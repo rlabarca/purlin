@@ -317,12 +317,19 @@ list that gates the eventual push of `main`.
 
 ## Also outstanding, from the 0.10.0 plan
 
-- **Tier 2a: run a real `purlin:audit`.** Proof Integrity is measured over **15 of 628** executed
-  proofs, across 2 of 40 features, and is 78 days stale. The dashboard now says so honestly in
-  amber rather than claiming a green 100%, but the number is still near-meaningless. This also
-  exercises the audit pipeline end to end for the first time.
-- **38 LOOSE Design findings across 12 features**, worth triaging via `purlin:spec`. Design is
-  566 of 587 descriptions measured, at 91%.
+**The authoritative list is now "TODO before pushing main" in
+`dev/plans/platform-generic-remote-verification.md`**, finalized at the end of Phase 11. It is the
+list that gates the eventual `--ff-only` merge and push of `main`, it carries everything below
+plus everything execution deferred through Phases 6 to 11, and it is where a new context starts.
+Read it there rather than here; these three are kept because they predate that plan.
+
+- **Tier 2a: run a real `purlin:audit`.** Proof Integrity is measured over a handful of executed
+  proofs across 2 features and is months stale. The dashboard says so honestly in amber rather
+  than claiming a green 100%, but the number is still near-meaningless. This also exercises the
+  audit pipeline end to end for the first time. Carried forward as the first open item of the
+  TODO list.
+- **38 LOOSE Design findings across 12 features**, worth triaging via `purlin:spec`. Carried
+  forward in that plan's Backlog table.
 - `~/.claude/plans/purlin-0.10.0-followups.md` still holds Tier 2 and Tier 3. Do not delete it
   until those are done.
 

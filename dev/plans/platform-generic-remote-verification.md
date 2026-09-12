@@ -2276,6 +2276,114 @@ user asked for (mobile OS ids are the same mechanism with an `os`), exercised on
   section (this is Tier 2a); push the branch; **do not merge or push `main`** (it happens after
   the ADO work; see "Branch and hand-off").
 
+## DONE — Phase 11: docs, one enforcement model, diagrams, release notes (`feat(purlin_docs,purlin_skills,skill_verify,purlin_version): the docs say what the mechanism does` at `60fad3b9`, `docs(assets): purlin:test in the lifecycle diagrams; screenshots refreshed` at `50638cb5`, receipts in the `verify:` commit that follows them)
+
+- **Numbers taken.** `purlin_docs` is new: RULE-1..7, PROOF-1..11 in new `dev/test_purlin_docs.py`
+  (added to the sweep), next free RULE-8/PROOF-12. `purlin_skills` RULE-12 amended and PROOF-12
+  rewritten in place (renamed to
+  `test_proof_writing_skills_review_both_the_tier_and_the_platform`); next free RULE-18/PROOF-18.
+  `skill_verify` RULE-9 and PROOF-9 amended in place; next free RULE-15/PROOF-15.
+  `purlin_version` RULE-9/PROOF-9 new, with `RELEASE_NOTES.md` added to its `> Scope:`; next free
+  RULE-10/PROOF-10.
+- **One proof per sub-claim, and one rule split across two.** RULE-1 has PROOF-1 (the four prose
+  strings) and PROOF-2 (the `@windows` token); RULE-2 has PROOF-3 (binds/does-not-bind),
+  PROOF-4 (`.test-lock`, `audit_llm`, the criteria pin) and PROOF-5 (the Pass D sentence in both
+  files); RULE-5 has PROOF-8 (the forbidden yaml) and PROOF-9 (the shape of a gate example).
+- **RULE-1's `@windows` clause is paragraph-scoped, not line-scoped.** The token had to survive in
+  eleven places that document the migration, and two of them (`proofs_format.md`'s Legacy
+  paragraph, `skills/init/SKILL.md`'s delta sample) carry the framing on a neighbouring line. The
+  rule therefore reads the blank-line-delimited paragraph and requires `legacy`/`Legacy` or the
+  literal `@unit @on(` in it. One real edit fell out: `spec_format.md`'s connector example used
+  `@integration, @e2e, and @windows` to show a tag that is not a tag, and now says
+  `@unit, @integration, and @e2e`, which demonstrates the same rule without teaching the token.
+- **RULE-4 counts rows, not tables.** PROOF-7 scans every tracked markdown under `docs/`,
+  `references/`, `skills/` and `agents/` plus `README.md` for `^\|\s*\*\*(Layer \d|Not a layer)`
+  and requires all of them to be in `references/hard_gates.md`, exactly five of them. The new
+  `## Enforcement Layers` section is not a `## Gate N` heading, so `purlin_references` PROOF-6's
+  one-gate count is untouched (asserted in the same test). The table in hard_gates.md's
+  "No Claude Code Hook Enforces Anything" section became a sentence pointing at the new one, so
+  the file itself does not carry two; `purlin_references` PROOF-26 still finds `purlin:verify`,
+  `pre-push`, `CI` and `Branch protection` in that sentence.
+- **The CI examples are workflows now.** `docs/examples/figma-web-app.md` had `on: deploy` and
+  two `run: purlin:` lines, neither of which is a thing a runner can execute; it and
+  `testing-workflow-guide.md` now check out with `fetch-depth: 0`, clone the plugin at a pinned
+  tag into `PURLIN_PLUGIN_ROOT`, run a real test command, and then call
+  `python3 "$PURLIN_PLUGIN_ROOT/scripts/ci/verify_gate.py" --check`. `purlin_references` PROOF-22
+  already required the `PURLIN_PLUGIN_ROOT` form and the pinned tag and passes over both blocks.
+  PROOF-9 also requires a real test command textually before the gate line, because a gate with
+  no run in front of it re-reads what the developer committed.
+- **Platform docs.** New `## Platforms` section in `testing-workflow-guide.md` (`@on`, the
+  registry including `kind: environment`, family ids, `PURLIN_PLATFORM`, scoped files, what
+  `purlin:test` does per platform, `purlin:init --update`, the template pointer);
+  `collaboration-guide.md` gained the scoped-file and `report-data.js` rows, the paragraph on what
+  travels and what does not, and the rule that a scoped file is never hand-merged;
+  `installation-guide.md` gained the `platforms` sample (its `mutation_checks` row and "Upgrading
+  the plugin" section were already written by Phase 7, checked);
+  `lifecycle-guide.md` and `dashboard-guide.md` had no stale "runner-gated tier" wording left, but
+  both carried `tamper-evident` and were rewritten to say what the hash binds; `README.md`'s
+  dashboard line now names the per-platform cards and chips; `agents/purlin.md` names platform-tag
+  review; `skills/init/SKILL.md` and `skills/build/SKILL.md` were the last two files saying
+  "runner-gated" and no longer do.
+- **Diagrams rendered.** `assets/src/lifecycle-eng-workflow.mmd`, `lifecycle-handoff.mmd` and
+  `lifecycle-qa-workflow.mmd` each labelled a node `purlin:unit-test`, renamed in Phase 0. Labels
+  fixed and all five re-rendered with `bash dev/render-diagrams.sh` (mmdc 11.17.0 through
+  `npx --yes @mermaid-js/mermaid-cli@latest`, system Chrome via `PURLIN_CHROME`, CA bundle exported
+  from both keychains into `NODE_EXTRA_CA_CERTS`, `PUPPETEER_SKIP_DOWNLOAD=1`).
+  `lifecycle-big-picture.svg` and `lifecycle-pm-workflow.svg` re-rendered byte-identical, which is
+  the useful signal that the render is reproducible. Sources and SVGs are in one commit.
+- **Screenshots.** `scripts/report/purlin-report.html` copied to the repository root (the symlink
+  is gitignored and was absent), `sync_status` run to refresh `.purlin/report-data.js`, then
+  `python3 dev/capture_doc_screenshots.py`. All three PNGs changed;
+  `dashboard-platforms.png` now shows `claude-cli` and `figma-mcp` beside `windows-2022`.
+- **RELEASE_NOTES.** The Unreleased section is rewritten as Added / Changed / Fixed / Upgrade
+  notes, and states `802 passed, 27 skipped across 14 suites` because that is what the run marker
+  records: `passed` there is the pytest test count plus the thirteen shell suites, not the 789 the
+  pytest summary line prints. RULE-9 compares the notes to the marker, so the notes had to carry
+  the marker's number and say which number it is. Bootstrapping needed one manual step: the proof
+  reads the marker on disk, which during a sweep is the *previous* sweep's, so the marker was
+  seeded to 802 by hand once and every sweep since has written 802 itself. `VERSION` is untouched
+  and nothing is tagged.
+- **Pass D.** `--check-proof-design` over all four edited specs: `purlin_docs` 5 PROVABLE and 6
+  STRUCTURAL (every rule here is about prose, so a grep is the strongest proof available);
+  `purlin_version` PROOF-9 STRUCTURAL; `purlin_skills` PROOF-12 and `skill_verify` PROOF-9 both
+  PROVABLE. Zero UNPROVABLE and zero LOOSE among them.
+- **Mutations (each applied with `PYTHONDONTWRITEBYTECODE=1`, its proof run, restored; all
+  fifteen caught).** `tamper-evident` added to `dashboard-guide.md` (PROOF-1); a `@windows` tag in
+  a `docs/index.md` paragraph with no legacy framing (PROOF-2); the `platform` row deleted from the
+  binds table (PROOF-3); `.test-lock.json` reinstated (PROOF-4); `Proof Design is deterministic`
+  restored in `remote_verification.md` (PROOF-5); the remote-verification Guides row deleted
+  (PROOF-6); a `| **Layer 1:` row pasted back into `lifecycle-guide.md` (PROOF-7); `on: deploy`
+  back in the figma example (PROOF-8); `fetch-depth: 0` removed from it (PROOF-9); the
+  `!assets/src/*.mmd` negation commented out (PROOF-10); `dashboard-platforms.png` renamed
+  (PROOF-11); the Unreleased count off by one (purlin_version PROOF-9); the platform paragraph
+  removed from `skills/spec/SKILL.md` (purlin_skills PROOF-12); the issuer no longer writing
+  `awaiting_runner`, and the fixture dropping its `@on(...)` (skill_verify PROOF-9, each
+  separately). Two first attempts survived and were replaced: renaming only the *label* of the
+  binds row left the word `platform` in the row's second cell, and dropping the word `Legacy` from
+  `spec_format.md` left `@unit @on(` in the same paragraph. Both are recorded because they are
+  exactly the "the fixture cannot tell correct from broken" case the mutation check exists for.
+- **Sweep.** `bash dev/run_tests.sh` (foreground): 14 suites, `789 passed, 27 skipped` (was
+  777/27; +11 are `purlin_docs` PROOF-1..11 and +1 is `purlin_version` PROOF-9). Subset runs during
+  the mutation checks churned `skill_verify.proofs-integration.json`,
+  `purlin_skills.proofs-unit.json` and `purlin_version.proofs-unit.json`; a full sweep restored
+  every entry (the sweep executes every churned file, so it rewrites what a subset dropped) and
+  `git diff --stat specs/` then showed one renamed test name and nine inserted lines, no entry lost.
+- **Receipts: 41 of 43, `features=36/38 anchors=5/5 vhash=900300fd`.** `purlin_docs` receipts on
+  its first run. The two skips are unchanged: `figma_web` and `skill_spec`, whose scoped evidence
+  no run has committed with a `Purlin-Runner:` trailer.
+- **Verification checklist, all green.** `scripts/ci/verify_gate.py --check --project-root .`
+  exit 0 (reporting 3 features not VERIFIED and 3 proofs awaiting `claude-cli`, which in
+  `optional` mode never block); `bash dev/bump_version.sh --check` exit 0;
+  `python3 scripts/update/migrate.py --check --project-root .` exit 0 (the only pending item is
+  `receipt-v1`, which is the two v1 receipts above and is not a `legacy-*`);
+  `command grep -rn "tamper-evident\|signed verification\|signed off\|\.test-lock" docs README.md
+  references skills tools agents` returns only the two negations in
+  `docs/regulated-environments.md`; `git ls-files .purlin/cache` is empty; `git ls-files
+  assets/src` lists exactly five `.mmd`.
+- **Not done here, by arrangement:** `dev/plans/ado-runner-provider.md` is written by a sibling
+  worktree agent in the same session and is not touched by this phase. CLAUDE.md unchanged.
+
+
 ---
 
 ## Reviewer findings applied (authoritative over the phase text where they differ)
@@ -2390,32 +2498,71 @@ number named earlier in this plan. Landing order and what each spec gains:
 
 ## TODO before pushing main (kept in `dev/plans/two-gauges-remote-verification.md` so a new context resumes from it)
 
-The push of `main` publishes 39+ commits for the first time and is expected to happen in a later
+The push of `main` publishes 40+ commits for the first time and is expected to happen in a later
 context, after these are resolved. Execution appends to this list whatever it defers; nothing is
 silently dropped. Sequence agreed 2026-09-12: this list is worked in a new context on THIS
 machine first; `dev/plans/ado-runner-provider.md` is then executed on the work machine, which
 has the Azure DevOps account. Do not start the ADO work here.
 
+Finalized at the end of Phase 11. Items marked `[x]` are closed and kept for the record.
+
 - [ ] Both audits run for real on this repo and recorded (Design and Integrity bars above met, or
-      the shortfall named per feature with its `purlin:spec` / `purlin:build` directive).
+      the shortfall named per feature with its `purlin:spec` / `purlin:build` directive). This is
+      Tier 2a and the last thing the branch owes. Phase 11 ran `--check-proof-design` over the
+      specs it wrote, not the repository-wide `purlin:audit --design`.
 - [ ] CI green on the branch head: `verify-gate`, `version-check`, `purlin-windows-2022-proofs`
       (`gh run list`), and `git pull --ff-only` returns nothing new.
 - [ ] The backlog table below triaged: each item either scheduled or explicitly accepted.
-- [ ] Release decision: `bash dev/bump_version.sh 0.11.0`, RELEASE_NOTES section finalized,
-      tag (the format bumps make this a minor release; the user decides when).
+- [ ] Release decision: `bash dev/bump_version.sh 0.11.0`, RELEASE_NOTES section finalized (the
+      Unreleased body is written; only the version heading and the tag are outstanding), tag. The
+      format bumps make this a minor release; the user decides when. Note `purlin_version` RULE-9:
+      the Unreleased counts are checked against `.purlin/runtime/test_run.json`, so a release that
+      changes the sweep must update that line in the same commit.
 - [ ] Consumer-CI templates exercised once against a scratch consumer project (clone a temp
       project, `purlin:init`, one `@on(linux)` proof, push to a scratch GitHub repo, confirm the
       runner commits back with both trailers and the gate passes). Not possible from this repo's
       own workflows, so it is a manual check before publishing.
+- [ ] **The two witness-less features.** `figma_web` (15 proofs, `@on(figma-mcp)`) and
+      `skill_spec` (PROOF-8, `@on(claude-cli)`) are the two the receipt issuer SKIPs as `evidence
+      not in the recorded run`: their proof files are platform-scoped but no run has committed
+      them with a `Purlin-Runner:` trailer, so they read `PASSING` with a stale v1 receipt and
+      `migrate.py --check` reports `receipt-v1` pending. To close either, on a host that has the
+      tool: `PURLIN_PLATFORM=figma-mcp PURLIN_E2E_FIGMA=1 python3 -m pytest
+      dev/test_e2e_figma_web.py` (or `PURLIN_PLATFORM=claude-cli PURLIN_E2E_AGENT=1 python3 -m
+      pytest dev/test_e2e_build_agent.py`), then commit the rewritten scoped file with
+      `git commit -m "test(figma_web): proofs from a figma-mcp host" -m "Purlin-Runner:
+      <user>@<host>" -m "Purlin-Platform: figma-mcp"`. `sync_status` reads the trailer off that
+      commit and stops saying "runner not recorded"; the issuer then accepts the evidence and the
+      feature reaches VERIFIED. Phase 6.5's third refusal, `static_checks`, closed exactly this
+      way through the Windows runner.
+- [ ] **(10.6) `skill_audit` PROOF-9..13 carry no `@on(gemini-cli)` tag, deliberately.** Their ids
+      are also proved by `dev/test_skill_specs.py`, which the sweep runs, so tagging them would
+      stop five passing local results counting and drop the feature from 22/22 to 17/17.
+      `dev/test_e2e_cross_model_audit.sh` exports `PURLIN_PROOF_PLATFORMS=gemini-cli` so a future
+      gemini run lands in a registered scope. Decide whether the honest model is a proof that can
+      be satisfied either locally or on an environment, which the satisfaction rules do not
+      express today, or whether the local proofs should move to their own ids.
+- [ ] **(6.3) `proof_plugins_php` and `proof_plugins_xunit` platform proofs have never executed
+      anywhere.** They skip on this machine (no `php`, no `dotnet`) and no runner has them. Run
+      them on a host with the toolchains, or model both as `kind: environment` platforms the way
+      10.6 did for the other three, so the gap reads AWAITING RUNNER instead of a silent skip.
+- [ ] **(8) `platforms.summary` carries no row for the host when no proof declares it.** The
+      Integrity modal therefore reports `windows-2022` over its 2 entries and says nothing about
+      the ~740 agnostic ones. Honest but thin. A host row for an undeclared host is the candidate
+      fix if the modal proves hard to read.
+- [ ] **(11) `purlin_docs` RULE-1 is paragraph-scoped for the `@windows` token.** A paragraph that
+      happens to contain the word `legacy` for an unrelated reason would pass. Tighten it if the
+      token ever migrates out of the migration docs entirely, at which point the rule can simply
+      forbid it.
 - [ ] Anything a subagent reports as "deferred" during execution (appended as it happens).
-- [ ] (6.5) The evidence check refuses receipts for `figma_web`, `skill_spec` and `static_checks`:
-      their proof files were committed locally with no `Purlin-Runner:` trailer and the sweep does
-      not run them (RULE-14 exceptions). 38/41 VERIFIED until 7.4 (static_checks via the runner)
-      and 10.6 (environment ids for the other two) give them a witness.
-- [ ] (6.3) `proof_plugins_php` and `proof_plugins_xunit` gained platform proofs that are skipped on
-      this machine (no php, no dotnet); they have never executed anywhere. Run them on a host with
-      the toolchains, or model both as `kind: environment` platforms in 10.6 so the gap reads
-      AWAITING RUNNER instead of silently skipped.
+- [x] (6.5) The evidence check refused receipts for `figma_web`, `skill_spec` and `static_checks`.
+      `static_checks` closed in 7.4 through the Windows runner; the other two are the open item
+      above.
+- [x] (11) Screenshots: `dev/capture_doc_screenshots.py` regenerated all three PNGs against the
+      refreshed `report-data.js`.
+- [x] (11) Diagrams: the three `purlin:unit-test` node labels are `purlin:test` and all five SVGs
+      are re-rendered from their committed `.mmd` sources.
+- [x] (11) `dev/plans/ado-runner-provider.md` written in a sibling worktree in the same session.
 
 ---
 
