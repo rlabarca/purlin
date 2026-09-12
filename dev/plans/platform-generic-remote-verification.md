@@ -2520,7 +2520,7 @@ Finalized at the end of Phase 11. Items marked `[x]` are closed and kept for the
       format bumps make this a minor release; the user decides when. Note `purlin_version` RULE-9:
       the Unreleased counts are checked against `.purlin/runtime/test_run.json`, so a release that
       changes the sweep must update that line in the same commit.
-- [ ] Consumer-CI templates exercised once against a scratch consumer project (clone a temp
+- [x] (closed by closeout item J on 2026-09-12: live run green against a scratch repo, both trailers, gate exit 0, repo deleted; two template defects found and fixed) Consumer-CI templates exercised once against a scratch consumer project (clone a temp
       project, `purlin:init`, one `@on(linux)` proof, push to a scratch GitHub repo, confirm the
       runner commits back with both trailers and the gate passes). Not possible from this repo's
       own workflows, so it is a manual check before publishing.
