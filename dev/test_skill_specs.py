@@ -2052,6 +2052,20 @@ class TestSkillTestRemotePath:
         assert 'macos-14' in section and 'windows-2022' in section, (
             "the samples must name concrete platform ids")
 
+        # The conditional read before the run, and the mandatory call after it.
+        assert re.search(r'(?i)already in context', section), (
+            "Step 1.5 must take the block from the sync_status output already "
+            "in context, not order an unconditional call before the run")
+        assert re.search(r'(?i)call\s+`?sync_status`?\s+once here', section), (
+            "Step 1.5 must call sync_status once itself only when no such "
+            "output is in context")
+        assert re.search(r'(?i)step 3[^.]{0,80}mandatory', ' '.join(section.split())), (
+            "Step 1.5 must name Step 3's post-test call as the mandatory one")
+        step3 = content[content.index('## Step 3'):]
+        assert 'sync_status' in step3 and re.search(r'(?i)not optional|mandatory',
+                                                    step3), (
+            "Step 3's sync_status call must be described as mandatory")
+
         # The flag that targets one platform.
         usage = content[content.index('## Usage'):content.index('## Step 1 ')]
         assert '--platform <id>' in usage, (

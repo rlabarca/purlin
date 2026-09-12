@@ -29,8 +29,11 @@ Read `.purlin/config.json` for `test_framework`. If set to a specific framework,
 
 ## Step 1.5 — Classify Platforms
 
-Before running anything, read the `Platforms:` block `sync_status` prints and show it. It is the
-authority on what this host can prove and what needs a runner; do not recompute the split by hand.
+Read the `Platforms:` block from the `sync_status` output already in context and show it. When
+no such output is in context, call `sync_status` once here to obtain it. It is the authority on
+what this host can prove and what needs a runner; do not recompute the split by hand. This read
+is the only `sync_status` call before the run, and it is conditional; the call in Step 3, after
+the tests, is the mandatory one.
 
 ```
 Platforms: host macos 14.7.1 arm64

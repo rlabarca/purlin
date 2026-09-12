@@ -106,7 +106,8 @@ Everything else is optional guidance. See `references/hard_gates.md`.
 
 `sync_status` is called by multiple skills. To avoid redundant calls:
 
-- `purlin:test` ALWAYS calls `sync_status` after tests (mandatory, not optional)
+- `purlin:test` calls `sync_status` always after tests, and once before them when the platform
+  block is not already in context
 - `purlin:build` delegates to `purlin:test` — do NOT call `sync_status` separately
 - `purlin:verify` delegates to `purlin:test --all` — do NOT call `sync_status` separately
 - `purlin:status` calls `sync_status` directly — this IS its purpose
