@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -387,3 +388,66 @@ class TestDriftSinceValidation:
         # Control: a valid since does resolve, and does run git.
         assert 'commits' in allowed, allowed
         assert allowed_calls, "the control call ran no subprocess at all"
+
+
+class TestDriftBatchedDiffStat:
+    """drift RULE-18: one numstat over the range, not one subprocess per file."""
+
+    FILE_COUNT = 12
+
+    def _repo(self, root):
+        os.makedirs(os.path.join(root, '.purlin'))
+        os.makedirs(os.path.join(root, 'specs', 'mcp'))
+        with open(os.path.join(root, 'specs', 'mcp', 'thing.md'), 'w') as f:
+            f.write('# Feature: thing\n\n> Scope: src/thing.py\n\n'
+                    '## Rules\n\n- RULE-1: Does the thing\n\n'
+                    '## Proof\n\n- PROOF-1 (RULE-1): Call it and verify 1\n')
+        _git(['init', '-q'], root)
+        _git(['config', 'user.email', 'test@test.com'], root)
+        _git(['config', 'user.name', 'Test'], root)
+        _git(['add', '-A'], root)
+        _git(['commit', '-q', '-m', 'chore: baseline'], root)
+        # One commit adding FILE_COUNT files, each with a different line count.
+        os.makedirs(os.path.join(root, 'src'))
+        for i in range(self.FILE_COUNT):
+            with open(os.path.join(root, 'src', f'mod{i}.py'), 'w') as f:
+                f.write('\n'.join(f'line {j}' for j in range(i + 1)) + '\n')
+        _git(['add', '-A'], root)
+        _git(['commit', '-q', '-m', 'feat: twelve modules'], root)
+
+    @pytest.mark.proof("drift", "PROOF-21", "RULE-18", tier="integration")
+    def test_one_numstat_call_covers_every_changed_file(self, tmp_path):
+        root = str(tmp_path / 'proj')
+        os.makedirs(root)
+        self._repo(root)
+
+        calls = []
+        real_run = subprocess.run
+
+        def spy(args, *rest, **kwargs):
+            calls.append(list(args) if isinstance(args, (list, tuple)) else [args])
+            return real_run(args, *rest, **kwargs)
+
+        purlin_server.subprocess.run = spy
+        try:
+            data = json.loads(purlin_server.drift(root, since='1'))
+        finally:
+            purlin_server.subprocess.run = real_run
+
+        numstat_calls = [c for c in calls if '--numstat' in c]
+        assert len(numstat_calls) == 1, (
+            f"expected exactly 1 numstat subprocess for {self.FILE_COUNT} files, "
+            f"got {len(numstat_calls)}: {numstat_calls}")
+
+        entries = {e['path']: e['diff_stat'] for e in data['files']
+                   if e['path'].startswith('src/mod')}
+        assert len(entries) == self.FILE_COUNT, entries
+        for path, stat in entries.items():
+            assert re.match(r'^\+\d+ -\d+$', stat), (path, stat)
+
+        # Every value equals what a per-file numstat reports for that path.
+        for path, stat in entries.items():
+            r = real_run(['git', 'diff', '--numstat', 'HEAD~1..HEAD', '--', path],
+                         cwd=root, capture_output=True, text=True)
+            parts = r.stdout.strip().split('\t')
+            assert stat == f'+{parts[0]} -{parts[1]}', (path, stat, r.stdout)

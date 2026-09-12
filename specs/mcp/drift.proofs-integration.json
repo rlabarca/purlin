@@ -18,6 +18,15 @@
       "test_name": "test_hostile_since_is_refused_before_any_subprocess",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "drift",
+      "id": "PROOF-21",
+      "rule": "RULE-18",
+      "test_file": "dev/test_drift.py",
+      "test_name": "test_one_numstat_call_covers_every_changed_file",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

@@ -4901,21 +4901,30 @@ def _resolve_since_anchor(project_root, since_arg=None):
     })
 
 
-def _get_diff_stat(project_root, since_ref, filepath):
-    """Get +/- line counts for a single file."""
+def _diff_stat_map(project_root, since_ref):
+    """Map every path git names in the range to its '+N -M' line counts.
+
+    One `git diff --numstat` over the whole range, not one per file: the
+    subprocess count no longer grows with the number of changed files.
+    Paths the range does not name (binary renames, for instance) are simply
+    absent, and callers read them as ''.
+    """
+    stats = {}
     try:
         r = subprocess.run(
             ['git', 'diff', '--numstat', '--end-of-options',
-             since_ref + '..HEAD', '--', filepath],
-            capture_output=True, text=True, cwd=project_root, timeout=5,
+             since_ref + '..HEAD', '--'],
+            capture_output=True, text=True, cwd=project_root, timeout=30,
         )
-        if r.returncode == 0 and r.stdout.strip():
-            parts = r.stdout.strip().split('\t')
-            if len(parts) >= 2:
-                return f'+{parts[0]} -{parts[1]}'
     except (subprocess.SubprocessError, OSError):
-        pass
-    return ''
+        return stats
+    if r.returncode != 0:
+        return stats
+    for line in r.stdout.splitlines():
+        parts = line.split('\t')
+        if len(parts) >= 3 and parts[2]:
+            stats[parts[2]] = f'+{parts[0]} -{parts[1]}'
+    return stats
 
 
 def _detect_spec_changes(project_root, since_ref, spec_files_in_diff):
@@ -5073,6 +5082,9 @@ def _compute_drift(project_root, since=None, network=True):
         for scope_file in info.get('scope', []):
             scope_to_specs.setdefault(scope_file, []).append(name)
 
+    # One numstat over the whole range; every entry reads its stat by lookup.
+    diff_stats = _diff_stat_map(project_root, since_ref)
+
     # Classify each file
     file_entries = []
     spec_files_in_diff = []
@@ -5086,7 +5098,7 @@ def _compute_drift(project_root, since=None, network=True):
                 'path': filepath,
                 'category': 'CHANGED_SPECS',
                 'spec': spec_name,
-                'diff_stat': _get_diff_stat(project_root, since_ref, filepath),
+                'diff_stat': diff_stats.get(filepath, ''),
             })
             continue
 
@@ -5102,7 +5114,7 @@ def _compute_drift(project_root, since=None, network=True):
                 'path': filepath,
                 'category': 'TESTS_ADDED',
                 'spec': spec_name,
-                'diff_stat': _get_diff_stat(project_root, since_ref, filepath),
+                'diff_stat': diff_stats.get(filepath, ''),
             })
             continue
 
@@ -5118,7 +5130,7 @@ def _compute_drift(project_root, since=None, network=True):
                 'path': filepath,
                 'category': 'CHANGED_BEHAVIOR',
                 'spec': matched_specs[0],
-                'diff_stat': _get_diff_stat(project_root, since_ref, filepath),
+                'diff_stat': diff_stats.get(filepath, ''),
             })
             continue
 
@@ -5132,7 +5144,7 @@ def _compute_drift(project_root, since=None, network=True):
                 'path': filepath,
                 'category': 'NO_IMPACT',
                 'spec': None,
-                'diff_stat': _get_diff_stat(project_root, since_ref, filepath),
+                'diff_stat': diff_stats.get(filepath, ''),
             })
             continue
 
@@ -5141,7 +5153,7 @@ def _compute_drift(project_root, since=None, network=True):
             'path': filepath,
             'category': 'NEW_BEHAVIOR',
             'spec': None,
-            'diff_stat': _get_diff_stat(project_root, since_ref, filepath),
+            'diff_stat': diff_stats.get(filepath, ''),
         })
 
     # Detect spec rule changes

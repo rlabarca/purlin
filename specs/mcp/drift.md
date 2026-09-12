@@ -24,6 +24,7 @@
 - RULE-15: Detects unpinned state when an anchor has `> Source:` but no `> Pinned:`, returning an external_anchor_drift entry with status `unpinned`
 - RULE-16: Returns a `rule_details` object for each spec with CHANGED_BEHAVIOR files, containing per-rule ID, description, and proof status (pass/fail/unproved), plus the list of changed scope files
 - RULE-17: The `since` argument is validated before any subprocess starts: only a commit count (digits only) or a `YYYY-MM-DD` date is accepted, and any other value is refused with an error naming the two accepted forms rather than passed to git
+- RULE-18: The `diff_stat` of every changed file is resolved by lookup from a single `git diff --numstat` taken over the whole range, so the subprocess count does not grow with the file count: this repo's 75 changed files cost one git call rather than 75, which was 0.749 s of a 1.04 s drift call. A path the batch does not name, such as one git reports only as a rename, carries an empty `diff_stat`
 
 ## Proof
 
@@ -47,3 +48,4 @@
 - PROOF-18 (RULE-15): e2e: Create anchor with Source but no Pinned; run drift; verify unpinned status @e2e
 - PROOF-19 (RULE-16): Create spec with 3 rules and `> Scope:` pointing to a source file; add proofs for 2 of 3 rules; modify the scope file and commit; call drift; verify rule_details contains the spec with 3 rule entries, 2 with proof_status=pass, 1 with proof_status=unproved, and the changed file in changed_files @integration
 - PROOF-20 (RULE-17): In a temp repo, call `drift(root, since="--output=/tmp/x")` with `subprocess.run` wrapped by a recording spy; verify the returned JSON carries `error: "rejected since"` with a reason naming both accepted forms and that the spy recorded zero calls. As a control, call the same function with `since="2"` and verify it returns a `commits` list and the spy did record calls @integration
+- PROOF-21 (RULE-18): In a temp repo commit 12 files of differing length in one commit, then call `drift` with `since="1"` and `subprocess.run` wrapped by a recording spy; verify exactly 1 recorded argv contains `--numstat`, that all 12 file entries carry a `diff_stat` matching `^\+\d+ -\d+$`, and that each value equals the output of `git diff --numstat HEAD~1..HEAD -- <path>` run for that path on its own @integration
