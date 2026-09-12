@@ -1,9 +1,9 @@
 {
   "feature": "purlin_version",
-  "vhash": "10ae5f34",
+  "vhash": "c7cb9d2f",
   "vhash_version": 2,
-  "commit": "92d02a18772f988aec53efa58c67cb0f40625823",
-  "timestamp": "2026-09-12T06:02:38.906756+00:00",
+  "commit": "50638cb55001cf77c2c20da9b33eee30d6344d91",
+  "timestamp": "2026-09-12T12:17:00.813302+00:00",
   "rules": [
     "RULE-1",
     "RULE-2",
@@ -12,7 +12,8 @@
     "RULE-5",
     "RULE-6",
     "RULE-7",
-    "RULE-8"
+    "RULE-8",
+    "RULE-9"
   ],
   "rule_hashes": {
     "RULE-1": "b4f1c5b2960b7a31",
@@ -22,7 +23,8 @@
     "RULE-5": "fe1602e736751489",
     "RULE-6": "6cfdd046a4a6b882",
     "RULE-7": "480fabcb21008240",
-    "RULE-8": "cd2b85d0dbce657a"
+    "RULE-8": "cd2b85d0dbce657a",
+    "RULE-9": "8442ef9025ce418a"
   },
   "proofs": [
     {
@@ -114,14 +116,24 @@
       "test_file": "dev/test_purlin_version.py",
       "test_name": "test_config_version_field_docs_carry_no_semver_literal",
       "platform": null
+    },
+    {
+      "feature": "purlin_version",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_purlin_version.py",
+      "test_name": "test_unreleased_counts_match_the_recorded_run",
+      "platform": null
     }
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T06:02:28.269187+00:00",
-      "commit": "92d02a18772f988aec53efa58c67cb0f40625823",
+      "at": "2026-09-12T12:16:56.921747+00:00",
+      "commit": "50638cb55001cf77c2c20da9b33eee30d6344d91",
       "sweep": "dev/run_tests.sh",
-      "passed": 790,
+      "passed": 802,
       "failed": 0,
       "skipped": 27
     },
@@ -130,8 +142,8 @@
         "file": "specs/instructions/purlin_version.proofs-unit.json",
         "tier": "unit",
         "platform": null,
-        "commit": "9601eaa497738784943bae38666441381e59b207",
-        "committed_at": "2026-09-11T12:34:06-04:00",
+        "commit": "60fad3b9e6e427cdbb5a0366f896fe8427d0dfb0",
+        "committed_at": "2026-09-12T08:13:43-04:00",
         "runner": null,
         "executed_in_test_run": true
       }

@@ -2,8 +2,8 @@
   "feature": "security_no_dangerous_patterns",
   "vhash": "9d766e72",
   "vhash_version": 2,
-  "commit": "92d02a18772f988aec53efa58c67cb0f40625823",
-  "timestamp": "2026-09-12T06:02:38.906756+00:00",
+  "commit": "50638cb55001cf77c2c20da9b33eee30d6344d91",
+  "timestamp": "2026-09-12T12:17:00.813302+00:00",
   "rules": [
     "RULE-1",
     "RULE-2",
@@ -84,10 +84,10 @@
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T06:02:28.269187+00:00",
-      "commit": "92d02a18772f988aec53efa58c67cb0f40625823",
+      "at": "2026-09-12T12:16:56.921747+00:00",
+      "commit": "50638cb55001cf77c2c20da9b33eee30d6344d91",
       "sweep": "dev/run_tests.sh",
-      "passed": 790,
+      "passed": 802,
       "failed": 0,
       "skipped": 27
     },
