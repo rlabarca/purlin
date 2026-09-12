@@ -6,7 +6,7 @@
       "id": "PROOF-16",
       "rule": "RULE-16",
       "test_file": "dev/test_claude_cli_helper.py",
-      "test_name": "test_agents_flag_carries_the_json_object_not_a_path",
+      "test_name": "test_agent_file_without_front_matter_is_all_prompt",
       "status": "pass",
       "tier": "unit"
     },
@@ -15,7 +15,7 @@
       "id": "PROOF-16",
       "rule": "RULE-16",
       "test_file": "dev/test_claude_cli_helper.py",
-      "test_name": "test_agent_file_without_front_matter_is_all_prompt",
+      "test_name": "test_agents_flag_carries_the_json_object_not_a_path",
       "status": "pass",
       "tier": "unit"
     },

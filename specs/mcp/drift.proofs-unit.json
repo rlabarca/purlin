@@ -3,6 +3,42 @@
   "proofs": [
     {
       "feature": "drift",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_since_anchor_resolution",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "drift",
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_broken_scope_detection",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "drift",
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_large_repo_recommends_spec_from_code",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "drift",
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_small_repo_returns_normal_drift",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "drift",
       "id": "PROOF-17",
       "rule": "RULE-12",
       "test_file": "dev/test_e2e_external_refs.sh",
@@ -12,19 +48,19 @@
     },
     {
       "feature": "drift",
-      "id": "PROOF-18",
+      "id": "PROOF-17",
       "rule": "RULE-15",
-      "test_file": "dev/test_e2e_external_refs.sh",
-      "test_name": "drift detects unpinned anchor",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_unpinned_anchor_detected",
       "status": "pass",
       "tier": "unit"
     },
     {
       "feature": "drift",
-      "id": "PROOF-1",
-      "rule": "RULE-1",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_since_anchor_resolution",
+      "id": "PROOF-18",
+      "rule": "RULE-15",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "drift detects unpinned anchor",
       "status": "pass",
       "tier": "unit"
     },
@@ -69,7 +105,7 @@
       "id": "PROOF-6",
       "rule": "RULE-6",
       "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_skill_md_not_no_impact",
+      "test_name": "test_agent_md_not_no_impact",
       "status": "pass",
       "tier": "unit"
     },
@@ -78,7 +114,7 @@
       "id": "PROOF-6",
       "rule": "RULE-6",
       "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_agent_md_not_no_impact",
+      "test_name": "test_skill_md_not_no_impact",
       "status": "pass",
       "tier": "unit"
     },
@@ -106,42 +142,6 @@
       "rule": "RULE-9",
       "test_file": "dev/test_mcp_server.py",
       "test_name": "test_drift_flags_array",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "drift",
-      "id": "PROOF-10",
-      "rule": "RULE-10",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_broken_scope_detection",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "drift",
-      "id": "PROOF-17",
-      "rule": "RULE-15",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_unpinned_anchor_detected",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "drift",
-      "id": "PROOF-11",
-      "rule": "RULE-11",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_large_repo_recommends_spec_from_code",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "drift",
-      "id": "PROOF-11",
-      "rule": "RULE-11",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_small_repo_returns_normal_drift",
       "status": "pass",
       "tier": "unit"
     }

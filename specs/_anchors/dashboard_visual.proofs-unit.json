@@ -12,6 +12,24 @@
     },
     {
       "feature": "dashboard_visual",
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_integrity_color_coding",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "dashboard_visual",
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_no_hardcoded_hex_outside_custom_properties",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "dashboard_visual",
       "id": "PROOF-2",
       "rule": "RULE-2",
       "test_file": "dev/test_purlin_report.py",
@@ -79,24 +97,6 @@
       "rule": "RULE-9",
       "test_file": "dev/test_purlin_report.py",
       "test_name": "test_untested_badge_and_no_proofs_opacity",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "dashboard_visual",
-      "id": "PROOF-10",
-      "rule": "RULE-10",
-      "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_integrity_color_coding",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "dashboard_visual",
-      "id": "PROOF-11",
-      "rule": "RULE-11",
-      "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_no_hardcoded_hex_outside_custom_properties",
       "status": "pass",
       "tier": "unit"
     }

@@ -12,6 +12,42 @@
     },
     {
       "feature": "skill_spec",
+      "id": "PROOF-10",
+      "rule": "RULE-9",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_points_at_proof_design_criteria",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_spec",
+      "id": "PROOF-11",
+      "rule": "RULE-10",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_exit_criteria_report_design_and_next_step",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_spec",
+      "id": "PROOF-12",
+      "rule": "RULE-11",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_assumption_tagging_is_mandatory_with_context",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_spec",
+      "id": "PROOF-13",
+      "rule": "RULE-12",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_customer_feedback_is_translated_into_rules",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_spec",
       "id": "PROOF-2",
       "rule": "RULE-2",
       "test_file": "dev/test_skill_specs.py",
@@ -57,15 +93,6 @@
     },
     {
       "feature": "skill_spec",
-      "id": "PROOF-9",
-      "rule": "RULE-8",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_validate_e2e_observable_flow",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "skill_spec",
       "id": "PROOF-7",
       "rule": "RULE-7",
       "test_file": "dev/test_skill_specs.py",
@@ -75,37 +102,10 @@
     },
     {
       "feature": "skill_spec",
-      "id": "PROOF-10",
-      "rule": "RULE-9",
+      "id": "PROOF-9",
+      "rule": "RULE-8",
       "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_points_at_proof_design_criteria",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "skill_spec",
-      "id": "PROOF-11",
-      "rule": "RULE-10",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_exit_criteria_report_design_and_next_step",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "skill_spec",
-      "id": "PROOF-12",
-      "rule": "RULE-11",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_assumption_tagging_is_mandatory_with_context",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "skill_spec",
-      "id": "PROOF-13",
-      "rule": "RULE-12",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_customer_feedback_is_translated_into_rules",
+      "test_name": "test_validate_e2e_observable_flow",
       "status": "pass",
       "tier": "unit"
     }

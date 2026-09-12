@@ -3,78 +3,6 @@
   "proofs": [
     {
       "feature": "purlin_report",
-      "id": "PROOF-2",
-      "rule": "RULE-2",
-      "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_no_data_message",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_report",
-      "id": "PROOF-3",
-      "rule": "RULE-3",
-      "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_summary_strip_counts",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_report",
-      "id": "PROOF-4",
-      "rule": "RULE-4",
-      "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_feature_table_row_count",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_report",
-      "id": "PROOF-5",
-      "rule": "RULE-5",
-      "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_row_expand_shows_detail",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_report",
-      "id": "PROOF-6",
-      "rule": "RULE-6",
-      "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_expanded_rule_sources_and_multi_proof_stacking",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_report",
-      "id": "PROOF-7",
-      "rule": "RULE-7",
-      "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_theme_toggle_persists",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_report",
-      "id": "PROOF-8",
-      "rule": "RULE-8",
-      "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_staleness_warning_amber",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_report",
-      "id": "PROOF-9",
-      "rule": "RULE-9",
-      "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_staleness_stale_red",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_report",
       "id": "PROOF-10",
       "rule": "RULE-10",
       "test_file": "dev/test_purlin_report.py",
@@ -151,6 +79,15 @@
       "rule": "RULE-19",
       "test_file": "dev/test_purlin_report.py",
       "test_name": "test_category_headers_with_rolled_up_summaries",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_no_data_message",
       "status": "pass",
       "tier": "unit"
     },
@@ -246,10 +183,10 @@
     },
     {
       "feature": "purlin_report",
-      "id": "PROOF-31",
-      "rule": "RULE-31",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
       "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_structural_proof_tag_rendering",
+      "test_name": "test_summary_strip_counts",
       "status": "pass",
       "tier": "unit"
     },
@@ -259,6 +196,15 @@
       "rule": "RULE-30",
       "test_file": "dev/test_purlin_report.py",
       "test_name": "test_description_block_rendering",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-31",
+      "rule": "RULE-31",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_structural_proof_tag_rendering",
       "status": "pass",
       "tier": "unit"
     },
@@ -277,6 +223,60 @@
       "rule": "RULE-33",
       "test_file": "dev/test_purlin_report.py",
       "test_name": "test_planned_proof_renders_greyed_not_run",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_feature_table_row_count",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_row_expand_shows_detail",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_expanded_rule_sources_and_multi_proof_stacking",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_theme_toggle_persists",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_staleness_warning_amber",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_staleness_stale_red",
       "status": "pass",
       "tier": "unit"
     }

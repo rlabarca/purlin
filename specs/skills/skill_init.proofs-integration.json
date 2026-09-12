@@ -3,6 +3,15 @@
   "proofs": [
     {
       "feature": "skill_init",
+      "id": "PROOF-51",
+      "rule": "RULE-48",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_registry_covers_every_shipped_plugin",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
       "id": "PROOF-52",
       "rule": "RULE-49",
       "test_file": "dev/test_init_update.py",
@@ -61,24 +70,6 @@
       "rule": "RULE-57",
       "test_file": "dev/test_init_update.py",
       "test_name": "test_mutation_checks_is_a_question_not_a_backfill",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "skill_init",
-      "id": "PROOF-75",
-      "rule": "RULE-72",
-      "test_file": "dev/test_init_update.py",
-      "test_name": "test_nothing_pending_means_nothing_written",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "skill_init",
-      "id": "PROOF-76",
-      "rule": "RULE-73",
-      "test_file": "dev/test_init_update.py",
-      "test_name": "test_absent_platform_id_flag_stamps_the_os_family",
       "status": "pass",
       "tier": "integration"
     },
@@ -210,19 +201,28 @@
     },
     {
       "feature": "skill_init",
-      "id": "PROOF-77",
-      "rule": "RULE-74",
-      "test_file": "dev/test_init_scaffold.py",
-      "test_name": "test_one_flag_rewrites_one_field_and_nothing_else",
+      "id": "PROOF-75",
+      "rule": "RULE-72",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_nothing_pending_means_nothing_written",
       "status": "pass",
       "tier": "integration"
     },
     {
       "feature": "skill_init",
-      "id": "PROOF-51",
-      "rule": "RULE-48",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_registry_covers_every_shipped_plugin",
+      "id": "PROOF-76",
+      "rule": "RULE-73",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_absent_platform_id_flag_stamps_the_os_family",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-77",
+      "rule": "RULE-74",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_one_flag_rewrites_one_field_and_nothing_else",
       "status": "pass",
       "tier": "integration"
     }

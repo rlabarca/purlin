@@ -12,10 +12,19 @@
     },
     {
       "feature": "purlin_docs",
-      "id": "PROOF-2",
-      "rule": "RULE-1",
+      "id": "PROOF-10",
+      "rule": "RULE-6",
       "test_file": "dev/test_purlin_docs.py",
-      "test_name": "test_bare_windows_token_only_in_the_nine_listed_sections",
+      "test_name": "test_every_lifecycle_svg_has_a_tracked_mermaid_source",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_docs",
+      "id": "PROOF-11",
+      "rule": "RULE-7",
+      "test_file": "dev/test_purlin_docs.py",
+      "test_name": "test_the_three_dashboard_screenshots_exist_and_are_referenced",
       "status": "pass",
       "tier": "unit"
     },
@@ -25,6 +34,51 @@
       "rule": "RULE-1",
       "test_file": "dev/test_purlin_docs.py",
       "test_name": "test_windows_token_in_an_unrelated_legacy_paragraph_is_rejected",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_docs",
+      "id": "PROOF-13",
+      "rule": "RULE-8",
+      "test_file": "dev/test_purlin_docs.py",
+      "test_name": "test_regulated_page_pins_the_plugin_by_tag_and_names_python_311",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_docs",
+      "id": "PROOF-14",
+      "rule": "RULE-9",
+      "test_file": "dev/test_purlin_docs.py",
+      "test_name": "test_every_section_names_a_mechanism_and_no_approval_vocabulary",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_docs",
+      "id": "PROOF-15",
+      "rule": "RULE-10",
+      "test_file": "dev/test_purlin_docs.py",
+      "test_name": "test_each_platform_doc_has_one_pointer_and_no_membership_question",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_docs",
+      "id": "PROOF-16",
+      "rule": "RULE-11",
+      "test_file": "dev/test_purlin_docs.py",
+      "test_name": "test_no_em_dash_or_en_dash_outside_fenced_blocks",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_docs",
+      "id": "PROOF-2",
+      "rule": "RULE-1",
+      "test_file": "dev/test_purlin_docs.py",
+      "test_name": "test_bare_windows_token_only_in_the_nine_listed_sections",
       "status": "pass",
       "tier": "unit"
     },
@@ -88,60 +142,6 @@
       "rule": "RULE-5",
       "test_file": "dev/test_purlin_docs.py",
       "test_name": "test_gate_examples_run_real_tests_first_and_fetch_full_history",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_docs",
-      "id": "PROOF-10",
-      "rule": "RULE-6",
-      "test_file": "dev/test_purlin_docs.py",
-      "test_name": "test_every_lifecycle_svg_has_a_tracked_mermaid_source",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_docs",
-      "id": "PROOF-11",
-      "rule": "RULE-7",
-      "test_file": "dev/test_purlin_docs.py",
-      "test_name": "test_the_three_dashboard_screenshots_exist_and_are_referenced",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_docs",
-      "id": "PROOF-13",
-      "rule": "RULE-8",
-      "test_file": "dev/test_purlin_docs.py",
-      "test_name": "test_regulated_page_pins_the_plugin_by_tag_and_names_python_311",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_docs",
-      "id": "PROOF-14",
-      "rule": "RULE-9",
-      "test_file": "dev/test_purlin_docs.py",
-      "test_name": "test_every_section_names_a_mechanism_and_no_approval_vocabulary",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_docs",
-      "id": "PROOF-15",
-      "rule": "RULE-10",
-      "test_file": "dev/test_purlin_docs.py",
-      "test_name": "test_each_platform_doc_has_one_pointer_and_no_membership_question",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_docs",
-      "id": "PROOF-16",
-      "rule": "RULE-11",
-      "test_file": "dev/test_purlin_docs.py",
-      "test_name": "test_no_em_dash_or_en_dash_outside_fenced_blocks",
       "status": "pass",
       "tier": "unit"
     }

@@ -6,7 +6,7 @@
       "id": "PROOF-8",
       "rule": "RULE-8",
       "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_hot_reload_off_when_env_unset",
+      "test_name": "test_failed_reload_prints_traceback_and_keeps_serving",
       "status": "pass",
       "tier": "integration"
     },
@@ -15,7 +15,7 @@
       "id": "PROOF-8",
       "rule": "RULE-8",
       "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_failed_reload_prints_traceback_and_keeps_serving",
+      "test_name": "test_hot_reload_off_when_env_unset",
       "status": "pass",
       "tier": "integration"
     },

@@ -12,78 +12,6 @@
     },
     {
       "feature": "purlin_skills",
-      "id": "PROOF-2",
-      "rule": "RULE-2",
-      "test_file": "dev/test_purlin_skills.py",
-      "test_name": "test_exactly_twelve_skill_files",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_skills",
-      "id": "PROOF-3",
-      "rule": "RULE-3",
-      "test_file": "dev/test_purlin_skills.py",
-      "test_name": "test_each_skill_has_usage_section",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_skills",
-      "id": "PROOF-4",
-      "rule": "RULE-4",
-      "test_file": "dev/test_purlin_skills.py",
-      "test_name": "test_skill_name_matches_directory",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_skills",
-      "id": "PROOF-5",
-      "rule": "RULE-5",
-      "test_file": "dev/test_purlin_skills.py",
-      "test_name": "test_modify_skills_have_commit_instructions",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_skills",
-      "id": "PROOF-6",
-      "rule": "RULE-6",
-      "test_file": "dev/test_purlin_skills.py",
-      "test_name": "test_mcp_skills_reference_tools",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_skills",
-      "id": "PROOF-7",
-      "rule": "RULE-7",
-      "test_file": "dev/test_purlin_skills.py",
-      "test_name": "test_build_and_unittest_require_sync_status",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_skills",
-      "id": "PROOF-8",
-      "rule": "RULE-8",
-      "test_file": "dev/test_purlin_skills.py",
-      "test_name": "test_verify_prohibits_modifying_files",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_skills",
-      "id": "PROOF-9",
-      "rule": "RULE-9",
-      "test_file": "dev/test_purlin_skills.py",
-      "test_name": "test_build_has_failure_diagnosis_guidance",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_skills",
       "id": "PROOF-10",
       "rule": "RULE-10",
       "test_file": "dev/test_purlin_skills.py",
@@ -151,6 +79,78 @@
       "rule": "RULE-17",
       "test_file": "dev/test_purlin_skills.py",
       "test_name": "test_build_branches_on_mutation_checks_and_test_links_the_section",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_skills",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_purlin_skills.py",
+      "test_name": "test_exactly_twelve_skill_files",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_skills",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "test_file": "dev/test_purlin_skills.py",
+      "test_name": "test_each_skill_has_usage_section",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_skills",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_purlin_skills.py",
+      "test_name": "test_skill_name_matches_directory",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_skills",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_purlin_skills.py",
+      "test_name": "test_modify_skills_have_commit_instructions",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_skills",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "test_file": "dev/test_purlin_skills.py",
+      "test_name": "test_mcp_skills_reference_tools",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_skills",
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "test_file": "dev/test_purlin_skills.py",
+      "test_name": "test_build_and_unittest_require_sync_status",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_skills",
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "test_file": "dev/test_purlin_skills.py",
+      "test_name": "test_verify_prohibits_modifying_files",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_skills",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_purlin_skills.py",
+      "test_name": "test_build_has_failure_diagnosis_guidance",
       "status": "pass",
       "tier": "unit"
     }

@@ -3,181 +3,10 @@
   "proofs": [
     {
       "feature": "sync_status",
-      "id": "PROOF-91",
-      "rule": "RULE-35",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_a_held_feature_reads_passing_and_the_header_decides_nothing",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-79",
-      "rule": "RULE-47",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_awaiting_names_the_platform_and_only_a_satisfying_result_clears_it",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-80",
-      "rule": "RULE-48",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_provenance_comes_from_the_scoped_files_commit_not_the_proof_file",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-85",
-      "rule": "RULE-52",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_platforms_block_says_where_each_declared_platform_can_be_proved",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-86",
-      "rule": "RULE-53",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_an_undeclared_platform_result_is_named_and_counts_toward_nothing",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-87",
-      "rule": "RULE-47",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_a_rule_with_one_platform_proved_stays_in_and_counts",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-81",
-      "rule": "RULE-49",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_mode_is_reported_as_a_declaration_not_as_the_gate",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-82",
-      "rule": "RULE-50",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_registry_keeps_valid_entries_and_names_every_dropped_one",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-83",
-      "rule": "RULE-50",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_unregistered_platform_id_is_a_feature_advisory_not_a_verdict",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-84",
-      "rule": "RULE-51",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_host_detection_and_satisfaction",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-89",
-      "rule": "RULE-55",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_advisory_names_every_pending_migration_once",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-92",
-      "rule": "RULE-57",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_one_platforms_line_with_the_segment_grammar",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-93",
-      "rule": "RULE-58",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_one_detail_line_per_platform_in_four_forms",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-94",
-      "rule": "RULE-18",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_the_marker_and_its_legend_render_and_vanish",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-95",
-      "rule": "RULE-40",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_the_status_column_is_ruled_from_the_tokens_rendered",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-102",
-      "rule": "RULE-63",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_an_environment_id_never_reads_as_a_runner",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-96",
-      "rule": "RULE-5",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_a_current_stamp_counts_and_a_scope_change_takes_it_back",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-97",
-      "rule": "RULE-59",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_re_stamping_after_a_receipt_stales_that_receipt",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-98",
-      "rule": "RULE-5",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_a_stamp_without_scope_is_uncountable",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-99",
-      "rule": "RULE-60",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_a_commit_to_the_scope_warns_and_one_outside_it_does_not",
+      "id": "PROOF-100",
+      "rule": "RULE-61",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_a_cached_grade_dies_with_the_inputs_it_was_graded_against",
       "status": "pass",
       "tier": "integration"
     },
@@ -187,6 +16,15 @@
       "rule": "RULE-62",
       "test_file": "dev/test_mcp_server.py",
       "test_name": "test_a_configured_auditor_that_cannot_run_warns_and_never_blocks",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-102",
+      "rule": "RULE-63",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_an_environment_id_never_reads_as_a_runner",
       "status": "pass",
       "tier": "integration"
     },
@@ -237,19 +75,91 @@
     },
     {
       "feature": "sync_status",
-      "id": "PROOF-90",
-      "rule": "RULE-56",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_integrity_splits_per_platform_and_design_never_does",
+      "id": "PROOF-79",
+      "rule": "RULE-47",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_awaiting_names_the_platform_and_only_a_satisfying_result_clears_it",
       "status": "pass",
       "tier": "integration"
     },
     {
       "feature": "sync_status",
-      "id": "PROOF-100",
-      "rule": "RULE-61",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_a_cached_grade_dies_with_the_inputs_it_was_graded_against",
+      "id": "PROOF-80",
+      "rule": "RULE-48",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_provenance_comes_from_the_scoped_files_commit_not_the_proof_file",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-81",
+      "rule": "RULE-49",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_mode_is_reported_as_a_declaration_not_as_the_gate",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-82",
+      "rule": "RULE-50",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_registry_keeps_valid_entries_and_names_every_dropped_one",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-83",
+      "rule": "RULE-50",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_unregistered_platform_id_is_a_feature_advisory_not_a_verdict",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-84",
+      "rule": "RULE-51",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_host_detection_and_satisfaction",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-85",
+      "rule": "RULE-52",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_platforms_block_says_where_each_declared_platform_can_be_proved",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-86",
+      "rule": "RULE-53",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_an_undeclared_platform_result_is_named_and_counts_toward_nothing",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-87",
+      "rule": "RULE-47",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_a_rule_with_one_platform_proved_stays_in_and_counts",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-88",
+      "rule": "RULE-54",
+      "test_file": "dev/test_receipts.py",
+      "test_name": "test_issuer_and_payload_agree_on_every_vhash",
       "status": "pass",
       "tier": "integration"
     },
@@ -264,10 +174,100 @@
     },
     {
       "feature": "sync_status",
-      "id": "PROOF-88",
-      "rule": "RULE-54",
-      "test_file": "dev/test_receipts.py",
-      "test_name": "test_issuer_and_payload_agree_on_every_vhash",
+      "id": "PROOF-89",
+      "rule": "RULE-55",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_advisory_names_every_pending_migration_once",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-90",
+      "rule": "RULE-56",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_integrity_splits_per_platform_and_design_never_does",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-91",
+      "rule": "RULE-35",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_a_held_feature_reads_passing_and_the_header_decides_nothing",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-92",
+      "rule": "RULE-57",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_one_platforms_line_with_the_segment_grammar",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-93",
+      "rule": "RULE-58",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_one_detail_line_per_platform_in_four_forms",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-94",
+      "rule": "RULE-18",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_the_marker_and_its_legend_render_and_vanish",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-95",
+      "rule": "RULE-40",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_the_status_column_is_ruled_from_the_tokens_rendered",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-96",
+      "rule": "RULE-5",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_a_current_stamp_counts_and_a_scope_change_takes_it_back",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-97",
+      "rule": "RULE-59",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_re_stamping_after_a_receipt_stales_that_receipt",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-98",
+      "rule": "RULE-5",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_a_stamp_without_scope_is_uncountable",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-99",
+      "rule": "RULE-60",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_a_commit_to_the_scope_warns_and_one_outside_it_does_not",
       "status": "pass",
       "tier": "integration"
     }

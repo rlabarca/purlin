@@ -30,6 +30,15 @@
     },
     {
       "feature": "schema_proof_format",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_standard_tiers_documented",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "schema_proof_format",
       "id": "PROOF-5",
       "rule": "RULE-5",
       "test_file": "dev/test_schema_proof_format.py",
@@ -39,46 +48,10 @@
     },
     {
       "feature": "schema_proof_format",
-      "id": "PROOF-8",
-      "rule": "RULE-5",
-      "test_file": "dev/test_schema_proof_format.py",
-      "test_name": "test_merge_key_includes_test_file",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "schema_proof_format",
       "id": "PROOF-5",
       "rule": "RULE-5",
       "test_file": "dev/test_schema_proof_format.py",
       "test_name": "test_scoped_file_merge_preserves_other_feature_and_leaves_agnostic_file_alone",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "schema_proof_format",
-      "id": "PROOF-8",
-      "rule": "RULE-5",
-      "test_file": "dev/test_schema_proof_format.py",
-      "test_name": "test_scoped_file_merge_key_includes_test_file",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "schema_proof_format",
-      "id": "PROOF-9",
-      "rule": "RULE-8",
-      "test_file": "dev/test_schema_proof_format.py",
-      "test_name": "test_discovery_stamps_platform_skips_bad_ids_and_aliases_legacy_files",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "schema_proof_format",
-      "id": "PROOF-4",
-      "rule": "RULE-4",
-      "test_file": "dev/test_schema_proof_format.py",
-      "test_name": "test_standard_tiers_documented",
       "status": "pass",
       "tier": "unit"
     },
@@ -97,6 +70,33 @@
       "rule": "RULE-7",
       "test_file": "dev/test_schema_proof_format.py",
       "test_name": "test_manual_stamp_format_documented",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "schema_proof_format",
+      "id": "PROOF-8",
+      "rule": "RULE-5",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_merge_key_includes_test_file",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "schema_proof_format",
+      "id": "PROOF-8",
+      "rule": "RULE-5",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_scoped_file_merge_key_includes_test_file",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "schema_proof_format",
+      "id": "PROOF-9",
+      "rule": "RULE-8",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_discovery_stamps_platform_skips_bad_ids_and_aliases_legacy_files",
       "status": "pass",
       "tier": "unit"
     }

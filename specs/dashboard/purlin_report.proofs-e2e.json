@@ -57,10 +57,10 @@
     },
     {
       "feature": "purlin_report",
-      "id": "PROOF-41",
-      "rule": "RULE-39",
+      "id": "PROOF-39",
+      "rule": "RULE-37",
       "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_awaiting_runner_block_explains_the_reduced_coverage",
+      "test_name": "test_refresh_directive_names_only_the_stale_gauge",
       "status": "pass",
       "tier": "e2e"
     },
@@ -75,10 +75,10 @@
     },
     {
       "feature": "purlin_report",
-      "id": "PROOF-39",
-      "rule": "RULE-37",
+      "id": "PROOF-41",
+      "rule": "RULE-39",
       "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_refresh_directive_names_only_the_stale_gauge",
+      "test_name": "test_awaiting_runner_block_explains_the_reduced_coverage",
       "status": "pass",
       "tier": "e2e"
     },
@@ -102,24 +102,6 @@
     },
     {
       "feature": "purlin_report",
-      "id": "PROOF-50",
-      "rule": "RULE-41",
-      "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_focus_single_dialog_and_render_closes_it",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "purlin_report",
-      "id": "PROOF-51",
-      "rule": "RULE-46",
-      "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_host_row_is_first_badged_and_covers_the_agnostic_results",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "purlin_report",
       "id": "PROOF-45",
       "rule": "RULE-3",
       "test_file": "dev/test_purlin_report.py",
@@ -133,15 +115,6 @@
       "rule": "RULE-43",
       "test_file": "dev/test_purlin_report.py",
       "test_name": "test_chips_are_the_status_colours_and_the_badge_is_untouched",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "purlin_report",
-      "id": "PROOF-52",
-      "rule": "RULE-47",
-      "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_environment_chips_rows_and_header_say_environment",
       "status": "pass",
       "tier": "e2e"
     },
@@ -169,6 +142,33 @@
       "rule": "RULE-45",
       "test_file": "dev/test_purlin_report.py",
       "test_name": "test_invalidated_grades_and_named_auditor_surface_on_the_card",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-50",
+      "rule": "RULE-41",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_focus_single_dialog_and_render_closes_it",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-51",
+      "rule": "RULE-46",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_host_row_is_first_badged_and_covers_the_agnostic_results",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-52",
+      "rule": "RULE-47",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_environment_chips_rows_and_header_say_environment",
       "status": "pass",
       "tier": "e2e"
     },

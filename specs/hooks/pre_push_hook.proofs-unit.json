@@ -3,15 +3,6 @@
   "proofs": [
     {
       "feature": "pre_push_hook",
-      "id": "PROOF-17",
-      "rule": "RULE-1",
-      "test_file": "dev/test_e2e_external_refs.sh",
-      "test_name": "pre-push blocks on anchor fail",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "pre_push_hook",
       "id": "PROOF-15",
       "rule": "RULE-8",
       "test_file": "dev/test_e2e_strict_required.sh",
@@ -25,6 +16,15 @@
       "rule": "RULE-8",
       "test_file": "dev/test_e2e_strict_required.sh",
       "test_name": "strict blocks all-proved-unreceipted, allows once receipted",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-17",
+      "rule": "RULE-1",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "pre-push blocks on anchor fail",
       "status": "pass",
       "tier": "unit"
     }

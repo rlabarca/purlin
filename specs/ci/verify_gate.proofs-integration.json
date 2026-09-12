@@ -3,6 +3,42 @@
   "proofs": [
     {
       "feature": "verify_gate",
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "test_file": "dev/test_verify_gate.py",
+      "test_name": "test_every_commit_back_workflow_retries_its_push",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "verify_gate",
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "test_file": "dev/test_verify_gate.py",
+      "test_name": "test_preflight_runs_before_the_proofs_and_fails_only_on_real_gaps",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "verify_gate",
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "test_file": "dev/test_verify_gate.py",
+      "test_name": "test_an_environment_row_is_marked_and_an_os_row_is_not",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "verify_gate",
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "test_file": "dev/test_verify_gate.py",
+      "test_name": "test_required_with_no_declared_platform_is_named_not_failed",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "verify_gate",
       "id": "PROOF-2",
       "rule": "RULE-2",
       "test_file": "dev/test_verify_gate.py",
@@ -43,42 +79,6 @@
       "rule": "RULE-9",
       "test_file": "dev/test_verify_gate.py",
       "test_name": "test_registry_errors_exit_two_in_every_mode_and_by_platform_counts",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "verify_gate",
-      "id": "PROOF-12",
-      "rule": "RULE-12",
-      "test_file": "dev/test_verify_gate.py",
-      "test_name": "test_an_environment_row_is_marked_and_an_os_row_is_not",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "verify_gate",
-      "id": "PROOF-10",
-      "rule": "RULE-10",
-      "test_file": "dev/test_verify_gate.py",
-      "test_name": "test_every_commit_back_workflow_retries_its_push",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "verify_gate",
-      "id": "PROOF-11",
-      "rule": "RULE-11",
-      "test_file": "dev/test_verify_gate.py",
-      "test_name": "test_preflight_runs_before_the_proofs_and_fails_only_on_real_gaps",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "verify_gate",
-      "id": "PROOF-13",
-      "rule": "RULE-13",
-      "test_file": "dev/test_verify_gate.py",
-      "test_name": "test_required_with_no_declared_platform_is_named_not_failed",
       "status": "pass",
       "tier": "integration"
     }
