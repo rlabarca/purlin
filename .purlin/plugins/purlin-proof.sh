@@ -18,6 +18,10 @@
 # no platforms declared goes to the agnostic <feature>.proofs-<tier>.json with
 # the seven standard fields, whatever PURLIN_PLATFORM says. The harness never
 # evaluates version constraints.
+#
+# purlin_proof_finish also writes or merges the project's run marker
+# .purlin/runtime/test_run.json (proof_common RULE-19), so a receipt issued in
+# a consumer project can record which run its evidence came from.
 set -euo pipefail
 
 _PURLIN_PROOFS=""
@@ -46,7 +50,7 @@ purlin_proof_finish() {
   [[ -z "$_PURLIN_PROOFS" ]] && return 0
 
   python3 -c "
-import json, os, glob, platform, sys
+import datetime, glob, json, os, platform, subprocess, sys, time
 
 
 _FAMILIES = {'Windows': 'windows', 'Darwin': 'macos', 'Linux': 'linux'}
@@ -71,6 +75,78 @@ def _project_root_of(path):
         if parent == d:
             return None
         d = parent
+
+
+# ── The run marker (proof_common RULE-19) ───────────────────────────────────
+# Written or merged at the same moment the proof files are written, so a
+# consumer receipt can record which run its evidence came from.
+
+_RUN_MARKER_REL = os.path.join('.purlin', 'runtime', 'test_run.json')
+
+
+def _run_marker_commit(root):
+    '''HEAD in root, or None when root is not inside a git work tree.'''
+    try:
+        out = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=root,
+                             capture_output=True, text=True)
+    except OSError:
+        return None
+    return out.stdout.strip() or None
+
+
+def _write_run_marker(root, sweep, test_files, passed, failed, skipped):
+    '''Write or merge <root>/.purlin/runtime/test_run.json (RULE-19).
+
+    Nothing is written when <root>/.purlin is absent: that is not a Purlin
+    project. An existing marker whose commit equals this run's commit is
+    merged into: test_files unioned, the three counts summed, this run
+    appended to runs, ok and-ed, and every other top-level field carried
+    through untouched. A marker naming another commit is replaced. The file is
+    written to a temp file in the same directory and renamed over the target,
+    so a concurrent reader sees one whole marker or the other; a read that
+    lands on unparsable JSON is retried before this run starts a fresh marker.
+    '''
+    if not os.path.isdir(os.path.join(root, '.purlin')):
+        return None
+    path = os.path.join(root, _RUN_MARKER_REL)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    commit = _run_marker_commit(root)
+    at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    files = sorted({str(f).replace(os.sep, '/').replace(chr(92), '/')
+                    for f in test_files if f})
+    marker = {}
+    for _attempt in range(3):
+        try:
+            with open(path) as f:
+                existing = json.load(f)
+            if isinstance(existing, dict) and existing.get('commit') == commit:
+                marker = existing
+            break
+        except FileNotFoundError:
+            break
+        except (ValueError, OSError):
+            # A concurrent writer is mid-replace: read again before giving up.
+            time.sleep(0.05)
+    runs = list(marker.get('runs') or [])
+    runs.append({'plugin': sweep, 'at': at, 'test_files': files,
+                 'passed': passed, 'failed': failed, 'skipped': skipped})
+    marker.update({
+        'at': at,
+        'commit': commit,
+        'sweep': sweep,
+        'test_files': sorted(set(marker.get('test_files') or []) | set(files)),
+        'passed': int(marker.get('passed') or 0) + passed,
+        'failed': int(marker.get('failed') or 0) + failed,
+        'skipped': int(marker.get('skipped') or 0) + skipped,
+        'ok': bool(marker.get('ok', True)) and failed == 0,
+        'runs': runs,
+    })
+    tmp = '%s.%d.tmp' % (path, os.getpid())
+    with open(tmp, 'w') as f:
+        json.dump(marker, f, indent=2)
+        f.write('\n')
+    os.replace(tmp, path)
+    return marker
 
 
 # Build spec dir mapping
@@ -161,6 +237,19 @@ for (feature, tier, plat), new_entries in entries.items():
         json.dump(payload, f, indent=2)
         f.write('\n')
     os.replace(tmp_path, path)
+
+# RULE-19: the run marker, written at the same moment as the proof files.
+# The harness has no skip signal (a script that never calls purlin_proof
+# cannot be told apart from one that skipped), so skipped is 0.
+all_entries = [e for group in entries.values() for e in group]
+_write_run_marker(
+    os.getcwd(),
+    'shell_purlin',
+    [e['test_file'] for e in all_entries],
+    sum(1 for e in all_entries if e['status'] == 'pass'),
+    sum(1 for e in all_entries if e['status'] != 'pass'),
+    0,
+)
 " <<< "$_PURLIN_PROOFS"
 
   _PURLIN_PROOFS=""

@@ -20,7 +20,10 @@
 #
 # On exit the sweep writes .purlin/runtime/test_run.json (gitignored) with the
 # commit, the suites and test files it invoked, and the counts, so a receipt
-# issuer can tell which run its evidence came from.
+# issuer can tell which run its evidence came from. The write is a merge under
+# proof_common RULE-19: the proof plugins write the same marker as each run
+# finishes, so their `runs` entries and any field they added are kept, and the
+# sweep replaces only the summary it owns (its own counts, ok and test_files).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -95,7 +98,7 @@ write_marker() {
   PURLIN_RUN_PYTEST_SKIPPED="$PYTEST_SKIPPED" \
   PURLIN_RUN_COMPLETE="$SWEEP_COMPLETE" \
   python3 - "$MARKER" <<'PY'
-import datetime, json, os, subprocess, sys
+import datetime, json, os, subprocess, sys, time
 
 marker = sys.argv[1]
 env = os.environ
@@ -116,7 +119,28 @@ if pool_ran:
         shell_passed -= 1
 commit = subprocess.run(['git', 'rev-parse', 'HEAD'],
                         capture_output=True, text=True).stdout.strip() or None
-run = {
+
+# The proof plugins write the same marker as they finish (proof_common
+# RULE-19), so this write is a merge through that rule: an existing marker at
+# this commit keeps its `runs` list and every field this sweep does not own,
+# including fields a newer plugin added. What the sweep does own is the
+# summary: it watched every suite, so its counts, its `ok` and its own
+# `test_files` list replace whatever the plugin runs inside it recorded.
+run = {}
+for _attempt in range(3):
+    try:
+        with open(marker) as f:
+            existing = json.load(f)
+        if isinstance(existing, dict) and existing.get('commit') == commit:
+            run = existing
+        break
+    except FileNotFoundError:
+        break
+    except (ValueError, OSError):
+        # A plugin is mid-replace: read again before giving up.
+        time.sleep(0.05)
+
+run.update({
     'at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
     'commit': commit,
     'sweep': 'dev/run_tests.sh',
@@ -127,11 +151,15 @@ run = {
     'skipped': py_skipped,
     'ok': env['PURLIN_RUN_COMPLETE'] == '1'
           and int(env['PURLIN_RUN_SHELL_FAILED']) == 0,
-}
-with open(marker, 'w') as f:
+})
+run.setdefault('runs', [])
+tmp = '%s.%d.tmp' % (marker, os.getpid())
+with open(tmp, 'w') as f:
     json.dump(run, f, indent=2)
     f.write('\n')
-print(f'run marker: {marker} (ok={str(run["ok"]).lower()})')
+os.replace(tmp, marker)
+print(f'run marker: {marker} (ok={str(run["ok"]).lower()}, '
+      f'{len(run["runs"])} plugin run(s) merged)')
 PY
   rm -f "$PYTEST_LOG"
 }

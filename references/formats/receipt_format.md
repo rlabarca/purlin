@@ -1,4 +1,4 @@
-> Format-Version: 2
+> Format-Version: 3
 
 # Verification Receipt Format
 
@@ -36,7 +36,10 @@ matches the current state is visibly out of date.
   "evidence": {
     "test_run": {"at": "<ISO 8601>", "commit": "<sha>",
                  "sweep": "dev/run_tests.sh", "passed": 676, "failed": 0,
-                 "skipped": 27},
+                 "skipped": 27,
+                 "runs": [{"plugin": "pytest_purlin", "at": "<ISO 8601>",
+                           "test_files": ["tests/test_login.py"],
+                           "passed": 12, "failed": 0, "skipped": 0}]},
     "proof_files": [
       {"file": "specs/auth/login.proofs-unit.json", "tier": "unit",
        "platform": null, "commit": "<sha>", "committed_at": "<ISO 8601>",
@@ -68,7 +71,19 @@ matches the current state is visibly out of date.
 ### `evidence`
 
 `evidence.test_run` is the run marker the issuer read: `at`, `commit`, `sweep`,
-`passed`, `failed` and `skipped`.
+`passed`, `failed`, `skipped` and `runs`.
+
+The marker itself lives at `.purlin/runtime/test_run.json` and is written by
+whatever ran the tests. In a consumer project that is the proof plugins: each one
+writes or merges the marker at the moment it writes its proof files
+(`specs/_anchors/proof_common.md` RULE-19). In this repository `dev/run_tests.sh`
+merges its own summary over the plugin runs of that sweep. So a project with no
+sweep script of its own still issues receipts that name a run.
+
+| Key | Meaning |
+|---|---|
+| `sweep` | Who wrote the marker: a plugin name (`pytest_purlin`, `jest_purlin`, `vitest_purlin`, `shell_purlin`, `sql_purlin`, `c_purlin`, `phpunit_purlin`, `xunit_purlin`) or `dev/run_tests.sh` |
+| `runs` | One `{plugin, at, test_files, passed, failed, skipped}` object per run that contributed to the marker at this commit. Empty when nothing appended to it |
 
 `evidence.test_run` is null for a receipt issued without a run marker, which is
 what `--no-run-check` produces. A null `test_run` means the receipt records proof

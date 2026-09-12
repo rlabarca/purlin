@@ -1814,6 +1814,24 @@ class TestSkillVerify:
             "the skill must state that unexecuted, unwitnessed evidence is a "
             "skip")
 
+    @pytest.mark.proof("skill_verify", "PROOF-15", "RULE-15", tier="integration")
+    def test_step_3_names_the_plugin_written_run_marker(self):
+        """RULE-15: a consumer project has no `dev/run_tests.sh`, so a Step 3
+        that names only the sweep makes RULE-12's refusal read as a bar only
+        this repository can clear."""
+        content = _read('verify')
+        step3 = content.split('### Step 3')[1].split('### Step 4')[0]
+        assert '.purlin/runtime/test_run.json' in step3, \
+            "Step 3 must name the marker path a consumer has to produce"
+        assert 'proof plugins write it' in step3, \
+            "Step 3 must say the proof plugins write the marker themselves"
+        assert 'dev/run_tests.sh' in step3, \
+            "Step 3 must say what writes the marker in this repository"
+        assert 'RULE-19' in step3 and 'proof_common' in step3, \
+            "Step 3 must point at the contract rather than restate it"
+        assert '`runs`' in step3, \
+            "Step 3 must name the runs list the receipt carries"
+
     @pytest.mark.proof("skill_verify", "PROOF-1", "RULE-1")
     def test_has_frontmatter(self):
         content = _read('verify')

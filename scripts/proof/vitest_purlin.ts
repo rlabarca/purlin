@@ -24,6 +24,11 @@
  * standard fields, whatever PURLIN_PLATFORM says. The reporter never evaluates
  * version constraints.
  *
+ * At the end of the run, the same moment the proof files are written, the
+ * reporter writes or merges the project's run marker
+ * .purlin/runtime/test_run.json (proof_common RULE-19), so a receipt issued in
+ * a consumer project can record which run its evidence came from.
+ *
  * Configuration in vitest.config.ts:
  *   import { defineConfig } from 'vitest/config';
  *   export default defineConfig({
@@ -33,6 +38,7 @@
  *   });
  */
 
+import { execFileSync } from "child_process";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
@@ -58,6 +64,96 @@ function hostPlatform(): string {
   if (env) return env;
   const sys = os.platform();
   return FAMILIES[sys] || sys;
+}
+
+// ── The run marker (proof_common RULE-19) ───────────────────────────────────
+// Written or merged at the same moment the proof files are written, so a
+// consumer receipt can record which run its evidence came from.
+
+const RUN_MARKER_REL = path.join(".purlin", "runtime", "test_run.json");
+
+// HEAD in `root`, or null when `root` is not inside a git work tree.
+function runMarkerCommit(root: string): string | null {
+  try {
+    const out = execFileSync("git", ["rev-parse", "HEAD"], {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    return out.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+// A synchronous pause, so a read that landed mid-replace can be retried.
+function runMarkerPause(ms: number): void {
+  try {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+  } catch {
+    // Atomics.wait is unavailable here: retry immediately instead.
+  }
+}
+
+/**
+ * Write or merge `<root>/.purlin/runtime/test_run.json` (RULE-19).
+ *
+ * Nothing is written when `<root>/.purlin` is absent: that is not a Purlin
+ * project. An existing marker whose `commit` equals this run's commit is
+ * merged into: `test_files` unioned, the three counts summed, this run
+ * appended to `runs`, `ok` and-ed, and every other top-level field carried
+ * through untouched. A marker naming another commit is replaced. The file is
+ * written to a temp file in the same directory and renamed over the target, so
+ * a concurrent reader sees one whole marker or the other; a read that lands on
+ * unparsable JSON is retried before this run starts a fresh marker.
+ */
+function writeRunMarker(root: string, sweep: string, testFiles: string[],
+                        passed: number, failed: number, skipped: number): void {
+  if (!fs.existsSync(path.join(root, ".purlin"))) return;
+  const markerPath = path.join(root, RUN_MARKER_REL);
+  fs.mkdirSync(path.dirname(markerPath), { recursive: true });
+  const commit = runMarkerCommit(root);
+  const at = new Date().toISOString();
+  const files = [
+    ...new Set(
+      testFiles
+        .filter(Boolean)
+        .map((f: string) => String(f).split(path.sep).join("/").replace(/\\/g, "/"))
+    ),
+  ].sort();
+
+  let marker: any = {};
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (!fs.existsSync(markerPath)) break;
+    try {
+      const existing: any = JSON.parse(fs.readFileSync(markerPath, "utf8"));
+      if (existing && typeof existing === "object" && !Array.isArray(existing)
+          && (existing.commit === undefined ? null : existing.commit) === commit) {
+        marker = existing;
+      }
+      break;
+    } catch {
+      runMarkerPause(50); // a concurrent writer is mid-replace
+    }
+  }
+
+  const runs = Array.isArray(marker.runs) ? marker.runs.slice() : [];
+  runs.push({ plugin: sweep, at, test_files: files, passed, failed, skipped });
+  Object.assign(marker, {
+    at,
+    commit,
+    sweep,
+    test_files: [...new Set([...(marker.test_files || []), ...files])].sort(),
+    passed: (marker.passed || 0) + passed,
+    failed: (marker.failed || 0) + failed,
+    skipped: (marker.skipped || 0) + skipped,
+    ok: (marker.ok === undefined ? true : Boolean(marker.ok)) && failed === 0,
+    runs,
+  });
+
+  const tmp = `${markerPath}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(marker, null, 2) + "\n");
+  fs.renameSync(tmp, markerPath);
 }
 
 // Project-relative with "/" separators on every OS (proof_common RULE-15).
@@ -235,6 +331,20 @@ class PurlinVitestReporter implements Reporter {
       fs.writeFileSync(tmpPath, JSON.stringify(payload, null, 2) + "\n");
       fs.renameSync(tmpPath, filePath);
     }
+
+    // RULE-19: the run marker, written at the same moment as the proof
+    // files. The counts are this run's marked results: one per entry it
+    // recorded, plus the marked tasks with no terminal state.
+    const entries: ProofEntry[] = [];
+    for (const group of this.proofs.values()) entries.push(...group);
+    writeRunMarker(
+      this.rootDir,
+      "vitest_purlin",
+      entries.map((e) => e.test_file),
+      entries.filter((e) => e.status === "pass").length,
+      entries.filter((e) => e.status !== "pass").length,
+      this.skipped.size
+    );
   }
 }
 

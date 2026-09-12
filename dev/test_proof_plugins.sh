@@ -750,6 +750,47 @@ assert json.load(open(path))['platform'] == fam
 }
 run "proof_common" "PROOF-22" "RULE-17" "shell: unset env names the family" test_shell_family_fallback
 
+# proof_common PROOF-25 (RULE-19): the shell harness writes the run marker, and
+# a second run at the same commit merges into it instead of replacing it.
+test_shell_run_marker() {
+  local d=$(mktemp -d)
+  mkdir -p "$d/specs/a" "$d/.purlin"
+  echo -e "# Feature: feat\n\n## Rules\n- RULE-1: X\n- RULE-2: Y" > "$d/specs/a/feat.md"
+  printf 'source "%s"\nPURLIN_PROOF_PLATFORMS=p1 purlin_proof feat PROOF-1 RULE-1 pass declared\npurlin_proof feat PROOF-2 RULE-2 pass unmarked\npurlin_proof_finish\n' "$SHELL_HARNESS" > "$d/t.sh"
+  (cd "$d" && PURLIN_PLATFORM=p1 bash t.sh)
+  python3 -c "
+import json, re
+path = '$d/.purlin/runtime/test_run.json'
+m = json.load(open(path))
+assert m['sweep'] == 'shell_purlin', m
+assert m['test_files'] == ['t.sh'], m
+assert (m['passed'], m['failed'], m['skipped']) == (2, 0, 0), m
+assert m['ok'] is True, m
+assert re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|\+00:00)\$', m['at']), m['at']
+assert m['commit'] is None or re.fullmatch(r'[0-9a-f]{40}', m['commit']), m['commit']
+assert [r['plugin'] for r in m['runs']] == ['shell_purlin'], m['runs']
+assert m['runs'][0]['test_files'] == ['t.sh'], m['runs']
+assert (m['runs'][0]['passed'], m['runs'][0]['failed']) == (2, 0), m['runs']
+# Age the marker into one an earlier run left: T3's unknown field on top, and
+# another run's test file in test_files. The next run must merge into both.
+m['skipped_proofs'] = [{'feature': 'feat', 'id': 'PROOF-9'}]
+m['test_files'] = sorted(m['test_files'] + ['dev/prior_run.py'])
+json.dump(m, open(path, 'w'), indent=2)
+" || { rm -rf "$d"; return 1; }
+  (cd "$d" && PURLIN_PLATFORM=p1 bash t.sh)
+  python3 -c "
+import json
+m = json.load(open('$d/.purlin/runtime/test_run.json'))
+assert (m['passed'], m['failed'], m['skipped']) == (4, 0, 0), m
+assert m['test_files'] == ['dev/prior_run.py', 't.sh'], m
+assert [r['plugin'] for r in m['runs']] == ['shell_purlin', 'shell_purlin'], m['runs']
+assert m['ok'] is True, m
+assert m['skipped_proofs'] == [{'feature': 'feat', 'id': 'PROOF-9'}], m
+"
+  local rc=$?; rm -rf "$d"; return $rc
+}
+run "proof_common" "PROOF-25" "RULE-19" "shell: run marker written, second run merged" test_shell_run_marker
+
 # Emit proof files
 cd "$PROJECT_ROOT"
 purlin_proof_finish

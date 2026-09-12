@@ -45,14 +45,24 @@
 // no on(...) writes the agnostic <feature>.proofs-<tier>.json with the seven
 // standard fields, whatever PURLIN_PLATFORM says. The logger never evaluates
 // version constraints.
+//
+// At the end of the run, the same moment the proof files are written, the logger
+// writes or merges the project's run marker .purlin/runtime/test_run.json
+// (proof_common RULE-19), so a receipt issued in a consumer project can record
+// which run its evidence came from.
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
+using System.Threading;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Client;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Logging;
@@ -289,11 +299,160 @@ namespace Purlin
                 filesWritten++;
             }
 
+            // RULE-19: the run marker, written at the same moment as the proof
+            // files. The counts are this run's marked results: one per proof it
+            // recorded, plus the marked tests reported with a Skipped outcome.
+            WriteRunMarker(_root, "xunit_purlin", _proofs.Select(p => p.TestFile),
+                           _proofs.Count(p => p.Status == "pass"),
+                           _proofs.Count(p => p.Status != "pass"),
+                           _skipped.Count);
+
             // Emitted during the run (TestRunComplete fires inside the test platform
             // process) — this line is the in-process collection signal that
             // distinguishes the logger from a post-run .trx parse.
             Console.Error.WriteLine(
                 $"[PurlinProofLogger] collected {_proofs.Count} proof(s) in-process; wrote {filesWritten} file(s).");
+        }
+
+        // ── The run marker (proof_common RULE-19) ────────────────────────────
+        // Written or merged at the same moment the proof files are written, so a
+        // consumer receipt can record which run its evidence came from.
+
+        private static readonly string RunMarkerRel =
+            Path.Combine(".purlin", "runtime", "test_run.json");
+
+        // HEAD in `root`, or null when `root` is not inside a git work tree.
+        private static string? RunMarkerCommit(string root)
+        {
+            try
+            {
+                var psi = new ProcessStartInfo("git", "rev-parse HEAD")
+                {
+                    WorkingDirectory = root,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                };
+                using Process? p = Process.Start(psi);
+                if (p == null) return null;
+                string outText = p.StandardOutput.ReadToEnd();
+                p.StandardError.ReadToEnd();
+                p.WaitForExit();
+                outText = outText.Trim();
+                return outText.Length > 0 ? outText : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private static int MarkerInt(JsonObject marker, string key)
+        {
+            if (marker[key] is JsonValue v && v.TryGetValue(out int i)) return i;
+            return 0;
+        }
+
+        /// <summary>
+        /// Write or merge &lt;root&gt;/.purlin/runtime/test_run.json (RULE-19).
+        ///
+        /// Nothing is written when &lt;root&gt;/.purlin is absent: that is not a
+        /// Purlin project. An existing marker whose commit equals this run's commit
+        /// is merged into: test_files unioned, the three counts summed, this run
+        /// appended to runs, ok and-ed, and every other top-level field carried
+        /// through untouched. A marker naming another commit is replaced. The file
+        /// is written to a temp file in the same directory and renamed over the
+        /// target, so a concurrent reader sees one whole marker or the other; a read
+        /// that lands on unparsable JSON is retried before this run starts a fresh
+        /// marker.
+        /// </summary>
+        private static void WriteRunMarker(string root, string sweep,
+                                           IEnumerable<string> testFiles,
+                                           int passed, int failed, int skipped)
+        {
+            if (!Directory.Exists(Path.Combine(root, ".purlin"))) return;
+            string path = Path.Combine(root, RunMarkerRel);
+            string dir = Path.GetDirectoryName(Path.GetFullPath(path)) ?? ".";
+            Directory.CreateDirectory(dir);
+
+            string? commit = RunMarkerCommit(root);
+            // Round-trip ISO 8601 in UTC ("...Z"): the "+00:00" spelling would come
+            // back from the JSON writer escaped as \u002B.
+            string at = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+            var files = new SortedSet<string>(StringComparer.Ordinal);
+            foreach (string f in testFiles)
+                if (!string.IsNullOrEmpty(f)) files.Add(f.Replace('\\', '/'));
+
+            var marker = new JsonObject();
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                if (!File.Exists(path)) break;
+                try
+                {
+                    JsonNode? existing = JsonNode.Parse(File.ReadAllText(path));
+                    if (existing is JsonObject obj)
+                    {
+                        string? had = obj["commit"] is JsonValue cv
+                            && cv.TryGetValue(out string? c) ? c : null;
+                        if (had == commit) marker = obj;
+                    }
+                    break;
+                }
+                catch (Exception)
+                {
+                    Thread.Sleep(50);  // a concurrent writer is mid-replace
+                }
+            }
+
+            var merged = new SortedSet<string>(files, StringComparer.Ordinal);
+            if (marker["test_files"] is JsonArray oldFiles)
+                foreach (JsonNode? n in oldFiles)
+                    if (n != null) merged.Add(n.GetValue<string>());
+
+            var runs = new JsonArray();
+            if (marker["runs"] is JsonArray oldRuns)
+                foreach (JsonNode? n in oldRuns)
+                    if (n != null) runs.Add(n.DeepClone());
+
+            // Cast to JsonNode rather than letting JsonArray.Add<T> infer: the
+            // generic overload builds a customized value that the writer refuses
+            // to serialize without a type resolver.
+            var thisFiles = new JsonArray();
+            foreach (string f in files) thisFiles.Add((JsonNode)f);
+            runs.Add(new JsonObject
+            {
+                ["plugin"] = sweep,
+                ["at"] = at,
+                ["test_files"] = thisFiles,
+                ["passed"] = passed,
+                ["failed"] = failed,
+                ["skipped"] = skipped,
+            });
+
+            bool hadOk = true;
+            if (marker["ok"] is JsonValue ov && ov.TryGetValue(out bool okValue))
+                hadOk = okValue;
+
+            var mergedFiles = new JsonArray();
+            foreach (string f in merged) mergedFiles.Add((JsonNode)f);
+
+            marker["at"] = at;
+            marker["commit"] = commit;
+            marker["sweep"] = sweep;
+            marker["test_files"] = mergedFiles;
+            marker["passed"] = MarkerInt(marker, "passed") + passed;
+            marker["failed"] = MarkerInt(marker, "failed") + failed;
+            marker["skipped"] = MarkerInt(marker, "skipped") + skipped;
+            marker["ok"] = hadOk && failed == 0;
+            marker["runs"] = runs;
+
+            string tmp = path + "." + Environment.ProcessId + ".tmp";
+            File.WriteAllText(tmp, marker.ToJsonString(new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver(),
+            }) + "\n");
+            File.Move(tmp, path, true);
         }
 
         // Walk up from `start` to the nearest ancestor containing a `specs/`

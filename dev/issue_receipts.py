@@ -17,6 +17,11 @@ refuses unless `.purlin/runtime/test_run.json` exists, records a passing sweep
 and names the commit that is HEAD now. `--no-run-check` overrides, and says so
 in the receipt by writing `evidence.test_run: null`.
 
+The marker is written by `dev/run_tests.sh` here and by the proof plugins
+themselves in a project that has no sweep script (proof_common RULE-19), so
+`sweep` and `runs` travel into `evidence.test_run` unchanged: a consumer
+receipt names the plugin runs its evidence came from.
+
 `project_root` defaults to this repository. It is a parameter so a test can
 receipt a temp project through the real issuer instead of hand-writing a
 receipt shape that would then be free to drift from this one.
@@ -97,6 +102,7 @@ def write_run_marker(root, test_files=None, ok=True, commit=None,
         'failed': failed,
         'skipped': skipped,
         'ok': ok,
+        'runs': [],
     }
     path = marker_path(root)
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -214,6 +220,10 @@ def main(root=None, quiet=False, run_check=True):
     executed = set(marker.get('test_files') or []) if marker else set()
     test_run = None
     if marker:
+        # `sweep` and `runs` say WHICH runner recorded the evidence: the dev
+        # sweep here, and in a consumer project the proof plugins themselves
+        # (proof_common RULE-19). Both pass through unchanged, so a receipt
+        # issued in a project with no `dev/run_tests.sh` still names its run.
         test_run = {
             'at': marker.get('at'),
             'commit': marker.get('commit'),
@@ -221,6 +231,7 @@ def main(root=None, quiet=False, run_check=True):
             'passed': marker.get('passed'),
             'failed': marker.get('failed'),
             'skipped': marker.get('skipped'),
+            'runs': marker.get('runs') or [],
         }
 
     issued, skipped = [], []

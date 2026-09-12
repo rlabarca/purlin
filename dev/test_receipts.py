@@ -235,6 +235,58 @@ class TestIssuerRunMarker:
 
 
 # ---------------------------------------------------------------------------
+# skill_verify RULE-15: the marker a consumer project's plugins wrote
+# ---------------------------------------------------------------------------
+
+class TestPluginWrittenMarkerReachesTheReceipt:
+
+    @pytest.mark.proof("skill_verify", "PROOF-15", "RULE-15", tier="integration")
+    def test_receipt_from_a_plugin_written_marker_names_the_plugin_run(self):
+        """RULE-15: in a project with no sweep script the marker is written by
+        the proof plugin itself, and the receipt must name that run rather than
+        fall back to `evidence.test_run: null`."""
+        root, spec_dir = _make_project(with_broken=False)
+        try:
+            dev = os.path.join(root, 'dev')
+            os.makedirs(dev)
+            assert not os.path.exists(os.path.join(dev, 'run_tests.sh')), \
+                "the fixture must be a project with no sweep script"
+            # The two test files the committed proof entries already name, so
+            # the plugin run regenerates those entries and records itself.
+            with open(os.path.join(dev, 't_plain.py'), 'w') as f:
+                f.write('import pytest\n'
+                        '@pytest.mark.proof("plain", "PROOF-1", "RULE-1")\n'
+                        'def test_thing(): assert True\n')
+            with open(os.path.join(dev, 't_lock.py'), 'w') as f:
+                f.write('import pytest\n'
+                        '@pytest.mark.proof("locking", "PROOF-1", "RULE-1")\n'
+                        'def test_fcntl(): assert True\n')
+            shutil.copy(os.path.join(ROOT, 'scripts', 'proof', 'pytest_purlin.py'),
+                        os.path.join(root, 'conftest.py'))
+            proc = subprocess.run(
+                [sys.executable, '-m', 'pytest', 'dev/t_lock.py',
+                 'dev/t_plain.py', '-q', '--no-header',
+                 '-p', 'no:cacheprovider'],
+                cwd=root, capture_output=True, text=True)
+            assert proc.returncode == 0, f"{proc.stdout}\n{proc.stderr}"
+
+            marker, err = issue_receipts.read_run_marker(root)
+            assert err is None, err
+            assert marker['sweep'] == 'pytest_purlin', marker
+
+            issued, skipped = issue_receipts.main(root, quiet=True)
+            assert 'plain' in [n for n, _, _ in issued], (issued, skipped)
+            test_run = _receipt(root, 'plain')['evidence']['test_run']
+            assert test_run['sweep'] == 'pytest_purlin', test_run
+            assert [r['plugin'] for r in test_run['runs']] == ['pytest_purlin'], \
+                f"the receipt must carry the plugin runs: {test_run.get('runs')}"
+            assert sorted(test_run['runs'][0]['test_files']) == \
+                ['dev/t_lock.py', 'dev/t_plain.py'], test_run['runs']
+        finally:
+            shutil.rmtree(root)
+
+
+# ---------------------------------------------------------------------------
 # skill_verify RULE-11: what a stale receipt says
 # ---------------------------------------------------------------------------
 

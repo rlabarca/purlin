@@ -516,7 +516,8 @@ class TestTypeScriptProofPlugin:
         task-tree literal, with cwd=tmp_path so it writes proofs under specs/.
         `env` replaces the subprocess environment when given."""
         glob_dir = tmp_path / 'node_modules' / 'glob'
-        glob_dir.mkdir(parents=True)
+        # exist_ok: a caller may drive the reporter twice against one project.
+        glob_dir.mkdir(parents=True, exist_ok=True)
         (glob_dir / 'package.json').write_text('{"name":"glob","version":"0.0.0","main":"index.js"}')
         (glob_dir / 'index.js').write_text(_GLOB_SHIM)
 
@@ -1801,3 +1802,244 @@ class TestSkipExemptionListMatchesTheSources:
             src = open(os.path.join(PROOF_SCRIPTS, name), encoding='utf-8').read()
             assert token in src, (
                 f"{name} can observe a skip, so RULE-18 requires it to keep a skip set ({token})")
+
+
+# ---------------------------------------------------------------------------
+# The run marker (proof_common RULE-19)
+#
+# One test per plugin, each driving the REAL plugin twice against the same temp
+# project: the first run writes the marker, the second merges into it. The
+# fixtures are the two-marker ones the platform-scoping classes already drive,
+# so the counts below (2 marked results per run) are the plugin's own view of
+# the run and not a number this file invented.
+# ---------------------------------------------------------------------------
+
+_MARKER_REL = os.path.join('.purlin', 'runtime', 'test_run.json')
+_ISO_UTC = _re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|\+00:00)$')
+# What T3 adds to this marker. An unknown top-level field must survive a merge
+# by an older plugin untouched, which is what makes the field addable at all.
+_UNKNOWN = [{'feature': 'feat', 'id': 'PROOF-9', 'reason': 'tsc not available'}]
+# A file some earlier run in the same project collected. The merge must union
+# it with what this run collected, not replace it: in a consumer project every
+# plugin writes this one marker, so a replace loses the other plugins' files.
+_PRIOR = 'dev/prior_run.py'
+
+
+def _purlin_project(tmp_path, feature='feat', sub='a'):
+    """A temp project with a spec and the `.purlin/` the guard looks for."""
+    spec_dir = _spec(tmp_path, feature, sub)
+    (tmp_path / '.purlin').mkdir(exist_ok=True)
+    return spec_dir
+
+
+def _read_marker(root, plugin):
+    path = os.path.join(str(root), _MARKER_REL)
+    assert os.path.isfile(path), (
+        f"{plugin} wrote its proof files without writing {_MARKER_REL}: no run "
+        f"marker in the project ({os.listdir(str(root))})")
+    with open(path) as f:
+        return json.load(f)
+
+
+def _seed_prior_run(root, plugin):
+    """Age the written marker into one an earlier run left: T3's
+    `skipped_proofs` on top, and another run's test file in `test_files`. The
+    next run at this commit must merge into both, not replace them."""
+    path = os.path.join(str(root), _MARKER_REL)
+    with open(path) as f:
+        marker = json.load(f)
+    marker['skipped_proofs'] = _UNKNOWN
+    marker['test_files'] = sorted(marker['test_files'] + [_PRIOR])
+    with open(path, 'w') as f:
+        json.dump(marker, f, indent=2)
+
+
+def _assert_first_run(root, plugin, test_file, passed=2):
+    """The marker one run of `plugin` wrote: its name, the file it collected,
+    its counts, and the single `runs` entry that says the same."""
+    m = _read_marker(root, plugin)
+    assert m['sweep'] == plugin, (
+        f"sweep must name the plugin that wrote the marker: {m['sweep']!r}")
+    assert m['test_files'] == [test_file], m['test_files']
+    assert (m['passed'], m['failed'], m['skipped']) == (passed, 0, 0), m
+    assert m['ok'] is True, m
+    assert _ISO_UTC.match(m['at']), f"`at` must be ISO 8601 in UTC: {m['at']!r}"
+    assert m['commit'] is None or _re.fullmatch(r'[0-9a-f]{40}', m['commit']), m['commit']
+    assert [r['plugin'] for r in m['runs']] == [plugin], m['runs']
+    run = m['runs'][0]
+    assert run['test_files'] == [test_file], run
+    assert (run['passed'], run['failed'], run['skipped']) == (passed, 0, 0), run
+    assert run['at'] == m['at'], run
+    return m
+
+
+def _assert_merged(root, plugin, test_files, passed=4):
+    """The second run at the same commit merged rather than replaced."""
+    m = _read_marker(root, plugin)
+    assert m['sweep'] == plugin, m
+    assert m['test_files'] == sorted(test_files), (
+        f"test_files must be the union of both runs: {m['test_files']}")
+    assert (m['passed'], m['failed'], m['skipped']) == (passed, 0, 0), m
+    assert m['ok'] is True, m
+    assert [r['plugin'] for r in m['runs']] == [plugin, plugin], m['runs']
+    assert m['skipped_proofs'] == _UNKNOWN, (
+        f"an unknown top-level field must survive the merge: "
+        f"{m.get('skipped_proofs')!r}")
+    return m
+
+
+class TestRunMarkerPerPlugin:
+    """proof_common RULE-19: one case per plugin, on the real plugin."""
+
+    @pytest.mark.proof("proof_common", "PROOF-25", "RULE-19", tier="integration")
+    def test_pytest_writes_and_merges_the_run_marker(self, tmp_path):
+        _purlin_project(tmp_path)
+        (tmp_path / 'test_feat.py').write_text(TestPytestPlatformScoping._SRC)
+        for args in (['init', '-q'], ['config', 'user.email', 't@e'],
+                     ['config', 'user.name', 't'], ['add', '-A'],
+                     ['commit', '-q', '-m', 'init']):
+            subprocess.run(['git'] + args, cwd=str(tmp_path),
+                           capture_output=True, text=True)
+        head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=str(tmp_path),
+                              capture_output=True, text=True).stdout.strip()
+
+        runner = TestPytestPlatformScoping()
+        runner._run(tmp_path, 'test_feat.py', 'p1')
+        m = _assert_first_run(tmp_path, 'pytest_purlin', 'test_feat.py')
+        assert m['commit'] == head, (m['commit'], head)
+
+        _seed_prior_run(tmp_path, 'pytest_purlin')
+        runner._run(tmp_path, 'test_feat.py', 'p1')
+        _assert_merged(tmp_path, 'pytest_purlin', ['test_feat.py', _PRIOR])
+
+        # A marker from another commit is replaced, not added to: counts from
+        # two trees would describe neither.
+        path = os.path.join(str(tmp_path), _MARKER_REL)
+        with open(path) as f:
+            stale = json.load(f)
+        stale['commit'] = '0' * 40
+        with open(path, 'w') as f:
+            json.dump(stale, f, indent=2)
+        runner._run(tmp_path, 'test_feat.py', 'p1')
+        fresh = _assert_first_run(tmp_path, 'pytest_purlin', 'test_feat.py')
+        assert fresh['commit'] == head, fresh['commit']
+        assert 'skipped_proofs' not in fresh and _PRIOR not in fresh['test_files'], (
+            "a marker from another commit must be replaced, not merged into")
+
+    @pytest.mark.skipif(not shutil.which('node'), reason='node not available')
+    @pytest.mark.proof("proof_common", "PROOF-25", "RULE-19", tier="integration")
+    def test_jest_writes_and_merges_the_run_marker(self, tmp_path):
+        _purlin_project(tmp_path)
+        runner = TestJestPlatformScoping()
+        target = str(tmp_path / 'tests' / 'feat.test.js')
+        runner._run(tmp_path, target, 'p1')
+        _assert_first_run(tmp_path, 'jest_purlin', 'tests/feat.test.js')
+        _seed_prior_run(tmp_path, 'jest_purlin')
+        runner._run(tmp_path, target, 'p1')
+        _assert_merged(tmp_path, 'jest_purlin', ['tests/feat.test.js', _PRIOR])
+
+    @pytest.mark.skipif(not _node_can_run_ts(),
+                        reason='node with a TS loader (tsc or type-stripping) not available')
+    @pytest.mark.proof("proof_common", "PROOF-25", "RULE-19", tier="integration")
+    def test_vitest_writes_and_merges_the_run_marker(self, tmp_path):
+        _purlin_project(tmp_path)
+        runner = TestVitestPlatformScoping()
+        files = runner._files(str(tmp_path / 'tests' / 'feat.test.ts'))
+        runner._drive_reporter(tmp_path, files, env=_env('p1'))
+        _assert_first_run(tmp_path, 'vitest_purlin', 'tests/feat.test.ts')
+        _seed_prior_run(tmp_path, 'vitest_purlin')
+        runner._drive_reporter(tmp_path, files, env=_env('p1'))
+        _assert_merged(tmp_path, 'vitest_purlin', ['tests/feat.test.ts', _PRIOR])
+
+    @pytest.mark.skipif(not shutil.which('gcc'), reason='gcc not available')
+    @pytest.mark.proof("proof_common", "PROOF-25", "RULE-19", tier="integration")
+    def test_c_writes_and_merges_the_run_marker(self, tmp_path):
+        _purlin_project(tmp_path)
+        runner = TestCPlatformScoping()
+        runner._run(tmp_path, 'tests/t.c', 'p1')
+        _assert_first_run(tmp_path, 'c_purlin', 'tests/t.c')
+        _seed_prior_run(tmp_path, 'c_purlin')
+        runner._run(tmp_path, 'tests/t.c', 'p1')
+        _assert_merged(tmp_path, 'c_purlin', ['tests/t.c', _PRIOR])
+
+    @pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
+    @pytest.mark.proof("proof_common", "PROOF-25", "RULE-19", tier="integration")
+    def test_sql_writes_and_merges_the_run_marker(self, tmp_path):
+        _purlin_project(tmp_path)
+        runner = TestSQLPlatformScoping()
+        runner._run(tmp_path, 'tests/feat.sql', 'p1')
+        _assert_first_run(tmp_path, 'sql_purlin', 'tests/feat.sql')
+        _seed_prior_run(tmp_path, 'sql_purlin')
+        runner._run(tmp_path, 'tests/feat.sql', 'p1')
+        _assert_merged(tmp_path, 'sql_purlin', ['tests/feat.sql', _PRIOR])
+
+    @pytest.mark.skipif(not shutil.which('php'), reason='php not available')
+    @pytest.mark.proof("proof_common", "PROOF-25", "RULE-19", tier="integration")
+    def test_php_writes_and_merges_the_run_marker(self, tmp_path):
+        _purlin_project(tmp_path)
+        runner = TestPHPPlatformScoping()
+        runner._run(tmp_path, 'tests/FeatTest.php', 'p1')
+        _assert_first_run(tmp_path, 'phpunit_purlin', 'tests/FeatTest.php')
+        _seed_prior_run(tmp_path, 'phpunit_purlin')
+        runner._run(tmp_path, 'tests/FeatTest.php', 'p1')
+        _assert_merged(tmp_path, 'phpunit_purlin', ['tests/FeatTest.php', _PRIOR])
+
+    @pytest.mark.skipif(not shutil.which('dotnet'), reason='dotnet SDK not available')
+    @pytest.mark.proof("proof_common", "PROOF-25", "RULE-19", tier="integration")
+    def test_xunit_writes_and_merges_the_run_marker(self, tmp_path):
+        _purlin_project(tmp_path, 'feat', 'svc')
+        runner = TestXUnitPlatformScoping()
+        proc = runner._build_and_run(tmp_path, 'p1')
+        assert os.path.isfile(os.path.join(str(tmp_path), _MARKER_REL)), (
+            f"{proc.stdout}\n{proc.stderr}")
+        _assert_first_run(tmp_path, 'xunit_purlin', 'tests/Tests.cs')
+        _seed_prior_run(tmp_path, 'xunit_purlin')
+        env = _env('p1')
+        env.update(DOTNET_CLI_TELEMETRY_OPTOUT='1', DOTNET_NOLOGO='1')
+        rerun = subprocess.run(
+            ['dotnet', 'test', 'tests/tests.csproj', '--logger', 'purlin',
+             '--', 'RunConfiguration.CollectSourceInformation=true'],
+            cwd=str(tmp_path), capture_output=True, text=True, env=env)
+        assert rerun.returncode == 0, f"{rerun.stdout}\n{rerun.stderr}"
+        _assert_merged(tmp_path, 'xunit_purlin', ['tests/Tests.cs', _PRIOR])
+
+    @pytest.mark.proof("proof_common", "PROOF-25", "RULE-19", tier="integration")
+    def test_the_dev_sweep_merges_over_the_plugin_runs(self, tmp_path):
+        """RULE-19's other writer: `dev/run_tests.sh` merges by the same rule
+        but owns the summary. The marker writer is lifted out of the script and
+        driven directly; the sweep itself is never run from a test."""
+        script = open(os.path.join(os.path.dirname(__file__), 'run_tests.sh')).read()
+        body = script.split('python3 - "$MARKER" <<\'PY\'\n', 1)[1].split('\nPY\n', 1)[0]
+        marker_path = tmp_path / 'test_run.json'
+        commit = subprocess.run(['git', 'rev-parse', 'HEAD'],
+                                capture_output=True, text=True).stdout.strip()
+        marker_path.write_text(json.dumps({
+            'at': 'earlier', 'commit': commit, 'sweep': 'pytest_purlin',
+            'test_files': ['dev/collected_by_the_plugin.py'],
+            'passed': 3, 'failed': 0, 'skipped': 1, 'ok': True,
+            'runs': [{'plugin': 'pytest_purlin', 'at': 'earlier',
+                      'test_files': ['dev/collected_by_the_plugin.py'],
+                      'passed': 3, 'failed': 0, 'skipped': 1}],
+            'skipped_proofs': _UNKNOWN,
+        }, indent=2))
+        env = dict(os.environ,
+                   PURLIN_RUN_SUITES='All Pytest Tests\n',
+                   PURLIN_RUN_TEST_FILES='dev/test_swept.py\n',
+                   PURLIN_RUN_SHELL_PASSED='1', PURLIN_RUN_SHELL_FAILED='0',
+                   PURLIN_RUN_PYTEST_PASSED='700', PURLIN_RUN_PYTEST_FAILED='0',
+                   PURLIN_RUN_PYTEST_SKIPPED='13', PURLIN_RUN_COMPLETE='1')
+        proc = subprocess.run([sys.executable, '-', str(marker_path)], input=body,
+                              capture_output=True, text=True, env=env)
+        assert proc.returncode == 0, f"{proc.stdout}\n{proc.stderr}"
+
+        m = json.loads(marker_path.read_text())
+        assert m['sweep'] == 'dev/run_tests.sh', m
+        # The summary is the sweep's own: 700 pytest tests plus 1 shell suite,
+        # less the pytest pool that the suite tally already counted.
+        assert (m['passed'], m['failed'], m['skipped']) == (700, 0, 13), m
+        assert m['test_files'] == ['dev/test_swept.py'], (
+            "the sweep's own list replaces what the plugin runs collected")
+        assert m['ok'] is True, m
+        # What it does not own it keeps: the plugin runs, and T3's field.
+        assert [r['plugin'] for r in m['runs']] == ['pytest_purlin'], m['runs']
+        assert m['skipped_proofs'] == _UNKNOWN, m

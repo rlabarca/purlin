@@ -534,6 +534,26 @@ class TestRemoteVerificationReference:
             "receipt_format.md must state that evidence.test_run is null for a "
             "receipt issued without a run marker")
 
+        # RULE-21: the `evidence` section must also say WHO writes the marker.
+        # A consumer project has no `dev/run_tests.sh`; told only about the
+        # sweep, it concludes no run can ever be recorded and reaches for
+        # `--no-run-check`, the one flag that makes the receipt claim nothing.
+        evidence = content.split('### `evidence`')[1].split('### What the vhash')[0]
+        assert '.purlin/runtime/test_run.json' in evidence, \
+            "the evidence section must name the run marker's path"
+        assert 'proof plugins' in evidence, (
+            "the evidence section must name the proof plugins as the writers "
+            "of the marker in a consumer project")
+        assert 'dev/run_tests.sh' in evidence, \
+            "the evidence section must name this repository's writer too"
+        assert 'RULE-19' in evidence, \
+            "the evidence section must point at proof_common RULE-19"
+        for key in ('sweep', 'runs'):
+            assert f'| `{key}` |' in evidence, (
+                f"`{key}` must be documented as a key of evidence.test_run")
+        assert 'per run that contributed' in evidence, \
+            "`runs` must be documented as one object per contributing run"
+
 
 class TestCITemplatesGoThroughThePluginRoot:
     """purlin_references RULE-22/23."""

@@ -3,6 +3,24 @@
   "proofs": [
     {
       "feature": "proof_common",
+      "id": "PROOF-17",
+      "rule": "RULE-13",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_jest_pending_writes_nothing_and_leaves_an_existing_file_alone",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-17",
+      "rule": "RULE-13",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_skipped_suite_writes_nothing_and_no_script_fakes_a_failure",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
       "id": "PROOF-5",
       "rule": "RULE-5",
       "test_file": "dev/test_multilang_proof_plugins.py",
@@ -372,19 +390,73 @@
     },
     {
       "feature": "proof_common",
-      "id": "PROOF-17",
-      "rule": "RULE-13",
-      "test_file": "dev/test_proof_plugins_missing.py",
-      "test_name": "test_jest_pending_writes_nothing_and_leaves_an_existing_file_alone",
+      "id": "PROOF-25",
+      "rule": "RULE-19",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_pytest_writes_and_merges_the_run_marker",
       "status": "pass",
       "tier": "integration"
     },
     {
       "feature": "proof_common",
-      "id": "PROOF-17",
-      "rule": "RULE-13",
-      "test_file": "dev/test_proof_plugins_missing.py",
-      "test_name": "test_skipped_suite_writes_nothing_and_no_script_fakes_a_failure",
+      "id": "PROOF-25",
+      "rule": "RULE-19",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_jest_writes_and_merges_the_run_marker",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-25",
+      "rule": "RULE-19",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_vitest_writes_and_merges_the_run_marker",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-25",
+      "rule": "RULE-19",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_c_writes_and_merges_the_run_marker",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-25",
+      "rule": "RULE-19",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_sql_writes_and_merges_the_run_marker",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-25",
+      "rule": "RULE-19",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_php_writes_and_merges_the_run_marker",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-25",
+      "rule": "RULE-19",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_xunit_writes_and_merges_the_run_marker",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-25",
+      "rule": "RULE-19",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_the_dev_sweep_merges_over_the_plugin_runs",
       "status": "pass",
       "tier": "integration"
     }

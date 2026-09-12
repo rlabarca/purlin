@@ -92,6 +92,15 @@ A proof file that the recorded run did not execute and no runner committed is
 evidence with no witness. The issuer names the file and the count and issues
 nothing for that feature.
 
+The marker is `.purlin/runtime/test_run.json`, and every project has one: in a
+consumer project the proof plugins write it themselves, each one writing or
+merging it at the moment it writes its proof files, and in this repository
+`dev/run_tests.sh` merges its own summary over those plugin runs. The contract is
+stated once, in `specs/_anchors/proof_common.md` RULE-19; do not restate it here.
+The receipt carries the marker's `sweep` and its `runs` list, one entry per plugin
+run that contributed, so the reader can see which runs the evidence rests on. A
+project with no sweep script of its own therefore needs no `--no-run-check`.
+
 #### Manual stamps in the count
 
 A rule carrying a current `@manual(email, date, sha)` stamp counts as proved, so a

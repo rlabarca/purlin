@@ -19,6 +19,11 @@
  * standard fields, whatever PURLIN_PLATFORM says. The collector never evaluates
  * version constraints.
  *
+ * At the end of the run, the same moment the proof files are written, the
+ * collector writes or merges the project's run marker
+ * .purlin/runtime/test_run.json (proof_common RULE-19), so a receipt issued in
+ * a consumer project can record which run its evidence came from.
+ *
  * Usage:
  *   php scripts/proof/phpunit_purlin.php <test_file>
  *
@@ -117,6 +122,100 @@ function resolve_spec_dirs(): array {
     return $dirs;
 }
 
+// ── The run marker (proof_common RULE-19) ───────────────────────────────────
+// Written or merged at the same moment the proof files are written, so a
+// consumer receipt can record which run its evidence came from.
+
+// HEAD in $root, or null when $root is not inside a git work tree.
+function run_marker_commit(string $root): ?string {
+    $descriptors = [1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
+    $pipes = [];
+    $process = @proc_open(['git', 'rev-parse', 'HEAD'], $descriptors, $pipes, $root);
+    if (!is_resource($process)) {
+        return null;
+    }
+    $out = stream_get_contents($pipes[1]);
+    fclose($pipes[1]);
+    stream_get_contents($pipes[2]);
+    fclose($pipes[2]);
+    proc_close($process);
+    $out = trim((string)$out);
+    return $out === '' ? null : $out;
+}
+
+/**
+ * Write or merge <root>/.purlin/runtime/test_run.json (RULE-19).
+ *
+ * Nothing is written when <root>/.purlin is absent: that is not a Purlin
+ * project. An existing marker whose commit equals this run's commit is merged
+ * into: test_files unioned, the three counts summed, this run appended to
+ * runs, ok and-ed, and every other top-level field carried through untouched.
+ * A marker naming another commit is replaced. The file is written to a temp
+ * file in the same directory and renamed over the target, so a concurrent
+ * reader sees one whole marker or the other; a read that lands on unparsable
+ * JSON is retried before this run starts a fresh marker.
+ */
+function write_run_marker(string $root, string $sweep, array $test_files,
+                          int $passed, int $failed, int $skipped): void {
+    if (!is_dir($root . '/.purlin')) {
+        return;
+    }
+    $path = $root . '/.purlin/runtime/test_run.json';
+    if (!is_dir(dirname($path))) {
+        mkdir(dirname($path), 0777, true);
+    }
+    $commit = run_marker_commit($root);
+    $at = gmdate('Y-m-d\TH:i:s') . '+00:00';
+    $files = [];
+    foreach ($test_files as $f) {
+        $f = str_replace('\\', '/', (string)$f);
+        if ($f !== '') {
+            $files[$f] = true;
+        }
+    }
+    $files = array_keys($files);
+    sort($files);
+
+    $marker = [];
+    for ($attempt = 0; $attempt < 3; $attempt++) {
+        if (!file_exists($path)) {
+            break;
+        }
+        $raw = @file_get_contents($path);
+        $existing = $raw === false ? null : json_decode($raw, true);
+        if (is_array($existing)) {
+            if (($existing['commit'] ?? null) === $commit) {
+                $marker = $existing;
+            }
+            break;
+        }
+        usleep(50000);  // a concurrent writer is mid-replace: read again
+    }
+
+    $runs = $marker['runs'] ?? [];
+    $runs[] = ['plugin' => $sweep, 'at' => $at, 'test_files' => $files,
+               'passed' => $passed, 'failed' => $failed, 'skipped' => $skipped];
+    $merged = array_values(array_unique(array_merge($marker['test_files'] ?? [], $files)));
+    sort($merged);
+
+    $marker['at'] = $at;
+    $marker['commit'] = $commit;
+    $marker['sweep'] = $sweep;
+    $marker['test_files'] = $merged;
+    $marker['passed'] = (int)($marker['passed'] ?? 0) + $passed;
+    $marker['failed'] = (int)($marker['failed'] ?? 0) + $failed;
+    $marker['skipped'] = (int)($marker['skipped'] ?? 0) + $skipped;
+    $marker['ok'] = ($marker['ok'] ?? true) && $failed === 0;
+    $marker['runs'] = $runs;
+
+    $tmp = $path . '.' . getmypid() . '.tmp';
+    file_put_contents($tmp, json_encode(
+        $marker,
+        JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
+    ) . "\n");
+    rename($tmp, $path);
+}
+
 function write_proofs(array $proofs_by_key, string $test_file): void {
     $spec_dirs = resolve_spec_dirs();
 
@@ -206,6 +305,25 @@ if (php_sapi_name() === 'cli' && isset($argv[1])) {
     }
 
     write_proofs($proofs_by_key, $test_file);
+
+    // RULE-19: the run marker, written at the same moment as the proof files.
+    // A PHP function that is never called records nothing, so the collector has
+    // no skip signal and $skipped is 0.
+    $marker_files = [];
+    $marker_passed = 0;
+    $marker_failed = 0;
+    foreach ($proofs_by_key as $entries) {
+        foreach ($entries as $e) {
+            $marker_files[] = $e['test_file'];
+            if ($e['status'] === 'pass') {
+                $marker_passed++;
+            } else {
+                $marker_failed++;
+            }
+        }
+    }
+    write_run_marker(getcwd(), 'phpunit_purlin', $marker_files,
+                     $marker_passed, $marker_failed, 0);
 
     // Also emit to stdout for inspection
     $all = [];
