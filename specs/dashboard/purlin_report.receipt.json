@@ -1,9 +1,9 @@
 {
   "feature": "purlin_report",
-  "vhash": "2da92eaf",
+  "vhash": "a965ad49",
   "vhash_version": 2,
-  "commit": "04a4ed35661173e0c6f334a3975a50fde7f97f35",
-  "timestamp": "2026-09-12T01:29:44.119617+00:00",
+  "commit": "310b6c10a5ba087e5d38869d2598c50e58feee9f",
+  "timestamp": "2026-09-12T02:18:56.822154+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -73,7 +73,7 @@
     "RULE-20": "dfbd0de47022a336",
     "RULE-21": "1ad35cad8e86b285",
     "RULE-22": "30c6515160c6779e",
-    "RULE-23": "16ee72437325dfbc",
+    "RULE-23": "eb510bbc241361b6",
     "RULE-24": "9365ad31238f655b",
     "RULE-25": "2414006fa2ef206d",
     "RULE-26": "bf47a0c179f94df5",
@@ -674,10 +674,10 @@
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T01:29:39.764379+00:00",
-      "commit": "04a4ed35661173e0c6f334a3975a50fde7f97f35",
+      "at": "2026-09-12T02:18:52.793555+00:00",
+      "commit": "310b6c10a5ba087e5d38869d2598c50e58feee9f",
       "sweep": "dev/run_tests.sh",
-      "passed": 701,
+      "passed": 724,
       "failed": 0,
       "skipped": 27
     },

@@ -1,9 +1,9 @@
 {
   "feature": "skill_init",
-  "vhash": "99f30369",
+  "vhash": "88cd88fe",
   "vhash_version": 2,
-  "commit": "04a4ed35661173e0c6f334a3975a50fde7f97f35",
-  "timestamp": "2026-09-12T01:29:44.119617+00:00",
+  "commit": "310b6c10a5ba087e5d38869d2598c50e58feee9f",
+  "timestamp": "2026-09-12T02:18:56.822154+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -48,7 +48,16 @@
     "RULE-46",
     "RULE-47",
     "RULE-48",
+    "RULE-49",
     "RULE-5",
+    "RULE-50",
+    "RULE-51",
+    "RULE-52",
+    "RULE-53",
+    "RULE-54",
+    "RULE-55",
+    "RULE-56",
+    "RULE-57",
     "RULE-6",
     "RULE-7",
     "RULE-8",
@@ -57,7 +66,7 @@
   "rule_hashes": {
     "RULE-1": "d402581da42374f9",
     "RULE-10": "fd3bc15f23ca977b",
-    "RULE-11": "6b3553a3ada694e2",
+    "RULE-11": "650d08ffe03234b8",
     "RULE-12": "8129e3dd7d0f543c",
     "RULE-13": "3c3f117a935ecae6",
     "RULE-14": "c7804e696487dd27",
@@ -98,11 +107,20 @@
     "RULE-46": "832c807872b4f909",
     "RULE-47": "5dac4716357a28cd",
     "RULE-48": "186005798bc6fbea",
+    "RULE-49": "697796cb52364742",
     "RULE-5": "14651aa1ed9ac2d9",
+    "RULE-50": "1c9113b9c03d1d44",
+    "RULE-51": "799639d2516b7c85",
+    "RULE-52": "4c342c160cd0e802",
+    "RULE-53": "d9d72aa11edbef4c",
+    "RULE-54": "18fea1d7d6371ae4",
+    "RULE-55": "73dd5b89fbb7afc6",
+    "RULE-56": "c070949a3ec94a75",
+    "RULE-57": "1bddc46ddd6351f8",
     "RULE-6": "9ac4e2875a7f7099",
     "RULE-7": "ed80cdf4731a433e",
     "RULE-8": "9c4b7fc1c7610d65",
-    "RULE-9": "dbaa582eea300c8f"
+    "RULE-9": "fcf7e082acad5cbb"
   },
   "proofs": [
     {
@@ -577,12 +595,122 @@
     },
     {
       "feature": "skill_init",
+      "id": "PROOF-52",
+      "rule": "RULE-49",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_check_lists_every_migration_with_its_files_and_ignores_version",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-53",
+      "rule": "RULE-50",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_every_plugin_marker_syntax_is_rewritten",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-54",
+      "rule": "RULE-51",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_check_leaves_the_tree_byte_identical",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-54",
+      "rule": "RULE-51",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_step_5d_shows_the_delta_and_asks_before_writing",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-55",
+      "rule": "RULE-52",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_apply_renames_without_writing_a_claim",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-56",
+      "rule": "RULE-53",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_stale_copy_is_replaced_and_a_custom_plugin_is_left_alone",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-57",
+      "rule": "RULE-54",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_second_apply_changes_nothing",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-58",
+      "rule": "RULE-55",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_step_5d_states_the_provenance_loss_before_consent",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-59",
+      "rule": "RULE-56",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_mcp_flag_is_the_mcp_step_of_update",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
       "id": "PROOF-6",
       "rule": "RULE-6",
       "status": "pass",
       "tier": "unit",
       "test_file": "dev/test_skill_specs.py",
       "test_name": "test_add_plugin_supports_file_and_git",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-60",
+      "rule": "RULE-57",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_mutation_checks_is_a_question_not_a_backfill",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-60",
+      "rule": "RULE-57",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_mutation_checks_question_is_documented",
       "platform": null
     },
     {
@@ -618,10 +746,10 @@
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T01:29:39.764379+00:00",
-      "commit": "04a4ed35661173e0c6f334a3975a50fde7f97f35",
+      "at": "2026-09-12T02:18:52.793555+00:00",
+      "commit": "310b6c10a5ba087e5d38869d2598c50e58feee9f",
       "sweep": "dev/run_tests.sh",
-      "passed": 701,
+      "passed": 724,
       "failed": 0,
       "skipped": 27
     },
@@ -639,8 +767,8 @@
         "file": "specs/skills/skill_init.proofs-integration.json",
         "tier": "integration",
         "platform": null,
-        "commit": "9e26d2e2551d98b0a903b5f1b362b7795f4f845c",
-        "committed_at": "2026-06-02T15:00:51-04:00",
+        "commit": "d51bcb3431bd553d564cd69a6ac9d3bdf10a8a0c",
+        "committed_at": "2026-09-11T22:12:05-04:00",
         "runner": null,
         "executed_in_test_run": true
       },
@@ -648,8 +776,8 @@
         "file": "specs/skills/skill_init.proofs-unit.json",
         "tier": "unit",
         "platform": null,
-        "commit": "0e8cc6b898218cd53a51e9ed9c9043a517f23bea",
-        "committed_at": "2026-09-11T11:36:30-04:00",
+        "commit": "d51bcb3431bd553d564cd69a6ac9d3bdf10a8a0c",
+        "committed_at": "2026-09-11T22:12:05-04:00",
         "runner": null,
         "executed_in_test_run": true
       }
