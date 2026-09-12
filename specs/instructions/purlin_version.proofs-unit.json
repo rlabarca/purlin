@@ -3,15 +3,6 @@
   "proofs": [
     {
       "feature": "purlin_version",
-      "id": "PROOF-9",
-      "rule": "RULE-9",
-      "test_file": "dev/test_purlin_version.py",
-      "test_name": "test_unreleased_counts_match_the_sweep_record",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_version",
       "id": "PROOF-1",
       "rule": "RULE-1",
       "test_file": "dev/test_purlin_version.py",
@@ -97,6 +88,15 @@
       "rule": "RULE-9",
       "test_file": "dev/test_purlin_version.py",
       "test_name": "test_sweep_exit_trap_writes_its_own_sweep_record",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_version",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_purlin_version.py",
+      "test_name": "test_unreleased_counts_match_the_sweep_record",
       "status": "pass",
       "tier": "unit"
     }

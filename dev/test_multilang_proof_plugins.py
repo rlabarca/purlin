@@ -2013,8 +2013,13 @@ class TestRunMarkerPerPlugin:
         but owns the summary. The marker writer is lifted out of the script and
         driven directly; the sweep itself is never run from a test."""
         script = open(os.path.join(os.path.dirname(__file__), 'run_tests.sh')).read()
-        body = script.split('python3 - "$MARKER" <<\'PY\'\n', 1)[1].split('\nPY\n', 1)[0]
+        opener = 'python3 - "$MARKER" "$LAST_SWEEP" <<\'PY\'\n'
+        assert opener in script, (
+            "dev/run_tests.sh no longer hands the writer both paths "
+            "(test_run.json and last_sweep.json); update this extraction")
+        body = script.split(opener, 1)[1].split('\nPY\n', 1)[0]
         marker_path = tmp_path / 'test_run.json'
+        last_sweep_path = tmp_path / 'last_sweep.json'
         commit = subprocess.run(['git', 'rev-parse', 'HEAD'],
                                 capture_output=True, text=True).stdout.strip()
         marker_path.write_text(json.dumps({
@@ -2032,12 +2037,18 @@ class TestRunMarkerPerPlugin:
                    PURLIN_RUN_SHELL_PASSED='1', PURLIN_RUN_SHELL_FAILED='0',
                    PURLIN_RUN_PYTEST_PASSED='700', PURLIN_RUN_PYTEST_FAILED='0',
                    PURLIN_RUN_PYTEST_SKIPPED='13', PURLIN_RUN_COMPLETE='1')
-        proc = subprocess.run([sys.executable, '-', str(marker_path)], input=body,
+        proc = subprocess.run([sys.executable, '-', str(marker_path),
+                               str(last_sweep_path)], input=body,
                               capture_output=True, text=True, env=env)
         assert proc.returncode == 0, f"{proc.stdout}\n{proc.stderr}"
 
         m = json.loads(marker_path.read_text())
         assert m['sweep'] == 'dev/run_tests.sh', m
+        # The sweep's own record (purlin_version RULE-9) is written beside the
+        # shared marker, whole and unmerged: no plugin runs, same counts.
+        own = json.loads(last_sweep_path.read_text())
+        assert (own['passed'], own['failed'], own['skipped'], own['ok']) == (700, 0, 13, True), own
+        assert 'runs' not in own and own['commit'] == commit, own
         # The summary is the sweep's own: 700 pytest tests plus 1 shell suite,
         # less the pytest pool that the suite tally already counted.
         assert (m['passed'], m['failed'], m['skipped']) == (700, 0, 13), m
