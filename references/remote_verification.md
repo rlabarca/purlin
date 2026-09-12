@@ -181,14 +181,27 @@ jobs:
       # proof file the plugins write; without it they fall back to the OS
       # family and this runner's results would land under `windows`.
       PURLIN_PLATFORM: <platform-id>
-      # Where the Purlin tooling is checked out. In the purlin repository
-      # itself set this to `.` and delete the "Install Purlin tooling" step
-      # below: that repository is the plugin.
-      PURLIN_PLUGIN_ROOT: ${{ runner.temp }}/purlin
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: true
+
+      - name: Locate Purlin tooling
+        # Where the Purlin tooling is checked out. It is set HERE, in a step,
+        # and never in a job `env:` block, because the `runner`
+        # context does not exist at job-env evaluation time: GitHub allows
+        # only `github`, `needs`, `strategy`, `matrix`, `vars`, `secrets` and
+        # `inputs` in `jobs.<id>.env`. A job env entry reading the runner
+        # context (runner.temp) is rejected before any job starts, and the run
+        # shows "This run likely failed because of a workflow file issue"
+        # with no jobs and no logs to read. `$RUNNER_TEMP` is the same value
+        # as a plain environment variable, and `$GITHUB_ENV` publishes it to
+        # every later step, so the clone, the preflight and the gate all read
+        # `$PURLIN_PLUGIN_ROOT` unchanged. In the purlin repository itself
+        # replace the value with `.` and delete the "Install Purlin tooling"
+        # step below: that repository is the plugin.
+        shell: bash
+        run: echo "PURLIN_PLUGIN_ROOT=$RUNNER_TEMP/purlin" >> "$GITHUB_ENV"
 
       - uses: actions/setup-python@v5
         with:
@@ -308,10 +321,17 @@ a proof. Three attempts, then exit `1`, so a genuinely broken push is still a fa
 **`shell: bash` on every `run:` step.** PowerShell is the default on windows runners and reads a
 leading `@` in a path as a splat, which silently mangles every scoped proof path.
 
-**`PURLIN_PLUGIN_ROOT` and the pinned tag.** A consumer project's checkout contains no Purlin
-`scripts/`, so every reference to Purlin tooling goes through `$PURLIN_PLUGIN_ROOT` and the clone
-pins a tag. This repository's own workflows are the exception: they set `PURLIN_PLUGIN_ROOT: .` and
-drop the install step, because this repository is the plugin.
+**`PURLIN_PLUGIN_ROOT`, set in a step, and the pinned tag.** A consumer project's checkout
+contains no Purlin `scripts/`, so every reference to Purlin tooling goes through
+`$PURLIN_PLUGIN_ROOT` and the clone pins a tag. The variable is published from the "Locate Purlin
+tooling" step through `$GITHUB_ENV` and never set in the job `env:` block, because `jobs.<id>.env`
+is evaluated before any runner is assigned and admits only the `github`, `needs`, `strategy`,
+`matrix`, `vars`, `secrets` and `inputs` contexts. `PURLIN_PLUGIN_ROOT: ${{ runner.temp }}/purlin`
+at job level is a workflow file error: GitHub refuses the whole run at startup, reports "This run
+likely failed because of a workflow file issue", and creates no job, so there is no log to read.
+`$RUNNER_TEMP` is the same directory reached as an ordinary environment variable inside a step.
+This repository's own workflows are the exception: they set `PURLIN_PLUGIN_ROOT: .` and drop the
+install step, because this repository is the plugin.
 
 **The `migrate.py --check` preflight.** A project whose `.purlin/plugins/` copies predate platform
 scoping writes agnostic files from a platform runner, which satisfies nothing while looking green.

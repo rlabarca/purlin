@@ -16,6 +16,14 @@
 #   3. `scripts/ci/verify_gate.py --check` exits 0 against the pulled checkout,
 #   4. the scratch repository is deleted, unless it is kept.
 #
+# Two waits make it deterministic. `gh repo create --push` returns before
+# GitHub has indexed the workflow files, so a dispatch fired straight after it
+# 404s with `workflow not found on the default branch`; the script polls
+# `gh workflow list` until both workflows are `active` first. And `--push`
+# fires both workflows on `push` as well as the dispatch, so the script waits
+# for the push runs, then dispatches, then watches the `workflow_dispatch`
+# runs by id: every run it asserts on is one it named.
+#
 # It is `specs/ci/consumer_ci.md` RULE-3, and the proof of that rule is a
 # `@manual` stamp: this script creates and destroys a real repository under a
 # real account, so nothing about it is something a test suite may do by itself.
@@ -40,14 +48,27 @@ SCRATCH_NAME="purlin-consumer-ci-scratch"
 PLATFORM_ID="ubuntu-24"
 RUNS_ON="ubuntu-24.04"
 PROOF_GLOB="*.proofs-unit@${PLATFORM_ID}.json"
-WORKFLOWS=("purlin-${PLATFORM_ID}-proofs.yml" "verify-gate.yml")
+# The two the fixture ships: the file `gh workflow run` dispatches, and the
+# `name:` the workflow declares, which is what `gh workflow list` reports.
+WORKFLOW_FILES=("purlin-${PLATFORM_ID}-proofs.yml" "verify-gate.yml")
+WORKFLOW_NAMES=("purlin-${PLATFORM_ID}-proofs" "verify-gate")
+
+# How long to wait for GitHub to index the pushed workflow files, and how
+# often to ask. 180s is a long way past what it has ever taken; the point is
+# that the script never dispatches into the window where it 404s.
+REGISTER_TIMEOUT=180
+REGISTER_INTERVAL=5
+# How long to wait for a run to appear after the event that should create it.
+RUN_APPEAR_TIMEOUT=120
 
 DRY_RUN=0
 KEEP=1
 FAILURES=0
+PUSH_RUNS=""
+DISPATCH_RUNS=""
 
 usage() {
-  sed -n '2,30p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '2,38p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
 while [[ $# -gt 0 ]]; do
@@ -131,23 +152,132 @@ gh_capture GH_USER '<user>' gh api user --jq .login
 REPO_SLUG="$GH_USER/$SCRATCH_NAME"
 gh_run gh repo create "$REPO_SLUG" --private --source . --push
 
-# ── 3. dispatch both workflows and wait ───────────────────────────────
-say "Dispatch both workflows on main and wait for them"
-for workflow in "${WORKFLOWS[@]}"; do
-  gh_run gh workflow run "$workflow" --ref main
-done
-if [[ $DRY_RUN -eq 0 ]]; then
-  # The dispatch is asynchronous: the run does not exist the instant the API
-  # call returns, and `gh run list` would report the previous one.
-  sleep 10
+# ── 3. wait for GitHub to register both workflows ────────────
+# `gh repo create --push` returns before GitHub has indexed the workflow files
+# on the default branch. A dispatch inside that window fails with
+# `HTTP 404: workflow not found on the default branch`, while `gh workflow
+# list` shows both workflows `active` seconds later. So poll the list, and
+# dispatch nothing until both names are there and active.
+say "Wait for GitHub to register both workflows"
+
+registered() {
+  python3 - "$1" "${WORKFLOW_NAMES[@]}" <<'PY'
+import json
+import sys
+try:
+    listing = json.loads(sys.argv[1] or '[]')
+except ValueError:
+    listing = []
+active = set()
+for entry in listing:
+    if isinstance(entry, dict) and entry.get('state') == 'active':
+        active.add(entry.get('name'))
+sys.exit(0 if all(name in active for name in sys.argv[2:]) else 1)
+PY
+}
+
+cmd "gh workflow list --repo $REPO_SLUG --json name,state  # every ${REGISTER_INTERVAL}s, up to ${REGISTER_TIMEOUT}s"
+if [[ $DRY_RUN -eq 1 ]]; then
+  would "both of '${WORKFLOW_NAMES[*]}' are listed active before anything is dispatched"
+else
+  WAITED=0
+  LISTING='[]'
+  while true; do
+    LISTING="$(gh workflow list --repo "$REPO_SLUG" --json name,state 2>/dev/null || printf '[]')"
+    if registered "$LISTING"; then
+      printf 'both workflows active after %ss: %s\n' "$WAITED" "$LISTING"
+      break
+    fi
+    if [[ $WAITED -ge $REGISTER_TIMEOUT ]]; then
+      printf 'FAIL  GitHub had not registered both workflows after %ss.\n' \
+             "$REGISTER_TIMEOUT" >&2
+      printf 'gh workflow list --repo %s --json name,state showed:\n%s\n' \
+             "$REPO_SLUG" "$LISTING" >&2
+      exit 1
+    fi
+    sleep "$REGISTER_INTERVAL"
+    WAITED=$((WAITED + REGISTER_INTERVAL))
+  done
 fi
-for workflow in "${WORKFLOWS[@]}"; do
-  gh_capture RUN_ID '<run-id>' gh run list --workflow "$workflow" \
-    --branch main --limit 1 --json databaseId --jq '.[0].databaseId'
-  gh_run gh run watch "$RUN_ID" --exit-status
+
+# The newest run of one workflow for one event, or nothing when there is none.
+latest_run() {
+  gh run list --repo "$REPO_SLUG" --workflow "$1" --event "$2" --branch main \
+    --limit 1 --json databaseId --jq '.[0].databaseId // empty'
+}
+
+# ── 4. the push-triggered runs, before any dispatch ───────────
+# `--push` fires both workflows on `push` as well as the dispatch below. The
+# proofs workflow commits its scoped file back, so two live runs of it would
+# race for one branch and hand the three-attempt rebase loop a conflict it
+# cannot resolve. Let the push runs finish first: the dispatch then starts
+# from a branch that already carries the commit-back, and every run this
+# script watches is named by id, never "the latest one".
+say "Wait for the push-triggered runs to finish"
+for workflow in "${WORKFLOW_FILES[@]}"; do
+  cmd "gh run list --repo $REPO_SLUG --workflow $workflow --event push --branch main --limit 1"
+  if [[ $DRY_RUN -eq 1 ]]; then
+    would "the push-triggered run of $workflow finishes before anything is dispatched"
+    continue
+  fi
+  waited=0
+  run_id=""
+  while true; do
+    run_id="$(latest_run "$workflow" push || true)"
+    if [[ -n "$run_id" ]]; then
+      break
+    fi
+    if [[ $waited -ge $RUN_APPEAR_TIMEOUT ]]; then
+      break
+    fi
+    sleep 5
+    waited=$((waited + 5))
+  done
+  if [[ -z "$run_id" ]]; then
+    printf 'no push-triggered run of %s within %ss; nothing to serialise against\n' \
+           "$workflow" "$RUN_APPEAR_TIMEOUT"
+    continue
+  fi
+  printf 'push run of %s: %s\n' "$workflow" "$run_id"
+  PUSH_RUNS="$PUSH_RUNS $workflow=$run_id"
+  gh_run gh run watch "$run_id" --repo "$REPO_SLUG" --exit-status
 done
 
-# ── 4. pull the commit-back ───────────────────────────────────────────
+# ── 5. dispatch both workflows and watch the dispatched runs ────
+# `--event workflow_dispatch` cannot return a push run, so the id captured
+# here is the dispatched run and nothing else. That is the run the assertions
+# below describe.
+say "Dispatch both workflows on main and wait for the dispatched runs"
+for workflow in "${WORKFLOW_FILES[@]}"; do
+  gh_run gh workflow run "$workflow" --repo "$REPO_SLUG" --ref main
+done
+for workflow in "${WORKFLOW_FILES[@]}"; do
+  cmd "gh run list --repo $REPO_SLUG --workflow $workflow --event workflow_dispatch --branch main --limit 1"
+  if [[ $DRY_RUN -eq 1 ]]; then
+    would "the workflow_dispatch run of $workflow finishes 'completed success'"
+    continue
+  fi
+  waited=0
+  run_id=""
+  while true; do
+    run_id="$(latest_run "$workflow" workflow_dispatch || true)"
+    if [[ -n "$run_id" ]]; then
+      break
+    fi
+    if [[ $waited -ge $RUN_APPEAR_TIMEOUT ]]; then
+      printf 'FAIL  no workflow_dispatch run of %s appeared within %ss\n' \
+             "$workflow" "$RUN_APPEAR_TIMEOUT" >&2
+      exit 1
+    fi
+    sleep 5
+    waited=$((waited + 5))
+  done
+  printf 'dispatched run of %s: %s\n' "$workflow" "$run_id"
+  DISPATCH_RUNS="$DISPATCH_RUNS $workflow=$run_id"
+  gh_run gh run watch "$run_id" --repo "$REPO_SLUG" --exit-status
+done
+
+# ── 6. pull the commit-back ───────────────────────────────────────────
 say "Pull what the runner committed back"
 if [[ $DRY_RUN -eq 1 ]]; then
   cmd "git pull --ff-only"
@@ -155,7 +285,7 @@ else
   git pull --ff-only || { sleep 5; git pull --ff-only; }
 fi
 
-# ── 5. the four assertions ────────────────────────────────────────────
+# ── 7. the four assertions ────────────────────────────────────────────
 say "Assertions"
 SCOPED="$(find specs -name "$PROOF_GLOB" -print -quit 2>/dev/null || true)"
 
@@ -187,7 +317,7 @@ else
   check "verify_gate.py --check exit code" "0" "$GATE_STATUS"
 fi
 
-# ── 6. the scratch repository, deleted or kept ────────────────────────
+# ── 8. the scratch repository, deleted or kept ────────────────────────
 say "Scratch repository"
 if [[ $KEEP -eq 1 ]]; then
   printf 'KEPT  %s (re-run with --delete to remove it)\n' "$REPO_SLUG"
@@ -197,6 +327,10 @@ else
 fi
 
 say "Result"
+if [[ -n "$PUSH_RUNS$DISPATCH_RUNS" ]]; then
+  printf 'push runs:      %s\n' "${PUSH_RUNS# }"
+  printf 'dispatch runs:  %s\n' "${DISPATCH_RUNS# }"
+fi
 if [[ $DRY_RUN -eq 1 ]]; then
   printf 'DRY RUN: every command above was printed; no gh call was made.\n'
   exit 0

@@ -387,7 +387,12 @@ class TestRemoteVerificationReference:
             ('write permission', r'permissions:\s*\n\s*contents:\s*write'),
             ('PURLIN_PLATFORM in the job env',
              r'PURLIN_PLATFORM:\s*<platform-id>'),
-            ('PURLIN_PLUGIN_ROOT in the job env', r'PURLIN_PLUGIN_ROOT:\s*\S'),
+            # Set in a step, never in the job env: `runner` is not one of the
+            # contexts `jobs.<id>.env` admits, and a job env that reads it is
+            # rejected at startup with no job created (RULE-29).
+            ('PURLIN_PLUGIN_ROOT published from a step',
+             r'run: echo "PURLIN_PLUGIN_ROOT=\$RUNNER_TEMP/purlin" '
+             r'>> "\$GITHUB_ENV"'),
             ('persist-credentials', r'persist-credentials:\s*true'),
             ('pinned tooling clone',
              r'git clone --depth 1 --branch v<VERSION>'),
@@ -839,3 +844,93 @@ class TestPlatformTaxonomyHasOneHome:
         assert TAXONOMY_HEADING in guide, (
             "docs/testing-workflow-guide.md must name the section it points "
             "at, not just the file")
+
+
+class TestNoJobEnvReadsTheRunnerContext:
+    """purlin_references RULE-29."""
+
+    RV = os.path.join(REFS, 'remote_verification.md')
+
+    @staticmethod
+    def _job_env_lines(block):
+        """[(job id, line)] for every line inside a `jobs.<id>.env:` mapping.
+
+        The blocks are workflow templates carrying placeholders, so they are
+        read by indentation rather than through a YAML parser: `<runs-on>`
+        and `${{ ... }}` are not values a strict loader accepts.
+        """
+        found = []
+        lines = block.split('\n')
+        in_jobs = False
+        job = None
+        job_indent = None
+        env_indent = None
+        for line in lines:
+            if not line.strip() or line.lstrip().startswith('#'):
+                continue
+            indent = len(line) - len(line.lstrip())
+            if re.match(r'^jobs:\s*$', line):
+                in_jobs = True
+                job = None
+                env_indent = None
+                continue
+            if not in_jobs:
+                continue
+            if indent == 0:
+                in_jobs = False
+                job = None
+                env_indent = None
+                continue
+            m = re.match(r'^(\s+)([A-Za-z0-9_.<>-]+):\s*$', line)
+            if m and (job_indent is None or len(m.group(1)) == job_indent) \
+                    and m.group(2) != 'env':
+                # A new job id: the first mapping key under `jobs:`.
+                if job_indent is None:
+                    job_indent = len(m.group(1))
+                if len(m.group(1)) == job_indent:
+                    job = m.group(2)
+                    env_indent = None
+                    continue
+            if job is None:
+                continue
+            if env_indent is not None:
+                if indent > env_indent:
+                    found.append((job, line))
+                    continue
+                env_indent = None
+            if re.match(r'^\s+env:\s*$', line) and indent == job_indent + 2:
+                env_indent = indent
+        return found
+
+    @pytest.mark.proof("purlin_references", "PROOF-29", "RULE-29")
+    def test_no_documented_job_env_reads_the_runner_context(self):
+        """`jobs.<id>.env` is evaluated before a runner exists.
+
+        GitHub admits only `github`, `needs`, `strategy`, `matrix`, `vars`,
+        `secrets` and `inputs` there. A job env carrying `${{ runner.temp }}`
+        is refused at startup: "This run likely failed because of a workflow
+        file issue", no job created, no log to read.
+        """
+        env_blocks = 0
+        for path in _markdown_under(REFS, os.path.join(PROJECT_ROOT, 'docs')):
+            rel = os.path.relpath(path, PROJECT_ROOT)
+            for block in _yaml_blocks(_read(path)):
+                for job, line in self._job_env_lines(block):
+                    env_blocks += 1
+                    assert not re.search(r'\$\{\{\s*runner\.', line), (
+                        f"{rel}: job `{job}` sets a job-level env entry from "
+                        f"the `runner` context, which GitHub refuses before "
+                        f"any job starts: {line.strip()!r}")
+        assert env_blocks, (
+            "no job-level `env:` entry was found under references/ or docs/; "
+            "this proof must not pass by parsing nothing")
+
+        # The template's replacement: the per-runner path is published from a
+        # step, where `$RUNNER_TEMP` is an ordinary environment variable.
+        rv = _read(self.RV)
+        assert 'run: echo "PURLIN_PLUGIN_ROOT=$RUNNER_TEMP/purlin" ' \
+               '>> "$GITHUB_ENV"' in rv, (
+            "the workflow template must publish PURLIN_PLUGIN_ROOT from the "
+            "`Locate Purlin tooling` step through $GITHUB_ENV")
+        assert '- name: Locate Purlin tooling' in rv, (
+            "the template must carry the `Locate Purlin tooling` step")

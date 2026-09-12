@@ -125,13 +125,19 @@ def render_verify_gate_workflow():
         text = f.read()
     proofs = render_proofs_workflow()
 
-    # D1: the job gains `PURLIN_PLUGIN_ROOT`, lifted from the proofs template.
-    # `PURLIN_PLATFORM` is not lifted with it: the gate proves nothing and
-    # names no platform, and an env var that steers proof filenames has no
+    # D1: the `Locate Purlin tooling` step, lifted verbatim from the proofs
+    # template, inserted after the checkout. It publishes `PURLIN_PLUGIN_ROOT`
+    # through `$GITHUB_ENV`; it is NOT a job `env:` entry, because
+    # `jobs.<id>.env` is evaluated before a runner exists and reading
+    # `${{ runner.temp }}` there is refused at startup with no job created
+    # (purlin_references RULE-29). The job gains no `env:` block at all:
+    # `PURLIN_PLATFORM` is not lifted either, because the gate proves nothing
+    # and names no platform, and an env var that steers proof filenames has no
     # business in a job that writes no proof file.
-    env_block = _lift(proofs, '      # Where the Purlin tooling is checked out.',
-                      '    steps:')
-    text = text.replace('    steps:\n', '    env:\n' + env_block + '    steps:\n', 1)
+    locate = _lift(proofs, '      - name: Locate Purlin tooling',
+                   '      - uses: actions/setup-python@v5')
+    text = text.replace('      - uses: actions/setup-python@v5\n',
+                        locate + '\n      - uses: actions/setup-python@v5\n', 1)
 
     # D2: the `Install Purlin tooling` step, lifted verbatim, after setup-python.
     install = _lift(proofs, '      - name: Install Purlin tooling',
