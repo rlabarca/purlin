@@ -1323,6 +1323,25 @@ class TestSkillStatus:
             "the sample rows must show both unscorable tokens"
         assert 'not audited' in block, "the sample rows must show the unmeasured token"
 
+        # The platform marker and its one legend line. A sample with no marked
+        # row leaves a reader meeting `PASSING*` with nowhere to look it up.
+        marked = [l for l in rows if re.search(r'\b(PASSING|PARTIAL|FAILING|UNTESTED)\*', l)]
+        assert len(marked) >= 1, f"no sample row carries the platform marker: {rows}"
+        legend = ('* proved here, awaiting a declared platform. VERIFIED needs '
+                  'every declared platform proved and receipted')
+        assert block.count(legend) == 1, (
+            f"the sample must carry exactly one legend line for the marker, "
+            f"got {block.count(legend)}")
+        assert block.index(legend) > block.index(marked[-1]), \
+            "the legend belongs under the box, after the last row"
+        prose = content.split('## Step 2', 1)[1].split('## Step 3', 1)[0]
+        assert re.search(r'(?i)awaiting a declared platform', prose), \
+            "the prose must say what the marker means"
+        assert re.search(r'(?i)verbatim|exactly as', prose), \
+            "the prose must say the legend is printed as returned"
+        assert re.search(r'(?i)nothing in its place|when no row carries', prose), \
+            "the prose must say the legend is omitted when nothing is marked"
+
     @pytest.mark.proof("skill_status", "PROOF-7", "RULE-7")
     def test_prints_the_servers_summary_line_not_a_substitute(self):
         """RULE-7: a reconstructed status-count line cannot carry a gauge."""
@@ -1361,6 +1380,59 @@ class TestSkillStatus:
             "the reason for the ordering must be given, not just the order"
 
 
+
+
+class TestSkillStatusPlatforms:
+    """skill_status RULE-9/10 — the Platforms line and AWAITING RUNNER."""
+
+    @pytest.mark.proof("skill_status", "PROOF-9", "RULE-9")
+    def test_platforms_line_is_printed_verbatim_and_omitted_when_absent(self):
+        content = _read('status')
+        heads = [h for h in re.findall(r'^## .*$', content, re.M)
+                 if re.search(r'(?i)platforms line', h)]
+        assert len(heads) == 1, f"expected one Platforms step heading, got {heads}"
+        raw = content.split(heads[0], 1)[1].split('\n## ', 1)[0]
+        section = ' '.join(raw.split())
+
+        fenced = re.findall(r'```(.*?)```', raw, re.DOTALL)
+        assert fenced, "the step must carry a fenced sample of the line"
+        assert any('Platforms (host: ' in f for f in fenced), fenced
+        sample = next(f for f in fenced if 'Platforms (host: ' in f)
+        assert ' | ' in sample, (
+            f"the sample must show the segment separator sync_status emits: {sample!r}")
+        assert ' (host)' in sample, (
+            f"the sample must show the host marker: {sample!r}")
+
+        assert re.search(r'(?i)verbatim', section), \
+            "the step must say the line is printed verbatim"
+        assert re.search(r'(?i)nothing in its place', section), \
+            "the step must say nothing is printed when the line is absent"
+        assert re.search(r'(?i)not to be expanded|do not expand', section), \
+            "the step must forbid expanding the line into a block"
+        assert re.search(r'(?i)recomput', section), \
+            "the step must forbid recomputing the figures in the line"
+
+    @pytest.mark.proof("skill_status", "PROOF-10", "RULE-10")
+    def test_awaiting_runner_is_defined_and_routed(self):
+        content = _read('status')
+        defs = content.split('## Status Definitions', 1)[1]
+        rows = [l for l in defs.splitlines() if l.startswith('|')]
+        awaiting = [l for l in rows if 'AWAITING RUNNER' in l]
+        assert len(awaiting) == 1, f"expected one AWAITING RUNNER row, got {awaiting}"
+        row = awaiting[0]
+        assert 'PASSING*' in row, f"the definition must name the marker: {row!r}"
+        assert re.search(r'(?i)never blocks', row), row
+        assert 'purlin:test' in row, f"the definition must name what closes it: {row!r}"
+
+        step3b = content.split('## Step 3b', 1)[1].split('\n## ', 1)[0]
+        directive = [l for l in step3b.splitlines()
+                     if l.startswith('|') and 'PASSING*' in l]
+        assert len(directive) == 1, f"expected one PASSING* directive row, got {directive}"
+        assert 'purlin:test' in directive[0].split('|')[-2], directive[0]
+
+        for line in awaiting + directive:
+            assert not re.search(r'(?i)\bfails\b|\bblocks the push\b', line), (
+                f"an awaiting platform neither fails nor blocks: {line!r}")
 
 
 class TestSkillTest:
