@@ -1342,19 +1342,66 @@ class TestSkillSpecFromCode:
         assert re.search(r'@integration|@e2e|unit.*tier|tier.*unit', content), \
             "spec-from-code skill missing tier tag references (@integration/@e2e/unit)"
 
-    @pytest.mark.proof("skill_spec_from_code", "PROOF-5", "RULE-9")
-    def test_phase4_cleanup_offer_and_overwrite_in_place(self):
+    # RULE-5 to RULE-8 are document-content rules: nothing in this repository
+    # detects a migration candidate or migrates a spec, so the honest proof of
+    # each is a grep of the instruction the agent follows. The greps are scoped
+    # to the numbered step the rule names (a whole-file grep could pass on a
+    # literal that had moved to a different phase), and they grade STRUCTURAL.
+    PHASE1_STEP3 = ('3. **Existing spec detection:**',
+                    '4. Launch up to 3 Explore sub-agents')
+    PHASE1_STEP3B = ('**b) Non-compliant specs in `specs/`:**',
+                     '4. Launch up to 3 Explore sub-agents')
+    PHASE3_STEP3 = ('3. **Existing spec migration (per feature):**',
+                    '4. **Data contract extraction (mandatory for ALL features):**')
+
+    @staticmethod
+    def _step(bounds, name):
+        """The body of one numbered step of spec-from-code's SKILL.md."""
         content = _read('spec-from-code')
-        # Phase 4 must offer to remove features/ after migration
-        assert re.search(r'(?i)(remove|delete).*features/', content), \
-            "spec-from-code skill missing offer to remove features/ in Phase 4"
-        # Non-compliant specs in specs/ are overwritten in place — NOT removed
-        assert re.search(r'(?i)overwritten in place', content), \
-            "spec-from-code skill missing 'overwritten in place' language for specs/"
-        # The spec must NOT say to remove non-compliant specs from specs/
-        # (they are overwritten, not deleted separately)
-        assert 'features/' in content and 'overwritten in place' in content, \
-            "spec-from-code skill must document features/ removal AND specs/ overwrite-in-place paths"
+        start, end = bounds
+        assert start in content, \
+            f"spec-from-code SKILL.md has no {name}: missing {start!r}"
+        body = content.split(start, 1)[1]
+        assert end in body, \
+            f"spec-from-code SKILL.md {name} is not followed by {end!r}"
+        return body.split(end, 1)[0]
+
+    def _require_literals(self, bounds, name, literals):
+        step = self._step(bounds, name)
+        for literal in literals:
+            assert literal in step, \
+                f"spec-from-code SKILL.md {name} must carry the literal {literal!r}"
+
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-5", "RULE-5")
+    def test_phase1_step3_names_both_candidate_locations(self):
+        self._require_literals(self.PHASE1_STEP3, 'Phase 1 step 3', [
+            'a) Legacy `features/` directory:',
+            'Glob `specs/**/*.md` and read each file',
+        ])
+
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-6", "RULE-6")
+    def test_phase1_step3b_lists_the_five_non_compliance_criteria(self):
+        self._require_literals(self.PHASE1_STEP3B, 'Phase 1 step 3b', [
+            'Missing `## Rules` section',
+            'Rules are not numbered (`RULE-N:` format)',
+            'Missing `## Proof` section',
+            'Missing `> Description:` metadata',
+            'Uses an outdated format',
+        ])
+
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-7", "RULE-7")
+    def test_phase1_step3b_excludes_compliant_specs(self):
+        self._require_literals(self.PHASE1_STEP3B, 'Phase 1 step 3b', [
+            '(with numbered rules, proofs, and proper sections) are left untouched',
+            'they are not migration candidates',
+        ])
+
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-8", "RULE-8")
+    def test_phase3_step3_keeps_the_old_spec_as_primary_input(self):
+        self._require_literals(self.PHASE3_STEP3, 'Phase 3 step 3', [
+            'primary input',
+            "preserve the author's intent, rules, and descriptions with minimal loss",
+        ])
 
     @pytest.mark.proof("skill_spec_from_code", "PROOF-34", "RULE-24")
     def test_draft_and_evaluate_with_rebuild_test(self):

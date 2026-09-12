@@ -221,6 +221,35 @@ EXPLICIT_RULE_2 = '- RULE-2: Link expires after 1 hour'
 ASSUMED_ADVISORY_2 = '⚠ 2 rules have (assumed) values — PM should confirm'
 ASSUMED_ADVISORY_1 = '⚠ 1 rule has (assumed) values — PM should confirm'
 
+# Each constraint's distinguishing literal: the text the one rule written from
+# that constraint carries, and no other rule does. RULE-13 is traceability, so a
+# count alone would pass a spec that merged two constraints and invented a third.
+PRD_CONSTRAINT_LITERALS = {
+    "The cart page lists every item with quantities and subtotals":
+        'quantities and subtotals',
+    "Removing an item updates the total without a reload":
+        'without a full page reload',
+    "The card number is Luhn-checked before submission":
+        'Luhn algorithm before submission',
+    "Stripe is reached over TLS 1.2 or higher": 'TLS 1.2 or higher',
+    "A successful payment creates a confirmed order":
+        'creates an order record with status "confirmed"',
+    "A failed payment shows the processor error and creates no order":
+        'does not create an order',
+}
+
+# The same PRD with two constraints merged into one rule: the Luhn constraint
+# loses its own rule and no rule description mentions it.
+PRD_MERGED_PAIR = (
+    '- RULE-3: Payment step validates credit card number using Luhn algorithm '
+    'before submission\n'
+    '- RULE-4: Payment step communicates with Stripe API using TLS 1.2 or higher\n'
+)
+PRD_MERGED_RULE = (
+    '- RULE-3: Payment step validates the card and reaches the Stripe API using '
+    'TLS 1.2 or higher\n'
+)
+
 # name -> (spec path, content, rule total including required anchor rules)
 ALL_SCENARIOS = {
     'password_reset': ('specs/auth/password_reset.md', PLAIN_DESCRIPTION_SPEC, 4),
@@ -381,15 +410,55 @@ class TestPRD:
         shutil.rmtree(self.tmp_dir)
 
     @pytest.mark.proof("skill_spec_from_code", "PROOF-22", "RULE-13", tier="e2e")
-    def test_prd_scenario_reads_back_six_rules(self):
-        """The PRD's 6 requirements read back as RULE-1 to RULE-6."""
-        assert len(PRD_REQUIREMENTS) == 6, "The PRD scenario input names 6 requirements"
-        block = _feature_block(sync_status(self.tmp_dir), 'checkout_flow')
-        printed = _own_rule_ids(block)
-        assert printed == ['RULE-1', 'RULE-2', 'RULE-3', 'RULE-4', 'RULE-5', 'RULE-6'], \
-            f"The PRD spec's own rules should read back as RULE-1..RULE-6, got {printed}"
-        assert len(printed) >= 5, \
-            f"RULE-13's floor for a multi-requirement PRD is 5 rules, got {len(printed)}"
+    def test_prd_scenario_carries_one_rule_per_constraint(self):
+        """One RULE-N per PRD constraint, each traceable to the constraint it came from.
+
+        The count is the PRD's constraint count, not a fixed target: merge two
+        constraints into one rule and the spec reads back one rule fewer with
+        the merged-away constraint named nowhere.
+        """
+        assert sorted(PRD_CONSTRAINT_LITERALS) == sorted(PRD_REQUIREMENTS), \
+            "every PRD constraint needs a distinguishing literal"
+        sync_status(self.tmp_dir)
+        own = [r for r in _payload_feature(self.tmp_dir, 'checkout_flow')['rules']
+               if r['label'] == 'own']
+
+        assert [r['id'] for r in own] == [
+            'RULE-1', 'RULE-2', 'RULE-3', 'RULE-4', 'RULE-5', 'RULE-6'], \
+            ("One rule per constraint reads back as RULE-1..RULE-6, got "
+             f"{[r['id'] for r in own]}")
+        assert len(own) == len(PRD_REQUIREMENTS), \
+            (f"The rule count is the PRD's constraint count ({len(PRD_REQUIREMENTS)}), "
+             f"got {len(own)}")
+
+        for constraint, literal in PRD_CONSTRAINT_LITERALS.items():
+            carriers = [r['id'] for r in own if literal in r['description']]
+            assert len(carriers) == 1, \
+                (f"the constraint {constraint!r} should be carried by exactly one "
+                 f"rule (literal {literal!r}), got {carriers}")
+
+        # Two constraints merged into one rule: 5 rules, and the Luhn constraint
+        # is traceable to none of them.
+        merged_spec = PRD_SPEC.replace(PRD_MERGED_PAIR, PRD_MERGED_RULE)
+        assert merged_spec != PRD_SPEC, "the merged-constraint fixture did not apply"
+        merged = tempfile.mkdtemp()
+        try:
+            _make_project(merged, specs={
+                'specs/checkout/checkout_flow.md': merged_spec,
+            })
+            sync_status(merged)
+            merged_own = [r for r in _payload_feature(merged, 'checkout_flow')['rules']
+                          if r['label'] == 'own']
+            assert len(merged_own) == len(PRD_REQUIREMENTS) - 1, \
+                ("A merge leaves one rule fewer than the PRD has constraints, got "
+                 f"{[r['id'] for r in merged_own]}")
+            lost = PRD_CONSTRAINT_LITERALS[
+                "The card number is Luhn-checked before submission"]
+            assert [r['id'] for r in merged_own if lost in r['description']] == [], \
+                (f"After the merge no rule should carry {lost!r}, got "
+                 f"{[r['description'] for r in merged_own]}")
+        finally:
+            shutil.rmtree(merged)
 
     @pytest.mark.proof("skill_spec_from_code", "PROOF-23", "RULE-14", tier="e2e")
     def test_prd_scenario_metadata_is_load_bearing(self):

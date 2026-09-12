@@ -387,6 +387,30 @@ PRD_REQUIREMENTS = [
     "The confirmation email goes out within a minute",
 ]
 
+# Each constraint's distinguishing literal: the text the one rule written from
+# that constraint carries, and no other rule does. RULE-13 is traceability, so a
+# count alone would pass a spec that merged two constraints and invented a third.
+PRD_CONSTRAINT_LITERALS = {
+    "Step 1 reviews the cart": 'cart items with prices and total',
+    "Step 2 takes payment through Stripe Elements": 'Stripe Elements',
+    "Step 3 confirms the order with an order number":
+        'order confirmation with order number',
+    "A declined card returns the shopper to Step 2": 'returns user to Step 2',
+    "The cart survives a payment retry": 'preserved across payment retries',
+    "The confirmation email goes out within a minute": 'within 60 seconds',
+}
+
+# The same PRD with two constraints merged into one rule: the Stripe Elements
+# constraint loses its own rule and no rule description mentions it.
+PRD_MERGED_PAIR = (
+    '- RULE-2: Step 2 collects payment info via Stripe Elements\n'
+    '- RULE-3: Step 3 shows order confirmation with order number\n'
+)
+PRD_MERGED_RULE = (
+    '- RULE-2: Step 2 takes payment and Step 3 shows order confirmation with '
+    'order number\n'
+)
+
 ALL_SCENARIOS = {
     'plain': ('file_upload', 'specs/upload/file_upload.md', PLAIN_DESCRIPTION_SPEC, 4),
     'prd': ('checkout', 'specs/checkout/checkout.md', PRD_SPEC, 6),
@@ -413,22 +437,64 @@ def _all_scenarios_project(tmp_dir):
 # ---------------------------------------------------------------------------
 
 
+def _own_rules(project_root, name):
+    """The feature's own rules, as the dashboard payload reports them."""
+    return [r for r in _payload_feature(project_root, name)['rules']
+            if r['label'] == 'own']
+
+
 @pytest.mark.proof("skill_spec_from_code", "PROOF-22", "RULE-13", tier="e2e")
-def test_prd_scenario_reads_back_six_rules(tmp_path):
-    """The PRD's 6 requirements read back as RULE-1 to RULE-6, over the floor of 5."""
-    assert len(PRD_REQUIREMENTS) == 6, "The PRD scenario input names 6 requirements"
-    _make_project(tmp_path, specs={
+def test_prd_scenario_carries_one_rule_per_constraint(tmp_path):
+    """One RULE-N per PRD constraint, each traceable to the constraint it came from.
+
+    The count is the PRD's constraint count, not a fixed target: merge two
+    constraints into one rule and the spec reads back one rule fewer with the
+    merged-away constraint named nowhere.
+    """
+    assert sorted(PRD_CONSTRAINT_LITERALS) == sorted(PRD_REQUIREMENTS), (
+        "every PRD constraint needs a distinguishing literal"
+    )
+    full = tmp_path / 'full'
+    _make_project(full, specs={
         'specs/checkout/checkout.md': PRD_SPEC,
         'specs/_anchors/api_conventions.md': API_ANCHOR_SPEC,
     })
+    sync_status(str(full))
+    own = _own_rules(full, 'checkout')
 
-    block = _feature_block(sync_status(str(tmp_path)), 'checkout')
-    printed = _own_rule_ids(block)
-    assert printed == ['RULE-1', 'RULE-2', 'RULE-3', 'RULE-4', 'RULE-5', 'RULE-6'], (
-        f"The PRD spec's own rules should read back as RULE-1..RULE-6, got {printed}"
+    assert [r['id'] for r in own] == [
+        'RULE-1', 'RULE-2', 'RULE-3', 'RULE-4', 'RULE-5', 'RULE-6'], (
+        f"One rule per constraint reads back as RULE-1..RULE-6, got "
+        f"{[r['id'] for r in own]}"
     )
-    assert len(printed) >= 5, (
-        f"RULE-13's floor for a multi-requirement PRD is 5 rules, got {len(printed)}"
+    assert len(own) == len(PRD_REQUIREMENTS), (
+        f"The rule count is the PRD's constraint count ({len(PRD_REQUIREMENTS)}), "
+        f"got {len(own)}"
+    )
+
+    for constraint, literal in PRD_CONSTRAINT_LITERALS.items():
+        carriers = [r['id'] for r in own if literal in r['description']]
+        assert len(carriers) == 1, (
+            f"the constraint {constraint!r} should be carried by exactly one rule "
+            f"(literal {literal!r}), got {carriers}"
+        )
+
+    # Two constraints merged into one rule: 5 rules, and the Stripe Elements
+    # constraint is traceable to none of them.
+    merged_spec = PRD_SPEC.replace(PRD_MERGED_PAIR, PRD_MERGED_RULE)
+    assert merged_spec != PRD_SPEC, "the merged-constraint fixture did not apply"
+    merged = tmp_path / 'merged'
+    _make_project(merged, specs={'specs/checkout/checkout.md': merged_spec})
+    sync_status(str(merged))
+    merged_own = _own_rules(merged, 'checkout')
+    assert len(merged_own) == len(PRD_REQUIREMENTS) - 1, (
+        f"A merge leaves one rule fewer than the PRD has constraints, got "
+        f"{[r['id'] for r in merged_own]}"
+    )
+    lost = PRD_CONSTRAINT_LITERALS["Step 2 takes payment through Stripe Elements"]
+    assert [r['id'] for r in merged_own if lost in r['description']] == [], (
+        f"After the merge no rule should carry {lost!r}, got "
+        f"{[r['description'] for r in merged_own]}"
     )
 
 

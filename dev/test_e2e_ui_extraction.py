@@ -35,6 +35,100 @@ def _read(path):
         return f.read()
 
 
+# Phase 3 step 4 of SKILL.md is where the five contract categories live; a
+# whole-file grep could pass on a label that had moved to another phase.
+PHASE3_STEP4 = ('4. **Data contract extraction (mandatory for ALL features):**',
+                '5. **Draft and evaluate rules (mandatory):**')
+PHASE3_STEP3 = ('3. **Existing spec migration (per feature):**',
+                '4. **Data contract extraction (mandatory for ALL features):**')
+
+# The five category labels, in the a) to e) order step 4 lists them.
+FIVE_CATEGORIES = [
+    'Inbound contracts',
+    'Outbound contracts',
+    'Transformation rules',
+    'State transitions',
+    'Access contracts',
+]
+
+
+def _step(bounds, name):
+    """The body of one numbered step of spec-from-code's SKILL.md."""
+    content = _read(SKILL_PATH)
+    start, end = bounds
+    assert start in content, f"SKILL.md has no {name}: missing {start!r}"
+    body = content.split(start, 1)[1]
+    assert end in body, f"SKILL.md {name} is not followed by {end!r}"
+    return body.split(end, 1)[0]
+
+
+def _require(bounds, name, literal):
+    step = _step(bounds, name)
+    assert literal in step, \
+        f"skills/spec-from-code/SKILL.md {name} must carry the literal {literal!r}"
+
+
+def _extract_contracts(source):
+    """Sort a component's contracts into the five categories step 4 names.
+
+    Each detector is the trace step 4 orders for its category: inbound = the
+    exact field names the component reads, outbound = emit/track/fetch calls,
+    transformations = filters, sorts and aggregations over collections, state =
+    state hooks and reducers, access = mode and permission gates.
+    """
+    return {
+        'inbound': sorted({'product.' + m
+                           for m in re.findall(r'\bproduct\.(\w+)', source)}),
+        'outbound': sorted(set(re.findall(
+            r'\b(track|logEvent|fetch|axios\.\w+)\s*\(', source))),
+        'transformations': sorted(set(re.findall(
+            r'\.(filter|sort|reduce)\(', source))),
+        'state': sorted(set(re.findall(
+            r'\b(useState|useReducer|setState)\s*\(', source))),
+        'access': sorted({"%s === '%s'" % (name, value) for name, value
+                          in re.findall(r"(\w+)\s*===\s*'([^']+)'", source)}),
+    }
+
+
+def _impl_rules(impl_text):
+    """Apply step 3's Active Deviations selection to an `.impl.md` table.
+
+    Returns (rules, flagged): a PM-ACCEPTED row becomes a rule carrying the
+    "Implementation does" column, a PENDING or REJECTED row becomes no rule and
+    is flagged for the review step instead.
+    """
+    rules, flagged = [], []
+    for line in impl_text.splitlines():
+        cols = [c.strip() for c in line.strip().strip('|').split('|')]
+        if len(cols) != 4 or cols[0] == 'Spec says' or set(cols[0]) <= set('- '):
+            continue
+        _spec_says, impl_does, _tag, status = cols
+        if status == 'ACCEPTED':
+            rules.append('- RULE-%d: %s' % (len(rules) + 1, impl_does))
+        else:
+            flagged.append(impl_does)
+    return rules, flagged
+
+
+def _discovery_rules(discoveries_text):
+    """Apply step 3's bug conversion to a `.discoveries.md` bug list.
+
+    Each `[BUG]` block's `Expected:` line becomes a rule; a block whose
+    `Status:` is not RESOLVED carries the `(deferred)` tag.
+    """
+    rules = []
+    for block in discoveries_text.split('[BUG]')[1:]:
+        expected = re.search(r'^- Expected: (.+)$', block, re.MULTILINE)
+        status = re.search(r'^- Status: (\w+)$', block, re.MULTILINE)
+        assert expected, f"bug block carries no Expected: line:\n{block}"
+        assert status, f"bug block carries no Status: line:\n{block}"
+        text = expected.group(1).rstrip('.')
+        if status.group(1) != 'RESOLVED':
+            text += ' (deferred)'
+        rules.append('- RULE-%d: %s' % (len(rules) + 1, text))
+    return rules
+
+
 # ---------------------------------------------------------------------------
 # Simulated UI component source — used in extraction heuristic tests
 # ---------------------------------------------------------------------------
@@ -337,154 +431,149 @@ def test_quality_guide_uses_coverage_dimensions():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.proof("skill_spec_from_code", "PROOF-33", "RULE-23", tier="e2e")
-def test_contract_extraction_identifies_all_categories(tmp_path):
-    """Simulated React component yields extractable contracts across all five categories.
+@pytest.mark.proof("skill_spec_from_code", "PROOF-33", "RULE-23", tier="unit")
+def test_contract_extraction_sorts_the_component_into_five_categories(tmp_path):
+    """The component's contracts sort into step 4's five categories.
 
-    Creates a realistic component and verifies the extraction can identify
-    inbound contracts (data fields), outbound contracts (none in this component),
-    transformation rules (filter/sort), state transitions (none), and
-    access contracts (loanType gate).
+    The categories are read out of SKILL.md step 4, the contracts out of a
+    component written to disk and read back, so the assertion is on what the
+    detection returns rather than on the fixture string.
     """
     comp_dir = tmp_path / 'src' / 'components'
     comp_dir.mkdir(parents=True)
-    (comp_dir / 'SingleProductPresentation.tsx').write_text(SIMULATED_REACT_COMPONENT)
+    component = comp_dir / 'SingleProductPresentation.tsx'
+    component.write_text(SIMULATED_REACT_COMPONENT)
+    source = component.read_text()
 
-    source = SIMULATED_REACT_COMPONENT
+    # Step 4 still names all five categories, as subsections a) to e).
+    step4 = _step(PHASE3_STEP4, 'Phase 3 step 4')
+    labels = re.findall('^\\s*\\*\\*([a-e])\\) (.+?)(?: \u2014|:)\\*\\*',
+                        step4, re.MULTILINE)
+    assert [letter for letter, _text in labels] == ['a', 'b', 'c', 'd', 'e'], (
+        f"Phase 3 step 4 must carry subsections a) to e), got {labels}"
+    )
+    for (letter, text), expected in zip(labels, FIVE_CATEGORIES):
+        assert text.startswith(expected), (
+            f"Phase 3 step 4 subsection {letter}) should be '{expected}', got {text!r}"
+        )
 
-    # --- Inbound contracts: exact field names from API/props ---
-    # Hero consumes: product.address, product.loanAmount, product.rate
-    assert 'product.address' in source, "Inbound: product.address"
-    assert 'product.loanAmount' in source, "Inbound: product.loanAmount"
-    assert 'product.rate' in source, "Inbound: product.rate"
-    # Loan details consumes: product.fields
-    assert 'product.fields' in source, "Inbound: product.fields"
-    # Looking Ahead consumes: product.chartData, product.callouts, product.formulas
-    assert 'product.chartData' in source, "Inbound: product.chartData"
-    assert 'product.callouts' in source, "Inbound: product.callouts"
-    assert 'product.formulas' in source, "Inbound: product.formulas"
-    # Purchase-specific: rateLockDate, Refi-specific: payoffAmount
-    assert 'product.rateLockDate' in source, "Inbound: product.rateLockDate"
-    assert 'product.payoffAmount' in source, "Inbound: product.payoffAmount"
+    found = _extract_contracts(source)
 
-    # --- Transformation rules: filter/sort logic ---
-    assert '.filter(' in source, "Transformation: filtering on product.fields"
-    assert '.sort(' in source, "Transformation: sorting on product.fields"
+    # Inbound: every field the component reads, by exact name.
+    assert found['inbound'] == [
+        'product.address',
+        'product.callouts',
+        'product.chartData',
+        'product.disclaimer',
+        'product.fields',
+        'product.formulas',
+        'product.hasInfoBar',
+        'product.infoMessage',
+        'product.loanAmount',
+        'product.payoffAmount',
+        'product.rate',
+        'product.rateLockDate',
+    ], f"Inbound contracts should be the 12 product fields, got {found['inbound']}"
 
-    # --- Access contracts: loanType gates ---
-    purchase_gates = re.findall(r"loanType\s*===\s*'purchase'", source)
-    refi_gates = re.findall(r"loanType\s*===\s*'refi'", source)
-    assert len(purchase_gates) >= 1, "Access: purchase gate"
-    assert len(refi_gates) >= 1, "Access: refi gate"
-
-    # --- Failure modes (supporting dimension): missing data fallback ---
-    assert 'No projection data available' in source or 'no-data' in source, (
-        "Failure mode: chart data fallback"
+    # Transformations: the filter and sort applied to product.fields.
+    assert found['transformations'] == ['filter', 'sort'], (
+        f"Transformations should be filter and sort, got {found['transformations']}"
     )
 
-    # --- Contract coverage count ---
-    inbound_fields = 9  # address, loanAmount, rate, fields, chartData, callouts, formulas, rateLockDate, payoffAmount
-    transformations = 2  # filter, sort
-    access_gates = 3  # purchase gate, refi gate, chart-only gate
-    failure_modes = 1  # missing chart fallback
-    # (No outbound contracts or state transitions in this component — that's fine)
+    # Access: the two loanType mode gates.
+    assert found['access'] == ["loanType === 'purchase'", "loanType === 'refi'"], (
+        f"Access contracts should be the two loanType gates, got {found['access']}"
+    )
 
-    contract_rules = inbound_fields + transformations + access_gates + failure_modes
-    assert contract_rules >= 10, (
-        f"Component should yield at least 10 contract-based rules, got {contract_rules}"
+    # This component emits nothing and holds no state: two of the five
+    # categories come back empty, which is what step 4 allows for them.
+    assert found['outbound'] == [], (
+        f"The component emits nothing, got outbound {found['outbound']}"
+    )
+    assert found['state'] == [], (
+        f"The component holds no state, got state {found['state']}"
+    )
+
+    # The same component with both mode gates deleted: the access category is
+    # earned by the gates in the code, not by the category list in SKILL.md.
+    gateless = (source
+                .replace("loanType === 'purchase' && ", '')
+                .replace("loanType === 'refi' && ", ''))
+    assert gateless != source, "the gateless fixture did not apply"
+    assert _extract_contracts(gateless)['access'] == [], (
+        "With both loanType gates deleted there is no access contract, got "
+        f"{_extract_contracts(gateless)['access']}"
     )
 
 
-@pytest.mark.proof("skill_spec_from_code", "PROOF-36", "RULE-25", tier="e2e")
-def test_impl_deviation_extraction(tmp_path):
-    """PM-ACCEPTED deviations from .impl.md become rules reflecting actual behavior."""
+@pytest.mark.proof("skill_spec_from_code", "PROOF-36", "RULE-25", tier="unit")
+def test_impl_accepted_deviations_become_rules(tmp_path):
+    """PM-ACCEPTED deviations become rules; a PENDING row is flagged instead."""
     features_dir = tmp_path / 'features' / 'presentation'
     features_dir.mkdir(parents=True)
-    (features_dir / 'single_product_presentation.impl.md').write_text(SIMULATED_IMPL_MD)
+    impl = features_dir / 'single_product_presentation.impl.md'
+    impl.write_text(SIMULATED_IMPL_MD)
+    content = impl.read_text()
 
-    content = SIMULATED_IMPL_MD
+    # The instruction the conversion follows.
+    _require(PHASE3_STEP3, 'Phase 3 step 3',
+             "If the deviation was PM-ACCEPTED, use the implementation's "
+             "behavior as the rule.")
+    _require(PHASE3_STEP3, 'Phase 3 step 3',
+             'If PENDING or REJECTED, flag it for the user in the review step '
+             'as a discrepancy.')
 
-    # Parse the deviations table
-    # Each row: | Spec says | Implementation does | Tag | PM status |
-    deviation_lines = [
-        line for line in content.splitlines()
-        if '|' in line and line.count('|') >= 4
-        and 'Spec says' not in line and '---' not in line
-    ]
-    assert len(deviation_lines) == 3, (
-        f"Expected 3 deviations, found {len(deviation_lines)}"
+    rules, flagged = _impl_rules(content)
+    assert rules == [
+        '- RULE-1: Hero shows 3 stat cards (removed equity card)',
+        '- RULE-2: Chart uses recharts for bundle size',
+    ], f"The 2 ACCEPTED rows should build these rules, got {rules}"
+    assert flagged == ['Info bar shows above disclaimer'], (
+        f"The PENDING row should be flagged, not turned into a rule, got {flagged}"
     )
 
-    # Extract PM statuses
-    accepted = [l for l in deviation_lines if 'ACCEPTED' in l]
-    pending = [l for l in deviation_lines if 'PENDING' in l]
-
-    assert len(accepted) == 2, (
-        f"Expected 2 ACCEPTED deviations, found {len(accepted)}"
+    # PM status decides, not row order: accept nothing from the first row and
+    # only the second ACCEPTED row survives as a rule.
+    demoted = content.replace('| DEVIATION-1 | ACCEPTED |',
+                              '| DEVIATION-1 | PENDING |')
+    assert demoted != content, "the demoted-deviation fixture did not apply"
+    demoted_rules, demoted_flagged = _impl_rules(demoted)
+    assert demoted_rules == ['- RULE-1: Chart uses recharts for bundle size'], (
+        f"With DEVIATION-1 demoted only 1 rule should be built, got {demoted_rules}"
     )
-    assert len(pending) == 1, (
-        f"Expected 1 PENDING deviation, found {len(pending)}"
-    )
-
-    # For ACCEPTED deviations, the "Implementation does" column becomes the rule
-    # For PENDING deviations, they should be flagged for user review
-    for line in accepted:
-        cols = [c.strip() for c in line.split('|') if c.strip()]
-        assert len(cols) >= 3, f"Deviation row should have at least 3 columns: {line}"
-        impl_behavior = cols[1]  # "Implementation does" column
-        assert impl_behavior, "ACCEPTED deviation must have an implementation description"
-
-    # Verify the extraction would produce rules from implementation behavior
-    assert 'Hero shows 3 stat cards' in content, (
-        "ACCEPTED deviation about stat card count should be extractable"
-    )
-    assert 'Chart uses recharts' in content, (
-        "ACCEPTED deviation about chart library should be extractable"
+    assert len(demoted_flagged) == 2, (
+        f"With DEVIATION-1 demoted 2 rows should be flagged, got {demoted_flagged}"
     )
 
 
-@pytest.mark.proof("skill_spec_from_code", "PROOF-38", "RULE-26", tier="e2e")
-def test_discoveries_bug_extraction(tmp_path):
-    """Resolved bugs become regression rules; open bugs become deferred rules."""
+@pytest.mark.proof("skill_spec_from_code", "PROOF-38", "RULE-26", tier="unit")
+def test_discoveries_bugs_become_regression_and_deferred_rules(tmp_path):
+    """A resolved bug becomes a regression rule; an open bug carries (deferred)."""
     features_dir = tmp_path / 'features' / 'presentation'
     features_dir.mkdir(parents=True)
-    (features_dir / 'single_product_presentation.discoveries.md').write_text(
-        SIMULATED_DISCOVERIES_MD
-    )
+    discoveries = features_dir / 'single_product_presentation.discoveries.md'
+    discoveries.write_text(SIMULATED_DISCOVERIES_MD)
+    content = discoveries.read_text()
 
-    content = SIMULATED_DISCOVERIES_MD
+    # The instruction the conversion follows.
+    _require(PHASE3_STEP3, 'Phase 3 step 3',
+             '(`[BUG]` entries with status RESOLVED) \u2014 each becomes a RULE-N '
+             'protecting against regression')
+    _require(PHASE3_STEP3, 'Phase 3 step 3',
+             '**Open bugs** \u2014 each becomes a RULE-N tagged `(deferred)`')
 
-    # Parse bug entries
-    bug_entries = re.findall(r'\[BUG\]\s+(M\d+):\s*(.+)', content)
-    assert len(bug_entries) == 2, f"Expected 2 bugs, found {len(bug_entries)}"
+    rules = _discovery_rules(content)
+    assert rules == [
+        '- RULE-1: Info bar and disclaimer should not overlap',
+        '- RULE-2: Tooltip should reposition to stay within viewport (deferred)',
+    ], f"The resolved and open bugs should build these rules, got {rules}"
 
-    # Identify resolved vs open
-    resolved_bugs = []
-    open_bugs = []
-    bug_blocks = content.split('[BUG]')[1:]  # skip preamble
-    for block in bug_blocks:
-        if 'Status: RESOLVED' in block:
-            resolved_bugs.append(block)
-        elif 'Status: OPEN' in block:
-            open_bugs.append(block)
-
-    assert len(resolved_bugs) == 1, f"Expected 1 resolved bug, found {len(resolved_bugs)}"
-    assert len(open_bugs) == 1, f"Expected 1 open bug, found {len(open_bugs)}"
-
-    # Resolved bug should become a regression rule
-    # "Info bar overlaps disclaimer on mobile" → RULE: Info bar does not overlap disclaimer below 768px
-    assert 'Info bar overlaps disclaimer' in resolved_bugs[0]
-    assert '768px' in resolved_bugs[0] or 'mobile' in resolved_bugs[0], (
-        "Resolved bug should have enough detail to create a specific regression rule"
-    )
-
-    # Open bug should become a deferred rule
-    # "Chart tooltip cuts off" → RULE: Chart tooltip stays in viewport (deferred)
-    assert 'Chart tooltip cuts off' in open_bugs[0]
-    assert 'OPEN' in open_bugs[0], "Open bug should be extractable as a (deferred) rule"
-
-    # Verify Figma references are present and extractable
-    figma_urls = re.findall(r'https://www\.figma\.com/design/[^\s]+', content)
-    assert len(figma_urls) >= 2, (
-        f"Expected at least 2 Figma URLs, found {len(figma_urls)}"
-    )
+    # The Status line decides the tag, not the entry order: resolve M15 too and
+    # no rule carries (deferred).
+    resolved = content.replace('- Status: OPEN', '- Status: RESOLVED')
+    assert resolved != content, "the all-resolved fixture did not apply"
+    resolved_rules = _discovery_rules(resolved)
+    assert resolved_rules == [
+        '- RULE-1: Info bar and disclaimer should not overlap',
+        '- RULE-2: Tooltip should reposition to stay within viewport',
+    ], f"With M15 resolved no rule should carry (deferred), got {resolved_rules}"
