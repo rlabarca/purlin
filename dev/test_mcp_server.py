@@ -4074,3 +4074,97 @@ class TestInheritedProofs:
         assert detail == [], detail
         assert 'inherited' not in no_marker, no_marker
         assert no_marker == summary, (no_marker, summary)
+
+
+class TestAnchorDetailBlock:
+    """sync_status RULE-67: the anchor block names its rules, never reprints them."""
+
+    def setup_method(self):
+        self.project_root = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.project_root, '.purlin'))
+        self.anchor_dir = os.path.join(self.project_root, 'specs', '_anchors')
+        os.makedirs(self.anchor_dir)
+        # Five rules whose text is long enough that reprinting it is the whole
+        # cost being removed, and distinct enough that a substring search for
+        # any one of them can only be answered by the description itself.
+        self.texts = [('%s rule %d says ' % (word, n)) for n, word in
+                      enumerate(('alpha', 'bravo', 'charlie', 'delta', 'echo'), 1)]
+        self.texts = [(text * 40)[:400] for text in self.texts]
+        assert all(len(t) == 400 for t in self.texts)
+        assert len(set(self.texts)) == 5
+
+    def teardown_method(self):
+        shutil.rmtree(self.project_root, ignore_errors=True)
+
+    def _write_anchor(self, rule_numbers=(1, 2, 3, 4, 5)):
+        rules = ''.join(
+            '- RULE-%d: %s\n' % (num, self.texts[i % len(self.texts)])
+            for i, num in enumerate(rule_numbers))
+        proofs = ''.join('- PROOF-%d (RULE-%d): checked @unit\n' % (num, num)
+                         for num in rule_numbers)
+        with open(os.path.join(self.anchor_dir, 'proof_common.md'), 'w') as f:
+            f.write('# Anchor: proof_common\n\n'
+                    '> Global: true\n\n'
+                    '## What it does\nEvery proof obeys these.\n\n'
+                    '## Rules\n' + rules + '\n'
+                    '## Proof\n' + proofs)
+
+    def _write_passing(self, rule_numbers):
+        entries = [{'feature': 'proof_common', 'id': 'PROOF-%d' % num,
+                    'rule': 'RULE-%d' % num, 'test_file': 'dev/t_anchor.py',
+                    'test_name': 'test_rule_%d' % num, 'status': 'pass',
+                    'tier': 'unit'} for num in rule_numbers]
+        with open(os.path.join(self.anchor_dir,
+                               'proof_common.proofs-unit.json'), 'w') as f:
+            json.dump({'tier': 'unit', 'proofs': entries}, f)
+
+    def _block(self):
+        report = purlin_server.sync_status(self.project_root)
+        block = _feature_block(report, 'proof_common')
+        return report, block.splitlines()
+
+    @pytest.mark.proof("sync_status", "PROOF-106", "RULE-67", tier="integration")
+    def test_anchor_block_names_its_rules_instead_of_reprinting_them(self):
+        self._write_anchor()
+        self._write_passing([1, 2, 3, 4])
+
+        report, lines = self._block()
+        assert lines == [
+            'proof_common: 5 rules (global — auto-applied to all features), '
+            'RULE-1 to RULE-5',
+            '  Unproved: RULE-5',
+            '  Rule text: specs/_anchors/proof_common.md',
+        ], lines
+
+        # The rule text is the file's job. A block that reprints it puts all
+        # 2,000 characters of these five descriptions into every report.
+        for text in self.texts:
+            assert text not in report, (
+                'rule description reprinted in the report: %r' % text[:60])
+
+        # 2,000 of the 2,600 bytes this report used to be were these five
+        # descriptions. The budget sits above what the block costs now and
+        # below what one reprint of the five costs.
+        assert len(report) < 1200, (
+            'the whole report is %d bytes, over the 1,200 byte budget'
+            % len(report))
+
+        # The fifth rule proved: the Unproved line has nothing to say and goes,
+        # and the two lines that are always owed are untouched.
+        self._write_passing([1, 2, 3, 4, 5])
+        report, lines = self._block()
+        assert lines == [
+            'proof_common: 5 rules (global — auto-applied to all features), '
+            'RULE-1 to RULE-5',
+            '  Rule text: specs/_anchors/proof_common.md',
+        ], lines
+        assert 'Unproved:' not in report, report
+
+        # A gap in the numbering reads as two runs, never as one range that
+        # claims ids the anchor does not carry.
+        self._write_anchor(rule_numbers=(1, 2, 3, 4, 5, 8))
+        self._write_passing([1, 2, 3, 4, 5, 8])
+        _, lines = self._block()
+        assert lines[0] == (
+            'proof_common: 6 rules (global — auto-applied to all features), '
+            'RULE-1 to RULE-5, RULE-8'), lines[0]

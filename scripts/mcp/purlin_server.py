@@ -2670,6 +2670,55 @@ def _audit_llm_advisory_lines(config):
     return lines
 
 
+def _rule_id_runs(rule_ids):
+    """Rule ids collapsed to contiguous runs: `RULE-1 to RULE-8, RULE-11`.
+
+    An anchor block used to spend a line per rule reprinting text the reader
+    can open the file for. What it owes the reader instead is which ids live
+    in there, and a run of consecutive numbers says that in a few words
+    (sync_status RULE-67).
+    """
+    nums = sorted({int(rid.split('-', 1)[1]) for rid in rule_ids})
+    if not nums:
+        return ''
+    runs = []
+    start = prev = nums[0]
+    for num in nums[1:]:
+        if num == prev + 1:
+            prev = num
+            continue
+        runs.append((start, prev))
+        start = prev = num
+    runs.append((start, prev))
+    return ', '.join(f"RULE-{lo}" if lo == hi else f"RULE-{lo} to RULE-{hi}"
+                     for lo, hi in runs)
+
+
+def _unproved_rule_ids(verdict):
+    """The active rule keys of one verdict that no pass yet covers, in order.
+
+    The same test the verdict's `proved` count applies, read back as ids: an
+    executed pass, or a current stamp on an own rule. Anything else is still
+    owed a proof, and an anchor block names those ids rather than making the
+    reader diff a rule list against a proof list (sync_status RULE-67).
+    """
+    proof_by_rule = verdict['proof_by_rule']
+    manual_ok_rules = verdict['manual_ok_rules']
+    unproved = [
+        key for key, label, _ in verdict['active_entries']
+        if proof_by_rule.get(key, {}).get('status') != 'pass'
+        and not (label == 'own' and key in manual_ok_rules)
+    ]
+    return sorted(unproved, key=_rule_key_order)
+
+
+def _rule_key_order(key):
+    """Sort key putting RULE-9 before RULE-10, grouped by source prefix."""
+    prefix, _, rule_id = key.rpartition('/')
+    number = rule_id.split('-', 1)[1] if '-' in rule_id else ''
+    return (prefix, int(number) if number.isdigit() else 0, rule_id)
+
+
 @_scoped
 def sync_status(project_root, role=None):
     """Generate the full sync_status report with directives."""
@@ -2805,10 +2854,16 @@ def sync_status(project_root, role=None):
     for name in sorted(anchors.keys()):
         info = anchors[name]
         rule_count = len(info['rules'])
+        # One verdict per anchor, read by the Unproved line here and by the
+        # summary row below. Computing it twice is how two surfaces of the
+        # same report come to disagree (RULE-54).
+        verdict = _feature_verdict(name, info, features, all_proofs,
+                                   global_anchors, project_root, registry)
+        rule_runs = _rule_id_runs(info['rules'].keys())
         if info.get('is_global'):
-            detail.append(f"{name}: {rule_count} rules (global \u2014 auto-applied to all features)")
+            detail.append(f"{name}: {rule_count} rules (global \u2014 auto-applied to all features), {rule_runs}")
         else:
-            detail.append(f"{name}: {rule_count} rules (apply to features with > Requires: {name})")
+            detail.append(f"{name}: {rule_count} rules (apply to features with > Requires: {name}), {rule_runs}")
         # Show external reference info with staleness check
         if info.get('source_url'):
             detail.append(f"  Source: {info['source_url']}")
@@ -2831,18 +2886,20 @@ def sync_status(project_root, role=None):
                     detail.append(f"  Pinned: {pinned_display} (current)")
             else:
                 detail.append(f"  \u26a0 Unpinned \u2014 run: purlin:anchor sync {name}")
-        for rule_id, desc in sorted(info['rules'].items()):
-            detail.append(f"  {rule_id}: {desc}")
+        # The ids still wanting a proof, and where the text of every rule
+        # lives. The text itself is the file's job, not the report's.
+        unproved = _unproved_rule_ids(verdict)
+        if unproved:
+            detail.append(f"  Unproved: {', '.join(unproved)}")
+        detail.append(f"  Rule text: {info['path']}")
         detail.append('')
 
-        # Include anchor in summary if it has proofs
+        # Include anchor in summary if it has proofs. Through the same verdict
+        # function as every other row: an anchor that hashed its own rule set
+        # by hand could disagree with the receipt the issuer wrote for it
+        # (RULE-54).
         anchor_proofs = all_proofs.get(name, [])
         if anchor_proofs:
-            # Through the same verdict function as every other row: an anchor
-            # that hashed its own rule set by hand could disagree with the
-            # receipt the issuer wrote for it (RULE-54).
-            verdict = _feature_verdict(name, info, features, all_proofs,
-                                       global_anchors, project_root, registry)
             a_status = _determine_status(
                 verdict['proved'], len(verdict['active_entries']),
                 verdict['has_fail'], verdict['has_current_receipt'],
