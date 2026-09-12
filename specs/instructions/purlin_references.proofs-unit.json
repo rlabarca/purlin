@@ -180,6 +180,15 @@
       "test_name": "test_every_config_template_field_has_an_ownership_row",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-21",
+      "rule": "RULE-21",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_receipt_format_is_the_receipt_contract",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

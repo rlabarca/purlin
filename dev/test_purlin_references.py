@@ -369,3 +369,48 @@ class TestRemoteVerificationReference:
         assert not missing_optional, (
             f"optional config fields {missing_optional} are read by a skill but "
             f"have no row in drift_criteria.md's Config Field Ownership table")
+
+    @pytest.mark.proof("purlin_references", "PROOF-21", "RULE-21")
+    def test_receipt_format_is_the_receipt_contract(self):
+        """RULE-21: the receipt contract lives in one file and states the
+        version, every v2 field, what the vhash does and does not bind, and
+        that a receipt issued without a run marker records no run."""
+        path = os.path.join(FORMATS, 'receipt_format.md')
+        assert os.path.isfile(path), \
+            "references/formats/receipt_format.md is the receipt contract"
+        content = _read(path)
+
+        m = re.match(r'>\s*Format-Version:\s*(\d+)', content)
+        assert m, "receipt_format.md must open with a > Format-Version: line"
+        assert int(m.group(1)) >= 2, \
+            f"receipt v2 needs Format-Version 2 or later, got {m.group(1)}"
+
+        fields = ['feature', 'vhash', 'vhash_version', 'commit', 'timestamp',
+                  'rules', 'rule_hashes', 'proofs', 'manual', 'evidence',
+                  'test_run', 'proof_files', 'awaiting_runner']
+        missing = [f for f in fields if f'`{f}`' not in content]
+        assert not missing, \
+            f"receipt_format.md documents no {missing} field"
+
+        row_keys = ['file', 'tier', 'platform', 'committed_at', 'runner',
+                    'executed_in_test_run']
+        missing_rows = [k for k in row_keys if f'`{k}`' not in content]
+        assert not missing_rows, (
+            f"the proof_files row keys {missing_rows} are undocumented, so a "
+            f"consumer cannot read the evidence block")
+
+        assert 'What the vhash binds' in content, \
+            "receipt_format.md must say what the vhash binds"
+        assert 'It does not bind' in content, (
+            "receipt_format.md must say what the vhash does NOT bind: a hash "
+            "read as binding the source code is read as a signature")
+
+        assert re.search(r'^## Version 1', content, re.M), \
+            "receipt_format.md must document the version 1 shape as historical"
+
+        null_marker = re.search(
+            r'`evidence\.test_run` is null for a receipt issued without a '
+            r'run marker', content)
+        assert null_marker, (
+            "receipt_format.md must state that evidence.test_run is null for a "
+            "receipt issued without a run marker")

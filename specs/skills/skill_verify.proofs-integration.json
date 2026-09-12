@@ -9,6 +9,51 @@
       "test_name": "test_platform_partial_receipt_records_what_it_could_not_verify",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "skill_verify",
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_receipt_shape_lives_in_the_format_file",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_verify",
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_skill_states_the_run_marker_contract",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_verify",
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "test_file": "dev/test_receipts.py",
+      "test_name": "test_issuer_refuses_without_a_recorded_passing_run_at_head",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_verify",
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "test_file": "dev/test_receipts.py",
+      "test_name": "test_issuer_skips_a_feature_whose_evidence_no_run_executed",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_verify",
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "test_file": "dev/test_receipts.py",
+      "test_name": "test_stale_receipt_names_reworded_rules_and_reproved_platforms",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

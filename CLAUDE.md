@@ -24,6 +24,7 @@ The files in `references/formats/` are **versioned contracts**. External tools, 
 - `spec_format.md` — parsed by `sync_status` (rule extraction, metadata)
 - `anchor_format.md` — anchor format (local and externally-referenced), parsed by `sync_status` + `purlin:anchor sync`
 - `proofs_format.md` — emitted by proof plugins, read by `sync_status`
+- `receipt_format.md`: the verification receipt written by `purlin:verify`, read by `sync_status`
 
 Each file has its own `> Format-Version: N` line — check the file directly for the current version.
 
@@ -38,6 +39,7 @@ Each file has its own `> Format-Version: N` line — check the file directly for
 
 **Authoritative reference files:**
 - `references/formats/proofs_format.md` — proof marker syntax (pytest, Jest, Shell)
+- `references/formats/receipt_format.md`: receipt shape, what the vhash binds
 - `references/audit_criteria.md` — test quality rules, HOLLOW/WEAK/STRONG criteria, scoring
 - `references/commit_conventions.md` — all commit message prefixes and formats
 - `references/spec_quality_guide.md` — rule writing, tier assignment, failure diagnosis

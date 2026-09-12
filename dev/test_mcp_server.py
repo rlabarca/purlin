@@ -1994,25 +1994,66 @@ class TestServerOutput:
             shutil.rmtree(project_root)
 
     @pytest.mark.proof("sync_status", "PROOF-6", "RULE-6")
-    def test_vhash_with_prefixed_keys(self):
-        rules_own = {"RULE-1": "x"}
-        proofs = [{"id": "PROOF-1", "status": "pass"}]
-        hash_own = purlin_server._compute_vhash(rules_own, proofs)
+    def test_vhash_v2_binds_rule_text_test_identity_and_feature(self):
+        """RULE-6: what the vhash binds, one binding at a time.
 
-        rules_with_required = {"RULE-1": "x", "anchor/RULE-1": "y"}
-        hash_combined = purlin_server._compute_vhash(rules_with_required, proofs)
+        The pinned literal is the mutation check for the formula itself: any
+        change to the segment order, the field list, the sort key or the
+        separator moves it.
+        """
+        def _proof(**over):
+            base = {"feature": "locking", "id": "PROOF-1", "rule": "RULE-1",
+                    "status": "pass", "tier": "unit", "platform": None,
+                    "test_file": "tests/test_lock.py",
+                    "test_name": "test_fcntl"}
+            base.update(over)
+            return base
 
-        # Hashes must differ when rule set changes
-        assert hash_own != hash_combined
-        # Verify format: 8 hex chars
-        assert len(hash_combined) == 8
-        assert all(c in '0123456789abcdef' for c in hash_combined)
+        rules = {"RULE-1": "Locks on POSIX", "security/RULE-1": "No eval"}
+        proofs = [
+            _proof(),
+            _proof(feature="security", platform="windows-2022",
+                   test_file="tests/test_sec.py", test_name="test_no_eval"),
+        ]
+        vhash = purlin_server._compute_vhash(rules, proofs)
 
-        # Pin the exact algorithm: sha256(comma-joined sorted rule IDs | comma-joined sorted proof pairs)[:8]
-        # Literal pre-computed from: sha256("RULE-1,anchor/RULE-1|PROOF-1:pass")[:8]
-        expected_hash = 'c0919893'
-        assert hash_combined == expected_hash, \
-            f"vhash algorithm mismatch: expected {expected_hash}, got {hash_combined}"
+        assert len(vhash) == 8
+        assert all(c in '0123456789abcdef' for c in vhash)
+        # Pinned from the v2 formula: sha256("\x00".join(
+        #   ["purlin-vhash/2"] + R segments + P segments))[:8]
+        assert vhash == 'c92b8ee3', (
+            f"vhash v2 algorithm mismatch: expected c92b8ee3, got {vhash}. "
+            "The segment order, field list, sort key or separator moved.")
+
+        # Rule text is bound, so a reworded rule stales the receipt.
+        reworded = dict(rules, **{"RULE-1": "Locks on POSIX systems"})
+        assert purlin_server._compute_vhash(reworded, proofs) != vhash
+
+        # ...but whitespace is normalised, so a reflow does not.
+        reflowed = dict(rules, **{"RULE-1": "Locks\n   on   POSIX"})
+        assert purlin_server._compute_vhash(reflowed, proofs) == vhash, \
+            "reflowing a rule must not invalidate a receipt"
+
+        # Test identity is bound: a renamed or rewritten test stales it.
+        swapped = [proofs[0], dict(proofs[1], test_name="test_eval_banned")]
+        assert purlin_server._compute_vhash(rules, swapped) != vhash
+
+        # `feature` is bound, so the same PROOF id under a feature and under a
+        # required anchor no longer collide.
+        same_id = [_proof(), _proof(feature="security")]
+        collide = [_proof(), _proof()]
+        assert purlin_server._compute_vhash(rules, same_id) != \
+            purlin_server._compute_vhash(rules, collide), \
+            "PROOF-1 under two features must not hash like one proof twice"
+
+        # No value can forge a field boundary. These two inputs are
+        # byte-identical once the segments are joined with ':' and differ only
+        # in where the ':' falls between test_file and test_name.
+        forged_a = [_proof(test_file="a:b", test_name="c")]
+        forged_b = [_proof(test_file="a", test_name="b:c")]
+        assert purlin_server._compute_vhash(rules, forged_a) != \
+            purlin_server._compute_vhash(rules, forged_b), \
+            "a ':' inside a field must not be able to forge a field boundary"
 
 
 class TestCoverageReportUsability:

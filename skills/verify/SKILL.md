@@ -57,37 +57,35 @@ This is informational — it does not block receipt issuance.
 
 For each feature with PASSING status:
 
-1. Compute `vhash = sha256(sorted RULE IDs + sorted proof IDs/statuses)` truncated to 8 hex chars.
+1. Compute the `vhash`. What it binds and how the segments are joined is stated
+   once, in `specs/mcp/sync_status.md` RULE-6; never restate the formula here.
 2. Get `commit = git rev-parse HEAD`.
-3. Write receipt to `specs/<category>/<feature>.receipt.json`:
+3. Write receipt to `specs/<category>/<feature>.receipt.json` in the shape
+   `references/formats/receipt_format.md` defines (version 2: `vhash_version`,
+   `rule_hashes`, full proof identity, an `evidence` block and the optional
+   `manual` and `awaiting_runner` lists). That file is the contract; this skill
+   does not repeat it.
 
-```json
-{
-  "feature": "<name>",
-  "vhash": "<8-char hex>",
-  "commit": "<full sha>",
-  "timestamp": "<ISO 8601>",
-  "rules": ["RULE-1", "RULE-2"],
-  "proofs": [
-    {"id": "PROOF-1", "rule": "RULE-1", "status": "pass"},
-    {"id": "PROOF-2", "rule": "RULE-2", "status": "pass"}
-  ]
-}
-```
+#### The run the receipt rests on
+
+Do not issue a receipt without a recorded test run. The issuer refuses unless the
+run marker exists, records a sweep that passed, and names the commit that is HEAD
+now, because a receipt over proof files nobody re-ran is a claim about a file
+rather than about a test. The override exists (`--no-run-check`) and it is not
+silent: it warns, and the receipt records `evidence.test_run: null`.
+
+A proof file that the recorded run did not execute and no runner committed is
+evidence with no witness. The issuer names the file and the count and issues
+nothing for that feature.
 
 #### Platform-partial receipts
 
-A feature declaring a proof at a runner-gated tier (`@windows`) that has no result
-there still earns a receipt: an absent runner is not a failure, and blocking on one
-would make a receipt unobtainable on every machine but the runner. The receipt
-records the gap instead, so it never claims more than was verified:
-
-```json
-  "awaiting_runner": [{"id": "PROOF-53", "tier": "unit", "platform": "windows"}]
-```
-
-The key is omitted when nothing is awaiting, so an ordinary receipt is unchanged.
-A receipt carrying it is a verified-here claim, not a verified-everywhere one.
+A feature declaring a proof `@on(<platform>)` that has no result there still earns
+a receipt: an absent runner is not a failure, and blocking on one would make a
+receipt unobtainable on every machine but the runner. The receipt records the gap
+in `awaiting_runner` instead, so it never claims more than was verified. The key
+is omitted when nothing is awaiting, so an ordinary receipt is unchanged. A
+receipt carrying it is a verified-here claim, not a verified-everywhere one.
 `sync_status` reports the same proofs as `AWAITING RUNNER`, and re-running verify
 after CI commits the results clears the list. See `specs/skills/skill_verify.md`
 RULE-9 and `specs/mcp/sync_status.md` RULE-47.

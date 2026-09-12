@@ -90,6 +90,24 @@
       "test_name": "test_project_gauge_is_weighted_by_measurement_coverage",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-88",
+      "rule": "RULE-54",
+      "test_file": "dev/test_receipts.py",
+      "test_name": "test_vhash_and_active_rules_have_exactly_one_call_site",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-88",
+      "rule": "RULE-54",
+      "test_file": "dev/test_receipts.py",
+      "test_name": "test_issuer_and_payload_agree_on_every_vhash",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

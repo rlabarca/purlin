@@ -102,14 +102,13 @@ compute_vhash() {
   local tmpdir="$1"
   python3 -c "
 import sys; sys.path.insert(0, '$SERVER_DIR')
-from purlin_server import _scan_specs, _read_proofs, _build_coverage_rules, _collect_relevant_proofs, _compute_vhash
-features = _scan_specs('$tmpdir')
-proofs = _read_proofs('$tmpdir')
+import purlin_server as ps
+features = ps._scan_specs('$tmpdir')
+proofs = ps._read_proofs('$tmpdir')
 info = features.get('test_feature', {})
-rule_entries, _ = _build_coverage_rules('test_feature', info, features)
-all_rules_dict = {key: True for key, _, _, _ in rule_entries}
-all_relevant = _collect_relevant_proofs('test_feature', rule_entries, proofs)
-print(_compute_vhash(all_rules_dict, all_relevant))
+registry, _ = ps._platform_registry(ps.resolve_config('$tmpdir'))
+verdict = ps._feature_verdict('test_feature', info, features, proofs, {}, '$tmpdir', registry)
+print(verdict['vhash'])
 "
 }
 
@@ -120,23 +119,31 @@ write_receipt() {
   python3 -c "
 import json, os, sys, subprocess, datetime
 sys.path.insert(0, '$SERVER_DIR')
-from purlin_server import _scan_specs, _read_proofs, _build_coverage_rules, _collect_relevant_proofs
+import purlin_server as ps
 
-features = _scan_specs('$tmpdir')
-proofs = _read_proofs('$tmpdir')
+features = ps._scan_specs('$tmpdir')
+proofs = ps._read_proofs('$tmpdir')
 info = features.get('test_feature', {})
-rule_entries, _ = _build_coverage_rules('test_feature', info, features)
-all_relevant = _collect_relevant_proofs('test_feature', rule_entries, proofs)
+registry, _ = ps._platform_registry(ps.resolve_config('$tmpdir'))
+verdict = ps._feature_verdict('test_feature', info, features, proofs, {}, '$tmpdir', registry)
+rules_text = verdict['rules_text']
+all_relevant = verdict['relevant_proofs']
 
 commit = subprocess.run(['git', 'rev-parse', 'HEAD'], capture_output=True, text=True, cwd='$tmpdir').stdout.strip()
 
 receipt = {
     'feature': 'test_feature',
     'vhash': '$vhash',
+    'vhash_version': 2,
     'commit': commit,
     'timestamp': datetime.datetime.now(datetime.timezone.utc).isoformat(),
-    'rules': sorted(set(key for key, _, _, _ in rule_entries)),
-    'proofs': [{'id': p['id'], 'rule': p['rule'], 'status': p['status']} for p in all_relevant]
+    'rules': sorted(rules_text),
+    'rule_hashes': {k: ps._rule_text_hash(rules_text[k]) for k in sorted(rules_text)},
+    'proofs': [{'feature': p.get('feature', ''), 'id': p['id'], 'rule': p['rule'],
+                'status': p['status'], 'tier': p.get('tier', ''),
+                'test_file': p.get('test_file', ''), 'test_name': p.get('test_name', ''),
+                'platform': p.get('platform')} for p in all_relevant],
+    'evidence': {'test_run': None, 'proof_files': []},
 }
 
 spec_dir = os.path.dirname(info.get('path', 'specs/auth/test_feature.md'))

@@ -92,6 +92,10 @@ def _make_project(mode='required', windows_proof=False, proofs_pass=True,
                    capture_output=True)
 
     if receipt and proofs_pass:
+        # A receipt rests on a recorded run (skill_verify RULE-12), so the
+        # fixture writes one through the issuer's own helper rather than
+        # hand-rolling the marker shape here.
+        issue_receipts.write_run_marker(root)
         issue_receipts.main(root, quiet=True)
         subprocess.run(['git', 'add', '-A'], cwd=root, capture_output=True)
         subprocess.run(['git', 'commit', '-q', '-m', 'verify'], cwd=root,

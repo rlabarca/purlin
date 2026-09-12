@@ -781,6 +781,92 @@ re-pins the literal (`dev/test_mcp_server.py:1778`), the mutation check being th
 - The `verify:` commit after this lands re-issues all 41 receipts as v2 (later phases re-issue in
   their own `verify:` commits as rules change; that is the existing rhythm).
 
+## DONE — Phase 6.5: vhash v2, receipt v2, one verdict function (`feat(sync_status,skill_verify): vhash v2, receipt v2, one verdict function`, receipts in the `verify:` commit that follows it)
+
+- **Numbers taken (landing order).** `sync_status` RULE-6 rewritten, RULE-54 (one verdict
+  function) new; PROOF-6 rewritten, PROOF-88 (RULE-54) new; next free RULE-55/PROOF-89.
+  `report_data` RULE-33 (receipt evidence fields) new with PROOF-34; next free
+  RULE-34/PROOF-35. `skill_verify` RULE-11 (receipt v2 by reference, stale detail) and RULE-12
+  (run marker) new with PROOF-11/12; next free RULE-13/PROOF-13. `purlin_references` RULE-21
+  (`receipt_format.md`) new with PROOF-21; next free RULE-22/PROOF-22. The phase text pencilled
+  `sync_status` RULE-52/PROOF-84 and `purlin_references` RULE-23; landing order gave RULE-54/
+  PROOF-88 and RULE-21.
+- **vhash v2.** `_rule_text_hash` (16 hex of sha256 over `" ".join(text.split())`),
+  `_vhash_proof_key`, `_vhash_manual_key` and `_compute_vhash(rules, proofs, manual=())`, where
+  `rules` is `{rule_key: rule_text}`. Segments are `\x00`-joined and start with `purlin-vhash/2`.
+  The `manual` parameter is wired and always empty this phase; Phase 10.2 fills it.
+- **One verdict function.** `_feature_verdict(name, info, all_features, all_proofs,
+  global_anchors, project_root, registry)` returns `rule_entries, active_entries, proof_by_rule,
+  relevant_proofs, rules_text, manual_ok, proved, has_fail, vhash, awaiting, awaiting_rule_count,
+  undeclared, platforms, unresolved_requires, receipt, has_current_receipt`. Callers:
+  `_report_feature`, both loops in `sync_status` (the regular table row and the anchor row),
+  `_build_report_data` (so `generate_digest` and `read_report_payload` come through it),
+  `_compute_drift` and `dev/issue_receipts.py`. `_compute_vhash` and `_active_rule_entries` are
+  each called from exactly one place in `purlin_server.py`, counted by AST in PROOF-88.
+  **Two call sites the phase text did not list were found and routed:** `_compute_drift`'s
+  per-feature status block, and the anchor branch of the summary table, which hashed an anchor's
+  own rule set by hand and would have disagreed with the issuer's receipt for it. The verdict
+  passes `{}` for `global_anchors` when the feature is an anchor, which also closes the issuer's
+  latent anchor bug (it passed the global anchors to anchors; invisible only because this project
+  registers none).
+- **Receipt v2** in the new `references/formats/receipt_format.md` (`> Format-Version: 2`, with
+  the v1 shape kept as a historical section). The v1 JSON block and the formula sentence left
+  `skills/verify/SKILL.md`, which now points at the format file and at `sync_status` RULE-6
+  (CLAUDE.md dedup). CLAUDE.md's two format lists gained the file. `_platform_provenance` split
+  into `_proof_file_rel` (agnostic path when `platform_id` is None) plus `_file_provenance`, so a
+  receipt can record provenance for every contributing file, not only scoped ones.
+- **Issuer** (`dev/issue_receipts.py`). New `read_run_marker` (missing, `ok: false`, or
+  `commit != HEAD` each refuse, naming which), `write_run_marker` (shared helper so tests do not
+  copy the marker shape; `test_files` defaults to every `test_file` a committed proof names),
+  `_proof_file_rows`, and `main(root, quiet=False, run_check=True)`. `--no-run-check` warns and
+  writes `evidence.test_run: null`. A file the recorded run did not execute and no runner
+  committed prints `SKIP <feature>: N proofs from <file> not executed in the recorded run` and
+  issues nothing for that feature. The issuer now computes nothing: no `is_def` filter, no
+  `active` of its own.
+- **Deviation, recorded: this repo issues 38 of 41 receipts, not 41.** The three features backed
+  by the `proof_common` RULE-14 exception suites are refused by the new SKIP, because their proof
+  files were committed locally with no `Purlin-Runner:` trailer and the sweep does not run their
+  suites: `figma_web` (`dev/test_e2e_figma_web.py`), `skill_spec`
+  (`dev/test_e2e_build_agent.py`) and `static_checks` (`dev/test_windows_native.py`, whose file
+  was committed in PR #5 with no trailer). This is the mechanism working: those three read
+  PASSING rather than VERIFIED until a runner commits their proofs with a trailer, or the suites
+  run here. Phase 7.4 renames the windows file through `purlin:init --update` and Phase 10.6 gives
+  the four externally-gated suites environment ids, which is where this closes. The `verify:`
+  commit therefore reads `features=38/41`.
+- **Stale detail.** `_receipt_rules_changed` (from the receipt's `rule_hashes`) and
+  `_receipt_platform_stale` (from `evidence.proof_files` commits versus current provenance) feed
+  two new lines after `Receipt stale (vhash mismatch)`:
+  `⚠ Rule text changed since last verification: RULE-1` and `⚠ <platform> re-proved since
+  receipt`. `report_data`'s `receipt` object gained `vhash_version`, `test_run_commit` and
+  `platform_stale`.
+- **Tests.** New `dev/test_receipts.py` (5 tests: the three refusals plus the override, the SKIP
+  and its runner escape, the two AST/parity halves of PROOF-88) added to `dev/run_tests.sh`.
+  `dev/test_mcp_server.py` PROOF-6 rewritten (literal re-pinned to `c92b8ee3`, plus rule-text
+  change, reflow, `test_name` swap, feature/anchor collision, and two inputs that collide under a
+  `:` join). `dev/test_report_data.py` PROOF-34, `dev/test_purlin_references.py` PROOF-21,
+  `dev/test_skill_specs.py` PROOF-11/12 skill-text halves. Updated to v2:
+  `dev/test_e2e_verify_audit.sh` (both helpers go through `_feature_verdict`),
+  `dev/test_e2e_audit_cache_pipeline.py` (two sites), `dev/test_verify_gate.py` (`_make_project`
+  writes a run marker through `issue_receipts.write_run_marker`).
+- **Pass D.** `--check-proof-design` on all four edited specs: PROOF-6, PROOF-88, PROOF-34,
+  PROOF-11, PROOF-12 and PROOF-21 all grade PROVABLE. Zero UNPROVABLE and zero LOOSE among them.
+  No em-dashes or en-dashes in any line this phase wrote, CLAUDE.md's two new bullets included
+  (they use a colon where their neighbours use an em-dash).
+- **Mutations (each applied, run with `PYTHONDONTWRITEBYTECODE=1` and `__pycache__` removed,
+  restored; all caught).** `\x00` to `:` in `_compute_vhash` (PROOF-6: the literal and,
+  independently, the two boundary-forging inputs collide); drop the rule-text hash from the R
+  segment (PROOF-6); a second `_compute_vhash` call site outside `_feature_verdict` (PROOF-88 AST
+  half); the issuer computing `active` from `rule_entries` as it did before 6.5 (PROOF-88 parity
+  half, which is the 6.4 note-4 gap); drop the `commit == HEAD` check (PROOF-12); drop the SKIP
+  (PROOF-12); drop the rule-text stale line and drop the platform stale line (PROOF-11, each
+  separately); `platform_stale` always `[]` (PROOF-34); remove the null-marker sentence from
+  `receipt_format.md` (PROOF-21); remove the format-file pointer from `skills/verify/SKILL.md`
+  (PROOF-11 skill half).
+- **Sweep.** `bash dev/run_tests.sh` (foreground): 14 suites, `685 passed, 27 skipped` (was
+  676/27; +9 are the 5 in `dev/test_receipts.py`, PROOF-21, PROOF-34 and the two skill-text
+  halves of PROOF-11/12). `git diff --stat specs/`: insertions only, plus one rename where
+  PROOF-6's test was renamed.
+
 ### 6.6 Generic remote path (`skill_test`, `purlin_references`, `purlin_commands`)
 
 - `skills/test/SKILL.md`: Usage adds `--platform <id>`; Step 1.5 becomes "Classify platforms"

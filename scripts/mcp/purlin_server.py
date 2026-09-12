@@ -469,12 +469,49 @@ def _check_visual_hash(project_root, visual_ref, stored_hash):
         return False
 
 
-def _compute_vhash(rules, proofs):
-    """Compute verification hash from sorted rule IDs + sorted proof IDs/statuses."""
-    rule_ids = sorted(rules.keys())
-    proof_parts = sorted(f"{p['id']}:{p['status']}" for p in proofs)
-    payload = ','.join(rule_ids) + '|' + ','.join(proof_parts)
-    return hashlib.sha256(payload.encode()).hexdigest()[:8]
+def _rule_text_hash(text):
+    """16 hex of sha256 over whitespace-normalised rule text.
+
+    Normalised so a reflow of the same words is the same rule: a spec reformat
+    must not invalidate every receipt in the project, while a reworded rule
+    must.
+    """
+    return hashlib.sha256(
+        ' '.join((text or '').split()).encode()).hexdigest()[:16]
+
+
+def _vhash_proof_key(p):
+    return (p.get('feature', ''), p.get('id', ''), p.get('rule', ''),
+            p.get('tier', ''), p.get('platform') or '',
+            p.get('test_file', ''), p.get('test_name', ''))
+
+
+def _vhash_manual_key(m):
+    return (m.get('feature', ''), m.get('proof_id', ''), m.get('rule', ''),
+            m.get('email', ''), m.get('date', ''), m.get('sha', ''))
+
+
+def _compute_vhash(rules, proofs, manual=()):
+    """Verification hash v2 (sync_status RULE-6).
+
+    `rules` is {rule_key: rule_text}; `proofs` are the relevant proof entries;
+    `manual` are the counted manual stamps (empty until the phase that counts
+    them). Segments are joined with `\x00`, which no field can contain, so no
+    value can forge a field boundary the way a `:` or `,` join allowed.
+    """
+    segments = ['purlin-vhash/2']
+    for key in sorted(rules):
+        segments += ['R', key, _rule_text_hash(rules[key])]
+    for p in sorted(proofs, key=_vhash_proof_key):
+        segments += ['P', p.get('feature', ''), p.get('id', ''),
+                     p.get('rule', ''), p.get('status', ''), p.get('tier', ''),
+                     p.get('platform') or '', p.get('test_file', ''),
+                     p.get('test_name', '')]
+    for m in sorted(manual, key=_vhash_manual_key):
+        segments += ['M', m.get('feature', ''), m.get('proof_id', ''),
+                     m.get('rule', ''), m.get('email', ''), m.get('date', ''),
+                     m.get('sha', '')]
+    return hashlib.sha256('\x00'.join(segments).encode()).hexdigest()[:8]
 
 
 def _get_rule_proof_descs(key, label, src_feature, info, all_features):
@@ -956,14 +993,36 @@ def _platform_provenance(project_root, spec_path, feature, tier, platform_id):
     `Purlin-Platform:`. A trailer platform that disagrees with the filename is
     returned as is, so the caller can say so. Zero new fields.
     """
+    rel = _proof_file_rel(project_root, spec_path, feature, tier, platform_id)
+    return _file_provenance(project_root, rel)
+
+
+def _proof_file_rel(project_root, spec_path, feature, tier, platform_id):
+    """The project-relative path of one proof file, agnostic or scoped.
+
+    `platform_id` None names the agnostic `<feature>.proofs-<tier>.json`, which
+    is what a receipt's evidence rows need: provenance is no longer a
+    platform-only question once a receipt records where every contributing
+    proof file came from.
+    """
     # spec_path is already project-relative and git runs with cwd=project_root,
     # so relativizing again would resolve against the process cwd instead.
     spec_dir = os.path.dirname(spec_path)
+    if not platform_id:
+        return os.path.join(spec_dir, f'{feature}.proofs-{tier}.json')
     rel = os.path.join(spec_dir, f'{feature}.proofs-{tier}@{platform_id}.json')
     if tier == 'unit' and platform_id in _LEGACY_PLATFORM_TIERS and \
             not os.path.isfile(os.path.join(project_root, rel)):
         # The pre-Format-Version-5 spelling, still read as unit@<platform>.
         rel = os.path.join(spec_dir, f'{feature}.proofs-{platform_id}.json')
+    return rel
+
+
+def _file_provenance(project_root, rel):
+    """{commit, when, runner, trailer_platform} for one committed file, or None.
+
+    Memoized per (project root, path) for the life of a report run.
+    """
     key = (os.path.abspath(project_root), rel)
     if key in _PROVENANCE_CACHE:
         return _PROVENANCE_CACHE[key]
@@ -1679,33 +1738,16 @@ def sync_status(project_root, role=None):
         detail.extend(feature_lines)
         detail.append('')
 
-        # Same counting as the detail report, from the one helper both use.
-        rule_entries, _ = _build_coverage_rules(name, info, features, global_anchors)
-        proof_by_rule = _build_proof_lookup(name, rule_entries, all_proofs)
-        active_entries, _awaiting, _gated = _active_rule_entries(
-            name, info, rule_entries, all_proofs, registry)
-        active_total = len(active_entries)
-        proved = sum(1 for key, _, _ in active_entries
-                     if proof_by_rule.get(key, {}).get('status') == 'pass')
-        has_fail = any(proof_by_rule.get(key, {}).get('status') == 'fail'
-                       for key, _, _ in active_entries)
+        # The same verdict the detail report just printed (RULE-54). This loop
+        # used to rebuild the rule entries a second time and hash them a third,
+        # which is how the table and the detail beneath it drifted apart.
+        verdict = _feature_verdict(name, info, features, all_proofs,
+                                   global_anchors, project_root, registry)
+        status = _determine_status(verdict['proved'], len(verdict['active_entries']),
+                                   verdict['has_fail'], verdict['has_current_receipt'])
 
-        all_proved_passing = (proved == active_total and active_total > 0)
-        receipt = _read_receipt(project_root, name)
-        has_current_receipt = False
-        if all_proved_passing and receipt:
-            cli_rule_entries, _ = _build_coverage_rules(name, info, features, global_anchors)
-            cli_active, _, _ = _active_rule_entries(
-                name, info, cli_rule_entries, all_proofs, registry)
-            cli_all_proofs_list = _collect_relevant_proofs(name, cli_rule_entries, all_proofs)
-            cli_vhash = _compute_vhash(
-                {key: True for key, _, _ in cli_active}, cli_all_proofs_list
-            )
-            has_current_receipt = (receipt.get('vhash') == cli_vhash)
-
-        status = _determine_status(proved, active_total, has_fail, has_current_receipt)
-
-        summary_rows.append((name, proved, active_total, status))
+        summary_rows.append((name, verdict['proved'],
+                             len(verdict['active_entries']), status))
 
     # Process anchors
     for name in sorted(anchors.keys()):
@@ -1740,33 +1782,17 @@ def sync_status(project_root, role=None):
         # Include anchor in summary if it has proofs
         anchor_proofs = all_proofs.get(name, [])
         if anchor_proofs:
-            deferred = info.get('deferred_rules', set())
-            active_rules = set(info['rules'].keys()) - deferred
-            active_total = len(active_rules)
+            # Through the same verdict function as every other row: an anchor
+            # that hashed its own rule set by hand could disagree with the
+            # receipt the issuer wrote for it (RULE-54).
+            verdict = _feature_verdict(name, info, features, all_proofs,
+                                       global_anchors, project_root, registry)
+            a_status = _determine_status(
+                verdict['proved'], len(verdict['active_entries']),
+                verdict['has_fail'], verdict['has_current_receipt'])
 
-            passed_rules = set()
-            has_fail = False
-            for p in anchor_proofs:
-                rule = p.get('rule', '')
-                if rule in active_rules:
-                    if p.get('status') == 'pass':
-                        passed_rules.add(rule)
-                    elif p.get('status') == 'fail':
-                        has_fail = True
-            proved = len(passed_rules)
-
-            a_all_proved_passing = (proved >= active_total and active_total > 0)
-            a_receipt = _read_receipt(project_root, name)
-            a_has_receipt = False
-            if a_all_proved_passing and a_receipt:
-                a_vhash = _compute_vhash(
-                    {r: True for r in active_rules}, anchor_proofs
-                )
-                a_has_receipt = (a_receipt.get('vhash') == a_vhash)
-
-            a_status = _determine_status(proved, active_total, has_fail, a_has_receipt)
-
-            summary_rows.append((f"{name} (anchor)", proved, active_total, a_status))
+            summary_rows.append((f"{name} (anchor)", verdict['proved'],
+                                 len(verdict['active_entries']), a_status))
 
     # Read both quality gauges. Design needs no tests, so it is meaningful even
     # when the audit cache is absent.
@@ -2079,6 +2105,120 @@ def _active_rule_entries(name, info, rule_entries, all_proofs, registry):
     return active, awaiting, gated
 
 
+def _rule_text_for(key, label, src_feature, info, all_features):
+    """The rule's own text, taken from the spec that declares it.
+
+    A required or global key is `<source>/RULE-N`; its text lives in the source
+    feature's spec, not in the feature that inherits it, so a reworded anchor
+    rule stales every receipt that carries it.
+    """
+    if label == 'own':
+        return info.get('rules', {}).get(key, '')
+    bare = key.split('/', 1)[1] if '/' in key else key
+    return all_features.get(src_feature, {}).get('rules', {}).get(bare, '')
+
+
+def _feature_verdict(name, info, all_features, all_proofs, global_anchors,
+                     project_root, registry):
+    """Everything a surface needs to state one feature's verdict, once.
+
+    Five surfaces used to rebuild this: the detail report, the summary table
+    (which rebuilt the rule entries a second time within the same loop), the
+    dashboard payload, the digest and `dev/issue_receipts.py`. Each rebuild was
+    a chance to disagree, and they did: the issuer computed its active rule set
+    without `_active_rule_entries`, so a feature whose only uncovered rule was
+    awaiting a runner read PASSING in the report and was skipped as unproved by
+    the issuer. `_compute_vhash` and `_active_rule_entries` are now called from
+    exactly one place in this file, which is this function (sync_status
+    RULE-54).
+
+    Returns a dict of `rule_entries`, `active_entries`, `proof_by_rule`,
+    `relevant_proofs`, `rules_text`, `manual_ok`, `proved`, `has_fail`,
+    `vhash`, `awaiting`, `awaiting_rule_count`, `undeclared`, `platforms` (the
+    `_platform_results` record), `unresolved_requires`, `receipt` and
+    `has_current_receipt`.
+    """
+    # An anchor is not a consumer of the global anchors; it carries its own
+    # rules and nothing else. Every caller but the issuer already did this, and
+    # the issuer's omission was invisible only because this project registers
+    # no global anchor.
+    ga = {} if info.get('is_anchor') else (global_anchors or {})
+    rule_entries, unresolved_requires = _build_coverage_rules(
+        name, info, all_features, ga)
+    proof_by_rule = _build_proof_lookup(name, rule_entries, all_proofs)
+    relevant_proofs = _collect_relevant_proofs(name, rule_entries, all_proofs)
+    active_entries, awaiting, awaiting_rule_count = _active_rule_entries(
+        name, info, rule_entries, all_proofs, registry)
+    rules_text = {
+        key: _rule_text_for(key, label, src, info, all_features)
+        for key, label, src in active_entries
+    }
+    # Manual stamps do not yet count toward coverage, so none enters the hash.
+    # The parameter is wired now so the phase that counts them changes one
+    # list, not the formula.
+    manual_ok = []
+    proved = sum(1 for key, _, _ in active_entries
+                 if proof_by_rule.get(key, {}).get('status') == 'pass')
+    has_fail = any(proof_by_rule.get(key, {}).get('status') == 'fail'
+                   for key, _, _ in active_entries)
+    vhash = _compute_vhash(rules_text, relevant_proofs, manual_ok)
+    pres = _platform_results(name, info, all_proofs, registry)
+    receipt = _read_receipt(project_root, name)
+    active_total = len(active_entries)
+    has_current_receipt = (
+        active_total > 0 and proved == active_total
+        and receipt is not None and receipt.get('vhash') == vhash
+    )
+    return {
+        'rule_entries': rule_entries,
+        'active_entries': active_entries,
+        'proof_by_rule': proof_by_rule,
+        'relevant_proofs': relevant_proofs,
+        'rules_text': rules_text,
+        'manual_ok': manual_ok,
+        'proved': proved,
+        'has_fail': has_fail,
+        'vhash': vhash,
+        'awaiting': awaiting,
+        'awaiting_rule_count': awaiting_rule_count,
+        'undeclared': pres['undeclared'],
+        'platforms': pres,
+        'unresolved_requires': unresolved_requires,
+        'receipt': receipt,
+        'has_current_receipt': has_current_receipt,
+    }
+
+
+def _receipt_rules_changed(receipt, rules_text):
+    """Rule keys whose text differs from what the receipt hashed, sorted.
+
+    Empty for a v1 receipt, which recorded no rule text to compare against; a
+    v1 receipt is stale on its `vhash_version` alone.
+    """
+    stored = (receipt or {}).get('rule_hashes') or {}
+    return sorted(key for key, text in rules_text.items()
+                  if key in stored and stored[key] != _rule_text_hash(text))
+
+
+def _receipt_platform_stale(project_root, receipt):
+    """Platform ids whose proof file has been committed again since the receipt.
+
+    Read from the receipt's own `evidence.proof_files` rows, so the comparison
+    is against the commit the receipt actually cited rather than against
+    whatever the current report happens to resolve.
+    """
+    rows = ((receipt or {}).get('evidence') or {}).get('proof_files') or []
+    stale = []
+    for row in rows:
+        platform = row.get('platform')
+        if not platform:
+            continue
+        current = _file_provenance(project_root, row.get('file', ''))
+        if current and current.get('commit') != row.get('commit'):
+            stale.append(platform)
+    return sorted(set(stale))
+
+
 def _report_feature(name, info, all_features, all_proofs, project_root, role,
                     global_anchors=None, gauges=None, registry=None):
     """Generate report lines for a single feature."""
@@ -2088,24 +2228,24 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
     if registry is None:
         registry, _ = _platform_registry({})
 
-    # Build combined rule set (own + required + global)
-    rule_entries, unresolved_requires = _build_coverage_rules(name, info, all_features, global_anchors)
-    proof_by_rule = _build_proof_lookup(name, rule_entries, all_proofs)
-    all_relevant_proofs = _collect_relevant_proofs(name, rule_entries, all_proofs)
+    # One verdict function, five surfaces (RULE-54). Runner-gated proofs
+    # waiting for their runner: a rule whose only declared proofs are awaiting
+    # is not unproved, it is unprovable here, so it leaves the coverage
+    # denominator the way a DEFERRED rule does. Warn, never block.
+    verdict = _feature_verdict(name, info, all_features, all_proofs,
+                               global_anchors, project_root, registry)
+    rule_entries = verdict['rule_entries']
+    unresolved_requires = verdict['unresolved_requires']
+    proof_by_rule = verdict['proof_by_rule']
+    active_entries = verdict['active_entries']
+    awaiting_rule_count = verdict['awaiting_rule_count']
+    pres = verdict['platforms']
 
     total = len(rule_entries)
     deferred_count = sum(1 for _, _, _, is_def in rule_entries if is_def)
 
-    # Runner-gated proofs waiting for their runner. A rule whose only declared
-    # proofs are runner-gated is not unproved, it is unprovable here, so it
-    # leaves the coverage denominator the way a DEFERRED rule does. Warn, never
-    # block: a missing Windows runner must not turn a green repo red.
-    active_entries, awaiting, awaiting_rule_count = _active_rule_entries(
-        name, info, rule_entries, all_proofs, registry)
-    pres = _platform_results(name, info, all_proofs, registry)
     active_total = len(active_entries)
-    proved = sum(1 for key, _, _ in active_entries
-                 if proof_by_rule.get(key, {}).get('status') == 'pass')
+    proved = verdict['proved']
 
     all_proved_passing = (proved == active_total and active_total > 0)
 
@@ -2172,14 +2312,9 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
 
     # Header — all rules proved
     if all_proved_passing and not warnings:
-        all_rules_dict = {key: True for key, _, _ in active_entries}
-        vhash = _compute_vhash(all_rules_dict, all_relevant_proofs)
-        receipt = _read_receipt(project_root, name)
-        has_current_receipt = (
-            proved == active_total
-            and receipt is not None
-            and receipt.get('vhash') == vhash
-        )
+        vhash = verdict['vhash']
+        receipt = verdict['receipt']
+        has_current_receipt = verdict['has_current_receipt']
 
         if has_current_receipt:
             header_status = "VERIFIED"
@@ -2196,7 +2331,7 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
 
         if receipt and not has_current_receipt:
             receipt_rules = set(receipt.get('rules', []))
-            current_rules = set(all_rules_dict.keys())
+            current_rules = set(verdict['rules_text'].keys())
             added_rules = current_rules - receipt_rules
             removed_rules = receipt_rules - current_rules
             anchor_added = {}
@@ -2217,6 +2352,16 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
                 lines.append(f"  \u26a0 Rules removed since last verification: {', '.join(sorted(removed_rules))}")
             if not added_rules and not removed_rules:
                 lines.append("  \u26a0 Proof statuses changed since last verification")
+            # What else moved under an unchanged rule set: a reworded rule, or
+            # a platform re-proved since the receipt cited its commit. Without
+            # these two the only explanation on offer was "proof statuses
+            # changed", which is what a reworded rule does not do.
+            text_changed = _receipt_rules_changed(receipt, verdict['rules_text'])
+            if text_changed:
+                lines.append("  \u26a0 Rule text changed since last verification: "
+                             + ', '.join(text_changed))
+            for platform in _receipt_platform_stale(project_root, receipt):
+                lines.append(f"  \u26a0 {platform} re-proved since receipt")
             lines.append(f"  \u2192 Run: purlin:verify to re-issue receipt")
         elif not receipt:
             lines.append("  \u2192 Run: purlin:verify to issue receipt")
@@ -2730,15 +2875,18 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             if info.get('is_global'):
                 anchors_global += 1
 
-        # Build combined rule set
-        ga = global_anchors if not is_anchor else {}
-        rule_entries, _ = _build_coverage_rules(name, info, features, ga)
-        proof_by_rule = _build_proof_lookup(name, rule_entries, all_proofs)
+        # One verdict function (sync_status RULE-54): the payload and the text
+        # report can no longer disagree about coverage, the vhash, or whether
+        # the receipt on disk is current.
+        verdict = _feature_verdict(name, info, features, all_proofs,
+                                   global_anchors, project_root, registry)
+        rule_entries = verdict['rule_entries']
+        proof_by_rule = verdict['proof_by_rule']
         all_proofs_by_rule = _build_all_proofs_lookup(name, rule_entries, all_proofs)
-        all_relevant_proofs = _collect_relevant_proofs(name, rule_entries, all_proofs)
 
-        active_entries, awaiting_runner, awaiting_rule_count = _active_rule_entries(
-            name, info, rule_entries, all_proofs, registry)
+        active_entries = verdict['active_entries']
+        awaiting_runner = verdict['awaiting']
+        awaiting_rule_count = verdict['awaiting_rule_count']
         pres = pres_by_feature[name]
         platform_records = _feature_platform_records(project_root, name, info, pres)
         for platform, record in platform_records.items():
@@ -2752,30 +2900,28 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
         deferred_count = sum(1 for _, _, _, d in rule_entries if d)
         active_total = len(active_entries)
 
-        has_fail = any(
-            proof_by_rule.get(key, {}).get('status') == 'fail'
-            for key, _, _ in active_entries
-        )
+        has_fail = verdict['has_fail']
 
-        # Compute vhash when ALL proofs pass
-        proved = sum(
-            1 for key, _, _ in active_entries
-            if proof_by_rule.get(key, {}).get('status') == 'pass'
-        )
-        vhash = None
+        # vhash is reported only when ALL proofs pass (RULE-6)
+        proved = verdict['proved']
         all_proved_passing = (proved == active_total and active_total > 0)
-        if all_proved_passing:
-            all_rules_dict = {key: True for key, _, _ in active_entries}
-            vhash = _compute_vhash(all_rules_dict, all_relevant_proofs)
+        vhash = verdict['vhash'] if all_proved_passing else None
 
-        # Read receipt
+        # Read receipt. `vhash_version`, `test_run_commit` and `platform_stale`
+        # are what let a reader tell a receipt that is merely older than the
+        # hash format from one whose evidence has moved underneath it
+        # (report_data RULE-33).
         receipt_data = None
-        receipt = _read_receipt(project_root, name)
+        receipt = verdict['receipt']
         if receipt:
+            test_run = (receipt.get('evidence') or {}).get('test_run') or {}
             receipt_data = {
                 'commit': receipt.get('commit', ''),
                 'timestamp': receipt.get('timestamp', ''),
                 'stale': receipt.get('vhash') != vhash if vhash else True,
+                'vhash_version': receipt.get('vhash_version', 1),
+                'test_run_commit': test_run.get('commit') or None,
+                'platform_stale': _receipt_platform_stale(project_root, receipt),
             }
 
         # Determine status
@@ -3358,30 +3504,22 @@ def _compute_drift(project_root, since=None):
     for name, info in features.items():
         if info['is_anchor']:
             continue
-        rule_entries, _ = _build_coverage_rules(name, info, features, global_anchors)
+        verdict = _feature_verdict(name, info, features, all_proofs,
+                                   global_anchors, project_root, registry)
+        rule_entries = verdict['rule_entries']
         total = len(rule_entries)
         if total == 0:
             continue
         deferred_count = sum(1 for _, _, _, is_def in rule_entries if is_def)
-        active_entries, _, _ = _active_rule_entries(
-            name, info, rule_entries, all_proofs, registry)
+        active_entries = verdict['active_entries']
         active_total = len(active_entries)
-        proof_by_rule = _build_proof_lookup(name, rule_entries, all_proofs)
-        proved = sum(1 for key, _, _ in active_entries
-                     if proof_by_rule.get(key, {}).get('status') == 'pass')
+        proof_by_rule = verdict['proof_by_rule']
+        proved = verdict['proved']
         failing = [key for key, _, _ in active_entries
                    if proof_by_rule.get(key, {}).get('status') == 'fail']
-        all_pass = (proved == active_total and active_total > 0)
-        d_receipt = _read_receipt(project_root, name)
-        d_has_receipt = False
-        if all_pass and d_receipt:
-            d_vhash = _compute_vhash(
-                {key: True for key, _, _ in active_entries},
-                _collect_relevant_proofs(name, rule_entries, all_proofs),
-            )
-            d_has_receipt = (d_receipt.get('vhash') == d_vhash)
         has_fail = len(failing) > 0
-        status = _determine_status(proved, active_total, has_fail, d_has_receipt)
+        status = _determine_status(proved, active_total, has_fail,
+                                   verdict['has_current_receipt'])
         assumed_count = len(info.get('assumed_rules', set()))
         entry = {
             'proved': proved,

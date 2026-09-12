@@ -1534,3 +1534,106 @@ class TestRemoteVerificationInPayload:
         assert data['remote_verification'] == 'off', (
             f"an omitted field defaults to 'off', got "
             f"{data['remote_verification']!r}")
+
+
+# ---------------------------------------------------------------------------
+# RULE-33: what a stale receipt in the payload is stale FROM
+# ---------------------------------------------------------------------------
+
+class TestReceiptEvidenceInPayload:
+
+    def setup_method(self):
+        self.tmp = tempfile.mkdtemp()
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+
+    def teardown_method(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _git(self, *args):
+        return subprocess.run(['git'] + list(args), cwd=self.tmp,
+                              capture_output=True, text=True)
+
+    def _build(self):
+        """A real project with a git history, a scoped proof file and a
+        receipt issued by the real issuer."""
+        purlin_dir = _make_project(self.tmp, report_enabled=True)
+        with open(os.path.join(purlin_dir, 'config.json'), 'w') as f:
+            json.dump({'report': True,
+                       'platforms': {'windows-2022': {'os': 'windows'}}}, f)
+        _write_spec(self.tmp, 'locking',
+                    '# Feature: locking\n\n'
+                    '> Description: Locks.\n\n'
+                    '## Rules\n'
+                    '- RULE-1: Locks on POSIX\n'
+                    '- RULE-2: Locks on the declared platform\n\n'
+                    '## Proof\n'
+                    '- PROOF-1 (RULE-1): fcntl path locks @unit\n'
+                    '- PROOF-2 (RULE-2): msvcrt path locks @unit @on(windows-2022)\n')
+        _write_proofs(self.tmp, 'locking', [
+            {'feature': 'locking', 'id': 'PROOF-1', 'rule': 'RULE-1',
+             'test_file': 'dev/t.py', 'test_name': 'test_fcntl',
+             'status': 'pass', 'tier': 'unit'}])
+        _write_proofs(self.tmp, 'locking', [
+            {'feature': 'locking', 'id': 'PROOF-2', 'rule': 'RULE-2',
+             'test_file': 'dev/t_win.py', 'test_name': 'test_msvcrt',
+             'status': 'pass', 'tier': 'unit'}], platform='windows-2022')
+        self._git('init', '-q')
+        self._git('config', 'user.email', 't@e')
+        self._git('config', 'user.name', 't')
+        self._git('add', '-A')
+        self._git('commit', '-q', '-m', 'init')
+
+    def _receipt_payload(self):
+        data = purlin_server.read_report_payload(self.tmp)
+        return {f['name']: f for f in data['features']}['locking']['receipt']
+
+    @pytest.mark.proof("report_data", "PROOF-34", "RULE-33", tier="integration")
+    def test_receipt_carries_version_run_commit_and_platform_staleness(self):
+        """RULE-33: a stale receipt reads the same whether the hash format
+        moved, the evidence was never tied to a run, or a runner re-proved a
+        platform. These three keys tell them apart."""
+        import issue_receipts
+
+        self._build()
+        marker = issue_receipts.write_run_marker(self.tmp)
+        issue_receipts.main(self.tmp, quiet=True)
+        self._git('add', '-A')
+        self._git('commit', '-q', '-m', 'verify')
+
+        receipt = self._receipt_payload()
+        assert receipt['vhash_version'] == 2, receipt
+        assert receipt['test_run_commit'] == marker['commit'], receipt
+        assert receipt['platform_stale'] == [], receipt
+        assert receipt['stale'] is False, receipt
+
+        # A version 1 receipt: all three keys are present, not omitted.
+        receipt_path = os.path.join(self.tmp, 'specs', 'app',
+                                    'locking.receipt.json')
+        with open(receipt_path) as f:
+            v2 = json.load(f)
+        with open(receipt_path, 'w') as f:
+            json.dump({'feature': 'locking', 'vhash': v2['vhash'],
+                       'commit': v2['commit'], 'timestamp': v2['timestamp'],
+                       'rules': v2['rules'],
+                       'proofs': [{'id': p['id'], 'rule': p['rule'],
+                                   'status': p['status']}
+                                  for p in v2['proofs']]}, f)
+        receipt = self._receipt_payload()
+        assert receipt['vhash_version'] == 1, \
+            "a receipt with no vhash_version key was written under version 1"
+        assert receipt['test_run_commit'] is None, receipt
+        assert receipt['platform_stale'] == [], receipt
+
+        # Re-issue v2, then commit the scoped file again: the platform whose
+        # evidence moved is named, and only that one.
+        with open(receipt_path, 'w') as f:
+            json.dump(v2, f, indent=2)
+        assert self._receipt_payload()['platform_stale'] == []
+        _write_proofs(self.tmp, 'locking', [
+            {'feature': 'locking', 'id': 'PROOF-2', 'rule': 'RULE-2',
+             'test_file': 'dev/t_win.py', 'test_name': 'test_msvcrt_again',
+             'status': 'pass', 'tier': 'unit'}], platform='windows-2022')
+        self._git('add', '-A')
+        self._git('commit', '-q', '-m', 'reproved on windows')
+        receipt = self._receipt_payload()
+        assert receipt['platform_stale'] == ['windows-2022'], receipt

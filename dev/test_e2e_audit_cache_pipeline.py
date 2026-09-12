@@ -1710,19 +1710,15 @@ Payments.
         subprocess.run(['git', 'commit', '-m', 'init'],
                        cwd=self.tmp_dir, capture_output=True)
 
-        # Compute vhash for verified_feat and write matching receipt
-        from purlin_server import _compute_vhash, _build_coverage_rules, \
-            _build_proof_lookup, _collect_relevant_proofs
+        # Compute vhash for verified_feat and write matching receipt, through
+        # the one verdict function every surface uses (sync_status RULE-54).
         features = _scan_specs(self.tmp_dir)
         all_proofs = _read_proofs(self.tmp_dir)
-        vf_info = features['verified_feat']
-        vf_rules, _ = _build_coverage_rules('verified_feat', vf_info, features, {})
-        vf_active = [(k, l, s) for k, l, s, d in vf_rules if not d]
-        vf_all_proofs = _collect_relevant_proofs('verified_feat', vf_rules, all_proofs)
-        vf_vhash = _compute_vhash(
-            {k: True for k, _, _ in vf_active}, vf_all_proofs
-        )
-        _write_receipt('verified_feat', vf_vhash)
+        registry, _ = purlin_server._platform_registry({})
+        vf_verdict = purlin_server._feature_verdict(
+            'verified_feat', features['verified_feat'], features, all_proofs,
+            {}, self.tmp_dir, registry)
+        _write_receipt('verified_feat', vf_verdict['vhash'])
 
         # Recommit with receipt
         subprocess.run(['git', 'add', '.'], cwd=self.tmp_dir, capture_output=True)
@@ -2255,18 +2251,29 @@ class TestStatusReportsBothGauges:
         # Prove and receipt every rule so the feature reaches VERIFIED.
         features = _scan_specs(self.tmp_dir)
         all_proofs = _read_proofs(self.tmp_dir)
-        rule_entries, _ = purlin_server._build_coverage_rules(
-            'login', features['login'], features, {})
-        active = [(k, l, s) for k, l, s, d in rule_entries if not d]
-        relevant = purlin_server._collect_relevant_proofs('login', rule_entries, all_proofs)
-        vhash = purlin_server._compute_vhash({k: True for k, _, _ in active}, relevant)
+        registry, _ = purlin_server._platform_registry({})
+        verdict = purlin_server._feature_verdict(
+            'login', features['login'], features, all_proofs, {},
+            self.tmp_dir, registry)
+        vhash = verdict['vhash']
+        rules_text = verdict['rules_text']
+        relevant = verdict['relevant_proofs']
         with open(os.path.join(self.tmp_dir, 'specs', 'auth', 'login.receipt.json'),
                   'w', encoding='utf-8') as f:
-            json.dump({'feature': 'login', 'vhash': vhash, 'commit': 'x',
+            json.dump({'feature': 'login', 'vhash': vhash, 'vhash_version': 2,
+                       'commit': 'x',
                        'timestamp': '2026-01-01T00:00:00+00:00',
-                       'rules': sorted(k for k, _, _ in active),
-                       'proofs': [{'id': p['id'], 'rule': p['rule'],
-                                   'status': p['status']} for p in relevant]}, f)
+                       'rules': sorted(rules_text),
+                       'rule_hashes': {k: purlin_server._rule_text_hash(rules_text[k])
+                                       for k in sorted(rules_text)},
+                       'proofs': [{'feature': p.get('feature', ''), 'id': p['id'],
+                                   'rule': p['rule'], 'status': p['status'],
+                                   'tier': p.get('tier', ''),
+                                   'test_file': p.get('test_file', ''),
+                                   'test_name': p.get('test_name', ''),
+                                   'platform': p.get('platform')}
+                                  for p in relevant],
+                       'evidence': {'test_run': None, 'proof_files': []}}, f)
 
         def login_block(output):
             """The per-feature detail block, which may end the output."""

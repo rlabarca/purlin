@@ -188,6 +188,7 @@ run_suite "All Pytest Tests" run_pytest \
   "$SCRIPT_DIR/test_purlin_report_markup.py" \
   "$SCRIPT_DIR/test_purlin_version.py" \
   "$SCRIPT_DIR/test_report_data.py" \
+  "$SCRIPT_DIR/test_receipts.py" \
   "$SCRIPT_DIR/test_verify_gate.py" \
   "$SCRIPT_DIR/test_drift.py" \
   "$SCRIPT_DIR/test_pre_push_hook.py" \

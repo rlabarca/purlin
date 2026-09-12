@@ -1490,6 +1490,49 @@ class TestSkillVerify:
         finally:
             shutil.rmtree(tmp)
 
+    @pytest.mark.proof("skill_verify", "PROOF-11", "RULE-11", tier="integration")
+    def test_receipt_shape_lives_in_the_format_file(self):
+        """RULE-11: the receipt contract and the vhash formula each live in one
+        place; the skill points at both instead of restating either."""
+        content = _read('verify')
+        assert 'references/formats/receipt_format.md' in content, (
+            "the skill must point at the receipt format file rather than "
+            "carry its own copy of the shape")
+        assert 'RULE-6' in content and 'sync_status' in content, (
+            "the vhash formula is stated once, in sync_status RULE-6; the "
+            "skill must point at it")
+
+        for v2_field in ('vhash_version', 'rule_hashes', 'evidence',
+                         'awaiting_runner'):
+            assert v2_field in content, \
+                f"the skill must name the v2 receipt field {v2_field}"
+
+        # The v1 body it used to carry is gone, so there is nothing left to
+        # drift from the format file.
+        assert '"rules": ["RULE-1"' not in content, \
+            "the version 1 receipt body must not survive in the skill"
+        assert '"proofs": [' not in content, \
+            "the version 1 receipt body must not survive in the skill"
+        assert 'sorted RULE IDs' not in content, \
+            "the skill must not restate the vhash formula"
+
+    @pytest.mark.proof("skill_verify", "PROOF-12", "RULE-12", tier="integration")
+    def test_skill_states_the_run_marker_contract(self):
+        """RULE-12: the refusal, its override, and what the override costs."""
+        content = _read('verify')
+        assert 'run marker' in content, \
+            "the skill must say a receipt rests on a recorded run"
+        assert 'refuses' in content, \
+            "the skill must say the issuer refuses without one"
+        assert '--no-run-check' in content, \
+            "the skill must name the override"
+        assert 'evidence.test_run: null' in content, (
+            "the skill must say the override is recorded in the receipt, not "
+            "silent")
+        assert 'not executed' in content or 'did not execute' in content, (
+            "the skill must state that unexecuted, unwitnessed evidence is a "
+            "skip")
+
     @pytest.mark.proof("skill_verify", "PROOF-1", "RULE-1")
     def test_has_frontmatter(self):
         content = _read('verify')

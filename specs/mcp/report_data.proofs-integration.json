@@ -72,6 +72,15 @@
       "test_name": "test_each_feature_gauge_carries_its_own_coverage",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-34",
+      "rule": "RULE-33",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_receipt_carries_version_run_commit_and_platform_staleness",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }
