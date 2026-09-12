@@ -194,6 +194,7 @@ run_suite "All Pytest Tests" run_pytest \
   "$SCRIPT_DIR/test_init_update.py" \
   "$SCRIPT_DIR/test_verify_gate.py" \
   "$SCRIPT_DIR/test_drift.py" \
+  "$SCRIPT_DIR/test_pre_commit_hook.py" \
   "$SCRIPT_DIR/test_pre_push_hook.py" \
   "$SCRIPT_DIR/test_e2e_spec_from_input.py" \
   "$SCRIPT_DIR/test_e2e_spec_migration.py" \

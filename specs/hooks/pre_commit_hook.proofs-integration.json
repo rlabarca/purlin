@@ -1,0 +1,77 @@
+{
+  "tier": "integration",
+  "proofs": [
+    {
+      "feature": "pre_commit_hook",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_pre_commit_hook.py",
+      "test_name": "test_skip_digest_env_prints_one_line_and_does_nothing",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_commit_hook",
+      "id": "PROOF-2",
+      "rule": "RULE-1",
+      "test_file": "dev/test_pre_commit_hook.py",
+      "test_name": "test_off_mode_prints_one_line_and_does_nothing",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_commit_hook",
+      "id": "PROOF-3",
+      "rule": "RULE-2",
+      "test_file": "dev/test_pre_commit_hook.py",
+      "test_name": "test_empty_candidate_does_not_end_the_search",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_commit_hook",
+      "id": "PROOF-4",
+      "rule": "RULE-2",
+      "test_file": "dev/test_pre_commit_hook.py",
+      "test_name": "test_no_candidate_carries_the_server_names_every_path",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_commit_hook",
+      "id": "PROOF-5",
+      "rule": "RULE-3",
+      "test_file": "dev/test_pre_commit_hook.py",
+      "test_name": "test_no_purlin_dir_silent_then_unusable_config_assumes_auto",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_commit_hook",
+      "id": "PROOF-6",
+      "rule": "RULE-4",
+      "test_file": "dev/test_pre_commit_hook.py",
+      "test_name": "test_auto_stages_digest_then_survives_a_generator_raise",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_commit_hook",
+      "id": "PROOF-7",
+      "rule": "RULE-5",
+      "test_file": "dev/test_pre_commit_hook.py",
+      "test_name": "test_warn_missing_then_stale_then_fresh",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_commit_hook",
+      "id": "PROOF-8",
+      "rule": "RULE-6",
+      "test_file": "dev/test_pre_commit_hook.py",
+      "test_name": "test_generator_traceback_reaches_the_caller",
+      "status": "pass",
+      "tier": "integration"
+    }
+  ]
+}
