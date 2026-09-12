@@ -3,69 +3,6 @@
   "proofs": [
     {
       "feature": "sync_status",
-      "id": "PROOF-48",
-      "rule": "RULE-27",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_report_data_per_feature_audit_data",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-49",
-      "rule": "RULE-28",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_cache_entries_without_feature_excluded_from_per_feature_but_counted_globally",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-78",
-      "rule": "RULE-46",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_project_gauge_is_weighted_by_measurement_coverage",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-90",
-      "rule": "RULE-56",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_integrity_splits_per_platform_and_design_never_does",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-100",
-      "rule": "RULE-61",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_a_cached_grade_dies_with_the_inputs_it_was_graded_against",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-88",
-      "rule": "RULE-54",
-      "test_file": "dev/test_receipts.py",
-      "test_name": "test_vhash_and_active_rules_have_exactly_one_call_site",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-88",
-      "rule": "RULE-54",
-      "test_file": "dev/test_receipts.py",
-      "test_name": "test_issuer_and_payload_agree_on_every_vhash",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "sync_status",
       "id": "PROOF-91",
       "rule": "RULE-35",
       "test_file": "dev/test_mcp_server.py",
@@ -259,6 +196,69 @@
       "rule": "RULE-64",
       "test_file": "dev/test_mcp_server.py",
       "test_name": "test_a_build_parses_each_test_file_at_most_once",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-48",
+      "rule": "RULE-27",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_report_data_per_feature_audit_data",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-49",
+      "rule": "RULE-28",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_cache_entries_without_feature_excluded_from_per_feature_but_counted_globally",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-78",
+      "rule": "RULE-46",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_project_gauge_is_weighted_by_measurement_coverage",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-90",
+      "rule": "RULE-56",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_integrity_splits_per_platform_and_design_never_does",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-100",
+      "rule": "RULE-61",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_a_cached_grade_dies_with_the_inputs_it_was_graded_against",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-88",
+      "rule": "RULE-54",
+      "test_file": "dev/test_receipts.py",
+      "test_name": "test_vhash_and_active_rules_have_exactly_one_call_site",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-88",
+      "rule": "RULE-54",
+      "test_file": "dev/test_receipts.py",
+      "test_name": "test_issuer_and_payload_agree_on_every_vhash",
       "status": "pass",
       "tier": "integration"
     }

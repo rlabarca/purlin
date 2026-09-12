@@ -1,108 +1,62 @@
 {
-  "feature": "verify_gate",
-  "vhash": "bf7f2b4a",
+  "feature": "consumer_ci",
+  "vhash": "0f610585",
   "vhash_version": 2,
   "commit": "f6f013a876e43d1964929356c868643020da4218",
   "timestamp": "2026-09-12T16:25:51.725741+00:00",
   "rules": [
     "RULE-1",
-    "RULE-10",
-    "RULE-11",
-    "RULE-12",
     "RULE-2",
     "RULE-3",
-    "RULE-4",
-    "RULE-5",
-    "RULE-6",
-    "RULE-7",
-    "RULE-8",
-    "RULE-9",
-    "security_no_dangerous_patterns/RULE-1",
-    "security_no_dangerous_patterns/RULE-2",
-    "security_no_dangerous_patterns/RULE-3",
-    "security_no_dangerous_patterns/RULE-4",
-    "security_no_dangerous_patterns/RULE-5",
-    "security_no_dangerous_patterns/RULE-6"
+    "verify_gate/RULE-1",
+    "verify_gate/RULE-10",
+    "verify_gate/RULE-11",
+    "verify_gate/RULE-12",
+    "verify_gate/RULE-2",
+    "verify_gate/RULE-3",
+    "verify_gate/RULE-4",
+    "verify_gate/RULE-5",
+    "verify_gate/RULE-6",
+    "verify_gate/RULE-7",
+    "verify_gate/RULE-8",
+    "verify_gate/RULE-9"
   ],
   "rule_hashes": {
-    "RULE-1": "97ca52c3eba938ff",
-    "RULE-10": "7171ccb76ed0557f",
-    "RULE-11": "57270bddbe706e9c",
-    "RULE-12": "1c9694487f75857c",
-    "RULE-2": "6f8fb117af6f46df",
-    "RULE-3": "b922845f2a62ee10",
-    "RULE-4": "7b72170a61644cfb",
-    "RULE-5": "b8811bdc9a3c176b",
-    "RULE-6": "33522399c2c45d52",
-    "RULE-7": "fe72f340117f543a",
-    "RULE-8": "680bf041c8fd8bc4",
-    "RULE-9": "ac76dd1129a0869d",
-    "security_no_dangerous_patterns/RULE-1": "088d6b3d2448029d",
-    "security_no_dangerous_patterns/RULE-2": "5472c9b7f8b25c0e",
-    "security_no_dangerous_patterns/RULE-3": "cf98992127576281",
-    "security_no_dangerous_patterns/RULE-4": "f53ddfe0e85bc1be",
-    "security_no_dangerous_patterns/RULE-5": "40da78efb052bece",
-    "security_no_dangerous_patterns/RULE-6": "1f7d90da54835852"
+    "RULE-1": "24fb1c4bc23bc8ee",
+    "RULE-2": "65f51b972c3b15b1",
+    "RULE-3": "692744dbe047cf04",
+    "verify_gate/RULE-1": "97ca52c3eba938ff",
+    "verify_gate/RULE-10": "7171ccb76ed0557f",
+    "verify_gate/RULE-11": "57270bddbe706e9c",
+    "verify_gate/RULE-12": "1c9694487f75857c",
+    "verify_gate/RULE-2": "6f8fb117af6f46df",
+    "verify_gate/RULE-3": "b922845f2a62ee10",
+    "verify_gate/RULE-4": "7b72170a61644cfb",
+    "verify_gate/RULE-5": "b8811bdc9a3c176b",
+    "verify_gate/RULE-6": "33522399c2c45d52",
+    "verify_gate/RULE-7": "fe72f340117f543a",
+    "verify_gate/RULE-8": "680bf041c8fd8bc4",
+    "verify_gate/RULE-9": "ac76dd1129a0869d"
   },
   "proofs": [
     {
-      "feature": "security_no_dangerous_patterns",
+      "feature": "consumer_ci",
       "id": "PROOF-1",
       "rule": "RULE-1",
       "status": "pass",
       "tier": "unit",
-      "test_file": "dev/test_security.py",
-      "test_name": "test_no_dynamic_code_execution",
+      "test_file": "dev/test_consumer_ci.py",
+      "test_name": "test_fixture_workflows_equal_the_rendered_templates",
       "platform": null
     },
     {
-      "feature": "security_no_dangerous_patterns",
+      "feature": "consumer_ci",
       "id": "PROOF-2",
       "rule": "RULE-2",
       "status": "pass",
       "tier": "unit",
-      "test_file": "dev/test_security.py",
-      "test_name": "test_no_shell_true",
-      "platform": null
-    },
-    {
-      "feature": "security_no_dangerous_patterns",
-      "id": "PROOF-3",
-      "rule": "RULE-3",
-      "status": "pass",
-      "tier": "unit",
-      "test_file": "dev/test_security.py",
-      "test_name": "test_no_os_system",
-      "platform": null
-    },
-    {
-      "feature": "security_no_dangerous_patterns",
-      "id": "PROOF-4",
-      "rule": "RULE-4",
-      "status": "pass",
-      "tier": "unit",
-      "test_file": "dev/test_security.py",
-      "test_name": "test_no_hardcoded_credentials",
-      "platform": null
-    },
-    {
-      "feature": "security_no_dangerous_patterns",
-      "id": "PROOF-5",
-      "rule": "RULE-5",
-      "status": "pass",
-      "tier": "unit",
-      "test_file": "dev/test_security.py",
-      "test_name": "test_subprocess_uses_list_args",
-      "platform": null
-    },
-    {
-      "feature": "security_no_dangerous_patterns",
-      "id": "PROOF-6",
-      "rule": "RULE-6",
-      "status": "pass",
-      "tier": "integration",
-      "test_file": "dev/test_security.py",
-      "test_name": "test_source_url_never_reaches_git_in_option_position",
+      "test_file": "dev/test_consumer_ci.py",
+      "test_name": "test_fixture_is_a_complete_tracked_consumer_project",
       "platform": null
     },
     {
@@ -226,6 +180,16 @@
       "platform": null
     }
   ],
+  "manual": [
+    {
+      "feature": "consumer_ci",
+      "proof_id": "PROOF-3",
+      "rule": "RULE-3",
+      "email": "rich.labarca@gmail.com",
+      "date": "2026-09-12",
+      "sha": "44ef47fa"
+    }
+  ],
   "evidence": {
     "test_run": {
       "at": "2026-09-12T16:25:13.469632+00:00",
@@ -237,20 +201,11 @@
     },
     "proof_files": [
       {
-        "file": "specs/_anchors/security_no_dangerous_patterns.proofs-integration.json",
-        "tier": "integration",
-        "platform": null,
-        "commit": "a5d71a013546313e7bc4cb298b89ed7e69720ea9",
-        "committed_at": "2026-09-11T22:36:11-04:00",
-        "runner": null,
-        "executed_in_test_run": true
-      },
-      {
-        "file": "specs/_anchors/security_no_dangerous_patterns.proofs-unit.json",
+        "file": "specs/ci/consumer_ci.proofs-unit.json",
         "tier": "unit",
         "platform": null,
-        "commit": "a5d71a013546313e7bc4cb298b89ed7e69720ea9",
-        "committed_at": "2026-09-11T22:36:11-04:00",
+        "commit": "abdf976ddb7e4bec9f1be09c6b9dcfc4c80cb727",
+        "committed_at": "2026-09-12T12:00:46-04:00",
         "runner": null,
         "executed_in_test_run": true
       },
