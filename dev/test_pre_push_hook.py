@@ -409,6 +409,50 @@ class TestRule4AllPassingAllows:
             f"False-positive PUSH BLOCKED:\n{output}")
 
 
+def _gate_module():
+    """scripts/hooks/pre_push_gate.py imported by path, the way a hook loads
+    it: there is no installable package to import it from."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "pre_push_gate_under_test", GATE_SCRIPT)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _registry_framework_ids():
+    """Every framework id references/supported_frameworks.md registers.
+
+    Both plugin tables carry a `Display name` column and no other table does,
+    so a table is a plugin table when its header names that column. The id is
+    the first word of the cell, which is what the config value and the tuple
+    spell (`pytest (Python)` is `pytest`).
+    """
+    path = os.path.join(PROJECT_ROOT, "references", "supported_frameworks.md")
+    with open(path, encoding="utf-8") as fh:
+        lines = fh.read().splitlines()
+
+    ids, name_col = set(), None
+    for line in lines:
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            name_col = None
+            continue
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        if "Display name" in cells:
+            name_col = cells.index("Display name")
+            continue
+        if name_col is None or set(stripped) <= set("|-: "):
+            continue
+        if name_col < len(cells):
+            display = cells[name_col].strip("*` ")
+            if display:
+                ids.add(display.split()[0])
+    assert ids, f"no Display name table rows found in {path}"
+    return ids
+
+
 # ---------------------------------------------------------------------------
 # RULE-5: framework list and auto-detection
 # ---------------------------------------------------------------------------
@@ -454,6 +498,33 @@ class TestRule5FrameworkDetection:
         assert "frameworks=pytest,shell" in out, out
         assert "bogus" in err, f"Expected 'bogus' named on stderr, got:\n{err}"
         assert "bogus" not in out, out
+
+    @pytest.mark.proof("pre_push_hook", "PROOF-31", "RULE-5", tier="integration")
+    def test_known_frameworks_equals_the_registry_id_set(self, tmp_path):
+        """KNOWN_FRAMEWORKS is the id set of the framework registry, taken over
+        both plugin tables of references/supported_frameworks.md, and a
+        registered id reaches the shell half instead of being dropped."""
+        registry_ids = _registry_framework_ids()
+        known = set(_gate_module().KNOWN_FRAMEWORKS)
+        expected = {"pytest", "vitest", "jest", "c", "php", "sql", "shell", "xunit"}
+
+        assert known == registry_ids, (
+            "KNOWN_FRAMEWORKS in scripts/hooks/pre_push_gate.py must equal the "
+            "id set of references/supported_frameworks.md; tuple has "
+            f"{sorted(known)}, registry has {sorted(registry_ids)}")
+        assert known == expected, sorted(known)
+        assert registry_ids == expected, sorted(registry_ids)
+
+        tmpdir = str(tmp_path)
+        _create_test_project(tmpdir, num_rules=1)
+        _set_config_field(tmpdir, "test_framework", "xunit")
+
+        rc, out, err = _run_gate(tmpdir, "config", "--project-root", tmpdir)
+        assert rc == 0, f"{out}\n{err}"
+        assert "frameworks=xunit" in out, out
+        assert "xunit" not in err, (
+            "a registered framework must not be reported as unknown, got:\n"
+            f"{err}")
 
 
 # ---------------------------------------------------------------------------

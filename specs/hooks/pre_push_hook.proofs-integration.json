@@ -192,6 +192,15 @@
     },
     {
       "feature": "pre_push_hook",
+      "id": "PROOF-31",
+      "rule": "RULE-5",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_known_frameworks_equals_the_registry_id_set",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
       "id": "PROOF-4",
       "rule": "RULE-4",
       "test_file": "dev/test_pre_push_hook.py",

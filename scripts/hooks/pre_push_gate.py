@@ -59,10 +59,15 @@ _VERIFIED = 'VERIFIED'
 _FAILING = 'FAILING'
 _PASSING = 'PASSING'
 
-# Every framework the shell half has a runner arm for, plus the ones Purlin
-# ships a proof plugin for. Detection order is the order of the Detection
-# table in references/supported_frameworks.md.
-KNOWN_FRAMEWORKS = ('pytest', 'vitest', 'jest', 'c', 'php', 'sql', 'shell')
+# Every framework id the registry references/supported_frameworks.md lists, in
+# both its plugin tables: the id is the first word of a row's Display name
+# cell. The order is the Detection table's order, then shell (which has no
+# detection heuristic), then the manual-setup plugins. A name outside this
+# tuple is dropped with a warning; a name in it that the shell half has no
+# runner arm for is kept and reported as unrun, which is already the case for
+# c, php and sql. Governed by specs/hooks/pre_push_hook.md RULE-5.
+KNOWN_FRAMEWORKS = (
+    'pytest', 'vitest', 'jest', 'c', 'php', 'sql', 'shell', 'xunit')
 
 _RULE = '=' * 63
 

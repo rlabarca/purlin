@@ -765,3 +765,53 @@ Deferrals and adjacent findings:
 - `docs/testing-workflow-guide.md`'s "Writing a custom plugin" sample still writes its proof
   file without a temp file at all. B4 rewrites that section and is the right place to make the
   sample show the RULE-24 write.
+
+### B5
+
+`fix(pre_push_hook): KNOWN_FRAMEWORKS names xunit, and a proof pins the tuple to the framework registry`
+
+Files touched:
+
+- `scripts/hooks/pre_push_gate.py` (`KNOWN_FRAMEWORKS` gains `'xunit'`; the comment above it now
+  names the registry and both of its plugin tables as the source of the ids)
+- `specs/hooks/pre_push_hook.md` (RULE-5 amended, PROOF-31 added)
+- `dev/test_pre_push_hook.py` (`_gate_module`, `_registry_framework_ids`,
+  `TestRule5FrameworkDetection.test_known_frameworks_equals_the_registry_id_set`)
+- `specs/hooks/pre_push_hook.proofs-integration.json` (1 new PROOF-31 entry)
+
+Maxima left in `specs/hooks/pre_push_hook.md`: RULE-16 / PROOF-31. No new RULE id; RULE-5 was
+amended in place.
+
+Test counts, `dev/test_pre_push_hook.py` run whole:
+
+- before: 27 passed, 0 skipped
+- after: 28 passed, 0 skipped (+1)
+
+Mutations, both restored, the file run whole each time:
+
+1. `'xunit'` removed from `KNOWN_FRAMEWORKS`. 1 failed, 27 passed, with
+   "AssertionError: KNOWN_FRAMEWORKS in scripts/hooks/pre_push_gate.py must equal the id set of
+   references/supported_frameworks.md; tuple has ['c', 'jest', 'php', 'pytest', 'shell', 'sql',
+   'vitest'], registry has ['c', 'jest', 'php', 'pytest', 'shell', 'sql', 'vitest', 'xunit']".
+2. The `| **xUnit** |` row deleted from the Additional Plugins table of
+   `references/supported_frameworks.md`, the tuple left correct. Same 1 failed, 27 passed, the
+   two sides swapped ("Extra items in the left set: 'xunit'"), so the proof reads the registry
+   rather than a second hardcoded list.
+
+Decisions:
+
+- The registry source is `references/supported_frameworks.md`, not `scaffold.py`'s `_DETECTORS`:
+  `_DETECTORS` lists six ids (no shell, which has no detection heuristic, and no xunit, which is
+  a manual-setup plugin), while the reference lists all eight across its two plugin tables. That
+  is also the file `skill_init` RULE-48/63 already calls the framework registry. The id is the
+  first word of a row's **Display name** cell, which is what the config value spells; RULE-5 and
+  the test both say so.
+- The tuple stays a tuple: the hook never reads markdown at runtime, so the proof is what keeps
+  the two in step, not a parse in the gate.
+- Adding `xunit` makes it behave exactly like `c`, `php` and `sql`: `resolve_frameworks` keeps it
+  instead of dropping it with a stderr warning, and `pre-push.sh` has no runner arm for it, so it
+  falls to the existing `*)` "no pre-push runner arm" line and the verdict still runs. No change
+  to `detect_frameworks`, because the registry does not auto-detect xUnit.
+
+Deferrals: none. No other file in `docs/`, `skills/` or `references/` enumerates the set of
+names the hook accepts, so nothing went stale with this edit.
