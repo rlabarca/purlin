@@ -62,6 +62,35 @@ class TestMCPProtocol:
         assert names == ["drift", "purlin_config", "sync_status"]
         assert len(tools) == 3
 
+        # The three tools must be the three the manifest declares, not merely
+        # three tools with the right count.
+        manifest_path = os.path.join(
+            os.path.dirname(__file__), '..', 'scripts', 'mcp', 'manifest.json')
+        with open(manifest_path, encoding='utf-8') as f:
+            manifest = json.load(f)
+        assert sorted(t["name"] for t in manifest["tools"]) == names, (
+            f"tools/list names {names} do not match manifest.json "
+            f"{sorted(t['name'] for t in manifest['tools'])}")
+
+        # Each advertised tool carries a description and the input schema a
+        # caller has to fill in. Without this an argument could be dropped from
+        # a schema and every name assertion above would still pass.
+        expected_properties = {
+            "sync_status": ["role"],
+            "purlin_config": ["action", "key", "value"],
+            "drift": ["role", "since"],
+        }
+        by_name = {t["name"]: t for t in tools}
+        for name, props in expected_properties.items():
+            tool = by_name[name]
+            assert tool["description"].strip(), f"{name} advertises no description"
+            schema = tool["inputSchema"]
+            assert schema["type"] == "object", (
+                f"{name} inputSchema type is {schema['type']!r}, expected 'object'")
+            assert sorted(schema["properties"]) == props, (
+                f"{name} inputSchema properties {sorted(schema['properties'])} "
+                f"!= {props}")
+
     @pytest.mark.proof("mcp_transport", "PROOF-3", "RULE-3")
     def test_notification_no_response(self):
         request = {"jsonrpc": "2.0", "method": "notifications/initialized"}
@@ -250,10 +279,24 @@ class TestSyncStatus:
                 '## Rules\n- RULE-1: No eval\n\n'
                 '## Proof\n- PROOF-1 (RULE-1): Grep for eval\n'
             )
+        # An otherwise identical anchor WITHOUT the `> Global: true` line, so
+        # the flag has to be read off the metadata rather than off "is an anchor".
+        with open(os.path.join(anchor_dir, 'local_only.md'), 'w') as f:
+            f.write(
+                '# Anchor: local_only\n\n'
+                '## What it does\nNo eval.\n\n'
+                '## Rules\n- RULE-1: No eval\n\n'
+                '## Proof\n- PROOF-1 (RULE-1): Grep for eval\n'
+            )
         features = purlin_server._scan_specs(self.project_root)
         assert 'security_no_eval' in features
         assert features['security_no_eval']['is_global'] is True
         assert features['security_no_eval']['is_anchor'] is True
+        assert 'local_only' in features
+        assert features['local_only']['is_global'] is False, (
+            "an anchor without '> Global: true' must not be flagged global: "
+            f"{features['local_only']}")
+        assert features['local_only']['is_anchor'] is True
 
     @pytest.mark.proof("sync_status", "PROOF-9", "RULE-9")
     def test_global_anchor_auto_applies(self):
@@ -331,8 +374,13 @@ class TestSyncStatus:
              "status": "pass", "tier": "unit"},
         ])
         result = purlin_server.sync_status(self.project_root)
-        # Structural proofs count toward VERIFIED
+        # RULE-7: a grep-based entry counts exactly as a behavioral one does.
         assert 'refs: PASSING' in result
+        assert '1/1 rules proved' in result, (
+            f"a grep-based proof must count toward coverage:\n{result}")
+        for token in ('STRONG', 'WEAK', 'HOLLOW', 'structural'):
+            assert token not in result, (
+                f"coverage must not grade proof quality; found {token!r} in:\n{result}")
 
     @pytest.mark.proof("sync_status", "PROOF-12", "RULE-12")
     def test_unresolved_requires_warning(self):
@@ -487,8 +535,13 @@ class TestSyncStatus:
              "status": "pass", "tier": "unit"},
         ])
         result = purlin_server.sync_status(self.project_root)
-        # All proofs count equally — grep-based proofs earn PASSING
+        # All proofs count equally: grep-based proofs earn PASSING
         assert 'refs: PASSING' in result
+        assert '1/1 rules proved' in result, (
+            f"a grep-based proof must count toward coverage:\n{result}")
+        for token in ('STRONG', 'WEAK', 'HOLLOW', 'structural'):
+            assert token not in result, (
+                f"coverage must not grade proof quality; found {token!r} in:\n{result}")
 
     @pytest.mark.proof("sync_status", "PROOF-16", "RULE-16")
     def test_warns_uncommitted_spec_changes(self):
@@ -531,6 +584,62 @@ class TestSyncStatus:
         result = purlin_server.sync_status(self.project_root)
         assert 'Uncommitted' not in result
 
+    @pytest.mark.proof("sync_status", "PROOF-17", "RULE-17")
+    def test_grep_and_behavioral_detail_blocks_are_identical(self):
+        """RULE-17: no visual distinction between grep-based and behavioral proofs.
+
+        Not "both say PASSING somewhere" but "the two blocks are the same text
+        once the feature name is swapped": that is what leaves no room for a
+        `(structural)` tag, a `not counted` label or a separate section.
+        """
+        self._write_spec('grep_only', (
+            '# Feature: grep_only\n\n'
+            '## What it does\nDocs.\n\n'
+            '## Rules\n- RULE-1: README carries a Usage heading\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): Grep README.md for "## Usage"\n'
+        ))
+        self._write_proofs('grep_only', [
+            {"feature": "grep_only", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "tests/test_docs.py", "test_name": "test_usage",
+             "status": "pass", "tier": "unit"},
+        ])
+        self._write_spec('behavioral', (
+            '# Feature: behavioral\n\n'
+            '## What it does\nAPI.\n\n'
+            '## Rules\n- RULE-1: Returns 200 on a valid request\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): POST a valid request; assert 200\n'
+        ))
+        self._write_proofs('behavioral', [
+            {"feature": "behavioral", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "tests/test_api.py", "test_name": "test_valid",
+             "status": "pass", "tier": "unit"},
+        ])
+        result = purlin_server.sync_status(self.project_root)
+
+        def _block(name):
+            lines = result.split('\n')
+            start = next(i for i, l in enumerate(lines) if l == f'{name}: PASSING')
+            out = []
+            for line in lines[start:]:
+                if not line.strip():
+                    break
+                out.append(line)
+            return out
+
+        grep_block = _block('grep_only')
+        behavioral_block = _block('behavioral')
+        assert grep_block[1].strip() == '1/1 rules proved \u2713', grep_block
+        # Same shape, line for line, once the feature name and the vhash (which
+        # binds the rule text) are taken out.
+        def _shape(block, name):
+            return [l.replace(name, '<name>').split('vhash=')[0] for l in block]
+        assert _shape(grep_block, 'grep_only') == _shape(behavioral_block, 'behavioral'), (
+            "a grep-based proof must render exactly like a behavioral one:\n"
+            f"{grep_block}\n{behavioral_block}")
+        for token in ('not counted', 'structural', 'Structural'):
+            assert token not in result, (
+                f"found the distinguishing label {token!r} in:\n{result}")
+
     @pytest.mark.proof("sync_status", "PROOF-18", "RULE-18")
     def test_summary_table(self):
         """sync_status output begins with a summary table."""
@@ -570,25 +679,60 @@ class TestSyncStatus:
             '- PROOF-2 (RULE-2): Run gamma Y test\n'
         ))
 
+        # Feature 4: a failing proof (FAILING leads the priority order)
+        self._write_spec('delta', (
+            '# Feature: delta\n\n'
+            '## What it does\nDelta feature.\n\n'
+            '## Rules\n- RULE-1: Delta does X\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): Run delta test\n'
+        ))
+        self._write_proofs('delta', [
+            {"feature": "delta", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "tests/test.py", "test_name": "test_delta",
+             "status": "fail", "tier": "unit"},
+        ])
+
+        # Feature 5: fully proved AND receipted, so VERIFIED
+        self._write_spec('epsilon', (
+            '# Feature: epsilon\n\n'
+            '## What it does\nEpsilon feature.\n\n'
+            '## Rules\n- RULE-1: Epsilon does X\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): Run epsilon test\n'
+        ))
+        self._write_proofs('epsilon', [
+            {"feature": "epsilon", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "tests/test.py", "test_name": "test_epsilon",
+             "status": "pass", "tier": "unit"},
+        ])
+        # The receipt has to carry the vhash the server computes for epsilon,
+        # otherwise it reads as stale and the row never reaches VERIFIED.
+        first_pass = purlin_server.sync_status(self.project_root)
+        epsilon_vhash = re.search(
+            r'epsilon: PASSING\n.*\n\s*vhash=(\w+)', first_pass).group(1)
+        with open(os.path.join(self.spec_dir, 'epsilon.receipt.json'), 'w') as f:
+            json.dump({"feature": "epsilon", "vhash": epsilon_vhash,
+                       "vhash_version": 2, "rules": ["RULE-1"], "proofs": []}, f)
+
         result = purlin_server.sync_status(self.project_root)
 
         # Table starts the output (┌ is first character)
         assert result.startswith('\u250c'), f"Expected table at start, got: {result[:80]}"
 
-        # Summary line — no receipts exist so 0 features VERIFIED
-        assert '0/3 features VERIFIED' in result
+        # Summary line: epsilon is the only receipted feature
+        assert '1/5 features VERIFIED' in result
 
         # Verify table contains all features
         assert '\u2502 alpha' in result
         assert '\u2502 beta' in result
         assert '\u2502 gamma' in result
 
-        # Verify sort order: PARTIAL before PASSING before —
-        beta_idx = result.index('\u2502 beta')
-        alpha_idx = result.index('\u2502 alpha')
-        gamma_idx = result.index('\u2502 gamma')
-        assert beta_idx < alpha_idx < gamma_idx, \
-            "Table should sort: PARTIAL, PASSING, \u2014"
+        # Verify the whole RULE-18 priority order:
+        # FAILING, PARTIAL, PASSING, VERIFIED, UNTESTED
+        order = [result.index('\u2502 ' + n)
+                 for n in ('delta', 'beta', 'alpha', 'epsilon', 'gamma')]
+        assert order == sorted(order), (
+            "Table must sort FAILING, PARTIAL, PASSING, VERIFIED, UNTESTED; got "
+            f"row offsets {order} for delta, beta, alpha, epsilon, gamma:\n{result}")
 
         # Detail section follows after table
         lines = result.split('\n')
@@ -1574,6 +1718,42 @@ class TestDrift:
         ).stdout.strip()
         assert ref == verify_sha, f"Expected ref={verify_sha}, got ref={ref}"
 
+        # A YYYY-MM-DD argument resolves to a commit, not to the date string.
+        ref, desc = purlin_server._resolve_since_anchor(
+            self.project_root, since_arg="2020-01-01")
+        assert desc == "since 2020-01-01", desc
+        assert ref.endswith('^'), f"a date anchor must resolve to <sha>^, got {ref}"
+        resolved = subprocess.run(
+            ['git', 'rev-parse', '--verify', ref[:-1] + '^{commit}'],
+            cwd=self.project_root, capture_output=True, text=True)
+        assert resolved.returncode == 0, (
+            f"date anchor {ref} is not built from a real commit sha: {resolved.stderr}")
+
+        # With no verify: commit in the log, the most recent tag is the anchor.
+        tagged = tempfile.mkdtemp()
+        try:
+            for args in (['git', 'init'],
+                         ['git', 'config', 'user.email', 'test@test.com'],
+                         ['git', 'config', 'user.name', 'Test']):
+                subprocess.run(args, cwd=tagged, capture_output=True, check=True)
+            with open(os.path.join(tagged, 'a.txt'), 'w') as f:
+                f.write('one')
+            subprocess.run(['git', 'add', '.'], cwd=tagged, capture_output=True, check=True)
+            subprocess.run(['git', 'commit', '-m', 'feat: one'],
+                           cwd=tagged, capture_output=True, check=True)
+            subprocess.run(['git', 'tag', 'v1.0.0'], cwd=tagged,
+                           capture_output=True, check=True)
+            with open(os.path.join(tagged, 'a.txt'), 'w') as f:
+                f.write('two')
+            subprocess.run(['git', 'add', '.'], cwd=tagged, capture_output=True, check=True)
+            subprocess.run(['git', 'commit', '-m', 'feat: two'],
+                           cwd=tagged, capture_output=True, check=True)
+            ref, desc = purlin_server._resolve_since_anchor(tagged)
+            assert ref == 'v1.0.0', f"expected the tag as the anchor, got {ref!r}"
+            assert desc.startswith('v1.0.0 ('), desc
+        finally:
+            shutil.rmtree(tagged)
+
     @pytest.mark.proof("drift", "PROOF-2", "RULE-2")
     def test_file_classification(self):
         result_text = purlin_server.drift(self.project_root)
@@ -1649,11 +1829,31 @@ class TestDrift:
         subprocess.run(['git', 'commit', '-m', 'feat: add anchor'],
                        cwd=self.project_root, capture_output=True, check=True)
 
+        # A global anchor applies to login without any > Requires: line, so it
+        # must land in the same total. Without it the (global) half of RULE-5 is
+        # proved by nothing.
+        global_dir = os.path.join(self.project_root, 'specs', '_anchors')
+        os.makedirs(global_dir, exist_ok=True)
+        with open(os.path.join(global_dir, 'security_no_eval.md'), 'w') as f:
+            f.write(
+                '# Anchor: security_no_eval\n\n'
+                '> Global: true\n\n'
+                '## What it does\nNo eval.\n\n'
+                '## Rules\n- RULE-1: No eval\n\n'
+                '## Proof\n- PROOF-1 (RULE-1): Grep for eval\n'
+            )
+        subprocess.run(['git', 'add', '.'], cwd=self.project_root,
+                       capture_output=True, check=True)
+        subprocess.run(['git', 'commit', '-m', 'feat: add global anchor'],
+                       cwd=self.project_root, capture_output=True, check=True)
+
         result_text = purlin_server.drift(self.project_root)
         data = json.loads(result_text)
-        # login has 2 own rules + 2 required from api_conv = 4 total
+        # login: 2 own + 2 required from api_conv + 1 global = 5 total
         assert 'login' in data['proof_status']
-        assert data['proof_status']['login']['total'] == 4
+        assert data['proof_status']['login']['total'] == 5, (
+            "proof_status total must count required AND global anchor rules, got "
+            f"{data['proof_status']['login']}")
 
 
 class TestDriftDetection:
@@ -1702,11 +1902,17 @@ class TestDriftDetection:
 
     @pytest.mark.proof("drift", "PROOF-6", "RULE-6")
     def test_agent_md_not_no_impact(self):
-        """.claude/agents/ .md files must be NEW_BEHAVIOR, not NO_IMPACT."""
+        """agents/ and .claude/agents/ .md files must be NEW_BEHAVIOR, not NO_IMPACT."""
         agent_dir = os.path.join(self.project_root, '.claude', 'agents')
         os.makedirs(agent_dir, exist_ok=True)
         with open(os.path.join(agent_dir, 'helper.md'), 'w') as f:
             f.write('---\nname: helper\n---\nHelper agent.\n')
+        # The third directory RULE-6 names. Dropping it from the classifier is
+        # invisible while only skills/ and .claude/agents/ are exercised.
+        plain_agent_dir = os.path.join(self.project_root, 'agents')
+        os.makedirs(plain_agent_dir, exist_ok=True)
+        with open(os.path.join(plain_agent_dir, 'reviewer.md'), 'w') as f:
+            f.write('---\nname: reviewer\n---\nReviewer agent.\n')
         subprocess.run(['git', 'add', '.'], cwd=self.project_root,
                        capture_output=True, check=True)
         subprocess.run(['git', 'commit', '-m', 'feat: add helper agent'],
@@ -1717,6 +1923,8 @@ class TestDriftDetection:
         categories = {f['path']: f['category'] for f in data['files']}
         assert categories.get('.claude/agents/helper.md') == 'NEW_BEHAVIOR', \
             f"Expected NEW_BEHAVIOR, got {categories.get('.claude/agents/helper.md')}"
+        assert categories.get('agents/reviewer.md') == 'NEW_BEHAVIOR', \
+            f"Expected NEW_BEHAVIOR for agents/reviewer.md, got {categories.get('agents/reviewer.md')}"
 
     @pytest.mark.proof("drift", "PROOF-7", "RULE-7")
     def test_scope_prefix_matching(self):

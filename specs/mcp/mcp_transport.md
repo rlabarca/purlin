@@ -17,10 +17,10 @@
 
 ## Proof
 
-- PROOF-1 (RULE-1): Send initialize request; verify protocolVersion and serverInfo @integration
-- PROOF-2 (RULE-2): Send tools/list; verify exactly 3 tools named sync_status, purlin_config, drift @integration
-- PROOF-3 (RULE-3): Send notifications/initialized; verify no response on stdout @integration
+- PROOF-1 (RULE-1): Send an `initialize` request; verify `result.protocolVersion` equals `2024-11-05` and `result.serverInfo.name` equals `purlin` @integration
+- PROOF-2 (RULE-2): Send `tools/list`; verify the result holds exactly 3 tools whose sorted names are `drift`, `purlin_config`, `sync_status`, that those names equal the names declared in `scripts/mcp/manifest.json`, and that each tool carries a non-empty `description` plus an `inputSchema` of `type` `object` whose property names are `role` for `sync_status`, `action`, `key`, `value` for `purlin_config`, and `since`, `role` for `drift` @integration
+- PROOF-3 (RULE-3): Send the notification `notifications/initialized` with no `id`; verify `handle_request` returns `None` rather than a response object, so there is nothing for the loop to write @integration
 - PROOF-4 (RULE-4): Send invalid JSON; verify error code -32700 @integration
 - PROOF-5 (RULE-5): Send unknown method; verify error code -32601 with method name @integration
 - PROOF-6 (RULE-6): Send tools/call with unknown tool; verify error code -32601 with tool name @integration
-- PROOF-7 (RULE-7): Start server; verify startup message on stderr, not stdout @integration
+- PROOF-7 (RULE-7): Run the server main loop on empty stdin; verify stderr carries the startup text `Purlin MCP server` and that stdout is the empty string @integration

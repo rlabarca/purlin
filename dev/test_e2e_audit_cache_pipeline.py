@@ -422,6 +422,12 @@ class TestAuditCachePipeline:
         assert isinstance(audit_summary['last_audit'], str), (
             f"Expected last_audit to be a non-null string, got {audit_summary['last_audit']!r}"
         )
+        # RULE-26 names last_audit_relative as its own field; the cache was
+        # stamped by write_audit_cache moments ago.
+        assert audit_summary['last_audit_relative'] == 'just now', (
+            f"Expected last_audit_relative 'just now', got "
+            f"{audit_summary['last_audit_relative']!r}"
+        )
 
     @pytest.mark.proof("sync_status", "PROOF-47", "RULE-26", tier="e2e")
     def test_report_data_audit_summary_null_when_no_cache(self):
@@ -477,8 +483,16 @@ class TestAuditCachePipeline:
         assert findings[0]['level'] == 'WEAK', (
             f"Expected finding level WEAK, got {findings[0]['level']}"
         )
+        # The finding must name the proof it grades, otherwise per-feature audit
+        # data cannot be traced back to the cache entry it came from.
+        assert findings[0]['proof_id'] == 'PROOF-3', (
+            f"Expected the WEAK finding to name PROOF-3, got {findings[0]['proof_id']}"
+        )
+        assert findings[0]['rule_id'] == 'RULE-3', (
+            f"Expected the WEAK finding to name RULE-3, got {findings[0]['rule_id']}"
+        )
 
-    @pytest.mark.proof("sync_status", "PROOF-49", "RULE-28", tier="e2e")
+    @pytest.mark.proof("sync_status", "PROOF-49", "RULE-28", tier="integration")
     def test_cache_entries_without_feature_excluded_from_per_feature_but_counted_globally(self):
         """RULE-28 as RULE-61 now leaves it: an entry with no `feature` field is read
         without raising — excluded from per-feature grouping — but it is INVALIDATED
@@ -1096,6 +1110,26 @@ Beta feature.
         # Verify non-empty before clearing
         before = read_audit_cache(self.tmp_dir)
         assert len(before) == 3, f"Expected 3 entries before clear, got {len(before)}"
+
+        # RULE-18 says "atomically replaces": a replacement that fails must
+        # leave the previous cache whole. A truncate-and-rewrite would lose it.
+        real_replace = os.replace
+
+        def _boom(src, dst, *a, **kw):
+            raise OSError("simulated replace failure")
+
+        os.replace = _boom
+        try:
+            with pytest.raises(OSError):
+                clear_audit_cache(self.tmp_dir)
+        finally:
+            os.replace = real_replace
+
+        survived = read_audit_cache(self.tmp_dir)
+        assert len(survived) == 3, (
+            "a failed os.replace must leave the previous cache intact, got "
+            f"{len(survived)} entries"
+        )
 
         # Clear and verify empty
         path = clear_audit_cache(self.tmp_dir)
@@ -2139,7 +2173,10 @@ class TestProofDesignGauge:
         data = json.loads(raw.removeprefix('const PURLIN_DATA = ').removesuffix(';\n'))
         assert data['design_summary'] is not None, "report data must carry design_summary"
         assert data['design_summary']['design'] == 50
+        assert data['design_summary']['provable'] == 1
         assert data['design_summary']['loose'] == 1
+        assert data['design_summary']['unprovable'] == 0
+        assert data['design_summary']['structural'] == 0
 
         # Removing the cache reverts the gauge to null rather than a stale number.
         os.remove(os.path.join(self.tmp_dir, '.purlin', 'cache', 'design_cache.json'))
@@ -2148,7 +2185,7 @@ class TestProofDesignGauge:
         data = json.loads(raw.removeprefix('const PURLIN_DATA = ').removesuffix(';\n'))
         assert data['design_summary'] is None
 
-    @pytest.mark.proof("report_data", "PROOF-25", "RULE-24", tier="e2e")
+    @pytest.mark.proof("report_data", "PROOF-25", "RULE-24", tier="integration")
     def test_both_entry_points_populate_both_gauges(self):
         """RULE-24: generate_digest must read both caches, not just the audit one.
 
@@ -2582,7 +2619,7 @@ class TestPerPlatformIntegrity:
                     self._proofs([('PROOF-3', 'RULE-3'), ('PROOF-4', 'RULE-4')],
                                  'macos-14'))
 
-    @pytest.mark.proof("sync_status", "PROOF-90", "RULE-56", tier="e2e")
+    @pytest.mark.proof("sync_status", "PROOF-90", "RULE-56", tier="integration")
     def test_integrity_splits_per_platform_and_design_never_does(self, monkeypatch):
         self._setup()
         write_audit_cache(self.tmp_dir, {

@@ -3,10 +3,100 @@
   "proofs": [
     {
       "feature": "sync_status",
+      "id": "PROOF-26",
+      "rule": "RULE-5",
+      "test_file": "dev/test_e2e_manual_staleness.sh",
+      "test_name": "current stamp counts: 2/2 PASSING with a vhash",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-27",
+      "rule": "RULE-5",
+      "test_file": "dev/test_e2e_manual_staleness.sh",
+      "test_name": "a committed scope change takes the stamp back out: 1/2 PARTIAL",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-28",
+      "rule": "RULE-5",
+      "test_file": "dev/test_e2e_manual_staleness.sh",
+      "test_name": "re-stamping at the new HEAD puts the rule back: 2/2 PASSING",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_unit_and_e2e_proofs_merged",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_fail_in_e2e_overrides_pass_in_unit",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_pass_does_not_override_earlier_fail",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_c_passes_but_sql_e2e_fails_same_rule",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-56",
+      "rule": "RULE-33",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_integrity_formula_consistent_across_sources",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-58",
+      "rule": "RULE-34",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_compute_integrity_is_single_function",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-59",
+      "rule": "RULE-35",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_determine_status_is_single_function",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
       "id": "PROOF-34",
       "rule": "RULE-1",
       "test_file": "dev/test_e2e_external_refs.sh",
-      "test_name": "Pinned/Path extraction correct",
+      "test_name": "coverage report: 0/3 own+required with directive",
       "status": "pass",
       "tier": "unit"
     },
@@ -79,33 +169,6 @@
       "rule": "RULE-2",
       "test_file": "dev/test_e2e_external_refs.sh",
       "test_name": "coverage progression correct",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-26",
-      "rule": "RULE-5",
-      "test_file": "dev/test_e2e_manual_staleness.sh",
-      "test_name": "current stamp counts: 2/2 PASSING with a vhash",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-27",
-      "rule": "RULE-5",
-      "test_file": "dev/test_e2e_manual_staleness.sh",
-      "test_name": "a committed scope change takes the stamp back out: 1/2 PARTIAL",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-28",
-      "rule": "RULE-5",
-      "test_file": "dev/test_e2e_manual_staleness.sh",
-      "test_name": "re-stamping at the new HEAD puts the rule back: 2/2 PASSING",
       "status": "pass",
       "tier": "unit"
     },
@@ -186,7 +249,7 @@
       "id": "PROOF-33",
       "rule": "RULE-2",
       "test_file": "dev/test_e2e_verify_audit.sh",
-      "test_name": "both specs PASSING, coverage counts correct",
+      "test_name": "login and agent_def both PASSING at 2/2",
       "status": "pass",
       "tier": "unit"
     },
@@ -340,6 +403,15 @@
       "rule": "RULE-16",
       "test_file": "dev/test_mcp_server.py",
       "test_name": "test_warns_uncommitted_spec_changes",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-17",
+      "rule": "RULE-17",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_grep_and_behavioral_detail_blocks_are_identical",
       "status": "pass",
       "tier": "unit"
     },
@@ -520,69 +592,6 @@
       "rule": "RULE-42",
       "test_file": "dev/test_mcp_server.py",
       "test_name": "test_directive_routes_on_whether_code_exists",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-56",
-      "rule": "RULE-33",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_integrity_formula_consistent_across_sources",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-58",
-      "rule": "RULE-34",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_compute_integrity_is_single_function",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-59",
-      "rule": "RULE-35",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_determine_status_is_single_function",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-14",
-      "rule": "RULE-14",
-      "test_file": "dev/test_proof_stress.py",
-      "test_name": "test_unit_and_e2e_proofs_merged",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-2",
-      "rule": "RULE-2",
-      "test_file": "dev/test_proof_stress.py",
-      "test_name": "test_fail_in_e2e_overrides_pass_in_unit",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-2",
-      "rule": "RULE-2",
-      "test_file": "dev/test_proof_stress.py",
-      "test_name": "test_pass_does_not_override_earlier_fail",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-2",
-      "rule": "RULE-2",
-      "test_file": "dev/test_proof_stress.py",
-      "test_name": "test_c_passes_but_sql_e2e_fails_same_rule",
       "status": "pass",
       "tier": "unit"
     }

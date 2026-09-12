@@ -224,12 +224,20 @@ STATUS_B=$(run_sync_status "$TMPDIR")
 
 phase_b_ok=false
 if echo "$STATUS_B" | grep -q "login: 2/5 rules proved"; then
-  # Also verify NOT VERIFIED (no VERIFIED line for login)
-  if ! echo "$STATUS_B" | grep -q "login: VERIFIED"; then
-    echo "    Phase B PASS: login shows 2/5, not VERIFIED"
+  # RULE-21 forbids PASSING for partial coverage, so the forbidden state has to
+  # be exercised: the summary row must read PARTIAL, and neither PASSING nor
+  # VERIFIED may appear for login anywhere in the report.
+  b_partial=false; b_not_passing=true; b_not_verified=true
+  echo "$STATUS_B" | grep -E "^.*login.*PARTIAL" -q && b_partial=true
+  echo "$STATUS_B" | grep -q "login: PASSING" && b_not_passing=false
+  echo "$STATUS_B" | grep -q "login: VERIFIED" && b_not_verified=false
+  if $b_partial && $b_not_passing && $b_not_verified; then
+    echo "    Phase B PASS: login shows 2/5 and PARTIAL, never PASSING or VERIFIED"
     phase_b_ok=true
   else
-    echo "    Phase B FAIL: login shows VERIFIED but should be PARTIAL"
+    echo "    Phase B FAIL: partial=$b_partial not_passing=$b_not_passing not_verified=$b_not_verified"
+    echo "    Status output:"
+    echo "$STATUS_B"
   fi
 else
   echo "    Phase B FAIL: expected 'login: 2/5 rules proved'"

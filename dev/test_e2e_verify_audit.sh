@@ -186,21 +186,29 @@ phase_a_ok=false
 if [[ -f "$RECEIPT_PATH" ]]; then
   receipt_vhash=$(python3 -c "import json; print(json.load(open('$RECEIPT_PATH'))['vhash'])")
   receipt_commit=$(python3 -c "import json; print(json.load(open('$RECEIPT_PATH'))['commit'])")
-  receipt_rules_count=$(python3 -c "import json; print(len(json.load(open('$RECEIPT_PATH'))['rules']))")
-  receipt_proofs_count=$(python3 -c "import json; print(len(json.load(open('$RECEIPT_PATH'))['proofs']))")
+  receipt_rules=$(python3 -c "import json; print(','.join(sorted(json.load(open('$RECEIPT_PATH'))['rules'])))")
+  receipt_proof_ids=$(python3 -c "import json; print(','.join(sorted(p['id'] for p in json.load(open('$RECEIPT_PATH'))['proofs'])))")
+  # The vhash is 8 lowercase hex characters, not merely some string, and it is
+  # the value a recomputation over the same state produces.
+  VHASH_RECOMPUTED=$(compute_vhash "$TMPDIR")
+  vhash_shape=$(python3 -c "
+import re, sys
+print('ok' if re.fullmatch(r'[0-9a-f]{8}', '$receipt_vhash') else 'bad')")
 
   if [[ "$receipt_vhash" == "$VHASH_A" ]] && \
+     [[ "$receipt_vhash" == "$VHASH_RECOMPUTED" ]] && \
+     [[ "$vhash_shape" == "ok" ]] && \
      [[ "$receipt_commit" == "$COMMIT_A" ]] && \
-     [[ "$receipt_rules_count" == "3" ]] && \
-     [[ "$receipt_proofs_count" == "3" ]]; then
-    echo "    Phase A PASS: receipt written with vhash=$VHASH_A, commit=$COMMIT_A, 3 rules, 3 proofs"
+     [[ "$receipt_rules" == "RULE-1,RULE-2,RULE-3" ]] && \
+     [[ "$receipt_proof_ids" == "PROOF-1,PROOF-2,PROOF-3" ]]; then
+    echo "    Phase A PASS: receipt vhash=$VHASH_A (8 hex, recomputes), commit=$COMMIT_A, rules=$receipt_rules, proofs=$receipt_proof_ids"
     phase_a_ok=true
   else
     echo "    Phase A FAIL: receipt content mismatch"
-    echo "      vhash: expected=$VHASH_A got=$receipt_vhash"
+    echo "      vhash: expected=$VHASH_A got=$receipt_vhash recomputed=$VHASH_RECOMPUTED shape=$vhash_shape"
     echo "      commit: expected=$COMMIT_A got=$receipt_commit"
-    echo "      rules: expected=3 got=$receipt_rules_count"
-    echo "      proofs: expected=3 got=$receipt_proofs_count"
+    echo "      rules: expected=RULE-1,RULE-2,RULE-3 got=$receipt_rules"
+    echo "      proofs: expected=PROOF-1,PROOF-2,PROOF-3 got=$receipt_proof_ids"
   fi
 else
   echo "    Phase A FAIL: receipt file not found at $RECEIPT_PATH"
@@ -252,17 +260,39 @@ content = content.replace(
 )
 open('$TMPDIR/specs/auth/test_feature.md', 'w').write(content)
 "
+# Prove RULE-4 too. The staleness explanation is part of the "all rules proved"
+# block, so a feature sitting at 3/4 never reaches the line RULE-15 is about.
+create_proof_file "$TMPDIR" "test_feature" \
+  "PROOF-1|RULE-1|pass" \
+  "PROOF-2|RULE-2|pass" \
+  "PROOF-3|RULE-3|pass" \
+  "PROOF-4|RULE-4|pass"
 (cd "$TMPDIR" && git add -A && git commit -q -m "add RULE-4")
 
 VHASH_C=$(compute_vhash "$TMPDIR")
 # Read receipt from disk — stale receipt should have different vhash
 receipt_stale_vhash=$(python3 -c "import json; print(json.load(open('$RECEIPT_PATH'))['vhash'])")
+
+# RULE-15: the report must say WHICH kind of change staled the receipt. Here the
+# feature's own rule set grew, so the explanation must name an own rule change
+# and must not blame a required or global anchor.
+STATUS_C=$(python3 -c "
+import sys; sys.path.insert(0, '$SERVER_DIR')
+from purlin_server import sync_status
+print(sync_status('$TMPDIR'))
+")
+c_stale=false; c_own=false; c_no_anchor=true
+echo "$STATUS_C" | grep -q "Receipt stale (vhash mismatch)" && c_stale=true
+echo "$STATUS_C" | grep -q "Own rules changed since last verification" && c_own=true
+echo "$STATUS_C" | grep -q "Required anchor" && c_no_anchor=false
+
 phase_c_ok=false
-if [[ "$VHASH_C" != "$receipt_stale_vhash" ]]; then
-  echo "    Phase C PASS: vhash mismatch detected with stale receipt ($VHASH_C != $receipt_stale_vhash)"
+if [[ "$VHASH_C" != "$receipt_stale_vhash" ]] && $c_stale && $c_own && $c_no_anchor; then
+  echo "    Phase C PASS: stale receipt explained as an own rule change ($VHASH_C != $receipt_stale_vhash)"
   phase_c_ok=true
 else
-  echo "    Phase C FAIL: vhash should differ from stale receipt ($VHASH_C == $receipt_stale_vhash)"
+  echo "    Phase C FAIL: vhash_differs=$([[ "$VHASH_C" != "$receipt_stale_vhash" ]] && echo true || echo false) stale=$c_stale own=$c_own no_anchor=$c_no_anchor"
+  echo "$STATUS_C"
 fi
 
 if $phase_c_ok; then
@@ -282,7 +312,8 @@ create_proof_file "$TMPDIR" "test_feature" \
   "PROOF-2|RULE-2|pass" \
   "PROOF-3|RULE-3|pass" \
   "PROOF-4|RULE-4|pass"
-(cd "$TMPDIR" && git add -A && git commit -q -m "add RULE-4 proof")
+# Phase C already committed this proof file, so there may be nothing new here.
+(cd "$TMPDIR" && git add -A && git commit -q -m "add RULE-4 proof" || true)
 
 VHASH_D=$(compute_vhash "$TMPDIR")
 RECEIPT_PATH_D=$(write_receipt "$TMPDIR" "$VHASH_D")
@@ -392,33 +423,32 @@ from purlin_server import sync_status
 print(sync_status('$TMPDIR_E'))
 ")
 
-# Check: both login and agent_def should be PASSING (structural checks count toward PASSING)
+# RULE-2: every rule proved and passing, with no receipt, earns PASSING. Both
+# fixtures have 2 rules and 2 passing entries, so both read PASSING at 2/2 and
+# neither may read PARTIAL or UNTESTED.
 login_ready=$(echo "$SYNC_OUTPUT_E" | grep -c "login: PASSING" || true)
 agent_ready=$(echo "$SYNC_OUTPUT_E" | grep -c "agent_def: PASSING" || true)
-
-# Also verify check_spec_coverage returns counts
-COVERAGE_BEHAVIORAL=$(python3 "$REAL_PROJECT_ROOT/scripts/audit/static_checks.py" --check-spec-coverage --spec-path "$TMPDIR_E/specs/auth/login.md")
-COVERAGE_STRUCTURAL=$(python3 "$REAL_PROJECT_ROOT/scripts/audit/static_checks.py" --check-spec-coverage --spec-path "$TMPDIR_E/specs/instructions/agent_def.md")
-
-BEHAV_RULES=$(echo "$COVERAGE_BEHAVIORAL" | python3 -c "import json,sys; print(json.load(sys.stdin)['rule_count'])")
-STRUCT_RULES=$(echo "$COVERAGE_STRUCTURAL" | python3 -c "import json,sys; print(json.load(sys.stdin)['rule_count'])")
+full_counts=$(echo "$SYNC_OUTPUT_E" | grep -c "2/2 rules proved" || true)
+no_partial=true; no_untested=true
+echo "$SYNC_OUTPUT_E" | grep -q "PARTIAL" && no_partial=false
+echo "$SYNC_OUTPUT_E" | grep -q "UNTESTED" && no_untested=false
 
 phase_e_ok=false
 if [[ "$login_ready" -ge "1" ]] && \
    [[ "$agent_ready" -ge "1" ]] && \
-   [[ "$BEHAV_RULES" -gt "0" ]] && \
-   [[ "$STRUCT_RULES" -gt "0" ]]; then
-  echo "    Phase E PASS: both specs PASSING, coverage counts correct"
+   [[ "$full_counts" -eq "2" ]] && \
+   $no_partial && $no_untested; then
+  echo "    Phase E PASS: login and agent_def both PASSING at 2/2"
   phase_e_ok=true
 else
-  echo "    Phase E FAIL: login_ready=$login_ready agent_ready=$agent_ready"
-  echo "      check_spec_coverage: behavioral_rules=$BEHAV_RULES structural_rules=$STRUCT_RULES"
+  echo "    Phase E FAIL: login_ready=$login_ready agent_ready=$agent_ready full_counts=$full_counts no_partial=$no_partial no_untested=$no_untested"
+  echo "$SYNC_OUTPUT_E"
 fi
 
 if $phase_e_ok; then
-  purlin_proof "sync_status" "PROOF-33" "RULE-2" pass "both specs PASSING, coverage counts correct"
+  purlin_proof "sync_status" "PROOF-33" "RULE-2" pass "login and agent_def both PASSING at 2/2"
 else
-  purlin_proof "sync_status" "PROOF-33" "RULE-2" fail "coverage counts not working correctly"
+  purlin_proof "sync_status" "PROOF-33" "RULE-2" fail "PASSING at 2/2 not reported for both features"
 fi
 
 # --- Emit proof files ---

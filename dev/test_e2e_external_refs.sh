@@ -196,35 +196,31 @@ run_hook() {
 
 
 # ==========================================================================
-# PROOF-1 (RULE-1): _scan_specs extracts Pinned and Path
+# PROOF-1 (RULE-1): sync_status reports own + required coverage with directives
 # ==========================================================================
-echo "--- PROOF-1: Pinned/Path extraction ---"
+echo "--- PROOF-1: coverage report with own + required rules ---"
 TMP1=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP1"
 init_project "$TMP1"
 create_anchor "$TMP1" "api_contract" "/tmp/fake.git" "abc1234def5678" "docs/spec.md"
+create_feature "$TMP1" "login" "auth" 1 "api_contract"
 (cd "$TMP1" && git add -A && git commit -q -m "add anchor")
 
-p1_result=$(python3 -c "
-import sys, os
-sys.path.insert(0, os.path.join('$TMP1', 'scripts', 'mcp'))
-from purlin_server import _scan_specs
-features = _scan_specs('$TMP1')
-info = features.get('api_contract', {})
-pinned = info.get('pinned', '')
-source_path = info.get('source_path', '')
-if pinned == 'abc1234def5678' and source_path == 'docs/spec.md':
-    print('pass')
-else:
-    print(f'fail: pinned={pinned} source_path={source_path}')
-" 2>/dev/null)
+output1=$(run_sync_status "$TMP1")
+# login: 1 own rule + 2 rules from the required anchor = 3
+p1_total=false; p1_own=false; p1_required=false; p1_directive=false
+echo "$output1" | grep -q "login: 0/3 rules proved" && p1_total=true
+echo "$output1" | grep -q "RULE-1: NO PROOF (own)" && p1_own=true
+echo "$output1" | grep -q "api_contract/RULE-1: NO PROOF (required)" && p1_required=true
+echo "$output1" | grep -q "Run: purlin:test" && p1_directive=true
 
-if [[ "$p1_result" == "pass" ]]; then
-  echo "  PASS: pinned and source_path extracted"
-  purlin_proof "sync_status" "PROOF-34" "RULE-1" pass "Pinned/Path extraction correct"
+if $p1_total && $p1_own && $p1_required && $p1_directive; then
+  echo "  PASS: 0/3 with (own)/(required) labels and a directive"
+  purlin_proof "sync_status" "PROOF-34" "RULE-1" pass "coverage report: 0/3 own+required with directive"
   PASS=$((PASS + 1))
 else
-  echo "  FAIL: $p1_result"
-  purlin_proof "sync_status" "PROOF-34" "RULE-1" fail "Pinned/Path extraction: $p1_result"
+  echo "  FAIL: total=$p1_total own=$p1_own required=$p1_required directive=$p1_directive"
+  echo "  Output: $output1"
+  purlin_proof "sync_status" "PROOF-34" "RULE-1" fail "coverage report: total=$p1_total own=$p1_own required=$p1_required directive=$p1_directive"
   FAIL=$((FAIL + 1))
 fi
 
@@ -242,7 +238,9 @@ output2=$(run_sync_status "$TMP2")
 p2_source=false; p2_path=false; p2_pinned=false
 echo "$output2" | grep -q "Source: git@github.com:acme/api.git" && p2_source=true
 echo "$output2" | grep -q "Path: docs/spec.md" && p2_path=true
-echo "$output2" | grep -q "Pinned: abc1234" && p2_pinned=true
+# Exactly 7 characters: "Pinned: abc1234" alone also matches a longer prefix,
+# so the 8th character of the SHA must be absent from the line.
+echo "$output2" | grep -qE "Pinned: abc1234([^0-9a-f]|$)" && p2_pinned=true
 
 if $p2_source && $p2_path && $p2_pinned; then
   echo "  PASS: Source/Path/Pinned in sync_status"
@@ -282,6 +280,8 @@ echo "--- PROOF-4: report-data.js fields ---"
 TMP4=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP4"
 init_project "$TMP4"
 create_anchor "$TMP4" "api_contract" "git@github.com:acme/api.git" "abc1234def5678" "docs/spec.md"
+# A local anchor with no > Source:/> Path:/> Pinned: must carry neither key.
+create_anchor "$TMP4" "bare_anchor" "" "" ""
 # Need purlin-report.html for report generation
 touch "$TMP4/purlin-report.html"
 (cd "$TMP4" && git add -A && git commit -q -m "add specs")
@@ -295,10 +295,14 @@ with open('$TMP4/.purlin/report-data.js') as f:
 match = re.search(r'const PURLIN_DATA = (.+);', text, re.DOTALL)
 data = json.loads(match.group(1))
 anchor = [f for f in data['features'] if f['name'] == 'api_contract'][0]
-if anchor.get('pinned') == 'abc1234def5678' and anchor.get('source_path') == 'docs/spec.md':
+bare = [f for f in data['features'] if f['name'] == 'bare_anchor'][0]
+if (anchor.get('pinned') == 'abc1234def5678'
+        and anchor.get('source_path') == 'docs/spec.md'
+        and bare.get('pinned') is None and bare.get('source_path') is None):
     print('pass')
 else:
-    print(f'fail: pinned={anchor.get(\"pinned\")} source_path={anchor.get(\"source_path\")}')
+    print(f'fail: pinned={anchor.get(\"pinned\")} source_path={anchor.get(\"source_path\")} '
+          f'bare_pinned={bare.get(\"pinned\")} bare_source_path={bare.get(\"source_path\")}')
 " 2>/dev/null)
 
 if [[ "$p4_result" == "pass" ]]; then
@@ -451,16 +455,18 @@ create_feature "$TMP8" "feature_b" "core" 1
 
 output8=$(run_sync_status "$TMP8")
 # Each feature: 1 own + 2 global = 3 rules
-p8_a=false; p8_b=false
+p8_a=false; p8_b=false; p8_label=false
 echo "$output8" | grep -A5 "feature_a" | grep -q "0/3" && p8_a=true
 echo "$output8" | grep -A5 "feature_b" | grep -q "0/3" && p8_b=true
+# RULE-9 also requires the rule to be labelled (global) in the coverage detail.
+[[ $(echo "$output8" | grep -c "global_ext/RULE-1: NO PROOF (global)") -eq 2 ]] && p8_label=true
 
-if $p8_a && $p8_b; then
+if $p8_a && $p8_b && $p8_label; then
   echo "  PASS: global anchor auto-applied to both features"
   purlin_proof "sync_status" "PROOF-41" "RULE-9" pass "global external anchor auto-applies"
   PASS=$((PASS + 1))
 else
-  echo "  FAIL: a=$p8_a b=$p8_b"
+  echo "  FAIL: a=$p8_a b=$p8_b label=$p8_label"
   echo "  Output: $output8"
   purlin_proof "sync_status" "PROOF-41" "RULE-9" fail "global anchor not auto-applied"
   FAIL=$((FAIL + 1))
@@ -544,14 +550,14 @@ create_feature "$TMP11" "progress" "core" 1 "ext_anchor"
 # Phase A: no proofs → UNTESTED
 out11a=$(run_sync_status "$TMP11")
 phase_a=false
-echo "$out11a" | grep -q "UNTESTED" && phase_a=true
+echo "$out11a" | grep -q "UNTESTED" && echo "$out11a" | grep -q "progress: 0/3 rules proved" && phase_a=true
 
 # Phase B: prove own rule only → PARTIAL
 create_proof_file "$TMP11" "progress" "core" "PROOF-1|RULE-1|pass"
 (cd "$TMP11" && git add -A && git commit -q -m "own proof")
 out11b=$(run_sync_status "$TMP11")
 phase_b=false
-echo "$out11b" | grep -q "PARTIAL" && phase_b=true
+echo "$out11b" | grep -q "PARTIAL" && echo "$out11b" | grep -q "progress: 1/3 rules proved" && phase_b=true
 
 # Phase C: prove anchor rules too → PASSING
 create_proof_file "$TMP11" "progress" "core" \
@@ -561,7 +567,7 @@ create_proof_file "$TMP11" "progress" "core" \
 (cd "$TMP11" && git add -A && git commit -q -m "all proofs")
 out11c=$(run_sync_status "$TMP11")
 phase_c=false
-echo "$out11c" | grep -q "PASSING" && phase_c=true
+echo "$out11c" | grep -q "progress: PASSING" && echo "$out11c" | grep -q "3/3 rules proved" && phase_c=true
 
 if $phase_a && $phase_b && $phase_c; then
   echo "  PASS: UNTESTED → PARTIAL → PASSING"
@@ -775,7 +781,12 @@ Constraint that starts local.
 EOF
 (cd "$TMP15" && git add -A && git commit -q -m "local anchor")
 
-# Capture Phase A state
+# Capture Phase A state: the observable report first, then the scan result
+p15_status_before=$(run_sync_status "$TMP15")
+p15_no_source=true; p15_no_pinned=true
+echo "$p15_status_before" | grep -A4 "evolving" | grep -q "Source:" && p15_no_source=false
+echo "$p15_status_before" | grep -A4 "evolving" | grep -q "Pinned:" && p15_no_pinned=false
+
 p15_before=$(python3 -c "
 import sys, os
 sys.path.insert(0, os.path.join('$TMP15', 'scripts', 'mcp'))
@@ -811,7 +822,12 @@ Constraint that starts local, now tracked from external source.
 EOF
 (cd "$TMP15" && git add -A && git commit -q -m "add external tracking")
 
-# Capture Phase B state
+# Capture Phase B state: the same two observations after the fields are added
+p15_status_after=$(run_sync_status "$TMP15")
+p15_has_source=false; p15_has_pinned=false
+echo "$p15_status_after" | grep -q "Source: $BARE15" && p15_has_source=true
+echo "$p15_status_after" | grep -q "Pinned: ${SHA15:0:7}" && p15_has_pinned=true
+
 p15_after=$(python3 -c "
 import sys, os
 sys.path.insert(0, os.path.join('$TMP15', 'scripts', 'mcp'))
@@ -821,14 +837,16 @@ info = features.get('evolving', {})
 print(f'{info.get(\"source_url\")},{info.get(\"pinned\")}')
 " 2>/dev/null)
 
-# Phase A should be None,None — Phase B should have values
-if [[ "$p15_before" == "None,None" ]] && [[ "$p15_after" == "$BARE15,$SHA15" ]]; then
+# Phase A: no Source/Pinned lines and None,None from the scan.
+# Phase B: the same anchor now reports both, in the report and in the scan.
+if [[ "$p15_before" == "None,None" ]] && [[ "$p15_after" == "$BARE15,$SHA15" ]] \
+   && $p15_no_source && $p15_no_pinned && $p15_has_source && $p15_has_pinned; then
   echo "  PASS: Part 1 → Part 2 transition: local becomes external"
-  purlin_proof "skill_anchor" "PROOF-7" "RULE-7" pass "Part 1→2 transition changes scan results"
+  purlin_proof "skill_anchor" "PROOF-7" "RULE-7" pass "Part 1→2 transition: sync_status gains Source/Pinned, scan gains values"
   PASS=$((PASS + 1))
 else
-  echo "  FAIL: before=$p15_before after=$p15_after"
-  purlin_proof "skill_anchor" "PROOF-7" "RULE-7" fail "transition: before=$p15_before after=$p15_after"
+  echo "  FAIL: before=$p15_before after=$p15_after no_source=$p15_no_source no_pinned=$p15_no_pinned has_source=$p15_has_source has_pinned=$p15_has_pinned"
+  purlin_proof "skill_anchor" "PROOF-7" "RULE-7" fail "transition: before=$p15_before after=$p15_after status_before=$p15_no_source/$p15_no_pinned status_after=$p15_has_source/$p15_has_pinned"
   FAIL=$((FAIL + 1))
 fi
 

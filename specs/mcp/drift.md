@@ -27,12 +27,12 @@
 
 ## Proof
 
-- PROOF-1 (RULE-1): Call with explicit since="5"; verify HEAD~5. Call with verify commit in log; verify that SHA @integration
+- PROOF-1 (RULE-1): Call `_resolve_since_anchor` over a repo whose log holds a `verify: initial` commit: with `since="5"` verify it returns ref `HEAD~5` and a description naming `5 commits`; with no argument verify the ref equals the SHA of that `verify:` commit and the description names `verification`; with `since="2020-01-01"` verify the description reads `since 2020-01-01` and the ref is a real commit SHA suffixed `^`. Then over a second repo with no `verify:` commit but a `v1.0.0` tag verify the ref is `v1.0.0` and the description starts `v1.0.0 (` @integration
 - PROOF-2 (RULE-2): Create changed spec, test file, and README; verify CHANGED_SPECS, TESTS_ADDED, NO_IMPACT classifications @integration
 - PROOF-3 (RULE-3): Call drift; verify all 5 top-level JSON keys present @integration
 - PROOF-4 (RULE-4): Create spec with grep-based proof passing; verify proved=1 and total=1 in proof_status @integration
-- PROOF-5 (RULE-5): Create feature requiring anchor with 2 rules; verify proof_status total includes anchor rules @integration
-- PROOF-6 (RULE-6): Create changed file at skills/new/SKILL.md with no scope; verify classified as NEW_BEHAVIOR @integration
+- PROOF-5 (RULE-5): Give feature `login` 2 own rules and `> Requires: api_conv` where anchor `api_conv` has 2 rules, and add a global anchor `security_no_eval` with 1 rule; call drift; verify `proof_status["login"]["total"]` is exactly 5, counting 2 own plus 2 required plus 1 global @integration
+- PROOF-6 (RULE-6): Commit a new file at each of `skills/build/SKILL.md`, `agents/reviewer.md` and `.claude/agents/helper.md`, none of them named in any spec `> Scope:`; call drift; verify all three are classified `NEW_BEHAVIOR` and none is `NO_IMPACT` @integration
 - PROOF-7 (RULE-7): Create spec with `> Scope: src/api/` and changed file src/api/login.js; verify CHANGED_BEHAVIOR @integration
 - PROOF-8 (RULE-8): Create spec with zero proofs and changed scope file; verify behavioral_gap: true @integration
 - PROOF-9 (RULE-9): Same setup; verify drift_flags array entry with reason behavioral_gap_with_code_change @integration

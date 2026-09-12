@@ -57,15 +57,6 @@
     },
     {
       "feature": "sync_status",
-      "id": "PROOF-49",
-      "rule": "RULE-28",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_cache_entries_without_feature_excluded_from_per_feature_but_counted_globally",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "sync_status",
       "id": "PROOF-50",
       "rule": "RULE-19",
       "test_file": "dev/test_e2e_audit_cache_pipeline.py",
@@ -205,15 +196,6 @@
       "rule": "RULE-44",
       "test_file": "dev/test_e2e_audit_cache_pipeline.py",
       "test_name": "test_fully_covered_feature_gets_gauge_directives",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "sync_status",
-      "id": "PROOF-90",
-      "rule": "RULE-56",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_integrity_splits_per_platform_and_design_never_does",
       "status": "pass",
       "tier": "e2e"
     }
