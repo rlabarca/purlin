@@ -54,10 +54,10 @@
 - PROOF-5 (RULE-5): Run static_checks with --spec-path on a file mocking the rule's function; verify status=fail check=mock_target_match
 - PROOF-6 (RULE-6): Run static_checks on any file; verify JSON output has proofs array with required fields
 - PROOF-7 (RULE-7): Run static_checks on a clean file and verify exit 0; run on a flawed file and verify exit 0 with status=fail in JSON output
-- PROOF-8 (RULE-8): Create spec with rules and proofs; call check_spec_coverage; verify rule_count and proof_count are correct
+- PROOF-8 (RULE-8): Call check_spec_coverage on a spec declaring 3 rules and 3 proofs and verify `rule_count` is 3 and `proof_count` is 3; run the CLI `--check-spec-coverage` on a spec declaring 2 rules and 2 proofs and verify exit 0 with `rule_count` 2 and `proof_count` 2; call it on a spec whose `## Rules` section is empty and verify both counts are 0
 - PROOF-10 (RULE-10): Call compute_proof_hash with same inputs twice and verify identical 16-char hex output; call with different inputs and verify different hash
 - PROOF-11 (RULE-11): Call read_audit_cache on a nonexistent path and verify empty dict; write valid JSON to the cache path and verify it parses correctly
-- PROOF-12 (RULE-12): Call write_audit_cache, then read the file back and verify contents match the written dict
+- PROOF-12 (RULE-12): Call write_audit_cache with one entry while spying on os.replace; verify the durable file was produced by renaming a path ending `.tmp` onto `audit_cache.json` and that reading it back returns that entry's fields under the recomputed key; then make os.replace raise OSError on a second write and verify `audit_cache.json` still holds exactly the first entry and no `.tmp` file is left beside it
 - PROOF-13 (RULE-13): Create shell test with if/else purlin_proof pair; run static_checks; verify status=pass (not flagged). Also verify a bare hardcoded pass without if/else is still caught
 - PROOF-14 (RULE-14): Run static_checks on file with assert True; verify literal=true. Run on file with assert x is not None; verify literal=false
 - PROOF-15 (RULE-15): Create proof JSON with two entries sharing PROOF-1 but targeting RULE-1 and RULE-2; call check_proof_file; verify result contains check='proof_id_collision' with both rules listed. Test with proof JSON from multiple language contexts (Python pytest, JavaScript Jest, Shell, C, PHP, SQL, TypeScript) to verify language-agnostic detection
@@ -65,13 +65,13 @@
 - PROOF-17 (RULE-1): e2e: Create test with assert True and a valid test; verify assert_true detected on first, pass on second @e2e
 - PROOF-18 (RULE-2): e2e: Create test with no assertions; verify no_assertions detected @e2e
 - PROOF-19 (RULE-4): e2e: Create test with logic mirroring (expected from same function as SUT); verify logic_mirroring detected @e2e
-- PROOF-20 (RULE-7): e2e: Create structurally valid but semantically weak test; verify passes structural checks @e2e
+- PROOF-20 (RULE-7): e2e: Run static_checks.py over a structurally valid but semantically weak test that asserts `resp.status_code == 401` and nothing about the error body; verify the process exits 0 and the JSON reports PROOF-2 with status `pass`, no defect being signalled through the exit code @e2e
 - PROOF-21 (RULE-7): e2e: Create 3 strong tests; verify all pass structural checks with exit 0 @e2e
 - PROOF-22 (RULE-6): e2e: Parse JSON output; verify proofs array has proof_id, rule_id, test_name, status, reason fields @e2e
 - PROOF-23 (RULE-7): e2e: Run on clean and flawed files; verify exit 0 for both; verify flawed has status=fail in JSON @e2e
 - PROOF-24 (RULE-5): e2e: Create test mocking bcrypt on rule about bcrypt; verify mock_target_match detected @e2e
 - PROOF-25 (RULE-3): e2e: Create test with bare except:pass; verify bare_except detected @e2e
-- PROOF-26 (RULE-8): e2e: Create specs with rules and proofs; call check_spec_coverage; verify rule_count and proof_count @e2e
+- PROOF-26 (RULE-8): e2e: Run the CLI `--check-spec-coverage` over a spec declaring 2 rules and 2 proofs; verify the printed JSON reads `rule_count` 2 and `proof_count` 2 @e2e
 - PROOF-27 (RULE-13): e2e: Create shell test with if/else purlin_proof pair; verify pass; verify bare hardcoded pass still caught @e2e
 - PROOF-28 (RULE-12): e2e: Call write_audit_cache with 3 entries; verify audit_cache.json created with 3 keys @e2e
 - PROOF-29 (RULE-17): e2e: Write cache; verify every entry has all required fields and cached_at is valid ISO 8601 @e2e
@@ -79,7 +79,7 @@
 - PROOF-31 (RULE-24): e2e: Write cache with 2 entries for same (feature, proof_id) — HOLLOW older, STRONG newer — plus a distinct entry; verify only the latest (STRONG) per (feature, proof_id) is kept and the unique entry survives @e2e
 - PROOF-32 (RULE-18): e2e: Write cache with entries; call clear_audit_cache; read back; verify empty dict @e2e
 - PROOF-33 (RULE-19): e2e: Write cache entries carrying a stale cached_at (midnight UTC); read back and verify each falls inside the bracketed [before, after] window of the write, proving the caller value was overwritten with the real current time. Then write a second batch for a different (feature, proof_id) and verify the first batch's entries retain their earlier timestamp rather than being re-stamped, so `_read_audit_summary` can still detect staleness @e2e
-- PROOF-35 (RULE-21): Call load_criteria with no config; verify only built-in content. Save additional file to cache; call again; verify built-in + separator + additional. Pass extra_path; verify all three present
+- PROOF-35 (RULE-21): Call load_criteria with no config and verify the built-in `## Assessment Levels` section is present and no `Additional Team Criteria (from` separator is; write `.purlin/cache/additional_criteria.md` holding `- No sleep() in tests` under the sha the config pins and verify the result carries the built-in section, an `## Additional Team Criteria` separator naming the configured source, and that line; pass extra_path holding `- All tests must have docstrings` and verify all three sources are present; walk static_checks.py with `ast` and verify load_criteria is the only function in the module that names `audit_criteria.md` or `additional_criteria.md`
 - PROOF-36 (RULE-22): Write cache with 3 entries (keys "aaa", "bbb", "ccc"); call prune_audit_cache with live_keys={"aaa","ccc"}; read back; verify "bbb" removed, "aaa" and "ccc" preserved with all original fields intact
 - PROOF-37 (RULE-23): Write cache with 3 entries; call prune_audit_cache with live_keys=set(); read back; verify empty dict. Write cache with 3 entries; call prune_audit_cache with all 3 keys as live; read back; verify all 3 entries preserved with identical content
 - PROOF-38 (RULE-22): e2e: Write 5 cache entries via write_audit_cache; write 3 live keys to a temp file; call --prune-cache --live-keys-file; verify JSON output shows pruned=2, kept=3; read cache back and confirm exactly 3 entries remain @e2e

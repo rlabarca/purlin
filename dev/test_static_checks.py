@@ -622,6 +622,25 @@ class TestAuditCache:
             # No .tmp file left behind after the rename
             assert not os.path.exists(cache_path + '.tmp')
 
+            # What the rename buys: a replacement that fails partway must leave
+            # the previous file exactly as it was. A plain open-and-write would
+            # have truncated the cache before failing, losing the STRONG entry.
+            second = {
+                'ignored-key': dict(data['a1b2c3d4e5f6a7b8'], assessment='HOLLOW'),
+            }
+            with mock.patch.object(static_checks.os, 'replace',
+                                   side_effect=OSError('no space left on device')):
+                with pytest.raises(OSError):
+                    write_audit_cache(tmpdir, second)
+
+            survived = read_audit_cache(tmpdir)
+            assert set(survived) == {key}, (
+                "a failed replacement must leave the previous cache intact, "
+                f"got keys {sorted(survived)}")
+            assert survived[key]['assessment'] == 'STRONG', (
+                "the half-written HOLLOW entry became visible: the cache reads "
+                f"{survived[key]['assessment']!r}")
+
 
 class TestWriteCacheMerge:
     """RULE-24: write_audit_cache merges into existing cache on disk."""
@@ -1274,6 +1293,44 @@ class TestLoadCriteria:
             load_criteria(project)
         assert 'additional_criteria.md' in str(exc.value)
         assert 'git@example.com:team/q.git#c.md' in str(exc.value)
+
+    @pytest.mark.proof("static_checks", "PROOF-35", "RULE-21")
+    def test_load_criteria_is_the_only_assembler(self):
+        """No other function in static_checks.py assembles criteria text.
+
+        The three paths above are a single source only while nothing else
+        reads the criteria files: a second reader would let the tool grade
+        against text load_criteria never saw, and the three tests above could
+        not tell. Docstrings are excluded so a function that merely cites
+        references/audit_criteria.md in prose is not counted as a reader.
+        """
+        source = open(STATIC_CHECKS_PY, encoding='utf-8').read()
+        tree = ast.parse(source)
+        filenames = ('audit_criteria.md', 'additional_criteria.md')
+
+        readers = set()
+        for node in ast.walk(tree):
+            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            docstring_node = None
+            if (node.body and isinstance(node.body[0], ast.Expr)
+                    and isinstance(node.body[0].value, ast.Constant)
+                    and isinstance(node.body[0].value.value, str)):
+                docstring_node = node.body[0].value
+            for sub in ast.walk(node):
+                if sub is docstring_node:
+                    continue
+                if (isinstance(sub, ast.Constant) and isinstance(sub.value, str)
+                        and any(name in sub.value for name in filenames)):
+                    readers.add(node.name)
+                    break
+
+        assert readers, \
+            "the walk found no function naming the criteria files at all"
+        assert readers == {'load_criteria'}, (
+            "load_criteria must be the only function in static_checks.py that "
+            f"assembles criteria text; these also name the criteria files: "
+            f"{sorted(readers)}")
 
 
 class TestWriteCacheLocking:

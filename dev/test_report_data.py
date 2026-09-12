@@ -225,7 +225,18 @@ class TestReportFileGeneration:
 
         report_path = os.path.join(self.tmp, '.purlin', 'report-data.js')
         assert not os.path.isfile(report_path), \
-            'Expected no report-data.js when report=false, but file was written'
+            'Expected no report-data.js when the config has no "report" key, but file was written'
+
+        # Second leg: the key present and literally false. An implementation
+        # that only looked for the key's absence, or that treated any value as
+        # truthy, would write the file here.
+        with open(os.path.join(self.tmp, '.purlin', 'config.json'), 'w') as f:
+            json.dump({'report': False}, f)
+
+        purlin_server.sync_status(self.tmp)
+
+        assert not os.path.isfile(report_path), \
+            'Expected no report-data.js when config has "report": false, but file was written'
 
     @pytest.mark.proof("report_data", "PROOF-14", "RULE-14")
     def test_dashboard_url_in_output_when_html_exists(self):
@@ -398,8 +409,11 @@ class TestReportDataStructure:
         assert 'stale' in receipt, "receipt missing 'stale' field"
         assert receipt['commit'] == 'abc1234'
         assert receipt['timestamp'] == '2024-01-01T00:00:00+00:00'
-        # vhash won't match (deadbeef vs computed), so stale should be True
-        assert isinstance(receipt['stale'], bool)
+        # The receipt's vhash is the literal 'deadbeef', which cannot equal the
+        # vhash computed from the feature's proofs, so it must read stale.
+        assert receipt['stale'] is True, (
+            "Expected stale=True for a receipt whose vhash is 'deadbeef', "
+            f"got {receipt['stale']!r}")
 
     @pytest.mark.proof("report_data", "PROOF-8", "RULE-8")
     def test_every_rule_entry_has_required_fields(self):
@@ -479,27 +493,48 @@ class TestReportDataStructure:
 
     @pytest.mark.proof("report_data", "PROOF-11", "RULE-11")
     def test_docs_url_derived_from_git_remote(self):
-        """_get_plugin_docs_url returns a URL derived from the git remote."""
-        url = purlin_server._get_plugin_docs_url()
-        # The Purlin repo has a git remote; url should be non-None and be a URL string
-        if url is not None:
-            assert url.startswith('https://'), \
-                f"Expected docs_url to start with https://, got: {url}"
-            assert 'docs' in url or 'blob' in url, \
-                f"Expected docs_url to reference docs path, got: {url}"
+        """The docs URL is derived from the plugin checkout's origin remote.
 
-        # Also verify it appears in report data
-        _write_spec(self.tmp, 'feature', _minimal_spec_content())
-        _write_proofs(self.tmp, 'feature', _minimal_proofs())
-        features = purlin_server._scan_specs(self.tmp)
-        proofs = purlin_server._read_proofs(self.tmp)
-        data = self._build(features=features, proofs=proofs)
+        Read against the real repository the assertion could only be "some
+        https URL", which a hardcoded constant satisfies. A fake plugin
+        checkout with a known origin pins the exact string the derivation must
+        produce.
+        """
+        expected = 'https://github.com/acme/purlin/blob/main/docs/index.md'
+        plugin_root = tempfile.mkdtemp()
+        try:
+            subprocess.run(['git', 'init'], cwd=plugin_root,
+                           capture_output=True, check=True)
+            subprocess.run(
+                ['git', 'remote', 'add', 'origin', 'git@github.com:acme/purlin.git'],
+                cwd=plugin_root, capture_output=True, check=True)
+            # _get_plugin_docs_url reads the remote of the checkout two levels
+            # above SCRIPT_DIR, so point that at the fixture.
+            fake_script_dir = os.path.join(plugin_root, 'scripts', 'mcp')
+            os.makedirs(fake_script_dir, exist_ok=True)
 
-        # docs_url key must exist in report data (may be None if no remote)
-        assert 'docs_url' in data, "Expected 'docs_url' field in report data"
-        # If _get_plugin_docs_url returns a value, it must match
-        assert data['docs_url'] == url, \
-            f"Report data docs_url {data['docs_url']!r} != _get_plugin_docs_url() {url!r}"
+            _write_spec(self.tmp, 'feature', _minimal_spec_content())
+            _write_proofs(self.tmp, 'feature', _minimal_proofs())
+            features = purlin_server._scan_specs(self.tmp)
+            proofs = purlin_server._read_proofs(self.tmp)
+
+            real_script_dir = purlin_server.SCRIPT_DIR
+            purlin_server.SCRIPT_DIR = fake_script_dir
+            try:
+                url = purlin_server._get_plugin_docs_url()
+                data = self._build(features=features, proofs=proofs)
+            finally:
+                purlin_server.SCRIPT_DIR = real_script_dir
+
+            assert url == expected, (
+                "Expected the URL derived from git@github.com:acme/purlin.git "
+                f"to be {expected!r}, got {url!r}")
+            assert 'docs_url' in data, "Expected 'docs_url' field in report data"
+            assert data['docs_url'] == expected, (
+                f"Report data docs_url {data['docs_url']!r} is not the URL "
+                f"derived from the plugin remote ({expected!r})")
+        finally:
+            shutil.rmtree(plugin_root, ignore_errors=True)
 
     @pytest.mark.proof("report_data", "PROOF-12", "RULE-12")
     def test_anchor_with_source_includes_source_url(self):
@@ -603,10 +638,22 @@ class TestReportDataStructure:
                            'last_audit', 'last_audit_relative', 'stale'}
         missing = required_fields - set(summary.keys())
         assert not missing, f"audit_summary missing fields: {missing}"
-        assert isinstance(summary['integrity'], (int, float)), \
-            f"integrity should be numeric, got {type(summary['integrity'])}"
-        assert isinstance(summary['stale'], bool), \
-            f"stale should be bool, got {type(summary['stale'])}"
+        # One STRONG and one WEAK: (1 + 0 manual) / 2 x 100 = 50.
+        assert summary['integrity'] == 50, \
+            f"Expected integrity=50 from 1 STRONG and 1 WEAK, got {summary['integrity']!r}"
+        assert summary['strong'] == 1, f"Expected strong=1, got {summary['strong']!r}"
+        assert summary['weak'] == 1, f"Expected weak=1, got {summary['weak']!r}"
+        assert summary['hollow'] == 0, f"Expected hollow=0, got {summary['hollow']!r}"
+        assert summary['manual'] == 0, f"Expected manual=0, got {summary['manual']!r}"
+        assert summary['last_audit'] == '2024-01-01T12:00:00+00:00', (
+            "Expected last_audit to be the newest cached_at "
+            f"'2024-01-01T12:00:00+00:00', got {summary['last_audit']!r}")
+        assert re.fullmatch(r'\d+ days ago', summary['last_audit_relative'] or ''), (
+            "Expected last_audit_relative to read '<N> days ago' for a 2024 "
+            f"timestamp, got {summary['last_audit_relative']!r}")
+        # 2024 is more than 24h old, which is what `stale` reports.
+        assert summary['stale'] is True, \
+            f"Expected stale=True for a 2024 timestamp, got {summary['stale']!r}"
 
     @pytest.mark.proof("report_data", "PROOF-16", "RULE-16")
     def test_per_feature_audit_populated_from_cache(self):
@@ -1691,6 +1738,18 @@ class TestPerFeatureDesignAndGaugeStates:
         # 100% over one measured proof must still report incomplete.
         assert audit['integrity'] == 100 and audit['coverage']['complete'] is False, \
             "a perfect score over a thin slice must not read as complete"
+        # The headline the surfaces report is weighted by coverage, and the
+        # unweighted score it came from is carried beside it. Design: 2 PROVABLE
+        # over 2 gradeable + 2 unmeasured = 50. Integrity: 1 STRONG over
+        # 1 gradeable + 3 unmeasured = 25.
+        assert design['assessed'] == 100, \
+            f"design assessed should be the unweighted 100, got {design['assessed']!r}"
+        assert design['weighted'] == 50, \
+            f"design weighted should be 50 over 2 of 4 measured, got {design['weighted']!r}"
+        assert audit['assessed'] == 100, \
+            f"audit assessed should be the unweighted 100, got {audit['assessed']!r}"
+        assert audit['weighted'] == 25, \
+            f"audit weighted should be 25 over 1 of 4 measured, got {audit['weighted']!r}"
 
         # Fill both caches to the full population.
         _write_design_cache(self.tmp, {
@@ -1708,6 +1767,12 @@ class TestPerFeatureDesignAndGaugeStates:
         audit, design = summaries()
         assert design['coverage'] == {'measured': 4, 'total': 4, 'complete': True}
         assert audit['coverage'] == {'measured': 4, 'total': 4, 'complete': True}
+        # With nothing unmeasured the weighted figure equals the assessed one,
+        # so the gauge does not change meaning as coverage fills in.
+        assert design['assessed'] == 100 and design['weighted'] == 100, \
+            f"design assessed/weighted was {design['assessed']}/{design['weighted']}"
+        assert audit['assessed'] == 100 and audit['weighted'] == 100, \
+            f"audit assessed/weighted was {audit['assessed']}/{audit['weighted']}"
 
 
     @pytest.mark.proof("report_data", "PROOF-29", "RULE-28", tier="integration")
@@ -2071,6 +2136,21 @@ class TestDigestProvenance:
         assert moved != head, "the fixture failed to produce a second commit"
         assert self._payload()['git_sha'] == moved, (
             "git_sha must be HEAD at generation time, not the first HEAD seen")
+
+        # A caller that passes an explicit sha still wins over the computed
+        # HEAD: this is the path the pre-commit digest writes through.
+        explicit = '00112233445566778899aabbccddeeff00112233'
+        assert explicit != moved, "the fixture's explicit sha must differ from HEAD"
+        features = purlin_server._scan_specs(self.tmp)
+        proofs = purlin_server._read_proofs(self.tmp)
+        config = purlin_server.resolve_config(self.tmp)
+        written_path = purlin_server._write_report_data(
+            self.tmp, features, proofs, config, {}, git_sha=explicit)
+        assert written_path, "the report should have been written"
+        written = _read_report(self.tmp)
+        assert written['git_sha'] == explicit, (
+            f"an explicit sha must win over HEAD {moved!r}, "
+            f"got {written['git_sha']!r}")
 
         # No git at all: the literal `unknown`, never null and never absent.
         shutil.rmtree(os.path.join(self.tmp, '.git'))

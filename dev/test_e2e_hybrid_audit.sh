@@ -152,16 +152,20 @@ def test_invalid_login():
     # Doesn't check error body — WEAK semantically but passes structural check
 PYEOF
 
-OUTPUT_D=$(python3 "$STATIC_CHECKS" "$TMPDIR_D/test_login.py" "login" --spec-path "$TMPDIR_D/specs/auth/login.md" 2>&1 || true)
+# The real exit status, not the status of a `|| true`: RULE-7 is the exit
+# convention, so the exit code is half of what this phase proves.
+set +e
+OUTPUT_D=$(python3 "$STATIC_CHECKS" "$TMPDIR_D/test_login.py" "login" --spec-path "$TMPDIR_D/specs/auth/login.md" 2>&1)
 EXIT_D=$?
+set -e
 PROOF2_STATUS_D=$(echo "$OUTPUT_D" | python3 -c "import json,sys; d=json.load(sys.stdin); proofs={p['proof_id']:p for p in d['proofs']}; print(proofs.get('PROOF-2',{}).get('status','missing'))")
 
-if [[ "$PROOF2_STATUS_D" == "pass" ]]; then
-  purlin_proof "static_checks" "PROOF-20" "RULE-7" pass "structurally valid test passes Pass 1"
-  echo "    PASS: structurally valid test passes static checks (exit $EXIT_D)"
+if [[ "$EXIT_D" == "0" && "$PROOF2_STATUS_D" == "pass" ]]; then
+  purlin_proof "static_checks" "PROOF-20" "RULE-7" pass "weak but structurally valid test: exit 0, PROOF-2 status pass"
+  echo "    PASS: exit 0 and PROOF-2 status pass"
 else
-  purlin_proof "static_checks" "PROOF-20" "RULE-7" fail "Expected pass; got $PROOF2_STATUS_D"
-  echo "    FAIL: expected pass, got $PROOF2_STATUS_D"
+  purlin_proof "static_checks" "PROOF-20" "RULE-7" fail "Expected exit 0 with PROOF-2 status pass; got exit $EXIT_D and status $PROOF2_STATUS_D"
+  echo "    FAIL: exit $EXIT_D, PROOF-2 status $PROOF2_STATUS_D"
 fi
 
 # ==========================================================================
