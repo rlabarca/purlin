@@ -1,9 +1,9 @@
 {
   "feature": "drift",
-  "vhash": "72515f90",
+  "vhash": "6495481e",
   "vhash_version": 2,
-  "commit": "c60ad919acc42da470151542a733ebede97c18eb",
-  "timestamp": "2026-09-12T02:30:53.732441+00:00",
+  "commit": "64248b321effaefe8919d8fcdbe0dc9290ac8ea7",
+  "timestamp": "2026-09-12T02:43:21.689109+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -13,6 +13,7 @@
     "RULE-14",
     "RULE-15",
     "RULE-16",
+    "RULE-17",
     "RULE-2",
     "RULE-3",
     "RULE-4",
@@ -35,7 +36,8 @@
     "security_no_dangerous_patterns/RULE-2",
     "security_no_dangerous_patterns/RULE-3",
     "security_no_dangerous_patterns/RULE-4",
-    "security_no_dangerous_patterns/RULE-5"
+    "security_no_dangerous_patterns/RULE-5",
+    "security_no_dangerous_patterns/RULE-6"
   ],
   "rule_hashes": {
     "RULE-1": "b5a0027e1aa14004",
@@ -46,6 +48,7 @@
     "RULE-14": "573f9fa1db2f58c5",
     "RULE-15": "e9ef6d1a858ac0c7",
     "RULE-16": "a6f06c4432d7fe2f",
+    "RULE-17": "8593d01717bb1d09",
     "RULE-2": "1a61870ac13a1ff2",
     "RULE-3": "d786c310fe8fb3fc",
     "RULE-4": "0d0d791b567f528e",
@@ -64,11 +67,12 @@
     "schema_spec_format/RULE-7": "0b06862aa4921580",
     "schema_spec_format/RULE-8": "79cb2afc91f483dc",
     "schema_spec_format/RULE-9": "d00ae4cd550896b0",
-    "security_no_dangerous_patterns/RULE-1": "ed467a922f765cf7",
+    "security_no_dangerous_patterns/RULE-1": "088d6b3d2448029d",
     "security_no_dangerous_patterns/RULE-2": "5472c9b7f8b25c0e",
     "security_no_dangerous_patterns/RULE-3": "cf98992127576281",
     "security_no_dangerous_patterns/RULE-4": "f53ddfe0e85bc1be",
-    "security_no_dangerous_patterns/RULE-5": "48c1e637216f0b48"
+    "security_no_dangerous_patterns/RULE-5": "40da78efb052bece",
+    "security_no_dangerous_patterns/RULE-6": "1f7d90da54835852"
   },
   "proofs": [
     {
@@ -249,6 +253,16 @@
       "tier": "unit",
       "test_file": "dev/test_mcp_server.py",
       "test_name": "test_file_classification",
+      "platform": null
+    },
+    {
+      "feature": "drift",
+      "id": "PROOF-20",
+      "rule": "RULE-17",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_drift.py",
+      "test_name": "test_hostile_since_is_refused_before_any_subprocess",
       "platform": null
     },
     {
@@ -458,7 +472,7 @@
       "status": "pass",
       "tier": "unit",
       "test_file": "dev/test_security.py",
-      "test_name": "test_no_eval_or_exec",
+      "test_name": "test_no_dynamic_code_execution",
       "platform": null
     },
     {
@@ -500,14 +514,24 @@
       "test_file": "dev/test_security.py",
       "test_name": "test_subprocess_uses_list_args",
       "platform": null
+    },
+    {
+      "feature": "security_no_dangerous_patterns",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_security.py",
+      "test_name": "test_source_url_never_reaches_git_in_option_position",
+      "platform": null
     }
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T02:30:48.320144+00:00",
-      "commit": "c60ad919acc42da470151542a733ebede97c18eb",
+      "at": "2026-09-12T02:43:11.813027+00:00",
+      "commit": "64248b321effaefe8919d8fcdbe0dc9290ac8ea7",
       "sweep": "dev/run_tests.sh",
-      "passed": 724,
+      "passed": 739,
       "failed": 0,
       "skipped": 27
     },
@@ -522,11 +546,20 @@
         "executed_in_test_run": true
       },
       {
+        "file": "specs/_anchors/security_no_dangerous_patterns.proofs-integration.json",
+        "tier": "integration",
+        "platform": null,
+        "commit": "a5d71a013546313e7bc4cb298b89ed7e69720ea9",
+        "committed_at": "2026-09-11T22:36:11-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      },
+      {
         "file": "specs/_anchors/security_no_dangerous_patterns.proofs-unit.json",
         "tier": "unit",
         "platform": null,
-        "commit": "645293053386d98597c57b6c5614d92de0c83dc0",
-        "committed_at": "2026-04-04T08:10:49-04:00",
+        "commit": "a5d71a013546313e7bc4cb298b89ed7e69720ea9",
+        "committed_at": "2026-09-11T22:36:11-04:00",
         "runner": null,
         "executed_in_test_run": true
       },
@@ -543,8 +576,8 @@
         "file": "specs/mcp/drift.proofs-integration.json",
         "tier": "integration",
         "platform": null,
-        "commit": "011ccbaa30dc0bae1ab95724e96609a5e91ecaba",
-        "committed_at": "2026-04-08T11:26:25-04:00",
+        "commit": "64248b321effaefe8919d8fcdbe0dc9290ac8ea7",
+        "committed_at": "2026-09-11T22:40:36-04:00",
         "runner": null,
         "executed_in_test_run": true
       },
