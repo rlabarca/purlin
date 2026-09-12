@@ -3,91 +3,19 @@
   "proofs": [
     {
       "feature": "report_data",
-      "id": "PROOF-39",
-      "rule": "RULE-38",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_the_payload_carries_evidence_stale_both_ways",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "report_data",
-      "id": "PROOF-30",
-      "rule": "RULE-29",
-      "test_file": "dev/test_report_data.py",
-      "test_name": "test_awaiting_runner_explains_the_coverage_it_reduced",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "report_data",
-      "id": "PROOF-32",
-      "rule": "RULE-31",
-      "test_file": "dev/test_report_data.py",
-      "test_name": "test_top_level_platforms_is_always_present",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "report_data",
-      "id": "PROOF-33",
-      "rule": "RULE-32",
-      "test_file": "dev/test_report_data.py",
-      "test_name": "test_per_feature_platforms_record_and_status_vocabulary",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "report_data",
-      "id": "PROOF-36",
-      "rule": "RULE-35",
-      "test_file": "dev/test_report_data.py",
-      "test_name": "test_platform_complete_holds_verified_at_passing",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "report_data",
-      "id": "PROOF-37",
-      "rule": "RULE-36",
-      "test_file": "dev/test_report_data.py",
-      "test_name": "test_platform_summary_rows_carry_counts_and_integrity",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "report_data",
-      "id": "PROOF-42",
-      "rule": "RULE-41",
-      "test_file": "dev/test_report_data.py",
-      "test_name": "test_host_row_covers_the_agnostic_results",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "report_data",
-      "id": "PROOF-43",
-      "rule": "RULE-42",
-      "test_file": "dev/test_report_data.py",
-      "test_name": "test_platform_kind_is_stated_on_every_row_and_registry_entry",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "report_data",
-      "id": "PROOF-38",
-      "rule": "RULE-37",
-      "test_file": "dev/test_report_data.py",
-      "test_name": "test_every_platform_key_is_present_with_nothing_declared",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "report_data",
       "id": "PROOF-19",
       "rule": "RULE-19",
       "test_file": "dev/test_report_data.py",
       "test_name": "test_feature_category_is_the_parent_directory_name",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-25",
+      "rule": "RULE-24",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_both_entry_points_populate_both_gauges",
       "status": "pass",
       "tier": "integration"
     },
@@ -129,6 +57,33 @@
     },
     {
       "feature": "report_data",
+      "id": "PROOF-30",
+      "rule": "RULE-29",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_awaiting_runner_explains_the_coverage_it_reduced",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-32",
+      "rule": "RULE-31",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_top_level_platforms_is_always_present",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-33",
+      "rule": "RULE-32",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_per_feature_platforms_record_and_status_vocabulary",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "report_data",
       "id": "PROOF-34",
       "rule": "RULE-33",
       "test_file": "dev/test_report_data.py",
@@ -142,6 +97,42 @@
       "rule": "RULE-34",
       "test_file": "dev/test_report_data.py",
       "test_name": "test_migrations_is_present_empty_and_populated",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-36",
+      "rule": "RULE-35",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_platform_complete_holds_verified_at_passing",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-37",
+      "rule": "RULE-36",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_platform_summary_rows_carry_counts_and_integrity",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-38",
+      "rule": "RULE-37",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_every_platform_key_is_present_with_nothing_declared",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-39",
+      "rule": "RULE-38",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_the_payload_carries_evidence_stale_both_ways",
       "status": "pass",
       "tier": "integration"
     },
@@ -165,6 +156,24 @@
     },
     {
       "feature": "report_data",
+      "id": "PROOF-42",
+      "rule": "RULE-41",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_host_row_covers_the_agnostic_results",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-43",
+      "rule": "RULE-42",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_platform_kind_is_stated_on_every_row_and_registry_entry",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "report_data",
       "id": "PROOF-44",
       "rule": "RULE-43",
       "test_file": "dev/test_report_data.py",
@@ -183,10 +192,10 @@
     },
     {
       "feature": "report_data",
-      "id": "PROOF-25",
-      "rule": "RULE-24",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_both_entry_points_populate_both_gauges",
+      "id": "PROOF-46",
+      "rule": "RULE-45",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_an_inherited_entry_is_marked_and_counted",
       "status": "pass",
       "tier": "integration"
     }

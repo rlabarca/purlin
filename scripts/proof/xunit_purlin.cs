@@ -49,7 +49,10 @@
 // At the end of the run, the same moment the proof files are written, the logger
 // writes or merges the project's run marker .purlin/runtime/test_run.json
 // (proof_common RULE-19), so a receipt issued in a consumer project can record
-// which run its evidence came from.
+// which run its evidence came from. Every marked test reported with a Skipped
+// outcome is recorded there under skipped_proofs as
+// {feature, id, test_file, test_name, reason} (proof_common RULE-20), the
+// reason being the skip message the .NET test platform carried with it.
 
 using System;
 using System.Collections.Generic;
@@ -93,6 +96,34 @@ namespace Purlin
         // so an existing entry for it survives the write-scoped overwrite instead
         // of being reaped by a sibling test in the same file (RULE-18).
         private readonly HashSet<string> _skipped = new HashSet<string>(StringComparer.Ordinal);
+
+        // One {feature, id, test_file, test_name, reason} per marked test this
+        // run skipped, for the run marker's skipped_proofs (RULE-20). Keyed by
+        // all four identity fields so the same test is recorded once.
+        private sealed class SkippedProof
+        {
+            public string Feature = "";
+            public string Id = "";
+            public string TestFile = "";
+            public string TestName = "";
+            public string? Reason;
+        }
+
+        private readonly Dictionary<string, SkippedProof> _skippedProofs =
+            new Dictionary<string, SkippedProof>(StringComparer.Ordinal);
+
+        // The message the test platform carried with a Skipped outcome: xUnit's
+        // [Fact(Skip="...")] reason, NUnit's Ignore reason, MSTest's Ignore
+        // message. Null when the run reported none.
+        private static string? SkipReason(TestResult result)
+        {
+            if (!string.IsNullOrWhiteSpace(result.ErrorMessage))
+                return result.ErrorMessage.Trim();
+            foreach (TestResultMessage m in result.Messages)
+                if (!string.IsNullOrWhiteSpace(m.Text))
+                    return m.Text.Trim();
+            return null;
+        }
 
         // The identity of a skipped marked test: (feature, id, test_file).
         private static string SkipKey(string feature, string id, string testFile)
@@ -177,6 +208,16 @@ namespace Purlin
             if (result.Outcome == TestOutcome.Skipped)
             {
                 _skipped.Add(SkipKey(feature, id, testFile));
+                // RULE-20: and the run marker records why it did not run.
+                _skippedProofs[SkipKey(feature, id, testFile) + "\u0000" + testName] =
+                    new SkippedProof
+                    {
+                        Feature = feature,
+                        Id = id,
+                        TestFile = testFile,
+                        TestName = testName,
+                        Reason = SkipReason(result),
+                    };
                 return;
             }
 
@@ -305,7 +346,7 @@ namespace Purlin
             WriteRunMarker(_root, "xunit_purlin", _proofs.Select(p => p.TestFile),
                            _proofs.Count(p => p.Status == "pass"),
                            _proofs.Count(p => p.Status != "pass"),
-                           _skipped.Count);
+                           _skipped.Count, _skippedProofs.Values);
 
             // Emitted during the run (TestRunComplete fires inside the test platform
             // process) — this line is the in-process collection signal that
@@ -366,9 +407,52 @@ namespace Purlin
         /// that lands on unparsable JSON is retried before this run starts a fresh
         /// marker.
         /// </summary>
+        // Union of the marker's skipped_proofs with this run's, keyed by
+        // (feature, id, test_file, test_name) (RULE-20). An entry already in the
+        // marker wins, so a plugin that ran earlier at this commit keeps the
+        // reason it observed.
+        private static JsonArray MergeSkippedProofs(JsonNode? existing,
+                                                    IEnumerable<SkippedProof> fresh)
+        {
+            var merged = new JsonArray();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            if (existing is JsonArray old)
+            {
+                foreach (JsonNode? n in old)
+                {
+                    if (n == null) continue;
+                    if (n is JsonObject o)
+                    {
+                        string Field(string k) => o[k] is JsonValue v
+                            && v.TryGetValue(out string? t) ? (t ?? "") : "";
+                        seen.Add(Field("feature") + "\u0000" + Field("id") + "\u0000"
+                                 + Field("test_file") + "\u0000" + Field("test_name"));
+                    }
+                    merged.Add(n.DeepClone());
+                }
+            }
+            foreach (SkippedProof p in fresh)
+            {
+                string key = p.Feature + "\u0000" + p.Id + "\u0000"
+                             + p.TestFile + "\u0000" + p.TestName;
+                if (!seen.Add(key)) continue;
+                var entry = new JsonObject
+                {
+                    ["feature"] = (JsonNode)p.Feature,
+                    ["id"] = (JsonNode)p.Id,
+                    ["test_file"] = (JsonNode)p.TestFile,
+                    ["test_name"] = (JsonNode)p.TestName,
+                };
+                entry["reason"] = p.Reason == null ? null : (JsonNode)p.Reason;
+                merged.Add(entry);
+            }
+            return merged;
+        }
+
         private static void WriteRunMarker(string root, string sweep,
                                            IEnumerable<string> testFiles,
-                                           int passed, int failed, int skipped)
+                                           int passed, int failed, int skipped,
+                                           IEnumerable<SkippedProof>? skippedProofs = null)
         {
             if (!Directory.Exists(Path.Combine(root, ".purlin"))) return;
             string path = Path.Combine(root, RunMarkerRel);
@@ -445,6 +529,12 @@ namespace Purlin
             marker["skipped"] = MarkerInt(marker, "skipped") + skipped;
             marker["ok"] = hadOk && failed == 0;
             marker["runs"] = runs;
+            // RULE-20: written only when the union is non-empty, so a run that
+            // skipped nothing adds no key.
+            JsonArray mergedSkips = MergeSkippedProofs(
+                marker["skipped_proofs"],
+                skippedProofs ?? Enumerable.Empty<SkippedProof>());
+            if (mergedSkips.Count > 0) marker["skipped_proofs"] = mergedSkips;
 
             string tmp = path + "." + Environment.ProcessId + ".tmp";
             File.WriteAllText(tmp, marker.ToJsonString(new JsonSerializerOptions

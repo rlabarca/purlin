@@ -4389,3 +4389,89 @@ class TestPlatformChipGeometry:
         assert long_chip["scroll"] > long_chip["client"], \
             "a long id must be ellipsised inside the chip, not widen the column"
         assert long_id in long_chip["title"], "the full id lives in the tooltip"
+
+
+class TestInheritedProofChip:
+    """purlin_report RULE-50 - evidence this host inherited says so."""
+
+    REASON = "tsc not available"
+
+    def _data(self, reason=REASON, mark=True):
+        data = make_data()
+        feature = next(f for f in data["features"] if f["name"] == "auth_login")
+        feature["inherited_count"] = 1 if mark else 0
+        for rule in feature["rules"]:
+            for proof in rule["proofs"]:
+                if mark and proof["id"] == "PROOF-4":
+                    proof["inherited"] = True
+                    proof["inherited_reason"] = reason
+        return data
+
+    def _expand(self, page):
+        """Expand auth_login through the same localStorage key the page uses,
+        rather than by clicking: the key persists across loads, so a second
+        click in one test would collapse the row instead of opening it."""
+        page.evaluate(
+            "() => localStorage.setItem('purlin-expanded',"
+            " JSON.stringify({auth_login: true}))")
+        page.reload()
+        page.wait_for_load_state("networkidle")
+        page.wait_for_timeout(300)
+
+    def _chips(self, page):
+        return page.evaluate("""() => {
+            const probe = document.createElement('span');
+            probe.style.color = 'var(--amber)';
+            document.body.appendChild(probe);
+            const amber = getComputedStyle(probe).color;
+            probe.remove();
+            const out = [];
+            for (const chip of document.querySelectorAll('.pchip')) {
+                if (chip.textContent.trim() !== 'inherited') continue;
+                const cell = chip.closest('.rprf');
+                out.push({
+                    text: chip.textContent.trim(),
+                    cls: chip.className,
+                    title: chip.getAttribute('title'),
+                    color: getComputedStyle(chip).color,
+                    amber: amber,
+                    cell: cell ? cell.textContent : '',
+                });
+            }
+            return out;
+        }""")
+
+    @pytest.mark.proof("purlin_report", "PROOF-56", "RULE-50", tier="e2e")
+    def test_an_inherited_proof_carries_an_amber_chip_with_its_reason(
+            self, page, dashboard):
+        load_dashboard(page, dashboard, data=self._data())
+        self._expand(page)
+
+        chips = self._chips(page)
+        assert len(chips) == 1, (
+            f"exactly the proof the run skipped carries the chip: {chips}")
+        chip = chips[0]
+        assert chip["text"] == "inherited", chip
+        assert "pchip-wait" in chip["cls"].split(), (
+            f"the chip is amber, like awaiting: something is missing here and "
+            f"it is not a failure: {chip['cls']}")
+        assert chip["color"] == chip["amber"], (
+            f"the chip must render in --amber, got {chip['color']} against "
+            f"{chip['amber']}")
+        assert chip["title"] == self.REASON, chip
+        assert "PROOF-4" in chip["cell"], chip["cell"]
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR,
+                                          "proof56_inherited_chip.png"))
+
+        # A framework that carried no message: the chip still says what it is.
+        load_dashboard(page, dashboard, data=self._data(reason=None))
+        self._expand(page)
+        chips = self._chips(page)
+        assert len(chips) == 1, chips
+        assert chips[0]["title"] == "no reason recorded", chips[0]
+
+        # Nothing inherited: no chip at all, so the chip is evidence and not
+        # decoration.
+        load_dashboard(page, dashboard, data=self._data(mark=False))
+        self._expand(page)
+        assert self._chips(page) == [], self._chips(page)

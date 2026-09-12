@@ -3905,3 +3905,105 @@ class TestReportBuildRunScope:
             f"{len(parses)} parses for {len(named)} distinct test files: a file was "
             "parsed once per proof it backs, so the build opened no run scope")
         assert elapsed < 15, f"the build took {elapsed:.1f}s"
+
+
+class TestInheritedProofs:
+    """sync_status RULE-65: a proof the run skipped here is inherited, not fresh.
+
+    The entry is real and the rule is proved, but the commit that proved it
+    may be months old and on another machine. Nothing said so before: a
+    missing prerequisite read as evidence produced here, forever.
+    """
+
+    MARKER = os.path.join('.purlin', 'runtime', 'test_run.json')
+
+    def setup_method(self):
+        self.project_root = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.project_root, '.purlin'))
+        self.spec_dir = os.path.join(self.project_root, 'specs', 'app')
+        os.makedirs(self.spec_dir)
+        with open(os.path.join(self.project_root, '.purlin', 'config.json'), 'w') as f:
+            json.dump({'report': False, 'version': '0.10.0',
+                       'test_framework': 'pytest', 'spec_dir': 'specs'}, f)
+        with open(os.path.join(self.spec_dir, 'locking.md'), 'w') as f:
+            f.write('# Feature: locking\n\n## What it does\nLocks.\n\n## Rules\n'
+                    '- RULE-1: Locks through the tsc path\n'
+                    '- RULE-2: Locks through the plain path\n\n## Proof\n'
+                    '- PROOF-1 (RULE-1): the tsc path locks @unit\n'
+                    '- PROOF-2 (RULE-2): the plain path locks @unit\n')
+        with open(os.path.join(self.spec_dir, 'locking.proofs-unit.json'), 'w') as f:
+            json.dump({'tier': 'unit', 'proofs': [
+                {'feature': 'locking', 'id': 'PROOF-1', 'rule': 'RULE-1',
+                 'test_file': 'dev/t_one.py', 'test_name': 'test_needs_tsc',
+                 'status': 'pass', 'tier': 'unit'},
+                {'feature': 'locking', 'id': 'PROOF-2', 'rule': 'RULE-2',
+                 'test_file': 'dev/t_two.py', 'test_name': 'test_plain',
+                 'status': 'pass', 'tier': 'unit'},
+            ]}, f, indent=2)
+        for args in (['init', '-q'], ['config', 'user.email', 't@e'],
+                     ['config', 'user.name', 't'], ['add', '-A'],
+                     ['commit', '-q', '-m', 'init']):
+            subprocess.run(['git'] + args, cwd=self.project_root,
+                           capture_output=True, text=True)
+        self.head = subprocess.run(
+            ['git', 'rev-parse', 'HEAD'], cwd=self.project_root,
+            capture_output=True, text=True).stdout.strip()
+
+    def teardown_method(self):
+        shutil.rmtree(self.project_root, ignore_errors=True)
+
+    def _marker(self, skipped_proofs):
+        path = os.path.join(self.project_root, self.MARKER)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        marker = {'at': '2026-09-12T00:00:00+00:00', 'commit': self.head,
+                  'sweep': 'pytest_purlin', 'test_files': ['dev/t_two.py'],
+                  'passed': 1, 'failed': 0, 'skipped': 1, 'ok': True,
+                  'runs': []}
+        if skipped_proofs is not None:
+            marker['skipped_proofs'] = skipped_proofs
+        with open(path, 'w') as f:
+            json.dump(marker, f, indent=2)
+
+    def _record(self, pid, test_file, test_name, reason='tsc not available'):
+        return {'feature': 'locking', 'id': pid, 'test_file': test_file,
+                'test_name': test_name, 'reason': reason}
+
+    def _lines(self):
+        out = purlin_server.sync_status(self.project_root).splitlines()
+        detail = [l for l in out if 'not executed on this host' in l]
+        summary = next(l for l in out if 'features VERIFIED' in l)
+        return detail, summary
+
+    @pytest.mark.proof("sync_status", "PROOF-104", "RULE-65", tier="integration")
+    def test_a_skipped_proof_reads_as_inherited_with_its_reason_and_sha(self):
+        sha7 = self.head[:7]
+
+        self._marker([self._record('PROOF-1', 'dev/t_one.py', 'test_needs_tsc')])
+        detail, summary = self._lines()
+        assert detail == [
+            '  ⚠ 1 proof not executed on this host (tsc not available): '
+            f'entries inherited from {sha7}'], detail
+        assert summary.endswith('| 1 inherited'), summary
+
+        # Two records, one reason, one proof file: one line, counted together.
+        self._marker([self._record('PROOF-1', 'dev/t_one.py', 'test_needs_tsc'),
+                      self._record('PROOF-2', 'dev/t_two.py', 'test_plain')])
+        detail, summary = self._lines()
+        assert detail == [
+            '  ⚠ 2 proofs not executed on this host (tsc not available): '
+            f'entries inherited from {sha7}'], detail
+        assert summary.endswith('| 2 inherited'), summary
+
+        # A record naming a test file no committed entry carries held nothing,
+        # so nothing was inherited and nothing is said.
+        self._marker([self._record('PROOF-1', 'dev/t_gone.py', 'test_needs_tsc')])
+        detail, summary = self._lines()
+        assert detail == [], detail
+        assert 'inherited' not in summary, summary
+
+        # No marker at all: the same silence, and the same summary line.
+        os.remove(os.path.join(self.project_root, self.MARKER))
+        detail, no_marker = self._lines()
+        assert detail == [], detail
+        assert 'inherited' not in no_marker, no_marker
+        assert no_marker == summary, (no_marker, summary)

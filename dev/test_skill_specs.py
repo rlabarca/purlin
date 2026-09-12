@@ -1832,6 +1832,24 @@ class TestSkillVerify:
         assert '`runs`' in step3, \
             "Step 3 must name the runs list the receipt carries"
 
+    @pytest.mark.proof("skill_verify", "PROOF-16", "RULE-16", tier="integration")
+    def test_step_3_names_the_skipped_proofs_the_receipt_carries(self):
+        """RULE-16: a bare `skipped: 6` names no proof. Step 3 has to say the
+        receipt carries which six, and that they were held rather than
+        re-proved."""
+        content = _read('verify')
+        step3 = content.split('### Step 3')[1].split('### Step 4')[0]
+        assert 'skipped_proofs' in step3, \
+            "Step 3 must name the skipped_proofs list the receipt carries"
+        for field in ('feature', 'id', 'test_file', 'test_name', 'reason'):
+            assert field in step3, (
+                f"Step 3 must name the {field} field of a skipped_proofs entry")
+        assert 'prerequisite' in step3, (
+            "Step 3 must say why the test did not run: a prerequisite this "
+            "host lacks, not a failure")
+        assert 'RULE-20' in step3 and 'proof_common' in step3, \
+            "Step 3 must point at proof_common RULE-20 rather than restate it"
+
     @pytest.mark.proof("skill_verify", "PROOF-1", "RULE-1")
     def test_has_frontmatter(self):
         content = _read('verify')

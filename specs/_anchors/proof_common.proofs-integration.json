@@ -459,6 +459,51 @@
       "test_name": "test_the_dev_sweep_merges_over_the_plugin_runs",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-26",
+      "rule": "RULE-20",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_pytest_records_the_skip_reason",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-26",
+      "rule": "RULE-20",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_jest_records_the_skipped_proof_with_a_null_reason",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-26",
+      "rule": "RULE-20",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_vitest_records_the_skipped_proof_with_a_null_reason",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-26",
+      "rule": "RULE-20",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_xunit_records_the_skip_reason",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-26",
+      "rule": "RULE-20",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_the_merge_unions_by_the_four_identity_fields",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

@@ -31,7 +31,10 @@
  * At the end of the run, the same moment the proof files are written, the
  * reporter writes or merges the project's run marker
  * .purlin/runtime/test_run.json (proof_common RULE-19), so a receipt issued in
- * a consumer project can record which run its evidence came from.
+ * a consumer project can record which run its evidence came from. Every marked
+ * test the run skipped is recorded there under skipped_proofs as
+ * {feature, id, test_file, test_name, reason} (proof_common RULE-20); jest
+ * reports no message with a skipped status, so reason is null.
  */
 
 const { execFileSync } = require("child_process");
@@ -83,6 +86,24 @@ function runMarkerCommit(root) {
   }
 }
 
+// Union of two skipped_proofs lists keyed by (feature, id, test_file,
+// test_name) (proof_common RULE-20). An entry already in the marker wins, so a
+// plugin that ran earlier at this commit keeps the reason it observed.
+function mergeSkippedProofs(existing, fresh) {
+  const out = (Array.isArray(existing) ? existing : []).filter(
+    (e) => e && typeof e === "object" && !Array.isArray(e)
+  );
+  const key = (e) => JSON.stringify([e.feature ?? null, e.id ?? null,
+                                     e.test_file ?? null, e.test_name ?? null]);
+  const seen = new Set(out.map(key));
+  for (const entry of fresh || []) {
+    if (seen.has(key(entry))) continue;
+    seen.add(key(entry));
+    out.push(entry);
+  }
+  return out;
+}
+
 // A synchronous pause, so a read that landed mid-replace can be retried.
 function runMarkerPause(ms) {
   try {
@@ -103,8 +124,12 @@ function runMarkerPause(ms) {
  * written to a temp file in the same directory and renamed over the target, so
  * a concurrent reader sees one whole marker or the other; a read that lands on
  * unparsable JSON is retried before this run starts a fresh marker.
+ * `skippedProofs` is unioned by (feature, id, test_file, test_name) and written
+ * only when the union is non-empty, so a run that skipped nothing adds no key
+ * (RULE-20).
  */
-function writeRunMarker(root, sweep, testFiles, passed, failed, skipped) {
+function writeRunMarker(root, sweep, testFiles, passed, failed, skipped,
+                        skippedProofs) {
   if (!fs.existsSync(path.join(root, ".purlin"))) return null;
   const markerPath = path.join(root, RUN_MARKER_REL);
   fs.mkdirSync(path.dirname(markerPath), { recursive: true });
@@ -146,6 +171,8 @@ function writeRunMarker(root, sweep, testFiles, passed, failed, skipped) {
     ok: (marker.ok === undefined ? true : Boolean(marker.ok)) && failed === 0,
     runs,
   });
+  const mergedSkips = mergeSkippedProofs(marker.skipped_proofs, skippedProofs);
+  if (mergedSkips.length) marker.skipped_proofs = mergedSkips;
 
   const tmp = `${markerPath}.${process.pid}.tmp`;
   fs.writeFileSync(tmp, JSON.stringify(marker, null, 2) + "\n");
@@ -167,6 +194,10 @@ class PurlinProofReporter {
     // an existing entry for it survives the write-scoped overwrite instead of
     // being reaped by a sibling test in the same file (proof_common RULE-18).
     this.skipped = new Set();
+    // One {feature, id, test_file, test_name, reason} per marked test this run
+    // skipped, for the run marker's skipped_proofs (RULE-20). A jest test
+    // result carries no skip message, so reason is null.
+    this.skippedProofs = new Map();
   }
 
   onTestResult(test, testResult) {
@@ -186,6 +217,14 @@ class PurlinProofReporter {
       // from this run's reap (RULE-18).
       if (SKIPPED_STATUSES.has(result.status)) {
         this.skipped.add(skipKey(feature, proofId, testFile));
+        // RULE-20: and the run marker records that it did not run. jest
+        // reports a status and no message for a skipped test, so the reason
+        // this contract asks for is null rather than invented.
+        this.skippedProofs.set(
+          `${feature}\u0000${proofId}\u0000${testFile}\u0000${result.title}`,
+          { feature, id: proofId, test_file: testFile,
+            test_name: result.title, reason: null }
+        );
         continue;
       }
 
@@ -282,7 +321,8 @@ class PurlinProofReporter {
       entries.map((e) => e.test_file),
       entries.filter((e) => e.status === "pass").length,
       entries.filter((e) => e.status !== "pass").length,
-      this.skipped.size
+      this.skipped.size,
+      [...this.skippedProofs.values()]
     );
   }
 }

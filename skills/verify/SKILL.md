@@ -98,8 +98,13 @@ merging it at the moment it writes its proof files, and in this repository
 `dev/run_tests.sh` merges its own summary over those plugin runs. The contract is
 stated once, in `specs/_anchors/proof_common.md` RULE-19; do not restate it here.
 The receipt carries the marker's `sweep` and its `runs` list, one entry per plugin
-run that contributed, so the reader can see which runs the evidence rests on. A
-project with no sweep script of its own therefore needs no `--no-run-check`.
+run that contributed, so the reader can see which runs the evidence rests on. It
+carries the marker's `skipped_proofs` too, one `{feature, id, test_file,
+test_name, reason}` entry per marked test the run skipped, so the receipt says
+which of its proof entries were held from an earlier commit because a
+prerequisite was missing here rather than re-proved by this run
+(`specs/_anchors/proof_common.md` RULE-20). A project with no sweep script of
+its own therefore needs no `--no-run-check`.
 
 #### Manual stamps in the count
 

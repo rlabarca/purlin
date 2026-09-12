@@ -198,6 +198,15 @@
       "test_name": "test_chips_are_centered_uniform_and_ellipsised",
       "status": "pass",
       "tier": "e2e"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-56",
+      "rule": "RULE-50",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_an_inherited_proof_carries_an_amber_chip_with_its_reason",
+      "status": "pass",
+      "tier": "e2e"
     }
   ]
 }

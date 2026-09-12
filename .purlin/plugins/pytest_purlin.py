@@ -28,7 +28,11 @@ constraints: the ids a marker declares are recorded by the spec, not here.
 At the end of the run, the same moment the proof files are written, the
 plugin writes or merges the project's run marker
 `.purlin/runtime/test_run.json` (proof_common RULE-19), so a receipt issued
-in a consumer project can record which run its evidence came from.
+in a consumer project can record which run its evidence came from. Every
+marked test the run skipped is recorded in that marker under `skipped_proofs`
+as `{feature, id, test_file, test_name, reason}` (proof_common RULE-20), the
+reason being the skip message pytest carries, so a kept entry (RULE-18) reads
+as inherited rather than as fresh evidence.
 """
 
 import datetime
@@ -85,7 +89,29 @@ def _run_marker_commit(root):
     return out.stdout.strip() or None
 
 
-def _write_run_marker(root, sweep, test_files, passed, failed, skipped):
+def _merge_skipped_proofs(existing, fresh):
+    """Union of two `skipped_proofs` lists keyed by
+    `(feature, id, test_file, test_name)` (proof_common RULE-20).
+
+    An entry already in the marker wins, so a plugin that ran earlier at this
+    commit keeps the reason it observed and a second plugin only adds what the
+    first never saw.
+    """
+    out = [e for e in (existing or []) if isinstance(e, dict)]
+    seen = {(e.get("feature"), e.get("id"), e.get("test_file"), e.get("test_name"))
+            for e in out}
+    for entry in fresh or []:
+        key = (entry.get("feature"), entry.get("id"),
+               entry.get("test_file"), entry.get("test_name"))
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(entry)
+    return out
+
+
+def _write_run_marker(root, sweep, test_files, passed, failed, skipped,
+                      skipped_proofs=()):
     """Write or merge `<root>/.purlin/runtime/test_run.json` (RULE-19).
 
     Nothing is written when `<root>/.purlin` is absent: that is not a Purlin
@@ -96,6 +122,9 @@ def _write_run_marker(root, sweep, test_files, passed, failed, skipped):
     written to a temp file in the same directory and renamed over the target,
     so a concurrent reader sees one whole marker or the other; a read that
     lands on unparsable JSON is retried before this run starts a fresh marker.
+    `skipped_proofs` is unioned by `(feature, id, test_file, test_name)` and is
+    written only when the union is non-empty, so a run that skipped nothing
+    adds no key (RULE-20).
     """
     if not os.path.isdir(os.path.join(root, ".purlin")):
         return None
@@ -132,6 +161,10 @@ def _write_run_marker(root, sweep, test_files, passed, failed, skipped):
         "ok": bool(marker.get("ok", True)) and failed == 0,
         "runs": runs,
     })
+    merged_skips = _merge_skipped_proofs(marker.get("skipped_proofs"),
+                                         skipped_proofs)
+    if merged_skips:
+        marker["skipped_proofs"] = merged_skips
     tmp = "%s.%d.tmp" % (path, os.getpid())
     with open(tmp, "w") as f:
         json.dump(marker, f, indent=2)
@@ -156,6 +189,10 @@ class ProofCollector:
         # existing entry for it survives the write-scoped overwrite instead of
         # being reaped by a sibling test in the same file (proof_common RULE-18).
         self.skipped = set()
+        # One {feature, id, test_file, test_name, reason} per marked test this
+        # run skipped, for the run marker's `skipped_proofs` (RULE-20). pytest
+        # carries a reason on every skip, so `reason` is never null here.
+        self.skipped_proofs = {}
 
     def pytest_runtest_makereport(self, item, call):
         # A skip surfaces as a Skipped exception: raised during setup by a
@@ -183,6 +220,18 @@ class ProofCollector:
                 # proof_common RULE-13: a skipped test emits no entry at all.
                 # RULE-18: and the entry it would have written is kept.
                 self.skipped.add((feature, proof_id, test_file))
+                # RULE-20: and the run marker records why it did not run. The
+                # message is the one pytest raised the skip with: a `skipif`
+                # reason, a `skip` marker's reason, or the argument to
+                # `pytest.skip()` in the body.
+                reason = getattr(call.excinfo.value, "msg", None)
+                self.skipped_proofs[(feature, proof_id, test_file, item.name)] = {
+                    "feature": feature,
+                    "id": proof_id,
+                    "test_file": test_file,
+                    "test_name": item.name,
+                    "reason": reason,
+                }
                 continue
             plat = _host_platform() if _declared_platforms(marker) else None
             key = (feature, tier, plat)
@@ -214,6 +263,7 @@ class ProofCollector:
             sum(1 for e in entries if e["status"] == "pass"),
             sum(1 for e in entries if e["status"] != "pass"),
             len(self.skipped),
+            list(self.skipped_proofs.values()),
         )
 
     def _write_proof_files(self):

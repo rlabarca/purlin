@@ -1391,6 +1391,81 @@ def _file_provenance(project_root, rel):
     return result
 
 
+# ── The run marker: prerequisites that stopped a proof running here ─────────
+# proof_common RULE-20: every plugin that can observe a skip records the marked
+# tests it skipped, with the reason its framework gave. RULE-18 kept those
+# entries committed; these helpers are what let a surface say so.
+
+
+def _run_marker(project_root):
+    """The project's run marker `.purlin/runtime/test_run.json` as a dict.
+
+    `{}` when there is none, or when what is on disk is not a JSON object: the
+    marker is a runtime file a test run owns, and a report must not fail over
+    one that is absent, half-written or from a foreign tool.
+    """
+    path = os.path.join(project_root, '.purlin', 'runtime', 'test_run.json')
+    try:
+        with open(path) as f:
+            marker = json.load(f)
+    except (OSError, ValueError):
+        return {}
+    return marker if isinstance(marker, dict) else {}
+
+
+def _inherited_proofs(project_root, feature, proofs):
+    """One record per committed entry of `feature` the recorded run skipped.
+
+    `{id, test_file, test_name, reason, entry}` for each `skipped_proofs`
+    record (`proof_common` RULE-20) whose `(feature, id, test_file)` names an
+    entry that is actually committed: that is the entry RULE-18 held in place,
+    so it is evidence this host inherited rather than evidence it produced. A
+    record naming no committed entry is not reported at all, because nothing
+    was held: the proof is simply uncovered from that test file.
+    """
+    records = _run_marker(project_root).get('skipped_proofs') or []
+    if not records:
+        return []
+    by_key = {}
+    for entry in proofs or []:
+        by_key.setdefault((entry.get('id'), entry.get('test_file')), entry)
+    out = []
+    for rec in records:
+        if not isinstance(rec, dict) or rec.get('feature') != feature:
+            continue
+        entry = by_key.get((rec.get('id'), rec.get('test_file')))
+        if entry is None:
+            continue
+        out.append({'id': rec.get('id'), 'test_file': rec.get('test_file'),
+                    'test_name': rec.get('test_name'),
+                    'reason': rec.get('reason'), 'entry': entry})
+    return out
+
+
+def _inherited_lines(project_root, name, info, inherited):
+    """The RULE-65 detail lines: one per (reason, provenance commit) group.
+
+    The commit is the proof file's own, read through `_file_provenance` the
+    way every other provenance on this surface is, because a proof entry
+    carries no timestamp on purpose.
+    """
+    groups = {}
+    for rec in inherited:
+        entry = rec['entry']
+        rel = _proof_file_rel(project_root, info.get('path', ''), name,
+                              entry.get('tier', 'unit'), entry.get('platform'))
+        prov = _file_provenance(project_root, rel) or {}
+        sha = (prov.get('commit') or '')[:7] or 'no commit'
+        groups.setdefault((rec.get('reason') or 'no reason recorded', sha),
+                          []).append(rec['id'])
+    out = []
+    for (reason, sha), ids in sorted(groups.items()):
+        n = len(ids)
+        out.append(f"  \u26a0 {n} proof{'s' if n != 1 else ''} not executed on "
+                   f"this host ({reason}): entries inherited from {sha}")
+    return out
+
+
 def _gauge_token(gauge, which):
     """Render one feature's gauge for the text table.
 
@@ -1987,7 +2062,8 @@ def _bare(name):
 def _build_summary_table(summary_rows, audit_summary=None, design_summary=None,
                          gauges_by_feature=None, config=None, awaiting_count=0,
                          platform_lines=None, platform_partial=frozenset(),
-                         platforms_line='', remote_status=None):
+                         platforms_line='', remote_status=None,
+                         inherited_count=0):
     """Build a coverage summary table with Unicode box-drawing characters.
 
     `platform_lines` is the Platforms block (sync_status RULE-52), printed
@@ -2000,6 +2076,11 @@ def _build_summary_table(summary_rows, audit_summary=None, design_summary=None,
     RULE-57 one-liner, printed after the summary line and before the mode
     line. Both default to empty, and with nothing declared the output is
     byte-identical to what it was before platforms existed.
+
+    `inherited_count` is how many committed proof entries the recorded run
+    skipped on this host (`sync_status` RULE-65). It is a segment of the
+    summary line, and 0 prints nothing, so a project with no run marker and a
+    project whose run skipped nothing read the same.
     """
     if not summary_rows:
         return []
@@ -2108,6 +2189,12 @@ def _build_summary_table(summary_rows, audit_summary=None, design_summary=None,
             summary_line += " | Proof Integrity: no tests yet \u2014 run purlin:audit for Proof Design"
         else:
             summary_line += " | No audit data \u2014 run purlin:audit for quality assessment"
+
+    # What this host did not run (RULE-65). Last, because it qualifies the
+    # coverage the line has just reported: those proofs read PASS off evidence
+    # an earlier commit produced, not off this run.
+    if inherited_count:
+        summary_line += f" | {inherited_count} inherited"
 
     lines.append(summary_line)
 
@@ -2623,6 +2710,9 @@ def sync_status(project_root, role=None):
 
     summary_rows = []
     detail = []
+    # Committed entries the recorded run skipped on this host, across features
+    # (RULE-65). Accumulated from the verdicts the loops below already build.
+    inherited_count = 0
     # The per-platform records the Platforms line and the status marker are
     # both read from, collected as each feature's verdict is computed rather
     # than rebuilt afterwards (RULE-54).
@@ -2670,6 +2760,7 @@ def sync_status(project_root, role=None):
         if not verdict['platform_complete']:
             platform_partial.add(name)
 
+        inherited_count += len(verdict['inherited'])
         summary_rows.append((name, verdict['proved'],
                              len(verdict['active_entries']), status))
 
@@ -2726,6 +2817,7 @@ def sync_status(project_root, role=None):
             if not verdict['platform_complete']:
                 platform_partial.add(name)
 
+            inherited_count += len(verdict['inherited'])
             summary_rows.append((f"{name} (anchor)", verdict['proved'],
                                  len(verdict['active_entries']), a_status))
 
@@ -2764,7 +2856,8 @@ def sync_status(project_root, role=None):
     table_lines = _build_summary_table(summary_rows, audit_summary, design_summary,
                                        gauges_by_feature, config, awaiting_count,
                                        platform_lines, frozenset(platform_partial),
-                                       platforms_line, remote_status=remote_status)
+                                       platforms_line, remote_status=remote_status,
+                                       inherited_count=inherited_count)
 
     # Report data generation (side effect)
     if config.get('report'):
@@ -3101,7 +3194,8 @@ def _feature_verdict(name, info, all_features, all_proofs, global_anchors,
 
     Returns a dict of `rule_entries`, `active_entries`, `proof_by_rule`,
     `relevant_proofs`, `rules_text`, `manual_ok`, `manual_ok_rules`, `proved`, `has_fail`,
-    `vhash`, `awaiting`, `awaiting_rule_count`, `undeclared`, `platforms` (the
+    `vhash`, `awaiting`, `awaiting_rule_count`, `undeclared`, `inherited` (the
+    committed entries the recorded run skipped on this host), `platforms` (the
     `_platform_results` record), `unresolved_requires`, `receipt` and
     `has_current_receipt`.
     """
@@ -3135,6 +3229,11 @@ def _feature_verdict(name, info, all_features, all_proofs, global_anchors,
                    for key, _, _ in active_entries)
     vhash = _compute_vhash(rules_text, relevant_proofs, manual_ok)
     pres = _platform_results(name, info, all_proofs, registry)
+    # Committed entries the recorded run skipped here (proof_common RULE-20).
+    # One read of the run marker, in the one function every surface goes
+    # through, so the text report, the payload and the issuer cannot disagree
+    # about which evidence this host inherited (sync_status RULE-54).
+    inherited = _inherited_proofs(project_root, name, all_proofs.get(name, []))
     receipt = _read_receipt(project_root, name)
     active_total = len(active_entries)
     has_current_receipt = (
@@ -3155,6 +3254,7 @@ def _feature_verdict(name, info, all_features, all_proofs, global_anchors,
         'awaiting': awaiting,
         'awaiting_rule_count': awaiting_rule_count,
         'undeclared': pres['undeclared'],
+        'inherited': inherited,
         'platforms': pres,
         # False when some proof declares a platform with no result there. The
         # feature is proved here and cannot claim more (report_data RULE-35).
@@ -3224,6 +3324,12 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
         return _platform_lines(project_root, name, info, pres,
                                awaiting_rule_count, platform_records, host_ids,
                                verdict['has_current_receipt'], registry)
+
+    def inherited_detail():
+        # What this host did not run (sync_status RULE-65). Printed beside the
+        # platform lines because it answers the same question they do: which
+        # of this feature's evidence was produced here, and which was not.
+        return _inherited_lines(project_root, name, info, verdict['inherited'])
 
     total = len(rule_entries)
     deferred_count = sum(1 for _, _, _, is_def in rule_entries if is_def)
@@ -3315,6 +3421,7 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
         lines.append(f"  {proved}/{active_total} rules proved \u2713{deferred_suffix}")
         lines.append(f"  vhash={vhash}")
         lines.extend(platform_detail())
+        lines.extend(inherited_detail())
 
         if receipt and not has_current_receipt:
             receipt_rules = set(receipt.get('rules', []))
@@ -3384,6 +3491,7 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
     lines.extend(warnings)
     lines.extend(advisories)
     lines.extend(platform_detail())
+    lines.extend(inherited_detail())
     if visual_hash_changed:
         lines.append("  \u26a0 Visual reference image was modified since rules were extracted")
         lines.append(f"  \u2192 Run: purlin:spec {name} (re-extract rules from updated image)")
@@ -4211,6 +4319,18 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             else:
                 summary['untested'] += 1
 
+        # Committed entries the recorded run skipped here, keyed the way
+        # RULE-18 keeps them (report_data RULE-45). Built once per feature so
+        # the per-proof lookup below is a dict hit, not a scan.
+        inherited_by_key = {(rec['id'], rec['test_file']): rec
+                            for rec in verdict['inherited']}
+
+        def inherited_keys(p):
+            rec = inherited_by_key.get((p.get('id'), p.get('test_file')))
+            if rec is None:
+                return {}
+            return {'inherited': True, 'inherited_reason': rec['reason']}
+
         # Build per-rule list
         rules_list = []
         for key, label, src_feature, is_deferred in rule_entries:
@@ -4265,6 +4385,11 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
                     'platform': p.get('platform'),
                     'status': p.get('status', ''),
                     'audit': proof_audit,
+                    # `inherited` and `inherited_reason` only on an entry the
+                    # recorded run skipped here; absent otherwise, so the
+                    # payload does not grow a pair of keys on every proof in
+                    # the project to say nothing (report_data RULE-45).
+                    **inherited_keys(p),
                     **platform_keys(pid),
                 })
 
@@ -4366,6 +4491,10 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             # RULE-47, report_data RULE-29).
             'awaiting_runner': [{'id': pid, 'tier': tier, 'platform': platform}
                                 for pid, tier, platform in awaiting_runner],
+            # How many of this feature's committed entries the recorded run
+            # skipped on this host (report_data RULE-45). Always present, so 0
+            # is told from a payload written before the field existed.
+            'inherited_count': len(verdict['inherited']),
             # Scoped results that satisfy no declared platform; they count
             # toward nothing (sync_status RULE-53).
             'undeclared': [{'id': pid, 'tier': tier, 'platform': platform}

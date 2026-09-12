@@ -285,6 +285,35 @@ class TestPluginWrittenMarkerReachesTheReceipt:
         finally:
             shutil.rmtree(root)
 
+    @pytest.mark.proof("skill_verify", "PROOF-16", "RULE-16", tier="integration")
+    def test_receipt_carries_the_runs_skipped_proofs(self):
+        """RULE-16: the marker's `skipped_proofs` reaches the receipt
+        unchanged, so a receipt says which proof entries were held from an
+        earlier commit rather than re-proved by the run it cites."""
+        skipped_proofs = [{'feature': 'plain', 'id': 'PROOF-4',
+                           'test_file': 'dev/t_plain.py',
+                           'test_name': 'test_tsc_path',
+                           'reason': 'tsc not available'}]
+        root, spec_dir = _make_project(with_broken=False)
+        try:
+            issue_receipts.write_run_marker(root, skipped_proofs=skipped_proofs)
+            issued, skipped = issue_receipts.main(root, quiet=True)
+            assert 'plain' in [n for n, _, _ in issued], (issued, skipped)
+            test_run = _receipt(root, 'plain')['evidence']['test_run']
+            assert test_run['skipped_proofs'] == skipped_proofs, (
+                "the receipt must carry the run's skipped proofs with their "
+                f"reason: {test_run.get('skipped_proofs')}")
+
+            # A run that skipped nothing writes no key; the receipt still
+            # carries the field, empty, so an absent key never has to be told
+            # from a receipt written before the field existed.
+            issue_receipts.write_run_marker(root)
+            issue_receipts.main(root, quiet=True)
+            test_run = _receipt(root, 'plain')['evidence']['test_run']
+            assert test_run['skipped_proofs'] == [], test_run
+        finally:
+            shutil.rmtree(root)
+
 
 # ---------------------------------------------------------------------------
 # skill_verify RULE-11: what a stale receipt says

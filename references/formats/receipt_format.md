@@ -1,4 +1,4 @@
-> Format-Version: 3
+> Format-Version: 4
 
 # Verification Receipt Format
 
@@ -39,7 +39,11 @@ matches the current state is visibly out of date.
                  "skipped": 27,
                  "runs": [{"plugin": "pytest_purlin", "at": "<ISO 8601>",
                            "test_files": ["tests/test_login.py"],
-                           "passed": 12, "failed": 0, "skipped": 0}]},
+                           "passed": 12, "failed": 0, "skipped": 0}],
+                 "skipped_proofs": [{"feature": "login", "id": "PROOF-4",
+                                     "test_file": "tests/test_login.py",
+                                     "test_name": "test_tsc_path",
+                                     "reason": "tsc not available"}]},
     "proof_files": [
       {"file": "specs/auth/login.proofs-unit.json", "tier": "unit",
        "platform": null, "commit": "<sha>", "committed_at": "<ISO 8601>",
@@ -71,7 +75,7 @@ matches the current state is visibly out of date.
 ### `evidence`
 
 `evidence.test_run` is the run marker the issuer read: `at`, `commit`, `sweep`,
-`passed`, `failed`, `skipped` and `runs`.
+`passed`, `failed`, `skipped`, `runs` and `skipped_proofs`.
 
 The marker itself lives at `.purlin/runtime/test_run.json` and is written by
 whatever ran the tests. In a consumer project that is the proof plugins: each one
@@ -84,6 +88,7 @@ sweep script of its own still issues receipts that name a run.
 |---|---|
 | `sweep` | Who wrote the marker: a plugin name (`pytest_purlin`, `jest_purlin`, `vitest_purlin`, `shell_purlin`, `sql_purlin`, `c_purlin`, `phpunit_purlin`, `xunit_purlin`) or `dev/run_tests.sh` |
 | `runs` | One `{plugin, at, test_files, passed, failed, skipped}` object per run that contributed to the marker at this commit. Empty when nothing appended to it |
+| `skipped_proofs` | One `{feature, id, test_file, test_name, reason}` object per marked test the run skipped (`specs/_anchors/proof_common.md` RULE-20). `reason` is the message the framework gave, `null` where it gave none. Empty when the run skipped nothing. A proof entry named here was kept from an earlier commit under RULE-18 rather than re-proved by this run |
 
 `evidence.test_run` is null for a receipt issued without a run marker, which is
 what `--no-run-check` produces. A null `test_run` means the receipt records proof

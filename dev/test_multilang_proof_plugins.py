@@ -1757,8 +1757,12 @@ class TestSkippedTestKeepsItsEntry:
         this arm asserts on `scripts/proof/xunit_purlin.cs` itself: the Skipped
         branch records the key, and the kept filter consults it."""
         src = open(os.path.join(PROOF_SCRIPTS, 'xunit_purlin.cs'), encoding='utf-8').read()
+        # Non-greedy to the closing brace at the branch's own indentation: the
+        # body now holds a braced object initializer (proof_common RULE-20), so
+        # a `[^}]*` body would stop at the first inner brace.
         m = _re.search(
-            r'if\s*\(result\.Outcome\s*==\s*TestOutcome\.Skipped\)\s*\{(?P<body>[^}]*)\}', src)
+            r'if\s*\(result\.Outcome\s*==\s*TestOutcome\.Skipped\)\s*\{'
+            r'(?P<body>.*?)\n            \}', src, _re.S)
         assert m, "no TestOutcome.Skipped branch in xunit_purlin.cs"
         body = m.group('body')
         assert '_skipped.Add(SkipKey(feature, id, testFile))' in body, (
@@ -2043,3 +2047,169 @@ class TestRunMarkerPerPlugin:
         # What it does not own it keeps: the plugin runs, and T3's field.
         assert [r['plugin'] for r in m['runs']] == ['pytest_purlin'], m['runs']
         assert m['skipped_proofs'] == _UNKNOWN, m
+
+
+# ---------------------------------------------------------------------------
+# Skipped proofs in the run marker (proof_common RULE-20)
+#
+# One case per plugin that can observe a skip, each driving the REAL plugin
+# over one test file holding one passing marked test and one skipped marked
+# test, plus a merge case. The fixtures below are the RULE-18 ones with a
+# `.purlin/` added, because the marker is only written inside a Purlin project.
+# ---------------------------------------------------------------------------
+
+_SKIP_REASON_PY = 'tool not installed'
+_SKIP_REASON_CS = 'dotnet 9 not installed'
+
+_SKIP_TEST_CS = (
+    'using Xunit;\n'
+    'namespace Svc.Tests {\n'
+    '  public class SkipTests {\n'
+    '    [Fact][Trait("PurlinProof","feat:PROOF-1:RULE-1:unit")]\n'
+    '    public void Passes() { Assert.True(true); }\n'
+    f'    [Fact(Skip="{_SKIP_REASON_CS}")]'
+    '[Trait("PurlinProof","feat:PROOF-2:RULE-2:unit")]\n'
+    '    public void NeedsATool() { Assert.True(false); }\n'
+    '  }\n'
+    '}\n'
+)
+
+# An entry another plugin left in the same marker at the same commit. The union
+# must keep it and add this run's, never replace or duplicate.
+_FOREIGN_SKIP = {'feature': 'feat', 'id': 'PROOF-8',
+                 'test_file': 'tests/FeatTest.php', 'test_name': 'needs_php',
+                 'reason': 'php not available'}
+
+
+def _assert_one_skipped_proof(root, plugin, test_file, test_name, reason):
+    """The marker names the skipped marked test, and only it."""
+    m = _read_marker(root, plugin)
+    entries = m.get('skipped_proofs')
+    assert entries is not None, (
+        f"{plugin} skipped a marked test and wrote no skipped_proofs "
+        f"into the run marker: {m}")
+    assert entries == [{
+        'feature': 'feat', 'id': 'PROOF-2', 'test_file': test_file,
+        'test_name': test_name, 'reason': reason,
+    }], (f"{plugin} recorded the wrong skipped_proofs entry (reason is the "
+         f"field a plugin that stopped capturing it loses): {entries}")
+    return m
+
+
+class TestSkippedProofsInTheRunMarker:
+    """proof_common RULE-20, one arm per plugin that can observe a skip."""
+
+    _PY_SRC = (
+        'import pytest\n'
+        '@pytest.mark.proof("feat", "PROOF-1", "RULE-1")\n'
+        'def test_passes(): assert True\n'
+        f'@pytest.mark.skipif(True, reason="{_SKIP_REASON_PY}")\n'
+        '@pytest.mark.proof("feat", "PROOF-2", "RULE-2")\n'
+        'def test_needs_a_tool(): assert False\n'
+    )
+
+    def _run_pytest(self, tmp_path):
+        shutil.copy(os.path.join(PROOF_SCRIPTS, 'pytest_purlin.py'),
+                    str(tmp_path / 'conftest.py'))
+        (tmp_path / 'test_feat.py').write_text(self._PY_SRC)
+        result = subprocess.run(
+            [sys.executable, '-m', 'pytest', 'test_feat.py', '-q', '--no-header',
+             '-p', 'no:cacheprovider'],
+            capture_output=True, text=True, cwd=str(tmp_path), env=_env(None))
+        assert result.returncode == 0, f"pytest failed:\n{result.stdout}\n{result.stderr}"
+        return result
+
+    @pytest.mark.proof("proof_common", "PROOF-26", "RULE-20", tier="integration")
+    def test_pytest_records_the_skip_reason(self, tmp_path):
+        _purlin_project(tmp_path)
+        self._run_pytest(tmp_path)
+        _assert_one_skipped_proof(tmp_path, 'pytest_purlin', 'test_feat.py',
+                                  'test_needs_a_tool', _SKIP_REASON_PY)
+
+    @pytest.mark.skipif(not shutil.which('node'), reason='node not available')
+    @pytest.mark.proof("proof_common", "PROOF-26", "RULE-20", tier="integration")
+    def test_jest_records_the_skipped_proof_with_a_null_reason(self, tmp_path):
+        _purlin_project(tmp_path)
+        (tmp_path / 'tests').mkdir()
+        js_path = tmp_path / 'tests' / 'feat.test.js'
+        js_path.write_text('// fixture\n')
+        glob_dir = tmp_path / 'node_modules' / 'glob'
+        glob_dir.mkdir(parents=True, exist_ok=True)
+        (glob_dir / 'package.json').write_text(
+            '{"name":"glob","version":"0.0.0","main":"index.js"}')
+        (glob_dir / 'index.js').write_text(_GLOB_SHIM)
+        shutil.copy(os.path.join(PROOF_SCRIPTS, 'jest_purlin.js'),
+                    str(tmp_path / 'jest_purlin.js'))
+        harness = tmp_path / 'harness.cjs'
+        harness.write_text(
+            'const Reporter = require("./jest_purlin.js");\n'
+            'const r = new Reporter({ rootDir: ' + json.dumps(str(tmp_path)) + ' }, {});\n'
+            'r.onTestResult(null, { testFilePath: ' + json.dumps(str(js_path)) + ', testResults: [\n'
+            '  { title: "runs [proof:feat:PROOF-1:RULE-1]", status: "passed" },\n'
+            '  { title: "needs a tool [proof:feat:PROOF-2:RULE-2]", status: "pending" },\n'
+            ']});\n'
+            'r.onRunComplete();\n')
+        result = subprocess.run(['node', str(harness)], capture_output=True, text=True,
+                                cwd=str(tmp_path), env=_env(None))
+        assert result.returncode == 0, f"jest harness failed:\n{result.stdout}\n{result.stderr}"
+        # jest reports a status and no message, so the reason is null and never
+        # a sentence this plugin invented.
+        _assert_one_skipped_proof(tmp_path, 'jest_purlin', 'tests/feat.test.js',
+                                  'needs a tool [proof:feat:PROOF-2:RULE-2]', None)
+
+    @pytest.mark.skipif(not _node_can_run_ts(),
+                        reason='node with a TS loader (tsc or type-stripping) not available')
+    @pytest.mark.proof("proof_common", "PROOF-26", "RULE-20", tier="integration")
+    def test_vitest_records_the_skipped_proof_with_a_null_reason(self, tmp_path):
+        _purlin_project(tmp_path)
+        (tmp_path / 'feat.test.ts').write_text('// fixture\n')
+        files_js = (
+            '[{ type: "suite", filepath: process.cwd() + "/feat.test.ts", tasks: [\n'
+            '  { type: "test", name: "runs [proof:feat:PROOF-1:RULE-1:unit]",'
+            ' result: { state: "pass" } },\n'
+            '  { type: "test", name: "needs a tool [proof:feat:PROOF-2:RULE-2:unit]",'
+            ' result: { state: "skip" } },\n'
+            ']}]')
+        TestTypeScriptProofPlugin()._drive_reporter(tmp_path, files_js)
+        _assert_one_skipped_proof(tmp_path, 'vitest_purlin', 'feat.test.ts',
+                                  'needs a tool [proof:feat:PROOF-2:RULE-2:unit]', None)
+
+    @pytest.mark.skipif(not shutil.which('dotnet'), reason='dotnet SDK not available')
+    @pytest.mark.proof("proof_common", "PROOF-26", "RULE-20", tier="integration")
+    def test_xunit_records_the_skip_reason(self, tmp_path):
+        _purlin_project(tmp_path, 'feat', 'svc')
+        (tmp_path / 'logger').mkdir()
+        shutil.copy(_XUNIT_LOGGER_SRC, str(tmp_path / 'logger' / 'PurlinProofLogger.cs'))
+        (tmp_path / 'logger' / 'logger.csproj').write_text(_LOGGER_CSPROJ)
+        (tmp_path / 'tests').mkdir()
+        (tmp_path / 'tests' / 'tests.csproj').write_text(_TEST_CSPROJ)
+        (tmp_path / 'tests' / 'Tests.cs').write_text(_SKIP_TEST_CS)
+        env = _env(None)
+        env.update(DOTNET_CLI_TELEMETRY_OPTOUT='1', DOTNET_NOLOGO='1')
+        proc = subprocess.run(
+            ['dotnet', 'test', 'tests/tests.csproj', '--logger', 'purlin',
+             '--', 'RunConfiguration.CollectSourceInformation=true'],
+            cwd=str(tmp_path), capture_output=True, text=True, env=env)
+        assert proc.returncode == 0, f"{proc.stdout}\n{proc.stderr}"
+        _assert_one_skipped_proof(tmp_path, 'xunit_purlin', 'tests/Tests.cs',
+                                  'Svc.Tests.SkipTests.NeedsATool', _SKIP_REASON_CS)
+
+    @pytest.mark.proof("proof_common", "PROOF-26", "RULE-20", tier="integration")
+    def test_the_merge_unions_by_the_four_identity_fields(self, tmp_path):
+        """A second run at the same commit adds what the marker lacks and
+        touches nothing it already holds."""
+        _purlin_project(tmp_path)
+        self._run_pytest(tmp_path)
+        path = os.path.join(str(tmp_path), _MARKER_REL)
+        with open(path) as f:
+            marker = json.load(f)
+        mine = marker['skipped_proofs'][0]
+        marker['skipped_proofs'] = [dict(_FOREIGN_SKIP), mine]
+        with open(path, 'w') as f:
+            json.dump(marker, f, indent=2)
+
+        self._run_pytest(tmp_path)
+        merged = _read_marker(tmp_path, 'pytest_purlin')['skipped_proofs']
+        assert merged == [_FOREIGN_SKIP, mine], (
+            "the union is keyed by (feature, id, test_file, test_name): another "
+            f"plugin's entry survives and this run's is not duplicated: {merged}")

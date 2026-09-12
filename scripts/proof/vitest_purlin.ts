@@ -27,7 +27,10 @@
  * At the end of the run, the same moment the proof files are written, the
  * reporter writes or merges the project's run marker
  * .purlin/runtime/test_run.json (proof_common RULE-19), so a receipt issued in
- * a consumer project can record which run its evidence came from.
+ * a consumer project can record which run its evidence came from. Every marked
+ * task the run did not execute is recorded there under skipped_proofs as
+ * {feature, id, test_file, test_name, reason} (proof_common RULE-20); a task
+ * with no terminal state carries no message, so reason is null.
  *
  * Configuration in vitest.config.ts:
  *   import { defineConfig } from 'vitest/config';
@@ -86,6 +89,32 @@ function runMarkerCommit(root: string): string | null {
   }
 }
 
+interface SkippedProof {
+  feature: string;
+  id: string;
+  test_file: string;
+  test_name: string;
+  reason: string | null;
+}
+
+// Union of two skipped_proofs lists keyed by (feature, id, test_file,
+// test_name) (proof_common RULE-20). An entry already in the marker wins, so a
+// plugin that ran earlier at this commit keeps the reason it observed.
+function mergeSkippedProofs(existing: any, fresh: SkippedProof[]): any[] {
+  const out = (Array.isArray(existing) ? existing : []).filter(
+    (e: any) => e && typeof e === "object" && !Array.isArray(e)
+  );
+  const key = (e: any) => JSON.stringify([e.feature ?? null, e.id ?? null,
+                                          e.test_file ?? null, e.test_name ?? null]);
+  const seen = new Set(out.map(key));
+  for (const entry of fresh || []) {
+    if (seen.has(key(entry))) continue;
+    seen.add(key(entry));
+    out.push(entry);
+  }
+  return out;
+}
+
 // A synchronous pause, so a read that landed mid-replace can be retried.
 function runMarkerPause(ms: number): void {
   try {
@@ -106,9 +135,13 @@ function runMarkerPause(ms: number): void {
  * written to a temp file in the same directory and renamed over the target, so
  * a concurrent reader sees one whole marker or the other; a read that lands on
  * unparsable JSON is retried before this run starts a fresh marker.
+ * `skippedProofs` is unioned by (feature, id, test_file, test_name) and written
+ * only when the union is non-empty, so a run that skipped nothing adds no key
+ * (RULE-20).
  */
 function writeRunMarker(root: string, sweep: string, testFiles: string[],
-                        passed: number, failed: number, skipped: number): void {
+                        passed: number, failed: number, skipped: number,
+                        skippedProofs: SkippedProof[] = []): void {
   if (!fs.existsSync(path.join(root, ".purlin"))) return;
   const markerPath = path.join(root, RUN_MARKER_REL);
   fs.mkdirSync(path.dirname(markerPath), { recursive: true });
@@ -150,6 +183,8 @@ function writeRunMarker(root: string, sweep: string, testFiles: string[],
     ok: (marker.ok === undefined ? true : Boolean(marker.ok)) && failed === 0,
     runs,
   });
+  const mergedSkips = mergeSkippedProofs(marker.skipped_proofs, skippedProofs);
+  if (mergedSkips.length) marker.skipped_proofs = mergedSkips;
 
   const tmp = `${markerPath}.${process.pid}.tmp`;
   fs.writeFileSync(tmp, JSON.stringify(marker, null, 2) + "\n");
@@ -195,6 +230,10 @@ class PurlinVitestReporter implements Reporter {
   // execute, so an existing entry for it survives the write-scoped overwrite
   // instead of being reaped by a sibling test in the same file (RULE-18).
   private skipped: Set<string> = new Set();
+  // One {feature, id, test_file, test_name, reason} per marked task this run
+  // did not execute, for the run marker's skipped_proofs (RULE-20). A task
+  // with no terminal state carries no message, so reason is null.
+  private skippedProofs: Map<string, SkippedProof> = new Map();
   private rootDir: string;
 
   constructor() {
@@ -242,6 +281,14 @@ class PurlinVitestReporter implements Reporter {
     const state = task.result?.state;
     if (state !== "pass" && state !== "fail") {
       this.skipped.add(skipKey(feature, proofId, testFile));
+      // RULE-20: and the run marker records that it did not run. A vitest task
+      // with no terminal state carries no message, so the reason this contract
+      // asks for is null rather than invented.
+      this.skippedProofs.set(
+        `${feature}\u0000${proofId}\u0000${testFile}\u0000${name}`,
+        { feature, id: proofId, test_file: testFile, test_name: name,
+          reason: null }
+      );
       return;
     }
 
@@ -343,7 +390,8 @@ class PurlinVitestReporter implements Reporter {
       entries.map((e) => e.test_file),
       entries.filter((e) => e.status === "pass").length,
       entries.filter((e) => e.status !== "pass").length,
-      this.skipped.size
+      this.skipped.size,
+      [...this.skippedProofs.values()]
     );
   }
 }

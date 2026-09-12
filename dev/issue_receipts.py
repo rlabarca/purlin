@@ -19,8 +19,9 @@ in the receipt by writing `evidence.test_run: null`.
 
 The marker is written by `dev/run_tests.sh` here and by the proof plugins
 themselves in a project that has no sweep script (proof_common RULE-19), so
-`sweep` and `runs` travel into `evidence.test_run` unchanged: a consumer
-receipt names the plugin runs its evidence came from.
+`sweep`, `runs` and `skipped_proofs` travel into `evidence.test_run`
+unchanged: a consumer receipt names the plugin runs its evidence came from,
+and which of its proof entries no test re-ran on that host.
 
 `project_root` defaults to this repository. It is a parameter so a test can
 receipt a temp project through the real issuer instead of hand-writing a
@@ -77,7 +78,7 @@ def read_run_marker(root):
 
 
 def write_run_marker(root, test_files=None, ok=True, commit=None,
-                     passed=1, failed=0, skipped=0):
+                     passed=1, failed=0, skipped=0, skipped_proofs=None):
     """Write a run marker for `root`, for tests that build a temp project.
 
     Shared from here rather than copied into each test file, so a change to the
@@ -104,6 +105,10 @@ def write_run_marker(root, test_files=None, ok=True, commit=None,
         'ok': ok,
         'runs': [],
     }
+    # proof_common RULE-20: the key exists only when the run skipped a marked
+    # test, exactly as the plugins write it.
+    if skipped_proofs:
+        marker['skipped_proofs'] = skipped_proofs
     path = marker_path(root)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, 'w') as f:
@@ -232,6 +237,10 @@ def main(root=None, quiet=False, run_check=True):
             'failed': marker.get('failed'),
             'skipped': marker.get('skipped'),
             'runs': marker.get('runs') or [],
+            # Which marked tests the run skipped and why (proof_common
+            # RULE-20). Passed through unchanged, so a receipt says which of
+            # its proof entries the run inherited rather than produced.
+            'skipped_proofs': marker.get('skipped_proofs') or [],
         }
 
     issued, skipped = [], []

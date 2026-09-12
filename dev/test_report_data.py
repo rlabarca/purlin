@@ -2676,3 +2676,107 @@ class TestRemoteStatus:
             'state': 'none',
             'proofs': {'declared': 0, 'proved': 0, 'failed': 0, 'awaiting': 0},
             'platforms': []}, data['remote_status']
+
+
+class TestInheritedProofsInThePayload:
+    """report_data RULE-45: the payload says which evidence this host inherited."""
+
+    MARKER = os.path.join('.purlin', 'runtime', 'test_run.json')
+
+    def setup_method(self):
+        self.tmp = tempfile.mkdtemp()
+        _make_project(self.tmp)
+        _write_spec(self.tmp, 'locking',
+                    '# Feature: locking\n\n## Rules\n'
+                    '- RULE-1: Locks through the tsc path\n'
+                    '- RULE-2: Locks through the plain path\n\n## Proof\n'
+                    '- PROOF-1 (RULE-1): the tsc path locks @unit\n'
+                    '- PROOF-2 (RULE-2): the plain path locks @unit\n')
+        _write_proofs(self.tmp, 'locking', [
+            {'feature': 'locking', 'id': 'PROOF-1', 'rule': 'RULE-1',
+             'test_file': 'dev/t_one.py', 'test_name': 'test_needs_tsc',
+             'status': 'pass', 'tier': 'unit'},
+            {'feature': 'locking', 'id': 'PROOF-2', 'rule': 'RULE-2',
+             'test_file': 'dev/t_two.py', 'test_name': 'test_plain',
+             'status': 'pass', 'tier': 'unit'},
+        ])
+        for args in (['init', '-q'], ['config', 'user.email', 't@e'],
+                     ['config', 'user.name', 't'], ['add', '-A'],
+                     ['commit', '-q', '-m', 'init']):
+            subprocess.run(['git'] + args, cwd=self.tmp, capture_output=True)
+        self.head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=self.tmp,
+                                   capture_output=True, text=True).stdout.strip()
+
+    def teardown_method(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _marker(self, skipped_proofs):
+        path = os.path.join(self.tmp, self.MARKER)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        marker = {'at': '2026-09-12T00:00:00+00:00', 'commit': self.head,
+                  'sweep': 'pytest_purlin', 'test_files': ['dev/t_two.py'],
+                  'passed': 1, 'failed': 0, 'skipped': 1, 'ok': True, 'runs': []}
+        if skipped_proofs is not None:
+            marker['skipped_proofs'] = skipped_proofs
+        with open(path, 'w') as f:
+            json.dump(marker, f, indent=2)
+
+    def _record(self, pid, test_file, reason='tsc not available'):
+        return {'feature': 'locking', 'id': pid, 'test_file': test_file,
+                'test_name': 'test_x', 'reason': reason}
+
+    def _feature(self):
+        payload = purlin_server.read_report_payload(self.tmp)
+        return next(f for f in payload['features'] if f['name'] == 'locking')
+
+    def _proofs_by_id(self, feature):
+        return {p['id']: p for rule in feature['rules'] for p in rule['proofs']}
+
+    @pytest.mark.proof("report_data", "PROOF-46", "RULE-45", tier="integration")
+    def test_an_inherited_entry_is_marked_and_counted(self):
+        self._marker([self._record('PROOF-1', 'dev/t_one.py')])
+        feature = self._feature()
+        by_id = self._proofs_by_id(feature)
+        assert feature['inherited_count'] == 1, feature['inherited_count']
+        assert by_id['PROOF-1']['inherited'] is True, by_id['PROOF-1']
+        assert by_id['PROOF-1']['inherited_reason'] == 'tsc not available', \
+            by_id['PROOF-1']
+        # A proof nothing skipped carries neither key, the way an agnostic
+        # proof carries no `platforms` (RULE-32).
+        assert 'inherited' not in by_id['PROOF-2'], by_id['PROOF-2']
+        assert 'inherited_reason' not in by_id['PROOF-2'], by_id['PROOF-2']
+
+        # The writing path and the reading path agree by construction: both
+        # read the marker through `_feature_verdict`.
+        config = purlin_server.resolve_config(self.tmp)
+        features = purlin_server._scan_specs(self.tmp)
+        built = purlin_server._build_report_data(
+            self.tmp, features, purlin_server._read_proofs(self.tmp), config, {},
+            generated_by='sync_status')
+        built_feature = next(f for f in built['features'] if f['name'] == 'locking')
+        assert built_feature['rules'] == feature['rules'], \
+            "_build_report_data and read_report_payload disagree about inheritance"
+        assert built_feature['inherited_count'] == 1
+
+        # A framework that carried no message writes null, never a sentence.
+        self._marker([self._record('PROOF-1', 'dev/t_one.py'),
+                      self._record('PROOF-2', 'dev/t_two.py', reason=None)])
+        feature = self._feature()
+        by_id = self._proofs_by_id(feature)
+        assert feature['inherited_count'] == 2, feature['inherited_count']
+        assert by_id['PROOF-2']['inherited'] is True, by_id['PROOF-2']
+        assert by_id['PROOF-2']['inherited_reason'] is None, by_id['PROOF-2']
+
+        # A record naming a test file no committed entry carries held nothing.
+        self._marker([self._record('PROOF-1', 'dev/t_gone.py')])
+        feature = self._feature()
+        by_id = self._proofs_by_id(feature)
+        assert feature['inherited_count'] == 0, feature['inherited_count']
+        assert not any('inherited' in p for p in by_id.values()), by_id
+
+        # No marker: the count is still present, so 0 is told from a payload
+        # written before the field existed.
+        os.remove(os.path.join(self.tmp, self.MARKER))
+        feature = self._feature()
+        assert feature['inherited_count'] == 0, feature
+        assert not any('inherited' in p for p in self._proofs_by_id(feature).values())

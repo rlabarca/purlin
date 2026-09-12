@@ -3,6 +3,15 @@
   "proofs": [
     {
       "feature": "skill_verify",
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_issuer_refuses_until_the_project_is_migrated",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_verify",
       "id": "PROOF-9",
       "rule": "RULE-9",
       "test_file": "dev/test_skill_specs.py",
@@ -14,17 +23,44 @@
       "feature": "skill_verify",
       "id": "PROOF-11",
       "rule": "RULE-11",
-      "test_file": "dev/test_receipts.py",
-      "test_name": "test_stale_receipt_names_reworded_rules_and_reproved_platforms",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_receipt_shape_lives_in_the_format_file",
       "status": "pass",
       "tier": "integration"
     },
     {
       "feature": "skill_verify",
-      "id": "PROOF-11",
-      "rule": "RULE-11",
+      "id": "PROOF-12",
+      "rule": "RULE-12",
       "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_receipt_shape_lives_in_the_format_file",
+      "test_name": "test_skill_states_the_run_marker_contract",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_verify",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_step_3_names_the_plugin_written_run_marker",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_verify",
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_step_3_names_the_skipped_proofs_the_receipt_carries",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_verify",
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_verify_commit_counts_features_and_anchors_separately",
       "status": "pass",
       "tier": "integration"
     },
@@ -48,33 +84,6 @@
     },
     {
       "feature": "skill_verify",
-      "id": "PROOF-12",
-      "rule": "RULE-12",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_skill_states_the_run_marker_contract",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "skill_verify",
-      "id": "PROOF-13",
-      "rule": "RULE-13",
-      "test_file": "dev/test_init_update.py",
-      "test_name": "test_issuer_refuses_until_the_project_is_migrated",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "skill_verify",
-      "id": "PROOF-14",
-      "rule": "RULE-14",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_verify_commit_counts_features_and_anchors_separately",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "skill_verify",
       "id": "PROOF-15",
       "rule": "RULE-15",
       "test_file": "dev/test_receipts.py",
@@ -84,10 +93,19 @@
     },
     {
       "feature": "skill_verify",
-      "id": "PROOF-15",
-      "rule": "RULE-15",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_step_3_names_the_plugin_written_run_marker",
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "test_file": "dev/test_receipts.py",
+      "test_name": "test_receipt_carries_the_runs_skipped_proofs",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_verify",
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "test_file": "dev/test_receipts.py",
+      "test_name": "test_stale_receipt_names_reworded_rules_and_reproved_platforms",
       "status": "pass",
       "tier": "integration"
     }

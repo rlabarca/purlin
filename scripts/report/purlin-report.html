@@ -927,6 +927,14 @@ loadData(function(initial) {
     } else if (p.platform) {
       h += '<span class="pchip pchip-ok">@' + esc(p.platform) + '</span> ';
     }
+    /* A proof the recorded run skipped on this host reads off evidence an
+       earlier commit produced, not off this run (report_data RULE-45). Amber,
+       like awaiting: something is missing here, and it is not a failure. */
+    if (p.inherited) {
+      h += '<span class="pchip pchip-wait" title="'
+        + esc(p.inherited_reason || 'no reason recorded')
+        + '">inherited</span> ';
+    }
     if (p.description) {
       h += '<span>' + esc(p.description) + '</span>';
     }

@@ -492,8 +492,9 @@ class TestRemoteVerificationReference:
     @pytest.mark.proof("purlin_references", "PROOF-21", "RULE-21")
     def test_receipt_format_is_the_receipt_contract(self):
         """RULE-21: the receipt contract lives in one file and states the
-        version, every v2 field, what the vhash does and does not bind, and
-        that a receipt issued without a run marker records no run."""
+        version, every v2 field, what the vhash does and does not bind, that a
+        receipt issued without a run marker records no run, and the
+        `evidence.test_run` keys down to `skipped_proofs`."""
         path = os.path.join(FORMATS, 'receipt_format.md')
         assert os.path.isfile(path), \
             "references/formats/receipt_format.md is the receipt contract"
@@ -501,8 +502,9 @@ class TestRemoteVerificationReference:
 
         m = re.match(r'>\s*Format-Version:\s*(\d+)', content)
         assert m, "receipt_format.md must open with a > Format-Version: line"
-        assert int(m.group(1)) >= 2, \
-            f"receipt v2 needs Format-Version 2 or later, got {m.group(1)}"
+        assert int(m.group(1)) >= 4, (
+            f"`skipped_proofs` in evidence.test_run made this Format-Version 4, "
+            f"got {m.group(1)}")
 
         fields = ['feature', 'vhash', 'vhash_version', 'commit', 'timestamp',
                   'rules', 'rule_hashes', 'proofs', 'manual', 'evidence',
@@ -548,11 +550,20 @@ class TestRemoteVerificationReference:
             "the evidence section must name this repository's writer too"
         assert 'RULE-19' in evidence, \
             "the evidence section must point at proof_common RULE-19"
-        for key in ('sweep', 'runs'):
+        for key in ('sweep', 'runs', 'skipped_proofs'):
             assert f'| `{key}` |' in evidence, (
                 f"`{key}` must be documented as a key of evidence.test_run")
         assert 'per run that contributed' in evidence, \
             "`runs` must be documented as one object per contributing run"
+        # `skipped_proofs` is what tells a reader that a proof entry was kept
+        # from an earlier commit rather than re-proved by the recorded run.
+        skips = [ln for ln in evidence.splitlines()
+                 if ln.startswith('| `skipped_proofs` |')]
+        assert len(skips) == 1, evidence
+        for token in ('feature', 'id', 'test_file', 'test_name', 'reason',
+                      'RULE-20'):
+            assert token in skips[0], (
+                f"the skipped_proofs row must name {token}: {skips[0]}")
 
 
 class TestCITemplatesGoThroughThePluginRoot:
