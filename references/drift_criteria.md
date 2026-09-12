@@ -63,13 +63,13 @@ The skill re-classifies MCP categories by reading the actual `git diff`. The MCP
 
 ## Behavioral Gap Drift Detection
 
-When a feature has no behavioral proofs (only structural checks) AND has changed files, the proofs don't actually test the changed behavior — they only verify that instruction text exists.
+When a feature has zero proved rules AND has changed files, no passing proof stands behind the changed behavior: whatever proofs the spec declares, none of them is passing.
 
 The MCP tool precomputes this. Each file entry classified as CHANGED_BEHAVIOR includes:
 
-- `behavioral_gap: true` — when the file's spec has no behavioral proofs (only structural checks)
+- `behavioral_gap: true` — when the file's spec has rules but none of them is proved (`total` > 0 and `proved` == 0)
 
-The top-level result includes a `drift_flags` array summarizing all features with no behavioral proofs that have changed files:
+The top-level result includes a `drift_flags` array summarizing all features with zero proved rules that have changed files:
 
 ```json
 {
@@ -86,8 +86,8 @@ The top-level result includes a `drift_flags` array summarizing all features wit
 The skill should surface these prominently:
 
 ```
-Spec: purlin_agent (8 rules, 0 behavioral proofs)
-⚠ All proofs are structural checks. Code changed but no behavioral test verifies the new behavior.
+Spec: purlin_agent (8 rules, 0 proved)
+⚠ No rule of this spec is proved. Code changed but no passing proof verifies the new behavior.
 → Run: purlin:spec purlin_agent (add behavioral rules)
 ```
 

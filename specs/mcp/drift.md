@@ -10,7 +10,7 @@
 - RULE-1: Resolves the "since" anchor from: explicit argument (integer or date), most recent `verify:` commit, most recent tag, or smart fallback based on commits since Purlin initialization
 - RULE-2: Classifies changed files into categories: CHANGED_SPECS, TESTS_ADDED, CHANGED_BEHAVIOR, NO_IMPACT, NEW_BEHAVIOR
 - RULE-3: Returns JSON with `since`, `commits`, `files`, `spec_changes`, and `proof_status` fields
-- RULE-4: proof_status entries include a `structural_checks` count of structural proofs, and `proved`/`total` fields only count behavioral proofs
+- RULE-4: Each `proof_status` entry carries `proved`, `total`, `status` and `failing_rules` (plus `deferred` and `assumed` only when nonzero) and no `structural_checks` key: grep-based and behavioral proofs count alike toward `proved` and `total`
 - RULE-5: proof_status totals include required and global anchor rules, not just own rules
 - RULE-6: Classifies files in `skills/`, `agents/`, and `.claude/agents/` as NEW_BEHAVIOR when not in scope — never NO_IMPACT
 - RULE-7: Scope matching supports directory prefix: `> Scope: src/api/` matches `src/api/login.js`
@@ -30,7 +30,7 @@
 - PROOF-1 (RULE-1): Call `_resolve_since_anchor` over a repo whose log holds a `verify: initial` commit: with `since="5"` verify it returns ref `HEAD~5` and a description naming `5 commits`; with no argument verify the ref equals the SHA of that `verify:` commit and the description names `verification`; with `since="2020-01-01"` verify the description reads `since 2020-01-01` and the ref is a real commit SHA suffixed `^`. Then over a second repo with no `verify:` commit but a `v1.0.0` tag verify the ref is `v1.0.0` and the description starts `v1.0.0 (` @integration
 - PROOF-2 (RULE-2): Create changed spec, test file, and README; verify CHANGED_SPECS, TESTS_ADDED, NO_IMPACT classifications @integration
 - PROOF-3 (RULE-3): Call drift; verify all 5 top-level JSON keys present @integration
-- PROOF-4 (RULE-4): Create spec with grep-based proof passing; verify proved=1 and total=1 in proof_status @integration
+- PROOF-4 (RULE-4): In a temp project add feature `refs` with one rule proved by a single grep-style proof entry with status `pass`, commit it and call `drift`; verify `proof_status["refs"]` reads `proved` 1, `total` 1 (the grep entry counted like any other proof), `status` `PASSING` and `failing_rules` `[]`, and that its key set is exactly those four with no `structural_checks` key @integration
 - PROOF-5 (RULE-5): Give feature `login` 2 own rules and `> Requires: api_conv` where anchor `api_conv` has 2 rules, and add a global anchor `security_no_eval` with 1 rule; call drift; verify `proof_status["login"]["total"]` is exactly 5, counting 2 own plus 2 required plus 1 global @integration
 - PROOF-6 (RULE-6): Commit a new file at each of `skills/build/SKILL.md`, `agents/reviewer.md` and `.claude/agents/helper.md`, none of them named in any spec `> Scope:`; call drift; verify all three are classified `NEW_BEHAVIOR` and none is `NO_IMPACT` @integration
 - PROOF-7 (RULE-7): Create spec with `> Scope: src/api/` and changed file src/api/login.js; verify CHANGED_BEHAVIOR @integration

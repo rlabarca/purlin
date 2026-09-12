@@ -8,6 +8,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REAL_PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 STATIC_CHECKS="$REAL_PROJECT_ROOT/scripts/audit/static_checks.py"
 
+# Every proof here drives the real static_checks.py CLI as a subprocess over a
+# throwaway project on disk, which is the e2e tier the spec declares.
+export PURLIN_PROOF_TIER="e2e"
+
 # Load proof harness
 source "$REAL_PROJECT_ROOT/scripts/proof/shell_purlin.sh"
 

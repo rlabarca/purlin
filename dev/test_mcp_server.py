@@ -1772,8 +1772,10 @@ class TestDrift:
 
 
     @pytest.mark.proof("drift", "PROOF-4", "RULE-4")
-    def test_drift_structural_only_flag(self):
-        # Add a structural-only spec with passing proofs
+    def test_drift_proof_status_counts_every_proof_alike(self):
+        # A feature proved only by a grep-style proof entry. It must count in
+        # `proved` and `total` exactly like a behavioral entry, and the payload
+        # must carry no separate structural tally (drift RULE-4).
         spec_content = (
             '# Feature: refs\n\n'
             '## What it does\nReference docs.\n\n'
@@ -1799,8 +1801,18 @@ class TestDrift:
         result_text = purlin_server.drift(self.project_root)
         data = json.loads(result_text)
         assert 'refs' in data['proof_status']
-        assert data['proof_status']['refs']['proved'] == 1
-        assert data['proof_status']['refs']['total'] == 1
+        entry = data['proof_status']['refs']
+        assert entry['proved'] == 1, (
+            f"the grep-style proof must count in proved, got {entry!r}")
+        assert entry['total'] == 1, (
+            f"the grep-style proof must count in total, got {entry!r}")
+        assert entry['status'] == 'PASSING', entry
+        assert entry['failing_rules'] == [], entry
+        assert 'structural_checks' not in entry, (
+            "proof_status must carry no structural_checks tally, got "
+            f"{entry!r}")
+        assert set(entry) == {'proved', 'total', 'status', 'failing_rules'}, (
+            f"unexpected proof_status keys: {sorted(entry)}")
 
 
     @pytest.mark.proof("drift", "PROOF-5", "RULE-5")
