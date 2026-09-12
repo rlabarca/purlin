@@ -1,9 +1,9 @@
 {
   "feature": "purlin_references",
-  "vhash": "cad51cdd",
+  "vhash": "bfa7a66e",
   "vhash_version": 2,
-  "commit": "5eae587352030278b680c420a3f53d44191e37a4",
-  "timestamp": "2026-09-12T01:10:26.117889+00:00",
+  "commit": "04a4ed35661173e0c6f334a3975a50fde7f97f35",
+  "timestamp": "2026-09-12T01:29:44.119617+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -19,6 +19,8 @@
     "RULE-2",
     "RULE-20",
     "RULE-21",
+    "RULE-22",
+    "RULE-23",
     "RULE-3",
     "RULE-4",
     "RULE-5",
@@ -55,11 +57,13 @@
     "RULE-15": "e815c9dcd8fdd81c",
     "RULE-16": "3f1f8e51f1d84a27",
     "RULE-17": "fc2c00fdc13ae5fc",
-    "RULE-18": "b7c85b90814f0d4d",
+    "RULE-18": "c814a57cc97ee536",
     "RULE-19": "8eb687612464507b",
     "RULE-2": "996bc9e18ef44254",
     "RULE-20": "e6c7ee3f4b28bb6f",
     "RULE-21": "4f9826745ca67eb3",
+    "RULE-22": "b1cb8a70d139c348",
+    "RULE-23": "e356ba67012eea56",
     "RULE-3": "d839c931e0196ea4",
     "RULE-4": "07abc29ef83143f9",
     "RULE-5": "cbb9df44c4322774",
@@ -225,6 +229,26 @@
       "tier": "unit",
       "test_file": "dev/test_purlin_references.py",
       "test_name": "test_receipt_format_is_the_receipt_contract",
+      "platform": null
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-22",
+      "rule": "RULE-22",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_no_template_invokes_a_bare_scripts_path",
+      "platform": null
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-23",
+      "rule": "RULE-23",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_every_listed_framework_carries_a_runner_setup_cell",
       "platform": null
     },
     {
@@ -530,10 +554,10 @@
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T01:10:22.457881+00:00",
-      "commit": "5eae587352030278b680c420a3f53d44191e37a4",
+      "at": "2026-09-12T01:29:39.764379+00:00",
+      "commit": "04a4ed35661173e0c6f334a3975a50fde7f97f35",
       "sweep": "dev/run_tests.sh",
-      "passed": 698,
+      "passed": 701,
       "failed": 0,
       "skipped": 27
     },
@@ -560,8 +584,8 @@
         "file": "specs/instructions/purlin_references.proofs-unit.json",
         "tier": "unit",
         "platform": null,
-        "commit": "5eae587352030278b680c420a3f53d44191e37a4",
-        "committed_at": "2026-09-11T21:08:00-04:00",
+        "commit": "04a4ed35661173e0c6f334a3975a50fde7f97f35",
+        "committed_at": "2026-09-11T21:26:56-04:00",
         "runner": null,
         "executed_in_test_run": true
       }

@@ -1,11 +1,12 @@
 {
   "feature": "verify_gate",
-  "vhash": "dc80d954",
+  "vhash": "413a5c55",
   "vhash_version": 2,
-  "commit": "5eae587352030278b680c420a3f53d44191e37a4",
-  "timestamp": "2026-09-12T01:10:26.117889+00:00",
+  "commit": "04a4ed35661173e0c6f334a3975a50fde7f97f35",
+  "timestamp": "2026-09-12T01:29:44.119617+00:00",
   "rules": [
     "RULE-1",
+    "RULE-10",
     "RULE-2",
     "RULE-3",
     "RULE-4",
@@ -22,6 +23,7 @@
   ],
   "rule_hashes": {
     "RULE-1": "97ca52c3eba938ff",
+    "RULE-10": "7171ccb76ed0557f",
     "RULE-2": "6f8fb117af6f46df",
     "RULE-3": "b922845f2a62ee10",
     "RULE-4": "7b72170a61644cfb",
@@ -95,6 +97,16 @@
       "tier": "unit",
       "test_file": "dev/test_verify_gate.py",
       "test_name": "test_gate_does_not_parse_the_rendered_table",
+      "platform": null
+    },
+    {
+      "feature": "verify_gate",
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_verify_gate.py",
+      "test_name": "test_every_commit_back_workflow_retries_its_push",
       "platform": null
     },
     {
@@ -180,10 +192,10 @@
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T01:10:22.457881+00:00",
-      "commit": "5eae587352030278b680c420a3f53d44191e37a4",
+      "at": "2026-09-12T01:29:39.764379+00:00",
+      "commit": "04a4ed35661173e0c6f334a3975a50fde7f97f35",
       "sweep": "dev/run_tests.sh",
-      "passed": 698,
+      "passed": 701,
       "failed": 0,
       "skipped": 27
     },
@@ -201,8 +213,8 @@
         "file": "specs/ci/verify_gate.proofs-integration.json",
         "tier": "integration",
         "platform": null,
-        "commit": "6c573eca30579fdb8044c72155ab252267843861",
-        "committed_at": "2026-09-11T20:42:14-04:00",
+        "commit": "04a4ed35661173e0c6f334a3975a50fde7f97f35",
+        "committed_at": "2026-09-11T21:26:56-04:00",
         "runner": null,
         "executed_in_test_run": true
       },
