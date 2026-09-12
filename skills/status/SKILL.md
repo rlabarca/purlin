@@ -11,13 +11,12 @@ Show rule coverage across all features. Always outputs a consistent table follow
 
 ```
 purlin:status                   Show all features
-purlin:status --role <role>     Filter by role (pm, dev, qa)
 ```
 
 ## Step 1 — Call sync_status
 
 ```
-sync_status(role: <from argument, optional>)
+sync_status()
 ```
 
 ## Step 2 — Feature Table (mandatory)

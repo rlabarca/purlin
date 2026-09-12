@@ -2720,7 +2720,7 @@ def _rule_key_order(key):
 
 
 @_scoped
-def sync_status(project_root, role=None):
+def sync_status(project_root):
     """Generate the full sync_status report with directives."""
     _PROVENANCE_CACHE.clear()
     features = _scan_specs(project_root)
@@ -2825,7 +2825,7 @@ def sync_status(project_root, role=None):
     for name in sorted(regular.keys()):
         info = regular[name]
         feature_lines = _report_feature(
-            name, info, features, all_proofs, project_root, role, global_anchors,
+            name, info, features, all_proofs, project_root, global_anchors,
             gauges=gauges_by_feature.get(name), registry=registry,
         )
         detail.extend(feature_lines)
@@ -3389,7 +3389,7 @@ def _receipt_platform_stale(project_root, receipt):
     return sorted(set(stale))
 
 
-def _report_feature(name, info, all_features, all_proofs, project_root, role,
+def _report_feature(name, info, all_features, all_proofs, project_root,
                     global_anchors=None, gauges=None, registry=None):
     """Generate report lines for a single feature."""
     lines = []
@@ -5333,7 +5333,7 @@ def _compute_drift(project_root, since=None, network=True):
     }
 
 
-def drift(project_root, since=None, role=None):
+def drift(project_root, since=None):
     """Generate structured drift data as JSON."""
     result = _compute_drift(project_root, since)
     return json.dumps(result, separators=(',', ':'))
@@ -5459,13 +5459,7 @@ TOOLS = [
         "description": "Show rule coverage per feature. Greps specs for RULE-N, reads *.proofs-*.json, diffs them. Returns coverage report with actionable → directives.",
         "inputSchema": {
             "type": "object",
-            "properties": {
-                "role": {
-                    "type": "string",
-                    "description": "Optional role filter (pm, dev, qa) to prioritize relevant items.",
-                    "enum": ["pm", "dev", "qa"]
-                }
-            },
+            "properties": {},
             "required": []
         }
     },
@@ -5500,11 +5494,6 @@ TOOLS = [
                 "since": {
                     "type": "string",
                     "description": "Override anchor: integer for last N commits, or YYYY-MM-DD date."
-                },
-                "role": {
-                    "type": "string",
-                    "description": "Role filter for TOP PRIORITIES: pm, eng, qa, or all.",
-                    "enum": ["pm", "eng", "qa", "all"]
                 }
             },
             "required": []
@@ -5546,7 +5535,7 @@ def handle_request(request, project_root):
 
         if tool_name == 'sync_status':
             try:
-                result_text = sync_status(project_root, role=arguments.get('role'))
+                result_text = sync_status(project_root)
             except Exception as e:
                 result_text = f"Error running sync_status: {e}"
             return {
@@ -5572,11 +5561,7 @@ def handle_request(request, project_root):
 
         if tool_name == 'drift':
             try:
-                result_text = drift(
-                    project_root,
-                    since=arguments.get('since'),
-                    role=arguments.get('role'),
-                )
+                result_text = drift(project_root, since=arguments.get('since'))
             except Exception as e:
                 result_text = f"Error running drift: {e}"
             return {

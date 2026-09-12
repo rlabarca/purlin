@@ -36,6 +36,15 @@
       "test_name": "test_payload_carries_no_pretty_printing_whitespace",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "drift",
+      "id": "PROOF-23",
+      "rule": "RULE-20",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_drift_declares_no_role",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

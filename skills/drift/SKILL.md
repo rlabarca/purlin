@@ -20,7 +20,7 @@ purlin:drift --since <N>                Last N commits
 purlin:drift --since <date>             Since a date (YYYY-MM-DD)
 ```
 
-The role can be passed as a bare positional argument (`purlin:drift pm`) or as a flag (`purlin:drift --role pm`). Both are equivalent. If no role is given, show all three priority sections.
+The role can be passed as a bare positional argument (`purlin:drift pm`) or as a flag (`purlin:drift --role pm`). Both are equivalent. The `drift` MCP tool takes no role argument; this skill filters its own output by role. If no role is given, show all three priority sections.
 
 ### Note on uncommitted changes
 
@@ -29,7 +29,7 @@ Drift detection compares committed git history. Uncommitted changes to specs, co
 ## Step 1 — Call the drift MCP tool
 
 ```
-drift(since: <from --since arg if given>, role: <from role arg if given, default "all">)
+drift(since: <from --since arg if given>)
 ```
 
 If the tool returns a JSON object with a `recommendation` field instead of the normal drift data, the project has no verification history and too many commits for drift tracking to be useful. Display:

@@ -2,6 +2,7 @@
 
 import glob
 import hashlib
+import inspect
 import json
 import os
 import re
@@ -99,9 +100,9 @@ class TestMCPProtocol:
         # caller has to fill in. Without this an argument could be dropped from
         # a schema and every name assertion above would still pass.
         expected_properties = {
-            "sync_status": ["role"],
+            "sync_status": [],
             "purlin_config": ["action", "key", "value"],
-            "drift": ["role", "since"],
+            "drift": ["since"],
         }
         by_name = {t["name"]: t for t in tools}
         for name, props in expected_properties.items():
@@ -4168,3 +4169,59 @@ class TestAnchorDetailBlock:
         assert lines[0] == (
             'proof_common: 6 rules (global — auto-applied to all features), '
             'RULE-1 to RULE-5, RULE-8'), lines[0]
+
+
+class TestNoRoleArgument:
+    """sync_status RULE-68 and drift RULE-20: neither tool takes a role."""
+
+    def setup_method(self):
+        self.project_root = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.project_root, '.purlin'))
+
+    def teardown_method(self):
+        shutil.rmtree(self.project_root, ignore_errors=True)
+
+    def _tools(self):
+        resp = purlin_server.handle_request(
+            {"jsonrpc": "2.0", "method": "tools/list", "id": 1},
+            self.project_root)
+        tools = resp["result"]["tools"]
+        assert len(tools) == 3, tools
+        return {t["name"]: t for t in tools}
+
+    def _call(self, tool_name, arguments):
+        resp = purlin_server.handle_request(
+            {"jsonrpc": "2.0", "method": "tools/call", "id": 2,
+             "params": {"name": tool_name, "arguments": arguments}},
+            self.project_root)
+        return resp["result"]["content"][0]["text"]
+
+    @pytest.mark.proof("sync_status", "PROOF-107", "RULE-68", tier="integration")
+    def test_sync_status_declares_no_role(self):
+        by_name = self._tools()
+        schema = by_name["sync_status"]["inputSchema"]
+        assert schema["properties"] == {}, schema["properties"]
+        for name, tool in by_name.items():
+            assert "role" not in tool["inputSchema"].get("properties", {}), (
+                f"{name} still declares a role property")
+        params = list(
+            inspect.signature(purlin_server.sync_status).parameters)
+        assert params == ["project_root"], params
+        # A caller that still sends the retired argument is answered, not
+        # failed: handle_request reads arguments with .get.
+        text = self._call("sync_status", {"role": "pm"})
+        assert not text.startswith("Error running sync_status"), text
+
+    @pytest.mark.proof("drift", "PROOF-23", "RULE-20", tier="integration")
+    def test_drift_declares_no_role(self):
+        by_name = self._tools()
+        schema = by_name["drift"]["inputSchema"]
+        assert sorted(schema["properties"]) == ["since"], schema["properties"]
+        for name, tool in by_name.items():
+            assert "role" not in tool["inputSchema"].get("properties", {}), (
+                f"{name} still declares a role property")
+        params = list(inspect.signature(purlin_server.drift).parameters)
+        assert params == ["project_root", "since"], params
+        text = self._call("drift", {"role": "eng"})
+        assert not text.startswith("Error running drift"), text
+        assert isinstance(json.loads(text), dict), text
