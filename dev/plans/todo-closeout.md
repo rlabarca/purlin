@@ -51,6 +51,7 @@ of writing a third project builder. `main` is still neither merged nor pushed, a
 | 16 | (2026-09-12, mid-session) "note that we wont do an integrity audit till i say but we should check proof design as we write them". Proof Integrity (`purlin:audit` Pass 1 and Pass 2) is not run in this session or the taxonomy plan until the user says so; every new or amended description is graded under `--check-proof-design` before its commit and the rewritten set gets a Pass D2 regrade. |
 | 17 | (2026-09-12, mid-session) The Pass D2 regrade found that `skill_spec_from_code` RULE-5 to RULE-19 describe agent-only detection, migration and generation that no code performs, so ten remediated proofs still pair a hand-written fixture with a grep. The user chose "Reclassify as document-content rules": those rules are rewritten as statements about what `skills/spec-from-code/SKILL.md` instructs, their proofs become honest STRUCTURAL greps excluded from the Design score, and no new mechanism is built. Item B14. |
 | 18 | (2026-09-12, mid-session) "no push.. just commit": the branch is not pushed after any group until the user says so; each group closes at its `verify:` commit. The CI-green and `git pull --ff-only` steps wait for the eventual push. |
+| 19 | (2026-09-12, mid-session) Item K's one approved run failed on three defects in the test itself (the rejection assertion read the index instead of HEAD, the build session's 600 s cap was too short for a real agent, and CLI 2.1.269 rejects a path for `--agents` and wants JSON); the agent fixed them without re-running. Asked whether to spend about $3 on one more run, the user chose "No, defer K": the fixes are committed, no witness, the command is recorded. |
 | 11 | "Remaining TODO items: CI green at head (check), backlog triage (this plan is the triage), figma_web witness (deferred with the command), anything new a subagent defers (append)." |
 
 ## How to work
@@ -456,22 +457,88 @@ the request is still answered; and the mutation._
 
 ## DONE - I: plugin pinning guidance
 
-_Placeholder. Record: the integration point's wording in `docs/regulated-environments.md`; RULE-8
-and PROOF-13; and the mutation._
+- Commit `3e017276` on `closeout/I`, cherry-picked as `a9156a7f`. `docs/regulated-environments.md`
+  gains `### Pinned Plugin Version and Interpreter` as the first subsection under
+  `## Integration Points (not extensions)`: "A regulated deployment pins the plugin by tag and never
+  installs it from a branch head" (naming the marketplace entry the installation guide documents,
+  `.claude-plugin/plugin.json`'s `version` field to read the installed release back, and CI's
+  `git clone --depth 1 --branch v<VERSION>`; it states that none of those carries a ref field, so
+  none was invented) and "A regulated deployment runs Python 3.11 or newer" (the tested floor: the
+  workflows pin `python-version: '3.11'`; the installation guide and README state the lower
+  development prerequisite `Python 3.8+`, cited rather than contradicted).
+- `purlin_docs` RULE-8 (both statements with their literals) / PROOF-13 (greps the section for nine
+  literals plus its enclosing heading; STRUCTURAL, as every proof of this prose spec).
+  `dev/test_purlin_docs.py` 12 to 13. Mutation: the Python sentence deleted fails PROOF-13 with
+  `missing literals: ['Python 3.11 or newer']`; restored.
+- Item T4 (the docs pass) rewrites this file later and must keep both literals.
 
 ## DONE - J: consumer-CI fixture and dry run
 
-_Placeholder. Record: what `init_project` produced and what was added by hand; the fixture's file
-list; the two workflow files and the substitutions RULE-1 checks; the dry-run script's assertions;
-whether the live run was executed and against which scratch repo; the `@manual` stamp date; and
-the mutation._
+- Commits `de734c8f` and `f690d8d2` on `closeout/J`, cherry-picked as `abdf976d` and `44ef47fa`;
+  stamp commit `8490c0c8`. `dev/fixtures/consumer-ci/` (9 tracked files): from `init_project`
+  (which now calls `scripts/init/scaffold.py` with `--test-framework pytest --pre-push warn --report
+  on --digest auto`): `.purlin/config.json`, `.purlin/plugins/pytest_purlin.py` (byte-identical to
+  `scripts/proof/`), `conftest.py`, `.gitignore`; by hand: the `platforms.ubuntu-24` entry
+  (`os: linux`, `distro: ubuntu`, `version: "24.04"`, `arch: x86_64`, GitHub runner
+  `ubuntu-24.04`, workflow `purlin-ubuntu-24-proofs`) plus `remote_verification: "optional"`,
+  `specs/core/greeting.md` (RULE-1 agnostic, RULE-2 `@unit @on(ubuntu-24)`), `greeting.py`,
+  `tests/test_greeting.py`, and the two workflows. RULE-1's substitutions: `<platform-id>` to
+  `ubuntu-24`, `<runs-on>` to `ubuntu-24.04`, `--branch v<VERSION>` to `--branch
+  two-gauges-remote-verification` (temporary, flips at release), and `<test files>` to
+  `tests/test_greeting.py`; `verify-gate.yml` derives from this repository's workflow by the four
+  consumer adaptations `remote_verification.md` states.
+- **The live run found two real defects, both fixed under rules before the second run.** (1) The
+  reference template set `PURLIN_PLUGIN_ROOT: ${{ runner.temp }}/purlin` at job level, where the
+  `runner` context does not exist, so every consumer workflow generated from it failed at startup
+  (runs 34702875740 and 34702876500, no jobs); this repository's own workflow never hit it because
+  it uses the literal `.`. The template now publishes the path from a `Locate Purlin tooling` step
+  (`echo "PURLIN_PLUGIN_ROOT=$RUNNER_TEMP/purlin" >> "$GITHUB_ENV"`); `purlin_references` RULE-29 /
+  PROOF-29 parse every fenced yaml block under `references/` and `docs/` and refuse a `${{ runner.`
+  inside any job-level `env`. (2) The driver dispatched before GitHub had registered the workflows
+  (`HTTP 404: workflow not found on the default branch`); it now polls `gh workflow list` until
+  both are `active`, waits for the push-triggered runs, then dispatches and watches the
+  `workflow_dispatch` run ids.
+- `dev/consumer_ci_dryrun.sh`: `--dry-run` (prints every command, no `gh` call), `--keep`
+  (default), `--delete`, `--help`; asserts both trailers, the scoped file with `platform:
+  ubuntu-24`, and the gate's exit 0. `consumer_ci` RULE-1 to RULE-3, PROOF-1/2 unit
+  (`dev/test_consumer_ci.py`, in the sweep), PROOF-3 `@manual`, all PROVABLE. Mutations:
+  `PURLIN_PLATFORM: linux` in the fixture workflow fails PROOF-1 at line 20 printing both versions;
+  `${{ runner.temp }}` restored in the template fails PROOF-29 naming the file and job.
+- **Live run, 2026-09-12, executed and green** (approved by the user for create and delete):
+  `rlabarca/purlin-consumer-ci-scratch` created; push runs 34703355970 and 34703356018 and dispatch
+  runs 34703368735 and 34703369537 all `completed success`; commit-back `12ffa27` with
+  `Purlin-Runner: github-actions/ubuntu-24.04` and `Purlin-Platform: ubuntu-24`;
+  `specs/core/greeting.proofs-unit@ubuntu-24.json` with `platform: ubuntu-24`; `verify-gate: PASS
+  (mode is optional; findings never block)`, exit 0; 81 s; repository deleted. PROOF-3 stamped
+  `@manual(rich.labarca@gmail.com, 2026-09-12, 44ef47fa)`. The first, failed run's scratch
+  repository was deleted before the second run.
 
 ## DONE - K: the claude-cli witness
 
-_Placeholder. Record: the run's cost and duration; the scoped files it rewrote; the commit sha and
-that `git log --format='%(trailers:key=Purlin-Runner,valueonly)'` reads it back; the `skill_spec`
-and `skill_build` verdicts before and after; and the exact figma_web command left for a host with
-a Figma MCP server._
+- **Deferred by decision 19; the test fixes landed.** Commit `22c8f2c6` on `closeout/K`,
+  cherry-picked as `01c895d8`: `skill_spec` PROOF-8 (RULE-7) rewritten per the regrade's FIX and
+  PROVABLE (accepted leg: `git ls-files --error-unmatch specs/auth_login.md` exits 0, `git status
+  --porcelain specs/` is empty, the last commit subject starts with `spec(auth_login):`; rejection
+  leg: a pre-commit hook refuses every staged `specs/` path, the session must name the blocked
+  commit and not claim the exit criteria, `git cat-file -e HEAD:specs/auth_login.md` fails);
+  `dev/test_e2e_build_agent.py` fixed in three places found by the run: the HEAD check (the
+  rejection assertion had read the index), the build session cap 600 to 1500 s, and `--agents`
+  passed as JSON (CLI 2.1.269 rejects a path; `dev/test_e2e_figma_web.py:88` has the same break,
+  recorded in the parent plan's TODO list).
+- **The one approved run** (919 s, about $2 to $4): both spec sessions behaved correctly; the build
+  session hit the 600 s cap, so `skill_build.proofs-e2e@claude-cli.json` was never written and
+  `skill_spec.proofs-e2e@claude-cli.json` was restored after the index-versus-HEAD defect marked it
+  `fail`. No witness commit exists; `skill_spec` and `skill_build` keep their AWAITING state.
+- **Command for the next run, on this machine or any host with the claude CLI:**
+  `cd <repo> && export PATH="/opt/homebrew/opt/dotnet@8/bin:$PWD/.venv/bin:$PATH" &&
+  PURLIN_PLATFORM=claude-cli PURLIN_E2E_AGENT=1 python3 -m pytest dev/test_e2e_build_agent.py`,
+  then `git commit -m "test(skill_spec,skill_build): proofs from a claude-cli host" -m "$(printf
+  'Purlin-Runner: %s@%s\nPurlin-Platform: claude-cli' "$(id -un)" "$(hostname -s)")"` and read the
+  trailers back with `git log -1 --format='%(trailers:key=Purlin-Runner,valueonly)'`.
+- **figma_web** stays awaiting: no Figma MCP server here. Command for a host that has one:
+  `PURLIN_PLATFORM=figma-mcp PURLIN_E2E_FIGMA=1 python3 -m pytest dev/test_e2e_figma_web.py`, after
+  fixing its `--agents` path argument the same way, then the same trailered commit with
+  `Purlin-Platform: figma-mcp`.
 
 ## DONE - M: init scaffold script and coverage
 

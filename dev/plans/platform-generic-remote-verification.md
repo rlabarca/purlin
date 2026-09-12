@@ -2587,6 +2587,12 @@ Finalized at the end of Phase 11. Items marked `[x]` are closed and kept for the
       across runs: a full sweep at `0c637993` reordered 14 proof files with every record byte-identical
       (committed as `d85d370b`). A stable sort in each writer (by id, test_file, test_name) would end
       the churn; it is a `proof_common` rule with a per-plugin proof.
+- [ ] (closeout, found by item K) `dev/test_e2e_figma_web.py:88` passes `--agents` a file path;
+      claude CLI 2.1.269 rejects that and wants JSON (fixed in `dev/test_e2e_build_agent.py` by item
+      K). Fix it before the figma-mcp witness run.
+- [ ] (closeout, decision 19) `skill_spec` and `skill_build`'s claude-cli witness: one approved run
+      failed on test defects, now fixed; the user deferred the second run. Command in
+      `dev/plans/todo-closeout.md` DONE - K.
 - [ ] (closeout, found by item B6) `skill_audit` PROOF-11's description says "parse external LLM
       response" while its test greps `skills/audit/SKILL.md` for five field names; resolve when
       item E retags PROOF-9 to PROOF-13 `@on(gemini-cli)`.

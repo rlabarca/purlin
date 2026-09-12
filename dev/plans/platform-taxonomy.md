@@ -181,49 +181,31 @@ runs the suite); the mutation; the closeout table amendment; the parent plan's T
 
 ## DONE - T2: environments rendered as environments
 
-- Main tree, sequential, one commit. `_is_environment` and `_platform_kind` in
-  `scripts/mcp/purlin_server.py` are the only two predicates; every surface reads a word rather
-  than recomputing one.
-- `sync_status` RULE-63 / PROOF-102 (`TestPlatformsLineAndDetailLines::
-  test_an_environment_id_never_reads_as_a_runner`). The three forms for an environment id:
-  the Platforms block line `environment: figma-mcp (15 proofs; run with PURLIN_PLATFORM=figma-mcp
-  on a host that has it, commit with a Purlin-Runner trailer)` replacing the `runner:` line; the
-  Platforms line segment `figma-mcp (environment) 0/1 verified, ...` with its awaiting clause
-  reading `<n> proofs awaiting an environment run`; and the RULE-58 detail line
-  `⚠ gemini-cli: awaiting an environment run, 4 proofs (...)`. An OS id keeps `runner:`, no
-  mark and `awaiting runner`. `specs/mcp/config_engine.md` PROOF-14 and its test were amended for
-  the new block line, which they assert verbatim.
-- `report_data` RULE-42 / PROOF-43. `platform_kind` (`os` or `environment`) is on every
-  `platforms.summary` row and every `platforms.registry` entry, the RULE-41 host row reading `os`.
-  Item F's `kind` (`host` / `declared`) is untouched: it says where the row came from,
-  `platform_kind` what the id names. `read_report_payload` and `_build_report_data` are asserted
-  equal on both. PROOF-32's exact-shape registry assertion and RULE-31's parenthetical were
-  amended for the added key.
-- `purlin_report` RULE-47 / PROOF-52 (Playwright, `@e2e`). An environment chip shows the id itself
-  with a `span.env-badge` reading `env` styled as `.host-badge` is; the first column of all three
-  platform tables is headed `Platform / environment` and its cell carries the same badge; both the
-  chip's and the cell's `title` carry `environment: satisfied only by a hand run with
-  PURLIN_PLATFORM=<id> on a host that has it`. `docs/dashboard-guide.md`'s chip bullet gained one
-  sentence.
-- `verify_gate` RULE-12 / PROOF-12. A By-platform line reads `figma-mcp (environment): 15 proved,
-  0 awaiting, 0 failing (1 feature)`; an OS id's line is unchanged.
-- This repository after the change: three `environment:` block lines (claude-cli 4 proofs,
-  figma-mcp 15, gemini-cli 4), `runner: windows-2022 (2 proofs; github workflow
-  purlin-windows-2022-proofs)` unchanged, `⚠ gemini-cli: awaiting an environment run, 4 proofs
-  (PROOF-23, PROOF-24, PROOF-25, PROOF-26)`, `⚠ claude-cli: awaiting an environment run, 3
-  proofs (PROOF-17, PROOF-18, PROOF-19)`, and the gate exiting 0 with all three environment ids
-  marked.
-- Design D1 over the four specs plus config_engine: every new description PROVABLE, zero
-  UNPROVABLE and zero LOOSE (sync_status 96 PROVABLE / 2 STRUCTURAL, report_data 35 / 8,
-  purlin_report 50 / 2, verify_gate 11 / 1, config_engine 14 / 0).
-- Mutations, each applied, its whole file run, restored: print `runner:` for an environment id
-  fails PROOF-102 at `assert env_line in block` and also fails config_engine PROOF-14; drop
-  `platform_kind` from the summary row fails PROOF-43 with `KeyError: 'platform_kind'`; let an
-  environment chip inherit the host's OS abbreviation fails PROOF-52 with
-  `['macENV ⏳', 'win ⏳']`; drop `(environment)` from the gate line fails PROOF-12 on the
-  missing `figma-mcp (environment): 0 proved, 1 awaiting, 0 failing (1 feature)`.
-- Test counts: `dev/test_mcp_server.py` 83 to 84, `dev/test_report_data.py` 43 to 44,
-  `dev/test_verify_gate.py` 11 to 12, `dev/test_purlin_report.py` 62 to 63.
+- Commit `10c5815b` in the main tree (18 files). `sync_status` RULE-63 / PROOF-102: the Platforms
+  block prints `environment: <id> (N proofs; run with PURLIN_PLATFORM=<id> on a host that has it,
+  commit with a Purlin-Runner trailer)` instead of a `runner:` line for a `kind: environment` id;
+  the Platforms line segment reads `<id> (environment) ...` and its awaiting clause `N proofs
+  awaiting an environment run`; the RULE-58 detail line reads `⚠ <id>: awaiting an environment run,
+  N proofs (...)`; OS ids are unchanged. Two predicates, `_is_environment` and `_platform_kind`, are
+  the only deciders. `report_data` RULE-42 / PROOF-43: `platform_kind` (`os` | `environment`) on
+  every `platforms.summary` row and every `platforms.registry` entry (the host row is `os`); item F's
+  `kind` (`host` | `declared`) untouched. `purlin_report` RULE-47 / PROOF-52: an environment chip
+  shows the id plus an `env` badge styled like the host badge, all three platform tables are headed
+  `Platform / environment`, chip and cell tooltips read `environment: satisfied only by a hand run
+  with PURLIN_PLATFORM=<id> on a host that has it`. `verify_gate` RULE-12 / PROOF-12: By-platform
+  lines read `<id> (environment): ...`. `config_engine` PROOF-14 and `report_data` RULE-31 / PROOF-32
+  amended because they asserted the moved literals.
+- This repository now prints three `environment:` lines (claude-cli 4 proofs, figma-mcp 15,
+  gemini-cli 4), `runner: windows-2022 (2 proofs; github workflow purlin-windows-2022-proofs)`,
+  `⚠ gemini-cli: awaiting an environment run, 4 proofs (PROOF-23 to PROOF-26)` and
+  `⚠ claude-cli: awaiting an environment run, 3 proofs (PROOF-17 to PROOF-19)`; the gate reads
+  `figma-mcp (environment): 15 proved, 0 awaiting, 0 failing (1 feature)`, exit 0.
+- D1: every new description PROVABLE (sync_status 96/2, report_data 35/8, purlin_report 50/2,
+  verify_gate 11/1, config_engine 14/0). Tests +1 function in each of test_mcp_server,
+  test_report_data, test_verify_gate, test_purlin_report. Mutations: `runner:` printed for an
+  environment id fails PROOF-102; `platform_kind` dropped fails PROOF-43 (`KeyError`); the env chip
+  inheriting the OS abbreviation fails PROOF-52 (`['macENV ⏳', 'win ⏳']`); `(environment)` dropped
+  from the gate line fails PROOF-12.
 
 ## DONE - T3: prerequisites visible in the run record
 
