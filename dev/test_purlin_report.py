@@ -2213,7 +2213,8 @@ class TestExternalReferenceBlock:
     @pytest.mark.proof("purlin_report", "PROOF-26", "RULE-26")
     def test_external_reference_block(self, page, dashboard):
         """PROOF-26: Expanded anchor with source_url shows External Reference block
-        with Source link, Path, and Pinned (truncated); unpinned shows amber."""
+        with Source link, Path, a git SHA pin as its 7-char prefix, a Figma
+        ISO 8601 pin in full; unpinned shows amber."""
         now = datetime.datetime.now(datetime.timezone.utc).isoformat()
         features = [
             {
@@ -2258,12 +2259,36 @@ class TestExternalReferenceBlock:
                 ],
                 "audit": None,
             },
+            {
+                # Figma-sourced anchor: `purlin:anchor sync` pins the file's
+                # lastModified as an ISO 8601 timestamp, not a commit SHA, so
+                # the detail block must show it whole (RULE-26).
+                "name": "figma_anchor",
+                "category": "_anchors",
+                "type": "anchor",
+                "is_global": False,
+                "source_url": "https://www.figma.com/design/ABC123/Design-System",
+                "pinned": "2026-03-31T12:00:00Z",
+                "source_path": None,
+                "proved": 1,
+                "total": 1,
+                "deferred": 0,
+                "status": "PASSING",
+                "vhash": "eeff3344",
+                "receipt": None,
+                "rules": [
+                    {"id": "RULE-1", "description": "Matches the Figma frame",
+                     "label": "own", "source": None, "is_deferred": False,
+                     "is_assumed": False, "status": "PASS", "proofs": []},
+                ],
+                "audit": None,
+            },
         ]
         data = make_data({
             "features": features,
-            "summary": {"total_features": 0, "verified": 0, "passing": 1,
+            "summary": {"total_features": 0, "verified": 0, "passing": 2,
                         "partial": 0, "failing": 0, "untested": 1},
-            "anchors_summary": {"total": 2, "with_source": 2, "global": 0},
+            "anchors_summary": {"total": 3, "with_source": 3, "global": 0},
         })
         load_dashboard(page, dashboard, data=data)
 
@@ -2329,6 +2354,31 @@ class TestExternalReferenceBlock:
             f"Expected 'Unpinned' in amber, got {unpinned_text}"
         )
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof26_ext_ref_unpinned.png"))
+
+        # Figma anchor: the ISO 8601 pin must render whole, never truncated
+        page.click("tr.fr[data-name='unpinned_anchor']")  # collapse
+        page.wait_for_timeout(200)
+        page.click("tr.fr[data-name='figma_anchor']")
+        page.wait_for_timeout(300)
+
+        figma_pinned = page.evaluate("""() => {
+            var block = document.querySelector('.ext-ref-block');
+            var rows = block ? block.querySelectorAll('tr') : [];
+            for (var r of rows) {
+                var label = r.querySelector('.ext-ref-label');
+                if (label && label.textContent.trim() === 'Pinned') {
+                    var code = r.querySelector('code');
+                    return code ? code.textContent : null;
+                }
+            }
+            return null;
+        }""")
+        assert figma_pinned == "2026-03-31T12:00:00Z", (
+            "Expected the Figma pin rendered in full as '2026-03-31T12:00:00Z', "
+            f"got {figma_pinned!r} (a Figma timestamp must not be truncated "
+            "like a git SHA)"
+        )
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof26_ext_ref_figma.png"))
 
     @pytest.mark.proof("purlin_report", "PROOF-27", "RULE-27")
     def test_ext_icon_tooltip_includes_pinned(self, page, dashboard):

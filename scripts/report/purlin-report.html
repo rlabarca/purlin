@@ -1415,7 +1415,13 @@ table{min-width:830px}
         h += '<tr><td class="ext-ref-label">Path</td><td><code>' + esc(f.source_path) + '</code></td></tr>';
       }
       if (f.pinned) {
-        var pd = f.pinned.length > 10 ? f.pinned.substring(0, 7) : f.pinned;
+        /* A git pin is a commit SHA: hex only, so it shows as its 7-char
+           prefix. A Figma pin is an ISO 8601 timestamp whose "-", "T" and ":"
+           never match the hex shape, so it shows whole. Anything else renders
+           verbatim. report_data carries no source-kind field, so the pin's own
+           shape is the discriminator (RULE-26). */
+        var isGitSha = /^[0-9a-fA-F]{7,40}$/.test(f.pinned);
+        var pd = (isGitSha && f.pinned.length > 10) ? f.pinned.substring(0, 7) : f.pinned;
         h += '<tr><td class="ext-ref-label">Pinned</td><td><code>' + esc(pd) + '</code></td></tr>';
       } else {
         h += '<tr><td class="ext-ref-label">Pinned</td><td class="ext-ref-warn">Unpinned</td></tr>';
