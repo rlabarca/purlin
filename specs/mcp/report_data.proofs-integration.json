@@ -3,6 +3,15 @@
   "proofs": [
     {
       "feature": "report_data",
+      "id": "PROOF-39",
+      "rule": "RULE-38",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_the_payload_carries_evidence_stale_both_ways",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "report_data",
       "id": "PROOF-30",
       "rule": "RULE-29",
       "test_file": "dev/test_report_data.py",

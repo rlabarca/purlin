@@ -1789,6 +1789,50 @@ Ordered by dependency; each item is one `fix`/`feat` commit with its rule and pr
   renders it as a row title and the QA report lists it. After the final verify commit it fires on
   zero features here and starts firing on the first scope edit without a re-run.
 
+## DONE — Phase 10.3: evidence older than code (`feat(sync_status,report_data,purlin_report): warn when evidence is older than the code`; receipts in the `verify:` commit that follows it)
+
+- **Numbers taken (landing order).** `sync_status` RULE-60 with PROOF-99 (next free
+  RULE-61/PROOF-100), `report_data` RULE-38 with PROOF-39 (next free RULE-39/PROOF-40),
+  `purlin_report` RULE-44 with PROOF-48 (next free RULE-45/PROOF-49).
+- **The signal.** `_evidence_age(project_root, info, receipt)` returns `(commits, sha7)` or None
+  from `git rev-list --count --end-of-options <sha>..HEAD -- <scope paths>`, where `<sha>` is
+  `evidence.test_run.commit` and falls back to `receipt.commit` for a receipt issued before that
+  field existed. `_evidence_age_lines` renders the two lines. It warns and never blocks: the
+  status stays VERIFIED, no gate reads it, and `references/hard_gates.md` is unchanged.
+- **Why not proof-file dates.** A re-executed test file whose bytes do not change gets no new
+  commit, so a proof file's git date says when the file was last edited and not when it last
+  ran. Comparing those dates to the scope fired on 23 of this repository's 41 features while
+  every one of them had just been re-run. The run the receipt records is the only honest input,
+  and the rule says so in its own text so the rejected design cannot be re-proposed from the
+  rule alone.
+- **One git question.** `_scope_changed_since` from 10.2 became a boolean wrapper over
+  `_scope_commits_since(project_root, scope, sha)`, which returns the count and carries the `--`
+  and the `--end-of-options`. The manual stamp's staleness, the manual coverage count and the
+  evidence warning are now one query shape asked three times.
+- **The renderer is not in `_report_feature`.** The first attempt put `if header_status ==
+  'VERIFIED':` inline and `sync_status` PROOF-86's AST check caught it in the sweep: that
+  function may hold no `VERIFIED` literal of its own (RULE-54). The comparison moved into
+  `_evidence_age_lines`, which is where the whole rendering now lives.
+- **Payload and dashboard.** Every feature carries `evidence_stale`, present always and true only
+  for a VERIFIED feature whose scope moved. The dashboard renders it as a row `title` and one
+  amber `stale evidence` chip in the status cell; the status badge keeps the class its status
+  alone dictates. This is the first item only of Phase 8's "Phase 10 signals rendered" paragraph:
+  `invalidated` and `auditors` belong to 10.4.
+- **Pass D.** PROOF-99, PROOF-39 and PROOF-48 all PROVABLE. The non-PROVABLE descriptions in the
+  three specs (9 in `sync_status`, 10 in `report_data`, 4 in `purlin_report`) all predate this
+  phase.
+- **Mutation (1, restored).** Dropping the `--` path filter from `_scope_commits_since` kills both
+  PROOF-99 and PROOF-39: the outside-the-scope commit is counted and the warning fires where the
+  proof asserts it must not.
+- **It fires on zero features here.** After the final verify commit, `sync_status('.')` prints no
+  `EVIDENCE OLDER THAN CODE` line: the sweep and the receipts are at HEAD, so no scope has moved
+  since the run behind any receipt. The first scope edit committed without a re-run starts it.
+- **Sweep.** `bash dev/run_tests.sh` reads `756 passed, 27 skipped`, 14 suites, 0 failed, up from
+  `753 passed, 27 skipped`: two new tests in `dev/test_mcp_server.py` and one in
+  `dev/test_purlin_report.py`. `git diff --stat specs/` after the sweep: three rules, three
+  proofs, three new proof entries.
+
+
 ### 10.4 Audit cache integrity and auditor identity (`static_checks`, `skill_audit`)
 
 - The key is computed from project state by one function at write and read:

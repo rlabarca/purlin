@@ -2925,3 +2925,122 @@ class TestManualStampsCount:
         assert 'login: PASSING' not in result, result
         assert ('Manual proof without > Scope:' in result
                 and 'does not count toward coverage' in result), result
+
+
+class TestEvidenceOlderThanCode:
+    """sync_status RULE-60 and report_data RULE-38: a VERIFIED feature whose
+    scope moved since the tests behind its receipt ran says so, and never
+    blocks."""
+
+    def setup_method(self):
+        self.project_root = os.path.realpath(tempfile.mkdtemp())
+        os.makedirs(os.path.join(self.project_root, '.purlin', 'runtime'))
+        os.makedirs(os.path.join(self.project_root, 'specs', 'auth'))
+        os.makedirs(os.path.join(self.project_root, 'src'))
+        with open(os.path.join(self.project_root, '.purlin', 'config.json'), 'w') as f:
+            json.dump({'version': '0.9.0', 'test_framework': 'auto',
+                       'spec_dir': 'specs', 'report': True}, f)
+        self._git('init')
+        self._git('config', 'user.email', 'test@test.com')
+        self._git('config', 'user.name', 'Test')
+
+    def teardown_method(self):
+        shutil.rmtree(self.project_root)
+
+    def _git(self, *args):
+        return subprocess.run(['git'] + list(args), cwd=self.project_root,
+                              capture_output=True, text=True, check=True)
+
+    def _commit(self, message):
+        self._git('add', '-A')
+        self._git('commit', '-m', message)
+        return self._git('rev-parse', 'HEAD').stdout.strip()
+
+    def _write(self, rel, text):
+        path = os.path.join(self.project_root, rel)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w') as f:
+            f.write(text)
+
+    def _payload(self):
+        features = purlin_server._scan_specs(self.project_root)
+        all_proofs = purlin_server._read_proofs(self.project_root)
+        config = purlin_server.resolve_config(self.project_root)
+        data = purlin_server._build_report_data(
+            self.project_root, features, all_proofs, config, {}, None)
+        return {f['name']: f for f in data['features']}
+
+    def _receipt_at_head(self):
+        """Receipt the feature through the real issuer, with a run marker
+        naming HEAD so the receipt records a real `evidence.test_run`."""
+        sys.path.insert(0, os.path.dirname(__file__))
+        import issue_receipts
+        self._write('.purlin/runtime/test_run.json', json.dumps({
+            'at': '2026-09-12T00:00:00+00:00',
+            'commit': self._git('rev-parse', 'HEAD').stdout.strip(),
+            'sweep': 'dev/run_tests.sh', 'suites': ['All Pytest Tests'],
+            'test_files': ['dev/test_login.py'],
+            'passed': 1, 'failed': 0, 'skipped': 0, 'ok': True,
+        }))
+        issued, skipped = issue_receipts.main(self.project_root, quiet=True)
+        assert [n for n, _, _ in issued] == ['login'], (issued, skipped)
+        return issued[0][1]
+
+    def _setup_verified_feature(self):
+        self._write('src/app.py', 'v1\n')
+        self._write('other/notes.md', 'v1\n')
+        self._write('specs/auth/login.md',
+                    '# Feature: login\n\n'
+                    '> Scope: src/app.py\n\n'
+                    '## What it does\nHandles login.\n\n'
+                    '## Rules\n- RULE-1: Valid credentials return a token\n\n'
+                    '## Proof\n- PROOF-1 (RULE-1): POST valid creds; verify a '
+                    'token comes back\n')
+        self._write('specs/auth/login.proofs-unit.json', json.dumps({
+            'tier': 'unit',
+            'proofs': [{'feature': 'login', 'id': 'PROOF-1', 'rule': 'RULE-1',
+                        'test_file': 'dev/test_login.py',
+                        'test_name': 'test_valid_creds', 'status': 'pass',
+                        'tier': 'unit'}],
+        }, indent=2) + '\n')
+        c1 = self._commit('the code, the spec and its proof')
+        self._receipt_at_head()
+        self._commit('receipt login')
+        assert 'login: VERIFIED' in purlin_server.sync_status(self.project_root)
+        return c1
+
+    @pytest.mark.proof("sync_status", "PROOF-99", "RULE-60", tier="integration")
+    def test_a_commit_to_the_scope_warns_and_one_outside_it_does_not(self):
+        c1 = self._setup_verified_feature()
+
+        # A commit inside the scope.
+        self._write('src/app.py', 'v2\n')
+        self._commit('change the scope')
+
+        out = purlin_server.sync_status(self.project_root)
+        warning = [l for l in out.splitlines() if 'EVIDENCE OLDER THAN CODE' in l]
+        assert len(warning) == 1, out
+        assert '1 commits' in warning[0], warning
+        assert c1[:7] in warning[0], (c1[:7], warning)
+        assert '→ Run: purlin:test login' in out, out
+        # It warns and never blocks: the feature is still VERIFIED.
+        assert 'login: VERIFIED' in out, out
+
+    @pytest.mark.proof("report_data", "PROOF-39", "RULE-38", tier="integration")
+    def test_the_payload_carries_evidence_stale_both_ways(self):
+        self._setup_verified_feature()
+
+        # Nothing has moved yet.
+        assert self._payload()['login']['evidence_stale'] is False
+
+        # A commit outside the scope is not evidence that the code moved.
+        self._write('other/notes.md', 'v2\n')
+        self._commit('change something outside the scope')
+        out = purlin_server.sync_status(self.project_root)
+        assert 'EVIDENCE OLDER THAN CODE' not in out, out
+        assert self._payload()['login']['evidence_stale'] is False
+
+        # A commit inside it is.
+        self._write('src/app.py', 'v2\n')
+        self._commit('change the scope')
+        assert self._payload()['login']['evidence_stale'] is True

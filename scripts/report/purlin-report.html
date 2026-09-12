@@ -1181,7 +1181,14 @@ table{min-width:830px}
             var intVal = (f.audit && f.audit.integrity != null) ? f.audit.integrity : null;
             var dsnVal = (f.design && f.design.design != null) ? f.design.design : null;
 
-            bh += '<tr class="fr cat-child' + (isExpanded ? ' expanded' : '') + '" data-name="' + esc(f.name) + '">';
+            /* Evidence older than code (RULE-44). The row says so in its
+               title and wears an amber chip; nothing about the status badge
+               moves, because the receipt is still true about the commit it
+               names. */
+            var evTitle = f.evidence_stale
+              ? ' title="' + esc('Evidence older than code: the scope changed since the tests behind this receipt ran. Run purlin:test ' + f.name) + '"'
+              : '';
+            bh += '<tr class="fr cat-child' + (isExpanded ? ' expanded' : '') + '" data-name="' + esc(f.name) + '"' + evTitle + '>';
 
             /* Name + type */
             bh += '<td><div class="fn"><span class="chv">&#9654;</span><span class="fnt">' + esc(f.name) + '</span>';
@@ -1220,9 +1227,14 @@ table{min-width:830px}
             }
             var badgeTitle = (f.status === 'PASSING' && heldOn.length)
               ? ' title="' + esc('Awaiting ' + heldOn.join(', ')) + '"' : '';
+            var evChip = f.evidence_stale
+              ? '<div class="pchips"><span class="pchip pchip-wait ev-stale" title="'
+                + esc('The scope changed since the tests behind this receipt ran. Run purlin:test ' + f.name)
+                + '">stale evidence</span></div>'
+              : '';
             bh += '<td class="col-status"><span class="' + badgeClass(f.status) + '"'
               + badgeTitle + '>' + badgeText(f.status) + '</span>'
-              + platformChips(f) + '</td>';
+              + evChip + platformChips(f) + '</td>';
 
             /* Design and Integrity. gaugeCell never emits an em dash: a blank
                cell under a populated summary card is what RULE-35 forbids. */

@@ -165,6 +165,15 @@
     },
     {
       "feature": "sync_status",
+      "id": "PROOF-99",
+      "rule": "RULE-60",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_a_commit_to_the_scope_warns_and_one_outside_it_does_not",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
       "id": "PROOF-78",
       "rule": "RULE-46",
       "test_file": "dev/test_e2e_audit_cache_pipeline.py",

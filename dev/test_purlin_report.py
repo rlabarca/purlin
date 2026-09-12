@@ -3545,3 +3545,49 @@ class TestPlatformVisualConstants:
         assert "var(--shadow)" in modal_rule, modal_rule
         for rule in (overlay_rule, modal_rule):
             assert not re.search(r'#[0-9a-fA-F]{3,8}\b', rule), rule
+
+
+class TestEvidenceStaleRendering:
+    """purlin_report RULE-44: evidence older than code is a row title and an
+    amber chip, and the status badge never moves."""
+
+    @pytest.mark.proof("purlin_report", "PROOF-48", "RULE-44", tier="e2e")
+    def test_stale_evidence_is_an_amber_chip_and_a_row_title(
+            self, page, dashboard):
+        data = make_data()
+        by_name = {f["name"]: f for f in data["features"]}
+        by_name["auth_login"]["status"] = "VERIFIED"
+        by_name["auth_login"]["evidence_stale"] = True
+        for name, f in by_name.items():
+            if name != "auth_login":
+                f["evidence_stale"] = False
+        load_dashboard(page, dashboard, data=data)
+
+        row = page.locator("tr.fr[data-name='auth_login']")
+        title = row.get_attribute("title") or ""
+        assert "Evidence older than code" in title, title
+        assert "purlin:test auth_login" in title, title
+
+        chip = row.locator(".pchip.ev-stale")
+        assert chip.count() == 1, chip.count()
+        assert chip.inner_text().strip() == "stale evidence", chip.inner_text()
+        assert rgb_to_hex(chip.evaluate(
+            "el => getComputedStyle(el).color")) == "#f59e0b"
+
+        badge = row.locator(".col-status span").first
+        stale_badge_cls = badge.get_attribute("class")
+        assert "VERIFIED" in badge.inner_text(), badge.inner_text()
+
+        # A feature whose evidence is current renders neither, and the badge
+        # is the same class: the warning never touches the verdict.
+        plain = make_data()
+        for f in plain["features"]:
+            f["evidence_stale"] = False
+        {f["name"]: f for f in plain["features"]}["auth_login"]["status"] = "VERIFIED"
+        load_dashboard(page, dashboard, data=plain)
+        clean_row = page.locator("tr.fr[data-name='auth_login']")
+        assert not (clean_row.get_attribute("title") or ""), \
+            clean_row.get_attribute("title")
+        assert clean_row.locator(".pchip.ev-stale").count() == 0
+        assert clean_row.locator(".col-status span").first.get_attribute(
+            "class") == stale_badge_cls

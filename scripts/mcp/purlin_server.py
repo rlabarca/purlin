@@ -433,33 +433,97 @@ def _read_proofs(project_root, legacy=None):
     return all_proofs
 
 
-def _scope_changed_since(project_root, scope, sha):
-    """True when a file named by `scope` has a commit after `sha`.
+def _scope_commits_since(project_root, scope, sha):
+    """How many commits since `sha` touched a file named by `scope`.
 
-    One question asked by two callers that must never disagree: the manual
-    stamp's staleness line and the coverage count that trusts the same stamp.
+    One question asked by three callers that must never disagree: the manual
+    stamp's staleness line, the coverage count that trusts the same stamp, and
+    the evidence-age warning, which needs the number rather than the fact.
     While the count lived elsewhere a stamp could read PASS in the detail and
     still be refused by the counter, or the reverse, and nothing in the report
     would say which was right.
 
-    Returns False when there is no scope or no sha to compare against, and
-    when git cannot answer: an unanswerable question is not evidence of
-    change. `_manual_ok_keys` refuses the no-scope case before calling, so the
-    False here never becomes a silent "still current".
+    The `--` is what makes the answer about the scope at all: without it git
+    counts every commit in the range and the caller learns only that the
+    project moved. `--end-of-options` keeps a scope path that begins with `-`
+    from being read as a flag.
+
+    Returns 0 when there is no scope or no sha to compare against, and when
+    git cannot answer: an unanswerable question is not evidence of change.
+    Every caller refuses the no-scope case before asking, so the 0 here never
+    becomes a silent "still current".
     """
     if not scope or not sha:
-        return False
+        return 0
     if isinstance(scope, str):
         scope = [part.strip() for part in scope.split(',') if part.strip()]
     try:
         result = subprocess.run(
-            ['git', 'log', '--oneline', '--end-of-options',
+            ['git', 'rev-list', '--count', '--end-of-options',
              f'{sha}..HEAD', '--'] + list(scope),
             capture_output=True, text=True, cwd=project_root, timeout=5
         )
-        return bool(result.stdout.strip())
-    except (subprocess.SubprocessError, OSError):
-        return False
+        return int((result.stdout or '').strip() or 0)
+    except (subprocess.SubprocessError, OSError, ValueError):
+        return 0
+
+
+def _scope_changed_since(project_root, scope, sha):
+    """True when a file named by `scope` has a commit after `sha`."""
+    return _scope_commits_since(project_root, scope, sha) > 0
+
+
+def _evidence_age(project_root, info, receipt):
+    """`(commits, sha7)` when the scope moved since this receipt's tests ran.
+
+    None when there is no receipt, no `> Scope:`, or nothing has moved.
+
+    The comparison is against the run the receipt records, not against the
+    proof files' own git dates. A re-executed test file whose bytes do not
+    change gets no new commit, so a proof-file date says when the file was
+    last edited and not when it last ran: comparing those dates to the scope
+    fired on 23 of this repository's 41 features while every one of them had
+    just been re-run. `evidence.test_run.commit` is the honest input, and a
+    receipt issued before that field existed falls back to `receipt.commit`,
+    which is at least the commit the receipt was written against.
+    """
+    scope = (info or {}).get('scope') or []
+    if not scope or not receipt:
+        return None
+    test_run = (receipt.get('evidence') or {}).get('test_run') or {}
+    sha = test_run.get('commit') or receipt.get('commit') or ''
+    if not sha:
+        return None
+    count = _scope_commits_since(project_root, scope, sha)
+    if count <= 0:
+        return None
+    return count, sha[:7]
+
+
+def _evidence_age_lines(project_root, name, info, receipt, status):
+    """The RULE-60 warning, or no lines.
+
+    It lives here rather than inline in `_report_feature` because that
+    function may hold no `VERIFIED` literal of its own: every verdict it
+    prints comes from `_determine_status` (RULE-54), and a second place
+    deciding what VERIFIED means is how the header and the summary table
+    came to disagree once already.
+
+    A warning and never a gate. The receipt is still true about the commit it
+    names, and a commit touching the scope may not touch the behaviour the
+    tests cover; what the reader needs is to know the question is open.
+    """
+    if status != 'VERIFIED':
+        return []
+    age = _evidence_age(project_root, info, receipt)
+    if not age:
+        return []
+    count, sha7 = age
+    return [
+        f"  \u26a0 EVIDENCE OLDER THAN CODE: scope changed in {count} commits "
+        f"since the tests behind this receipt ran ({sha7})",
+        f"  \u2192 Run: purlin:test {name}",
+    ]
 
 
 def _check_manual_staleness(project_root, scope_files, commit_sha):
@@ -2921,6 +2985,9 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
         elif not receipt:
             lines.append("  \u2192 Run: purlin:verify to issue receipt")
 
+        lines.extend(_evidence_age_lines(project_root, name, info, receipt,
+                                         header_status))
+
         if visual_hash_changed:
             lines.append("  \u26a0 Visual reference image was modified since rules were extracted")
             lines.append(f"  \u2192 Run: purlin:spec {name} (re-extract rules from updated image)")
@@ -3766,6 +3833,12 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             'platform_complete': platform_complete,
             'status': status,
             'vhash': vhash,
+            # True only for a VERIFIED feature whose scope has been committed
+            # to since the tests behind its receipt ran (report_data RULE-38).
+            # Always present, so a consumer can tell false from an older
+            # payload that predates the field.
+            'evidence_stale': status == 'VERIFIED' and bool(
+                _evidence_age(project_root, info, receipt)),
             'receipt': receipt_data,
             'rules': rules_list,
             'audit': _build_feature_audit(audit_by_feature.get(name, []),
