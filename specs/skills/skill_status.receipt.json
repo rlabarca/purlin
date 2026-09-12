@@ -1,28 +1,32 @@
 {
   "feature": "skill_status",
-  "vhash": "a6b1889f",
+  "vhash": "f86705c0",
   "vhash_version": 2,
-  "commit": "9858956737af77f91c15d887c81af77787622e0e",
-  "timestamp": "2026-09-12T03:48:39.498099+00:00",
+  "commit": "4ebfb980a9aa4cd5c0a0ae1aa628513caee04675",
+  "timestamp": "2026-09-12T03:56:32.919827+00:00",
   "rules": [
     "RULE-1",
+    "RULE-10",
     "RULE-2",
     "RULE-3",
     "RULE-4",
     "RULE-5",
     "RULE-6",
     "RULE-7",
-    "RULE-8"
+    "RULE-8",
+    "RULE-9"
   ],
   "rule_hashes": {
     "RULE-1": "d402581da42374f9",
+    "RULE-10": "ae99f7f1ec9c4066",
     "RULE-2": "f882d91d4488414b",
     "RULE-3": "17bcceb4d5a490b1",
     "RULE-4": "31813cc5a5a7a2a9",
     "RULE-5": "8328f1e848a2fbe5",
-    "RULE-6": "2fe234c24eb4fb37",
+    "RULE-6": "3cc47a9d5aace927",
     "RULE-7": "d50a8fdb9085f3f3",
-    "RULE-8": "a81422cc32317f36"
+    "RULE-8": "a81422cc32317f36",
+    "RULE-9": "4484dc2eaf7d45f6"
   },
   "proofs": [
     {
@@ -33,6 +37,16 @@
       "tier": "unit",
       "test_file": "dev/test_skill_specs.py",
       "test_name": "test_has_frontmatter",
+      "platform": null
+    },
+    {
+      "feature": "skill_status",
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_awaiting_runner_is_defined_and_routed",
       "platform": null
     },
     {
@@ -104,14 +118,24 @@
       "test_file": "dev/test_skill_specs.py",
       "test_name": "test_documents_gauge_remediation_and_ordering",
       "platform": null
+    },
+    {
+      "feature": "skill_status",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_platforms_line_is_printed_verbatim_and_omitted_when_absent",
+      "platform": null
     }
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T03:48:39.261002+00:00",
-      "commit": "9858956737af77f91c15d887c81af77787622e0e",
+      "at": "2026-09-12T03:56:32.703144+00:00",
+      "commit": "4ebfb980a9aa4cd5c0a0ae1aa628513caee04675",
       "sweep": "dev/run_tests.sh",
-      "passed": 754,
+      "passed": 756,
       "failed": 0,
       "skipped": 27
     },
@@ -120,8 +144,8 @@
         "file": "specs/skills/skill_status.proofs-unit.json",
         "tier": "unit",
         "platform": null,
-        "commit": "b0e7e67f67f315ca910ca6f93c404c00cc22b848",
-        "committed_at": "2026-09-11T15:01:03-04:00",
+        "commit": "4ebfb980a9aa4cd5c0a0ae1aa628513caee04675",
+        "committed_at": "2026-09-11T23:53:52-04:00",
         "runner": null,
         "executed_in_test_run": true
       }
