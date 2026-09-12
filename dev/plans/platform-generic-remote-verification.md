@@ -2579,7 +2579,7 @@ Finalized at the end of Phase 11. Items marked `[x]` are closed and kept for the
       (agent-driven, no script surface); the Step 6 confirmation block; `remote_verification:
       required` with no `platforms` registered (belongs to `verify_gate`). The coverage matrix is
       summarized in `dev/plans/todo-closeout.md` DONE - M.
-- [ ] (closeout, deferred by item B14) `skill_spec_from_code`: RULE-16 and RULE-18 look mis-homed
+- [x] (closed by item B17: RULE-16 and RULE-18 re-homed to `skill_spec` RULE-11 / RULE-12 with PROOF-12 / PROOF-13; the rest of this line stays open) (closeout, deferred by item B14) `skill_spec_from_code`: RULE-16 and RULE-18 look mis-homed
       from `purlin:spec` (the spec-from-code skill forbids `(assumed)` tags outright and never reads
       customer feedback); RULE-13's "at least 5 rules" contradicts RULE-28; PROOF-33/36/38 are
       proved from `dev/test_e2e_ui_extraction.py`; PROOF-5 to PROOF-8 have no test anywhere.
@@ -2608,7 +2608,7 @@ Finalized at the end of Phase 11. Items marked `[x]` are closed and kept for the
       totals, never merged with plugin runs) and RULE-9 / PROOF-9 read that file; a plugin marker
       then no longer masks the check. Until then the closing entries of `dev/plans/todo-closeout.md`
       record the by-hand comparison.
-- [ ] (closeout, found by item B6) `skill_audit` PROOF-11's description says "parse external LLM
+- [x] (closed by item E': PROOF-11 rewritten as the grep it is) (closeout, found by item B6) `skill_audit` PROOF-11's description says "parse external LLM
       response" while its test greps `skills/audit/SKILL.md` for five field names; resolve when
       item E retags PROOF-9 to PROOF-13 `@on(gemini-cli)`.
 - [x] (6.5) The evidence check refused receipts for `figma_web`, `skill_spec` and `static_checks`.
