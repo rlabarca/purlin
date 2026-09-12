@@ -1098,3 +1098,54 @@ Deferrals and adjacent findings:
   was not edited.
 - `references/proof_plugin_contract.md` section C already states the shell exception, so the new
   rule cites it rather than restating it. The contract file itself did not need an edit.
+
+## Landed commits (2026-09-12, in landing order)
+
+| Plan commit | sha | Spec maxima left |
+|---|---|---|
+| plan copy | 61432ea6 | none |
+| B1 | e8aec9be | proof_common RULE-21 / PROOF-27 (PROOF-9 amended) |
+| A1 | 3d20ea6a | static_checks RULE-48 / PROOF-81 |
+| B2 | 64e535b3 | proof_common RULE-23 / PROOF-29; proof_plugins_pytest RULE-4 / PROOF-4 and proof_plugins_jest RULE-4 / PROOF-5 (RULE-3 amended in each) |
+| A2 | a5a3a45c | static_checks RULE-50 / PROOF-83 |
+| C2 | 338c9610 | skill_init RULE-75 / PROOF-78; purlin_references RULE-20 amended |
+| B3 | 58ece53d | proof_common RULE-25 / PROOF-31 |
+| B5 | 90fa396f | pre_push_hook RULE-16 / PROOF-31 (RULE-5 amended) |
+| B4 | ddbd0274 | purlin_references RULE-32 / PROOF-32 |
+| C1 | 8460dabe | verify_gate RULE-17 / PROOF-17; report_data RULE-46 / PROOF-47; sync_status RULE-66 / PROOF-105; purlin_docs RULE-11 / PROOF-16 (RULE-9 amended); purlin_references RULE-17 amended |
+| fixture re-sync | d26acbc1 | none |
+| B6 | 4f07c7d0 | purlin_references RULE-33 / PROOF-33 (RULE-2 amended) |
+
+Test-count deltas, whole files, passed: test_multilang_proof_plugins 71 to 122;
+test_static_checks 91 to 104; test_verify_gate 13 to 17; test_report_data 47 to 48;
+test_mcp_server 89 to 90; test_init_scaffold 15 to 16; test_pre_push_hook 27 to 28;
+test_plugin_contract new, 4. Every other file named by a commit was unchanged in count.
+
+The deterministic sweep on this repository at 4f07c7d0 (`--deterministic-sweep`): 46 features,
+847 proofs declared and graded, 842 executed, 930 backings, 733 pass, 85 HOLLOW (44
+logic_mirroring, 21 assert_true, 20 no_assertions), 0 UNPROVABLE, 24 unmeasurable (all
+`marker_not_found` in `dev/test_proof_plugins.sh`, whose `purlin_proof` calls are built from
+shell variables). The gate stays off here; `verify_gate.py --check` prints today's output plus
+the single `verify-gate: quality_gate = off` line (44 lines, exit 0).
+
+## Execution notes
+
+- Worktrees for the lanes lived under `../purlin-wt/` (outside the checkout) so nothing in the
+  main tree saw them. Every lane appended its own `### <id>` block under one `## DONE` heading,
+  so every rebase conflicted on this file and nowhere else; resolving was deleting the three
+  marker lines. Ordering the blocks by landing time is the intended record.
+- `dotnet` on PATH is 10.x and the xUnit test projects target net8.0; every xUnit case fails on
+  the bare PATH. `export PATH=/opt/homebrew/opt/dotnet@8/bin:$PATH` before any run that drives
+  the xUnit plugin, including `dev/run_tests.sh`. Nothing in the repo pins the runtime.
+- `git checkout -- specs/` to restore proof JSON files also reverts spec `.md` edits. Restore
+  with a glob on `specs/**/*.proofs-*.json` only.
+- Two plugins edited (B2, B3) without re-copying `dev/fixtures/consumer-ci/.purlin/plugins/`
+  broke consumer_ci PROOF-2 for four commits; the fixture copy is part of the pytest plugin's
+  changeset, not a fixture regeneration.
+- Adjacent defects found and left: `check_csharp` reads bodies raw, so a C# comment naming
+  `Assert.True(true)` is a false HOLLOW (`_strip_c_like_comments` now exists); the
+  `logic_mirroring` detector flags before/after invariance tests (`before = f(x)` then
+  `assert f(x) == before`), which is where most of this repository's 44 logic_mirroring HOLLOWs
+  come from; `references/proof_plugin_contract.md` is dash free but not yet in purlin_docs
+  RULE-11's `DASH_FREE_REFERENCES`; `--sync-audit-criteria` and `--audit-llm` still have no
+  scaffolder flag.
