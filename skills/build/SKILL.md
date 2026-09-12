@@ -107,19 +107,6 @@ RUNNER forever.
   `Mutation checks are off (mutation_checks: false); turn them on with purlin:init --mutation-checks on`,
   so the omission is visible rather than silent. Do not run the check.
 
-After writing tests, ALWAYS spawn an independent auditor to review the proofs you just wrote.
-Do NOT audit your own tests in the same context — the auditor must be independent.
-
-**This audit is feature-scoped and advisory.** It covers only the feature just built, reuses
-the audit cache so it is cheap, and exists for fast feedback while the code is fresh in
-context. It is not the project-wide audit: `purlin:verify` Step 4e runs that one, and that is
-the authoritative measurement. Running the same project-wide audit twice would double the cost
-for one number, so scope this one:
-
-```
-Agent(subagent_type="purlin:purlin-auditor", prompt="Audit feature <name> only: ...")
-```
-
 ## Step 4 — Run Tests and Iterate
 
 The iteration loop is: **write code → write tests → run `purlin:test` → read coverage output → fix → repeat**. The loop does NOT end until coverage output shows PASSING for the target feature (all rules proved). PARTIAL means more tests are still needed.
@@ -161,6 +148,21 @@ to contradict a weak test. The description and the assertion are two statements 
 claim, so exactly one of them is wrong. Find out which. If the description is genuinely wrong,
 say so explicitly and fix it deliberately via `purlin:spec`; if the test is wrong, fix the
 test. And never narrow a description for an anchor rule: that contract belongs to someone else.
+
+After `purlin:test` has emitted proof files, ALWAYS spawn an independent auditor to review
+the proofs you just wrote. The auditor reads those files, so spawning it before the run leaves
+it nothing to read.
+Do NOT audit your own tests in the same context: the auditor must be independent.
+
+**This audit is feature-scoped and advisory.** It covers only the feature just built, reuses
+the audit cache so it is cheap, and exists for fast feedback while the code is fresh in
+context. It is not the project-wide audit: `purlin:verify` Step 4e runs that one, and that is
+the authoritative measurement. Running the same project-wide audit twice would double the cost
+for one number, so scope this one:
+
+```
+Agent(subagent_type="purlin:purlin-auditor", prompt="Audit feature <name> only: ...")
+```
 
 ## Step 5 — Changeset Summary (mandatory)
 

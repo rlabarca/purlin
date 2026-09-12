@@ -723,6 +723,36 @@ class TestSkillBuild:
         assert re.search(r'(?i)anchor', content), \
             "narrowing an anchor-rule description must be forbidden outright"
 
+    @pytest.mark.proof("skill_build", "PROOF-23", "RULE-16")
+    def test_auditor_is_spawned_after_the_test_run_emits_proof_files(self):
+        """Audit Pass 0.5 and Pass 1 exit 2 when the feature has no proof
+        file, so an auditor spawned in the test-writing step crashed on every
+        fresh feature."""
+        content = _read('build')
+        spawn = content.index('purlin:purlin-auditor')
+        delegation = content.index('purlin:test <name>')
+        assert spawn > delegation, (
+            "the auditor is spawned at offset %d, before the purlin:test "
+            "delegation at offset %d" % (spawn, delegation))
+
+        # The instruction must say why the order matters, in the sentence that
+        # orders the spawn and not somewhere else in the file.
+        order = content.index('ALWAYS spawn an independent auditor')
+        assert re.search(r'(?i)after\s+`?purlin:test`?\s+has\s+emitted\s+proof\s+files',
+                         content[max(0, order - 120):order]), (
+            "the spawn instruction must state that it runs only after "
+            "purlin:test has emitted proof files")
+        assert delegation < order < spawn, (
+            "the ordering sentence must introduce the Agent() call that follows it")
+
+        headings = [(m.start(), m.group(1))
+                    for m in re.finditer(r'(?m)^## (.+)$', content)]
+        enclosing = [h for off, h in headings if off < spawn][-1]
+        m = re.match(r'Step ([0-9]+)', enclosing)
+        assert m, "the auditor spawn must sit inside a numbered step, not %r" % enclosing
+        assert int(m.group(1)) >= 4, (
+            "the auditor spawn sits in %r, which runs before the tests" % enclosing)
+
 # ── skill_drift ───────────────────────────────────────────────────────
 
 class TestSkillDrift:

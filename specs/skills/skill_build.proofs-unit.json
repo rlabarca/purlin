@@ -75,6 +75,15 @@
     },
     {
       "feature": "skill_build",
+      "id": "PROOF-23",
+      "rule": "RULE-16",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_auditor_is_spawned_after_the_test_run_emits_proof_files",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_build",
       "id": "PROOF-3",
       "rule": "RULE-3",
       "test_file": "dev/test_skill_specs.py",
