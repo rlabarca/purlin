@@ -518,7 +518,7 @@ Examples:
 
 8. **No test-only specs:** Never generate a spec whose purpose is to be a container for tests (e.g., `e2e_feature_scoped_overwrite`, `e2e_audit_cache_pipeline`). If integration or e2e tests validate a feature's behavior, those tests should prove rules in that feature's spec — not in a separate spec. When code analysis reveals e2e test files, map their assertions to the feature spec they exercise and add rules there.
 
-9. **Rebuild-risk filter and coverage check (mandatory):** Before presenting specs, apply two filters:
+9. **Rebuild-risk filter and coverage check (mandatory):** Before presenting specs, apply three filters:
 
    **Filter 1 — Drop implementation noise:** Review every rule just written. For each rule, ask: "Does this describe *what* the feature must do, or *how* the code does it?" Remove rules that specify:
    - CSS pixel values, margins, padding (visual polish — QA catches these)
