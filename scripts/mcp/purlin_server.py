@@ -1734,18 +1734,40 @@ def _declared_platform_counts(features):
     return counts
 
 
+def _is_environment(registry, platform_id):
+    """True when the registry entry for `platform_id` is `kind: environment`.
+
+    One predicate, read by every surface that has to choose a word (sync_status
+    RULE-63). An environment is a tool, an account or a model rather than a
+    host, so "runner" is wrong about it in both directions: nothing dispatches
+    one, and nothing detects one either.
+    """
+    entry = (registry or {}).get(platform_id) or {}
+    return entry.get('kind') == _PLATFORM_KIND_ENVIRONMENT
+
+
+def _platform_kind(registry, platform_id):
+    """`environment` or `os`, the taxonomy word for a registry id.
+
+    An id nothing registers is reported as `os`: it is an unresolved host id,
+    not a tool, and the registry advisory (RULE-50) is what names it.
+    """
+    return ('environment' if _is_environment(registry, platform_id) else 'os')
+
+
 def _platform_dispatch_note(registry, platform_id):
-    """How `purlin:test` would reach a platform the host is not, for the
-    `runner:` line of the Platforms block."""
+    """How a result for a platform the host is not can ever arrive, for the
+    `runner:` or `environment:` line of the Platforms block."""
     entry = registry.get(platform_id)
     if entry is None:
         return 'unregistered'
     runner = entry.get('runner')
-    if not runner and entry.get('kind') == _PLATFORM_KIND_ENVIRONMENT:
+    if not runner and _is_environment(registry, platform_id):
         # Nothing dispatches a tool. Name the one way the result can arrive.
-        return (f'environment; run with PURLIN_PLATFORM={platform_id} on a '
-                f'host that has it, then commit with a '
-                f'Purlin-Runner: <user>@<host> trailer')
+        # The line's own label already says `environment:`, so the note says
+        # only what a person has to do.
+        return (f'run with PURLIN_PLATFORM={platform_id} on a host that has '
+                f'it, commit with a Purlin-Runner trailer')
     if not runner:
         return 'no runner configured'
     provider = runner.get('provider')
@@ -1767,7 +1789,10 @@ def _platforms_block(features, registry, host):
     `PURLIN_PLATFORM` value that makes the plugin write the scoped file),
     under `runner:` otherwise, with how a runner would reach it, and an id
     that is neither registered nor a family id is listed as unregistered
-    rather than dropped.
+    rather than dropped. A `kind: environment` id the host does not satisfy
+    takes the label `environment:` instead of `runner:` (RULE-63): no runner
+    dispatches a tool, an account or a model, so calling the line a runner
+    line tells the reader to wait for something that is never coming.
     """
     counts = _declared_platform_counts(features)
     if not counts:
@@ -1793,7 +1818,8 @@ def _platforms_block(features, registry, host):
         lines.append(f"  local:  {pid} ({proofs(counts[pid])}); "
                      f"run with PURLIN_PLATFORM={pid}")
     for pid in remote:
-        lines.append(f"  runner: {pid} ({proofs(counts[pid])}; "
+        label = 'environment:' if _is_environment(registry, pid) else 'runner:'
+        lines.append(f"  {label} {pid} ({proofs(counts[pid])}; "
                      f"{_platform_dispatch_note(registry, pid)})")
     return lines
 
@@ -1802,10 +1828,16 @@ def _platforms_line(platform_summary, host_id):
     """The one-line per-platform standing (sync_status RULE-57), or ''.
 
     `Platforms (host: <id>): <segment> | <segment>`. A segment is the id, the
-    word `(host)` when it is this machine, the verified fraction, and up to
+    marks `(host)` when it is this machine and `(environment)` when the
+    registry entry is `kind: environment`, the verified fraction, and up to
     five clauses that are omitted when their count is zero: passing, failing,
-    proofs awaiting a runner, Integrity with its measurement coverage, and
-    when the platform was last proved and by which runner.
+    proofs awaiting a runner (`awaiting an environment run` for an
+    environment, RULE-63), Integrity with its measurement coverage, and when
+    the platform was last proved and by which runner.
+
+    The kind is read off the summary row's `platform_kind` rather than looked
+    up again here (`report_data` RULE-42): one builder decides the taxonomy
+    word and every surface repeats it.
 
     One line, because `purlin:status` is read in a terminal beside forty
     feature rows: the per-platform detail belongs to the dashboard's modal and
@@ -1818,7 +1850,12 @@ def _platforms_line(platform_summary, host_id):
     segments = []
     for pid in sorted(platform_summary):
         row = platform_summary[pid]
-        here = ' (host)' if pid == host_id else ''
+        marks = []
+        if pid == host_id:
+            marks.append('host')
+        if row.get('platform_kind') == 'environment':
+            marks.append('environment')
+        here = f" ({', '.join(marks)})" if marks else ''
         parts = [f"{pid}{here} {row['verified']}/{row['features']} verified"]
         if row['passing']:
             parts.append(f"{row['passing']} passing")
@@ -1826,8 +1863,11 @@ def _platforms_line(platform_summary, host_id):
             parts.append(f"{row['failing']} failing")
         awaiting = (row.get('proofs') or {}).get('awaiting') or 0
         if awaiting:
+            wait = ('awaiting an environment run'
+                    if row.get('platform_kind') == 'environment'
+                    else 'awaiting runner')
             parts.append(f"{awaiting} proof{'s' if awaiting != 1 else ''} "
-                         f"awaiting runner")
+                         f"{wait}")
         integrity = row.get('integrity') or {}
         coverage = integrity.get('coverage') or {}
         if coverage.get('total'):
@@ -2654,7 +2694,8 @@ def sync_status(project_root, role=None):
     }
     host_id = _host_id(registry, host)
     platforms_line = _platforms_line(
-        _platform_summary(records_by_feature, all_proofs, audit_by_proof, host_id),
+        _platform_summary(records_by_feature, all_proofs, audit_by_proof,
+                          host_id, registry=registry),
         host_id)
 
     # Build summary table and combine output
@@ -2851,7 +2892,7 @@ def _gauge_directives(name, gauges):
 
 
 def _platform_lines(project_root, name, info, pres, awaiting_rule_count,
-                    records, host_ids, receipted):
+                    records, host_ids, receipted, registry=None):
     """One line per declared platform, host first, then at most three more.
 
     A proof declaring a platform that had never run there reported nothing at
@@ -2864,7 +2905,9 @@ def _platform_lines(project_root, name, info, pres, awaiting_rule_count,
     `records` is the feature's `_platform_records`; `host_ids` are the declared
     ids this host satisfies; `receipted` says whether the feature holds a
     current receipt, which is what makes a gap a platform-partial receipt
-    rather than an ordinary wait.
+    rather than an ordinary wait; `registry` decides which awaiting word the
+    id takes, because a `kind: environment` id is waiting on a person rather
+    than on a runner (RULE-63).
     """
     out = []
     # Host first: what was proved here needs no runner and is what the reader
@@ -2878,7 +2921,9 @@ def _platform_lines(project_root, name, info, pres, awaiting_rule_count,
                        f"({', '.join(rec['failed'])})")
         elif rec['awaiting']:
             n = len(rec['awaiting'])
-            out.append(f"  \u26a0 {platform}: awaiting runner, {n} proof"
+            wait = ('awaiting an environment run'
+                    if _is_environment(registry, platform) else 'awaiting runner')
+            out.append(f"  \u26a0 {platform}: {wait}, {n} proof"
                        f"{'s' if n != 1 else ''} ({', '.join(rec['awaiting'])})")
         elif platform in host_ids:
             out.append(f"  \u2713 {platform} (host): {proved}/{declared} proved")
@@ -3115,7 +3160,7 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
     def platform_detail():
         return _platform_lines(project_root, name, info, pres,
                                awaiting_rule_count, platform_records, host_ids,
-                               verdict['has_current_receipt'])
+                               verdict['has_current_receipt'], registry)
 
     total = len(rule_entries)
     deferred_count = sum(1 for _, _, _, is_def in rule_entries if is_def)
@@ -3833,11 +3878,17 @@ def _host_summary_row(all_proofs, audit_by_proof, host_id, receipted_by_feature)
         # "this id is the host machine": a declared row can also be the host,
         # and a reader tells that from `platforms.host_id`.
         'host': True, 'kind': 'host',
+        # The taxonomy word (report_data RULE-42), which is a different
+        # question from `kind`: `kind` says where the row came from, and
+        # `platform_kind` says what sort of thing the id names. This row
+        # describes the machine the sweep ran on, which is always an operating
+        # system host and never a tool, so it is `os`.
+        'platform_kind': 'os',
     }
 
 
 def _platform_summary(records_by_feature, all_proofs, audit_by_proof, host_id,
-                      receipted_by_feature=None, host_row=False):
+                      receipted_by_feature=None, host_row=False, registry=None):
     """The project roll-up per platform (report_data RULE-36).
 
     One row per platform some proof declares, and none for a registry id
@@ -3854,6 +3905,11 @@ def _platform_summary(records_by_feature, all_proofs, audit_by_proof, host_id,
     prefix, and a segment repeating it would both duplicate that and break
     sync_status RULE-57, where every segment is a platform some proof declares.
     The dashboard modal has no such prefix, which is the gap the row closes.
+
+    Every row also carries `platform_kind` (report_data RULE-42), resolved
+    from `registry` here so that no reader recomputes the taxonomy from the
+    absence of an `os` key. The text line, the dashboard and the CI gate all
+    choose a word from it.
     """
     summary = {}
     for _name, records in sorted(records_by_feature.items()):
@@ -3864,6 +3920,7 @@ def _platform_summary(records_by_feature, all_proofs, audit_by_proof, host_id,
                 'proofs': {'declared': 0, 'proved': 0, 'failed': 0, 'awaiting': 0},
                 'integrity': None, 'last_proved': None, 'last_runner': None,
                 'host': False, 'kind': 'declared',
+                'platform_kind': _platform_kind(registry, platform),
             })
             row['features'] += 1
             row[record['status'].lower()] += 1
@@ -4212,7 +4269,12 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
         # gate exits 2 on `platforms.errors`, and a key that is sometimes
         # absent cannot be told from an older payload.
         'platforms': {
-            'registry': {pid: {k: v for k, v in entry.items() if k != '_id'}
+            # Each entry keeps its declared keys and gains `platform_kind`
+            # (RULE-42), so a reader picking a word for an id never has to
+            # infer one from a missing `os`.
+            'registry': {pid: dict(
+                             {k: v for k, v in entry.items() if k != '_id'},
+                             platform_kind=_platform_kind(registry, pid))
                          for pid, entry in sorted(registry.items())},
             'host': host,
             'local': [pid for pid in declared_ids if pid in host_ids],
@@ -4221,7 +4283,8 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             'host_id': host_id,
             'summary': _platform_summary(records_by_feature, all_proofs,
                                          audit_by_proof, host_id,
-                                         receipted_by_feature, host_row=True),
+                                         receipted_by_feature, host_row=True,
+                                         registry=registry),
         },
         'platform_testing': bool(declared_ids),
         # Always present, empty when the project is current (report_data

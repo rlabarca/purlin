@@ -3492,11 +3492,13 @@ class TestRemoteVerificationChip:
 
 def make_platform_row(pid, features=1, verified=1, passing=0, failing=0,
                       awaiting=0, executed=2, measured=1, weighted=50,
-                      assessed=100, last_proved=None, runner=None, host=False):
+                      assessed=100, last_proved=None, runner=None, host=False,
+                      platform_kind="os"):
     """One `platforms.summary` row in the report_data RULE-36 shape.
 
     `host=True` is the RULE-41 row for the detected host, the one covering the
-    results that name no platform."""
+    results that name no platform. `platform_kind` is the RULE-42 taxonomy
+    word, a separate question from `kind`."""
     return {
         "features": features, "verified": verified, "passing": passing,
         "failing": failing, "awaiting": awaiting,
@@ -3512,6 +3514,7 @@ def make_platform_row(pid, features=1, verified=1, passing=0, failing=0,
         "last_runner": runner,
         "host": host,
         "kind": "host" if host else "declared",
+        "platform_kind": platform_kind,
     }
 
 
@@ -3937,6 +3940,96 @@ class TestPlatformChips:
         page.locator("tr.fr[data-name='auth_login'] .pchip").first.click()
         assert page.locator("tr.fr[data-name='auth_login'].expanded").count() == 1, \
             "clicking a chip must still toggle the row"
+
+
+class TestEnvironmentIdsReadAsEnvironments:
+    """purlin_report RULE-47 - a tool is never abbreviated as an OS."""
+
+    NOTE = ("environment: satisfied only by a hand run with "
+            "PURLIN_PLATFORM=figma-mcp on a host that has it")
+
+    def _data(self):
+        data = platform_data(
+            records={"auth_login": {
+                "figma-mcp": make_platform_record(
+                    proved=0, awaiting=["PROOF-9"], status="AWAITING"),
+                "windows-2022": make_platform_record(
+                    proved=0, awaiting=["PROOF-8"], status="AWAITING"),
+            }},
+            registry={"figma-mcp": {"kind": "environment",
+                                    "platform_kind": "environment"},
+                      "windows-2022": {"os": "windows", "platform_kind": "os"}},
+            rows={
+                "figma-mcp": make_platform_row(
+                    "figma-mcp", features=1, verified=0, awaiting=1,
+                    platform_kind="environment"),
+                "windows-2022": make_platform_row(
+                    "windows-2022", features=1, verified=0, awaiting=1),
+            })
+        by_name = {f["name"]: f for f in data["features"]}
+        by_name["auth_login"]["status"] = "PASSING"
+        return data
+
+    @pytest.mark.proof("purlin_report", "PROOF-52", "RULE-47", tier="e2e")
+    def test_environment_chips_rows_and_header_say_environment(
+            self, page, dashboard):
+        load_dashboard(page, dashboard, data=self._data())
+
+        chips = page.locator("tr.fr[data-name='auth_login'] .pchip")
+        assert chips.count() == 2, f"one chip per declared id, got {chips.count()}"
+        # The badge is a child span, so inner_text reads `figma-mcpENV`: what
+        # the rule fixes is the leading label, which must be the id itself.
+        def pick(prefix):
+            for i in range(chips.count()):
+                if chips.nth(i).inner_text().startswith(prefix):
+                    return chips.nth(i)
+            return None
+
+        texts = [chips.nth(i).inner_text() for i in range(chips.count())]
+        env_chip, os_chip = pick("figma-mcp"), pick("win")
+        assert env_chip is not None, (
+            f"an environment chip is labelled by its id, never by an OS "
+            f"abbreviation: {texts}")
+        assert os_chip is not None, texts
+        badge = env_chip.locator(".env-badge")
+        assert badge.count() == 1, env_chip.inner_text()
+        assert badge.inner_text().strip().lower() == "env", badge.inner_text()
+        assert os_chip.locator(".env-badge").count() == 0, (
+            "an OS id carries no env badge")
+        assert self.NOTE in (env_chip.get_attribute("title") or ""), \
+            env_chip.get_attribute("title")
+        assert "environment" not in (os_chip.get_attribute("title") or ""), \
+            os_chip.get_attribute("title")
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR,
+                                          "proof52_environment_chip.png"))
+
+        # The counts table: the header names both kinds, the cell is badged.
+        page.evaluate(
+            "() => document.querySelector(\"[data-modal='verified']\").click()")
+        # The modal table style renders header text upper case.
+        head = page.locator("#modal .modal-table thead th").nth(0)
+        assert head.inner_text().strip().upper() == "PLATFORM / ENVIRONMENT", \
+            head.inner_text()
+        rows = page.locator("#modal .modal-table tbody tr")
+        cells = [rows.nth(i).locator("td").nth(0) for i in range(rows.count())]
+        env_cell = next(c for c in cells
+                        if c.inner_text().startswith("figma-mcp"))
+        os_cell = next(c for c in cells
+                       if c.inner_text().startswith("windows-2022"))
+        assert env_cell.locator(".env-badge").count() == 1, env_cell.inner_text()
+        assert self.NOTE in (env_cell.get_attribute("title") or ""), \
+            env_cell.get_attribute("title")
+        assert os_cell.locator(".env-badge").count() == 0, os_cell.inner_text()
+        assert os_cell.get_attribute("title") is None, \
+            os_cell.get_attribute("title")
+        page.keyboard.press("Escape")
+
+        # And the Integrity table carries the same header.
+        page.evaluate(
+            "() => document.querySelector(\"[data-modal='integrity']\").click()")
+        head = page.locator("#modal .modal-table thead th").nth(0)
+        assert head.inner_text().strip().upper() == "PLATFORM / ENVIRONMENT", \
+            head.inner_text()
 
 
 class TestPlatformsDetailBlock:

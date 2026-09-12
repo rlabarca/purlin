@@ -138,6 +138,15 @@
     },
     {
       "feature": "purlin_report",
+      "id": "PROOF-52",
+      "rule": "RULE-47",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_environment_chips_rows_and_header_say_environment",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "purlin_report",
       "id": "PROOF-47",
       "rule": "RULE-39",
       "test_file": "dev/test_purlin_report.py",

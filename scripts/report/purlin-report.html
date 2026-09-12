@@ -230,6 +230,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .dst{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);margin-bottom:6px;margin-top:14px}
 .awr{font-size:11px;color:var(--text-secondary);line-height:1.7}
 .host-badge{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--teal);border:1px solid var(--teal);border-radius:3px;padding:0 4px;margin-left:6px}
+.env-badge{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--blue);border:1px solid var(--blue);border-radius:3px;padding:0 4px;margin-left:6px}
 .awr-host{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--teal);border:1px solid var(--teal);border-radius:3px;padding:0 4px;margin-left:6px}
 .pchips{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
 .pchip{font-family:var(--font-mono);font-size:9px;font-weight:600;letter-spacing:.03em;border-radius:3px;padding:0 4px;border:1px solid var(--border)}
@@ -492,7 +493,44 @@ table{min-width:830px}
     return (r.host && r.id === 'unregistered') ? 'this host' : r.id;
   }
 
+  /* The first column of every platform table. The header names both kinds
+     (RULE-47), because a column headed `Platform` over a row reading
+     `figma-mcp` asserts the wrong taxonomy; the cell carries the `env` badge
+     and the hand-run tooltip so the row says who has to act. */
+  function platformHeadCell() {
+    return '<th>Platform / environment</th>';
+  }
+
+  function platformNameCell(id, label, host) {
+    var t = isEnvironment(id) ? ' title="' + esc(envNote(id)) + '"' : '';
+    return '<td' + t + '>' + esc(label)
+      + (host ? '<span class="host-badge">host</span>' : '')
+      + envBadge(id) + '</td>';
+  }
+
+  /* A `kind: environment` registry id: a tool, an account or a model rather
+     than a host (report_data RULE-42 puts the word in the payload so nothing
+     here infers it from a missing `os`). */
+  function isEnvironment(id) {
+    var reg = ((D.platforms || {}).registry || {})[id] || {};
+    return reg.platform_kind === 'environment';
+  }
+
+  /* What a hand run of an environment id costs the reader, said wherever the
+     id appears (RULE-47). */
+  function envNote(id) {
+    return 'environment: satisfied only by a hand run with PURLIN_PLATFORM='
+      + id + ' on a host that has it';
+  }
+
+  function envBadge(id) {
+    return isEnvironment(id) ? '<span class="env-badge">env</span>' : '';
+  }
+
   function platformAbbrev(id) {
+    /* An environment is named by its id and never abbreviated: `mac` for
+       `figma-mcp` would claim the chip is about this machine's OS. */
+    if (isEnvironment(id)) return id;
     var reg = ((D.platforms || {}).registry || {})[id] || {};
     var os = reg.os || '';
     if (os === 'windows') return 'win';
@@ -531,8 +569,10 @@ table{min-width:830px}
         + (rec.declared || 0) + ' proved';
       if (rec.awaiting && rec.awaiting.length) title += ', awaiting ' + rec.awaiting.join(', ');
       if (rec.failed && rec.failed.length) title += ', failing ' + rec.failed.join(', ');
+      if (isEnvironment(ids[i])) title += '; ' + envNote(ids[i]);
       out += '<span class="' + pchipClass(rec.status) + '" title="' + esc(title) + '">'
-          + esc(platformAbbrev(ids[i])) + ' ' + pchipMark(rec.status) + '</span>';
+          + esc(platformAbbrev(ids[i])) + envBadge(ids[i]) + ' '
+          + pchipMark(rec.status) + '</span>';
     }
     return out + '</div>';
   }
@@ -557,13 +597,13 @@ table{min-width:830px}
 
   function platformCountsModal() {
     var rows = platformRows();
-    var h = '<table class="modal-table"><thead><tr><th>Platform</th><th>Features</th>'
+    var h = '<table class="modal-table"><thead><tr>' + platformHeadCell()
+      + '<th>Features</th>'
       + '<th>Verified</th><th>Passing</th><th>Awaiting</th><th>Failing</th>'
       + '<th>Last proved</th></tr></thead><tbody>';
     for (var i = 0; i < rows.length; i++) {
       var r = rows[i];
-      h += '<tr><td>' + esc(platformLabel(r))
-        + (r.isHost ? '<span class="host-badge">host</span>' : '') + '</td>'
+      h += '<tr>' + platformNameCell(r.id, platformLabel(r), r.isHost)
         + '<td>' + (r.features || 0) + '</td><td>' + (r.verified || 0) + '</td>'
         + '<td>' + (r.passing || 0) + '</td><td>' + (r.awaiting || 0) + '</td>'
         + '<td>' + (r.failing || 0) + '</td>'
@@ -574,15 +614,15 @@ table{min-width:830px}
 
   function platformIntegrityModal() {
     var rows = platformRows();
-    var h = '<table class="modal-table"><thead><tr><th>Platform</th><th>Executed</th>'
+    var h = '<table class="modal-table"><thead><tr>' + platformHeadCell()
+      + '<th>Executed</th>'
       + '<th>Measured</th><th>Integrity</th><th>Assessed</th><th>S / W / H</th>'
       + '</tr></thead><tbody>';
     for (var i = 0; i < rows.length; i++) {
       var r = rows[i];
       var g = r.integrity || {};
       var cov = g.coverage || {};
-      h += '<tr><td>' + esc(platformLabel(r))
-        + (r.isHost ? '<span class="host-badge">host</span>' : '') + '</td>'
+      h += '<tr>' + platformNameCell(r.id, platformLabel(r), r.isHost)
         + '<td>' + (cov.total || 0) + '</td><td>' + (cov.measured || 0) + '</td>'
         + '<td>' + (g.weighted == null ? '\u2014' : g.weighted + '%') + '</td>'
         + '<td>' + (g.assessed == null ? '\u2014' : g.assessed + '%') + '</td>'
@@ -612,10 +652,10 @@ table{min-width:830px}
       }
     }
     var ids = Object.keys(byPlatform).sort();
-    var h = '<table class="modal-table"><thead><tr><th>Platform</th>'
+    var h = '<table class="modal-table"><thead><tr>' + platformHeadCell()
       + '<th>Failing features</th><th>Proofs</th></tr></thead><tbody>';
     for (var j = 0; j < ids.length; j++) {
-      h += '<tr><td>' + esc(ids[j]) + '</td><td>'
+      h += '<tr>' + platformNameCell(ids[j], ids[j], false) + '<td>'
         + esc(byPlatform[ids[j]].features.join(', ')) + '</td><td>'
         + esc(byPlatform[ids[j]].proofs.join(', ')) + '</td></tr>';
     }

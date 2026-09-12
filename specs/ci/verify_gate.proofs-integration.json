@@ -48,6 +48,15 @@
     },
     {
       "feature": "verify_gate",
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "test_file": "dev/test_verify_gate.py",
+      "test_name": "test_an_environment_row_is_marked_and_an_os_row_is_not",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "verify_gate",
       "id": "PROOF-10",
       "rule": "RULE-10",
       "test_file": "dev/test_verify_gate.py",

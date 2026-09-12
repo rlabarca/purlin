@@ -2834,14 +2834,14 @@ class TestPlatformRegistry:
         self._write_spec('@unit @on(figma-mcp)')
         self._config({'figma-mcp': self.ENVIRONMENTS['figma-mcp']})
         out = purlin_server.sync_status(self.project_root)
-        expected = ('runner: figma-mcp (1 proof; environment; run with '
-                    'PURLIN_PLATFORM=figma-mcp on a host that has it, then '
-                    'commit with a Purlin-Runner: <user>@<host> trailer)')
+        expected = ('environment: figma-mcp (1 proof; run with '
+                    'PURLIN_PLATFORM=figma-mcp on a host that has it, '
+                    'commit with a Purlin-Runner trailer)')
         assert expected in out, f"expected {expected!r} in:\n{out}"
         for line in out.splitlines():
-            assert not (line.strip().startswith('local:')
+            assert not (line.strip().startswith(('local:', 'runner:'))
                         and 'figma-mcp' in line), (
-                f"an environment is never this host: {line}")
+                f"an environment is neither this host nor a runner: {line}")
 
         # The text half. The registry accepts a kind; the rule set that says
         # what belongs under it lives in one place, and the two must not drift.
@@ -3272,6 +3272,82 @@ class TestPlatformsLineAndDetailLines:
         for line in [l for l in plain if l.startswith('│')]:
             assert len(line.split('│')[3]) == 10, (
                 f"the status cell must stay 8 wide plus its two spaces: {line!r}")
+
+    @pytest.mark.proof("sync_status", "PROOF-102", "RULE-63", tier="integration")
+    def test_an_environment_id_never_reads_as_a_runner(self, monkeypatch):
+        """sync_status RULE-63: three surfaces, one word.
+
+        `awaiting runner` on `figma-mcp` points the reader at `purlin:test`,
+        which dispatches nothing for a tool. The only thing that closes the
+        gap is a person on a host that has it.
+        """
+        self._host(monkeypatch)
+        self._config({'figma-mcp': {'kind': 'environment',
+                                    'label': 'Figma MCP server'},
+                      'windows-2022': {'os': 'windows',
+                                       'runner': {'provider': 'github',
+                                                  'workflow': 'win.yml'}}})
+        self._spec(['- PROOF-1 (RULE-1): a @unit @on(figma-mcp)',
+                    '- PROOF-2 (RULE-2): b @unit @on(windows-2022)',
+                    '- PROOF-3 (RULE-3): c @unit'], rules=3)
+        self._proofs([self._entry('PROOF-3', 'RULE-3')])
+
+        def surfaces():
+            lines = purlin_server.sync_status(self.project_root).splitlines()
+            block = [l.strip() for l in lines
+                     if l.startswith(('  local:', '  runner:', '  environment:'))]
+            head = next(l for l in lines if l.startswith('Platforms (host: '))
+            head = head.split('): ', 1)[1]
+            segs = {s.split()[0]: s for s in head.split(' | ')}
+            detail = [l for l in lines if l[:4] in ('  \u2713 ', '  \u26a0 ', '  \u2717 ')]
+            return block, segs, detail
+
+        block, segs, detail = surfaces()
+
+        # 1. The Platforms block: its own label, and the one way in.
+        env_line = ('environment: figma-mcp (1 proof; run with '
+                    'PURLIN_PLATFORM=figma-mcp on a host that has it, '
+                    'commit with a Purlin-Runner trailer)')
+        assert env_line in block, f"expected {env_line!r} in {block}"
+        assert ('runner: windows-2022 (1 proof; github workflow win.yml)'
+                in block), block
+        assert not any(l.startswith('runner:') and 'figma-mcp' in l
+                       for l in block), block
+
+        # 2. The Platforms line segment.
+        assert segs['figma-mcp'].startswith('figma-mcp (environment) '), segs
+        assert '1 proof awaiting an environment run' in segs['figma-mcp'], segs
+        assert '(environment)' not in segs['windows-2022'], segs
+        assert '1 proof awaiting runner' in segs['windows-2022'], segs
+
+        # 3. The RULE-58 detail line.
+        assert ('  \u26a0 figma-mcp: awaiting an environment run, 1 proof '
+                '(PROOF-1)') in detail, detail
+        assert ('  \u26a0 windows-2022: awaiting runner, 1 proof (PROOF-2)'
+                in detail), detail
+
+        # The word itself is gone from every line that is only about the
+        # environment. `Purlin-Runner` is capitalised and names the commit
+        # trailer that records provenance, which is not a dispatch claim.
+        for line in (env_line, segs['figma-mcp'],
+                     '  \u26a0 figma-mcp: awaiting an environment run, '
+                     '1 proof (PROOF-1)'):
+            assert 'runner' not in line, (
+                f"an environment id is never described with 'runner': {line!r}")
+
+        # The forms follow the registry kind, not the id: registered as an OS
+        # entry, the same id reverts to the runner wording everywhere.
+        self._config({'figma-mcp': {'os': 'linux'},
+                      'windows-2022': {'os': 'windows',
+                                       'runner': {'provider': 'github',
+                                                  'workflow': 'win.yml'}}})
+        block, segs, detail = surfaces()
+        assert any(l.startswith('runner: figma-mcp (1 proof;') for l in block), block
+        assert not any(l.startswith('environment:') for l in block), block
+        assert '(environment)' not in segs['figma-mcp'], segs
+        assert '1 proof awaiting runner' in segs['figma-mcp'], segs
+        assert ('  \u26a0 figma-mcp: awaiting runner, 1 proof (PROOF-1)'
+                in detail), detail
 
 
 class TestManualStampsCount:

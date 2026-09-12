@@ -1381,7 +1381,8 @@ class TestAwaitingRunnerPayload:
         p = built['platforms']
         assert built['platform_testing'] is True
         assert p['registry']['windows-2022'] == {
-            'os': 'windows', 'runner': {'provider': 'github'}}, p['registry']
+            'os': 'windows', 'runner': {'provider': 'github'},
+            'platform_kind': 'os'}, p['registry']
         assert 'mac-typo' not in p['registry']
         assert len(p['errors']) == 1 and 'mac-typo' in p['errors'][0], p['errors']
         assert p['local'] == ['macos'] and p['remote'] == ['windows-2022'], (p['local'], p['remote'])
@@ -1708,6 +1709,74 @@ class TestAwaitingRunnerPayload:
         built, _ = self._both(cfg)
         rows = built['platforms']['summary']
         assert list(rows) == ['windows-2022'], list(rows)
+
+    @pytest.mark.proof("report_data", "PROOF-43", "RULE-42", tier="integration")
+    def test_platform_kind_is_stated_on_every_row_and_registry_entry(
+            self, monkeypatch):
+        """report_data RULE-42: the taxonomy word lives in the payload.
+
+        Three readers (the Platforms line, the dashboard and the CI gate) each
+        inferring `environment` from a missing `os` key would be three chances
+        to disagree with the registry validator that owns the kind.
+        """
+        monkeypatch.delenv('PURLIN_PLATFORM', raising=False)
+        monkeypatch.setattr(purlin_server, '_detect_host_platform', lambda: {
+            'os': 'macos', 'version': '15.0', 'distro': '', 'arch': 'arm64',
+            'id': None})
+        _write_spec(self.tmp, 'design',
+                    '# Feature: design\n\n## What it does\nD.\n\n'
+                    '## Rules\n- RULE-1: A\n- RULE-2: B\n\n'
+                    '## Proof\n'
+                    '- PROOF-1 (RULE-1): a @unit @on(figma-mcp)\n'
+                    '- PROOF-2 (RULE-2): b @unit\n')
+        _write_proofs(self.tmp, 'design', [_entry('design', 'PROOF-2', 'RULE-2')])
+        _write_spec(self.tmp, 'locking',
+                    '# Feature: locking\n\n## What it does\nL.\n\n'
+                    '## Rules\n- RULE-1: A\n\n'
+                    '## Proof\n- PROOF-1 (RULE-1): a @unit @on(windows-2022)\n')
+        _write_proofs(self.tmp, 'locking',
+                      [_entry('locking', 'PROOF-1', 'RULE-1')],
+                      platform='windows-2022')
+        cfg = self._config(platforms={
+            'figma-mcp': {'kind': 'environment', 'label': 'Figma MCP server'},
+            'gemini-cli': {'kind': 'environment',
+                           'runner': {'provider': 'github',
+                                      'workflow': 'gemini.yml'}},
+            'macos-15': {'os': 'macos', 'version': '15'},
+            'windows-2022': {'os': 'windows'},
+        })
+
+        built, read = self._both(cfg)
+        registry = built['platforms']['registry']
+        for pid in ('figma-mcp', 'gemini-cli'):
+            assert registry[pid]['platform_kind'] == 'environment', registry[pid]
+        for pid in ('windows-2022', 'macos-15', 'windows', 'macos', 'linux'):
+            assert registry[pid]['platform_kind'] == 'os', (pid, registry[pid])
+        missing = [pid for pid, e in registry.items() if 'platform_kind' not in e]
+        assert not missing, f"every registry entry states its kind: {missing}"
+
+        rows = built['platforms']['summary']
+        assert built['platforms']['host_id'] == 'macos-15', built['platforms']
+        assert list(rows) == ['macos-15', 'figma-mcp', 'windows-2022'], list(rows)
+        assert rows['figma-mcp']['platform_kind'] == 'environment', rows['figma-mcp']
+        assert rows['figma-mcp']['kind'] == 'declared', (
+            "`kind` says where the row came from and `platform_kind` what the "
+            f"id names; the two are separate fields: {rows['figma-mcp']}")
+        assert rows['windows-2022']['platform_kind'] == 'os', rows['windows-2022']
+        host = rows['macos-15']
+        assert host['kind'] == 'host' and host['host'] is True, host
+        assert host['platform_kind'] == 'os', (
+            "the host row describes the machine the sweep ran on, which is an "
+            f"operating system host and never a tool: {host}")
+        missing = [pid for pid, r in rows.items() if 'platform_kind' not in r]
+        assert not missing, f"every summary row states its kind: {missing}"
+
+        # The gate reads `read_report_payload` and the dashboard reads the
+        # built payload. They must not disagree about the taxonomy.
+        assert (read['platforms']['summary'] == rows
+                and read['platforms']['registry'] == registry), (
+            "read_report_payload and _build_report_data disagree about "
+            "platform_kind")
 
     @pytest.mark.proof("report_data", "PROOF-38", "RULE-37", tier="integration")
     def test_every_platform_key_is_present_with_nothing_declared(self):

@@ -3,19 +3,19 @@
   "proofs": [
     {
       "feature": "report_data",
-      "id": "PROOF-39",
-      "rule": "RULE-38",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_the_payload_carries_evidence_stale_both_ways",
+      "id": "PROOF-25",
+      "rule": "RULE-24",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_both_entry_points_populate_both_gauges",
       "status": "pass",
       "tier": "integration"
     },
     {
       "feature": "report_data",
-      "id": "PROOF-25",
-      "rule": "RULE-24",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_both_entry_points_populate_both_gauges",
+      "id": "PROOF-39",
+      "rule": "RULE-38",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_the_payload_carries_evidence_stale_both_ways",
       "status": "pass",
       "tier": "integration"
     },
@@ -70,6 +70,15 @@
       "rule": "RULE-41",
       "test_file": "dev/test_report_data.py",
       "test_name": "test_host_row_covers_the_agnostic_results",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-43",
+      "rule": "RULE-42",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_platform_kind_is_stated_on_every_row_and_registry_entry",
       "status": "pass",
       "tier": "integration"
     },

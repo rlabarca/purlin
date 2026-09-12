@@ -500,6 +500,60 @@ class TestRegistryErrorsAndByPlatform:
             shutil.rmtree(root)
 
 
+class TestByPlatformNamesEnvironments:
+
+    @pytest.mark.proof("verify_gate", "PROOF-12", "RULE-12", tier="integration")
+    def test_an_environment_row_is_marked_and_an_os_row_is_not(self):
+        """verify_gate RULE-12: the gate's reader decides who acts.
+
+        An unmarked `figma-mcp` line reads exactly like `windows-2022` and
+        sends the reader to wait for a runner that nothing dispatches.
+        """
+        env_registry = {'figma-mcp': {'kind': 'environment'},
+                        'windows-2022': {'os': 'windows'}}
+        root = _make_project(mode='required', windows_proof=True,
+                             platforms=env_registry)
+        spec_path = os.path.join(root, 'specs', 'app', 'locking.md')
+        try:
+            # RULE-1 gets the environment proof, RULE-2 the windows one, so
+            # each id owns exactly one awaiting proof.
+            with open(spec_path) as f:
+                spec = f.read()
+            spec = spec.replace(
+                '- PROOF-1 (RULE-1): fcntl path locks @unit',
+                '- PROOF-1 (RULE-1): fcntl path locks @unit\n'
+                '- PROOF-4 (RULE-1): the Figma MCP server answers '
+                '@unit @on(figma-mcp)')
+            with open(spec_path, 'w') as f:
+                f.write(spec)
+
+            code, out = _run(root)
+            lines = [l.strip() for l in out.splitlines() if l.startswith('  ')]
+            assert ('figma-mcp (environment): 0 proved, 1 awaiting, '
+                    '0 failing (1 feature)') in lines, out
+            assert ('windows-2022: 0 proved, 1 awaiting, 0 failing '
+                    '(1 feature)') in lines, out
+            assert not any(l.startswith('windows-2022 (environment)')
+                           for l in lines), out
+            assert not any(l.startswith('figma-mcp:') for l in lines), (
+                "an environment row must never print unmarked:\n" + out)
+
+            # The mark follows the registry kind, not the id.
+            with open(os.path.join(root, '.purlin', 'config.json')) as f:
+                cfg = json.load(f)
+            cfg['platforms'] = {'figma-mcp': {'os': 'macos'},
+                                'windows-2022': {'os': 'windows'}}
+            with open(os.path.join(root, '.purlin', 'config.json'), 'w') as f:
+                json.dump(cfg, f)
+            code, out = _run(root)
+            lines = [l.strip() for l in out.splitlines() if l.startswith('  ')]
+            assert ('figma-mcp: 0 proved, 1 awaiting, 0 failing '
+                    '(1 feature)') in lines, out
+            assert '(environment)' not in out, out
+        finally:
+            shutil.rmtree(root)
+
+
 class TestCommitBackPushSurvivesARace:
 
     @pytest.mark.proof("verify_gate", "PROOF-10", "RULE-10", tier="integration")

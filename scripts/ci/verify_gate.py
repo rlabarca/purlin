@@ -93,7 +93,16 @@ def _findings(payload):
 
 
 def _by_platform(payload):
-    """One report line per declared platform, from `platforms.summary`."""
+    """One report line per declared platform, from `platforms.summary`.
+
+    An id whose row reads `platform_kind` `environment` is marked
+    `<id> (environment)` (verify_gate RULE-12). The gate's reader is looking
+    at a failed build asking who has to act: a line that reads like every OS
+    row sends them to wait for a runner that will never be dispatched, when
+    what the id needs is a person running the suite with `PURLIN_PLATFORM`
+    set. The word is read off the payload and never recomputed here
+    (`report_data` RULE-42).
+    """
     summary = (payload.get('platforms') or {}).get('summary') or {}
     lines = []
     for platform in sorted(summary):
@@ -105,8 +114,10 @@ def _by_platform(payload):
         if agg.get('host'):
             continue
         proofs = agg.get('proofs') or {}
+        kind = (' (environment)'
+                if agg.get('platform_kind') == 'environment' else '')
         lines.append(
-            f"{platform}: {proofs.get('proved', 0)} proved, "
+            f"{platform}{kind}: {proofs.get('proved', 0)} proved, "
             f"{proofs.get('awaiting', 0)} awaiting, "
             f"{proofs.get('failed', 0)} failing "
             f"({agg.get('features', 0)} feature"
