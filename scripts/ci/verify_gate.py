@@ -27,6 +27,17 @@ EXIT CODES  (aligned with dev/bump_version.sh)
 
     Fails closed. An error reading the evidence is never a pass.
 
+A `required` DECLARATION WITH NOTHING REMOTE IN IT
+    A project can declare `required` while no proof anywhere declares a
+    platform. That is not the unreadable-registry case above: the gate knows
+    exactly what the evidence means, which is that nothing is platform-scoped,
+    and an empty `platforms` registry is a configuration the reference blesses
+    ("Family ids need no configuration"). So the gate names it in one line and
+    leaves the verdict alone: an unverified feature still exits 1, a clean tree
+    still exits 0, and neither becomes a 2. The line is what stops the other
+    failure, a PASS under the strictest mode with no By-platform section to say
+    that nothing remote was ever checked.
+
 THIS SCRIPT NEVER WRITES. No file is created or modified, no commit is made, no
 proof or receipt is touched. It is the CI counterpart of `purlin:verify`'s
 read-only contract, for the same reason: a gate that can edit the evidence it
@@ -52,6 +63,24 @@ _ENFORCEMENT_NOTE = (
     'Note: remote_verification is DECLARED in .purlin/config.json, which the '
     'agent can edit. It is not the enforcement. Enforcement is branch protection '
     'marking this job a required check.'
+)
+
+# `required` is the declaration that verified-everywhere is the bar. When no
+# proof declares a platform there is no "everywhere": the registry, empty or
+# populated, has nothing in it being verified and no runner will be dispatched
+# for anything. That is a declaration with nothing remote in it, not evidence
+# the gate cannot read, so it is named and the verdict is left to RULE-3 and
+# RULE-4 (verify_gate RULE-13).
+_NO_PLATFORM_NOTE = (
+    'verify-gate: no proof declares a platform, so nothing in '
+    '.purlin/config.json\'s "platforms" registry is being verified: '
+    "'required' is a verified-here bar only."
+)
+_NO_PLATFORM_FIX = (
+    'verify-gate: that is reported, not failed. An empty registry is a '
+    'supported configuration (references/remote_verification.md, "Family ids '
+    'need no configuration"), so the fix is a proof declaring @on(<platform>) '
+    'where this project means verified-everywhere.'
 )
 
 
@@ -166,6 +195,13 @@ def check(project_root, out=sys.stdout):
 
     if mode == 'off':
         print("verify-gate: disabled for this project. Reporting only.", file=out)
+
+    # Read off the payload's own flag (`platform_testing` is true when any proof
+    # declares a platform), never recomputed from the registry here, so the gate
+    # cannot disagree with the report that sent the reader to it.
+    if mode == 'required' and not payload.get('platform_testing'):
+        print(_NO_PLATFORM_NOTE, file=out)
+        print(_NO_PLATFORM_FIX, file=out)
 
     if by_platform:
         print(f"\nBy platform ({len(by_platform)}):", file=out)

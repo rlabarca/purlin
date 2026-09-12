@@ -72,6 +72,15 @@
       "test_name": "test_preflight_runs_before_the_proofs_and_fails_only_on_real_gaps",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "verify_gate",
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "test_file": "dev/test_verify_gate.py",
+      "test_name": "test_required_with_no_declared_platform_is_named_not_failed",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

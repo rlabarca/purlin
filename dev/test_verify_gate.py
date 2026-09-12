@@ -679,3 +679,145 @@ class TestCommitBackWorkflowsPreflightTheMigration:
         finally:
             shutil.rmtree(blocking, ignore_errors=True)
             shutil.rmtree(advisory, ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------
+# RULE-13: a `required` declaration with nothing remote in it
+# ---------------------------------------------------------------------------
+
+SCAFFOLD_PY = os.path.join(ROOT, 'scripts', 'init', 'scaffold.py')
+
+NO_PLATFORM_LINE = (
+    'verify-gate: no proof declares a platform, so nothing in '
+    '.purlin/config.json\'s "platforms" registry is being verified: '
+    "'required' is a verified-here bar only.")
+
+
+def _unscoped_spec(platform_proof=False):
+    """The `_spec` shape with no registry behind it. The optional extra proof
+    declares the built-in family id `windows`, which needs no registry entry
+    (`references/remote_verification.md`): the only variable is the
+    declaration."""
+    extra = ('- PROOF-3 (RULE-2): msvcrt locks a file on a real windows host '
+             '@unit @on(windows)\n') if platform_proof else ''
+    return (
+        '# Feature: locking\n\n'
+        '> Description: File locking.\n\n'
+        '## Rules\n'
+        '- RULE-1: Locks on POSIX\n'
+        '- RULE-2: Locks on Windows\n\n'
+        '## Proof\n'
+        '- PROOF-1 (RULE-1): fcntl path locks @unit\n'
+        '- PROOF-2 (RULE-2): msvcrt shim locks @unit\n'
+        + extra
+    )
+
+
+def _write_evidence(root, platform_proof=False, proofs_pass=True):
+    """The feature, its unit proof file, a commit and (when passing) a receipt.
+
+    Re-callable on the same project: the spec and the proof file are rewritten
+    and a new receipt issued, so one scaffold can answer several cases.
+    """
+    spec_dir = os.path.join(root, 'specs', 'app')
+    os.makedirs(spec_dir, exist_ok=True)
+    with open(os.path.join(spec_dir, 'locking.md'), 'w') as f:
+        f.write(_unscoped_spec(platform_proof))
+    entries = [
+        {'feature': 'locking', 'id': 'PROOF-1', 'rule': 'RULE-1',
+         'test_file': 'tests/test_lock.py', 'test_name': 'test_fcntl',
+         'status': 'pass', 'tier': 'unit'},
+        {'feature': 'locking', 'id': 'PROOF-2', 'rule': 'RULE-2',
+         'test_file': 'tests/test_lock.py', 'test_name': 'test_shim',
+         'status': 'pass' if proofs_pass else 'fail', 'tier': 'unit'},
+    ]
+    with open(os.path.join(spec_dir, 'locking.proofs-unit.json'), 'w') as f:
+        json.dump({'tier': 'unit', 'proofs': entries}, f)
+    subprocess.run(['git', 'add', '-A'], cwd=root, capture_output=True)
+    subprocess.run(['git', 'commit', '-q', '-m', 'evidence'], cwd=root,
+                   capture_output=True)
+    if proofs_pass:
+        issue_receipts.write_run_marker(root)
+        issue_receipts.main(root, quiet=True)
+        subprocess.run(['git', 'add', '-A'], cwd=root, capture_output=True)
+        subprocess.run(['git', 'commit', '-q', '-m', 'verify'], cwd=root,
+                       capture_output=True)
+
+
+def _scaffold_required_project():
+    """A project the real scaffolder wrote, declaring `required`, with no
+    `platforms` key anywhere: `templates/config.json` carries none and
+    `purlin:init` never writes one (`references/remote_verification.md`).
+
+    `--digest off` so no pre-commit hook is installed over the fixture's own
+    commits, and `--report off` so no dashboard symlink is created.
+    """
+    root = tempfile.mkdtemp()
+    subprocess.run(['git', 'init', '-q'], cwd=root, capture_output=True)
+    for k, v in (('user.email', 't@e'), ('user.name', 't')):
+        subprocess.run(['git', 'config', k, v], cwd=root, capture_output=True)
+    result = subprocess.run(
+        [sys.executable, SCAFFOLD_PY, '--project-root', root,
+         '--plugin-root', ROOT, '--test-framework', 'pytest',
+         '--pre-push', 'warn', '--digest', 'off', '--report', 'off',
+         '--mutation-checks', 'off', '--remote-verification', 'required'],
+        capture_output=True, text=True, timeout=120)
+    assert result.returncode == 0, (
+        f"the scaffolder failed: {result.stdout}{result.stderr}")
+    return root
+
+
+class TestRequiredWithNothingRemoteInIt:
+
+    @pytest.mark.proof("verify_gate", "PROOF-13", "RULE-13", tier="integration")
+    def test_required_with_no_declared_platform_is_named_not_failed(self):
+        """A `required` declaration that nothing platform-scoped answers is a
+        vacuous PASS waiting to happen. The gate names it; it does not turn a
+        build red that no proof failed."""
+        root = _scaffold_required_project()
+        try:
+            config = json.load(open(os.path.join(root, '.purlin',
+                                                 'config.json')))
+            assert config['remote_verification'] == 'required', config
+            assert 'platforms' not in config, (
+                f"the scaffolded config must carry no platforms registry, got "
+                f"{config.get('platforms')!r}")
+
+            # Case 1: nothing declared, nothing unverified.
+            _write_evidence(root)
+            code, out = _run(root)
+            assert code == 0, (
+                f"a clean tree under 'required' with nothing declared must "
+                f"still pass, got {code}:\n{out}")
+            assert NO_PLATFORM_LINE in out.splitlines(), (
+                f"the gate did not name the empty registry:\n{out}")
+            assert not [l for l in out.splitlines()
+                        if l.startswith('By platform')], (
+                f"nothing is declared, so there is no By platform section:\n{out}")
+            assert 'verify-gate: PASS.' in out.splitlines(), out
+
+            # Case 2: one proof declares the built-in family id `windows`. The
+            # registry is still absent, so the declaration is the only change.
+            _write_evidence(root, platform_proof=True)
+            code, out = _run(root)
+            assert code == 1, (
+                f"a proof awaiting a runner must fail 'required', got "
+                f"{code}:\n{out}")
+            assert NO_PLATFORM_LINE not in out, (
+                f"a proof declares a platform, so the line must be gone:\n{out}")
+            assert ('windows: 0 proved, 1 awaiting, 0 failing (1 feature)'
+                    in [l.strip() for l in out.splitlines()]), (
+                f"the By platform row for the declared family id is missing:\n{out}")
+
+            # Case 3: nothing declared again, and this time something is
+            # unverified. The line is printed and the verdict is still RULE-3's.
+            _write_evidence(root, proofs_pass=False)
+            code, out = _run(root)
+            assert code == 1, (
+                f"an unverified feature under 'required' must still exit 1, "
+                f"got {code}:\n{out}")
+            assert NO_PLATFORM_LINE in out.splitlines(), (
+                f"the line is informational and must survive a FAIL:\n{out}")
+            assert code != 2, "an absent registry is never a bad invocation"
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
