@@ -1771,6 +1771,30 @@ user asked for (mobile OS ids are the same mechanism with an `os`), exercised on
   sources and the negation). The plan's `dev/screenshots/` paragraph is deleted: the directory
   does not exist.
 - Screenshots: `python3 dev/capture_doc_screenshots.py` after 7.4 (three images).
+- **ADO runner provider plan (user request, 2026-09-12): write `dev/plans/ado-runner-provider.md`**,
+  a self-contained plan to be executed cold on the user's work machine (which has an Azure DevOps
+  account; this machine does not). It must carry: the context a fresh reader needs (registry
+  `runner.provider`, the trailer contract, both loop-guard halves, the dispatch loop in
+  `purlin:test` Step 2b, the preflight, `PURLIN_PLATFORM`, scoped files, what `verify_gate`
+  RULE-7/10/11 require of a commit-back workflow); the ADO pieces to build: a pipeline template
+  in `references/remote_verification.md` (`azure-pipelines-purlin-<id>.yml`: `trigger.paths.exclude`
+  for the scoped files, `pool.vmImage` from `runs_on`, `PURLIN_PLATFORM` variable, checkout with
+  `persistCredentials: true`, the tooling clone pinned by tag, the preflight, per-framework
+  setup, both trailers, `[skip ci]` in the commit subject which ADO honours, the pull-rebase-retry
+  loop, `System.AccessToken` with the build service granted Contribute on the repo), dispatch and
+  polling via `az pipelines run --name <workflow> --branch <branch>` and `az pipelines runs show`
+  (auth via `az login` or `AZURE_DEVOPS_EXT_PAT`), the `provider: ado` branch in
+  `skills/test/SKILL.md` Step 2b and the setup offer, registry validation accepting `ado` with
+  `organization` and `project` fields, `verify_gate` workflow rules generalised to
+  `azure-pipelines-purlin-*.yml` alongside `.github/workflows/purlin-*-proofs.yml`, the docs
+  (`remote_verification.md`, `testing-workflow-guide.md`, `installation-guide.md`); the rules
+  and proofs with next-free numbers (`skill_test`, `purlin_references`, `verify_gate`,
+  `sync_status` registry validation) and their mutation checks; prerequisites on the work
+  machine (`az` CLI with the `azure-devops` extension, a project, a macOS or Windows hosted pool,
+  a scratch consumer project to exercise the loop end to end since this repo's CI is GitHub);
+  a verification checklist; and the traps carried from this plan's execution notes. Written in
+  Phase 11 from the GitHub path as it actually shipped, so it names real function and rule
+  numbers, not the provisional ones.
 - `RELEASE_NOTES.md` Unreleased rewritten with the final counts from the run marker and an
   "Upgrade notes" block: `purlin:init --update`, receipts re-issued (v1 reads stale until
   `purlin:verify`), `@windows` becomes `@unit @on(...)`, `--compute-proof-hash` removed,
