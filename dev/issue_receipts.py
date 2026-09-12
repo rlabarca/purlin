@@ -312,7 +312,19 @@ def main(root=None, quiet=False, run_check=True):
         print(f'  receipt {n:38s} vhash={v}{note}')
     for n, why in skipped:
         print(f'  SKIP    {n:38s} {why}')
-    print(f'\n{len(issued)} receipts issued, {len(skipped)} skipped')
+    # The two counts the `verify:` commit carries, printed the way
+    # `references/commit_conventions.md` spells them so the message is copied
+    # rather than recounted. Features and anchors are never summed: an anchor
+    # is a cross-cutting constraint, and one merged fraction hides which of the
+    # two a run actually receipted.
+    anchors_total = sum(1 for v in features.values() if v.get('is_anchor'))
+    features_total = len(features) - anchors_total
+    anchors_issued = sum(1 for n, _v, _aw in issued
+                         if features[n].get('is_anchor'))
+    features_issued = len(issued) - anchors_issued
+    print(f'\nfeatures={features_issued}/{features_total} '
+          f'anchors={anchors_issued}/{anchors_total}, '
+          f'{len(skipped)} skipped')
     return issued, skipped
 
 

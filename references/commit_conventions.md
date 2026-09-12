@@ -21,7 +21,7 @@ spec(auth_login): add rules for SSO and MFA flows
 feat(auth_login): implement SSO redirect and callback
 test(auth_login): 3/3 rules proved
 fix(auth_login): handle expired tokens in callback
-verify: [Complete:all] features=5/5 vhash=a1b2c3d4
+verify: [Complete:all] features=5/5 anchors=2/2 vhash=a1b2c3d4
 anchor(design_tokens): sync from upstream (abc1234)
 chore: initialize purlin project
 chore(update): migrate to 0.10.0 (legacy-tier-windows, legacy-proof-file, legacy-marker)
@@ -73,10 +73,17 @@ The first line uses the standard `feat(<name>):` prefix. The body has three sect
 The verify skill uses a specific format:
 
 ```
-verify: [Complete:all] features=N/T vhash=<combined-hash>
+verify: [Complete:all] features=N/T anchors=A/B vhash=<combined-hash>
 ```
 
-Where `N/T` is the verified/total feature count and `combined-hash` = `sha256(sorted individual vhashes joined by comma)[:8]`.
+`N/T` is the verified/total count of features and `A/B` the verified/total count of anchors. The
+two are counted separately and never summed: an anchor is a cross-cutting constraint, so a run
+that receipted every anchor and half the features reads very differently from one that did the
+reverse, and a single merged fraction hides which it was. `combined-hash` =
+`sha256(sorted individual vhashes joined by comma)[:8]` over both counts together.
+
+`python3 dev/issue_receipts.py` prints the same two counts on its summary line, so the numbers in
+the commit message are copied from the issuer rather than recounted by hand.
 
 ## Manual Stamp Commit
 

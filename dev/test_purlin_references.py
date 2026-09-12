@@ -7,6 +7,7 @@ that define Purlin's formats, conventions, and quality standards.
 import json
 import os
 import re
+import subprocess
 
 import pytest
 
@@ -118,7 +119,7 @@ class TestPurlinReferences:
         assert len(gate_headers) == 1
 
     @pytest.mark.proof("purlin_references", "PROOF-7", "RULE-7")
-    def test_commit_conventions_eight_prefixes(self):
+    def test_commit_conventions_prefixes_and_the_verify_vocabulary(self):
         content = _read(os.path.join(REFS, 'commit_conventions.md'))
         # Extract table/list rows to avoid matching prefixes in prose
         rows = [l for l in content.splitlines()
@@ -128,6 +129,34 @@ class TestPurlinReferences:
                         'verify', 'anchor', 'chore', 'docs'):
             assert prefix in row_text, \
                 f"Missing commit prefix '{prefix}' in table/list rows"
+        assert 'chore(update):' in row_text, (
+            "the `chore(update):` migration prefix has no table row")
+
+        # The verify-commit vocabulary, stated here and copied by three other
+        # files. Features and anchors are two counts, never one.
+        section = content[content.index('## Verification Receipt Commit'):
+                          content.index('## Manual Stamp Commit')]
+        assert ('verify: [Complete:all] features=N/T anchors=A/B '
+                'vhash=<combined-hash>') in section, section
+        assert 'separately' in section, (
+            "the section must say the two counts are never summed: " + section)
+        assert re.search(r'verify: \[Complete:all\] features=\d+/\d+ '
+                         r'anchors=\d+/\d+ vhash=', content), (
+            "the worked example must carry both counts")
+
+        skill = _read(os.path.join(PROJECT_ROOT, 'skills', 'verify',
+                                   'SKILL.md'))
+        assert 'features=N/T anchors=A/B' in skill, (
+            "skills/verify/SKILL.md states a different verify-commit format "
+            "from the reference that owns it")
+
+        issuer = _read(os.path.join(PROJECT_ROOT, 'dev', 'issue_receipts.py'))
+        assert "features={features_issued}/{features_total} " in issuer, (
+            "the issuer's summary line must print the features count the "
+            "commit message copies")
+        assert "anchors={anchors_issued}/{anchors_total}" in issuer, (
+            "the issuer's summary line must print the anchors count "
+            "separately from the features count")
 
     @pytest.mark.proof("purlin_references", "PROOF-8", "RULE-8")
     def test_purlin_commands_categories_and_skills(self):
@@ -648,3 +677,60 @@ class TestSharedSectionsSkillsPointAt:
             "the init skill must quote the value statement by reference"
         assert 'twice the tokens' not in skill, \
             "the init skill restates the value statement instead of quoting it"
+
+
+class TestRepoHygiene:
+    """RULE-26 and RULE-27: two facts about this repository that a reference
+    document asserts in prose. Each proof reads the fact itself, so the prose
+    fails the day the fact changes rather than quietly going stale."""
+
+    @pytest.mark.proof("purlin_references", "PROOF-26", "RULE-26")
+    def test_hooks_json_registers_nothing_and_hard_gates_says_so(self):
+        with open(os.path.join(PROJECT_ROOT, 'hooks', 'hooks.json')) as f:
+            hooks = json.load(f)
+
+        registered = 0
+        for event, entries in (hooks.get('hooks') or {}).items():
+            registered += len(entries or [])
+        assert registered == 0, (
+            f"hooks/hooks.json now registers {registered} hook(s): "
+            f"{hooks}. references/hard_gates.md says it registers none, so "
+            f"either the hook goes or the sentence is rewritten")
+
+        gates = _read(os.path.join(REFS, 'hard_gates.md'))
+        assert 'hooks/hooks.json' in gates, (
+            "hard_gates.md must name the file it is making a claim about")
+        assert 'registers no Claude Code hooks' in gates, gates[-1200:]
+        assert 'agents/purlin.md' in gates and 'instruction' in gates, (
+            "hard_gates.md must say the NEVERs are instructions, not "
+            "mechanisms")
+        for layer in ('purlin:verify', 'pre-push', 'CI', 'Branch protection'):
+            assert layer in gates, (
+                f"hard_gates.md names no enforcement layer {layer!r}; without "
+                f"the list a reader has nothing to fall back on")
+
+    @pytest.mark.proof("purlin_references", "PROOF-27", "RULE-27")
+    def test_nothing_under_purlin_cache_is_tracked(self):
+        root = os.path.abspath(PROJECT_ROOT)
+        tracked = subprocess.run(
+            ['git', 'ls-files', '--', '.purlin/cache'],
+            cwd=root, capture_output=True, text=True, check=True)
+        listed = [l for l in tracked.stdout.splitlines() if l.strip()]
+        assert listed == [], (
+            f"tracked files under .purlin/cache: {listed}. The gauges are per "
+            f"machine; a tracked cache file is a stale number that travels "
+            f"into every clone")
+
+        # A positive control: `git ls-files` really does see this repository,
+        # so the empty result above is a fact and not a broken invocation.
+        everything = subprocess.run(
+            ['git', 'ls-files'], cwd=root,
+            capture_output=True, text=True, check=True)
+        assert len(everything.stdout.splitlines()) > 100, (
+            "git ls-files returned almost nothing; the emptiness above proves "
+            "nothing")
+
+        ignore = _read(os.path.join(PROJECT_ROOT, '.gitignore'))
+        assert '.purlin/cache/' in ignore, (
+            ".gitignore must exclude the directory, so a cache file cannot be "
+            "added back without -f")

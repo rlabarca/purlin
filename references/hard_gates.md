@@ -31,6 +31,26 @@ could ever get its first receipt. This is enforced in the skill logic, not a hoo
 
 Skills are optional tools, not gatekeepers.
 
+## No Claude Code Hook Enforces Anything
+
+`hooks/hooks.json` registers no Claude Code hooks: its `hooks` object is empty and the plugin
+installs no `PreToolUse`, `PostToolUse` or `Stop` handler. So every **NEVER** in `agents/purlin.md`
+is an instruction to the agent, not a mechanism that stops it. An agent that ignores one is not
+blocked by anything inside this repository.
+
+The controls that survive an agent ignoring an instruction are the enforcement layers below it,
+each of which runs outside the agent's turn:
+
+| Layer | Where it runs | What an ignoring agent cannot do |
+|---|---|---|
+| The proof-coverage gate | `purlin:verify`'s issuer | write a receipt for a rule with no passing proof |
+| The pre-push hook | `git push`, on the developer's machine | push past a `strict` gate result |
+| CI (`scripts/ci/verify_gate.py --check`) | the forge, on a branch the agent cannot configure | turn a required check green |
+| Branch protection | the forge's settings | merge without that check |
+
+Read the **NEVER** list as the agent's contract and this table as what holds when the contract is
+broken. `docs/regulated-environments.md` is where the layers are described in full.
+
 ## Project Policy Is Not a Framework Gate
 
 A project can add gates of its own, and one ships as a template: `scripts/ci/verify_gate.py

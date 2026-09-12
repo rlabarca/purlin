@@ -14,7 +14,7 @@
 - RULE-4: `anchor_format.md` documents anchor file location (`specs/_anchors/`), metadata fields (`> Source:`, `> Pinned:`, `> Global:`), sync protocol, and global anchor behavior
 - RULE-5: `anchor_format.md` documents all 8 type values: `design`, `api`, `security`, `brand`, `platform`, `schema`, `legal`, `prodbrief`
 - RULE-6: `hard_gates.md` documents exactly 1 gate: proof coverage. A project's own CI gate is documented there as project policy layered on that one gate, in a section that is not a `## Gate N` heading, so the framework's count cannot be inflated by describing what a project configures for itself
-- RULE-7: `commit_conventions.md` documents all 8 commit prefixes: spec, feat, fix, test, verify, anchor, chore, docs
+- RULE-7: `commit_conventions.md` documents all 8 commit prefixes: spec, feat, fix, test, verify, anchor, chore, docs, and carries the `chore(update):` prefix row for a migration commit. Its `verify:` format is `verify: [Complete:all] features=N/T anchors=A/B vhash=<combined-hash>`: features and anchors are counted separately and never summed, because a run that receipted every anchor and half the features is not the same result as the reverse, and one merged fraction cannot say which happened. `skills/verify/SKILL.md` and `dev/issue_receipts.py` carry the same two counts, so the number in the commit message is copied from the issuer rather than recounted by hand
 - RULE-8: `purlin_commands.md` lists all 12 skills grouped by category (Authoring, Building, Quality, Reporting, Project)
 - RULE-9: `spec_quality_guide.md` includes guidance on writing rules (rebuild test, contract boundaries, coverage dimensions), proof descriptions, tier assignment, and FORBIDDEN patterns
 - RULE-10: `spec_quality_guide.md` includes test failure diagnosis guidance with the three categories (code bug, test bug, spec drift) and assertion integrity rules
@@ -34,6 +34,16 @@
 
 - RULE-24: `purlin_commands.md` carries a `## Pending migrations` section, so every skill can point at one anchor (`purlin_commands.md#pending-migrations`) instead of restating the advisory. It states what a skill does when `sync_status` opens with the advisory (stop, print it and its directive, ask whether to run `purlin:init --update` now), that skills which do not call `sync_status` call it first when they would write specs or proofs, and that `purlin:verify` declines to issue receipts while a `legacy-*` migration is pending because the legacy alias makes coverage a guess, framed as a refusal to claim and not as a gate
 - RULE-25: `spec_quality_guide.md` carries a `## Mutation check` section: what a mutation check is, the three steps (break the behaviour, run that proof and watch it fail, restore and re-run), when it runs (every new or amended proof, before the commit that carries it), what a surviving mutation means (the fixture cannot tell correct from broken, so the proof is weak and needs the discriminating case), two worked examples, and the value statement `purlin:init` prints before its question. The value statement lives here once and is quoted by reference from the skill, per CLAUDE.md's deduplication rule
+- RULE-26: `hard_gates.md` states that `hooks/hooks.json` registers no Claude Code hooks, so
+  every **NEVER** in `agents/purlin.md` is an instruction to the agent rather than a mechanism
+  that stops it, and names the enforcement layers that survive an agent ignoring one: the
+  proof-coverage gate in the issuer, the pre-push hook, the CI gate job, and branch protection.
+  A reader who takes the NEVER list for enforcement will believe the repository stops an agent it
+  cannot stop
+- RULE-27: Nothing under `.purlin/cache/` is tracked by git. The gauges are per machine by design
+  and `.gitignore` already excludes the directory, so a tracked cache file is a stale number that
+  travels: it arrives in every clone, is read before anything recomputes it, and reports a
+  measurement taken on somebody else's machine at some earlier commit
 
 ## Proof
 
@@ -43,7 +53,7 @@
 - PROOF-4 (RULE-4): Grep `references/formats/anchor_format.md` for `_anchors/`, `> Source:`, `> Pinned:`, `> Global:`; verify all appear
 - PROOF-5 (RULE-5): Grep `references/formats/anchor_format.md` for all 8 type values: `design`, `api`, `security`, `brand`, `platform`, `schema`, `legal`, `prodbrief`; verify all appear in the type metadata documentation
 - PROOF-6 (RULE-6): Grep `references/hard_gates.md` for "Proof coverage"; verify it appears and no second gate is defined
-- PROOF-7 (RULE-7): Grep `references/commit_conventions.md` for the 8 prefixes: `spec`, `feat`, `fix`, `test`, `verify`, `anchor`, `chore`, `docs`; verify all 8 appear
+- PROOF-7 (RULE-7): Grep `references/commit_conventions.md` for the 8 prefixes `spec`, `feat`, `fix`, `test`, `verify`, `anchor`, `chore`, `docs` in its table rows, and for the `chore(update):` row specifically. Then assert the literal `features=N/T anchors=A/B vhash=<combined-hash>` appears in the Verification Receipt Commit section together with the word `separately`, and that the same `features=` and `anchors=` pair appears in the worked example, in `skills/verify/SKILL.md` and in `dev/issue_receipts.py`'s summary line. Dropping `anchors=` from any one of the four fails the proof
 - PROOF-8 (RULE-8): Grep `references/purlin_commands.md` for `Authoring`, `Building`, `Quality`, `Reporting`, `Project`; verify all 5 category headers exist. Count skill entries; verify 12
 - PROOF-9 (RULE-9): Grep `references/spec_quality_guide.md` for "rebuild test", "contract boundary/boundaries", "Coverage dimensions", "FORBIDDEN", "Tier"; verify the guide covers the rebuild test, contract boundaries, coverage dimensions, forbidden patterns, and tier assignment
 - PROOF-10 (RULE-10): Grep `references/spec_quality_guide.md` for `Code bug`, `Test bug`, `Spec drift`, and `Assertion Integrity`; verify all appear
@@ -61,4 +71,15 @@
 - PROOF-22 (RULE-22): Extract every fenced yaml block from every markdown file under `references/` and `docs/`; for each occurrence of a `scripts/` path in a block, assert it is immediately preceded by `$PURLIN_PLUGIN_ROOT/` or `${PURLIN_PLUGIN_ROOT}/`, and assert that any block cloning the plugin pins a tag matching `--branch v<VERSION>` rather than a branch name. Assert at least one such `scripts/` invocation was found, so the scan cannot pass by matching nothing, and grep the prose for the sentence recording this repository's own workflows as the `PURLIN_PLUGIN_ROOT: .` exception. Rewriting the preflight step to a bare `scripts/update/migrate.py` fails the proof
 - PROOF-23 (RULE-23): Parse the markdown tables of `references/supported_frameworks.md` that carry a `Runner setup` column, collect every framework row from both of them, and assert each row's `Runner setup` cell is non-empty after stripping whitespace. Assert the framework set is the same one the Detection section and the plugin file column name, so a framework cannot pass by being dropped from the table, and that at least seven frameworks were found. Emptying one cell fails the proof
 - PROOF-24 (RULE-24): Grep `references/purlin_commands.md` for a heading that anchors to `#pending-migrations` and verify its section names `purlin:init --update` as the directive, states that the skill stops before its own work, names the skills that see the advisory by construction, and contains the sentence that `purlin:verify` does not issue receipts while a `legacy-*` migration is pending together with the words refusal and gate. Deleting the section or the verify sentence fails the proof
+- PROOF-26 (RULE-26): Parse `hooks/hooks.json` and assert the total number of registered hook
+  entries is zero: the `hooks` object is empty and no event key holds a non-empty list. Then grep
+  `references/hard_gates.md` for the sentence naming `hooks/hooks.json` as registering no hooks,
+  for the words `instruction` and `agents/purlin.md`, and for all four enforcement layers
+  (`purlin:verify`, pre-push, CI, branch protection). Adding a single `PreToolUse` entry to
+  `hooks/hooks.json` fails the parse half, so the sentence cannot outlive the fact it states
+- PROOF-27 (RULE-27): Run `git ls-files .purlin/cache` from the project root and assert its
+  output is empty. Assert the same command over the repository root returns a non-empty list, so
+  the proof cannot pass in a directory where `git ls-files` returns nothing for every path, and
+  assert `.gitignore` carries a `.purlin/cache/` line. `git add -f .purlin/cache/status.json`
+  fails the proof
 - PROOF-25 (RULE-25): Grep `references/spec_quality_guide.md` for a heading that anchors to `#mutation-check` and verify its section contains three numbered steps whose verbs are break, run and restore, the sentence that a surviving mutation means the fixture cannot tell the correct behaviour from the broken one, two worked examples each naming the discriminating case that was added, and a value statement naming what the check catches, that it costs roughly twice the tokens and minutes per proof, and who should turn it on. Verify `skills/init/SKILL.md` quotes that statement by reference rather than restating it, so the file that prints it and the file that owns it cannot disagree

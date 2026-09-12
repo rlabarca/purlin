@@ -1,0 +1,59 @@
+{
+  "tier": "unit",
+  "proofs": [
+    {
+      "feature": "qa_report",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_tools_qa.py",
+      "test_name": "test_no_credential_bearing_url_and_a_real_private_repo_path",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "qa_report",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_tools_qa.py",
+      "test_name": "test_each_field_name_is_read_and_the_two_scores_stay_separate",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "qa_report",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "test_file": "dev/test_tools_qa.py",
+      "test_name": "test_verified_is_described_as_proved_everywhere_with_a_matching_receipt",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "qa_report",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_tools_qa.py",
+      "test_name": "test_uncommitted_paragraph_names_all_three_causes",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "qa_report",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_tools_qa.py",
+      "test_name": "test_no_signoff_or_compliance_claims_and_the_prohibition_is_stated",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "qa_report",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "test_file": "dev/test_tools_qa.py",
+      "test_name": "test_each_skill_zip_holds_one_skill_md_equal_to_its_sibling",
+      "status": "pass",
+      "tier": "unit"
+    }
+  ]
+}

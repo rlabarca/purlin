@@ -1,6 +1,6 @@
 ---
 name: purlin-qa-report
-description: Fetches and analyzes a Purlin project digest from a git repository URL to produce a triaged QA report. Use when the user provides a repo URL and asks about QA status, test coverage, verification readiness, proof quality, compliance status, or what needs manual testing. Produces an HTML artifact with color-coded severity sections.
+description: Fetches and analyzes a Purlin project digest from a git repository URL to produce a triaged QA report. Use when the user provides a repo URL and asks about QA status, test coverage, verification readiness, proof quality, or what needs manual testing. Produces an HTML artifact with color-coded severity sections.
 ---
 
 # Purlin QA Report
@@ -22,20 +22,23 @@ git --version 2>/dev/null || echo "Git not found"
 
 ### 1b. Sparse-clone only the digest file
 
-Clone just `.purlin/report-data.js` to minimize download size:
+Clone just `.purlin/report-data.js` to minimize download size. Prefer `gh repo clone`, which takes
+the credential from the `gh` keyring and never puts one on the command line:
 
 ```bash
-git clone \
+gh repo clone <org>/<repo> /tmp/purlin-qa-digest -- \
   --depth 1 \
   --filter=blob:none \
   --sparse \
-  --branch <branch-or-tag> \
-  <REPO_URL> \
-  /tmp/purlin-qa-digest
+  --branch <branch-or-tag>
 
 cd /tmp/purlin-qa-digest
 git sparse-checkout set .purlin
 ```
+
+Without `gh`, use a plain clone of the `https://<HOST>/<org>/<repo>.git` URL with the same four
+flags and let the machine's configured credential helper supply the secret. Either way the URL
+carries no credential.
 
 If no branch/tag was specified, omit `--branch` (defaults to the repo's default branch).
 
@@ -49,6 +52,12 @@ If the clone fails, work through authentication — do not give up.
 | `Permission denied (publickey)` | SSH key not set up |
 | `Repository not found` | Wrong URL, or no read access |
 
+**Never put a credential in a URL.** A URL that carries a username and a secret before the `@`
+is written into the shell history, into the clone's own config file, and into the process table
+where any other account on the machine can read it; it is also the form that survives a
+copy-paste into a ticket. Hand the secret to a credential store instead, so it is never an
+argument.
+
 **HTTPS with a Personal Access Token (PAT):**
 
 Ask the user to generate a PAT with read-only repo access:
@@ -56,12 +65,15 @@ Ask the user to generate a PAT with read-only repo access:
 - **Bitbucket**: Personal settings → App passwords → `Repositories: Read`
 - **GitLab**: User settings → Access Tokens → `read_repository`
 
-Then retry with credentials in the URL:
+Then have them store it once and retry the clone from 1b unchanged:
 ```bash
-git clone --depth 1 --filter=blob:none --sparse \
-  https://<USERNAME>:<TOKEN>@<HOST>/<org>/<repo>.git \
-  /tmp/purlin-qa-digest
+gh auth login                                      # GitHub: stores it in the gh keyring
+git config --global credential.helper osxkeychain  # any host, macOS
+# git config --global credential.helper libsecret  # any host, Linux
 ```
+
+After `gh auth login`, `gh repo clone` needs nothing further. For the credential-helper route the
+first clone prompts once for the username and the PAT and the helper remembers both.
 
 **SSH key:**
 
@@ -94,23 +106,50 @@ The digest is a JavaScript variable assignment: `const PURLIN_DATA = {...};`. St
 | `git_sha` | The commit this data was generated against |
 | `summary` | Feature counts: total, verified, passing, partial, failing, untested |
 | `features[]` | Array of every feature and anchor with rules, proofs, status, audit data |
-| `audit_summary` | Overall proof quality: integrity %, strong/weak/hollow counts |
+| `audit_summary` | Overall proof quality. Report `weighted` and `assessed` separately, never one as the other: `assessed` is the score over the proofs that were actually graded, `weighted` counts every ungraded proof against the score. A project with three graded proofs out of ninety can show `assessed` 100 and `weighted` 3, and only the pair says which. Report `audit_summary.coverage` as `measured` of `total` beside them, so the reader sees how much of the project the score rests on, plus the strong/weak/hollow counts |
+| `audit_summary.auditors` | Who or what produced the assessments, when present. Absent on digests written before auditor identity was recorded, so read it defensively and say "not recorded" rather than inventing one |
 | `drift` | What changed since last verification: commits, files, spec changes |
 | `anchors_summary` | Anchor counts: total, with external source, global |
 | `platform_testing` | True when some proof declares a platform it must be proved on |
 | `platforms` | `registry`, `host`, `host_id`, `local`, `remote`, `errors` and `summary`, one summary row per declared platform with its feature counts, proof counts, per-platform Proof Integrity and when it was last proved |
 | `summary.held_by_platform` | Features that would read VERIFIED but for a platform that has not run. `summary.verified_here` is the count with no platform in the picture |
 
-Note: The digest may contain an `uncommitted` field — ignore it. The digest is generated by a pre-commit hook, so by definition everything was committed when the digest was written. The `uncommitted` field is only meaningful in the engineer's live local dashboard, not in the committed digest you're reading.
+**`uncommitted`**: report it whenever it is non-empty, naming the files. The old advice was to
+disregard the field, on the reasoning that a pre-commit hook wrote the digest, so everything must
+have been committed. That reasoning does not hold. A non-empty `uncommitted` in a committed digest means one
+of exactly three things, and each is worth a line in the report:
+
+1. The project's `digest` config is set to `warn` or `off`, so the hook did not refuse the commit.
+2. The commit was made with `PURLIN_SKIP_DIGEST=1`, which bypasses the hook.
+3. The pre-commit hook hit one of its fail-open paths (no Python, no server, an unreadable
+   config) and let the commit through rather than blocking it.
+
+In all three the digest describes a tree that is not the committed tree, so every count in it may
+be stale. Say which files, and say that the numbers below them are measured against a tree that
+differs from the commit.
 
 Each feature has:
-- `status`: VERIFIED (every rule proved, receipt current, and every declared platform proved), PASSING (every rule proved, and either no current receipt or a declared platform that has not run), PARTIAL (some rules proved, none failing), FAILING (a proof failed), UNTESTED (no proofs). A receipt is a record that tests ran, not an approval by a person; nobody has signed anything off
+- `status`: VERIFIED (all rules proved on every declared platform and a receipt matches), PASSING (every rule proved, and either no current receipt or a declared platform that has not run), PARTIAL (some rules proved, none failing), FAILING (a proof failed), UNTESTED (no proofs). A receipt is a record that tests ran, not an approval by a person. Never describe a feature, a release or a project as approved, cleared or compliant on the strength of one
 - `rules[]`: Each rule has `id`, `description`, `status` (PASS/FAIL/NONE), and `proofs[]`
 - `audit`: Per-feature integrity score and proof-level assessments (STRONG/WEAK/HOLLOW)
 - `type`: "feature" or "anchor" (cross-cutting constraint like security policy)
 - `platforms`: one record per platform the feature's proofs declare, each with `declared`, `proved`, `failed`, `awaiting`, a `status` of FAILING, AWAITING, PASSING or VERIFIED, `receipted`, and the commit and runner that proved it
 - `platform_complete`: false when a declared platform has no result. This is what holds an otherwise complete feature at PASSING
 - `awaiting_runner[]`: `{id, tier, platform}` for every proof waiting on a platform
+- `vhash`: the verification hash of the feature's current rules and proofs, or null when the
+  feature is not fully proved. Report it next to the receipt: the pair is what makes a VERIFIED
+  claim checkable by someone who did not run the tests
+- `receipt.vhash_version`: the hash format the receipt was issued under. A receipt at version 1
+  predates the current formula, so its `stale` flag says nothing about the code; report it as
+  "issued under an older hash format, re-verify to compare"
+- `receipt.test_run_commit`: the commit whose test run the receipt rests on. When it differs from
+  `git_sha`, the receipt was issued against code that is no longer the tip; report both shas
+- `evidence_stale`: true when the proof files behind the receipt are older than the code they
+  cover. Recent digests carry it; older ones do not, so read it defensively and omit the line
+  rather than reporting false
+
+Report `git_sha` in the header of every report. It is the commit every number in the digest was
+measured against, and without it the report cannot be tied back to a state of the repository.
 
 ## Triage Priority
 
@@ -211,7 +250,7 @@ The HTML file should contain these sections. Skip any section that has zero item
   | Source | Timestamp field | What it tells you |
   |--------|----------------|-------------------|
   | Coverage (status) | `timestamp` | When the coverage scan ran — this is the digest generation time |
-  | Audit | `audit_summary.last_audit` | When proof quality was last assessed. May be days older than status. Show "not available" if `audit_summary` is null |
+  | Audit | `audit_summary.last_audit` | When proof quality was last assessed. May be days older than status. Show "not available" if `audit_summary` is null. Beside it print `weighted`% and `assessed`% as two numbers, `audit_summary.coverage.measured` of `.total` measured, and `audit_summary.auditors` when the digest carries it |
   | Drift | `drift.since` | The anchor point drift is measured from (e.g., "last verification (6 days ago)") |
 
   Format example in the header:
@@ -225,6 +264,9 @@ The HTML file should contain these sections. Skip any section that has zero item
   If audit is significantly older than coverage (>24h), highlight it in amber — audit scores may not reflect recent changes. If audit is null, highlight in red.
 
 - **Freshness warning**: if the digest `timestamp` is more than 24 hours old, show a warning banner: "This digest is {age} old. Ask the team to commit to refresh it."
+- **Uncommitted-tree warning**: if `uncommitted` is non-empty, show a banner naming the files and
+  the three ways it can be non-empty (Step 2), because every count below it was measured against a
+  tree that differs from the commit
 - **Summary bar**: colored cards showing VERIFIED / PASSING / PARTIAL / FAILING / UNTESTED counts, plus integrity % if audit data exists
 - **Red section (Broken)**: FAILING features with specific rule descriptions and test file paths
 - **Orange section (Changed Without Coverage)**: drift items where code changed but tests are missing
@@ -232,7 +274,9 @@ The HTML file should contain these sections. Skip any section that has zero item
 - **Purple section (Manual Tests)**: all manual proofs grouped into Stale (needs re-check) and Current subsections, showing who verified, when, and what behavior
 - **Blue section (Coverage Gaps)**: PARTIAL and UNTESTED features with the specific rules that need tests
 - **Green section (Ready for Verification)**: PASSING features with every declared platform proved, awaiting a verification run
-- **Footer**: Purlin version, digest timestamp, git SHA
+- **Footer**: Purlin version, digest timestamp, `git_sha`, and for each VERIFIED feature its
+  `vhash`, its receipt's `vhash_version` and `test_run_commit`, and `evidence_stale` when the
+  digest carries it. These are what let a reader check the claim instead of trusting the badge
 
 ### Theme
 
@@ -278,7 +322,14 @@ Section border colors: red (`--red`), orange (#f97316), yellow (`--amber`), purp
 
 6. **Counts in headers.** Every section header includes the count so QA can gauge scope at a glance.
 
-7. **No jargon.** Don't say "HOLLOW proof" — say "test exists but doesn't verify the behavior." Don't say "drift flag" — say "code changed since last verification." Translate Purlin concepts into QA language.
+7. **Claim only what the data says.** The report describes test evidence and nothing else. No
+   field in the digest records a human judgment, so the report never declares a project
+   compliant, approved, cleared or certified, and never states a compliance verdict of any kind:
+   a receipt records that tests ran, not that a person accepted the result. Report VERIFIED as
+   "all rules proved on every declared platform and a receipt matches" and let the reader draw
+   the conclusion.
+
+8. **No jargon.** Don't say "HOLLOW proof" — say "test exists but doesn't verify the behavior." Don't say "drift flag" — say "code changed since last verification." Translate Purlin concepts into QA language.
 
 ## Example Interactions
 

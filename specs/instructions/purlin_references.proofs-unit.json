@@ -60,7 +60,7 @@
       "id": "PROOF-7",
       "rule": "RULE-7",
       "test_file": "dev/test_purlin_references.py",
-      "test_name": "test_commit_conventions_eight_prefixes",
+      "test_name": "test_commit_conventions_prefixes_and_the_verify_vocabulary",
       "status": "pass",
       "tier": "unit"
     },
@@ -223,6 +223,24 @@
       "rule": "RULE-25",
       "test_file": "dev/test_purlin_references.py",
       "test_name": "test_mutation_check_section_carries_steps_examples_and_value",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-26",
+      "rule": "RULE-26",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_hooks_json_registers_nothing_and_hard_gates_says_so",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-27",
+      "rule": "RULE-27",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_nothing_under_purlin_cache_is_tracked",
       "status": "pass",
       "tier": "unit"
     }

@@ -3,6 +3,8 @@
 Structural verification of each skill definition file under skills/.
 """
 
+import contextlib
+import io
 import json
 import os
 import re
@@ -2016,6 +2018,72 @@ class TestUpdateSkillText:
         gates = _read_ref('hard_gates.md')
         assert 'migration' not in gates.lower(), (
             "hard_gates.md must gain no migration gate: " + gates[:200])
+
+    @pytest.mark.proof("skill_verify", "PROOF-14", "RULE-14", tier="integration")
+    def test_verify_commit_counts_features_and_anchors_separately(self):
+        """RULE-14: two counts, never one. The skill states the vocabulary and
+        the issuer prints the numbers the commit message copies."""
+        content = _read('verify')
+        step = content[content.index('### Step 5 \u2014 Commit'):]
+        assert 'features=N/T anchors=A/B' in step, step[:600]
+        assert 'references/commit_conventions.md' in step, step[:600]
+        flat = ' '.join(step.split())
+        assert 'never summed' in flat, flat[:600]
+
+        # The issuer really prints those two counts, separately, for a project
+        # holding one feature and one anchor.
+        sys.path.insert(0, os.path.join(PROJECT_ROOT, 'dev'))
+        import issue_receipts
+
+        tmp = tempfile.mkdtemp()
+        try:
+            os.makedirs(os.path.join(tmp, '.purlin'))
+            feat_dir = os.path.join(tmp, 'specs', 'app')
+            anch_dir = os.path.join(tmp, 'specs', '_anchors')
+            os.makedirs(feat_dir)
+            os.makedirs(anch_dir)
+            with open(os.path.join(tmp, '.purlin', 'config.json'), 'w') as f:
+                json.dump({'report': False}, f)
+
+            with open(os.path.join(feat_dir, 'locking.md'), 'w') as f:
+                f.write('# Feature: locking\n\n> Scope: src/lock.py\n\n'
+                        '## Rules\n- RULE-1: POSIX locks\n\n'
+                        '## Proof\n- PROOF-1 (RULE-1): fcntl locks @unit\n')
+            with open(os.path.join(anch_dir, 'house_style.md'), 'w') as f:
+                f.write('# Anchor: house_style\n\n> Type: design\n'
+                        '> Scope: src/\n\n'
+                        '## Rules\n- RULE-1: One accent colour\n\n'
+                        '## Proof\n- PROOF-1 (RULE-1): one accent @unit\n')
+            for d, name in ((feat_dir, 'locking'), (anch_dir, 'house_style')):
+                with open(os.path.join(d, f'{name}.proofs-unit.json'), 'w') as f:
+                    json.dump({'tier': 'unit', 'proofs': [
+                        {'feature': name, 'id': 'PROOF-1', 'rule': 'RULE-1',
+                         'test_file': 'tests/t.py', 'test_name': 't',
+                         'status': 'pass', 'tier': 'unit'}]}, f)
+
+            subprocess.run(['git', 'init', '-q'], cwd=tmp, capture_output=True)
+            for k, v in (('user.email', 't@e'), ('user.name', 't')):
+                subprocess.run(['git', 'config', k, v], cwd=tmp,
+                               capture_output=True)
+            subprocess.run(['git', 'add', '-A'], cwd=tmp, capture_output=True)
+            subprocess.run(['git', 'commit', '-q', '-m', 'init'], cwd=tmp,
+                           capture_output=True)
+
+            issue_receipts.write_run_marker(tmp)
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                issued, skipped = issue_receipts.main(tmp)
+            out = buf.getvalue()
+
+            assert len(issued) == 2 and skipped == [], (issued, skipped, out)
+            assert 'features=1/1 anchors=1/1' in out, (
+                "the issuer must print the two counts the verify commit "
+                "copies, separately: " + out)
+            assert '2/2' not in out, (
+                "the issuer summed the feature and the anchor into one "
+                "fraction: " + out)
+        finally:
+            shutil.rmtree(tmp)
 
     @pytest.mark.proof("skill_build", "PROOF-22", "RULE-15")
     def test_build_branches_on_the_mutation_checks_field(self):

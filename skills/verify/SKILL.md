@@ -243,7 +243,7 @@ The loop: verify → audit → if issues → build fixes → verify again. Verif
 
 ### Step 5 — Commit
 
-Commit per `references/commit_conventions.md` using the `verify:` prefix: `verify: [Complete:all] features=N/T vhash=<combined-hash>`. `N/T` is verified/total count. The combined hash covers all individual vhashes: `sha256(sorted vhashes joined by comma)[:8]`.
+Commit per `references/commit_conventions.md` using the `verify:` prefix: `verify: [Complete:all] features=N/T anchors=A/B vhash=<combined-hash>`. `N/T` is the verified/total count of features and `A/B` the verified/total count of anchors; the two are counted separately and never summed, because a run that receipted every anchor and half the features is not the same result as the reverse. Take both counts from the issuer's summary line rather than recounting them. The combined hash covers all individual vhashes: `sha256(sorted vhashes joined by comma)[:8]`.
 
 ---
 

@@ -30,6 +30,15 @@
     },
     {
       "feature": "skill_verify",
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_verify_commit_counts_features_and_anchors_separately",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_verify",
       "id": "PROOF-12",
       "rule": "RULE-12",
       "test_file": "dev/test_receipts.py",
