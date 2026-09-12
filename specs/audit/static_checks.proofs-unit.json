@@ -849,6 +849,87 @@
     },
     {
       "feature": "static_checks",
+      "id": "PROOF-71",
+      "rule": "RULE-44",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_every_shipped_extension_dispatches_and_nothing_else_does",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-72",
+      "rule": "RULE-45",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_tautologies",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-73",
+      "rule": "RULE-45",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_no_assertions_through_a_hash_comment",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-74",
+      "rule": "RULE-45",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_real_assertion_forms_pass",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-75",
+      "rule": "RULE-46",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_unconditional_pass",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-76",
+      "rule": "RULE-46",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_block_with_no_select",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-77",
+      "rule": "RULE-46",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_predicates_that_read_the_database_pass",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-78",
+      "rule": "RULE-47",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_constant_passed_argument",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-79",
+      "rule": "RULE-47",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_computed_arguments_and_short_calls_pass",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
       "id": "PROOF-8",
       "rule": "RULE-8",
       "test_file": "dev/test_static_checks.py",
@@ -871,6 +952,24 @@
       "rule": "RULE-8",
       "test_file": "dev/test_static_checks.py",
       "test_name": "test_spec_coverage_via_cli",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-80",
+      "rule": "RULE-48",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_key_moves_when_the_graded_body_moves",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-81",
+      "rule": "RULE-42",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_pass_one_and_the_key_share_the_one_parse",
       "status": "pass",
       "tier": "unit"
     }

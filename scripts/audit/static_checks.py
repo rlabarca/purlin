@@ -2,7 +2,10 @@
 """Deterministic static checks for proof quality — no LLM required.
 
 Catches structural test problems (assert True, no assertions, logic mirroring,
-bare except, mock-target match) using Python's ast module and regex.
+bare except, mock-target match) using Python's ast module and regex. Every
+language Purlin ships a proof plugin for has a checker here: Python, JS/TS
+(.js .jsx .mjs .cjs .ts .tsx), shell, C#, PHP, SQL and C (.c .h). Which checker
+reads which extension is decided in one place, the extension table below.
 
 Usage (see _USAGE below — it is the single source for this list):
     static_checks.py <test_file> <feature_name> [--spec-path <path>]
@@ -126,6 +129,32 @@ def _python_proof_functions(source):
             if m:
                 entries.append((m.group(1), m.group(2), m.group(3), node.name, node))
     return entries, lines
+
+
+def _python_parse(path, content):
+    """`_python_proof_functions(content)` for the file at `path`, memoized per scope.
+
+    One `ast.parse` and one line split per file however many callers ask for it:
+    Pass 1 (`check_python`) and the cache-key extractor (`_python_proof_sources`)
+    both come through here, so a file carrying two features is parsed once inside
+    a `run_scope()` rather than once per feature (RULE-42). Outside a scope
+    nothing is memoized. A file that does not parse raises SyntaxError exactly as
+    `ast.parse` does, and that failure is memoized too so a second caller inside
+    the scope does not re-parse it.
+    """
+    cache = _RUN_CACHE
+    if cache is not None and path in cache.py_parses:
+        result = cache.py_parses[path]
+    else:
+        try:
+            result = _python_proof_functions(content)
+        except SyntaxError as exc:
+            result = exc
+        if cache is not None:
+            cache.py_parses[path] = result
+    if isinstance(result, SyntaxError):
+        raise result
+    return result
 
 
 def _get_python_proofs_and_functions(source, feature_name):
@@ -293,8 +322,14 @@ def _check_logic_mirroring(node):
     return False
 
 
-def _check_mock_target_match(node, source, rule_desc):
-    """Detect mock/patch targeting the function the rule describes."""
+def _check_mock_target_match(node, lines, rule_desc):
+    """Detect mock/patch targeting the function the rule describes.
+
+    `lines` is the one split `_python_parse` made of the file, so the decorator
+    and function source come from `_segment` rather than from
+    `ast.get_source_segment`, which re-splits the whole file on every call
+    (RULE-42).
+    """
     if not rule_desc:
         return False
     rule_words = set(re.findall(r'[a-z_]\w+', rule_desc.lower()))
@@ -305,7 +340,7 @@ def _check_mock_target_match(node, source, rule_desc):
                    'code', 'file', 'function', 'method', 'class'}
 
     for deco in node.decorator_list:
-        deco_src = ast.get_source_segment(source, deco) or ''
+        deco_src = _segment(lines, deco) or ''
         # Look for @patch("some.module.func") or @mock.patch(...)
         patch_targets = re.findall(r'patch\(["\']([^"\']+)["\']', deco_src)
         for target in patch_targets:
@@ -315,7 +350,7 @@ def _check_mock_target_match(node, source, rule_desc):
                 return True
 
     # Also check mock.patch context managers in the body
-    func_src = ast.get_source_segment(source, node) or ''
+    func_src = _segment(lines, node) or ''
     ctx_targets = re.findall(r'mock\.patch\(["\']([^"\']+)["\']', func_src)
     for target in ctx_targets:
         parts = {p.lower() for p in target.split('.')}
@@ -330,7 +365,9 @@ def check_python(filepath, feature_name, rule_descs=None):
     rule_descs = rule_descs or {}
     with open(filepath, encoding='utf-8') as f:
         source = f.read()
-    proofs = _get_python_proofs_and_functions(source, feature_name)
+    entries, lines = _python_parse(filepath, source)
+    proofs = [(pid, rid, name, node)
+              for feature, pid, rid, name, node in entries if feature == feature_name]
     results = []
     for proof_id, rule_id, test_name, func_node in proofs:
         checks_failed = []
@@ -344,7 +381,7 @@ def check_python(filepath, feature_name, rule_descs=None):
         if _check_logic_mirroring(func_node):
             checks_failed.append(('logic_mirroring', 'expected value computed by same function as SUT', None))
         rdesc = rule_descs.get(rule_id, '')
-        if rdesc and _check_mock_target_match(func_node, source, rdesc):
+        if rdesc and _check_mock_target_match(func_node, lines, rdesc):
             checks_failed.append(('mock_target_match', 'mock target matches the function the rule describes', None))
 
         if checks_failed:
@@ -370,8 +407,12 @@ def check_python(filepath, feature_name, rule_descs=None):
 # Shell checks (regex-based)
 # ---------------------------------------------------------------------------
 
-def check_shell(filepath, feature_name):
-    """Run shell test checks. Returns list of proof result dicts."""
+def check_shell(filepath, feature_name, rule_descs=None):
+    """Run shell test checks. Returns list of proof result dicts.
+
+    `rule_descs` is accepted so every checker in the extension table has one
+    signature; shell has no rule-aware check to spend it on.
+    """
     with open(filepath, encoding='utf-8') as f:
         content = f.read()
     lines = content.splitlines()
@@ -663,8 +704,12 @@ def _iter_js_proof_bodies(content, feature_name):
         yield marker.group(1), marker.group(2), title, body
 
 
-def check_js(filepath, feature_name):
-    """Run JS/TS test checks. Returns list of proof result dicts."""
+def check_js(filepath, feature_name, rule_descs=None):
+    """Run JS/TS test checks. Returns list of proof result dicts.
+
+    `rule_descs` is accepted so every checker in the extension table has one
+    signature; JS has no rule-aware check to spend it on.
+    """
     with open(filepath, encoding='utf-8') as f:
         content = f.read()
     results = []
@@ -700,59 +745,79 @@ def check_js(filepath, feature_name):
 # C# / .NET (xUnit / NUnit / MSTest) checks
 # ---------------------------------------------------------------------------
 
-def _read_csharp_balanced(content, i, opener, closer):
+# C#, PHP and C all delimit a test body with braces and all hide braces inside
+# strings and comments, so one scanner serves the three of them. The caller says
+# which line-comment prefixes its language has and whether it has C#'s verbatim
+# `@"..."` string; nothing else differs (CLAUDE.md deduplication rule).
+_CSHARP_LINE_COMMENTS = ('//',)
+_PHP_LINE_COMMENTS = ('//', '#')
+
+
+def _skip_c_like_noncode(content, j, line_comment_prefixes=_CSHARP_LINE_COMMENTS,
+                         verbatim_strings=True):
+    """Index just past the comment, string or char literal starting at content[j].
+
+    None when content[j] starts none of them, so the caller reads it as code.
+    Escapes are backslash escapes, except inside a C# verbatim string where `""`
+    escapes a quote.
+
+    Not tracked: PHP heredoc/nowdoc (`<<<EOT ... EOT;`) and C# raw string
+    literals. A brace inside one of those is counted as code, which can end a
+    scanned body early, so a checker reading these bodies can only ever see less
+    of the test than the author wrote.
+    """
+    n = len(content)
+    c = content[j]
+    for prefix in line_comment_prefixes:
+        if content.startswith(prefix, j):
+            nl = content.find('\n', j)
+            return n if nl < 0 else nl
+    if c == '/' and content[j + 1:j + 2] == '*':
+        e = content.find('*/', j + 2)
+        return n if e < 0 else e + 2
+    if verbatim_strings and c == '@' and content[j + 1:j + 2] == '"':
+        j += 2
+        while j < n:
+            if content[j] == '"':
+                if content[j + 1:j + 2] == '"':
+                    j += 2
+                    continue
+                return j + 1
+            j += 1
+        return n
+    if c == '"' or c == "'":  # string, interpolated string, or char literal
+        quote = c
+        j += 1
+        while j < n:
+            if content[j] == '\\':
+                j += 2
+                continue
+            if content[j] == quote:
+                return j + 1
+            j += 1
+        return n
+    return None
+
+
+def _read_c_like_balanced(content, i, opener, closer,
+                          line_comment_prefixes=_CSHARP_LINE_COMMENTS,
+                          verbatim_strings=True):
     """content[i] is `opener`. Return (inner_text, index_after_matching_close).
 
-    Skips C# strings (regular, verbatim @"", interpolated $""), char literals,
-    and // and /* */ comments so their contents never affect bracket depth.
+    Skips strings, char literals and comments so their contents never affect
+    bracket depth. Unterminated input returns everything to the end of the file.
     """
     n = len(content)
     depth = 0
     j = i
     start_inner = i + 1
     while j < n:
+        skipped = _skip_c_like_noncode(content, j, line_comment_prefixes,
+                                       verbatim_strings)
+        if skipped is not None:
+            j = skipped
+            continue
         c = content[j]
-        if c == '/' and content[j + 1:j + 2] == '/':
-            nl = content.find('\n', j)
-            j = n if nl < 0 else nl
-            continue
-        if c == '/' and content[j + 1:j + 2] == '*':
-            e = content.find('*/', j + 2)
-            j = n if e < 0 else e + 2
-            continue
-        if c == '@' and content[j + 1:j + 2] == '"':  # verbatim string: "" escapes a quote
-            j += 2
-            while j < n:
-                if content[j] == '"':
-                    if content[j + 1:j + 2] == '"':
-                        j += 2
-                        continue
-                    j += 1
-                    break
-                j += 1
-            continue
-        if c == '"':  # regular or interpolated string ($ prefix already passed over)
-            j += 1
-            while j < n:
-                if content[j] == '\\':
-                    j += 2
-                    continue
-                if content[j] == '"':
-                    j += 1
-                    break
-                j += 1
-            continue
-        if c == "'":  # char literal
-            j += 1
-            while j < n:
-                if content[j] == '\\':
-                    j += 2
-                    continue
-                if content[j] == "'":
-                    j += 1
-                    break
-                j += 1
-            continue
         if c == opener:
             depth += 1
         elif c == closer:
@@ -761,6 +826,36 @@ def _read_csharp_balanced(content, i, opener, closer):
                 return content[start_inner:j], j + 1
         j += 1
     return content[start_inner:j], j  # unterminated
+
+
+def _read_csharp_balanced(content, i, opener, closer):
+    """The C# reader: `_read_c_like_balanced` with C#'s comments and strings."""
+    return _read_c_like_balanced(content, i, opener, closer)
+
+
+def _strip_c_like_comments(text, line_comment_prefixes=_CSHARP_LINE_COMMENTS,
+                           verbatim_strings=True):
+    """`text` with every comment replaced by a space, strings left untouched.
+
+    A checker that searches a body for assertion syntax must not read the
+    author's prose: a `// no assert(true) here` comment would otherwise be a
+    tautology, and a `// no throw = pass` comment an assertion. Strings are kept
+    because an assertion's arguments are compared as written.
+    """
+    out = []
+    i = 0
+    n = len(text)
+    while i < n:
+        is_comment = (text[i] == '/' and text[i + 1:i + 2] == '*') or any(
+            text.startswith(prefix, i) for prefix in line_comment_prefixes)
+        end = _skip_c_like_noncode(text, i, line_comment_prefixes, verbatim_strings)
+        if end is None:
+            out.append(text[i])
+            i += 1
+            continue
+        out.append(' ' if is_comment else text[i:end])
+        i = end
+    return ''.join(out)
 
 
 def _find_csharp_body(content, i):
@@ -878,6 +973,496 @@ def check_csharp(filepath, feature_name, rule_descs=None):
     return results
 
 
+# ---------------------------------------------------------------------------
+# Constant-expression test, shared by the PHP and C checkers
+# ---------------------------------------------------------------------------
+
+_CONST_EXPR_LITERAL_RE = re.compile(
+    r"'(?:[^'\\]|\\.)*'|\"(?:[^\"\\]|\\.)*\"|/\*.*?\*/|//[^\n]*", re.DOTALL)
+_CONST_EXPR_WORD_RE = re.compile(r'[A-Za-z_]\w*')
+_CONST_EXPR_WORDS = frozenset({'true', 'false', 'null'})
+
+
+def _is_constant_expression(text):
+    """True when `text` is built only from literals, operators and parentheses.
+
+    String and char literals are removed first, then any remaining word that is
+    not `true`, `false` or `null` means the expression reads something: a
+    variable, a call, a column. `1 == 1` and `'a' == 'a'` are constant;
+    `validate(-1) == 0` and `$result` are not.
+
+    Deliberately conservative in one direction: a hexadecimal or suffixed
+    numeric literal (`0x1F`, `1UL`) leaves a word behind and so reads as
+    non-constant. That under-reports a tautology, which is the safe error for a
+    check whose `fail` verdict is HOLLOW with no override.
+    """
+    stripped = _CONST_EXPR_LITERAL_RE.sub(' ', text)
+    if '$' in stripped:  # a PHP variable
+        return False
+    for word in _CONST_EXPR_WORD_RE.findall(stripped):
+        if word.lower() not in _CONST_EXPR_WORDS:
+            return False
+    return bool(text.strip())
+
+
+# ---------------------------------------------------------------------------
+# PHP (PHPUnit-style) checks
+# ---------------------------------------------------------------------------
+
+# Copied byte for byte from the marker regex in scripts/proof/phpunit_purlin.php,
+# `(?:public\s+)?function` quirk included, so the function Pass 1 reads is the
+# function the plugin executed and recorded. Groups: feature, proof id, rule id,
+# tier, declared platforms, function name.
+_PHP_MARKER_RE = re.compile(
+    r'@purlin\s+(\w+)\s+(PROOF-\d+)\s+(RULE-\d+)(?:\s+(?!on\()(\w+))?'
+    r'(?:\s+on\(([^)]*)\))?.*?\n\s*(?:public\s+)?function\s+(\w+)',
+    re.DOTALL)
+
+# An assertion, in any of the shapes PHPUnit and plain PHP tests use. A test
+# that raises on failure asserts through `throw`, which is how the shipped
+# plugin decides pass or fail, so `throw` counts.
+_PHP_ASSERTION_RE = re.compile(
+    r'->\s*(?:assert\w*|fail|expectException\w*)\s*\('
+    r'|::\s*(?:assert\w*|fail|expectException\w*)\s*\('
+    r'|\bassert\s*\('
+    r'|\bexpect\s*\('
+    r'|\bthrow\b')
+
+_PHP_LITERAL = (r"(?:'(?:[^'\\]|\\.)*'|\"(?:[^\"\\]|\\.)*\""
+                r"|[+-]?\d+(?:\.\d+)?|true|false|null)")
+_PHP_TAUTOLOGY_RES = (
+    (re.compile(r'\bassertTrue\s*\(\s*true\s*[,)]'), 'assertTrue(true)'),
+    (re.compile(r'\bassertFalse\s*\(\s*false\s*[,)]'), 'assertFalse(false)'),
+    (re.compile(r'\bassertNotFalse\s*\(\s*true\s*[,)]'), 'assertNotFalse(true)'),
+    (re.compile(r'(?<!\w)assert\s*\(\s*true\s*[,)]'), 'assert(true)'),
+)
+_PHP_IDENTICAL_ARGS_RE = re.compile(
+    r'\bassert(?:Same|Equals)\s*\(\s*(' + _PHP_LITERAL + r')\s*,\s*('
+    + _PHP_LITERAL + r')\s*[,)]')
+_PHP_IF_RE = re.compile(r'(?<!\w)if\s*\(')
+
+
+def _find_php_body(content, i):
+    """The `{ ... }` body of the function whose name ends at `i`, or None.
+
+    None for an abstract or interface method, which has no body to read.
+    """
+    n = len(content)
+    while i < n and content[i] not in '({;':
+        i += 1
+    if i >= n or content[i] == ';':
+        return None
+    if content[i] == '(':  # the parameter list
+        _params, i = _read_c_like_balanced(content, i, '(', ')',
+                                           _PHP_LINE_COMMENTS, verbatim_strings=False)
+    while i < n and content[i] != '{':  # a return type may sit between ) and {
+        if content[i] == ';':
+            return None
+        i += 1
+    if i >= n:
+        return None
+    body, _after = _read_c_like_balanced(content, i, '{', '}',
+                                         _PHP_LINE_COMMENTS, verbatim_strings=False)
+    return body
+
+
+def _iter_php_proof_bodies(content, feature_name):
+    """Yield (proof_id, rule_id, test_name, body) for every marked PHP test.
+
+    Pass 1 and the cache-key extractor read the same bodies, so the marker regex
+    and the body finder live here once (CLAUDE.md deduplication rule).
+    """
+    for m in _PHP_MARKER_RE.finditer(content):
+        if m.group(1) != feature_name:
+            continue
+        body = _find_php_body(content, m.end())
+        if body is None:
+            continue
+        yield m.group(2), m.group(3), m.group(6), body
+
+
+def _php_constant_guard(body):
+    """True when a constant `if` guards a throw: `if (true !== true) throw ...`.
+
+    The guard never fires, so the test cannot fail, but `throw` in the body
+    still satisfies the assertion search below. Only an `if` whose condition is
+    a constant expression counts, so `if (!$r) throw ...` is a real assertion.
+    """
+    for m in _PHP_IF_RE.finditer(body):
+        open_paren = m.end() - 1
+        cond, after = _read_c_like_balanced(body, open_paren, '(', ')',
+                                            _PHP_LINE_COMMENTS, verbatim_strings=False)
+        if not _is_constant_expression(cond):
+            continue
+        while after < len(body) and body[after] in ' \t\r\n':
+            after += 1
+        if after < len(body) and body[after] == '{':
+            guarded, _end = _read_c_like_balanced(body, after, '{', '}',
+                                                  _PHP_LINE_COMMENTS,
+                                                  verbatim_strings=False)
+        else:
+            end = body.find(';', after)
+            guarded = body[after:] if end < 0 else body[after:end]
+        if re.search(r'\bthrow\b', guarded):
+            return True
+    return False
+
+
+def _php_tautology(body):
+    """The reason a PHP test body asserts nothing falsifiable, or None."""
+    for pattern, shown in _PHP_TAUTOLOGY_RES:
+        if pattern.search(body):
+            return f'{shown} is tautological'
+    for m in _PHP_IDENTICAL_ARGS_RE.finditer(body):
+        if m.group(1) == m.group(2):
+            return (f'assertSame/assertEquals of two identical literals '
+                    f'({m.group(1)}) is tautological')
+    if _php_constant_guard(body):
+        return 'a constant `if` guard on a throw can never fire'
+    return None
+
+
+def check_php(filepath, feature_name, rule_descs=None):
+    """Run PHP (PHPUnit-style) test checks. Returns list of proof result dicts.
+
+    Reads the `/** @purlin feature PROOF-N RULE-N */` docblocks the shipped
+    plugin reads, finds each marked function's body, and applies assert-true and
+    no-assertion detection. Known limit, shared with C#: a test that delegates
+    every assertion to a helper method reads as `no_assertions` here.
+    """
+    with open(filepath, encoding='utf-8') as f:
+        content = f.read()
+    results = []
+    for proof_id, rule_id, test_name, raw_body in _iter_php_proof_bodies(
+            content, feature_name):
+        # The author's comments are prose, not code: `// no throw = pass` is not
+        # an assertion and `// never assert(true)` is not a tautology.
+        body = _strip_c_like_comments(raw_body, _PHP_LINE_COMMENTS,
+                                      verbatim_strings=False)
+        tautology = _php_tautology(body)
+        if tautology:
+            results.append({
+                'proof_id': proof_id, 'rule_id': rule_id,
+                'test_name': test_name, 'status': 'fail',
+                'check': 'assert_true', 'reason': tautology,
+                'literal': True,
+            })
+            continue
+        if not _PHP_ASSERTION_RE.search(body):
+            results.append({
+                'proof_id': proof_id, 'rule_id': rule_id,
+                'test_name': test_name, 'status': 'fail',
+                'check': 'no_assertions',
+                'reason': 'test function has no assert*/expect*/throw call',
+            })
+            continue
+        results.append({
+            'proof_id': proof_id, 'rule_id': rule_id,
+            'test_name': test_name, 'status': 'pass',
+            'reason': 'structural checks passed',
+        })
+    return results
+
+
+# ---------------------------------------------------------------------------
+# SQL (sqlite3) checks
+# ---------------------------------------------------------------------------
+
+# The same marker regex and the same block delimiting as scripts/proof/sql_purlin.sh:
+# a block runs from its marker to the next marker or to the end of the file.
+_SQL_MARKER_RE = re.compile(
+    r'^-- @purlin\s+(\w+)\s+(PROOF-\d+)\s+(RULE-\d+)(?:[ \t]+(?!on\()(\w+))?'
+    r'(?:[ \t]+on\(([^)]*)\))?',
+    re.MULTILINE)
+_SQL_TEST_NAME_RE = re.compile(r'^-- Test:\s*(.+)', re.MULTILINE)
+
+# `SELECT 'PASS';` as a whole statement: no WHERE, so nothing decides it.
+_SQL_PLAIN_PASS_RE = re.compile(r"SELECT\s+'PASS'\s*;?[ \t]*$",
+                                re.IGNORECASE | re.MULTILINE)
+_SQL_CASE_PASS_RE = re.compile(r"CASE\s+WHEN\s+(.*?)\s+THEN\s+'PASS'",
+                               re.IGNORECASE | re.DOTALL)
+_SQL_SELECT_RE = re.compile(r'\bSELECT\b', re.IGNORECASE)
+_SQL_STRING_RE = re.compile(r"'(?:[^']|'')*'")
+_SQL_WORD_RE = re.compile(r'[A-Za-z_]\w*')
+# Words a predicate may use and still decide nothing: they are operators and
+# literals, not data. Any other identifier reads a column, calls a function or
+# opens a subquery, so the predicate depends on something.
+_SQL_OPERATOR_WORDS = frozenset({
+    'and', 'or', 'not', 'is', 'null', 'in', 'like', 'glob', 'between',
+    'true', 'false', 'escape',
+})
+
+
+def _sql_executable(block):
+    """The block with its `--` comment lines removed, as the plugin runs it."""
+    return '\n'.join(l for l in block.split('\n')
+                     if not l.strip().startswith('--')).strip()
+
+
+def _sql_strip_comments(sql):
+    """`sql` with every `--` comment removed, string literals left untouched.
+
+    `_sql_executable` drops whole comment lines, exactly as the shipped plugin
+    does, but a trailing `-- then SELECT 'PASS'` survives it and sqlite ignores
+    it. Reading one as SQL would flag a block that never runs it.
+    """
+    out = []
+    i = 0
+    n = len(sql)
+    while i < n:
+        if sql.startswith('--', i):
+            nl = sql.find('\n', i)
+            i = n if nl < 0 else nl
+            continue
+        if sql[i] == "'":
+            m = _SQL_STRING_RE.match(sql, i)
+            if m:
+                out.append(m.group(0))
+                i = m.end()
+                continue
+        out.append(sql[i])
+        i += 1
+    return ''.join(out)
+
+
+def _sql_constant_predicate(predicate):
+    """True when a CASE predicate decides nothing: no identifier but operators."""
+    stripped = _SQL_STRING_RE.sub(' ', predicate)
+    for word in _SQL_WORD_RE.findall(stripped):
+        if word.lower() not in _SQL_OPERATOR_WORDS:
+            return False
+    return bool(predicate.strip())
+
+
+def _iter_sql_proof_blocks(content, feature_name):
+    """Yield (proof_id, rule_id, test_name, block) for every marked SQL block.
+
+    `block` is the raw text between markers, comments included: it is what the
+    cache-key extractor keys on, and `_sql_executable` derives what sqlite3 sees.
+    Shared by Pass 1 and the extractor (CLAUDE.md deduplication rule).
+    """
+    markers = list(_SQL_MARKER_RE.finditer(content))
+    for i, m in enumerate(markers):
+        if m.group(1) != feature_name:
+            continue
+        end = markers[i + 1].start() if i + 1 < len(markers) else len(content)
+        block = content[m.end():end].strip()
+        name_match = _SQL_TEST_NAME_RE.search(block)
+        test_name = name_match.group(1).strip() if name_match else m.group(2)
+        yield m.group(2), m.group(3), test_name, block
+
+
+def _sql_tautology(sql_exec):
+    """The reason the block's first PASS is unconditional, or None.
+
+    Only the first `'PASS'` producer is judged: sqlite3 prints rows in statement
+    order and the plugin reads the first line, so a later unconditional
+    `SELECT 'PASS'` cannot rescue a block whose first check printed FAIL.
+    """
+    candidates = []
+    for m in _SQL_PLAIN_PASS_RE.finditer(sql_exec):
+        candidates.append((m.start(), "an unconditional SELECT 'PASS'"))
+    for m in _SQL_CASE_PASS_RE.finditer(sql_exec):
+        reason = None
+        if _sql_constant_predicate(m.group(1)):
+            reason = (f"CASE WHEN {' '.join(m.group(1).split())} THEN 'PASS' "
+                      'compares constants')
+        candidates.append((m.start(), reason))
+    if not candidates:
+        return None
+    candidates.sort()
+    return candidates[0][1]
+
+
+def check_sql(filepath, feature_name, rule_descs=None):
+    """Run SQL (sqlite3) test checks. Returns list of proof result dicts.
+
+    A block passes at runtime when its output starts with `PASS`, so the checks
+    here are about what produces that word: an unconditional `SELECT 'PASS'` or
+    a `CASE WHEN` whose predicate compares constants proves nothing about the
+    schema. A predicate naming any column, function or subquery is left alone.
+    """
+    with open(filepath, encoding='utf-8') as f:
+        content = f.read()
+    results = []
+    for proof_id, rule_id, test_name, block in _iter_sql_proof_blocks(
+            content, feature_name):
+        sql_exec = _sql_strip_comments(_sql_executable(block))
+        tautology = _sql_tautology(sql_exec)
+        if tautology:
+            results.append({
+                'proof_id': proof_id, 'rule_id': rule_id,
+                'test_name': test_name, 'status': 'fail',
+                'check': 'assert_true',
+                'reason': f'{tautology} passes whatever the data holds',
+                'literal': True,
+            })
+            continue
+        if not _SQL_SELECT_RE.search(sql_exec):
+            results.append({
+                'proof_id': proof_id, 'rule_id': rule_id,
+                'test_name': test_name, 'status': 'fail',
+                'check': 'no_assertions',
+                'reason': 'proof block runs no SELECT, so it observes nothing',
+            })
+            continue
+        results.append({
+            'proof_id': proof_id, 'rule_id': rule_id,
+            'test_name': test_name, 'status': 'pass',
+            'reason': 'structural checks passed',
+        })
+    return results
+
+
+# ---------------------------------------------------------------------------
+# C checks
+# ---------------------------------------------------------------------------
+
+# purlin_proof(feature, id, rule, passed, test_name, test_file, tier) and its
+# purlin_proof_on(..., platforms) sibling, per scripts/proof/c_purlin.h. The
+# `\s*\(` is what keeps purlin_proof_finish() out of the scan.
+_C_CALL_RE = re.compile(r'\bpurlin_proof(?:_on)?\s*\(')
+_C_STRING_RE = re.compile(r'^"(?:[^"\\]|\\.)*"$')
+_C_LINE_COMMENTS = ('//',)
+_C_PROOF_MIN_ARGS = 7
+
+
+def _split_c_arguments(argtext):
+    """`argtext` split on its depth-0 commas, each argument stripped.
+
+    Strings, char literals, comments and nested brackets are skipped, so a
+    string argument holding a comma or a close paren stays one argument.
+    """
+    args = []
+    depth = 0
+    start = 0
+    i = 0
+    n = len(argtext)
+    while i < n:
+        skipped = _skip_c_like_noncode(argtext, i, _C_LINE_COMMENTS,
+                                       verbatim_strings=False)
+        if skipped is not None:
+            i = skipped
+            continue
+        c = argtext[i]
+        if c in '([{':
+            depth += 1
+        elif c in ')]}':
+            depth -= 1
+        elif c == ',' and depth == 0:
+            args.append(argtext[start:i])
+            start = i + 1
+        i += 1
+    args.append(argtext[start:])
+    return [a.strip() for a in args]
+
+
+def _c_string_value(arg):
+    """The text of a C string-literal argument, or None when it is not one."""
+    if not _C_STRING_RE.fullmatch(arg):
+        return None
+    return arg[1:-1]
+
+
+def _c_top_level_block(content, pos):
+    """The outermost `{ ... }` block containing `pos`, or None.
+
+    That is the enclosing function body for a call written at any nesting depth
+    inside it. Keying a C proof on the whole block over-invalidates its cached
+    grade when an unrelated line of `main` moves, which is the safe direction:
+    the grade is recomputed rather than wrongly reused.
+    """
+    depth = 0
+    start = None
+    i = 0
+    n = len(content)
+    while i < n:
+        skipped = _skip_c_like_noncode(content, i, _C_LINE_COMMENTS,
+                                       verbatim_strings=False)
+        if skipped is not None:
+            i = skipped
+            continue
+        c = content[i]
+        if c == '{':
+            if depth == 0:
+                start = i
+            depth += 1
+        elif c == '}':
+            depth -= 1
+            if depth <= 0:
+                if start is not None and start <= pos <= i:
+                    return content[start:i + 1]
+                depth = 0
+                start = None
+        i += 1
+    return None
+
+
+def _iter_c_proof_bodies(content, feature_name):
+    """Yield (proof_id, rule_id, test_name, passed_arg, block) per C proof call.
+
+    `passed_arg` is the call's fourth argument, the one the harness records as
+    pass or fail; `block` is the enclosing top-level block, which is what the
+    cache-key extractor keys on. Shared by Pass 1 and the extractor (CLAUDE.md
+    deduplication rule).
+    """
+    for m in _C_CALL_RE.finditer(content):
+        open_paren = m.end() - 1
+        argtext, _after = _read_c_like_balanced(content, open_paren, '(', ')',
+                                                _C_LINE_COMMENTS,
+                                                verbatim_strings=False)
+        args = _split_c_arguments(argtext)
+        if len(args) < _C_PROOF_MIN_ARGS:
+            continue
+        if _c_string_value(args[0]) != feature_name:
+            continue
+        proof_id = _c_string_value(args[1])
+        rule_id = _c_string_value(args[2])
+        if not proof_id or not rule_id:
+            continue
+        test_name = _c_string_value(args[4])
+        if test_name is None:
+            test_name = args[4][:60]
+        block = _c_top_level_block(content, m.start())
+        yield proof_id, rule_id, test_name, args[3], block
+
+
+def check_c(filepath, feature_name, rule_descs=None):
+    """Run C test checks. Returns list of proof result dicts.
+
+    One check only, and deliberately so: the harness records whatever the call's
+    fourth argument evaluates to, so the single thing a regex can prove about a
+    C proof is that the argument is a constant expression (`1`, `1 == 1`) and
+    the recorded status therefore cannot depend on the code under test. A
+    variable or a call there is an assertion computed before the call, which
+    this checker passes without judging. There is no no-assertion check: a C
+    test with no assertion is one whose `passed` argument is constant, which the
+    constant check already catches.
+    """
+    with open(filepath, encoding='utf-8') as f:
+        content = f.read()
+    results = []
+    for proof_id, rule_id, test_name, passed_arg, _block in _iter_c_proof_bodies(
+            content, feature_name):
+        if _is_constant_expression(passed_arg):
+            results.append({
+                'proof_id': proof_id, 'rule_id': rule_id,
+                'test_name': test_name, 'status': 'fail',
+                'check': 'assert_true',
+                'reason': (f'purlin_proof passed argument `{passed_arg}` is a '
+                           'constant expression, so the recorded status cannot '
+                           'depend on the code under test'),
+                'literal': True,
+            })
+            continue
+        results.append({
+            'proof_id': proof_id, 'rule_id': rule_id,
+            'test_name': test_name, 'status': 'pass',
+            'reason': 'structural checks passed',
+        })
+    return results
+
+
 # Build-output / vendored directories that never contain authored test source.
 _SOURCE_SCAN_SKIP_DIRS = {'bin', 'obj', 'node_modules', '.git', '.purlin', 'dist', 'build'}
 
@@ -927,21 +1512,52 @@ def resolve_test_file_from_name(test_name, project_root, ext='.cs'):
     return os.path.relpath(best, project_root).replace(os.sep, '/')
 
 
+# ---------------------------------------------------------------------------
+# The extension table
+#
+# One table decides which language reads a test file. `analyze_test_file`
+# dispatches from it, `_test_bodies` branches on the same sets, and
+# `_TEST_CODE_EXTENSIONS` is derived from it rather than listed again, so an
+# extension cannot reach one of the three and be missed by the others. There is
+# no fallback branch: an extension absent from the table yields [] rather than
+# being read by whichever checker happened to be last in an if-chain, which is
+# how `.mjs` and `.cjs` were once handed to nobody and `.rb` to the JS scanner.
+# ---------------------------------------------------------------------------
+
+_JS_EXTENSIONS = frozenset({'.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx'})
+_C_EXTENSIONS = frozenset({'.c', '.h'})
+
+_CHECKERS = dict(
+    [('.py', check_python), ('.sh', check_shell), ('.cs', check_csharp),
+     ('.php', check_php), ('.sql', check_sql)]
+    + [(e, check_js) for e in sorted(_JS_EXTENSIONS)]
+    + [(e, check_c) for e in sorted(_C_EXTENSIONS)]
+)
+
+# Every extension Pass 1 can read.
+_CHECKER_EXTENSIONS = frozenset(_CHECKERS)
+
+# Every extension whose test code this module can also extract for a cache key.
+# Shell is the one checked language with no extractor: its proofs are keyed on
+# rule text and proof description alone and the cache entry records
+# `inputs.test_verifiable: false` rather than pretending a test edit would
+# invalidate the grade.
+_TEST_CODE_EXTENSIONS = _CHECKER_EXTENSIONS - {'.sh'}
+
+
 def analyze_test_file(test_file, feature_name, rule_descs=None):
     """Dispatch a test file to the language checker matching its extension.
 
-    Returns the list of proof result dicts, or [] for unsupported extensions.
+    Returns the list of proof result dicts, or [] for an extension no checker
+    reads (a custom plugin's language). A file whose language has a checker but
+    whose markers it cannot find returns [] too: the caller distinguishes the
+    two through `_CHECKER_EXTENSIONS`.
     """
     ext = os.path.splitext(test_file)[1].lower()
-    if ext == '.py':
-        return check_python(test_file, feature_name, rule_descs)
-    if ext == '.sh':
-        return check_shell(test_file, feature_name)
-    if ext in ('.js', '.ts', '.jsx', '.tsx'):
-        return check_js(test_file, feature_name)
-    if ext == '.cs':
-        return check_csharp(test_file, feature_name, rule_descs)
-    return []
+    checker = _CHECKERS.get(ext)
+    if checker is None:
+        return []
+    return checker(test_file, feature_name, rule_descs)
 
 
 # ---------------------------------------------------------------------------
@@ -1520,11 +2136,13 @@ def _find_spec_path(project_root, feature):
 # ---------------------------------------------------------------------------
 
 class _RunCache:
-    __slots__ = ('specs', 'proof_records', 'py_sources', 'test_bodies', 'keys')
+    __slots__ = ('specs', 'proof_records', 'py_parses', 'py_sources', 'test_bodies',
+                 'keys')
 
     def __init__(self):
         self.specs = {}          # feature -> (spec_path, declared, rule_descs)
         self.proof_records = {}  # feature -> {proof_id: (test_file, test_name)}
+        self.py_parses = {}      # test path -> (entries, lines) | SyntaxError
         self.py_sources = {}     # abs test path -> {(feature, proof_id): src} | None
         self.test_bodies = {}    # (abs test path, feature) -> {proof_id: src} | None
         self.keys = {}           # (feature, proof_id, cache_name) -> (key, inputs)
@@ -1608,7 +2226,7 @@ def _python_proof_sources(path, content):
     if cache is not None and path in cache.py_sources:
         return cache.py_sources[path]
     try:
-        entries, lines = _python_proof_functions(content)
+        entries, lines = _python_parse(path, content)
     except SyntaxError:
         sources = None
     else:
@@ -1635,6 +2253,10 @@ def _test_bodies(path, ext, feature):
     except OSError:
         content = None
     if content is not None:
+        # One branch per language and no fallback: an extension with no branch
+        # here is not extractable and returns None, instead of being handed to
+        # whichever extractor the `else` happened to name (it was the JS one,
+        # so every `.php`, `.sql` and `.c` file was scanned for `it(...)`).
         if ext == '.py':
             sources = _python_proof_sources(path, content)
             if sources is not None:
@@ -1644,21 +2266,29 @@ def _test_bodies(path, ext, feature):
             bodies = {}
             for pid, _rid, _name, body in _iter_csharp_proof_bodies(content, feature):
                 bodies.setdefault(pid, body)
-        else:
+        elif ext in _JS_EXTENSIONS:
             bodies = {}
             for pid, _rid, _title, body in _iter_js_proof_bodies(content, feature):
                 bodies.setdefault(pid, body)
+        elif ext == '.php':
+            bodies = {}
+            for pid, _rid, _name, body in _iter_php_proof_bodies(content, feature):
+                bodies.setdefault(pid, body)
+        elif ext == '.sql':
+            bodies = {}
+            for pid, _rid, _name, block in _iter_sql_proof_blocks(content, feature):
+                bodies.setdefault(pid, block)
+        elif ext in _C_EXTENSIONS:
+            bodies = {}
+            for pid, _rid, _name, _passed, block in _iter_c_proof_bodies(
+                    content, feature):
+                if block is not None:
+                    bodies.setdefault(pid, block)
+        else:
+            bodies = None
     if cache is not None:
         cache.test_bodies[memo_key] = bodies
     return bodies
-
-
-# Extensions whose test code this module can extract. Anything else (shell, sql,
-# php, c) has no extractor here, so its proofs are keyed on rule text and proof
-# description alone and the entry records `inputs.test_verifiable: false` rather
-# than pretending a test edit would invalidate the grade.
-_TEST_CODE_EXTENSIONS = frozenset(
-    {'.py', '.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx', '.cs'})
 
 
 def _extract_test_code(project_root, feature, proof_id, test_file):

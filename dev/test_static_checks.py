@@ -22,7 +22,10 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'aud
 import static_checks
 from static_checks import (
     analyze_test_file,
+    check_c,
     check_csharp,
+    check_php,
+    check_sql,
     check_proof_file,
     check_python,
     check_shell,
@@ -62,7 +65,7 @@ def _write_tmp(content, suffix='.py'):
 def _scaffold_proof(root, feature='login', proof_id='PROOF-1', rule_id='RULE-1',
                     test_file='tests/test_login.py', test_name='test_login',
                     rule_text=None, description=None, tier='unit',
-                    test_body='    assert 1 + 1 == 2'):
+                    test_body='    assert 1 + 1 == 2', write_test=True):
     """Write the spec, proof record and test function behind <feature>/<proof_id>.
 
     write_audit_cache re-keys every entry through cache_key_for(), which resolves
@@ -76,7 +79,11 @@ def _scaffold_proof(root, feature='login', proof_id='PROOF-1', rule_id='RULE-1',
     again for the SAME proof_id replaces just that proof's test function, which is
     how a test simulates an edit to the graded code.
 
-    Returns the path of the test file it wrote.
+    With `write_test` False only the spec and the proof record are written and
+    the test file is left to the caller, which is how a test scaffolds one source
+    file carrying several proofs in a language this helper does not generate.
+
+    Returns the path of the test file (written or merely named).
     """
     spec_dir = os.path.join(root, 'specs', 'app')
     os.makedirs(spec_dir, exist_ok=True)
@@ -125,6 +132,8 @@ def _scaffold_proof(root, feature='login', proof_id='PROOF-1', rule_id='RULE-1',
     # --- the test itself ---
     test_path = os.path.join(root, *test_file.split('/'))
     os.makedirs(os.path.dirname(test_path), exist_ok=True)
+    if not write_test:
+        return test_path
     if test_file.endswith('.py'):
         block = (f'@pytest.mark.proof("{feature}", "{proof_id}", "{rule_id}")\n'
                  f'def {test_name}():\n{test_body}')
@@ -1879,6 +1888,390 @@ namespace Demo {{
             assert payload['test_file'] == 'tests/AuthLogicTests.cs', payload
 
 
+class TestCheckPhp:
+    """RULE-45: deterministic Pass-1 checks for PHP (PHPUnit-style) tests."""
+
+    def _php(self, body, proof_id="PROOF-1", rule_id="RULE-1"):
+        return _write_tmp(f'''<?php
+class DemoTest {{
+  /** @purlin phpfeat {proof_id} {rule_id} unit */
+  public function testTheThing() {{
+{body}
+  }}
+}}
+''', suffix='.php')
+
+    @pytest.mark.proof("static_checks", "PROOF-72", "RULE-45")
+    def test_detects_tautologies(self):
+        """Every shape that asserts something true by construction is assert_true."""
+        cases = {
+            'assertTrue(true)': '    $this->assertTrue(true);',
+            'assertFalse(false)': '    self::assertFalse(false);',
+            'assert(true)': '    assert(true);',
+            'assertSame identical': '    $this->assertSame("a", "a");',
+            'assertEquals identical': '    $this->assertEquals(1, 1);',
+            'constant if guard': (
+                '    $r = validate(-1);\n'
+                '    if (true !== true) { throw new Exception("impossible"); }'),
+        }
+        for name, body in cases.items():
+            path = self._php(body)
+            try:
+                results = check_php(path, "phpfeat")
+                assert len(results) == 1, f"{name}: expected 1 proof, got {results}"
+                assert results[0]['status'] == 'fail', f"{name}: not flagged — {results[0]}"
+                assert results[0]['check'] == 'assert_true', f"{name}: {results[0]}"
+                assert results[0]['literal'] is True, f"{name}: {results[0]}"
+                assert results[0]['test_name'] == 'testTheThing', results[0]
+            finally:
+                os.unlink(path)
+
+    @pytest.mark.proof("static_checks", "PROOF-73", "RULE-45")
+    def test_detects_no_assertions_through_a_hash_comment(self):
+        """A body with no assert/expect/throw is no_assertions, a comment naming
+        `throw` is not an assertion, and a `#` comment holding an unbalanced `{`
+        does not let the scan run on into the next test.
+
+        Without `#` among the PHP line-comment prefixes the first body swallows the
+        second function, finds its assertSame, and the empty test reads as pass.
+        """
+        path = _write_tmp('''<?php
+/** @purlin phpfeat PROOF-1 RULE-1 unit */
+function test_no_assert() {
+    # a hash comment with a { brace in it
+    $result = send_email("user@test.com", "Hello");
+    // No throw = pass. But $result is never inspected.
+}
+/** @purlin phpfeat PROOF-2 RULE-2 unit */
+function test_real() {
+    $this->assertSame(3, add(1, 2));
+}
+''', suffix='.php')
+        try:
+            results = {r['proof_id']: r for r in check_php(path, "phpfeat")}
+            assert set(results) == {'PROOF-1', 'PROOF-2'}, results
+            assert results['PROOF-1']['status'] == 'fail', results['PROOF-1']
+            assert results['PROOF-1']['check'] == 'no_assertions', results['PROOF-1']
+            assert results['PROOF-2']['status'] == 'pass', \
+                f"the second test's own assertion was not read — {results['PROOF-2']}"
+        finally:
+            os.unlink(path)
+
+    @pytest.mark.proof("static_checks", "PROOF-74", "RULE-45")
+    def test_real_assertion_forms_pass(self):
+        """Every assertion shape a PHP test legitimately uses is recognized."""
+        cases = {
+            'phpunit': '    $this->assertSame(3, add(1, 2));',
+            'static': '    self::assertGreaterThan(0, count($rows));',
+            'assert class': '    Assert::assertTrue(is_valid($row));',
+            'expectException': ('    $this->expectException(RuntimeException::class);\n'
+                                '    parse("nope");'),
+            'bare assert': '    assert(is_valid($row));',
+            'throw guard': ('    $r = validate_email("a@b.c");\n'
+                            '    if (!$r) { throw new Exception("should accept"); }'),
+            'expect': '    expect(total())->toBe(7);',
+            'comment naming a tautology': (
+                '    // never write assert(true) here\n'
+                '    $this->assertSame(3, add(1, 2));'),
+        }
+        for name, body in cases.items():
+            path = self._php(body)
+            try:
+                results = check_php(path, "phpfeat")
+                assert len(results) == 1, f"{name}: expected 1 proof, got {results}"
+                assert results[0]['status'] == 'pass', \
+                    f"{name}: real assertion flagged — {results[0]}"
+            finally:
+                os.unlink(path)
+
+
+class TestCheckSql:
+    """RULE-46: deterministic Pass-1 checks for SQL (sqlite3) proof blocks."""
+
+    def _sql(self, block, proof_id="PROOF-1", rule_id="RULE-1"):
+        return _write_tmp(f'-- @purlin sqlfeat {proof_id} {rule_id} unit\n'
+                          f'-- Test: the thing\n{block}\n', suffix='.sql')
+
+    @pytest.mark.proof("static_checks", "PROOF-75", "RULE-46")
+    def test_detects_unconditional_pass(self):
+        """A PASS that nothing decides is assert_true, bare or inside a CASE."""
+        cases = {
+            'bare': "DELETE FROM parents WHERE id = 1;\nSELECT 'PASS';",
+            'constant case': "SELECT CASE WHEN 1 = 1 THEN 'PASS' ELSE 'FAIL' END;",
+            'fixture case': "SELECT CASE WHEN 'alice' = 'alice' THEN 'PASS' ELSE 'FAIL' END;",
+        }
+        for name, block in cases.items():
+            path = self._sql(block)
+            try:
+                results = check_sql(path, "sqlfeat")
+                assert len(results) == 1, f"{name}: expected 1 proof, got {results}"
+                assert results[0]['status'] == 'fail', f"{name}: not flagged — {results[0]}"
+                assert results[0]['check'] == 'assert_true', f"{name}: {results[0]}"
+                assert results[0]['test_name'] == 'the thing', results[0]
+            finally:
+                os.unlink(path)
+
+    @pytest.mark.proof("static_checks", "PROOF-76", "RULE-46")
+    def test_detects_block_with_no_select(self):
+        """A block that never SELECTs observes nothing, and the proof id stands in
+        for a missing `-- Test:` name exactly as the shipped plugin does."""
+        path = _write_tmp("-- @purlin sqlfeat PROOF-3 RULE-3 unit\n"
+                          "INSERT INTO users (email) VALUES ('a@b.c');\n", suffix='.sql')
+        try:
+            results = check_sql(path, "sqlfeat")
+            assert len(results) == 1, results
+            assert results[0]['status'] == 'fail', results[0]
+            assert results[0]['check'] == 'no_assertions', results[0]
+            assert results[0]['test_name'] == 'PROOF-3', results[0]
+        finally:
+            os.unlink(path)
+
+    @pytest.mark.proof("static_checks", "PROOF-77", "RULE-46")
+    def test_predicates_that_read_the_database_pass(self):
+        """A predicate naming a column, a function or a subquery decides something;
+        a block ends at the next marker rather than running on into it; and a
+        trailing `--` comment is not read as SQL the block runs."""
+        path = _write_tmp("""-- @purlin sqlfeat PROOF-1 RULE-1 unit
+-- Test: subquery
+SELECT CASE WHEN (SELECT count(*) FROM users) = 1 THEN 'PASS' ELSE 'FAIL' END;
+
+-- @purlin sqlfeat PROOF-2 RULE-2 unit
+-- Test: function
+SELECT CASE WHEN changes() = 1 THEN 'PASS' ELSE 'FAIL' END;
+
+-- @purlin sqlfeat PROOF-3 RULE-3 unit
+-- Test: column
+SELECT CASE WHEN email IS NOT NULL THEN 'PASS' ELSE 'FAIL' END FROM users; -- not SELECT 'PASS'
+
+-- @purlin otherfeat PROOF-9 RULE-9 unit
+-- Test: not this feature
+SELECT 'PASS';
+""", suffix='.sql')
+        try:
+            results = check_sql(path, "sqlfeat")
+            assert [r['proof_id'] for r in results] == ['PROOF-1', 'PROOF-2', 'PROOF-3'], \
+                f"another feature's block leaked in — {results}"
+            for r in results:
+                assert r['status'] == 'pass', f"a real predicate was flagged — {r}"
+        finally:
+            os.unlink(path)
+
+
+class TestCheckC:
+    """RULE-47: the one deterministic Pass-1 check a C proof admits."""
+
+    def _c(self, passed, proof_id="PROOF-1", rule_id="RULE-1",
+           test_name='"test_thing"'):
+        return _write_tmp(f'''#include "c_purlin.h"
+int validate(int x) {{ return x > 0 ? 0 : -1; }}
+int main(void) {{
+    int r = validate(-1);
+    purlin_proof("cfeat", "{proof_id}", "{rule_id}", {passed},
+                 {test_name}, __FILE__, "unit");
+    purlin_proof_finish();
+    return 0;
+}}
+''', suffix='.c')
+
+    @pytest.mark.proof("static_checks", "PROOF-78", "RULE-47")
+    def test_detects_constant_passed_argument(self):
+        """A `passed` argument built only from literals records a status the code
+        under test cannot move. The test_name argument is read from the same call
+        even when the string it holds carries a comma and a close paren."""
+        for passed in ('1', '1 == 1', '(1)', 'true', '0 == 0 && 1'):
+            path = self._c(passed, test_name='"test_a, b) c"')
+            try:
+                results = check_c(path, "cfeat")
+                assert len(results) == 1, f"{passed}: expected 1 proof, got {results}"
+                assert results[0]['status'] == 'fail', f"{passed}: not flagged — {results[0]}"
+                assert results[0]['check'] == 'assert_true', f"{passed}: {results[0]}"
+                assert results[0]['literal'] is True, f"{passed}: {results[0]}"
+                assert results[0]['test_name'] == 'test_a, b) c', \
+                    f"the string argument was split on its own comma — {results[0]}"
+            finally:
+                os.unlink(path)
+
+    @pytest.mark.proof("static_checks", "PROOF-79", "RULE-47")
+    def test_computed_arguments_and_short_calls_pass(self):
+        """A `passed` argument that reads a variable or calls something is an
+        assertion computed before the call, and is left alone. A call with fewer
+        than seven arguments, or one whose first argument is not this feature, is
+        not a proof call at all: that is what keeps the header's own forwarding
+        declaration of purlin_proof out of the results."""
+        for passed in ('r == 0', 'strcmp(expected[0], "a") == 0', 'validate(5) == 0'):
+            path = self._c(passed)
+            try:
+                results = check_c(path, "cfeat")
+                assert len(results) == 1, f"{passed}: expected 1 proof, got {results}"
+                assert results[0]['status'] == 'pass', \
+                    f"{passed}: a computed assertion was flagged — {results[0]}"
+            finally:
+                os.unlink(path)
+
+        short = _write_tmp('''#include "c_purlin.h"
+static void purlin_proof(const char *feature, const char *id, const char *rule,
+                         int passed, const char *test_name, const char *test_file,
+                         const char *tier) {
+    purlin_proof_on(feature, id, rule, passed, test_name, test_file, tier, NULL);
+}
+int main(void) {
+    purlin_proof("cfeat", "PROOF-1", 1);
+    purlin_proof("otherfeat", "PROOF-2", "RULE-2", 1, "t", __FILE__, "unit");
+    return 0;
+}
+''', suffix='.c')
+        try:
+            assert check_c(short, "cfeat") == [], \
+                "a short call, a forwarding wrapper or another feature produced a proof"
+        finally:
+            os.unlink(short)
+
+
+class TestDispatchAllExtensions:
+    """RULE-44: one extension table, and no fallback for anything outside it."""
+
+    _FIXTURES = {
+        '.mjs': 'it("t [proof:dfeat:PROOF-1:RULE-1]", () => { expect(true).toBe(true); });',
+        '.cjs': 'it("t [proof:dfeat:PROOF-1:RULE-1]", () => { expect(true).toBe(true); });',
+        '.php': ('<?php\n/** @purlin dfeat PROOF-1 RULE-1 unit */\n'
+                 'function test_t() { $this->assertTrue(true); }\n'),
+        '.sql': "-- @purlin dfeat PROOF-1 RULE-1 unit\nSELECT 'PASS';\n",
+        '.c': ('#include "c_purlin.h"\nint main(void) {\n'
+               '    purlin_proof("dfeat", "PROOF-1", "RULE-1", 1, "t", __FILE__, "unit");\n'
+               '    return 0;\n}\n'),
+        '.h': ('#include "c_purlin.h"\nvoid suite(void) {\n'
+               '    purlin_proof("dfeat", "PROOF-1", "RULE-1", 1, "t", __FILE__, "unit");\n'
+               '}\n'),
+    }
+
+    @pytest.mark.proof("static_checks", "PROOF-71", "RULE-44")
+    def test_every_shipped_extension_dispatches_and_nothing_else_does(self):
+        """Each extension a shipped plugin emits reaches a checker that flags the
+        hollow fixture; an extension no checker reads yields [] and no extracted
+        body, rather than being handed to whichever checker an if-chain ended on."""
+        for ext, content in self._FIXTURES.items():
+            path = _write_tmp(content, suffix=ext)
+            try:
+                results = analyze_test_file(path, 'dfeat')
+                assert len(results) == 1, f"{ext}: dispatch produced {results}"
+                assert results[0]['check'] == 'assert_true', f"{ext}: {results[0]}"
+            finally:
+                os.unlink(path)
+
+        # An unknown extension: no checker, and no extractor either. The `.rb` file
+        # carries a Jest-shaped marker, which the old silent fallback would read.
+        ruby = _write_tmp(
+            'it("t [proof:dfeat:PROOF-1:RULE-1]", () => { expect(1).toBe(1); });',
+            suffix='.rb')
+        try:
+            assert analyze_test_file(ruby, 'dfeat') == [], \
+                ".rb reached a checker — the dispatch has a fallback"
+            assert static_checks._test_bodies(ruby, '.rb', 'dfeat') is None, \
+                ".rb produced a body — _test_bodies still falls back to the JS extractor"
+        finally:
+            os.unlink(ruby)
+
+        # One table: the extractor set is derived from it rather than listed again,
+        # and shell is the single checked language deliberately left out of it.
+        assert static_checks._CHECKER_EXTENSIONS == frozenset(
+            {'.py', '.sh', '.cs', '.php', '.sql'}
+            | static_checks._JS_EXTENSIONS | static_checks._C_EXTENSIONS)
+        assert static_checks._TEST_CODE_EXTENSIONS == \
+            static_checks._CHECKER_EXTENSIONS - {'.sh'}
+        assert {'.mjs', '.cjs'} <= static_checks._JS_EXTENSIONS
+
+
+class TestExtractorsForPhpSqlC:
+    """RULE-48: PHP, SQL and C test code enters the cache key, so a grade cannot
+    survive an edit to the test that earned it."""
+
+    _PHP_SRC = '''<?php
+/** @purlin demo PROOF-1 RULE-1 unit */
+function test_graded() {
+    $graded = 1 + 1;
+    $this->assertSame(2, $graded);
+}
+/** @purlin demo PROOF-2 RULE-2 unit */
+function test_neighbour() {
+    $other = 3 + 3;
+    $this->assertSame(6, $other);
+}
+'''
+
+    _SQL_SRC = """-- @purlin demo PROOF-1 RULE-1 unit
+-- Test: graded
+SELECT CASE WHEN (SELECT count(*) FROM users) = 1 THEN 'PASS' ELSE 'FAIL' END;
+
+-- @purlin demo PROOF-2 RULE-2 unit
+-- Test: neighbour
+SELECT CASE WHEN (SELECT count(*) FROM orders) = 2 THEN 'PASS' ELSE 'FAIL' END;
+"""
+
+    _C_SRC = '''#include "c_purlin.h"
+int main(void) {
+    int graded = compute(1);
+    int other = compute(3);
+    purlin_proof("demo", "PROOF-1", "RULE-1", graded == 2, "test_graded", __FILE__, "unit");
+    purlin_proof("demo", "PROOF-2", "RULE-2", other == 6, "test_neighbour", __FILE__, "unit");
+    return 0;
+}
+'''
+
+    def _project(self, root, test_file, source):
+        for proof_id, rule_id, test_name in (('PROOF-1', 'RULE-1', 'test_graded'),
+                                             ('PROOF-2', 'RULE-2', 'test_neighbour')):
+            path = _scaffold_proof(root, 'demo', proof_id, rule_id,
+                                   test_file=test_file, test_name=test_name,
+                                   write_test=False)
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(source)
+        return path
+
+    @pytest.mark.proof("static_checks", "PROOF-80", "RULE-48", tier="unit")
+    def test_key_moves_when_the_graded_body_moves(self):
+        cases = (
+            ('tests/test_demo.php', self._PHP_SRC, '$graded = 1 + 1', '$graded = 1 + 9',
+             '$other = 3 + 3', '$other = 3 + 9', True),
+            ('tests/test_demo.sql', self._SQL_SRC, 'FROM users) = 1', 'FROM users) = 9',
+             'FROM orders) = 2', 'FROM orders) = 9', True),
+            # C keys on the enclosing top-level block, so an edit anywhere in main
+            # moves every proof the block carries: over-invalidation, the safe way.
+            ('tests/test_demo.c', self._C_SRC, 'compute(1)', 'compute(9)',
+             'compute(3)', 'compute(7)', False),
+        )
+        for test_file, source, old, new, other_old, other_new, isolated in cases:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                path = self._project(tmpdir, test_file, source)
+                lang = os.path.splitext(test_file)[1]
+
+                key1, inputs = cache_key_for(tmpdir, 'demo', 'PROOF-1')
+                assert inputs['test_verifiable'] is True, \
+                    f"{lang}: no test code entered the key — there is no extractor"
+                assert cache_key_for(tmpdir, 'demo', 'PROOF-1')[0] == key1, \
+                    f"{lang}: the key is not deterministic"
+                key2 = _key(tmpdir, 'demo', 'PROOF-2')
+                assert key1 != key2, f"{lang}: two proofs share one key"
+
+                with open(path, 'w', encoding='utf-8') as f:
+                    f.write(source.replace(old, new))
+                assert _key(tmpdir, 'demo', 'PROOF-1') != key1, \
+                    f"{lang}: editing the graded test left the key unchanged"
+
+                with open(path, 'w', encoding='utf-8') as f:
+                    f.write(source)
+                assert _key(tmpdir, 'demo', 'PROOF-1') == key1, \
+                    f"{lang}: the key did not come back when the edit was undone"
+
+                with open(path, 'w', encoding='utf-8') as f:
+                    f.write(source.replace(other_old, other_new))
+                moved = _key(tmpdir, 'demo', 'PROOF-1') != key1
+                assert moved is not isolated, (
+                    f"{lang}: an edit to the neighbouring proof "
+                    f"{'invalidated' if moved else 'did not invalidate'} this one")
+                assert _key(tmpdir, 'demo', 'PROOF-2') != key2, \
+                    f"{lang}: the edited proof's own key should have moved"
+
+
 class TestCacheEntryValidation:
     """RULE-33 — reject entries whose dedup key is missing.
 
@@ -2644,6 +3037,61 @@ class TestRunScope:
             assert cache_key_for(tmpdir, 'alpha', 'PROOF-1') != outside[('alpha', 'PROOF-1', static_checks.AUDIT_CACHE)], \
                 "the scope leaked past its block: an edited test kept its old key"
             assert static_checks._RUN_CACHE is None
+
+
+    @pytest.mark.proof("static_checks", "PROOF-81", "RULE-42", tier="unit")
+    def test_pass_one_and_the_key_share_the_one_parse(self, monkeypatch):
+        """Pass 1 and the cache-key resolver go through the same memo, so a file
+        carrying two features is parsed once inside a scope however many of them
+        ask for it, and no check reaches for ast.get_source_segment."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            for feature, pid, rid in (('alpha', 'PROOF-1', 'RULE-1'),
+                                      ('beta', 'PROOF-2', 'RULE-2')):
+                _scaffold_proof(tmpdir, feature, pid, rid,
+                                test_file='tests/test_both.py',
+                                test_name=f'test_{feature}',
+                                test_body='    value = 1 + 1\n    assert value == 2')
+            path = os.path.join(tmpdir, 'tests', 'test_both.py')
+            unscoped = analyze_test_file(path, 'alpha')
+
+            parses, segments = [], []
+            real_parse = static_checks.ast.parse
+            monkeypatch.setattr(static_checks.ast, 'parse',
+                                lambda *a, **k: (parses.append(1), real_parse(*a, **k))[1])
+            monkeypatch.setattr(static_checks.ast, 'get_source_segment',
+                                lambda *a, **k: (segments.append(1), None)[1])
+            with static_checks.run_scope():
+                scoped = analyze_test_file(path, 'alpha')
+                other = analyze_test_file(path, 'beta')
+                key, inputs = cache_key_for(tmpdir, 'alpha', 'PROOF-1')
+            assert len(parses) == 1, (
+                "one file carrying two features and a cache key must mean one "
+                f"ast.parse, not {len(parses)}")
+            assert segments == [], \
+                "a check reached for get_source_segment instead of the one line split"
+            assert scoped == unscoped, "a scoped Pass 1 result differs from the unscoped one"
+            assert [r['proof_id'] for r in other] == ['PROOF-2'], other
+            assert inputs['test_verifiable'] is True and key
+
+            # The mock-target check reads the decorator from that same split.
+            mocked = _write_tmp('''import pytest
+from unittest.mock import patch
+
+@patch("auth.bcrypt.checkpw")
+@pytest.mark.proof("alpha", "PROOF-3", "RULE-3")
+def test_hashes(mock_checkpw):
+    mock_checkpw.return_value = True
+    assert login("a", "b") == 200
+''')
+            try:
+                with static_checks.run_scope():
+                    results = check_python(mocked, 'alpha',
+                                           {'RULE-3': 'Passwords are hashed with bcrypt'})
+                assert results[0]['check'] == 'mock_target_match', results
+                assert segments == [], \
+                    "mock_target_match still calls get_source_segment"
+            finally:
+                os.unlink(mocked)
 
     @pytest.mark.proof("static_checks", "PROOF-69", "RULE-42", tier="unit")
     def test_segment_matches_the_stdlib_byte_for_byte(self):

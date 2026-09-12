@@ -28,7 +28,7 @@ import pytest
 PROOF_SCRIPTS = os.path.join(os.path.dirname(__file__), '..', 'scripts', 'proof')
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'audit'))
-from static_checks import check_python
+from static_checks import check_c, check_php, check_python, check_sql
 
 
 # ---------------------------------------------------------------------------
@@ -138,6 +138,18 @@ def _assert_proof_passes(data, msg=""):
     assert proofs[0]['status'] == 'pass', f"Expected pass, got {proofs[0]['status']}. {msg}"
 
 
+def _assert_pass1_catches(results, check, msg=""):
+    """Assert Pass 1 flags the cheat the runtime plugin happily recorded as pass.
+
+    The runtime assertion beside each of these says the cheat survives the test
+    run; this one says the deterministic checker catches it anyway, which is what
+    makes the row a Pass 1 catch rather than an LLM job.
+    """
+    assert len(results) == 1, f"Pass 1 produced {len(results)} proofs. {msg}"
+    assert results[0]['status'] == 'fail', f"Pass 1 passed it: {results[0]}. {msg}"
+    assert results[0]['check'] == check, f"Pass 1 said {results[0]}. {msg}"
+
+
 # ===========================================================================
 # CHEAT 1: Tautological — assertion always true
 # ===========================================================================
@@ -163,7 +175,10 @@ int main(void) {
 ''', 'feat')
         assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
         assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
-        _assert_proof_passes(data, "C tautological cheat passes — needs LLM")
+        _assert_proof_passes(data, "C tautological cheat still passes at runtime")
+        _assert_pass1_catches(
+            check_c(str(tmp_path / 'test.c'), 'feat'), 'assert_true',
+            "the passed argument `1 == 1` is a constant expression")
 
     @pytest.mark.skipif(not shutil.which('php'), reason='php not available')
     @pytest.mark.proof("proof_plugins_php", "PROOF-1", "RULE-1")
@@ -180,7 +195,10 @@ function test_validates_input() {
 ''', 'feat')
         assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
         assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
-        _assert_proof_passes(data, "PHP tautological cheat passes — needs LLM")
+        _assert_proof_passes(data, "PHP tautological cheat still passes at runtime")
+        _assert_pass1_catches(
+            check_php(str(tmp_path / 'test.php'), 'feat'), 'assert_true',
+            "the `if (true !== true)` guard on the throw can never fire")
 
     @pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
     @pytest.mark.proof("proof_plugins_sql", "PROOF-1", "RULE-1")
@@ -193,7 +211,10 @@ SELECT CASE WHEN 1 = 1 THEN 'PASS' ELSE 'FAIL' END;
 ''', 'feat', setup_sql='CREATE TABLE t (id INTEGER);')
         assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
         assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
-        _assert_proof_passes(data, "SQL tautological cheat passes — needs LLM")
+        _assert_proof_passes(data, "SQL tautological cheat still passes at runtime")
+        _assert_pass1_catches(
+            check_sql(str(tmp_path / 'test.sql'), 'feat'), 'assert_true',
+            "CASE WHEN 1 = 1 THEN 'PASS' compares two constants")
 
     @pytest.mark.skipif(not shutil.which('tsc'), reason='tsc not available')
     @pytest.mark.proof("proof_plugins_vitest", "PROOF-1", "RULE-1")
@@ -288,7 +309,10 @@ SELECT CASE WHEN 'alice' = 'alice' THEN 'PASS' ELSE 'FAIL' END;
 ''', 'feat', setup_sql='CREATE TABLE users (email TEXT UNIQUE);')
         assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
         assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
-        _assert_proof_passes(data, "SQL fixture-only cheat passes — needs LLM")
+        _assert_proof_passes(data, "SQL fixture-only cheat still passes at runtime")
+        _assert_pass1_catches(
+            check_sql(str(tmp_path / 'test.sql'), 'feat'), 'assert_true',
+            "the predicate compares one fixture literal with itself")
 
     @pytest.mark.skipif(not shutil.which('tsc'), reason='tsc not available')
     @pytest.mark.proof("proof_plugins_vitest", "PROOF-1", "RULE-1")
@@ -551,7 +575,10 @@ int main(void) {
 ''', 'feat')
         assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
         assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
-        _assert_proof_passes(data, "C no-assertion cheat passes — needs LLM")
+        _assert_proof_passes(data, "C no-assertion cheat still passes at runtime")
+        _assert_pass1_catches(
+            check_c(str(tmp_path / 'test.c'), 'feat'), 'assert_true',
+            "the hardcoded `1` cannot depend on the hash the test computed")
 
     @pytest.mark.skipif(not shutil.which('php'), reason='php not available')
     @pytest.mark.proof("proof_plugins_php", "PROOF-2", "RULE-2")
@@ -568,7 +595,10 @@ function test_sends_notification() {
 ''', 'feat')
         assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
         assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
-        _assert_proof_passes(data, "PHP no-assertion cheat passes — needs LLM")
+        _assert_proof_passes(data, "PHP no-assertion cheat still passes at runtime")
+        _assert_pass1_catches(
+            check_php(str(tmp_path / 'test.php'), 'feat'), 'no_assertions',
+            "the body has no assert, no expect and no throw")
 
     @pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
     @pytest.mark.proof("proof_plugins_sql", "PROOF-2", "RULE-2")
@@ -587,7 +617,10 @@ SELECT 'PASS';
                       'INSERT INTO children VALUES (1, 1);')
         assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
         assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
-        _assert_proof_passes(data, "SQL no-assertion cheat passes — needs LLM")
+        _assert_proof_passes(data, "SQL no-assertion cheat still passes at runtime")
+        _assert_pass1_catches(
+            check_sql(str(tmp_path / 'test.sql'), 'feat'), 'assert_true',
+            "SELECT 'PASS' after the DELETE observes nothing")
 
     @pytest.mark.skipif(not shutil.which('tsc'), reason='tsc not available')
     @pytest.mark.proof("proof_plugins_vitest", "PROOF-1", "RULE-1")

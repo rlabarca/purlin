@@ -1,4 +1,4 @@
-> Criteria-Version: 19
+> Criteria-Version: 20
 
 # Proof Audit Criteria
 
@@ -120,7 +120,11 @@ A description is PROVABLE when all of these hold:
 
 These are caught by static analysis (`scripts/audit/static_checks.py`). No LLM involved. A proof that fails any deterministic check is HOLLOW, no override possible.
 
+Every language Purlin ships a proof plugin for has a checker: Python, JavaScript/TypeScript, Shell, C#, PHP, SQL and C. A test file whose extension no shipped checker reads (a custom plugin's language) is not measured by Pass 1 at all, and is never HOLLOW for that reason.
+
 ### HOLLOW (always caught)
+
+The checks in this section are the Python ones. Each other language's checks are in its own subsection below, and a language is only ever judged by its own.
 
 - **Tautological assertions**: `assert True`, `assert result is not None`, `assert len(x) >= 0`, `self.assertTrue(True)`. These are true regardless of code behavior
 - **No assertion statements**: test function body contains zero assertion statements (`assert`, `self.assert*`, `pytest.raises`, `expect`). Test runs code but checks nothing
@@ -133,10 +137,47 @@ These are caught by static analysis (`scripts/audit/static_checks.py`). No LLM i
 - **Hardcoded pass**: `purlin_proof ... pass` with no preceding test logic (the result is hardcoded, not based on a check). Note: if/else pairs where the same proof ID appears in both branches (one pass, one fail) are recognized as conditional proofs: the if-condition is the assertion, and they are NOT flagged
 - **No assertion commands**: no `test`, `[`, `grep`, `diff`, or `||` patterns between proof markers
 
-### JavaScript/TypeScript-specific checks
+### JavaScript/TypeScript-specific checks (`.js` `.jsx` `.mjs` `.cjs` `.ts` `.tsx`)
 
 - **`expect(true).toBe(true)`**: tautological, same as `assert True`
 - **No `expect()` calls**: test function body contains no assertions
+
+### C#-specific checks (`.cs`)
+
+Markers are `[Trait("PurlinProof", "feature:PROOF-N:RULE-N:tier")]` traits, each associated with the `[Fact]`/`[Theory]` method body that follows it.
+
+- **`Assert.True(true)` / `Assert.IsTrue(true)` / `Assert.Equal(true, true)`**: tautological
+- **No assertion call**: the body contains no `Assert.`, no `.Should()`, no `.Verify()` and no Playwright `Expect(...)` chained to a `To*Async()` matcher. A bare `Expect(x)` with no matcher is not an assertion
+
+Known limit: a test that delegates every assertion to a helper method reads as no assertions here, because the checker sees only the marked method's own body.
+
+### PHP-specific checks (`.php`)
+
+Markers are the `/** @purlin feature PROOF-N RULE-N */` docblocks, read with the same regex the shipped plugin uses, so the function audited is the function that ran.
+
+- **Tautological assertions**: `assertTrue(true)`, `assertFalse(false)`, `assert(true)`, `assertSame`/`assertEquals` of two identical literals
+- **Constant `if` guard on a throw**: `if (true !== true) { throw ...; }` is a check that can never fire, so the test cannot fail
+- **No assertion call**: the body contains no `assert*`, no `expect*` and no `throw`. A PHPUnit test that raises on failure asserts through `throw`, which is how the plugin decides pass or fail, so `throw` counts
+
+Comments are stripped before either check, so a `// no throw = pass` note is not read as an assertion. Known limit, the same one C# has: a test that delegates every assertion to a helper reads as no assertions.
+
+### SQL-specific checks (`.sql`)
+
+A proof block runs from its `-- @purlin` marker to the next marker or the end of the file, and it passes at runtime when its first output line starts with `PASS`. The checks are therefore about what produces that word.
+
+- **Unconditional `SELECT 'PASS'`**: a statement nothing decides, so the block passes whatever the data holds
+- **Constant `CASE WHEN` predicate**: `CASE WHEN 1 = 1 THEN 'PASS'` or `CASE WHEN 'alice' = 'alice' THEN 'PASS'`, where the predicate names no identifier outside the operator words (`and or not is null in like glob between true false escape`). A predicate naming a column, calling a function such as `changes()`, or opening a subquery decides something and is not flagged
+- **No `SELECT` at all**: the block changes the database and observes nothing
+
+Only the first `'PASS'` producer in a block is judged: sqlite3 prints rows in statement order and the plugin reads the first line, so a later unconditional `SELECT 'PASS'` cannot rescue a block whose first check printed `FAIL`.
+
+### C-specific checks (`.c` `.h`)
+
+A C proof is a `purlin_proof(...)` or `purlin_proof_on(...)` call of seven or more arguments whose first argument is the feature name. The harness records whatever the fourth argument, `passed`, evaluates to, so exactly one thing is deterministically checkable and exactly one check is made.
+
+- **Constant `passed` argument**: `1`, `1 == 1` or any expression built only from literals, operators and parentheses. The recorded status cannot depend on the code under test
+
+A variable or a call in that position is an assertion computed before the call and is not flagged. There is no separate no-assertion check for C: a C test that asserts nothing is one whose `passed` argument is constant, which the check above already catches.
 
 ### Proof-file structural checks (Pass 0.5: language-agnostic)
 
@@ -335,7 +376,7 @@ stamped by the writer, so a caller-supplied value is advisory.
 
 The cache key is `sha256(rule_text + "\0" + proof_description + "\0" + test_function_code)[:16]`. The null-byte separator prevents input-shifting collisions (e.g. a `|` in rule text causing two different inputs to hash identically).
 
-Nobody computes that hash by hand and nobody pastes the three inputs in. `resolve_proof_inputs(project_root, feature, proof_id)` reads them out of the project: the rule text and the proof description from `specs/**/<feature>.md`, and the graded test function's source from the file the proof JSON names. `--cache-key --feature <name> --proof-id PROOF-N` is the only way to obtain a key, `--write-cache` re-keys every entry it is given through the same function and discards the key the caller supplied, and a `(feature, proof_id)` that does not resolve is rejected with exit 2. When the test file's language has no extractor here (shell, SQL, PHP, C) the test code is absent from the key and the entry records `inputs.test_verifiable: false`, so a reader can tell an entry a test edit cannot invalidate from one it can. Validating a whole cache resolves every entry, so the readers and the batch writer open one `run_scope()` around the batch: inside it each spec, proof file and test file is read once, and every key is byte-identical to the unscoped one (static_checks RULE-42).
+Nobody computes that hash by hand and nobody pastes the three inputs in. `resolve_proof_inputs(project_root, feature, proof_id)` reads them out of the project: the rule text and the proof description from `specs/**/<feature>.md`, and the graded test function's source from the file the proof JSON names. `--cache-key --feature <name> --proof-id PROOF-N` is the only way to obtain a key, `--write-cache` re-keys every entry it is given through the same function and discards the key the caller supplied, and a `(feature, proof_id)` that does not resolve is rejected with exit 2. When the test file's language has no extractor here (shell, or a language no shipped checker reads) the test code is absent from the key and the entry records `inputs.test_verifiable: false`, so a reader can tell an entry a test edit cannot invalidate from one it can. Validating a whole cache resolves every entry, so the readers and the batch writer open one `run_scope()` around the batch: inside it each spec, proof file and test file is read once, and every key is byte-identical to the unscoped one (static_checks RULE-42).
 
 Every entry also carries `auditor` as `{name, command}`, stamped by the writer from `audit_llm_name` (or `claude`) and `audit_llm` (or null). Like `cached_at`, it is not something a caller supplies.
 

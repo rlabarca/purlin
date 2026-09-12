@@ -368,3 +368,80 @@ bare PATH. `/opt/homebrew/opt/dotnet@8/bin` is installed and carries 8.0.31, so 
 recorded above was made with that directory prepended to PATH and the file is green there,
 at HEAD as well as after this commit. Nothing in the repository pins the runtime; a consumer
 or CI host with only .NET 10 sees the same failures.
+
+### A1
+
+`feat(static_checks): Pass 1 checkers for PHP, SQL and C, .mjs/.cjs dispatch, and cache-key
+extractors for all three`
+
+Files touched:
+
+- `scripts/audit/static_checks.py` — extension table, `check_php`, `check_sql`, `check_c`, the
+  shared `_read_c_like_balanced`/`_skip_c_like_noncode`/`_strip_c_like_comments` scanners, the
+  `_python_parse` run-scope memo, `_test_bodies` branches
+- `specs/audit/static_checks.md` — RULE-44 to RULE-48, PROOF-71 to PROOF-81, amended RULE-42 and
+  `> Description:`
+- `specs/audit/static_checks.proofs-unit.json` — 11 new entries (97 to 108)
+- `dev/test_static_checks.py` — `TestCheckPhp`, `TestCheckSql`, `TestCheckC`,
+  `TestDispatchAllExtensions`, `TestExtractorsForPhpSqlC`, one new `TestRunScope` proof,
+  `_scaffold_proof(write_test=False)`
+- `dev/test_cheat_matrix.py` — `_assert_pass1_catches` beside the runtime pass on the seven rows
+  that flipped from "needs LLM" to a Pass 1 catch
+- `references/audit_criteria.md` — Criteria-Version 20: C#, PHP, SQL and C Pass 1 subsections,
+  `.mjs`/`.cjs` named in the JS heading, the no-extractor sentence generalised
+- `references/supported_frameworks.md` — the C# Pass 1 callout generalised to every shipped plugin
+
+Spec maxima left: `specs/audit/static_checks.md` RULE-48 / PROOF-81. No other spec touched.
+
+Test counts (whole files): `dev/test_static_checks.py` 91 passed, 0 skipped to 102 passed, 0
+skipped. `dev/test_cheat_matrix.py` 20 passed, 5 skipped to 20 passed, 5 skipped (the five skips
+are the `tsc` rows; the flipped rows gained assertions, not tests).
+
+Mutations run on `scripts/audit/static_checks.py`, `dev/test_static_checks.py` run whole each
+time, restored after each:
+
+1. `.mjs` dropped from `_JS_EXTENSIONS`. PROOF-71 failed with
+   `AssertionError: .mjs: dispatch produced []`.
+2. `_TEST_CODE_EXTENSIONS` narrowed to `_CHECKER_EXTENSIONS - {'.sh', '.php'}`. PROOF-80 failed
+   with `AssertionError: .php: no test code entered the key - there is no extractor` (PROOF-71's
+   derived-set assertion failed too).
+3. `_php_constant_guard` disabled in `_php_tautology`. PROOF-72 failed with
+   `AssertionError: constant if guard: not flagged - {... 'status': 'pass' ...}`.
+4. The `_SQL_PLAIN_PASS_RE` candidates dropped in `_sql_tautology`. PROOF-75 failed with
+   `AssertionError: bare: not flagged - {... 'status': 'pass' ...}`.
+5. The `_is_constant_expression` test disabled in `check_c`. PROOF-78 failed with
+   `AssertionError: 1: not flagged - {... 'status': 'pass' ...}`.
+6. `#` dropped from `_PHP_LINE_COMMENTS`. PROOF-73 failed with
+   `AssertionError: {'proof_id': 'PROOF-1', ... 'test_name': 'test_no_assert', 'status': 'pass'}`.
+
+Decisions taken beyond the plan:
+
+- Comments are stripped from a PHP body and a SQL block before either check runs. Without it the
+  cheat matrix's own PHP no-assertion fixture passes on the word `throw` inside `// No throw =
+  pass.`, and a trailing `-- ... SELECT 'PASS'` comment reads as an unconditional pass. Both were
+  false verdicts in the dangerous direction.
+- Only the first `'PASS'` producer in a SQL block is judged, because sqlite3 prints rows in
+  statement order and the plugin reads the first line, so a later unconditional `SELECT 'PASS'`
+  cannot rescue a block whose first check printed FAIL.
+- `_read_c_like_balanced` takes `verbatim_strings` as well as `line_comment_prefixes`. PHP's `@`
+  is the error-suppression operator, so reading `@"..."` as a C# verbatim string there would
+  mis-scan a body and could produce a false `no_assertions`.
+- `check_shell` and `check_js` gained an ignored `rule_descs=None` so every checker in the
+  dispatch table has one signature.
+- RULE-39 was left as written: it carries no language list to reword (the "shell, SQL, PHP, C"
+  list the plan meant is `audit_criteria.md`'s cache-key sentence, which was reworded).
+- `references/audit_criteria.md` Criteria-Version 19 to 20. It documents new deterministic checks,
+  which is a substantive criteria change; the version does not enter any cache key.
+
+Deferrals and adjacent findings:
+
+- `check_csharp` reads its bodies raw, so a C# comment naming `Assert.True(true)` is a false
+  HOLLOW and one naming an assertion hides a real `no_assertions`. The fix is one call to the new
+  `_strip_c_like_comments` in `check_csharp`, but it changes behaviour RULE-31's proofs pin and
+  belongs with a C# commit, not this one.
+- PHP heredoc/nowdoc and C# raw string literals are not tracked by the shared scanner, so an
+  unbalanced brace inside one ends the scanned body early. Documented on
+  `_skip_c_like_noncode`; a body can only come out shorter than the author wrote it.
+- `dev/test_multilang_proof_plugins.py` fails 6 and errors 6 on this host, all `TestXUnit*`, on a
+  clean `git stash` of this work as well. A pre-existing `dotnet` toolchain problem, not this
+  commit's.
