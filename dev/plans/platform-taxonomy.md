@@ -162,8 +162,22 @@ runs the suite); the mutation; the closeout table amendment; the parent plan's T
 
 ## DONE - T1: the rule set as reference text
 
-_Placeholder. Record: the section's final text location and headings; RULE-28 / PROOF-28; the
-amended config_engine RULE-12; both mutations._
+- Commit `0d529016` on `taxonomy/T1`, cherry-picked as `164852b0`. The section `## Platforms,
+  environments and prerequisites` sits in `references/remote_verification.md` directly after
+  `## Platforms` (where `@on(...)` is first explained) and before `## Where it lives, and why`. It
+  carries the three bold membership questions verbatim, the `**Platform**` / `**Environment**` /
+  `**Prerequisite**` labels, the provider sentence and the classification of the current ids.
+  `docs/testing-workflow-guide.md`'s Platforms section gained one pointer sentence.
+- `purlin_references` RULE-28 / PROOF-28 (`TestPlatformTaxonomyHasOneHome`): every literal is in
+  that section and each question occurs exactly once across tracked markdown under `docs/`,
+  `references/` and `skills/`. `config_engine` RULE-12 amended with the membership question and
+  the sentence that a toolchain is a prerequisite, never a registry entry; PROOF-14 extended with
+  the text half (the `env-with-os` error assertion kept). Both PROVABLE.
+- Mutations: the provider sentence deleted fails PROOF-28 naming it; the membership question
+  deleted from the reference fails PROOF-14 naming the section. `dev/test_purlin_references.py`
+  27 to 28 tests.
+- Left for T3: the prerequisite paragraph names the run marker as where skipped proofs are
+  recorded but not a `skipped_proofs` field, which does not exist until T3.
 
 ## DONE - T2: environments rendered as environments
 
@@ -193,10 +207,11 @@ regulated-environments diff._
   at HEAD and, after T3, carries `skipped_proofs` naming the six tsc skips with their reason.
 - `python3 -c "import sys; sys.path.insert(0,'scripts/mcp'); from purlin_server import
   sync_status; print(sync_status('.'))"` shows, after T2, `environment: figma-mcp (15 proofs; ...)`,
-  `environment: claude-cli (...)` and `environment: gemini-cli (5 proofs; ...)` in the Platforms
+  `environment: claude-cli (...)` and `environment: gemini-cli (4 proofs; ...)` in the Platforms
   block, `runner: windows-2022 (2 proofs; github workflow purlin-windows-2022-proofs)` unchanged,
-  and `skill_audit` reading `⚠ gemini-cli: awaiting an environment run, 5 proofs (PROOF-23,
-  PROOF-24, PROOF-25, PROOF-26, PROOF-27)` with 22/22 rules proved.
+  and `skill_audit` reading `⚠ gemini-cli: awaiting an environment run, 4 proofs (PROOF-23,
+  PROOF-24, PROOF-25, PROOF-26)` with 22/22 rules proved (PROOF-27 moved to the local
+  `dev/test_e2e_fake_audit_llm.sh` by closeout item B15, since that phase never calls gemini).
 - `python3 scripts/ci/verify_gate.py --check --project-root .` exits 0 and its By-platform
   section reads `figma-mcp (environment): ...` for each environment id.
 - `python3 scripts/audit/static_checks.py --check-proof-design` over every spec these items

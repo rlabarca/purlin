@@ -2506,13 +2506,15 @@ has the Azure DevOps account. Do not start the ADO work here.
 
 Finalized at the end of Phase 11. Items marked `[x]` are closed and kept for the record.
 
-- [ ] Both audits run for real on this repo and recorded (Design and Integrity bars above met, or
-      the shortfall named per feature with its `purlin:spec` / `purlin:build` directive). This is
-      Tier 2a and the last thing the branch owes. Phase 11 ran `--check-proof-design` over the
-      specs it wrote, not the repository-wide `purlin:audit --design`.
+- [x] (Design half) Proof Design run for real on 2026-09-12: Pass D1 over all 43 specs and Pass D2 by
+      six Opus auditors, 77.4% before remediation (442/571, 9 UNPROVABLE), then closeout items B
+      and B9 to B15 rewrote 118 descriptions with their tests; the final number is in
+      `dev/plans/todo-closeout.md` DONE - B. Proof Integrity is NOT measured, by the user's
+      decision 16 ("we wont do an integrity audit till i say"); the gauge reads no audit data.
 - [ ] CI green on the branch head: `verify-gate`, `version-check`, `purlin-windows-2022-proofs`
       (`gh run list`), and `git pull --ff-only` returns nothing new.
-- [ ] The backlog table below triaged: each item either scheduled or explicitly accepted.
+- [x] The backlog table below triaged in `dev/plans/todo-closeout.md` (decision 10) and
+      `dev/plans/platform-taxonomy.md`; each row below says where it went.
 - [ ] Release decision: `bash dev/bump_version.sh 0.11.0`, RELEASE_NOTES section finalized (the
       Unreleased body is written; only the version heading and the tag are outstanding), tag. The
       format bumps make this a minor release; the user decides when. Note `purlin_version` RULE-9:
@@ -2544,17 +2546,21 @@ Finalized at the end of Phase 11. Items marked `[x]` are closed and kept for the
       express today, or whether the local proofs should move to their own ids.
       Closed by `spec(skill_audit): the gemini run gets its own proof ids; the local greps keep
       theirs at unit tier`: decision 13 of `dev/plans/platform-taxonomy.md` chose the second
-      option, so the gemini suite emits PROOF-23 to PROOF-27 `@on(gemini-cli)` and the local
+      option, so the gemini suite emits PROOF-23 to PROOF-26 `@on(gemini-cli)` (PROOF-27 moved to the
+      local `dev/test_e2e_fake_audit_llm.sh` in item B15, since that phase never calls gemini) and the local
       greps keep PROOF-9 to PROOF-13 agnostic at `@unit`.
-- [ ] **(6.3) `proof_plugins_php` and `proof_plugins_xunit` platform proofs have never executed
-      anywhere.** They skip on this machine (no `php`, no `dotnet`) and no runner has them. Run
+- [x] **(6.3) `proof_plugins_php` and `proof_plugins_xunit` platform proofs have never executed
+      anywhere.** Closed by closeout item C: php 8.5.10 and dotnet 8.0.131 installed here, both suites
+      execute in every sweep (51 passed in the plugin file, 0 skipped). They skip on this machine (no `php`, no `dotnet`) and no runner has them. Run
       them on a host with the toolchains, or model both as `kind: environment` platforms the way
       10.6 did for the other three, so the gap reads AWAITING RUNNER instead of a silent skip.
-- [ ] **(8) `platforms.summary` carries no row for the host when no proof declares it.** The
+- [x] **(8) `platforms.summary` carries no row for the host when no proof declares it.** Closed by
+      closeout item F (`report_data` RULE-41, `purlin_report` RULE-46). The
       Integrity modal therefore reports `windows-2022` over its 2 entries and says nothing about
       the ~740 agnostic ones. Honest but thin. A host row for an undeclared host is the candidate
       fix if the modal proves hard to read.
-- [ ] **(11) `purlin_docs` RULE-1 is paragraph-scoped for the `@windows` token.** A paragraph that
+- [x] **(11) `purlin_docs` RULE-1 is paragraph-scoped for the `@windows` token.** Closed by closeout
+      item G: the exemption is a closed list of nine (file, section) pairs, PROOF-2 amended, PROOF-12 new. A paragraph that
       happens to contain the word `legacy` for an unrelated reason would pass. Tighten it if the
       token ever migrates out of the migration docs entirely, at which point the rule can simply
       forbid it.
@@ -2573,6 +2579,14 @@ Finalized at the end of Phase 11. Items marked `[x]` are closed and kept for the
       (agent-driven, no script surface); the Step 6 confirmation block; `remote_verification:
       required` with no `platforms` registered (belongs to `verify_gate`). The coverage matrix is
       summarized in `dev/plans/todo-closeout.md` DONE - M.
+- [ ] (closeout, deferred by item B14) `skill_spec_from_code`: RULE-16 and RULE-18 look mis-homed
+      from `purlin:spec` (the spec-from-code skill forbids `(assumed)` tags outright and never reads
+      customer feedback); RULE-13's "at least 5 rules" contradicts RULE-28; PROOF-33/36/38 are
+      proved from `dev/test_e2e_ui_extraction.py`; PROOF-5 to PROOF-8 have no test anywhere.
+- [ ] (closeout, found by the Group 1 and 2 sweep) The proof plugins' emission order is not stable
+      across runs: a full sweep at `0c637993` reordered 14 proof files with every record byte-identical
+      (committed as `d85d370b`). A stable sort in each writer (by id, test_file, test_name) would end
+      the churn; it is a `proof_common` rule with a per-plugin proof.
 - [ ] (closeout, found by item B6) `skill_audit` PROOF-11's description says "parse external LLM
       response" while its test greps `skills/audit/SKILL.md` for five field names; resolve when
       item E retags PROOF-9 to PROOF-13 `@on(gemini-cli)`.
@@ -2591,15 +2605,15 @@ Finalized at the end of Phase 11. Items marked `[x]` are closed and kept for the
 
 | Item | Why deferred |
 |---|---|
-| Spec for `scripts/hooks/pre-commit.sh` (fail-open, `git add` of the digest, `PURLIN_SKIP_DIGEST`) | Digest is informational; needs its own spec and 6 to 8 proofs; do after Phase 9 so both hooks share the plugin-root resolver |
-| MCP server hot-reload swallowing all exceptions in `main()` | Dev convenience; gate on `PURLIN_DEV_RELOAD=1` and log the traceback; touches `mcp_transport`, outside this plan |
-| `plugin.json` pins nothing (`python3` from PATH, install from git HEAD) | Needs a release-process decision (tagging, minimum Python); record in `regulated-environments.md` as an integration point: pin the plugin by tag |
+| Spec for `scripts/hooks/pre-commit.sh` (fail-open, `git add` of the digest, `PURLIN_SKIP_DIGEST`) | DONE: closeout item D, `specs/hooks/pre_commit_hook.md` RULE-1 to RULE-6, PROOF-1 to PROOF-8 |
+| MCP server hot-reload swallowing all exceptions in `main()` | Scheduled: closeout item H (`mcp_transport` RULE-8 / PROOF-8) |
+| `plugin.json` pins nothing (`python3` from PATH, install from git HEAD) | Scheduled: closeout item I (`purlin_docs` RULE-8 / PROOF-13, the integration point in `regulated-environments.md`) |
 | Integrity formula counting MANUAL as full credit | Formula pinned across three files (RULE-33); 10.4 restricts MANUAL to entries backed by a current stamp; the weighting is a product decision |
-| Proof plugins writing the run marker for consumer projects | 6.5's marker is dev-side; the consumer path relies on `purlin:verify` running `purlin:test` first |
-| Tier 2a: a real `purlin:audit` on this repo | After 10.4 the hand-built cache is invalid by construction and Integrity reads unmeasured, which is honest; the real audit is the only way to a number |
-| 38 LOOSE Design findings across 12 features | Triage via `purlin:spec`; unchanged from the previous plan |
+| Proof plugins writing the run marker for consumer projects | Scheduled: closeout item L, then taxonomy item T3 adds `skipped_proofs` to it |
+| Tier 2a: a real `purlin:audit` on this repo | Design half done (closeout item A); Integrity deferred by decision 16 until the user says so |
+| 38 LOOSE Design findings across 12 features | DONE: superseded by the repository-wide audit (129 findings) and closeout item B |
 | `summary.total_features` including anchors | Chose the split vocabulary (10.5) over changing the summary strip |
-| ADO and other runner providers | The registry's `runner.provider` is the seam; `purlin:test` reports non-github providers as not dispatchable |
+| ADO and other runner providers | Scheduled: `dev/plans/ado-runner-provider.md` on the work machine |
 | Deep-merge of `platforms` across `config.local.json` | Flat replace kept and documented (6.2); revisit if a per-user runner override is ever needed |
 
 ---

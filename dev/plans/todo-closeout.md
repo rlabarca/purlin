@@ -49,6 +49,8 @@ of writing a third project builder. `main` is still neither merged nor pushed, a
 | 13 | (2026-09-12, mid-session) On item E the user chose the clean fix over the "either" rule after the controller showed that decision 4's same-test clause would demote the local witness the day a gemini run lands: "do the clean fix". Item E now: `skill_audit` PROOF-9 to PROOF-13 keep their ids with no `@on`; the gemini suite gets new proof ids tagged `@on(gemini-cli)`; no "either" satisfaction rule, no `witness` field, no `proofs_proved_locally`; the TODO note is deleted. Decision 4 is superseded. |
 | 14 | (2026-09-12, mid-session) "implement a plan to create the defensible rule set.. use subagents and worktrees where possible.. subagents are opus 5": the platform / environment / prerequisite taxonomy is written as `dev/plans/platform-taxonomy.md` and executed interleaved with Groups 2 to 4 as that plan states. |
 | 16 | (2026-09-12, mid-session) "note that we wont do an integrity audit till i say but we should check proof design as we write them". Proof Integrity (`purlin:audit` Pass 1 and Pass 2) is not run in this session or the taxonomy plan until the user says so; every new or amended description is graded under `--check-proof-design` before its commit and the rewritten set gets a Pass D2 regrade. |
+| 17 | (2026-09-12, mid-session) The Pass D2 regrade found that `skill_spec_from_code` RULE-5 to RULE-19 describe agent-only detection, migration and generation that no code performs, so ten remediated proofs still pair a hand-written fixture with a grep. The user chose "Reclassify as document-content rules": those rules are rewritten as statements about what `skills/spec-from-code/SKILL.md` instructs, their proofs become honest STRUCTURAL greps excluded from the Design score, and no new mechanism is built. Item B14. |
+| 18 | (2026-09-12, mid-session) "no push.. just commit": the branch is not pushed after any group until the user says so; each group closes at its `verify:` commit. The CI-green and `git pull --ff-only` steps wait for the eventual push. |
 | 11 | "Remaining TODO items: CI green at head (check), backlog triage (this plan is the triage), figma_web witness (deferred with the command), anything new a subagent defers (append)." |
 
 ## How to work
@@ -258,8 +260,57 @@ Each item gets its section filled in as it lands, in the same commit as the item
 
 ## DONE - B: Design remediation
 
-_Placeholder. Record: each rewritten description with its old and new grade, the proof behind it,
-and the re-run result. If A met the bar, record "not needed" and the number that made it so._
+- **Scope.** 129 findings from item A (120 LOOSE, 9 UNPROVABLE). Excluded by design: `figma_web`
+  (10, no Figma MCP server here; the fixes are `@on` removals on checks any host can run, left for
+  the host that can re-run the suite) and `skill_spec` PROOF-8 (item K's paid run). The other 118
+  were remediated in eight parallel worktrees grouped by test file so no two agents shared a file,
+  plus six follow-up worktrees for what the first round deferred. Every commit carries its
+  mutations in the body.
+- **Commits, in landing order** (branch commit, spine sha): B2 `4d778fab` as `6831c78c`
+  (report_data, static_checks: 14, 9 test extensions incl. static_checks PROOF-20's exit status
+  that `|| true` had masked); B6 `2cfc2640` as `b548e42c` (skill_audit, skill_build, skill_verify:
+  12, the audit-loop shell suite retiered to unit, four greps honestly STRUCTURAL); B8 `79cdaf53`
+  as `09cb9a95` (pre_push_hook, config_engine, verify_gate, security anchor, teammate definitions:
+  8, pre_push_hook PROOF-28/29/30 new for exit 5, the jest/vitest/shell arms and the plugin-root
+  precedence); B7 `041b15d` as `306683f7` (proof_common and five plugins: 12); B1 `c85a2106` as
+  `74e68475` (sync_status, drift, mcp_transport, purlin_config, skill_anchor plus three
+  audit-pipeline proofs: 38, 20 mutations, sync_status PROOF-17 rewritten from proving RULE-17's
+  negation to proving it, PROOF-33/34 rebuilt around observable output); B3 `4b18d27` as
+  `1a21dd4b` (skill_spec_from_code: 12, five UNPROVABLE fixtures redesigned); B4 `db85e8e6` as
+  `e1f31190` (purlin_report, dashboard_visual: 12, PROOF-50 new for the modal's focus and
+  re-render clauses); B9 `ac953b80` as `abd41c3f` (drift RULE-4 rewritten to the payload the
+  server emits, `drift_criteria.md` matched; `dev/test_e2e_hybrid_audit.sh` exports
+  `PURLIN_PROOF_TIER=e2e` so static_checks PROOF-17 to 27 land where the spec says); B10
+  `cfe1c43b` as `7738b699` (init e2e PROOF-22/34 emit nothing without node instead of `pass`;
+  skill_init RULE-72/73, PROOF-75/76 for `--update` idempotence and the `--platform-id` default);
+  B11 `be7aa3a7` as `7c80e87f` (dashboard: a Figma pin renders as its full timestamp, a hex SHA as
+  7 characters, RULE-26 finally implemented); B12 `45820314` as `57100cc7` (header labels read
+  `Design: 3h ago` / `Integrity: not measured`, the refresh command moves to the tooltip, RULE-37
+  amended, and `refreshCommand` no longer sends an unmeasured Design gauge to `--integrity`); B13a
+  `e946440a` as `b3ba8395` (ten clauses the regrade found uncovered get their cases, static_checks
+  PROOF-67 new for exit 2); B14 `2ee22ca0` as `278e6189` (decision 17: skill_spec_from_code
+  RULE-5 to 12 and 25 to 27 restated as what the skill instructs with STRUCTURAL greps, parser
+  rules kept behavioural; 15 entries moved e2e to unit).
+- **Regrade.** Two Opus auditors re-ran Pass D1 and D2 over the 145 descriptions added or changed
+  since item A (`regrade_ids.json`): R1 76 graded, 66 PROVABLE, 10 LOOSE (all "rule clause left
+  unexercised", closed by B13a); R2 69 graded, 50 PROVABLE, 8 STRUCTURAL, 8 LOOSE, 3 UNPROVABLE
+  (10 of the 11 in skill_spec_from_code, the root cause behind decision 17; the eleventh
+  skill_audit PROOF-11, closed by item E'). R2 also named the form to copy: security anchor
+  PROOF-6, purlin_report PROOF-1 and PROOF-19, skill_build PROOF-15.
+- **Score after remediation (2026-09-12, at `e00a91ad`, from the server's `design_summary`):** Design 98% assessed (570/581 PROVABLE over the gradeable set; 191 STRUCTURAL excluded), weighted 97% over coverage 772/778 measured; UNPROVABLE 0; LOOSE 11, of which figma_web 10 (no Figma MCP server here) and skill_spec PROOF-8 (the paid claude-cli run; its FIX from the regrade goes into item K). The 91% bar with zero UNPROVABLE holds. The cache is `.purlin/cache/design_cache.json` (gitignored); six
+  regrade rounds (R1 to R6) kept it current with every rewrite. Proof Integrity: not measured
+  (decision 16).
+- **Real defects the remediation found and fixed, beyond wording:** static_checks PROOF-20's
+  masked exit status; the hybrid-audit suite writing every proof at unit tier; drift RULE-4
+  promising a `structural_checks` count the server never emits; the init e2e suite recording
+  `pass` for a jest test that did not run; the dashboard truncating Figma pins as if they were
+  SHAs; `refreshCommand` pointing an unmeasured Design gauge at `--integrity`.
+- **Deferred to the parent plan's TODO list:** proof_plugins_xunit RULE-1's NUnit claim; the
+  `.tmp` left behind by a failed audit-cache write; and from B14: skill_spec_from_code RULE-16 and
+  RULE-18 look mis-homed from `purlin:spec` (the skill forbids `(assumed)` outright and never reads
+  customer feedback), RULE-13's "at least 5 rules" contradicts RULE-28, PROOF-33/36/38 are proved
+  from `dev/test_e2e_ui_extraction.py` which B14 did not own, and PROOF-5 to PROOF-8 have no test
+  at all.
 
 ## DONE - C: php and xunit toolchains installed, the two plugin suites executed
 
@@ -331,21 +382,72 @@ and the re-run result. If A met the bar, record "not needed" and the number that
 
 ## DONE - E: "either" satisfaction semantics, and the gemini tags
 
-_Placeholder. Record: the final rule text; the `witness` field's three values and where each is
-rendered; the `@on(windows-2022)` plus macOS fixture that proves an OS platform is never satisfied
-locally; the `skill_audit` count before and after tagging PROOF-9 to PROOF-13 (22/22 expected to
-stay 22/22); and both mutations._
+- **Superseded by decision 13; built as item E' of `dev/plans/platform-taxonomy.md`.** Commit
+  `47c9c3ac` on `taxonomy/E1`, cherry-picked as `28234f8c`. `skill_audit` PROOF-23 to PROOF-27
+  were added as the gemini suite's own ids (`@e2e @on(gemini-cli)`, one per RULE-9 to RULE-13, each
+  naming the phase of `dev/test_e2e_cross_model_audit.sh` and the literal it asserts); item B15
+  then found that the RULE-13 phase drives `dev/fake_audit_llm.sh` and never calls gemini, so
+  PROOF-27 moved to the new ungated `dev/test_e2e_fake_audit_llm.sh` (in the sweep) as a plain
+  `@e2e` proof and the gemini suite keeps PROOF-23 to PROOF-26; PROOF-9 to
+  PROOF-13 stay the local greps at `@unit` with honest wording (PROOF-11 now names the
+  `## External LLM Mode` step and its five field names). No server change. Before: `skill_audit:
+  PASSING, 22/22 rules proved`, no platform line. After: `22/22 rules proved`, `gemini-cli:
+  awaiting runner, 4 proofs (PROOF-23 ... PROOF-26)` after B15, and the Platforms block gains
+  `runner: gemini-cli (4 proofs; environment; ...)` (T2 rewords that). Mutation: PROOF-9's marker
+  commented out reads 21/22 PARTIAL. D1: 14 PROVABLE, 13 STRUCTURAL. The gemini suite was not run
+  (no `gemini` on this machine); its scoped file appears when a gemini host runs it.
 
 ## DONE - F: host row in the Integrity modal
 
-_Placeholder. Record: the `platforms.summary` host row's shape and what it counts; the badge; the
-Playwright assertion; and both mutations._
+- Commit `61b482e6` on `closeout/F`, cherry-picked as `fe38f0f6`. Numbers as renumbered by the
+  taxonomy plan: `report_data` RULE-41 / PROOF-42, `purlin_report` RULE-46 / PROOF-51; RULE-36
+  amended ("one row per platform some proof declares, at most one further row for the detected
+  host under RULE-41, and no row for any other registry id", rows carry `host` and `kind`).
+- **The host row.** `platforms.summary` gains one row keyed by the detected host id, placed
+  first, when some proof declares a platform, the host id has no declared row, and at least one
+  entry is agnostic. Its `proofs` counts are the agnostic entries only (`declared`, `proved`,
+  `failed`); `features` counts features holding one; the feature words are that population
+  (`failing` if an agnostic entry failed, else `verified` with a current receipt, else
+  `passing`); `awaiting` is 0 and `last_proved` / `last_runner` null by construction (agnostic
+  entries exist only for executed tests). It carries `host: true, kind: "host"`; declared rows
+  carry `host: false, kind: "declared"`. On this repository it covers the 974 agnostic entries
+  the Integrity split previously said nothing about.
+- **Modals.** The row renders first with the `host` badge (`this host` when the host is
+  `unregistered`); the Integrity footnote gained "The host row covers the results that name no
+  platform: they ran here."; `declaredRows()` feeds the held-by sub-label and the Failing card's
+  clickability so the host row never changes those.
+- **Two deviations, recorded.** `scripts/ci/verify_gate.py` (+6 lines, outside F's file list)
+  skips host rows so `verify_gate` RULE-9's "one line per declared id" stays true, rather than
+  amending that rule, proof and test. The agnostic-entry precondition is F's own: without it
+  `sync_status` PROOF-90 breaks and the row is a column of zeroes, so PROOF-37 keeps its
+  "no linux row" assertion restated with the reason.
+- **Mutations.** Badge dropped: PROOF-51 fails `the host row must carry exactly one badge, 0 ==
+  1`. Scoped entries counted into the row: PROOF-42 fails `declared 4 != 3` and PROOF-37 fails on
+  the row set. D1: report_data 34 PROVABLE / 8 STRUCTURAL, purlin_report 49 / 2. Tests:
+  `dev/test_report_data.py` 42 to 43, `dev/test_purlin_report.py` 61 to 62.
 
 ## DONE - G: `purlin_docs` RULE-1 tightened
 
-_Placeholder. Record: the named section the exemption now points at; the amended PROOF-2 and the
-new PROOF-12; and the mutation (an unrelated paragraph containing `legacy`) with the file and
-paragraph the failure named._
+- **Closed list.** `purlin_docs` RULE-1's `@windows` exemption is now nine (file, section) pairs, the
+  section being the nearest preceding markdown heading outside fenced blocks with dashes folded
+  to `-`: `docs/installation-guide.md` "Upgrading the plugin"; `docs/testing-workflow-guide.md`
+  "What `purlin:test` does per platform"; `references/audit_criteria.md` "LOOSE";
+  `references/formats/proofs_format.md` "File Naming"; `references/formats/spec_format.md`
+  "Platform tags"; `references/spec_quality_guide.md` "Tier Assignment"; `skills/init/SKILL.md`
+  "Usage" and "Step 5d - Update"; `skills/verify/SKILL.md` "Pre-check: pending migrations". Eleven
+  occurrences, none moved: every one states the one-release alias and its `@unit @on(...)` rewrite.
+  The token anywhere else is FORBIDDEN, including in a paragraph that merely contains `legacy`, and
+  a listed section with no occurrence is a stale exemption and fails too.
+- **PROOF-2 amended** (every hit's pair is listed, every listed pair has a hit); **PROOF-12 new**: a
+  temp copy of `docs/installation-guide.md` with `A legacy install may still carry @windows here.`
+  under `## Prerequisites` yields exactly one offender naming that file and section. Both
+  PROVABLE. `dev/test_purlin_docs.py` 11 to 12 tests. Commit `1a6308f1` on `closeout/G`,
+  cherry-picked as `cffea958`.
+- **Mutations.** `@windows` added to the installation guide's "Set Up a Project" paragraph that
+  already contains `legacy`: PROOF-2 fails `the bare token may appear only in the sections RULE-1
+  lists; the word legacy nearby does not exempt a paragraph: docs/installation-guide.md: section
+  'Set Up a Project'`. The only `@windows` in `audit_criteria.md` removed: fails `these sections are
+  exempted by RULE-1 but no longer carry a @windows occurrence, so the exemption is stale`.
 
 ## DONE - H: MCP hot-reload gated and logged
 
