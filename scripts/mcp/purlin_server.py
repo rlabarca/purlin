@@ -1250,11 +1250,21 @@ def _static_checks():
     keys cannot be checked, and that is reported as unverifiable rather than
     treated as valid: a reader that kept every grade when the checker was
     missing would report a full gauge from a cache nobody could recompute.
+
+    A process that already imported the CLI hands it over instead of loading a
+    second copy: `scripts/hooks/refresh_digest.py` imports it as `static_checks`
+    before it calls `generate_digest`, so loading it again by path under another
+    name executed all 3,389 lines twice per hook run and gave the two copies
+    separate `run_scope` state.
     """
     global _STATIC_CHECKS_MODULE
     if _STATIC_CHECKS_MODULE is not _STATIC_CHECKS_UNSET:
         return _STATIC_CHECKS_MODULE
     _STATIC_CHECKS_MODULE = None
+    imported = sys.modules.get('static_checks')
+    if imported is not None and hasattr(imported, 'cache_key_for'):
+        _STATIC_CHECKS_MODULE = imported
+        return _STATIC_CHECKS_MODULE
     path = os.path.join(os.path.dirname(SCRIPT_DIR), 'audit', 'static_checks.py')
     try:
         import importlib.util

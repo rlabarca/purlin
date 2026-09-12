@@ -365,3 +365,34 @@ class TestRegistration:
             assert isinstance(entry.get('timeout'), int), entry
             assert 'scripts/hooks/refresh_digest.py' in entry['command'], entry
             assert '${CLAUDE_PLUGIN_ROOT}' in entry['command'], entry
+
+
+class TestNoSecondModuleLoad:
+    """sync_status RULE-64 - the hook's static_checks is the server's too."""
+
+    @pytest.mark.proof("sync_status", "PROOF-107", "RULE-64", tier="integration")
+    def test_the_hook_run_loads_static_checks_once(self, tmp_path, monkeypatch):
+        project = _project(str(tmp_path))
+        module = _load_hook_module()
+        monkeypatch.setattr(purlin_server, '_STATIC_CHECKS_MODULE',
+                            purlin_server._STATIC_CHECKS_UNSET)
+
+        loaded = []
+        real_spec_from_file = importlib.util.spec_from_file_location
+
+        def spy(name, location, *args, **kwargs):
+            loaded.append(str(location))
+            return real_spec_from_file(name, location, *args, **kwargs)
+
+        monkeypatch.setattr(importlib.util, 'spec_from_file_location', spy)
+        _main_in(project, module)
+        monkeypatch.setattr(importlib.util, 'spec_from_file_location',
+                            real_spec_from_file)
+
+        reloads = [p for p in loaded if p.endswith('static_checks.py')]
+        assert reloads == [], \
+            f'static_checks was loaded again by path during the hook run: {reloads}'
+        assert 'static_checks' in sys.modules
+        assert purlin_server._static_checks() is sys.modules['static_checks'], \
+            'the server built a second copy instead of reusing the imported one'
+        assert os.path.exists(_digest_path(project)), 'the hook wrote no digest'
