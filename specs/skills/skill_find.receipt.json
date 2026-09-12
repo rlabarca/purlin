@@ -2,8 +2,8 @@
   "feature": "skill_find",
   "vhash": "e357c4b8",
   "vhash_version": 2,
-  "commit": "092c582e74a83fbbfc0fca50d64f74f2582db9d7",
-  "timestamp": "2026-09-12T17:28:42.237911+00:00",
+  "commit": "487ba3ff60b3df2d09d960d9546304526be4bbfa",
+  "timestamp": "2026-09-12T18:54:22.825237+00:00",
   "rules": [
     "RULE-1",
     "RULE-2",
@@ -60,26 +60,26 @@
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T17:28:16.431355+00:00",
-      "commit": "092c582e74a83fbbfc0fca50d64f74f2582db9d7",
+      "at": "2026-09-12T18:54:15.439303+00:00",
+      "commit": "487ba3ff60b3df2d09d960d9546304526be4bbfa",
       "sweep": "dev/run_tests.sh",
-      "passed": 906,
+      "passed": 924,
       "failed": 0,
-      "skipped": 7,
+      "skipped": 6,
       "runs": [
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T17:18:21.357785+00:00",
+          "at": "2026-09-12T18:50:15.105227+00:00",
           "test_files": [
             "dev/test_proof_plugins.sh"
           ],
-          "passed": 27,
+          "passed": 28,
           "failed": 0,
           "skipped": 0
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T17:18:21.456056+00:00",
+          "at": "2026-09-12T18:50:15.206814+00:00",
           "test_files": [
             "dev/test_e2e_teammate_audit_loop.sh"
           ],
@@ -89,7 +89,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T17:18:21.890665+00:00",
+          "at": "2026-09-12T18:50:15.668320+00:00",
           "test_files": [
             "dev/test_e2e_build_changeset.sh"
           ],
@@ -99,7 +99,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T17:18:31.922114+00:00",
+          "at": "2026-09-12T18:50:25.661899+00:00",
           "test_files": [
             "dev/test_init_e2e.sh"
           ],
@@ -109,7 +109,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T17:18:32.807892+00:00",
+          "at": "2026-09-12T18:50:26.549057+00:00",
           "test_files": [
             "dev/test_e2e_feature_scoped_overwrite.sh"
           ],
@@ -119,7 +119,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T17:18:40.243751+00:00",
+          "at": "2026-09-12T18:50:34.255421+00:00",
           "test_files": [
             "dev/test_e2e_external_refs.sh"
           ],
@@ -129,7 +129,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T17:18:41.078461+00:00",
+          "at": "2026-09-12T18:50:35.099187+00:00",
           "test_files": [
             "dev/test_e2e_strict_required.sh"
           ],
@@ -139,7 +139,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T17:18:41.562994+00:00",
+          "at": "2026-09-12T18:50:35.586082+00:00",
           "test_files": [
             "dev/test_e2e_manual_staleness.sh"
           ],
@@ -149,7 +149,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T17:18:41.955299+00:00",
+          "at": "2026-09-12T18:50:35.969933+00:00",
           "test_files": [
             "dev/test_e2e_required_rules.sh"
           ],
@@ -159,7 +159,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T17:18:42.806401+00:00",
+          "at": "2026-09-12T18:50:36.817032+00:00",
           "test_files": [
             "dev/test_e2e_verify_audit.sh"
           ],
@@ -169,7 +169,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T17:18:45.249671+00:00",
+          "at": "2026-09-12T18:50:39.402618+00:00",
           "test_files": [
             "dev/test_e2e_anchor_authority.sh"
           ],
@@ -179,7 +179,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T17:18:46.093505+00:00",
+          "at": "2026-09-12T18:50:40.282719+00:00",
           "test_files": [
             "dev/test_e2e_hybrid_audit.sh"
           ],
@@ -189,7 +189,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T17:18:47.029475+00:00",
+          "at": "2026-09-12T18:50:41.239306+00:00",
           "test_files": [
             "dev/test_e2e_additional_criteria.sh"
           ],
@@ -199,7 +199,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T17:18:47.271630+00:00",
+          "at": "2026-09-12T18:50:41.469821+00:00",
           "test_files": [
             "dev/test_e2e_fake_audit_llm.sh"
           ],
@@ -209,9 +209,10 @@
         },
         {
           "plugin": "pytest_purlin",
-          "at": "2026-09-12T17:22:13.218332+00:00",
+          "at": "2026-09-12T18:54:15.269965+00:00",
           "test_files": [
             "dev/test_cheat_matrix.py",
+            "dev/test_claude_cli_helper.py",
             "dev/test_config_engine.py",
             "dev/test_consumer_ci.py",
             "dev/test_drift.py",
@@ -247,205 +248,9 @@
             "dev/test_tools_qa.py",
             "dev/test_verify_gate.py"
           ],
-          "passed": 898,
-          "failed": 0,
-          "skipped": 3
-        },
-        {
-          "plugin": "pytest_purlin",
-          "at": "2026-09-12T17:22:38.097631+00:00",
-          "test_files": [
-            "dev/test_cheat_matrix.py",
-            "dev/test_multilang_proof_plugins.py",
-            "dev/test_proof_stress.py"
-          ],
-          "passed": 108,
+          "passed": 916,
           "failed": 0,
           "skipped": 2
-        },
-        {
-          "plugin": "shell_purlin",
-          "at": "2026-09-12T17:24:24.801269+00:00",
-          "test_files": [
-            "dev/test_proof_plugins.sh"
-          ],
-          "passed": 27,
-          "failed": 0,
-          "skipped": 0
-        },
-        {
-          "plugin": "shell_purlin",
-          "at": "2026-09-12T17:24:24.898243+00:00",
-          "test_files": [
-            "dev/test_e2e_teammate_audit_loop.sh"
-          ],
-          "passed": 7,
-          "failed": 0,
-          "skipped": 0
-        },
-        {
-          "plugin": "shell_purlin",
-          "at": "2026-09-12T17:24:25.352397+00:00",
-          "test_files": [
-            "dev/test_e2e_build_changeset.sh"
-          ],
-          "passed": 4,
-          "failed": 0,
-          "skipped": 0
-        },
-        {
-          "plugin": "shell_purlin",
-          "at": "2026-09-12T17:24:35.284426+00:00",
-          "test_files": [
-            "dev/test_init_e2e.sh"
-          ],
-          "passed": 34,
-          "failed": 0,
-          "skipped": 0
-        },
-        {
-          "plugin": "shell_purlin",
-          "at": "2026-09-12T17:24:36.159411+00:00",
-          "test_files": [
-            "dev/test_e2e_feature_scoped_overwrite.sh"
-          ],
-          "passed": 3,
-          "failed": 0,
-          "skipped": 0
-        },
-        {
-          "plugin": "shell_purlin",
-          "at": "2026-09-12T17:24:43.576173+00:00",
-          "test_files": [
-            "dev/test_e2e_external_refs.sh"
-          ],
-          "passed": 15,
-          "failed": 0,
-          "skipped": 0
-        },
-        {
-          "plugin": "shell_purlin",
-          "at": "2026-09-12T17:24:44.399092+00:00",
-          "test_files": [
-            "dev/test_e2e_strict_required.sh"
-          ],
-          "passed": 2,
-          "failed": 0,
-          "skipped": 0
-        },
-        {
-          "plugin": "shell_purlin",
-          "at": "2026-09-12T17:24:44.880007+00:00",
-          "test_files": [
-            "dev/test_e2e_manual_staleness.sh"
-          ],
-          "passed": 3,
-          "failed": 0,
-          "skipped": 0
-        },
-        {
-          "plugin": "shell_purlin",
-          "at": "2026-09-12T17:24:45.263911+00:00",
-          "test_files": [
-            "dev/test_e2e_required_rules.sh"
-          ],
-          "passed": 4,
-          "failed": 0,
-          "skipped": 0
-        },
-        {
-          "plugin": "shell_purlin",
-          "at": "2026-09-12T17:24:46.089357+00:00",
-          "test_files": [
-            "dev/test_e2e_verify_audit.sh"
-          ],
-          "passed": 5,
-          "failed": 0,
-          "skipped": 0
-        },
-        {
-          "plugin": "shell_purlin",
-          "at": "2026-09-12T17:24:48.616173+00:00",
-          "test_files": [
-            "dev/test_e2e_anchor_authority.sh"
-          ],
-          "passed": 5,
-          "failed": 0,
-          "skipped": 0
-        },
-        {
-          "plugin": "shell_purlin",
-          "at": "2026-09-12T17:24:49.452413+00:00",
-          "test_files": [
-            "dev/test_e2e_hybrid_audit.sh"
-          ],
-          "passed": 11,
-          "failed": 0,
-          "skipped": 0
-        },
-        {
-          "plugin": "shell_purlin",
-          "at": "2026-09-12T17:24:50.364446+00:00",
-          "test_files": [
-            "dev/test_e2e_additional_criteria.sh"
-          ],
-          "passed": 1,
-          "failed": 0,
-          "skipped": 0
-        },
-        {
-          "plugin": "shell_purlin",
-          "at": "2026-09-12T17:24:50.590005+00:00",
-          "test_files": [
-            "dev/test_e2e_fake_audit_llm.sh"
-          ],
-          "passed": 1,
-          "failed": 0,
-          "skipped": 0
-        },
-        {
-          "plugin": "pytest_purlin",
-          "at": "2026-09-12T17:28:15.941485+00:00",
-          "test_files": [
-            "dev/test_cheat_matrix.py",
-            "dev/test_config_engine.py",
-            "dev/test_consumer_ci.py",
-            "dev/test_drift.py",
-            "dev/test_e2e_audit_cache_pipeline.py",
-            "dev/test_e2e_spec_from_input.py",
-            "dev/test_e2e_spec_migration.py",
-            "dev/test_e2e_ui_extraction.py",
-            "dev/test_init_scaffold.py",
-            "dev/test_init_update.py",
-            "dev/test_mcp_server.py",
-            "dev/test_multilang_proof_plugins.py",
-            "dev/test_pre_commit_hook.py",
-            "dev/test_pre_push_hook.py",
-            "dev/test_proof_plugins_missing.py",
-            "dev/test_proof_stress.py",
-            "dev/test_purlin_agent.py",
-            "dev/test_purlin_docs.py",
-            "dev/test_purlin_references.py",
-            "dev/test_purlin_report.py",
-            "dev/test_purlin_report_markup.py",
-            "dev/test_purlin_skills.py",
-            "dev/test_purlin_teammate_definitions.py",
-            "dev/test_purlin_version.py",
-            "dev/test_receipts.py",
-            "dev/test_refresh_digest_hook.py",
-            "dev/test_report_data.py",
-            "dev/test_schema_proof_format.py",
-            "dev/test_schema_spec_format.py",
-            "dev/test_security.py",
-            "dev/test_skill_specs.py",
-            "dev/test_static_checks.py",
-            "dev/test_sweep_completeness.py",
-            "dev/test_tools_qa.py",
-            "dev/test_verify_gate.py"
-          ],
-          "passed": 898,
-          "failed": 0,
-          "skipped": 3
         }
       ],
       "skipped_proofs": [
@@ -490,13 +295,6 @@
           "test_file": "dev/test_cheat_matrix.py",
           "test_name": "test_typescript_no_assertion",
           "reason": "tsc not available"
-        },
-        {
-          "feature": "purlin_version",
-          "id": "PROOF-9",
-          "test_file": "dev/test_purlin_version.py",
-          "test_name": "test_unreleased_counts_match_the_recorded_run",
-          "reason": "the run marker at /Users/richlabarca/LocalCode/purlin/.purlin/runtime/test_run.json names sweep 'shell_purlin', not 'dev/run_tests.sh': a proof plugin wrote it as it finished and it carries only that plugin's counts, so it is not the run the Unreleased section describes; run `bash dev/run_tests.sh` for the sweep's own marker"
         }
       ]
     },
