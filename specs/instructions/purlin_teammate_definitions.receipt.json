@@ -2,8 +2,8 @@
   "feature": "purlin_teammate_definitions",
   "vhash": "55ad0862",
   "vhash_version": 2,
-  "commit": "7bb6cba34799150b449ea36cd42293c9e4189f40",
-  "timestamp": "2026-09-12T04:04:10.974614+00:00",
+  "commit": "824f30f758e2f8bbca6b2f0886ebc263c3f508df",
+  "timestamp": "2026-09-12T04:18:52.724464+00:00",
   "rules": [
     "RULE-1",
     "RULE-4",
@@ -48,10 +48,10 @@
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T04:04:10.742191+00:00",
-      "commit": "7bb6cba34799150b449ea36cd42293c9e4189f40",
+      "at": "2026-09-12T04:18:52.495931+00:00",
+      "commit": "824f30f758e2f8bbca6b2f0886ebc263c3f508df",
       "sweep": "dev/run_tests.sh",
-      "passed": 756,
+      "passed": 763,
       "failed": 0,
       "skipped": 27
     },

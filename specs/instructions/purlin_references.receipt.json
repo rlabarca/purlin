@@ -1,9 +1,9 @@
 {
   "feature": "purlin_references",
-  "vhash": "cca73d3d",
+  "vhash": "800ca30d",
   "vhash_version": 2,
-  "commit": "7bb6cba34799150b449ea36cd42293c9e4189f40",
-  "timestamp": "2026-09-12T04:04:10.974614+00:00",
+  "commit": "824f30f758e2f8bbca6b2f0886ebc263c3f508df",
+  "timestamp": "2026-09-12T04:18:52.724464+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -40,6 +40,7 @@
     "schema_proof_format/RULE-8",
     "schema_spec_format/RULE-1",
     "schema_spec_format/RULE-10",
+    "schema_spec_format/RULE-11",
     "schema_spec_format/RULE-2",
     "schema_spec_format/RULE-3",
     "schema_spec_format/RULE-4",
@@ -85,6 +86,7 @@
     "schema_proof_format/RULE-8": "b9742bca663db227",
     "schema_spec_format/RULE-1": "f45914620174d07f",
     "schema_spec_format/RULE-10": "a3f8447935e7723a",
+    "schema_spec_format/RULE-11": "06b6e9e65f77c849",
     "schema_spec_format/RULE-2": "cdd67c98e86b9dce",
     "schema_spec_format/RULE-3": "8f08e518a4c1b77a",
     "schema_spec_format/RULE-4": "c10c1885ca4abf0d",
@@ -477,6 +479,16 @@
     },
     {
       "feature": "schema_spec_format",
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_note_field_is_ignored_by_the_parser",
+      "platform": null
+    },
+    {
+      "feature": "schema_spec_format",
       "id": "PROOF-2",
       "rule": "RULE-2",
       "status": "pass",
@@ -578,10 +590,10 @@
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T04:04:10.742191+00:00",
-      "commit": "7bb6cba34799150b449ea36cd42293c9e4189f40",
+      "at": "2026-09-12T04:18:52.495931+00:00",
+      "commit": "824f30f758e2f8bbca6b2f0886ebc263c3f508df",
       "sweep": "dev/run_tests.sh",
-      "passed": 756,
+      "passed": 763,
       "failed": 0,
       "skipped": 27
     },
@@ -592,6 +604,15 @@
         "platform": null,
         "commit": "6bc61d2874dcbcd81892b0998a31ce84edc5c2a6",
         "committed_at": "2026-09-11T20:16:10-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      },
+      {
+        "file": "specs/_anchors/schema_spec_format.proofs-integration.json",
+        "tier": "integration",
+        "platform": null,
+        "commit": "f2b43d2cbce229827a789f9402781cef6c87a3d3",
+        "committed_at": "2026-09-12T00:08:18-04:00",
         "runner": null,
         "executed_in_test_run": true
       },

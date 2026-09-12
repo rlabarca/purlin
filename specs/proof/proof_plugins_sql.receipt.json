@@ -1,9 +1,9 @@
 {
   "feature": "proof_plugins_sql",
-  "vhash": "651ca312",
+  "vhash": "cb2788e5",
   "vhash_version": 2,
-  "commit": "7bb6cba34799150b449ea36cd42293c9e4189f40",
-  "timestamp": "2026-09-12T04:04:10.974614+00:00",
+  "commit": "824f30f758e2f8bbca6b2f0886ebc263c3f508df",
+  "timestamp": "2026-09-12T04:18:52.724464+00:00",
   "rules": [
     "RULE-1",
     "RULE-2",
@@ -16,6 +16,7 @@
     "proof_common/RULE-15",
     "proof_common/RULE-16",
     "proof_common/RULE-17",
+    "proof_common/RULE-18",
     "proof_common/RULE-2",
     "proof_common/RULE-3",
     "proof_common/RULE-4",
@@ -45,12 +46,13 @@
     "proof_common/RULE-1": "53b6df3e51f553ab",
     "proof_common/RULE-10": "0f0ae6c3ee385c41",
     "proof_common/RULE-11": "564f7e45bbdf8ebf",
-    "proof_common/RULE-12": "bbad0e14ec5c4d40",
-    "proof_common/RULE-13": "92e060863fcaaf3a",
+    "proof_common/RULE-12": "fa541e2d751034c1",
+    "proof_common/RULE-13": "9d833a25ea533b33",
     "proof_common/RULE-14": "cf4fab16ef3635e0",
     "proof_common/RULE-15": "37ad2ef295ed00fc",
     "proof_common/RULE-16": "12739c6ae8c04e68",
     "proof_common/RULE-17": "ffa53c690712d6ba",
+    "proof_common/RULE-18": "d76a17eebb31ade8",
     "proof_common/RULE-2": "0423594d1f4790d4",
     "proof_common/RULE-3": "8d2c917561ab6742",
     "proof_common/RULE-4": "c7bf2e1f3e586701",
@@ -183,6 +185,16 @@
       "tier": "integration",
       "test_file": "dev/test_multilang_proof_plugins.py",
       "test_name": "test_marker_removed_from_a_file_that_is_not_rerun_survives",
+      "platform": null
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-17",
+      "rule": "RULE-13",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_jest_pending_writes_nothing_and_leaves_an_existing_file_alone",
       "platform": null
     },
     {
@@ -423,6 +435,66 @@
       "tier": "unit",
       "test_file": "dev/test_proof_plugins.sh",
       "test_name": "shell: unset env names the family",
+      "platform": null
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-23",
+      "rule": "RULE-18",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_jest_pending_result_keeps_the_committed_entry",
+      "platform": null
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-23",
+      "rule": "RULE-18",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_pytest_body_skip_keeps_the_committed_entry",
+      "platform": null
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-23",
+      "rule": "RULE-18",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_pytest_skip_marker_keeps_the_committed_entry",
+      "platform": null
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-23",
+      "rule": "RULE-18",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_vitest_skip_state_keeps_the_committed_entry",
+      "platform": null
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-23",
+      "rule": "RULE-18",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_xunit_logger_records_and_consults_the_skip_set",
+      "platform": null
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-24",
+      "rule": "RULE-18",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_the_exempt_plugins_named_in_rule_18_are_the_ones_without_a_skip_set",
       "platform": null
     },
     {
@@ -918,10 +990,10 @@
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T04:04:10.742191+00:00",
-      "commit": "7bb6cba34799150b449ea36cd42293c9e4189f40",
+      "at": "2026-09-12T04:18:52.495931+00:00",
+      "commit": "824f30f758e2f8bbca6b2f0886ebc263c3f508df",
       "sweep": "dev/run_tests.sh",
-      "passed": 756,
+      "passed": 763,
       "failed": 0,
       "skipped": 27
     },
@@ -930,8 +1002,8 @@
         "file": "specs/_anchors/proof_common.proofs-integration.json",
         "tier": "integration",
         "platform": null,
-        "commit": "6bc61d2874dcbcd81892b0998a31ce84edc5c2a6",
-        "committed_at": "2026-09-11T20:16:10-04:00",
+        "commit": "f2b43d2cbce229827a789f9402781cef6c87a3d3",
+        "committed_at": "2026-09-12T00:08:18-04:00",
         "runner": null,
         "executed_in_test_run": true
       },
