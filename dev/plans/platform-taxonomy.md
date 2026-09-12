@@ -209,11 +209,41 @@ runs the suite); the mutation; the closeout table amendment; the parent plan's T
 
 ## DONE - T3: prerequisites visible in the run record
 
-_Placeholder. Record: the `skipped_proofs` shape and which plugins carry a reason; the
-sync_status line and summary count; the payload fields; the chip; the receipt field and the
-Format-Version bump; the extended RULE-18 text; this repository's real output (expected: the six
-`tsc not available` skips in `dev/test_cheat_matrix.py` and `dev/test_proof_stress.py` become
-visible as inherited entries); the mutations._
+- Commit `152f1740` on `taxonomy/T3` (a worktree, by the controller's decision 20, because another
+  session was landing commits in the main tree), cherry-picked as `ef462803` after six conflicts
+  with that session's `f5492db0` and with T4 were resolved by keeping both sides in number order
+  (report_data RULE-44 then RULE-45, PROOF-45 then PROOF-46; `_build_summary_table` takes both
+  `remote_status` and `inherited_count`; the dashboard guide keeps T4's bullets plus T3's chip
+  sentence; two proof files unioned).
+- **`skipped_proofs`** in `.purlin/runtime/test_run.json`: `{feature, id, test_file, test_name,
+  reason}`, unioned at the same commit by `(feature, id, test_file, test_name)` with the existing
+  entry winning, written only when non-empty. pytest (`call.excinfo.value.msg`) and xunit
+  (`ErrorMessage`, else `Messages`) carry a real reason; jest and vitest report none, so `reason` is
+  null. `dev/run_tests.sh`'s EXIT-trap merge carries the key through untouched.
+- **Surfaces.** `sync_status` prints `⚠ N proofs not executed on this host (<reason>): entries
+  inherited from <sha7>` per (reason, provenance commit) group, the sha from `_file_provenance`; the
+  summary line gains ` | N inherited`, absent at 0 (RULE-65 / PROOF-104). Payload: `inherited:
+  true` and `inherited_reason` on the matching proof, `inherited_count` per feature, one read in
+  `_feature_verdict` (report_data RULE-45 / PROOF-46). Dashboard: an amber `inherited` chip with
+  the reason as tooltip (purlin_report RULE-50 / PROOF-56). Receipt: `evidence.test_run.skipped_proofs`,
+  `receipt_format.md` Format-Version 3 to 4 (skill_verify RULE-16 / PROOF-16, purlin_references
+  RULE-21 amended, PROOF-21 extended). `proof_common` RULE-20 / PROOF-26 (one case per capable
+  plugin plus a merge case); RULE-18 gained: "A kept entry is also recorded in the run marker as
+  skipped, with the reason the framework gave, under `skipped_proofs` (RULE-20), so a surface
+  reading the marker can say the entry was inherited from the commit that last proved it instead
+  of presenting it as evidence this run produced."
+- D1 (PROVABLE / STRUCTURAL, zero LOOSE, zero UNPROVABLE): proof_common 25/1, sync_status 98/2,
+  report_data 37/8, purlin_report 54/2, skill_verify 9/7, purlin_references 9/20. Tests: net +10
+  (multilang +5, mcp_server, report_data, purlin_report, receipts, skill_specs +1 each).
+  Mutations: pytest reason set to None fails PROOF-26 naming `reason`; `_inherited_lines` returning
+  nothing fails PROOF-104; the issuer dropping the key fails PROOF-16 (`KeyError: 'skipped_proofs'`);
+  `inherited` dropped from the payload fails PROOF-46. PROOF-23's xunit source regex was also fixed
+  (its `[^}]*` body stopped at the new object initializer).
+- **This repository shows no inherited lines, and the plan's expectation was wrong.** The run
+  records all six `tsc not available` skips correctly (`proof_plugins_vitest` PROOF-1, five in
+  `dev/test_cheat_matrix.py` and one in `dev/test_proof_stress.py`), but no committed proof entry
+  exists for any of them, so nothing was ever held under RULE-18 and nothing is inherited. They
+  become visible when a host with `tsc` commits those entries.
 
 ## DONE - T4: the docs pass
 
