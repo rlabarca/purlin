@@ -16,6 +16,13 @@ declared goes to the agnostic `<feature>.proofs-<tier>.json` with the seven
 standard fields, whatever `PURLIN_PLATFORM` says. The emitter never evaluates
 version constraints.
 
+The project root is found by walking up from the working directory to the
+nearest ancestor holding `specs/` or `.purlin/` (proof_common RULE-22); the
+spec scan, the `specs/` fallback, the orphan-reaping existence check, the run
+marker and every recorded `test_file` (RULE-23) are all rooted there, so
+piping a runner's output in from a subdirectory writes into the project's own
+`specs/` tree.
+
 At the end of the run, the same moment the proof files are written, the
 emitter writes or merges the project's run marker
 `.purlin/runtime/test_run.json` (proof_common RULE-19), so a receipt issued
@@ -41,6 +48,61 @@ def _host_platform():
         return env
     system = platform.system()
     return _FAMILIES.get(system, system.lower())
+
+
+# ── The project root (proof_common RULE-22, RULE-23) ────────────────────────
+# Everything the emitter addresses by a project-relative path is rooted here and
+# not at the working directory, so a run started from a subdirectory writes into
+# the project's own `specs/` tree instead of making a second one beside itself.
+
+
+def _find_root(start):
+    """The nearest ancestor of `start`, `start` itself included, that holds a
+    `specs/` or a `.purlin/` directory (RULE-22); None when none does."""
+    d = os.path.realpath(start)
+    while True:
+        if (os.path.isdir(os.path.join(d, "specs"))
+                or os.path.isdir(os.path.join(d, ".purlin"))):
+            return d
+        parent = os.path.dirname(d)
+        if parent == d:
+            return None
+        d = parent
+
+
+def _project_root(start=None):
+    """The RULE-22 project root of `start` (the working directory by default):
+    the nearest ancestor holding `specs/` or `.purlin/`, and `start` itself
+    when no ancestor holds either."""
+    start = os.path.realpath(start or os.getcwd())
+    return _find_root(start) or start
+
+
+def _relativize(root, path):
+    """`path` recorded relative to `root` with `/` separators (RULE-23, RULE-15).
+
+    The header records the path the C runner passed, which is `__FILE__` as the
+    build spelled it: absolute or relative. A relative one is resolved against
+    the working directory first, so the same source recorded from a
+    subdirectory and from the root reads the same, and under the RULE-4 merge
+    key a difference does not collapse, it accumulates as a second entry for one
+    proof. A file outside `root` is made relative to the nearest project root
+    above the file itself, and left absolute when there is none, rather than
+    rewritten with `../` segments.
+    """
+    if not path:
+        return path
+    abs_path = os.path.realpath(path)
+    for base in (root, _find_root(os.path.dirname(abs_path))):
+        if not base:
+            continue
+        try:
+            rel = os.path.relpath(abs_path, base)
+        except ValueError:
+            continue
+        if rel != os.pardir and not rel.startswith(os.pardir + os.sep):
+            return rel.replace(os.sep, "/").replace("\\", "/")
+    return abs_path.replace(os.sep, "/").replace("\\", "/")
 
 
 # ── The run marker (proof_common RULE-19) ───────────────────────────────────
@@ -132,9 +194,12 @@ def main():
     if not proofs_raw:
         return
 
-    # Build feature -> spec directory mapping
+    # The RULE-22 project root, and the spec scan rooted at it so it finds the
+    # project's specs from a subdirectory too.
+    root = _project_root()
     spec_dirs = {}
-    for spec in glob.glob("specs/**/*.md", recursive=True):
+    for spec in glob.glob(os.path.join(glob.escape(root), "specs", "**", "*.md"),
+                          recursive=True):
         stem = os.path.splitext(os.path.basename(spec))[0]
         spec_dirs[stem] = os.path.dirname(spec)
 
@@ -148,8 +213,9 @@ def main():
             "feature": raw["feature"],
             "id": raw["id"],
             "rule": raw["rule"],
-            # Forward slashes on every OS (proof_common RULE-15).
-            "test_file": (raw.get("test_file") or "").replace(os.sep, "/").replace("\\", "/"),
+            # Relative to the project root, forward slashes on every OS
+            # (proof_common RULE-23, RULE-15).
+            "test_file": _relativize(root, raw.get("test_file") or ""),
             "test_name": raw.get("test_name", ""),
             "status": raw.get("status", "fail"),
             "tier": tier,
@@ -169,7 +235,7 @@ def main():
                 f"purlin:spec {feature}",
                 file=sys.stderr,
             )
-            spec_dir = "specs"
+            spec_dir = os.path.join(root, "specs")
         path = os.path.join(spec_dir, f"{feature}.proofs-{suffix}.json")
 
         existing = []
@@ -179,7 +245,9 @@ def main():
 
         # Write-scoped overwrite keyed by (feature, tier, platform, test_file), per
         # proof_common RULE-4 (the file carries tier and platform, so within it the
-        # key is (feature, test_file)), plus orphan reaping of vanished test files (RULE-11).
+        # key is (feature, test_file)), plus orphan reaping of vanished test files
+        # (RULE-11). Each recorded path is resolved from the RULE-22 project
+        # root, the same root RULE-23 relativized it against.
         run_files = {e.get("test_file") for e in new_entries}
         kept = [
             e
@@ -187,7 +255,8 @@ def main():
             if e.get("feature") != feature
             or (
                 e.get("test_file") not in run_files
-                and os.path.exists(e.get("test_file") or "")
+                and bool(e.get("test_file"))
+                and os.path.exists(os.path.join(root, e.get("test_file") or ""))
             )
         ]
 
@@ -209,7 +278,7 @@ def main():
     # runner made), so `skipped` is 0.
     all_entries = [e for group in grouped.values() for e in group]
     _write_run_marker(
-        os.getcwd(),
+        root,
         "c_purlin",
         [e["test_file"] for e in all_entries],
         sum(1 for e in all_entries if e["status"] == "pass"),

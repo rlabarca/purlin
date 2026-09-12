@@ -19,6 +19,12 @@
  * standard fields, whatever PURLIN_PLATFORM says. The collector never evaluates
  * version constraints.
  *
+ * The project root is found by walking up from the working directory to the
+ * nearest ancestor holding specs/ or .purlin/ (proof_common RULE-22); the spec
+ * scan, the specs/ fallback, the orphan-reaping existence check, the run marker
+ * and the recorded test_file (RULE-23) are all rooted there, so running the
+ * collector from a subdirectory writes into the project's own specs/ tree.
+ *
  * At the end of the run, the same moment the proof files are written, the
  * collector writes or merges the project's run marker
  * .purlin/runtime/test_run.json (proof_common RULE-19), so a receipt issued in
@@ -104,14 +110,87 @@ function run_php_test(string $filepath, string $function_name): bool {
     return proc_close($process) === 0;
 }
 
-function resolve_spec_dirs(): array {
-    $dirs = [];
-    foreach (glob('specs/**/*.md', GLOB_BRACE) as $spec) {
-        // glob with ** doesn't work recursively in PHP, use recursive scan
+// ── The project root (proof_common RULE-22, RULE-23) ────────────────────────
+// Everything the collector addresses by a project-relative path is rooted here
+// and not at the working directory, so a run started from a subdirectory writes
+// into the project's own specs/ tree instead of making a second one beside it.
+
+// The nearest ancestor of $dir, $dir itself included, that holds a specs/ or a
+// .purlin/ directory (RULE-22); null when none does.
+function find_root(string $dir): ?string {
+    $dir = rtrim($dir, '/');
+    if ($dir === '') {
+        $dir = '/';
     }
-    // Use a recursive directory iterator instead
+    while (true) {
+        if (is_dir($dir . '/specs') || is_dir($dir . '/.purlin')) {
+            return $dir;
+        }
+        $parent = dirname($dir);
+        if ($parent === $dir) {
+            return null;
+        }
+        $dir = $parent;
+    }
+}
+
+// The RULE-22 project root of $start (the working directory by default): the
+// nearest ancestor holding specs/ or .purlin/, and $start itself when none does.
+function project_root(?string $start = null): string {
+    $start = $start ?? (string)getcwd();
+    $real = realpath($start);
+    if ($real !== false) {
+        $start = $real;
+    }
+    return find_root($start) ?? $start;
+}
+
+/**
+ * $path recorded relative to $root with "/" separators (RULE-23, RULE-15).
+ *
+ * The argv path is resolved against the working directory first, so an
+ * absolute invocation and a relative one naming the same file record the same
+ * value: under the RULE-4 merge key a difference does not collapse, it
+ * accumulates as a second entry for one proof. A file outside $root is made
+ * relative to the nearest project root above the file itself, and left absolute
+ * when there is none, rather than rewritten with "../" segments.
+ */
+function relativize(string $root, string $path): string {
+    if ($path === '') {
+        return $path;
+    }
+    $real = realpath($path);
+    if ($real !== false) {
+        $abs = $real;
+    } elseif (strncmp($path, '/', 1) === 0) {
+        $abs = $path;
+    } else {
+        $abs = rtrim((string)getcwd(), '/') . '/' . $path;
+    }
+    foreach ([$root, find_root(dirname($abs))] as $base) {
+        if ($base === null || $base === '') {
+            continue;
+        }
+        $prefix = rtrim($base, '/') . '/';
+        if (strncmp($abs, $prefix, strlen($prefix)) === 0) {
+            return str_replace('\\', '/', substr($abs, strlen($prefix)));
+        }
+    }
+    return str_replace('\\', '/', $abs);
+}
+
+// RULE-1: feature -> spec directory, matched by spec filename stem, scanned from
+// the project root so a run started in a subdirectory finds the project's specs.
+// An absent specs/ yields no mapping rather than a RecursiveDirectoryIterator
+// that throws before the RULE-3 fallback can run.
+function resolve_spec_dirs(string $root): array {
+    $dirs = [];
+    $specs_root = $root . '/specs';
+    if (!is_dir($specs_root)) {
+        return $dirs;
+    }
     $iterator = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator('specs', RecursiveDirectoryIterator::SKIP_DOTS)
+        new RecursiveDirectoryIterator($specs_root, RecursiveDirectoryIterator::SKIP_DOTS)
     );
     foreach ($iterator as $file) {
         if ($file->getExtension() === 'md') {
@@ -229,8 +308,8 @@ function sort_proof_entries(array $entries): array {
     return $entries;
 }
 
-function write_proofs(array $proofs_by_key, string $test_file): void {
-    $spec_dirs = resolve_spec_dirs();
+function write_proofs(array $proofs_by_key, string $root): void {
+    $spec_dirs = resolve_spec_dirs($root);
 
     foreach ($proofs_by_key as $key => $new_entries) {
         [$feature, $tier, $platform] = explode(':', $key);
@@ -238,7 +317,7 @@ function write_proofs(array $proofs_by_key, string $test_file): void {
         $spec_dir = $spec_dirs[$feature] ?? null;
         if ($spec_dir === null) {
             fwrite(STDERR, "WARNING: No spec found for feature \"{$feature}\" — writing proofs to specs/{$feature}.proofs-{$suffix}.json. Create a spec with: purlin:spec {$feature}\n");
-            $spec_dir = 'specs';
+            $spec_dir = $root . '/specs';
         }
 
         $path = "{$spec_dir}/{$feature}.proofs-{$suffix}.json";
@@ -252,17 +331,20 @@ function write_proofs(array $proofs_by_key, string $test_file): void {
 
         // Write-scoped overwrite keyed by (feature, tier, platform, test_file), per
         // proof_common RULE-4 (the file carries tier and platform, so within it the
-        // key is (feature, test_file)), plus orphan reaping of vanished test files (RULE-11).
+        // key is (feature, test_file)), plus orphan reaping of vanished test files
+        // (RULE-11). Each recorded path is resolved from the RULE-22 project
+        // root, the same root RULE-23 relativized it against.
         $run_files = [];
         foreach ($new_entries as $e) {
             $run_files[$e['test_file'] ?? ''] = true;
         }
-        $kept = array_filter($existing, function($e) use ($feature, $run_files) {
+        $kept = array_filter($existing, function($e) use ($feature, $run_files, $root) {
             if (($e['feature'] ?? '') !== $feature) {
                 return true;
             }
             $tf = $e['test_file'] ?? '';
-            return $tf !== '' && !isset($run_files[$tf]) && file_exists($tf);
+            return $tf !== '' && !isset($run_files[$tf])
+                && file_exists(strncmp($tf, '/', 1) === 0 ? $tf : $root . '/' . $tf);
         });
 
         $payload = ['tier' => $tier];
@@ -291,9 +373,11 @@ if (php_sapi_name() === 'cli' && isset($argv[1])) {
         fwrite(STDERR, "File not found: {$test_file}\n");
         exit(2);
     }
-    // Recorded with "/" separators on every OS (proof_common RULE-15); the
-    // path as given is still used to run the tests.
-    $recorded_file = str_replace('\\', '/', $test_file);
+    // Recorded relative to the RULE-22 project root, with "/" separators on
+    // every OS (RULE-23, RULE-15); the path as given is still used to run the
+    // tests.
+    $root = project_root();
+    $recorded_file = relativize($root, $test_file);
 
     $markers = parse_proof_markers($test_file);
     if (empty($markers)) {
@@ -320,7 +404,7 @@ if (php_sapi_name() === 'cli' && isset($argv[1])) {
         $proofs_by_key[$key][] = $entry;
     }
 
-    write_proofs($proofs_by_key, $test_file);
+    write_proofs($proofs_by_key, $root);
 
     // RULE-19: the run marker, written at the same moment as the proof files.
     // A PHP function that is never called records nothing, so the collector has
@@ -338,7 +422,7 @@ if (php_sapi_name() === 'cli' && isset($argv[1])) {
             }
         }
     }
-    write_run_marker(getcwd(), 'phpunit_purlin', $marker_files,
+    write_run_marker($root, 'phpunit_purlin', $marker_files,
                      $marker_passed, $marker_failed, 0);
 
     // Also emit to stdout for inspection

@@ -107,10 +107,10 @@ file never touches the agnostic file or another platform's file.
 When proof plugins write a proof file, they:
 
 1. Load the existing file (if any).
-2. Keep an existing entry only if it belongs to a different feature, **or** its `test_file`
-   still resolves to a file in the working tree **and** either that `test_file` was not
-   executed in this run, or the run skipped the test the entry belongs to and did not write
-   that entry afresh.
+2. Keep an existing entry only if it belongs to a different feature, **or** its `test_file`,
+   resolved from the project root, still names a file in the working tree **and** either that
+   `test_file` was not executed in this run, or the run skipped the test the entry belongs to
+   and did not write that entry afresh.
 3. Append the new entries from the current test run.
 4. Sort the merged entries by `(id, test_file, test_name)` under plain ordinal string
    comparison, so `PROOF-1` precedes `PROOF-10` and `PROOF-10` precedes `PROOF-2`, and two runs
@@ -119,14 +119,16 @@ When proof plugins write a proof file, they:
 
 ```python
 keep(e) = e["feature"] != feature
-          or (os.path.exists(e["test_file"])
+          or (os.path.exists(os.path.join(project_root, e["test_file"]))
               and (e["test_file"] not in this_run_files
                    or ((feature, e["id"], e["test_file"]) in this_run_skipped
                        and (e["id"], e["test_file"], e["test_name"]) not in this_run_wrote)))
 ```
 
-`this_run_skipped` holds a `(feature, id, test_file)` triple for each marked test the run
-skipped; `this_run_wrote` holds an `(id, test_file, test_name)` triple for each entry this
+`project_root` is the nearest ancestor of the plugin's working directory holding `specs/` or
+`.purlin/`, the same root every recorded `test_file` was measured against, so the check reads
+each path from the place that produced it. `this_run_skipped` holds a `(feature, id, test_file)`
+triple for each marked test the run skipped; `this_run_wrote` holds an `(id, test_file, test_name)` triple for each entry this
 write is about to append, so an executed test always replaces its own entry even when a
 skipped test in the same file carries the same proof id. A plugin whose framework has no skip
 signal (shell, sql, phpunit, c) leaves `this_run_skipped` empty, and the clause has no effect
@@ -162,10 +164,14 @@ A narrower key reaps less, so two rules bound what survives:
   skipped, and the evidence a capable host produced would disappear on a host that cannot
   reproduce it. Only an executed test replaces its own entry.
 
-The existence check resolves `test_file` relative to the process's working directory, which
-the plugins already require to be the repository root (they glob `specs/**/*.md` from it). If
-a plugin is run from elsewhere, every path fails the check and the merge degrades to the
-older feature-wide purge: narrower than intended, never wider.
+The existence check resolves `test_file` from the project root, not from the process's working
+directory, and so does the `specs/**/*.md` scan that finds where to write. The root is the
+nearest ancestor of the working directory holding `specs/` or `.purlin/`, and the working
+directory itself when no ancestor holds either. A working directory below the root is the
+normal case rather than the exception: the .NET test platform runs a logger from the test
+output folder, and `pytest`, `npm test` and `dotnet test` are all run from a subdirectory
+often enough. Reading each path from the root is what keeps such a run adding one entry
+instead of failing every check and reaping the whole feature.
 
 A proof the spec tags `@on(windows-2022)` is proved by a scoped file,
 `<feature>.proofs-unit@windows-2022.json`, written by the run whose `PURLIN_PLATFORM` was

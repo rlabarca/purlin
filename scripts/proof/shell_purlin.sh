@@ -19,6 +19,12 @@
 # the seven standard fields, whatever PURLIN_PLATFORM says. The harness never
 # evaluates version constraints.
 #
+# The project root is found by walking up from the working directory to the
+# nearest ancestor holding specs/ or .purlin/ (proof_common RULE-22); the spec
+# scan, the specs/ fallback, the orphan-reaping existence check, the run marker
+# and every recorded test_file (RULE-23) are all rooted there, so sourcing this
+# harness from a subdirectory writes into the project's own specs/ tree.
+#
 # purlin_proof_finish also writes or merges the project's run marker
 # .purlin/runtime/test_run.json (proof_common RULE-19), so a receipt issued in
 # a consumer project can record which run its evidence came from.
@@ -65,16 +71,32 @@ def _host_platform():
     return _FAMILIES.get(system, system.lower())
 
 
-def _project_root_of(path):
-    '''Nearest ancestor of path that looks like a project root.'''
-    d = os.path.dirname(path)
+def _find_root(start):
+    '''Nearest ancestor of the directory start, start itself included, holding
+    a specs/ or a .purlin/ directory (proof_common RULE-22); None when none
+    does.'''
+    d = os.path.realpath(start)
     while True:
-        if os.path.isdir(os.path.join(d, '.git')) or os.path.isdir(os.path.join(d, 'specs')):
+        if os.path.isdir(os.path.join(d, 'specs')) or os.path.isdir(os.path.join(d, '.purlin')):
             return d
         parent = os.path.dirname(d)
         if parent == d:
             return None
         d = parent
+
+
+def _project_root(start=None):
+    '''The RULE-22 project root of start (the working directory by default):
+    the nearest ancestor holding specs/ or .purlin/, and start itself when no
+    ancestor holds either.'''
+    start = os.path.realpath(start or os.getcwd())
+    return _find_root(start) or start
+
+
+def _project_root_of(path):
+    '''The project root of the file at path, or None (RULE-23's second
+    candidate: a test script outside the project being written to).'''
+    return _find_root(os.path.dirname(path))
 
 
 # ── The run marker (proof_common RULE-19) ───────────────────────────────────
@@ -149,9 +171,14 @@ def _write_run_marker(root, sweep, test_files, passed, failed, skipped):
     return marker
 
 
+# The RULE-22 project root: everything below is addressed from here rather than
+# from the working directory, so a run started in a subdirectory writes into the
+# project's own specs/ tree instead of making a second one beside itself.
+root = _project_root()
+
 # Build spec dir mapping
 spec_dirs = {}
-for spec in glob.glob('specs/**/*.md', recursive=True):
+for spec in glob.glob(os.path.join(glob.escape(root), 'specs', '**', '*.md'), recursive=True):
     stem = os.path.splitext(os.path.basename(spec))[0]
     spec_dirs[stem] = os.path.dirname(spec)
 
@@ -171,16 +198,16 @@ for line in sys.stdin.read().strip().split('\n'):
     # value that depends on how the script happened to be invoked. Mirrors the
     # pytest plugin's item.fspath.relto(config.rootdir).
     #
-    # Two candidate roots, in order: the project being written to (cwd), then
-    # the project the test file itself lives in. The second matters when a
-    # harness writes proofs into a different tree than the one holding the test
-    # script; without it that case falls back to an absolute path, which then
-    # differs by invocation form and accumulates duplicate entries under the
-    # (feature, tier, test_file) merge key.
+    # Two candidate roots, in order: the project being written to (the RULE-22
+    # root of the working directory), then the project the test file itself
+    # lives in. The second matters when a harness writes proofs into a different
+    # tree than the one holding the test script; without it that case falls back
+    # to an absolute path, which then differs by invocation form and accumulates
+    # duplicate entries under the (feature, tier, test_file) merge key.
     if test_file and test_file != 'unknown':
         abs_tf = os.path.realpath(test_file)
         rel = None
-        for base in (os.getcwd(), _project_root_of(abs_tf)):
+        for base in (root, _project_root_of(abs_tf)):
             if not base:
                 continue
             try:
@@ -213,7 +240,7 @@ for (feature, tier, plat), new_entries in entries.items():
     spec_dir = spec_dirs.get(feature)
     if spec_dir is None:
         print(f'WARNING: No spec found for feature \"{feature}\" — writing proofs to specs/{feature}.proofs-{suffix}.json. Create a spec with: purlin:spec {feature}', file=sys.stderr)
-        spec_dir = 'specs'
+        spec_dir = os.path.join(root, 'specs')
     path = os.path.join(spec_dir, f'{feature}.proofs-{suffix}.json')
     existing = []
     if os.path.exists(path):
@@ -221,12 +248,16 @@ for (feature, tier, plat), new_entries in entries.items():
             existing = json.load(f).get('proofs', [])
     # Write-scoped overwrite keyed by (feature, tier, platform, test_file), per
     # proof_common RULE-4 (the file carries tier and platform, so within it the
-    # key is (feature, test_file)), plus orphan reaping of vanished test files (RULE-11).
+    # key is (feature, test_file)), plus orphan reaping of vanished test files
+    # (RULE-11). Each recorded path is resolved from the RULE-22 project root,
+    # the same root RULE-23 relativized it against.
     run_files = {e['test_file'] for e in new_entries}
     kept = [
         e for e in existing
         if e.get('feature') != feature
-        or (e.get('test_file') not in run_files and os.path.exists(e.get('test_file') or ''))
+        or (e.get('test_file') not in run_files
+            and bool(e.get('test_file'))
+            and os.path.exists(os.path.join(root, e.get('test_file') or '')))
     ]
     payload = {'tier': tier}
     if plat is not None:
@@ -248,7 +279,7 @@ for (feature, tier, plat), new_entries in entries.items():
 # cannot be told apart from one that skipped), so skipped is 0.
 all_entries = [e for group in entries.values() for e in group]
 _write_run_marker(
-    os.getcwd(),
+    root,
     'shell_purlin',
     [e['test_file'] for e in all_entries],
     sum(1 for e in all_entries if e['status'] == 'pass'),

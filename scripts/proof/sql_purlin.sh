@@ -24,6 +24,12 @@
 # standard fields, whatever PURLIN_PLATFORM says. The harness never evaluates
 # version constraints.
 #
+# The project root is found by walking up from the working directory to the
+# nearest ancestor holding specs/ or .purlin/ (proof_common RULE-22); the spec
+# scan, the specs/ fallback, the orphan-reaping existence check, the run marker
+# and the recorded test_file (RULE-23) are all rooted there, so running this
+# harness from a subdirectory writes into the project's own specs/ tree.
+#
 # The run also writes or merges the project's run marker
 # .purlin/runtime/test_run.json (proof_common RULE-19), so a receipt issued in
 # a consumer project can record which run its evidence came from.
@@ -57,9 +63,6 @@ import datetime, glob, json, os, platform, re, subprocess, sys, time
 
 test_file = os.environ['PURLIN_SQL_TEST_FILE']
 db_file = os.environ['PURLIN_SQL_DB_FILE']
-# Recorded with '/' separators on every OS (proof_common RULE-15); the path as
-# given is still used to read the file.
-recorded_file = test_file.replace(os.sep, '/').replace(chr(92), '/')
 
 _FAMILIES = {'Windows': 'windows', 'Darwin': 'macos', 'Linux': 'linux'}
 
@@ -71,6 +74,63 @@ def _host_platform():
         return env
     system = platform.system()
     return _FAMILIES.get(system, system.lower())
+
+
+# The project root (proof_common RULE-22, RULE-23). Everything the harness
+# addresses project-relative is rooted here and not at the working directory, so
+# a run started from a subdirectory writes into the project's own specs/ tree
+# instead of making a second one beside itself.
+
+
+def _find_root(start):
+    '''Nearest ancestor of the directory start, start itself included, holding
+    a specs/ or a .purlin/ directory (RULE-22); None when none does.'''
+    d = os.path.realpath(start)
+    while True:
+        if os.path.isdir(os.path.join(d, 'specs')) or os.path.isdir(os.path.join(d, '.purlin')):
+            return d
+        parent = os.path.dirname(d)
+        if parent == d:
+            return None
+        d = parent
+
+
+def _project_root(start=None):
+    '''The RULE-22 project root of start (the working directory by default).'''
+    start = os.path.realpath(start or os.getcwd())
+    return _find_root(start) or start
+
+
+def _relativize(base_root, raw_path):
+    '''raw_path recorded relative to base_root with / separators (RULE-23,
+    RULE-15).
+
+    The argv path is resolved against the working directory first, so an
+    absolute invocation and a relative one naming the same file record the same
+    value: under the RULE-4 merge key a difference does not collapse, it
+    accumulates as a second entry for one proof. A file outside base_root is
+    made relative to the nearest project root above the file itself, and left
+    absolute when there is none, rather than rewritten with ../ segments.
+    '''
+    if not raw_path:
+        return raw_path
+    abs_path = os.path.realpath(raw_path)
+    for base in (base_root, _find_root(os.path.dirname(abs_path))):
+        if not base:
+            continue
+        try:
+            rel = os.path.relpath(abs_path, base)
+        except ValueError:
+            continue
+        if rel != os.pardir and not rel.startswith(os.pardir + os.sep):
+            return rel.replace(os.sep, '/').replace(chr(92), '/')
+    return abs_path.replace(os.sep, '/').replace(chr(92), '/')
+
+
+root = _project_root()
+# Recorded relative to the project root, with '/' separators on every OS
+# (RULE-23, RULE-15); the path as given is still used to read the file.
+recorded_file = _relativize(root, test_file)
 
 
 with open(test_file) as f:
@@ -210,9 +270,10 @@ def _write_run_marker(root, sweep, test_files, passed, failed, skipped):
     return marker
 
 
-# Build spec dir mapping
+# Build spec dir mapping, rooted at the RULE-22 project root so the scan finds
+# the project's specs from a subdirectory too.
 spec_dirs = {}
-for spec in glob.glob('specs/**/*.md', recursive=True):
+for spec in glob.glob(os.path.join(glob.escape(root), 'specs', '**', '*.md'), recursive=True):
     stem = os.path.splitext(os.path.basename(spec))[0]
     spec_dirs[stem] = os.path.dirname(spec)
 
@@ -222,7 +283,7 @@ for (feature, tier, plat), new_entries in proofs_by_key.items():
     spec_dir = spec_dirs.get(feature)
     if spec_dir is None:
         print(f'WARNING: No spec found for feature \"{feature}\" — writing proofs to specs/{feature}.proofs-{suffix}.json. Create a spec with: purlin:spec {feature}', file=sys.stderr)
-        spec_dir = 'specs'
+        spec_dir = os.path.join(root, 'specs')
     path = os.path.join(spec_dir, f'{feature}.proofs-{suffix}.json')
     existing = []
     if os.path.exists(path):
@@ -230,12 +291,16 @@ for (feature, tier, plat), new_entries in proofs_by_key.items():
             existing = json.load(f).get('proofs', [])
     # Write-scoped overwrite keyed by (feature, tier, platform, test_file), per
     # proof_common RULE-4 (the file carries tier and platform, so within it the
-    # key is (feature, test_file)), plus orphan reaping of vanished test files (RULE-11).
+    # key is (feature, test_file)), plus orphan reaping of vanished test files
+    # (RULE-11). Each recorded path is resolved from the RULE-22 project root,
+    # the same root RULE-23 relativized it against.
     run_files = {e['test_file'] for e in new_entries}
     kept = [
         e for e in existing
         if e.get('feature') != feature
-        or (e.get('test_file') not in run_files and os.path.exists(e.get('test_file') or ''))
+        or (e.get('test_file') not in run_files
+            and bool(e.get('test_file'))
+            and os.path.exists(os.path.join(root, e.get('test_file') or '')))
     ]
     payload = {'tier': tier}
     if plat is not None:
@@ -257,7 +322,7 @@ for (feature, tier, plat), new_entries in proofs_by_key.items():
 # skip signal and skipped is 0.
 all_entries = [e for group in proofs_by_key.values() for e in group]
 _write_run_marker(
-    os.getcwd(),
+    root,
     'sql_purlin',
     [e['test_file'] for e in all_entries],
     sum(1 for e in all_entries if e['status'] == 'pass'),

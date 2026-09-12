@@ -28,6 +28,12 @@
  * standard fields, whatever PURLIN_PLATFORM says. The reporter never evaluates
  * version constraints.
  *
+ * The project root is found by walking up from jest's own rootDir to the
+ * nearest ancestor holding specs/ or .purlin/ (proof_common RULE-22); the spec
+ * scan, the specs/ fallback, the orphan-reaping existence check, the run marker
+ * and every recorded test_file (RULE-23) are all rooted there, so running jest
+ * from a subdirectory writes into the project's own specs/ tree.
+ *
  * At the end of the run, the same moment the proof files are written, the
  * reporter writes or merges the project's run marker
  * .purlin/runtime/test_run.json (proof_common RULE-19), so a receipt issued in
@@ -64,6 +70,37 @@ function hostPlatform() {
   if (env) return env;
   const sys = os.platform();
   return FAMILIES[sys] || sys;
+}
+
+// ── The project root (proof_common RULE-22, RULE-23) ────────────────────────
+// Everything the reporter addresses by a project-relative path is rooted here
+// and not at the working directory, so a run started from a subdirectory writes
+// into the project's own `specs/` tree instead of making a second one beside it.
+
+function isDir(p) {
+  try {
+    return fs.statSync(p).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+// The nearest ancestor of `start`, `start` itself included, that holds a
+// `specs/` or a `.purlin/` directory (RULE-22); null when none does.
+function findRoot(start) {
+  let dir = path.resolve(start);
+  for (;;) {
+    if (isDir(path.join(dir, "specs")) || isDir(path.join(dir, ".purlin"))) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) return null;
+    dir = parent;
+  }
+}
+
+// The RULE-22 project root of `start`: the nearest ancestor holding `specs/` or
+// `.purlin/`, and `start` itself when no ancestor holds either.
+function projectRoot(start) {
+  return findRoot(start) || path.resolve(start);
 }
 
 // ── The run marker (proof_common RULE-19) ───────────────────────────────────
@@ -194,15 +231,41 @@ function writeRunMarker(root, sweep, testFiles, passed, failed, skipped,
   return marker;
 }
 
-// Project-relative with "/" separators on every OS (proof_common RULE-15).
-function relativeTestFile(rootDir, filePath) {
-  return path.relative(rootDir, filePath).split(path.sep).join("/").replace(/\\/g, "/");
+// `filePath` recorded relative to the RULE-22 project root with "/" separators
+// on every OS (proof_common RULE-23, RULE-15). Whatever shape jest handed over
+// is resolved against the working directory first, so an absolute path and a
+// relative one naming the same file record the same value. A file outside
+// `root` is made relative to the nearest project root above the file itself,
+// and left absolute when there is none, rather than rewritten with "../".
+function toPosix(p) {
+  return p.split(path.sep).join("/").replace(/\\/g, "/");
+}
+
+function relativeTestFile(root, filePath) {
+  if (!filePath) return filePath;
+  const abs = path.resolve(filePath);
+  for (const base of [root, findRoot(path.dirname(abs))]) {
+    if (!base) continue;
+    const rel = path.relative(base, abs);
+    if (rel && !path.isAbsolute(rel) && rel !== ".."
+        && !rel.startsWith(".." + path.sep)) {
+      return toPosix(rel);
+    }
+  }
+  return toPosix(abs);
 }
 
 class PurlinProofReporter {
   constructor(globalConfig, reporterOptions) {
     this.globalConfig = globalConfig;
     this.options = reporterOptions || {};
+    // RULE-22: resolved once, and used for the spec scan, the fallback, the
+    // existence check, the run marker and every recorded `test_file`. The walk
+    // starts at jest's own `rootDir`, which is where jest says this run lives
+    // and a firmer statement than the reporter process's working directory;
+    // `rootDir` is not itself the project root when jest was started from a
+    // subdirectory, which is what the walk is for.
+    this.root = projectRoot((globalConfig && globalConfig.rootDir) || process.cwd());
     this.proofs = {}; // keyed by `${feature}:${tier}:${platform}` (platform "" when agnostic)
     // skipKey(feature, id, test_file) for every marked test this run skipped, so
     // an existing entry for it survives the write-scoped overwrite instead of
@@ -215,8 +278,6 @@ class PurlinProofReporter {
   }
 
   onTestResult(test, testResult) {
-    const rootDir = this.globalConfig.rootDir;
-
     for (const result of testResult.testResults) {
       // Parse proof markers from test title:
       // [proof:feature:PROOF-N:RULE-N[:tier][:on(a, b)]]
@@ -224,7 +285,7 @@ class PurlinProofReporter {
       if (!match) continue;
 
       const [, feature, proofId, ruleId, tier = "unit", onList] = match;
-      const testFile = relativeTestFile(rootDir, testResult.testFilePath);
+      const testFile = relativeTestFile(this.root, testResult.testFilePath);
 
       // A test jest did not execute records nothing: it emits no entry
       // (proof_common RULE-13) and protects the entry it would have written
@@ -265,9 +326,11 @@ class PurlinProofReporter {
   onRunComplete() {
     if (Object.keys(this.proofs).length === 0) return;
 
-    // Build feature -> spec directory mapping
+    // Build feature -> spec directory mapping, rooted at the RULE-22 project
+    // root so the scan finds the project's specs from a subdirectory too.
+    const root = this.root;
     const specDirs = {};
-    const specs = globSync("specs/**/*.md");
+    const specs = globSync("specs/**/*.md", { cwd: root });
     for (const spec of specs) {
       const stem = path.basename(spec, ".md");
       specDirs[stem] = path.dirname(spec);
@@ -281,7 +344,7 @@ class PurlinProofReporter {
         process.stderr.write(`WARNING: No spec found for feature "${feature}" — writing proofs to specs/${feature}.proofs-${suffix}.json. Create a spec with: purlin:spec ${feature}\n`);
         specDir = "specs";
       }
-      const filePath = path.join(specDir, `${feature}.proofs-${suffix}.json`);
+      const filePath = path.join(root, specDir, `${feature}.proofs-${suffix}.json`);
 
       // Load existing file
       let existing = [];
@@ -295,7 +358,9 @@ class PurlinProofReporter {
 
       // Write-scoped overwrite keyed by (feature, tier, platform, test_file), per
       // proof_common RULE-4 (the file carries tier and platform, so within it the
-      // key is (feature, test_file)), plus orphan reaping of vanished test files (RULE-11).
+      // key is (feature, test_file)), plus orphan reaping of vanished test files
+      // (RULE-11). Each recorded path is resolved from the RULE-22 project root,
+      // the same root RULE-23 relativized it against.
       const runFiles = new Set(newEntries.map((e) => e.test_file));
       // What this run wrote, so a skipped test's protection never keeps an entry
       // the run has just replaced (RULE-18: only an executed test replaces its
@@ -305,7 +370,7 @@ class PurlinProofReporter {
       );
       const kept = existing.filter((e) => {
         if (e.feature !== feature) return true;
-        if (!e.test_file || !fs.existsSync(e.test_file)) return false;
+        if (!e.test_file || !fs.existsSync(path.resolve(root, e.test_file))) return false;
         if (!runFiles.has(e.test_file)) return true;
         // The file ran. RULE-18: an entry whose test the run skipped is kept
         // with its old status, unless this run wrote it afresh.
@@ -333,7 +398,7 @@ class PurlinProofReporter {
     // recorded, plus the marked tests jest reported as skipped.
     const entries = [].concat(...Object.values(this.proofs));
     writeRunMarker(
-      this.globalConfig.rootDir,
+      this.root,
       "jest_purlin",
       entries.map((e) => e.test_file),
       entries.filter((e) => e.status === "pass").length,

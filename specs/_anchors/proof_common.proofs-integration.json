@@ -498,6 +498,150 @@
     },
     {
       "feature": "proof_common",
+      "id": "PROOF-28",
+      "rule": "RULE-22",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_a_run_from_a_subdirectory_writes_into_the_projects_specs_tree[c]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-28",
+      "rule": "RULE-22",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_a_run_from_a_subdirectory_writes_into_the_projects_specs_tree[jest]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-28",
+      "rule": "RULE-22",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_a_run_from_a_subdirectory_writes_into_the_projects_specs_tree[php]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-28",
+      "rule": "RULE-22",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_a_run_from_a_subdirectory_writes_into_the_projects_specs_tree[pytest]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-28",
+      "rule": "RULE-22",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_a_run_from_a_subdirectory_writes_into_the_projects_specs_tree[shell]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-28",
+      "rule": "RULE-22",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_a_run_from_a_subdirectory_writes_into_the_projects_specs_tree[sql]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-28",
+      "rule": "RULE-22",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_a_run_from_a_subdirectory_writes_into_the_projects_specs_tree[vitest]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-28",
+      "rule": "RULE-22",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_a_run_from_a_subdirectory_writes_into_the_projects_specs_tree[xunit]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-29",
+      "rule": "RULE-23",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_an_absolute_test_path_is_recorded_relative_to_the_project_root[c]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-29",
+      "rule": "RULE-23",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_an_absolute_test_path_is_recorded_relative_to_the_project_root[jest]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-29",
+      "rule": "RULE-23",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_an_absolute_test_path_is_recorded_relative_to_the_project_root[php]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-29",
+      "rule": "RULE-23",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_an_absolute_test_path_is_recorded_relative_to_the_project_root[pytest]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-29",
+      "rule": "RULE-23",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_an_absolute_test_path_is_recorded_relative_to_the_project_root[shell]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-29",
+      "rule": "RULE-23",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_an_absolute_test_path_is_recorded_relative_to_the_project_root[sql]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-29",
+      "rule": "RULE-23",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_an_absolute_test_path_is_recorded_relative_to_the_project_root[vitest]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-29",
+      "rule": "RULE-23",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_an_absolute_test_path_is_recorded_relative_to_the_project_root[xunit]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
       "id": "PROOF-5",
       "rule": "RULE-5",
       "test_file": "dev/test_multilang_proof_plugins.py",

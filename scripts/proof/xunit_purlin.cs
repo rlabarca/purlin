@@ -12,6 +12,10 @@
 // It collects the `PurlinProof` test trait during the run and writes
 // write-scoped proof JSON files next to the matching spec, implementing the
 // shared proof-plugin contract (see specs/_anchors/proof_common.md):
+//   - root every project-relative path at the nearest ancestor of the working
+//     directory holding specs/ or .purlin/ (RULE-22), and record test_file
+//     relative to that root (RULE-23); the test host's working directory is the
+//     test output folder, so nothing here may be resolved from it
 //   - resolve the spec directory by scanning specs/**/*.md (RULE-1)
 //   - write <feature>.proofs-<tier>.json into that directory (RULE-2)
 //   - fall back to specs/ with a stderr warning when no spec matches (RULE-3, RULE-9)
@@ -134,10 +138,11 @@ namespace Purlin
             return feature + "\u0000" + id + "\u0000" + testFile;
         }
 
-        // The project root: the nearest ancestor of the working directory that
-        // contains a `specs/` directory. vstest runs the logger with the test
-        // project directory as the CWD, which is usually nested under the repo
-        // root (e.g. tests/MyProject.Tests), so we walk up to locate specs/.
+        // The project root (RULE-22): the nearest ancestor of the working
+        // directory, that directory included, holding a `specs/` or a
+        // `.purlin/` directory. vstest runs the logger with the test output
+        // folder as the CWD, well below the repo root, so every project-relative
+        // path the logger reads or writes is resolved from here instead.
         private string _root = Directory.GetCurrentDirectory();
 
         // ITestLogger
@@ -302,7 +307,12 @@ namespace Purlin
                         entry.TryGetValue("test_file", out string? tf);
                         entry.TryGetValue("id", out string? eid);
                         entry.TryGetValue("test_name", out string? ename);
-                        if (string.IsNullOrEmpty(tf) || !File.Exists(tf)) continue;
+                        // RULE-11 resolved from the RULE-22 project root, the
+                        // same root RULE-23 relativized the path against: the
+                        // test host's working directory is the test output
+                        // folder, so a cwd-relative check reaps every entry.
+                        if (string.IsNullOrEmpty(tf)
+                            || !File.Exists(Path.Combine(_root, tf))) continue;
                         // RULE-18: an entry whose test this run skipped is kept with its
                         // old status, even though a sibling test in the same file ran,
                         // unless this run wrote that entry afresh.
@@ -552,18 +562,45 @@ namespace Purlin
             File.Move(tmp, path, true);
         }
 
-        // Walk up from `start` to the nearest ancestor containing a `specs/`
-        // directory. Falls back to `start` if none is found.
-        private static string FindRoot(string start)
+        // RULE-22: walk up from `start`, `start` itself included, to the nearest
+        // ancestor holding a `specs/` or a `.purlin/` directory; null when none
+        // does. A project whose specs live elsewhere still has `.purlin/`, and a
+        // fresh project has `specs/` before it has anything else, so either is
+        // enough to recognise the root.
+        private static string? FindRootOrNull(string start)
         {
             var dir = new DirectoryInfo(start);
             while (dir != null)
             {
-                if (Directory.Exists(Path.Combine(dir.FullName, "specs")))
+                if (Directory.Exists(Path.Combine(dir.FullName, "specs"))
+                    || Directory.Exists(Path.Combine(dir.FullName, ".purlin")))
                     return dir.FullName;
                 dir = dir.Parent;
             }
-            return start;
+            return null;
+        }
+
+        // The RULE-22 project root of `start`, falling back to `start` itself.
+        private static string FindRoot(string start)
+        {
+            return FindRootOrNull(start) ?? start;
+        }
+
+        // The roots RULE-23 tries, in order: the project being written to, then
+        // the project the source file itself lives in.
+        private static IEnumerable<string> RootCandidates(string root, string abs)
+        {
+            yield return root;
+            string? own = FindRootOrNull(Path.GetDirectoryName(abs) ?? root);
+            if (own != null && !string.Equals(own, root, StringComparison.Ordinal))
+                yield return own;
+        }
+
+        // A relative path that climbs out of the base it was measured from.
+        private static bool ClimbsOut(string rel)
+        {
+            return rel.Length == 0 || Path.IsPathRooted(rel) || rel == ".."
+                || rel.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal);
         }
 
         private static List<Dictionary<string, string>> ReadProofs(string path)
@@ -671,13 +708,27 @@ namespace Purlin
             return sb.ToString();
         }
 
+        // RULE-23: `file` recorded relative to the RULE-22 project root. The path
+        // the test platform hands over is absolute; a relative one is resolved
+        // against `root` first, so both spellings record the same value. A file
+        // outside `root` is measured from the nearest project root above the file
+        // itself, and left absolute when there is none, rather than rewritten
+        // with "../" segments: under the RULE-4 merge key a path that differs by
+        // invocation form does not collapse, it accumulates a second entry.
         private static string MakeRelative(string root, string file)
         {
             if (string.IsNullOrEmpty(file)) return file;
             try
             {
+                string abs = Path.GetFullPath(file, root);
+                string chosen = abs;
+                foreach (string candidate in RootCandidates(root, abs))
+                {
+                    string rel = Path.GetRelativePath(candidate, abs);
+                    if (!ClimbsOut(rel)) { chosen = rel; break; }
+                }
                 // Forward slashes on every OS (proof_common RULE-15) so proof files are portable.
-                return Path.GetRelativePath(root, file).Replace('\\', '/');
+                return chosen.Replace('\\', '/');
             }
             catch (Exception)
             {

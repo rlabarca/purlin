@@ -472,8 +472,11 @@ _REPORTER_SRC = os.path.join(PROOF_SCRIPTS, 'vitest_purlin.ts')
 
 # Minimal `glob` stand-in so the compiled/stripped reporter's require("glob")
 # resolves without an npm install. It performs the real filesystem walk the
-# reporter expects (globSync("specs/**/*.md")) — only the dependency is
-# substituted; the reporter's collection and write logic run for real.
+# reporter expects (globSync("specs/**/*.md", { cwd: root })) — only the
+# dependency is substituted; the reporter's collection and write logic run for
+# real. Like the real glob, it resolves the pattern against `cwd` and returns
+# paths relative to it, which is what lets the reporter root its scan at the
+# project root (proof_common RULE-22) rather than at the working directory.
 _GLOB_SHIM = '''\
 const fs = require('fs');
 const path = require('path');
@@ -486,7 +489,13 @@ function walk(dir, out) {
     else if (e.name.endsWith('.md')) out.push(full);
   }
 }
-function globSync(pattern) { const base = pattern.split('/**/')[0]; const out = []; walk(base, out); return out; }
+function globSync(pattern, opts) {
+  const cwd = (opts && opts.cwd) || process.cwd();
+  const base = path.resolve(cwd, pattern.split('/**/')[0]);
+  const out = [];
+  walk(base, out);
+  return out.map(function (p) { return path.relative(cwd, p); });
+}
 module.exports = { globSync };
 '''
 
@@ -2276,9 +2285,6 @@ _KEPT_ENTRY = {'feature': 'feat', 'id': 'PROOF-11', 'rule': 'RULE-9',
 # Ordinal: 'PROOF-1' is a prefix of 'PROOF-10', and '0' < '1' < '2'. Numeric
 # order would read PROOF-1, PROOF-2, PROOF-10, PROOF-11 instead.
 _ORDINAL_IDS = ['PROOF-1', 'PROOF-10', 'PROOF-11', 'PROOF-2']
-# The same order without the kept entry, for the one writer whose merge cannot see
-# it (see `_two_runs`).
-_ORDINAL_IDS_NO_KEPT = ['PROOF-1', 'PROOF-10', 'PROOF-2']
 
 
 def _seed_kept_entry(root, spec_dir):
@@ -2310,24 +2316,21 @@ def _assert_stable_order(first, second, plugin, expected_ids=_ORDINAL_IDS):
 class TestDeterministicProofEntryOrder:
     """proof_common RULE-21, one case per plugin on the real writer."""
 
-    def _two_runs(self, tmp_path, driver, sub='a', seed=True):
+    def _two_runs(self, tmp_path, driver, sub='a'):
         """Drive `driver` twice in two fresh projects, the second with the three
         markers declared in reverse source order; return both written files.
 
-        `seed=False` for the .NET logger alone: it runs inside the test host,
-        whose working directory is the test output folder, so RULE-11's existence
-        check never resolves a project-relative path and the kept entry is reaped
-        before the sort can place it. That degradation is the documented one and
-        belongs to RULE-11, not here; the three records the run wrote still carry
-        the order this proof is about.
+        Every writer, the .NET logger included, is seeded with the kept sibling
+        entry: RULE-22 roots the RULE-11 existence check at the project root, so
+        a run whose working directory is a subdirectory (the test host's is the
+        test output folder) resolves the kept path instead of reaping it.
         """
         written = []
         for name, cases in (('forward', _ORDER_CASES),
                             ('reversed', tuple(reversed(_ORDER_CASES)))):
             root = tmp_path / name
             spec_dir = _spec(root, 'feat', sub)
-            if seed:
-                _seed_kept_entry(root, spec_dir)
+            _seed_kept_entry(root, spec_dir)
             driver(root, cases)
             written.append(spec_dir / 'feat.proofs-unit.json')
         return written
@@ -2494,8 +2497,8 @@ class TestDeterministicProofEntryOrder:
     @pytest.mark.skipif(not shutil.which('dotnet'), reason='dotnet SDK not available')
     @pytest.mark.proof("proof_common", "PROOF-27", "RULE-21", tier="integration")
     def test_xunit_entry_order_is_ordinal_and_stable(self, tmp_path):
-        first, second = self._two_runs(tmp_path, self._run_xunit, sub='svc', seed=False)
-        _assert_stable_order(first, second, 'xunit_purlin', _ORDINAL_IDS_NO_KEPT)
+        first, second = self._two_runs(tmp_path, self._run_xunit, sub='svc')
+        _assert_stable_order(first, second, 'xunit_purlin')
 
 
 # ---------------------------------------------------------------------------
@@ -2678,3 +2681,263 @@ class TestFallbackWarningPerPlugin:
         assert written, (
             f"{plugin} warned but wrote nothing under specs/: "
             f"{os.listdir(str(root / 'specs'))}")
+
+
+# ---------------------------------------------------------------------------
+# proof_common RULE-22 and RULE-23, on all 8 plugins.
+#
+# One driver per plugin, each writing its fixture into `workdir`, running the
+# real plugin with `workdir` as the working directory, and returning the
+# CompletedProcess plus the path of the test file it recorded, relative to
+# `workdir`. `absolute` decides whether the path the plugin is handed is the
+# absolute one or the bare relative name, for the plugins whose path arrives
+# through an argument; pytest, jest, vitest and xunit are always handed an
+# absolute path by their framework, so they ignore it.
+#
+# PROOF-28 runs each from `<root>/sub/`: the evidence must land in `<root>/specs/`
+# beside the project's spec, the entry of a test file this run did not execute
+# must survive the RULE-11 reap, and `test_file` must read `sub/...`.
+# PROOF-29 runs each from `<root>` with an absolute path in: `test_file` must
+# come out relative all the same.
+# ---------------------------------------------------------------------------
+
+_ROOTED_MARKER_SRC = ('feat', 'PROOF-1', 'RULE-1', 'it')
+
+
+def _rooted_pytest(workdir, absolute):
+    shutil.copy(os.path.join(PROOF_SCRIPTS, 'pytest_purlin.py'),
+                str(workdir / 'conftest.py'))
+    target = workdir / 'test_feat.py'
+    target.write_text(
+        'import pytest\n'
+        '@pytest.mark.proof("feat", "PROOF-1", "RULE-1")\n'
+        'def test_it(): assert True\n')
+    arg = str(target) if absolute else 'test_feat.py'
+    proc = subprocess.run(
+        [sys.executable, '-m', 'pytest', arg, '-q', '--no-header',
+         '-p', 'no:cacheprovider'],
+        capture_output=True, text=True, cwd=str(workdir), env=_env(None))
+    return proc, 'test_feat.py'
+
+
+def _rooted_shell(workdir, absolute):
+    script = workdir / 't.sh'
+    script.write_text(
+        '#!/usr/bin/env bash\nset -euo pipefail\n'
+        'source ' + os.path.join(PROOF_SCRIPTS, 'shell_purlin.sh') + '\n'
+        'purlin_proof "feat" "PROOF-1" "RULE-1" pass "it"\n'
+        'purlin_proof_finish\n')
+    arg = str(script) if absolute else 't.sh'
+    proc = subprocess.run(['bash', arg], capture_output=True, text=True,
+                          cwd=str(workdir), env=_env(None))
+    return proc, 't.sh'
+
+
+def _rooted_jest(workdir, absolute):
+    glob_dir = workdir / 'node_modules' / 'glob'
+    glob_dir.mkdir(parents=True, exist_ok=True)
+    (glob_dir / 'package.json').write_text(
+        '{"name":"glob","version":"0.0.0","main":"index.js"}')
+    (glob_dir / 'index.js').write_text(_GLOB_SHIM)
+    shutil.copy(os.path.join(PROOF_SCRIPTS, 'jest_purlin.js'),
+                str(workdir / 'jest_purlin.js'))
+    (workdir / 'tests').mkdir(exist_ok=True)
+    target = workdir / 'tests' / 'feat.test.js'
+    target.write_text('// fixture\n')
+    harness = workdir / 'harness.cjs'
+    harness.write_text(
+        'const Reporter = require("./jest_purlin.js");\n'
+        # jest's own rootDir is the directory it was started in, which is the
+        # subdirectory here, not the project root.
+        f'const r = new Reporter({{ rootDir: {json.dumps(str(workdir))} }}, {{}});\n'
+        'r.onTestResult(null, { testFilePath: ' + json.dumps(str(target))
+        + ', testResults: [\n'
+        '  { title: "it [proof:feat:PROOF-1:RULE-1]", status: "passed" },\n'
+        ']});\n'
+        'r.onRunComplete();\n')
+    proc = subprocess.run(['node', str(harness)], capture_output=True, text=True,
+                          cwd=str(workdir), env=_env(None))
+    return proc, 'tests/feat.test.js'
+
+
+def _rooted_vitest(workdir, absolute):
+    (workdir / 'tests').mkdir(exist_ok=True)
+    target = workdir / 'tests' / 'feat.test.ts'
+    target.write_text('// fixture\n')
+    files_js = (
+        '[{ type: "suite", filepath: ' + json.dumps(str(target)) + ', tasks: [\n'
+        '  { type: "test", name: "it [proof:feat:PROOF-1:RULE-1:unit]",'
+        ' result: { state: "pass" } },\n'
+        ']}]')
+    proc = TestTypeScriptProofPlugin()._drive_reporter(workdir, files_js,
+                                                       env=_env(None))
+    return proc, 'tests/feat.test.ts'
+
+
+def _rooted_c(workdir, absolute):
+    shutil.copy(os.path.join(PROOF_SCRIPTS, 'c_purlin.h'), str(workdir))
+    src = workdir / 't.c'
+    recorded = str(src) if absolute else 't.c'
+    src.write_text(
+        '#include "c_purlin.h"\nint main(void) {\n'
+        '  purlin_proof("feat", "PROOF-1", "RULE-1", 1, "it", '
+        + json.dumps(recorded) + ', "unit");\n'
+        '  purlin_proof_finish();\n  return 0;\n}\n')
+    binary = workdir / 't'
+    cc = subprocess.run(['gcc', '-o', str(binary), str(src), '-I', str(workdir)],
+                        capture_output=True, text=True)
+    assert cc.returncode == 0, cc.stderr
+    run = subprocess.run([str(binary)], capture_output=True, text=True,
+                         cwd=str(workdir))
+    assert run.returncode == 0, run.stderr
+    proc = subprocess.run(
+        [sys.executable, os.path.join(PROOF_SCRIPTS, 'c_purlin_emit.py')],
+        input=run.stdout, capture_output=True, text=True,
+        cwd=str(workdir), env=_env(None))
+    return proc, 't.c'
+
+
+def _rooted_sql(workdir, absolute):
+    target = workdir / 'feat.sql'
+    target.write_text(
+        "-- @purlin feat PROOF-1 RULE-1 unit\n-- Test: it\nSELECT 'PASS';\n")
+    arg = str(target) if absolute else 'feat.sql'
+    proc = subprocess.run(
+        ['bash', os.path.join(PROOF_SCRIPTS, 'sql_purlin.sh'), arg],
+        capture_output=True, text=True, cwd=str(workdir), env=_env(None))
+    return proc, 'feat.sql'
+
+
+def _rooted_php(workdir, absolute):
+    target = workdir / 'FeatTest.php'
+    target.write_text(
+        '<?php\n/** @purlin feat PROOF-1 RULE-1 unit */\nfunction test_it() { }\n')
+    arg = str(target) if absolute else 'FeatTest.php'
+    proc = subprocess.run(
+        ['php', os.path.join(PROOF_SCRIPTS, 'phpunit_purlin.php'), arg],
+        capture_output=True, text=True, cwd=str(workdir), env=_env(None))
+    return proc, 'FeatTest.php'
+
+
+def _rooted_xunit(workdir, absolute):
+    (workdir / 'logger').mkdir()
+    shutil.copy(_XUNIT_LOGGER_SRC, str(workdir / 'logger' / 'PurlinProofLogger.cs'))
+    (workdir / 'logger' / 'logger.csproj').write_text(_LOGGER_CSPROJ)
+    (workdir / 'tests').mkdir()
+    (workdir / 'tests' / 'tests.csproj').write_text(_TEST_CSPROJ)
+    (workdir / 'tests' / 'Tests.cs').write_text(
+        'using Xunit;\nnamespace Svc.Tests {\n  public class RootTests {\n'
+        '    [Fact][Trait("PurlinProof","feat:PROOF-1:RULE-1:unit")]\n'
+        '    public void It() { Assert.True(true); }\n'
+        '  }\n}\n')
+    env = _env(None)
+    env.update(DOTNET_CLI_TELEMETRY_OPTOUT='1', DOTNET_NOLOGO='1')
+    proc = subprocess.run(
+        ['dotnet', 'test', 'tests/tests.csproj', '--logger', 'purlin',
+         '--', 'RunConfiguration.CollectSourceInformation=true'],
+        cwd=str(workdir), capture_output=True, text=True, env=env)
+    return proc, 'tests/Tests.cs'
+
+
+# One arm per plugin, each skipped only for its own missing toolchain, so a host
+# without php still proves the other seven.
+_ROOTED_ARMS = (
+    pytest.param('pytest', _rooted_pytest, id='pytest'),
+    pytest.param('shell', _rooted_shell, id='shell'),
+    pytest.param('jest', _rooted_jest, id='jest',
+                 marks=pytest.mark.skipif(not shutil.which('node'),
+                                          reason='node not available')),
+    pytest.param('vitest', _rooted_vitest, id='vitest',
+                 marks=pytest.mark.skipif(
+                     not _node_can_run_ts(),
+                     reason='node with a TS loader (tsc or type-stripping) not available')),
+    pytest.param('c', _rooted_c, id='c',
+                 marks=pytest.mark.skipif(not shutil.which('gcc'),
+                                          reason='gcc not available')),
+    pytest.param('sql', _rooted_sql, id='sql',
+                 marks=pytest.mark.skipif(not shutil.which('sqlite3'),
+                                          reason='sqlite3 not available')),
+    pytest.param('php', _rooted_php, id='php',
+                 marks=pytest.mark.skipif(not shutil.which('php'),
+                                          reason='php not available')),
+    pytest.param('xunit', _rooted_xunit, id='xunit',
+                 marks=pytest.mark.skipif(not shutil.which('dotnet'),
+                                          reason='dotnet SDK not available')),
+)
+
+
+class TestProjectRootFoundByWalking:
+    """proof_common RULE-22 / PROOF-28: one arm per plugin, on the real writer."""
+
+    @pytest.mark.parametrize('plugin,driver', _ROOTED_ARMS)
+    @pytest.mark.proof("proof_common", "PROOF-28", "RULE-22", tier="integration")
+    def test_a_run_from_a_subdirectory_writes_into_the_projects_specs_tree(
+            self, tmp_path, plugin, driver):
+        root = tmp_path / 'proj'
+        spec_dir = _spec(root, 'feat', 'a')
+        (root / '.purlin').mkdir()
+        _seed_kept_entry(root, spec_dir)
+        workdir = root / 'sub'
+        workdir.mkdir()
+
+        proc, recorded = driver(workdir, False)
+        assert proc.returncode == 0, f"{plugin}:\n{proc.stdout}\n{proc.stderr}"
+
+        proof_path = spec_dir / 'feat.proofs-unit.json'
+        assert proof_path.is_file(), (
+            f"{plugin} must write into the project's own specs/ tree when run "
+            f"from a subdirectory; {proof_path} is missing and the project holds "
+            f"{sorted(os.listdir(str(root)))}, the subdirectory "
+            f"{sorted(os.listdir(str(workdir)))}\n{proc.stdout}\n{proc.stderr}")
+        assert not (workdir / 'specs').exists(), (
+            f"{plugin} made a second specs/ tree inside the subdirectory it ran "
+            f"from: {sorted(os.listdir(str(workdir / 'specs')))}")
+
+        entries = json.load(open(proof_path))['proofs']
+        by_id = {e['id']: e for e in entries}
+        assert sorted(by_id) == ['PROOF-1', 'PROOF-11'], (
+            f"{plugin} must write its own entry beside the one the RULE-4 merge "
+            f"keeps; got {entries}")
+        assert by_id['PROOF-11'] == _KEPT_ENTRY, (
+            f"{plugin} reaped the entry of a test file it did not execute: its "
+            f"path {_KEPT_SIBLING!r} resolves from the project root, so a "
+            f"RULE-11 existence check rooted at the working directory is what "
+            f"drops it. Got {by_id.get('PROOF-11')}")
+        assert by_id['PROOF-1']['test_file'] == 'sub/' + recorded, (
+            f"{plugin} must record test_file relative to the project root, so "
+            f"the subdirectory is part of the path: expected "
+            f"{'sub/' + recorded!r}, got {by_id['PROOF-1']['test_file']!r}")
+
+        marker = root / '.purlin' / 'runtime' / 'test_run.json'
+        assert marker.is_file(), (
+            f"{plugin} must write the RULE-19 run marker into the project's own "
+            f".purlin/, not look for one beside the subdirectory it ran from")
+
+
+class TestTestFileIsProjectRelative:
+    """proof_common RULE-23 / PROOF-29: one arm per plugin, on the real writer."""
+
+    @pytest.mark.parametrize('plugin,driver', _ROOTED_ARMS)
+    @pytest.mark.proof("proof_common", "PROOF-29", "RULE-23", tier="integration")
+    def test_an_absolute_test_path_is_recorded_relative_to_the_project_root(
+            self, tmp_path, plugin, driver):
+        root = tmp_path / 'proj'
+        spec_dir = _spec(root, 'feat', 'a')
+
+        proc, recorded = driver(root, True)
+        assert proc.returncode == 0, f"{plugin}:\n{proc.stdout}\n{proc.stderr}"
+
+        entries = json.load(open(spec_dir / 'feat.proofs-unit.json'))['proofs']
+        assert len(entries) == 1, entries
+        tf = entries[0]['test_file']
+        assert tf == recorded, (
+            f"{plugin} was handed the absolute path {str(root / recorded)!r} and "
+            f"must record it relative to the project root as {recorded!r}; got "
+            f"{tf!r}. An absolute path in a committed proof file carries one "
+            f"machine's directory layout and does not match the same test run "
+            f"from anywhere else.")
+        assert not os.path.isabs(tf), tf
+        assert '\\' not in tf, tf
+        assert os.pardir not in tf.split('/'), (
+            f"{plugin} rewrote the path with parent segments instead of "
+            f"measuring it from the project root: {tf!r}")

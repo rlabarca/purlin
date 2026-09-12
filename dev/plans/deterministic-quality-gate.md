@@ -445,3 +445,80 @@ Deferrals and adjacent findings:
 - `dev/test_multilang_proof_plugins.py` fails 6 and errors 6 on this host, all `TestXUnit*`, on a
   clean `git stash` of this work as well. A pre-existing `dotnet` toolchain problem, not this
   commit's.
+
+### B2
+
+`feat(proof_common): every plugin finds the project root by walk and records test_file project-relative`
+
+Files touched:
+
+- `scripts/proof/pytest_purlin.py`, `shell_purlin.sh`, `jest_purlin.js`, `vitest_purlin.ts`,
+  `sql_purlin.sh`, `c_purlin_emit.py`, `phpunit_purlin.php`, `xunit_purlin.cs` (all eight)
+- `.purlin/plugins/pytest_purlin.py`, `jest_purlin.js`, `vitest_purlin.ts`, `purlin-proof.sh`
+  (the four synced copies, PROOF-20 byte identity)
+- `specs/_anchors/proof_common.md` (RULE-22, RULE-23, PROOF-28, PROOF-29; PROOF-27's xUnit
+  sentence amended; `> Description:` and one "What it does" paragraph)
+- `specs/proof/proof_plugins_pytest.md`, `specs/proof/proof_plugins_jest.md` (RULE-3 and
+  PROOF-3 named pytest's `rootdir` and jest's `rootDir` as the base; both now name the
+  project root and cite proof_common RULE-23)
+- `dev/test_multilang_proof_plugins.py` (`TestProjectRootFoundByWalking`,
+  `TestTestFileIsProjectRelative`, eight `_rooted_*` drivers, `_ROOTED_ARMS`; `_GLOB_SHIM`
+  honours `{cwd}` like the real glob; PROOF-27's xUnit arm seeded, `_ORDINAL_IDS_NO_KEPT` and
+  `_two_runs(seed=)` deleted)
+- `references/formats/proofs_format.md` (orphan-reaping prose and the `keep(e)` sample rooted;
+  no Format-Version bump, B4 owns that)
+- `specs/_anchors/proof_common.proofs-integration.json` (16 new entries, 8 per new proof)
+
+Maxima left: `specs/_anchors/proof_common.md` RULE-23 / PROOF-29.
+`specs/proof/proof_plugins_pytest.md` RULE-4 / PROOF-4 and
+`specs/proof/proof_plugins_jest.md` RULE-4 / PROOF-5, both unchanged (rules amended in
+place, no new ids).
+
+Test counts:
+
+- `dev/test_multilang_proof_plugins.py` run whole: 79 passed before, 95 after (+16, one arm
+  per plugin for each of PROOF-28 and PROOF-29), 0 skipped either way
+- `dev/test_proof_plugins_missing.py`: 31 passed before and after
+- `bash dev/test_proof_plugins.sh`: 28/28 before and after
+- `bash dev/test_proof_pytest.sh`, `dev/test_proof_jest.sh`, `dev/test_proof_shell.sh`:
+  5 passed / 0 failed each, before and after
+- `python3 -m pytest dev/test_init_scaffold.py -q`: 15 passed before and after
+- `python3 -m pytest dev/test_pre_push_hook.py -q` (the repository's own pytest plugin,
+  driven the way the sweep drives it): 27 passed, and its committed proof JSON files came
+  back byte-identical, so the rooted writer records the same paths from the repo root
+
+Mutations, `dev/test_multilang_proof_plugins.py` run whole each time:
+
+1. xUnit's existence check put back to the cwd-relative `File.Exists(tf)`. 2 failed, 93
+   passed: PROOF-28's xUnit arm with "AssertionError: xunit must write its own entry beside
+   the one the RULE-4 merge keeps; got [{... 'id': 'PROOF-1' ...}]" (the kept `PROOF-11` entry
+   reaped), and PROOF-27's now-seeded xUnit arm with "AssertionError: xunit_purlin must write
+   entries in ordinal (id, test_file, test_name) order ['PROOF-1', 'PROOF-10', 'PROOF-11',
+   'PROOF-2'], got ['PROOF-1', 'PROOF-10', 'PROOF-2']".
+2. The SQL harness's relativization removed (`recorded_file` back to the path as given).
+   2 failed, 93 passed: PROOF-29's sql arm with "AssertionError: sql was handed the absolute
+   path '/private/var/.../proj/feat.sql' and must record it relative to the project root as
+   'feat.sql'; got '/private/var/.../proj/feat.sql'", and PROOF-28's sql arm with
+   "AssertionError: sql must record test_file relative to the project root, so the
+   subdirectory is part of the path: expected 'sub/feat.sql', got 'feat.sql'".
+
+Restored after each; 126 passed across the two pytest files.
+
+Decisions:
+
+- RULE-22's walk starts at the working directory, except for jest, which is handed
+  `globalConfig.rootDir` and walks from there. Starting jest at `process.cwd()` broke
+  `dev/test_proof_plugins.sh`'s three jest cases, which construct the reporter from the
+  repository root and `process.chdir` into the temp project only before `onRunComplete`;
+  `rootDir` is also the firmer statement of where a jest run lives. The rule says so
+  explicitly rather than leaving it to the implementation.
+- The shell harness's `_project_root_of` no longer accepts `.git` as a root marker, so all
+  eight plugins recognise a root by the same two directories. A git repository that is not a
+  Purlin project is not a root, and every Purlin project has `.purlin/`.
+- RULE-23's outside-the-root clause (measure from the nearest root above the file, leave it
+  absolute when there is none, never write `../`) is implemented in all eight rather than in
+  the shell harness alone, so one `relativize` shape reads the same in every language.
+
+Deferral: the `require("glob")` shims in `dev/test_multilang_proof_plugins.py` and
+`dev/test_proof_plugins_missing.py` are still two copies of the same stand-in. B3 deletes
+both when jest and vitest stop depending on `glob`, so they were not consolidated here.

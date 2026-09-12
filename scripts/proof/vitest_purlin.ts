@@ -24,6 +24,12 @@
  * standard fields, whatever PURLIN_PLATFORM says. The reporter never evaluates
  * version constraints.
  *
+ * The project root is found by walking up from the working directory to the
+ * nearest ancestor holding specs/ or .purlin/ (proof_common RULE-22); the spec
+ * scan, the specs/ fallback, the orphan-reaping existence check, the run marker
+ * and every recorded test_file (RULE-23) are all rooted there, so running
+ * vitest from a subdirectory writes into the project's own specs/ tree.
+ *
  * At the end of the run, the same moment the proof files are written, the
  * reporter writes or merges the project's run marker
  * .purlin/runtime/test_run.json (proof_common RULE-19), so a receipt issued in
@@ -67,6 +73,37 @@ function hostPlatform(): string {
   if (env) return env;
   const sys = os.platform();
   return FAMILIES[sys] || sys;
+}
+
+// ── The project root (proof_common RULE-22, RULE-23) ────────────────────────
+// Everything the reporter addresses by a project-relative path is rooted here
+// and not at the working directory, so a run started from a subdirectory writes
+// into the project's own `specs/` tree instead of making a second one beside it.
+
+function isDir(p: string): boolean {
+  try {
+    return fs.statSync(p).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+// The nearest ancestor of `start`, `start` itself included, that holds a
+// `specs/` or a `.purlin/` directory (RULE-22); null when none does.
+function findRoot(start: string): string | null {
+  let dir = path.resolve(start);
+  for (;;) {
+    if (isDir(path.join(dir, "specs")) || isDir(path.join(dir, ".purlin"))) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) return null;
+    dir = parent;
+  }
+}
+
+// The RULE-22 project root of `start`: the nearest ancestor holding `specs/` or
+// `.purlin/`, and `start` itself when no ancestor holds either.
+function projectRoot(start: string): string {
+  return findRoot(start) || path.resolve(start);
 }
 
 // ── The run marker (proof_common RULE-19) ───────────────────────────────────
@@ -205,9 +242,28 @@ function writeRunMarker(root: string, sweep: string, testFiles: string[],
   fs.renameSync(tmp, markerPath);
 }
 
-// Project-relative with "/" separators on every OS (proof_common RULE-15).
-function relativeTestFile(rootDir: string, filePath: string): string {
-  return path.relative(rootDir, filePath).split(path.sep).join("/").replace(/\\/g, "/");
+// `filePath` recorded relative to the RULE-22 project root with "/" separators
+// on every OS (proof_common RULE-23, RULE-15). Whatever shape vitest handed
+// over is resolved against the working directory first, so an absolute path and
+// a relative one naming the same file record the same value. A file outside
+// `root` is made relative to the nearest project root above the file itself,
+// and left absolute when there is none, rather than rewritten with "../".
+function toPosix(p: string): string {
+  return p.split(path.sep).join("/").replace(/\\/g, "/");
+}
+
+function relativeTestFile(root: string, filePath: string): string {
+  if (!filePath) return filePath;
+  const abs = path.resolve(filePath);
+  for (const base of [root, findRoot(path.dirname(abs))]) {
+    if (!base) continue;
+    const rel = path.relative(base, abs);
+    if (rel && !path.isAbsolute(rel) && rel !== ".."
+        && !rel.startsWith(".." + path.sep)) {
+      return toPosix(rel);
+    }
+  }
+  return toPosix(abs);
 }
 
 /**
@@ -248,10 +304,13 @@ class PurlinVitestReporter implements Reporter {
   // did not execute, for the run marker's skipped_proofs (RULE-20). A task
   // with no terminal state carries no message, so reason is null.
   private skippedProofs: Map<string, SkippedProof> = new Map();
-  private rootDir: string;
+  // RULE-22: resolved once, from the working directory vitest was started in,
+  // and used for the spec scan, the fallback, the existence check, the run
+  // marker and every recorded `test_file`.
+  private root: string;
 
   constructor() {
-    this.rootDir = process.cwd();
+    this.root = projectRoot(process.cwd());
   }
 
   onFinished(files?: VitestTask[]): void {
@@ -285,7 +344,7 @@ class PurlinVitestReporter implements Reporter {
 
     const filepath = file.filepath ?? file.file?.filepath;
     const testFile = filepath
-      ? relativeTestFile(this.rootDir, filepath)
+      ? relativeTestFile(this.root, filepath)
       : "unknown";
 
     // Only record tasks that produced a terminal pass/fail result. Skipped,
@@ -330,9 +389,11 @@ class PurlinVitestReporter implements Reporter {
   private writeProofFiles(): void {
     if (this.proofs.size === 0) return;
 
-    // Build feature -> spec directory mapping
+    // Build feature -> spec directory mapping, rooted at the RULE-22 project
+    // root so the scan finds the project's specs from a subdirectory too.
+    const root = this.root;
     const specDirs: Record<string, string> = {};
-    const specs = globSync("specs/**/*.md");
+    const specs = globSync("specs/**/*.md", { cwd: root });
     for (const spec of specs) {
       const stem = path.basename(spec, ".md");
       specDirs[stem] = path.dirname(spec);
@@ -348,7 +409,7 @@ class PurlinVitestReporter implements Reporter {
         );
         specDir = "specs";
       }
-      const filePath = path.join(specDir, `${feature}.proofs-${suffix}.json`);
+      const filePath = path.join(root, specDir, `${feature}.proofs-${suffix}.json`);
 
       // Load existing file
       let existing: ProofEntry[] = [];
@@ -363,7 +424,9 @@ class PurlinVitestReporter implements Reporter {
 
       // Write-scoped overwrite keyed by (feature, tier, platform, test_file), per
       // proof_common RULE-4 (the file carries tier and platform, so within it the
-      // key is (feature, test_file)), plus orphan reaping of vanished test files (RULE-11).
+      // key is (feature, test_file)), plus orphan reaping of vanished test files
+      // (RULE-11). Each recorded path is resolved from the RULE-22 project root,
+      // the same root RULE-23 relativized it against.
       const runFiles = new Set(newEntries.map((e) => e.test_file));
       // What this run wrote, so a skipped test's protection never keeps an entry
       // the run has just replaced (RULE-18: only an executed test replaces its
@@ -373,7 +436,7 @@ class PurlinVitestReporter implements Reporter {
       );
       const kept = existing.filter((e) => {
         if (e.feature !== feature) return true;
-        if (!e.test_file || !fs.existsSync(e.test_file)) return false;
+        if (!e.test_file || !fs.existsSync(path.resolve(root, e.test_file))) return false;
         if (!runFiles.has(e.test_file)) return true;
         // The file ran. RULE-18: an entry whose test the run skipped is kept
         // with its old status, unless this run wrote it afresh.
@@ -402,7 +465,7 @@ class PurlinVitestReporter implements Reporter {
     const entries: ProofEntry[] = [];
     for (const group of this.proofs.values()) entries.push(...group);
     writeRunMarker(
-      this.rootDir,
+      this.root,
       "vitest_purlin",
       entries.map((e) => e.test_file),
       entries.filter((e) => e.status === "pass").length,

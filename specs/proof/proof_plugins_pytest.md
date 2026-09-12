@@ -18,12 +18,12 @@ arg handling, path resolution, and hook wiring live here; everything else is pro
 
 - RULE-1: The marker signature is `@pytest.mark.proof("feature", "PROOF-N", "RULE-N", tier="unit")` where tier defaults to `"unit"`
 - RULE-2: Markers with fewer than 3 positional args are silently skipped
-- RULE-3: `test_file` is recorded as the path relative to the pytest rootdir
+- RULE-3: `test_file` is recorded as the path relative to the project root (proof_common RULE-23), not to pytest's own `rootdir`, which is the invocation directory when the run started below the project root
 - RULE-4: The plugin registers itself via `pytest_configure` and collects results in `pytest_runtest_makereport` during the `call` phase only
 
 ## Proof
 
 - PROOF-1 (RULE-1): Create a test with `@pytest.mark.proof("feat", "PROOF-1", "RULE-1")`; run pytest; verify the proof entry has `feature: "feat"`, `tier: "unit"` @integration
 - PROOF-2 (RULE-2): Create a test with `@pytest.mark.proof("feat", "PROOF-1")` (only 2 args); run pytest; verify no proof entry is emitted for that test @integration
-- PROOF-3 (RULE-3): Run pytest from a project root; verify `test_file` in the proof entry is relative to the root (not absolute) @integration
+- PROOF-3 (RULE-3): Run pytest from a project root; verify `test_file` in the proof entry is relative to the project root (not absolute) @integration
 - PROOF-4 (RULE-4): Hand `pytest_configure` a fake config; verify it adds an ini line naming the `proof` marker and registers a `ProofCollector` under the plugin name `purlin_proof`. Then run a real pytest session over one file holding a marked test whose fixture raises (setup phase) and a marked test that fails in its own body (call phase); verify the written proof file holds the call-phase test as `PROOF-2` with `status: "fail"` and holds no entry at all for the setup-phase test's `PROOF-1`, because `pytest_runtest_makereport` collects during the `call` phase only @integration
