@@ -30,118 +30,10 @@
     },
     {
       "feature": "skill_spec_from_code",
-      "id": "PROOF-10",
-      "rule": "RULE-5",
-      "test_file": "dev/test_e2e_spec_migration.py",
-      "test_name": "test_legacy_features_dir_is_phase1_detection_scope",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-11",
-      "rule": "RULE-6",
-      "test_file": "dev/test_e2e_spec_migration.py",
-      "test_name": "test_unnumbered_rules_get_renumbered",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-12",
-      "rule": "RULE-6",
-      "test_file": "dev/test_e2e_spec_migration.py",
-      "test_name": "test_missing_description_detected",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-13",
-      "rule": "RULE-6",
-      "test_file": "dev/test_e2e_spec_migration.py",
-      "test_name": "test_missing_proof_section_detected",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-14",
-      "rule": "RULE-7",
-      "test_file": "dev/test_e2e_spec_migration.py",
-      "test_name": "test_compliant_spec_bytes_untouched",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-15",
-      "rule": "RULE-7",
-      "test_file": "dev/test_e2e_spec_migration.py",
-      "test_name": "test_compliant_spec_excluded_from_candidate_list",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-16",
-      "rule": "RULE-8",
-      "test_file": "dev/test_e2e_spec_migration.py",
-      "test_name": "test_existing_metadata_is_load_bearing",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-17",
-      "rule": "RULE-5",
-      "test_file": "dev/test_e2e_spec_migration.py",
-      "test_name": "test_legacy_feature_name_and_category_preserved",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-18",
-      "rule": "RULE-8",
-      "test_file": "dev/test_e2e_spec_migration.py",
-      "test_name": "test_llm_evaluates_migration_fidelity",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-19",
-      "rule": "RULE-10",
-      "test_file": "dev/test_e2e_spec_migration.py",
-      "test_name": "test_sequential_rule_numbering",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-20",
-      "rule": "RULE-11",
-      "test_file": "dev/test_e2e_spec_migration.py",
-      "test_name": "test_every_rule_has_proof",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-21",
-      "rule": "RULE-12",
-      "test_file": "dev/test_e2e_spec_migration.py",
-      "test_name": "test_no_assumed_tags_with_explicit_values",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
       "id": "PROOF-22",
       "rule": "RULE-13",
       "test_file": "dev/test_e2e_spec_migration.py",
-      "test_name": "test_prd_extracts_at_least_5_rules",
+      "test_name": "test_prd_scenario_reads_back_six_rules",
       "status": "pass",
       "tier": "e2e"
     },
@@ -150,7 +42,7 @@
       "id": "PROOF-23",
       "rule": "RULE-14",
       "test_file": "dev/test_e2e_spec_migration.py",
-      "test_name": "test_prd_has_valid_metadata",
+      "test_name": "test_prd_scenario_metadata_is_load_bearing",
       "status": "pass",
       "tier": "e2e"
     },
@@ -159,7 +51,7 @@
       "id": "PROOF-24",
       "rule": "RULE-15",
       "test_file": "dev/test_e2e_spec_migration.py",
-      "test_name": "test_prd_requires_overlapping_anchor",
+      "test_name": "test_prd_scenario_requires_anchor_counts_toward_coverage",
       "status": "pass",
       "tier": "e2e"
     },
@@ -177,7 +69,7 @@
       "id": "PROOF-26",
       "rule": "RULE-17",
       "test_file": "dev/test_e2e_spec_migration.py",
-      "test_name": "test_assumed_tags_parseable_by_sync_status",
+      "test_name": "test_assumed_tagged_rules_still_parse",
       "status": "pass",
       "tier": "e2e"
     },
@@ -228,37 +120,10 @@
     },
     {
       "feature": "skill_spec_from_code",
-      "id": "PROOF-19",
-      "rule": "RULE-10",
-      "test_file": "dev/test_e2e_spec_from_input.py",
-      "test_name": "test_sequential_rule_numbering",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-20",
-      "rule": "RULE-11",
-      "test_file": "dev/test_e2e_spec_from_input.py",
-      "test_name": "test_every_rule_has_proof",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-21",
-      "rule": "RULE-12",
-      "test_file": "dev/test_e2e_spec_from_input.py",
-      "test_name": "test_no_assumed_tags_on_explicit_values",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_spec_from_code",
       "id": "PROOF-22",
       "rule": "RULE-13",
       "test_file": "dev/test_e2e_spec_from_input.py",
-      "test_name": "test_prd_extracts_at_least_5_rules",
+      "test_name": "test_prd_scenario_reads_back_six_rules",
       "status": "pass",
       "tier": "e2e"
     },
@@ -267,7 +132,7 @@
       "id": "PROOF-23",
       "rule": "RULE-14",
       "test_file": "dev/test_e2e_spec_from_input.py",
-      "test_name": "test_prd_metadata_present",
+      "test_name": "test_prd_scenario_metadata_is_load_bearing",
       "status": "pass",
       "tier": "e2e"
     },
@@ -276,7 +141,7 @@
       "id": "PROOF-24",
       "rule": "RULE-15",
       "test_file": "dev/test_e2e_spec_from_input.py",
-      "test_name": "test_requires_anchor_in_coverage",
+      "test_name": "test_prd_scenario_requires_anchor_counts_toward_coverage",
       "status": "pass",
       "tier": "e2e"
     },
@@ -294,7 +159,7 @@
       "id": "PROOF-26",
       "rule": "RULE-17",
       "test_file": "dev/test_e2e_spec_from_input.py",
-      "test_name": "test_assumed_rules_parseable_by_sync_status",
+      "test_name": "test_assumed_tagged_rules_still_parse",
       "status": "pass",
       "tier": "e2e"
     },
