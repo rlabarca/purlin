@@ -2555,6 +2555,23 @@ Finalized at the end of Phase 11. Items marked `[x]` are closed and kept for the
       token ever migrates out of the migration docs entirely, at which point the rule can simply
       forbid it.
 - [ ] Anything a subagent reports as "deferred" during execution (appended as it happens).
+- [ ] (closeout, deferred by item B7) `proof_plugins_xunit` RULE-1 claims an NUnit `[Category]`
+      attribute is an equivalent marker; `scripts/proof/xunit_purlin.cs` matches only the trait
+      named `PurlinProof`, so the claim cannot hold without a plugin change (NUnit `[Property]` and
+      MSTest `[TestProperty]` would work; neither package is in the local NuGet cache). Rule text
+      is stale; left unedited and unproved.
+- [ ] (closeout, deferred by item B2) `static_checks.write_audit_cache` leaves its `.tmp` file
+      behind when `os.replace` raises; PROOF-12 asserts only that the durable file is intact. A
+      cleanup is a code change with its own rule.
+- [ ] (closeout, deferred by item M) init coverage gaps left open: `--sync-audit-criteria`,
+      `--audit-llm` and the `audit_criteria*` fields (need a cloning script of their own); the
+      single-step flag contract for `--pre-push`, `--report`, `--digest`, `--mutation-checks`
+      (agent-driven, no script surface); the Step 6 confirmation block; `remote_verification:
+      required` with no `platforms` registered (belongs to `verify_gate`). The coverage matrix is
+      summarized in `dev/plans/todo-closeout.md` DONE - M.
+- [ ] (closeout, found by item B6) `skill_audit` PROOF-11's description says "parse external LLM
+      response" while its test greps `skills/audit/SKILL.md` for five field names; resolve when
+      item E retags PROOF-9 to PROOF-13 `@on(gemini-cli)`.
 - [x] (6.5) The evidence check refused receipts for `figma_web`, `skill_spec` and `static_checks`.
       `static_checks` closed in 7.4 through the Windows runner; the other two are the open item
       above.

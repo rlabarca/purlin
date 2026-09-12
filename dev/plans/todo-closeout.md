@@ -45,6 +45,10 @@ of writing a third project builder. `main` is still neither merged nor pushed, a
 | 8 | "reuse `init_project` from dev/test_init_e2e.sh (do not write a third builder; there is no gh scratch-repo tooling anywhere in the repo), produce a committed fixture `dev/fixtures/consumer-ci/` ... a script `dev/consumer_ci_dryrun.sh` ... a rule and proof ... that the fixture's workflows equal the reference templates after substitution (so the fixture cannot drift from the docs), with the live dry run itself as a manual proof ... or an `@on(github-actions)` environment proof; pick one and justify." |
 | 9 | "tighten `purlin_docs` RULE-1's `@windows` exemption to a named section of the migration docs (rule and proof change, mutation: put `@windows` in an unrelated paragraph containing 'legacy')." |
 | 10 | Backlog rows, all scheduled now: "(a) spec for scripts/hooks/pre-commit.sh ... (b) MCP hot-reload: gate on `PURLIN_DEV_RELOAD=1`, log the traceback to stderr, `mcp_transport` spec rule and proof; (c) plugin pinning guidance ... (d) consumer run marker: every plugin writes/merges `.purlin/runtime/test_run.json` ... Order (d) last; it is the largest." |
+| 12 | (2026-09-12, added mid-session) Init coverage: "Make sure we have good rules and proofs for the initial setup process for purlin. Different configs of init. Confirm we have good coverage." Analysis found no mechanical entry point (the e2e suite re-implements init in bash) and 38 of 91 configuration axes unproved; the user chose "Add scripts/init/scaffold.py: a deterministic script owns the mechanical half of init, the way migrate.py owns --update; the skill asks the questions and calls it; proofs drive the real script across the config variants; test_init_e2e.sh's init_project becomes a caller of it." This is item M. |
+| 13 | (2026-09-12, mid-session) On item E the user chose the clean fix over the "either" rule after the controller showed that decision 4's same-test clause would demote the local witness the day a gemini run lands: "do the clean fix". Item E now: `skill_audit` PROOF-9 to PROOF-13 keep their ids with no `@on`; the gemini suite gets new proof ids tagged `@on(gemini-cli)`; no "either" satisfaction rule, no `witness` field, no `proofs_proved_locally`; the TODO note is deleted. Decision 4 is superseded. |
+| 14 | (2026-09-12, mid-session) "implement a plan to create the defensible rule set.. use subagents and worktrees where possible.. subagents are opus 5": the platform / environment / prerequisite taxonomy is written as `dev/plans/platform-taxonomy.md` and executed interleaved with Groups 2 to 4 as that plan states. |
+| 16 | (2026-09-12, mid-session) "note that we wont do an integrity audit till i say but we should check proof design as we write them". Proof Integrity (`purlin:audit` Pass 1 and Pass 2) is not run in this session or the taxonomy plan until the user says so; every new or amended description is graded under `--check-proof-design` before its commit and the rewritten set gets a Pass D2 regrade. |
 | 11 | "Remaining TODO items: CI green at head (check), backlog triage (this plan is the triage), figma_web witness (deferred with the command), anything new a subagent defers (append)." |
 
 ## How to work
@@ -110,8 +114,13 @@ number).
 | J | Consumer-CI fixture and dry run: `dev/fixtures/consumer-ci/` built through `init_project` from `dev/test_init_e2e.sh:43`, plus `dev/consumer_ci_dryrun.sh`, plus a new spec | `specs/ci/consumer_ci.md`, `specs/ci/consumer_ci.proofs-*.json`, `dev/fixtures/consumer-ci/**`, `dev/consumer_ci_dryrun.sh`, `dev/test_consumer_ci.py`, `dev/run_tests.sh` | main | none | `consumer_ci` RULE-1 to RULE-3, PROOF-1 / PROOF-2 unit, PROOF-3 `@manual` | change one line of the fixture's `purlin-ubuntu-24-proofs.yml`; PROOF-1 must fail naming the line |
 | K | Agent witness run: `PURLIN_PLATFORM=claude-cli PURLIN_E2E_AGENT=1 python3 -m pytest dev/test_e2e_build_agent.py`, then commit the rewritten `@claude-cli` scoped files with both trailers in one `-m` | `specs/skills/skill_spec.proofs-*@claude-cli.json`, `specs/skills/skill_build.proofs-*@claude-cli.json` | main | none | none new (the proofs exist and are declared; only the witness was missing) | n/a: this is a witness run, not a behaviour change |
 | L | Consumer run marker: every plugin writes or merges `.purlin/runtime/test_run.json` (`at`, `commit`, `test_files` it collected, counts) so a consumer receipt carries `evidence.test_run`; `dev/issue_receipts.py` and `purlin:verify` Step 3 read it | `scripts/proof/*` (all 8), `.purlin/plugins/*` (the 4 copies), `specs/_anchors/proof_common.md`, `specs/skills/skill_verify.md`, `references/formats/receipt_format.md`, `specs/instructions/purlin_references.md`, `skills/verify/SKILL.md`, `dev/issue_receipts.py`, `dev/test_multilang_proof_plugins.py`, `dev/test_proof_plugins.sh`, `dev/test_skill_specs.py` | main | C (php and dotnet must be installed so all 8 plugins can be proved) | `proof_common` RULE-19 / PROOF-25 (one description, one test per plugin); `skill_verify` RULE-15 / PROOF-15; `purlin_references` RULE-23 amended (`receipt_format.md` content) | drop one plugin's marker write; PROOF-25 must fail naming that plugin |
+| M | (added by decision 12) `scripts/init/scaffold.py` owns the mechanical half of `purlin:init`; `skill_init` gains rules and proofs that drive the real script across the config variants; the nine skill_init Design findings are fixed in the same pass; `init_project` in `dev/test_init_e2e.sh` becomes a caller of the script | `scripts/init/scaffold.py`, `skills/init/SKILL.md`, `specs/skills/skill_init.md`, `specs/skills/skill_init.proofs-*.json`, `dev/test_init_e2e.sh`, `dev/test_init_scaffold.py`, `dev/test_skill_specs.py` (skill_init classes), `templates/gitignore.purlin`, `dev/run_tests.sh`, `docs/installation-guide.md`, `references/purlin_commands.md` | worktree | none (lands before J, which reuses `init_project`) | `skill_init` RULE-58+ / PROOF-61+ | per proof: break the script's behaviour (skip a copy, drop a gitignore line, ignore `--force`), the proof must fail naming it |
 
-### E: the exact "either" semantics to write
+### E: superseded by decision 13
+
+The "either" design below is kept for the record and is NOT built. Item E is now the clean fix: new proof ids for the gemini suite, PROOF-9 to PROOF-13 untouched, no server change. `dev/plans/platform-taxonomy.md` carries the exact numbers.
+
+### E (original): the exact "either" semantics to write
 
 A proof `P` declared `@on(D1, ..., Dn)` is satisfied on `Di` when **either** of these holds:
 
@@ -177,6 +186,8 @@ recorded exception rather than a silent one.
 
 ## Parallel groups, in order
 
+**Group 1 (extended).** Item M runs in a worktree alongside item B's worktrees and is cherry-picked with them, before Group 2.
+
 **Group 1.** Main tree: item A (Pass D1, then the 43 Pass D2 batches), then item B if the gate is
 not met. Worktrees in parallel: item C (php and dotnet install, then the plugin suites) and item D
 (the pre-commit spec). Integrator cherry-picks C then D, sweeps once, receipts, `verify:`.
@@ -208,10 +219,42 @@ Each item gets its section filled in as it lands, in the same commit as the item
 
 ## DONE - A: Pass D1 and Pass D2 over the whole repository
 
-_Placeholder. Record: the D1 command and its per-level counts across all 43 specs; how many
-descriptions went to D2 and in how many batches; the Design score with its coverage denominator;
-every UNPROVABLE and LOOSE finding with the feature and proof id; whether the 91% bar held before
-any remediation; and the explicit statement that Proof Integrity was not measured and why._
+- **Pass D1** (2026-09-12, at `26c03b0e`): `python3 scripts/audit/static_checks.py
+  --check-proof-design --spec-path <spec>` over all 43 specs (38 features and 5 anchors; the
+  header line is `# Feature:` or `# Anchor:`, on line 2 for the five specs that carry a
+  `spec-from-code` comment on line 1). 740 descriptions: PROVABLE 537, LOOSE 34, UNPROVABLE 0,
+  STRUCTURAL 169 (excluded). D1-only score 94.0% (537/571). All 34 LOOSE came from one check,
+  `no_expected_value`, in ten features (sync_status 7, figma_web 5, skill_build 4, skill_init 4,
+  dashboard_visual 3, mcp_transport 3, proof_common 3, purlin_report 2, report_data 2,
+  skill_spec 1).
+- **Pass D2**: the 537 D1-PROVABLE descriptions were graded by six Opus `purlin:purlin-auditor`
+  subagents on this account (no `audit_llm` configured), one model pass per feature, batched as
+  sync_status | static_checks, drift, config_engine | skill_init, skill_spec_from_code,
+  skill_audit | purlin_report, report_data, verify_gate, mcp_transport | pre_push_hook,
+  proof_common, purlin_skills, schema_spec_format, purlin_references, figma_web, skill_verify,
+  skill_test | the twenty small features. Each auditor wrote its own entries through the locked
+  `--write-design-cache` and read them back; the cache (`.purlin/cache/design_cache.json`,
+  gitignored) holds all 740 descriptions. D2 downgraded 86 to LOOSE and 9 to UNPROVABLE.
+- **Design score before remediation: 77.4% (442/571 scored; 169 STRUCTURAL excluded; coverage
+  740/740 measured).** The 91% bar did NOT hold. UNPROVABLE (9): sync_status PROOF-17 (a
+  faithful test proves the rule's negation; the description predates RULE-7/17's uniform
+  display), PROOF-33 and PROOF-34 (`@e2e` descriptions naming internal functions);
+  skill_init PROOF-8 (tautological hand-built fixture); skill_spec_from_code PROOF-12, 13, 15
+  (each asserts its own fixture), PROOF-14 (the migration is never run), PROOF-19 (the fixture
+  supplies the numbering the proof checks). LOOSE (120) by feature: sync_status 22, figma_web 10,
+  report_data 11, skill_spec_from_code 7, purlin_report 9, skill_init 8, static_checks 6,
+  skill_audit 6, skill_build 5, dashboard_visual 4, mcp_transport 4, proof_common 4, drift 4,
+  pre_push_hook 3, config_engine 2, proof_plugins_xunit 2, proof_plugins_jest 2, proof_plugins_c 2,
+  and one each in skill_spec, skill_verify, verify_gate, security_no_dangerous_patterns,
+  proof_plugins_shell, skill_anchor, proof_plugins_pytest, purlin_teammate_definitions,
+  purlin_config. The recurring criteria: no expected value named, a rule clause uncovered by
+  every proof for it, an `@e2e` tag on a static grep or an in-process call, and (figma_web) an
+  `@on(figma-mcp)` tag on a check any host could run. The full per-proof table with CRITERION,
+  WHY and FIX was the input to item B.
+- **Proof Integrity was not measured.** `purlin:audit` Pass 1 and Pass 2 are deferred until after
+  the ADO work by decision 1; the hand-built cache was untracked in Phase 10.5 and would be
+  invalid by construction since Phase 10.4, so the gauge reads `No audit data` rather than a
+  stale percentage.
 
 ## DONE - B: Design remediation
 
@@ -220,19 +263,71 @@ and the re-run result. If A met the bar, record "not needed" and the number that
 
 ## DONE - C: php and xunit toolchains installed, the two plugin suites executed
 
-_Placeholder. Record: `php --version` and `dotnet --version` exactly; the whole-file run of
-`dev/test_multilang_proof_plugins.py`; the proof entries that landed for `proof_plugins_php`,
-`proof_plugins_xunit` and `proof_common`; the sweep counts before and after (802 passed / 27
-skipped at `50638cb5`; 14 of those 27 are the four skipped classes, 2 + 6 + 3 + 3, so expect
-roughly 816 passed / 13 skipped and record the real numbers); the RELEASE_NOTES counts line
-update; and the statement that no `PURLIN_PLATFORM` runner-side equivalent is needed because
-these plugin proofs declare no platforms and write agnostic files._
+- **Versions.** `php --version`: `PHP 8.5.10 (cli) (built: Aug 25 2026 21:09:32) (NTS)` from
+  `brew install php` at `/opt/homebrew/bin/php`. `brew install --cask dotnet-sdk` FAILED on this
+  machine (`sudo: a terminal is required to read the password`, the cask runs a pkg installer), so
+  the formula `brew install dotnet` was installed instead (SDK 10.0.400, runtime 10.0.11, at
+  `/opt/homebrew/bin/dotnet`). That alone did not run the suite: the xunit fixture targets
+  `net8.0` and SDK 10 ships no 8.0 runtime, so every xunit test aborted with `You must install or
+  update .NET ... Microsoft.NETCore.App, version 8.0.0`. Keg-only `brew install dotnet@8`
+  (SDK 8.0.131, runtime 8.0.31) fixed it with `/opt/homebrew/opt/dotnet@8/bin` first on PATH.
+  **Every sweep on this machine needs that PATH entry** (see Traps).
+- **Whole-file run** of `dev/test_multilang_proof_plugins.py` in the worktree: 51 passed, 0
+  skipped, 0 failed. The four formerly skipped classes are 14 tests: TestPHPProofPlugin 2,
+  TestPHPPlatformScoping 3, TestXUnitProofPlugin 6, TestXUnitPlatformScoping 3. Commit `d24836b3`
+  on `closeout/C`, cherry-picked as `43dca2f0`: only
+  `specs/_anchors/proof_common.proofs-integration.json` changed (35 to 43 entries, PROOF-5/19/21/22
+  for php and xunit, nothing lost); `proof_plugins_php.proofs-integration.json` (3) and
+  `proof_plugins_xunit.proofs-integration.json` (6) were rewritten byte-identically, so the
+  skip-preserved entries are now backed by execution.
+- **Sweep counts.** 789 passed / 27 skipped at `26c03b0e`; 818 passed / 6 skipped at `1416adf5`
+  (pytest line), marker 831 / 6. The 21 resolved skips are the 14 above plus 7 php-gated cases in
+  `dev/test_cheat_matrix.py` and `dev/test_proof_stress.py` that had never run here either; those
+  wrote a new `specs/proof/proof_plugins_php.proofs-unit.json` (6 entries) and static_checks
+  PROOF-15's php-and-sql entry, committed in `d3de549c` with the RELEASE_NOTES counts line
+  (`831 passed, 6 skipped`). The 6 remaining skips are all `tsc not available`. The other 8 of the
+  29 new passes are item D's.
+- **Mutations** (each applied, whole file run, restored, `git diff --stat scripts/` empty):
+  dropping `$payload['platform']` from the php scoped-file writer fails
+  `test_php_unset_env_names_the_family` (`KeyError: 'platform'`) and the declared-marker split
+  test; dropping the top-level `platform` append in `xunit_purlin.cs`'s `Serialize` fails
+  `test_xunit_unset_env_names_the_family` the same way plus the xunit declared-marker test.
+- **No `PURLIN_PLATFORM` runner-side equivalent is needed.** The php and xunit markers in the test
+  file declare no `platforms=`, and the files written are agnostic (`proofs-integration.json`,
+  top-level keys `tier` and `proofs`, no `@` suffix).
 
 ## DONE - D: spec for the pre-commit hook
 
-_Placeholder. Record: the six rules and what each fail-open path now logs; the shared plugin-root
-resolver and where it lives; the `PURLIN_SKIP_DIGEST` rule; the eight proofs and their mutations;
-and the `dev/run_tests.sh` line that adds `dev/test_pre_commit_hook.py` to the pytest pool._
+- **Spec** `specs/hooks/pre_commit_hook.md` (Scope `scripts/hooks/pre-commit.sh`), commit
+  `b6082c59` on `closeout/D`, cherry-picked as `1416adf5`. RULE-1: every path exits 0, the hook
+  never blocks a commit; `PURLIN_SKIP_DIGEST=1` and mode `off` each print exactly one line and
+  write and stage nothing. RULE-2: plugin root resolved in `pre_push_hook` RULE-14's order (the
+  script's own directory through `readlink`, `$PURLIN_PLUGIN_ROOT`, `$CLAUDE_PLUGIN_ROOT`, the
+  project root); the first candidate carrying `scripts/mcp/purlin_server.py` wins; a miss prints a
+  WARNING naming every path searched. RULE-3: no `.purlin/` is a silent exit 0; an unparseable
+  config or a `digest` value outside auto/warn/off prints one line naming the file and the value
+  and runs `auto`. RULE-4: `auto` regenerates through `generate_digest` and `git add`s exactly the
+  file it returned, with `$ROOT` and the server directory passed as argv, never spliced into
+  Python source; a raise leaves the Python error visible and still exits 0. RULE-5: `warn` never
+  regenerates or stages; it warns when the digest is missing, warns naming 3600 seconds when it is
+  stale, and prints nothing when fresh. RULE-6: no `2>/dev/null` anywhere in the hook.
+- **What each fail-open path prints now.** No plugin: `WARNING: the Purlin plugin was not found
+  ... Searched for scripts/mcp/purlin_server.py under:` then one line per candidate and a
+  `PURLIN_PLUGIN_ROOT` hint. Bad config: `could not read a usable "digest" mode from <path>
+  (got "<value>"); assuming "auto".` Generation raised: the real traceback, then `digest
+  generation failed (python exit N, error above).`
+- **Proofs** (`dev/test_pre_commit_hook.py`, 8 tests, all `@integration`): PROOF-1 skip env,
+  PROOF-2 off mode, PROOF-3 an empty candidate is stepped over, PROOF-4 no server anywhere and
+  all three paths named, PROOF-5 no `.purlin/` silent plus `{"digest": 7}` plus a truncated
+  config, PROOF-6 exactly the digest is staged and a raise leaves it byte-identical, PROOF-7
+  missing / 7200 s stale / fresh, PROOF-8 an `IsADirectoryError` reaches the caller's stderr and
+  the script has no `2>/dev/null`. D1: 8 PROVABLE, 0 LOOSE, 0 UNPROVABLE, 0 STRUCTURAL.
+- **Mutation.** Removing the first `echo` of the plugin-not-found branch fails PROOF-4 alone:
+  `AssertionError: the plugin-not-found fail-open path was silent: no candidate carried
+  scripts/mcp/purlin_server.py and the hook printed no WARNING, so the skipped digest is
+  invisible.` Restored, 8 passed.
+- **Sweep line.** `dev/run_tests.sh` gained `"$SCRIPT_DIR/test_pre_commit_hook.py" \` in the
+  pytest pool before `test_pre_push_hook.py`; `dev/test_sweep_completeness.py` passes.
 
 ## DONE - E: "either" satisfaction semantics, and the gemini tags
 
@@ -276,6 +371,57 @@ that `git log --format='%(trailers:key=Purlin-Runner,valueonly)'` reads it back;
 and `skill_build` verdicts before and after; and the exact figma_web command left for a host with
 a Figma MCP server._
 
+## DONE - M: init scaffold script and coverage
+
+- **Why.** The user asked mid-session for good rules and proofs over the init process across its
+  configurations (decision 12). A read-only coverage analysis over 91 configuration axes found 33
+  COVERED, 20 PROSE-ONLY and 38 GAP, and one structural cause: `purlin:init` had no mechanical entry
+  point, so `dev/test_init_e2e.sh`'s `init_project` re-implemented the skill in bash and 16 e2e
+  proofs tested that simulation (PROOF-15/16/17 asserted the argument they were passed). A change
+  to `skills/init/SKILL.md` could not fail any e2e proof. The user chose the script.
+- **The script** `scripts/init/scaffold.py` (commit `c508b4b8` on `closeout/M`, cherry-picked as
+  `60564307`): `--project-root`, `--plugin-root`, `--test-framework` (auto | id | comma list |
+  `other`), `--pre-push warn|strict|off`, `--mutation-checks on|off`, `--remote-verification
+  required|optional|off`, `--report on|off`, `--digest auto|warn|off`, `--force`, `--dry-run`.
+  Exit 0 scaffolded; 1 already initialized without `--force`; 2 not a git repository, unknown
+  framework id, or no plugin root. Prints one plan line per file (`wrote`, `kept`, `linked`,
+  `copied`). The skill asks the questions and calls it; `--update` stays with `migrate.py` and
+  `--mcp` with the MCP step.
+- **Rules.** `skill_init` RULE-58 to RULE-71 new: 58 the skill delegates to the script; 59 git
+  pre-flight refusal; 60 refuse without `--force`; 61 what `--force` keeps; 62 config from the
+  template plus the answers plus `VERSION`; 63 plugin copies per registry, comma list, `other`,
+  unknown id refused; 64 wiring files written when absent and kept when present; 65 the gitignore
+  block is the template (now including `.purlin/config.local.json`); 66 dashboard symlink; 67 hooks
+  symlink-or-copy and no pre-commit hook at `digest off`; 68 plan lines and `--dry-run`; 69
+  determinism (a second run changes nothing); 70 answered modes land verbatim; 71 `auto` installs
+  what it detects. Scope, RULE-8, RULE-15, RULE-16 and RULE-17 amended. RULE-17 decision: the skill
+  text wins; shell has no detection heuristic in the registry, so `auto` with nothing detected
+  installs no plugin and says so, RULE-17 covers shell as a selection and RULE-71 the auto half.
+- **Proofs.** PROOF-61 to PROOF-74 new in `dev/test_init_scaffold.py` (14 tests, all
+  `@integration`, each driving the real script on a temp git repository with `--plugin-root`);
+  PROOF-8, 15, 16, 17, 26, 27, 36, 37, 38, 39, 40, 42 amended (the nine Design findings and the
+  three tautological e2e proofs), 11 of them with test changes. `init_project` in
+  `dev/test_init_e2e.sh` is now a caller of the script with its old signature, so the 33 existing
+  e2e proofs run against the real mechanics (34 pass before and after). D1 for `skill_init`: 73
+  PROVABLE, 0 LOOSE, 0 UNPROVABLE, 1 STRUCTURAL (PROOF-41, pre-existing); was 55/4/0/1.
+- **Two live defects fixed.** `.purlin/config.local.json` was documented as gitignored in four
+  files but no writer added the entry (`templates/gitignore.purlin` was an orphan), so a new project
+  would have committed per-user overrides; this repository's own `.gitignore` hid it. The documented
+  pytest wiring `pytest_plugins = [".purlin.plugins.pytest_purlin"]` raised `TypeError` before any
+  test ran; the script writes a `sys.path` form and PROOF-67 runs a bare `python3 -m pytest`
+  against it.
+- **Mutations (25)**, each broken, whole file run, restored; the failing assertions are in the
+  commit body. One mutation exposed a substring bug in the new PROOF-61 (it compared flag prefixes),
+  fixed to compare whole flags before the commit.
+- **Sweep line.** `dev/run_tests.sh` gained `"$SCRIPT_DIR/test_init_scaffold.py" \` next to
+  `test_init_update.py`.
+- **Left open, recorded in the parent plan's TODO list:** `--sync-audit-criteria`, `--audit-llm`
+  and the `audit_criteria*` fields (a separate cloning script); the single-step flag contract for
+  `--pre-push`, `--report`, `--digest`, `--mutation-checks` (agent-driven, no script surface); the
+  Step 6 confirmation block; `remote_verification: required` with no `platforms` (belongs to
+  `verify_gate`). `--update` on an up-to-date project and `--platform-id`'s default, plus the
+  node-absent `pass` emitted by e2e PROOF-22/34, are item B10 (below).
+
 ## DONE - L: consumer run marker
 
 _Placeholder. Record: the marker's shape as each of the eight plugins writes or merges it; how
@@ -314,7 +460,7 @@ byte-identity proofs still green; `receipt_format.md`'s updated `evidence.test_r
   names is tracked; `git ls-files '*.proofs-*@claude-cli.json'` lists the files item K committed;
   `git ls-files .purlin/runtime` is empty (the run marker stays gitignored, in this repo and in a
   consumer project).
-- `command grep -rn $'—\|–' dev/plans/todo-closeout.md` returns nothing, and the same
+- `command grep -rn $'\xe2\x80\x94\|\xe2\x80\x93' dev/plans/todo-closeout.md` returns nothing, and the same
   search over every file this plan touched finds nothing new outside `purlin_server.py`'s existing
   output separators. Use zsh's `$'...'` escape form, never the literal characters: the parent
   plan's literal form makes the check find itself and always report a hit, and the system `grep`
@@ -369,6 +515,14 @@ Carried from the parent plans:
 
 New for this session:
 
+- **`dotnet` on this machine is SDK 10 and the xunit fixture targets `net8.0`.** The cask
+  `dotnet-sdk` cannot be installed non-interactively (pkg installer wants sudo); the formula
+  `dotnet` (10) plus keg-only `dotnet@8` are installed instead. Every sweep and every run of
+  `dev/test_multilang_proof_plugins.py` needs `export PATH="/opt/homebrew/opt/dotnet@8/bin:$PATH"`
+  first, or the nine xunit tests fail (not skip) with `Microsoft.NETCore.App, version 8.0.0`.
+- **The design cache lives at `.purlin/cache/design_cache.json`**, not `.purlin/design_cache.json`
+  as the item table says; `.purlin/cache/` is gitignored and `git ls-files .purlin/cache` must
+  stay empty.
 - **The `-m` trailer paragraph.** `git` parses trailers out of the **last paragraph only**, and
   each `-m` is its own paragraph. Two separate `-m` flags leave `Purlin-Runner:` unreadable to
   `git log --format='%(trailers:key=Purlin-Runner,valueonly)'`, and the report then says
