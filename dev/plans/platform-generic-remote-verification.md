@@ -2600,6 +2600,14 @@ Finalized at the end of Phase 11. Items marked `[x]` are closed and kept for the
       `drift_criteria.md`, `references/remote_verification.md`'s mode table, the installation guide
       and the four test files with mode loops. The remote chip now reads the data (report_data
       RULE-44), so the config word matters less; judge after it has been used.
+- [ ] (closeout, found by the final sweep) `purlin_version` PROOF-9 always skips inside
+      `dev/run_tests.sh` now: the shell suites write the run marker before the pytest pool runs (item
+      L), and RULE-9 compares only against a `dev/run_tests.sh` marker (item L2), so during a sweep
+      the marker on disk is `shell_purlin`'s and the counts line is checked by nobody but a person.
+      Fix: the sweep's EXIT trap also writes `.purlin/runtime/last_sweep.json` (the dev sweep's own
+      totals, never merged with plugin runs) and RULE-9 / PROOF-9 read that file; a plugin marker
+      then no longer masks the check. Until then the closing entries of `dev/plans/todo-closeout.md`
+      record the by-hand comparison.
 - [ ] (closeout, found by item B6) `skill_audit` PROOF-11's description says "parse external LLM
       response" while its test greps `skills/audit/SKILL.md` for five field names; resolve when
       item E retags PROOF-9 to PROOF-13 `@on(gemini-cli)`.

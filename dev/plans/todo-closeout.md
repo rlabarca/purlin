@@ -647,6 +647,38 @@ Each item gets its section filled in as it lands, in the same commit as the item
   runs, so `purlin_version` PROOF-9 would read a plugin's marker mid-sweep; RULE-9 now compares the
   notes against the dev sweep's marker only (`sweep == dev/run_tests.sh`) and skips otherwise.
 
+## DONE - Final: the session's close (2026-09-12)
+
+- **Sweeps.** Group 1 and 2 closed at `505f2e06` (858 passed, 6 skipped, 15 suites; marker 872),
+  receipts `b5d2c11b` (features=37/39 anchors=5/5 vhash=d0278bbe). Group 3 closed at `f6f013a8`
+  after the other session's fix (858 passed, 6 skipped; marker 872), receipts `1082dc6f`
+  (features=38/40 anchors=5/5 vhash=62511918). The final sweep at `092c582e` reads
+  15 suites passed, 892 passed and 7 skipped in pytest, marker 906 / 0 / 7 with 31 merged plugin runs and 7 `skipped_proofs`, `ok` true, equal to the RELEASE_NOTES counts line (906 passed, 7 skipped across 15 suites), compared by hand because PROOF-9 skips mid-sweep; receipts `f20abccf` (features=38/41 anchors=5/5 vhash=71217fe1; the third skip is consumer_ci, whose `@manual` PROOF-3 stamp at 44ef47fa went stale when `092c582e` refreshed the fixture's plugin copy; re-run the dry run and re-stamp after the push). The skip that appeared between the
+  Group 3 close and the final sweep is `purlin_version` PROOF-9 skipping on a plugin-written marker mid-sweep, recorded in the parent plan's TODO list with its fix (a `last_sweep.json` written by the sweep).
+- **Design after every remediation** (from the server's `design_summary` at `e00a91ad`, before
+  the other session's four commits and T2 to T4 added their own PROVABLE descriptions): 98%
+  assessed (570/581), weighted 97% over 772/778 measured, 0 UNPROVABLE, 11 LOOSE, of which
+  figma_web 10 and skill_spec PROOF-8 (deferred with item K). Proof Integrity: not measured
+  (decision 16).
+- **Verification checklist at the close.** `scripts/ci/verify_gate.py --check` exit 0 with seven
+  proofs awaiting (skill_audit PROOF-23 to 26 on gemini-cli, skill_build PROOF-17 to 19 on
+  claude-cli; mode optional, never blocks); `scripts/update/migrate.py --check` exit 0 with only
+  `receipt-v1` pending (figma_web and skill_spec); `bash dev/bump_version.sh --check` exit 0,
+  `VERSION` 0.10.0, no tag; `git ls-files .purlin/cache` and `.purlin/runtime` empty;
+  `assets/src` five `.mmd`; `dev/fixtures/consumer-ci` nine files; `skill_spec.proofs-e2e@claude-cli.json`
+  tracked (no witness yet; `skill_build`'s scoped file was never written). CI: not run, the branch
+  is not pushed (decision 18). No em-dash or en-dash in the three plans (Python count), and
+  purlin_docs RULE-11 now guards `docs/`, `README.md` and the four references.
+- **The final sweep's one failure and its lesson.** `consumer_ci` PROOF-2 failed once because the
+  fixture's `.purlin/plugins/pytest_purlin.py` copy predated items L and T3; the byte-identity
+  proof caught exactly the staleness it exists for, and the copy was refreshed in `092c582e`.
+  Any change to `scripts/proof/pytest_purlin.py` must refresh that copy too, the same way the
+  four `.purlin/plugins/` copies are refreshed.
+- **Concurrency.** A second session (`event-driven-dashboard-refresh`) landed five commits on the
+  branch during Groups 3 and 4 (`ada91b46`, `f6f013a8`, `0f8a5909`, `57902a94`, `f5492db0`, plus
+  `533ddf32` docs); one of them broke two AST proofs and was fixed by that session on request;
+  every sweep-plus-receipt window was held exclusively by this session (decision 20).
+
 ## Verification checklist
 
 - `export PATH="$PWD/.venv/bin:$PATH"`; `PYTHONDONTWRITEBYTECODE=1 bash dev/run_tests.sh` green in
@@ -692,8 +724,8 @@ What the machine that picks up `dev/plans/ado-runner-provider.md` will find:
 
 - **Branch:** `two-gauges-remote-verification`, pushed to `origin`. `git fetch && git checkout
   two-gauges-remote-verification` is the whole handoff. `main` is still neither merged nor pushed.
-- **HEAD after this session: unknown at the time of writing.** The final `verify:` commit's sha
-  goes here when the session ends. Do not assume `5f6b0cb8`.
+- **HEAD after this session: the closing docs commit directly above the final `verify:` commit `f20abccf`** (`git log --oneline -2` shows both). Do not assume `5f6b0cb8`. The branch is NOT pushed (decision 18): push it
+  first, from this machine, before the work machine fetches.
 - **Two open items, both deliberate.** `figma_web` (15 proofs, `@on(figma-mcp)`) has no witness:
   this machine has no Figma MCP server. On a host that has one, run
   `PURLIN_PLATFORM=figma-mcp PURLIN_E2E_FIGMA=1 python3 -m pytest dev/test_e2e_figma_web.py`
