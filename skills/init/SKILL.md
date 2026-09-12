@@ -90,7 +90,11 @@ leaves every other key and every other file in the project byte-identical.
 `auto`, so a lone re-answer never re-detects the frameworks or re-copies a
 plugin. Do NOT hand-edit `.purlin/config.json` for one of these: the scaffolder
 owns that file, and a config edited by hand is how a key gets dropped, reordered
-or written in the wrong type.
+or written in the wrong type. The four audit fields that Steps 7b and 7c fill in
+(`audit_criteria`, `audit_criteria_pinned`, `audit_llm` and `audit_llm_name`)
+are the one exception, because the scaffolder takes no flag for any of them and
+the answers only exist after those two steps have asked their questions. Every
+other key belongs to the scaffolder, and no other step writes that file.
 
 **Setting the quality gate on an existing project.** `purlin:init --quality-gate
 <off|deterministic>` is one of those single-step re-answers: ask which mode the
@@ -360,7 +364,7 @@ Pre-push hook mode:
   [off]    Run nothing and check nothing
 ```
 
-Write the chosen mode to `.purlin/config.json` as `"pre_push": "warn"`, `"pre_push": "strict"` or `"pre_push": "off"`. Any other value makes the hook block every push until it is corrected: a typo must not disable enforcement invisibly.
+Pass the answer to the scaffolder as `--pre-push <mode>`. Any other value makes the hook block every push until it is corrected: a typo must not disable enforcement invisibly, which is why the flag takes `warn`, `strict` and `off` and nothing else.
 
 When called via `purlin:init --pre-push`, ONLY the mode selection above runs: ask, then run the scaffolder with `--force --pre-push <mode>` and nothing else (Step 2, **Single-step re-answers**), which rewrites `pre_push` alone. No hook is installed by that run beyond the one it keeps; the hook install below happens during the full init flow, inside the same scaffolder.
 
@@ -393,7 +397,7 @@ It NEVER triggers an audit — cached audit data is included.
 Run purlin:audit separately when you want fresh audit scores.
 ```
 
-Write the chosen mode to `.purlin/config.json` as `"digest": "auto"` (or `"warn"` or `"off"`).
+Pass the answer to the scaffolder as `--digest <mode>`, which takes `auto`, `warn` and `off`.
 
 When called via `purlin:init --digest`, ask the mode above and then run the scaffolder with `--force --digest <mode>` and nothing else (Step 2, **Single-step re-answers**): that one run rewrites `digest` and installs the pre-commit hook below when the project has none. Also remove `.purlin/report-data.js` from `.gitignore` if present. This makes `--digest` a complete setup command for existing projects — the user runs one command and gets the full digest feature.
 

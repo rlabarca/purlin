@@ -30,6 +30,48 @@ MIGRATE = os.path.join(ROOT, 'scripts', 'update', 'migrate.py')
 
 GIT_REQUIRED = "Purlin requires git. Run 'git init' first."
 
+# An instruction to the agent to write the config file: an imperative write verb
+# opening a sentence, a list item or a bolded lead-in, with
+# `.purlin/config.json` as what it writes within the same sentence. Prose that
+# only mentions the file ("the run rewrites that key of ...", "three modes, set
+# in ...", "Do NOT hand-edit ...") is not an instruction and does not match.
+CONFIG_WRITE = re.compile(
+    r'(?:^|[.:)]\s|\*\*\s)(?:write|set|save|add|edit|put)\b'
+    r'[^\n]{0,90}`\.purlin/config\.json`',
+    re.I | re.M)
+
+# The four fields Steps 7b and 7c write: the scaffolder has no flag for any of
+# them, so these two steps are the only exemption RULE-58 grants.
+AUDIT_FIELDS = ('audit_criteria', 'audit_criteria_pinned',
+                'audit_llm', 'audit_llm_name')
+CONFIG_WRITE_STEPS = ('Step 7b', 'Step 7c')
+
+
+def _unwrap(text):
+    """Join hard-wrapped prose so one sentence is one line.
+
+    A line is folded onto the one before it only when it continues a prose
+    paragraph: not blank, not indented, and not opening a list item, heading,
+    quote, table row or code fence. Without this a sentence that happens to
+    wrap between its verb and the config path would read as two lines and slip
+    past the scan.
+    """
+    lines = []
+    for line in text.split('\n'):
+        if (lines and lines[-1].strip() and line.strip()
+                and not re.match(r'[\s\-*#>|`]|\d+[.)]', line)):
+            lines[-1] = lines[-1].rstrip() + ' ' + line
+        else:
+            lines.append(line)
+    return '\n'.join(lines)
+
+
+def _skill_steps(skill):
+    """`(heading, body)` for every `## Step ...` section of the skill."""
+    parts = re.split(r'^## ([^\n]+)$', skill, flags=re.M)
+    return [(head, body) for head, body in zip(parts[1::2], parts[2::2])
+            if head.startswith('Step ')]
+
 
 def _read(path):
     with open(path, encoding='utf-8') as f:
@@ -171,6 +213,37 @@ class TestDelegation:
             assert by_hand not in steps, (
                 f"the init steps still instruct {by_hand!r} by hand; the "
                 f"scaffolder owns that")
+
+        # No step writes `.purlin/config.json` by hand except Steps 7b and 7c,
+        # and those two only for the four audit fields the scaffolder has no
+        # flag for. Every step is scanned, not one slice of the file.
+        found = {}
+        for head, body in _skill_steps(skill):
+            for line in _unwrap(body).split('\n'):
+                if CONFIG_WRITE.search(line):
+                    found.setdefault(head, []).append(line.strip())
+        assert found, "the scan found no config-write instruction at all"
+
+        offenders = sorted(
+            (head, line) for head, lines in found.items() for line in lines
+            if not head.startswith(CONFIG_WRITE_STEPS))
+        assert not offenders, (
+            "these steps instruct writing `.purlin/config.json` by hand; the "
+            "scaffolder takes the answer as a flag instead: "
+            + '; '.join(f'{head}: {line}' for head, line in offenders))
+
+        # The exemption has to be real on both sides: each exempt step still
+        # writes the fields it is exempt for, or the clause is dead prose.
+        for step in CONFIG_WRITE_STEPS:
+            matched = [h for h in found if h.startswith(step)]
+            assert matched, (
+                f"{step} no longer writes `.purlin/config.json`, so RULE-58's "
+                f"exemption for it is stale")
+        exempt = '\n'.join(body for head, body in _skill_steps(skill)
+                           if head.startswith(CONFIG_WRITE_STEPS))
+        missing = [f for f in AUDIT_FIELDS if f not in exempt]
+        assert not missing, \
+            f"the exempt steps no longer name the audit fields: {missing}"
 
 
 # ---------------------------------------------------------------------------
