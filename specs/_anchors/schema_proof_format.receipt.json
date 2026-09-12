@@ -1,8 +1,9 @@
 {
   "feature": "schema_proof_format",
-  "vhash": "770c9074",
-  "commit": "6c573eca30579fdb8044c72155ab252267843861",
-  "timestamp": "2026-09-12T00:42:14.743896+00:00",
+  "vhash": "e6c91786",
+  "vhash_version": 2,
+  "commit": "5eae587352030278b680c420a3f53d44191e37a4",
+  "timestamp": "2026-09-12T01:10:26.117889+00:00",
   "rules": [
     "RULE-1",
     "RULE-2",
@@ -13,61 +14,147 @@
     "RULE-7",
     "RULE-8"
   ],
+  "rule_hashes": {
+    "RULE-1": "b61d6b4948a9dd21",
+    "RULE-2": "674bd446b164694b",
+    "RULE-3": "85878840188fce4d",
+    "RULE-4": "449cb2773620c483",
+    "RULE-5": "740bd96aa5aee3b5",
+    "RULE-6": "48a5aee5e204de4b",
+    "RULE-7": "d0a6bf6e73d644da",
+    "RULE-8": "25b9d36d1662e14d"
+  },
   "proofs": [
     {
+      "feature": "schema_proof_format",
       "id": "PROOF-1",
       "rule": "RULE-1",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_proof_file_read_by_sync_status",
+      "platform": null
     },
     {
+      "feature": "schema_proof_format",
       "id": "PROOF-2",
       "rule": "RULE-2",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_proof_entry_has_all_seven_fields",
+      "platform": null
     },
     {
+      "feature": "schema_proof_format",
       "id": "PROOF-3",
       "rule": "RULE-3",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_invalid_status_not_counted",
+      "platform": null
     },
     {
+      "feature": "schema_proof_format",
       "id": "PROOF-4",
       "rule": "RULE-4",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_standard_tiers_documented",
+      "platform": null
     },
     {
+      "feature": "schema_proof_format",
       "id": "PROOF-5",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_feature_scoped_overwrite",
+      "platform": null
     },
     {
+      "feature": "schema_proof_format",
       "id": "PROOF-5",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_scoped_file_merge_preserves_other_feature_and_leaves_agnostic_file_alone",
+      "platform": null
     },
     {
+      "feature": "schema_proof_format",
       "id": "PROOF-6",
       "rule": "RULE-6",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_proof_files_not_gitignored",
+      "platform": null
     },
     {
+      "feature": "schema_proof_format",
       "id": "PROOF-7",
       "rule": "RULE-7",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_manual_stamp_format_documented",
+      "platform": null
     },
     {
+      "feature": "schema_proof_format",
       "id": "PROOF-8",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_merge_key_includes_test_file",
+      "platform": null
     },
     {
+      "feature": "schema_proof_format",
       "id": "PROOF-8",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_scoped_file_merge_key_includes_test_file",
+      "platform": null
     },
     {
+      "feature": "schema_proof_format",
       "id": "PROOF-9",
       "rule": "RULE-8",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_discovery_stamps_platform_skips_bad_ids_and_aliases_legacy_files",
+      "platform": null
     }
-  ]
+  ],
+  "evidence": {
+    "test_run": {
+      "at": "2026-09-12T01:10:22.457881+00:00",
+      "commit": "5eae587352030278b680c420a3f53d44191e37a4",
+      "sweep": "dev/run_tests.sh",
+      "passed": 698,
+      "failed": 0,
+      "skipped": 27
+    },
+    "proof_files": [
+      {
+        "file": "specs/_anchors/schema_proof_format.proofs-unit.json",
+        "tier": "unit",
+        "platform": null,
+        "commit": "6bc61d2874dcbcd81892b0998a31ce84edc5c2a6",
+        "committed_at": "2026-09-11T20:16:10-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      }
+    ]
+  }
 }

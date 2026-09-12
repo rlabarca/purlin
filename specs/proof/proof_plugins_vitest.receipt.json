@@ -1,8 +1,9 @@
 {
   "feature": "proof_plugins_vitest",
-  "vhash": "3718f123",
-  "commit": "6c573eca30579fdb8044c72155ab252267843861",
-  "timestamp": "2026-09-12T00:42:14.743896+00:00",
+  "vhash": "d7af4658",
+  "vhash_version": 2,
+  "commit": "5eae587352030278b680c420a3f53d44191e37a4",
+  "timestamp": "2026-09-12T01:10:26.117889+00:00",
   "rules": [
     "RULE-1",
     "RULE-2",
@@ -37,391 +38,867 @@
     "security_no_dangerous_patterns/RULE-4",
     "security_no_dangerous_patterns/RULE-5"
   ],
+  "rule_hashes": {
+    "RULE-1": "c16a2b12493813f2",
+    "RULE-2": "ae7acb90f00cf2b0",
+    "proof_common/RULE-1": "53b6df3e51f553ab",
+    "proof_common/RULE-10": "0f0ae6c3ee385c41",
+    "proof_common/RULE-11": "564f7e45bbdf8ebf",
+    "proof_common/RULE-12": "bbad0e14ec5c4d40",
+    "proof_common/RULE-13": "92e060863fcaaf3a",
+    "proof_common/RULE-14": "cf4fab16ef3635e0",
+    "proof_common/RULE-15": "37ad2ef295ed00fc",
+    "proof_common/RULE-16": "12739c6ae8c04e68",
+    "proof_common/RULE-17": "ffa53c690712d6ba",
+    "proof_common/RULE-2": "0423594d1f4790d4",
+    "proof_common/RULE-3": "8d2c917561ab6742",
+    "proof_common/RULE-4": "c7bf2e1f3e586701",
+    "proof_common/RULE-5": "6bf12f8938040c7b",
+    "proof_common/RULE-6": "d3ed4958a0248b17",
+    "proof_common/RULE-7": "43a9dc3cfe1f6066",
+    "proof_common/RULE-8": "a818378e726df3cd",
+    "proof_common/RULE-9": "103b8c247a215969",
+    "schema_proof_format/RULE-1": "b61d6b4948a9dd21",
+    "schema_proof_format/RULE-2": "674bd446b164694b",
+    "schema_proof_format/RULE-3": "85878840188fce4d",
+    "schema_proof_format/RULE-4": "449cb2773620c483",
+    "schema_proof_format/RULE-5": "740bd96aa5aee3b5",
+    "schema_proof_format/RULE-6": "48a5aee5e204de4b",
+    "schema_proof_format/RULE-7": "d0a6bf6e73d644da",
+    "schema_proof_format/RULE-8": "25b9d36d1662e14d",
+    "security_no_dangerous_patterns/RULE-1": "ed467a922f765cf7",
+    "security_no_dangerous_patterns/RULE-2": "5472c9b7f8b25c0e",
+    "security_no_dangerous_patterns/RULE-3": "cf98992127576281",
+    "security_no_dangerous_patterns/RULE-4": "f53ddfe0e85bc1be",
+    "security_no_dangerous_patterns/RULE-5": "48c1e637216f0b48"
+  },
   "proofs": [
     {
+      "feature": "proof_common",
       "id": "PROOF-1",
       "rule": "RULE-1",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_plugins.sh",
+      "test_name": "spec dir resolution",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-1",
       "rule": "RULE-1",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_c_and_sql_proofs_coexist",
+      "platform": null
     },
     {
-      "id": "PROOF-1",
-      "rule": "RULE-1",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-1",
-      "rule": "RULE-1",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-1",
-      "rule": "RULE-1",
-      "status": "pass"
-    },
-    {
+      "feature": "proof_common",
       "id": "PROOF-10",
       "rule": "RULE-4",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_feature_scoped_overwrite.sh",
+      "test_name": "separate proof files don't interfere",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-11",
       "rule": "RULE-4",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_feature_scoped_overwrite.sh",
+      "test_name": "overwrite replaces only target feature, others intact",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-12",
       "rule": "RULE-10",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_feature_scoped_overwrite.sh",
+      "test_name": "re-run of the same test file purges the removed proof",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-13",
       "rule": "RULE-10",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_removed_test_purged_on_rerun",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-13",
       "rule": "RULE-10",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_removed_test_entry_purged_in_shell_plugin",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-13",
       "rule": "RULE-10",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_removed_test_entry_purged_on_rerun",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-14",
       "rule": "RULE-4",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_two_test_files_one_feature_and_tier_coexist_in_either_order",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-15",
       "rule": "RULE-11",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_deleted_test_file_entry_is_reaped",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-16",
       "rule": "RULE-12",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_marker_removed_from_a_file_that_is_not_rerun_survives",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-17",
       "rule": "RULE-13",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_skipped_suite_writes_nothing_and_no_script_fakes_a_failure",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-18",
       "rule": "RULE-14",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_sweep_completeness.py",
+      "test_name": "test_every_proof_named_test_file_is_swept_or_excepted",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-19",
       "rule": "RULE-15",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_c_test_file_has_forward_slashes",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-19",
       "rule": "RULE-15",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_jest_test_file_has_forward_slashes",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-19",
       "rule": "RULE-15",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_pytest_test_file_has_forward_slashes",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-19",
       "rule": "RULE-15",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_sql_test_file_has_forward_slashes",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-19",
       "rule": "RULE-15",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_vitest_test_file_has_forward_slashes",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-19",
       "rule": "RULE-15",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_plugins.sh",
+      "test_name": "shell: test_file has forward slashes",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-2",
       "rule": "RULE-2",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_plugins.sh",
+      "test_name": "proof file naming",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-2",
       "rule": "RULE-2",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_proof_file_naming",
+      "platform": null
     },
     {
-      "id": "PROOF-2",
-      "rule": "RULE-2",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-2",
-      "rule": "RULE-2",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-2",
-      "rule": "RULE-2",
-      "status": "pass"
-    },
-    {
+      "feature": "proof_common",
       "id": "PROOF-20",
       "rule": "RULE-16",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_host_detection_lives_only_in_the_host_platform_helper",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-20",
       "rule": "RULE-16",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_plugin_copies_are_byte_identical_to_the_originals",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-21",
       "rule": "RULE-17",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_c_declared_marker_scopes_and_unmarked_stays_agnostic",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-21",
       "rule": "RULE-17",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_jest_declared_marker_scopes_and_unmarked_stays_agnostic",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-21",
       "rule": "RULE-17",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_pytest_declared_marker_scopes_and_unmarked_stays_agnostic",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-21",
       "rule": "RULE-17",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_sql_declared_marker_scopes_and_unmarked_stays_agnostic",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-21",
       "rule": "RULE-17",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_vitest_declared_marker_scopes_and_unmarked_stays_agnostic",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-21",
       "rule": "RULE-17",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_plugins.sh",
+      "test_name": "shell: declared marker scopes, unmarked stays agnostic",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-22",
       "rule": "RULE-17",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_c_unset_env_names_the_family",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-22",
       "rule": "RULE-17",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_jest_unset_env_names_the_family",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-22",
       "rule": "RULE-17",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_pytest_unset_env_names_the_family",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-22",
       "rule": "RULE-17",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_sql_unset_env_names_the_family",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-22",
       "rule": "RULE-17",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_vitest_unset_env_names_the_family",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-22",
       "rule": "RULE-17",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_plugins.sh",
+      "test_name": "shell: unset env names the family",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-3",
       "rule": "RULE-3",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_plugins.sh",
+      "test_name": "fallback to specs/",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-3",
       "rule": "RULE-3",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_fallback_to_specs_root_when_no_spec",
+      "platform": null
     },
     {
-      "id": "PROOF-3",
-      "rule": "RULE-3",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-3",
-      "rule": "RULE-3",
-      "status": "pass"
-    },
-    {
+      "feature": "proof_common",
       "id": "PROOF-4",
       "rule": "RULE-4",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_plugins.sh",
+      "test_name": "write-scoped overwrite",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-4",
       "rule": "RULE-4",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_overwrite_replaces_only_own_feature",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-4",
       "rule": "RULE-4",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_three_features_share_one_proof_file",
+      "platform": null
     },
     {
-      "id": "PROOF-4",
-      "rule": "RULE-4",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-4",
-      "rule": "RULE-4",
-      "status": "pass"
-    },
-    {
+      "feature": "proof_common",
       "id": "PROOF-5",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_c_declared_marker_scopes_and_unmarked_stays_agnostic",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-5",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_jest_declared_marker_scopes_and_unmarked_stays_agnostic",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-5",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_pytest_declared_marker_scopes_and_unmarked_stays_agnostic",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-5",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_python_proof_plugin_real_execution",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-5",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_sql_declared_marker_scopes_and_unmarked_stays_agnostic",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-5",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_vitest_declared_marker_scopes_and_unmarked_stays_agnostic",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-5",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_plugins.sh",
+      "test_name": "all 7 required fields",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-5",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_plugins.sh",
+      "test_name": "shell: 7 fields agnostic, 8 fields scoped",
+      "platform": null
     },
     {
-      "id": "PROOF-5",
-      "rule": "RULE-5",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-5",
-      "rule": "RULE-5",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-5",
-      "rule": "RULE-5",
-      "status": "pass"
-    },
-    {
+      "feature": "proof_common",
       "id": "PROOF-6",
       "rule": "RULE-6",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_c_happy_path_only",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-6",
       "rule": "RULE-6",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_c_no_assertion",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-6",
       "rule": "RULE-6",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_plugins.sh",
+      "test_name": "pass/fail status",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-6",
       "rule": "RULE-6",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_c_test_name_contradicts_behavior",
+      "platform": null
     },
     {
-      "id": "PROOF-6",
-      "rule": "RULE-6",
-      "status": "pass"
-    },
-    {
+      "feature": "proof_common",
       "id": "PROOF-7",
       "rule": "RULE-7",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_plugins.sh",
+      "test_name": "no markers no files",
+      "platform": null
     },
     {
+      "feature": "proof_common",
       "id": "PROOF-7",
       "rule": "RULE-7",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_no_markers_no_proof_files",
+      "platform": null
     },
     {
+      "feature": "proof_common",
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_plugins.sh",
+      "test_name": "custom plugin proofs discovered by sync_status",
+      "platform": null
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_custom_plugin_proof_files_discovered_by_sync_status",
+      "platform": null
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_plugins.sh",
+      "test_name": "fallback warning to stderr",
+      "platform": null
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_pytest_fallback_emits_warning_to_stderr",
+      "platform": null
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_shell_fallback_emits_warning_to_stderr",
+      "platform": null
+    },
+    {
+      "feature": "proof_plugins_vitest",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_vitest_reporter_marker_parsing",
+      "platform": null
+    },
+    {
+      "feature": "proof_plugins_vitest",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_vitest_reporter_onfinished_walk",
+      "platform": null
+    },
+    {
+      "feature": "schema_proof_format",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_proof_file_read_by_sync_status",
+      "platform": null
+    },
+    {
+      "feature": "schema_proof_format",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_proof_entry_has_all_seven_fields",
+      "platform": null
+    },
+    {
+      "feature": "schema_proof_format",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_invalid_status_not_counted",
+      "platform": null
+    },
+    {
+      "feature": "schema_proof_format",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_standard_tiers_documented",
+      "platform": null
+    },
+    {
+      "feature": "schema_proof_format",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_feature_scoped_overwrite",
+      "platform": null
+    },
+    {
+      "feature": "schema_proof_format",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_scoped_file_merge_preserves_other_feature_and_leaves_agnostic_file_alone",
+      "platform": null
+    },
+    {
+      "feature": "schema_proof_format",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_proof_files_not_gitignored",
+      "platform": null
+    },
+    {
+      "feature": "schema_proof_format",
       "id": "PROOF-7",
       "rule": "RULE-7",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_manual_stamp_format_documented",
+      "platform": null
     },
     {
+      "feature": "schema_proof_format",
       "id": "PROOF-8",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_merge_key_includes_test_file",
+      "platform": null
     },
     {
+      "feature": "schema_proof_format",
       "id": "PROOF-8",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_scoped_file_merge_key_includes_test_file",
+      "platform": null
     },
     {
-      "id": "PROOF-8",
-      "rule": "RULE-8",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-8",
-      "rule": "RULE-8",
-      "status": "pass"
-    },
-    {
+      "feature": "schema_proof_format",
       "id": "PROOF-9",
       "rule": "RULE-8",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_discovery_stamps_platform_skips_bad_ids_and_aliases_legacy_files",
+      "platform": null
     },
     {
-      "id": "PROOF-9",
-      "rule": "RULE-9",
-      "status": "pass"
+      "feature": "security_no_dangerous_patterns",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_security.py",
+      "test_name": "test_no_eval_or_exec",
+      "platform": null
     },
     {
-      "id": "PROOF-9",
-      "rule": "RULE-9",
-      "status": "pass"
+      "feature": "security_no_dangerous_patterns",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_security.py",
+      "test_name": "test_no_shell_true",
+      "platform": null
     },
     {
-      "id": "PROOF-9",
-      "rule": "RULE-9",
-      "status": "pass"
+      "feature": "security_no_dangerous_patterns",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_security.py",
+      "test_name": "test_no_os_system",
+      "platform": null
+    },
+    {
+      "feature": "security_no_dangerous_patterns",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_security.py",
+      "test_name": "test_no_hardcoded_credentials",
+      "platform": null
+    },
+    {
+      "feature": "security_no_dangerous_patterns",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_security.py",
+      "test_name": "test_subprocess_uses_list_args",
+      "platform": null
     }
-  ]
+  ],
+  "evidence": {
+    "test_run": {
+      "at": "2026-09-12T01:10:22.457881+00:00",
+      "commit": "5eae587352030278b680c420a3f53d44191e37a4",
+      "sweep": "dev/run_tests.sh",
+      "passed": 698,
+      "failed": 0,
+      "skipped": 27
+    },
+    "proof_files": [
+      {
+        "file": "specs/_anchors/proof_common.proofs-integration.json",
+        "tier": "integration",
+        "platform": null,
+        "commit": "6bc61d2874dcbcd81892b0998a31ce84edc5c2a6",
+        "committed_at": "2026-09-11T20:16:10-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      },
+      {
+        "file": "specs/_anchors/proof_common.proofs-unit.json",
+        "tier": "unit",
+        "platform": null,
+        "commit": "6bc61d2874dcbcd81892b0998a31ce84edc5c2a6",
+        "committed_at": "2026-09-11T20:16:10-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      },
+      {
+        "file": "specs/_anchors/schema_proof_format.proofs-unit.json",
+        "tier": "unit",
+        "platform": null,
+        "commit": "6bc61d2874dcbcd81892b0998a31ce84edc5c2a6",
+        "committed_at": "2026-09-11T20:16:10-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      },
+      {
+        "file": "specs/_anchors/security_no_dangerous_patterns.proofs-unit.json",
+        "tier": "unit",
+        "platform": null,
+        "commit": "645293053386d98597c57b6c5614d92de0c83dc0",
+        "committed_at": "2026-04-04T08:10:49-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      },
+      {
+        "file": "specs/proof/proof_plugins_vitest.proofs-integration.json",
+        "tier": "integration",
+        "platform": null,
+        "commit": "30236f14ea07050a362d4f08e93b23c1561c7a1a",
+        "committed_at": "2026-06-02T10:53:52-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      }
+    ]
+  }
 }

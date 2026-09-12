@@ -1,8 +1,9 @@
 {
   "feature": "skill_init",
-  "vhash": "c898a901",
-  "commit": "6c573eca30579fdb8044c72155ab252267843861",
-  "timestamp": "2026-09-12T00:42:14.743896+00:00",
+  "vhash": "99f30369",
+  "vhash_version": 2,
+  "commit": "5eae587352030278b680c420a3f53d44191e37a4",
+  "timestamp": "2026-09-12T01:10:26.117889+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -53,261 +54,605 @@
     "RULE-8",
     "RULE-9"
   ],
+  "rule_hashes": {
+    "RULE-1": "d402581da42374f9",
+    "RULE-10": "fd3bc15f23ca977b",
+    "RULE-11": "6b3553a3ada694e2",
+    "RULE-12": "8129e3dd7d0f543c",
+    "RULE-13": "3c3f117a935ecae6",
+    "RULE-14": "c7804e696487dd27",
+    "RULE-15": "962e1e9d24023646",
+    "RULE-16": "63b7b695cb5041ad",
+    "RULE-17": "eb1f567eae8359f2",
+    "RULE-18": "409ccc7cd0d620da",
+    "RULE-19": "3f29e9335d8f027c",
+    "RULE-2": "f882d91d4488414b",
+    "RULE-20": "d3196b174860329c",
+    "RULE-21": "c37582b874c4e58d",
+    "RULE-22": "21168c55903d8ea1",
+    "RULE-23": "e5c7c4e24068e517",
+    "RULE-24": "b843859f06772859",
+    "RULE-25": "5a0740dc5633a1aa",
+    "RULE-26": "0578ccf875f54a05",
+    "RULE-27": "d8af29eca058b7b6",
+    "RULE-28": "f4c6fbecf5ec662c",
+    "RULE-29": "48216fa91ce5a1ce",
+    "RULE-3": "67aed7b9ce3ae904",
+    "RULE-30": "10ba87d4f1c03ee9",
+    "RULE-31": "3d9bb836532c585f",
+    "RULE-32": "23a96cd0558d9cfc",
+    "RULE-33": "befd51716aa672a7",
+    "RULE-34": "5b222e89b8b1a71a",
+    "RULE-35": "4e5f6ba6e17c7534",
+    "RULE-36": "31c0cd89d25b5887",
+    "RULE-37": "9a6530e7fe524fef",
+    "RULE-38": "feb3dd562fa84079",
+    "RULE-39": "2aac5077ef2e4073",
+    "RULE-4": "d678c1c2ae01571c",
+    "RULE-40": "90262fabc4f02f62",
+    "RULE-41": "d0c399e123d036f8",
+    "RULE-42": "f5b69c2b395cc55b",
+    "RULE-43": "b85b8610c13b5d6c",
+    "RULE-44": "f452ba4d3fb1bba8",
+    "RULE-45": "7acaa624a6eafd15",
+    "RULE-46": "832c807872b4f909",
+    "RULE-47": "5dac4716357a28cd",
+    "RULE-48": "186005798bc6fbea",
+    "RULE-5": "14651aa1ed9ac2d9",
+    "RULE-6": "9ac4e2875a7f7099",
+    "RULE-7": "ed80cdf4731a433e",
+    "RULE-8": "9c4b7fc1c7610d65",
+    "RULE-9": "dbaa582eea300c8f"
+  },
   "proofs": [
     {
+      "feature": "skill_init",
       "id": "PROOF-1",
       "rule": "RULE-1",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_has_frontmatter",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-10",
       "rule": "RULE-10",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "config version matches VERSION file",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-11",
       "rule": "RULE-11",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "default config values correct",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-12",
       "rule": "RULE-12",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "conftest.py triggers pytest detection",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-13",
       "rule": "RULE-13",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "pyproject.toml [tool.pytest] triggers pytest",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-14",
       "rule": "RULE-14",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "package.json jest triggers jest detection",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-15",
       "rule": "RULE-15",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "vitest maps to native vitest_purlin.ts",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-16",
       "rule": "RULE-16",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "multi-framework scaffolding correct",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-17",
       "rule": "RULE-17",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "shell fallback scaffolds purlin-proof.sh",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-18",
       "rule": "RULE-18",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "pytest plugin byte-identical",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-19",
       "rule": "RULE-19",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "jest reporter byte-identical",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-2",
       "rule": "RULE-2",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_has_usage_section",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-20",
       "rule": "RULE-20",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "shell harness byte-identical",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-21",
       "rule": "RULE-21",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "scaffolded pytest plugin produces valid proofs",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-22",
       "rule": "RULE-22",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "scaffolded jest reporter produces valid proofs",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-23",
       "rule": "RULE-23",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "scaffolded shell harness produces valid proofs",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-24",
       "rule": "RULE-24",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "empty specs returns No specs found",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-25",
       "rule": "RULE-25",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "status progression UNTESTED\u2192PASSING\u2192FAILING",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-26",
       "rule": "RULE-26",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "report-data.js generated correctly",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-27",
       "rule": "RULE-27",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "all gitignore entries present, digest not ignored",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-28",
       "rule": "RULE-28",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "no duplicate gitignore entries",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-29",
       "rule": "RULE-29",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "pre-push hook installed correctly",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-3",
       "rule": "RULE-3",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_name_matches_directory",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-30",
       "rule": "RULE-30",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "non-purlin hook preserved",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-31",
       "rule": "RULE-31",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "dashboard report on/off correct",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-32",
       "rule": "RULE-32",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "Python lifecycle: init\u2192spec\u2192pytest\u2192proofs\u2192PASSING\u2192hook-ok",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-33",
       "rule": "RULE-32",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "Shell lifecycle: init\u2192spec\u2192shell-proof\u2192PASSING",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-34",
       "rule": "RULE-32",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "Jest lifecycle: init\u2192spec\u2192reporter\u2192PASSING",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-35",
       "rule": "RULE-33",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_skill_prints_detecting_codebase_before_scan",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-36",
       "rule": "RULE-34",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_skill_always_presents_framework_selection_list",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-37",
       "rule": "RULE-35",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_skill_shows_single_detection_preselected",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-38",
       "rule": "RULE-36",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_skill_shows_multi_detection_preselected",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-39",
       "rule": "RULE-37",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_skill_shows_no_detection_all_unselected",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-4",
       "rule": "RULE-4",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_has_commit_instructions",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-40",
       "rule": "RULE-38",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_mcp_server_bundled_in_plugin_manifest",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-41",
       "rule": "RULE-39",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_bundled_mcp_server_uses_plugin_root_variable",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-42",
       "rule": "RULE-40",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_documents_legacy_mcp_json_migration",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-43",
       "rule": "RULE-41",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "digest field present",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-44",
       "rule": "RULE-42",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "pre-commit hook installed",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-45",
       "rule": "RULE-43",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "existing hook preserved",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-46",
       "rule": "RULE-44",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "digest auto-generated and staged",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-47",
       "rule": "RULE-45",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "digest has fresh timestamp and git_sha",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-48",
       "rule": "RULE-46",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "no audit triggered",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-49",
       "rule": "RULE-47",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "vitest reporter byte-identical",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-5",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_add_plugin_validates_by_language",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-50",
       "rule": "RULE-48",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_selection_list_built_from_registry_not_hardcoded",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-51",
       "rule": "RULE-48",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_registry_covers_every_shipped_plugin",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-6",
       "rule": "RULE-6",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_add_plugin_supports_file_and_git",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-7",
       "rule": "RULE-7",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_list_plugins_labels_builtin_and_custom",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-8",
       "rule": "RULE-8",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "all init directories exist",
+      "platform": null
     },
     {
+      "feature": "skill_init",
       "id": "PROOF-9",
       "rule": "RULE-9",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "config.json has all required fields",
+      "platform": null
     }
-  ]
+  ],
+  "evidence": {
+    "test_run": {
+      "at": "2026-09-12T01:10:22.457881+00:00",
+      "commit": "5eae587352030278b680c420a3f53d44191e37a4",
+      "sweep": "dev/run_tests.sh",
+      "passed": 698,
+      "failed": 0,
+      "skipped": 27
+    },
+    "proof_files": [
+      {
+        "file": "specs/skills/skill_init.proofs-e2e.json",
+        "tier": "e2e",
+        "platform": null,
+        "commit": "0e8cc6b898218cd53a51e9ed9c9043a517f23bea",
+        "committed_at": "2026-09-11T11:36:30-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      },
+      {
+        "file": "specs/skills/skill_init.proofs-integration.json",
+        "tier": "integration",
+        "platform": null,
+        "commit": "9e26d2e2551d98b0a903b5f1b362b7795f4f845c",
+        "committed_at": "2026-06-02T15:00:51-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      },
+      {
+        "file": "specs/skills/skill_init.proofs-unit.json",
+        "tier": "unit",
+        "platform": null,
+        "commit": "0e8cc6b898218cd53a51e9ed9c9043a517f23bea",
+        "committed_at": "2026-09-11T11:36:30-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      }
+    ]
+  }
 }

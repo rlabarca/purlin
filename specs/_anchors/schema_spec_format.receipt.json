@@ -1,8 +1,9 @@
 {
   "feature": "schema_spec_format",
-  "vhash": "c41ea837",
-  "commit": "6c573eca30579fdb8044c72155ab252267843861",
-  "timestamp": "2026-09-12T00:42:14.743896+00:00",
+  "vhash": "22d984fd",
+  "vhash_version": 2,
+  "commit": "5eae587352030278b680c420a3f53d44191e37a4",
+  "timestamp": "2026-09-12T01:10:26.117889+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -15,66 +16,159 @@
     "RULE-8",
     "RULE-9"
   ],
+  "rule_hashes": {
+    "RULE-1": "f45914620174d07f",
+    "RULE-10": "a3f8447935e7723a",
+    "RULE-2": "cdd67c98e86b9dce",
+    "RULE-3": "8f08e518a4c1b77a",
+    "RULE-4": "c10c1885ca4abf0d",
+    "RULE-5": "bb99f8999955b57e",
+    "RULE-6": "53122a6f4cfa667b",
+    "RULE-7": "0b06862aa4921580",
+    "RULE-8": "79cb2afc91f483dc",
+    "RULE-9": "d00ae4cd550896b0"
+  },
   "proofs": [
     {
+      "feature": "schema_spec_format",
       "id": "PROOF-1",
       "rule": "RULE-1",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_format_documents_two_sections",
+      "platform": null
     },
     {
+      "feature": "schema_spec_format",
       "id": "PROOF-10",
       "rule": "RULE-10",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_platform_id_charset_rejects_dots_underscores_and_upper_case",
+      "platform": null
     },
     {
+      "feature": "schema_spec_format",
       "id": "PROOF-2",
       "rule": "RULE-2",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_unnumbered_rule_triggers_warning",
+      "platform": null
     },
     {
+      "feature": "schema_spec_format",
       "id": "PROOF-3",
       "rule": "RULE-3",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_all_proof_lines_match_pattern",
+      "platform": null
     },
     {
+      "feature": "schema_spec_format",
       "id": "PROOF-4",
       "rule": "RULE-4",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_rule_without_proof_shows_uncovered",
+      "platform": null
     },
     {
+      "feature": "schema_spec_format",
       "id": "PROOF-5",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_requires_includes_referenced_rules",
+      "platform": null
     },
     {
+      "feature": "schema_spec_format",
       "id": "PROOF-6",
       "rule": "RULE-6",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_scope_metadata_parsed",
+      "platform": null
     },
     {
+      "feature": "schema_spec_format",
       "id": "PROOF-7",
       "rule": "RULE-7",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_spec_headings_use_correct_prefix",
+      "platform": null
     },
     {
+      "feature": "schema_spec_format",
       "id": "PROOF-8",
       "rule": "RULE-8",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_multiline_description_continuation",
+      "platform": null
     },
     {
+      "feature": "schema_spec_format",
       "id": "PROOF-9",
       "rule": "RULE-9",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_prose_ending_in_at_word_is_not_a_tier_tag",
+      "platform": null
     },
     {
+      "feature": "schema_spec_format",
       "id": "PROOF-9",
       "rule": "RULE-9",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_real_spec_is_parsed_correctly",
+      "platform": null
     },
     {
+      "feature": "schema_spec_format",
       "id": "PROOF-9",
       "rule": "RULE-9",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_tier_and_platform_tags_split_identically_in_both_modules",
+      "platform": null
     }
-  ]
+  ],
+  "evidence": {
+    "test_run": {
+      "at": "2026-09-12T01:10:22.457881+00:00",
+      "commit": "5eae587352030278b680c420a3f53d44191e37a4",
+      "sweep": "dev/run_tests.sh",
+      "passed": 698,
+      "failed": 0,
+      "skipped": 27
+    },
+    "proof_files": [
+      {
+        "file": "specs/_anchors/schema_spec_format.proofs-unit.json",
+        "tier": "unit",
+        "platform": null,
+        "commit": "a3df73f5380d03e58f1567ac64b52c7bfb7b4ecb",
+        "committed_at": "2026-09-11T19:32:25-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      }
+    ]
+  }
 }

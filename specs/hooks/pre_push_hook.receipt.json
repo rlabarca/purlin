@@ -1,8 +1,9 @@
 {
   "feature": "pre_push_hook",
-  "vhash": "b44f7fb6",
-  "commit": "6c573eca30579fdb8044c72155ab252267843861",
-  "timestamp": "2026-09-12T00:42:14.743896+00:00",
+  "vhash": "a34a803a",
+  "vhash_version": 2,
+  "commit": "5eae587352030278b680c420a3f53d44191e37a4",
+  "timestamp": "2026-09-12T01:10:26.117889+00:00",
   "rules": [
     "RULE-1",
     "RULE-2",
@@ -19,111 +20,280 @@
     "security_no_dangerous_patterns/RULE-4",
     "security_no_dangerous_patterns/RULE-5"
   ],
+  "rule_hashes": {
+    "RULE-1": "103aba4d5f3a6916",
+    "RULE-2": "20cca3670437f0d6",
+    "RULE-3": "37b5e69cd1af9198",
+    "RULE-4": "ca5c180699256933",
+    "RULE-5": "c30a4a4b33500ab5",
+    "RULE-6": "abc01668fdd5a0ca",
+    "RULE-7": "371938f9eeed16e1",
+    "RULE-8": "1434504d3fac31c8",
+    "RULE-9": "c8246802a49cec16",
+    "security_no_dangerous_patterns/RULE-1": "ed467a922f765cf7",
+    "security_no_dangerous_patterns/RULE-2": "5472c9b7f8b25c0e",
+    "security_no_dangerous_patterns/RULE-3": "cf98992127576281",
+    "security_no_dangerous_patterns/RULE-4": "f53ddfe0e85bc1be",
+    "security_no_dangerous_patterns/RULE-5": "48c1e637216f0b48"
+  },
   "proofs": [
     {
-      "id": "PROOF-1",
-      "rule": "RULE-1",
-      "status": "pass"
-    },
-    {
+      "feature": "pre_push_hook",
       "id": "PROOF-10",
       "rule": "RULE-8",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_strict_mode_allows_passing_blocks_partial",
+      "platform": null
     },
     {
+      "feature": "pre_push_hook",
       "id": "PROOF-11",
       "rule": "RULE-9",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_installed_hook_exists_is_executable_and_blocks",
+      "platform": null
     },
     {
+      "feature": "pre_push_hook",
       "id": "PROOF-12",
       "rule": "RULE-4",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_fail_keyword_in_rule_description_does_not_block",
+      "platform": null
     },
     {
+      "feature": "pre_push_hook",
       "id": "PROOF-13",
       "rule": "RULE-7",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_recovery_message_lists_feature_specific_commands",
+      "platform": null
     },
     {
+      "feature": "pre_push_hook",
       "id": "PROOF-14",
       "rule": "RULE-8",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_strict_mode_recovery_includes_verify_command",
+      "platform": null
     },
     {
+      "feature": "pre_push_hook",
       "id": "PROOF-15",
       "rule": "RULE-8",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_strict_required.sh",
+      "test_name": "strict blocks when required rules lack proofs",
+      "platform": null
     },
     {
+      "feature": "pre_push_hook",
       "id": "PROOF-16",
       "rule": "RULE-8",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_strict_required.sh",
+      "test_name": "strict allows when all rules (own+required) proved",
+      "platform": null
     },
     {
+      "feature": "pre_push_hook",
       "id": "PROOF-17",
       "rule": "RULE-1",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "pre-push blocks on anchor fail",
+      "platform": null
     },
     {
+      "feature": "pre_push_hook",
       "id": "PROOF-17",
       "rule": "RULE-1",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "pre-push blocks on anchor fail",
+      "platform": null
     },
     {
+      "feature": "pre_push_hook",
       "id": "PROOF-2",
       "rule": "RULE-2",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_partial_coverage_exits_0_with_warning",
+      "platform": null
     },
     {
-      "id": "PROOF-2",
-      "rule": "RULE-2",
-      "status": "pass"
-    },
-    {
+      "feature": "pre_push_hook",
       "id": "PROOF-3",
       "rule": "RULE-3",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_no_specs_dir_exits_0_silently",
+      "platform": null
     },
     {
-      "id": "PROOF-3",
-      "rule": "RULE-3",
-      "status": "pass"
-    },
-    {
+      "feature": "pre_push_hook",
       "id": "PROOF-4",
       "rule": "RULE-4",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_all_pass_exits_0",
+      "platform": null
     },
     {
-      "id": "PROOF-4",
-      "rule": "RULE-4",
-      "status": "pass"
-    },
-    {
+      "feature": "pre_push_hook",
       "id": "PROOF-5",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_detects_framework_from_config_and_auto",
+      "platform": null
     },
     {
-      "id": "PROOF-5",
-      "rule": "RULE-5",
-      "status": "pass"
-    },
-    {
+      "feature": "pre_push_hook",
       "id": "PROOF-6",
       "rule": "RULE-6",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_unit_test_runs_integration_skipped",
+      "platform": null
     },
     {
+      "feature": "pre_push_hook",
       "id": "PROOF-7",
       "rule": "RULE-7",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_output_shows_blocked_and_recovery_on_fail",
+      "platform": null
     },
     {
+      "feature": "pre_push_hook",
       "id": "PROOF-9",
       "rule": "RULE-8",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_strict_mode_blocks_partial_coverage",
+      "platform": null
+    },
+    {
+      "feature": "security_no_dangerous_patterns",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_security.py",
+      "test_name": "test_no_eval_or_exec",
+      "platform": null
+    },
+    {
+      "feature": "security_no_dangerous_patterns",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_security.py",
+      "test_name": "test_no_shell_true",
+      "platform": null
+    },
+    {
+      "feature": "security_no_dangerous_patterns",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_security.py",
+      "test_name": "test_no_os_system",
+      "platform": null
+    },
+    {
+      "feature": "security_no_dangerous_patterns",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_security.py",
+      "test_name": "test_no_hardcoded_credentials",
+      "platform": null
+    },
+    {
+      "feature": "security_no_dangerous_patterns",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_security.py",
+      "test_name": "test_subprocess_uses_list_args",
+      "platform": null
     }
-  ]
+  ],
+  "evidence": {
+    "test_run": {
+      "at": "2026-09-12T01:10:22.457881+00:00",
+      "commit": "5eae587352030278b680c420a3f53d44191e37a4",
+      "sweep": "dev/run_tests.sh",
+      "passed": 698,
+      "failed": 0,
+      "skipped": 27
+    },
+    "proof_files": [
+      {
+        "file": "specs/_anchors/security_no_dangerous_patterns.proofs-unit.json",
+        "tier": "unit",
+        "platform": null,
+        "commit": "645293053386d98597c57b6c5614d92de0c83dc0",
+        "committed_at": "2026-04-04T08:10:49-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      },
+      {
+        "file": "specs/hooks/pre_push_hook.proofs-e2e.json",
+        "tier": "e2e",
+        "platform": null,
+        "commit": "c1bd591d2d00207a14fa67e4ccd4f2d24300e674",
+        "committed_at": "2026-04-07T07:52:32-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      },
+      {
+        "file": "specs/hooks/pre_push_hook.proofs-integration.json",
+        "tier": "integration",
+        "platform": null,
+        "commit": "abfa5980c67ba5c291b6cbc9f81dcc1ecd5e2d51",
+        "committed_at": "2026-04-07T08:47:47-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      },
+      {
+        "file": "specs/hooks/pre_push_hook.proofs-unit.json",
+        "tier": "unit",
+        "platform": null,
+        "commit": "746a3408724282faabdd46c0c1095d89146b9400",
+        "committed_at": "2026-09-11T19:19:59-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      }
+    ]
+  }
 }

@@ -1,8 +1,9 @@
 {
   "feature": "sync_status",
-  "vhash": "0a8ff4a0",
-  "commit": "6c573eca30579fdb8044c72155ab252267843861",
-  "timestamp": "2026-09-12T00:42:14.743896+00:00",
+  "vhash": "e16b843d",
+  "vhash_version": 2,
+  "commit": "5eae587352030278b680c420a3f53d44191e37a4",
+  "timestamp": "2026-09-12T01:10:26.117889+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -53,6 +54,7 @@
     "RULE-51",
     "RULE-52",
     "RULE-53",
+    "RULE-54",
     "RULE-6",
     "RULE-7",
     "RULE-8",
@@ -81,636 +83,1431 @@
     "security_no_dangerous_patterns/RULE-4",
     "security_no_dangerous_patterns/RULE-5"
   ],
+  "rule_hashes": {
+    "RULE-1": "d6cea0b1adb3c5ad",
+    "RULE-10": "4decb79795a84422",
+    "RULE-11": "64e6a700e2ce7add",
+    "RULE-12": "440d8cf4ec950efa",
+    "RULE-13": "cfa4f6613b64a04b",
+    "RULE-14": "74f79b83905fbf7d",
+    "RULE-15": "d3e2b7b45bb90d7b",
+    "RULE-16": "1a42c8e646aa3adb",
+    "RULE-17": "8a431dcae7508b55",
+    "RULE-18": "36920bb9c7a69617",
+    "RULE-19": "92436685d5b4644f",
+    "RULE-2": "aaba2b573675c62f",
+    "RULE-20": "b5b744d2f6754b34",
+    "RULE-21": "8cfc896b93b90ca6",
+    "RULE-22": "95d6dc049a1650b9",
+    "RULE-23": "c5f065a19d4b7b4c",
+    "RULE-24": "f5290e505c4d8359",
+    "RULE-25": "6133bf1071066205",
+    "RULE-26": "07c50dd14d518760",
+    "RULE-27": "f1c425084ec22126",
+    "RULE-28": "4d7fa129d851a675",
+    "RULE-29": "395315e070904cee",
+    "RULE-3": "4f86c0932022b9f5",
+    "RULE-30": "f6da2bf32dbe780d",
+    "RULE-31": "fa3a6e3f7ce9209f",
+    "RULE-32": "e4539bec0bd6902b",
+    "RULE-33": "5b436444c00844f8",
+    "RULE-34": "d34e1ec9be9d6dd0",
+    "RULE-35": "571b405180010706",
+    "RULE-36": "84884016e785cc46",
+    "RULE-37": "01827d28caa5633a",
+    "RULE-38": "dbb8a05c4d711e87",
+    "RULE-39": "4e9378beb5063d5c",
+    "RULE-4": "353b5cae69c375f7",
+    "RULE-40": "359c1d6674e2274f",
+    "RULE-41": "05e47214b092721f",
+    "RULE-42": "944cd07adba472dd",
+    "RULE-43": "75ce623ae8ce32c8",
+    "RULE-44": "1bcaca907b75d8a2",
+    "RULE-45": "999b4c7d68c67c54",
+    "RULE-46": "aa851978722faaa3",
+    "RULE-47": "6b4e0ad7677f9476",
+    "RULE-48": "932e86c3fa0d25d0",
+    "RULE-49": "e06989914ccfefca",
+    "RULE-5": "71bd019a08da6cb3",
+    "RULE-50": "61638efe3c302305",
+    "RULE-51": "84d502659d703f7b",
+    "RULE-52": "9d5768c234261cde",
+    "RULE-53": "2657bb0fe0943218",
+    "RULE-54": "dcf72a3af47f8998",
+    "RULE-6": "d7a520923fe66c2b",
+    "RULE-7": "6928d520a82f7961",
+    "RULE-8": "6f164a612b02694f",
+    "RULE-9": "4b189b05505f592d",
+    "schema_proof_format/RULE-1": "b61d6b4948a9dd21",
+    "schema_proof_format/RULE-2": "674bd446b164694b",
+    "schema_proof_format/RULE-3": "85878840188fce4d",
+    "schema_proof_format/RULE-4": "449cb2773620c483",
+    "schema_proof_format/RULE-5": "740bd96aa5aee3b5",
+    "schema_proof_format/RULE-6": "48a5aee5e204de4b",
+    "schema_proof_format/RULE-7": "d0a6bf6e73d644da",
+    "schema_proof_format/RULE-8": "25b9d36d1662e14d",
+    "schema_spec_format/RULE-1": "f45914620174d07f",
+    "schema_spec_format/RULE-10": "a3f8447935e7723a",
+    "schema_spec_format/RULE-2": "cdd67c98e86b9dce",
+    "schema_spec_format/RULE-3": "8f08e518a4c1b77a",
+    "schema_spec_format/RULE-4": "c10c1885ca4abf0d",
+    "schema_spec_format/RULE-5": "bb99f8999955b57e",
+    "schema_spec_format/RULE-6": "53122a6f4cfa667b",
+    "schema_spec_format/RULE-7": "0b06862aa4921580",
+    "schema_spec_format/RULE-8": "79cb2afc91f483dc",
+    "schema_spec_format/RULE-9": "d00ae4cd550896b0",
+    "security_no_dangerous_patterns/RULE-1": "ed467a922f765cf7",
+    "security_no_dangerous_patterns/RULE-2": "5472c9b7f8b25c0e",
+    "security_no_dangerous_patterns/RULE-3": "cf98992127576281",
+    "security_no_dangerous_patterns/RULE-4": "f53ddfe0e85bc1be",
+    "security_no_dangerous_patterns/RULE-5": "48c1e637216f0b48"
+  },
   "proofs": [
     {
+      "feature": "schema_proof_format",
       "id": "PROOF-1",
       "rule": "RULE-1",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_proof_file_read_by_sync_status",
+      "platform": null
     },
     {
+      "feature": "schema_proof_format",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_proof_entry_has_all_seven_fields",
+      "platform": null
+    },
+    {
+      "feature": "schema_proof_format",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_invalid_status_not_counted",
+      "platform": null
+    },
+    {
+      "feature": "schema_proof_format",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_standard_tiers_documented",
+      "platform": null
+    },
+    {
+      "feature": "schema_proof_format",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_feature_scoped_overwrite",
+      "platform": null
+    },
+    {
+      "feature": "schema_proof_format",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_scoped_file_merge_preserves_other_feature_and_leaves_agnostic_file_alone",
+      "platform": null
+    },
+    {
+      "feature": "schema_proof_format",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_proof_files_not_gitignored",
+      "platform": null
+    },
+    {
+      "feature": "schema_proof_format",
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_manual_stamp_format_documented",
+      "platform": null
+    },
+    {
+      "feature": "schema_proof_format",
+      "id": "PROOF-8",
+      "rule": "RULE-5",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_merge_key_includes_test_file",
+      "platform": null
+    },
+    {
+      "feature": "schema_proof_format",
+      "id": "PROOF-8",
+      "rule": "RULE-5",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_scoped_file_merge_key_includes_test_file",
+      "platform": null
+    },
+    {
+      "feature": "schema_proof_format",
+      "id": "PROOF-9",
+      "rule": "RULE-8",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_proof_format.py",
+      "test_name": "test_discovery_stamps_platform_skips_bad_ids_and_aliases_legacy_files",
+      "platform": null
+    },
+    {
+      "feature": "schema_spec_format",
       "id": "PROOF-1",
       "rule": "RULE-1",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_format_documents_two_sections",
+      "platform": null
     },
     {
-      "id": "PROOF-1",
-      "rule": "RULE-1",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-1",
-      "rule": "RULE-1",
-      "status": "pass"
-    },
-    {
+      "feature": "schema_spec_format",
       "id": "PROOF-10",
       "rule": "RULE-10",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_platform_id_charset_rejects_dots_underscores_and_upper_case",
+      "platform": null
     },
     {
+      "feature": "schema_spec_format",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_unnumbered_rule_triggers_warning",
+      "platform": null
+    },
+    {
+      "feature": "schema_spec_format",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_all_proof_lines_match_pattern",
+      "platform": null
+    },
+    {
+      "feature": "schema_spec_format",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_rule_without_proof_shows_uncovered",
+      "platform": null
+    },
+    {
+      "feature": "schema_spec_format",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_requires_includes_referenced_rules",
+      "platform": null
+    },
+    {
+      "feature": "schema_spec_format",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_scope_metadata_parsed",
+      "platform": null
+    },
+    {
+      "feature": "schema_spec_format",
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_spec_headings_use_correct_prefix",
+      "platform": null
+    },
+    {
+      "feature": "schema_spec_format",
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_multiline_description_continuation",
+      "platform": null
+    },
+    {
+      "feature": "schema_spec_format",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_prose_ending_in_at_word_is_not_a_tier_tag",
+      "platform": null
+    },
+    {
+      "feature": "schema_spec_format",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_real_spec_is_parsed_correctly",
+      "platform": null
+    },
+    {
+      "feature": "schema_spec_format",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_tier_and_platform_tags_split_identically_in_both_modules",
+      "platform": null
+    },
+    {
+      "feature": "security_no_dangerous_patterns",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_security.py",
+      "test_name": "test_no_eval_or_exec",
+      "platform": null
+    },
+    {
+      "feature": "security_no_dangerous_patterns",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_security.py",
+      "test_name": "test_no_shell_true",
+      "platform": null
+    },
+    {
+      "feature": "security_no_dangerous_patterns",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_security.py",
+      "test_name": "test_no_os_system",
+      "platform": null
+    },
+    {
+      "feature": "security_no_dangerous_patterns",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_security.py",
+      "test_name": "test_no_hardcoded_credentials",
+      "platform": null
+    },
+    {
+      "feature": "security_no_dangerous_patterns",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_security.py",
+      "test_name": "test_subprocess_uses_list_args",
+      "platform": null
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_rules_with_required_no_proofs",
+      "platform": null
+    },
+    {
+      "feature": "sync_status",
       "id": "PROOF-10",
       "rule": "RULE-10",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_rule_labels",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-11",
       "rule": "RULE-11",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_scope_overlap_suggestion",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-12",
       "rule": "RULE-12",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_unresolved_requires_warning",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-13",
       "rule": "RULE-13",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_manual_proof_with_scope_no_warning",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-13",
       "rule": "RULE-13",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_manual_proof_without_scope_warning",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-14",
       "rule": "RULE-14",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_prefers_subdirectory_proofs",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-14",
       "rule": "RULE-14",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_unit_and_e2e_proofs_merged",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-15",
       "rule": "RULE-15",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_receipt_staleness_from_anchor_change",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-16",
       "rule": "RULE-16",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_warns_uncommitted_spec_changes",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-18",
       "rule": "RULE-18",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_summary_table",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-2",
       "rule": "RULE-2",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_ready_with_vhash",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-2",
       "rule": "RULE-2",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_c_passes_but_sql_e2e_fails_same_rule",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-2",
       "rule": "RULE-2",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_fail_in_e2e_overrides_pass_in_unit",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-2",
       "rule": "RULE-2",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_pass_does_not_override_earlier_fail",
+      "platform": null
     },
     {
-      "id": "PROOF-2",
-      "rule": "RULE-2",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-2",
-      "rule": "RULE-2",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-2",
-      "rule": "RULE-2",
-      "status": "pass"
-    },
-    {
+      "feature": "sync_status",
       "id": "PROOF-20",
       "rule": "RULE-20",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_untested_status_for_zero_proofs",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-21",
       "rule": "RULE-21",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_partial_status_when_not_all_rules_proved",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-22",
       "rule": "RULE-4",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_required_rules.sh",
+      "test_name": "sync_status counts required+global rules in total",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-23",
       "rule": "RULE-10",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_required_rules.sh",
+      "test_name": "sync_status labels rules as own/required/global",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-24",
       "rule": "RULE-21",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_required_rules.sh",
+      "test_name": "partial proofs show 2/5 and not VERIFIED",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-25",
       "rule": "RULE-2",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_required_rules.sh",
+      "test_name": "full proofs show 5/5 and PASSING",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-26",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_manual_staleness.sh",
+      "test_name": "stamped manual proof shows PASS with verified date",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-27",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_manual_staleness.sh",
+      "test_name": "scope file change makes manual proof STALE with directive",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-28",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_manual_staleness.sh",
+      "test_name": "re-stamp clears stale state, shows PASS",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-29",
       "rule": "RULE-6",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_verify_audit.sh",
+      "test_name": "receipt written with correct vhash, commit, rules, proofs",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-3",
       "rule": "RULE-3",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_warns_unnumbered_rules",
+      "platform": null
     },
     {
-      "id": "PROOF-3",
-      "rule": "RULE-3",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-3",
-      "rule": "RULE-3",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-3",
-      "rule": "RULE-3",
-      "status": "pass"
-    },
-    {
+      "feature": "sync_status",
       "id": "PROOF-30",
       "rule": "RULE-6",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_verify_audit.sh",
+      "test_name": "audit matches when rules+proofs unchanged",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-31",
       "rule": "RULE-15",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_verify_audit.sh",
+      "test_name": "audit detects mismatch when rule added but receipt stale",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-32",
       "rule": "RULE-6",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_verify_audit.sh",
+      "test_name": "re-verify produces different vhash, audit matches after update",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-33",
       "rule": "RULE-2",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_verify_audit.sh",
+      "test_name": "both specs PASSING, coverage counts correct",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-34",
       "rule": "RULE-1",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "Pinned/Path extraction correct",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-35",
       "rule": "RULE-22",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "sync_status shows pinned info",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-36",
       "rule": "RULE-23",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "unpinned warning present",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-37",
       "rule": "RULE-24",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "report-data.js includes pinned fields",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-38",
       "rule": "RULE-4",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "coverage includes anchor rules",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-39",
       "rule": "RULE-4",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "2 external anchors counted",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-4",
       "rule": "RULE-4",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_requires_counts_for_coverage",
+      "platform": null
     },
     {
-      "id": "PROOF-4",
-      "rule": "RULE-4",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-4",
-      "rule": "RULE-4",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-4",
-      "rule": "RULE-4",
-      "status": "pass"
-    },
-    {
+      "feature": "sync_status",
       "id": "PROOF-40",
       "rule": "RULE-4",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "external + local anchor counted",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-41",
       "rule": "RULE-9",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "global external anchor auto-applies",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-42",
       "rule": "RULE-2",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_external_refs.sh",
+      "test_name": "coverage progression correct",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-43",
       "rule": "RULE-19",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_sync_status_shows_integrity_line",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-44",
       "rule": "RULE-19",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_sync_status_no_cache_shows_no_audit_data",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-45",
       "rule": "RULE-25",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_sync_status_stale_cache_warns",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-46",
       "rule": "RULE-26",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_report_data_audit_summary_fields",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-47",
       "rule": "RULE-26",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_report_data_audit_summary_null_when_no_cache",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-48",
       "rule": "RULE-27",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_report_data_per_feature_audit_data",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-49",
       "rule": "RULE-28",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_cache_entries_without_feature_excluded_from_per_feature_but_counted_globally",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-5",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_manual_proof_staleness",
+      "platform": null
     },
     {
-      "id": "PROOF-5",
-      "rule": "RULE-5",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-5",
-      "rule": "RULE-5",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-5",
-      "rule": "RULE-5",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-5",
-      "rule": "RULE-5",
-      "status": "pass"
-    },
-    {
+      "feature": "sync_status",
       "id": "PROOF-50",
       "rule": "RULE-19",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_deleting_cache_reverts_to_no_audit_state",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-51",
       "rule": "RULE-29",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_integrity_is_quality_only",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-52",
       "rule": "RULE-30",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_integrity_counts_only_own_feature_proofs",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-53",
       "rule": "RULE-31",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_global_integrity_quality_only",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-54",
       "rule": "RULE-29",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_integrity_ignores_no_proof_rules_completely",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-55",
       "rule": "RULE-32",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_cli_integrity_matches_report_data",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-56",
       "rule": "RULE-33",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_integrity_formula_consistent_across_sources",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-56",
       "rule": "RULE-33",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_integrity_formula_consistent_across_files",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-57",
       "rule": "RULE-32",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_integrity_with_no_proof_rules_all_sources_match",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-58",
       "rule": "RULE-34",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_compute_integrity_is_single_function",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-59",
       "rule": "RULE-35",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_determine_status_is_single_function",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-6",
       "rule": "RULE-6",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_vhash_v2_binds_rule_text_test_identity_and_feature",
+      "platform": null
     },
     {
-      "id": "PROOF-6",
-      "rule": "RULE-6",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-6",
-      "rule": "RULE-6",
-      "status": "pass"
-    },
-    {
+      "feature": "sync_status",
       "id": "PROOF-60",
       "rule": "RULE-34",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_multi_feature_integrity_cli_matches_dashboard",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-61",
       "rule": "RULE-35",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_all_statuses_cli_matches_dashboard",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-62",
       "rule": "RULE-36",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_scan_specs_parses_stack",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-62",
       "rule": "RULE-36",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_scan_specs_stack_absent",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-63",
       "rule": "RULE-37",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_no_rule_count_warning_for_anchors",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-63",
       "rule": "RULE-37",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_no_rule_count_warning_for_few_rules",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-63",
       "rule": "RULE-37",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_no_rule_count_warning_for_instructions",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-63",
       "rule": "RULE-37",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_no_rule_count_warning_for_many_rules",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-64",
       "rule": "RULE-17",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_proof_types_display_uniformly",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-65",
       "rule": "RULE-22",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_anchor_detail_shows_source_path_and_pinned",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-66",
       "rule": "RULE-23",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_anchor_unpinned_warning",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-67",
       "rule": "RULE-24",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_report_data_includes_pinned_and_source_path",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-68",
       "rule": "RULE-38",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_legacy_mcp_entry_advisory",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-69",
       "rule": "RULE-39",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_design_score_needs_no_audit_cache",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-69",
       "rule": "RULE-39",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_reports_both_gauges_and_distinguishes_untested",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-7",
       "rule": "RULE-7",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_all_proof_types_count_equally",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-7",
       "rule": "RULE-7",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_structural_only_detection",
+      "platform": null
     },
     {
-      "id": "PROOF-7",
-      "rule": "RULE-7",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-7",
-      "rule": "RULE-7",
-      "status": "pass"
-    },
-    {
+      "feature": "sync_status",
       "id": "PROOF-70",
       "rule": "RULE-40",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_table_borders_align_for_every_status",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-71",
       "rule": "RULE-41",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_reports_declared_proof_ids_and_descriptions",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-72",
       "rule": "RULE-42",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_directive_routes_on_whether_code_exists",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-73",
       "rule": "RULE-18",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_gauge_cells_use_whole_words_for_both_empty_states",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-73",
       "rule": "RULE-18",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_summary_table_carries_both_gauge_columns",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-74",
       "rule": "RULE-39",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_summary_line_states_each_gauge_denominator",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-75",
       "rule": "RULE-43",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_design_formula_consistent_across_the_same_three_files",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-76",
       "rule": "RULE-44",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_fully_covered_feature_gets_gauge_directives",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-77",
       "rule": "RULE-45",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_each_gauge_reports_its_own_age_and_refresh_command",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-78",
       "rule": "RULE-46",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_project_gauge_is_weighted_by_measurement_coverage",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-79",
       "rule": "RULE-47",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_awaiting_names_the_platform_and_only_a_satisfying_result_clears_it",
+      "platform": null
     },
     {
-      "id": "PROOF-8",
-      "rule": "RULE-5",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-8",
-      "rule": "RULE-5",
-      "status": "pass"
-    },
-    {
+      "feature": "sync_status",
       "id": "PROOF-8",
       "rule": "RULE-8",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_scan_specs_detects_global",
+      "platform": null
     },
     {
-      "id": "PROOF-8",
-      "rule": "RULE-8",
-      "status": "pass"
-    },
-    {
+      "feature": "sync_status",
       "id": "PROOF-80",
       "rule": "RULE-48",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_provenance_comes_from_the_scoped_files_commit_not_the_proof_file",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-81",
       "rule": "RULE-49",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_mode_is_reported_as_a_declaration_not_as_the_gate",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-82",
       "rule": "RULE-50",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_registry_keeps_valid_entries_and_names_every_dropped_one",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-83",
       "rule": "RULE-50",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_unregistered_platform_id_is_a_feature_advisory_not_a_verdict",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-84",
       "rule": "RULE-51",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_host_detection_and_satisfaction",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-85",
       "rule": "RULE-52",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_platforms_block_says_where_each_declared_platform_can_be_proved",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-86",
       "rule": "RULE-53",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_an_undeclared_platform_result_is_named_and_counts_toward_nothing",
+      "platform": null
     },
     {
+      "feature": "sync_status",
       "id": "PROOF-87",
       "rule": "RULE-47",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_a_rule_with_one_platform_proved_stays_in_and_counts",
+      "platform": null
     },
     {
-      "id": "PROOF-9",
-      "rule": "RULE-8",
-      "status": "pass"
+      "feature": "sync_status",
+      "id": "PROOF-88",
+      "rule": "RULE-54",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_receipts.py",
+      "test_name": "test_issuer_and_payload_agree_on_every_vhash",
+      "platform": null
     },
     {
+      "feature": "sync_status",
+      "id": "PROOF-88",
+      "rule": "RULE-54",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_receipts.py",
+      "test_name": "test_vhash_and_active_rules_have_exactly_one_call_site",
+      "platform": null
+    },
+    {
+      "feature": "sync_status",
       "id": "PROOF-9",
       "rule": "RULE-9",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-9",
-      "rule": "RULE-9",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-9",
-      "rule": "RULE-9",
-      "status": "pass"
-    },
-    {
-      "id": "PROOF-9",
-      "rule": "RULE-9",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_global_anchor_auto_applies",
+      "platform": null
     }
-  ]
+  ],
+  "evidence": {
+    "test_run": {
+      "at": "2026-09-12T01:10:22.457881+00:00",
+      "commit": "5eae587352030278b680c420a3f53d44191e37a4",
+      "sweep": "dev/run_tests.sh",
+      "passed": 698,
+      "failed": 0,
+      "skipped": 27
+    },
+    "proof_files": [
+      {
+        "file": "specs/_anchors/schema_proof_format.proofs-unit.json",
+        "tier": "unit",
+        "platform": null,
+        "commit": "6bc61d2874dcbcd81892b0998a31ce84edc5c2a6",
+        "committed_at": "2026-09-11T20:16:10-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      },
+      {
+        "file": "specs/_anchors/schema_spec_format.proofs-unit.json",
+        "tier": "unit",
+        "platform": null,
+        "commit": "a3df73f5380d03e58f1567ac64b52c7bfb7b4ecb",
+        "committed_at": "2026-09-11T19:32:25-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      },
+      {
+        "file": "specs/_anchors/security_no_dangerous_patterns.proofs-unit.json",
+        "tier": "unit",
+        "platform": null,
+        "commit": "645293053386d98597c57b6c5614d92de0c83dc0",
+        "committed_at": "2026-04-04T08:10:49-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      },
+      {
+        "file": "specs/mcp/sync_status.proofs-e2e.json",
+        "tier": "e2e",
+        "platform": null,
+        "commit": "b0e7e67f67f315ca910ca6f93c404c00cc22b848",
+        "committed_at": "2026-09-11T15:01:03-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      },
+      {
+        "file": "specs/mcp/sync_status.proofs-integration.json",
+        "tier": "integration",
+        "platform": null,
+        "commit": "5eae587352030278b680c420a3f53d44191e37a4",
+        "committed_at": "2026-09-11T21:08:00-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      },
+      {
+        "file": "specs/mcp/sync_status.proofs-unit.json",
+        "tier": "unit",
+        "platform": null,
+        "commit": "5eae587352030278b680c420a3f53d44191e37a4",
+        "committed_at": "2026-09-11T21:08:00-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      }
+    ]
+  }
 }

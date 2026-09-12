@@ -1,8 +1,9 @@
 {
   "feature": "report_data",
-  "vhash": "e01e337d",
-  "commit": "6c573eca30579fdb8044c72155ab252267843861",
-  "timestamp": "2026-09-12T00:42:14.743896+00:00",
+  "vhash": "b99e526d",
+  "vhash_version": 2,
+  "commit": "5eae587352030278b680c420a3f53d44191e37a4",
+  "timestamp": "2026-09-12T01:10:26.117889+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -30,6 +31,7 @@
     "RULE-30",
     "RULE-31",
     "RULE-32",
+    "RULE-33",
     "RULE-4",
     "RULE-5",
     "RULE-6",
@@ -37,191 +39,460 @@
     "RULE-8",
     "RULE-9"
   ],
+  "rule_hashes": {
+    "RULE-1": "e905b66e22121ef4",
+    "RULE-10": "f148948f8e6f9024",
+    "RULE-11": "473aad587c4adead",
+    "RULE-12": "af2396f319f83f2b",
+    "RULE-13": "5a333f9fa99be681",
+    "RULE-14": "adeac87b6638b757",
+    "RULE-15": "2620bf48a2efc8c4",
+    "RULE-16": "148d1b43dbd359d4",
+    "RULE-17": "d4006567a1c78a93",
+    "RULE-18": "9fb8d08eeb178b1a",
+    "RULE-19": "b513fbfdab29ae40",
+    "RULE-2": "eb76753211b1380f",
+    "RULE-20": "ca671fcda679eaff",
+    "RULE-21": "a2591f300d6fd095",
+    "RULE-22": "958b250760bfd33e",
+    "RULE-23": "91e643fb4bb13ffa",
+    "RULE-24": "510452ec5d877bc1",
+    "RULE-25": "2622738b4811fbd1",
+    "RULE-26": "b819d055f2d3eccd",
+    "RULE-27": "8fe90877f7da257f",
+    "RULE-28": "36636841a4e02ca9",
+    "RULE-29": "5c83fd872342b915",
+    "RULE-3": "ede7ab6e8b2f0134",
+    "RULE-30": "0f644c439e843d78",
+    "RULE-31": "155994d30b69a470",
+    "RULE-32": "1b62de6fd4da36cc",
+    "RULE-33": "7c69bc327f22aab8",
+    "RULE-4": "010c51463e5eb6dc",
+    "RULE-5": "e707019dacd5b978",
+    "RULE-6": "036c3482a0f33383",
+    "RULE-7": "e244445cbbb272d9",
+    "RULE-8": "b2cf42f63ece6ca9",
+    "RULE-9": "45e1d24a1df5391b"
+  },
   "proofs": [
     {
+      "feature": "report_data",
       "id": "PROOF-1",
       "rule": "RULE-1",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_report_written_when_enabled",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-10",
       "rule": "RULE-10",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_all_rule_labels_are_valid",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-11",
       "rule": "RULE-11",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_docs_url_derived_from_git_remote",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-12",
       "rule": "RULE-12",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_anchor_with_source_includes_source_url",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-13",
       "rule": "RULE-13",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_anchors_summary_total_matches_anchor_count",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-14",
       "rule": "RULE-14",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_dashboard_url_in_output_when_html_exists",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-15",
       "rule": "RULE-15",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_audit_summary_fields_present_and_null_when_no_cache",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-16",
       "rule": "RULE-16",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_per_feature_audit_populated_from_cache",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-17",
       "rule": "RULE-17",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_all_proofs_count_equally",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-18",
       "rule": "RULE-18",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_partial_coverage_gets_partial_status_not_passing",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-19",
       "rule": "RULE-19",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_feature_category_is_the_parent_directory_name",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-19",
       "rule": "RULE-19",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_feature_category_derived_from_spec_directory",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-2",
       "rule": "RULE-2",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_no_report_written_when_disabled",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-20",
       "rule": "RULE-20",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_passing_verified_always_100pct_coverage",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-21",
       "rule": "RULE-21",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_description_from_metadata_field",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-21",
       "rule": "RULE-21",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_description_multiline",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-21",
       "rule": "RULE-21",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_description_null_when_absent",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-22",
       "rule": "RULE-8",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_planned_proofs_appear_in_proofs_array",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-22",
       "rule": "RULE-8",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_planned_proofs_for_required_anchor_rules",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-23",
       "rule": "RULE-22",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_planned_proofs_do_not_affect_coverage",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-24",
       "rule": "RULE-23",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_report_data_carries_design_summary",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-25",
       "rule": "RULE-24",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_both_entry_points_populate_both_gauges",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-26",
       "rule": "RULE-25",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_per_feature_design_excludes_structural_from_denominator",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-27",
       "rule": "RULE-26",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_every_feature_carries_a_gauge_state_and_no_nulls",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-28",
       "rule": "RULE-27",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_gauge_summaries_state_their_denominator",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-29",
       "rule": "RULE-28",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_each_feature_gauge_carries_its_own_coverage",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-3",
       "rule": "RULE-3",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_report_file_is_valid_js_with_json",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-30",
       "rule": "RULE-29",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_awaiting_runner_explains_the_coverage_it_reduced",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-31",
       "rule": "RULE-30",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_mode_is_carried_verbatim_and_defaults_rather_than_vanishing",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-32",
       "rule": "RULE-31",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_top_level_platforms_is_always_present",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-33",
       "rule": "RULE-32",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_per_feature_platforms_record_and_status_vocabulary",
+      "platform": null
     },
     {
+      "feature": "report_data",
+      "id": "PROOF-34",
+      "rule": "RULE-33",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_receipt_carries_version_run_commit_and_platform_staleness",
+      "platform": null
+    },
+    {
+      "feature": "report_data",
       "id": "PROOF-4",
       "rule": "RULE-4",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_summary_counts_sum_to_total",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-5",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_every_feature_has_required_fields",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-6",
       "rule": "RULE-6",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_passing_features_have_vhash_others_do_not",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-7",
       "rule": "RULE-7",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_receipt_fields_present_when_receipt_file_exists",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-8",
       "rule": "RULE-8",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_every_rule_entry_has_required_fields",
+      "platform": null
     },
     {
+      "feature": "report_data",
       "id": "PROOF-9",
       "rule": "RULE-9",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_all_rule_statuses_are_valid",
+      "platform": null
     }
-  ]
+  ],
+  "evidence": {
+    "test_run": {
+      "at": "2026-09-12T01:10:22.457881+00:00",
+      "commit": "5eae587352030278b680c420a3f53d44191e37a4",
+      "sweep": "dev/run_tests.sh",
+      "passed": 698,
+      "failed": 0,
+      "skipped": 27
+    },
+    "proof_files": [
+      {
+        "file": "specs/mcp/report_data.proofs-e2e.json",
+        "tier": "e2e",
+        "platform": null,
+        "commit": "4f0cf1f7c3bb00c9bd10055f858a498e75316ce7",
+        "committed_at": "2026-09-11T12:44:32-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      },
+      {
+        "file": "specs/mcp/report_data.proofs-integration.json",
+        "tier": "integration",
+        "platform": null,
+        "commit": "5eae587352030278b680c420a3f53d44191e37a4",
+        "committed_at": "2026-09-11T21:08:00-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      },
+      {
+        "file": "specs/mcp/report_data.proofs-unit.json",
+        "tier": "unit",
+        "platform": null,
+        "commit": "7c80c2862d03841e1a9efeda1b59180c54879329",
+        "committed_at": "2026-09-11T17:32:24-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      }
+    ]
+  }
 }

@@ -1,8 +1,9 @@
 {
   "feature": "skill_test",
-  "vhash": "2b240c30",
-  "commit": "6c573eca30579fdb8044c72155ab252267843861",
-  "timestamp": "2026-09-12T00:42:14.743896+00:00",
+  "vhash": "e313c602",
+  "vhash_version": 2,
+  "commit": "5eae587352030278b680c420a3f53d44191e37a4",
+  "timestamp": "2026-09-12T01:10:26.117889+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -16,61 +17,150 @@
     "RULE-8",
     "RULE-9"
   ],
+  "rule_hashes": {
+    "RULE-1": "d402581da42374f9",
+    "RULE-10": "08d8766a2edf1b61",
+    "RULE-11": "492ff4d27547f6d9",
+    "RULE-2": "f882d91d4488414b",
+    "RULE-3": "336845facd874f55",
+    "RULE-4": "d678c1c2ae01571c",
+    "RULE-5": "024cce5a799f3d8f",
+    "RULE-6": "70549ccc108e41a8",
+    "RULE-7": "e14fc3cdf16294ed",
+    "RULE-8": "f7b9d36ee2149136",
+    "RULE-9": "dac99d2423a39206"
+  },
   "proofs": [
     {
+      "feature": "skill_test",
       "id": "PROOF-1",
       "rule": "RULE-1",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_has_frontmatter",
+      "platform": null
     },
     {
+      "feature": "skill_test",
       "id": "PROOF-10",
       "rule": "RULE-10",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_the_remote_loop_bound_is_three_and_matches_the_other_skills",
+      "platform": null
     },
     {
+      "feature": "skill_test",
       "id": "PROOF-11",
       "rule": "RULE-11",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_setup_is_offered_on_discovery_and_never_at_init",
+      "platform": null
     },
     {
+      "feature": "skill_test",
       "id": "PROOF-2",
       "rule": "RULE-2",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_has_usage_section",
+      "platform": null
     },
     {
+      "feature": "skill_test",
       "id": "PROOF-3",
       "rule": "RULE-3",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_name_matches_directory",
+      "platform": null
     },
     {
+      "feature": "skill_test",
       "id": "PROOF-4",
       "rule": "RULE-4",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_has_commit_instructions",
+      "platform": null
     },
     {
+      "feature": "skill_test",
       "id": "PROOF-5",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_requires_sync_status_not_optional",
+      "platform": null
     },
     {
+      "feature": "skill_test",
       "id": "PROOF-6",
       "rule": "RULE-6",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_zero_tests_is_not_a_plugin_failure",
+      "platform": null
     },
     {
+      "feature": "skill_test",
       "id": "PROOF-7",
       "rule": "RULE-7",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_tiers_are_classified_before_anything_runs",
+      "platform": null
     },
     {
+      "feature": "skill_test",
       "id": "PROOF-8",
       "rule": "RULE-8",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_the_remote_path_is_four_ordered_operations_and_says_why_it_is_here",
+      "platform": null
     },
     {
+      "feature": "skill_test",
       "id": "PROOF-9",
       "rule": "RULE-9",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_remotely_proved_is_reported_distinctly_and_sourced_from_the_commit",
+      "platform": null
     }
-  ]
+  ],
+  "evidence": {
+    "test_run": {
+      "at": "2026-09-12T01:10:22.457881+00:00",
+      "commit": "5eae587352030278b680c420a3f53d44191e37a4",
+      "sweep": "dev/run_tests.sh",
+      "passed": 698,
+      "failed": 0,
+      "skipped": 27
+    },
+    "proof_files": [
+      {
+        "file": "specs/skills/skill_test.proofs-unit.json",
+        "tier": "unit",
+        "platform": null,
+        "commit": "7c80c2862d03841e1a9efeda1b59180c54879329",
+        "committed_at": "2026-09-11T17:32:24-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      }
+    ]
+  }
 }
