@@ -2593,6 +2593,13 @@ Finalized at the end of Phase 11. Items marked `[x]` are closed and kept for the
 - [ ] (closeout, decision 19) `skill_spec` and `skill_build`'s claude-cli witness: one approved run
       failed on test defects, now fixed; the user deferred the second run. Command in
       `dev/plans/todo-closeout.md` DONE - K.
+- [ ] (dashboard session, 2026-09-12, deferred by the user after a cost/value pass) retire the
+      `optional` remote-verification mode: config becomes `required | off`, `optional` rewritten to
+      `off` under the `config-fields-missing` migration in `scripts/update/migrate.py`, verify_gate
+      RULE-3 (`off` must print findings), sync_status RULE-49, skill_init RULE-11, scaffold choices,
+      `drift_criteria.md`, `references/remote_verification.md`'s mode table, the installation guide
+      and the four test files with mode loops. The remote chip now reads the data (report_data
+      RULE-44), so the config word matters less; judge after it has been used.
 - [ ] (closeout, found by item B6) `skill_audit` PROOF-11's description says "parse external LLM
       response" while its test greps `skills/audit/SKILL.md` for five field names; resolve when
       item E retags PROOF-9 to PROOF-13 `@on(gemini-cli)`.
