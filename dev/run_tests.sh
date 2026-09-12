@@ -36,7 +36,27 @@
 #    Anything that needs the sweep's own counts (purlin_version RULE-9 checks
 #    the RELEASE_NOTES Unreleased counts line against them) reads this file,
 #    where no plugin writes, instead of guessing from a field on the shared one.
+#
+# `--fast` is the inner-loop run: it holds out the 15 shell suites and the
+# browser suite (test_purlin_report.py), which together are nearly all of the
+# wall clock, and writes NEITHER marker. Both files are read as the claim that
+# every suite ran (proof_common RULE-19, purlin_version RULE-9 against
+# last_sweep.json), and a partial run has no right to make that claim, so
+# --fast leaves whatever the last whole sweep recorded in place rather than
+# overwriting it with a subset. The held-out invocations stay in this file
+# behind `if [[ $FAST -eq 0 ]]` rather than being deleted, because
+# dev/test_sweep_completeness.py (proof_common PROOF-18) reads this file as
+# text for `$SCRIPT_DIR/test_*` paths and a deleted line reads to it as a suite
+# dropped from the sweep.
 set -euo pipefail
+
+FAST=0
+for arg in "$@"; do
+  case "$arg" in
+    --fast) FAST=1 ;;
+    *) echo "usage: $0 [--fast]" >&2; exit 2 ;;
+  esac
+done
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -103,6 +123,11 @@ run_pytest() {
 # marker ($MARKER, merged with the plugin runs) and the sweep's own record
 # ($LAST_SWEEP, written whole, never merged).
 write_marker() {
+  if [[ $FAST -eq 1 ]]; then
+    rm -f "$PYTEST_LOG"
+    echo "fast mode: no run marker written"
+    return 0
+  fi
   mkdir -p "$(dirname "$MARKER")" "$(dirname "$LAST_SWEEP")"
   PURLIN_RUN_SUITES="$SUITES" \
   PURLIN_RUN_TEST_FILES="$TEST_FILES" \
@@ -208,6 +233,8 @@ PY
 trap write_marker EXIT
 
 # ── Shell tests first (proof files written per feature) ──────────────
+# Held out by --fast: these 15 invocations are most of the sweep's wall clock.
+if [[ $FAST -eq 0 ]]; then
 run_suite "Proof Plugins (Shell)" bash "$SCRIPT_DIR/test_proof_plugins.sh"
 run_suite "E2E Teammate Audit Loop" bash "$SCRIPT_DIR/test_e2e_teammate_audit_loop.sh"
 run_suite "E2E Build Changeset" bash "$SCRIPT_DIR/test_e2e_build_changeset.sh"
@@ -224,6 +251,9 @@ run_suite "E2E Anchor Authority" bash "$SCRIPT_DIR/test_e2e_anchor_authority.sh"
 run_suite "E2E Hybrid Audit" bash "$SCRIPT_DIR/test_e2e_hybrid_audit.sh"
 run_suite "E2E Additional Criteria" bash "$SCRIPT_DIR/test_e2e_additional_criteria.sh"
 run_suite "E2E Fake Audit LLM" bash "$SCRIPT_DIR/test_e2e_fake_audit_llm.sh"
+else
+  echo "fast mode: skipping the 15 shell suites"
+fi
 
 # ── All pytest tests in a single session ─────────────────────────────
 # One session for speed. Correctness no longer depends on it: the merge key
@@ -237,9 +267,10 @@ run_suite "E2E Fake Audit LLM" bash "$SCRIPT_DIR/test_e2e_fake_audit_llm.sh"
 # but absent from every committed proof file. With the merge key fixed they
 # belong in the sweep.
 #
-# test_purlin_report.py drives a real browser and adds roughly 80s.
+# test_purlin_report.py drives a real browser and adds roughly 80s. It is in
+# the default run; only --fast holds it out, and then no marker is written.
 # test_sweep_completeness.py checks this file against the committed proofs.
-run_suite "All Pytest Tests" run_pytest \
+PYTEST_FILES=(
   "$SCRIPT_DIR/test_config_engine.py" \
   "$SCRIPT_DIR/test_mcp_server.py" \
   "$SCRIPT_DIR/test_purlin_docs.py" \
@@ -275,9 +306,14 @@ run_suite "All Pytest Tests" run_pytest \
   "$SCRIPT_DIR/test_e2e_spec_migration.py" \
   "$SCRIPT_DIR/test_e2e_ui_extraction.py" \
   "$SCRIPT_DIR/test_claude_cli_helper.py" \
-  "$SCRIPT_DIR/test_sweep_completeness.py" \
-  "$SCRIPT_DIR/test_purlin_report.py" \
-  -v
+  "$SCRIPT_DIR/test_sweep_completeness.py"
+)
+if [[ $FAST -eq 0 ]]; then
+  PYTEST_FILES+=("$SCRIPT_DIR/test_purlin_report.py")
+else
+  echo "fast mode: skipping the browser suite (dev/test_purlin_report.py)"
+fi
+run_suite "All Pytest Tests" run_pytest "${PYTEST_FILES[@]}" -v
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━"
