@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # E2E test: Cross-model audit with real Gemini CLI
-# 3 proofs covering 3 rules — all @e2e (Level 3).
+# 5 proofs (skill_audit PROOF-23 to PROOF-27, one per RULE-9 to RULE-13), all @e2e
+# and all scoped to the gemini-cli environment. These ids belong to this suite alone:
+# RULE-9 to RULE-13 also have local proofs (PROOF-9 to PROOF-13, @unit, in
+# dev/test_skill_specs.py), and one proof id with two claimants was the defect.
 # Requires `gemini` CLI to be installed. Skips gracefully if unavailable.
 set -euo pipefail
 
@@ -24,7 +27,7 @@ echo "=== e2e_cross_model_audit tests ==="
 # --- Pre-flight: check gemini CLI ---
 if ! command -v gemini &>/dev/null; then
   echo "Skipping: gemini CLI not installed."
-  echo "  PROOF-9, PROOF-10 and PROOF-11 were not executed on this host."
+  echo "  PROOF-23 to PROOF-27 were not executed on this host."
   echo "  No proof entries written: proof_common RULE-13 reserves \"fail\" for a test"
   echo "  that ran and failed. Writing it here made skill_audit FAILING on every"
   echo "  machine without the gemini CLI, and would have blocked a push."
@@ -266,9 +269,9 @@ RESPONSE_A=$(cat "$PROMPT_FILE_A" | gemini -m pro -p "" 2>"$GEMINI_STDERR_A") ||
   rm -f "$PROMPT_FILE_A"
   echo "    Gemini CLI failed (stderr): $(cat "$GEMINI_STDERR_A" | grep -i 'error\|quota' | head -3)"
   rm -f "$GEMINI_STDERR_A"
-  purlin_proof "skill_audit" "PROOF-9" "RULE-9" fail "gemini CLI returned error"
-  purlin_proof "skill_audit" "PROOF-10" "RULE-10" fail "gemini CLI returned error"
-  purlin_proof "skill_audit" "PROOF-11" "RULE-11" fail "gemini CLI returned error"
+  purlin_proof "skill_audit" "PROOF-23" "RULE-9" fail "gemini CLI returned error"
+  purlin_proof "skill_audit" "PROOF-24" "RULE-10" fail "gemini CLI returned error"
+  purlin_proof "skill_audit" "PROOF-25" "RULE-11" fail "gemini CLI returned error"
   export PROJECT_ROOT="$REAL_PROJECT_ROOT"
   cd "$PROJECT_ROOT"
   purlin_proof_finish
@@ -293,11 +296,11 @@ else
 fi
 
 if $phase_a_ok; then
-  purlin_proof "skill_audit" "PROOF-9" "RULE-9" pass "external LLM detects hollow tests as non-STRONG"
+  purlin_proof "skill_audit" "PROOF-23" "RULE-9" pass "external LLM detects hollow tests as non-STRONG"
 else
   echo "    Raw Gemini response (Phase A):"
   echo "$RESPONSE_A" | head -30
-  purlin_proof "skill_audit" "PROOF-9" "RULE-9" fail "external LLM detects hollow tests as non-STRONG"
+  purlin_proof "skill_audit" "PROOF-23" "RULE-9" fail "external LLM detects hollow tests as non-STRONG"
 fi
 
 # ==========================================================================
@@ -335,8 +338,8 @@ RESPONSE_B=$(cat "$PROMPT_FILE_B" | gemini -m pro -p "" 2>"$GEMINI_STDERR_B") ||
   rm -f "$PROMPT_FILE_B"
   echo "    Gemini CLI failed (stderr): $(cat "$GEMINI_STDERR_B" | grep -i 'error\|quota' | head -3)"
   rm -f "$GEMINI_STDERR_B"
-  purlin_proof "skill_audit" "PROOF-10" "RULE-10" fail "gemini CLI returned error"
-  purlin_proof "skill_audit" "PROOF-11" "RULE-11" fail "gemini CLI returned error"
+  purlin_proof "skill_audit" "PROOF-24" "RULE-10" fail "gemini CLI returned error"
+  purlin_proof "skill_audit" "PROOF-25" "RULE-11" fail "gemini CLI returned error"
   export PROJECT_ROOT="$REAL_PROJECT_ROOT"
   cd "$PROJECT_ROOT"
   purlin_proof_finish
@@ -362,11 +365,11 @@ else
 fi
 
 if $phase_b_ok; then
-  purlin_proof "skill_audit" "PROOF-10" "RULE-10" pass "external LLM approves strong tests as STRONG or WEAK (not HOLLOW)"
+  purlin_proof "skill_audit" "PROOF-24" "RULE-10" pass "external LLM approves strong tests as STRONG or WEAK (not HOLLOW)"
 else
   echo "    Raw Gemini response (Phase B):"
   echo "$RESPONSE_B" | head -30
-  purlin_proof "skill_audit" "PROOF-10" "RULE-10" fail "external LLM approves strong tests as STRONG or WEAK"
+  purlin_proof "skill_audit" "PROOF-24" "RULE-10" fail "external LLM approves strong tests as STRONG or WEAK"
 fi
 
 # ==========================================================================
@@ -406,13 +409,13 @@ done
 
 if $phase_c_ok; then
   echo "    Phase C PASS: all fields parsed from Gemini response"
-  purlin_proof "skill_audit" "PROOF-11" "RULE-11" pass "response parsing extracts PROOF-ID, ASSESSMENT, CRITERION, WHY, FIX"
+  purlin_proof "skill_audit" "PROOF-25" "RULE-11" pass "response parsing extracts PROOF-ID, ASSESSMENT, CRITERION, WHY, FIX"
 else
   echo "    Phase C FAIL: parsing failures:"
   echo -e "$parse_failures"
   echo "    Raw Gemini response (Phase B, used for parsing):"
   echo "$RESPONSE_B" | head -40
-  purlin_proof "skill_audit" "PROOF-11" "RULE-11" fail "response parsing extracts PROOF-ID, ASSESSMENT, CRITERION, WHY, FIX"
+  purlin_proof "skill_audit" "PROOF-25" "RULE-11" fail "response parsing extracts PROOF-ID, ASSESSMENT, CRITERION, WHY, FIX"
 fi
 
 # ==========================================================================
@@ -476,11 +479,11 @@ echo "    Pass 1 results: PROOF-1=$PROOF1_STATIC, PROOF-2=$PROOF2_STATIC"
 
 if [[ "$PROOF1_STATIC" != "fail/assert_true" ]]; then
   echo "    Phase D FAIL: Pass 1 should catch PROOF-1 as fail/assert_true, got $PROOF1_STATIC"
-  purlin_proof "skill_audit" "PROOF-12" "RULE-12" fail "two-pass: static_checks did not catch PROOF-1"
+  purlin_proof "skill_audit" "PROOF-26" "RULE-12" fail "two-pass: static_checks did not catch PROOF-1"
 else
   if [[ "$PROOF2_STATIC" != "pass" ]]; then
     echo "    Phase D FAIL: Pass 1 should pass PROOF-2, got $PROOF2_STATIC"
-    purlin_proof "skill_audit" "PROOF-12" "RULE-12" fail "two-pass: PROOF-2 should pass static checks"
+    purlin_proof "skill_audit" "PROOF-26" "RULE-12" fail "two-pass: PROOF-2 should pass static checks"
   else
     # Pass 2: Send only PROOF-2 (the one that passed Pass 1) to Gemini
     echo "    Pass 2: Sending only PROOF-2 to Gemini (PROOF-1 already HOLLOW)..."
@@ -503,7 +506,7 @@ def test_invalid_login_strong():
     RESPONSE_D=$(cat "$PROMPT_FILE_D" | gemini -m pro -p "" 2>"$GEMINI_STDERR_D") || {
       rm -f "$PROMPT_FILE_D" "$GEMINI_STDERR_D"
       echo "    Gemini CLI failed in Phase D"
-      purlin_proof "skill_audit" "PROOF-12" "RULE-12" fail "gemini CLI returned error in two-pass flow"
+      purlin_proof "skill_audit" "PROOF-26" "RULE-12" fail "gemini CLI returned error in two-pass flow"
       export PROJECT_ROOT="$REAL_PROJECT_ROOT"
       cd "$PROJECT_ROOT"
       purlin_proof_finish
@@ -517,18 +520,18 @@ def test_invalid_login_strong():
     # Gemini should return STRONG or WEAK (never HOLLOW — that's Pass 1 only)
     if [[ "$ASSESS_D" == "STRONG" ]]; then
       echo "    Phase D PASS: Pass 1 caught PROOF-1 (HOLLOW), Pass 2 approved PROOF-2 (STRONG)"
-      purlin_proof "skill_audit" "PROOF-12" "RULE-12" pass "two-pass: static catches HOLLOW, Gemini rates STRONG"
+      purlin_proof "skill_audit" "PROOF-26" "RULE-12" pass "two-pass: static catches HOLLOW, Gemini rates STRONG"
     elif [[ "$ASSESS_D" == "WEAK" ]]; then
       echo "    Phase D PASS (WEAK): Pass 1 caught PROOF-1, Gemini rated PROOF-2 as WEAK (acceptable — semantic judgment)"
-      purlin_proof "skill_audit" "PROOF-12" "RULE-12" pass "two-pass: static catches HOLLOW, Gemini rates WEAK"
+      purlin_proof "skill_audit" "PROOF-26" "RULE-12" pass "two-pass: static catches HOLLOW, Gemini rates WEAK"
     elif [[ "$ASSESS_D" == "HOLLOW" ]]; then
       echo "    Phase D FAIL: Gemini returned HOLLOW in Pass 2 — should only return STRONG or WEAK"
       echo "    Raw response: $(echo "$RESPONSE_D" | head -15)"
-      purlin_proof "skill_audit" "PROOF-12" "RULE-12" fail "Gemini returned HOLLOW in Pass 2 (should be overridden to WEAK)"
+      purlin_proof "skill_audit" "PROOF-26" "RULE-12" fail "Gemini returned HOLLOW in Pass 2 (should be overridden to WEAK)"
     else
       echo "    Phase D FAIL: Gemini returned unexpected assessment '$ASSESS_D'"
       echo "    Raw response: $(echo "$RESPONSE_D" | head -15)"
-      purlin_proof "skill_audit" "PROOF-12" "RULE-12" fail "unexpected assessment from Gemini in Pass 2"
+      purlin_proof "skill_audit" "PROOF-26" "RULE-12" fail "unexpected assessment from Gemini in Pass 2"
     fi
   fi
 fi
@@ -672,10 +675,10 @@ done
 
 if $ping_ok && $config_ok && $static_ok && $llm_ok && $fields_ok; then
   echo "    Phase E PASS: custom LLM configured, init ping works, two-pass audit completes"
-  purlin_proof "skill_audit" "PROOF-13" "RULE-13" pass "custom audit LLM configured and used in two-pass flow"
+  purlin_proof "skill_audit" "PROOF-27" "RULE-13" pass "custom audit LLM configured and used in two-pass flow"
 else
   echo "    Phase E FAIL: ping=$ping_ok config=$config_ok static=$static_ok llm=$llm_ok fields=$fields_ok"
-  purlin_proof "skill_audit" "PROOF-13" "RULE-13" fail "custom audit LLM flow incomplete"
+  purlin_proof "skill_audit" "PROOF-27" "RULE-13" fail "custom audit LLM flow incomplete"
 fi
 
 # --- Emit proof files ---

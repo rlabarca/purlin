@@ -2535,13 +2535,17 @@ Finalized at the end of Phase 11. Items marked `[x]` are closed and kept for the
       commit and stops saying "runner not recorded"; the issuer then accepts the evidence and the
       feature reaches VERIFIED. Phase 6.5's third refusal, `static_checks`, closed exactly this
       way through the Windows runner.
-- [ ] **(10.6) `skill_audit` PROOF-9..13 carry no `@on(gemini-cli)` tag, deliberately.** Their ids
+- [x] **(10.6) `skill_audit` PROOF-9..13 carry no `@on(gemini-cli)` tag, deliberately.** Their ids
       are also proved by `dev/test_skill_specs.py`, which the sweep runs, so tagging them would
       stop five passing local results counting and drop the feature from 22/22 to 17/17.
       `dev/test_e2e_cross_model_audit.sh` exports `PURLIN_PROOF_PLATFORMS=gemini-cli` so a future
       gemini run lands in a registered scope. Decide whether the honest model is a proof that can
       be satisfied either locally or on an environment, which the satisfaction rules do not
       express today, or whether the local proofs should move to their own ids.
+      Closed by `spec(skill_audit): the gemini run gets its own proof ids; the local greps keep
+      theirs at unit tier`: decision 13 of `dev/plans/platform-taxonomy.md` chose the second
+      option, so the gemini suite emits PROOF-23 to PROOF-27 `@on(gemini-cli)` and the local
+      greps keep PROOF-9 to PROOF-13 agnostic at `@unit`.
 - [ ] **(6.3) `proof_plugins_php` and `proof_plugins_xunit` platform proofs have never executed
       anywhere.** They skip on this machine (no `php`, no `dotnet`) and no runner has them. Run
       them on a host with the toolchains, or model both as `kind: environment` platforms the way

@@ -3,51 +3,6 @@
   "proofs": [
     {
       "feature": "skill_audit",
-      "id": "PROOF-9",
-      "rule": "RULE-9",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_static_checks_detects_hollow_test_as_non_strong",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_audit",
-      "id": "PROOF-10",
-      "rule": "RULE-10",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_static_checks_passes_well_structured_test",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_audit",
-      "id": "PROOF-11",
-      "rule": "RULE-11",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_skill_documents_external_llm_response_fields",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_audit",
-      "id": "PROOF-12",
-      "rule": "RULE-12",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_two_pass_flow_hollow_caught_in_pass1_valid_passes_through",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_audit",
-      "id": "PROOF-13",
-      "rule": "RULE-13",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_config_stores_audit_llm_fields_and_skill_documents_external_llm_mode",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "skill_audit",
       "id": "PROOF-14",
       "rule": "RULE-14",
       "test_file": "dev/test_skill_specs.py",

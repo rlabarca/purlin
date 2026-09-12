@@ -214,7 +214,7 @@ class TestSkillAudit:
             "Anchor Rule Handling section missing the "\
             "'Recommend to anchor author (<source>): <rule> could be clearer' template"
 
-    @pytest.mark.proof("skill_audit", "PROOF-9", "RULE-9", tier="e2e")
+    @pytest.mark.proof("skill_audit", "PROOF-9", "RULE-9", tier="unit")
     def test_static_checks_detects_hollow_test_as_non_strong(self):
         """Pass 1 (static_checks) catches deliberately hollow tests — assert True is flagged as fail."""
         hollow_code = (
@@ -239,7 +239,7 @@ class TestSkillAudit:
             if path:
                 os.unlink(path)
 
-    @pytest.mark.proof("skill_audit", "PROOF-10", "RULE-10", tier="e2e")
+    @pytest.mark.proof("skill_audit", "PROOF-10", "RULE-10", tier="unit")
     def test_static_checks_passes_well_structured_test(self):
         """Pass 1 passes a well-structured test with real assertions — eligible for STRONG or WEAK via LLM."""
         strong_code = (
@@ -263,7 +263,7 @@ class TestSkillAudit:
             if path:
                 os.unlink(path)
 
-    @pytest.mark.proof("skill_audit", "PROOF-11", "RULE-11", tier="e2e")
+    @pytest.mark.proof("skill_audit", "PROOF-11", "RULE-11", tier="unit")
     def test_skill_documents_external_llm_response_fields(self):
         """The skill documents that parsing must extract all required fields from LLM output."""
         content = _read('audit')
@@ -273,7 +273,7 @@ class TestSkillAudit:
         assert re.search(r'(?i)(flexible|different LLMs|format slightly differently)', content), \
             "audit SKILL.md missing flexible parsing note for external LLM responses"
 
-    @pytest.mark.proof("skill_audit", "PROOF-12", "RULE-12", tier="e2e")
+    @pytest.mark.proof("skill_audit", "PROOF-12", "RULE-12", tier="unit")
     def test_two_pass_flow_hollow_caught_in_pass1_valid_passes_through(self):
         """Pass 1 flags assert True as HOLLOW; well-structured test survives and proceeds to Pass 2."""
         mixed_code = (
@@ -306,7 +306,7 @@ class TestSkillAudit:
             if path:
                 os.unlink(path)
 
-    @pytest.mark.proof("skill_audit", "PROOF-13", "RULE-13", tier="e2e")
+    @pytest.mark.proof("skill_audit", "PROOF-13", "RULE-13", tier="unit")
     def test_config_stores_audit_llm_fields_and_skill_documents_external_llm_mode(self):
         """Config stores audit_llm and audit_llm_name; skill documents the external LLM two-pass flow."""
         content = _read('audit')
