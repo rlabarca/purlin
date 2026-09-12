@@ -38,6 +38,24 @@ A `required` DECLARATION WITH NOTHING REMOTE IN IT
     failure, a PASS under the strictest mode with no By-platform section to say
     that nothing remote was ever checked.
 
+QUALITY GATE
+    Off unless the project asks for it. `.purlin/config.json`'s `quality_gate`
+    field DECLARES whether the two model-free quality passes are read as a
+    gate: `off` (the default, and what a project that never set the field
+    gets) reports nothing beyond one line, and `deterministic` runs
+    `scripts/audit/static_checks.py`'s `deterministic_sweep` and exits 1 on a
+    HOLLOW executed proof or an UNPROVABLE proof description. Both passes are
+    deterministic and cacheless, so CI recomputes every grade from the source
+    it checked out. It is not the enforcement, for the same reason the mode
+    above is not: the field is a file in the repository the agent can edit.
+    Enforcement is branch protection marking this job a required check.
+
+    A proof the sweep cannot measure (a language no shipped checker reads, a
+    test file that is not on disk, a marker the checker cannot find) is
+    reported and never fails the gate: an unmeasurable proof is a gap in
+    coverage, not a defect. The remote verdict and the quality verdict are
+    independent; either one failing fails the branch.
+
 THIS SCRIPT NEVER WRITES. No file is created or modified, no commit is made, no
 proof or receipt is touched. It is the CI counterpart of `purlin:verify`'s
 read-only contract, for the same reason: a gate that can edit the evidence it
@@ -54,6 +72,13 @@ EXIT_BAD_INVOCATION = 2
 
 MODES = ('required', 'optional', 'off')
 
+# The quality gate is opt-in: a project that never wrote the field reads `off`,
+# which is the mode that computes nothing. `deterministic` names the two passes
+# that need no model and no cache (Pass 1 over test source, Pass D1 over proof
+# descriptions), which is exactly why they can be a gate: CI recomputes every
+# grade from the checkout in front of it.
+QUALITY_MODES = ('off', 'deterministic')
+
 # A receipt is issued once every rule is proved, so VERIFIED is the only state
 # that means "the evidence is complete and committed". PASSING is complete but
 # unreceipted, which is a developer who has not run purlin:verify yet.
@@ -63,6 +88,17 @@ _ENFORCEMENT_NOTE = (
     'Note: remote_verification is DECLARED in .purlin/config.json, which the '
     'agent can edit. It is not the enforcement. Enforcement is branch protection '
     'marking this job a required check.'
+)
+
+_QUALITY_ENFORCEMENT_NOTE = (
+    'Note: quality_gate is DECLARED in .purlin/config.json, which the agent '
+    'can edit. It is not the enforcement. Enforcement is branch protection '
+    'marking this job a required check.'
+)
+
+_UNMEASURABLE_NOTE = (
+    '  An unmeasurable proof is a gap in coverage, not a defect: it never '
+    'fails the gate.'
 )
 
 # `required` is the declaration that verified-everywhere is the bar. When no
@@ -96,6 +132,78 @@ def _load_payload(project_root):
     except ImportError:
         return None
     return purlin_server.read_report_payload(project_root)
+
+
+def _load_static_checks():
+    """The deterministic checker module, or None.
+
+    Imported by path for `_load_payload`'s reason: CI checks out the repo, it
+    does not pip-install it. Imported only under `deterministic`, so a project
+    with the gate off never loads it.
+    """
+    audit_dir = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'audit')
+    if audit_dir not in sys.path:
+        sys.path.insert(0, audit_dir)
+    try:
+        import static_checks
+    except ImportError:
+        return None
+    return static_checks
+
+
+def _quality_finding_line(row, kind):
+    """One report line for a sweep finding.
+
+    `kind` is `HOLLOW`, `UNPROVABLE` or `unmeasurable`. A hollow proof names
+    the test the verdict was taken from, because the reader's next move is to
+    open it; an unprovable description has no test to name; an unmeasurable
+    proof names why it could not be measured, because that is the whole of
+    what the gate learned about it.
+    """
+    head = f"{row['feature']}: {row['proof_id']} {kind}"
+    if kind == 'unmeasurable':
+        return f"{head} ({_unmeasurable_because(row)})"
+    head = f"{head} ({row['check']})"
+    if kind == 'UNPROVABLE':
+        return head
+    name = row.get('test_name') or '?'
+    return f"{head} {row.get('test_file') or '?'}::{name}"
+
+
+def _unmeasurable_because(row):
+    """Why one proof could not be measured, in one clause."""
+    check = row.get('check')
+    test_file = row.get('test_file') or ''
+    if check == 'no_checker':
+        ext = os.path.splitext(test_file)[1].lower() or '(no extension)'
+        return f"{test_file}: no deterministic checker for {ext}"
+    if check == 'missing_file':
+        if not test_file:
+            return 'no test file is recorded for it'
+        return f"{test_file}: named by the proof record but not on disk"
+    if check == 'marker_not_found':
+        return f"{test_file}: carries no marker for this proof"
+    return f"{test_file}: {check}"
+
+
+def _quality_section(sweep, out):
+    """Print the quality-gate section. Returns True when the gate fails."""
+    hollow = sweep.get('hollow') or []
+    unprovable = sweep.get('unprovable') or []
+    unmeasurable = sweep.get('unmeasurable') or []
+    print(f"\nQuality gate (deterministic): {len(hollow)} HOLLOW, "
+          f"{len(unprovable)} UNPROVABLE, {len(unmeasurable)} unmeasurable",
+          file=out)
+    for row in hollow:
+        print(f"  {_quality_finding_line(row, 'HOLLOW')}", file=out)
+    for row in unprovable:
+        print(f"  {_quality_finding_line(row, 'UNPROVABLE')}", file=out)
+    for row in unmeasurable:
+        print(f"  {_quality_finding_line(row, 'unmeasurable')}", file=out)
+    if unmeasurable:
+        print(_UNMEASURABLE_NOTE, file=out)
+    return bool(hollow or unprovable)
 
 
 def _findings(payload):
@@ -172,6 +280,14 @@ def check(project_root, out=sys.stdout):
               "the mode must not disable the declaration invisibly.", file=out)
         return EXIT_BAD_INVOCATION
 
+    quality = payload.get('quality_gate', 'off')
+    if quality not in QUALITY_MODES:
+        print(f"verify-gate: quality_gate is {quality!r}, which is not a "
+              f"recognized mode ({' | '.join(QUALITY_MODES)}).", file=out)
+        print("verify-gate: failing closed rather than assuming 'off'. A typo in "
+              "the mode must not disable the declaration invisibly.", file=out)
+        return EXIT_BAD_INVOCATION
+
     # A malformed `platforms` entry was dropped from the registry, so a proof
     # naming it may be matching every host of its family or nothing at all.
     # Evidence read through a broken registry is unreadable evidence: exit 2
@@ -192,6 +308,12 @@ def check(project_root, out=sys.stdout):
 
     print(f"verify-gate: remote_verification = {mode}", file=out)
     print(_ENFORCEMENT_NOTE, file=out)
+    # One line under `off` too: a reader of a job log must be able to tell a
+    # project that declined the quality gate from one running a build old
+    # enough not to have had it, and the note only belongs where it applies.
+    print(f"verify-gate: quality_gate = {quality}", file=out)
+    if quality == 'deterministic':
+        print(_QUALITY_ENFORCEMENT_NOTE, file=out)
 
     if mode == 'off':
         print("verify-gate: disabled for this project. Reporting only.", file=out)
@@ -225,16 +347,48 @@ def check(project_root, out=sys.stdout):
         print("\nEvery feature is VERIFIED and nothing is awaiting a runner.",
               file=out)
 
+    quality_fail = False
+    if quality == 'deterministic':
+        static_checks = _load_static_checks()
+        if static_checks is None:
+            print("\nverify-gate: quality_gate is 'deterministic' but "
+                  "scripts/audit/static_checks.py could not be imported.",
+                  file=out)
+            print("verify-gate: failing closed. A gate that cannot run the "
+                  "checks it declares does not pass the branch.", file=out)
+            return EXIT_BAD_INVOCATION
+        try:
+            sweep = static_checks.deterministic_sweep(project_root)
+        except Exception as exc:  # noqa: BLE001 - any failure is unread evidence
+            print(f"\nverify-gate: scripts/audit/static_checks.py raised "
+                  f"{type(exc).__name__}: {exc}", file=out)
+            print("verify-gate: failing closed. A gate that cannot run the "
+                  "checks it declares does not pass the branch.", file=out)
+            return EXIT_BAD_INVOCATION
+        quality_fail = _quality_section(sweep, out)
+
+    # The two verdicts are independent: the remote gate asks whether the
+    # evidence is complete everywhere it was declared, the quality gate asks
+    # whether the evidence is worth anything. Either one failing fails the
+    # branch, and when both hold both lines are printed, because a reader who
+    # fixes one and pushes again should not discover the other on the next run.
+    remote_fail = mode == 'required' and bool(unverified or awaiting)
+
+    if remote_fail:
+        print("\nverify-gate: FAIL. This project declares remote_verification "
+              "'required', which is the declaration that verified-everywhere is "
+              "the bar.", file=out)
+    if quality_fail:
+        print("\nverify-gate: FAIL. This project declares quality_gate "
+              "'deterministic', which is the declaration that no proof may be "
+              "HOLLOW or its description UNPROVABLE.", file=out)
+    if remote_fail or quality_fail:
+        return EXIT_GATE_FAILED
+
     if mode != 'required':
         print(f"\nverify-gate: PASS (mode is {mode}; findings never block).",
               file=out)
         return EXIT_OK
-
-    if unverified or awaiting:
-        print("\nverify-gate: FAIL. This project declares remote_verification "
-              "'required', which is the declaration that verified-everywhere is "
-              "the bar.", file=out)
-        return EXIT_GATE_FAILED
 
     print("\nverify-gate: PASS.", file=out)
     return EXIT_OK

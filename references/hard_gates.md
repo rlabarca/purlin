@@ -22,9 +22,12 @@ could ever get its first receipt. This is enforced in the skill logic, not a hoo
 - Writing tests without proof markers: allowed, though `sync_status` will not count them.
 - Writing specs in any format: allowed, though an unnumbered rule gets a WARNING from `sync_status`.
 - Editing anchor files, external references included: allowed.
-- A low **Proof Design** or **Proof Integrity** score: allowed. Both gauges are advisory and
-  neither blocks a commit, a push, or a receipt. They measure quality; the gate measures
-  coverage.
+- A low **Proof Design** or **Proof Integrity** score: allowed. Both gauges are
+  advisory by default, and neither blocks a commit, a push, or a receipt. They measure quality; the gate
+  measures coverage. A project can opt in to more: with `quality_gate` set to `"deterministic"`
+  in `.purlin/config.json`, the CI gate job exits 1 on a HOLLOW proof or an UNPROVABLE proof
+  description, which is project policy layered on the one gate and not a second one. The LLM
+  halves of both gauges never block anything.
 - Committing without running verify: allowed.
 - A proof declared `@on(<platform>)` with no result there: allowed. It reports
   `AWAITING RUNNER`, which warns and never blocks (`specs/mcp/sync_status.md` RULE-47).
@@ -59,7 +62,7 @@ copy, because three copies drifted into three different answers about what block
 | **Layer 0: skill logic** | inside `purlin:verify`, in the developer's session | a receipt for any feature with a rule that has no passing proof. This is Gate 1 above, the framework's one gate, and nobody can turn it off: it is how the skill works. Every layer below it is something a project configures for itself |
 | **Layer 1: git pre-push hook** | `git push`, on the developer's machine | in `warn`, a FAILING proof; in `strict`, anything not VERIFIED; in `off`, nothing at all, and it prints one line saying so. The developer sets the mode with `purlin:init --pre-push` and can bypass any mode with `--no-verify`. Caveat worth knowing before you rely on it: when the hook cannot resolve the plugin root it has no evidence to read, so it prints a WARNING and allows the push in `warn` and exits 1 in `strict`, rather than reporting a pass it did not earn |
 | **Layer 2: your CI test run** | the forge, on the triggers your workflow declares | whatever your own test job blocks on. Purlin ships no pipeline config; you write it. Running every tier here regenerates the proof files from the code as pushed, which is what makes Layer 3 a clean-room reading rather than a re-read of what the developer committed |
-| **Layer 3: `scripts/ci/verify_gate.py --check`** | the forge, as a job branch protection marks required | a merge while any feature is not VERIFIED or is awaiting a runner. `.purlin/config.json`'s `remote_verification` field **declares** which bar the project holds itself to; branch protection is what **enforces** it, because the field is a file in the tree the agent can edit |
+| **Layer 3: `scripts/ci/verify_gate.py --check`** | the forge, as a job branch protection marks required | a merge while any feature is not VERIFIED or is awaiting a runner, and, where the project set `quality_gate` to `"deterministic"`, a merge while any proof is HOLLOW or any proof description is UNPROVABLE. `.purlin/config.json`'s `remote_verification` and `quality_gate` fields **declare** which bars the project holds itself to; branch protection is what **enforces** them, because both fields are files in the tree the agent can edit |
 | **Not a layer: `purlin:verify --recheck`** | a Claude Code session, on a developer's machine | nothing. It is a local clean-room re-run that re-executes the tests and compares the recomputed vhash against the committed receipts. No workflow can invoke a skill, so it is a check you choose to run, never a gate that runs on you |
 
 ## Project Policy Is Not a Framework Gate
@@ -78,9 +81,10 @@ distinction is not cosmetic:
 | What it asks | does every rule have a passing proof? | whatever the project decided, e.g. is every feature VERIFIED on every platform? |
 
 `.purlin/config.json`'s `remote_verification` field **declares** whether a project holds itself to
-the remote bar. It does not enforce it: the field is a file in the tree the agent can edit, so
-enforcement has to live outside the repository (`docs/regulated-environments.md`, "Policy lives
-outside the repo"). See `references/remote_verification.md`.
+the remote bar, and its `quality_gate` field **declares** whether the two deterministic quality
+passes are read as a gate. Neither field enforces anything: both are files in the tree the agent
+can edit, so enforcement has to live outside the repository (`docs/regulated-environments.md`,
+"Policy lives outside the repo"). See `references/remote_verification.md`.
 
 So the count stands. Purlin has exactly 1 hard gate; a project may have as many as it configures,
 and none of them are Purlin's.

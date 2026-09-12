@@ -1550,6 +1550,10 @@ def _gauge_suffix(summary, which, audit_summary, design_summary):
 
 _REMOTE_VERIFICATION_MODES = ('required', 'optional', 'off')
 
+#: The opt-in deterministic quality gate (`verify_gate` RULE-14). `off` is what
+#: a project that never wrote the field reads as, and is silent here.
+_QUALITY_GATE_MODES = ('off', 'deterministic')
+
 
 # ---------------------------------------------------------------------------
 # Platform registry and host detection (sync_status RULE-50/51)
@@ -2054,6 +2058,33 @@ def _remote_verification_line(config, awaiting_count, remote_status=None):
             f"→ Run: purlin:test to set up a runner")
 
 
+def _quality_gate_line(config):
+    """The project's declared quality gate, or '' when it declared none.
+
+    Silent under `off` and when the field is absent, which are the same thing:
+    a project that never opted in gains nothing from a line saying so, and
+    every project that existed before the field did would otherwise grow one.
+
+    Under `deterministic` the line says three things, because the mode alone
+    says none of them: which two model-free passes are read, what a failure
+    is, and that the field is the declaration while branch protection is the
+    enforcement (the same split RULE-49 states for `remote_verification`, and
+    for the same reason: the field is a file in the tree the agent can edit).
+    This never runs the sweep. `sync_status` is a report, the gate is where
+    the grading happens, and a status call must not pay for a CI setting.
+    """
+    mode = config.get('quality_gate', 'off')
+    if mode == 'off':
+        return ''
+    if mode not in _QUALITY_GATE_MODES:
+        return (f"Quality gate: {mode!r} is not a recognized mode "
+                f"(" + " | ".join(_QUALITY_GATE_MODES) + ")")
+    return ("Quality gate: deterministic, the CI gate fails on a HOLLOW proof "
+            "or an UNPROVABLE proof description. Declared in config; "
+            "enforcement is branch protection marking the verify-gate job a "
+            "required check")
+
+
 def _bare(name):
     """The feature name behind a table label: anchors render as `x (anchor)`."""
     return name.split(' (', 1)[0]
@@ -2211,6 +2242,12 @@ def _build_summary_table(summary_rows, audit_summary=None, design_summary=None,
     rv_line = _remote_verification_line(config or {}, awaiting_count, remote_status)
     if rv_line:
         lines.append(rv_line)
+    # The quality gate under it, for the same reason and in the same shape: a
+    # second declaration with a second enforcement clause does not fit on the
+    # summary line either. Silent unless the project declared it.
+    qg_line = _quality_gate_line(config or {})
+    if qg_line:
+        lines.append(qg_line)
     lines.extend(platform_lines or [])
 
     lines.append("")  # blank line before detail
@@ -4545,6 +4582,11 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
         # a gate that cannot tell "mode absent" from "older payload" cannot fail
         # closed on the difference (report_data RULE-30).
         'remote_verification': config.get('remote_verification', 'off'),
+        # Present for RULE-30's reason, and carried verbatim rather than
+        # normalised: the gate is the reader that refuses a value outside the
+        # closed set, and a payload that quietly turned a typo into 'off'
+        # would disable the declaration before the gate ever saw it.
+        'quality_gate': config.get('quality_gate', 'off'),
         # Always present too (report_data RULE-31), for the same reason: the
         # gate exits 2 on `platforms.errors`, and a key that is sometimes
         # absent cannot be told from an older payload.

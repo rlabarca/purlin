@@ -25,12 +25,22 @@ claim. The commands are the ones in [references/purlin_commands.md](../reference
 - **Not a signature system.** `@manual` stamps and `git config user.email` are developer conveniences, not legally binding electronic signatures. GPG-signed commits prove key possession, not identity or intent. Nothing Purlin issues is signed verification: the `vhash` is a change detector, not a token, and no key is involved anywhere in it.
 - **Not tamper-evident.** Everything Purlin produces lives in the git repository, which is mutable. `git push --force` can erase any receipt, and a receipt rewritten in place reads exactly like one that was earned.
 - **Not an audit trail.** Git history is a development log, not an immutable compliance record.
-- **Not a test quality gate.** Purlin proves that a test executed and passed. It does not prove
-  that the test contains meaningful assertions. An agent can write `assert True` and produce a
-  valid proof. The two quality gauges measure exactly that and are worth recording in your QMS
-  evidence, but both are advisory: neither blocks a receipt. `purlin:audit` reports them, and
-  nothing reads them as a gate. A regulated team still enforces independent human review of test
-  logic, through CODEOWNERS or a QMS-managed review, before accepting any proof artifact.
+- **Not a test quality gate by default.** Purlin proves that a test executed and passed. It does
+  not prove that the test contains meaningful assertions: an agent can write `assert True` and
+  produce a valid proof. Each of the two quality gauges has a deterministic half and a judgment
+  half. The deterministic halves are Pass 1, which reads test source, and Pass D1, which reads
+  proof descriptions. Both prove the absence of a fixed list of defects (a tautological
+  assertion, no assertion at all, a swallowed exception, a test that mirrors the logic it
+  checks, a mocked-out target, a description nothing could falsify), and both bind the grade to
+  the test source it was computed from, so CI recomputes every grade from the commit in front of
+  it. The other halves are an LLM reading a test against a rule, which is judgment and not
+  proof. In the framework both gauges are advisory: neither blocks a receipt, and `purlin:audit`
+  reports them. A project that sets `quality_gate` to `"deterministic"` in `.purlin/config.json`
+  makes the deterministic half an exit `1` from `scripts/ci/verify_gate.py --check`, with branch
+  protection marking that job required as the enforcement, the same split `remote_verification`
+  has. The judgment half stays advisory either way, so a regulated team still enforces
+  independent human review of test logic, through CODEOWNERS or a QMS-managed review, before
+  accepting any proof artifact.
 
 ---
 
@@ -234,8 +244,30 @@ Developer or agent
 
 Compliance rules, required verification levels and approval requirements are enforced by the
 CI/CD infrastructure, never by a config file the agent can edit. `.purlin/config.json`'s
-`remote_verification` field declares which bar a project holds itself to; branch protection
-marking `scripts/ci/verify_gate.py --check` a required job is what enforces it.
+`remote_verification` and `quality_gate` fields declare which bars a project holds itself to,
+one for where the evidence has to be proved and one for how good it has to be; branch protection
+marking `scripts/ci/verify_gate.py --check` a required job is what enforces both. Two
+declarations, one enforcement point, and neither field is the enforcement.
+
+### The deterministic quality gate
+
+`quality_gate` is off unless a project sets it, and it has two values. Under `"deterministic"`,
+`scripts/ci/verify_gate.py --check` runs the two model-free passes over the checkout it was
+handed and exits `1` when any executed proof is graded HOLLOW or any proof description is graded
+UNPROVABLE. Neither pass calls a model and neither reads a cache, so the grade in the job log is
+a grade of that commit and a validation record can cite the run that produced it. The
+implementation is `scripts/audit/static_checks.py`, the criteria are
+`references/audit_criteria.md`, and what each grade means is `specs/audit/static_checks.md`.
+
+A proof the passes cannot measure, because its test is written in a language no shipped checker
+reads, because the file it names is not on disk, or because the checker cannot find its marker,
+is reported in the same section and never fails the branch. An unmeasurable proof is a gap in
+coverage, not a defect, and a gate that failed on one would block every project that wrote a
+plugin of its own.
+
+The field is a declaration like `remote_verification`: it is a file in the tree the agent can
+edit, so the enforcement is branch protection marking the gate job a required check. The LLM
+halves of both gauges stay advisory under every value of the field.
 
 ### Approvals come from an identity provider
 
@@ -318,10 +350,10 @@ boundary:
 
 | Not bound | Consequence |
 |---|---|
-| The **content of the test code** | The named test can be rewritten to `assert True` and the hash does not move. Only the two quality gauges and human review look inside a test |
+| The **content of the test code** | The named test can be rewritten to `assert True` and the hash does not move. Only the two quality gauges and human review look inside a test. Under `quality_gate` `"deterministic"` the CI gate refuses to merge that rewrite, which is a check on the branch and not a property of the hash |
 | **Who ran it** | The receipt records a git author and a `Purlin-Runner:` trailer where a runner committed one. Neither is authenticated |
 | **When it ran** | The receipt carries a timestamp the machine that wrote it supplied |
-| **That the test is meaningful** | See "Not a test quality gate" above. A passing proof is a claim about execution, never about relevance |
+| **That the test is meaningful** | See "Not a test quality gate by default" above. A passing proof is a claim about execution, never about relevance. The deterministic passes rule out a fixed list of defects; whether the test is relevant to the rule is judgment, and stays with the LLM passes and human review |
 | **The runner's honesty** | A remote result is trusted because the workflow file and the branch protection around it are trusted, not because anything in the receipt proves where the bytes came from |
 
 A vhash is a change detector. It answers "is this receipt still about the code and rules in front

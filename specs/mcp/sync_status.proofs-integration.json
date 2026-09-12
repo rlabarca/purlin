@@ -48,6 +48,15 @@
     },
     {
       "feature": "sync_status",
+      "id": "PROOF-105",
+      "rule": "RULE-66",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_quality_gate_is_silent_until_a_project_declares_it",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
       "id": "PROOF-48",
       "rule": "RULE-27",
       "test_file": "dev/test_e2e_audit_cache_pipeline.py",

@@ -257,12 +257,13 @@ jobs:
 
 `fetch-depth: 0` matters: the gate reads `git log` per proof file to report when each platform was last proved and by which runner, and a shallow clone has no history to read.
 
-Running every tier in the test step regenerates the proof files from the code as pushed, so the VERIFIED the gate then reads is a clean-room reading rather than a re-read of whatever the developer happened to commit. `verify_gate.py --check` exits 1 when a feature is not VERIFIED or is awaiting a runner, and exits 2 when the platform registry is unreadable; branch protection marking the job required is what makes the exit code matter.
+Running every tier in the test step regenerates the proof files from the code as pushed, so the VERIFIED the gate then reads is a clean-room reading rather than a re-read of whatever the developer happened to commit. `verify_gate.py --check` exits 1 when a feature is not VERIFIED or is awaiting a runner, and exits 2 when the platform registry is unreadable; branch protection marking the job required is what makes the exit code matter. A project that sets `quality_gate` to `"deterministic"` in `.purlin/config.json` gets a second, independent verdict from the same job: the two model-free quality passes run over the checkout and exit 1 on a HOLLOW proof or an UNPROVABLE proof description. The field is off unless you set it, and neither quality gauge is a gate by default.
 
 | Trigger | Tiers to run | Gate reads |
 |---------|-------------|----------|
 | PR / branch push | unit + `@integration` | Any FAIL |
 | Merge to main | All tiers | Any FAIL, partial coverage, or a platform awaiting a runner |
+| Merge to main, with `quality_gate: "deterministic"` | All tiers | The above, plus any HOLLOW proof or UNPROVABLE proof description |
 
 ## Platforms
 

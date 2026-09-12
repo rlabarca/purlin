@@ -1623,6 +1623,73 @@ class TestRemoteVerificationMode:
         line, out = self._mode_line()
         assert line and 'no proof declares a platform' in line, line
 
+    def _config_full(self, **fields):
+        cfg = {'report': False}
+        cfg.update(fields)
+        with open(os.path.join(self.project_root, '.purlin', 'config.json'),
+                  'w') as f:
+            json.dump(cfg, f)
+
+    @pytest.mark.proof("sync_status", "PROOF-105", "RULE-66", tier="integration")
+    def test_quality_gate_is_silent_until_a_project_declares_it(self):
+        # Absent and 'off' are the same state: a project that never opted in
+        # is told nothing. The remote mode is 'optional' throughout so the
+        # remote line is present and the new line has something to sit under.
+        self._config_full(remote_verification='optional')
+        absent = purlin_server.sync_status(self.project_root)
+        assert not [l for l in absent.splitlines()
+                    if l.startswith('Quality gate:')], (
+            f"a project with no quality_gate field must print no line:\n{absent}")
+
+        self._config_full(remote_verification='optional', quality_gate='off')
+        off = purlin_server.sync_status(self.project_root)
+        assert not [l for l in off.splitlines()
+                    if l.startswith('Quality gate:')], (
+            f"an 'off' project must print no line either:\n{off}")
+        assert off == absent, (
+            "'off' and an absent field are the same state and must render "
+            "identically")
+
+        # deterministic: one line, naming the mode, what the gate fails on,
+        # and the declaration/enforcement split.
+        self._config_full(remote_verification='optional',
+                          quality_gate='deterministic')
+        on = purlin_server.sync_status(self.project_root)
+        lines = on.splitlines()
+        gate_lines = [l for l in lines if l.startswith('Quality gate:')]
+        assert len(gate_lines) == 1, (
+            f"expected exactly one quality-gate line, got {gate_lines}:\n{on}")
+        line = gate_lines[0]
+        for token in ('deterministic', 'HOLLOW', 'UNPROVABLE',
+                      'branch protection', 'Declared in config'):
+            assert token in line, (
+                f"the line must name {token!r}, which is what a reader needs "
+                f"to know what the gate does and who enforces it: {line!r}")
+
+        # Directly under the remote line, and nothing else moved.
+        rv_index = next(i for i, l in enumerate(lines)
+                        if l.startswith('Remote verification:'))
+        assert lines[rv_index + 1] == line, (
+            f"the quality-gate line must sit directly under the remote line; "
+            f"line {rv_index + 1} is {lines[rv_index + 1]!r}")
+        assert [l for l in lines if l != line] == off.splitlines(), (
+            "declaring the quality gate must add one line and change nothing "
+            "else")
+
+        # A typo is named, never silently read as 'off'.
+        self._config_full(remote_verification='optional',
+                          quality_gate='determinstic')
+        typo = purlin_server.sync_status(self.project_root)
+        gate_lines = [l for l in typo.splitlines()
+                      if l.startswith('Quality gate:')]
+        assert len(gate_lines) == 1, (
+            f"an unrecognized mode must be reported, not dropped:\n{typo}")
+        assert 'not a recognized mode' in gate_lines[0], gate_lines[0]
+        for valid in ('off', 'deterministic'):
+            assert valid in gate_lines[0], (
+                f"the error must name the valid modes so the typo is fixable: "
+                f"{gate_lines[0]!r}")
+
 
 class TestIntegrityFormula:
     """sync_status RULE-33: integrity formula consistency."""

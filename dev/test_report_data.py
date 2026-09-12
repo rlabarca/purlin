@@ -2130,6 +2130,44 @@ class TestRemoteVerificationInPayload:
             f"an omitted field defaults to 'off', got "
             f"{data['remote_verification']!r}")
 
+    @pytest.mark.proof("report_data", "PROOF-47", "RULE-46")
+    def test_quality_gate_is_carried_verbatim_and_defaults_rather_than_vanishing(
+            self):
+        for mode in ('deterministic', 'off'):
+            data = self._build({'report': True, 'quality_gate': mode})
+            assert data.get('quality_gate') == mode, (
+                f"the payload must carry the declared quality gate verbatim; "
+                f"declared {mode!r}, payload says {data.get('quality_gate')!r}")
+
+        # A value outside the closed set is carried as written. The gate is the
+        # reader that refuses it (verify_gate RULE-14); a payload that
+        # normalised the typo to 'off' would disable the declaration here,
+        # before anything could report it.
+        data = self._build({'report': True, 'quality_gate': 'determinstic'})
+        assert data.get('quality_gate') == 'determinstic', (
+            f"a misspelled mode must reach the gate as written, got "
+            f"{data['quality_gate']!r}")
+
+        # Config omits the field entirely: the key is still there, defaulted.
+        data = self._build({'report': True})
+        assert 'quality_gate' in data, (
+            "the key must be present even when the config omits the field, so "
+            "the gate never has to distinguish 'field absent' from 'old payload'")
+        assert data.get('quality_gate') == 'off', (
+            f"an omitted field defaults to 'off', got "
+            f"{data.get('quality_gate')!r}")
+
+        # The reading path the gate actually calls agrees with the builder.
+        with open(os.path.join(self.tmp, '.purlin', 'config.json')) as f:
+            cfg = json.load(f)
+        cfg['quality_gate'] = 'deterministic'
+        with open(os.path.join(self.tmp, '.purlin', 'config.json'), 'w') as f:
+            json.dump(cfg, f)
+        payload = purlin_server.read_report_payload(self.tmp)
+        assert payload['quality_gate'] == 'deterministic', (
+            f"read_report_payload must carry the same field the builder does, "
+            f"got {payload.get('quality_gate')!r}")
+
 
 # ---------------------------------------------------------------------------
 # RULE-33: what a stale receipt in the payload is stale FROM

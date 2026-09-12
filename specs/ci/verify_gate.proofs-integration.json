@@ -39,6 +39,42 @@
     },
     {
       "feature": "verify_gate",
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "test_file": "dev/test_verify_gate.py",
+      "test_name": "test_off_is_one_line_and_a_typo_fails_closed",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "verify_gate",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_verify_gate.py",
+      "test_name": "test_hollow_fails_unmeasurable_never_does_and_the_verdicts_are_independent",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "verify_gate",
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "test_file": "dev/test_verify_gate.py",
+      "test_name": "test_output_header_and_the_gate_count_all_hold",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "verify_gate",
+      "id": "PROOF-17",
+      "rule": "RULE-17",
+      "test_file": "dev/test_verify_gate.py",
+      "test_name": "test_a_deterministic_run_leaves_the_tree_and_writes_no_cache",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "verify_gate",
       "id": "PROOF-2",
       "rule": "RULE-2",
       "test_file": "dev/test_verify_gate.py",

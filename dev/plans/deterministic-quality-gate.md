@@ -906,3 +906,100 @@ Deferrals and adjacent findings:
   because the three-part string is still in the file, in the sentence explaining that within one
   file the merge is unchanged. Correcting the rule is an amendment to a rule this commit does not
   own a proof for.
+
+### C1
+
+`feat(verify_gate,report_data,sync_status): the opt-in deterministic quality gate, its payload
+field, its status line, and the docs that said nothing reads the gauges as a gate`
+
+Files touched:
+
+- `scripts/ci/verify_gate.py` — `QUALITY_MODES`, `_QUALITY_ENFORCEMENT_NOTE`, `_UNMEASURABLE_NOTE`,
+  `_load_static_checks`, `_quality_finding_line`, `_unmeasurable_because`, `_quality_section`, the
+  mode read and its fail-closed validation, the mode line, the sweep call, the two independent
+  verdicts, and a `QUALITY GATE` section in the module docstring
+- `scripts/mcp/purlin_server.py` — `_QUALITY_GATE_MODES`, `_quality_gate_line`, its append in
+  `_build_summary_table`, and `'quality_gate'` in `_build_report_data`'s payload
+- `specs/ci/verify_gate.md` — RULE-14 to RULE-17, PROOF-14 to PROOF-17, PROOF-5 and
+  `> Description:` amended
+- `specs/mcp/report_data.md` — RULE-46 / PROOF-47; `specs/mcp/sync_status.md` — RULE-66 / PROOF-105
+- `specs/instructions/purlin_docs.md` — RULE-9's closed config-field set gains `quality_gate`
+- `specs/instructions/purlin_references.md` — RULE-17 and PROOF-17 amended, no new id
+- `dev/test_verify_gate.py`, `dev/test_report_data.py`, `dev/test_mcp_server.py`,
+  `dev/test_purlin_docs.py` (`CONFIG_FIELDS`), `dev/test_purlin_references.py`
+- Part D docs: `docs/regulated-environments.md` (the `- **Not a test quality gate by default.**`
+  bullet, two vhash does-not-bind rows, "Policy lives outside the repo", the new
+  `### The deterministic quality gate` subsection), `references/hard_gates.md` (the
+  "What Is NOT a Gate" bullet, the Layer 3 row, "Project Policy Is Not a Framework Gate"),
+  `README.md`, `docs/testing-workflow-guide.md` (gate sentence and a trigger-table row),
+  `docs/lifecycle-guide.md`, `references/remote_verification.md`, `references/audit_criteria.md`,
+  `skills/audit/SKILL.md`
+
+Spec maxima left: `verify_gate` RULE-17 / PROOF-17; `report_data` RULE-46 / PROOF-47;
+`sync_status` RULE-66 / PROOF-105; `purlin_docs` RULE-11 / PROOF-16 (unchanged, RULE-9 amended);
+`purlin_references` RULE-29 / PROOF-29 (unchanged, RULE-17 and PROOF-17 amended in place).
+
+Test counts, whole files, before to after:
+
+- `dev/test_verify_gate.py` 13 passed to 17 passed, 0 skipped
+- `dev/test_report_data.py` 47 to 48; `dev/test_mcp_server.py` 89 to 90
+- `dev/test_purlin_docs.py` 16, `dev/test_purlin_references.py` 29, `dev/test_skill_specs.py` 141,
+  `dev/test_purlin_agent.py` 12: unchanged
+- `dev/test_e2e_audit_cache_pipeline.py`, `dev/test_purlin_report.py`, `dev/test_static_checks.py`,
+  `dev/test_windows_native.py` run green and unchanged (213 passed, 2 skipped together)
+
+Gate run on this worktree, `python3 scripts/ci/verify_gate.py --check --project-root .`: 42 lines
+and exit 0 before, with the one new line `verify-gate: quality_gate = off`; 152 lines and exit 1
+with a temporary `"quality_gate": "deterministic"`, reporting `Quality gate (deterministic): 82
+HOLLOW, 0 UNPROVABLE, 24 unmeasurable` and the quality FAIL line. The config was reverted. No
+refresh of `.purlin/report-data.js` was needed or made: the gate calls `read_report_payload`,
+which rebuilds the payload from `.purlin/config.json` and the specs, and never reads that file.
+
+Mutations, each reverted and the file re-run green after:
+
+1. `print('verify-gate: PASS (nothing to check).')` before the quality-mode read.
+   PROOF-14 failed with "AssertionError: remote mode 'required': a gate that cannot read its own
+   declaration must not print a PASS" (PROOF-9 and PROOF-15 failed too).
+2. The sweep run under every mode (`if quality in QUALITY_MODES`). PROOF-14 failed with
+   "AssertionError: under 'off' the mode line is the whole of the difference; the rest of the
+   output still mentions the gate", the `Quality gate (deterministic): 0 HOLLOW ...` section
+   printed under it.
+3. `'quality_gate'` dropped from `_build_report_data`'s payload. PROOF-47 failed with
+   "AssertionError: the payload must carry the declared quality gate verbatim; declared
+   'deterministic', payload says None".
+4. `quality_fail = bool(hollow or unprovable or unmeasurable)`. PROOF-15 failed with
+   "AssertionError: with the tautology gone the gate must pass, got 1".
+5. `_quality_gate_line`'s `off` branch deleted, so the line prints for every project. PROOF-105
+   failed with "AssertionError: a project with no quality_gate field must print no line".
+6. `os.makedirs(<root>/.purlin/cache)` in the deterministic branch. PROOF-17 failed with
+   "AssertionError: a deterministic run created .purlin/cache/; the gate grades the evidence and
+   must not write beside it".
+7. The opt-in sentence removed from `hard_gates.md`'s "What Is NOT a Gate" list. verify_gate
+   PROOF-16 failed with "the opt-in mode must be named in the list where a reader counts gates,
+   not only in a later section" and purlin_references PROOF-17 with "the list must name
+   `quality_gate` as the opt-in that makes the deterministic half of the gauges a CI failure".
+
+Decisions taken:
+
+- The quality mode is validated immediately after the remote mode and before the registry check,
+  so a typo fails closed in every remote mode including the one whose registry is broken.
+- When only the quality gate fails, no remote PASS line is printed: the two verdicts are computed
+  first, then the FAIL lines, then the remote PASS lines. With `quality_gate` off this is
+  byte-identical to the previous ordering, which is what PROOF-3, PROOF-6, PROOF-9, PROOF-12 and
+  PROOF-13 keep pinning.
+- The unmeasurable sentence is printed only when the sweep reported an unmeasurable proof. It
+  explains the third count; with nothing in that column it is noise.
+- `sync_status`'s line never runs the sweep. A status call happens on every turn and the sweep is
+  a CI cost the project asked CI to pay; the dashboard chip stays out of scope, as the plan says.
+- Mutation 7 did not fail on the first attempt: both new assertions split `hard_gates.md` on
+  `What Is NOT a Gate` and read everything after it, and `quality_gate` also appears in the Layer 3
+  row and in "Project Policy Is Not a Framework Gate" further down. Both tests now cut the split at
+  the next `## ` heading, which also tightens the pre-existing `Proof Design`/`Proof Integrity`
+  assertion in purlin_references PROOF-17.
+
+Deferral and adjacent defect found, not fixed: `dev/test_consumer_ci.py::test_fixture_is_a_complete
+_tracked_consumer_project` (consumer_ci PROOF-2) fails at HEAD, before any change in this commit.
+B2 edited `scripts/proof/pytest_purlin.py` without syncing
+`dev/fixtures/consumer-ci/.purlin/plugins/pytest_purlin.py`, which the proof requires to be
+byte-identical. It is B2's fixture to re-copy; `specs/ci/consumer_ci.proofs-unit.json` was restored
+rather than committed with the failing entry.

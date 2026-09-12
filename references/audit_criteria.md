@@ -9,7 +9,7 @@ This document defines how `purlin:audit` grades proofs. It measures two differen
 | **Proof Design** | *Is the claim provable?* | the rule and its proof description | No |
 | **Proof Integrity** | *Is the claim proven?* | the test code behind each proof | Yes |
 
-`purlin:verify` answers a third, separate question, *does it pass right now?*, and it alone owns pass/fail. Neither gauge is a gate.
+`purlin:verify` answers a third, separate question, *does it pass right now?*, and it alone owns pass/fail. Neither gauge is a gate by default. A project that sets `quality_gate` to `"deterministic"` in `.purlin/config.json` has the deterministic passes below read as a CI gate as well (`specs/ci/verify_gate.md` RULE-15); the LLM passes stay advisory under every setting.
 
 **Proof Design is a precondition for Proof Integrity meaning anything.** Many Integrity criteria below are comparisons against the proof description ("the description says verify X AND Y but the test only checks X"), so they can only fire when the description claims something specific. Against a description like `Verify authentication works`, a test asserting almost nothing satisfies every Integrity criterion trivially: there is nothing to contradict it. A high Integrity score over vague descriptions is not evidence of quality; it is evidence of an unfalsifiable spec. Criteria marked **[relative]** are the ones that depend on a `PROVABLE` description.
 

@@ -345,8 +345,21 @@ class TestHardGatesAccuracy:
             "the single-gate promise must survive"
         not_gate = gates.split('What Is NOT a Gate', 1)
         assert len(not_gate) == 2, "hard_gates.md missing the 'What Is NOT a Gate' list"
-        assert 'Proof Design' in not_gate[1] and 'Proof Integrity' in not_gate[1], \
+        # The list itself, not everything after it: `quality_gate` is named in
+        # three later sections, so an unbounded split would pass on any of them.
+        listing = re.split(r'(?m)^## ', not_gate[1])[0]
+        assert 'Proof Design' in listing and 'Proof Integrity' in listing, \
             "both gauges must be listed as non-gates"
+
+        # The opt-in belongs in the same list. A reader who learns the gauges
+        # do not block, and meets a project whose CI fails on a HOLLOW proof,
+        # has been told the count is wrong unless the exception is here.
+        assert 'advisory by default' in listing, (
+            "the list must say the gauges are advisory *by default*, or the "
+            "opt-in below contradicts it")
+        assert 'quality_gate' in listing, (
+            "the list must name `quality_gate` as the opt-in that makes the "
+            "deterministic half of the gauges a CI failure")
 
 
 class TestRemoteVerificationReference:

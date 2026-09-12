@@ -365,6 +365,12 @@ So the two layers read:
 State the split whenever you report the mode. "Remote verification: required" alone invites the
 reading that the field is the gate.
 
+`.purlin/config.json` carries a second declaration read by the same job, `quality_gate`, with the
+values `"off"` (the default) and `"deterministic"`. It says whether the two model-free quality
+passes are read as a gate, and it has the same declaration/enforcement split for the same reason.
+The two verdicts are independent: either one can fail a branch on its own. See
+`references/hard_gates.md` and `specs/ci/verify_gate.md` RULE-14 and RULE-15.
+
 ## What travels with a branch, and what does not
 
 | Artifact | Committed? | Travels |

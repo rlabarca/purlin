@@ -536,8 +536,9 @@ REGULATED = 'docs/regulated-environments.md'
 #: The closed set of config fields RULE-9 accepts as a mechanism name.
 CONFIG_FIELDS = (
     'audit_llm', 'audit_llm_name', 'audit_criteria', 'audit_criteria_pinned',
-    'mutation_checks', 'platforms', 'remote_verification', 'pre_push',
-    'digest', 'report', 'test_framework', 'version', 'skipped_proofs',
+    'mutation_checks', 'platforms', 'remote_verification', 'quality_gate',
+    'pre_push', 'digest', 'report', 'test_framework', 'version',
+    'skipped_proofs',
 )
 
 #: RULE-9's five mechanism shapes, each as (name, pattern over raw text).

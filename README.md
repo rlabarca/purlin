@@ -175,9 +175,12 @@ Install these as Claude Desktop skills (drag the `.skill` file or paste the `.md
 
 1. **Proof coverage.** `purlin:verify` will not issue a receipt unless every rule has a passing proof.
 
-Everything else is optional guidance. In particular **neither quality gauge is a gate**: a low
-Proof Design or Proof Integrity score never blocks a commit, a push, or a receipt. They tell
-you how good the evidence is; the gate only asks whether it exists.
+Everything else is optional guidance. In particular **neither quality gauge is a gate by
+default**: a low Proof Design or Proof Integrity score never blocks a commit, a push, or a
+receipt. They tell you how good the evidence is; the gate only asks whether it exists. A project
+can opt in to more: `"quality_gate": "deterministic"` in `.purlin/config.json` makes the CI gate
+job exit 1 on a HOLLOW proof or an UNPROVABLE proof description, which is the project's own
+policy layered on the framework's one gate, not a second one.
 
 A project can add gates of its own, and one ships as a template: `scripts/ci/verify_gate.py
 --check` fails a branch whose features are not VERIFIED, or that are awaiting a runner for a

@@ -6,6 +6,7 @@ couples a gate to a dashboard layout), and pass when it cannot read the
 evidence.
 """
 
+import io
 import json
 import os
 import re
@@ -315,14 +316,21 @@ class TestGateNeverWrites:
                     capture_output=True, text=True).stdout
                 return entries, head, porcelain
 
-            for mode in ('required', 'optional', 'off'):
+            # The fourth run declares the quality gate, which is the mode
+            # that opens every test file the project names. The read-only
+            # contract has to hold over the mode that reads the most.
+            runs = [{'remote_verification': mode}
+                    for mode in ('required', 'optional', 'off')]
+            runs.append({'remote_verification': 'off',
+                         'quality_gate': 'deterministic'})
+            for fields in runs:
                 with open(cfg_path, 'w') as f:
-                    json.dump({'report': False, 'remote_verification': mode}, f)
+                    json.dump(dict({'report': False}, **fields), f)
                 before = snapshot()
                 _run(root)
                 after = snapshot()
                 assert before == after, (
-                    f"mode {mode!r}: the gate changed the tree.\n"
+                    f"config {fields!r}: the gate changed the tree.\n"
                     f"added/changed: "
                     f"{set(after[0].items()) - set(before[0].items())}\n"
                     f"removed: {set(before[0]) - set(after[0])}\n"
@@ -821,3 +829,361 @@ class TestRequiredWithNothingRemoteInIt:
             assert code != 2, "an absent registry is never a bad invocation"
         finally:
             shutil.rmtree(root, ignore_errors=True)
+
+# ---------------------------------------------------------------------------
+# The deterministic quality gate (RULE-14 to RULE-17)
+# ---------------------------------------------------------------------------
+
+_HOLLOW_TEST = '''import pytest
+
+
+@pytest.mark.proof("locking", "PROOF-1", "RULE-1")
+def test_fcntl():
+    assert True
+
+
+@pytest.mark.proof("locking", "PROOF-2", "RULE-2")
+def test_shim():
+    held = {'fd': 7}
+    assert held['fd'] == 7
+'''
+
+_HONEST_TEST = _HOLLOW_TEST.replace(
+    "def test_fcntl():\n    assert True",
+    "def test_fcntl():\n    held = {'fd': 3}\n    assert held['fd'] == 3")
+
+_RUBY_TEST = '''# purlin_proof locking PROOF-3 RULE-3
+it "releases the lock" do
+  expect(lock.release).to be true
+end
+'''
+
+_QUALITY_SPEC = (
+    '# Feature: locking\n\n'
+    '> Description: File locking.\n\n'
+    '## Rules\n'
+    '- RULE-1: Locks on POSIX\n'
+    '- RULE-2: Locks on Windows\n'
+    '- RULE-3: Locks are released\n\n'
+    '## Proof\n'
+    '- PROOF-1 (RULE-1): the fcntl path returns a held lock whose fd is not '
+    'None @unit\n'
+    '- PROOF-2 (RULE-2): the msvcrt shim returns a held lock whose fd is not '
+    'None @unit\n'
+    '- PROOF-3 (RULE-3): releasing a held lock leaves the file openable by a '
+    'second process @unit\n')
+
+
+def _quality_project(remote='off', quality='deterministic', hollow=True):
+    """A temp project the deterministic sweep can actually grade.
+
+    Three proofs: one backed by a tautological Python test (HOLLOW under
+    Pass 1), one backed by an honest one, and one backed by a `.rb` file no
+    shipped checker reads, which is the unmeasurable case.
+    """
+    root = tempfile.mkdtemp()
+    os.makedirs(os.path.join(root, '.purlin'))
+    spec_dir = os.path.join(root, 'specs', 'app')
+    os.makedirs(spec_dir)
+    os.makedirs(os.path.join(root, 'tests'))
+    _write_quality_config(root, remote, quality)
+    with open(os.path.join(spec_dir, 'locking.md'), 'w') as f:
+        f.write(_QUALITY_SPEC)
+    with open(os.path.join(spec_dir, 'locking.proofs-unit.json'), 'w') as f:
+        json.dump({'tier': 'unit', 'proofs': [
+            {'feature': 'locking', 'id': 'PROOF-1', 'rule': 'RULE-1',
+             'test_file': 'tests/test_lock.py', 'test_name': 'test_fcntl',
+             'status': 'pass', 'tier': 'unit'},
+            {'feature': 'locking', 'id': 'PROOF-2', 'rule': 'RULE-2',
+             'test_file': 'tests/test_lock.py', 'test_name': 'test_shim',
+             'status': 'pass', 'tier': 'unit'},
+            {'feature': 'locking', 'id': 'PROOF-3', 'rule': 'RULE-3',
+             'test_file': 'tests/lock_spec.rb',
+             'test_name': 'releases the lock', 'status': 'pass',
+             'tier': 'unit'},
+        ]}, f)
+    _write_hollow(root, hollow)
+    with open(os.path.join(root, 'tests', 'lock_spec.rb'), 'w') as f:
+        f.write(_RUBY_TEST)
+    subprocess.run(['git', 'init', '-q'], cwd=root, capture_output=True)
+    for k, v in (('user.email', 't@e'), ('user.name', 't')):
+        subprocess.run(['git', 'config', k, v], cwd=root, capture_output=True)
+    subprocess.run(['git', 'add', '-A'], cwd=root, capture_output=True)
+    subprocess.run(['git', 'commit', '-q', '-m', 'init'], cwd=root,
+                   capture_output=True)
+    return root
+
+
+def _write_quality_config(root, remote, quality):
+    cfg = {'report': False, 'remote_verification': remote}
+    if quality is not None:
+        cfg['quality_gate'] = quality
+    with open(os.path.join(root, '.purlin', 'config.json'), 'w') as f:
+        json.dump(cfg, f)
+
+
+def _write_hollow(root, hollow):
+    with open(os.path.join(root, 'tests', 'test_lock.py'), 'w') as f:
+        f.write(_HOLLOW_TEST if hollow else _HONEST_TEST)
+
+
+class TestQualityGateIsOptIn:
+
+    @pytest.mark.proof("verify_gate", "PROOF-14", "RULE-14", tier="integration")
+    def test_off_is_one_line_and_a_typo_fails_closed(self):
+        """A project that never opted in gains one line and nothing else."""
+        root = _make_project(mode='required', proofs_pass=False, receipt=False)
+        try:
+            _write_quality_config(root, 'required', None)
+            code_absent, absent = _run(root)
+            _write_quality_config(root, 'required', 'off')
+            code_off, off = _run(root)
+
+            assert absent == off, (
+                "an absent quality_gate and an explicit 'off' are the same "
+                f"state and must render identically:\n{absent!r}\n{off!r}")
+            assert code_absent == code_off, (
+                f"same state, different exit codes: {code_absent} vs {code_off}")
+
+            line = 'verify-gate: quality_gate = off'
+            hits = [l for l in off.splitlines() if l.startswith(
+                'verify-gate: quality_gate =')]
+            assert hits == [line], (
+                f"expected exactly one mode line {line!r}, got {hits}:\n{off}")
+
+            # Remove that one line: what is left must not mention the gate at
+            # all, which is what "computes nothing" looks like from outside.
+            rest = off.replace(line + '\n', '', 1)
+            assert 'quality' not in rest.lower(), (
+                "under 'off' the mode line is the whole of the difference; "
+                f"the rest of the output still mentions the gate:\n{rest}")
+
+            # And nothing is loaded: the checker module is never imported.
+            saved = sys.modules.pop('static_checks', None)
+            try:
+                buf = io.StringIO()
+                verify_gate.check(root, out=buf)
+                assert 'static_checks' not in sys.modules, (
+                    "under 'off' the gate imported the deterministic checker; "
+                    "the mode that computes nothing must load nothing")
+            finally:
+                if saved is not None:
+                    sys.modules['static_checks'] = saved
+
+            # A typo fails closed in every remote mode, and never passes.
+            for mode in ('required', 'optional', 'off'):
+                _write_quality_config(root, mode, 'determinstic')
+                code, out = _run(root)
+                assert code == 2, (
+                    f"remote mode {mode!r}: a misspelled quality_gate must "
+                    f"exit 2, got {code}:\n{out}")
+                assert 'PASS' not in out, (
+                    f"remote mode {mode!r}: a gate that cannot read its own "
+                    f"declaration must not print a PASS:\n{out}")
+                for token in ('determinstic', 'off', 'deterministic'):
+                    assert token in out, (
+                        f"the error must name {token!r} so the typo is "
+                        f"fixable:\n{out}")
+        finally:
+            shutil.rmtree(root)
+
+
+class TestDeterministicQualityGate:
+
+    @pytest.mark.proof("verify_gate", "PROOF-15", "RULE-15", tier="integration")
+    def test_hollow_fails_unmeasurable_never_does_and_the_verdicts_are_independent(
+            self):
+        root = _quality_project(remote='off', quality='deterministic')
+        try:
+            code, out = _run(root)
+            assert code == 1, (
+                f"a HOLLOW proof must fail the declared quality gate, got "
+                f"{code}:\n{out}")
+            assert ('Quality gate (deterministic): 1 HOLLOW, 0 UNPROVABLE, '
+                    '1 unmeasurable') in out, (
+                f"the section header must count all three:\n{out}")
+            assert ('locking: PROOF-1 HOLLOW (assert_true) '
+                    'tests/test_lock.py::test_fcntl') in out, (
+                f"the hollow line must name the feature, the proof, the check "
+                f"and the test the verdict came from:\n{out}")
+            assert ('locking: PROOF-3 unmeasurable (tests/lock_spec.rb: no '
+                    'deterministic checker for .rb)') in out, (
+                f"the unmeasurable line must name the file and why:\n{out}")
+            assert 'never fails the gate' in out, (
+                f"the section must say what an unmeasurable proof costs:\n{out}")
+            assert "quality_gate 'deterministic'" in out, (
+                f"the verdict must name the declaration it failed:\n{out}")
+
+            # Fix the tautology: the same unmeasurable proof is still listed
+            # and the gate now passes, so it provably never failed it. The
+            # verdict also moved on an edit to the test source, which is what
+            # "recomputed, never read from a cache" means from outside.
+            _write_hollow(root, hollow=False)
+            code, out = _run(root)
+            assert code == 0, (
+                f"with the tautology gone the gate must pass, got {code}:\n{out}")
+            assert '0 HOLLOW' in out and '1 unmeasurable' in out, out
+            assert 'tests/lock_spec.rb' in out, (
+                f"the unmeasurable proof must still be reported:\n{out}")
+
+            # Independence. Both gates failing prints both lines.
+            _write_hollow(root, hollow=True)
+            _write_quality_config(root, 'required', 'deterministic')
+            code, both = _run(root)
+            assert code == 1, both
+            assert "remote_verification 'required'" in both and \
+                   "quality_gate 'deterministic'" in both, (
+                f"both verdicts hold, so both FAIL lines must print:\n{both}")
+
+            # And the remote FAIL line is the same line the gate printed before
+            # the quality gate existed: the quality mode does not reword it.
+            _write_hollow(root, hollow=False)
+            _, quality_on = _run(root)
+            _write_quality_config(root, 'required', 'off')
+            _, quality_off = _run(root)
+
+            def _remote_fail_line(text):
+                return next(l for l in text.splitlines()
+                            if l.startswith('verify-gate: FAIL.'))
+            assert _remote_fail_line(quality_on) == \
+                _remote_fail_line(quality_off), (
+                "the remote FAIL line must be byte-identical whether or not "
+                "the quality gate is declared")
+
+            # Fail closed on a checker that cannot be loaded, and on a sweep
+            # that raises. Both are "the gate could not run the check it
+            # declared", which is a 2 and never a 0.
+            _write_quality_config(root, 'off', 'deterministic')
+            real = verify_gate._load_static_checks()
+            assert real is not None and callable(
+                getattr(real, 'deterministic_sweep', None)), (
+                "the real loader must return a module carrying the sweep, or "
+                "the substitutions below stand in for nothing")
+
+            saved = verify_gate._load_static_checks
+            try:
+                verify_gate._load_static_checks = lambda: None
+                buf = io.StringIO()
+                assert verify_gate.check(root, out=buf) == 2, (
+                    f"an unloadable checker must exit 2:\n{buf.getvalue()}")
+                assert 'scripts/audit/static_checks.py' in buf.getvalue(), (
+                    f"the exit must name the module:\n{buf.getvalue()}")
+
+                class _Raises:
+                    @staticmethod
+                    def deterministic_sweep(project_root):
+                        raise RuntimeError('unreadable proof file')
+
+                verify_gate._load_static_checks = lambda: _Raises
+                buf = io.StringIO()
+                assert verify_gate.check(root, out=buf) == 2, (
+                    f"a sweep that raises must exit 2:\n{buf.getvalue()}")
+                text = buf.getvalue()
+                assert 'scripts/audit/static_checks.py' in text and \
+                    'unreadable proof file' in text, (
+                    f"the exit must name the module and the failure:\n{text}")
+                assert not [l for l in text.splitlines()
+                            if l.startswith('verify-gate: PASS')], text
+            finally:
+                verify_gate._load_static_checks = saved
+        finally:
+            shutil.rmtree(root)
+
+
+class TestQualityGateDeclarationVersusEnforcement:
+
+    @pytest.mark.proof("verify_gate", "PROOF-16", "RULE-16", tier="integration")
+    def test_output_header_and_the_gate_count_all_hold(self):
+        root = _quality_project(remote='off', quality='deterministic')
+        try:
+            _, out = _run(root)
+            flat = ' '.join(out.split())
+            for phrase in (
+                    'quality_gate is DECLARED in .purlin/config.json',
+                    'It is not the enforcement.',
+                    'Enforcement is branch protection marking this job a '
+                    'required check.'):
+                assert phrase in flat, (
+                    f"the output does not carry {phrase!r}:\n{out}")
+
+            header = ' '.join(open(GATE_PY).read().split('"""')[1].split())
+            assert '`quality_gate` field DECLARES' in header, (
+                "the source header does not carry '`quality_gate` field "
+                "DECLARES'")
+
+            for claim in ('quality_gate enforces',
+                          'quality_gate is the enforcement',
+                          'config.json enforces'):
+                assert claim not in flat, (
+                    f"the output describes the config field as the gate: "
+                    f"{claim!r}")
+                assert claim not in header, (
+                    f"the source header describes the config field as the "
+                    f"gate: {claim!r}")
+
+            # The framework still has one gate. This mode is project policy
+            # layered on it, the same relation remote_verification has.
+            gates = open(os.path.join(ROOT, 'references',
+                                      'hard_gates.md')).read()
+            headings = re.findall(r'(?m)^## Gate \d.*$', gates)
+            assert len(headings) == 1, (
+                f"references/hard_gates.md must carry exactly one gate "
+                f"heading; got {headings}")
+            not_gate = gates.split('What Is NOT a Gate', 1)
+            assert len(not_gate) == 2, (
+                "references/hard_gates.md has no 'What Is NOT a Gate' list")
+            # The list itself: `quality_gate` is named in later sections too,
+            # so an unbounded split would pass on any of them.
+            listing = re.split(r'(?m)^## ', not_gate[1])[0]
+            assert 'quality_gate' in listing, (
+                "the opt-in mode must be named in the list where a reader "
+                "counts gates, not only in a later section")
+        finally:
+            shutil.rmtree(root)
+
+
+class TestQualityGateNeverWrites:
+
+    @pytest.mark.proof("verify_gate", "PROOF-17", "RULE-17", tier="integration")
+    def test_a_deterministic_run_leaves_the_tree_and_writes_no_cache(self):
+        root = _quality_project(remote='off', quality='deterministic')
+        try:
+            def snapshot():
+                entries = {}
+                for dirpath, dirnames, filenames in os.walk(root):
+                    if '.git' in dirnames:
+                        dirnames.remove('.git')
+                    for fn in filenames:
+                        full = os.path.join(dirpath, fn)
+                        st = os.stat(full)
+                        entries[os.path.relpath(full, root)] = (
+                            st.st_size, st.st_mtime_ns)
+                head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=root,
+                                      capture_output=True, text=True).stdout
+                porcelain = subprocess.run(
+                    ['git', 'status', '--porcelain'], cwd=root,
+                    capture_output=True, text=True).stdout
+                return entries, head, porcelain
+
+            before = snapshot()
+            code, out = _run(root)
+            after = snapshot()
+
+            # The run did work: an unchanged tree after a no-op proves nothing.
+            assert 'Quality gate (deterministic): 1 HOLLOW' in out, (
+                f"the sweep must have graded this project:\n{out}")
+            assert code == 1, out
+
+            assert before[0] == after[0], (
+                "the quality gate changed the tree.\n"
+                f"added/changed: "
+                f"{set(after[0].items()) - set(before[0].items())}\n"
+                f"removed: {set(before[0]) - set(after[0])}")
+            assert before[1:] == after[1:], (
+                f"HEAD or the working tree state moved: {before[1:]} -> "
+                f"{after[1:]}")
+            assert not os.path.exists(os.path.join(root, '.purlin', 'cache')), (
+                "a deterministic run created .purlin/cache/; the gate grades "
+                "the evidence and must not write beside it")
+        finally:
+            shutil.rmtree(root)
