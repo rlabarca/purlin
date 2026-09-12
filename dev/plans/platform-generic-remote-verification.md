@@ -2565,34 +2565,56 @@ Finalized at the end of Phase 11. Items marked `[x]` are closed and kept for the
       token ever migrates out of the migration docs entirely, at which point the rule can simply
       forbid it.
 - [ ] Anything a subagent reports as "deferred" during execution (appended as it happens).
-- [ ] (closeout, deferred by item B7) `proof_plugins_xunit` RULE-1 claims an NUnit `[Category]`
+- [x] (closed by closeout V5 on 2026-09-12: RULE-1 narrowed to the `PurlinProof` trait the logger reads, PROOF-1 asserts a `Category` trait and a lower-case name are ignored; NUnit is not in the local NuGet cache and no network restore was allowed, so nothing new was implemented) (closeout, deferred by item B7) `proof_plugins_xunit` RULE-1 claims an NUnit `[Category]`
       attribute is an equivalent marker; `scripts/proof/xunit_purlin.cs` matches only the trait
       named `PurlinProof`, so the claim cannot hold without a plugin change (NUnit `[Property]` and
       MSTest `[TestProperty]` would work; neither package is in the local NuGet cache). Rule text
       is stale; left unedited and unproved.
-- [ ] (closeout, deferred by item B2) `static_checks.write_audit_cache` leaves its `.tmp` file
+- [x] (closed by closeout V3 on 2026-09-12: RULE-43 / PROOF-70, the failed rename unlinks its `.tmp` and re-raises; PROOF-12 restated to what its test asserts) (closeout, deferred by item B2) `static_checks.write_audit_cache` leaves its `.tmp` file
       behind when `os.replace` raises; PROOF-12 asserts only that the durable file is intact. A
       cleanup is a code change with its own rule.
-- [ ] (closeout, deferred by item M) init coverage gaps left open: `--sync-audit-criteria`,
+- [x] (partly closed by closeout V7 on 2026-09-12: `remote_verification: required` with nothing remote is `verify_gate` RULE-13 / PROOF-13 (exit 0 with a named line); the single-step flags are `skill_init` RULE-74 / PROOF-77 (`--test-framework` now keeps the recorded value under `--force`); still open: `--sync-audit-criteria`, `--audit-llm` and the Step 6 confirmation block, see the V7 line below) (closeout, deferred by item M) init coverage gaps left open: `--sync-audit-criteria`,
       `--audit-llm` and the `audit_criteria*` fields (need a cloning script of their own); the
       single-step flag contract for `--pre-push`, `--report`, `--digest`, `--mutation-checks`
       (agent-driven, no script surface); the Step 6 confirmation block; `remote_verification:
       required` with no `platforms` registered (belongs to `verify_gate`). The coverage matrix is
       summarized in `dev/plans/todo-closeout.md` DONE - M.
-- [x] (closed by item B17: RULE-16 and RULE-18 re-homed to `skill_spec` RULE-11 / RULE-12 with PROOF-12 / PROOF-13; the rest of this line stays open) (closeout, deferred by item B14) `skill_spec_from_code`: RULE-16 and RULE-18 look mis-homed
+- [x] (closed by item B17: RULE-16 and RULE-18 re-homed to `skill_spec` RULE-11 / RULE-12 with PROOF-12 / PROOF-13; the rest closed by closeout V6 on 2026-09-12: RULE-13 restated as one rule per PRD constraint with PROOF-22 rebuilt, PROOF-33/36/38 rebuilt from tautologies at `@e2e` to derived-output checks at `@unit`, PROOF-5 to PROOF-8 given greps, the duplicate PROOF-5 marker that tested RULE-9 deleted) (closeout, deferred by item B14) `skill_spec_from_code`: RULE-16 and RULE-18 look mis-homed
       from `purlin:spec` (the spec-from-code skill forbids `(assumed)` tags outright and never reads
       customer feedback); RULE-13's "at least 5 rules" contradicts RULE-28; PROOF-33/36/38 are
       proved from `dev/test_e2e_ui_extraction.py`; PROOF-5 to PROOF-8 have no test anywhere.
-- [ ] (closeout, found by the Group 1 and 2 sweep) The proof plugins' emission order is not stable
+- [x] (closed by closeout V2 on 2026-09-12: `proof_common` RULE-21 / PROOF-27, every writer sorts by (id, test_file, test_name) ordinally; the first sorted sweep rewrote 49 files at `487ba3ff` and the next sweep left the tree clean) (closeout, found by the Group 1 and 2 sweep) The proof plugins' emission order is not stable
       across runs: a full sweep at `0c637993` reordered 14 proof files with every record byte-identical
       (committed as `d85d370b`). A stable sort in each writer (by id, test_file, test_name) would end
       the churn; it is a `proof_common` rule with a per-plugin proof.
-- [ ] (closeout, found by item K) `dev/test_e2e_figma_web.py:88` passes `--agents` a file path;
+- [x] (closed by closeout V4 on 2026-09-12: both suites build the command through `dev/e2e_claude_cli.py`, `figma_web` RULE-16 / PROOF-16 at `@unit` in the swept `dev/test_claude_cli_helper.py`) (closeout, found by item K) `dev/test_e2e_figma_web.py:88` passes `--agents` a file path;
       claude CLI 2.1.269 rejects that and wants JSON (fixed in `dev/test_e2e_build_agent.py` by item
       K). Fix it before the figma-mcp witness run.
 - [ ] (closeout, decision 19) `skill_spec` and `skill_build`'s claude-cli witness: one approved run
       failed on test defects, now fixed; the user deferred the second run. Command in
       `dev/plans/todo-closeout.md` DONE - K.
+- [ ] (closeout V2, 2026-09-12) `proof_common` RULE-11's relative-path existence check is a no-op for
+      `xunit_purlin.cs`: the logger runs inside the .NET test host, whose working directory is the test
+      output folder, so a kept entry whose `test_file` exists only relative to the project root is reaped.
+      The logger already knows `_root` and could resolve against it. PROOF-27's xunit arm records the
+      consequence (it runs without the seeded kept entry).
+- [ ] (closeout V4, 2026-09-12) the two gated claude suites still hardcode `--model sonnet` and
+      `--max-turns 50` at each call site; give `dev/e2e_claude_cli.py` defaults once a suite needs to differ.
+- [ ] (closeout V5, 2026-09-12) three historical mentions still promise NUnit or MSTest for the xunit
+      plugin: `RELEASE_NOTES.md` (the 0.9.x entry saying `[Category]` / `[TestProperty]` "surface the same
+      way"), `scripts/proof/xunit_purlin.cs` and `specs/_anchors/proof_common.md` RULE-20's text naming
+      NUnit/MSTest `Ignore` reasons as skip-reason sources. Decide whether to reword them or leave them as
+      the record of what was claimed.
+- [ ] (closeout V6, 2026-09-12) two claimants per proof id, which the taxonomy plan's Traps call the
+      defect: `dev/test_e2e_spec_from_input.py` re-claims every `skill_spec_from_code` id that
+      `dev/test_e2e_spec_migration.py` proves (PROOF-19 to 24, 26, 28 to 31; only PROOF-31's "advisory
+      disappears when both tags go" leg is unique to it), and `dev/test_e2e_ui_extraction.py` re-claims
+      PROOF-1/2/3/4/34/39/40 already proved in `dev/test_skill_specs.py`. Fold the unique leg into the
+      migration suite, delete the duplicates.
+- [ ] (closeout V7, 2026-09-12) `purlin:init --sync-audit-criteria` and `--audit-llm` still hand-edit the
+      config: no scaffolder flag, because each means deciding the value shape it writes (`audit_criteria`
+      is synced from an external source, `audit_llm` is an object), which is not a single-field re-answer.
+      The Step 6 confirmation block is likewise unproved.
 - [ ] (dashboard session, 2026-09-12, deferred by the user after a cost/value pass) retire the
       `optional` remote-verification mode: config becomes `required | off`, `optional` rewritten to
       `off` under the `config-fields-missing` migration in `scripts/update/migrate.py`, verify_gate
@@ -2600,7 +2622,7 @@ Finalized at the end of Phase 11. Items marked `[x]` are closed and kept for the
       `drift_criteria.md`, `references/remote_verification.md`'s mode table, the installation guide
       and the four test files with mode loops. The remote chip now reads the data (report_data
       RULE-44), so the config word matters less; judge after it has been used.
-- [ ] (closeout, found by the final sweep) `purlin_version` PROOF-9 always skips inside
+- [x] (closed by closeout V1 on 2026-09-12: the sweep writes `.purlin/runtime/last_sweep.json`, RULE-9 / PROOF-9 read it, the counts line was checked inside both closeout sweeps) (closeout, found by the final sweep) `purlin_version` PROOF-9 always skips inside
       `dev/run_tests.sh` now: the shell suites write the run marker before the pytest pool runs (item
       L), and RULE-9 compares only against a `dev/run_tests.sh` marker (item L2), so during a sweep
       the marker on disk is `shell_purlin`'s and the counts line is checked by nobody but a person.

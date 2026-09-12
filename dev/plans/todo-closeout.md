@@ -679,6 +679,89 @@ Each item gets its section filled in as it lands, in the same commit as the item
   `533ddf32` docs); one of them broke two AST proofs and was fixed by that session on request;
   every sweep-plus-receipt window was held exclusively by this session (decision 20).
 
+## DONE - Closeout V1 to V7: the small fixes (2026-09-12, second closeout session)
+
+Seven items from the parent plan's open "(closeout, ...)" lines, worked from `89847a91` by a controller
+with one Opus subagent per item: V1 in the main tree, V2 to V7 in six parallel worktrees on `fix/<item>`,
+cherry-picked in order with both co-author lines kept. No push, no merge of `main`, `VERSION` 0.10.0, no
+tag, no Proof Integrity run (decision 16), no agent run (K stays deferred), no figma run.
+
+- **Baseline** at `89847a91`: 892 passed, 7 skipped, 15 suites; marker 906 / 0 / 7, `sweep`
+  `dev/run_tests.sh`, `ok` true; 46 receipts, 43 at `092c582e`; `migrate.py --check` exit 0 with only
+  `receipt-v1`; `verify_gate.py --check` exit 0 with seven awaiting. The one deviation: `.purlin/report-data.js`
+  went dirty between the controller's first status check and the baseline agent's, because the plugin's
+  async `refresh_digest.py` hook runs in this session and the committed digest was stale (from `12b7f03d`);
+  this clone has no pre-commit hook installed in `.git/hooks`, so only the async hook refreshes it. Treated
+  as a known exception all session and committed once at the close.
+- **V1** `09b72531` (main tree): `dev/run_tests.sh`'s EXIT trap also writes `.purlin/runtime/last_sweep.json`
+  (at, commit, passed, failed, skipped, ok, suites), whole and never merged; `purlin_version` RULE-9 / PROOF-9
+  read it and skip only when it is absent. Two test functions carry PROOF-9 (the writer lifted out of the
+  script with `sed` and driven against a temp repo; the notes comparison). Mutations: the second write
+  removed fails naming `last_sweep.json`; the notes bumped to 907 against a seeded 906 fail naming both.
+  The post-V1 sweep found `proof_common` PROOF-25's sweep case split on the old heredoc opener
+  (`IndexError`); fixed in `b0052e0a`, the case now hands the writer both paths and asserts the second file
+  (mutation: the write replaced by `pass` fails with `FileNotFoundError` naming it).
+- **Seeding protocol, used twice.** Before each sweep the counts line was set to the predicted marker and
+  `last_sweep.json` seeded to match, so PROOF-9 compares inside the sweep instead of skipping; the trap then
+  overwrote the seed with the real record. Both predictions held exactly.
+- **V2** `0ca9a950` as `5f401e2a`: `proof_common` RULE-21 / PROOF-27, every writer (all eight plugins, the
+  four `.purlin/plugins/` copies and the consumer-ci fixture copy re-`cp`'d) sorts its records by
+  (id, test_file, test_name) under ordinal comparison after the merge; `proofs_format.md` gained one
+  sentence, no version bump. PROOF-27 is one case per plugin in a new class at the end of
+  `dev/test_multilang_proof_plugins.py` (+7; the vitest arm ran here because node 25 strips types) plus one
+  shell proof (+1). Mutations: pytest, shell and jest sorts removed each fail "wrote different bytes".
+  Recorded: the xunit arm runs without the seeded kept entry because the .NET test host's cwd defeats
+  RULE-11's existence check (TODO appended to the parent plan). The first sorted sweep at `200acdbc` rewrote
+  49 proof files, every record set unchanged (checked per file), committed as `487ba3ff`; the next sweep left
+  the tree clean, which is the rule's real check.
+- **V3** `ed2f5436` as `94e42cdf`: `static_checks` RULE-43 / PROOF-70, a failed `os.replace` in
+  `write_audit_cache` unlinks its `.tmp` and re-raises; PROOF-12 restated to what its test asserts (+1).
+  Mutation: the unlink dropped fails naming `['audit_cache.json.tmp']`.
+- **V4** `723ed251` as `c6267377`: both gated claude suites build their command through the new
+  `dev/e2e_claude_cli.py` (`agents_json`, `claude_command`), so `--agents` carries the JSON object and the
+  figma suite no longer passes a path; `figma_web` RULE-16 / PROOF-16 at `@unit` with no `@on`, in the new
+  swept `dev/test_claude_cli_helper.py` (+3, one line in `dev/run_tests.sh`), `dev/e2e_claude_cli.py` added to
+  figma_web's Scope. Neither gated suite was run. Mutations: the path passed again fails naming `--agents`
+  in the helper and in the figma suite.
+- **V5** `e387b425` as `3fed05d0`: the NuGet cache holds only xunit packages and no network restore was
+  allowed, so `proof_plugins_xunit` RULE-1 was narrowed to the `PurlinProof` trait the logger reads
+  (ordinal; `Category`, `Property`, `TestProperty` and other casings ignored, NUnit and MSTest not claimed);
+  PROOF-1 extended with a `Category` trait and a `purlinproof` trait that must not be collected (+0
+  functions, the fixture grew); the `.cs` header comment, `docs/testing-workflow-guide.md` and
+  `proofs_format.md` say the same. Mutations: case-insensitive matching and `Category` collection each
+  fail naming the collected id.
+- **V6** `762d2a98` as `31ea2617`: `skill_spec_from_code` RULE-13 restated as one RULE-N per testable PRD
+  constraint (no fixed count, agreeing with RULE-28) with PROOF-22 rebuilt to assert one rule per
+  constraint from the dashboard payload and one rule fewer when two constraints merge; PROOF-33/36/38 were
+  tautologies at a false `@e2e` and now assert derived output at `@unit` (entries moved between proof
+  files); PROOF-5 to PROOF-8 got step-scoped greps (STRUCTURAL, honestly); the duplicate marker at
+  `dev/test_skill_specs.py` that carried PROOF-5 while testing RULE-9 was deleted (PROOF-9's one claimant is
+  `dev/test_e2e_ui_extraction.py`). +3 functions, eight mutations in the commit body. Spec: 11 PROVABLE,
+  32 STRUCTURAL, zero LOOSE or UNPROVABLE.
+- **V7** `0e17bbfa` as `8558f9ce` and `4cbc4c10` as `df2649f8`: `verify_gate` RULE-13 / PROOF-13, a
+  `required` declaration with nothing remote (the payload's `platform_testing` false) prints a line naming
+  it and exits 0, not 2, because the reference blesses an empty registry, exit 2 would redden a build no
+  proof failed, and PROOF-3's `required` run expects exit 1 there (+1); `skill_init` RULE-74 / PROOF-77, a
+  lone `--force --<flag>` rewrites exactly one config key and keeps every other byte, which required
+  `--test-framework` to keep the recorded value when absent (it defaulted to `auto` and rewrote
+  `test_framework` too); `skills/init/SKILL.md` Step 2 gains the single-step re-answers block (+1).
+  Mutations: the two prints dropped fail "did not name the empty registry"; the default back to `auto`
+  fails "changed ['pre_push', 'test_framework']"; the plugin keep-branch dropped fails naming the copied
+  path.
+- **Sweeps and receipts.** `200acdbc`: 910 passed, 6 skipped, 15 suites, marker 924 / 0 / 6, equal to the
+  seeded prediction and the counts line. `487ba3ff`: the same counts, tree clean. Receipts `222554f6`
+  (features=38/41 anchors=5/5 vhash=0fc72767; the combined hash is over all 46 receipts on disk, which is
+  what reproduces `71217fe1` at the previous close). Skipped: consumer_ci (PROOF-3's manual stamp stale
+  since the fixture's plugin copy changed; re-run the dry run and re-stamp after the push), figma_web and
+  skill_spec (no environment witness). Design: every new or amended description graded PROVABLE under
+  `--check-proof-design` before its commit, except V6's four prose greps which are STRUCTURAL by design.
+  Integrity: not measured (decision 16).
+- **Checks at the close.** `migrate.py --check` exit 0, `receipt-v1` pending for skill_spec and figma_web
+  only; `verify_gate.py --check` exit 0, seven awaiting (skill_audit PROOF-23 to 26 on gemini-cli,
+  skill_build PROOF-17 to 19 on claude-cli); `bump_version.sh --check` exit 0, `VERSION` 0.10.0, no tag;
+  `git ls-files .purlin/cache .purlin/runtime` empty; the six worktrees and `fix/*` branches removed after
+  their picks landed. Not pushed (decision 18).
+
 ## Verification checklist
 
 - `export PATH="$PWD/.venv/bin:$PATH"`; `PYTHONDONTWRITEBYTECODE=1 bash dev/run_tests.sh` green in
@@ -724,7 +807,7 @@ What the machine that picks up `dev/plans/ado-runner-provider.md` will find:
 
 - **Branch:** `two-gauges-remote-verification`, pushed to `origin`. `git fetch && git checkout
   two-gauges-remote-verification` is the whole handoff. `main` is still neither merged nor pushed.
-- **HEAD after this session: the closing docs commit directly above the final `verify:` commit `f20abccf`** (`git log --oneline -2` shows both). Do not assume `5f6b0cb8`. The branch is NOT pushed (decision 18): push it
+- **HEAD after the second closeout session: the closing docs commit directly above the `verify:` commit `222554f6`** (`git log --oneline -2` shows both; the first session closed at `f20abccf`). Do not assume `5f6b0cb8`. The branch is NOT pushed (decision 18): push it
   first, from this machine, before the work machine fetches.
 - **Two open items, both deliberate.** `figma_web` (15 proofs, `@on(figma-mcp)`) has no witness:
   this machine has no Figma MCP server. On a host that has one, run
