@@ -129,6 +129,15 @@
     },
     {
       "feature": "skill_init",
+      "id": "PROOF-51",
+      "rule": "RULE-48",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_registry_covers_every_shipped_plugin",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
       "id": "PROOF-52",
       "rule": "RULE-49",
       "test_file": "dev/test_init_update.py",
@@ -192,10 +201,19 @@
     },
     {
       "feature": "skill_init",
-      "id": "PROOF-51",
-      "rule": "RULE-48",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_registry_covers_every_shipped_plugin",
+      "id": "PROOF-75",
+      "rule": "RULE-72",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_nothing_pending_means_nothing_written",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-76",
+      "rule": "RULE-73",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_absent_platform_id_flag_stamps_the_os_family",
       "status": "pass",
       "tier": "integration"
     }

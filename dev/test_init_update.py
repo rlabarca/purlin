@@ -473,3 +473,147 @@ class TestIssuerRefusesWhileLegacyPending:
             assert [name for name, _v, _a in issued] == ['demo'], (issued, skipped)
         finally:
             shutil.rmtree(root, ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------
+# skill_init RULE-72: an up-to-date project is told so and left alone
+# ---------------------------------------------------------------------------
+
+# A spec with nothing legacy about it: the proof line carries `@unit`, which is
+# a tier, so the detector has no `@windows` tag to report.
+CURRENT_SPEC = '''# Feature: demo
+
+> Scope: src/demo.py
+> Description: A feature with one already migrated proof.
+
+## Rules
+
+- RULE-1: does the thing on the platform
+
+## Proof
+
+- PROOF-1 (RULE-1): Call it and assert the thing @unit
+'''
+
+
+def _make_current_project():
+    """A temp project that was never migrated and has nothing pending.
+
+    Built field by field rather than by running `--apply` over a legacy
+    project, because "already migrated once" is RULE-54's case (PROOF-57) and
+    this one is the project that never needed a migration at all.
+    """
+    root = tempfile.mkdtemp()
+    os.makedirs(os.path.join(root, '.purlin', 'plugins'))
+
+    # The template verbatim, with only `version` stamped, so no field is
+    # missing and no version gap exists.
+    config = dict(ps._template_config())
+    config['version'] = ps._read_version()
+    _write(root, '.purlin/config.json', json.dumps(config, indent=2) + '\n')
+
+    _write(root, 'specs/demo/demo.md', CURRENT_SPEC)
+    # Tier in the filename, not a platform: not a legacy proof file.
+    _write(root, 'specs/demo/demo.proofs-unit.json', json.dumps({
+        'tier': 'unit',
+        'proofs': [{'feature': 'demo', 'id': 'PROOF-1', 'rule': 'RULE-1',
+                    'test_file': 'tests/test_demo.py',
+                    'test_name': 'test_thing', 'status': 'pass',
+                    'tier': 'unit'}],
+    }, indent=2) + '\n')
+
+    # A modern marker, and a plugin copy with no drift.
+    _write(root, 'tests/test_demo.py',
+           'import pytest\n\n\n'
+           '@pytest.mark.proof("demo", "PROOF-1", "RULE-1")\n'
+           'def test_thing():\n    assert 1\n')
+    shutil.copyfile(os.path.join(ROOT, 'scripts', 'proof', 'pytest_purlin.py'),
+                    os.path.join(root, '.purlin', 'plugins',
+                                 'pytest_purlin.py'))
+
+    # No receipt at all and no `.mcp.json`: the two directive migrations have
+    # nothing to report either, so `pending` must come back completely empty.
+    _git(root, 'init', '-q')
+    for key, value in (('user.email', 't@e'), ('user.name', 't')):
+        _git(root, 'config', key, value)
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-q', '-m', 'current project')
+    return root
+
+
+class TestUpToDateProject:
+
+    @pytest.mark.proof("skill_init", "PROOF-75", "RULE-72", tier="integration")
+    def test_nothing_pending_means_nothing_written(self):
+        """RULE-72: an update that rewrites a clean project cannot be trusted."""
+        root = _make_current_project()
+        try:
+            code, out, err = _run(root, '--check')
+            assert code == 0, f'a current project must exit 0: {out} {err}'
+            assert json.loads(out)['pending'] == [], out
+
+            before = _tree_hashes(root)
+            code, out, err = _run(root, '--apply', *SCRIPTED_IDS)
+            assert code == 0, err
+            assert out.strip() == 'nothing to do', out
+
+            after = _tree_hashes(root)
+            assert set(after) == set(before), (
+                'apply added or removed a path on a clean project: '
+                f'{sorted(set(after) ^ set(before))}')
+            changed = [rel for rel in before if after[rel] != before[rel]]
+            assert changed == [], f'apply rewrote {changed} on a clean project'
+            assert _git(root, 'status', '--porcelain').stdout.strip() == ''
+
+            # The skill's own stopping point for the same state.
+            with open(os.path.join(ROOT, 'skills', 'init', 'SKILL.md'),
+                      encoding='utf-8') as f:
+                skill = f.read()
+            assert ('If `pending` is empty, print\n'
+                    '`Project is up to date with Purlin <VERSION>.` and stop.'
+                    ) in skill, 'SKILL.md no longer stops on an empty pending list'
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------
+# skill_init RULE-73: --platform-id defaults to the OS family id
+# ---------------------------------------------------------------------------
+
+class TestPlatformIdDefault:
+
+    @pytest.mark.proof("skill_init", "PROOF-76", "RULE-73", tier="integration")
+    def test_absent_platform_id_flag_stamps_the_os_family(self):
+        """RULE-73: no flag means the OS family id, never a runner label."""
+        root = _make_legacy_project(with_mcp=False)
+        try:
+            # No --platform-id anywhere on the command line.
+            code, _out, err = _run(root, '--apply', 'legacy-tier-windows',
+                                   'legacy-proof-file', 'legacy-marker')
+            assert code == 0, err
+
+            spec = _read(root, 'specs/demo/demo.md')
+            assert f'@unit @on({WIN})' in spec, spec
+            assert not spec.rstrip().endswith(f'@{WIN}'), spec
+
+            new_rel = f'specs/demo/demo.proofs-unit@{WIN}.json'
+            assert os.path.exists(os.path.join(root, new_rel)), new_rel
+            assert not os.path.exists(
+                os.path.join(root, f'specs/demo/demo.proofs-{WIN}.json'))
+            with open(os.path.join(root, new_rel)) as f:
+                payload = json.load(f)
+            assert payload['tier'] == 'unit', payload
+            assert payload['platform'] == WIN, payload
+            for entry in payload['proofs']:
+                assert entry['platform'] == WIN, entry
+                assert entry['tier'] == 'unit', entry
+
+            marker = _read(root, 'tests/test_demo.py')
+            assert f'tier="unit", platforms=("{WIN}",)' in marker, marker
+
+            # The documented default, read off the parser itself.
+            help_out = subprocess.run([sys.executable, MIGRATE, '--help'],
+                                      capture_output=True, text=True).stdout
+            assert f'default: {WIN}' in help_out, help_out
+        finally:
+            shutil.rmtree(root, ignore_errors=True)

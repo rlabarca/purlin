@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Tests for init_e2e — 33 proofs covering 31 rules.
+# Tests for init_e2e: 34 proofs covering 32 rules on a host with node.
+# PROOF-22 and PROOF-34 need node; with no node they are skipped and emit
+# nothing, so a node-less host records 32 (see the skip branches below).
 # Verifies that purlin:init's output works with ALL downstream Purlin tools.
 set -euo pipefail
 
@@ -34,6 +36,7 @@ trap cleanup_all EXIT
 
 PASS=0
 FAIL=0
+SKIPPED=0
 
 # ==========================================================================
 # Helper: run the real purlin:init scaffolder
@@ -608,9 +611,23 @@ if (proof.proofs[0].feature !== 'weather' || proof.proofs[0].status !== 'pass') 
     FAIL=$((FAIL + 1))
   fi
 else
-  echo "  SKIP: node not available"
-  purlin_proof "skill_init" "PROOF-22" "RULE-22" pass "jest reporter (skipped — node not available)"
-  PASS=$((PASS + 1))
+  # No node on this host, so PROOF-22 did not execute. Emit NOTHING: per
+  # proof_common RULE-13 a status records execution, never availability, and a
+  # "pass" here would record green evidence for a test that never ran (a "fail"
+  # would be just as dishonest, reporting a missing tool as a broken build).
+  #
+  # What the harness then does to the committed PROOF-22 entry, from
+  # scripts/proof/shell_purlin.sh lines 149-154: the kept filter keeps an
+  # existing skill_init entry only when its test_file was NOT executed in this
+  # run. dev/test_init_e2e.sh IS in run_files (its other proofs emitted), so the
+  # committed PROOF-22 entry is reaped from specs/skills/skill_init.proofs-e2e.json
+  # on a node-less host. It is NOT held: RULE-18 holds a skipped test's entry
+  # only for plugins that can observe a skip, and its last clause names shell as
+  # exempt (a script that does not call the marker cannot be told apart from one
+  # that skipped). The entry returns the next time the suite runs on a host with
+  # node. Losing the entry is the honest outcome; keeping a stale "pass" is not.
+  echo "  SKIP: node not available (PROOF-22 not executed, no proof entry written)"
+  SKIPPED=$((SKIPPED + 1))
 fi
 
 # ==========================================================================
@@ -1049,9 +1066,14 @@ r.onRunComplete();
     FAIL=$((FAIL + 1))
   fi
 else
-  echo "  SKIP: node not available"
-  purlin_proof "skill_init" "PROOF-34" "RULE-32" pass "Jest lifecycle (skipped — node not available)"
-  PASS=$((PASS + 1))
+  # Same contract as the PROOF-22 skip above: no node, so PROOF-34 did not
+  # execute and nothing is emitted for it (proof_common RULE-13). The committed
+  # PROOF-34 entry in specs/skills/skill_init.proofs-e2e.json is reaped by the
+  # kept filter in scripts/proof/shell_purlin.sh lines 149-154, because this
+  # test file ran; shell is exempt from the RULE-18 hold, so the entry returns
+  # only when a host with node next runs the suite.
+  echo "  SKIP: node not available (PROOF-34 not executed, no proof entry written)"
+  SKIPPED=$((SKIPPED + 1))
 fi
 
 # ==========================================================================
@@ -1156,6 +1178,17 @@ else
 fi
 
 # PROOF-47: Verify timestamp and git_sha in digest
+#
+# PROOF-47 and PROOF-48 depend on PROOF-46 having produced the digest. Their
+# else branches below write status "fail", and that is honest and stays: this is
+# not an unavailable-prerequisite guard (nothing here asks whether a tool is
+# installed), it is a dependent assertion whose input the suite itself failed to
+# produce. The digest is missing because the code under test did not write it,
+# so "the test ran and its assertion could not hold" is exactly what happened,
+# and proof_common RULE-13 forbids only a status that reports availability. The
+# repo-wide scanner in dev/test_proof_plugins_missing.py (proof_common PROOF-17)
+# flags a `fail` only under an `if ! command -v` style guard, and deliberately
+# not under a branch like this one.
 p47_ok=false
 if $p46_ok; then
   p47_result=$(python3 -c "
@@ -1241,5 +1274,5 @@ cd "$PROJECT_ROOT"
 purlin_proof_finish
 
 echo ""
-echo "init_e2e: $PASS passed, $FAIL failed (33 proofs recorded)"
+echo "init_e2e: $PASS passed, $FAIL failed, $SKIPPED skipped (no proof entry written for a skipped test)"
 [[ $FAIL -eq 0 ]]
