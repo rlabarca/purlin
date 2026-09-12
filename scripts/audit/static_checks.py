@@ -163,13 +163,6 @@ def _python_parse(path, content):
     return result
 
 
-def _get_python_proofs_and_functions(source, feature_name):
-    """Parse Python file, return list of (proof_id, rule_id, test_name, func_node)."""
-    entries, _lines = _python_proof_functions(source)
-    return [(pid, rid, name, node)
-            for feature, pid, rid, name, node in entries if feature == feature_name]
-
-
 def _has_assertion(node):
     """Check if a function body contains any assertion statement."""
     for child in ast.walk(node):

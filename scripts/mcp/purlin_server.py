@@ -2335,13 +2335,6 @@ _MIGRATION_ORDER = ('legacy-tier-windows', 'legacy-proof-file', 'legacy-marker',
                     'plugin-copies-stale', 'config-fields-missing',
                     'receipt-v1', 'legacy-mcp')
 
-# The five ids `scripts/update/migrate.py --apply` rewrites. The other two are
-# directives, not rewrites: a receipt is a claim that tests ran, so only
-# purlin:verify may issue one, and the MCP entry is purlin:init --mcp's step.
-_SCRIPTED_MIGRATIONS = frozenset({'legacy-tier-windows', 'legacy-proof-file',
-                                  'legacy-marker', 'plugin-copies-stale',
-                                  'config-fields-missing'})
-
 # Config fields the update asks about rather than backfilling from the
 # template. A default that costs the user time and tokens is a decision, not a
 # default (skill_init RULE-52), so it is never written on their behalf.
