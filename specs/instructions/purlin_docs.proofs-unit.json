@@ -15,7 +15,16 @@
       "id": "PROOF-2",
       "rule": "RULE-1",
       "test_file": "dev/test_purlin_docs.py",
-      "test_name": "test_bare_windows_tag_appears_only_as_a_documented_legacy_alias",
+      "test_name": "test_bare_windows_token_only_in_the_nine_listed_sections",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_docs",
+      "id": "PROOF-12",
+      "rule": "RULE-1",
+      "test_file": "dev/test_purlin_docs.py",
+      "test_name": "test_windows_token_in_an_unrelated_legacy_paragraph_is_rejected",
       "status": "pass",
       "tier": "unit"
     },

@@ -37,6 +37,87 @@ def _prose_files():
     return [f for f in files if not f.endswith('.skill')]
 
 
+WINDOWS_TOKEN = re.compile(r'@windows(?![-\w.])')
+
+# RULE-1's closed list: the only (file, section) pairs where the bare
+# `@windows` token may appear. A section is the nearest preceding markdown
+# heading, normalised by _norm_heading (any dash folded to `-`, whitespace
+# collapsed), so `Step 5d - Update` here is skills/init/SKILL.md's
+# `## Step 5d — Update`.
+WINDOWS_TOKEN_SECTIONS = (
+    ('docs/installation-guide.md', 'Upgrading the plugin'),
+    ('docs/testing-workflow-guide.md', 'What `purlin:test` does per platform'),
+    ('references/audit_criteria.md', 'LOOSE'),
+    ('references/formats/proofs_format.md', 'File Naming'),
+    ('references/formats/spec_format.md', 'Platform tags'),
+    ('references/spec_quality_guide.md', 'Tier Assignment'),
+    ('skills/init/SKILL.md', 'Usage'),
+    ('skills/init/SKILL.md', 'Step 5d - Update'),
+    ('skills/verify/SKILL.md', 'Pre-check: pending migrations'),
+)
+
+
+def _norm_heading(text):
+    text = text.replace('—', '-').replace('–', '-')
+    return re.sub(r'\s+', ' ', text).strip()
+
+
+def _sectioned_paragraphs(text):
+    """Yield (paragraph, nearest preceding heading) for one markdown file.
+
+    Paragraphs are blank-line delimited. Lines inside a fenced block are never
+    read as headings, so a `# comment` in a shell example cannot be mistaken
+    for a section.
+    """
+    section = None
+    fenced = False
+    para = []
+    para_section = None
+    for line in text.splitlines():
+        if re.match(r'^\s{0,3}(```|~~~)', line):
+            fenced = not fenced
+        elif not fenced:
+            heading = re.match(r'^\s{0,3}#{1,6}\s+(.*\S)\s*$', line)
+            if heading:
+                section = _norm_heading(heading.group(1))
+        if line.strip():
+            if not para:
+                para_section = section
+            para.append(line)
+        elif para:
+            yield '\n'.join(para), para_section
+            para = []
+            para_section = None
+    if para:
+        yield '\n'.join(para), para_section
+
+
+def _windows_token_paragraphs(root, files):
+    """Every paragraph carrying a bare `@windows` token, read under `root`.
+
+    Returns (rel, section, paragraph) triples. `root` is a parameter so the
+    same check runs against a temp copy of a doc file.
+    """
+    hits = []
+    for rel in files:
+        try:
+            with open(os.path.join(root, rel), encoding='utf-8') as f:
+                text = f.read()
+        except (UnicodeDecodeError, IsADirectoryError, FileNotFoundError):
+            continue
+        for para, section in _sectioned_paragraphs(text):
+            if WINDOWS_TOKEN.search(para):
+                hits.append((rel, section, para))
+    return hits
+
+
+def _windows_token_offenders(root, files):
+    """The (rel, section, paragraph) triples outside RULE-1's closed list."""
+    allowed = set(WINDOWS_TOKEN_SECTIONS)
+    return [hit for hit in _windows_token_paragraphs(root, files)
+            if (hit[0], hit[1]) not in allowed]
+
+
 def _yaml_blocks(text):
     return re.findall(r'^```ya?ml\n(.*?)^```', text, re.MULTILINE | re.DOTALL)
 
@@ -74,30 +155,62 @@ class TestForbiddenPromises:
             f"empty tree, so it proves nothing")
 
     @pytest.mark.proof("purlin_docs", "PROOF-2", "RULE-1")
-    def test_bare_windows_tag_appears_only_as_a_documented_legacy_alias(self):
-        token = re.compile(r'@windows(?![-\w.])')
-        found = 0
-        offenders = []
-        for rel in _prose_files():
-            try:
-                text = _read(rel)
-            except (UnicodeDecodeError, IsADirectoryError):
-                continue
-            for para in re.split(r'\n[ \t]*\n', text):
-                if not token.search(para):
-                    continue
-                found += 1
-                if 'legacy' in para.lower() or '@unit @on(' in para:
-                    continue
-                offenders.append(f"{rel}: {para.strip()[:160]}")
+    def test_bare_windows_token_only_in_the_nine_listed_sections(self):
+        hits = _windows_token_paragraphs(PROJECT_ROOT, _prose_files())
+        allowed = set(WINDOWS_TOKEN_SECTIONS)
+        offenders = [f"{rel}: section {section!r}: {para.strip()[:160]}"
+                     for rel, section, para in hits
+                     if (rel, section) not in allowed]
         assert not offenders, (
-            "`@windows` is a platform, never a tier. Each occurrence must sit "
-            "in a paragraph naming it as legacy or showing the `@unit @on(...)`"
-            " rewrite:\n" + "\n".join(offenders))
-        assert found >= 3, (
-            f"only {found} occurrences scanned; the migration path is "
-            f"documented in more places than that, so the scan is not reading "
-            f"what it thinks it is")
+            "`@windows` is a platform, never a tier. The bare token may "
+            "appear only in the sections RULE-1 lists; the word `legacy` "
+            "nearby does not exempt a paragraph:\n" + "\n".join(offenders))
+        covered = {(rel, section) for rel, section, _ in hits}
+        stale = [pair for pair in WINDOWS_TOKEN_SECTIONS
+                 if pair not in covered]
+        assert not stale, (
+            "these sections are exempted by RULE-1 but no longer carry a "
+            f"`@windows` occurrence, so the exemption is stale: {stale}")
+        assert len(hits) >= len(WINDOWS_TOKEN_SECTIONS) >= 9, (
+            f"scanned {len(hits)} paragraphs over "
+            f"{len(WINDOWS_TOKEN_SECTIONS)} listed sections; the migration is "
+            f"documented in nine sections, so the scan is not reading what it "
+            f"thinks it is")
+
+    @pytest.mark.proof("purlin_docs", "PROOF-12", "RULE-1")
+    def test_windows_token_in_an_unrelated_legacy_paragraph_is_rejected(
+            self, tmp_path):
+        rel = 'docs/installation-guide.md'
+        unrelated = 'Prerequisites'
+        assert (rel, unrelated) not in set(WINDOWS_TOKEN_SECTIONS), (
+            f"{unrelated!r} must be outside the closed list for this case to "
+            f"discriminate")
+        heading = f"## {unrelated}\n"
+        text = _read(rel)
+        assert heading in text, f"{rel} no longer has a {heading!r} section"
+        injected = text.replace(
+            heading,
+            heading + "\nA legacy install may still carry @windows here.\n",
+            1)
+        dest = tmp_path / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(injected, encoding='utf-8')
+
+        offenders = _windows_token_offenders(str(tmp_path), [rel])
+        rejected = [o for o in offenders if o[0] == rel and o[1] == unrelated]
+        assert len(rejected) == 1, (
+            f"the injected paragraph under {unrelated!r} must be rejected by "
+            f"file and section; offenders were {offenders}")
+        opara = rejected[0][2]
+        assert 'legacy' in opara.lower() and WINDOWS_TOKEN.search(opara), (
+            "the rejected paragraph must be the one carrying both `legacy` "
+            "and the bare token, proving the word alone does not exempt it")
+        exempt = [o for o in offenders if o[1] == 'Upgrading the plugin']
+        assert not exempt, (
+            f"the listed section of the same file must stay exempt: {exempt}")
+        assert _windows_token_offenders(PROJECT_ROOT, [rel]) == [], (
+            f"the committed {rel} must pass the same check, so the failure "
+            f"above is the injection and not the file")
 
 
 class TestVhashHonesty:
