@@ -4408,3 +4408,122 @@ class TestOneLogPerBaseSha:
             scope = self.SCOPES[name]
             assert purlin_server._scope_commits_since(
                 self.project_root, [scope], c0) == self._by_hand(scope, c0), name
+
+
+class TestOneWalkOfSpecs:
+    """sync_status RULE-70: one walk of specs/ answers every spec, receipt and
+    proof-file path lookup."""
+
+    def setup_method(self):
+        self.project_root = os.path.realpath(tempfile.mkdtemp())
+        os.makedirs(os.path.join(self.project_root, '.purlin', 'runtime'))
+        with open(os.path.join(self.project_root, '.purlin', 'config.json'), 'w') as f:
+            json.dump({'version': '0.9.0', 'test_framework': 'auto',
+                       'spec_dir': 'specs', 'report': False}, f)
+        self._git('init')
+        self._git('config', 'user.email', 'test@test.com')
+        self._git('config', 'user.name', 'Test')
+
+    def teardown_method(self):
+        shutil.rmtree(self.project_root, ignore_errors=True)
+
+    def _git(self, *args):
+        return subprocess.run(['git'] + list(args), cwd=self.project_root,
+                              capture_output=True, text=True, check=True)
+
+    def _write(self, rel, text):
+        path = os.path.join(self.project_root, rel)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w') as f:
+            f.write(text)
+
+    def _commit(self, message):
+        self._git('add', '-A')
+        self._git('commit', '-m', message)
+
+    def _spec(self, rules):
+        body = ''.join(f'- RULE-{n}: the login rule {n}\n'
+                       for n in range(1, rules + 1))
+        proof = ''.join(f'- PROOF-{n} (RULE-{n}): call login; verify answer {n} '
+                        f'comes back @unit\n' for n in range(1, rules + 1))
+        self._write('specs/auth/login.md',
+                    '# Feature: login\n\n'
+                    '> Scope: src/app.py\n\n'
+                    f'## Rules\n{body}\n'
+                    f'## Proof\n{proof}')
+        self._write('specs/auth/login.proofs-unit.json', json.dumps({
+            'tier': 'unit',
+            'proofs': [{'feature': 'login', 'id': f'PROOF-{n}',
+                        'rule': f'RULE-{n}', 'test_file': 'dev/test_login.py',
+                        'test_name': f'test_login_{n}', 'status': 'pass',
+                        'tier': 'unit'} for n in range(1, rules + 1)],
+        }, indent=2) + '\n')
+
+    def _receipt_everything(self):
+        sys.path.insert(0, os.path.dirname(__file__))
+        import issue_receipts
+        self._write('.purlin/runtime/test_run.json', json.dumps({
+            'at': '2026-09-12T00:00:00+00:00',
+            'commit': self._git('rev-parse', 'HEAD').stdout.strip(),
+            'sweep': 'dev/run_tests.sh', 'suites': ['All Pytest Tests'],
+            'test_files': ['dev/test_login.py'],
+            'passed': 1, 'failed': 0, 'skipped': 0, 'ok': True,
+        }))
+        issued, skipped = issue_receipts.main(self.project_root, quiet=True)
+        assert [n for n, _, _ in issued] == ['login'], (issued, skipped)
+
+    def _move_receipt(self, from_rel, to_rel):
+        src = os.path.join(self.project_root, from_rel)
+        dst = os.path.join(self.project_root, to_rel)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.move(src, dst)
+        self._commit(f'chore: move the receipt to {to_rel}')
+
+    @pytest.mark.proof("sync_status", "PROOF-109", "RULE-70", tier="integration")
+    def test_no_reader_globs_the_spec_tree_and_the_receipt_reads_the_same_anywhere(self):
+        self._write('src/app.py', 'v1\n')
+        self._spec(1)
+        self._commit('feat: login, its proof and its code')
+        self._receipt_everything()
+        self._commit('verify: receipt login')
+
+        patterns = []
+        real_glob = purlin_server.glob.glob
+
+        def spy(pattern, *rest, **kwargs):
+            patterns.append(pattern)
+            return real_glob(pattern, *rest, **kwargs)
+
+        purlin_server.glob.glob = spy
+        try:
+            nested = _feature_block(
+                purlin_server.sync_status(self.project_root), 'login')
+        finally:
+            purlin_server.glob.glob = real_glob
+
+        spec_dir = os.path.join(self.project_root, 'specs')
+        strayed = [p for p in patterns if p.startswith(spec_dir)]
+        assert strayed == [], (
+            f"a reader still globs the spec tree: {strayed}")
+        assert not [p for p in patterns if '**' in p], (
+            f"a recursive glob survived the walk: {patterns}")
+        assert 'VERIFIED' in nested, nested
+
+        # The same receipt, read from specs/ instead of specs/auth/.
+        self._move_receipt('specs/auth/login.receipt.json',
+                           'specs/login.receipt.json')
+        at_root = _feature_block(
+            purlin_server.sync_status(self.project_root), 'login')
+        assert at_root == nested, (at_root, nested)
+
+        # And a stale one: a second rule moves the vhash the receipt bound.
+        self._spec(2)
+        self._commit('feat: a second login rule and its proof')
+        stale_at_root = _feature_block(
+            purlin_server.sync_status(self.project_root), 'login')
+        assert 'Receipt stale' in stale_at_root, stale_at_root
+        self._move_receipt('specs/login.receipt.json',
+                           'specs/auth/login.receipt.json')
+        stale_nested = _feature_block(
+            purlin_server.sync_status(self.project_root), 'login')
+        assert stale_nested == stale_at_root, (stale_nested, stale_at_root)

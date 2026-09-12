@@ -163,6 +163,88 @@ def _parse_description(content):
     return result if result else None
 
 
+# One walk of `specs/` per report run, keyed by project root, held as
+# (index, stamp). `_clear_run_caches()` empties it on entry to each build.
+_SPEC_INDEX_CACHE = {}
+
+
+def _spec_tree_stamp(dirs):
+    """`((dir, mtime_ns), ...)` for the directories one walk of `specs/` saw.
+
+    What makes the index reusable without a second walk. A directory's mtime
+    moves when a file in it is created, deleted or renamed, which is exactly
+    when a path index goes wrong; editing a spec's contents moves the file's
+    mtime and not the directory's, and the index holds no contents. A
+    directory created since the walk moves its parent's mtime, so a subtree
+    that did not exist cannot hide. A few stats per call is what lets every
+    reader share one walk without any of them having to know which caller is
+    the outermost.
+    """
+    stamp = []
+    for path in dirs:
+        try:
+            stamp.append((path, os.stat(path).st_mtime_ns))
+        except OSError:
+            stamp.append((path, None))
+    return tuple(stamp)
+
+
+def _spec_index(project_root):
+    """Every path under `specs/` a report asks for, from one `os.walk`.
+
+    `{'spec_files': [path, ...], 'spec_dirs': {feature: dir},
+    'receipts': {feature: [path, ...]}, 'proof_files': [path, ...]}`.
+
+    Five readers used to glob `specs/**` for themselves, and `_read_receipt`
+    and `_read_proofs` did it once per feature: 138 recursive globs of the same
+    tree per report on this repository, every one of them walking every
+    directory again to answer a question the walk before it had already
+    answered. The walk here is the only one, and every reader indexes into it.
+
+    The order is glob's order, because the readers depend on it: `_read_proofs`
+    keeps the last spec of a duplicated feature name and `_read_receipt` reads
+    the first receipt it can parse. `os.walk` top down visits directories in
+    the same scandir order that `**` does, hidden names are skipped the way
+    glob skips them, and symlinked directories are followed the way
+    `glob(recursive=True)` follows them.
+
+    The walk is reused only while every directory it saw still carries the
+    mtime it had (`_spec_tree_stamp`), so a caller that adds or removes a spec
+    between two reads gets the tree it just wrote without having to know that
+    a cache exists.
+    """
+    key = os.path.abspath(project_root)
+    spec_dir = os.path.join(project_root, 'specs')
+    cached = _SPEC_INDEX_CACHE.get(key)
+    if cached is not None:
+        index, stamp = cached
+        if _spec_tree_stamp(d for d, _mtime in stamp) == stamp:
+            return index
+
+    index = {'spec_files': [], 'spec_dirs': {}, 'receipts': {},
+             'proof_files': []}
+    walked = [spec_dir]
+    if os.path.isdir(spec_dir):
+        walked = []
+        for root, dirs, files in os.walk(spec_dir, followlinks=True):
+            walked.append(root)
+            dirs[:] = [d for d in dirs if not d.startswith('.')]
+            for name in files:
+                if name.startswith('.'):
+                    continue
+                path = os.path.join(root, name)
+                if name.endswith('.receipt.json'):
+                    stem = name[:-len('.receipt.json')]
+                    index['receipts'].setdefault(stem, []).append(path)
+                elif name.endswith('.md'):
+                    index['spec_files'].append(path)
+                    index['spec_dirs'][os.path.splitext(name)[0]] = root
+                elif name.endswith('.json') and '.proofs-' in name:
+                    index['proof_files'].append(path)
+    _SPEC_INDEX_CACHE[key] = (index, _spec_tree_stamp(walked))
+    return index
+
+
 def _scan_specs(project_root):
     """Scan all specs and return a dict of feature -> spec info."""
     spec_dir = os.path.join(project_root, 'specs')
@@ -170,7 +252,7 @@ def _scan_specs(project_root):
         return {}
 
     features = {}
-    for spec_path in glob.glob(os.path.join(spec_dir, '**', '*.md'), recursive=True):
+    for spec_path in _spec_index(project_root)['spec_files']:
         # Skip proof files and non-spec files
         basename = os.path.basename(spec_path)
         if basename.startswith('.'):
@@ -383,16 +465,15 @@ def _read_proofs(project_root, legacy=None):
     if not os.path.isdir(spec_dir):
         return {}
 
-    # Build spec directory map: feature_name -> directory containing its .md
-    spec_dirs = {}
-    for spec_path in glob.glob(os.path.join(spec_dir, '**', '*.md'), recursive=True):
-        stem = os.path.splitext(os.path.basename(spec_path))[0]
-        spec_dirs[stem] = os.path.dirname(spec_path)
+    # Which directory holds each feature's .md, and every proof file, from the
+    # one walk of specs/ this run makes (RULE-70).
+    index = _spec_index(project_root)
+    spec_dirs = index['spec_dirs']
 
     # Collect all proof files, grouped by (feature_stem, tier, platform)
     proof_files = {}  # (feature_stem, tier, platform) -> [paths]
     legacy_keys = set()
-    for proof_path in glob.glob(os.path.join(spec_dir, '**', '*.proofs-*.json'), recursive=True):
+    for proof_path in index['proof_files']:
         parts = _proof_file_parts(os.path.basename(proof_path))
         if parts is None:
             continue
@@ -1447,6 +1528,7 @@ def _clear_run_caches():
     _PROVENANCE_CACHE.clear()
     _SCOPE_LOG_CACHE.clear()
     _SCOPE_COUNT_CACHE.clear()
+    _SPEC_INDEX_CACHE.clear()
 
 
 def _platform_provenance(project_root, spec_path, feature, tier, platform_id):
@@ -2387,7 +2469,7 @@ def _read_receipt(project_root, feature_name):
     spec_dir = os.path.join(project_root, 'specs')
     if not os.path.isdir(spec_dir):
         return None
-    for path in glob.glob(os.path.join(spec_dir, '**', f'{feature_name}.receipt.json'), recursive=True):
+    for path in _spec_index(project_root)['receipts'].get(feature_name, []):
         try:
             with open(path, 'r') as f:
                 return json.load(f)
@@ -2599,8 +2681,8 @@ def _v1_receipts(project_root):
     if not os.path.isdir(spec_dir):
         return []
     found = []
-    for path in sorted(glob.glob(os.path.join(spec_dir, '**', '*.receipt.json'),
-                                 recursive=True)):
+    index = _spec_index(project_root)
+    for path in sorted(p for paths in index['receipts'].values() for p in paths):
         try:
             with open(path) as f:
                 receipt = json.load(f)
@@ -5455,6 +5537,7 @@ def _compute_drift(project_root, since=None, network=True):
 
 def drift(project_root, since=None):
     """Generate structured drift data as JSON."""
+    _clear_run_caches()
     result = _compute_drift(project_root, since)
     return json.dumps(result, separators=(',', ':'))
 
