@@ -452,8 +452,25 @@ Each item gets its section filled in as it lands, in the same commit as the item
 
 ## DONE - H: MCP hot-reload gated and logged
 
-_Placeholder. Record: the `PURLIN_DEV_RELOAD=1` gate; what stderr carries on a failed reload; that
-the request is still answered; and the mutation._
+- Commit `934932a9` on `closeout/H`, cherry-picked onto the spine after T2 (the last item of the
+  group to touch `scripts/mcp/purlin_server.py`). `main()` reads `PURLIN_DEV_RELOAD` once before the
+  stdin loop; the reload block runs only when it equals `1` (unset or any other value: no `getmtime`,
+  no reload, no message). A failed reload prints `Purlin MCP: reload failed` and the traceback to
+  stderr and keeps answering with the already loaded module; stdout stays JSON-RPC only (RULE-7).
+- **A defect the proof exposed.** The old block called `importlib.reload(sys.modules['__main__'])`,
+  which always raises `ModuleNotFoundError: spec not found for the module '__main__'` when the server
+  runs as a script, which is how the plugin launches it; the hot-reload had never once succeeded and
+  `except Exception: pass` hid it. The reload now loads by path (`importlib.util.spec_from_file_location`
+  plus `exec_module`), which is what makes the success case observable.
+- `mcp_transport` RULE-8 / PROOF-8 (`@integration`, new `mcp_transport.proofs-integration.json`,
+  3 entries in `dev/test_mcp_server.py`, 84 to 87 tests): the server driven as a subprocess over two
+  `initialize` requests against a COPY of the file: (a) env unset, source changed, no `reloaded` or
+  `reload failed` line, both answers unchanged; (b) `=1` with `def broken(:` appended, stderr carries
+  `reload failed`, `Traceback` and `SyntaxError`, the second answer is still the old module's; (c)
+  `=1` with a valid edit, `reloaded` and the second answer carries the new `serverInfo.version`.
+  D1: 8 PROVABLE. Mutations: the traceback print removed and `except Exception: pass` restored fails
+  (b) with `failed reload was swallowed`; the gate dropped fails (a) with `source changed with
+  PURLIN_DEV_RELOAD unset`.
 
 ## DONE - I: plugin pinning guidance
 
