@@ -13,43 +13,80 @@
  * Or use the docblock convention:
  *   // @proof current_weather PROOF-1 RULE-1
  *   it("fetches weather data", async () => { ... });
+ *
+ * Marker syntax in test titles:
+ *   [proof:feature:PROOF-N:RULE-N]                      tier "unit"
+ *   [proof:feature:PROOF-N:RULE-N:integration]          explicit tier
+ *   [proof:feature:PROOF-N:RULE-N:unit:on(windows-2022)] platforms declared
+ *   [proof:feature:PROOF-N:RULE-N:on(windows, macos)]   tier omitted, platforms declared
+ *
+ * A marker that declares on(...) writes its entry to
+ * <feature>.proofs-<tier>@<host>.json, where <host> is PURLIN_PLATFORM when set
+ * and otherwise the detected OS family (windows, macos, linux); every entry in
+ * that file carries an eighth field, "platform", equal to <host>. A marker with
+ * no on(...) writes the agnostic <feature>.proofs-<tier>.json with the seven
+ * standard fields, whatever PURLIN_PLATFORM says. The reporter never evaluates
+ * version constraints.
  */
 
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
 const { globSync } = require("glob");
+
+const PROOF_MARKER_RE =
+  /\[proof:(\w+):(PROOF-\d+):(RULE-\d+)(?::(\w+))?(?::on\(([^)]*)\))?\]/;
+
+const FAMILIES = { win32: "windows", darwin: "macos", linux: "linux" };
+
+// PURLIN_PLATFORM when set, else the OS family. The only place the reporter
+// looks at the host; nothing else in it branches on the operating system.
+function hostPlatform() {
+  const env = (process.env.PURLIN_PLATFORM || "").trim();
+  if (env) return env;
+  const sys = os.platform();
+  return FAMILIES[sys] || sys;
+}
+
+// Project-relative with "/" separators on every OS (proof_common RULE-15).
+function relativeTestFile(rootDir, filePath) {
+  return path.relative(rootDir, filePath).split(path.sep).join("/").replace(/\\/g, "/");
+}
 
 class PurlinProofReporter {
   constructor(globalConfig, reporterOptions) {
     this.globalConfig = globalConfig;
     this.options = reporterOptions || {};
-    this.proofs = {}; // keyed by `${feature}:${tier}`
+    this.proofs = {}; // keyed by `${feature}:${tier}:${platform}` (platform "" when agnostic)
   }
 
   onTestResult(test, testResult) {
     const rootDir = this.globalConfig.rootDir;
 
     for (const result of testResult.testResults) {
-      // Parse proof markers from test title: [proof:feature:PROOF-N:RULE-N:tier]
-      const match = result.title.match(
-        /\[proof:(\w+):(PROOF-\d+):(RULE-\d+)(?::(\w+))?\]/
-      );
+      // Parse proof markers from test title:
+      // [proof:feature:PROOF-N:RULE-N[:tier][:on(a, b)]]
+      const match = result.title.match(PROOF_MARKER_RE);
       if (!match) continue;
 
-      const [, feature, proofId, ruleId, tier = "unit"] = match;
-      const key = `${feature}:${tier}`;
+      const [, feature, proofId, ruleId, tier = "unit", onList] = match;
+      const declared = (onList || "").split(",").map((s) => s.trim()).filter(Boolean);
+      const platform = declared.length ? hostPlatform() : "";
+      const key = `${feature}:${tier}:${platform}`;
 
       if (!this.proofs[key]) this.proofs[key] = [];
 
-      this.proofs[key].push({
+      const entry = {
         feature,
         id: proofId,
         rule: ruleId,
-        test_file: path.relative(rootDir, testResult.testFilePath),
+        test_file: relativeTestFile(rootDir, testResult.testFilePath),
         test_name: result.title,
         status: result.status === "passed" ? "pass" : "fail",
         tier,
-      });
+      };
+      if (platform) entry.platform = platform;
+      this.proofs[key].push(entry);
     }
   }
 
@@ -65,13 +102,14 @@ class PurlinProofReporter {
     }
 
     for (const [key, newEntries] of Object.entries(this.proofs)) {
-      const [feature, tier] = key.split(":");
+      const [feature, tier, platform] = key.split(":");
+      const suffix = platform ? `${tier}@${platform}` : tier;
       let specDir = specDirs[feature];
       if (!specDir) {
-        process.stderr.write(`WARNING: No spec found for feature "${feature}" — writing proofs to specs/${feature}.proofs-${tier}.json. Create a spec with: purlin:spec ${feature}\n`);
+        process.stderr.write(`WARNING: No spec found for feature "${feature}" — writing proofs to specs/${feature}.proofs-${suffix}.json. Create a spec with: purlin:spec ${feature}\n`);
         specDir = "specs";
       }
-      const filePath = path.join(specDir, `${feature}.proofs-${tier}.json`);
+      const filePath = path.join(specDir, `${feature}.proofs-${suffix}.json`);
 
       // Load existing file
       let existing = [];
@@ -83,8 +121,9 @@ class PurlinProofReporter {
         }
       }
 
-      // Write-scoped overwrite keyed by (feature, tier, test_file), per proof_common
-      // RULE-4, plus orphan reaping of vanished test files (RULE-11).
+      // Write-scoped overwrite keyed by (feature, tier, platform, test_file), per
+      // proof_common RULE-4 (the file carries tier and platform, so within it the
+      // key is (feature, test_file)), plus orphan reaping of vanished test files (RULE-11).
       const runFiles = new Set(newEntries.map((e) => e.test_file));
       const kept = existing.filter(
         (e) =>
@@ -94,13 +133,13 @@ class PurlinProofReporter {
             fs.existsSync(e.test_file))
       );
 
+      const payload = platform
+        ? { tier, platform, proofs: [...kept, ...newEntries] }
+        : { tier, proofs: [...kept, ...newEntries] };
+
       // Atomic write: tmp + rename
       const tmpPath = filePath + ".tmp";
-      fs.writeFileSync(
-        tmpPath,
-        JSON.stringify({ tier, proofs: [...kept, ...newEntries] }, null, 2) +
-          "\n"
-      );
+      fs.writeFileSync(tmpPath, JSON.stringify(payload, null, 2) + "\n");
       fs.renameSync(tmpPath, filePath);
     }
   }

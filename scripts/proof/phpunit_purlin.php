@@ -8,6 +8,16 @@
  * Marker syntax in test files:
  *   /** @purlin feature_name PROOF-1 RULE-1 unit * /
  *   public function testValidLogin() { ... }
+ *   /** @purlin feature_name PROOF-2 RULE-2 unit on(windows-2022) * /
+ *   /** @purlin feature_name PROOF-3 RULE-3 on(windows, macos) * /   (tier omitted: unit)
+ *
+ * A marker that declares on(...) writes its entry to
+ * <feature>.proofs-<tier>@<host>.json, where <host> is PURLIN_PLATFORM when set
+ * and otherwise the detected OS family (windows, macos, linux); every entry in
+ * that file carries an eighth field, "platform", equal to <host>. A marker with
+ * no on(...) writes the agnostic <feature>.proofs-<tier>.json with the seven
+ * standard fields, whatever PURLIN_PLATFORM says. The collector never evaluates
+ * version constraints.
  *
  * Usage:
  *   php scripts/proof/phpunit_purlin.php <test_file>
@@ -19,26 +29,39 @@
 // When run standalone, parse a PHP test file and emit proof JSON to stdout.
 // The actual test execution happens via `php -r` — this script orchestrates.
 
+// PURLIN_PLATFORM when set, else the OS family. The only place the collector
+// looks at the host; nothing else in it branches on the operating system.
+function host_platform(): string {
+    $env = trim((string)getenv('PURLIN_PLATFORM'));
+    if ($env !== '') {
+        return $env;
+    }
+    $families = ['Windows' => 'windows', 'Darwin' => 'macos', 'Linux' => 'linux'];
+    return $families[PHP_OS_FAMILY] ?? strtolower(PHP_OS_FAMILY);
+}
+
 function parse_proof_markers(string $filepath): array {
     $content = file_get_contents($filepath);
     $markers = [];
 
     // Match @purlin docblock annotations
-    // Pattern: @purlin feature_name PROOF-N RULE-N [tier]
+    // Pattern: @purlin feature_name PROOF-N RULE-N [tier] [on(a, b)]
     preg_match_all(
-        '/@purlin\s+(\w+)\s+(PROOF-\d+)\s+(RULE-\d+)(?:\s+(\w+))?.*?\n\s*(?:public\s+)?function\s+(\w+)/s',
+        '/@purlin\s+(\w+)\s+(PROOF-\d+)\s+(RULE-\d+)(?:\s+(?!on\()(\w+))?(?:\s+on\(([^)]*)\))?.*?\n\s*(?:public\s+)?function\s+(\w+)/s',
         $content,
         $matches,
         PREG_SET_ORDER
     );
 
     foreach ($matches as $m) {
+        $declared = array_values(array_filter(array_map('trim', explode(',', $m[5] ?? ''))));
         $markers[] = [
             'feature' => $m[1],
             'id' => $m[2],
             'rule' => $m[3],
-            'tier' => $m[4] ?? 'unit',
-            'test_name' => $m[5],
+            'tier' => ($m[4] ?? '') !== '' ? $m[4] : 'unit',
+            'platform' => count($declared) ? host_platform() : '',
+            'test_name' => $m[6],
         ];
     }
 
@@ -80,14 +103,15 @@ function write_proofs(array $proofs_by_key, string $test_file): void {
     $spec_dirs = resolve_spec_dirs();
 
     foreach ($proofs_by_key as $key => $new_entries) {
-        [$feature, $tier] = explode(':', $key);
+        [$feature, $tier, $platform] = explode(':', $key);
+        $suffix = $platform !== '' ? "{$tier}@{$platform}" : $tier;
         $spec_dir = $spec_dirs[$feature] ?? null;
         if ($spec_dir === null) {
-            fwrite(STDERR, "WARNING: No spec found for feature \"{$feature}\" — writing proofs to specs/{$feature}.proofs-{$tier}.json. Create a spec with: purlin:spec {$feature}\n");
+            fwrite(STDERR, "WARNING: No spec found for feature \"{$feature}\" — writing proofs to specs/{$feature}.proofs-{$suffix}.json. Create a spec with: purlin:spec {$feature}\n");
             $spec_dir = 'specs';
         }
 
-        $path = "{$spec_dir}/{$feature}.proofs-{$tier}.json";
+        $path = "{$spec_dir}/{$feature}.proofs-{$suffix}.json";
 
         // Load existing
         $existing = [];
@@ -96,8 +120,9 @@ function write_proofs(array $proofs_by_key, string $test_file): void {
             $existing = $data['proofs'] ?? [];
         }
 
-        // Write-scoped overwrite keyed by (feature, tier, test_file), per proof_common
-        // RULE-4, plus orphan reaping of vanished test files (RULE-11).
+        // Write-scoped overwrite keyed by (feature, tier, platform, test_file), per
+        // proof_common RULE-4 (the file carries tier and platform, so within it the
+        // key is (feature, test_file)), plus orphan reaping of vanished test files (RULE-11).
         $run_files = [];
         foreach ($new_entries as $e) {
             $run_files[$e['test_file'] ?? ''] = true;
@@ -110,10 +135,16 @@ function write_proofs(array $proofs_by_key, string $test_file): void {
             return $tf !== '' && !isset($run_files[$tf]) && file_exists($tf);
         });
 
+        $payload = ['tier' => $tier];
+        if ($platform !== '') {
+            $payload['platform'] = $platform;
+        }
+        $payload['proofs'] = array_values(array_merge($kept, $new_entries));
+
         // Atomic write
         $tmp = $path . '.tmp';
         file_put_contents($tmp, json_encode(
-            ['tier' => $tier, 'proofs' => array_values(array_merge($kept, $new_entries))],
+            $payload,
             JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
         ) . "\n");
         rename($tmp, $path);
@@ -127,6 +158,9 @@ if (php_sapi_name() === 'cli' && isset($argv[1])) {
         fwrite(STDERR, "File not found: {$test_file}\n");
         exit(2);
     }
+    // Recorded with "/" separators on every OS (proof_common RULE-15); the
+    // path as given is still used to run the tests.
+    $recorded_file = str_replace('\\', '/', $test_file);
 
     $markers = parse_proof_markers($test_file);
     if (empty($markers)) {
@@ -137,16 +171,20 @@ if (php_sapi_name() === 'cli' && isset($argv[1])) {
     $proofs_by_key = [];
     foreach ($markers as $marker) {
         $passed = run_php_test($test_file, $marker['test_name']);
-        $key = $marker['feature'] . ':' . $marker['tier'];
-        $proofs_by_key[$key][] = [
+        $key = $marker['feature'] . ':' . $marker['tier'] . ':' . $marker['platform'];
+        $entry = [
             'feature' => $marker['feature'],
             'id' => $marker['id'],
             'rule' => $marker['rule'],
-            'test_file' => $test_file,
+            'test_file' => $recorded_file,
             'test_name' => $marker['test_name'],
             'status' => $passed ? 'pass' : 'fail',
             'tier' => $marker['tier'],
         ];
+        if ($marker['platform'] !== '') {
+            $entry['platform'] = $marker['platform'];
+        }
+        $proofs_by_key[$key][] = $entry;
     }
 
     write_proofs($proofs_by_key, $test_file);

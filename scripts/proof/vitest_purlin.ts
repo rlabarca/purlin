@@ -13,6 +13,16 @@
  * Marker syntax in test files:
  *   it("validates credentials [proof:auth_login:PROOF-1:RULE-1:unit]", () => { ... });
  *   it("validates credentials [proof:auth_login:PROOF-1:RULE-1]", () => { ... }); // tier defaults to "unit"
+ *   it("locks natively [proof:auth_login:PROOF-2:RULE-2:unit:on(windows-2022)]", () => { ... });
+ *   it("locks natively [proof:auth_login:PROOF-2:RULE-2:on(windows, macos)]", () => { ... }); // tier omitted
+ *
+ * A marker that declares on(...) writes its entry to
+ * <feature>.proofs-<tier>@<host>.json, where <host> is PURLIN_PLATFORM when set
+ * and otherwise the detected OS family (windows, macos, linux); every entry in
+ * that file carries an eighth field, "platform", equal to <host>. A marker with
+ * no on(...) writes the agnostic <feature>.proofs-<tier>.json with the seven
+ * standard fields, whatever PURLIN_PLATFORM says. The reporter never evaluates
+ * version constraints.
  *
  * Configuration in vitest.config.ts:
  *   import { defineConfig } from 'vitest/config';
@@ -24,6 +34,7 @@
  */
 
 import * as fs from "fs";
+import * as os from "os";
 import * as path from "path";
 import { globSync } from "glob";
 
@@ -35,6 +46,23 @@ interface ProofEntry {
   test_name: string;
   status: "pass" | "fail";
   tier: string;
+  platform?: string;
+}
+
+const FAMILIES: Record<string, string> = { win32: "windows", darwin: "macos", linux: "linux" };
+
+// PURLIN_PLATFORM when set, else the OS family. The only place the reporter
+// looks at the host; nothing else in it branches on the operating system.
+function hostPlatform(): string {
+  const env = (process.env.PURLIN_PLATFORM || "").trim();
+  if (env) return env;
+  const sys = os.platform();
+  return FAMILIES[sys] || sys;
+}
+
+// Project-relative with "/" separators on every OS (proof_common RULE-15).
+function relativeTestFile(rootDir: string, filePath: string): string {
+  return path.relative(rootDir, filePath).split(path.sep).join("/").replace(/\\/g, "/");
 }
 
 /**
@@ -57,7 +85,8 @@ interface Reporter {
   onFinished?: (files?: VitestTask[]) => void;
 }
 
-const PROOF_MARKER_RE = /\[proof:(\w+):(PROOF-\d+):(RULE-\d+)(?::(\w+))?\]/;
+const PROOF_MARKER_RE =
+  /\[proof:(\w+):(PROOF-\d+):(RULE-\d+)(?::(\w+))?(?::on\(([^)]*)\))?\]/;
 
 class PurlinVitestReporter implements Reporter {
   private proofs: Map<string, ProofEntry[]> = new Map();
@@ -99,8 +128,10 @@ class PurlinVitestReporter implements Reporter {
     const match = name.match(PROOF_MARKER_RE);
     if (!match) return;
 
-    const [, feature, proofId, ruleId, tier = "unit"] = match;
-    const key = `${feature}:${tier}`;
+    const [, feature, proofId, ruleId, tier = "unit", onList] = match;
+    const declared = (onList || "").split(",").map((s) => s.trim()).filter(Boolean);
+    const platform = declared.length ? hostPlatform() : "";
+    const key = `${feature}:${tier}:${platform}`;
 
     if (!this.proofs.has(key)) {
       this.proofs.set(key, []);
@@ -108,10 +139,10 @@ class PurlinVitestReporter implements Reporter {
 
     const filepath = file.filepath ?? file.file?.filepath;
     const testFile = filepath
-      ? path.relative(this.rootDir, filepath)
+      ? relativeTestFile(this.rootDir, filepath)
       : "unknown";
 
-    this.proofs.get(key)!.push({
+    const entry: ProofEntry = {
       feature,
       id: proofId,
       rule: ruleId,
@@ -119,7 +150,9 @@ class PurlinVitestReporter implements Reporter {
       test_name: name,
       status: state === "pass" ? "pass" : "fail",
       tier,
-    });
+    };
+    if (platform) entry.platform = platform;
+    this.proofs.get(key)!.push(entry);
   }
 
   private writeProofFiles(): void {
@@ -134,15 +167,16 @@ class PurlinVitestReporter implements Reporter {
     }
 
     for (const [key, newEntries] of this.proofs.entries()) {
-      const [feature, tier] = key.split(":");
+      const [feature, tier, platform] = key.split(":");
+      const suffix = platform ? `${tier}@${platform}` : tier;
       let specDir = specDirs[feature];
       if (!specDir) {
         process.stderr.write(
-          `WARNING: No spec found for feature "${feature}" — writing proofs to specs/${feature}.proofs-${tier}.json. Create a spec with: purlin:spec ${feature}\n`
+          `WARNING: No spec found for feature "${feature}" — writing proofs to specs/${feature}.proofs-${suffix}.json. Create a spec with: purlin:spec ${feature}\n`
         );
         specDir = "specs";
       }
-      const filePath = path.join(specDir, `${feature}.proofs-${tier}.json`);
+      const filePath = path.join(specDir, `${feature}.proofs-${suffix}.json`);
 
       // Load existing file
       let existing: ProofEntry[] = [];
@@ -155,8 +189,9 @@ class PurlinVitestReporter implements Reporter {
         }
       }
 
-      // Write-scoped overwrite keyed by (feature, tier, test_file), per proof_common
-      // RULE-4, plus orphan reaping of vanished test files (RULE-11).
+      // Write-scoped overwrite keyed by (feature, tier, platform, test_file), per
+      // proof_common RULE-4 (the file carries tier and platform, so within it the
+      // key is (feature, test_file)), plus orphan reaping of vanished test files (RULE-11).
       const runFiles = new Set(newEntries.map((e) => e.test_file));
       const kept = existing.filter(
         (e) =>
@@ -166,16 +201,13 @@ class PurlinVitestReporter implements Reporter {
             fs.existsSync(e.test_file))
       );
 
+      const payload = platform
+        ? { tier, platform, proofs: [...kept, ...newEntries] }
+        : { tier, proofs: [...kept, ...newEntries] };
+
       // Atomic write: tmp + rename
       const tmpPath = filePath + ".tmp";
-      fs.writeFileSync(
-        tmpPath,
-        JSON.stringify(
-          { tier, proofs: [...kept, ...newEntries] },
-          null,
-          2
-        ) + "\n"
-      );
+      fs.writeFileSync(tmpPath, JSON.stringify(payload, null, 2) + "\n");
       fs.renameSync(tmpPath, filePath);
     }
   }

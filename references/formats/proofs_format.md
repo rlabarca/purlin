@@ -1,4 +1,4 @@
-> Format-Version: 4
+> Format-Version: 5
 
 # Proof File Format
 
@@ -7,13 +7,25 @@ Proof files are JSON files emitted by test runners with proof markers. They live
 ## File Naming
 
 ```
-<feature>.proofs-<tier>.json
+<feature>.proofs-<tier>.json                  platform-agnostic
+<feature>.proofs-<tier>@<platform-id>.json    scoped to one platform
 ```
 
 Examples:
 - `specs/auth/login.proofs-unit.json`
 - `specs/auth/login.proofs-integration.json`
+- `specs/auth/login.proofs-unit@windows-2022.json`
 - `specs/webhooks/webhook_delivery.proofs-unit.json`
+
+A result lands in a scoped file when, and only when, its test marker declares platforms
+(see "Platform markers" under each framework below). The `<platform-id>` is the host's id:
+`PURLIN_PLATFORM` when set, otherwise the detected OS family (`windows`, `macos`, `linux`).
+It is `[a-z0-9][a-z0-9-]*`, the same charset as a spec's `@on(...)` tag; a file whose
+suffix is outside that charset is not read. The tier is `unit`, `integration` or `e2e`.
+
+Legacy: a `<feature>.proofs-windows.json` from Format-Version 4 is read for one release as
+`unit@windows`; `sync_status` prints an advisory naming the file and `purlin:init --update`,
+which renames it. `windows` is a platform, never a tier.
 
 ## Location
 
@@ -47,23 +59,50 @@ Proof files live in the same directory as their spec. The proof plugins resolve 
 }
 ```
 
+A scoped file carries `platform` at the top level and on every entry, equal to the id in
+its name and constant for the whole file:
+
+```json
+{
+  "tier": "unit",
+  "platform": "windows-2022",
+  "proofs": [
+    {
+      "feature": "login",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "test_file": "tests/test_login.py",
+      "test_name": "test_native_lock",
+      "status": "pass",
+      "tier": "unit",
+      "platform": "windows-2022"
+    }
+  ]
+}
+```
+
 ## Fields
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `tier` | string | Test tier: `"unit"`, `"integration"`, `"e2e"`, `"windows"` (platform-gated), etc. Freeform — a proof tagged `@<name>` lives in `<feature>.proofs-<name>.json`. |
+| `tier` | string | Test tier: `"unit"`, `"integration"` or `"e2e"`. A tier says what kind of test a proof is, never where it must run. |
+| `platform` | string | Scoped files only. The platform id from the filename, at the top level and on every entry; absent from an agnostic file and its entries. |
 | `proofs[].feature` | string | Feature name (matches spec filename stem) |
 | `proofs[].id` | string | Proof ID matching `## Proof` section: `PROOF-1`, `PROOF-2`, etc. |
 | `proofs[].rule` | string | Rule ID this proof covers: `RULE-1`, `RULE-2`, etc. |
-| `proofs[].test_file` | string | Relative path to the test file |
+| `proofs[].test_file` | string | Path to the test file relative to the project root, with `/` separators on every OS |
 | `proofs[].test_name` | string | Test function/case name |
 | `proofs[].status` | string | `"pass"` or `"fail"` |
 | `proofs[].tier` | string | Tier this proof belongs to |
+| `proofs[].platform` | string | Scoped files only; equals the top-level `platform` |
 
 ## Merge Behavior (Write-Scoped Overwrite)
 
-The merge key is `(feature, tier, test_file)`. The tier is carried by the filename, so within
-one tier file an entry is addressed by `(feature, test_file)`.
+The merge key is `(feature, tier, platform, test_file)`, with `platform` empty for an
+agnostic file. The tier and the platform are carried by the filename, so within one file an
+entry is addressed by `(feature, test_file)` and the merge within a file is unchanged from
+the three-part key `(feature, tier, test_file)` it grew from. A run that writes a scoped
+file never touches the agnostic file or another platform's file.
 
 When proof plugins write a proof file, they:
 
@@ -88,7 +127,7 @@ Scoping the overwrite per `(feature, tier)` alone means that whenever two test f
 the same feature at the same tier, whichever runs last erases the other's entries. That
 forces every writer for a `(feature, tier)` pair into a single process, which in turn makes
 it impossible to split a large suite across files, to run suites independently, or to prove
-a platform-gated tier on a remote runner and merge the result back.
+a platform-scoped proof on a remote runner and merge the result back.
 
 With `test_file` in the key, those writers coexist. They can run in any order, in separate
 processes, on separate machines.
@@ -101,8 +140,8 @@ A narrower key reaps less, so two rules bound what survives:
   as a gone path plus a new one: the old entry is dropped and the new is appended in the
   same write.
 - **A marker removed from a file that is not re-run is not reaped.** The entry stays until
-  that `(feature, tier)` is run again by something that executes the file. This is the
-  deliberate cost of per-file scoping, and it is asserted by a proof so it cannot change
+  that `(feature, tier, platform)` is run again by something that executes the file. This is
+  the deliberate cost of per-file scoping, and it is asserted by a proof so it cannot change
   silently.
 
 The existence check resolves `test_file` relative to the process's working directory, which
@@ -110,10 +149,25 @@ the plugins already require to be the repository root (they glob `specs/**/*.md`
 a plugin is run from elsewhere, every path fails the check and the merge degrades to the
 older feature-wide purge: narrower than intended, never wider.
 
-A platform-gated tier (e.g. `windows`, emitted only by a CI runner where those tests run, and
-skipped elsewhere) is never touched by a host run that skips those tests: a run only rewrites
-the tier files it actually collected proofs for. So a CI-committed `<feature>.proofs-windows.json`
-survives subsequent local runs and is read by `sync_status`/`purlin:verify` like any other tier.
+A proof the spec tags `@on(windows-2022)` is proved by a scoped file,
+`<feature>.proofs-unit@windows-2022.json`, written by the run whose `PURLIN_PLATFORM` was
+`windows-2022` (a runner sets it) from a marker that declares that platform. A local run on
+macOS with the same marker writes `<feature>.proofs-unit@macos.json` instead, which satisfies
+nothing the spec asked for and harms nothing either: a run only rewrites the files it actually
+collected proofs for, so the CI-committed `@windows-2022` file survives every local run and is
+read by `sync_status`/`purlin:verify` like any other proof file.
+
+### Runners
+
+There is one plugin per framework, everywhere. A runner executes the same plugin file the
+developer runs (this repository's `scripts/proof/*`, a consumer project's `.purlin/plugins/*`
+copies, byte-identical), and `PURLIN_PLATFORM` is the only per-runner input. The marker
+decides whether a result is scoped; the environment only names the file. Plugins never
+evaluate version constraints and never read the `platforms` registry: whether a host with a
+given id satisfies what a spec asked for is `sync_status`'s judgement, made from the file
+name. Nothing in a plugin branches on the host operating system except the family fallback
+inside its one host-platform helper, which is what makes a simulated Windows path on macOS
+not a Windows proof without a second code path.
 
 ### A skipped test writes nothing
 
@@ -123,9 +177,9 @@ is forbidden, because nothing downstream can then tell a broken build from a mis
 the merge key above, emitting nothing is safe: whatever a capable host last proved for those ids
 stays committed and untouched, so the skip neither falsifies nor destroys it.
 
-A proof the spec declares at a runner-gated tier with no entry in that tier's file is reported as
-`AWAITING RUNNER` rather than `NO PROOF`. It does not count against coverage and does not block a
-receipt; a receipt issued while one is outstanding records it as platform-partial.
+A proof the spec declares with `@on(...)` and no scoped result for a named platform is reported
+as `AWAITING RUNNER` rather than `NO PROOF`. It does not count against coverage and does not
+block a receipt; a receipt issued while one is outstanding records it as platform-partial.
 
 ## Proof Markers by Framework
 
@@ -139,7 +193,14 @@ def test_something():
 @pytest.mark.proof("feature_name", "PROOF-2", "RULE-2", tier="integration")
 def test_integration_thing():
     assert actual == expected
+
+@pytest.mark.proof("feature_name", "PROOF-3", "RULE-3", platforms=("windows-2022",))
+def test_platform_specific_thing():
+    assert actual == expected
 ```
+
+Platform markers: `platforms=(...)` takes a tuple of ids, or one id as a bare string. A
+marker with it writes the scoped file; a marker without it writes the agnostic file.
 
 Plugin: `scripts/proof/pytest_purlin.py` (scaffolded to `.purlin/plugins/pytest_purlin.py` by `purlin:init`).
 
@@ -153,7 +214,15 @@ it("does something [proof:feature_name:PROOF-1:RULE-1:unit]", () => {
 it("does integration thing [proof:feature_name:PROOF-2:RULE-2:integration]", () => {
   expect(actual).toBe(expected);
 });
+
+it("locks natively [proof:feature_name:PROOF-3:RULE-3:unit:on(windows-2022)]", () => {
+  expect(actual).toBe(expected);
+});
 ```
+
+Platform markers: `[proof:feature:PROOF-N:RULE-N[:tier][:on(a, b)]]`. The tier may be
+omitted while `on(...)` is present (`[proof:f:PROOF-3:RULE-3:on(windows)]` is tier `unit`).
+The reporter's pattern is `\[proof:(\w+):(PROOF-\d+):(RULE-\d+)(?::(\w+))?(?::on\(([^)]*)\))?\]`.
 
 Reporter: `scripts/proof/jest_purlin.js` (scaffolded to `.purlin/plugins/jest_purlin.js` by `purlin:init`).
 
@@ -164,8 +233,13 @@ source scripts/proof/shell_purlin.sh  # or .purlin/plugins/purlin-proof.sh
 
 purlin_proof "feature_name" "PROOF-1" "RULE-1" pass "test description"
 purlin_proof "feature_name" "PROOF-2" "RULE-2" fail "test description"
+PURLIN_PROOF_PLATFORMS="windows-2022" purlin_proof "feature_name" "PROOF-3" "RULE-3" pass "native lock"
 purlin_proof_finish  # writes proof files
 ```
+
+Platform markers: `PURLIN_PROOF_PLATFORMS`, a comma-separated list of ids, read at each
+`purlin_proof` call beside `PURLIN_PROOF_TIER`. Set it for one call (as above) or export it
+for a whole script.
 
 ### C
 
@@ -176,10 +250,17 @@ int main(void) {
     int result = add(2, 3);
     purlin_proof("feature_name", "PROOF-1", "RULE-1",
                  result == 5, "test_addition", __FILE__, "unit");
+    purlin_proof_on("feature_name", "PROOF-3", "RULE-3",
+                    locked, "test_native_lock", __FILE__, "unit", "windows-2022");
     purlin_proof_finish();  /* prints JSON to stdout */
     return 0;
 }
 ```
+
+Platform markers: `purlin_proof_on(feature, proof_id, rule_id, passed, name, file, tier,
+platforms)` with `platforms` a comma-separated string; `purlin_proof` is the same call with
+`NULL`. The header prints `"platforms": "a,b"` on each entry and the emitter does the host
+detection and the file naming.
 
 Compile and pipe: `gcc -o test test.c && ./test | python3 scripts/proof/c_purlin_emit.py`
 
@@ -194,7 +275,13 @@ function testValidLogin() {
     $result = login("alice", "secret");
     if ($result !== 200) throw new Exception("Expected 200");
 }
+
+/** @purlin feature_name PROOF-3 RULE-3 unit on(windows-2022) */
+function testNativeLock() { ... }
 ```
+
+Platform markers: `@purlin feature PROOF-N RULE-N [tier] [on(a, b)]`; the tier may be
+omitted while `on(...)` is present.
 
 Runner: `php scripts/proof/phpunit_purlin.php tests/AuthTest.php`
 
@@ -209,7 +296,14 @@ INSERT INTO users (name, email) VALUES ('Alice', 'a@test.com');
 INSERT OR IGNORE INTO users (name, email) VALUES ('Bob', 'a@test.com');
 SELECT CASE WHEN (SELECT count(*) FROM users WHERE email='a@test.com') = 1
        THEN 'PASS' ELSE 'FAIL' END;
+
+-- @purlin feature_name PROOF-3 RULE-3 unit on(windows-2022)
+-- Test: case-insensitive collation on the native build
+SELECT 'PASS';
 ```
+
+Platform markers: `-- @purlin feature PROOF-N RULE-N [tier] [on(a, b)]`; the tier may be
+omitted while `on(...)` is present.
 
 Runner: `bash scripts/proof/sql_purlin.sh tests/test_constraints.sql test.db`
 
@@ -217,7 +311,7 @@ Plugin: `scripts/proof/sql_purlin.sh`.
 
 ### Vitest (TypeScript-native)
 
-Same marker syntax as Jest. Use the TypeScript reporter for type-safe integration:
+Same marker syntax as Jest, including `:on(a, b)`. Use the TypeScript reporter for type-safe integration:
 
 ```typescript
 it("validates credentials [proof:auth_login:PROOF-1:RULE-1:unit]", () => {
@@ -238,7 +332,14 @@ public void ValidLogin()
 {
     Assert.Equal(200, Login("alice", "secret"));
 }
+
+[Fact]
+[Trait("PurlinProof", "feature_name:PROOF-3:RULE-3:unit:on(windows-2022)")]
+public void NativeLock() { ... }
 ```
+
+Platform markers: trait value `feature:PROOF-N:RULE-N[:tier][:on(a, b)]`; `on(...)` may
+follow the tier or stand in its place.
 
 Runner: `dotnet test --logger purlin -- RunConfiguration.CollectSourceInformation=true`
 

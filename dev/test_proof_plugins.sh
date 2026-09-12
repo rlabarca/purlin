@@ -673,6 +673,83 @@ PY
 }
 run "proof_common" "PROOF-9" "RULE-9" "fallback warning to stderr" test_fallback_warning
 
+echo "--- Platform-scoped files (shell harness) ---"
+
+# proof_common PROOF-21 (RULE-17) + PROOF-5 (RULE-5): with PURLIN_PLATFORM=p1, a
+# call recorded under PURLIN_PROOF_PLATFORMS lands in feat.proofs-unit@p1.json
+# (platform "p1" top-level and on the entry, 8 fields); the call recorded with
+# no platforms lands only in feat.proofs-unit.json with exactly 7 fields.
+test_shell_scoped_split() {
+  local d=$(mktemp -d)
+  mkdir -p "$d/specs/a"
+  echo -e "# Feature: feat\n\n## Rules\n- RULE-1: X" > "$d/specs/a/feat.md"
+  (
+    cd "$d"
+    export PURLIN_PLATFORM=p1
+    source "$SHELL_HARNESS"
+    PURLIN_PROOF_PLATFORMS="p1" purlin_proof "feat" "PROOF-1" "RULE-1" pass "declared"
+    purlin_proof "feat" "PROOF-2" "RULE-2" pass "unmarked"
+    purlin_proof_finish
+  )
+  python3 -c "
+import json
+seven = {'feature','id','rule','test_file','test_name','status','tier'}
+s = json.load(open('$d/specs/a/feat.proofs-unit@p1.json'))
+assert s['platform'] == 'p1' and s['tier'] == 'unit', s
+assert [e['id'] for e in s['proofs']] == ['PROOF-1'], s
+assert all(e['platform'] == 'p1' and set(e) == seven | {'platform'} for e in s['proofs']), s
+a = json.load(open('$d/specs/a/feat.proofs-unit.json'))
+assert 'platform' not in a, a
+assert [e['id'] for e in a['proofs']] == ['PROOF-2'], a
+assert all(set(e) == seven for e in a['proofs']), a
+assert not any(chr(92) in e['test_file'] for e in s['proofs'] + a['proofs'])
+"
+  local rc=$?; rm -rf "$d"; return $rc
+}
+run "proof_common" "PROOF-21" "RULE-17" "shell: declared marker scopes, unmarked stays agnostic" test_shell_scoped_split
+run "proof_common" "PROOF-5" "RULE-5" "shell: 7 fields agnostic, 8 fields scoped" test_shell_scoped_split
+
+# proof_common PROOF-19 (RULE-15): a sourcing script literally named with a
+# backslash (constructible on POSIX) records test_file with "/" only.
+test_shell_forward_slash() {
+  local d=$(mktemp -d)
+  mkdir -p "$d/specs/a" "$d/dev"
+  echo -e "# Feature: feat\n\n## Rules\n- RULE-1: X" > "$d/specs/a/feat.md"
+  printf 'source "%s"\nPURLIN_PROOF_PLATFORMS=p1 purlin_proof feat PROOF-1 RULE-1 pass declared\npurlin_proof feat PROOF-2 RULE-2 pass unmarked\npurlin_proof_finish\n' "$SHELL_HARNESS" > "$d/dev\\t.sh"
+  (cd "$d" && PURLIN_PLATFORM=p1 bash 'dev\t.sh')
+  python3 -c "
+import json
+for name in ('feat.proofs-unit@p1.json', 'feat.proofs-unit.json'):
+    for e in json.load(open('$d/specs/a/' + name))['proofs']:
+        assert e['test_file'] == 'dev/t.sh', e['test_file']
+"
+  local rc=$?; rm -rf "$d"; return $rc
+}
+run "proof_common" "PROOF-19" "RULE-15" "shell: test_file has forward slashes" test_shell_forward_slash
+
+# proof_common PROOF-22 (RULE-17): PURLIN_PLATFORM unset names the OS family.
+test_shell_family_fallback() {
+  local d=$(mktemp -d)
+  mkdir -p "$d/specs/a"
+  echo -e "# Feature: feat\n\n## Rules\n- RULE-1: X" > "$d/specs/a/feat.md"
+  (
+    cd "$d"
+    unset PURLIN_PLATFORM
+    source "$SHELL_HARNESS"
+    PURLIN_PROOF_PLATFORMS="p1" purlin_proof "feat" "PROOF-1" "RULE-1" pass "declared"
+    purlin_proof_finish
+  )
+  python3 -c "
+import json, os, platform
+fam = {'Windows': 'windows', 'Darwin': 'macos', 'Linux': 'linux'}.get(platform.system(), platform.system().lower())
+path = '$d/specs/a/feat.proofs-unit@' + fam + '.json'
+assert os.path.isfile(path), os.listdir('$d/specs/a')
+assert json.load(open(path))['platform'] == fam
+"
+  local rc=$?; rm -rf "$d"; return $rc
+}
+run "proof_common" "PROOF-22" "RULE-17" "shell: unset env names the family" test_shell_family_fallback
+
 # Emit proof files
 cd "$PROJECT_ROOT"
 purlin_proof_finish

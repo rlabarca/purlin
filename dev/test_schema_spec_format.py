@@ -352,7 +352,9 @@ class TestTierTagParsing:
 
     @pytest.mark.proof("schema_spec_format", "PROOF-9", "RULE-9")
     def test_real_spec_is_parsed_correctly(self):
-        """The spec that exposed this must now parse as untagged."""
+        """The spec that exposed this: PROOF-4's prose names `@integration`,
+        `@e2e` and `@on(` in backticks before its real tier tag, and none of
+        those is read as a tag or truncated."""
         import importlib.util, os
         path = os.path.join(os.path.dirname(__file__), '..', 'scripts', 'mcp', 'purlin_server.py')
         spec = importlib.util.spec_from_file_location('_tt_srv2', path)
@@ -361,7 +363,9 @@ class TestTierTagParsing:
 
         root = os.path.join(os.path.dirname(__file__), '..')
         info = srv._scan_specs(root)['schema_proof_format']
-        assert info['proof_tier_by_id'].get('PROOF-4') == 'unit', (
-            "PROOF-4 has no tier tag; its prose merely ends in '@windows'")
-        assert info['proof_desc_by_id']['PROOF-4'].rstrip().endswith('@windows'), (
+        assert info['proof_tier_by_id'].get('PROOF-4') == 'integration', (
+            "PROOF-4's only tag is the trailing @integration")
+        assert info['proof_desc_by_id']['PROOF-4'].rstrip().endswith('`@on(`'), (
             "the description's final clause must not be truncated")
+        assert info['proof_platforms_by_id'].get('PROOF-4') == [], (
+            "a backticked `@on(` in prose is not a platform tag")

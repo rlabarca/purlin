@@ -338,11 +338,42 @@ def _extract_section(content, heading):
     return m.group(1) if m else None
 
 
-def _read_proofs(project_root):
+# Proof-file discovery (schema_proof_format RULE-1/RULE-8). Character-identical in
+# scripts/audit/static_checks.py. Groups: feature stem, tier, optional platform id.
+_PROOF_FILE_RE = re.compile(r'^(.+)\.proofs-([A-Za-z0-9_]+)(?:@([a-z0-9][a-z0-9-]*))?\.json$')
+
+# A file whose tier is really a platform (the pre-Format-Version-5 spelling
+# `<feature>.proofs-windows.json`) is read as `unit@windows`; the caller is told
+# so it can name the rename that `purlin:init --update` performs.
+_LEGACY_PLATFORM_TIERS = frozenset({'windows'})
+
+
+def _proof_file_parts(basename):
+    """(feature_stem, tier, platform, legacy) for a proof filename, or None.
+
+    `platform` is None for an agnostic file. `legacy` is True when the filename
+    carried a platform where its tier belongs, in which case `tier` is already
+    `unit` and `platform` is that name.
+    """
+    m = _PROOF_FILE_RE.match(basename)
+    if not m:
+        return None
+    stem, tier, plat = m.group(1), m.group(2), m.group(3)
+    if plat is None and tier in _LEGACY_PLATFORM_TIERS:
+        return stem, 'unit', tier, True
+    return stem, tier, plat, False
+
+
+def _read_proofs(project_root, legacy=None):
     """Read all proof JSON files and return dict of feature -> list of proofs.
 
-    When the same (feature, tier) proof file exists both at specs/ root and in
-    a subdirectory, prefer the subdirectory version (adjacent to its spec).
+    When the same (feature, tier, platform) proof file exists both at specs/
+    root and in a subdirectory, prefer the subdirectory version (adjacent to
+    its spec). Every entry read is stamped, in memory only, with `platform`:
+    the id from a scoped filename (`<feature>.proofs-<tier>@<id>.json`) or
+    None from an agnostic one. A legacy `<feature>.proofs-windows.json` is
+    read as tier `unit`, platform `windows`, and its project-relative path is
+    appended to `legacy` when a list is passed.
     """
     spec_dir = os.path.join(project_root, 'specs')
     if not os.path.isdir(spec_dir):
@@ -354,21 +385,22 @@ def _read_proofs(project_root):
         stem = os.path.splitext(os.path.basename(spec_path))[0]
         spec_dirs[stem] = os.path.dirname(spec_path)
 
-    # Collect all proof files, grouped by (feature_stem, tier)
-    proof_files = {}  # (feature_stem, tier) -> [paths]
-    proof_re = re.compile(r'^(.+)\.proofs-(.+)\.json$')
+    # Collect all proof files, grouped by (feature_stem, tier, platform)
+    proof_files = {}  # (feature_stem, tier, platform) -> [paths]
+    legacy_keys = set()
     for proof_path in glob.glob(os.path.join(spec_dir, '**', '*.proofs-*.json'), recursive=True):
-        basename = os.path.basename(proof_path)
-        m = proof_re.match(basename)
-        if not m:
+        parts = _proof_file_parts(os.path.basename(proof_path))
+        if parts is None:
             continue
-        feature_stem = m.group(1)
-        tier = m.group(2)
-        proof_files.setdefault((feature_stem, tier), []).append(proof_path)
+        feature_stem, tier, plat, is_legacy = parts
+        key = (feature_stem, tier, plat)
+        if is_legacy:
+            legacy_keys.add(key)
+        proof_files.setdefault(key, []).append(proof_path)
 
-    # For each (feature, tier), pick the best proof file
+    # For each (feature, tier, platform), pick the best proof file
     all_proofs = {}
-    for (feature_stem, tier), paths in proof_files.items():
+    for (feature_stem, tier, plat), paths in proof_files.items():
         if len(paths) == 1:
             chosen = paths[0]
         else:
@@ -387,8 +419,15 @@ def _read_proofs(project_root):
         except (json.JSONDecodeError, IOError, OSError):
             continue
 
+        is_legacy = (feature_stem, tier, plat) in legacy_keys
+        if is_legacy and legacy is not None:
+            legacy.append(os.path.relpath(chosen, project_root).replace(os.sep, '/'))
+
         for entry in data.get('proofs', []):
             feature = entry.get('feature', '')
+            entry['platform'] = plat
+            if is_legacy:
+                entry['tier'] = tier
             all_proofs.setdefault(feature, []).append(entry)
 
     return all_proofs
@@ -767,10 +806,11 @@ def _attach_gauge_coverage(project_root, features, all_proofs,
 
 # Tiers that cannot execute on an arbitrary developer machine: they need a
 # specific runner. A proof declaring one of these is not missing when it has no
-# result here, it is waiting, and the two must not report identically. Adding a
-# tier name here also requires adding it to the closed tier set in
-# specs/_anchors/schema_proof_format.md RULE-4 and the check that enforces it in
-# dev/test_schema_proof_format.py.
+# result here, it is waiting, and the two must not report identically. Since
+# proofs_format.md v5 no tier is runner-gated (schema_proof_format RULE-4): the
+# name here is the platform a legacy `@windows` proof aliases to, and the file
+# `_read_proofs` reads as unit@windows. Phase 6.4 replaces this set with the
+# platform registry.
 _RUNNER_GATED_TIERS = frozenset({'windows'})
 
 
@@ -808,7 +848,14 @@ def _awaiting_runner(name, info, all_proofs):
     gated = _runner_gated_proofs(info)
     if not gated:
         return []
-    executed = {(e.get('id'), e.get('tier')) for e in all_proofs.get(name, [])}
+    # A result satisfies the gate under its tier or under the platform its file
+    # is scoped to: a legacy `proofs-windows.json` reads as unit@windows, and a
+    # `proofs-unit@windows.json` result names the platform the same way.
+    executed = set()
+    for e in all_proofs.get(name, []):
+        executed.add((e.get('id'), e.get('tier')))
+        if e.get('platform'):
+            executed.add((e.get('id'), e.get('platform')))
     return sorted((pid, tier) for pid, tier in gated.items()
                   if (pid, tier) not in executed)
 
@@ -1356,7 +1403,8 @@ def _check_legacy_mcp_entry(project_root):
 def sync_status(project_root, role=None):
     """Generate the full sync_status report with directives."""
     features = _scan_specs(project_root)
-    all_proofs = _read_proofs(project_root)
+    legacy_proof_files = []
+    all_proofs = _read_proofs(project_root, legacy=legacy_proof_files)
 
     if not features:
         return "No specs found in specs/. Run purlin:init to set up, or create specs manually."
@@ -1397,6 +1445,20 @@ def sync_status(project_root, role=None):
         for error in registry_errors:
             preamble.append(f'  {error}')
         preamble.append('\u2192 Fix: edit "platforms" in .purlin/config.json')
+        preamble.append('')
+
+    # A proof file named with a platform where its tier belongs is still read
+    # (as unit@<platform>) for one release; the rename is purlin:init --update's.
+    if legacy_proof_files:
+        n = len(legacy_proof_files)
+        preamble.append(f'\u26a0 Legacy proof file{"s" if n != 1 else ""}: {n} file{"s name" if n != 1 else " names"} '
+                        'a platform as the tier:')
+        for rel in sorted(legacy_proof_files):
+            base = os.path.basename(rel)
+            parts = _proof_file_parts(base)
+            stem, tier, plat = parts[0], parts[1], parts[2]
+            preamble.append(f'  {rel} (read as {tier}@{plat}; becomes {stem}.proofs-{tier}@{plat}.json)')
+        preamble.append('\u2192 Run: purlin:init --update to rename it and rewrite the markers')
         preamble.append('')
 
     # Separate anchors from regular features

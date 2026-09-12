@@ -84,6 +84,42 @@
     },
     {
       "feature": "proof_common",
+      "id": "PROOF-21",
+      "rule": "RULE-17",
+      "test_file": "dev/test_proof_plugins.sh",
+      "test_name": "shell: declared marker scopes, unmarked stays agnostic",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_proof_plugins.sh",
+      "test_name": "shell: 7 fields agnostic, 8 fields scoped",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-19",
+      "rule": "RULE-15",
+      "test_file": "dev/test_proof_plugins.sh",
+      "test_name": "shell: test_file has forward slashes",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-22",
+      "rule": "RULE-17",
+      "test_file": "dev/test_proof_plugins.sh",
+      "test_name": "shell: unset env names the family",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "proof_common",
       "id": "PROOF-10",
       "rule": "RULE-4",
       "test_file": "dev/test_e2e_feature_scoped_overwrite.sh",

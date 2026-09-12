@@ -904,6 +904,31 @@ _TIER_TAG_RE = re.compile(_TIER_TAG_BODY)
 # variable, so the charset is what all three accept (schema_spec_format RULE-10).
 _PLATFORM_ID_RE = re.compile(r'^[a-z0-9][a-z0-9-]*$')
 
+# Proof-file discovery (schema_proof_format RULE-1/RULE-8). Character-identical in
+# scripts/audit/static_checks.py. Groups: feature stem, tier, optional platform id.
+_PROOF_FILE_RE = re.compile(r'^(.+)\.proofs-([A-Za-z0-9_]+)(?:@([a-z0-9][a-z0-9-]*))?\.json$')
+
+# A file whose tier is really a platform (the pre-Format-Version-5 spelling
+# `<feature>.proofs-windows.json`) is read as `unit@windows`; the caller is told
+# so it can name the rename that `purlin:init --update` performs.
+_LEGACY_PLATFORM_TIERS = frozenset({'windows'})
+
+
+def _proof_file_parts(basename):
+    """(feature_stem, tier, platform, legacy) for a proof filename, or None.
+
+    `platform` is None for an agnostic file. `legacy` is True when the filename
+    carried a platform where its tier belongs, in which case `tier` is already
+    `unit` and `platform` is that name.
+    """
+    m = _PROOF_FILE_RE.match(basename)
+    if not m:
+        return None
+    stem, tier, plat = m.group(1), m.group(2), m.group(3)
+    if plat is None and tier in _LEGACY_PLATFORM_TIERS:
+        return stem, 'unit', tier, True
+    return stem, tier, plat, False
+
 
 def _split_proof_tags(desc):
     """Split the trailing tags off a proof description.
@@ -1215,6 +1240,10 @@ def audit_scope(project_root):
     executed = {}
     tests = {}
     for pf in glob.glob(os.path.join(spec_dir, '**', '*.proofs-*.json'), recursive=True):
+        parts = _proof_file_parts(os.path.basename(pf))
+        if parts is None:
+            continue
+        _stem, file_tier, file_platform, is_legacy = parts
         try:
             with open(pf, encoding='utf-8') as f:
                 data = json.load(f)
@@ -1224,6 +1253,10 @@ def audit_scope(project_root):
             feat = entry.get('feature')
             if not feat:
                 continue
+            # Same in-memory stamp the server applies on read.
+            entry['platform'] = file_platform
+            if is_legacy:
+                entry['tier'] = file_tier
             executed.setdefault(feat, set()).add(entry.get('id'))
             tf = entry.get('test_file')
             if tf:

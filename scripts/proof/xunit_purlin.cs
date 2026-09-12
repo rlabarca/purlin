@@ -24,17 +24,31 @@
 // The marker is a test trait rather than a parsed string because traits are the
 // framework-neutral metadata channel in the .NET test platform: xUnit's [Trait],
 // NUnit's [Category]/[Property], and MSTest's [TestProperty] all surface as
-// TestCase.Traits. The trait value is colon-delimited: "feature:PROOF-N:RULE-N:tier"
-// (tier optional, defaults to "unit").
+// TestCase.Traits. The trait value is colon-delimited:
+// "feature:PROOF-N:RULE-N[:tier][:on(a, b)]" (tier optional, defaults to "unit";
+// on(...) may follow the tier or stand in its place).
 //
 //     [Fact]
 //     [Trait("PurlinProof", "my_feature:PROOF-1:RULE-1:unit")]
 //     public void DoesTheThing() { Assert.Equal(200, Login("alice", "secret")); }
+//
+//     [Fact]
+//     [Trait("PurlinProof", "my_feature:PROOF-2:RULE-2:unit:on(windows-2022)")]
+//     public void LocksNatively() { ... }
+//
+// A marker that declares on(...) writes its entry to
+// <feature>.proofs-<tier>@<host>.json, where <host> is PURLIN_PLATFORM when set
+// and otherwise the detected OS family (windows, macos, linux); every entry in
+// that file carries an eighth field, "platform", equal to <host>. A marker with
+// no on(...) writes the agnostic <feature>.proofs-<tier>.json with the seven
+// standard fields, whatever PURLIN_PLATFORM says. The logger never evaluates
+// version constraints.
 
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel;
@@ -58,6 +72,7 @@ namespace Purlin
             public string TestName = "";
             public string Status = "";
             public string Tier = "";
+            public string Platform = "";   // "" when the marker declares no platforms
         }
 
         private readonly List<Proof> _proofs = new List<Proof>();
@@ -108,13 +123,28 @@ namespace Purlin
             // RULE-4: a skipped test is not recorded at all.
             if (result.Outcome == TestOutcome.Skipped) return;
 
-            // RULE-1: "feature:PROOF-N:RULE-N:tier" — tier defaults to "unit".
+            // RULE-1: "feature:PROOF-N:RULE-N[:tier][:on(a, b)]" — tier defaults to "unit".
             string[] parts = marker.Split(':');
             if (parts.Length < 3) return;
             string feature = parts[0];
             string id = parts[1];
             string rule = parts[2];
-            string tier = parts.Length >= 4 && parts[3].Length > 0 ? parts[3] : "unit";
+            string tier = "unit";
+            bool declared = false;
+            for (int i = 3; i < parts.Length; i++)
+            {
+                string part = parts[i].Trim();
+                if (part.StartsWith("on(", StringComparison.Ordinal) && part.EndsWith(")", StringComparison.Ordinal))
+                {
+                    string inner = part.Substring(3, part.Length - 4);
+                    declared = inner.Split(',').Any(p => p.Trim().Length > 0);
+                }
+                else if (part.Length > 0 && i == 3)
+                {
+                    tier = part;
+                }
+            }
+            string platform = declared ? HostPlatform() : "";
 
             // RULE-5: test_file relative to the project root; test_name fully-qualified.
             string testFile = MakeRelative(_root, tc.CodeFilePath ?? "");
@@ -134,6 +164,7 @@ namespace Purlin
                 TestName = testName,
                 Status = status,
                 Tier = tier,
+                Platform = platform,
             });
         }
 
@@ -155,27 +186,31 @@ namespace Purlin
                 }
             }
 
-            // Group by (feature, tier) — one file per group.
+            // Group by (feature, tier, platform) — one file per group.
             int filesWritten = 0;
-            foreach (var group in _proofs.GroupBy(p => (p.Feature, p.Tier)))
+            foreach (var group in _proofs.GroupBy(p => (p.Feature, p.Tier, p.Platform)))
             {
                 string feature = group.Key.Feature;
                 string tier = group.Key.Tier;
+                string platform = group.Key.Platform;
+                string suffix = platform.Length > 0 ? $"{tier}@{platform}" : tier;
 
                 // RULE-3 / RULE-9: fall back to specs/ with a stderr warning.
                 if (!specDirs.TryGetValue(feature, out string? specDir))
                 {
                     Console.Error.WriteLine(
                         $"WARNING: No spec found for feature \"{feature}\" — writing proofs to " +
-                        $"specs/{feature}.proofs-{tier}.json. Create a spec with: purlin:spec {feature}");
+                        $"specs/{feature}.proofs-{suffix}.json. Create a spec with: purlin:spec {feature}");
                     specDir = specsRoot;
                 }
 
-                string path = Path.Combine(specDir, $"{feature}.proofs-{tier}.json");
+                string path = Path.Combine(specDir, $"{feature}.proofs-{suffix}.json");
 
-                // RULE-4: write-scoped overwrite keyed by (feature, tier, test_file):
-                // keep other features, keep this feature's entries from test files this run
-                // did not execute, and reap entries whose test file is gone (RULE-11).
+                // RULE-4: write-scoped overwrite keyed by (feature, tier, platform, test_file):
+                // the file carries tier and platform, so within it the key is (feature,
+                // test_file). Keep other features, keep this feature's entries from test
+                // files this run did not execute, and reap entries whose test file is gone
+                // (RULE-11).
                 var runFiles = new HashSet<string>(group.Select(p => p.TestFile));
                 var kept = new List<Dictionary<string, string>>();
                 if (File.Exists(path))
@@ -196,8 +231,8 @@ namespace Purlin
                 var ordered = new List<Dictionary<string, string>>(kept);
                 foreach (Proof p in group)
                 {
-                    // RULE-5: all 7 fields, canonical order.
-                    ordered.Add(new Dictionary<string, string>
+                    // RULE-5: all 7 fields, canonical order; an 8th, platform, in a scoped file.
+                    var fields = new Dictionary<string, string>
                     {
                         ["feature"] = p.Feature,
                         ["id"] = p.Id,
@@ -206,10 +241,12 @@ namespace Purlin
                         ["test_name"] = p.TestName,
                         ["status"] = p.Status,
                         ["tier"] = p.Tier,
-                    });
+                    };
+                    if (platform.Length > 0) fields["platform"] = platform;
+                    ordered.Add(fields);
                 }
 
-                string json = Serialize(tier, ordered);
+                string json = Serialize(tier, platform, ordered);
 
                 // Atomic write: tmp + rename.
                 string fullDir = Path.GetDirectoryName(Path.GetFullPath(path)) ?? ".";
@@ -267,11 +304,25 @@ namespace Purlin
             return result;
         }
 
-        private static string Serialize(string tier, List<Dictionary<string, string>> proofs)
+        // PURLIN_PLATFORM when set, else the OS family. The only place the logger
+        // looks at the host; nothing else in it branches on the operating system.
+        private static string HostPlatform()
+        {
+            string env = (Environment.GetEnvironmentVariable("PURLIN_PLATFORM") ?? "").Trim();
+            if (env.Length > 0) return env;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return "windows";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) return "macos";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) return "linux";
+            return RuntimeInformation.OSDescription.Split(' ')[0].ToLowerInvariant();
+        }
+
+        private static string Serialize(string tier, string platform, List<Dictionary<string, string>> proofs)
         {
             var sb = new StringBuilder();
             sb.Append("{\n");
             sb.Append("  \"tier\": ").Append(JsonStr(tier)).Append(",\n");
+            if (platform.Length > 0)
+                sb.Append("  \"platform\": ").Append(JsonStr(platform)).Append(",\n");
             sb.Append("  \"proofs\": [");
             for (int i = 0; i < proofs.Count; i++)
             {
@@ -319,12 +370,12 @@ namespace Purlin
             if (string.IsNullOrEmpty(file)) return file;
             try
             {
-                // Normalize separators so proof files are portable.
+                // Forward slashes on every OS (proof_common RULE-15) so proof files are portable.
                 return Path.GetRelativePath(root, file).Replace('\\', '/');
             }
             catch (Exception)
             {
-                return file;
+                return file.Replace('\\', '/');
             }
         }
     }

@@ -455,6 +455,118 @@ same commit as the phase's last work. Run whole test files only; finish with
   `purlin:test` verifies the plugin is wired (the freshness check's "no proof files written"
   branch already exists for the local run and is reused for the runner's log).
 
+## DONE — Phase 6.3 (with 6.3b's plugin rules): scoped proof files and plugins (`feat(proof_common,schema_proof_format): platform-scoped proof files`, receipts in the `verify:` commit that follows it)
+
+- **Numbers taken (landing order, matching the reviewer table).** `proof_common` RULE-15
+  (forward-slash `test_file`), RULE-16 (one plugin per framework, host branching only in the
+  host-platform helper), RULE-17 (marker decides, environment names, no version evaluation);
+  PROOF-19 (RULE-15, per plugin), PROOF-20 (RULE-16, grep plus copy byte-identity), PROOF-21
+  and PROOF-22 (RULE-17, env set / env unset, per plugin); RULE-2/4/5/11/12/13 amended and
+  PROOF-5 extended (exactly 7 fields agnostic, exactly 8 scoped). `schema_proof_format` RULE-1/2/4/5
+  rewritten, RULE-8 (discovery pattern, in-memory `platform` stamp, id charset, legacy alias and
+  advisory), PROOF-4 updated, PROOF-5/8 gained scoped variants, PROOF-9 new (RULE-8). Next free:
+  proof_common RULE-18/PROOF-23, schema_proof_format RULE-9/PROOF-10. `skill_init` gained nothing:
+  the vitest byte-identity rule the reviewer asked for already exists as RULE-47/PROOF-49.
+- **Discovery.** `_PROOF_FILE_RE` and `_proof_file_parts(basename) -> (stem, tier, platform,
+  legacy)` sit directly above `_read_proofs` in `scripts/mcp/purlin_server.py` and beside
+  `_PLATFORM_ID_RE` in `scripts/audit/static_checks.py`, `inspect.getsource`-identical (PROOF-9
+  asserts it). `_read_proofs(project_root, legacy=None)` groups by `(stem, tier, platform)` with
+  the old same-directory preference, stamps `entry['platform']` (id or `None`) on every entry read,
+  and appends each legacy path to `legacy` when a list is passed. `static_checks.audit_scope`
+  now parses names through the same helper and stamps the same way; it never had a same-directory
+  preference (it counts executed ids across every file) and still has none. `_awaiting_runner`'s
+  executed set is `{(id, tier)} ∪ {(id, platform)}`, so a result satisfies the 6.1 alias under
+  either name; nothing else in the server reads an entry's tier.
+- **The legacy file.** `specs/audit/static_checks.proofs-windows.json` is untouched (Phase 7 renames
+  it). `_read_proofs` reads it as tier `unit`, platform `windows`, on every entry, and
+  `sync_status` prints in the preamble: `⚠ Legacy proof file: 1 file names a platform as the
+  tier:` / `  specs/audit/static_checks.proofs-windows.json (read as unit@windows; becomes
+  static_checks.proofs-unit@windows.json)` / `→ Run: purlin:init --update to rename it and
+  rewrite the markers`. PROOF-53/54 (declared `@windows`, aliased by 6.1 to unit+on(windows), gated
+  under `windows`) are satisfied by the `(id, 'windows')` member of the executed set; static_checks
+  stays 35/35 VERIFIED and no AWAITING RUNNER appears. `_RUNNER_GATED_TIERS` is unchanged (its
+  comment now says it is the alias name, replaced in 6.4); `_runner_provenance` still finds the
+  legacy path by `proofs-windows.json`.
+- **Plugins, identical semantics in all eight.** Host id = `PURLIN_PLATFORM` if set, else the family
+  (`Windows`/`win32` → `windows`, `Darwin`/`darwin` → `macos`, `Linux`/`linux` → `linux`, anything
+  else lower-cased), computed in one helper per plugin (`_host_platform` in pytest, shell, C emitter
+  and sql; `hostPlatform` in jest and vitest; `host_platform` in phpunit; `HostPlatform` in xunit).
+  A marker with declared platforms writes `<feature>.proofs-<tier>@<host>.json` with `platform` at
+  the top level and on each entry; a marker without writes the agnostic file byte-for-byte as
+  before. Merge key `(feature, tier, platform, test_file)`; the per-file code is unchanged.
+
+  | Plugin | Marker syntax for platforms |
+  |---|---|
+  | pytest | `@pytest.mark.proof(f, p, r, tier="unit", platforms=("windows-2022",))`; a bare string is one id |
+  | jest / vitest | `[proof:f:PROOF-N:RULE-N[:tier][:on(a, b)]]`, regex `\[proof:(\w+):(PROOF-\d+):(RULE-\d+)(?::(\w+))?(?::on\(([^)]*)\))?\]`; tier may be omitted with `on(...)` present |
+  | shell | `PURLIN_PROOF_PLATFORMS="a,b"` (comma list) read at each `purlin_proof` call beside `PURLIN_PROOF_TIER`; the record line gained an 8th `|` field |
+  | C | `purlin_proof_on(f, p, r, passed, name, file, tier, "a,b")`; `purlin_proof` is the wrapper passing `NULL`; the header prints `"platforms": "a,b"` and `c_purlin_emit.py` detects the host and names the file |
+  | phpunit | `@purlin f PROOF-N RULE-N [tier] [on(a,b)]`, tier group `(?:\s+(?!on\()(\w+))?` so `on(` is never read as a tier |
+  | sql | `-- @purlin f PROOF-N RULE-N [tier] [on(a,b)]`, same lookahead |
+  | xunit | trait `f:PROOF-N:RULE-N[:tier][:on(a,b)]`; `on(...)` may follow the tier or stand in its place |
+
+  `test_file` forward slashes: every plugin now replaces `\` with `/` outright (pytest and shell
+  keep their `os.sep` replace and add it; jest/vitest `split(path.sep).join("/")` plus a
+  backslash replace; xunit's `MakeRelative` already replaced and its catch branch now does too;
+  phpunit and sql normalise the argv path for the record while still opening the path as given;
+  the C emitter normalises). Replacing a literal backslash on POSIX rather than only `os.sep`
+  is what makes PROOF-19 constructible on this machine for every plugin (a test file literally
+  named `tests\test_x.py` collects under pytest, `dev\t.sh` sources under bash), and a
+  POSIX test path with a backslash in it is not a case anyone has. sql's embedded Python now
+  receives the two paths through `PURLIN_SQL_TEST_FILE`/`PURLIN_SQL_DB_FILE` rather than
+  spliced into the source: the backslash path was a `SyntaxWarning` (and a future error) when
+  interpolated. Every plugin's header comment documents the syntax. The four `.purlin/plugins/`
+  copies are `cp` regenerated; `dev/test_init_e2e.sh` PROOF-18/19/20/49 pass and PROOF-20's
+  second test asserts the byte-identity directly.
+- **Proofs.** `dev/test_multilang_proof_plugins.py` gained a "Platform-scoped proof files"
+  section: `TestPytestPlatformScoping`, `TestJestPlatformScoping` (node drives the real reporter
+  with a fake `testFilePath`; it lives here and not in `dev/test_proof_jest.sh` because that script
+  is outside `dev/run_tests.sh`, which RULE-14 would have flagged), `TestVitestPlatformScoping`
+  (`_drive_reporter` gained `env=`), `TestCPlatformScoping`, `TestSQLPlatformScoping`,
+  `TestPHPPlatformScoping`, `TestXUnitPlatformScoping`, each with a scoped test (PROOF-21 and
+  PROOF-5 markers), a forward-slash test (PROOF-19) and a family test (PROOF-22); shell's three
+  live in `dev/test_proof_plugins.sh`. `TestOnePluginEverywhere` (PROOF-20) greps `scripts/proof/`
+  and `.purlin/plugins/` for the seven host tokens, finds the enclosing definition by scanning
+  upward with a per-language definition regex (control keywords skipped), and requires
+  `hostplatform` in the lower-cased, underscore-stripped name; 12 files checked, 12 hits. xunit's
+  forward-slash case is not constructible on a POSIX host (`CodeFilePath` is the compiler's own
+  path), so that test asserts the real run's path has no backslash and that `MakeRelative`
+  replaces in both branches; the php and xunit classes skip here (no `php`, no `dotnet`) and
+  ran nowhere yet. `dev/test_schema_proof_format.py`: PROOF-4 rewritten (valid set
+  {unit, integration, e2e}, `@` suffix charset, name/top-level/entry agreement for non-legacy
+  files, the legacy file read back as unit@windows through `_read_proofs`, `spec_format.md`
+  documents `@on(`); `TestScopedProofFiles` adds the PROOF-5 and PROOF-8 scoped variants and
+  PROOF-9. `dev/test_schema_spec_format.py`'s real-spec connector test now reads PROOF-4's new
+  line (tier `integration`, backticked `@on(` not a tag, no platforms).
+- **Pass D.** Every new or amended description grades PROVABLE except `proof_common` PROOF-20
+  (STRUCTURAL: a grep over source, which is the only proof a rule about where code may live
+  can have) and `schema_proof_format` PROOF-4 (STRUCTURAL, as before: it scans committed
+  files). Zero UNPROVABLE, zero LOOSE on both anchors.
+- **Mutations (each applied, its proof run, restored; all thirteen caught).** pytest: drop the
+  backslash replace; drop `entry["platform"]`; let `PURLIN_PLATFORM` alone scope an undeclared
+  marker; return the raw `platform.system()` from the family fallback. jest: drop the backslash
+  replace. vitest: drop the top-level `platform`. C emitter: drop the `test_file` normalisation.
+  sql: drop the `(?!on\()` lookahead (tier reads `on`). shell: drop the `chr(92)` replace. server:
+  drop the `platform` stamp on read; empty `_LEGACY_PLATFORM_TIERS`; drop the `(id, platform)`
+  member of the executed set (sync_status PROOF-79 goes AWAITING). grep: a `sys.platform` read
+  inside `c_purlin_emit.main` (PROOF-20 names the file, line and function).
+- **Format and docs.** `proofs_format.md` 4 → 5: File Naming gains the scoped form, the id charset,
+  the legacy sentence; Schema gains a scoped example; Fields gains `platform` (top level and
+  per entry) and says `test_file` is `/`-separated; Merge states the four-part key and that the
+  per-file merge is unchanged; the platform-gated paragraph is rewritten around `@on` and
+  `PURLIN_PLATFORM`; a "Runners" paragraph states one plugin everywhere, `PURLIN_PLATFORM` as the
+  only per-runner input and no version evaluation; each framework section gains a "Platform
+  markers" paragraph. `skills/test/SKILL.md`, `skills/verify/SKILL.md` and
+  `references/remote_verification.md` still say "runner-gated tier" and `@windows`; those are
+  allocated to 6.6 (`skill_test` rewording) and Phase 11 (`purlin_docs` RULE-1) and were left.
+  CLAUDE.md unchanged.
+- **Sweep.** `bash dev/run_tests.sh` (foreground): 14 suites, `670 passed, 27 skipped` (was 650/21:
+  +20 passed are pytest/jest/vitest/C/sql × 3, PROOF-20 × 2, schema PROOF-5/8/9 scoped variants;
+  +6 skipped are the php and xunit classes). `git diff --stat specs/`: insertions only;
+  `proof_common.proofs-integration.json` 6 → 28 entries, `proof_common.proofs-unit.json` 27 → 31,
+  `schema_proof_format.proofs-unit.json` 8 → 11, no entry lost. No scoped file was committed:
+  every fixture writes into a temp project.
+
 ### 6.4 Server satisfaction model (`sync_status`, `report_data`, `verify_gate`)
 
 - Delete `_RUNNER_GATED_TIERS`/`_runner_gated_proofs` (`:699-708`). New

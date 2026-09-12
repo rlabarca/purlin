@@ -48,6 +48,204 @@
     },
     {
       "feature": "proof_common",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_pytest_declared_marker_scopes_and_unmarked_stays_agnostic",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-21",
+      "rule": "RULE-17",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_pytest_declared_marker_scopes_and_unmarked_stays_agnostic",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-19",
+      "rule": "RULE-15",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_pytest_test_file_has_forward_slashes",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-22",
+      "rule": "RULE-17",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_pytest_unset_env_names_the_family",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_jest_declared_marker_scopes_and_unmarked_stays_agnostic",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-21",
+      "rule": "RULE-17",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_jest_declared_marker_scopes_and_unmarked_stays_agnostic",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-19",
+      "rule": "RULE-15",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_jest_test_file_has_forward_slashes",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-22",
+      "rule": "RULE-17",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_jest_unset_env_names_the_family",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_vitest_declared_marker_scopes_and_unmarked_stays_agnostic",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-21",
+      "rule": "RULE-17",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_vitest_declared_marker_scopes_and_unmarked_stays_agnostic",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-19",
+      "rule": "RULE-15",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_vitest_test_file_has_forward_slashes",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-22",
+      "rule": "RULE-17",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_vitest_unset_env_names_the_family",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_c_declared_marker_scopes_and_unmarked_stays_agnostic",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-21",
+      "rule": "RULE-17",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_c_declared_marker_scopes_and_unmarked_stays_agnostic",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-19",
+      "rule": "RULE-15",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_c_test_file_has_forward_slashes",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-22",
+      "rule": "RULE-17",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_c_unset_env_names_the_family",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_sql_declared_marker_scopes_and_unmarked_stays_agnostic",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-21",
+      "rule": "RULE-17",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_sql_declared_marker_scopes_and_unmarked_stays_agnostic",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-19",
+      "rule": "RULE-15",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_sql_test_file_has_forward_slashes",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-22",
+      "rule": "RULE-17",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_sql_unset_env_names_the_family",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-20",
+      "rule": "RULE-16",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_host_detection_lives_only_in_the_host_platform_helper",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-20",
+      "rule": "RULE-16",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_plugin_copies_are_byte_identical_to_the_originals",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
       "id": "PROOF-17",
       "rule": "RULE-13",
       "test_file": "dev/test_proof_plugins_missing.py",

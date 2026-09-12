@@ -468,9 +468,10 @@ def _node_can_run_ts():
 )
 class TestTypeScriptProofPlugin:
 
-    def _drive_reporter(self, tmp_path, files_js):
+    def _drive_reporter(self, tmp_path, files_js, env=None):
         """Load vitest_purlin.ts and call onFinished(files) with the given JS
-        task-tree literal, with cwd=tmp_path so it writes proofs under specs/."""
+        task-tree literal, with cwd=tmp_path so it writes proofs under specs/.
+        `env` replaces the subprocess environment when given."""
         glob_dir = tmp_path / 'node_modules' / 'glob'
         glob_dir.mkdir(parents=True)
         (glob_dir / 'package.json').write_text('{"name":"glob","version":"0.0.0","main":"index.js"}')
@@ -509,7 +510,7 @@ class TestTypeScriptProofPlugin:
             )
             cmd = ['node', '--experimental-strip-types', str(harness)]
 
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(tmp_path))
+        result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(tmp_path), env=env)
         assert result.returncode == 0, (
             f"reporter harness failed:\nSTDOUT:{result.stdout}\nSTDERR:{result.stderr}"
         )
@@ -1050,3 +1051,502 @@ class TestXUnitProofPlugin:
         assert "feat" in feats
         other = [p for p in run["data"]["proofs"] if p["feature"] == "otherfeat"]
         assert len(other) == 1 and other[0]["test_name"] == "Other.Keep", other
+
+
+# ---------------------------------------------------------------------------
+# Platform-scoped proof files (proof_common RULE-5/15/16/17; proofs_format.md v5)
+#
+# One test per plugin per behaviour, each driving the real plugin:
+#   scoped:  PURLIN_PLATFORM=p1, one marker declaring on(p1) and one unmarked ->
+#            the declared entry lands in <feature>.proofs-unit@p1.json with
+#            platform "p1" at the top level and on the entry (8 fields); the
+#            unmarked entry lands only in <feature>.proofs-unit.json (7 fields).
+#   slash:   a backslash-bearing path reaches the plugin through whatever its
+#            API allows; no "\" appears in any written test_file.
+#   family:  PURLIN_PLATFORM unset -> the scoped file is named after the OS
+#            family, computed here from platform.system() independently.
+# jest lives here rather than in dev/test_proof_jest.sh because that script is
+# not in dev/run_tests.sh, and a proof only that script regenerated would fail
+# proof_common RULE-14. The shell harness is covered in dev/test_proof_plugins.sh.
+# ---------------------------------------------------------------------------
+
+import platform as _platform_mod
+import re as _re
+
+_SEVEN = {'feature', 'id', 'rule', 'test_file', 'test_name', 'status', 'tier'}
+_PLUGIN_COPIES = os.path.join(os.path.dirname(__file__), '..', '.purlin', 'plugins')
+
+
+def _expected_family():
+    system = _platform_mod.system()
+    return {'Windows': 'windows', 'Darwin': 'macos', 'Linux': 'linux'}.get(system, system.lower())
+
+
+def _env(platform_id):
+    """The subprocess environment: PURLIN_PLATFORM set to `platform_id`, or absent when None."""
+    env = {k: v for k, v in os.environ.items() if k != 'PURLIN_PLATFORM'}
+    if platform_id is not None:
+        env['PURLIN_PLATFORM'] = platform_id
+    return env
+
+
+def _assert_scoped_split(scoped_path, agnostic_path, platform_id, scoped_ids, agnostic_ids):
+    """The declared marker went to the scoped file with 8 fields; the unmarked
+    one went only to the agnostic file with exactly 7; no backslash anywhere."""
+    assert os.path.isfile(scoped_path), f"scoped file not written: {scoped_path}"
+    data = json.load(open(scoped_path))
+    assert data.get('tier') == 'unit', data
+    assert data.get('platform') == platform_id, (
+        f"top-level platform must equal the filename id {platform_id!r}: {data}")
+    assert {e['id'] for e in data['proofs']} == set(scoped_ids), data['proofs']
+    for e in data['proofs']:
+        assert e.get('platform') == platform_id, e
+        assert set(e) == _SEVEN | {'platform'}, f"scoped entry must carry exactly 8 fields: {sorted(e)}"
+        assert '\\' not in e['test_file'], e['test_file']
+
+    assert os.path.isfile(agnostic_path), f"agnostic file not written: {agnostic_path}"
+    adata = json.load(open(agnostic_path))
+    assert 'platform' not in adata, f"an agnostic file carries no platform: {adata}"
+    assert {e['id'] for e in adata['proofs']} == set(agnostic_ids), adata['proofs']
+    for e in adata['proofs']:
+        assert set(e) == _SEVEN, f"agnostic entry must carry exactly the 7 fields: {sorted(e)}"
+        assert '\\' not in e['test_file'], e['test_file']
+    scoped_in_agnostic = {e['id'] for e in adata['proofs']} & set(scoped_ids)
+    assert not scoped_in_agnostic, (
+        f"a declared marker must not also land in the agnostic file: {scoped_in_agnostic}")
+
+
+def _spec(tmp_path, feature, sub='a'):
+    spec_dir = tmp_path / 'specs' / sub
+    spec_dir.mkdir(parents=True, exist_ok=True)
+    (spec_dir / f'{feature}.md').write_text(
+        f'# Feature: {feature}\n\n## Rules\n- RULE-1: a\n- RULE-2: b\n\n'
+        '## Proof\n- PROOF-1 (RULE-1): t\n- PROOF-2 (RULE-2): t\n')
+    return spec_dir
+
+
+# ----- pytest --------------------------------------------------------------
+
+class TestPytestPlatformScoping:
+
+    def _run(self, tmp_path, test_rel, platform_id):
+        shutil.copy(os.path.join(PROOF_SCRIPTS, 'pytest_purlin.py'), str(tmp_path / 'conftest.py'))
+        result = subprocess.run(
+            [sys.executable, '-m', 'pytest', test_rel, '-q', '--no-header', '-p', 'no:cacheprovider'],
+            capture_output=True, text=True, cwd=str(tmp_path), env=_env(platform_id))
+        assert result.returncode == 0, f"pytest failed:\n{result.stdout}\n{result.stderr}"
+
+    _SRC = (
+        'import pytest\n'
+        '@pytest.mark.proof("feat", "PROOF-1", "RULE-1", platforms=("p1",))\n'
+        'def test_declared(): assert True\n'
+        '@pytest.mark.proof("feat", "PROOF-2", "RULE-2")\n'
+        'def test_unmarked(): assert True\n'
+    )
+
+    @pytest.mark.proof("proof_common", "PROOF-21", "RULE-17", tier="integration")
+    @pytest.mark.proof("proof_common", "PROOF-5", "RULE-5", tier="integration")
+    def test_pytest_declared_marker_scopes_and_unmarked_stays_agnostic(self, tmp_path):
+        spec_dir = _spec(tmp_path, 'feat')
+        (tmp_path / 'test_feat.py').write_text(self._SRC)
+        self._run(tmp_path, 'test_feat.py', 'p1')
+        _assert_scoped_split(spec_dir / 'feat.proofs-unit@p1.json', spec_dir / 'feat.proofs-unit.json',
+                             'p1', ['PROOF-1'], ['PROOF-2'])
+
+    @pytest.mark.proof("proof_common", "PROOF-19", "RULE-15", tier="integration")
+    def test_pytest_test_file_has_forward_slashes(self, tmp_path):
+        # A file literally named with a backslash is collectable on POSIX, and
+        # item.fspath.relto(rootdir) hands the plugin that backslash.
+        spec_dir = _spec(tmp_path, 'feat')
+        (tmp_path / 'tests\\test_feat.py').write_text(self._SRC)
+        self._run(tmp_path, 'tests\\test_feat.py', 'p1')
+        for name in ('feat.proofs-unit@p1.json', 'feat.proofs-unit.json'):
+            for e in json.load(open(spec_dir / name))['proofs']:
+                assert e['test_file'] == 'tests/test_feat.py', e['test_file']
+
+    @pytest.mark.proof("proof_common", "PROOF-22", "RULE-17", tier="integration")
+    def test_pytest_unset_env_names_the_family(self, tmp_path):
+        spec_dir = _spec(tmp_path, 'feat')
+        (tmp_path / 'test_feat.py').write_text(self._SRC)
+        self._run(tmp_path, 'test_feat.py', None)
+        fam = _expected_family()
+        assert (spec_dir / f'feat.proofs-unit@{fam}.json').is_file(), os.listdir(spec_dir)
+        assert json.load(open(spec_dir / f'feat.proofs-unit@{fam}.json'))['platform'] == fam
+        assert not [n for n in os.listdir(spec_dir) if '@' in n and n != f'feat.proofs-unit@{fam}.json']
+
+
+# ----- jest ----------------------------------------------------------------
+
+@pytest.mark.skipif(not shutil.which('node'), reason='node not available')
+class TestJestPlatformScoping:
+
+    def _run(self, tmp_path, test_file_path, platform_id):
+        """Drive the real reporter's onTestResult/onRunComplete in node with a
+        fake testFilePath under rootDir=tmp_path."""
+        glob_dir = tmp_path / 'node_modules' / 'glob'
+        glob_dir.mkdir(parents=True, exist_ok=True)
+        (glob_dir / 'package.json').write_text('{"name":"glob","version":"0.0.0","main":"index.js"}')
+        (glob_dir / 'index.js').write_text(_GLOB_SHIM)
+        shutil.copy(os.path.join(PROOF_SCRIPTS, 'jest_purlin.js'), str(tmp_path / 'jest_purlin.js'))
+        harness = tmp_path / 'harness.cjs'
+        harness.write_text(
+            'const Reporter = require("./jest_purlin.js");\n'
+            f'const r = new Reporter({{ rootDir: {json.dumps(str(tmp_path))} }}, {{}});\n'
+            f'r.onTestResult(null, {{ testFilePath: {json.dumps(test_file_path)}, testResults: [\n'
+            '  { title: "declared [proof:feat:PROOF-1:RULE-1:on(p1)]", status: "passed" },\n'
+            '  { title: "unmarked [proof:feat:PROOF-2:RULE-2]", status: "passed" },\n'
+            ']});\n'
+            'r.onRunComplete();\n')
+        result = subprocess.run(['node', str(harness)], capture_output=True, text=True,
+                                cwd=str(tmp_path), env=_env(platform_id))
+        assert result.returncode == 0, f"jest reporter harness failed:\n{result.stdout}\n{result.stderr}"
+
+    @pytest.mark.proof("proof_common", "PROOF-21", "RULE-17", tier="integration")
+    @pytest.mark.proof("proof_common", "PROOF-5", "RULE-5", tier="integration")
+    def test_jest_declared_marker_scopes_and_unmarked_stays_agnostic(self, tmp_path):
+        spec_dir = _spec(tmp_path, 'feat')
+        self._run(tmp_path, str(tmp_path / 'tests' / 'feat.test.js'), 'p1')
+        _assert_scoped_split(spec_dir / 'feat.proofs-unit@p1.json', spec_dir / 'feat.proofs-unit.json',
+                             'p1', ['PROOF-1'], ['PROOF-2'])
+
+    @pytest.mark.proof("proof_common", "PROOF-19", "RULE-15", tier="integration")
+    def test_jest_test_file_has_forward_slashes(self, tmp_path):
+        spec_dir = _spec(tmp_path, 'feat')
+        self._run(tmp_path, str(tmp_path) + '/tests\\sub\\feat.test.js', 'p1')
+        for name in ('feat.proofs-unit@p1.json', 'feat.proofs-unit.json'):
+            for e in json.load(open(spec_dir / name))['proofs']:
+                assert e['test_file'] == 'tests/sub/feat.test.js', e['test_file']
+
+    @pytest.mark.proof("proof_common", "PROOF-22", "RULE-17", tier="integration")
+    def test_jest_unset_env_names_the_family(self, tmp_path):
+        spec_dir = _spec(tmp_path, 'feat')
+        self._run(tmp_path, str(tmp_path / 'tests' / 'feat.test.js'), None)
+        fam = _expected_family()
+        assert (spec_dir / f'feat.proofs-unit@{fam}.json').is_file(), os.listdir(spec_dir)
+        assert json.load(open(spec_dir / f'feat.proofs-unit@{fam}.json'))['platform'] == fam
+
+
+# ----- vitest --------------------------------------------------------------
+
+@pytest.mark.skipif(not _node_can_run_ts(), reason='node with a TS loader (tsc or type-stripping) not available')
+class TestVitestPlatformScoping(TestTypeScriptProofPlugin):
+
+    def _files(self, filepath):
+        return (
+            '[{ type: "suite", filepath: ' + json.dumps(filepath) + ', tasks: [\n'
+            '  { type: "test", name: "declared [proof:feat:PROOF-1:RULE-1:unit:on(p1)]", result: { state: "pass" } },\n'
+            '  { type: "test", name: "unmarked [proof:feat:PROOF-2:RULE-2]", result: { state: "pass" } },\n'
+            ']}]')
+
+    @pytest.mark.proof("proof_common", "PROOF-21", "RULE-17", tier="integration")
+    @pytest.mark.proof("proof_common", "PROOF-5", "RULE-5", tier="integration")
+    def test_vitest_declared_marker_scopes_and_unmarked_stays_agnostic(self, tmp_path):
+        spec_dir = _spec(tmp_path, 'feat')
+        self._drive_reporter(tmp_path, self._files(str(tmp_path / 'tests' / 'feat.test.ts')), env=_env('p1'))
+        _assert_scoped_split(spec_dir / 'feat.proofs-unit@p1.json', spec_dir / 'feat.proofs-unit.json',
+                             'p1', ['PROOF-1'], ['PROOF-2'])
+
+    @pytest.mark.proof("proof_common", "PROOF-19", "RULE-15", tier="integration")
+    def test_vitest_test_file_has_forward_slashes(self, tmp_path):
+        spec_dir = _spec(tmp_path, 'feat')
+        self._drive_reporter(tmp_path, self._files(str(tmp_path) + '/tests\\sub\\feat.test.ts'), env=_env('p1'))
+        for name in ('feat.proofs-unit@p1.json', 'feat.proofs-unit.json'):
+            for e in json.load(open(spec_dir / name))['proofs']:
+                assert e['test_file'] == 'tests/sub/feat.test.ts', e['test_file']
+
+    @pytest.mark.proof("proof_common", "PROOF-22", "RULE-17", tier="integration")
+    def test_vitest_unset_env_names_the_family(self, tmp_path):
+        spec_dir = _spec(tmp_path, 'feat')
+        self._drive_reporter(tmp_path, self._files(str(tmp_path / 'tests' / 'feat.test.ts')), env=_env(None))
+        fam = _expected_family()
+        assert (spec_dir / f'feat.proofs-unit@{fam}.json').is_file(), os.listdir(spec_dir)
+        assert json.load(open(spec_dir / f'feat.proofs-unit@{fam}.json'))['platform'] == fam
+
+    # The inherited parsing/walk tests are already recorded under the parent
+    # class; re-running them here would only duplicate their entries.
+    test_vitest_reporter_onfinished_walk = None
+    test_vitest_reporter_marker_parsing = None
+
+
+# ----- C -------------------------------------------------------------------
+
+@pytest.mark.skipif(not shutil.which('gcc'), reason='gcc not available')
+class TestCPlatformScoping:
+
+    def _run(self, tmp_path, test_file_literal, platform_id):
+        shutil.copy(os.path.join(PROOF_SCRIPTS, 'c_purlin.h'), str(tmp_path))
+        src = tmp_path / 't.c'
+        src.write_text(
+            '#include "c_purlin.h"\n'
+            'int main(void) {\n'
+            f'  purlin_proof_on("feat", "PROOF-1", "RULE-1", 1, "declared", "{test_file_literal}", "unit", "p1");\n'
+            f'  purlin_proof("feat", "PROOF-2", "RULE-2", 1, "unmarked", "{test_file_literal}", "unit");\n'
+            '  purlin_proof_finish();\n  return 0;\n}\n')
+        binary = tmp_path / 't'
+        cc = subprocess.run(['gcc', '-o', str(binary), str(src), '-I', str(tmp_path)],
+                            capture_output=True, text=True)
+        assert cc.returncode == 0, cc.stderr
+        run = subprocess.run([str(binary)], capture_output=True, text=True)
+        assert run.returncode == 0, run.stderr
+        emit = subprocess.run([sys.executable, os.path.join(PROOF_SCRIPTS, 'c_purlin_emit.py')],
+                              input=run.stdout, capture_output=True, text=True,
+                              cwd=str(tmp_path), env=_env(platform_id))
+        assert emit.returncode == 0, emit.stderr
+        return run.stdout
+
+    @pytest.mark.proof("proof_common", "PROOF-21", "RULE-17", tier="integration")
+    @pytest.mark.proof("proof_common", "PROOF-5", "RULE-5", tier="integration")
+    def test_c_declared_marker_scopes_and_unmarked_stays_agnostic(self, tmp_path):
+        spec_dir = _spec(tmp_path, 'feat')
+        stdout = self._run(tmp_path, 'tests/t.c', 'p1')
+        # The header records what was declared; the emitter decides the file.
+        by_id = {e['id']: e for e in json.loads(stdout)['proofs']}
+        assert by_id['PROOF-1']['platforms'] == 'p1' and by_id['PROOF-2']['platforms'] == '', by_id
+        _assert_scoped_split(spec_dir / 'feat.proofs-unit@p1.json', spec_dir / 'feat.proofs-unit.json',
+                             'p1', ['PROOF-1'], ['PROOF-2'])
+
+    @pytest.mark.proof("proof_common", "PROOF-19", "RULE-15", tier="integration")
+    def test_c_test_file_has_forward_slashes(self, tmp_path):
+        spec_dir = _spec(tmp_path, 'feat')
+        stdout = self._run(tmp_path, 'tests\\\\sub\\\\t.c', 'p1')
+        assert '\\\\' in stdout, "the header must hand the emitter the backslashes as given"
+        for name in ('feat.proofs-unit@p1.json', 'feat.proofs-unit.json'):
+            for e in json.load(open(spec_dir / name))['proofs']:
+                assert e['test_file'] == 'tests/sub/t.c', e['test_file']
+
+    @pytest.mark.proof("proof_common", "PROOF-22", "RULE-17", tier="integration")
+    def test_c_unset_env_names_the_family(self, tmp_path):
+        spec_dir = _spec(tmp_path, 'feat')
+        self._run(tmp_path, 'tests/t.c', None)
+        fam = _expected_family()
+        assert (spec_dir / f'feat.proofs-unit@{fam}.json').is_file(), os.listdir(spec_dir)
+        assert json.load(open(spec_dir / f'feat.proofs-unit@{fam}.json'))['platform'] == fam
+
+
+# ----- SQL -----------------------------------------------------------------
+
+@pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
+class TestSQLPlatformScoping:
+
+    _SQL = (
+        '-- @purlin feat PROOF-1 RULE-1 on(p1)\n-- Test: declared\nSELECT \'PASS\';\n'
+        '-- @purlin feat PROOF-2 RULE-2\n-- Test: unmarked\nSELECT \'PASS\';\n'
+    )
+
+    def _run(self, tmp_path, rel, platform_id):
+        (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / rel).write_text(self._SQL)
+        result = subprocess.run(['bash', os.path.join(PROOF_SCRIPTS, 'sql_purlin.sh'), rel],
+                                capture_output=True, text=True, cwd=str(tmp_path), env=_env(platform_id))
+        assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+
+    @pytest.mark.proof("proof_common", "PROOF-21", "RULE-17", tier="integration")
+    @pytest.mark.proof("proof_common", "PROOF-5", "RULE-5", tier="integration")
+    def test_sql_declared_marker_scopes_and_unmarked_stays_agnostic(self, tmp_path):
+        spec_dir = _spec(tmp_path, 'feat')
+        self._run(tmp_path, 'tests/feat.sql', 'p1')
+        _assert_scoped_split(spec_dir / 'feat.proofs-unit@p1.json', spec_dir / 'feat.proofs-unit.json',
+                             'p1', ['PROOF-1'], ['PROOF-2'])
+
+    @pytest.mark.proof("proof_common", "PROOF-19", "RULE-15", tier="integration")
+    def test_sql_test_file_has_forward_slashes(self, tmp_path):
+        # The argv path is a file literally named with a backslash on POSIX.
+        spec_dir = _spec(tmp_path, 'feat')
+        self._run(tmp_path, 'tests\\feat.sql', 'p1')
+        for name in ('feat.proofs-unit@p1.json', 'feat.proofs-unit.json'):
+            for e in json.load(open(spec_dir / name))['proofs']:
+                assert e['test_file'] == 'tests/feat.sql', e['test_file']
+
+    @pytest.mark.proof("proof_common", "PROOF-22", "RULE-17", tier="integration")
+    def test_sql_unset_env_names_the_family(self, tmp_path):
+        spec_dir = _spec(tmp_path, 'feat')
+        self._run(tmp_path, 'tests/feat.sql', None)
+        fam = _expected_family()
+        assert (spec_dir / f'feat.proofs-unit@{fam}.json').is_file(), os.listdir(spec_dir)
+        assert json.load(open(spec_dir / f'feat.proofs-unit@{fam}.json'))['platform'] == fam
+
+
+# ----- PHP -----------------------------------------------------------------
+
+@pytest.mark.skipif(not shutil.which('php'), reason='php not available')
+class TestPHPPlatformScoping:
+
+    _PHP = (
+        '<?php\n'
+        '/** @purlin feat PROOF-1 RULE-1 unit on(p1) */\n'
+        'function test_declared() { }\n'
+        '/** @purlin feat PROOF-2 RULE-2 unit */\n'
+        'function test_unmarked() { }\n'
+    )
+
+    def _run(self, tmp_path, rel, platform_id):
+        (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / rel).write_text(self._PHP)
+        result = subprocess.run(['php', os.path.join(PROOF_SCRIPTS, 'phpunit_purlin.php'), rel],
+                                capture_output=True, text=True, cwd=str(tmp_path), env=_env(platform_id))
+        assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+
+    @pytest.mark.proof("proof_common", "PROOF-21", "RULE-17", tier="integration")
+    @pytest.mark.proof("proof_common", "PROOF-5", "RULE-5", tier="integration")
+    def test_php_declared_marker_scopes_and_unmarked_stays_agnostic(self, tmp_path):
+        spec_dir = _spec(tmp_path, 'feat')
+        self._run(tmp_path, 'tests/FeatTest.php', 'p1')
+        _assert_scoped_split(spec_dir / 'feat.proofs-unit@p1.json', spec_dir / 'feat.proofs-unit.json',
+                             'p1', ['PROOF-1'], ['PROOF-2'])
+
+    @pytest.mark.proof("proof_common", "PROOF-19", "RULE-15", tier="integration")
+    def test_php_test_file_has_forward_slashes(self, tmp_path):
+        spec_dir = _spec(tmp_path, 'feat')
+        self._run(tmp_path, 'tests\\FeatTest.php', 'p1')
+        for name in ('feat.proofs-unit@p1.json', 'feat.proofs-unit.json'):
+            for e in json.load(open(spec_dir / name))['proofs']:
+                assert e['test_file'] == 'tests/FeatTest.php', e['test_file']
+
+    @pytest.mark.proof("proof_common", "PROOF-22", "RULE-17", tier="integration")
+    def test_php_unset_env_names_the_family(self, tmp_path):
+        spec_dir = _spec(tmp_path, 'feat')
+        self._run(tmp_path, 'tests/FeatTest.php', None)
+        fam = _expected_family()
+        assert (spec_dir / f'feat.proofs-unit@{fam}.json').is_file(), os.listdir(spec_dir)
+        assert json.load(open(spec_dir / f'feat.proofs-unit@{fam}.json'))['platform'] == fam
+
+
+# ----- xUnit ---------------------------------------------------------------
+
+_PLATFORM_TEST_CS = (
+    'using Xunit;\n'
+    'namespace Svc.Tests {\n'
+    '  public class PlatTests {\n'
+    '    [Fact][Trait("PurlinProof","feat:PROOF-1:RULE-1:unit:on(p1)")]\n'
+    '    public void Declared() { Assert.True(true); }\n'
+    '    [Fact][Trait("PurlinProof","feat:PROOF-2:RULE-2")]\n'
+    '    public void Unmarked() { Assert.True(true); }\n'
+    '  }\n'
+    '}\n'
+)
+
+
+@pytest.mark.skipif(not shutil.which('dotnet'), reason='dotnet SDK not available')
+class TestXUnitPlatformScoping:
+
+    def _build_and_run(self, root, platform_id):
+        (root / 'logger').mkdir()
+        shutil.copy(_XUNIT_LOGGER_SRC, str(root / 'logger' / 'PurlinProofLogger.cs'))
+        (root / 'logger' / 'logger.csproj').write_text(_LOGGER_CSPROJ)
+        (root / 'tests').mkdir()
+        (root / 'tests' / 'tests.csproj').write_text(_TEST_CSPROJ)
+        (root / 'tests' / 'Tests.cs').write_text(_PLATFORM_TEST_CS)
+        env = _env(platform_id)
+        env.update(DOTNET_CLI_TELEMETRY_OPTOUT='1', DOTNET_NOLOGO='1')
+        proc = subprocess.run(
+            ['dotnet', 'test', 'tests/tests.csproj', '--logger', 'purlin',
+             '--', 'RunConfiguration.CollectSourceInformation=true'],
+            cwd=str(root), capture_output=True, text=True, env=env)
+        return proc
+
+    @pytest.fixture(scope='class')
+    def scoped_run(self, tmp_path_factory):
+        root = tmp_path_factory.mktemp('xunit_plat')
+        spec_dir = _spec(root, 'feat', 'svc')
+        proc = self._build_and_run(root, 'p1')
+        return {'root': root, 'spec_dir': spec_dir, 'proc': proc}
+
+    @pytest.mark.proof("proof_common", "PROOF-21", "RULE-17", tier="integration")
+    @pytest.mark.proof("proof_common", "PROOF-5", "RULE-5", tier="integration")
+    def test_xunit_declared_marker_scopes_and_unmarked_stays_agnostic(self, scoped_run):
+        spec_dir = scoped_run['spec_dir']
+        assert (spec_dir / 'feat.proofs-unit@p1.json').is_file(), (
+            f"{os.listdir(spec_dir)}\n{scoped_run['proc'].stdout}\n{scoped_run['proc'].stderr}")
+        _assert_scoped_split(spec_dir / 'feat.proofs-unit@p1.json', spec_dir / 'feat.proofs-unit.json',
+                             'p1', ['PROOF-1'], ['PROOF-2'])
+
+    @pytest.mark.proof("proof_common", "PROOF-19", "RULE-15", tier="integration")
+    def test_xunit_test_file_has_forward_slashes(self, scoped_run):
+        # CodeFilePath comes from the compiler's own view of the source path, so a
+        # backslash can only reach the logger on Windows; there MakeRelative's
+        # Replace turns it into "/". On a POSIX host this asserts the recorded
+        # path of the real run and that the replacement is what MakeRelative does.
+        spec_dir = scoped_run['spec_dir']
+        for name in ('feat.proofs-unit@p1.json', 'feat.proofs-unit.json'):
+            for e in json.load(open(spec_dir / name))['proofs']:
+                assert '\\' not in e['test_file'] and e['test_file'].endswith('Tests.cs'), e['test_file']
+        src = open(_XUNIT_LOGGER_SRC).read()
+        body = src[src.index('private static string MakeRelative'):]
+        body = body[:body.index('\n        }\n')]
+        assert body.count(".Replace('\\\\', '/')") == 2, body
+
+    @pytest.mark.proof("proof_common", "PROOF-22", "RULE-17", tier="integration")
+    def test_xunit_unset_env_names_the_family(self, tmp_path):
+        spec_dir = _spec(tmp_path, 'feat', 'svc')
+        proc = self._build_and_run(tmp_path, None)
+        fam = _expected_family()
+        assert (spec_dir / f'feat.proofs-unit@{fam}.json').is_file(), (
+            f"{os.listdir(spec_dir)}\n{proc.stdout}\n{proc.stderr}")
+        assert json.load(open(spec_dir / f'feat.proofs-unit@{fam}.json'))['platform'] == fam
+
+
+# ----- one plugin per framework, everywhere (RULE-16) -----------------------
+
+class TestOnePluginEverywhere:
+
+    _HOST_TOKENS = _re.compile(
+        r'sys\.platform|platform\.system|process\.platform|os\.platform|PHP_OS|RuntimeInformation|\buname\b')
+    # Function-definition lines across Python, shell, JS/TS, PHP, C and C#.
+    _DEF_RE = _re.compile(
+        r'^\s*(?:'
+        r'def\s+(?P<py>\w+)\s*\('                                    # Python (also inside shell heredocs)
+        r'|(?:export\s+)?(?:async\s+)?function\s+(?P<js>\w+)\s*\('   # JS/TS/PHP
+        r'|(?P<sh>\w+)\s*\(\)\s*\{'                                  # shell
+        r'|(?:(?:public|private|protected|internal|static|override|async)\s+)*[\w<>\[\]?,. ]+?\s+(?P<cs>\w+)\s*\([^;]*\)\s*(?:\{|$)'  # C/C#
+        r'|(?:private|public|protected)?\s*(?P<ts>\w+)\s*\([^)]*\)\s*(?::\s*[\w<>\[\]| ]+)?\s*\{\s*$'  # TS/JS methods
+        r')')
+
+    _KEYWORDS = {'if', 'else', 'elseif', 'for', 'foreach', 'while', 'switch', 'catch', 'return', 'try'}
+
+    @staticmethod
+    def _enclosing_function(lines, idx):
+        """Name of the nearest function definition at or above line idx, or None."""
+        for i in range(idx, -1, -1):
+            m = TestOnePluginEverywhere._DEF_RE.match(lines[i])
+            if m:
+                name = next(v for v in m.groupdict().values() if v)
+                if name not in TestOnePluginEverywhere._KEYWORDS:
+                    return name
+        return None
+
+    @pytest.mark.proof("proof_common", "PROOF-20", "RULE-16", tier="integration")
+    def test_host_detection_lives_only_in_the_host_platform_helper(self):
+        dirs = [os.path.abspath(PROOF_SCRIPTS), os.path.abspath(_PLUGIN_COPIES)]
+        checked = 0
+        hits = 0
+        offenders = []
+        for d in dirs:
+            for name in sorted(os.listdir(d)):
+                path = os.path.join(d, name)
+                if not os.path.isfile(path) or name.startswith('.'):
+                    continue
+                checked += 1
+                lines = open(path, encoding='utf-8').read().splitlines()
+                for i, line in enumerate(lines):
+                    if not self._HOST_TOKENS.search(line):
+                        continue
+                    hits += 1
+                    fn = self._enclosing_function(lines, i)
+                    if not fn or 'hostplatform' not in fn.lower().replace('_', ''):
+                        offenders.append(f"{os.path.relpath(path)}:{i + 1} in {fn!r}: {line.strip()}")
+        assert checked >= 12, f"expected the 8 plugins plus the 4 copies, saw {checked}"
+        assert hits >= 7, f"every host-detecting plugin should show its helper; saw {hits} hits"
+        assert not offenders, "host detection outside a host_platform helper:\n" + "\n".join(offenders)
+
+    @pytest.mark.proof("proof_common", "PROOF-20", "RULE-16", tier="integration")
+    def test_plugin_copies_are_byte_identical_to_the_originals(self):
+        pairs = {
+            'pytest_purlin.py': 'pytest_purlin.py',
+            'jest_purlin.js': 'jest_purlin.js',
+            'vitest_purlin.ts': 'vitest_purlin.ts',
+            'shell_purlin.sh': 'purlin-proof.sh',
+        }
+        for src, copy in pairs.items():
+            a = open(os.path.join(PROOF_SCRIPTS, src), 'rb').read()
+            b = open(os.path.join(_PLUGIN_COPIES, copy), 'rb').read()
+            assert a == b, f".purlin/plugins/{copy} differs from scripts/proof/{src}"

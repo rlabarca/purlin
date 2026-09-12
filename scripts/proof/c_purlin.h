@@ -18,6 +18,18 @@
  *       return 0;
  *   }
  *
+ * A proof that must be proved on named platforms declares them with
+ * purlin_proof_on(), whose last argument is a comma-separated list of ids:
+ *
+ *       purlin_proof_on("auth_login", "PROOF-2", "RULE-2", locked,
+ *                       "test_native_lock", __FILE__, "unit", "windows-2022");
+ *
+ * purlin_proof() is purlin_proof_on() with NULL platforms. The header only
+ * records what was declared; the emitter (c_purlin_emit.py) decides the file:
+ * an entry with platforms declared goes to <feature>.proofs-<tier>@<host>.json
+ * (<host> is PURLIN_PLATFORM, else the OS family) with an eighth field
+ * "platform", and an entry without goes to the agnostic <feature>.proofs-<tier>.json.
+ *
  * Compile and run, then pipe to the emitter:
  *   gcc -o test_runner test_runner.c && ./test_runner | python3 c_purlin_emit.py
  */
@@ -38,24 +50,33 @@ typedef struct {
     char test_name[PURLIN_MAX_STR];
     char test_file[PURLIN_MAX_STR];
     char tier[PURLIN_MAX_STR];
+    char platforms[PURLIN_MAX_STR];
     int passed;
 } PurlinProofEntry;
 
 static PurlinProofEntry _purlin_proofs[PURLIN_MAX_PROOFS];
 static int _purlin_proof_count = 0;
 
-static void purlin_proof(const char *feature, const char *id, const char *rule,
-                         int passed, const char *test_name, const char *test_file,
-                         const char *tier) {
+static void purlin_proof_on(const char *feature, const char *id, const char *rule,
+                            int passed, const char *test_name, const char *test_file,
+                            const char *tier, const char *platforms) {
     if (_purlin_proof_count >= PURLIN_MAX_PROOFS) return;
     PurlinProofEntry *e = &_purlin_proofs[_purlin_proof_count++];
+    memset(e, 0, sizeof(*e));
     strncpy(e->feature, feature, PURLIN_MAX_STR - 1);
     strncpy(e->id, id, PURLIN_MAX_STR - 1);
     strncpy(e->rule, rule, PURLIN_MAX_STR - 1);
     strncpy(e->test_name, test_name, PURLIN_MAX_STR - 1);
     strncpy(e->test_file, test_file, PURLIN_MAX_STR - 1);
     strncpy(e->tier, tier, PURLIN_MAX_STR - 1);
+    if (platforms != NULL) strncpy(e->platforms, platforms, PURLIN_MAX_STR - 1);
     e->passed = passed;
+}
+
+static void purlin_proof(const char *feature, const char *id, const char *rule,
+                         int passed, const char *test_name, const char *test_file,
+                         const char *tier) {
+    purlin_proof_on(feature, id, rule, passed, test_name, test_file, tier, NULL);
 }
 
 /* Escape a string for JSON output (handles quotes and backslashes). */
@@ -88,7 +109,9 @@ static void purlin_proof_finish(void) {
         printf(", \"test_name\": \"%s\"", buf);
         printf(", \"status\": \"%s\"", e->passed ? "pass" : "fail");
         _purlin_json_escape(e->tier, buf, sizeof(buf));
-        printf(", \"tier\": \"%s\"}", buf);
+        printf(", \"tier\": \"%s\"", buf);
+        _purlin_json_escape(e->platforms, buf, sizeof(buf));
+        printf(", \"platforms\": \"%s\"}", buf);
     }
     printf("\n  ]\n}\n");
 }

@@ -1,7 +1,7 @@
-"""Tests for schema_proof_format — 7 rules.
+"""Tests for schema_proof_format — 8 rules.
 
 Validates the proof file schema, merge behavior, tier constraints,
-git tracking, and manual stamp format.
+platform-scoped file discovery, git tracking, and manual stamp format.
 """
 
 import glob
@@ -223,33 +223,203 @@ class TestProofFormatEnforcement:
         assert len(entries) == 2, f"expected exactly 2 entries, got {entries}"
 
 
+class TestScopedProofFiles(TestProofFormatEnforcement):
+    """RULE-5 in a scoped file and RULE-8 discovery. Inherits the tmp project
+    fixture; the parent's tests are not re-run here."""
+
+    test_proof_file_read_by_sync_status = None
+    test_proof_entry_has_all_seven_fields = None
+    test_invalid_status_not_counted = None
+    test_feature_scoped_overwrite = None
+    test_merge_key_includes_test_file = None
+
+    _SEVEN = {'feature', 'id', 'rule', 'test_file', 'test_name', 'status', 'tier'}
+
+    def _write_scoped(self, name, platform, proofs, tier='unit', subdir='test'):
+        d = os.path.join(self.project_root, 'specs', subdir)
+        os.makedirs(d, exist_ok=True)
+        path = os.path.join(d, f'{name}.proofs-{tier}@{platform}.json')
+        with open(path, 'w') as f:
+            json.dump({"tier": tier, "platform": platform, "proofs": proofs}, f)
+        return path
+
+    def _conftest(self):
+        plugin_path = os.path.join(PROJECT_ROOT, 'scripts', 'proof')
+        with open(os.path.join(self.project_root, 'conftest.py'), 'w') as f:
+            f.write('import sys\n'
+                    f'sys.path.insert(0, r"{plugin_path}")\n'
+                    'from pytest_purlin import pytest_configure  # noqa\n')
+
+    def _pytest(self, *files, platform='p1'):
+        import subprocess
+        env = dict(os.environ, PURLIN_PLATFORM=platform)
+        result = subprocess.run(['python3', '-m', 'pytest', *files, '-q', '-p', 'no:cacheprovider'],
+                                cwd=self.project_root, capture_output=True, text=True, env=env)
+        assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+
+    @pytest.mark.proof("schema_proof_format", "PROOF-5", "RULE-5")
+    def test_scoped_file_merge_preserves_other_feature_and_leaves_agnostic_file_alone(self):
+        self._write_spec('feat_a', (
+            '# Feature: feat_a\n\n## What it does\nA.\n\n'
+            '## Rules\n- RULE-1: Must work\n\n## Proof\n- PROOF-1 (RULE-1): Test @unit @on(p1)\n'
+        ))
+        seed_b = {"feature": "feat_b", "id": "PROOF-1", "rule": "RULE-1",
+                  "test_file": "t.py", "test_name": "t_b", "status": "pass", "tier": "unit"}
+        scoped = self._write_scoped('feat_a', 'p1', [dict(seed_b, platform='p1')])
+        self._write_proofs('feat_a', [seed_b])
+        agnostic = os.path.join(self.project_root, 'specs', 'test', 'feat_a.proofs-unit.json')
+        before = open(agnostic, 'rb').read()
+
+        with open(os.path.join(self.project_root, 'test_feat_a.py'), 'w') as f:
+            f.write('import pytest\n'
+                    '@pytest.mark.proof("feat_a", "PROOF-1", "RULE-1", platforms=("p1",))\n'
+                    'def test_a():\n    assert True\n')
+        self._conftest()
+        self._pytest('test_feat_a.py', platform='p1')
+
+        data = json.load(open(scoped))
+        assert data['platform'] == 'p1'
+        by_feature = {p['feature']: p for p in data['proofs']}
+        assert by_feature['feat_b']['test_name'] == 't_b', "feat_b must survive in the scoped file"
+        assert by_feature['feat_a']['test_file'] == 'test_feat_a.py'
+        assert all(p['platform'] == 'p1' and set(p) == self._SEVEN | {'platform'} for p in data['proofs']), data
+        assert open(agnostic, 'rb').read() == before, (
+            "a run that wrote only the scoped file must not touch the agnostic file")
+
+    @pytest.mark.proof("schema_proof_format", "PROOF-8", "RULE-5")
+    def test_scoped_file_merge_key_includes_test_file(self):
+        self._write_spec('feat_split', (
+            '# Feature: feat_split\n\n## What it does\nSplit.\n\n'
+            '## Rules\n- RULE-1: a\n- RULE-2: b\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): Test @on(p1)\n- PROOF-2 (RULE-2): Test @on(p1)\n'
+        ))
+        for name, pid, rid in (('test_first_half.py', 'PROOF-1', 'RULE-1'),
+                               ('test_second_half.py', 'PROOF-2', 'RULE-2')):
+            with open(os.path.join(self.project_root, name), 'w') as f:
+                f.write('import pytest\n'
+                        f'@pytest.mark.proof("feat_split", "{pid}", "{rid}", platforms=("p1",))\n'
+                        f'def test_{pid.lower().replace("-", "_")}():\n    assert True\n')
+        scoped = self._write_scoped('feat_split', 'p1', [
+            {"feature": "feat_split", "id": "PROOF-1", "rule": "RULE-1",
+             "test_file": "test_first_half.py", "test_name": "stale_name",
+             "status": "fail", "tier": "unit", "platform": "p1"},
+            {"feature": "feat_split", "id": "PROOF-2", "rule": "RULE-2",
+             "test_file": "test_second_half.py", "test_name": "test_proof_2",
+             "status": "pass", "tier": "unit", "platform": "p1"},
+        ])
+        self._conftest()
+        self._pytest('test_first_half.py', platform='p1')
+
+        entries = json.load(open(scoped))['proofs']
+        by_file = {e['test_file']: e for e in entries}
+        assert by_file['test_second_half.py']['test_name'] == 'test_proof_2', entries
+        assert by_file['test_first_half.py']['status'] == 'pass', entries
+        assert by_file['test_first_half.py']['test_name'] == 'test_proof_1', entries
+        assert len(entries) == 2, entries
+        assert not os.path.exists(os.path.join(self.project_root, 'specs', 'test',
+                                               'feat_split.proofs-unit.json')), (
+            "declared markers write no agnostic file")
+
+    @pytest.mark.proof("schema_proof_format", "PROOF-9", "RULE-8")
+    def test_discovery_stamps_platform_skips_bad_ids_and_aliases_legacy_files(self):
+        import inspect
+        sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'audit'))
+        import static_checks
+        assert inspect.getsource(purlin_server._proof_file_parts) == \
+            inspect.getsource(static_checks._proof_file_parts)
+        assert purlin_server._PROOF_FILE_RE.pattern == static_checks._PROOF_FILE_RE.pattern
+
+        spec = ('# Feature: {n}\n\n## What it does\nX.\n\n## Rules\n- RULE-1: r\n\n'
+                '## Proof\n- PROOF-1 (RULE-1): t\n')
+        self._write_spec('foo', spec.format(n='foo'))
+        self._write_spec('bar', spec.format(n='bar'))
+        entry = lambda feat, tf: {"feature": feat, "id": "PROOF-1", "rule": "RULE-1",
+                                  "test_file": tf, "test_name": "t", "status": "pass", "tier": "unit"}
+        self._write_proofs('foo', [entry('foo', 'agnostic.py')])
+        self._write_scoped('foo', 'ok-1', [dict(entry('foo', 'scoped.py'), platform='ok-1')])
+        d = os.path.join(self.project_root, 'specs', 'test')
+        with open(os.path.join(d, 'foo.proofs-unit@Bad_Id.json'), 'w') as f:
+            json.dump({"tier": "unit", "platform": "Bad_Id",
+                       "proofs": [dict(entry('foo', 'bad.py'), platform='Bad_Id')]}, f)
+        with open(os.path.join(d, 'bar.proofs-windows.json'), 'w') as f:
+            json.dump({"tier": "windows", "proofs": [dict(entry('bar', 'legacy.py'), tier='windows')]}, f)
+
+        legacy = []
+        read = purlin_server._read_proofs(self.project_root, legacy=legacy)
+        by_file = {e['test_file']: e for e in read['foo']}
+        assert by_file['agnostic.py']['platform'] is None
+        assert by_file['scoped.py']['platform'] == 'ok-1'
+        assert 'bad.py' not in by_file, "a suffix outside the id charset must not be read"
+        assert [(e['tier'], e['platform']) for e in read['bar']] == [('unit', 'windows')]
+        assert legacy == ['specs/test/bar.proofs-windows.json']
+
+        out = purlin_server.sync_status(self.project_root)
+        assert 'specs/test/bar.proofs-windows.json' in out, out
+        assert 'read as unit@windows' in out and 'bar.proofs-unit@windows.json' in out, out
+        assert 'purlin:init --update' in out, out
+        assert 'bar: PASSING' in out or 'bar: VERIFIED' in out, out
+
+        os.remove(os.path.join(d, 'bar.proofs-windows.json'))
+        legacy2 = []
+        purlin_server._read_proofs(self.project_root, legacy=legacy2)
+        assert legacy2 == []
+        assert 'purlin:init --update' not in purlin_server.sync_status(self.project_root)
+
+
 class TestProofFormatConventions:
 
     @pytest.mark.proof("schema_proof_format", "PROOF-4", "RULE-4")
     def test_standard_tiers_documented(self):
-        valid_tiers = {'unit', 'integration', 'e2e', 'windows'}
-        # Verify all existing proof files only use valid tiers
-        proof_files = glob.glob(os.path.join(PROJECT_ROOT, 'specs', '**',
-                                             '*.proofs-*.json'), recursive=True)
+        """RULE-4: the tier vocabulary is unit, integration, e2e; nothing is
+        runner-gated by tier. A committed legacy `<feature>.proofs-windows.json`
+        is tolerated for one release only through the server's alias, which
+        reads it as unit@windows; every `@` suffix is a platform id."""
+        valid_tiers = {'unit', 'integration', 'e2e'}
+        proof_files = sorted(glob.glob(os.path.join(PROJECT_ROOT, 'specs', '**',
+                                                    '*.proofs-*.json'), recursive=True))
         assert len(proof_files) > 0, "No proof files found"
+        legacy = []
         for path in proof_files:
+            parts = purlin_server._proof_file_parts(os.path.basename(path))
+            assert parts is not None, f"{path} matches no proof-file pattern"
+            _stem, file_tier, platform, is_legacy = parts
+            assert file_tier in valid_tiers, f"Invalid tier '{file_tier}' in the name of {path}"
+            if platform is not None:
+                assert purlin_server._PLATFORM_ID_RE.match(platform), (
+                    f"the @ suffix of {path} is not a platform id")
             with open(path) as f:
                 data = json.load(f)
-            file_tier = data.get('tier', '')
-            assert file_tier in valid_tiers, \
-                f"Invalid top-level tier '{file_tier}' in {path}"
+            if is_legacy:
+                legacy.append(os.path.relpath(path, PROJECT_ROOT))
+                continue
+            assert data.get('tier') == file_tier, (
+                f"top-level tier {data.get('tier')!r} disagrees with the filename of {path}")
+            assert data.get('platform') == platform, (
+                f"top-level platform {data.get('platform')!r} disagrees with the filename of {path}")
             for entry in data.get('proofs', []):
-                entry_tier = entry.get('tier', '')
-                assert entry_tier in valid_tiers, \
-                    f"Invalid entry tier '{entry_tier}' in {entry.get('id')} of {path}"
+                assert entry.get('tier') == file_tier, (
+                    f"Invalid entry tier '{entry.get('tier')}' in {entry.get('id')} of {path}")
+                assert entry.get('platform') == platform, (
+                    f"entry platform {entry.get('platform')!r} in {entry.get('id')} of {path}")
 
-        # Verify format reference documents the standard tiers + the platform-gated windows tier
+        # The legacy file is read through the alias as unit@windows, on every entry.
+        read = purlin_server._read_proofs(PROJECT_ROOT)
+        for rel in legacy:
+            with open(os.path.join(PROJECT_ROOT, rel)) as f:
+                ids = {e['id'] for e in json.load(f)['proofs']}
+            stem = os.path.basename(rel).split('.proofs-')[0]
+            seen = [e for e in read.get(stem, []) if e['id'] in ids]
+            assert seen and all(e['tier'] == 'unit' and e['platform'] == 'windows' for e in seen), (
+                f"{rel} must be read as unit@windows, got "
+                f"{[(e['id'], e['tier'], e['platform']) for e in seen]}")
+
+        # Verify the spec format documents the tiers and the platform tag.
         with open(os.path.join(PROJECT_ROOT, 'references', 'formats',
                                'spec_format.md')) as f:
             fmt = f.read()
         assert '@integration' in fmt
         assert '@e2e' in fmt
-        assert '@windows' in fmt
+        assert '@on(' in fmt
 
     @pytest.mark.proof("schema_proof_format", "PROOF-6", "RULE-6")
     def test_proof_files_not_gitignored(self):
