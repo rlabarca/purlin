@@ -3441,10 +3441,34 @@ class TestRemoteVerificationChip:
                 f"{chip.get_attribute('data-rv-mode')!r}")
             assert mode in chip.inner_text(), chip.inner_text()
             title = chip.get_attribute("title") or ""
-            assert "branch protection" in title, (
-                f"the tooltip must name the enforcement: {title!r}")
-            assert "declares" in title or "Declared" in title, (
-                f"the tooltip must say the field is a declaration: {title!r}")
+            assert title == (
+                "Declared in .purlin/config.json. The field declares the mode; "
+                "enforcement is branch protection marking the verify-gate job "
+                "a required check."), (
+                "the tooltip must carry both halves of the split verbatim: "
+                f"{title!r}")
+
+        # Never recomputed here. The chip is the payload's field and nothing
+        # else, so a payload whose field disagrees with every other signal in
+        # it still renders the field. A dashboard that derived the mode from,
+        # say, the presence of remote platforms or of awaiting proofs would
+        # flip both of these.
+        data = platform_data()          # platforms.remote holds windows-2022,
+        data["remote_verification"] = "off"   # whose row has an awaiting proof
+        load_dashboard(page, dashboard, data=data)
+        assert page.locator(".rv-mode").count() == 0, (
+            "an 'off' payload renders no chip even with a remote platform and "
+            "an awaiting proof in it: the mode is read, never recomputed")
+
+        data = make_data()              # no platforms, nothing awaiting
+        data["platform_testing"] = False
+        data["remote_verification"] = "required"
+        load_dashboard(page, dashboard, data=data)
+        chip = page.locator(".header .rv-mode")
+        assert chip.count() == 1 and chip.get_attribute("data-rv-mode") == "required", (
+            "a 'required' payload renders the declared mode even with no "
+            "remote platform to justify recomputing it, got "
+            f"{chip.count()} chip(s) reading {chip.get_attribute('data-rv-mode')!r}")
 
         # off renders nothing. A project that never opted in gains no chip.
         data = make_data()
@@ -3671,6 +3695,45 @@ class TestModalHelperRuntime:
             "render() must close an open dialog before rebuilding #app"
         assert page.locator(".modal-overlay").count() == 0, \
             "no overlay may outlive the content it described"
+
+        # The two closing paths that are not the close button. PROOF-44
+        # exercises them too, but under RULE-42: the rule that owns the one
+        # modal helper is this one, so its proof asserts them itself.
+        page.locator(".sc-verified").click()
+        assert page.locator("#modal").count() == 1, \
+            "the Verified card must reopen the dialog"
+        page.keyboard.press("Escape")
+        assert page.locator("#modal").count() == 0, \
+            "Escape must close the dialog"
+        assert page.locator(".modal-overlay").count() == 0, \
+            "Escape must take the overlay with it"
+        assert page.evaluate(
+            "document.activeElement.classList.contains('sc-verified')"), \
+            "Escape must return focus to the card that opened the dialog"
+
+        page.locator(".sc-verified").click()
+        assert page.locator("#modal").count() == 1, \
+            "the Verified card must reopen the dialog"
+        page.locator("#modal-overlay").click(position={"x": 5, "y": 5})
+        assert page.locator("#modal").count() == 0, \
+            "a click on the backdrop, outside the dialog box, must close it"
+        assert page.locator(".modal-overlay").count() == 0, \
+            "the backdrop click must take the overlay with it"
+
+        # Tab is trapped: ten presses is more than the dialog's focusables, so
+        # an untrapped dialog reaches the summary cards behind it.
+        page.locator(".sc-verified").click()
+        for i in range(1, 11):
+            page.keyboard.press("Tab")
+            assert page.evaluate(
+                "() => !!document.getElementById('modal') &&"
+                " document.getElementById('modal')"
+                ".contains(document.activeElement)"), (
+                f"Tab press {i} left the dialog, focus reached "
+                + page.evaluate(
+                    "() => document.activeElement.id"
+                    " || document.activeElement.className"))
+        page.keyboard.press("Escape")
 
 
 class TestHostSummaryRow:

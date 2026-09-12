@@ -2191,21 +2191,32 @@ class TestProofDesignGauge:
 
     @pytest.mark.proof("report_data", "PROOF-24", "RULE-23", tier="e2e")
     def test_report_data_carries_design_summary(self):
+        """RULE-23: the gauge's own numbers, seeded asymmetrically.
+
+        2 PROVABLE and 1 LOOSE, not one of each: a symmetric seed scores 50
+        either way round, so a scorer that swapped the two level labels would
+        pass it. 2 of 3 reads 67, and the swap reads 33.
+        """
         _make_project(self.tmp_dir, with_git=True, with_report=True)
         write_audit_cache(self.tmp_dir, {
             'd1': self._design_entry('PROVABLE', 'PROOF-1'),
-            'd2': self._design_entry('LOOSE', 'PROOF-2'),
+            'd2': self._design_entry('PROVABLE', 'PROOF-2'),
+            'd3': self._design_entry('LOOSE', 'PROOF-3'),
         }, static_checks.DESIGN_CACHE)
 
         sync_status(self.tmp_dir)
         raw = open(os.path.join(self.tmp_dir, '.purlin', 'report-data.js')).read()
         data = json.loads(raw.removeprefix('const PURLIN_DATA = ').removesuffix(';\n'))
         assert data['design_summary'] is not None, "report data must carry design_summary"
-        assert data['design_summary']['design'] == 50
-        assert data['design_summary']['provable'] == 1
-        assert data['design_summary']['loose'] == 1
+        assert data['design_summary']['design'] == 67, (
+            "2 PROVABLE of 3 gradeable is 67, and 33 would mean the PROVABLE "
+            f"and LOOSE labels are the wrong way round: {data['design_summary']}")
+        assert data['design_summary']['provable'] == 2, data['design_summary']
+        assert data['design_summary']['loose'] == 1, data['design_summary']
         assert data['design_summary']['unprovable'] == 0
         assert data['design_summary']['structural'] == 0
+        assert data['design_summary']['gradeable_total'] == 3, \
+            data['design_summary']
 
         # Removing the cache reverts the gauge to null rather than a stale number.
         os.remove(os.path.join(self.tmp_dir, '.purlin', 'cache', 'design_cache.json'))

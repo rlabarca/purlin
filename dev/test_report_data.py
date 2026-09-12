@@ -158,6 +158,36 @@ def _two_rule_proofs(feature='feature'):
     ]
 
 
+def _four_rule_spec_content(name='feature'):
+    """A spec declaring RULE-1..RULE-4 with PROOF-1..PROOF-4.
+
+    The asymmetric-seed fixture: a summary seeded 1 STRONG and 1 WEAK scores 50
+    with the level labels either way round, so four proofs are what it takes to
+    grade 3 of them STRONG and read a percentage that the swap would change.
+    """
+    rules = ('returns correct output', 'rejects malformed input',
+             'rate limits repeat callers', 'logs every rejection')
+    proofs = ('assert output', 'assert it raises', 'assert the 6th call is refused',
+              'assert the rejection reached the log')
+    return (
+        f'# Feature: {name}\n\n'
+        '> Description: Does stuff.\n\n'
+        '## Rules\n'
+        + ''.join(f'- RULE-{i}: {name} {text}\n'
+                  for i, text in enumerate(rules, 1))
+        + '\n## Proof\n'
+        + ''.join(f'- PROOF-{i} (RULE-{i}): Call {name}(), {text}\n'
+                  for i, text in enumerate(proofs, 1))
+    )
+
+
+def _four_rule_proofs(feature='feature'):
+    """Executed proof records for all four proofs of _four_rule_spec_content."""
+    base = _minimal_proofs(feature)[0]
+    return [dict(base, id=f'PROOF-{i}', rule=f'RULE-{i}',
+                 test_name=f'test_rule_{i}') for i in range(1, 5)]
+
+
 def _minimal_proofs(feature='feature'):
     return [{
         'feature': feature,
@@ -590,12 +620,17 @@ class TestReportDataStructure:
 
     @pytest.mark.proof("report_data", "PROOF-15", "RULE-15")
     def test_audit_summary_fields_present_and_null_when_no_cache(self):
-        """audit_summary has required fields when cache exists; null when no cache."""
-        # First: verify null when no cache. Two rules and two proofs, because the
-        # cache below grades both and an entry naming a proof the spec does not
-        # declare is invalidated on read rather than counted.
-        _write_spec(self.tmp, 'feature', _two_rule_spec_content())
-        _write_proofs(self.tmp, 'feature', _two_rule_proofs())
+        """audit_summary has required fields when cache exists; null when no cache.
+
+        The cache is seeded 3 STRONG and 1 WEAK rather than one of each: one of
+        each is 50 with the STRONG and WEAK labels either way round, so a scorer
+        that swapped them would pass. 3 of 4 reads 75, and the swap reads 25.
+        """
+        # First: verify null when no cache. Four rules and four proofs, because
+        # the cache below grades all four and an entry naming a proof the spec
+        # does not declare is invalidated on read rather than counted.
+        _write_spec(self.tmp, 'feature', _four_rule_spec_content())
+        _write_proofs(self.tmp, 'feature', _four_rule_proofs())
         features = purlin_server._scan_specs(self.tmp)
         proofs = purlin_server._read_proofs(self.tmp)
 
@@ -605,26 +640,18 @@ class TestReportDataStructure:
 
         # Now: write an audit cache and verify fields
         cache_entries = {
-            'feature::PROOF-1::RULE-1': {
+            f'feature::PROOF-{i}::RULE-{i}': {
                 'feature': 'feature',
-                'proof_id': 'PROOF-1',
-                'rule_id': 'RULE-1',
-                'assessment': 'STRONG',
-                'criterion': 'Tests real behavior',
-                'fix': '',
-                'priority': 'LOW',
+                'proof_id': f'PROOF-{i}',
+                'rule_id': f'RULE-{i}',
+                'assessment': 'STRONG' if i < 4 else 'WEAK',
+                'criterion': ('Tests real behavior' if i < 4
+                              else 'Missing assertion'),
+                'fix': '' if i < 4 else 'Add assertion',
+                'priority': 'LOW' if i < 4 else 'HIGH',
                 'cached_at': '2024-01-01T12:00:00+00:00',
-            },
-            'feature::PROOF-1::RULE-2': {
-                'feature': 'feature',
-                'proof_id': 'PROOF-2',
-                'rule_id': 'RULE-2',
-                'assessment': 'WEAK',
-                'criterion': 'Missing assertion',
-                'fix': 'Add assertion',
-                'priority': 'HIGH',
-                'cached_at': '2024-01-01T12:00:00+00:00',
-            },
+            }
+            for i in range(1, 5)
         }
         _write_audit_cache(self.tmp, cache_entries)
         audit_summary = purlin_server._read_audit_summary(self.tmp)
@@ -638,13 +665,17 @@ class TestReportDataStructure:
                            'last_audit', 'last_audit_relative', 'stale'}
         missing = required_fields - set(summary.keys())
         assert not missing, f"audit_summary missing fields: {missing}"
-        # One STRONG and one WEAK: (1 + 0 manual) / 2 x 100 = 50.
-        assert summary['integrity'] == 50, \
-            f"Expected integrity=50 from 1 STRONG and 1 WEAK, got {summary['integrity']!r}"
-        assert summary['strong'] == 1, f"Expected strong=1, got {summary['strong']!r}"
+        # Three STRONG and one WEAK: (3 + 0 manual) / 4 x 100 = 75. A 25 here
+        # would mean the STRONG and WEAK labels are the wrong way round.
+        assert summary['integrity'] == 75, (
+            "Expected integrity=75 from 3 STRONG and 1 WEAK; 25 would mean the "
+            f"two labels are swapped, got {summary['integrity']!r}")
+        assert summary['strong'] == 3, f"Expected strong=3, got {summary['strong']!r}"
         assert summary['weak'] == 1, f"Expected weak=1, got {summary['weak']!r}"
         assert summary['hollow'] == 0, f"Expected hollow=0, got {summary['hollow']!r}"
         assert summary['manual'] == 0, f"Expected manual=0, got {summary['manual']!r}"
+        assert summary['behavioral_total'] == 4, \
+            f"Expected behavioral_total=4, got {summary['behavioral_total']!r}"
         assert summary['last_audit'] == '2024-01-01T12:00:00+00:00', (
             "Expected last_audit to be the newest cached_at "
             f"'2024-01-01T12:00:00+00:00', got {summary['last_audit']!r}")
