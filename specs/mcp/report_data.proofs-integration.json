@@ -3,6 +3,15 @@
   "proofs": [
     {
       "feature": "report_data",
+      "id": "PROOF-25",
+      "rule": "RULE-24",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_both_entry_points_populate_both_gauges",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "report_data",
       "id": "PROOF-30",
       "rule": "RULE-29",
       "test_file": "dev/test_report_data.py",
@@ -43,6 +52,15 @@
       "rule": "RULE-36",
       "test_file": "dev/test_report_data.py",
       "test_name": "test_platform_summary_rows_carry_counts_and_integrity",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-42",
+      "rule": "RULE-41",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_host_row_covers_the_agnostic_results",
       "status": "pass",
       "tier": "integration"
     },
@@ -133,15 +151,6 @@
       "rule": "RULE-40",
       "test_file": "dev/test_report_data.py",
       "test_name": "test_the_payload_names_the_auditor_and_counts_the_stale_grades",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "report_data",
-      "id": "PROOF-25",
-      "rule": "RULE-24",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_both_entry_points_populate_both_gauges",
       "status": "pass",
       "tier": "integration"
     },

@@ -98,6 +98,12 @@ def _by_platform(payload):
     lines = []
     for platform in sorted(summary):
         agg = summary[platform] or {}
+        # The host row (report_data RULE-41) covers the results that name no
+        # platform. It declares nothing, so it gets no line here: the gate
+        # reports whether each DECLARED id was proved, and the agnostic
+        # results are already the project's own proved and failing counts.
+        if agg.get('host'):
+            continue
         proofs = agg.get('proofs') or {}
         lines.append(
             f"{platform}: {proofs.get('proved', 0)} proved, "

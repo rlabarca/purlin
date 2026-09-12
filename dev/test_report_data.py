@@ -1491,6 +1491,12 @@ class TestAwaitingRunnerPayload:
         built, _ = self._both(cfg)
         rows = built['platforms']['summary']
         assert sorted(rows) == ['macos', 'windows-2022'], sorted(rows)
+        for pid in rows:
+            assert rows[pid]['host'] is False, (pid, rows[pid])
+            assert rows[pid]['kind'] == 'declared', (pid, rows[pid])
+        # `linux` is the host here, and it still gets no row: every entry in
+        # this fixture is scoped, so the RULE-41 host row has nothing to own.
+        assert built['platforms']['host_id'] == 'linux', built['platforms']['host_id']
         assert 'linux' not in rows, "a registry id nothing declares gets no row"
 
         win = rows['windows-2022']
@@ -1506,6 +1512,93 @@ class TestAwaitingRunnerPayload:
         mac = rows['macos']
         assert mac['awaiting'] == 1 and mac['verified'] == 0, mac
         assert mac['last_proved'] is None, mac['last_proved']
+
+    @pytest.mark.proof("report_data", "PROOF-42", "RULE-41", tier="integration")
+    def test_host_row_covers_the_agnostic_results(self, monkeypatch):
+        """The detected host gets one summary row for the results that name no
+        platform, and a scoped result never enters its counts."""
+        monkeypatch.delenv('PURLIN_PLATFORM', raising=False)
+        # The real detector reads PURLIN_PLATFORM into `id`; the stub must too,
+        # so the second half of this test can claim a declared id.
+        monkeypatch.setattr(purlin_server, '_detect_host_platform', lambda: {
+            'os': 'macos', 'version': '15.0', 'distro': '', 'arch': 'arm64',
+            'id': os.environ.get('PURLIN_PLATFORM') or None})
+        # `locking`: two agnostic proofs and one proved on windows-2022.
+        _write_spec(self.tmp, 'locking',
+                    '# Feature: locking\n\n## What it does\nLocks.\n\n'
+                    '## Rules\n- RULE-1: A\n- RULE-2: B\n- RULE-3: C\n\n'
+                    '## Proof\n'
+                    '- PROOF-1 (RULE-1): a @unit\n'
+                    '- PROOF-2 (RULE-2): b @unit\n'
+                    '- PROOF-3 (RULE-3): c @unit @on(windows-2022)\n')
+        _write_proofs(self.tmp, 'locking',
+                      [_entry('locking', 'PROOF-1', 'RULE-1'),
+                       _entry('locking', 'PROOF-2', 'RULE-2')])
+        _write_proofs(self.tmp, 'locking',
+                      [_entry('locking', 'PROOF-3', 'RULE-3')],
+                      platform='windows-2022')
+        # `held`: one agnostic proof, one awaiting windows-2022, receipted. Its
+        # own standing on the host must not be demoted by the runner gap.
+        _write_spec(self.tmp, 'held',
+                    '# Feature: held\n\n## What it does\nHeld.\n\n'
+                    '## Rules\n- RULE-1: A\n- RULE-2: B\n\n'
+                    '## Proof\n'
+                    '- PROOF-1 (RULE-1): a @unit\n'
+                    '- PROOF-2 (RULE-2): b @unit @on(windows-2022)\n')
+        _write_proofs(self.tmp, 'held', [_entry('held', 'PROOF-1', 'RULE-1')])
+        _write_audit_cache(self.tmp, {
+            'k1': {'feature': 'locking', 'proof_id': 'PROOF-1',
+                   'assessment': 'STRONG', 'cached_at': '2026-01-01T00:00:00Z'},
+        })
+        cfg = self._config(platforms={
+            'macos-15': {'os': 'macos', 'version': '15'},
+            'windows-2022': {'os': 'windows'},
+        })
+
+        built = self._build(cfg)
+        held = {f['name']: f for f in built['features']}['held']
+        _write_receipt(self.tmp, 'held', 'abc1234', '2026-01-01T00:00:00Z',
+                       held['vhash'])
+        built, _ = self._both(cfg)
+        rows = built['platforms']['summary']
+        assert built['platforms']['host_id'] == 'macos-15', built['platforms']
+        assert list(rows) == ['macos-15', 'windows-2022'], list(rows)
+
+        host = rows['macos-15']
+        assert host['host'] is True and host['kind'] == 'host', host
+        assert rows['windows-2022']['host'] is False, rows['windows-2022']
+        assert rows['windows-2022']['kind'] == 'declared', rows['windows-2022']
+        # Three agnostic entries: locking PROOF-1 and PROOF-2, held PROOF-1.
+        # The windows-2022 entry would make it 4.
+        assert host['proofs'] == {'declared': 3, 'proved': 3, 'failed': 0,
+                                 'awaiting': 0}, host['proofs']
+        assert host['features'] == 2, host
+        assert (host['verified'], host['passing'], host['failing'],
+                host['awaiting']) == (1, 1, 0, 0), (
+            "the receipted `held` reads verified on the host it ran on even "
+            f"though windows-2022 is awaiting; got {host}")
+        assert host['last_proved'] is None and host['last_runner'] is None, host
+        assert host['integrity']['coverage'] == {
+            'measured': 1, 'total': 3, 'complete': False}, host['integrity']
+        assert host['integrity']['weighted'] == 33, host['integrity']
+        assert host['integrity']['assessed'] == 100, host['integrity']
+
+        # A host id that already has a declared row gets no second row.
+        monkeypatch.setenv('PURLIN_PLATFORM', 'windows-2022')
+        built, _ = self._both(cfg)
+        rows = built['platforms']['summary']
+        assert list(rows) == ['windows-2022'], list(rows)
+        assert rows['windows-2022']['host'] is False, rows['windows-2022']
+
+        # Nothing agnostic left to own: the host row is absent rather than a
+        # column of zeroes.
+        monkeypatch.delenv('PURLIN_PLATFORM', raising=False)
+        for name in ('locking', 'held'):
+            os.remove(os.path.join(self.tmp, 'specs', 'app',
+                                   f'{name}.proofs-unit.json'))
+        built, _ = self._both(cfg)
+        rows = built['platforms']['summary']
+        assert list(rows) == ['windows-2022'], list(rows)
 
     @pytest.mark.proof("report_data", "PROOF-38", "RULE-37", tier="integration")
     def test_every_platform_key_is_present_with_nothing_declared(self):

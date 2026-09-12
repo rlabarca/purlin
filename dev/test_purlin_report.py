@@ -3468,8 +3468,11 @@ class TestRemoteVerificationChip:
 
 def make_platform_row(pid, features=1, verified=1, passing=0, failing=0,
                       awaiting=0, executed=2, measured=1, weighted=50,
-                      assessed=100, last_proved=None, runner=None):
-    """One `platforms.summary` row in the report_data RULE-36 shape."""
+                      assessed=100, last_proved=None, runner=None, host=False):
+    """One `platforms.summary` row in the report_data RULE-36 shape.
+
+    `host=True` is the RULE-41 row for the detected host, the one covering the
+    results that name no platform."""
     return {
         "features": features, "verified": verified, "passing": passing,
         "failing": failing, "awaiting": awaiting,
@@ -3483,6 +3486,8 @@ def make_platform_row(pid, features=1, verified=1, passing=0, failing=0,
         },
         "last_proved": last_proved,
         "last_runner": runner,
+        "host": host,
+        "kind": "host" if host else "declared",
     }
 
 
@@ -3666,6 +3671,93 @@ class TestModalHelperRuntime:
             "render() must close an open dialog before rebuilding #app"
         assert page.locator(".modal-overlay").count() == 0, \
             "no overlay may outlive the content it described"
+
+
+class TestHostSummaryRow:
+    """purlin_report RULE-46 - the host row owns the agnostic results."""
+
+    @staticmethod
+    def _host_payload(host_id="macos-15", host_kwargs=None, win_kwargs=None,
+                      summary_extra=None, base=None):
+        host_kwargs = dict({"features": 2, "verified": 1, "passing": 1,
+                            "executed": 7, "measured": 3, "weighted": 33,
+                            "assessed": 100}, **(host_kwargs or {}))
+        win_kwargs = dict({"features": 1, "verified": 0, "awaiting": 1,
+                           "executed": 2, "measured": 1}, **(win_kwargs or {}))
+        return platform_data(
+            base, host_id=host_id,
+            registry={"macos-15": {"os": "macos"},
+                      "windows-2022": {"os": "windows"}},
+            rows={
+                host_id: make_platform_row(host_id, host=True, **host_kwargs),
+                "windows-2022": make_platform_row("windows-2022",
+                                                  **win_kwargs),
+            },
+            summary_extra=summary_extra)
+
+    @staticmethod
+    def _open_integrity(page):
+        page.evaluate(
+            "() => document.querySelector(\"[data-modal='integrity']\").click()")
+        return page.locator("#modal .modal-table tbody tr")
+
+    @pytest.mark.proof("purlin_report", "PROOF-51", "RULE-46", tier="e2e")
+    def test_host_row_is_first_badged_and_covers_the_agnostic_results(
+            self, page, dashboard):
+        load_dashboard(page, dashboard, data=self._host_payload())
+        rows = self._open_integrity(page)
+        assert rows.count() == 2, f"one row per summary row, got {rows.count()}"
+
+        first = rows.nth(0).locator("td").nth(0)
+        assert "macos-15" in first.inner_text(), first.inner_text()
+        badge = first.locator(".host-badge")
+        assert badge.count() == 1, "the host row must carry exactly one badge"
+        assert badge.inner_text().strip().lower() == "host", badge.inner_text()
+        executed = rows.nth(0).locator("td").nth(1).inner_text().strip()
+        assert executed == "7", (
+            "the host row's Executed column is the agnostic entry count; "
+            f"got {executed!r}")
+
+        second = rows.nth(1).locator("td").nth(0)
+        assert second.inner_text().strip() == "windows-2022", second.inner_text()
+        assert second.locator(".host-badge").count() == 0, \
+            "a declared row carries no host badge"
+        assert rows.nth(1).locator("td").nth(1).inner_text().strip() == "2"
+
+        foot = page.locator("#modal .modal-foot").inner_text()
+        assert "covers the results that name no platform" in foot, foot
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR,
+                                          "proof51_host_row.png"))
+
+        # An unregistered host is this machine, not a failed lookup.
+        load_dashboard(page, dashboard,
+                       data=self._host_payload(host_id="unregistered"))
+        rows = self._open_integrity(page)
+        first = rows.nth(0).locator("td").nth(0)
+        assert "this host" in first.inner_text(), first.inner_text()
+        assert "unregistered" not in first.inner_text(), first.inner_text()
+        assert first.locator(".host-badge").count() == 1, first.inner_text()
+        page.locator("#modal-close").click()
+        page.evaluate(
+            "() => document.querySelector(\"[data-modal='verified']\").click()")
+        counts_first = page.locator(
+            "#modal .modal-table tbody tr").nth(0).locator("td").nth(0)
+        assert "this host" in counts_first.inner_text(), counts_first.inner_text()
+
+        # The host row holds no feature back and opens no failing table.
+        load_dashboard(page, dashboard, data=self._host_payload(
+            host_kwargs={"features": 3, "verified": 0, "passing": 0,
+                         "failing": 3},
+            win_kwargs={"features": 1, "verified": 1, "awaiting": 0},
+            summary_extra={"verified_here": 3, "held_by_platform": 1}))
+        assert page.locator(".sc-failing").get_attribute("data-modal") is None, \
+            ("an agnostic failure is the project's own Failing count, not a "
+             "platform's, so the card must not open a per-platform table")
+        sub = page.locator(".sc-verified .summary-card-sub").inner_text()
+        assert "on windows-2022" in sub, (
+            "the held-by sub-label reads the declared rows only; got "
+            f"{sub!r}")
+        assert "macos-15" not in sub, sub
 
 
 class TestPlatformSubLabels:

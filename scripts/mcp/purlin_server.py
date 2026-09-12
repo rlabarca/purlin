@@ -3781,7 +3781,63 @@ def _platform_integrity(all_proofs, audit_by_proof, platform_id, host_id):
     }
 
 
-def _platform_summary(records_by_feature, all_proofs, audit_by_proof, host_id):
+def _host_summary_row(all_proofs, audit_by_proof, host_id, receipted_by_feature):
+    """The one extra `platforms.summary` row for the detected host
+    (report_data RULE-41).
+
+    It covers the results that name no platform. An agnostic entry declares no
+    platform and so appears in no declared row, yet it ran somewhere and that
+    somewhere is this machine: without this row the Integrity modal splits a
+    handful of scoped entries and silently omits the hundreds the project
+    actually rests on.
+
+    Counted over the agnostic entries alone. A scoped result belongs to the
+    platform it names and never enters these counts, so the row cannot borrow
+    a runner's evidence. `awaiting` is zero in both the feature words and the
+    proof counts, and that is structural rather than optimistic: an entry
+    exists only for a test that executed (proof_common RULE-13), so nothing on
+    the host can be waiting for a runner. `last_proved` and `last_runner` are
+    null for the same reason: provenance is read out of a scoped file's last
+    commit, and an agnostic file is named for no platform.
+    """
+    declared = proved = failed_count = 0
+    features = verified = passing = failing = 0
+    for feature, entries in sorted(all_proofs.items()):
+        agnostic = [e for e in entries if not e.get('platform')]
+        if not agnostic:
+            continue
+        features += 1
+        declared += len(agnostic)
+        proved += sum(1 for e in agnostic if e.get('status') == 'pass')
+        feature_failed = [e for e in agnostic if e.get('status') == 'fail']
+        failed_count += len(feature_failed)
+        # The same four words _platform_status uses, restricted to this
+        # feature's agnostic entries: a feature whose windows proof is still
+        # awaiting a runner reads its own standing here rather than being
+        # demoted by a gap on another platform.
+        if feature_failed:
+            failing += 1
+        elif (receipted_by_feature or {}).get(feature):
+            verified += 1
+        else:
+            passing += 1
+    return {
+        'features': features, 'verified': verified, 'passing': passing,
+        'failing': failing, 'awaiting': 0,
+        'proofs': {'declared': declared, 'proved': proved,
+                   'failed': failed_count, 'awaiting': 0},
+        'integrity': _platform_integrity(all_proofs, audit_by_proof,
+                                         host_id, host_id),
+        'last_proved': None, 'last_runner': None,
+        # `host` says "this is the row that covers the agnostic results", not
+        # "this id is the host machine": a declared row can also be the host,
+        # and a reader tells that from `platforms.host_id`.
+        'host': True, 'kind': 'host',
+    }
+
+
+def _platform_summary(records_by_feature, all_proofs, audit_by_proof, host_id,
+                      receipted_by_feature=None, host_row=False):
     """The project roll-up per platform (report_data RULE-36).
 
     One row per platform some proof declares, and none for a registry id
@@ -3790,6 +3846,14 @@ def _platform_summary(records_by_feature, all_proofs, audit_by_proof, host_id):
     feature counts in the four record words, the proof counts behind them, the
     platform's Integrity and when it was last proved, so a card that splits a
     number per platform has every figure it needs from one object.
+
+    With `host_row`, and only when some proof declares a platform, the host id
+    has no declared row of its own and at least one proof entry is agnostic,
+    one more row is prepended for the host (RULE-41). It is opt-in because the payload and the `Platforms (host: ...)`
+    text line read the same builder: the line already names the host in its
+    prefix, and a segment repeating it would both duplicate that and break
+    sync_status RULE-57, where every segment is a platform some proof declares.
+    The dashboard modal has no such prefix, which is the gap the row closes.
     """
     summary = {}
     for _name, records in sorted(records_by_feature.items()):
@@ -3799,6 +3863,7 @@ def _platform_summary(records_by_feature, all_proofs, audit_by_proof, host_id):
                 'awaiting': 0,
                 'proofs': {'declared': 0, 'proved': 0, 'failed': 0, 'awaiting': 0},
                 'integrity': None, 'last_proved': None, 'last_runner': None,
+                'host': False, 'kind': 'declared',
             })
             row['features'] += 1
             row[record['status'].lower()] += 1
@@ -3814,7 +3879,16 @@ def _platform_summary(records_by_feature, all_proofs, audit_by_proof, host_id):
     for platform, row in summary.items():
         row['integrity'] = _platform_integrity(all_proofs, audit_by_proof,
                                                platform, host_id)
-    return {pid: summary[pid] for pid in sorted(summary)}
+    ordered = {pid: summary[pid] for pid in sorted(summary)}
+    if host_row and summary and host_id not in summary:
+        row = _host_summary_row(all_proofs, audit_by_proof, host_id,
+                                receipted_by_feature)
+        # Only when something agnostic actually ran. With nothing to own the
+        # row would be the column of zeroes this docstring's first paragraph
+        # refuses for a platform nothing declares.
+        if row['features']:
+            return {host_id: row, **ordered}
+    return ordered
 
 
 def _build_report_data(project_root, features, all_proofs, config, global_anchors,
@@ -3831,6 +3905,11 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
     }
     host_id = _host_id(registry, host)
     records_by_feature = {}
+    # Whether each feature holds a current receipt, collected as the feature
+    # loop decides it. The host row's `verified` word needs the same
+    # separator the declared rows get from `record['receipted']`, and a
+    # feature with no declared platform has no record to read it from.
+    receipted_by_feature = {}
     audit_by_feature = _read_audit_cache_by_feature(project_root, features=features)
     # Read the design cache here rather than accepting it as a parameter. A
     # defaulted parameter is what let generate_digest silently blank the Design
@@ -3920,6 +3999,7 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
         platform_records = _platform_records(project_root, name, info, pres,
                                              has_current_receipt)
         records_by_feature[name] = platform_records
+        receipted_by_feature[name] = has_current_receipt
 
         # Update summary for non-anchor features
         if not is_anchor:
@@ -4140,7 +4220,8 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             'errors': list(registry_errors),
             'host_id': host_id,
             'summary': _platform_summary(records_by_feature, all_proofs,
-                                         audit_by_proof, host_id),
+                                         audit_by_proof, host_id,
+                                         receipted_by_feature, host_row=True),
         },
         'platform_testing': bool(declared_ids),
         # Always present, empty when the project is current (report_data

@@ -470,7 +470,10 @@ table{min-width:830px}
     var p = (D && D.platforms) || {};
     var summary = p.summary || {};
     var hostId = p.host_id || '';
-    /* The host first, then by id: what ran here needs no runner. */
+    /* The host first, then by id: what ran here needs no runner. The host's
+       row is the one report_data RULE-41 adds for the results that name no
+       platform, and it sorts first by the same comparison as a declared row
+       that happens to be this machine. */
     return Object.keys(summary).sort(function (a, b) {
       if ((a === hostId) !== (b === hostId)) return a === hostId ? -1 : 1;
       return a < b ? -1 : a > b ? 1 : 0;
@@ -480,6 +483,13 @@ table{min-width:830px}
       row.isHost = (id === hostId);
       return row;
     });
+  }
+
+  /* The Platform cell of both modals. `unregistered` is a real host_id, not a
+     failed lookup, but a reader seeing it in a Platform column has no way to
+     know that, so the host row says what it is instead (RULE-46). */
+  function platformLabel(r) {
+    return (r.host && r.id === 'unregistered') ? 'this host' : r.id;
   }
 
   function platformAbbrev(id) {
@@ -527,9 +537,17 @@ table{min-width:830px}
     return out + '</div>';
   }
 
+  function declaredRows() {
+    /* Rows some proof declares. The host row is excluded wherever a figure
+       means "a runner is holding this back" or "a platform is failing": the
+       machine the report was written on holds nothing back, and its failures
+       are already the project's own Failing count (RULE-46). */
+    return platformRows().filter(function (r) { return !r.host; });
+  }
+
   function heldPlatform() {
-    /* The platform binding Verified: the row with the fewest verified. */
-    var rows = platformRows();
+    /* The platform binding Verified: the declared row with the fewest verified. */
+    var rows = declaredRows();
     var worst = null;
     for (var i = 0; i < rows.length; i++) {
       if (worst === null || (rows[i].verified || 0) < (worst.verified || 0)) worst = rows[i];
@@ -544,7 +562,7 @@ table{min-width:830px}
       + '<th>Last proved</th></tr></thead><tbody>';
     for (var i = 0; i < rows.length; i++) {
       var r = rows[i];
-      h += '<tr><td>' + esc(r.id)
+      h += '<tr><td>' + esc(platformLabel(r))
         + (r.isHost ? '<span class="host-badge">host</span>' : '') + '</td>'
         + '<td>' + (r.features || 0) + '</td><td>' + (r.verified || 0) + '</td>'
         + '<td>' + (r.passing || 0) + '</td><td>' + (r.awaiting || 0) + '</td>'
@@ -563,7 +581,7 @@ table{min-width:830px}
       var r = rows[i];
       var g = r.integrity || {};
       var cov = g.coverage || {};
-      h += '<tr><td>' + esc(r.id)
+      h += '<tr><td>' + esc(platformLabel(r))
         + (r.isHost ? '<span class="host-badge">host</span>' : '') + '</td>'
         + '<td>' + (cov.total || 0) + '</td><td>' + (cov.measured || 0) + '</td>'
         + '<td>' + (g.weighted == null ? '\u2014' : g.weighted + '%') + '</td>'
@@ -609,7 +627,8 @@ table{min-width:830px}
     + 'fraction and never fail a feature.';
   var MODAL_INTEGRITY_FOOT = 'A grade describes the test, not the platform, so '
     + 'this split reports measurement coverage per platform rather than a claim '
-    + 'that a proof is stronger on one machine. Proof Design is not split: a '
+    + 'that a proof is stronger on one machine. The host row covers the results '
+    + 'that name no platform: they ran here. Proof Design is not split: a '
     + 'description is graded from its text and has no platform.';
   var MODAL_FAILING_FOOT = 'A failing proof on a declared platform fails the '
     + 'feature everywhere, because the rule it covers reads FAIL in every '
@@ -1124,7 +1143,7 @@ table{min-width:830px}
     h += '</div>';
     /* Failing opens the modal only when a platform actually fails: a card
        that opens an empty table is worse than one that does not open. */
-    var platformFails = platformRows().some(function (r) { return (r.failing || 0) > 0; });
+    var platformFails = declaredRows().some(function (r) { return (r.failing || 0) > 0; });
     h += '<div class="summary-card sc-failing' + (platformFails ? ' sc-click' : '') + '"'
       + (platformFails ? cardAttrs('failing') : '') + '><div class="summary-card-number">'
       + S.failing + '</div><div class="summary-card-label">Failing</div></div>';
