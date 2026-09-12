@@ -1,14 +1,14 @@
 # Feature: mcp_transport
 
 > Requires: security_no_dangerous_patterns
-> Scope: scripts/mcp/purlin_server.py, scripts/mcp/manifest.json
+> Scope: scripts/mcp/purlin_server.py
 > Stack: python/stdlib, json
 > Description: JSON-RPC 2.0 transport layer for the Purlin MCP server. Reads requests from stdin, dispatches to tool handlers, writes responses to stdout. Implements MCP protocol initialization and error handling.
 
 ## Rules
 
 - RULE-1: The server implements MCP protocol version `2024-11-05` and responds to `initialize` with protocolVersion, capabilities, and serverInfo
-- RULE-2: `tools/list` returns exactly 3 tools: `sync_status`, `purlin_config`, `drift` — matching the manifest definitions
+- RULE-2: `tools/list` returns exactly 3 tools, `sync_status`, `purlin_config` and `drift`, and serves them from `TOOLS` in `scripts/mcp/purlin_server.py`, which is the one tool declaration in the repository. A second declaration lived in `scripts/mcp/manifest.json`, which no shipped code ever opened: only this spec's proof read it, and its descriptions had already drifted from the ones the server serves. A data file nothing loads is not a contract, so the file is gone and the proof asserts it stays gone
 - RULE-3: `notifications/initialized` produces no response (notification, not request)
 - RULE-4: Invalid JSON input returns error code `-32700` (Parse error)
 - RULE-5: Unknown methods return error code `-32601` with the method name in the message
@@ -19,7 +19,7 @@
 ## Proof
 
 - PROOF-1 (RULE-1): Send an `initialize` request; verify `result.protocolVersion` equals `2024-11-05`, `result.serverInfo.name` equals `purlin`, and `result.capabilities` is present and equals `{"tools": {}}`, the tools capability a client needs to discover that this server serves tools @integration
-- PROOF-2 (RULE-2): Send `tools/list`; verify the result holds exactly 3 tools whose sorted names are `drift`, `purlin_config`, `sync_status`, that those names equal the names declared in `scripts/mcp/manifest.json`, and that each tool carries a non-empty `description` plus an `inputSchema` of `type` `object` whose property names are `role` for `sync_status`, `action`, `key`, `value` for `purlin_config`, and `since`, `role` for `drift` @integration
+- PROOF-2 (RULE-2): Send `tools/list`; verify the result holds exactly 3 tools whose sorted names are `drift`, `purlin_config`, `sync_status`, that those names equal the sorted names in `purlin_server.TOOLS`, and that `scripts/mcp/manifest.json` does not exist on disk, so no second declaration is free to drift. Verify each tool carries a non-empty `description` plus an `inputSchema` of `type` `object` whose property names are none at all for `sync_status`, `action`, `key`, `value` for `purlin_config`, and `since` for `drift` @integration
 - PROOF-3 (RULE-3): Send the notification `notifications/initialized` with no `id`; verify `handle_request` returns `None` rather than a response object, so there is nothing for the loop to write @integration
 - PROOF-4 (RULE-4): Send invalid JSON; verify error code -32700 @integration
 - PROOF-5 (RULE-5): Send unknown method; verify error code -32601 with method name @integration

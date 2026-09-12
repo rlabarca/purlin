@@ -86,15 +86,17 @@ class TestMCPProtocol:
         assert names == ["drift", "purlin_config", "sync_status"]
         assert len(tools) == 3
 
-        # The three tools must be the three the manifest declares, not merely
-        # three tools with the right count.
+        # TOOLS in purlin_server.py is the one declaration. A second one in a
+        # data file beside it was read by nothing but this assertion and had
+        # already drifted from the descriptions the server actually serves.
         manifest_path = os.path.join(
             os.path.dirname(__file__), '..', 'scripts', 'mcp', 'manifest.json')
-        with open(manifest_path, encoding='utf-8') as f:
-            manifest = json.load(f)
-        assert sorted(t["name"] for t in manifest["tools"]) == names, (
-            f"tools/list names {names} do not match manifest.json "
-            f"{sorted(t['name'] for t in manifest['tools'])}")
+        assert not os.path.exists(manifest_path), (
+            f"{manifest_path} is back: a second tool declaration no shipped "
+            f"code reads, free to drift from TOOLS")
+        assert names == sorted(t["name"] for t in purlin_server.TOOLS), (
+            f"tools/list names {names} do not match the TOOLS declaration "
+            f"{sorted(t['name'] for t in purlin_server.TOOLS)}")
 
         # Each advertised tool carries a description and the input schema a
         # caller has to fill in. Without this an argument could be dropped from
