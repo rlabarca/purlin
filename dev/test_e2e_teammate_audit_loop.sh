@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
-# E2E test: Verify-Audit-Build Loop
-# 7 proofs covering 7 rules — all @e2e.
+# Verify-Audit-Build Loop: skill documentation checks.
+# 7 proofs covering 7 rules. Every one of them is a static read of a checked-in
+# SKILL.md, so all 7 are declared unit tier in their specs, not @e2e.
 # Verifies that the skill definitions document the audit -> purlin:build remediation protocol.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Load proof harness. Every proof this script emits is declared @e2e in its spec
-# (skill_audit PROOF-4..8, skill_build PROOF-8, skill_verify PROOF-6), so the tier
-# must be set before purlin_proof runs — otherwise the entries land in the unit-tier
-# proof files and clobber the unit proofs that pytest writes for the same features.
-export PURLIN_PROOF_TIER="e2e"
+# Load proof harness. Every proof this script emits is declared unit tier in its
+# spec (skill_audit PROOF-4..8, skill_build PROOF-8, skill_verify PROOF-6): each one
+# greps a checked-in SKILL.md and never launches anything. The tier must be set
+# before purlin_proof runs so the entries land in the unit-tier proof files, next to
+# the entries pytest writes for the same proof ids from dev/test_skill_specs.py (the
+# write-scoped overwrite is keyed by test_file, so the two sets do not clobber).
+export PURLIN_PROOF_TIER="unit"
 source "$PROJECT_ROOT/scripts/proof/shell_purlin.sh"
 
 echo "=== e2e_teammate_audit_loop tests ==="
@@ -66,8 +69,14 @@ if ! echo "$auditor_section" | grep -q "purlin:build"; then
   echo "    FAIL: Missing purlin:build remediation route in independent auditor mode"
   proof2_ok=false
 fi
-if ! echo "$auditor_section" | grep -qi "read-only"; then
-  echo "    FAIL: Missing read-only statement in independent auditor mode"
+if ! echo "$auditor_section" | grep -q -- "read-only and never edits code or tests"; then
+  echo "    FAIL: Missing 'read-only and never edits code or tests' statement in independent auditor mode"
+  proof2_ok=false
+fi
+# RULE-5 also requires the section to SAY no fixer agent is spawned, not merely to
+# omit the retired agent name. The sentence wraps, so fold newlines before matching.
+if ! echo "$auditor_section" | tr '\n' ' ' | grep -qE "There is no separate +fixer agent to spawn"; then
+  echo "    FAIL: Missing 'There is no separate fixer agent to spawn' statement in independent auditor mode"
   proof2_ok=false
 fi
 if echo "$auditor_section" | grep -q "purlin-builder"; then
@@ -96,17 +105,25 @@ if ! echo "$build_content" | grep -q "## When Running as Proof Fixer"; then
 fi
 # Extract the build skill's Proof Fixer section
 build_fixer=$(awk '/^## When Running as Proof Fixer/{found=1; next} /^## [A-Z]/{if(found) exit} found' "$BUILD_SKILL")
-if ! echo "$build_fixer" | grep -qi "audit\|auditor"; then
-  echo "    FAIL: Missing auditor reference in build proof fixer section"
+if ! echo "$build_fixer" | grep -q -- "audit findings"; then
+  echo "    FAIL: Missing 'audit findings' reference in build proof fixer section"
+  proof3_ok=false
+fi
+if ! echo "$build_fixer" | grep -q -- "PROOF-ID"; then
+  echo "    FAIL: Missing PROOF-ID keying of audit findings in build proof fixer section"
   proof3_ok=false
 fi
 # Check for fix + report back protocol
-if ! echo "$build_fixer" | grep -qi "fix.*proof\|proof.*fix\|Fix the test"; then
-  echo "    FAIL: Missing fix instruction in build proof fixer section"
+if ! echo "$build_fixer" | grep -q -- "Fix the test to address the specific issue"; then
+  echo "    FAIL: Missing 'Fix the test to address the specific issue' instruction in build proof fixer section"
   proof3_ok=false
 fi
-if ! echo "$build_fixer" | grep -qi "report\|Re-audit"; then
-  echo "    FAIL: Missing report-back in build proof fixer section"
+if ! echo "$build_fixer" | grep -q -- "Fixed PROOF-N"; then
+  echo "    FAIL: Missing 'Fixed PROOF-N' report-back template in build proof fixer section"
+  proof3_ok=false
+fi
+if ! echo "$build_fixer" | grep -q -- "Re-audit please"; then
+  echo "    FAIL: Missing 'Re-audit please' report-back in build proof fixer section"
   proof3_ok=false
 fi
 
@@ -124,8 +141,8 @@ echo "  --- PROOF-4: Audit independent auditor mode re-audits after fixes land -
 
 proof4_ok=true
 
-if ! echo "$auditor_section" | grep -qi "re-audit\|reaudit\|re-assess\|reassess"; then
-  echo "    FAIL: Missing re-audit/re-assess in independent auditor mode"
+if ! echo "$auditor_section" | grep -q -- "After the fixes land, re-audit the affected proofs"; then
+  echo "    FAIL: Missing 'After the fixes land, re-audit the affected proofs' step in independent auditor mode"
   proof4_ok=false
 fi
 
@@ -143,8 +160,12 @@ echo "  --- PROOF-5: Audit independent auditor mode has 3-round termination ---"
 
 proof5_ok=true
 
-if ! echo "$auditor_section" | grep -q "3 rounds"; then
-  echo "    FAIL: Missing '3 rounds' termination condition"
+if ! echo "$auditor_section" | grep -q -- "After 3 rounds on any single proof, move on"; then
+  echo "    FAIL: Missing 'After 3 rounds on any single proof, move on' termination condition"
+  proof5_ok=false
+fi
+if ! echo "$auditor_section" | grep -q -- "When all findings are addressed (or rounds exhausted)"; then
+  echo "    FAIL: Missing 'When all findings are addressed (or rounds exhausted)' termination condition"
   proof5_ok=false
 fi
 
@@ -169,8 +190,8 @@ if ! echo "$verify_audit" | grep -q "purlin-auditor"; then
   echo "    FAIL: Missing purlin-auditor reference in verify Step 4e section"
   proof6_ok=false
 fi
-if ! echo "$verify_audit" | grep -qi "integrity score"; then
-  echo "    FAIL: Missing integrity score reference in verify Step 4e section"
+if ! echo "$verify_audit" | grep -q -- "Report the final integrity score"; then
+  echo "    FAIL: Missing 'Report the final integrity score' instruction in verify Step 4e section"
   proof6_ok=false
 fi
 
@@ -198,8 +219,12 @@ if ! echo "$anchor_section" | grep -qi "anchor"; then
   echo "    FAIL: Missing anchor rule handling section"
   proof7_ok=false
 fi
-if ! echo "$anchor_section" | grep -qi "report\|lead"; then
-  echo "    FAIL: Missing instruction to report to the lead for ambiguous anchor rules"
+if ! echo "$anchor_section" | grep -q -- "message the lead"; then
+  echo "    FAIL: Missing 'message the lead' instruction for ambiguous anchor rules"
+  proof7_ok=false
+fi
+if ! echo "$anchor_section" | grep -q -- "Recommend to anchor author (<source>): <rule> could be clearer"; then
+  echo "    FAIL: Missing 'Recommend to anchor author (<source>): <rule> could be clearer' template"
   proof7_ok=false
 fi
 
@@ -216,4 +241,4 @@ cd "$PROJECT_ROOT"
 purlin_proof_finish
 
 echo ""
-echo "e2e_teammate_audit_loop: 7 proofs recorded"
+echo "teammate_audit_loop: 7 proofs recorded"

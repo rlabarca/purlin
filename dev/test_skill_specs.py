@@ -57,6 +57,29 @@ def _read_ref(ref_name):
         return f.read()
 
 
+def _section(content, heading):
+    """The body of one markdown section: everything after `heading` up to the
+    next heading at the same or a shallower level. A whole-file grep cannot tell
+    whether a sentence lives in the section the rule is about, so every proof
+    that names a section greps only what this returns."""
+    depth = len(heading) - len(heading.lstrip('#'))
+    lines = content.splitlines()
+    try:
+        start = lines.index(heading)
+    except ValueError:
+        next_ = [i for i, l in enumerate(lines) if l.startswith(heading)]
+        assert next_, f"section heading not found: {heading!r}"
+        start = next_[0]
+    body = []
+    for line in lines[start + 1:]:
+        stripped = line.lstrip('#')
+        d = len(line) - len(stripped)
+        if d and d <= depth and stripped.startswith(' '):
+            break
+        body.append(line)
+    return '\n'.join(body)
+
+
 def _assert_frontmatter(content, skill_name):
     m = re.search(r'^---\n(.*?)\n---', content, re.DOTALL)
     assert m, f"No frontmatter in {skill_name}"
@@ -133,54 +156,63 @@ class TestSkillAudit:
         assert 'name:' in content, "audit SKILL.md must have a name: field"
         _assert_name_matches(content, 'audit')
 
-    @pytest.mark.proof("skill_audit", "PROOF-4", "RULE-4", tier="e2e")
+    @pytest.mark.proof("skill_audit", "PROOF-4", "RULE-4")
     def test_independent_auditor_reads_criteria_and_assesses(self):
         content = _read('audit')
-        assert re.search(r'(?i)independent auditor', content), \
-            "audit SKILL.md missing 'independent auditor' section"
-        assert 'audit_criteria' in content, \
-            "audit SKILL.md missing audit_criteria reference in independent auditor mode"
-        assert 'STRONG' in content, "audit SKILL.md missing STRONG assessment level"
-        assert 'WEAK' in content, "audit SKILL.md missing WEAK assessment level"
-        assert 'HOLLOW' in content, "audit SKILL.md missing HOLLOW assessment level"
+        assert '## When Running as Independent Auditor' in content, \
+            "audit SKILL.md missing '## When Running as Independent Auditor' section"
+        section = _section(content, '## When Running as Independent Auditor')
+        assert '--load-criteria' in section, \
+            "independent auditor section missing the --load-criteria criteria loader"
+        assert 'STRONG' in section, "independent auditor section missing STRONG assessment level"
+        assert 'WEAK' in section, "independent auditor section missing WEAK assessment level"
+        assert 'HOLLOW' in section, "independent auditor section missing HOLLOW assessment level"
 
-    @pytest.mark.proof("skill_audit", "PROOF-5", "RULE-5", tier="e2e")
+    @pytest.mark.proof("skill_audit", "PROOF-5", "RULE-5")
     def test_independent_auditor_routes_findings_to_build(self):
         content = _read('audit')
-        assert 'purlin:build' in content, \
-            "audit SKILL.md must route remediation to purlin:build"
-        assert re.search(r'(?i)read-only', content), \
-            "audit SKILL.md must state the audit is read-only"
+        section = _section(content, '## When Running as Independent Auditor')
+        assert 'purlin:build <feature>' in section, \
+            "independent auditor section must route remediation to `purlin:build <feature>`"
+        assert 'read-only and never edits code or tests' in section, \
+            "independent auditor section must state the audit is read-only and never edits code or tests"
+        # The rule wants the section to SAY no fixer agent is spawned, not merely to
+        # omit the retired agent name. The sentence wraps, so fold whitespace first.
+        assert re.search(r'There is no separate\s+fixer agent to spawn', section), \
+            "independent auditor section missing 'There is no separate fixer agent to spawn'"
         assert 'purlin-builder' not in content, \
-            "purlin-builder is retired — it is not a spawnable type in consumer projects"
-        assert re.search(r'(?i)(PROOF-ID|finding|fix)', content), \
-            "audit SKILL.md missing three-part finding structure"
+            "purlin-builder is retired: it is not a spawnable type in consumer projects"
 
-    @pytest.mark.proof("skill_audit", "PROOF-6", "RULE-6", tier="e2e")
+    @pytest.mark.proof("skill_audit", "PROOF-6", "RULE-6")
     def test_independent_auditor_re_audits_after_fixes_land(self):
         content = _read('audit')
-        assert re.search(r'(?i)(re-audit|re.audit)', content), \
-            "audit SKILL.md missing re-audit step after fixes land"
-        assert re.search(r'(?i)after the fixes land', content), \
-            "audit SKILL.md must say re-audit happens after the fixes land"
+        section = _section(content, '## When Running as Independent Auditor')
+        assert 'After the fixes land, re-audit the affected proofs' in section, \
+            "independent auditor section missing the step "\
+            "'After the fixes land, re-audit the affected proofs'"
 
-    @pytest.mark.proof("skill_audit", "PROOF-7", "RULE-7", tier="e2e")
+    @pytest.mark.proof("skill_audit", "PROOF-7", "RULE-7")
     def test_independent_auditor_terminates_after_3_rounds(self):
         content = _read('audit')
-        assert re.search(r'3 rounds', content), \
-            "audit SKILL.md missing '3 rounds' termination condition"
-        assert re.search(r'(?i)(rounds exhausted|move on|all findings addressed)', content), \
-            "audit SKILL.md missing termination language (findings addressed or rounds exhausted)"
+        section = _section(content, '## When Running as Independent Auditor')
+        assert 'After 3 rounds on any single proof, move on' in section, \
+            "independent auditor section missing "\
+            "'After 3 rounds on any single proof, move on'"
+        assert 'When all findings are addressed (or rounds exhausted)' in section, \
+            "independent auditor section missing "\
+            "'When all findings are addressed (or rounds exhausted)'"
 
-    @pytest.mark.proof("skill_audit", "PROOF-8", "RULE-8", tier="e2e")
+    @pytest.mark.proof("skill_audit", "PROOF-8", "RULE-8")
     def test_anchor_rule_handling_reports_to_lead(self):
         content = _read('audit')
-        assert re.search(r'(?i)anchor rule', content), \
-            "audit SKILL.md missing Anchor Rule Handling section"
-        assert re.search(r'(?i)message the lead', content), \
-            "audit SKILL.md missing 'message the lead' for ambiguous anchor rules"
-        assert re.search(r'(?i)(ambiguous|could be clearer)', content), \
-            "audit SKILL.md missing ambiguous rule guidance in anchor handling"
+        assert '### Anchor Rule Handling' in content, \
+            "audit SKILL.md missing '### Anchor Rule Handling' section"
+        section = _section(content, '### Anchor Rule Handling')
+        assert 'message the lead' in section, \
+            "Anchor Rule Handling section missing 'message the lead' for ambiguous anchor rules"
+        assert 'Recommend to anchor author (<source>): <rule> could be clearer' in section, \
+            "Anchor Rule Handling section missing the "\
+            "'Recommend to anchor author (<source>): <rule> could be clearer' template"
 
     @pytest.mark.proof("skill_audit", "PROOF-9", "RULE-9", tier="e2e")
     def test_static_checks_detects_hollow_test_as_non_strong(self):
@@ -602,14 +634,21 @@ class TestSkillBuild:
     def test_documents_proof_fixer_mode(self):
         content = _read('build')
         # Build skill must document the "proof fixer" mode invoked by the auditor
-        assert re.search(r'(?i)(proof fixer|running as proof fixer)', content), \
-            "build skill missing 'proof fixer' mode documentation"
-        # Must instruct to fix proofs based on audit feedback
-        assert re.search(r'(?i)(audit.*finding|finding.*audit|fix.*proof|HOLLOW|WEAK)', content), \
-            "build skill missing fix-proofs-based-on-audit instruction"
+        assert '## When Running as Proof Fixer' in content, \
+            "build skill missing '## When Running as Proof Fixer' section"
+        section = _section(content, '## When Running as Proof Fixer')
+        # Must instruct to fix proofs based on audit feedback, keyed by PROOF-ID
+        assert 'audit findings' in section, \
+            "proof fixer section missing the 'audit findings' input"
+        assert 'PROOF-ID' in section, \
+            "proof fixer section must key each audit finding by PROOF-ID"
+        assert 'Fix the test to address the specific issue' in section, \
+            "proof fixer section missing 'Fix the test to address the specific issue'"
         # Must document reporting back after fixing
-        assert re.search(r'(?i)(report back|re-audit|Fixed.*PROOF)', content), \
-            "build skill missing 'report back' / 're-audit' instruction after fixing"
+        assert 'Fixed PROOF-N' in section, \
+            "proof fixer section missing the 'Fixed PROOF-N' report-back template"
+        assert 'Re-audit please' in section, \
+            "proof fixer section missing the 'Re-audit please' report-back"
 
     @pytest.mark.proof("skill_build", "PROOF-9", "RULE-9")
     def test_documents_changeset_summary(self):
@@ -1727,15 +1766,16 @@ class TestSkillVerify:
     def test_step_4e_documents_independent_audit(self):
         content = _read('verify')
         # Step 4e must document the independent audit that reports final integrity score
-        assert re.search(r'Step 4e', content), \
-            "verify skill missing Step 4e heading"
-        assert re.search(r'(?i)independent', content), \
-            "verify skill missing 'independent' audit language in Step 4e"
-        assert re.search(r'(?i)integrity', content), \
-            "verify skill missing integrity score reference in Step 4e"
-        # Must reference the auditor agent (purlin-auditor)
-        assert 'purlin-auditor' in content, \
+        heading = [l for l in content.splitlines() if l.startswith('### Step 4e')]
+        assert heading, "verify skill missing '### Step 4e' heading"
+        assert 'Independent Audit' in heading[0], \
+            f"verify skill Step 4e heading is not the Independent Audit step: {heading[0]!r}"
+        section = _section(content, heading[0])
+        # Must reference the auditor agent (purlin-auditor) and end on the score
+        assert 'purlin-auditor' in section, \
             "verify skill Step 4e missing purlin-auditor reference"
+        assert 'Report the final integrity score' in section, \
+            "verify skill Step 4e missing 'Report the final integrity score' instruction"
 
     @pytest.mark.proof("skill_verify", "PROOF-7", "RULE-7")
     def test_untested_case_is_handled(self):

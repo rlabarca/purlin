@@ -266,25 +266,65 @@ lines.append('→ tests/test_login.py:8   bcrypt.hashpw call — verify test doe
 print('\n'.join(lines))
 " > "$FIXER_FILE"
 
-# Must have PROOF-N -> file:line mappings (not RULE-N)
-if ! grep -qE 'PROOF-[0-9]+ → [^ ]+:[0-9]+' "$FIXER_FILE"; then
-  echo "    FAIL: Proof fixer changeset missing PROOF-N → file:line mapping"
+# Two changesets that each break RULE-11 in exactly one way, so each check is
+# shown to discriminate on its own. Without these runs the block would only
+# assert the shape of a fixture it wrote itself.
+# (a) RULE-N mappings instead of PROOF-N mappings.
+RULE_STYLE_FILE="$TMPDIR/_rule_changeset.txt"
+python3 -c "
+lines = []
+lines.append('── Changeset ──────────────────────────────────────────────────')
+lines.append('')
+lines.append('RULE-1 → src/login.py:12   bcrypt hashing')
+lines.append('RULE-3 → src/login.py:40   rate limit counter')
+lines.append('')
+lines.append('── Review ──────────────────────────────────────────────────')
+lines.append('')
+lines.append('→ src/login.py:12   check the work factor')
+print('\n'.join(lines))
+" > "$RULE_STYLE_FILE"
+
+# (b) PROOF-N mappings, but carrying the Decisions section RULE-11 says to omit.
+DECISIONS_FILE="$TMPDIR/_decisions_changeset.txt"
+python3 -c "
+lines = []
+lines.append('── Changeset ──────────────────────────────────────────────────')
+lines.append('')
+lines.append('PROOF-1 → tests/test_login.py:8   Replaced mock with real bcrypt call')
+lines.append('')
+lines.append('── Decisions ──────────────────────────────────────────────────')
+lines.append('')
+lines.append('→ Chose bcrypt over argon2 for dependency reasons')
+lines.append('')
+lines.append('── Review ──────────────────────────────────────────────────')
+lines.append('')
+lines.append('→ tests/test_login.py:8   check the work factor')
+print('\n'.join(lines))
+" > "$DECISIONS_FILE"
+
+# The four checks RULE-11 asks for, as one function, so the same checks can be
+# run against a changeset that violates the rule.
+fixer_changeset_ok() {
+  local file="$1"
+  grep -qE 'PROOF-[0-9]+ → [^ ]+:[0-9]+' "$file" || return 1
+  if grep -q "── Decisions " "$file"; then return 1; fi
+  grep -q "── Changeset " "$file" || return 1
+  grep -q "── Review " "$file" || return 1
+  return 0
+}
+
+if ! fixer_changeset_ok "$FIXER_FILE"; then
+  echo "    FAIL: Proof fixer changeset rejected by the RULE-11 checks"
   proof15_ok=false
 fi
 
-# Decisions section must be ABSENT (proof fixes are mechanical)
-if grep -q "── Decisions " "$FIXER_FILE"; then
-  echo "    FAIL: Proof fixer changeset should NOT have Decisions section"
+if fixer_changeset_ok "$RULE_STYLE_FILE"; then
+  echo "    FAIL: changeset mapping RULE-N instead of PROOF-N accepted by the RULE-11 checks"
   proof15_ok=false
 fi
 
-# Changeset and Review must still be present
-if ! grep -q "── Changeset " "$FIXER_FILE"; then
-  echo "    FAIL: Proof fixer changeset missing Changeset section"
-  proof15_ok=false
-fi
-if ! grep -q "── Review " "$FIXER_FILE"; then
-  echo "    FAIL: Proof fixer changeset missing Review section"
+if fixer_changeset_ok "$DECISIONS_FILE"; then
+  echo "    FAIL: changeset carrying a Decisions section accepted by the RULE-11 checks"
   proof15_ok=false
 fi
 

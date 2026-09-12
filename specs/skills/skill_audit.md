@@ -34,14 +34,14 @@
 - PROOF-1 (RULE-1): Grep `skills/audit/SKILL.md` for YAML frontmatter delimiters (`---`); verify `name:` and `description:` fields exist
 - PROOF-2 (RULE-2): Grep `skills/audit/SKILL.md` for `## Usage`; verify the section exists
 - PROOF-3 (RULE-3): Extract `name:` from frontmatter; verify it equals `audit`
-- PROOF-4 (RULE-4): e2e: Grep skills/audit/SKILL.md for independent auditor section; verify audit_criteria.md and STRONG/WEAK/HOLLOW @e2e
-- PROOF-5 (RULE-5): e2e: Grep the independent auditor section; verify it routes remediation to `purlin:build`, states the audit is read-only, and contains no instruction to spawn a fixer agent @e2e
-- PROOF-6 (RULE-6): e2e: Grep the independent auditor section for the re-audit step after fixes land; verify the re-check loop @e2e
-- PROOF-7 (RULE-7): e2e: Grep independent auditor section for 3 rounds; verify termination condition @e2e
-- PROOF-8 (RULE-8): e2e: Grep anchor rule handling for report to lead; verify ambiguous anchor protocol @e2e
+- PROOF-4 (RULE-4): Extract the `## When Running as Independent Auditor` section of `skills/audit/SKILL.md`; verify the section body names the criteria loader `--load-criteria` and all three assessment literals `STRONG`, `WEAK` and `HOLLOW`
+- PROOF-5 (RULE-5): Extract the `## When Running as Independent Auditor` section of `skills/audit/SKILL.md`; verify it routes remediation to `purlin:build <feature>`, states the audit is `read-only and never edits code or tests`, states `There is no separate fixer agent to spawn`, and contains no mention of the retired `purlin-builder` agent type
+- PROOF-6 (RULE-6): Extract the `## When Running as Independent Auditor` section of `skills/audit/SKILL.md`; verify it contains the literal re-audit step `After the fixes land, re-audit the affected proofs`
+- PROOF-7 (RULE-7): Extract the `## When Running as Independent Auditor` section of `skills/audit/SKILL.md`; verify it contains both termination conditions: `After 3 rounds on any single proof, move on` and `When all findings are addressed (or rounds exhausted)`
+- PROOF-8 (RULE-8): Extract the `### Anchor Rule Handling` section of `skills/audit/SKILL.md`; verify that for an ambiguous anchor rule it instructs `message the lead` with the template `Recommend to anchor author (<source>): <rule> could be clearer`
 - PROOF-9 (RULE-9): e2e: Audit hollow test code with external LLM; verify returns HOLLOW or WEAK @e2e
 - PROOF-10 (RULE-10): e2e: Audit strong test code with external LLM; verify STRONG or WEAK (not HOLLOW) @e2e
-- PROOF-11 (RULE-11): e2e: Parse external LLM response; verify ASSESSMENT, CRITERION, WHY, FIX fields extracted @e2e
+- PROOF-11 (RULE-11): e2e: Parse external LLM response; verify all five required fields are extracted: `PROOF-ID`, `ASSESSMENT`, `CRITERION`, `WHY` and `FIX` @e2e
 - PROOF-12 (RULE-12): e2e: Mixed-quality test file; static_checks catches assert True; valid test goes to external LLM @e2e
 - PROOF-13 (RULE-13): e2e: Write config with fake LLM command; verify ping, config fields, and two-pass audit @e2e
 - PROOF-14 (RULE-14): e2e: Create fake git repo with additional criteria; configure project with the pinned sha and cache the file with its `<!-- purlin-criteria-sha: <sha> -->` first line; verify load_criteria returns built-in + additional with separator and without the header line; verify Pass 1 still catches assert True; verify additional criteria reach fake LLM prompt. Then rewrite the cached file's header to a different sha and verify `--load-criteria` exits 2 naming both shas and prints no criteria on stdout; delete the cached file and verify the same exit 2 naming the missing cache; restore both and verify the load succeeds again, so the negative case cannot pass by leaving the project broken @e2e
