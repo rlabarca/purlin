@@ -100,19 +100,29 @@ GIT_REQUIRED = "Purlin requires git. Run 'git init' first."
 # it as `purlin-proof.sh`, which is the name every shell test sources.
 _DEST_OVERRIDES = {'shell_purlin.sh': 'purlin-proof.sh'}
 
+# Directory names detection never descends into: dot directories are tool
+# state, and `node_modules` is other people's code, where a vendored package's
+# own Makefile or test fixtures are not this project's frameworks.
+_SKIP_DIRS = ('node_modules',)
+
+# A SQL file counts as a test only when its name says so. `tests/fixtures.sql`
+# is seed data, not a test, and a project that keeps one got the sql plugin.
+_SQL_TEST_NAME = re.compile(r'^(?:test_.+\.sql|.+_test\.sql|.+\.test\.sql)$')
+
 # The registry's Detection column is prose for a reader; these are the same
 # checks as code. An id here that the registry does not list is a bug, and
 # `_frameworks()` raises on one rather than installing a file nobody shipped.
 _DETECTORS = (
     ('pytest', lambda root: (_exists(root, 'conftest.py')
                              or '[tool.pytest' in _slurp(root, 'pyproject.toml'))),
-    ('vitest', lambda root: 'vitest' in _slurp(root, 'package.json')),
-    ('jest', lambda root: 'jest' in _slurp(root, 'package.json')),
-    ('c', lambda root: (_exists(root, 'Makefile')
-                        or _exists(root, 'CMakeLists.txt'))),
+    ('vitest', lambda root: _npm_package(root, 'vitest')),
+    ('jest', lambda root: _npm_package(root, 'jest')),
+    ('c', lambda root: ((_exists(root, 'Makefile')
+                         or _exists(root, 'CMakeLists.txt'))
+                        and _has_source(root, '.c'))),
     ('php', lambda root: (_exists(root, 'composer.json')
                           or _exists(root, 'phpunit.xml'))),
-    ('sql', lambda root: any(n.endswith('.sql')
+    ('sql', lambda root: any(_SQL_TEST_NAME.match(n)
                              for n in _listdir(root, 'tests'))),
 )
 
@@ -169,6 +179,44 @@ def _listdir(root, rel):
         return sorted(os.listdir(os.path.join(root, rel)))
     except (IOError, OSError):
         return []
+
+
+def _npm_package(root, name):
+    """True when `package.json` declares `name` as a dependency.
+
+    A substring search over the file's text called every project whose
+    package.json merely mentioned the word a project of that framework: a
+    vitest project whose `description` says "migrated off jest" got the jest
+    plugin too. The dependency maps are parsed and the key looked up, and a
+    `<name>.config.*` file beside the manifest counts as the same answer.
+    """
+    text = _slurp(root, 'package.json')
+    if text:
+        try:
+            data = json.loads(text)
+        except ValueError:
+            data = None
+        if isinstance(data, dict):
+            for section in ('dependencies', 'devDependencies'):
+                deps = data.get(section)
+                if isinstance(deps, dict) and name in deps:
+                    return True
+    return any(n.startswith(name + '.config.') for n in _listdir(root, '.'))
+
+
+def _has_source(root, suffix):
+    """True when some file under `root` ends in `suffix`.
+
+    A build file alone is not a language: `Makefile` is how a Python or a Go
+    project spells its task runner just as often as it is how a C project
+    builds. Dot directories and `node_modules` are skipped (`_SKIP_DIRS`).
+    """
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = sorted(d for d in dirnames
+                             if not d.startswith('.') and d not in _SKIP_DIRS)
+        if any(n.endswith(suffix) for n in filenames):
+            return True
+    return False
 
 
 def _write(path, text):

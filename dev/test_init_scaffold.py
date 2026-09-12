@@ -788,3 +788,89 @@ class TestQualityGate:
         assert 'invalid choice' in err, err
         assert _read(os.path.join(repo, '.purlin', 'config.json')) == frozen, \
             "a refused --quality-gate value still rewrote the config"
+
+
+# ---------------------------------------------------------------------------
+# RULE-71 (precision): each heuristic names a fact only that framework has
+# ---------------------------------------------------------------------------
+
+def _detected(files):
+    """Scaffold a temp repo holding `files` and return the detected ids.
+
+    `files` is a {relative path: text} map. `--test-framework auto` is the
+    only flag, so what lands in `.purlin/plugins/` is exactly what detection
+    chose.
+    """
+    root = _tmp_repo()
+    try:
+        for rel, text in sorted(files.items()):
+            _write(root, rel, text)
+        code, out, err = _run(root, '--test-framework', 'auto')
+        assert code == 0, (code, err)
+        assert _config(root)['test_framework'] == 'auto', _config(root)
+        return _plugins(root)
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def _detection_table_ids():
+    """The framework column of the Detection table, lowercased, in order."""
+    content = _read(os.path.join(ROOT, 'references',
+                                 'supported_frameworks.md'))
+    section = re.search(r'^## Detection$(.*?)(?=^## )', content,
+                        re.MULTILINE | re.DOTALL)
+    assert section, "supported_frameworks.md has no ## Detection section"
+    ids = []
+    for line in section.group(1).splitlines():
+        cells = [c.strip() for c in line.strip().strip('|').split('|')]
+        if len(cells) != 2 or cells[0].startswith('-') or cells[0] == 'Check':
+            continue
+        name = re.sub(r'\(.*?\)', '', cells[1]).strip().strip('`*').lower()
+        ids.append(name)
+    return ids
+
+
+class TestDetectionPrecision:
+
+    @pytest.mark.proof("skill_init", "PROOF-79", "RULE-71", tier="integration")
+    def test_each_heuristic_names_a_fact_only_that_framework_has(self):
+        """RULE-71: a build file is not a language and a .sql file is not a
+        test. Every case below is a project the old substring and
+        bare-build-file heuristics called a framework project wrongly."""
+        # C: a Makefile alone is a task runner, not a C project.
+        assert _detected({'Makefile': 'all:\n\t@echo hi\n',
+                          'README.md': 'a python project\n'}) == [], \
+            "a Makefile with no *.c file still selected the C plugin"
+        assert _detected({'Makefile': 'all:\n\t@echo hi\n',
+                          'src/main.c': 'int main(void){return 0;}\n'}) == \
+            ['c_purlin.h', 'c_purlin_emit.py'], \
+            "a Makefile beside a *.c file did not select C"
+
+        # jest/vitest: the dependency maps are parsed, not the file's text.
+        vitest_only = _detected({'package.json': json.dumps({
+            'description': 'migrated off jest last year',
+            'devDependencies': {'vitest': '^2.0.0'},
+        })})
+        assert vitest_only == ['vitest_purlin.ts'], (
+            f"the word jest in a package.json string selected jest: "
+            f"{vitest_only}")
+        assert _detected({'package.json': json.dumps({
+            'devDependencies': {'jest': '^29.0.0'}})}) == \
+            ['jest_purlin.js'], "a declared jest dependency was not detected"
+
+        # SQL: the file name has to say test.
+        assert _detected({'tests/fixtures.sql': 'INSERT INTO t VALUES (1);\n'}) \
+            == [], "tests/fixtures.sql, which is seed data, selected the SQL plugin"
+        assert _detected({'tests/test_schema.sql': 'SELECT 1;\n'}) == \
+            ['sql_purlin.sh'], "tests/test_schema.sql did not select SQL"
+
+        # The reference's Detection table and the code's table are one list.
+        sys.path.insert(0, os.path.join(ROOT, 'scripts', 'init'))
+        try:
+            import scaffold
+        finally:
+            sys.path.pop(0)
+        code_ids = [framework_id for framework_id, _ in scaffold._DETECTORS]
+        assert _detection_table_ids() == code_ids, (
+            f"the Detection table of supported_frameworks.md says "
+            f"{_detection_table_ids()} while _DETECTORS says {code_ids}")

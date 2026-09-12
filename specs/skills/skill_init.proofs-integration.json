@@ -234,6 +234,15 @@
       "test_name": "test_quality_gate_is_written_only_when_answered",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-79",
+      "rule": "RULE-71",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_each_heuristic_names_a_fact_only_that_framework_has",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

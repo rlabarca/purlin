@@ -9,11 +9,11 @@ Proof plugins shipped with Purlin. `purlin:init` detects and scaffolds the appro
 | Framework | Display name | Languages | Plugin file | Detection | Marker syntax | Runner setup |
 |-----------|-------------|-----------|------------|-----------|---------------|--------------|
 | **pytest** | pytest (Python) | Python | `scripts/proof/pytest_purlin.py` | `conftest.py` or `[tool.pytest]` in `pyproject.toml` | `@pytest.mark.proof("feature", "PROOF-1", "RULE-1")`; the marker's tier is also added as a registered pytest marker, so `-m "not integration and not e2e"` selects the unit tier | `pip install pytest` |
-| **Jest** | jest (JS/TS) | JavaScript, TypeScript | `scripts/proof/jest_purlin.js` | `package.json` contains `jest` | `[proof:feature:PROOF-1:RULE-1:unit]` in test title | `npm ci` |
-| **Vitest** | vitest (JS/TS) | JavaScript, TypeScript | `scripts/proof/vitest_purlin.ts` | `package.json` contains `vitest` | `[proof:feature:PROOF-1:RULE-1:unit]` in test title (native TS reporter — Vitest loads `.ts` reporters via Vite, so it covers both JS and TS projects) | `npm ci` |
-| **C** | c (C/gcc) | C | `scripts/proof/c_purlin.h` + `scripts/proof/c_purlin_emit.py` | `Makefile` or `CMakeLists.txt` present | `purlin_proof("feature", "PROOF-1", "RULE-1", passed, name, file, tier)` | the platform's C toolchain (`gcc` from the image's package manager on linux, Xcode command line tools on macos, MSVC build tools on windows) |
+| **Jest** | jest (JS/TS) | JavaScript, TypeScript | `scripts/proof/jest_purlin.js` | `jest` under `dependencies` or `devDependencies` in `package.json`, or a `jest.config.*` file | `[proof:feature:PROOF-1:RULE-1:unit]` in test title | `npm ci` |
+| **Vitest** | vitest (JS/TS) | JavaScript, TypeScript | `scripts/proof/vitest_purlin.ts` | `vitest` under `dependencies` or `devDependencies` in `package.json`, or a `vitest.config.*` file | `[proof:feature:PROOF-1:RULE-1:unit]` in test title (native TS reporter — Vitest loads `.ts` reporters via Vite, so it covers both JS and TS projects) | `npm ci` |
+| **C** | c (C/gcc) | C | `scripts/proof/c_purlin.h` + `scripts/proof/c_purlin_emit.py` | `Makefile` or `CMakeLists.txt` present AND at least one `*.c` file | `purlin_proof("feature", "PROOF-1", "RULE-1", passed, name, file, tier)` | the platform's C toolchain (`gcc` from the image's package manager on linux, Xcode command line tools on macos, MSVC build tools on windows) |
 | **PHP** | php (PHP) | PHP | `scripts/proof/phpunit_purlin.php` | `composer.json` or `phpunit.xml` present | `/** @purlin feature PROOF-1 RULE-1 unit */` docblock | `composer install` |
-| **SQL** | sql (sqlite3) | SQL (sqlite3) | `scripts/proof/sql_purlin.sh` | `.sql` test files in `tests/` | `-- @purlin feature PROOF-1 RULE-1 unit` comment | nothing beyond `python3` (`actions/setup-python` puts it on PATH on all three runner OSes) |
+| **SQL** | sql (sqlite3) | SQL (sqlite3) | `scripts/proof/sql_purlin.sh` | a `test_*.sql`, `*_test.sql` or `*.test.sql` file in `tests/` | `-- @purlin feature PROOF-1 RULE-1 unit` comment | nothing beyond `python3` (`actions/setup-python` puts it on PATH on all three runner OSes) |
 | **Shell** | shell (Bash) | Bash | `scripts/proof/shell_purlin.sh` | No auto-detection — user must select | `purlin_proof "feature" "PROOF-1" "RULE-1" pass "desc"` | nothing beyond `python3` (`actions/setup-python` puts it on PATH on all three runner OSes) |
 
 The **Runner setup** column is what `purlin:test` reads when it scaffolds a platform runner
@@ -54,15 +54,15 @@ A project whose specs carry `@e2e` proofs but has no e2e-capable runner installe
 | Check | Framework |
 |-------|-----------|
 | `conftest.py` at root OR `[tool.pytest]` in `pyproject.toml` | pytest |
-| `package.json` contains `vitest` | Vitest (`vitest_purlin.ts`) |
-| `package.json` contains `jest` | Jest |
-| `Makefile` or `CMakeLists.txt` at root | C |
+| `vitest` under `dependencies` or `devDependencies` in `package.json`, or a `vitest.config.*` file | Vitest (`vitest_purlin.ts`) |
+| `jest` under `dependencies` or `devDependencies` in `package.json`, or a `jest.config.*` file | Jest |
+| `Makefile` or `CMakeLists.txt` AND at least one `*.c` file | C |
 | `composer.json` or `phpunit.xml` at root | PHP |
-| `.sql` files in `tests/` directory | SQL |
+| a `test_*.sql`, `*_test.sql` or `*.test.sql` file in `tests/` | SQL |
 
 All detected frameworks are scaffolded. Shell has no auto-detection heuristic — the user must explicitly select it. If no framework is detected, the full selection list is shown with nothing pre-selected.
 
-The `test_framework` config field stores a comma-separated list when multiple are detected: `"pytest,jest"`.
+The `test_framework` config field records the answer the user gave, not the detection result: `auto` when detection chose the frameworks, or the comma-separated list the user named (`"pytest,jest"`). `auto` is written verbatim so the hook resolves the frameworks from what is on disk on every run (`specs/skills/skill_init.md` RULE-71).
 
 ## Adding More Frameworks
 
