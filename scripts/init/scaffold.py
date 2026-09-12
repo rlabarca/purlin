@@ -57,6 +57,15 @@ WHAT `--force` KEEPS
     this run did not ask about, and changes exactly what was re-answered.
     Nothing else on disk is replaced: an existing plugin copy, wiring file,
     hook or dashboard is kept and reported as `kept`.
+
+    `--test-framework` keeps with the rest. Absent, it is the project's own
+    recorded value (`auto` in a project that has no config yet), so the
+    framework selection a re-init resolves is the one the project already
+    answered and the field is not rewritten. That is what makes a single-step
+    re-answer single: `--force --pre-push strict` alone changes `pre_push` and
+    nothing else, which is what `purlin:init --pre-push` needs from this script
+    (`skill_init` RULE-74). A flag that defaulted to `auto` would re-detect the
+    frameworks and write `auto` over the recorded answer on every such run.
 """
 
 import argparse
@@ -156,6 +165,22 @@ def _write(path, text):
         f.write(text)
 
 
+def _existing_config(root):
+    """The project's current `.purlin/config.json`, or None.
+
+    None means absent or not a readable JSON object, which are the two cases
+    with no answers to keep.
+    """
+    rel = os.path.join('.purlin', 'config.json')
+    if not os.path.exists(os.path.join(root, rel)):
+        return None
+    try:
+        value = json.loads(_slurp(root, rel))
+    except json.JSONDecodeError:
+        return None
+    return value if isinstance(value, dict) else None
+
+
 def _plugin_root():
     """The installed plugin: this file is <plugin root>/scripts/init/."""
     return os.path.dirname(os.path.dirname(
@@ -200,20 +225,22 @@ def _detect(root, known):
 
 # ── the steps ─────────────────────────────────────────────────────────
 
-def _config(plan, root, plugin_root, answers, force, dry_run):
-    """Step 2: the template, the answers, and `version` from VERSION."""
+def _config(plan, root, plugin_root, answers, existing, force, dry_run):
+    """Step 2: the template, the answers, and `version` from VERSION.
+
+    `existing` is `_existing_config(root)`, read once in `main` because the
+    framework selection needs the same answers this writes.
+    """
     template = json.loads(_slurp(plugin_root, os.path.join('templates',
                                                            'config.json')))
     path = os.path.join(root, '.purlin', 'config.json')
     base = {}
     if os.path.exists(path) and force:
-        try:
-            base = json.loads(_slurp(root, os.path.join('.purlin',
-                                                        'config.json')))
-        except json.JSONDecodeError:
-            base = {}
+        if existing is None:
             plan.append('wrote .purlin/config.json (the existing file was not '
                         'readable JSON; rewritten from the template)')
+        else:
+            base = existing
     config = dict(template)
     config.update(base)
     for key, value in answers.items():
@@ -386,8 +413,10 @@ def main(argv=None):
     parser.add_argument('--plugin-root', default=None,
                         help='the installed Purlin plugin (default: the '
                              'directory this script ships in)')
-    parser.add_argument('--test-framework', default='auto',
-                        help='auto, one registry id, or a comma-separated list')
+    parser.add_argument('--test-framework', default=None,
+                        help='auto, one registry id, or a comma-separated list '
+                             "(default: the project's own recorded value, or "
+                             'auto when it has no config yet)')
     parser.add_argument('--pre-push', choices=('warn', 'strict', 'off'),
                         default=None)
     parser.add_argument('--mutation-checks', choices=('on', 'off'), default=None)
@@ -432,7 +461,17 @@ def main(argv=None):
               file=sys.stderr)
         return EXIT_BAD_INVOCATION
 
-    requested = [part.strip() for part in args.test_framework.split(',')
+    # Absent, `--test-framework` is the project's own recorded answer, so a
+    # single-step re-answer (`--force --pre-push strict` alone) resolves the
+    # frameworks the project already chose and leaves the field alone. A
+    # non-string recorded value is no answer at all and falls back to `auto`.
+    existing = _existing_config(root) if args.force else None
+    recorded = (existing or {}).get('test_framework')
+    framework_spec = args.test_framework
+    if framework_spec is None:
+        framework_spec = recorded if isinstance(recorded, str) else 'auto'
+
+    requested = [part.strip() for part in framework_spec.split(',')
                  if part.strip()]
     if requested == ['auto']:
         selected = _detect(root, registry)
@@ -467,7 +506,8 @@ def main(argv=None):
             os.makedirs(path, exist_ok=True)
         plan.append(f'wrote {directory}/')
 
-    config = _config(plan, root, plugin_root, answers, args.force, args.dry_run)
+    config = _config(plan, root, plugin_root, answers, existing, args.force,
+                     args.dry_run)
     _plugins(plan, root, plugin_root, registry, selected, args.dry_run)
     _wiring(plan, root, selected, args.dry_run)
     _gitignore(plan, root, plugin_root, args.dry_run)

@@ -30,7 +30,7 @@ purlin:init --mcp                       Run only the MCP step of --update
 
 Each `--flag` runs ONLY that step, not the full init.
 
-**Who does what.** This skill asks the questions; `scripts/init/scaffold.py` writes the files, exactly as `scripts/update/migrate.py` performs `--update`. The script handles the full init and the `--force` re-run (Steps 1, 2, 4, 5, 5b, 7 and 7a), and takes `--pre-push`, `--digest`, `--report` and `--mutation-checks` as answers. The single-step flags of the same names, `--add-plugin`, `--list-plugins`, `--sync-audit-criteria` and `--audit-llm` stay agent-driven; `--update` is `scripts/update/migrate.py` (Step 5d) and `--mcp` is its MCP step (Step 5c).
+**Who does what.** This skill asks the questions; `scripts/init/scaffold.py` writes the files, exactly as `scripts/update/migrate.py` performs `--update`. The script handles the full init, the `--force` re-run (Steps 1, 2, 4, 5, 5b, 7 and 7a) and the single-step re-answers: it takes `--pre-push`, `--digest`, `--report` and `--mutation-checks` as answers, and `purlin:init --pre-push`, `--report`, `--digest` and `--mutation-checks` each ask their own question and then run it with `--force` and that one flag (see **Single-step re-answers** in Step 2). `--add-plugin`, `--list-plugins`, `--sync-audit-criteria` and `--audit-llm` stay agent-driven; `--update` is `scripts/update/migrate.py` (Step 5d) and `--mcp` is its MCP step (Step 5c).
 
 ## Step 1 — Pre-flight
 
@@ -70,6 +70,24 @@ was asked: it reads `templates/config.json`, writes the answers over it, stamps
 `version` from `${CLAUDE_PLUGIN_ROOT}/VERSION`, and never writes a proof entry,
 a receipt or a commit. `--dry-run` prints the same plan and writes nothing,
 which is what to run when the user wants to see the plan before agreeing to it.
+
+**Single-step re-answers.** `purlin:init --pre-push`, `--report`, `--digest` and
+`--mutation-checks` change one setting on a project that is already initialized.
+Each asks only its own question, then runs the same scaffolder with `--force`
+and that one flag:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" \
+  --project-root . --force --pre-push <warn|strict|off>
+```
+
+One flag, one field: the run rewrites that key of `.purlin/config.json` and
+leaves every other key and every other file in the project byte-identical.
+`--test-framework` left off is the value the project already recorded, not
+`auto`, so a lone re-answer never re-detects the frameworks or re-copies a
+plugin. Do NOT hand-edit `.purlin/config.json` for one of these: the scaffolder
+owns that file, and a config edited by hand is how a key gets dropped, reordered
+or written in the wrong type.
 
 Config template fields (from `templates/config.json`), plus the optional `platforms` field that init never writes:
 
@@ -186,7 +204,7 @@ Dashboard report is currently: on
   [off] Disable
 ```
 
-After changing, update `"report"` in `.purlin/config.json`. If turning on, copy the HTML file to project root. If turning off, do NOT delete an existing HTML file (the user may want to keep it).
+After changing, run the scaffolder with `--force --report on|off` and nothing else (Step 2, **Single-step re-answers**): it writes `"report"`, links `purlin-report.html` when the answer is on and the file is absent, and never deletes an existing dashboard when the answer is off (the user may want to keep it).
 
 ## Step 5c — MCP Server (plugin-bundled) + Legacy Migration
 
@@ -329,7 +347,7 @@ Pre-push hook mode:
 
 Write the chosen mode to `.purlin/config.json` as `"pre_push": "warn"`, `"pre_push": "strict"` or `"pre_push": "off"`. Any other value makes the hook block every push until it is corrected: a typo must not disable enforcement invisibly.
 
-When called via `purlin:init --pre-push`, ONLY the mode selection above runs (no hook installation). The hook install below happens during the full init flow, inside the scaffolder.
+When called via `purlin:init --pre-push`, ONLY the mode selection above runs: ask, then run the scaffolder with `--force --pre-push <mode>` and nothing else (Step 2, **Single-step re-answers**), which rewrites `pre_push` alone. No hook is installed by that run beyond the one it keeps; the hook install below happens during the full init flow, inside the same scaffolder.
 
 The scaffolder installs `.git/hooks/pre-push` as a symlink to the installed
 plugin's `scripts/hooks/pre-push.sh`, and copies the file only when the link
@@ -362,7 +380,7 @@ Run purlin:audit separately when you want fresh audit scores.
 
 Write the chosen mode to `.purlin/config.json` as `"digest": "auto"` (or `"warn"` or `"off"`).
 
-When called via `purlin:init --digest`, run the mode selection above AND the hook installation below. Also remove `.purlin/report-data.js` from `.gitignore` if present. This makes `--digest` a complete setup command for existing projects — the user runs one command and gets the full digest feature.
+When called via `purlin:init --digest`, ask the mode above and then run the scaffolder with `--force --digest <mode>` and nothing else (Step 2, **Single-step re-answers**): that one run rewrites `digest` and installs the pre-commit hook below when the project has none. Also remove `.purlin/report-data.js` from `.gitignore` if present. This makes `--digest` a complete setup command for existing projects — the user runs one command and gets the full digest feature.
 
 The scaffolder installs `.git/hooks/pre-commit` by the same symlink-then-copy
 rule as the pre-push hook, and keeps an existing hook of either kind. At
@@ -463,7 +481,8 @@ Mutation checks:
 Pass the answer to the scaffolder as `--mutation-checks on|off`, which writes `"mutation_checks": true` or `"mutation_checks": false`.
 
 When called via `purlin:init --mutation-checks on|off`, ONLY this step runs: read the current
-value, show it, and write the new one, exactly as `--pre-push` does for its mode.
+value, show it, and run the scaffolder with `--force --mutation-checks on|off` and nothing
+else, exactly as `--pre-push` does for its mode (Step 2, **Single-step re-answers**).
 
 `purlin:init --update` asks this same question when `mutation_checks` is absent from the config,
 and passes the answer to the migration script as `--mutation-checks on|off`. It is the one config

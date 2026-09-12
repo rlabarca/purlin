@@ -3,15 +3,6 @@
   "proofs": [
     {
       "feature": "skill_init",
-      "id": "PROOF-51",
-      "rule": "RULE-48",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_registry_covers_every_shipped_plugin",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "skill_init",
       "id": "PROOF-52",
       "rule": "RULE-49",
       "test_file": "dev/test_init_update.py",
@@ -214,6 +205,24 @@
       "rule": "RULE-71",
       "test_file": "dev/test_init_scaffold.py",
       "test_name": "test_auto_scaffolds_what_it_detects_and_never_defaults_to_shell",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-77",
+      "rule": "RULE-74",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_one_flag_rewrites_one_field_and_nothing_else",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-51",
+      "rule": "RULE-48",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_registry_covers_every_shipped_plugin",
       "status": "pass",
       "tier": "integration"
     }

@@ -628,3 +628,77 @@ class TestPlanAndAnswers:
                     '--test-framework)') in out, out
         finally:
             shutil.rmtree(bare, ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------
+# RULE-74: a single-step re-answer is a single config write
+# ---------------------------------------------------------------------------
+
+class TestSingleStepReanswer:
+
+    @pytest.mark.proof("skill_init", "PROOF-77", "RULE-74", tier="integration")
+    def test_one_flag_rewrites_one_field_and_nothing_else(self, repo):
+        """RULE-74: `purlin:init --pre-push` changes the pre-push mode. If the
+        script it runs also re-detects the frameworks or re-copies a plugin,
+        the step that changed one setting cannot be told from one that changed
+        two."""
+        code, out, err = _run(
+            repo, '--test-framework', 'pytest', '--pre-push', 'warn',
+            '--digest', 'auto', '--report', 'on', '--mutation-checks', 'off',
+            '--remote-verification', 'off')
+        assert code == 0, (code, out, err)
+
+        before_config = _config(repo)
+        before_tree = _tree(repo)
+        assert before_config['test_framework'] == 'pytest'
+        assert 'pytest_purlin.py' in _plugins(repo)
+
+        cases = (
+            (('--pre-push', 'strict'), 'pre_push', 'strict'),
+            (('--report', 'off'), 'report', False),
+            (('--digest', 'warn'), 'digest', 'warn'),
+            (('--mutation-checks', 'on'), 'mutation_checks', True),
+        )
+        for flags, key, value in cases:
+            named = ' '.join(flags)
+            code, out, err = _run(repo, '--force', *flags)
+            assert code == 0, (named, code, out, err)
+
+            after_config = _config(repo)
+            assert after_config[key] == value, (
+                f"{named} must write {key}={value!r}, got "
+                f"{after_config.get(key)!r}")
+            changed = {k for k in set(before_config) | set(after_config)
+                       if before_config.get(k, '\0') != after_config.get(k, '\0')}
+            assert changed == {key}, (
+                f"{named} alone must rewrite exactly {key!r}; it changed "
+                f"{sorted(changed)}")
+            # Named outright, because these two are the ways a lone re-answer
+            # stops being one: a re-detected framework and a restamped version.
+            assert after_config['test_framework'] == 'pytest', (
+                f"{named} rewrote test_framework to "
+                f"{after_config['test_framework']!r}; the project's own answer "
+                f"must be kept when the flag is absent")
+            assert after_config['version'] == before_config['version'], named
+
+            after_tree = _tree(repo)
+            assert set(after_tree) == set(before_tree), (
+                f"{named} changed the set of files: added "
+                f"{sorted(set(after_tree) - set(before_tree))}, removed "
+                f"{sorted(set(before_tree) - set(after_tree))}")
+            differing = sorted(rel for rel in before_tree
+                               if rel != os.path.join('.purlin', 'config.json')
+                               and after_tree[rel] != before_tree[rel])
+            assert not differing, (
+                f"{named} rewrote {differing[0]}; a single-step re-answer "
+                f"writes the config and nothing else")
+
+            # The plan says the same thing the tree does: one write, the rest
+            # kept or skipped. A re-copied plugin would read `copied ...`.
+            stray = [line for line in out.splitlines()
+                     if line and not line.startswith(('kept ', 'skipped '))
+                     and line != 'wrote .purlin/config.json']
+            assert not stray, (
+                f"{named} planned more than the config write: {stray}")
+
+            before_config, before_tree = after_config, after_tree
