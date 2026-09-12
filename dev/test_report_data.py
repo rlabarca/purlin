@@ -1637,3 +1637,80 @@ class TestReceiptEvidenceInPayload:
         self._git('commit', '-q', '-m', 'reproved on windows')
         receipt = self._receipt_payload()
         assert receipt['platform_stale'] == ['windows-2022'], receipt
+
+
+class TestMigrationsInPayload:
+    """RULE-34: the pending-migration list travels in the payload, always
+    present, so the dashboard and the CI preflight read the same list the CLI
+    prints. The legacy tier name is assembled, never written out: the detector
+    scans the repository for exactly that literal."""
+
+    WIN = 'win' + 'dows'
+
+    def setup_method(self):
+        self.tmp = tempfile.mkdtemp()
+        _make_project(self.tmp)
+
+    def teardown_method(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _config(self, **fields):
+        with open(os.path.join(self.tmp, '.purlin', 'config.json'), 'w') as f:
+            json.dump(fields, f)
+
+    def _payloads(self):
+        config = purlin_server.resolve_config(self.tmp)
+        features = purlin_server._scan_specs(self.tmp)
+        all_proofs = purlin_server._read_proofs(self.tmp)
+        built = purlin_server._build_report_data(
+            self.tmp, features, all_proofs, config, {})
+        return built, purlin_server.read_report_payload(self.tmp)
+
+    @pytest.mark.proof("report_data", "PROOF-35", "RULE-34", tier="integration")
+    def test_migrations_is_present_empty_and_populated(self):
+        win = self.WIN
+        # A config that is present but missing a template field, plus a proof
+        # file named with a platform where the tier belongs.
+        self._config(version=purlin_server._read_version(),
+                     test_framework='pytest', spec_dir='specs',
+                     pre_push='warn', mutation_checks=False, report=True,
+                     digest='auto')
+        _write_spec(self.tmp, 'demo',
+                    '# Feature: demo\n\n## Rules\n- RULE-1: does it\n\n'
+                    f'## Proof\n- PROOF-1 (RULE-1): assert it @{win}\n')
+        _write_proofs(self.tmp, 'demo', [
+            {'feature': 'demo', 'id': 'PROOF-1', 'rule': 'RULE-1',
+             'test_file': 't.py', 'test_name': 't', 'status': 'pass',
+             'tier': win}], tier=win)
+
+        built, read = self._payloads()
+        for payload in (built, read):
+            ids = [m['id'] for m in payload['migrations']]
+            assert ids == ['legacy-tier-windows', 'legacy-proof-file',
+                           'config-fields-missing'], ids
+            by_id = {m['id']: m for m in payload['migrations']}
+            assert by_id['legacy-proof-file']['files'] == \
+                [f'specs/app/demo.proofs-{win}.json'], by_id
+            assert by_id['config-fields-missing']['files'] == \
+                ['.purlin/config.json']
+            for entry in payload['migrations']:
+                assert entry['count'] >= 1, entry
+                assert entry['files'], entry
+
+        # Repaired: the key stays, the list empties. Absent would be
+        # indistinguishable from a payload an older plugin wrote.
+        self._config(version=purlin_server._read_version(),
+                     test_framework='pytest', spec_dir='specs',
+                     pre_push='warn', remote_verification='off',
+                     mutation_checks=False, report=True, digest='auto')
+        _write_spec(self.tmp, 'demo',
+                    '# Feature: demo\n\n## Rules\n- RULE-1: does it\n\n'
+                    '## Proof\n- PROOF-1 (RULE-1): assert it @unit @on(windows)\n')
+        os.rename(os.path.join(self.tmp, 'specs', 'app',
+                               f'demo.proofs-{win}.json'),
+                  os.path.join(self.tmp, 'specs', 'app',
+                               'demo.proofs-unit@windows.json'))
+        built, read = self._payloads()
+        for payload in (built, read):
+            assert 'migrations' in payload, payload.keys()
+            assert payload['migrations'] == [], payload['migrations']

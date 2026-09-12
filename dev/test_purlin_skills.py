@@ -164,3 +164,38 @@ class TestPurlinSkills:
             "init skill missing jest_purlin.js → JavaScript/Jest association on same line"
         assert 'custom' in content, \
             "init skill missing 'custom' label for non-built-in plugins"
+
+    @pytest.mark.proof("purlin_skills", "PROOF-16", "RULE-16")
+    def test_every_skill_points_at_the_pending_migrations_section(self):
+        """RULE-16: one anchor in all 12 skills, not twelve paraphrases."""
+        anchor = 'purlin_commands.md#pending-migrations'
+        files = _skill_files()
+        assert len(files) == 12, f"expected 12 skills, scanned {len(files)}"
+        missing = [p for p in files if anchor not in _read(p)]
+        assert not missing, f"skills with no {anchor} pointer: {missing}"
+        # The six that do not display sync_status output must say they call it.
+        for name in ('spec', 'spec-from-code', 'audit', 'anchor', 'find',
+                     'rename'):
+            content = _read(os.path.join(SKILLS_DIR, name, 'SKILL.md'))
+            line = [l for l in content.splitlines() if anchor in l]
+            assert line, f"{name}: no pointer line"
+            assert 'sync_status' in line[0] and 'first' in line[0], \
+                f"{name} must say it calls sync_status first: {line[0]}"
+
+    @pytest.mark.proof("purlin_skills", "PROOF-17", "RULE-17")
+    def test_build_branches_on_mutation_checks_and_test_links_the_section(self):
+        """RULE-17: one definition of the practice, linked from both skills."""
+        anchor = 'spec_quality_guide.md#mutation-check'
+        build = _read(os.path.join(SKILLS_DIR, 'build', 'SKILL.md'))
+        assert 'mutation_checks' in build, "build skill does not name the field"
+        assert anchor in build, f"build skill does not link {anchor}"
+        assert re.search(r'`mutation_checks` is `true`', build), \
+            "build skill has no true branch"
+        assert re.search(r'`mutation_checks` is `false`', build), \
+            "build skill has no false branch"
+        assert 'purlin:init --mutation-checks on' in build, \
+            "build skill does not say how to turn the check on"
+        assert 'commit body' in build, \
+            "build skill does not record the mutation in the commit body"
+        test_skill = _read(os.path.join(SKILLS_DIR, 'test', 'SKILL.md'))
+        assert anchor in test_skill, f"test skill does not link {anchor}"

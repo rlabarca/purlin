@@ -135,6 +135,24 @@
       "test_name": "test_init_list_plugins_labels_builtin_and_custom",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "purlin_skills",
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "test_file": "dev/test_purlin_skills.py",
+      "test_name": "test_every_skill_points_at_the_pending_migrations_section",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_skills",
+      "id": "PROOF-17",
+      "rule": "RULE-17",
+      "test_file": "dev/test_purlin_skills.py",
+      "test_name": "test_build_branches_on_mutation_checks_and_test_links_the_section",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

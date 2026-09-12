@@ -5,6 +5,8 @@ description: Rename a feature across specs, proofs, markers, and references
 
 Rename a feature across all Purlin artifacts in one atomic operation.
 
+**Pending migrations:** call `sync_status` first when this skill would write specs or proofs, and follow `references/purlin_commands.md#pending-migrations` when it opens with a pending-migrations advisory.
+
 ## Usage
 
 ```

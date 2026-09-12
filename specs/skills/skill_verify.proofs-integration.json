@@ -54,6 +54,15 @@
       "test_name": "test_stale_receipt_names_reworded_rules_and_reproved_platforms",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "skill_verify",
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_issuer_refuses_until_the_project_is_migrated",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

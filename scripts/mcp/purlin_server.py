@@ -1640,6 +1640,311 @@ def _check_legacy_mcp_entry(project_root):
     return None
 
 
+# ── Pending migrations (skill_init RULE-49, sync_status RULE-55) ──────
+#
+# A project initialized by an older plugin carries artifacts the current
+# plugin no longer writes. Detection is content-based, never version-based:
+# a project may have been initialized by any version, may have been edited by
+# hand, and may have applied half of a migration already, so what is on disk
+# is the only honest input. Every check names the files it found, because a
+# count with no filename is not something a reader can act on.
+_MIGRATION_ORDER = ('legacy-tier-windows', 'legacy-proof-file', 'legacy-marker',
+                    'plugin-copies-stale', 'config-fields-missing',
+                    'receipt-v1', 'legacy-mcp')
+
+# The five ids `scripts/update/migrate.py --apply` rewrites. The other two are
+# directives, not rewrites: a receipt is a claim that tests ran, so only
+# purlin:verify may issue one, and the MCP entry is purlin:init --mcp's step.
+_SCRIPTED_MIGRATIONS = frozenset({'legacy-tier-windows', 'legacy-proof-file',
+                                  'legacy-marker', 'plugin-copies-stale',
+                                  'config-fields-missing'})
+
+# Config fields the update asks about rather than backfilling from the
+# template. A default that costs the user time and tokens is a decision, not a
+# default (skill_init RULE-52), so it is never written on their behalf.
+_ASKED_CONFIG_FIELDS = ('mutation_checks',)
+
+# One entry per proof-marker syntax a plugin reads, with the extensions that
+# carry it. `windows` as a tier is the pre-platform spelling; the id is the
+# same text in every plugin, so the rewrite is per syntax and not per plugin
+# (jest and vitest share one).
+_LEGACY_MARKER_SYNTAXES = (
+    ('pytest', ('.py',),
+     re.compile(r'(@?pytest\.mark\.proof\((?:[^()]|\([^()]*\))*?tier\s*=\s*)'
+                r'(["\'])windows\2')),
+    ('jest/vitest', ('.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx'),
+     re.compile(r'(\[proof:[A-Za-z_]\w*:PROOF-\d+:RULE-\d+):windows\]')),
+    ('shell', ('.sh', '.bash'),
+     re.compile(r'PURLIN_PROOF_TIER=(["\']?)windows\1(?![\w-])')),
+    ('c', ('.c', '.h'),
+     re.compile(r'purlin_proof\(([^;]*?)"windows"\s*\)')),
+    ('phpunit', ('.php',),
+     re.compile(r'(@purlin\s+[A-Za-z_]\w*\s+PROOF-\d+\s+RULE-\d+)\s+windows(?![\w-])')),
+    ('sql', ('.sql',),
+     re.compile(r'(@purlin\s+[A-Za-z_]\w*\s+PROOF-\d+\s+RULE-\d+)\s+windows(?![\w-])')),
+    ('xunit', ('.cs', '.fs', '.vb'),
+     re.compile(r'("[A-Za-z_]\w*:PROOF-\d+:RULE-\d+):windows"')),
+)
+
+_MARKER_SCAN_SKIP_DIRS = frozenset({
+    'node_modules', 'vendor', '__pycache__', 'dist', 'build', 'target',
+    'venv', 'bin', 'obj',
+})
+
+
+def _plugin_source_dir():
+    """`scripts/proof/` inside the installed plugin, the source of the copies."""
+    return os.path.join(os.path.dirname(SCRIPT_DIR), 'proof')
+
+
+def _template_config():
+    """The shipped `templates/config.json`, or {} when it cannot be read."""
+    path = os.path.join(os.path.dirname(os.path.dirname(SCRIPT_DIR)),
+                        'templates', 'config.json')
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except (json.JSONDecodeError, IOError, OSError):
+        return {}
+
+
+def _iter_source_files(project_root):
+    """Every file under the project a proof marker could live in.
+
+    Dot directories are skipped whole: `.git`, `.claude` (which may hold other
+    agents' worktrees) and `.purlin` are not the project's own source, and a
+    rewrite that reached into them would edit a checkout nobody asked about.
+    """
+    for dirpath, dirnames, filenames in os.walk(project_root):
+        dirnames[:] = [d for d in dirnames
+                       if not d.startswith('.') and d not in _MARKER_SCAN_SKIP_DIRS]
+        for filename in filenames:
+            yield os.path.join(dirpath, filename)
+
+
+def _legacy_marker_hits(project_root):
+    """[(rel_path, syntax_label, count)] for every legacy `windows`-tier marker."""
+    hits = []
+    for path in _iter_source_files(project_root):
+        ext = os.path.splitext(path)[1].lower()
+        for label, extensions, pattern in _LEGACY_MARKER_SYNTAXES:
+            if ext not in extensions:
+                continue
+            try:
+                with open(path, 'r', encoding='utf-8', errors='replace') as f:
+                    text = f.read()
+            except (IOError, OSError):
+                continue
+            found = len(pattern.findall(text))
+            if found:
+                rel = os.path.relpath(path, project_root).replace(os.sep, '/')
+                hits.append((rel, label, found))
+    return sorted(hits)
+
+
+def _stale_plugin_copies(project_root):
+    """[rel_path] for each `.purlin/plugins/` copy that differs from its source.
+
+    A copy with no counterpart in the plugin's `scripts/proof/` is a custom
+    plugin the project installed itself and is left alone.
+    """
+    copies_dir = os.path.join(project_root, '.purlin', 'plugins')
+    source_dir = _plugin_source_dir()
+    if not os.path.isdir(copies_dir) or not os.path.isdir(source_dir):
+        return []
+    stale = []
+    for name in sorted(os.listdir(copies_dir)):
+        copy_path = os.path.join(copies_dir, name)
+        source_path = os.path.join(source_dir, name)
+        if not os.path.isfile(copy_path) or not os.path.isfile(source_path):
+            continue
+        try:
+            with open(copy_path, 'rb') as f:
+                have = f.read()
+            with open(source_path, 'rb') as f:
+                want = f.read()
+        except (IOError, OSError):
+            continue
+        if have != want:
+            stale.append(f'.purlin/plugins/{name}')
+    return stale
+
+
+def _config_field_gaps(config):
+    """(backfill, asked, version_gap) for `.purlin/config.json`.
+
+    `backfill` is filled from the template, `asked` is put to the user, and
+    `version_gap` is (current, installed) when the stamp is not this plugin's.
+    """
+    template = _template_config()
+    backfill, asked = [], []
+    for key in sorted(template):
+        if key in config:
+            continue
+        (asked if key in _ASKED_CONFIG_FIELDS else backfill).append(key)
+    installed = _read_version()
+    current = config.get('version')
+    version_gap = None
+    if current and installed and current != installed:
+        version_gap = (current, installed)
+    return backfill, asked, version_gap
+
+
+def _v1_receipts(project_root):
+    """[rel_path] for every receipt written under the version 1 vhash formula."""
+    spec_dir = os.path.join(project_root, 'specs')
+    if not os.path.isdir(spec_dir):
+        return []
+    found = []
+    for path in sorted(glob.glob(os.path.join(spec_dir, '**', '*.receipt.json'),
+                                 recursive=True)):
+        try:
+            with open(path) as f:
+                receipt = json.load(f)
+        except (json.JSONDecodeError, IOError, OSError):
+            continue
+        if not receipt.get('vhash_version'):
+            found.append(os.path.relpath(path, project_root).replace(os.sep, '/'))
+    return found
+
+
+def _pending_migrations(project_root, config=None):
+    """[{id, count, summary, files}] for everything `purlin:init --update` owns.
+
+    Ordered by `_MIGRATION_ORDER`, empty when the project is current. Every
+    entry names the files it counted, so the report and the script agree on
+    what is pending and the user can read the list before consenting.
+    """
+    if config is None:
+        config = resolve_config(project_root)
+    pending = []
+
+    # A proof line whose trailing tag is the pre-platform `@windows`. The
+    # parser already warns about each one; reading its warning here means the
+    # detector and the alias cannot disagree about what is legacy.
+    tag_files, tag_count = [], 0
+    features = _scan_specs(project_root)
+    for name in sorted(features):
+        info = features[name]
+        hits = [pid for pid, message in (info.get('proof_tag_warnings') or [])
+                if message.startswith('@windows is a platform')]
+        if hits:
+            tag_count += len(hits)
+            tag_files.append(info['path'])
+    if tag_count:
+        pending.append({
+            'id': 'legacy-tier-windows',
+            'count': tag_count,
+            'summary': (f'{tag_count} proof line{"s" if tag_count != 1 else ""} '
+                        f'tagged @windows, which is a platform and not a tier'),
+            'files': sorted(tag_files),
+        })
+
+    legacy_files = []
+    _read_proofs(project_root, legacy=legacy_files)
+    if legacy_files:
+        n = len(legacy_files)
+        pending.append({
+            'id': 'legacy-proof-file',
+            'count': n,
+            'summary': (f'{n} proof file{"s" if n != 1 else ""} named with a '
+                        f'platform where the tier belongs'),
+            'files': sorted(legacy_files),
+        })
+
+    marker_hits = _legacy_marker_hits(project_root)
+    if marker_hits:
+        total = sum(count for _rel, _label, count in marker_hits)
+        labels = sorted({label for _rel, label, _count in marker_hits})
+        pending.append({
+            'id': 'legacy-marker',
+            'count': total,
+            'summary': (f'{total} proof marker{"s" if total != 1 else ""} '
+                        f'declaring windows as the tier ({", ".join(labels)})'),
+            'files': [rel for rel, _label, _count in marker_hits],
+        })
+
+    stale_copies = _stale_plugin_copies(project_root)
+    if stale_copies:
+        n = len(stale_copies)
+        pending.append({
+            'id': 'plugin-copies-stale',
+            'count': n,
+            'summary': (f'{n} plugin cop{"ies" if n != 1 else "y"} in '
+                        f'.purlin/plugins/ differ{"" if n != 1 else "s"} from '
+                        f'the installed plugin'),
+            'files': stale_copies,
+        })
+
+    # An empty config is not a config missing fields: there is no initialized
+    # project to bring up to date, which is purlin:init's case, not the
+    # update's. Without this every fixture with a bare `.purlin/` would report
+    # a migration it cannot act on.
+    backfill, asked, version_gap = _config_field_gaps(config) if config else ([], [], None)
+    if backfill or asked or version_gap:
+        parts = []
+        if backfill:
+            parts.append(f'{len(backfill)} field'
+                         f'{"s" if len(backfill) != 1 else ""} to fill from the '
+                         f'template: {", ".join(backfill)}')
+        if version_gap:
+            parts.append(f'version is {version_gap[0]}, VERSION is {version_gap[1]}')
+        if asked:
+            parts.append(f'{len(asked)} field'
+                         f'{"s" if len(asked) != 1 else ""} to ask about, not '
+                         f'backfill: {", ".join(asked)}')
+        pending.append({
+            'id': 'config-fields-missing',
+            'count': len(backfill) + len(asked) + (1 if version_gap else 0),
+            'summary': '; '.join(parts),
+            'files': ['.purlin/config.json'],
+        })
+
+    v1 = _v1_receipts(project_root)
+    if v1:
+        n = len(v1)
+        pending.append({
+            'id': 'receipt-v1',
+            'count': n,
+            'summary': (f'{n} receipt{"s" if n != 1 else ""} written under the '
+                        f'version 1 vhash formula; purlin:verify re-issues '
+                        f'{"them" if n != 1 else "it"} from a fresh run'),
+            'files': v1,
+        })
+
+    legacy_mcp = _check_legacy_mcp_entry(project_root)
+    if legacy_mcp:
+        pending.append({
+            'id': 'legacy-mcp',
+            'count': 1,
+            'summary': (f'.mcp.json pins purlin to a plugin-cache path '
+                        f'({legacy_mcp}), which shadows the plugin-bundled '
+                        f'MCP server'),
+            'files': ['.mcp.json'],
+        })
+
+    order = {mid: i for i, mid in enumerate(_MIGRATION_ORDER)}
+    return sorted(pending, key=lambda m: order.get(m['id'], len(order)))
+
+
+def _pending_migration_lines(pending):
+    """The preamble advisory: one line per migration, one directive (RULE-55)."""
+    if not pending:
+        return []
+    n = len(pending)
+    lines = [f'⚠ Pending migration{"s" if n != 1 else ""}: {n} '
+             f'from an older plugin version:']
+    for entry in pending:
+        lines.append(f'  {entry["id"]} ({entry["count"]}): {entry["summary"]}')
+        for rel in entry['files'][:5]:
+            lines.append(f'    {rel}')
+        if len(entry['files']) > 5:
+            lines.append(f'    ... and {len(entry["files"]) - 5} more')
+    lines.append('→ Run: purlin:init --update')
+    lines.append('')
+    return lines
+
+
 def sync_status(project_root, role=None):
     """Generate the full sync_status report with directives."""
     _PROVENANCE_CACHE.clear()
@@ -1659,14 +1964,13 @@ def sync_status(project_root, role=None):
     registry, registry_errors = _platform_registry(config)
     _mark_undeclared_results(features, all_proofs, registry)
 
-    # Warn about a legacy version-pinned MCP entry (shadows the plugin-bundled server)
-    legacy_mcp = _check_legacy_mcp_entry(project_root)
-    if legacy_mcp:
-        preamble.append('⚠ Legacy MCP config: .mcp.json pins purlin to a plugin-cache path:')
-        preamble.append(f'  {legacy_mcp}')
-        preamble.append('This entry shadows the plugin-bundled MCP server and stays on the old version after plugin updates.')
-        preamble.append('→ Run: purlin:init --mcp (then /reload-plugins)')
-        preamble.append('')
+    # Everything `purlin:init --update` owns, in one advisory with one
+    # directive (RULE-55). The legacy MCP entry is one entry of this list
+    # rather than an advisory of its own (RULE-38): a project that has not
+    # been updated usually has several of these, and one directive that fixes
+    # all of them is what a reader can act on.
+    preamble.extend(_pending_migration_lines(
+        _pending_migrations(project_root, config)))
 
     # Check for uncommitted spec/proof changes
     uncommitted = _check_uncommitted_specs(project_root)
@@ -1700,7 +2004,9 @@ def sync_status(project_root, role=None):
             parts = _proof_file_parts(base)
             stem, tier, plat = parts[0], parts[1], parts[2]
             preamble.append(f'  {rel} (read as {tier}@{plat}; becomes {stem}.proofs-{tier}@{plat}.json)')
-        preamble.append('\u2192 Run: purlin:init --update to rename it and rewrite the markers')
+        # No directive here: the pending-migrations advisory above carries the
+        # one directive that fixes all of these at once (RULE-55). Two lines
+        # saying "run --update" is how a reader starts skipping both.
         preamble.append('')
 
     # Separate anchors from regular features
@@ -2343,15 +2649,24 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
                 else:
                     own_added.append(r)
             lines.append("  \u26a0 Receipt stale (vhash mismatch)")
-            if anchor_added:
-                for src, rules in sorted(anchor_added.items()):
-                    lines.append(f"  \u26a0 Required anchor \"{src}\" changed: added {', '.join(rules)}")
-            if own_added:
-                lines.append(f"  \u26a0 Own rules changed since last verification")
-            if removed_rules:
-                lines.append(f"  \u26a0 Rules removed since last verification: {', '.join(sorted(removed_rules))}")
-            if not added_rules and not removed_rules:
-                lines.append("  \u26a0 Proof statuses changed since last verification")
+            # A receipt written under the version 1 formula mismatches for that
+            # reason alone, so every explanation below would be wrong about
+            # why. It is one of the pending migrations (RULE-55), and the only
+            # thing that clears it is a fresh run: this is a claim that tests
+            # ran, so nothing but purlin:verify may re-issue it.
+            if not receipt.get('vhash_version'):
+                lines.append("  \u26a0 Receipt is version 1; the vhash formula "
+                             "changed; run purlin:verify")
+            else:
+                if anchor_added:
+                    for src, rules in sorted(anchor_added.items()):
+                        lines.append(f"  \u26a0 Required anchor \"{src}\" changed: added {', '.join(rules)}")
+                if own_added:
+                    lines.append("  \u26a0 Own rules changed since last verification")
+                if removed_rules:
+                    lines.append(f"  \u26a0 Rules removed since last verification: {', '.join(sorted(removed_rules))}")
+                if not added_rules and not removed_rules:
+                    lines.append("  \u26a0 Proof statuses changed since last verification")
             # What else moved under an unchanged rule set: a reworded rule, or
             # a platform re-proved since the receipt cited its commit. Without
             # these two the only explanation on offer was "proof statuses
@@ -3104,6 +3419,11 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             'summary': {pid: platform_summary[pid] for pid in sorted(platform_summary)},
         },
         'platform_testing': bool(declared_ids),
+        # Always present, empty when the project is current (report_data
+        # RULE-34). The dashboard's action banner reads it, and a key that is
+        # sometimes absent cannot be told from a payload written by an older
+        # plugin, which is the state it exists to report.
+        'migrations': _pending_migrations(project_root, config),
         'docs_url': _get_plugin_docs_url(),
         'summary': summary,
         'features': feature_list,

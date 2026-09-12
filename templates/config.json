@@ -4,6 +4,7 @@
   "spec_dir": "specs",
   "pre_push": "warn",
   "remote_verification": "off",
+  "mutation_checks": false,
   "report": true,
   "digest": "auto"
 }

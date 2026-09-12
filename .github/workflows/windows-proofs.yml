@@ -17,6 +17,10 @@ permissions:
 jobs:
   windows-native:
     runs-on: windows-latest
+    env:
+      # This repository is the plugin, so the tooling root is the checkout
+      # itself and the template's "Install Purlin tooling" step is not needed.
+      PURLIN_PLUGIN_ROOT: .
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,7 +33,17 @@ jobs:
       - name: Install pytest
         run: pip install pytest
 
+      - name: Preflight
+        # Fails the job when the project's plugin copies are stale or a legacy
+        # migration is pending: stale copies predate platform scoping and write
+        # agnostic proof files that satisfy no platform, so the run would look
+        # green and prove nothing (specs/ci/verify_gate.md RULE-11).
+        # -> Run: purlin:init --update and commit
+        shell: bash
+        run: python3 "$PURLIN_PLUGIN_ROOT/scripts/update/migrate.py" --check --project-root .
+
       - name: Run Windows-native proofs
+        shell: bash
         run: python -m pytest dev/test_windows_native.py -v
 
       - name: Commit Windows proof file back to the branch

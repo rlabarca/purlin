@@ -9,6 +9,8 @@ Create, sync, and manage anchor specs. Anchors define cross-cutting constraints 
 
 See `references/formats/anchor_format.md` for the full format.
 
+**Pending migrations:** call `sync_status` first when this skill would write specs or proofs, and follow `references/purlin_commands.md#pending-migrations` when it opens with a pending-migrations advisory.
+
 ## Usage
 
 ```

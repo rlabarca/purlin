@@ -10,6 +10,8 @@ here rather than invoking a runner themselves, which is also why remote executio
 pushing a branch and pulling a runner's proof commits is writing, and `purlin:verify` is a
 read-only gate. See `references/remote_verification.md`.
 
+**Pending migrations:** when `sync_status` opens with a pending-migrations advisory, stop and follow `references/purlin_commands.md#pending-migrations` before doing this skill's work.
+
 ## Usage
 
 ```
@@ -244,7 +246,7 @@ Proof files are project records, not ephemeral build artifacts. Uncommitted proo
 
 ## Writing Tests with Proof Markers
 
-When tests are missing, write them with proof markers. For marker syntax (pytest, Jest, Shell), see `references/formats/proofs_format.md`. For test quality rules (what makes a proof STRONG vs HOLLOW), see `references/audit_criteria.md`.
+When tests are missing, write them with proof markers. For marker syntax (pytest, Jest, Shell), see `references/formats/proofs_format.md`. For test quality rules (what makes a proof STRONG vs HOLLOW), see `references/audit_criteria.md`. For the mutation check, which is what catches a proof that passes against broken code, see `references/spec_quality_guide.md#mutation-check`: it runs before the commit that carries the proof when the project sets `mutation_checks: true`.
 
 ## Note
 

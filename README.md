@@ -152,6 +152,7 @@ auth_login: 2/3 rules proved
 | `purlin:status` | Show coverage + directives |
 | `purlin:drift` | Drift detection and change summary |
 | `purlin:init` | Initialize project |
+| `purlin:init --update` | Bring an initialized project up to the installed plugin |
 | `purlin:anchor` | Sync external constraints |
 | `purlin:find` | Search specs |
 | `purlin:rename` | Rename feature across artifacts |

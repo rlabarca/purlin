@@ -19,6 +19,7 @@
 - RULE-9: The agent instructions present the three questions (provable / proven / passes now) mapped to Proof Design, Proof Integrity and `purlin:verify`, and state that `purlin:verify` alone owns pass/fail
 - RULE-10: The Core Loop states there is no fixed order, enumerates the observable states with the next step for each, and names all three supported pathways — specs-and-proofs-first, specs-then-code-and-tests, and specs-then-code-then-tests-then-verify. It contains no instruction to build code first when a spec exists without code
 - RULE-11: Implicit routing includes design-intent triggers ("are my proofs any good", "before we build") routed to `purlin:audit --design`, and an integrity-target trigger that requires answering the ceiling arithmetic before starting work
+- RULE-12: The agent definition links the two shared sections rather than restating them: `references/spec_quality_guide.md#mutation-check` in the core loop, so the practice that catches a proof passing against broken code is one click away when a proof is written, and `references/purlin_commands.md#pending-migrations`, so a pending migration is handled before anything else. The reference table's `spec_quality_guide.md` row names the mutation check among what that file covers
 
 ## Proof
 
@@ -33,3 +34,4 @@
 - PROOF-9 (RULE-9): Grep `agents/purlin.md` for the three-question table; verify it names Proof Design, Proof Integrity and `purlin:verify`, and states that verify owns pass/fail
 - PROOF-10 (RULE-10): Grep `agents/purlin.md` for the no-fixed-order statement and the state table; verify all three pathways are named and that the string "build the code first" does not appear anywhere in the file
 - PROOF-11 (RULE-11): Grep `agents/purlin.md` implicit routing for `purlin:audit --design` and for the ceiling formula; verify both are present
+- PROOF-12 (RULE-12): Grep `agents/purlin.md` and verify both literal anchors `spec_quality_guide.md#mutation-check` and `purlin_commands.md#pending-migrations` appear, that the first sits inside the Core Loop section rather than only in the reference table, and that the reference table row for `spec_quality_guide.md` names the mutation check. Removing either anchor fails the proof

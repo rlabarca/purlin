@@ -99,6 +99,15 @@
       "test_name": "test_routes_design_intent_and_integrity_targets",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "purlin_agent",
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "test_file": "dev/test_purlin_agent.py",
+      "test_name": "test_agent_links_the_two_shared_sections",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

@@ -207,6 +207,24 @@
       "test_name": "test_every_listed_framework_carries_a_runner_setup_cell",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-24",
+      "rule": "RULE-24",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_pending_migrations_section_exists_and_names_the_directive",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-25",
+      "rule": "RULE-25",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_mutation_check_section_carries_steps_examples_and_value",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

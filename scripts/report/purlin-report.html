@@ -261,6 +261,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .ab-failing{border-left-color:var(--red);background:var(--red-dim);color:var(--red)}
 .ab-passing{border-left-color:var(--green);background:var(--green-dim);color:var(--green)}
 .ab-untested{border-left-color:var(--gray-badge);background:rgba(100,116,139,.08);color:var(--text-dim)}
+.ab-migrations{border-left-color:var(--amber);background:var(--amber-dim);color:var(--amber)}
 
 /* Rule row highlights */
 .rule-np td{border-left:3px solid var(--amber)}
@@ -494,25 +495,41 @@ table{min-width:830px}
     return '';
   }
 
+  /* The pending-migrations banner (purlin_report RULE-23). It is project
+     state, not feature state, so it is shown above every feature's own banner
+     and in every status including VERIFIED: a VERIFIED feature whose project
+     has not been updated is verified against a legacy alias. Same directive
+     sync_status prints, so the two cannot send the reader different places. */
+  function migrationBanner() {
+    var m = (typeof D !== 'undefined' && D && D.migrations) ? D.migrations : [];
+    if (!m.length) return '';
+    var ids = [];
+    for (var i = 0; i < m.length; i++) ids.push(m[i].id);
+    return '<div class="ab ab-migrations"><span class="ab-icon">&#9888;</span><span class="ab-text">'
+      + m.length + ' pending migration' + (m.length !== 1 ? 's' : '')
+      + ' (' + esc(ids.join(', ')) + ') &mdash; run <span class="ab-cmd">purlin:init --update</span></span></div>';
+  }
+
   function actionBanner(f) {
-    if (f.status === 'VERIFIED') return '';
+    var mig = migrationBanner();
+    if (f.status === 'VERIFIED') return mig;
     if (f.status === 'PASSING') {
-      return '<div class="ab ab-passing"><span class="ab-icon">&#10003;</span><span class="ab-text">All rules proved &mdash; run <span class="ab-cmd">purlin:verify</span> to issue a verification receipt</span></div>';
+      return mig + '<div class="ab ab-passing"><span class="ab-icon">&#10003;</span><span class="ab-text">All rules proved &mdash; run <span class="ab-cmd">purlin:verify</span> to issue a verification receipt</span></div>';
     }
     if (f.status === 'FAILING') {
       var failCount = 0;
       for (var i = 0; i < f.rules.length; i++) { if (f.rules[i].status === 'FAIL') failCount++; }
-      return '<div class="ab ab-failing"><span class="ab-icon">&#10007;</span><span class="ab-text">' + failCount + ' test' + (failCount !== 1 ? 's' : '') + ' failing &mdash; fix code or tests to reach PASSING</span></div>';
+      return mig + '<div class="ab ab-failing"><span class="ab-icon">&#10007;</span><span class="ab-text">' + failCount + ' test' + (failCount !== 1 ? 's' : '') + ' failing &mdash; fix code or tests to reach PASSING</span></div>';
     }
     if (f.status === 'PARTIAL') {
       var noProof = 0;
       for (var i = 0; i < f.rules.length; i++) { if (f.rules[i].status === 'NONE') noProof++; }
-      return '<div class="ab ab-partial"><span class="ab-icon">&#9888;</span><span class="ab-text">' + noProof + ' rule' + (noProof !== 1 ? 's' : '') + ' need proofs &mdash; write tests to reach PASSING</span></div>';
+      return mig + '<div class="ab ab-partial"><span class="ab-icon">&#9888;</span><span class="ab-text">' + noProof + ' rule' + (noProof !== 1 ? 's' : '') + ' need proofs &mdash; write tests to reach PASSING</span></div>';
     }
     if (f.status === 'UNTESTED') {
-      return '<div class="ab ab-untested"><span class="ab-icon">&#9744;</span><span class="ab-text">No proofs yet &mdash; write tests to begin coverage</span></div>';
+      return mig + '<div class="ab ab-untested"><span class="ab-icon">&#9744;</span><span class="ab-text">No proofs yet &mdash; write tests to begin coverage</span></div>';
     }
-    return '';
+    return mig;
   }
 
   var hasGlobalAudit = false;

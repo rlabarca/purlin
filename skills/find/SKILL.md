@@ -5,6 +5,8 @@ description: Search specs by name and show coverage
 
 Find a spec by name and display its rule coverage from `sync_status`.
 
+**Pending migrations:** call `sync_status` first when this skill would write specs or proofs, and follow `references/purlin_commands.md#pending-migrations` when it opens with a pending-migrations advisory.
+
 ## Usage
 
 ```

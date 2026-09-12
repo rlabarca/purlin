@@ -1875,3 +1875,99 @@ class TestRetiredVerifyFlagIsGone:
         usage = verify[verify.index('## Usage'):verify.index('## Default Mode')]
         assert '--recheck' in usage, (
             "verify's Usage block must document --recheck")
+
+
+class TestUpdateSkillText:
+    """The prose halves of `purlin:init --update` and the two settings it
+    introduces. The behavioural halves live in dev/test_init_update.py."""
+
+    @pytest.mark.proof("skill_init", "PROOF-54", "RULE-51")
+    def test_step_5d_shows_the_delta_and_asks_before_writing(self):
+        content = _read('init')
+        step = content[content.index('## Step 5d'):content.index('## Step 6')]
+        assert 'AskUserQuestion' in step, "Step 5d does not ask for consent"
+        for heading in ('KEEPING', 'UPDATING', 'RENAMING', 'ASKING'):
+            assert heading in step, f"Step 5d delta has no {heading} section"
+        flat = ' '.join(step.split())
+        assert 'Nothing is written before the answer' in flat, flat[:400]
+        assert '--update --check' in step, "Step 5d does not document --check"
+        assert 'report and change nothing' in flat, flat[:400]
+
+    @pytest.mark.proof("skill_init", "PROOF-58", "RULE-55")
+    def test_step_5d_states_the_provenance_loss_before_consent(self):
+        content = _read('init')
+        step = content[content.index('## Step 5d'):content.index('## Step 6')]
+        flat = ' '.join(step.split())
+        assert 'runner not recorded' in flat, "provenance loss is not named"
+        assert 'does not delete evidence' in flat, flat[:400]
+        assert step.index('runner not recorded') < step.index('AskUserQuestion'), \
+            "the provenance loss must be stated above the consent question"
+
+    @pytest.mark.proof("skill_init", "PROOF-59", "RULE-56")
+    def test_mcp_flag_is_the_mcp_step_of_update(self):
+        content = _read('init')
+        usage = content[content.index('## Usage'):content.index('## Step 1')]
+        mcp_line = [l for l in usage.splitlines()
+                    if l.startswith('purlin:init --mcp')]
+        assert mcp_line, "no --mcp usage line"
+        assert 'MCP step of --update' in mcp_line[0], mcp_line[0]
+        step5c = content[content.index('## Step 5c'):content.index('## Step 5d')]
+        assert 'MCP step of `--update`' in ' '.join(step5c.split()), step5c[-600:]
+        step5d = content[content.index('## Step 5d'):content.index('## Step 6')]
+        assert 'legacy-mcp' in step5d, "Step 5d does not list the legacy-mcp migration"
+
+    @pytest.mark.proof("skill_init", "PROOF-60", "RULE-57")
+    def test_mutation_checks_question_is_documented(self):
+        content = _read('init')
+        usage = content[content.index('## Usage'):content.index('## Step 1')]
+        assert 'purlin:init --mutation-checks on|off' in usage, usage
+        step = content[content.index('## Step 7d'):content.index('## Step 8')]
+        flat = ' '.join(step.split())
+        assert 'references/spec_quality_guide.md' in step, step
+        assert 'quoting it from' in flat or 'quote' in flat.lower(), flat[:400]
+        assert 'before' in flat.split('question')[0], flat[:400]
+        assert 'mutation_checks' in step and 'true' in step and 'false' in step
+        step5d = content[content.index('## Step 5d'):content.index('## Step 6')]
+        assert '--mutation-checks on|off' in step5d, \
+            "Step 5d does not pass the answer to the script"
+        assert 'never writes that field silently' in ' '.join(step5d.split()), step5d
+
+    @pytest.mark.proof("skill_verify", "PROOF-13", "RULE-13")
+    def test_verify_declines_to_claim_while_legacy_pending(self):
+        content = _read('verify')
+        flat = ' '.join(content.split())
+        assert 'pending-migrations' in content, "verify does not name the advisory"
+        assert 'legacy-*' in flat, flat[:200]
+        assert 'purlin:init --update' in content
+        assert 'refusal to claim, not a gate' in flat, flat[:400]
+        gates = _read_ref('hard_gates.md')
+        assert 'migration' not in gates.lower(), (
+            "hard_gates.md must gain no migration gate: " + gates[:200])
+
+    @pytest.mark.proof("skill_build", "PROOF-22", "RULE-15")
+    def test_build_branches_on_the_mutation_checks_field(self):
+        content = _read('build')
+        flat = ' '.join(content.split())
+        assert '`mutation_checks` is `true`' in flat, flat[:400]
+        assert '`mutation_checks` is `false`' in flat, flat[:400]
+        assert 'spec_quality_guide.md#mutation-check' in content
+        assert 'Mutation checks are off (mutation_checks: false)' in flat, \
+            "the off branch must carry the exact line the skill prints"
+        assert 'purlin:init --mutation-checks on' in content
+        commit_step = content[content.index('## Step 6'):]
+        assert 'mutation' in commit_step.lower(), \
+            "the commit step must carry the mutation lines"
+
+    @pytest.mark.proof("skill_audit", "PROOF-21", "RULE-21")
+    def test_audit_criteria_caps_a_proof_with_no_mutation_at_weak(self):
+        criteria = _read_ref('audit_criteria.md')
+        weak_start = criteria.index('### WEAK (LLM judgment)')
+        weak = criteria[weak_start:criteria.index('### Rule quality advisory')]
+        flat = ' '.join(weak.split())
+        assert 'mutation_checks' in flat, "the WEAK list has no mutation criterion"
+        assert 'no higher than WEAK' in flat, flat[:400]
+        assert 'lifts the cap' in flat or 'cap is removed' in flat, flat[:400]
+        assert 'does not apply' in flat, flat[:400]
+        strong = criteria[criteria.index('### STRONG (LLM judgment)'):]
+        assert 'mutation_checks' not in strong, \
+            "the mutation criterion belongs in the WEAK list, not STRONG"

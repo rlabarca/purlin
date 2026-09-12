@@ -5,6 +5,8 @@ description: Evaluate proof quality — Proof Design (provable?) and Proof Integ
 
 Audit all proofs (or a specific feature) against configurable criteria. Read-only — never modifies code or test files.
 
+**Pending migrations:** call `sync_status` first when this skill would write specs or proofs, and follow `references/purlin_commands.md#pending-migrations` when it opens with a pending-migrations advisory.
+
 ## Usage
 
 ```

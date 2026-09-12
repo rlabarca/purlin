@@ -5,6 +5,8 @@ description: Inject spec rules into context, then implement
 
 Read a spec, load all its rules (including from `> Requires:` dependencies), and implement the feature.
 
+**Pending migrations:** when `sync_status` opens with a pending-migrations advisory, stop and follow `references/purlin_commands.md#pending-migrations` before doing this skill's work.
+
 ## Usage
 
 ```
@@ -80,6 +82,17 @@ Review every proof marker just written. Apply tier heuristics from `references/s
 - Pure logic/in-memory → unit (no tag)
 
 If ANY proof marker is missing a tier tag and the test clearly isn't unit tier (it calls subprocess, hits a network endpoint, etc.), add the tag before running.
+
+**Mutation check (branches on `mutation_checks` in `.purlin/config.json`):**
+
+- When `mutation_checks` is `true`: every new or amended proof is mutation-checked before the
+  commit that carries it, per `references/spec_quality_guide.md#mutation-check`. Break the
+  behaviour, run that proof and watch it fail, restore, re-run. Record each mutation in the
+  commit body (Step 6) as one line per proof: `PROOF-N: <what was broken> -> failed, restored`.
+  A mutation that survives is a finding: strengthen the fixture and repeat.
+- When `mutation_checks` is `false`: print one visible line,
+  `Mutation checks are off (mutation_checks: false); turn them on with purlin:init --mutation-checks on`,
+  so the omission is visible rather than silent. Do not run the check.
 
 After writing tests, ALWAYS spawn an independent auditor to review the proofs you just wrote.
 Do NOT audit your own tests in the same context — the auditor must be independent.
@@ -196,6 +209,10 @@ After the changeset summary, commit all changed files. Use the changeset summary
 git add <source files> <test files> specs/**/*.proofs-*.json
 git commit  # message body = changeset summary from Step 5
 ```
+
+When `mutation_checks` is `true`, the commit body carries the mutation lines from Step 3
+alongside the changeset summary, so the mutation that was run is in git history with the proof it
+belongs to.
 
 Do NOT commit after each failed iteration — only when stable. Do NOT defer the commit to a later step. Uncommitted proof files are invisible to drift detection and verification.
 

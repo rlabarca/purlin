@@ -356,14 +356,17 @@ class TestScopedProofFiles(TestProofFormatEnforcement):
         out = purlin_server.sync_status(self.project_root)
         assert 'specs/test/bar.proofs-windows.json' in out, out
         assert 'read as unit@windows' in out and 'bar.proofs-unit@windows.json' in out, out
-        assert 'purlin:init --update' in out, out
+        assert 'legacy-proof-file' in out, out
+        assert out.count('\u2192 Run: purlin:init --update') == 1, out
         assert 'bar: PASSING' in out or 'bar: VERIFIED' in out, out
 
         os.remove(os.path.join(d, 'bar.proofs-windows.json'))
         legacy2 = []
         purlin_server._read_proofs(self.project_root, legacy=legacy2)
         assert legacy2 == []
-        assert 'purlin:init --update' not in purlin_server.sync_status(self.project_root)
+        out2 = purlin_server.sync_status(self.project_root)
+        assert 'read as unit@windows' not in out2, out2
+        assert 'legacy-proof-file' not in out2, out2
 
 
 class TestProofFormatConventions:

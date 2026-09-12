@@ -202,3 +202,21 @@ class TestThreePathways:
         # The ceiling arithmetic, so a target request is answered before work starts.
         assert re.search(r'\(1\s*[−-]\s*T\)', content), \
             "must carry the reachability condition for an integrity target"
+
+    @pytest.mark.proof("purlin_agent", "PROOF-12", "RULE-12")
+    def test_agent_links_the_two_shared_sections(self):
+        """RULE-12: the agent names the sections rather than restating them."""
+        content = _read()
+        assert 'spec_quality_guide.md#mutation-check' in content, \
+            "agent does not link the mutation-check section"
+        assert 'purlin_commands.md#pending-migrations' in content, \
+            "agent does not link the pending-migrations section"
+        start = content.index('## Core Loop')
+        end = content.index('## ', start + 5)
+        core_loop = content[start:end]
+        assert 'spec_quality_guide.md#mutation-check' in core_loop, \
+            "the mutation-check link must be in the core loop, not only the table"
+        rows = [l for l in content.splitlines()
+                if l.startswith('|') and 'spec_quality_guide.md' in l]
+        assert rows, "no reference-table row for spec_quality_guide.md"
+        assert any('mutation check' in r.lower() for r in rows), rows

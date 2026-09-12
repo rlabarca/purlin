@@ -181,6 +181,7 @@ The proof count from `proof_status` reflects the state BEFORE the current change
 | `audit_criteria_pinned` | `purlin:init --sync-audit-criteria` | `load_criteria()` (SHA pinning) | not set |
 | `audit_llm` | `purlin:init --audit-llm` | `purlin:audit` (External LLM Mode) | not set (uses Claude) |
 | `audit_llm_name` | `purlin:init --audit-llm` | `purlin:audit` (report header) | not set |
+| `mutation_checks` | `purlin:init` (Step 7d), `purlin:init --mutation-checks`, or `purlin:init --update` (asked, never backfilled) | `purlin:build` (Step: writing tests), `purlin:audit` (Pass 2 cap) | `false` |
 | `report` | `purlin:init --report` | `sync_status` (report-data.js side effect) | `true` |
 | `digest` | `purlin:init --digest` | pre-commit hook (digest regeneration) | `"auto"` |
 | `platforms` | `purlin:test` setup offer (with consent), or hand edit | `sync_status`, `purlin:test`, `scripts/ci/verify_gate.py` | not set (family ids `windows`, `macos`, `linux` only) |

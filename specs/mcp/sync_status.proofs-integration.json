@@ -84,6 +84,15 @@
     },
     {
       "feature": "sync_status",
+      "id": "PROOF-89",
+      "rule": "RULE-55",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_advisory_names_every_pending_migration_once",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
       "id": "PROOF-78",
       "rule": "RULE-46",
       "test_file": "dev/test_e2e_audit_cache_pipeline.py",

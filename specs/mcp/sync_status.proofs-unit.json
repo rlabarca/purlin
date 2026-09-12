@@ -465,7 +465,7 @@
       "id": "PROOF-68",
       "rule": "RULE-38",
       "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_legacy_mcp_entry_advisory",
+      "test_name": "test_legacy_mcp_entry_is_one_pending_migration",
       "status": "pass",
       "tier": "unit"
     },

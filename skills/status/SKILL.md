@@ -5,6 +5,8 @@ description: Show rule coverage dashboard with feature table
 
 Show rule coverage across all features. Always outputs a consistent table followed by a summary line and dashboard link.
 
+**Pending migrations:** when `sync_status` opens with a pending-migrations advisory, stop and follow `references/purlin_commands.md#pending-migrations` before doing this skill's work.
+
 ## Usage
 
 ```

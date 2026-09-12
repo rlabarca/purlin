@@ -589,3 +589,59 @@ class TestCITemplatesGoThroughThePluginRoot:
         assert re.search(r'(?i)runner setup.{0,200}scaffold', content, re.S), (
             "the file must name the column as what purlin:test reads when it "
             "scaffolds a runner workflow")
+
+
+class TestSharedSectionsSkillsPointAt:
+    """RULE-24 and RULE-25: the two sections every skill links rather than
+    restates. Each proof reads the section's own content, so deleting the
+    section or hollowing it out fails here rather than at the twelve call
+    sites."""
+
+    @pytest.mark.proof("purlin_references", "PROOF-24", "RULE-24")
+    def test_pending_migrations_section_exists_and_names_the_directive(self):
+        content = _read(os.path.join(REFS, 'purlin_commands.md'))
+        m = re.search(r'(?m)^## Pending migrations\s*$', content)
+        assert m, "purlin_commands.md has no '## Pending migrations' heading"
+        nxt = re.search(r'(?m)^## ', content[m.end():])
+        section = content[m.end():m.end() + (nxt.start() if nxt else len(content))]
+        flat = ' '.join(section.split())
+        assert 'purlin:init --update' in section, section
+        assert 'stop before doing the skill' in flat, section
+        assert re.search(r'purlin:status.*purlin:drift', section, re.S), (
+            "the section must name the skills that see the advisory by "
+            "construction")
+        assert ('`purlin:verify` does not issue receipts while a '
+                '`legacy-*` migration is pending') in flat, section
+        assert 'refusal to claim' in section and 'not a gate' in section, section
+
+    @pytest.mark.proof("purlin_references", "PROOF-25", "RULE-25")
+    def test_mutation_check_section_carries_steps_examples_and_value(self):
+        content = _read(os.path.join(REFS, 'spec_quality_guide.md'))
+        m = re.search(r'(?m)^## Mutation check\s*$', content)
+        assert m, "spec_quality_guide.md has no '## Mutation check' heading"
+        nxt = re.search(r'(?m)^## ', content[m.end():])
+        section = content[m.end():m.end() + (nxt.start() if nxt else len(content))]
+
+        steps = re.findall(r'(?m)^(\d)\. (.+)$', section)
+        assert [s[0] for s in steps] == ['1', '2', '3'], steps
+        assert 'Break' in steps[0][1] or 'break' in steps[0][1], steps[0]
+        assert 'Run' in steps[1][1] or 'run' in steps[1][1], steps[1]
+        assert 'Restore' in steps[2][1] or 'restore' in steps[2][1], steps[2]
+
+        flat = ' '.join(section.split())
+        assert 'cannot tell the correct behaviour from the broken one' in flat, \
+            "the surviving-mutation clause is missing"
+        examples = re.findall(r'\*\*Worked example: ', section)
+        assert len(examples) == 2, f"expected 2 worked examples, found {len(examples)}"
+        assert flat.count('discriminating case') >= 3, section
+
+        value = flat[flat.index('**What it is worth.**'):]
+        assert 'passes against broken code' in value, value
+        assert 'twice the tokens' in value, value
+        assert 'regulated' in value and 'prototypes' in value, value
+
+        skill = _read(os.path.join(PROJECT_ROOT, 'skills', 'init', 'SKILL.md'))
+        assert 'spec_quality_guide.md' in skill and 'Mutation check' in skill, \
+            "the init skill must quote the value statement by reference"
+        assert 'twice the tokens' not in skill, \
+            "the init skill restates the value statement instead of quoting it"

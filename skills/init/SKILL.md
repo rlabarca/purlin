@@ -5,6 +5,8 @@ description: Initialize a project for Purlin
 
 Set up a project for spec-driven development. Creates `.purlin/`, `specs/`, detects the test framework, and scaffolds the proof plugin.
 
+**Pending migrations:** see `references/purlin_commands.md#pending-migrations`. `purlin:init --update` (Step 5d) is what clears them.
+
 ## Usage
 
 ```
@@ -17,7 +19,13 @@ purlin:init --audit-llm                 Change audit LLM (default/external)
 purlin:init --pre-push                  Change pre-push mode (warn/strict)
 purlin:init --report                    Toggle HTML dashboard report (on/off)
 purlin:init --digest                    Change digest mode (auto/warn/off)
-purlin:init --mcp                       Migrate legacy .mcp.json (MCP server is plugin-bundled)
+purlin:init --mutation-checks on|off    Change the mutation-check setting
+purlin:init --update                    Bring the project up to the installed plugin
+purlin:init --update --check            Report what is pending; write nothing
+purlin:init --update --platform-id <id> What a legacy @windows tag becomes (default: windows)
+purlin:init --update --mutation-checks on|off
+                                        Answer the mutation-check question during the update
+purlin:init --mcp                       Run only the MCP step of --update
 ```
 
 Each `--flag` runs ONLY that step, not the full init.
@@ -49,6 +57,7 @@ Config template fields (from `templates/config.json`), plus the optional `platfo
 | `spec_dir` | `"specs"` | Directory containing specs |
 | `pre_push` | `"warn"` | Pre-push hook mode (`warn` or `strict`) |
 | `remote_verification` | `"off"` | Declared remote-verification mode (`required`, `optional`, `off`). A declaration, not the enforcement; see `references/remote_verification.md`. Init writes the default and does not ask: setup is offered when `purlin:test` discovers a runner-gated proof |
+| `mutation_checks` | `false` | Whether every new or amended proof is mutation-checked before the commit that carries it (Step 7d). Asked, never defaulted silently; what the check is worth and what it costs is stated once in `references/spec_quality_guide.md` § Mutation check |
 | `report` | `true` | HTML dashboard report generation |
 | `digest` | `"auto"` | Digest generation mode (`auto`, `warn`, or `off`) |
 | `platforms` | not set (optional; not written by init) | Registry for `@on(...)` proof tags: `{"<id>": {"os": windows\|macos\|linux, "version", "distro", "arch", "runner", "label"}}`. The family ids `windows`, `macos`, `linux` are built in; an entry pins a version or attaches a runner. Written by `purlin:test`'s setup offer with consent, or by hand; see `references/drift_criteria.md` |
@@ -182,7 +191,96 @@ The Purlin MCP server (`sync_status`, `purlin_config`, and `drift` tools) is bun
 
 If `.mcp.json` has no `purlin` entry (or doesn't exist), print: `MCP server: bundled with plugin (sync_status, purlin_config, drift).`
 
-When called via `purlin:init --mcp`, ONLY this step runs — use it to migrate an existing project after updating the plugin.
+When called via `purlin:init --mcp`, ONLY this step runs. `--mcp` is the MCP step of `--update` (Step 5d) under its own name: `--update` runs it as one of its migrations (`legacy-mcp`), and `--mcp` runs that step alone, which is what an existing project needs after a plugin update when nothing else is pending.
+
+## Step 5d — Update
+
+`purlin:init --update` brings an already-initialized project up to the installed plugin. It is
+the one command for "the plugin moved, this project has not": there is no separate update skill,
+and `--mcp` (Step 5c) is one of its steps.
+
+Detection is content-based, never version-based. A project may have been initialized by any
+version, edited by hand, or half-migrated already, so what is on disk is the only honest input
+and the `version` field is not consulted to decide what to do.
+
+**1. Check.** Run the detector, which writes nothing:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/update/migrate.py" --check --project-root .
+```
+
+It prints JSON: `{"project_root": ..., "pending": [{"id", "count", "summary", "files"}, ...]}`,
+and every entry names the files it counted. This is the same list `sync_status` prints as its
+pending-migrations advisory, from the same detector. If `pending` is empty, print
+`Project is up to date with Purlin <VERSION>.` and stop.
+
+When called as `purlin:init --update --check`, stop here: report and change nothing.
+
+**2. Show the delta before asking.** Present it in the shape `skills/spec/SKILL.md` Step 7c uses,
+per file, so the user reads what will change before consenting:
+
+```
+Pending migrations: 4 (Purlin 0.10.0)
+
+RENAMING:
+  specs/audit/static_checks.proofs-windows.json
+    -> specs/audit/static_checks.proofs-unit@windows-2022.json   (git mv; platform stamped)
+
+UPDATING:
+  specs/audit/static_checks.md          2 proof tags @windows -> @unit @on(windows-2022)
+  dev/test_windows_native.py            2 markers, windows tier -> tier unit, on(windows-2022)
+  .purlin/plugins/pytest_purlin.py      replaced with the installed plugin's copy
+  .purlin/config.json                   remote_verification="off", version=0.10.0
+
+KEEPING (unchanged):
+  specs/audit/static_checks.receipt.json   a receipt is a claim that tests ran
+  every other proof file, spec and test
+
+ASKING:
+  mutation_checks                       not backfilled; see Step 7d
+
+DIRECTIVES (nothing is written for these):
+  receipt-v1   -> Run: purlin:verify
+  legacy-mcp   -> Run: purlin:init --mcp (then /reload-plugins)
+```
+
+Name the provenance loss explicitly for every renamed platform proof file: the commit that
+carried the old name still exists, but the report reads provenance per current filename, so the
+file reports `runner not recorded` until the runner next commits it under the new name. The
+rename does not delete evidence; it moves the record, and `git mv` keeps its history.
+
+**3. Ask.** Use `AskUserQuestion` to get consent before any write. Nothing is written before the
+answer: no rewrite, no rename, no copy, no config edit.
+
+**4. Apply.** Run the migrations the user approved:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/update/migrate.py" --apply <id> [<id> ...] \
+  --project-root . --platform-id <id> [--mutation-checks on|off]
+```
+
+`--platform-id` is what a legacy `@windows` tag, proof file and marker become; it defaults to
+`windows` (the OS family id), and a project with a registered platform passes that id instead.
+The script never writes a proof entry and never writes a receipt: `receipt-v1` and `legacy-mcp`
+print directives only. When `mutation_checks` is absent from the config, ask the Step 7d question
+and pass the answer as `--mutation-checks on|off`; the update never writes that field silently.
+
+`--update` writes no workflow file and registers no platform. Both belong to `purlin:test`'s
+consent path, which is the one place a runner is discovered and offered.
+
+**5. Re-run the tests whose markers changed.** A marker rewrite changes which file a plugin
+writes, and only a plugin may write a proof file. For every feature whose markers were rewritten,
+run `purlin:test <feature>` so the plugin emits the scoped file itself.
+
+**6. Print the receipt directive.** `-> Run: purlin:verify`. The update never issues a receipt,
+and `purlin:verify` declines to issue while any `legacy-*` migration is pending, so this is the
+step that closes the loop.
+
+**7. Commit.** `chore(update): migrate to <VERSION> (<ids>)`, with the applied ids in the
+parentheses (see `references/commit_conventions.md`).
+
+**8. Idempotent.** Run `--check` again. It reports nothing pending apart from the two directives
+the script does not apply, and a second `--update` changes nothing.
 
 ## Step 6 — Confirmation
 
@@ -352,6 +450,39 @@ After the user enters the command:
 4. **If it fails:** print the error and ask the user to try again or skip.
 
 This step is also callable independently via `purlin:init --audit-llm`.
+
+## Step 7d — Mutation Checks
+
+A mutation check is the practice of breaking the behaviour a proof covers, watching that proof
+fail, and restoring the code before committing. It is the only check that catches a proof which
+passes against broken code, and it is off by default because it costs real time and tokens.
+
+Print the value statement **before** the question, quoting it from
+`references/spec_quality_guide.md` § Mutation check ("What it is worth"). That section is the one
+source for this text; do not restate it here in different words.
+
+Then ask:
+
+```
+Mutation checks:
+  [off] Write proofs and move on (default)
+  [on]  Every new or amended proof is mutation-checked before the commit that carries it
+```
+
+Write the answer to `.purlin/config.json` as `"mutation_checks": true` or `"mutation_checks": false`.
+
+When called via `purlin:init --mutation-checks on|off`, ONLY this step runs: read the current
+value, show it, and write the new one, exactly as `--pre-push` does for its mode.
+
+`purlin:init --update` asks this same question when `mutation_checks` is absent from the config,
+and passes the answer to the migration script as `--mutation-checks on|off`. It is the one config
+field the update never backfills from the template: a setting that doubles the cost of writing a
+proof is a decision the project makes, not a default it inherits.
+
+What reads the field: `purlin:build` requires the check before the commit when it is true and
+prints one line saying the check is off when it is false; `purlin:audit` may ask an author to
+name the mutation they ran and caps a proof whose author cannot name one at WEAK
+(`references/audit_criteria.md` § Pass 2).
 
 ## Step 8 — Commit
 

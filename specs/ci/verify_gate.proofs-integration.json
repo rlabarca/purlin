@@ -54,6 +54,15 @@
       "test_name": "test_every_commit_back_workflow_retries_its_push",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "verify_gate",
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "test_file": "dev/test_verify_gate.py",
+      "test_name": "test_preflight_runs_before_the_proofs_and_fails_only_on_real_gaps",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -371,6 +372,10 @@ class TestSyncStatus:
             json.dump({
                 "feature": "login",
                 "vhash": "oldvhash",
+                # Version 2: a version 1 receipt is stale because the formula
+                # changed, and sync_status says so instead of explaining an
+                # anchor change that is not why (RULE-55).
+                "vhash_version": 2,
                 "rules": ["RULE-1", "security/RULE-1"],
                 "proofs": []
             }, f)
@@ -834,9 +839,10 @@ class TestSyncStatus:
         assert anchor_entry['source_path'] == 'specs/security/constraints.md'
 
     @pytest.mark.proof("sync_status", "PROOF-68", "RULE-38")
-    def test_legacy_mcp_entry_advisory(self):
-        """Legacy plugin-cache .mcp.json entry triggers the migration advisory;
-        dev-checkout paths and absent files do not."""
+    def test_legacy_mcp_entry_is_one_pending_migration(self):
+        """RULE-38: the legacy entry reports as the `legacy-mcp` migration with
+        the shared `--update` directive, not as an advisory of its own with a
+        `--mcp` directive nobody else prints."""
         self._write_spec('login', (
             '# Feature: login\n\n'
             '## What it does\nHandles login.\n\n'
@@ -845,36 +851,37 @@ class TestSyncStatus:
         ))
         mcp_path = os.path.join(self.project_root, '.mcp.json')
 
-        # Case 1: version-pinned plugin-cache path → advisory with directive
+        # Case 1: version-pinned plugin-cache path -> one migration entry
         cache_path = '/Users/dev/.claude/plugins/cache/purlin/purlin/0.9.1/scripts/mcp/purlin_server.py'
         with open(mcp_path, 'w') as f:
             json.dump({'mcpServers': {'purlin': {
                 'command': 'python3', 'args': [cache_path]}}}, f)
         result = purlin_server.sync_status(self.project_root)
-        assert 'Legacy MCP config' in result, \
-            f'Expected legacy MCP advisory in preamble, got: {result[:300]}'
-        assert cache_path in result, 'Advisory should show the pinned path'
-        assert '→ Run: purlin:init --mcp' in result, \
-            'Advisory must include the purlin:init --mcp directive'
-        # Advisory is prepended — appears in the preamble, before feature output
+        assert 'legacy-mcp' in result, \
+            f'Expected the legacy-mcp migration entry, got: {result[:400]}'
+        assert cache_path in result, 'The entry must show the pinned path'
+        assert '\u2192 Run: purlin:init --update' in result, \
+            'The advisory must close with the shared --update directive'
+        assert '\u2192 Run: purlin:init --mcp' not in result, \
+            'The --mcp directive must not be printed as a second advisory'
         preamble_section = result.split('login')[0]
-        assert 'Legacy MCP config' in preamble_section, \
-            'Advisory must appear in the preamble, before feature output'
+        assert 'legacy-mcp' in preamble_section, \
+            'The entry must appear in the preamble, before feature output'
 
-        # Case 2: non-cache path (dev checkout) → no advisory
+        # Case 2: non-cache path (dev checkout) -> no entry
         with open(mcp_path, 'w') as f:
             json.dump({'mcpServers': {'purlin': {
                 'command': 'python3',
                 'args': ['/Users/dev/LocalCode/purlin/scripts/mcp/purlin_server.py']}}}, f)
         result = purlin_server.sync_status(self.project_root)
-        assert 'Legacy MCP config' not in result, \
-            'Dev-checkout path must not trigger the advisory'
+        assert 'legacy-mcp' not in result, \
+            'Dev-checkout path must not report a migration'
 
-        # Case 3: no .mcp.json → no advisory
+        # Case 3: no .mcp.json -> no entry
         os.remove(mcp_path)
         result = purlin_server.sync_status(self.project_root)
-        assert 'Legacy MCP config' not in result, \
-            'Absent .mcp.json must not trigger the advisory'
+        assert 'legacy-mcp' not in result, \
+            'Absent .mcp.json must not report a migration'
 
 
 class TestPlatformProofs:
@@ -2331,3 +2338,141 @@ class TestPlatformRegistry:
         assert host['id'] is None
         assert not sat(registry['win-2022'], host)
         assert purlin_server._host_platform_ids(registry, host) == ['macos']
+
+
+class TestPendingMigrationsAdvisory:
+    """sync_status RULE-55: everything `purlin:init --update` owns, in one
+    advisory with one directive.
+
+    The legacy tier name is assembled rather than written out, for the reason
+    dev/test_init_update.py gives: the detector under test scans the repository
+    for exactly those literals.
+    """
+
+    WIN = 'win' + 'dows'
+
+    def setup_method(self):
+        self.project_root = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.project_root, '.purlin', 'plugins'))
+        self.spec_dir = os.path.join(self.project_root, 'specs', 'app')
+        os.makedirs(self.spec_dir)
+
+    def teardown_method(self):
+        shutil.rmtree(self.project_root, ignore_errors=True)
+
+    def _write(self, rel, text):
+        path = os.path.join(self.project_root, rel)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w') as f:
+            f.write(text)
+
+    def _build_legacy(self):
+        win = self.WIN
+        self._write('.purlin/config.json', json.dumps({
+            'version': '0.9.0', 'test_framework': 'pytest',
+            'spec_dir': 'specs', 'pre_push': 'warn', 'report': False,
+            'digest': 'auto'}, indent=2))
+        self._write('specs/app/demo.md',
+                    '# Feature: demo\n\n'
+                    '> Description: Demo.\n\n'
+                    '## Rules\n'
+                    '- RULE-1: does the thing\n'
+                    '- RULE-2: does it on the platform\n\n'
+                    '## Proof\n'
+                    '- PROOF-1 (RULE-1): assert the thing @unit\n'
+                    f'- PROOF-2 (RULE-2): assert it on the platform @{win}\n')
+        self._write('specs/app/demo.proofs-unit.json', json.dumps({
+            'tier': 'unit', 'proofs': [
+                {'feature': 'demo', 'id': 'PROOF-1', 'rule': 'RULE-1',
+                 'test_file': 'dev/t_demo.py', 'test_name': 'test_thing',
+                 'status': 'pass', 'tier': 'unit'}]}))
+        self._write(f'specs/app/demo.proofs-{win}.json', json.dumps({
+            'tier': win, 'proofs': [
+                {'feature': 'demo', 'id': 'PROOF-2', 'rule': 'RULE-2',
+                 'test_file': 'dev/t_demo.py', 'test_name': 'test_platform',
+                 'status': 'pass', 'tier': win}]}))
+        self._write('tests/t_demo.py',
+                    '@pytest.mark.proof("demo", "PROOF-2", "RULE-2", '
+                    f'tier="{win}")\ndef test_platform():\n    assert 1\n')
+        shutil.copyfile(
+            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                         'scripts', 'proof', 'pytest_purlin.py'),
+            os.path.join(self.project_root, '.purlin', 'plugins',
+                         'pytest_purlin.py'))
+        with open(os.path.join(self.project_root, '.purlin', 'plugins',
+                               'pytest_purlin.py'), 'a') as f:
+            f.write('\n# drift\n')
+        self._write('specs/app/demo.receipt.json', json.dumps({
+            'feature': 'demo', 'vhash': 'deadbeef', 'commit': 'x',
+            'timestamp': '2025-01-01T00:00:00+00:00',
+            'rules': ['RULE-1', 'RULE-2'], 'proofs': []}, indent=2))
+
+    @pytest.mark.proof("sync_status", "PROOF-89", "RULE-55", tier="integration")
+    def test_advisory_names_every_pending_migration_once(self):
+        """RULE-55: one line per id with its count and a file, one directive,
+        and a version 1 receipt explained as a version 1 receipt."""
+        win = self.WIN
+        self._build_legacy()
+        result = purlin_server.sync_status(self.project_root)
+        preamble = result.split('demo:')[0]
+
+        expected = {
+            'legacy-tier-windows': 'specs/app/demo.md',
+            'legacy-proof-file': f'specs/app/demo.proofs-{win}.json',
+            'legacy-marker': 'tests/t_demo.py',
+            'plugin-copies-stale': '.purlin/plugins/pytest_purlin.py',
+            'config-fields-missing': '.purlin/config.json',
+            'receipt-v1': 'specs/app/demo.receipt.json',
+        }
+        for mid, rel in expected.items():
+            lines = [l for l in preamble.splitlines()
+                     if l.strip().startswith(f'{mid} (')]
+            assert len(lines) == 1, f'{mid}: expected one line, got {lines}'
+            assert re.search(rf'{re.escape(mid)} \(\d+\):', lines[0]), lines[0]
+            assert rel in preamble, f'{mid}: {rel} is not named in the advisory'
+        assert result.count('→ Run: purlin:init --update') == 1, result[:800]
+
+        # The version 1 receipt is explained as such, not as a proof change.
+        feature_block = result[result.index('demo:'):]
+        assert 'Receipt is version 1' in feature_block, feature_block[:600]
+        assert 'the vhash formula changed' in feature_block
+        assert 'Proof statuses changed since last verification' not in feature_block
+
+        # Repair all six; the advisory goes away entirely.
+        self._write('specs/app/demo.md',
+                    '# Feature: demo\n\n'
+                    '> Description: Demo.\n\n'
+                    '## Rules\n'
+                    '- RULE-1: does the thing\n'
+                    '- RULE-2: does it on the platform\n\n'
+                    '## Proof\n'
+                    '- PROOF-1 (RULE-1): assert the thing @unit\n'
+                    '- PROOF-2 (RULE-2): assert it on the platform '
+                    '@unit @on(windows)\n')
+        os.rename(os.path.join(self.spec_dir, f'demo.proofs-{win}.json'),
+                  os.path.join(self.spec_dir, 'demo.proofs-unit@windows.json'))
+        self._write('tests/t_demo.py',
+                    '@pytest.mark.proof("demo", "PROOF-2", "RULE-2", '
+                    'tier="unit", platforms=("windows",))\n'
+                    'def test_platform():\n    assert 1\n')
+        shutil.copyfile(
+            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                         'scripts', 'proof', 'pytest_purlin.py'),
+            os.path.join(self.project_root, '.purlin', 'plugins',
+                         'pytest_purlin.py'))
+        config = dict(json.load(open(os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            'templates', 'config.json'))))
+        config['version'] = purlin_server._read_version()
+        config['report'] = False
+        self._write('.purlin/config.json', json.dumps(config, indent=2))
+        receipt = json.load(open(os.path.join(self.spec_dir,
+                                              'demo.receipt.json')))
+        receipt['vhash_version'] = 2
+        self._write('specs/app/demo.receipt.json',
+                    json.dumps(receipt, indent=2))
+
+        result = purlin_server.sync_status(self.project_root)
+        assert 'Pending migration' not in result, result[:800]
+        for mid in expected:
+            assert mid not in result, f'{mid} still reported: {result[:800]}'

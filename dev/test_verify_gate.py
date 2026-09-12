@@ -24,6 +24,7 @@ sys.path.insert(0, DEV)
 
 import verify_gate  # noqa: E402
 import issue_receipts  # noqa: E402
+import purlin_server  # noqa: E402
 
 GATE_PY = os.path.join(ROOT, 'scripts', 'ci', 'verify_gate.py')
 WORKFLOW_DIR = os.path.join(ROOT, '.github', 'workflows')
@@ -127,7 +128,10 @@ def _workflows_that_commit_proofs():
         if not fn.endswith(('.yml', '.yaml')):
             continue
         text = open(os.path.join(WORKFLOW_DIR, fn)).read()
-        if re.search(r'git\s+add\s+\S*\.proofs-[\w*]+\.json', text) and \
+        # The scoped form carries `@<platform-id>` before `.json`, so the
+        # pattern has to admit it or a platform workflow drops out of every
+        # scan that uses this helper.
+        if re.search(r'git\s+add\s+\S*\.proofs-[\w*]+(?:@[\w.*-]+)?\.json', text) and \
                 'git commit' in text:
             found.append((fn, text))
     return found
@@ -471,3 +475,84 @@ class TestCommitBackPushSurvivesARace:
             for trailer in ('Purlin-Runner:', 'Purlin-Platform:'):
                 assert re.search(r'-m\s+["\']' + trailer, text), (
                     f"{fn} retries its push but records no {trailer} trailer")
+
+
+class TestCommitBackWorkflowsPreflightTheMigration:
+
+    @pytest.mark.proof("verify_gate", "PROOF-11", "RULE-11", tier="integration")
+    def test_preflight_runs_before_the_proofs_and_fails_only_on_real_gaps(self):
+        """RULE-11: the runner is the machine nobody watches. Stale plugin
+        copies there write agnostic files that satisfy nothing, and the job
+        still goes green."""
+        workflows = [(fn, text) for fn, text in _workflows_that_commit_proofs()
+                     if fn.endswith('-proofs.yml')]
+        assert workflows, (
+            "no *-proofs.yml workflow commits a proof file back; this proof "
+            "must not pass by matching nothing")
+        for fn, text in workflows:
+            m = re.search(r'run:.*scripts/update/migrate\.py.*--check', text)
+            if m is None:
+                m = re.search(r'scripts/update/migrate\.py[^\n]*\n?[^\n]*--check',
+                              text)
+            assert m, f"{fn} runs the proofs without the migrate.py --check preflight"
+            run_steps = [rm.start() for rm in
+                         re.finditer(r'(?m)^\s+- name:\s+Run\b', text)]
+            assert run_steps, f"{fn} has no step whose name begins with Run"
+            assert m.start() < min(run_steps), (
+                f"{fn} runs its preflight after the proofs; a stale plugin copy "
+                "would already have written the files by then")
+
+        # The script's own verdict: blocking ids fail, advisory ids do not.
+        migrate = os.path.join(ROOT, 'scripts', 'update', 'migrate.py')
+
+        def _check(root):
+            result = subprocess.run(
+                [sys.executable, migrate, '--check', '--project-root', root],
+                capture_output=True, text=True)
+            return result.returncode, json.loads(result.stdout)['pending']
+
+        blocking = tempfile.mkdtemp()
+        advisory = tempfile.mkdtemp()
+        try:
+            for root in (blocking, advisory):
+                os.makedirs(os.path.join(root, '.purlin', 'plugins'))
+                os.makedirs(os.path.join(root, 'specs', 'app'))
+                config = dict(json.load(open(os.path.join(
+                    ROOT, 'templates', 'config.json'))))
+                config['version'] = purlin_server._read_version()
+                with open(os.path.join(root, '.purlin', 'config.json'), 'w') as f:
+                    json.dump(config, f)
+                with open(os.path.join(root, 'specs', 'app', 'demo.md'), 'w') as f:
+                    f.write('# Feature: demo\n\n## Rules\n- RULE-1: does it\n\n'
+                            '## Proof\n- PROOF-1 (RULE-1): assert it @unit\n')
+
+            # Blocking: a stale plugin copy and a legacy proof file.
+            shutil.copyfile(
+                os.path.join(ROOT, 'scripts', 'proof', 'pytest_purlin.py'),
+                os.path.join(blocking, '.purlin', 'plugins', 'pytest_purlin.py'))
+            with open(os.path.join(blocking, '.purlin', 'plugins',
+                                   'pytest_purlin.py'), 'a') as f:
+                f.write('\n# drift\n')
+            legacy_name = 'demo.proofs-' + 'win' + 'dows' + '.json'
+            with open(os.path.join(blocking, 'specs', 'app', legacy_name),
+                      'w') as f:
+                json.dump({'tier': 'win' + 'dows', 'proofs': []}, f)
+            code, pending = _check(blocking)
+            ids = {entry['id'] for entry in pending}
+            assert code == 1, (code, pending)
+            assert {'plugin-copies-stale', 'legacy-proof-file'} <= ids, ids
+
+            # Advisory only: a version 1 receipt is reported and passes.
+            with open(os.path.join(advisory, 'specs', 'app',
+                                   'demo.receipt.json'), 'w') as f:
+                json.dump({'feature': 'demo', 'vhash': 'x', 'rules': ['RULE-1'],
+                           'proofs': []}, f)
+            code, pending = _check(advisory)
+            ids = {entry['id'] for entry in pending}
+            assert ids == {'receipt-v1'}, ids
+            assert code == 0, (
+                "a version 1 receipt must not fail the preflight: it says "
+                "nothing about the run that is about to happen")
+        finally:
+            shutil.rmtree(blocking, ignore_errors=True)
+            shutil.rmtree(advisory, ignore_errors=True)

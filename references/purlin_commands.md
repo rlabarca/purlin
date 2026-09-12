@@ -40,6 +40,8 @@ Purlin — Spec-Driven Development
   Project
   ──────
   purlin:init                   Initialize project (.purlin/, specs/, proof plugin)
+  purlin:init --update          Bring the project up to the installed plugin
+  purlin:init --update --check  Report pending migrations; write nothing
   purlin:init --add-plugin <src> Install a proof plugin from a file path or git URL
   purlin:init --list-plugins    List installed proof plugins
   purlin:rename <old> <new>     Rename feature across all Purlin artifacts
@@ -62,7 +64,24 @@ Purlin — Spec-Driven Development
 | `purlin:status` | Show coverage + directives | Nothing (read-only) |
 | `purlin:drift` | Drift detection since last verify | Nothing (read-only) |
 | `purlin:init` | Initialize project | `.purlin/`, `specs/`, proof plugin |
+| `purlin:init --update` | Migrate the project to the installed plugin | Specs, proof filenames, markers, plugin copies, config |
 | `purlin:anchor` | Sync external constraints | `specs/_anchors/*.md` |
 | `purlin:find` | Search specs | Nothing (read-only) |
 | `purlin:rename` | Rename feature | Specs, proofs, markers, references |
 | `purlin:spec-from-code` | Generate specs from code | `specs/<category>/<name>.md` |
+
+## Pending migrations
+
+When `sync_status` opens with a pending-migrations advisory, stop before doing the skill's work,
+print the advisory and its directive, and ask whether to run `purlin:init --update` now.
+`purlin:verify` does not issue receipts while a `legacy-*` migration is pending, because the
+legacy alias makes coverage a guess; that is a warning and a refusal to claim, not a gate.
+
+Skills that display `sync_status` output (`purlin:status`, `purlin:test`, `purlin:build`,
+`purlin:verify`, `purlin:drift`) see the advisory by construction. The skills that do not call
+`sync_status` call it first when they would write specs or proofs, for the same reason: a spec
+written against a legacy alias is written against a reading the next release drops.
+
+The advisory names one migration per line with its count and the files it counted, and ends with
+`→ Run: purlin:init --update`. `purlin:init --update --check` prints the same list as JSON and
+writes nothing, which is what a CI preflight runs.

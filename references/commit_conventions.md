@@ -10,6 +10,7 @@
 | `test(<name>):` | Writing or updating tests |
 | `verify:` | Issuing verification receipts |
 | `anchor(<name>):` | Syncing an anchor from upstream |
+| `chore(update):` | `purlin:init --update` migrating a project to the installed plugin |
 | `chore:` | Project setup, config changes, cleanup |
 | `docs:` | Documentation updates |
 
@@ -23,7 +24,20 @@ fix(auth_login): handle expired tokens in callback
 verify: [Complete:all] features=5/5 vhash=a1b2c3d4
 anchor(design_tokens): sync from upstream (abc1234)
 chore: initialize purlin project
+chore(update): migrate to 0.10.0 (legacy-tier-windows, legacy-proof-file, legacy-marker)
 ```
+
+## Update Commit
+
+`purlin:init --update` commits its migration as one commit:
+
+```
+chore(update): migrate to <VERSION> (<ids>)
+```
+
+The parentheses carry the migration ids that were applied, comma separated, so the commit says
+which mechanical rewrites it contains without anyone reading the diff. The update never issues a
+receipt, so this commit is followed by `purlin:verify` and its own `verify:` commit.
 
 ## Build Commit Body
 

@@ -1946,6 +1946,49 @@ class TestActionBanners:
         )
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof23_verified.png"))
 
+        # --- Pending migrations: project state, shown in every status ---
+        # The same payload, with two migrations pending. Every expanded
+        # feature, VERIFIED included, now carries the migrations banner with
+        # the directive sync_status prints.
+        data = make_action_banner_data()
+        data["migrations"] = [
+            {"id": "legacy-proof-file", "count": 1,
+             "summary": "1 proof file named with a platform where the tier belongs",
+             "files": ["specs/app/demo.proofs-legacy.json"]},
+            {"id": "plugin-copies-stale", "count": 2,
+             "summary": "2 plugin copies differ from the installed plugin",
+             "files": [".purlin/plugins/a.py", ".purlin/plugins/b.py"]},
+        ]
+        load_dashboard(page, dashboard, data=data)
+        # The previous half left rows expanded, and that survives the reload in
+        # localStorage; clear it so each click below expands rather than
+        # collapses.
+        page.evaluate("localStorage.removeItem('purlin-expanded')")
+        page.reload()
+        page.wait_for_load_state("networkidle")
+        for name, own in (("feat_verified", None),
+                          ("feat_passing", ".ab-passing"),
+                          ("feat_partial", ".ab-partial")):
+            page.click(f"tr.fr[data-name='{name}']")
+            page.wait_for_timeout(300)
+            banners = page.query_selector_all("tr.dr .ab-migrations")
+            assert len(banners) == 1, (
+                f"{name}: expected exactly one migrations banner, got "
+                f"{len(banners)}")
+            text = banners[0].inner_text()
+            assert "2 pending migrations" in text, text
+            assert "legacy-proof-file" in text and "plugin-copies-stale" in text, text
+            assert "purlin:init --update" in text, text
+            if own:
+                assert page.query_selector(f"tr.dr {own}"), (
+                    f"{name}: the feature's own banner must still be shown")
+            page.click(f"tr.fr[data-name='{name}']")
+            page.wait_for_timeout(200)
+        page.click("tr.fr[data-name='feat_verified']")
+        page.wait_for_timeout(300)
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR,
+                                          "proof23_migrations.png"))
+
 
 class TestRuleRowHighlights:
 

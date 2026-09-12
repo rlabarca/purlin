@@ -7,6 +7,8 @@ Read-only skill. Calls the `drift` MCP tool for structured data, then interprets
 
 Classification criteria: see `references/drift_criteria.md` (Criteria-Version: 1).
 
+**Pending migrations:** when `sync_status` opens with a pending-migrations advisory, stop and follow `references/purlin_commands.md#pending-migrations` before doing this skill's work.
+
 ## Usage
 
 ```

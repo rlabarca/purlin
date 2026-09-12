@@ -75,7 +75,7 @@ This does 7 things:
 1. **Creates `.purlin/`** — config directory with `config.json` (team defaults) and `config.local.json` (per-user overrides, gitignored).
 2. **Creates `specs/`** — directory for spec files, with a `_anchors/` subdirectory for cross-cutting constraints with external references.
 3. **Scaffolds proof plugin** — detects your test framework (pytest, Jest, Vitest, C, PHP, SQL — see [supported frameworks](../references/supported_frameworks.md)) and installs the appropriate proof collector so tests emit `*.proofs-*.json` files. The selection list offers every shipped plugin, including ones with no auto-detection (shell) or manual setup (xUnit/.NET).
-4. **Verifies the MCP server** — Purlin's MCP server (the `sync_status`, `purlin_config`, and `drift` tools) is bundled with the plugin and registers automatically wherever the plugin is enabled, always tracking the installed plugin version. Projects initialized before v0.9.4 have a legacy version-pinned `purlin` entry in `.mcp.json` that shadows the bundled server — init removes it (or run `purlin:init --mcp` to migrate just this step, then `/reload-plugins`).
+4. **Verifies the MCP server** — Purlin's MCP server (the `sync_status`, `purlin_config`, and `drift` tools) is bundled with the plugin and registers automatically wherever the plugin is enabled, always tracking the installed plugin version. Projects initialized before v0.9.4 have a legacy version-pinned `purlin` entry in `.mcp.json` that shadows the bundled server — init removes it (see [Upgrading the plugin](#upgrading-the-plugin), which owns every migration an older project needs).
 5. **Installs pre-push hook** — a git hook that runs tests before push. You choose warn mode (block on failures, warn on partial) or strict mode (block unless all features are VERIFIED).
 6. **Installs pre-commit hook (project digest)** — regenerates `.purlin/report-data.js` (coverage + drift data) on every commit so stakeholders see current status without running Purlin tools. Modes: `auto` (default), `warn`, or `off`.
 7. **Configures audit criteria** — built-in criteria always apply, covering both quality gauges. Optionally add team-specific criteria from a git-hosted file (appended to built-in defaults). See [references/audit_criteria.md](../references/audit_criteria.md).
@@ -125,10 +125,13 @@ Default config (`version` is set from the installed framework's `VERSION` file a
   "spec_dir": "specs",
   "pre_push": "warn",
   "remote_verification": "off",
+  "mutation_checks": false,
   "report": true,
   "digest": "auto"
 }
 ```
+
+`mutation_checks` is off by default. When it is on, every new or amended proof is mutation-checked before the commit that carries it: break the behaviour, watch the proof fail, restore. It is the only check that catches a proof which passes against broken code, and it costs roughly twice the tokens and minutes per proof; see [spec_quality_guide.md § Mutation check](../references/spec_quality_guide.md#mutation-check). `purlin:init` asks; `purlin:init --mutation-checks on|off` changes it later.
 
 The HTML dashboard is enabled by default (`"report": true`). When enabled, `purlin:status` writes `.purlin/report-data.js` on every call, and `purlin:init` creates a `purlin-report.html` symlink at the project root. Open it in a browser to see live coverage. Toggle with `purlin:init --report`. See the [Dashboard Guide](dashboard-guide.md) for details.
 
@@ -158,6 +161,8 @@ Already initialized? Use `purlin:init --force` to reconfigure, or change individ
 | What you want | How |
 |---------------|-----|
 | Switch pre-push mode (warn/strict) | `purlin:init --pre-push` |
+| Turn mutation checks on or off | `purlin:init --mutation-checks on\|off` |
+| Migrate the project to the installed plugin | `purlin:init --update` |
 | Toggle HTML dashboard | `purlin:init --report` |
 | Change digest mode (auto/warn/off) | `purlin:init --digest` |
 | Add a proof plugin | `purlin:init --add-plugin ./my-plugin.py` |
@@ -201,6 +206,30 @@ Or inside Claude Code:
 ```
 
 Both pull the latest version. Existing specs, proofs, and config are preserved.
+
+## Upgrading the plugin
+
+After `claude plugin marketplace update`, the plugin has moved and the project has not. Run:
+
+```
+purlin:init --update
+```
+
+It detects what is pending from the project's own contents (never from the `version` field), shows the delta, asks before writing anything, and then migrates:
+
+| Migration | What it does |
+|---|---|
+| `legacy-tier-windows` | Rewrites `@windows` proof tags to `@unit @on(<platform-id>)` |
+| `legacy-proof-file` | `git mv`s `<feature>.proofs-windows.json` to `<feature>.proofs-unit@<platform-id>.json` and stamps `platform` on it |
+| `legacy-marker` | Rewrites every plugin's `windows`-tier proof marker to tier `unit` plus the platform |
+| `plugin-copies-stale` | Replaces each `.purlin/plugins/` copy with the installed plugin's file |
+| `config-fields-missing` | Fills config fields from the template and stamps `version` from the installed `VERSION` |
+| `receipt-v1` | Prints `→ Run: purlin:verify`. A receipt is a claim that tests ran, so the update never writes one |
+| `legacy-mcp` | Removes the legacy `purlin` entry from `.mcp.json` (this is what `purlin:init --mcp` runs on its own), then `/reload-plugins` |
+
+`purlin:init --update --check` reports what is pending and writes nothing; it is also what a CI preflight runs, so a runner never proves anything with stale plugin copies. `purlin:init --update --platform-id <id>` says what a legacy `@windows` tag becomes (default: the `windows` OS family). Every skill points at the same advisory: when `purlin:status` or any other skill opens with a pending-migrations block, that is this command asking to be run.
+
+The update never scaffolds a runner and never issues a receipt. Registering a platform and writing its workflow is `purlin:test`'s consent path; receipts come from `purlin:verify` after a fresh run.
 
 ## Upgrading from an Older Version of Purlin
 

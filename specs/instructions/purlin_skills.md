@@ -22,6 +22,8 @@
 - RULE-13: Init skill `--add-plugin` validates plugin files against language-specific patterns (Python: `proofs`+`json`, JS: `proofs`+`JSON`, Shell: `purlin_proof`, Java: `proofs`+`Proof`) and warns if validation fails
 - RULE-14: Init skill `--add-plugin` supports both local file paths and git URL sources with distinct handling for each
 - RULE-15: Init skill `--list-plugins` identifies built-in plugins (`pytest_purlin`, `jest_purlin`, `purlin-proof`) by framework name and labels all others as `custom`
+- RULE-16: Every `skills/*/SKILL.md` carries a one-line pointer to `references/purlin_commands.md#pending-migrations`, using that exact anchor, so a skill invoked while a migration is pending sends the user to one shared section rather than to twelve paraphrases. The skills that do not display `sync_status` output say that they call `sync_status` first when they would write specs or proofs
+- RULE-17: `skills/build/SKILL.md` branches on `mutation_checks` (required before the commit and recorded in the commit body when true, one visible line when false) and `skills/test/SKILL.md` points at `references/spec_quality_guide.md#mutation-check` from its proof-marker section, so the practice has one definition and each skill names it rather than describing it
 
 ## Proof
 
@@ -40,3 +42,5 @@
 - PROOF-13 (RULE-13): Grep `skills/init/SKILL.md` for the validation table language entries (`Python`, `JavaScript`, `Shell`, `Java`) and the warning text `doesn't look like a standard proof plugin`; verify all present
 - PROOF-14 (RULE-14): Grep `skills/init/SKILL.md` for `local file path` and `git URL`; verify both source types are documented with distinct handling steps
 - PROOF-15 (RULE-15): Grep `skills/init/SKILL.md` for `pytest_purlin.py` with `Python/pytest`, `jest_purlin.js` with `JavaScript/Jest`, and the label `custom`; verify the labeling table exists
+- PROOF-16 (RULE-16): For each of the 12 `skills/*/SKILL.md` files, grep for the literal anchor `purlin_commands.md#pending-migrations` and verify it appears at least once; assert exactly 12 files were scanned so the proof cannot pass by matching nothing. For the six skills that do not display `sync_status` output (spec, spec-from-code, audit, anchor, find, rename), verify the same line also says `sync_status` is called first when the skill would write specs or proofs
+- PROOF-17 (RULE-17): Grep `skills/build/SKILL.md` and verify it names `mutation_checks` with both branches (the `true` branch requiring the check before the commit and recording it in the commit body, the `false` branch printing one line) and links `spec_quality_guide.md#mutation-check`; grep `skills/test/SKILL.md` and verify its proof-marker section links the same anchor. Removing the link from either file fails the proof

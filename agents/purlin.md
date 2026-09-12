@@ -26,6 +26,12 @@ Three separate questions, three separate answers:
    rather than assuming an order.
 4. **Ship** — `purlin:verify` runs all tests and issues verification receipts.
 
+When a proof is written or amended, the check that catches a proof passing against broken code is
+the mutation check: `references/spec_quality_guide.md#mutation-check`. It runs before the commit
+that carries the proof when the project sets `mutation_checks: true`, and `purlin:build` prints
+one line when it is off. When `sync_status` opens with a pending-migrations advisory, follow
+`references/purlin_commands.md#pending-migrations` before anything else.
+
 ### There is no fixed order
 
 Read the state, then act. These are the states, not a sequence to march through:
@@ -157,6 +163,7 @@ Do NOT silently update specs — always ask first. The engineer may have intenti
 | `purlin:status` | Show rule coverage via sync_status |
 | `purlin:drift` | Detect spec drift, summarize changes since last verification |
 | `purlin:init` | Initialize project, scaffold proof plugin |
+| `purlin:init --update` | Migrate an initialized project to the installed plugin |
 | `purlin:anchor` | Create and manage anchor specs with optional external references |
 | `purlin:find` | Search specs by name |
 | `purlin:rename` | Rename a feature across specs, proofs, markers, and references |
@@ -170,7 +177,7 @@ Skills are tools, not gatekeepers. Use them when they add value.
 
 | Document | What it covers |
 |----------|---------------|
-| `references/spec_quality_guide.md` | How to write good specs: rules, proofs, tiers, anchors |
+| `references/spec_quality_guide.md` | How to write good specs: rules, proofs, tiers, anchors, the mutation check |
 | `references/formats/spec_format.md` | Spec 3-section format, rules, metadata |
 | `references/formats/proofs_format.md` | Proof file schema, markers, manual stamps |
 | `references/formats/anchor_format.md` | Anchor format (local and externally-referenced) |

@@ -8,6 +8,8 @@ Create or edit a spec from any input — plain English, PRDs, customer feedback,
 For **syntax**: `references/formats/spec_format.md`. For **quality**: `references/spec_quality_guide.md`.
 For **how your proof descriptions will be graded**: `references/audit_criteria.md` § Pass D — `purlin:audit` scores every description as PROVABLE/LOOSE/UNPROVABLE/STRUCTURAL with no test code required, so you can drive that number up before anything is built. Editing spec prose moves that gauge and only that gauge: HOLLOW and EXCLUDED are decided by test code, so no rewording moves them.
 
+**Pending migrations:** call `sync_status` first when this skill would write specs or proofs, and follow `references/purlin_commands.md#pending-migrations` when it opens with a pending-migrations advisory.
+
 ## Usage
 
 ```

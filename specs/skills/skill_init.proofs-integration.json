@@ -9,6 +9,69 @@
       "test_name": "test_registry_covers_every_shipped_plugin",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-52",
+      "rule": "RULE-49",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_check_lists_every_migration_with_its_files_and_ignores_version",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-53",
+      "rule": "RULE-50",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_every_plugin_marker_syntax_is_rewritten",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-54",
+      "rule": "RULE-51",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_check_leaves_the_tree_byte_identical",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-55",
+      "rule": "RULE-52",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_apply_renames_without_writing_a_claim",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-56",
+      "rule": "RULE-53",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_stale_copy_is_replaced_and_a_custom_plugin_is_left_alone",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-57",
+      "rule": "RULE-54",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_second_apply_changes_nothing",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-60",
+      "rule": "RULE-57",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_mutation_checks_is_a_question_not_a_backfill",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

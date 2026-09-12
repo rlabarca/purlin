@@ -106,6 +106,29 @@ def write_run_marker(root, test_files=None, ok=True, commit=None,
     return marker
 
 
+def legacy_migrations_pending(root):
+    """The `legacy-*` migrations pending in `root`, as ids.
+
+    A receipt is a claim about coverage, and while a legacy alias is in play
+    coverage is a guess: the `@windows` tag is read as `@unit @on(windows)`,
+    the legacy proof file is read as `unit@windows`, and a marker still writing
+    the old tier can land results under a name no spec declares. Declining to
+    claim is not a gate (`references/hard_gates.md` is unchanged); it is the
+    issuer refusing to sign for something it cannot read straight.
+    """
+    return [entry['id'] for entry in ps._pending_migrations(root)
+            if entry['id'].startswith('legacy-')]
+
+
+def _legacy_refusal_lines(ids):
+    return [
+        f'REFUSED: {len(ids)} legacy migration'
+        f'{"s" if len(ids) != 1 else ""} pending: {", ".join(ids)}',
+        'The legacy alias makes coverage a guess, so no receipt is issued.',
+        '\u2192 Run: purlin:init --update, then re-run the issuer',
+    ]
+
+
 def _refusal_lines(err):
     return [
         f'REFUSED: {err}',
@@ -155,6 +178,13 @@ def _proof_file_rows(root, features, proofs, executed, have_marker):
 
 def main(root=None, quiet=False, run_check=True):
     root = root or ROOT
+    # skill_verify RULE-13: no receipt while a legacy-* migration is pending.
+    legacy_ids = legacy_migrations_pending(root)
+    if legacy_ids:
+        if not quiet:
+            for line in _legacy_refusal_lines(legacy_ids):
+                print(line)
+        return [], []
     marker = None
     if run_check:
         marker, err = read_run_marker(root)
@@ -285,6 +315,10 @@ if __name__ == '__main__':
     run_check = '--no-run-check' not in argv
     positional = [a for a in argv if not a.startswith('--')]
     target = positional[0] if positional else ROOT
+    if legacy_migrations_pending(target):
+        for line in _legacy_refusal_lines(legacy_migrations_pending(target)):
+            print(line)
+        sys.exit(1)
     if run_check and read_run_marker(target)[1]:
         for line in _refusal_lines(read_run_marker(target)[1]):
             print(line)

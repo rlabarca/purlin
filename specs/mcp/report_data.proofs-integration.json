@@ -81,6 +81,15 @@
       "test_name": "test_receipt_carries_version_run_commit_and_platform_staleness",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-35",
+      "rule": "RULE-34",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_migrations_is_present_empty_and_populated",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

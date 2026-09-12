@@ -251,13 +251,13 @@ init_project "$TMP2" "shell" "warn" "true"
 if python3 -c "
 import json, sys
 d = json.load(open('$TMP2/.purlin/config.json'))
-required = ['version', 'test_framework', 'spec_dir', 'pre_push', 'remote_verification', 'report', 'digest']
+required = ['version', 'test_framework', 'spec_dir', 'pre_push', 'remote_verification', 'mutation_checks', 'report', 'digest']
 missing = [k for k in required if k not in d]
 if missing:
     print('Missing:', missing, file=sys.stderr)
     sys.exit(1)
 " 2>/dev/null; then
-  echo "  PASS: all 7 required fields present"
+  echo "  PASS: all 8 required fields present"
   purlin_proof "skill_init" "PROOF-9" "RULE-9" pass "config.json has all required fields"
   PASS=$((PASS + 1))
 else
@@ -300,6 +300,7 @@ assert d['test_framework'] == 'auto', f'test_framework={d[\"test_framework\"]}'
 assert d['spec_dir'] == 'specs', f'spec_dir={d[\"spec_dir\"]}'
 assert d['pre_push'] == 'warn', f'pre_push={d[\"pre_push\"]}'
 assert d['remote_verification'] == 'off', f'remote_verification={d[\"remote_verification\"]}'
+assert d['mutation_checks'] == False, f'mutation_checks={d[\"mutation_checks\"]}'
 assert d['report'] == True, f'report={d[\"report\"]}'
 " 2>/dev/null; then
   echo "  PASS: defaults correct"

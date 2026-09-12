@@ -507,6 +507,53 @@ Descriptions above.
 - **Use realistic data.** No empty strings or single-element arrays as representative inputs.
 - **No self-mocking.** Mock external dependencies (network, filesystem), not the code under test.
 
+## Mutation check
+
+A mutation check is the practice of breaking the behaviour a proof covers, watching that proof
+fail, and restoring the code before the commit. It is the authoring twin of Proof Integrity: a
+proof that still passes against broken code proves nothing, and neither a static check nor an LLM
+grade can see it, because both read the test and the rule rather than running one against the
+other.
+
+It is opt-in, from `mutation_checks` in `.purlin/config.json` (`purlin:init` asks; default
+`false`).
+
+**The three steps.**
+
+1. Break the behaviour the proof covers, in the smallest way that is still a real defect: delete
+   the clause, flip the comparison, drop the field. Not the test, and not a syntax error.
+2. Run that proof, and only that proof. It must fail, and the failure must name what you broke.
+3. Restore the code and re-run. The proof passes again, and the working tree is byte-identical to
+   what it was.
+
+**When.** Every new or amended proof, before the commit that carries it. Record the mutation in
+the commit body when `mutation_checks` is `true`, so a reviewer can re-run it.
+
+**A mutation that survives is a finding, not a formality.** It means the fixture cannot tell the
+correct behaviour from the broken one: the proof is weak, not finished. Add the discriminating
+case to the fixture, then re-run the mutation until it fails.
+
+**Worked example: the version comparison.** A rule said `>=14.0` holds on a host running `14.7.1`.
+The proof's fixture asserted exactly that. Replacing the `>=` tuple comparison with a string
+prefix comparison left the proof green, because `"14.7.1"` starts with `"14"` either way. The
+discriminating case was `>=13` against `14.7.1`: true under a numeric comparison, false under a
+prefix one. With that case in the fixture the mutation failed, which is what made the proof a
+proof.
+
+**Worked example: the identifier charset.** A rule restricted platform ids to lower-case letters,
+digits and hyphens. The fixture's invalid id was `Windows_2022`, which is invalid twice over: an
+upper-case letter and an underscore. Removing the underscore from the pattern left the proof
+green, because the capital `W` still rejected the id. The discriminating case was an id whose only
+illegal character was the underscore. One fixture value, and the proof went from asserting "some
+rejection happens" to asserting the rule.
+
+**What it is worth.** A mutation check catches exactly one thing: a proof that passes against
+broken code, which no static check and no LLM grade can see. It costs roughly twice the tokens
+and twice the minutes per proof, because every proof is written once and then run twice more
+around an edit and a revert. Turn it on for regulated or long-lived projects, where a proof that
+never fails is a liability that outlives the person who wrote it. Leave it off for throwaway
+prototypes, where the proof and the code are discarded together.
+
 ## When Tests Fail: Fix the Code, Not the Test
 
 When a proof-marked test fails, the agent must diagnose before fixing. There are three possibilities:

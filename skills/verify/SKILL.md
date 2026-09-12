@@ -5,6 +5,8 @@ description: Run all tests, issue verification receipts
 
 Run the FULL test suite across all tiers, then issue verification receipts for every feature with complete rule coverage.
 
+**Pending migrations:** when `sync_status` opens with a pending-migrations advisory, stop and follow `references/purlin_commands.md#pending-migrations` before doing this skill's work.
+
 ## Usage
 
 ```
@@ -22,6 +24,18 @@ Before running verification, call sync_status. If it reports uncommitted spec/pr
 "There are uncommitted spec/proof changes. Verification receipts reference committed state — uncommitted changes won't be included in the vhash. Commit first?"
 
 If the user says yes, commit the changes. If no, proceed but note the receipts may not reflect current state.
+
+### Pre-check: pending migrations
+
+`sync_status` opens with a pending-migrations advisory when the project has not been brought up to
+the installed plugin (`references/purlin_commands.md#pending-migrations`). While any `legacy-*`
+migration is pending, this skill issues NO receipt for any feature: the legacy `@windows` alias
+makes coverage a guess, so a receipt would be a claim about a reading rather than about the
+project. Print the advisory, print `→ Run: purlin:init --update`, and stop before Step 3. This is
+a refusal to claim, not a gate: nothing is blocked, no push is stopped, and
+`references/hard_gates.md` gains no entry. The other pending migrations (`config-fields-missing`,
+`receipt-v1`) are reported and do not stop verification; `receipt-v1` is what a run of this skill
+clears, by re-issuing those receipts under the version 2 formula from a fresh run.
 
 ### Step 1 — Run All Tests
 
