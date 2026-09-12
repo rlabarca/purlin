@@ -153,6 +153,7 @@ run_suite "E2E Verify Audit" bash "$SCRIPT_DIR/test_e2e_verify_audit.sh"
 run_suite "E2E Anchor Authority" bash "$SCRIPT_DIR/test_e2e_anchor_authority.sh"
 run_suite "E2E Hybrid Audit" bash "$SCRIPT_DIR/test_e2e_hybrid_audit.sh"
 run_suite "E2E Additional Criteria" bash "$SCRIPT_DIR/test_e2e_additional_criteria.sh"
+run_suite "E2E Fake Audit LLM" bash "$SCRIPT_DIR/test_e2e_fake_audit_llm.sh"
 
 # ── All pytest tests in a single session ─────────────────────────────
 # One session for speed. Correctness no longer depends on it: the merge key

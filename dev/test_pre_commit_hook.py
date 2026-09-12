@@ -373,6 +373,17 @@ class TestRule4AutoStages:
         assert "digest generation failed" in output, (
             "the generation-failed fail-open path was silent about the "
             f"failure.\n{output!r}")
+        # RULE-4's "the python error text reaches the developer" clause. The
+        # hook's own line above survives a hook that captured or redirected
+        # python's stderr; the traceback out of generate_digest does not, so
+        # assert on err alone rather than out + err.
+        assert "IsADirectoryError" in err, (
+            "the hook printed that generation failed but python's error text "
+            "never reached the developer: its stderr was captured or "
+            f"redirected.\nstderr was: {err!r}")
+        assert "sample_feature.md" in err, (
+            "python's error text reached the developer without naming the "
+            f"path that broke.\nstderr was: {err!r}")
         with open(digest_path, "rb") as fh:
             after = fh.read()
         assert after == before, (
