@@ -216,6 +216,30 @@ def _git_init(tmp_dir):
                    cwd=tmp_dir, capture_output=True, check=True)
 
 
+def _git_commit_with_runner(tmp_dir, runner, platform_id):
+    """Init a repo in `tmp_dir` and commit everything written so far under a
+    `Purlin-Runner:` trailer, the way a CI commit-back does. Returns the
+    commit's committer date (`%cI`).
+
+    A proof entry deliberately carries no timestamp (sync_status RULE-48), so
+    a row's `last_proved` and `last_runner` can only come from the scoped
+    proof file's last commit: a fixture that wants them non-null has to make
+    that commit carry the trailer.
+    """
+    def git(*args):
+        return subprocess.run(['git'] + list(args), cwd=tmp_dir,
+                              capture_output=True, text=True, check=True)
+
+    git('init', '-q')
+    git('config', 'user.email', 'test@test.com')
+    git('config', 'user.name', 'Test')
+    git('add', '-A')
+    git('commit', '-q', '-m',
+        f'test: scoped proofs\n\nPurlin-Runner: {runner}\n'
+        f'Purlin-Platform: {platform_id}')
+    return git('log', '-1', '--format=%cI').stdout.strip()
+
+
 # ---------------------------------------------------------------------------
 # Integration tests (require git init)
 # ---------------------------------------------------------------------------
@@ -1514,6 +1538,10 @@ class TestAwaitingRunnerPayload:
                    'assessment': 'STRONG', 'cached_at': '2026-01-01T00:00:00Z'},
         })
         cfg = self._config(platforms={'windows-2022': {'os': 'windows'}})
+        # The windows-2022 proof file is committed by a runner that names
+        # itself, so the row's provenance pair has something to read.
+        when = _git_commit_with_runner(
+            self.tmp, 'github-actions/windows-2022', 'windows-2022')
 
         built = self._build(cfg)
         locking = {f['name']: f for f in built['features']}['locking']
@@ -1539,10 +1567,22 @@ class TestAwaitingRunnerPayload:
             'measured': 1, 'total': 2, 'complete': False}, win['integrity']
         assert win['integrity']['weighted'] == 50, win['integrity']
         assert win['integrity']['assessed'] == 100, win['integrity']
+        # The provenance pair, read together: the commit date of the scoped
+        # file and the `Purlin-Runner:` trailer of that same commit, so a
+        # surface can say when windows-2022 was proved and by what.
+        assert win['last_proved'] == when, (
+            f"last_proved must be the scoped file's commit date {when!r}, "
+            f"got {win['last_proved']!r}")
+        assert win['last_runner'] == 'github-actions/windows-2022', (
+            "last_runner must be the Purlin-Runner: trailer of the commit "
+            f"last_proved reads, got {win['last_runner']!r}")
 
         mac = rows['macos']
         assert mac['awaiting'] == 1 and mac['verified'] == 0, mac
+        # Nothing ran on macos, so there is no scoped file and no commit:
+        # both halves of the pair are null, not one of them.
         assert mac['last_proved'] is None, mac['last_proved']
+        assert mac['last_runner'] is None, mac['last_runner']
 
     @pytest.mark.proof("report_data", "PROOF-42", "RULE-41", tier="integration")
     def test_host_row_covers_the_agnostic_results(self, monkeypatch):
@@ -1550,10 +1590,12 @@ class TestAwaitingRunnerPayload:
         platform, and a scoped result never enters its counts."""
         monkeypatch.delenv('PURLIN_PLATFORM', raising=False)
         # The real detector reads PURLIN_PLATFORM into `id`; the stub must too,
-        # so the second half of this test can claim a declared id.
-        monkeypatch.setattr(purlin_server, '_detect_host_platform', lambda: {
-            'os': 'macos', 'version': '15.0', 'distro': '', 'arch': 'arm64',
-            'id': os.environ.get('PURLIN_PLATFORM') or None})
+        # so the second half of this test can claim a declared id. `detected`
+        # is mutable so a later case can move the machine off the registry.
+        detected = {'os': 'macos', 'version': '15.0', 'distro': '',
+                    'arch': 'arm64'}
+        monkeypatch.setattr(purlin_server, '_detect_host_platform', lambda: dict(
+            detected, id=os.environ.get('PURLIN_PLATFORM') or None))
         # `locking`: two agnostic proofs and one proved on windows-2022.
         _write_spec(self.tmp, 'locking',
                     '# Feature: locking\n\n## What it does\nLocks.\n\n'
@@ -1613,6 +1655,42 @@ class TestAwaitingRunnerPayload:
             'measured': 1, 'total': 3, 'complete': False}, host['integrity']
         assert host['integrity']['weighted'] == 33, host['integrity']
         assert host['integrity']['assessed'] == 100, host['integrity']
+
+        # A host that satisfies no registry entry at all: `_host_id` falls back
+        # to the literal `unregistered`, and that is what the row is keyed by,
+        # so the agnostic results still have an owner. Nothing else about the
+        # row changes: it is the same population, still first, still `host`.
+        detected.update(os='freebsd', version='14.0', arch='x86_64')
+        built, _ = self._both(cfg)
+        assert built['platforms']['host_id'] == 'unregistered', (
+            f"a host matching no registry entry is named `unregistered`, got "
+            f"{built['platforms']['host_id']!r}")
+        rows = built['platforms']['summary']
+        assert list(rows) == ['unregistered', 'windows-2022'], list(rows)
+        unreg = rows['unregistered']
+        assert unreg['host'] is True and unreg['kind'] == 'host', unreg
+        assert unreg['proofs'] == {'declared': 3, 'proved': 3, 'failed': 0,
+                                   'awaiting': 0}, unreg['proofs']
+        assert (unreg['features'], unreg['verified'], unreg['passing'],
+                unreg['failing'], unreg['awaiting']) == (2, 1, 1, 0, 0), (
+            f"the unregistered row owns the same agnostic population: {unreg}")
+
+        # A failed agnostic entry makes its feature read `failing` on that row
+        # rather than the `verified` or `passing` it would otherwise get.
+        _write_proofs(self.tmp, 'locking',
+                      [_entry('locking', 'PROOF-1', 'RULE-1'),
+                       _entry('locking', 'PROOF-2', 'RULE-2', status='fail')])
+        built, _ = self._both(cfg)
+        unreg = built['platforms']['summary']['unregistered']
+        assert (unreg['verified'], unreg['passing'], unreg['failing']) == (1, 0, 1), (
+            f"`failing` takes precedence for the feature whose agnostic entry "
+            f"failed, and only for it: {unreg}")
+        assert unreg['proofs'] == {'declared': 3, 'proved': 2, 'failed': 1,
+                                   'awaiting': 0}, unreg['proofs']
+        _write_proofs(self.tmp, 'locking',
+                      [_entry('locking', 'PROOF-1', 'RULE-1'),
+                       _entry('locking', 'PROOF-2', 'RULE-2')])
+        detected.update(os='macos', version='15.0', arch='arm64')
 
         # A host id that already has a declared row gets no second row.
         monkeypatch.setenv('PURLIN_PLATFORM', 'windows-2022')
