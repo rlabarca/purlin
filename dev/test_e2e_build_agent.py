@@ -26,6 +26,8 @@ import sys
 
 import pytest
 
+from e2e_claude_cli import claude_command
+
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 sys.path.insert(0, os.path.join(PROJECT_ROOT, "scripts", "mcp"))
@@ -45,42 +47,18 @@ pytestmark = pytest.mark.skipif(
 
 
 # ---------------------------------------------------------------------------
-# Claude CLI helper (same pattern as test_e2e_figma_web.py)
+# Claude CLI helper (shared with test_e2e_figma_web.py via dev/e2e_claude_cli.py)
 # ---------------------------------------------------------------------------
 
-def _agents_json(path=None):
-    """``agents/purlin.md`` as the JSON object ``claude --agents`` expects.
-
-    The flag took a file path in older CLI builds and takes a JSON object
-    ({name: {description, prompt}}) in current ones, so the agent definition
-    is read from the repository and serialized here rather than passed by path.
-    """
-    path = path or os.path.join(PROJECT_ROOT, "agents", "purlin.md")
-    with open(path, encoding="utf-8") as f:
-        text = f.read()
-    name, description, body = "purlin", "", text
-    m = re.match(r"^---\n(.*?)\n---\n(.*)$", text, re.DOTALL)
-    if m:
-        front, body = m.group(1), m.group(2).lstrip("\n")
-        for line in front.splitlines():
-            if line.startswith("name:"):
-                name = line.split(":", 1)[1].strip()
-            elif line.startswith("description:"):
-                description = line.split(":", 1)[1].strip()
-    return json.dumps({name: {"description": description, "prompt": body}})
+AGENT_PATH = os.path.join(PROJECT_ROOT, "agents", "purlin.md")
 
 
 def _claude(prompt, *, cwd, timeout=300):
     """Send one message via ``claude -p``.  Returns (result_text, session_id)."""
-    cmd = [
-        "claude", "-p",
-        "--output-format", "json",
-        "--model", "sonnet",
-        "--max-turns", "50",
-        "--dangerously-skip-permissions",
-        "--plugin-dir", PROJECT_ROOT,
-        "--agents", _agents_json(),
-    ]
+    cmd = claude_command(
+        model="sonnet", max_turns=50,
+        plugin_dir=PROJECT_ROOT, agent_path=AGENT_PATH,
+    )
 
     result = subprocess.run(
         cmd, input=prompt, capture_output=True, text=True,

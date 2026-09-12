@@ -273,6 +273,7 @@ run_suite "All Pytest Tests" run_pytest \
   "$SCRIPT_DIR/test_e2e_spec_from_input.py" \
   "$SCRIPT_DIR/test_e2e_spec_migration.py" \
   "$SCRIPT_DIR/test_e2e_ui_extraction.py" \
+  "$SCRIPT_DIR/test_claude_cli_helper.py" \
   "$SCRIPT_DIR/test_sweep_completeness.py" \
   "$SCRIPT_DIR/test_purlin_report.py" \
   -v

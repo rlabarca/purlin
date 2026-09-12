@@ -27,6 +27,8 @@ import sys
 
 import pytest
 
+from e2e_claude_cli import claude_command
+
 # This suite drives the real `claude` CLI against a real Figma MCP server and
 # spends API budget. It had 15 @e2e marks and no module gate at all, so on a host
 # lacking the MCP server every test errored rather than skipping, which reads as a
@@ -72,22 +74,15 @@ MAX_PIXEL_DIFF_PCT = 18.0
 
 def _claude(prompt, *, cwd, add_dirs=(), session=None,
             plugin_dir=None, agent=None, timeout=300):
-    """Send one message via ``claude -p``.  Returns (result_text, session_id)."""
-    cmd = [
-        "claude", "-p",
-        "--output-format", "json",
-        "--model", "sonnet",
-        "--max-turns", "50",
-        "--dangerously-skip-permissions",
-    ]
-    for d in add_dirs:
-        cmd += ["--add-dir", d]
-    if plugin_dir:
-        cmd += ["--plugin-dir", plugin_dir]
-    if agent:
-        cmd += ["--agents", agent]
-    if session:
-        cmd += ["--resume", session]
+    """Send one message via ``claude -p``.  Returns (result_text, session_id).
+
+    ``agent`` is the path of an agent definition; the shared helper turns it
+    into the JSON object ``--agents`` expects (the flag rejects a path).
+    """
+    cmd = claude_command(
+        model="sonnet", max_turns=50, add_dirs=add_dirs,
+        plugin_dir=plugin_dir, agent_path=agent, session=session,
+    )
 
     result = subprocess.run(
         cmd, input=prompt, capture_output=True, text=True,

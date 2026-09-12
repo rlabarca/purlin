@@ -4,7 +4,7 @@
 >   docs/examples/figma-web-app.md produces a working web UI with high visual
 >   fidelity to the Figma design. Uses the modal-test Figma file as the design
 >   reference. Each step is a real `claude -p` invocation — nothing is faked.
-> Scope: docs/examples/figma-web-app.md, skills/anchor/SKILL.md, skills/build/SKILL.md
+> Scope: docs/examples/figma-web-app.md, skills/anchor/SKILL.md, skills/build/SKILL.md, dev/e2e_claude_cli.py
 > Stack: python/pytest, playwright, shell/bash
 > Requires: skill_anchor
 
@@ -41,6 +41,7 @@ The 5 documented messages (adapted for the modal-test design):
 - RULE-13: The audit static_checks pipeline returns a classification for anchor proofs
 - RULE-14: Each test run saves screenshot(s) to dev/figma_web_result.png showing the built UI
 - RULE-15: Message 4+5 — "run the tests" and "verify and ship" result in passing tests (pytest exit 0)
+- RULE-16: The figma-mcp suite drives `claude -p` through the shared helper dev/e2e_claude_cli.py and hands `--agents` the JSON object built from `agents/purlin.md` (`{"purlin": {"description": ..., "prompt": ...}}`), never a file path
 
 ## Proof
 
@@ -59,3 +60,4 @@ The 5 documented messages (adapted for the modal-test design):
 - PROOF-13 (RULE-13): Run static_checks.py on the anchor test file; verify it returns proof classifications @e2e @on(figma-mcp)
 - PROOF-14 (RULE-14): Capture Playwright screenshot to dev/figma_web_result.png; verify valid PNG @e2e @on(figma-mcp)
 - PROOF-15 (RULE-15): Send messages 4+5 via claude -p --resume; run pytest in the built project; verify exit code 0 @e2e @on(figma-mcp)
+- PROOF-16 (RULE-16): `claude_command(agent_path=<repo>/agents/purlin.md, plugin_dir=...)` from dev/e2e_claude_cli.py returns an argv whose element after `--agents` parses as JSON to exactly one key `purlin`, whose `description` equals the `description:` line of the agent front matter and whose `prompt` equals the text after the front matter (starting `# Purlin Agent`), and no argv element ends with `purlin.md`; an agent file with no front matter yields `{"purlin": {"description": "", "prompt": <whole file text>}}`; and both dev/test_e2e_figma_web.py and dev/test_e2e_build_agent.py contain `from e2e_claude_cli import` while neither contains the rejected path form `"--agents", agent` or `"--agents", AGENT` @unit
