@@ -3,6 +3,24 @@
   "proofs": [
     {
       "feature": "proof_common",
+      "id": "PROOF-17",
+      "rule": "RULE-13",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_jest_pending_writes_nothing_and_leaves_an_existing_file_alone",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-17",
+      "rule": "RULE-13",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_skipped_suite_writes_nothing_and_no_script_fakes_a_failure",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
       "id": "PROOF-5",
       "rule": "RULE-5",
       "test_file": "dev/test_multilang_proof_plugins.py",
@@ -228,6 +246,78 @@
     },
     {
       "feature": "proof_common",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_php_declared_marker_scopes_and_unmarked_stays_agnostic",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-21",
+      "rule": "RULE-17",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_php_declared_marker_scopes_and_unmarked_stays_agnostic",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-19",
+      "rule": "RULE-15",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_php_test_file_has_forward_slashes",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-22",
+      "rule": "RULE-17",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_php_unset_env_names_the_family",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_xunit_declared_marker_scopes_and_unmarked_stays_agnostic",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-21",
+      "rule": "RULE-17",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_xunit_declared_marker_scopes_and_unmarked_stays_agnostic",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-19",
+      "rule": "RULE-15",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_xunit_test_file_has_forward_slashes",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-22",
+      "rule": "RULE-17",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_xunit_unset_env_names_the_family",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
       "id": "PROOF-20",
       "rule": "RULE-16",
       "test_file": "dev/test_multilang_proof_plugins.py",
@@ -295,24 +385,6 @@
       "rule": "RULE-18",
       "test_file": "dev/test_multilang_proof_plugins.py",
       "test_name": "test_the_exempt_plugins_named_in_rule_18_are_the_ones_without_a_skip_set",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "proof_common",
-      "id": "PROOF-17",
-      "rule": "RULE-13",
-      "test_file": "dev/test_proof_plugins_missing.py",
-      "test_name": "test_jest_pending_writes_nothing_and_leaves_an_existing_file_alone",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "proof_common",
-      "id": "PROOF-17",
-      "rule": "RULE-13",
-      "test_file": "dev/test_proof_plugins_missing.py",
-      "test_name": "test_skipped_suite_writes_nothing_and_no_script_fakes_a_failure",
       "status": "pass",
       "tier": "integration"
     }
