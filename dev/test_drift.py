@@ -334,3 +334,56 @@ class TestDriftExternalAnchorStaleness:
             f"Expected remote_sha {entry['remote_sha']!r} to be prefix of actual new SHA "
             f"{new_sha!r}"
         )
+
+
+class TestDriftSinceValidation:
+    """drift RULE-17: the `since` argument is validated before any subprocess."""
+
+    def _repo(self, root):
+        os.makedirs(os.path.join(root, '.purlin'))
+        os.makedirs(os.path.join(root, 'specs', 'mcp'))
+        with open(os.path.join(root, 'specs', 'mcp', 'thing.md'), 'w') as f:
+            f.write('# Feature: thing\n\n> Scope: src/thing.py\n\n'
+                    '## Rules\n\n- RULE-1: Does the thing\n\n'
+                    '## Proof\n\n- PROOF-1 (RULE-1): Call it and verify 1\n')
+        _git(['init', '-q'], root)
+        _git(['config', 'user.email', 'test@test.com'], root)
+        _git(['config', 'user.name', 'Test'], root)
+        for i in range(3):
+            with open(os.path.join(root, f'f{i}.txt'), 'w') as f:
+                f.write(str(i))
+            _git(['add', '-A'], root)
+            _git(['commit', '-q', '-m', f'chore: commit {i}'], root)
+
+    @pytest.mark.proof("drift", "PROOF-20", "RULE-17", tier="integration")
+    def test_hostile_since_is_refused_before_any_subprocess(self, tmp_path):
+        root = str(tmp_path / 'proj')
+        os.makedirs(root)
+        self._repo(root)
+
+        calls = []
+        real_run = subprocess.run
+
+        def spy(args, *rest, **kwargs):
+            calls.append(list(args) if isinstance(args, (list, tuple)) else [args])
+            return real_run(args, *rest, **kwargs)
+
+        purlin_server.subprocess.run = spy
+        try:
+            refused = json.loads(purlin_server.drift(root, since='--output=/tmp/x'))
+            refused_calls = list(calls)
+            calls.clear()
+            allowed = json.loads(purlin_server.drift(root, since='2'))
+            allowed_calls = list(calls)
+        finally:
+            purlin_server.subprocess.run = real_run
+
+        assert refused.get('error') == 'rejected since', refused
+        reason = refused.get('reason', '')
+        assert 'digits only' in reason and 'YYYY-MM-DD' in reason, reason
+        assert refused_calls == [], (
+            f"a refused since still reached a subprocess: {refused_calls}")
+
+        # Control: a valid since does resolve, and does run git.
+        assert 'commits' in allowed, allowed
+        assert allowed_calls, "the control call ran no subprocess at all"

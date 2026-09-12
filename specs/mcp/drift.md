@@ -23,6 +23,7 @@
 - RULE-14: drift returns the anchor name in external_anchor_drift matching the anchor's spec name, not the external repo name or path
 - RULE-15: Detects unpinned state when an anchor has `> Source:` but no `> Pinned:`, returning an external_anchor_drift entry with status `unpinned`
 - RULE-16: Returns a `rule_details` object for each spec with CHANGED_BEHAVIOR files, containing per-rule ID, description, and proof status (pass/fail/unproved), plus the list of changed scope files
+- RULE-17: The `since` argument is validated before any subprocess starts: only a commit count (digits only) or a `YYYY-MM-DD` date is accepted, and any other value is refused with an error naming the two accepted forms rather than passed to git
 
 ## Proof
 
@@ -45,3 +46,4 @@
 - PROOF-17 (RULE-12): e2e: Create external anchor pinned to initial SHA; advance repo; run drift; verify stale entry with remote SHA @e2e
 - PROOF-18 (RULE-15): e2e: Create anchor with Source but no Pinned; run drift; verify unpinned status @e2e
 - PROOF-19 (RULE-16): Create spec with 3 rules and `> Scope:` pointing to a source file; add proofs for 2 of 3 rules; modify the scope file and commit; call drift; verify rule_details contains the spec with 3 rule entries, 2 with proof_status=pass, 1 with proof_status=unproved, and the changed file in changed_files @integration
+- PROOF-20 (RULE-17): In a temp repo, call `drift(root, since="--output=/tmp/x")` with `subprocess.run` wrapped by a recording spy; verify the returned JSON carries `error: "rejected since"` with a reason naming both accepted forms and that the spy recorded zero calls. As a control, call the same function with `since="2"` and verify it returns a `commits` list and the spy did record calls @integration

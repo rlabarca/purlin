@@ -3,6 +3,15 @@
   "proofs": [
     {
       "feature": "drift",
+      "id": "PROOF-20",
+      "rule": "RULE-17",
+      "test_file": "dev/test_drift.py",
+      "test_name": "test_hostile_since_is_refused_before_any_subprocess",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "drift",
       "id": "PROOF-19",
       "rule": "RULE-16",
       "test_file": "dev/test_mcp_server.py",

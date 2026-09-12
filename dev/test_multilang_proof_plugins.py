@@ -11,6 +11,7 @@ Run with: python3 -m pytest dev/test_multilang_proof_plugins.py -v
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -313,6 +314,31 @@ function test_deliberate_failure() {
             {'feature': 'cart_ops', 'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'fail', 'tier': 'unit'},
         ])
 
+
+# ---------------------------------------------------------------------------
+# PHP plugin source checks - no php binary required
+# ---------------------------------------------------------------------------
+
+class TestPHPProofPluginSource:
+    """proof_plugins_php RULE-3: an argv array, never a shell string."""
+
+    @pytest.mark.proof("proof_plugins_php", "PROOF-3", "RULE-3", tier="integration")
+    def test_php_plugin_launches_through_proc_open_with_an_argv_array(self):
+        plugin_path = os.path.join(PROOF_SCRIPTS, 'phpunit_purlin.php')
+        with open(plugin_path) as f:
+            source = f.read()
+
+        launches = [m for m in re.finditer(r'\bproc_open\s*\(', source)]
+        assert launches, "no proc_open( launch site found in the PHP plugin"
+        for m in launches:
+            after = source[m.end():m.end() + 40].lstrip()
+            assert after.startswith('['), (
+                f"proc_open first argument is not an array literal: {after[:40]!r}")
+
+        forbidden = 'ex' + 'ec('
+        assert forbidden not in source, (
+            f"{forbidden} is still present in the PHP plugin; a shell string "
+            "can be assembled")
 
 # ---------------------------------------------------------------------------
 # SQL tests — run with sqlite3

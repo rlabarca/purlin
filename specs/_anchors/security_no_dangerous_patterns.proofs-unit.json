@@ -6,7 +6,7 @@
       "id": "PROOF-1",
       "rule": "RULE-1",
       "test_file": "dev/test_security.py",
-      "test_name": "test_no_eval_or_exec",
+      "test_name": "test_no_dynamic_code_execution",
       "status": "pass",
       "tier": "unit"
     },

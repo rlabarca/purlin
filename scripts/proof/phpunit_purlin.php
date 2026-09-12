@@ -27,7 +27,8 @@
  */
 
 // When run standalone, parse a PHP test file and emit proof JSON to stdout.
-// The actual test execution happens via `php -r` — this script orchestrates.
+// Each annotated function runs in its own child php process; this script
+// orchestrates and collects the results.
 
 // PURLIN_PLATFORM when set, else the OS family. The only place the collector
 // looks at the host; nothing else in it branches on the operating system.
@@ -69,16 +70,33 @@ function parse_proof_markers(string $filepath): array {
 }
 
 function run_php_test(string $filepath, string $function_name): bool {
-    // Include the test file and run the function, capturing the exit code
-    $cmd = sprintf(
-        'php -r \'require "%s"; try { %s(); echo "PASS"; } catch (Throwable $e) { echo "FAIL: " . $e->getMessage(); exit(1); }\' 2>&1',
-        addslashes($filepath),
+    // The child process is started from an argv array, so no shell string is
+    // ever built and nothing in the path can be read as an option or an
+    // operator (proof_plugins_php RULE-3). The path is embedded in the -r
+    // program as a PHP literal via var_export; the function name comes from
+    // the marker regex, which matches word characters only.
+    $code = sprintf(
+        'require %s; try { %s(); echo "PASS"; } '
+        . 'catch (Throwable $e) { echo "FAIL: " . $e->getMessage(); exit(1); }',
+        var_export($filepath, true),
         $function_name
     );
-    $output = [];
-    $exit_code = 0;
-    exec($cmd, $output, $exit_code);
-    return $exit_code === 0;
+    $descriptors = [
+        0 => ['pipe', 'r'],
+        1 => ['pipe', 'w'],
+        2 => ['pipe', 'w'],
+    ];
+    $pipes = [];
+    $process = proc_open(['php', '-r', $code], $descriptors, $pipes);
+    if (!is_resource($process)) {
+        return false;
+    }
+    fclose($pipes[0]);
+    stream_get_contents($pipes[1]);
+    fclose($pipes[1]);
+    stream_get_contents($pipes[2]);
+    fclose($pipes[2]);
+    return proc_close($process) === 0;
 }
 
 function resolve_spec_dirs(): array {

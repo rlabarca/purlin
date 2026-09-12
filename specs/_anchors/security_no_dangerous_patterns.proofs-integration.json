@@ -1,0 +1,14 @@
+{
+  "tier": "integration",
+  "proofs": [
+    {
+      "feature": "security_no_dangerous_patterns",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "test_file": "dev/test_security.py",
+      "test_name": "test_source_url_never_reaches_git_in_option_position",
+      "status": "pass",
+      "tier": "integration"
+    }
+  ]
+}

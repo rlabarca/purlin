@@ -32,12 +32,19 @@ git clone -q "$BARE_REPO" "$WORK"
 python3 -c "
 with open('$ANCHOR_FILE') as f:
     lines = f.readlines()
-filtered = [l for l in lines if not l.startswith('> Source:') and not l.startswith('> Pinned:') and not l.startswith('> Path:')]
+drop = ('> Source:', '> Pinned:', '> Path:', '> Note:')
+filtered = [l for l in lines if not l.startswith(drop)]
 with open('$WORK/security_policy.md', 'w') as f:
     f.writelines(filtered)
 "
 
-(cd "$WORK" && git add -A && git commit -q -m "initial security policy spec")
+(cd "$WORK" \
+  && git add -A \
+  && GIT_AUTHOR_NAME="Purlin Dev" GIT_AUTHOR_EMAIL="dev@purlin.local" \
+     GIT_COMMITTER_NAME="Purlin Dev" GIT_COMMITTER_EMAIL="dev@purlin.local" \
+     GIT_AUTHOR_DATE="2026-01-01T00:00:00+0000" \
+     GIT_COMMITTER_DATE="2026-01-01T00:00:00+0000" \
+     git commit -q -m "initial security policy spec")
 (cd "$WORK" && git push -q origin main 2>/dev/null || git push -q origin master 2>/dev/null)
 
 # Get the HEAD SHA
@@ -65,7 +72,7 @@ for i, line in enumerate(lines):
         break
 
 new_lines = [
-    '> Source: $BARE_REPO',
+    '> Source: ./dev/external-refs/security-policy.git',
     '> Path: security_policy.md',
     '> Pinned: $SHA',
 ]
@@ -82,4 +89,5 @@ fi
 
 echo ""
 echo "Done. Run 'purlin:status' to see the external reference."
+echo "If the anchor's > Pinned: line is not $SHA, update it to that value."
 echo "To test staleness: add a commit to the bare repo, then run 'purlin:drift'."

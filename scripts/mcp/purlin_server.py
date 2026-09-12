@@ -439,7 +439,8 @@ def _check_manual_staleness(project_root, scope_files, commit_sha):
         return False
     try:
         result = subprocess.run(
-            ['git', 'log', '--oneline', f'{commit_sha}..HEAD', '--'] + scope_files,
+            ['git', 'log', '--oneline', '--end-of-options',
+             f'{commit_sha}..HEAD', '--'] + scope_files,
             capture_output=True, text=True, cwd=project_root, timeout=5
         )
         return bool(result.stdout.strip())
@@ -2076,7 +2077,11 @@ def sync_status(project_root, role=None):
                     remote_short = staleness['remote_sha'][:7] if staleness.get('remote_sha') else '?'
                     detail.append(f"  Pinned: {pinned_display} \u26a0 STALE \u2014 remote is {remote_short}. Run: purlin:anchor sync {name}")
                 elif staleness and staleness['status'] == 'error':
-                    detail.append(f"  Pinned: {pinned_display} (source unreachable)")
+                    if staleness.get('error') == 'rejected source url':
+                        detail.append(f"  Pinned: {pinned_display} "
+                                      f"(source rejected: {staleness.get('reason', '')})")
+                    else:
+                        detail.append(f"  Pinned: {pinned_display} (source unreachable)")
                 else:
                     detail.append(f"  Pinned: {pinned_display} (current)")
             else:
@@ -3522,6 +3527,13 @@ _TEST_PATTERNS = ('.proofs-', 'test_', '_test.', '.test.', 'tests/', 'dev/test_'
 _BEHAVIORAL_MD_PREFIXES = ('skills/', 'agents/', '.claude/agents/')
 
 
+# A "since" value reaches drift from an LLM-authored tool call, so it is
+# untrusted input: it is accepted only as a commit count or an ISO date, and
+# anything else is refused before a single git process starts (drift RULE-17).
+_SINCE_DAYS_RE = re.compile(r'^[0-9]+$')
+_SINCE_DATE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
+
+
 def _resolve_since_anchor(project_root, since_arg=None):
     """Resolve the 'since' anchor to a (ref, description) tuple."""
     def _run_git(args):
@@ -3533,6 +3545,19 @@ def _resolve_since_anchor(project_root, since_arg=None):
             return r.stdout.strip() if r.returncode == 0 else ''
         except (subprocess.SubprocessError, OSError):
             return ''
+
+    if since_arg is not None and str(since_arg).strip() != '':
+        since_arg = str(since_arg).strip()
+        if not (_SINCE_DAYS_RE.match(since_arg)
+                or _SINCE_DATE_RE.match(since_arg)):
+            return None, json.dumps({
+                'error': 'rejected since',
+                'reason': (
+                    'since must be a number of commits (digits only) or a '
+                    'YYYY-MM-DD date; refusing to pass '
+                    f'{since_arg!r} to git'),
+                'since': since_arg,
+            })
 
     if since_arg:
         # Integer → HEAD~N
@@ -3561,7 +3586,8 @@ def _resolve_since_anchor(project_root, since_arg=None):
     # Most recent tag
     tag = _run_git(['describe', '--tags', '--abbrev=0'])
     if tag:
-        relative = _run_git(['log', '-1', '--format=%ar', tag])
+        relative = _run_git(['log', '-1', '--format=%ar',
+                             '--end-of-options', tag])
         return tag, f'{tag} ({relative})'
 
     # Smart fallback: check when Purlin was initialized
@@ -3570,7 +3596,8 @@ def _resolve_since_anchor(project_root, since_arg=None):
     # Take the earliest (last line) if multiple results
     if init_sha:
         init_sha = init_sha.strip().splitlines()[-1]
-        count_str = _run_git(['rev-list', '--count', f'{init_sha}..HEAD'])
+        count_str = _run_git(['rev-list', '--count', '--end-of-options',
+                              f'{init_sha}..HEAD'])
         count = int(count_str) if count_str.isdigit() else 0
         if count < 30:
             return init_sha, f'since Purlin init ({count} commits)'
@@ -3586,7 +3613,7 @@ def _resolve_since_anchor(project_root, since_arg=None):
         })
 
     # No .purlin in git history — count all commits on current branch
-    count_str = _run_git(['rev-list', '--count', 'HEAD'])
+    count_str = _run_git(['rev-list', '--count', '--end-of-options', 'HEAD'])
     count = int(count_str) if count_str.isdigit() else 0
     if count < 30:
         return 'HEAD~' + str(min(count, 20)), f'last {min(count, 20)} commits (no verification or tag found)'
@@ -3604,7 +3631,8 @@ def _get_diff_stat(project_root, since_ref, filepath):
     """Get +/- line counts for a single file."""
     try:
         r = subprocess.run(
-            ['git', 'diff', '--numstat', since_ref + '..HEAD', '--', filepath],
+            ['git', 'diff', '--numstat', '--end-of-options',
+             since_ref + '..HEAD', '--', filepath],
             capture_output=True, text=True, cwd=project_root, timeout=5,
         )
         if r.returncode == 0 and r.stdout.strip():
@@ -3623,7 +3651,8 @@ def _detect_spec_changes(project_root, since_ref, spec_files_in_diff):
         feature_name = os.path.splitext(os.path.basename(spec_path))[0]
         try:
             r = subprocess.run(
-                ['git', 'diff', since_ref + '..HEAD', '--', spec_path],
+                ['git', 'diff', '--end-of-options',
+                 since_ref + '..HEAD', '--', spec_path],
                 capture_output=True, text=True, cwd=project_root, timeout=5,
             )
             diff_text = r.stdout if r.returncode == 0 else ''
@@ -3653,14 +3682,44 @@ def _detect_spec_changes(project_root, since_ref, spec_files_in_diff):
     return changes
 
 
+def _source_url_is_safe(url):
+    """Is an anchor's `> Source:` value safe to hand to git?
+
+    A Source line is repository-supplied text, so it is never allowed to reach
+    git in option position or to name a transport that runs a command. Returns
+    (True, '') or (False, reason), where reason is the phrase the status line
+    prints (security_no_dangerous_patterns RULE-6).
+    """
+    if not url:
+        return True, ''
+    if url.startswith('-'):
+        return False, 'begins with "-"'
+    if 'ext::' in url:
+        return False, 'names an ext:: transport'
+    if 'fd::' in url:
+        return False, 'names an fd:: transport'
+    if '\x00' in url:
+        return False, 'contains a NUL byte'
+    if '\n' in url or '\r' in url:
+        return False, 'contains a newline'
+    return True, ''
+
+
 def _check_git_staleness(source_url, pinned, project_root=None):
     """Compare pinned SHA to remote HEAD for git-sourced anchors.
 
     Returns None for non-git URLs. Otherwise returns a dict:
       {'status': 'current'|'stale'|'unpinned'|'error', 'remote_sha': str|None}
+
+    A Source value that fails _source_url_is_safe is refused here, before any
+    subprocess starts, and carries the reason back for the status line.
     """
     if not source_url:
         return None
+    safe, reason = _source_url_is_safe(source_url)
+    if not safe:
+        return {'status': 'error', 'remote_sha': None,
+                'error': 'rejected source url', 'reason': reason}
     is_git = (source_url.startswith('git@') or source_url.endswith('.git')
               or 'github.com' in source_url or 'gitlab.com' in source_url
               or source_url.startswith('/') or source_url.startswith('.'))
@@ -3670,7 +3729,7 @@ def _check_git_staleness(source_url, pinned, project_root=None):
         return {'status': 'unpinned', 'remote_sha': None}
     try:
         result = subprocess.run(
-            ['git', 'ls-remote', source_url, 'HEAD'],
+            ['git', 'ls-remote', '--end-of-options', source_url, 'HEAD'],
             capture_output=True, text=True, timeout=10,
             cwd=project_root or '.',
         )
@@ -3706,7 +3765,8 @@ def _compute_drift(project_root, since=None):
     # Gather commits
     try:
         r = subprocess.run(
-            ['git', 'log', '--oneline', since_ref + '..HEAD'],
+            ['git', 'log', '--oneline', '--end-of-options',
+             since_ref + '..HEAD', '--'],
             capture_output=True, text=True, cwd=project_root, timeout=10,
         )
         commits = [l.strip() for l in r.stdout.strip().splitlines() if l.strip()] \
@@ -3717,7 +3777,8 @@ def _compute_drift(project_root, since=None):
     # Gather changed files
     try:
         r = subprocess.run(
-            ['git', 'diff', '--name-only', since_ref + '..HEAD'],
+            ['git', 'diff', '--name-only', '--end-of-options',
+             since_ref + '..HEAD', '--'],
             capture_output=True, text=True, cwd=project_root, timeout=10,
         )
         changed_files = [l.strip() for l in r.stdout.strip().splitlines() if l.strip()] \
