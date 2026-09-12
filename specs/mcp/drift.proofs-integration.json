@@ -27,6 +27,15 @@
       "test_name": "test_one_numstat_call_covers_every_changed_file",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "drift",
+      "id": "PROOF-22",
+      "rule": "RULE-19",
+      "test_file": "dev/test_drift.py",
+      "test_name": "test_payload_carries_no_pretty_printing_whitespace",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

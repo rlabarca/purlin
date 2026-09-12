@@ -451,3 +451,44 @@ class TestDriftBatchedDiffStat:
                          cwd=root, capture_output=True, text=True)
             parts = r.stdout.strip().split('\t')
             assert stat == f'+{parts[0]} -{parts[1]}', (path, stat, r.stdout)
+
+
+class TestDriftCompactPayload:
+    """drift RULE-19: the payload serializes compact, since no human reads it."""
+
+    def _repo(self, root):
+        os.makedirs(os.path.join(root, '.purlin'))
+        os.makedirs(os.path.join(root, 'specs', 'mcp'))
+        with open(os.path.join(root, 'specs', 'mcp', 'thing.md'), 'w') as f:
+            f.write('# Feature: thing\n\n> Scope: src/thing.py\n\n'
+                    '## Rules\n\n- RULE-1: Does the thing\n\n'
+                    '## Proof\n\n- PROOF-1 (RULE-1): Call it and verify 1\n')
+        _git(['init', '-q'], root)
+        _git(['config', 'user.email', 'test@test.com'], root)
+        _git(['config', 'user.name', 'Test'], root)
+        _git(['add', '-A'], root)
+        _git(['commit', '-q', '-m', 'chore: baseline'], root)
+        os.makedirs(os.path.join(root, 'src'))
+        with open(os.path.join(root, 'src', 'thing.py'), 'w') as f:
+            f.write('def thing():\n    return 1\n')
+        _git(['add', '-A'], root)
+        _git(['commit', '-q', '-m', 'feat: thing'], root)
+
+    @pytest.mark.proof("drift", "PROOF-22", "RULE-19", tier="integration")
+    def test_payload_carries_no_pretty_printing_whitespace(self, tmp_path):
+        root = str(tmp_path / 'proj')
+        os.makedirs(root)
+        self._repo(root)
+
+        text = purlin_server.drift(root, since='1')
+
+        assert '\n  ' not in text, "payload still carries indentation"
+        assert '": ' not in text, "payload still carries a space after the key separator"
+
+        data = json.loads(text)
+        assert isinstance(data, dict), type(data)
+        for key in ('since', 'commits', 'files', 'spec_changes', 'proof_status'):
+            assert key in data, (key, sorted(data))
+
+        indented = json.dumps(data, indent=2)
+        assert len(text) < len(indented), (len(text), len(indented))

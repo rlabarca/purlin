@@ -5336,7 +5336,7 @@ def _compute_drift(project_root, since=None, network=True):
 def drift(project_root, since=None, role=None):
     """Generate structured drift data as JSON."""
     result = _compute_drift(project_root, since)
-    return json.dumps(result, indent=2)
+    return json.dumps(result, separators=(',', ':'))
 
 
 @_scoped

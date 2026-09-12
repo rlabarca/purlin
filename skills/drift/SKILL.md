@@ -52,6 +52,8 @@ Otherwise, the tool returns structured JSON containing:
 - `drift_flags` — precomputed drift indicators: features with structural-only coverage that have changed files. Each entry has `spec`, `reason`, and `files`.
 - `broken_scopes` — specs whose `> Scope:` references files or directories that no longer exist on disk. Each entry has `spec`, `missing_paths`, and `existing_paths`.
 
+The payload is serialized compact, with no indentation and no space after any separator: nobody reads it directly, and this skill is what formats it for a person. Parse it as JSON; never read it line by line.
+
 Deleted files are already filtered out by the tool — only files that exist on disk are included.
 
 ## Step 2 — Analyze and Classify Each Change
