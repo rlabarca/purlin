@@ -216,6 +216,19 @@ function write_run_marker(string $root, string $sweep, array $test_files,
     rename($tmp, $path);
 }
 
+// Sort a proof file's entries by (id, test_file, test_name) under plain ordinal
+// string comparison (proof_common RULE-21), applied after the merge and right
+// before serialization, so two runs of the same tests in any collection order
+// write byte-identical files.
+function sort_proof_entries(array $entries): array {
+    usort($entries, function($x, $y) {
+        return strcmp($x['id'] ?? '', $y['id'] ?? '')
+            ?: (strcmp($x['test_file'] ?? '', $y['test_file'] ?? '')
+                ?: strcmp($x['test_name'] ?? '', $y['test_name'] ?? ''));
+    });
+    return $entries;
+}
+
 function write_proofs(array $proofs_by_key, string $test_file): void {
     $spec_dirs = resolve_spec_dirs();
 
@@ -256,7 +269,10 @@ function write_proofs(array $proofs_by_key, string $test_file): void {
         if ($platform !== '') {
             $payload['platform'] = $platform;
         }
-        $payload['proofs'] = array_values(array_merge($kept, $new_entries));
+        // RULE-21: sorted by (id, test_file, test_name), ordinal, after the
+        // merge, so the collection order never reaches the file.
+        $payload['proofs'] = sort_proof_entries(
+            array_values(array_merge($kept, $new_entries)));
 
         // Atomic write
         $tmp = $path . '.tmp';

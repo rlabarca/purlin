@@ -328,6 +328,10 @@ namespace Purlin
                     ordered.Add(fields);
                 }
 
+                // RULE-21: sorted by (id, test_file, test_name), ordinal, after the
+                // merge, so the collection order never reaches the file.
+                ordered = SortProofEntries(ordered);
+
                 string json = Serialize(tier, platform, ordered);
 
                 // Atomic write: tmp + rename.
@@ -594,6 +598,25 @@ namespace Purlin
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) return "macos";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) return "linux";
             return RuntimeInformation.OSDescription.Split(' ')[0].ToLowerInvariant();
+        }
+
+        // Sort a proof file's entries by (id, test_file, test_name) under plain
+        // ordinal string comparison (proof_common RULE-21), applied after the merge
+        // and right before serialization, so two runs of the same tests in any
+        // collection order write byte-identical files.
+        private static List<Dictionary<string, string>> SortProofEntries(
+            List<Dictionary<string, string>> proofs)
+        {
+            return proofs
+                .OrderBy(e => Field(e, "id"), StringComparer.Ordinal)
+                .ThenBy(e => Field(e, "test_file"), StringComparer.Ordinal)
+                .ThenBy(e => Field(e, "test_name"), StringComparer.Ordinal)
+                .ToList();
+        }
+
+        private static string Field(Dictionary<string, string> entry, string name)
+        {
+            return entry.TryGetValue(name, out string? v) && v != null ? v : "";
         }
 
         private static string Serialize(string tier, string platform, List<Dictionary<string, string>> proofs)

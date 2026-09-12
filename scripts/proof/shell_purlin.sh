@@ -231,7 +231,12 @@ for (feature, tier, plat), new_entries in entries.items():
     payload = {'tier': tier}
     if plat is not None:
         payload['platform'] = plat
-    payload['proofs'] = kept + new_entries
+    # RULE-21: sorted by (id, test_file, test_name), ordinal, after the merge,
+    # so the collection order never reaches the file.
+    payload['proofs'] = sorted(
+        kept + new_entries,
+        key=lambda e: (e.get('id') or '', e.get('test_file') or '',
+                       e.get('test_name') or ''))
     tmp_path = path + '.tmp'
     with open(tmp_path, 'w') as f:
         json.dump(payload, f, indent=2)

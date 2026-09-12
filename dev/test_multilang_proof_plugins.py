@@ -2224,3 +2224,256 @@ class TestSkippedProofsInTheRunMarker:
         assert merged == [_FOREIGN_SKIP, mine], (
             "the union is keyed by (feature, id, test_file, test_name): another "
             f"plugin's entry survives and this run's is not duplicated: {merged}")
+
+
+# ---------------------------------------------------------------------------
+# Deterministic entry order (proof_common RULE-21)
+#
+# One case per plugin. Each runs a fixture of three marked tests whose ids are
+# chosen so ordinal and numeric order disagree (`PROOF-10` sorts before
+# `PROOF-2`), then runs the same three records in reverse source order in a
+# fresh project, and asserts the two written files are byte-identical and
+# ordered by (id, test_file, test_name). The shell harness's case lives in
+# dev/test_proof_plugins.sh, beside that plugin's other fixtures.
+# ---------------------------------------------------------------------------
+
+# (proof id, rule id, test-name stem). The pairing is fixed, so the reversed run
+# writes exactly the same three records and only their collection order differs.
+_ORDER_CASES = (
+    ('PROOF-10', 'RULE-1', 'ten'),
+    ('PROOF-2', 'RULE-2', 'two'),
+    ('PROOF-1', 'RULE-3', 'one'),
+)
+
+# An entry left by a test file the run does not execute, so the RULE-4 merge
+# keeps it. Its id sorts between the run's own ids, so a writer that sorted only
+# its fresh entries and appended them after the kept one would leave PROOF-11
+# first and fail here.
+_KEPT_SIBLING = 'kept_sibling.txt'
+_KEPT_ENTRY = {'feature': 'feat', 'id': 'PROOF-11', 'rule': 'RULE-9',
+               'test_file': _KEPT_SIBLING, 'test_name': 'kept_by_the_merge',
+               'status': 'pass', 'tier': 'unit'}
+
+# Ordinal: 'PROOF-1' is a prefix of 'PROOF-10', and '0' < '1' < '2'. Numeric
+# order would read PROOF-1, PROOF-2, PROOF-10, PROOF-11 instead.
+_ORDINAL_IDS = ['PROOF-1', 'PROOF-10', 'PROOF-11', 'PROOF-2']
+# The same order without the kept entry, for the one writer whose merge cannot see
+# it (see `_two_runs`).
+_ORDINAL_IDS_NO_KEPT = ['PROOF-1', 'PROOF-10', 'PROOF-2']
+
+
+def _seed_kept_entry(root, spec_dir):
+    """Put one entry from a test file this run does not execute into the proof
+    file, and make that path resolve so RULE-11 does not reap it."""
+    (root / _KEPT_SIBLING).write_text('a path that resolves, so the merge keeps the entry\n')
+    (spec_dir / 'feat.proofs-unit.json').write_text(
+        json.dumps({'tier': 'unit', 'proofs': [dict(_KEPT_ENTRY)]}, indent=2) + '\n')
+
+
+def _assert_stable_order(first, second, plugin, expected_ids=_ORDINAL_IDS):
+    """The two runs wrote the same bytes, in ordinal (id, test_file, test_name)
+    order rather than the order either run collected its tests in."""
+    a = first.read_bytes()
+    b = second.read_bytes()
+    assert a == b, (
+        f"{plugin} wrote different bytes for the same records, so the "
+        f"collection order reached the file:\n--- forward ---\n"
+        f"{a.decode()}\n--- reversed ---\n{b.decode()}")
+    proofs = json.loads(a.decode())['proofs']
+    ids = [e['id'] for e in proofs]
+    assert ids == expected_ids, (
+        f"{plugin} must write entries in ordinal (id, test_file, test_name) "
+        f"order {expected_ids}, got {ids}")
+    keys = [(e['id'], e['test_file'], e['test_name']) for e in proofs]
+    assert keys == sorted(keys), f"{plugin} order is not the full triple: {keys}"
+
+
+class TestDeterministicProofEntryOrder:
+    """proof_common RULE-21, one case per plugin on the real writer."""
+
+    def _two_runs(self, tmp_path, driver, sub='a', seed=True):
+        """Drive `driver` twice in two fresh projects, the second with the three
+        markers declared in reverse source order; return both written files.
+
+        `seed=False` for the .NET logger alone: it runs inside the test host,
+        whose working directory is the test output folder, so RULE-11's existence
+        check never resolves a project-relative path and the kept entry is reaped
+        before the sort can place it. That degradation is the documented one and
+        belongs to RULE-11, not here; the three records the run wrote still carry
+        the order this proof is about.
+        """
+        written = []
+        for name, cases in (('forward', _ORDER_CASES),
+                            ('reversed', tuple(reversed(_ORDER_CASES)))):
+            root = tmp_path / name
+            spec_dir = _spec(root, 'feat', sub)
+            if seed:
+                _seed_kept_entry(root, spec_dir)
+            driver(root, cases)
+            written.append(spec_dir / 'feat.proofs-unit.json')
+        return written
+
+    # ----- pytest ----------------------------------------------------------
+
+    def _run_pytest(self, root, cases):
+        src = ['import pytest\n']
+        for proof_id, rule_id, stem in cases:
+            src.append(f'@pytest.mark.proof("feat", "{proof_id}", "{rule_id}")\n')
+            src.append(f'def test_{stem}(): assert True\n')
+        (root / 'test_feat.py').write_text(''.join(src))
+        TestPytestPlatformScoping()._run(root, 'test_feat.py', None)
+
+    @pytest.mark.proof("proof_common", "PROOF-27", "RULE-21", tier="integration")
+    def test_pytest_entry_order_is_ordinal_and_stable(self, tmp_path):
+        first, second = self._two_runs(tmp_path, self._run_pytest)
+        _assert_stable_order(first, second, 'pytest_purlin')
+
+    # ----- jest ------------------------------------------------------------
+
+    def _run_jest(self, root, cases):
+        glob_dir = root / 'node_modules' / 'glob'
+        glob_dir.mkdir(parents=True, exist_ok=True)
+        (glob_dir / 'package.json').write_text(
+            '{"name":"glob","version":"0.0.0","main":"index.js"}')
+        (glob_dir / 'index.js').write_text(_GLOB_SHIM)
+        shutil.copy(os.path.join(PROOF_SCRIPTS, 'jest_purlin.js'),
+                    str(root / 'jest_purlin.js'))
+        (root / 'tests').mkdir(exist_ok=True)
+        target = root / 'tests' / 'feat.test.js'
+        target.write_text('// fixture\n')
+        results = ''.join(
+            '  { title: "%s [proof:feat:%s:%s]", status: "passed" },\n'
+            % (stem, proof_id, rule_id) for proof_id, rule_id, stem in cases)
+        harness = root / 'harness.cjs'
+        harness.write_text(
+            'const Reporter = require("./jest_purlin.js");\n'
+            'const r = new Reporter({ rootDir: ' + json.dumps(str(root)) + ' }, {});\n'
+            'r.onTestResult(null, { testFilePath: ' + json.dumps(str(target))
+            + ', testResults: [\n' + results + ']});\n'
+            'r.onRunComplete();\n')
+        proc = subprocess.run(['node', str(harness)], capture_output=True, text=True,
+                              cwd=str(root), env=_env(None))
+        assert proc.returncode == 0, f"jest harness failed:\n{proc.stdout}\n{proc.stderr}"
+
+    @pytest.mark.skipif(not shutil.which('node'), reason='node not available')
+    @pytest.mark.proof("proof_common", "PROOF-27", "RULE-21", tier="integration")
+    def test_jest_entry_order_is_ordinal_and_stable(self, tmp_path):
+        first, second = self._two_runs(tmp_path, self._run_jest)
+        _assert_stable_order(first, second, 'jest_purlin')
+
+    # ----- vitest ----------------------------------------------------------
+
+    def _run_vitest(self, root, cases):
+        (root / 'tests').mkdir(exist_ok=True)
+        (root / 'tests' / 'feat.test.ts').write_text('// fixture\n')
+        tasks = ''.join(
+            '  { type: "test", name: "%s [proof:feat:%s:%s:unit]",'
+            ' result: { state: "pass" } },\n'
+            % (stem, proof_id, rule_id) for proof_id, rule_id, stem in cases)
+        files_js = ('[{ type: "suite", filepath: '
+                    + json.dumps(str(root / 'tests' / 'feat.test.ts'))
+                    + ', tasks: [\n' + tasks + ']}]')
+        TestTypeScriptProofPlugin()._drive_reporter(root, files_js, env=_env(None))
+
+    @pytest.mark.skipif(not _node_can_run_ts(),
+                        reason='node with a TS loader (tsc or type-stripping) not available')
+    @pytest.mark.proof("proof_common", "PROOF-27", "RULE-21", tier="integration")
+    def test_vitest_entry_order_is_ordinal_and_stable(self, tmp_path):
+        first, second = self._two_runs(tmp_path, self._run_vitest)
+        _assert_stable_order(first, second, 'vitest_purlin')
+
+    # ----- C ---------------------------------------------------------------
+
+    def _run_c(self, root, cases):
+        shutil.copy(os.path.join(PROOF_SCRIPTS, 'c_purlin.h'), str(root))
+        (root / 'tests').mkdir(exist_ok=True)
+        calls = ''.join(
+            '  purlin_proof("feat", "%s", "%s", 1, "%s", "tests/t.c", "unit");\n'
+            % (proof_id, rule_id, stem) for proof_id, rule_id, stem in cases)
+        src = root / 't.c'
+        src.write_text('#include "c_purlin.h"\nint main(void) {\n' + calls
+                       + '  purlin_proof_finish();\n  return 0;\n}\n')
+        binary = root / 't'
+        cc = subprocess.run(['gcc', '-o', str(binary), str(src), '-I', str(root)],
+                            capture_output=True, text=True)
+        assert cc.returncode == 0, cc.stderr
+        run = subprocess.run([str(binary)], capture_output=True, text=True)
+        assert run.returncode == 0, run.stderr
+        emit = subprocess.run([sys.executable, os.path.join(PROOF_SCRIPTS, 'c_purlin_emit.py')],
+                              input=run.stdout, capture_output=True, text=True,
+                              cwd=str(root), env=_env(None))
+        assert emit.returncode == 0, f"{emit.stdout}\n{emit.stderr}"
+
+    @pytest.mark.skipif(not shutil.which('gcc'), reason='gcc not available')
+    @pytest.mark.proof("proof_common", "PROOF-27", "RULE-21", tier="integration")
+    def test_c_entry_order_is_ordinal_and_stable(self, tmp_path):
+        first, second = self._two_runs(tmp_path, self._run_c)
+        _assert_stable_order(first, second, 'c_purlin')
+
+    # ----- PHP -------------------------------------------------------------
+
+    def _run_php(self, root, cases):
+        (root / 'tests').mkdir(exist_ok=True)
+        body = ''.join(
+            '/** @purlin feat %s %s unit */\nfunction test_%s() { }\n'
+            % (proof_id, rule_id, stem) for proof_id, rule_id, stem in cases)
+        (root / 'tests' / 'FeatTest.php').write_text('<?php\n' + body)
+        proc = subprocess.run(
+            ['php', os.path.join(PROOF_SCRIPTS, 'phpunit_purlin.php'), 'tests/FeatTest.php'],
+            capture_output=True, text=True, cwd=str(root), env=_env(None))
+        assert proc.returncode == 0, f"{proc.stdout}\n{proc.stderr}"
+
+    @pytest.mark.skipif(not shutil.which('php'), reason='php not available')
+    @pytest.mark.proof("proof_common", "PROOF-27", "RULE-21", tier="integration")
+    def test_php_entry_order_is_ordinal_and_stable(self, tmp_path):
+        first, second = self._two_runs(tmp_path, self._run_php)
+        _assert_stable_order(first, second, 'phpunit_purlin')
+
+    # ----- SQL -------------------------------------------------------------
+
+    def _run_sql(self, root, cases):
+        (root / 'tests').mkdir(exist_ok=True)
+        body = ''.join(
+            "-- @purlin feat %s %s unit\n-- Test: %s\nSELECT 'PASS';\n"
+            % (proof_id, rule_id, stem) for proof_id, rule_id, stem in cases)
+        (root / 'tests' / 'feat.sql').write_text(body)
+        proc = subprocess.run(
+            ['bash', os.path.join(PROOF_SCRIPTS, 'sql_purlin.sh'), 'tests/feat.sql'],
+            capture_output=True, text=True, cwd=str(root), env=_env(None))
+        assert proc.returncode == 0, f"{proc.stdout}\n{proc.stderr}"
+
+    @pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
+    @pytest.mark.proof("proof_common", "PROOF-27", "RULE-21", tier="integration")
+    def test_sql_entry_order_is_ordinal_and_stable(self, tmp_path):
+        first, second = self._two_runs(tmp_path, self._run_sql)
+        _assert_stable_order(first, second, 'sql_purlin')
+
+    # ----- xunit -----------------------------------------------------------
+
+    def _run_xunit(self, root, cases):
+        (root / 'logger').mkdir()
+        shutil.copy(_XUNIT_LOGGER_SRC, str(root / 'logger' / 'PurlinProofLogger.cs'))
+        (root / 'logger' / 'logger.csproj').write_text(_LOGGER_CSPROJ)
+        (root / 'tests').mkdir()
+        (root / 'tests' / 'tests.csproj').write_text(_TEST_CSPROJ)
+        facts = ''.join(
+            '    [Fact][Trait("PurlinProof","feat:%s:%s:unit")]\n'
+            '    public void %s() { Assert.True(true); }\n'
+            % (proof_id, rule_id, stem.capitalize())
+            for proof_id, rule_id, stem in cases)
+        (root / 'tests' / 'Tests.cs').write_text(
+            'using Xunit;\nnamespace Svc.Tests {\n  public class OrderTests {\n'
+            + facts + '  }\n}\n')
+        env = _env(None)
+        env.update(DOTNET_CLI_TELEMETRY_OPTOUT='1', DOTNET_NOLOGO='1')
+        proc = subprocess.run(
+            ['dotnet', 'test', 'tests/tests.csproj', '--logger', 'purlin',
+             '--', 'RunConfiguration.CollectSourceInformation=true'],
+            cwd=str(root), capture_output=True, text=True, env=env)
+        assert proc.returncode == 0, f"{proc.stdout}\n{proc.stderr}"
+
+    @pytest.mark.skipif(not shutil.which('dotnet'), reason='dotnet SDK not available')
+    @pytest.mark.proof("proof_common", "PROOF-27", "RULE-21", tier="integration")
+    def test_xunit_entry_order_is_ordinal_and_stable(self, tmp_path):
+        first, second = self._two_runs(tmp_path, self._run_xunit, sub='svc', seed=False)
+        _assert_stable_order(first, second, 'xunit_purlin', _ORDINAL_IDS_NO_KEPT)

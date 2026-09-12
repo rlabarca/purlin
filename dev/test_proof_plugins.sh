@@ -791,6 +791,69 @@ assert m['skipped_proofs'] == [{'feature': 'feat', 'id': 'PROOF-9'}], m
 }
 run "proof_common" "PROOF-25" "RULE-19" "shell: run marker written, second run merged" test_shell_run_marker
 
+# proof_common PROOF-27 (RULE-21): the shell harness writes each file's records in
+# (id, test_file, test_name) ordinal order, after the merge, so two runs of the same
+# three markers in opposite source order write byte-identical files. The ids are
+# chosen so ordinal and numeric order disagree: PROOF-1 < PROOF-10 < PROOF-11 <
+# PROOF-2 by characters, 1 < 2 < 10 < 11 by value.
+test_shell_entry_order() {
+  local d=$(mktemp -d)
+  local one two
+  for one in forward reversed; do
+    mkdir -p "$d/$one/specs/a"
+    echo -e "# Feature: feat\n\n## Rules\n- RULE-1: X" > "$d/$one/specs/a/feat.md"
+    # An entry a test file this run does not execute left behind; its path resolves,
+    # so the merge keeps it, and its id must land third once the merged list is sorted.
+    echo 'kept' > "$d/$one/kept_sibling.txt"
+    cat > "$d/$one/specs/a/feat.proofs-unit.json" << 'JSON'
+{
+  "tier": "unit",
+  "proofs": [
+    {
+      "feature": "feat",
+      "id": "PROOF-11",
+      "rule": "RULE-9",
+      "test_file": "kept_sibling.txt",
+      "test_name": "kept_by_the_merge",
+      "status": "pass",
+      "tier": "unit"
+    }
+  ]
+}
+JSON
+  done
+  {
+    printf 'source "%s"\n' "$SHELL_HARNESS"
+    printf 'purlin_proof feat PROOF-10 RULE-1 pass ten\n'
+    printf 'purlin_proof feat PROOF-2 RULE-2 pass two\n'
+    printf 'purlin_proof feat PROOF-1 RULE-3 pass one\n'
+    printf 'purlin_proof_finish\n'
+  } > "$d/forward/t.sh"
+  {
+    printf 'source "%s"\n' "$SHELL_HARNESS"
+    printf 'purlin_proof feat PROOF-1 RULE-3 pass one\n'
+    printf 'purlin_proof feat PROOF-2 RULE-2 pass two\n'
+    printf 'purlin_proof feat PROOF-10 RULE-1 pass ten\n'
+    printf 'purlin_proof_finish\n'
+  } > "$d/reversed/t.sh"
+  (cd "$d/forward" && bash t.sh) >/dev/null 2>&1
+  (cd "$d/reversed" && bash t.sh) >/dev/null 2>&1
+  python3 -c "
+import json
+a = open('$d/forward/specs/a/feat.proofs-unit.json', 'rb').read()
+b = open('$d/reversed/specs/a/feat.proofs-unit.json', 'rb').read()
+assert a == b, 'the two runs wrote different bytes:\n' + a.decode() + '\n---\n' + b.decode()
+proofs = json.loads(a.decode())['proofs']
+ids = [e['id'] for e in proofs]
+want = ['PROOF-1', 'PROOF-10', 'PROOF-11', 'PROOF-2']
+assert ids == want, 'shell_purlin must write ordinal order %r, got %r' % (want, ids)
+keys = [(e['id'], e['test_file'], e['test_name']) for e in proofs]
+assert keys == sorted(keys), keys
+"
+  local rc=$?; rm -rf "$d"; return $rc
+}
+run "proof_common" "PROOF-27" "RULE-21" "shell: entries written in ordinal (id, test_file, test_name) order" test_shell_entry_order
+
 # Emit proof files
 cd "$PROJECT_ROOT"
 purlin_proof_finish

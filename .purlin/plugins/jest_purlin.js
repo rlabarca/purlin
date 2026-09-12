@@ -86,6 +86,20 @@ function runMarkerCommit(root) {
   }
 }
 
+// Sort a proof file's entries by (id, test_file, test_name) under plain ordinal
+// string comparison (proof_common RULE-21), applied after the merge and right
+// before serialization, so two runs of the same tests in any collection order
+// write byte-identical files.
+function sortProofEntries(entries) {
+  const ordinal = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+  return entries.slice().sort(
+    (x, y) =>
+      ordinal(x.id ?? "", y.id ?? "") ||
+      ordinal(x.test_file ?? "", y.test_file ?? "") ||
+      ordinal(x.test_name ?? "", y.test_name ?? "")
+  );
+}
+
 // Union of two skipped_proofs lists keyed by (feature, id, test_file,
 // test_name) (proof_common RULE-20). An entry already in the marker wins, so a
 // plugin that ran earlier at this commit keeps the reason it observed.
@@ -301,9 +315,12 @@ class PurlinProofReporter {
         );
       });
 
+      // RULE-21: sorted by (id, test_file, test_name), ordinal, after the
+      // merge, so the collection order never reaches the file.
+      const ordered = sortProofEntries([...kept, ...newEntries]);
       const payload = platform
-        ? { tier, platform, proofs: [...kept, ...newEntries] }
-        : { tier, proofs: [...kept, ...newEntries] };
+        ? { tier, platform, proofs: ordered }
+        : { tier, proofs: ordered };
 
       // Atomic write: tmp + rename
       const tmpPath = filePath + ".tmp";

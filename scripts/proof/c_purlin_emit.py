@@ -115,6 +115,17 @@ def _write_run_marker(root, sweep, test_files, passed, failed, skipped):
     return marker
 
 
+def _entry_order(entry):
+    """The sort key of a proof file's entries (proof_common RULE-21).
+
+    `(id, test_file, test_name)` under plain ordinal string comparison, applied
+    after the merge and right before serialization, so two runs of the same
+    tests in any collection order write byte-identical files.
+    """
+    return (entry.get("id") or "", entry.get("test_file") or "",
+            entry.get("test_name") or "")
+
+
 def main():
     data = json.load(sys.stdin)
     proofs_raw = data.get("proofs", [])
@@ -183,7 +194,9 @@ def main():
         payload = {"tier": tier}
         if plat is not None:
             payload["platform"] = plat
-        payload["proofs"] = kept + new_entries
+        # RULE-21: sorted by (id, test_file, test_name), ordinal, after the
+        # merge, so the collection order never reaches the file.
+        payload["proofs"] = sorted(kept + new_entries, key=_entry_order)
 
         tmp_path = path + ".tmp"
         with open(tmp_path, "w") as f:

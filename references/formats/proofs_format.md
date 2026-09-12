@@ -112,7 +112,10 @@ When proof plugins write a proof file, they:
    executed in this run, or the run skipped the test the entry belongs to and did not write
    that entry afresh.
 3. Append the new entries from the current test run.
-4. Write the merged result.
+4. Sort the merged entries by `(id, test_file, test_name)` under plain ordinal string
+   comparison, so `PROOF-1` precedes `PROOF-10` and `PROOF-10` precedes `PROOF-2`, and two runs
+   of the same tests in any collection order write byte-identical files.
+5. Write the merged result.
 
 ```python
 keep(e) = e["feature"] != feature
