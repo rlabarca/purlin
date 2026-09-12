@@ -1,0 +1,13 @@
+graph TD
+    start["purlin:drift pm"] --> items{"ACTION ITEMS?"}
+    items -- spec drift --> edit["purlin:spec feature"]
+    items -- assumed values --> edit
+    items -- missing spec --> new["purlin:spec new_feature"]
+    items -- none --> done["Done"]
+    edit --> design["purlin:audit --design<br/>grade the proof descriptions"]
+    new --> design
+    design -->|"LOOSE / UNPROVABLE"| edit
+    design -- PROVABLE --> approve{"Approve delta?"}
+    approve -- edit --> edit
+    approve -- yes --> commit["git commit"]
+    commit --> done

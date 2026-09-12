@@ -30,6 +30,7 @@ dev/external-refs/
 *.log
 *.pid
 *.mmd
+!assets/src/*.mmd
 *.png
 !docs/images/*.png
 *.jpeg

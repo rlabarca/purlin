@@ -1,0 +1,15 @@
+graph LR
+    drift["purlin:drift"] --> spec["purlin:spec"]
+    spec --> design["purlin:audit --design<br/>is the claim provable?"]
+    design --> build["build + purlin:test"]
+    build -->|"@on(platform)"| runner["CI runner<br/>one dispatch per platform"]
+    runner --> scoped["platform-scoped proofs<br/>feature.proofs-tier@platform.json"]
+    scoped -->|"proved remotely"| build
+    build --> verify["purlin:verify"]
+    verify -- fail --> build
+    verify -- pass --> hook["pre-push hook"]
+    hook --> remote["Remote repo"]
+    remote --> ci["CI Gate (optional)"]
+    ci -- pass --> ship["Ship"]
+    ci -- gaps --> drift
+    design -. LOOSE or UNPROVABLE .-> spec

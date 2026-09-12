@@ -1,0 +1,17 @@
+graph TD
+    start["purlin:drift eng"] --> items{"ACTION ITEMS?"}
+    items -- failing tests --> fix["fix code or test"]
+    items -- unproved rules --> build["build feature"]
+    items -- missing spec --> spec["purlin:spec feature"]
+    items -- none --> done["Done"]
+    spec --> build
+    fix --> test["purlin:unit-test"]
+    build --> test
+    test -->|"@on(platform)"| runner["CI runner<br/>platform-scoped proofs"]
+    runner -->|"proved remotely"| test
+    test --> audit["purlin:audit<br/>Proof Integrity"]
+    audit -->|"HOLLOW / WEAK"| fix
+    audit --> verify["purlin:verify"]
+    verify -- gaps --> items
+    verify --> ready["READY"]
+    ready --> done

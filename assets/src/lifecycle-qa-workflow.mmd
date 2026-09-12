@@ -1,0 +1,14 @@
+graph TD
+    start["purlin:drift qa"] --> items{"ACTION ITEMS?"}
+    items -- stale manual proofs --> manual["purlin:verify --manual"]
+    items -- coverage gaps --> test["purlin:unit-test"]
+    items -- none --> done["Done"]
+    manual --> status["purlin:status"]
+    test -->|"@on(platform)"| runner["CI runner<br/>platform-scoped proofs"]
+    runner -->|"proved remotely"| test
+    test --> status
+    status --> audit["purlin:audit<br/>Proof Design + Proof Integrity"]
+    audit --> verify["purlin:verify"]
+    verify -- gaps --> items
+    verify --> ready["all READY"]
+    ready --> done
