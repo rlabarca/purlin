@@ -5,7 +5,7 @@ graph TD
     items -- missing spec --> spec["purlin:spec feature"]
     items -- none --> done["Done"]
     spec --> build
-    fix --> test["purlin:unit-test"]
+    fix --> test["purlin:test"]
     build --> test
     test -->|"@on(platform)"| runner["CI runner<br/>platform-scoped proofs"]
     runner -->|"proved remotely"| test

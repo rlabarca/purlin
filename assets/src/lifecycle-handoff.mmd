@@ -3,7 +3,7 @@ graph TD
         a["purlin:spec (write rules)"] --> b["purlin:audit --design"]
     end
     subgraph Engineer
-        c["build + purlin:unit-test"] --> d["git push"]
+        c["build + purlin:test"] --> d["git push"]
     end
     subgraph QA
         e["purlin:test<br/>pushes and dispatches runners"] --> f["purlin:verify<br/>read only, issues receipts"]

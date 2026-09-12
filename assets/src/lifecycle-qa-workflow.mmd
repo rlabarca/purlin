@@ -1,7 +1,7 @@
 graph TD
     start["purlin:drift qa"] --> items{"ACTION ITEMS?"}
     items -- stale manual proofs --> manual["purlin:verify --manual"]
-    items -- coverage gaps --> test["purlin:unit-test"]
+    items -- coverage gaps --> test["purlin:test"]
     items -- none --> done["Done"]
     manual --> status["purlin:status"]
     test -->|"@on(platform)"| runner["CI runner<br/>platform-scoped proofs"]
