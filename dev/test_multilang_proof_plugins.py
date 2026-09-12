@@ -1101,7 +1101,7 @@ class TestXUnitProofPlugin:
 
 
 # ---------------------------------------------------------------------------
-# Platform-scoped proof files (proof_common RULE-5/15/16/17; proofs_format.md v5)
+# Platform-scoped proof files (proof_common RULE-5/15/16/17; proofs_format.md v6)
 #
 # One test per plugin per behaviour, each driving the real plugin:
 #   scoped:  PURLIN_PLATFORM=p1, one marker declaring on(p1) and one unmarked ->

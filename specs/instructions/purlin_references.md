@@ -2,9 +2,9 @@
 # Feature: purlin_references
 
 > Requires: schema_spec_format, schema_proof_format
-> Scope: references/spec_quality_guide.md, references/hard_gates.md, references/commit_conventions.md, references/purlin_commands.md, references/drift_criteria.md, references/audit_criteria.md, references/supported_frameworks.md, references/remote_verification.md, references/formats/spec_format.md, references/formats/proofs_format.md, references/formats/anchor_format.md, references/formats/receipt_format.md
+> Scope: references/spec_quality_guide.md, references/hard_gates.md, references/commit_conventions.md, references/purlin_commands.md, references/drift_criteria.md, references/audit_criteria.md, references/supported_frameworks.md, references/remote_verification.md, references/formats/spec_format.md, references/formats/proofs_format.md, references/formats/anchor_format.md, references/formats/receipt_format.md, references/proof_plugin_contract.md
 > Stack: markdown (reference documentation)
-> Description: Twelve reference documents that define Purlin's formats, conventions, and quality standards. These are the authoritative source that skills and agents reference, ensuring structural consistency across the framework.
+> Description: Thirteen reference documents that define Purlin's formats, conventions, and quality standards. These are the authoritative source that skills and agents reference, ensuring structural consistency across the framework.
 
 ## Rules
 
@@ -70,6 +70,34 @@
   belongs in a step, published through `$GITHUB_ENV` from the runner's own `$RUNNER_TEMP`, which
   is the same directory reached as an ordinary environment variable
 
+- RULE-30: `proof_plugin_contract.md` is the one checklist a proof plugin is written and audited
+  against, and its wiring list names every file a new framework has to be wired into: the plugin
+  file under `scripts/proof/`, the framework registry `supported_frameworks.md`, the scaffolder's
+  detectors and runner wiring in `scripts/init/scaffold.py`, the pre-push gate's known ids in
+  `scripts/hooks/pre_push_gate.py` and its runner arm in `scripts/hooks/pre-push.sh`, the init and
+  test skills, the marker sections of `docs/testing-workflow-guide.md` and
+  `references/formats/proofs_format.md`, the Pass 1 subsection of `audit_criteria.md` and the
+  checker dispatch in `scripts/audit/static_checks.py`, the per-plugin spec under `specs/proof/`,
+  the plugin test file, `dev/run_tests.sh`, and the five specs that pin those sites. Every path
+  the list names exists. A site the list omits is one a new language is wired into from memory or
+  not at all, which is how a framework ships selectable in one file and unknown to the hook that
+  runs it; a path the list names that does not exist is a checklist that outlived the tree it
+  describes and sends the next author to a file that moved
+- RULE-31: The contract's requirement section carries one row per `proof_common` rule, keyed by
+  the rule id, and the two sets are equal in both directions: every id a row cites exists in
+  `specs/_anchors/proof_common.md`, and every rule the anchor carries is cited by a row. The
+  contract is a reader's view of the anchor and never a second source of truth, so a rule added to
+  the anchor with no row is a requirement the checklist never mentions and a row citing an id the
+  anchor does not carry is a requirement nothing proves
+- RULE-32: `proofs_format.md` carries a `## Run marker` section for `.purlin/runtime/test_run.json`:
+  the nine top-level fields `proof_common` RULE-19 names (`at`, `commit`, `sweep`, `test_files`,
+  `passed`, `failed`, `skipped`, `ok`, `runs`), the RULE-20 `skipped_proofs` key with the shape of
+  one object, the merge rule (a run at the same commit merges into the existing marker, any other
+  commit starts a new one), and the temp-file-plus-single-replace write. The marker is part of
+  what a plugin writes, so a format file that documents only the proof files describes half the
+  contract, and a consumer who implements only that half issues receipts whose `evidence.test_run`
+  is null forever
+
 ## Proof
 
 - PROOF-1 (RULE-1): Grep `references/formats/spec_format.md` for `## Rules`, `## Proof`; verify both appear as required sections. Grep for `> Description:` in the metadata fields table. Grep for `RULE-N` pattern documentation
@@ -131,3 +159,26 @@
   `echo "PURLIN_PLUGIN_ROOT=$RUNNER_TEMP/purlin" >> "$GITHUB_ENV"`. Putting
   `PURLIN_PLUGIN_ROOT: ${{ runner.temp }}/purlin` back into the template's job `env` fails this
   proof naming `references/remote_verification.md` and the job `proofs` @unit
+
+- PROOF-30 (RULE-30): Split `references/proof_plugin_contract.md` on its `## ` headings, take the
+  body of the one section whose heading starts `B.`, and collect every backticked token carrying a
+  `/` and none of `<`, `>` or `*` (a template such as `proof_plugins_<framework>.md` names no
+  single file). Verify the fixed set of 19 wiring sites is a subset of the tokens collected, and
+  that every collected token resolves to an existing path under the project root, and that at
+  least 19 tokens were collected so the scan cannot pass on an empty section. Dropping
+  `scripts/hooks/pre_push_gate.py` from the checklist fails naming that path; leaving a path in the
+  list after moving the file fails the existence half naming it @unit
+- PROOF-31 (RULE-31): Take the `RULE-N` id from the first cell of every row of the contract's
+  section A table, and every id matching `^- RULE-N:` in `specs/_anchors/proof_common.md`. Verify
+  at least 25 anchor rules were read, that no anchor rule is missing a row, and that no row cites
+  an id the anchor does not carry. Changing a row's id to `RULE-99` fails naming it as cited but
+  absent from the anchor; adding a rule to the anchor with no row fails the other direction naming
+  the rule @unit
+- PROOF-32 (RULE-32): Verify `references/formats/proofs_format.md` opens with a `> Format-Version:`
+  of at least 6, split it on its `## ` headings and assert a `Run marker` section exists; verify
+  its body names `.purlin/runtime/test_run.json`, carries each of the nine RULE-19 field names as a
+  backticked token, documents `skipped_proofs` and gives one object the literal shape
+  `{feature, id, test_file, test_name, reason}`, states both halves of the merge rule, and states
+  that the marker is written through a temp file named for the writing process and replaced in one
+  operation. Renaming the section heading fails on the missing section; dropping a field from the
+  table fails naming that field @unit

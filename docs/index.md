@@ -64,6 +64,7 @@ See [references/purlin_commands.md](../references/purlin_commands.md) for the fu
 | [Spec Quality Guide](../references/spec_quality_guide.md) | How to write good rules, proofs, tiers, anchors, and FORBIDDEN patterns |
 | [Audit Criteria](../references/audit_criteria.md) | Both gauges: Proof Design (specs only) and Proof Integrity (Pass 1 structural, Pass 2 semantic) |
 | [Drift Criteria](../references/drift_criteria.md) | File classification, drift detection, config field ownership |
+| [Proof Plugin Contract](../references/proof_plugin_contract.md) | What a proof plugin must do, every file a new framework has to be wired into, and how to prove one |
 | [Generating Specs from Code](spec-from-code-guide.md) | Onboarding existing projects with `purlin:spec-from-code` |
 
 Key skills:

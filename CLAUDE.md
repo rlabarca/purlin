@@ -45,6 +45,7 @@ Each file has its own `> Format-Version: N` line — check the file directly for
 - `references/spec_quality_guide.md` — rule writing, tier assignment, failure diagnosis
 - `references/drift_criteria.md` — file classification, config field ownership, drift detection
 - `references/supported_frameworks.md` — test framework detection heuristics
+- `references/proof_plugin_contract.md` — the proof-plugin checklist: one row per `proof_common` rule, the ordered wiring list for a new language, and how to prove a plugin
 
 **When modifying a skill:** grep all other skills for the same concept. If you find duplicates, consolidate into the reference file and update all skills to point to it in the same commit.
 

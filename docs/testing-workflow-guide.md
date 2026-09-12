@@ -413,56 +413,109 @@ Purlin discovers proof files by globbing `specs/**/*.proofs-*.json`. If your plu
 
 ### Writing a custom plugin (Python)
 
-A proof plugin has one job: read test metadata during execution, write a JSON file after the run.
+The full contract is [references/proof_plugin_contract.md](../references/proof_plugin_contract.md):
+one row per rule of `specs/_anchors/proof_common.md`, the ordered list of files a new language
+has to touch, and which test class proves which row. Read it before writing a plugin. What
+follows is the smallest sample that satisfies the parts the contract calls out most often, not a
+second contract.
 
 ```python
 """Minimal proof plugin for a custom test framework.
 
-Collects proof results and writes .proofs-<tier>.json files
-next to specs. Merges on (feature, tier, test_file) so other
-features' proofs, and this feature's proofs from test files
-this run did not execute, are preserved.
+Collects proof results and writes .proofs-<tier>.json files next to specs.
+Everything is rooted at the project root, not the working directory, because
+the framework picks the working directory and the developer does not.
 """
 
-def write_proofs(results, tier="unit"):
+import json
+import os
+
+
+def _project_root(start=None):
+    """Nearest ancestor holding specs/ or .purlin/, else the start directory."""
+    cur = os.path.abspath(start or os.getcwd())
+    while True:
+        if (os.path.isdir(os.path.join(cur, "specs"))
+                or os.path.isdir(os.path.join(cur, ".purlin"))):
+            return cur
+        parent = os.path.dirname(cur)
+        if parent == cur:
+            return os.path.abspath(start or os.getcwd())
+        cur = parent
+
+
+def _spec_dirs(root):
+    """{feature stem: spec directory} over the project's own specs/ tree."""
+    found = {}
+    for dirpath, _dirnames, filenames in os.walk(os.path.join(root, "specs")):
+        for name in filenames:
+            if name.endswith(".md"):
+                found[os.path.splitext(name)[0]] = dirpath
+    return found
+
+
+def write_proofs(results, tier="unit", executed_files=()):
     """Write proof results to JSON files next to their specs.
 
     Args:
         results: list of (feature, proof_id, rule_id, test_file, test_name, passed)
+                 with test_file already relative to the project root, / separated
         tier: proof tier name (unit, integration, e2e)
+        executed_files: the test files this run actually executed
     """
-    import json, os, glob
-
-    spec_dirs = {}
-    for spec in glob.glob("specs/**/*.md", recursive=True):
-        stem = os.path.splitext(os.path.basename(spec))[0]
-        spec_dirs[stem] = os.path.dirname(spec)
+    root = _project_root()
+    spec_dirs = _spec_dirs(root)
+    executed = set(executed_files)
 
     by_feature = {}
     for feature, proof_id, rule_id, test_file, test_name, passed in results:
         by_feature.setdefault(feature, []).append({
             "feature": feature, "id": proof_id, "rule": rule_id,
             "test_file": test_file, "test_name": test_name,
-            "status": "pass" if passed else "fail", "tier": tier
+            "status": "pass" if passed else "fail", "tier": tier,
         })
 
     for feature, new_entries in by_feature.items():
-        spec_dir = spec_dirs.get(feature, "specs")
-        path = os.path.join(spec_dir, f"{feature}.proofs-{tier}.json")
+        spec_dir = spec_dirs.get(feature, os.path.join(root, "specs"))
+        path = os.path.join(spec_dir, "%s.proofs-%s.json" % (feature, tier))
         existing = []
         if os.path.exists(path):
             with open(path) as f:
                 existing = json.load(f).get("proofs", [])
-        kept = [e for e in existing if e["feature"] != feature]
-        with open(path, "w") as f:
-            json.dump({"tier": tier, "proofs": kept + new_entries}, f, indent=2)
+
+        # Another feature's entry always survives. This feature's survives only
+        # while its test file is still on disk and this run did not execute it.
+        kept = [
+            e for e in existing
+            if e["feature"] != feature
+            or (os.path.exists(os.path.join(root, e["test_file"]))
+                and e["test_file"] not in executed)
+        ]
+
+        merged = sorted(kept + new_entries,
+                        key=lambda e: (e["id"], e["test_file"], e["test_name"]))
+
+        # One full temp file named for this process, then one replace. Never a
+        # delete followed by a move: a reader must see the old file or the new.
+        tmp = "%s.%d.tmp" % (path, os.getpid())
+        with open(tmp, "w") as f:
+            json.dump({"tier": tier, "proofs": merged}, f, indent=2)
+        os.replace(tmp, path)
 ```
 
-Requirements:
-1. Read proof metadata from tests (annotations, decorators, tags)
-2. Write-scoped overwrite: replace this feature's entries from the test files this run executed, reap entries whose test file no longer exists, preserve everything else
-3. Write files next to specs: `specs/<category>/<feature>.proofs-<tier>.json`
-4. Handle parameterized tests (one entry per proof, pass only if ALL variants pass)
+What the sample is showing, and what the contract requires of a real plugin:
+
+1. Read proof metadata from tests (annotations, decorators, tags).
+2. Root everything at the project root: the spec scan, the `specs/` fallback, the existence
+   check above, and the run marker (`proof_common` RULE-22).
+3. Keep write-scoped overwrite honest: another feature's entries survive, and so do this
+   feature's entries from test files this run did not execute. A framework that reports skips
+   needs the four-clause filter in the contract, not the two-clause one above.
+4. Record `test_file` relative to that root with `/` separators on every OS (RULE-15, RULE-23).
+5. Write through a temp file carrying this process's id and replace in one operation (RULE-24).
+6. Write or merge the run marker `.purlin/runtime/test_run.json` (RULE-19), which is what lets a
+   receipt name the run its evidence came from.
+7. Handle parameterized tests (one entry per proof, pass only if ALL variants pass).
 
 Full JSON schema: [references/formats/proofs_format.md](../references/formats/proofs_format.md)
 

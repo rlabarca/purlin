@@ -1,4 +1,4 @@
-> Format-Version: 5
+> Format-Version: 6
 
 # Proof File Format
 
@@ -219,6 +219,104 @@ explicit call, so a script that never called it cannot be told apart from one th
 A proof the spec declares with `@on(...)` and no scoped result for a named platform is reported
 as `AWAITING RUNNER` rather than `NO PROOF`. It does not count against coverage and does not
 block a receipt; a receipt issued while one is outstanding records it as platform-partial.
+
+## Run marker
+
+A run leaves one more record beside the proof files: the run marker
+`.purlin/runtime/test_run.json`. Every plugin writes or merges it at the moment it writes its
+proof files (`proof_common` RULE-19), so a receipt issued in a project that has no sweep script
+still names the run its evidence came from. Without it `evidence.test_run` in a receipt is
+`null`, and the receipt says only that some file on disk holds a `pass`.
+
+```json
+{
+  "at": "2026-03-31T14:02:11Z",
+  "commit": "9f1c0a7e2b5d4c8091a3f6e7d2b1c4a5e6f70819",
+  "sweep": "pytest_purlin",
+  "test_files": ["tests/test_login.py"],
+  "passed": 2,
+  "failed": 0,
+  "skipped": 1,
+  "ok": true,
+  "runs": [
+    {
+      "plugin": "pytest_purlin",
+      "at": "2026-03-31T14:02:11Z",
+      "test_files": ["tests/test_login.py"],
+      "passed": 2,
+      "failed": 0,
+      "skipped": 1
+    }
+  ],
+  "skipped_proofs": [
+    {
+      "feature": "login",
+      "id": "PROOF-4",
+      "test_file": "tests/test_login.py",
+      "test_name": "test_native_lock",
+      "reason": "tool not installed"
+    }
+  ]
+}
+```
+
+### Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `at` | string | When the run finished, ISO 8601 in UTC. |
+| `commit` | string or null | `git rev-parse HEAD` in the project root; `null` outside a git work tree. |
+| `sweep` | string | The writer's name: `pytest_purlin`, `jest_purlin`, `vitest_purlin`, `shell_purlin`, `sql_purlin`, `c_purlin`, `phpunit_purlin`, `xunit_purlin`, or the sweep script's own name, so a reader can tell a plugin marker from a sweep marker. |
+| `test_files` | array | The project-relative, forward-slash files the run collected proofs from. |
+| `passed` | number | Marked results this run observed as passing. |
+| `failed` | number | Marked results this run observed as failing. |
+| `skipped` | number | Marked tests this run skipped. |
+| `ok` | boolean | True only while every merged run had no failure. |
+| `runs` | array | One `{plugin, at, test_files, passed, failed, skipped}` object per contributing run. |
+| `skipped_proofs` | array | One `{feature, id, test_file, test_name, reason}` object per marked test the run skipped (`proof_common` RULE-20). Written only when the union is non-empty, so a run that skipped nothing adds no key. |
+
+`reason` is the message the framework carried and is never invented. pytest's skip message and
+the .NET test platform's skip message are real strings; jest reports a `skipped`, `pending` or
+`todo` status with no message and vitest a task with no terminal state and no message, so both
+write `null`. A plugin whose framework reports no skip at all (shell, sql, phpunit, c) writes no
+`skipped_proofs` entry, because a script that never called the marker cannot be told apart from
+one that skipped.
+
+`skipped_proofs` is what turns a kept entry into a stated one. The merge holds the committed
+entry of a skipped test in place, and this list is how a surface reading the marker can say the
+entry was inherited from the commit that last proved it rather than presenting it as evidence
+this run produced.
+
+### Merging
+
+A run whose `commit` equals an existing marker's `commit` is merged into it:
+
+- `test_files` unioned,
+- `passed`, `failed` and `skipped` summed,
+- the run appended to `runs`,
+- `ok` and-ed,
+- `skipped_proofs` unioned keyed by `(feature, id, test_file, test_name)`, the entry already in
+  the marker winning,
+- every other top-level field carried through untouched, so a field a later version of this
+  contract adds is never dropped by an older plugin.
+
+Any other commit starts a new marker, because a count carried across commits would describe two
+trees.
+
+A sweep script that watches whole suites merges by the same rule and owns the summary: it keeps
+`runs` and every field it does not write, and replaces `test_files`, the three counts and `ok`
+with its own, because it watched every suite the plugins inside it reported on. It carries
+`skipped_proofs` through untouched, because a sweep watches suites and cannot see which marked
+test inside one was skipped.
+
+The marker is written the same way a proof file is: in full to a temp file beside it whose name
+carries the writing process's own id, then one filesystem operation replacing the target. A
+reader sees one whole marker or the other, never a partial document, and two plugins writing one
+marker in the same run never collide on the temp name. A read that lands on unparsable JSON is
+retried before the writer gives up and starts a fresh marker.
+
+Nothing is written at all when the project root holds no `.purlin/` directory. That is not a
+Purlin project, and a plugin must not create one.
 
 ## Proof Markers by Framework
 

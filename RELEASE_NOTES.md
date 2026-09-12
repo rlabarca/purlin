@@ -25,7 +25,7 @@ shell suite counts as one).
   `platform` field at the top level and on every entry. The marker decides and the environment
   names: a marker with no declared platforms writes the agnostic file whatever `PURLIN_PLATFORM`
   says. All eight proof plugins implement the same semantics and all eight now write `test_file`
-  with forward slashes on every OS. `proofs_format.md` is at Format-Version 5.
+  with forward slashes on every OS. `proofs_format.md` is at Format-Version 6.
 
 - **Host detection and per-platform satisfaction.** `sync_status` detects the host, prints a
   `Platforms:` block naming what runs locally and what needs a runner, and reports each declared

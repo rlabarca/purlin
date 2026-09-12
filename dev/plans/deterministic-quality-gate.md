@@ -815,3 +815,94 @@ Decisions:
 
 Deferrals: none. No other file in `docs/`, `skills/` or `references/` enumerates the set of
 names the hook accepts, so nothing went stale with this edit.
+
+### B4
+
+`docs(purlin_references): the proof-plugin contract, and proofs_format Format-Version 6 with the
+run-marker section`
+
+Files touched:
+
+- `references/proof_plugin_contract.md` (new; no `Format-Version` line, dash free) with sections
+  A (one requirement row per `proof_common` RULE-1 to RULE-25, plus the two legitimate merge
+  shapes), B (the 19-step wiring list and the per-framework table of the eight shipped plugins),
+  C (the checker and extractor requirement, shell the documented no-extractor exception) and D
+  (which test class proves which row, and the per-plugin spec template)
+- `references/formats/proofs_format.md` (new `## Run marker` section: the nine RULE-19 fields,
+  `skipped_proofs` per RULE-20, the same-commit merge, the PID temp file and single replace;
+  `> Format-Version: 5` to `6`, structural)
+- `docs/testing-workflow-guide.md` ("Writing a custom plugin" now points at the contract and
+  carries a corrected sample: rooted per RULE-22, a `kept` filter that keeps other features and
+  unexecuted-but-existing files, a `(id, test_file, test_name)` sort, and a PID temp file
+  replaced in one operation)
+- `references/supported_frameworks.md` ("Adding More Frameworks" points at the contract and
+  names the tables as step 2 of its wiring list)
+- `docs/index.md` (resources row), `CLAUDE.md` (authoritative reference files bullet)
+- `specs/instructions/purlin_references.md` (`> Scope:` gains the new file, `> Description:`
+  Twelve to Thirteen, RULE-30 to RULE-32, PROOF-30 to PROOF-32)
+- `dev/test_plugin_contract.py` (new; the three proofs)
+- `dev/run_tests.sh` (the new file in the pytest block, which `dev/test_sweep_completeness.py`
+  parses)
+- `specs/instructions/purlin_references.proofs-unit.json` (3 new entries)
+- `RELEASE_NOTES.md`, `dev/test_multilang_proof_plugins.py` (the two in-tree citations of
+  `proofs_format.md` version 5, comment and prose only)
+
+Spec maxima left: `specs/instructions/purlin_references.md` RULE-32 / PROOF-32. No other spec
+touched. All three new proof descriptions grade PROVABLE under
+`static_checks.py --check-proof-design`, and Pass 1 grades all three backings `pass`.
+
+Test counts (whole files, before -> after, passed/skipped):
+
+- `dev/test_plugin_contract.py` 0/0 -> 3/0 (new)
+- `dev/test_purlin_references.py` 29/0 -> 29/0
+- `dev/test_purlin_docs.py` 16/0 -> 16/0
+- `dev/test_sweep_completeness.py` 1/0 -> 1/0
+- `dev/test_skill_specs.py` 141/0 -> 141/0
+- `dev/test_purlin_agent.py` 12/0 -> 12/0
+- `dev/test_schema_proof_format.py` 11/0 -> 11/0
+- together: 210 passed -> 213 passed, 0 skipped either way. Only
+  `purlin_references.proofs-unit.json` changed; every other feature's proof JSON came back
+  byte-identical.
+
+Mutations, `dev/test_plugin_contract.py` run whole each time, restored after each:
+
+1. Step 4's `` `scripts/hooks/pre_push_gate.py` `` replaced with the prose "the pre-push gate".
+   1 failed, 2 passed. PROOF-30: "AssertionError: the contract's wiring list does not name
+   ['scripts/hooks/pre_push_gate.py']. A framework is wired into that site from memory or not at
+   all, which is how a plugin ships half wired: selectable in one file and unknown to the hook
+   that runs it".
+2. The `RULE-13` requirement row's id changed to `RULE-99`. 1 failed, 2 passed. PROOF-31:
+   "AssertionError: proof_common carries ['RULE-13'] with no row in the contract's requirement
+   table. A rule the checklist does not mention is one a plugin author never reads" (the
+   citation half, which reports `RULE-99` as cited but absent, is reached once the coverage half
+   is satisfied).
+3. `## Run marker` renamed to `## The test run record` in `proofs_format.md`. 1 failed, 2 passed.
+   PROOF-32: "AssertionError: proofs_format.md must carry a `## Run marker` section: a consumer
+   reading only [... 'The test run record'] concludes a plugin writes proof files and nothing
+   else, and every receipt issued in that project records evidence.test_run as null".
+
+Decisions:
+
+- Section B's path check reads every backticked token in the section that carries a `/` and none
+  of `<`, `>` or `*`, rather than one table column. A template such as
+  `proof_plugins_<framework>.md` names no single file, and the filter keeps the per-framework
+  table's eight plugin paths inside the existence half for free.
+- The contract carries no `> Format-Version:` line and is not in `references/formats/`. Nothing
+  parses it, so a version on it would be a number nobody could act on, and a consumer pinning it
+  would be pinning prose.
+- `references/proof_plugin_contract.md` is written dash free but was not added to
+  `dev/test_purlin_docs.py`'s `DASH_FREE_REFERENCES`. That tuple is purlin_docs RULE-11's proof
+  scope, and widening another feature's proof is a change that belongs with that feature.
+
+Deferrals and adjacent findings:
+
+- Two in-tree citations of `proofs_format.md` version 5 were left alone because C1 owns both
+  files this session: `scripts/mcp/purlin_server.py:1193` ("proofs_format.md v5 the tier says
+  what kind of test a proof is") and `dev/test_report_data.py:48` ("proofs_format.md v5"). Both
+  are comments and neither changes behaviour; they should read v6.
+- `specs/instructions/purlin_references.md` RULE-2 and PROOF-2 still pin the three-part merge key
+  `(feature, tier, test_file)` while `proofs_format.md` and `proof_common` RULE-4 have carried the
+  four-part `(feature, tier, platform, test_file)` since the platform work. The proof passes
+  because the three-part string is still in the file, in the sentence explaining that within one
+  file the merge is unchanged. Correcting the rule is an amendment to a rule this commit does not
+  own a proof for.

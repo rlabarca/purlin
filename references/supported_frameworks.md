@@ -72,4 +72,8 @@ Community or custom plugins can be installed via:
 purlin:init --add-plugin <path or git URL>
 ```
 
-See the [Testing Workflow Guide](../docs/testing-workflow-guide.md#proof-plugins) for details on writing custom plugins.
+What a plugin has to do, and every file a new framework has to be named in before a project can
+select it, a hook can run it and the quality gate can grade it, is the checklist in
+[`proof_plugin_contract.md`](proof_plugin_contract.md). The tables above are step 2 of its
+wiring list, so a framework added here and nowhere else is half wired. A worked sample is in the
+[Testing Workflow Guide](../docs/testing-workflow-guide.md#proof-plugins).

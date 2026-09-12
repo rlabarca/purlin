@@ -210,6 +210,33 @@
     },
     {
       "feature": "purlin_references",
+      "id": "PROOF-30",
+      "rule": "RULE-30",
+      "test_file": "dev/test_plugin_contract.py",
+      "test_name": "test_wiring_list_names_every_site_and_every_path_exists",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-31",
+      "rule": "RULE-31",
+      "test_file": "dev/test_plugin_contract.py",
+      "test_name": "test_requirement_rows_and_anchor_rules_are_the_same_set",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-32",
+      "rule": "RULE-32",
+      "test_file": "dev/test_plugin_contract.py",
+      "test_name": "test_run_marker_section_names_the_rule_19_fields",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_references",
       "id": "PROOF-4",
       "rule": "RULE-4",
       "test_file": "dev/test_purlin_references.py",
