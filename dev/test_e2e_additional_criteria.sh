@@ -31,6 +31,21 @@ CRITERIA
   (cd "$repodir" && git init -q && git add -A && git commit -q -m "initial criteria")
 }
 
+# --- Helper: cache team criteria the way `purlin:init --sync-audit-criteria` does ---
+# The first line names the commit the file was read at. load_criteria compares it
+# to audit_criteria_pinned and refuses to grade anything when the two disagree,
+# so a plain `cp` here would be a project that cannot be audited at all.
+cache_criteria() {
+  local projdir="$1"
+  local srcfile="$2"
+  local sha="$3"
+  mkdir -p "$projdir/.purlin/cache"
+  {
+    echo "<!-- purlin-criteria-sha: $sha -->"
+    cat "$srcfile"
+  } > "$projdir/.purlin/cache/additional_criteria.md"
+}
+
 # --- Helper: create a minimal Purlin project ---
 create_test_project() {
   local projdir="$1"
@@ -40,13 +55,15 @@ create_test_project() {
   mkdir -p "$projdir/specs/auth"
 
   # Config
+  local pinned_sha="${3:-}"
   if [[ -n "$criteria_url" ]]; then
     cat > "$projdir/.purlin/config.json" <<CONF
 {
   "version": "0.9.0",
   "test_framework": "pytest",
   "spec_dir": "specs",
-  "audit_criteria": "$criteria_url"
+  "audit_criteria": "$criteria_url",
+  "audit_criteria_pinned": "$pinned_sha"
 }
 CONF
   else
@@ -87,10 +104,11 @@ echo "--- Phase A: Built-in criteria always active ---"
 TMPDIR_A=$(mktemp -d)
 CRITERIA_REPO_A=$(mktemp -d)
 create_criteria_repo "$CRITERIA_REPO_A"
-create_test_project "$TMPDIR_A" "file://$CRITERIA_REPO_A#team_criteria.md"
+SHA_A=$(cd "$CRITERIA_REPO_A" && git rev-parse HEAD)
+create_test_project "$TMPDIR_A" "file://$CRITERIA_REPO_A#team_criteria.md" "$SHA_A"
 
 # Cache the additional criteria
-cp "$CRITERIA_REPO_A/team_criteria.md" "$TMPDIR_A/.purlin/cache/additional_criteria.md"
+cache_criteria "$TMPDIR_A" "$CRITERIA_REPO_A/team_criteria.md" "$SHA_A"
 
 # Create a test file with assert True (should be HOLLOW by Pass 1 regardless of additional criteria)
 cat > "$TMPDIR_A/test_hollow.py" <<'PYTEST'
@@ -122,10 +140,11 @@ echo "--- Phase B: load_criteria() appends ---"
 TMPDIR_B=$(mktemp -d)
 CRITERIA_REPO_B=$(mktemp -d)
 create_criteria_repo "$CRITERIA_REPO_B"
-create_test_project "$TMPDIR_B" "file://$CRITERIA_REPO_B#team_criteria.md"
+SHA_B=$(cd "$CRITERIA_REPO_B" && git rev-parse HEAD)
+create_test_project "$TMPDIR_B" "file://$CRITERIA_REPO_B#team_criteria.md" "$SHA_B"
 
 # Cache the additional criteria
-cp "$CRITERIA_REPO_B/team_criteria.md" "$TMPDIR_B/.purlin/cache/additional_criteria.md"
+cache_criteria "$TMPDIR_B" "$CRITERIA_REPO_B/team_criteria.md" "$SHA_B"
 
 # Run --load-criteria
 combined=$(python3 "$STATIC_CHECKS" --load-criteria --project-root "$TMPDIR_B")
@@ -157,7 +176,17 @@ else
   echo "  FAIL: Source URL missing from separator header"
 fi
 
-if $phase_b_builtin && $phase_b_additional && $phase_b_source; then phase_b=true; else phase_b=false; fi
+# The pin header is provenance for the cache, not criteria. It must not reach
+# the LLM prompt, or an auditor would be grading against a comment.
+phase_b_no_header=false
+if ! echo "$combined" | grep -q "purlin-criteria-sha"; then
+  echo "  PASS: pin header stripped from the combined criteria"
+  phase_b_no_header=true
+else
+  echo "  FAIL: pin header leaked into the combined criteria"
+fi
+
+if $phase_b_builtin && $phase_b_additional && $phase_b_source && $phase_b_no_header; then phase_b=true; else phase_b=false; fi
 
 rm -rf "$TMPDIR_B" "$CRITERIA_REPO_B"
 
@@ -226,18 +255,10 @@ create_criteria_repo "$CRITERIA_REPO_D"
 # Get initial SHA
 initial_sha=$(cd "$CRITERIA_REPO_D" && git rev-parse HEAD)
 
-create_test_project "$TMPDIR_D" "file://$CRITERIA_REPO_D#team_criteria.md"
-# Set pinned SHA to initial
-python3 -c "
-import json, os
-p = os.path.join('$TMPDIR_D', '.purlin', 'config.json')
-with open(p) as f: c = json.load(f)
-c['audit_criteria_pinned'] = '$initial_sha'
-with open(p, 'w') as f: json.dump(c, f)
-"
+create_test_project "$TMPDIR_D" "file://$CRITERIA_REPO_D#team_criteria.md" "$initial_sha"
 
-# Cache the initial criteria
-cp "$CRITERIA_REPO_D/team_criteria.md" "$TMPDIR_D/.purlin/cache/additional_criteria.md"
+# Cache the initial criteria, pinned at the commit it was read at
+cache_criteria "$TMPDIR_D" "$CRITERIA_REPO_D/team_criteria.md" "$initial_sha"
 
 # Add a new commit to the criteria repo
 echo "- **No print() in tests**" >> "$CRITERIA_REPO_D/team_criteria.md"
@@ -321,19 +342,84 @@ rm -rf "$TMPDIR_E"
 # Record proofs
 # ================================================================
 echo ""
+# ================================================================
+# Phase F: a pin that does not match stops the load (negative case)
+# ================================================================
+echo "--- Phase F: pin mismatch and missing cache both stop the load ---"
+
+TMPDIR_F=$(mktemp -d)
+CRITERIA_REPO_F=$(mktemp -d)
+create_criteria_repo "$CRITERIA_REPO_F"
+SHA_F=$(cd "$CRITERIA_REPO_F" && git rev-parse HEAD)
+create_test_project "$TMPDIR_F" "file://$CRITERIA_REPO_F#team_criteria.md" "$SHA_F"
+cache_criteria "$TMPDIR_F" "$CRITERIA_REPO_F/team_criteria.md" "$SHA_F"
+
+# It loads while the pin matches, so the failures below are the pin and nothing else.
+phase_f_ok=false
+if python3 "$STATIC_CHECKS" --load-criteria --project-root "$TMPDIR_F" >/dev/null 2>&1; then
+  echo "  PASS: loads while the cached sha matches audit_criteria_pinned"
+  phase_f_ok=true
+else
+  echo "  FAIL: refused to load a correctly pinned cache"
+fi
+
+# Rewrite the header to a different commit.
+cache_criteria "$TMPDIR_F" "$CRITERIA_REPO_F/team_criteria.md" "0000000deadbeef"
+f_status=0
+f_out=$(python3 "$STATIC_CHECKS" --load-criteria --project-root "$TMPDIR_F" 2>&1 >/dev/null) || f_status=$?
+f_stdout=$(python3 "$STATIC_CHECKS" --load-criteria --project-root "$TMPDIR_F" 2>/dev/null || true)
+phase_f_mismatch=false
+if [[ $f_status -eq 2 ]] \
+   && echo "$f_out" | grep -q "0000000deadbeef" \
+   && echo "$f_out" | grep -q "$SHA_F" \
+   && [[ -z "$f_stdout" ]]; then
+  echo "  PASS: mismatched pin exits 2 naming both shas and prints no criteria"
+  phase_f_mismatch=true
+else
+  echo "  FAIL: mismatched pin did not stop the load (status=$f_status): $f_out"
+fi
+
+# Remove the cache entirely.
+rm -f "$TMPDIR_F/.purlin/cache/additional_criteria.md"
+g_status=0
+g_out=$(python3 "$STATIC_CHECKS" --load-criteria --project-root "$TMPDIR_F" 2>&1 >/dev/null) || g_status=$?
+phase_f_missing=false
+if [[ $g_status -eq 2 ]] && echo "$g_out" | grep -q "additional_criteria.md"; then
+  echo "  PASS: missing cache exits 2 naming the file"
+  phase_f_missing=true
+else
+  echo "  FAIL: missing cache did not stop the load (status=$g_status): $g_out"
+fi
+
+# Restore, so the negative case cannot pass by leaving the project broken.
+cache_criteria "$TMPDIR_F" "$CRITERIA_REPO_F/team_criteria.md" "$SHA_F"
+phase_f_restored=false
+if python3 "$STATIC_CHECKS" --load-criteria --project-root "$TMPDIR_F" >/dev/null 2>&1; then
+  echo "  PASS: loads again once the pin is restored"
+  phase_f_restored=true
+else
+  echo "  FAIL: still refusing after the pin was restored"
+fi
+
+if $phase_f_ok && $phase_f_mismatch && $phase_f_missing && $phase_f_restored; then phase_f=true; else phase_f=false; fi
+
+rm -rf "$TMPDIR_F" "$CRITERIA_REPO_F"
+
+
+
 echo "=== Results ==="
 
 # PROOF-14 covers all phases
-if $phase_a && $phase_b && $phase_c && $phase_d && $phase_e; then
+if $phase_a && $phase_b && $phase_c && $phase_d && $phase_e && $phase_f; then
   echo "ALL PHASES PASSED"
   export PROJECT_ROOT="$REAL_PROJECT_ROOT"
   cd "$PROJECT_ROOT"
-  purlin_proof "skill_audit" "PROOF-14" "RULE-14" pass "All 5 phases passed: built-in always active, load_criteria appends, criteria reach LLM, SHA staleness detected, --extra appends"
+  purlin_proof "skill_audit" "PROOF-14" "RULE-14" pass "All 6 phases passed: built-in always active, load_criteria appends, criteria reach LLM, SHA staleness detected, --extra appends, pin mismatch and missing cache both stop the load"
 else
   echo "SOME PHASES FAILED"
   export PROJECT_ROOT="$REAL_PROJECT_ROOT"
   cd "$PROJECT_ROOT"
-  purlin_proof "skill_audit" "PROOF-14" "RULE-14" fail "Phase failures: A=$phase_a B=$phase_b C=$phase_c D=$phase_d E=$phase_e"
+  purlin_proof "skill_audit" "PROOF-14" "RULE-14" fail "Phase failures: A=$phase_a B=$phase_b C=$phase_c D=$phase_d E=$phase_e F=$phase_f"
 fi
 
 purlin_proof_finish

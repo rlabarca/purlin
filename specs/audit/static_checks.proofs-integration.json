@@ -3,6 +3,33 @@
   "proofs": [
     {
       "feature": "static_checks",
+      "id": "PROOF-63",
+      "rule": "RULE-38",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_write_cache_rekeys_every_entry_from_the_project",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-64",
+      "rule": "RULE-39",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_entries_carry_the_auditor_and_input_provenance",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-66",
+      "rule": "RULE-41",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_pinned_criteria_are_enforced",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "static_checks",
       "id": "PROOF-50",
       "rule": "RULE-29",
       "test_file": "dev/test_e2e_audit_cache_pipeline.py",

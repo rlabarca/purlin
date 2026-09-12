@@ -1,4 +1,4 @@
-> Criteria-Version: 18
+> Criteria-Version: 19
 
 # Proof Audit Criteria
 
@@ -333,7 +333,11 @@ stamped by the writer, so a caller-supplied value is advisory.
 
 ### Cache key
 
-The cache key is `sha256(rule_text + "\0" + proof_description + "\0" + test_function_code)[:16]`. The null-byte separator prevents input-shifting collisions (e.g. a `|` in rule text causing two different inputs to hash identically). If any of these three inputs change, the cache is invalidated for that proof and Pass 2 re-runs.
+The cache key is `sha256(rule_text + "\0" + proof_description + "\0" + test_function_code)[:16]`. The null-byte separator prevents input-shifting collisions (e.g. a `|` in rule text causing two different inputs to hash identically).
+
+Nobody computes that hash by hand and nobody pastes the three inputs in. `resolve_proof_inputs(project_root, feature, proof_id)` reads them out of the project: the rule text and the proof description from `specs/**/<feature>.md`, and the graded test function's source from the file the proof JSON names. `--cache-key --feature <name> --proof-id PROOF-N` is the only way to obtain a key, `--write-cache` re-keys every entry it is given through the same function and discards the key the caller supplied, and a `(feature, proof_id)` that does not resolve is rejected with exit 2. When the test file's language has no extractor here (shell, SQL, PHP, C) the test code is absent from the key and the entry records `inputs.test_verifiable: false`, so a reader can tell an entry a test edit cannot invalidate from one it can.
+
+Every entry also carries `auditor` as `{name, command}`, stamped by the writer from `audit_llm_name` (or `claude`) and `audit_llm` (or null). Like `cached_at`, it is not something a caller supplies.
 
 ### Cache behavior
 
@@ -344,10 +348,14 @@ The cache key is `sha256(rule_text + "\0" + proof_description + "\0" + test_func
 
 ### Cache invalidation
 
-The cache self-invalidates per-proof when:
+The cache self-invalidates per proof, and here is the mechanism rather than the promise: because the key is computed from project state on both sides, every reader recomputes each entry's key and drops the entries that no longer match. `sync_status`, the dashboard payload and the per-feature gauges all go through `_partition_cache_entries` in `purlin_server.py`, which reports the dropped entries as `invalidated`. An invalidated grade counts as unmeasured and never as passing, so the coverage-weighted score falls and the Proof Integrity line says `N invalidated, re-run purlin:audit`.
+
+A grade is invalidated when:
 - The spec rule text changes (rule was reworded)
 - The proof description changes (proof was rewritten)
 - The test function code changes (test was modified)
+- The grade is MANUAL and the `@manual` stamp behind it is no longer current, because a MANUAL grade is a human's claim and lives exactly as long as the stamp
+- `static_checks` cannot be imported by the reader at all, in which case no key can be checked and every entry is invalidated: an unverifiable cache is not a valid one
 
 No manual invalidation is needed. To force a full re-audit, delete `.purlin/cache/audit_cache.json`.
 

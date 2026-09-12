@@ -11,7 +11,9 @@ import tempfile
 import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'mcp'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'audit'))
 import purlin_server
+import static_checks
 
 
 # ---------------------------------------------------------------------------
@@ -66,13 +68,36 @@ def _write_receipt(tmp_dir, name, commit, timestamp, vhash, subdir='app'):
     return path
 
 
+def _rekey(tmp_dir, entries, cache_name):
+    """Key each entry the way the real writer does, from project state.
+
+    `write_audit_cache` ignores the caller's key and recomputes it through
+    `static_checks.cache_key_for`, and every reader recomputes it again and drops
+    the entries that no longer match. A fixture seeded under an invented key is
+    therefore an invalidated entry, not a graded one, so these helpers key their
+    entries the same way the writer would. A (feature, proof_id) the project does
+    not declare keeps the caller's key: that is exactly the unresolvable entry the
+    tolerance tests seed on purpose.
+    """
+    out = {}
+    for supplied_key, entry in entries.items():
+        try:
+            key, inputs = static_checks.cache_key_for(
+                tmp_dir, entry.get('feature'), entry.get('proof_id'), cache_name)
+        except static_checks.ProofInputsError:
+            out[supplied_key] = entry
+            continue
+        out[key] = dict(entry, inputs=inputs)
+    return out
+
+
 def _write_audit_cache(tmp_dir, entries):
     """Write audit_cache.json to .purlin/cache/."""
     cache_dir = os.path.join(tmp_dir, '.purlin', 'cache')
     os.makedirs(cache_dir, exist_ok=True)
     path = os.path.join(cache_dir, 'audit_cache.json')
     with open(path, 'w') as f:
-        json.dump(entries, f)
+        json.dump(_rekey(tmp_dir, entries, 'audit_cache.json'), f)
     return path
 
 
@@ -87,14 +112,50 @@ def _read_report(tmp_dir):
 
 
 def _minimal_spec_content(name='feature'):
+    """A one-rule, one-proof spec whose text names the feature.
+
+    A cache key is computed from the rule text, the proof description and the
+    graded test source and does NOT include the feature name, so two features
+    sharing this fixture's wording verbatim would key to the same entry and one
+    would silently overwrite the other. Naming the feature in the text keeps each
+    fixture its own measurement.
+    """
     return (
         f'# Feature: {name}\n\n'
         '> Description: Does stuff.\n\n'
         '## Rules\n'
-        '- RULE-1: Returns correct output\n\n'
+        f'- RULE-1: {name} returns correct output\n\n'
         '## Proof\n'
-        '- PROOF-1 (RULE-1): Call function, assert output\n'
+        f'- PROOF-1 (RULE-1): Call {name}(), assert output\n'
     )
+
+
+def _two_rule_spec_content(name='feature'):
+    """A spec declaring RULE-1/PROOF-1 and RULE-2/PROOF-2.
+
+    A cache entry is keyed on the rule text and the proof description the spec
+    declares, so a fixture naming PROOF-2 needs a spec that declares PROOF-2 or
+    the entry can never be anything but invalidated.
+    """
+    return (
+        f'# Feature: {name}\n\n'
+        '> Description: Does stuff.\n\n'
+        '## Rules\n'
+        f'- RULE-1: {name} returns correct output\n'
+        f'- RULE-2: {name} rejects malformed input\n\n'
+        '## Proof\n'
+        f'- PROOF-1 (RULE-1): Call {name}(), assert output\n'
+        f'- PROOF-2 (RULE-2): Call {name}() with junk, assert it raises\n'
+    )
+
+
+def _two_rule_proofs(feature='feature'):
+    """Executed proof records for both proofs of _two_rule_spec_content."""
+    return [
+        dict(_minimal_proofs(feature)[0], id='PROOF-1', rule='RULE-1'),
+        dict(_minimal_proofs(feature)[0], id='PROOF-2', rule='RULE-2',
+             test_name='test_rejects_malformed'),
+    ]
 
 
 def _minimal_proofs(feature='feature'):
@@ -495,9 +556,11 @@ class TestReportDataStructure:
     @pytest.mark.proof("report_data", "PROOF-15", "RULE-15")
     def test_audit_summary_fields_present_and_null_when_no_cache(self):
         """audit_summary has required fields when cache exists; null when no cache."""
-        # First: verify null when no cache
-        _write_spec(self.tmp, 'feature', _minimal_spec_content())
-        _write_proofs(self.tmp, 'feature', _minimal_proofs())
+        # First: verify null when no cache. Two rules and two proofs, because the
+        # cache below grades both and an entry naming a proof the spec does not
+        # declare is invalidated on read rather than counted.
+        _write_spec(self.tmp, 'feature', _two_rule_spec_content())
+        _write_proofs(self.tmp, 'feature', _two_rule_proofs())
         features = purlin_server._scan_specs(self.tmp)
         proofs = purlin_server._read_proofs(self.tmp)
 
@@ -548,8 +611,8 @@ class TestReportDataStructure:
     @pytest.mark.proof("report_data", "PROOF-16", "RULE-16")
     def test_per_feature_audit_populated_from_cache(self):
         """Per-feature audit is populated from audit cache when entries exist for that feature."""
-        _write_spec(self.tmp, 'feature', _minimal_spec_content())
-        _write_proofs(self.tmp, 'feature', _minimal_proofs())
+        _write_spec(self.tmp, 'feature', _two_rule_spec_content())
+        _write_proofs(self.tmp, 'feature', _two_rule_proofs())
 
         cache_entries = {
             'feature::PROOF-1::RULE-1': {
@@ -1056,7 +1119,7 @@ def _write_design_cache(tmp_dir, entries):
     os.makedirs(cache_dir, exist_ok=True)
     path = os.path.join(cache_dir, 'design_cache.json')
     with open(path, 'w', encoding='utf-8') as f:
-        json.dump(entries, f)
+        json.dump(_rekey(tmp_dir, entries, 'design_cache.json'), f)
     return path
 
 
@@ -1455,10 +1518,16 @@ class TestPerFeatureDesignAndGaugeStates:
     def teardown_method(self):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
-    def _two_feature_project(self):
-        """`login` and `payments`, each with one rule and one executed proof."""
+    def _two_feature_project(self, login_spec=None):
+        """`login` and `payments`, each with one rule and one executed proof.
+
+        `login_spec` overrides login's spec content for a test that needs more
+        than one declared proof behind it.
+        """
         for name in ('login', 'payments'):
-            _write_spec(self.tmp, name, _minimal_spec_content(name))
+            content = (login_spec if (login_spec and name == 'login')
+                       else _minimal_spec_content(name))
+            _write_spec(self.tmp, name, content)
             _write_proofs(self.tmp, name, _minimal_proofs(name))
         features = purlin_server._scan_specs(self.tmp)
         proofs = purlin_server._read_proofs(self.tmp)
@@ -1470,6 +1539,18 @@ class TestPerFeatureDesignAndGaugeStates:
     @pytest.mark.proof("report_data", "PROOF-26", "RULE-25", tier="integration")
     def test_per_feature_design_excludes_structural_from_denominator(self):
         """Design = PROVABLE / (PROVABLE + LOOSE + UNPROVABLE); STRUCTURAL out."""
+        # A design grade is keyed on the rule text and the proof description, so
+        # login must actually declare the six proofs being graded; the spec goes
+        # down before the cache so the fixture can be keyed the way the writer
+        # keys it.
+        login_spec = (
+            '# Feature: login\n\n## What it does\nLogs in.\n\n## Rules\n'
+            + ''.join(f'- RULE-{i}: Does thing {i}\n' for i in range(1, 7))
+            + '\n## Proof\n'
+            + ''.join(f'- PROOF-{i} (RULE-{i}): Call it with {i}, assert {i + 1}\n'
+                      for i in range(1, 7))
+        )
+        _write_spec(self.tmp, 'login', login_spec)
         _write_design_cache(self.tmp, {
             'd1': _cache_entry('PROVABLE', 'login', 'PROOF-1'),
             'd2': _cache_entry('PROVABLE', 'login', 'PROOF-2'),
@@ -1478,7 +1559,7 @@ class TestPerFeatureDesignAndGaugeStates:
             'd5': _cache_entry('STRUCTURAL', 'login', 'PROOF-5'),
             'd6': _cache_entry('STRUCTURAL', 'login', 'PROOF-6'),
         })
-        data = self._two_feature_project()
+        data = self._two_feature_project(login_spec=login_spec)
         login = next(f for f in data['features'] if f['name'] == 'login')
         payments = next(f for f in data['features'] if f['name'] == 'payments')
 
@@ -1570,12 +1651,15 @@ class TestPerFeatureDesignAndGaugeStates:
         them. `complete` is what the dashboard colours on.
         """
         # Four declared proof descriptions across two features, four executed proofs.
+        # Each feature's wording is its own: the cache key is computed from the
+        # rule text and the proof description and carries no feature name, so two
+        # features worded identically would key to one entry.
         spec = (
             '# Feature: {name}\n\n## Rules\n'
-            '- RULE-1: Does the first thing\n'
-            '- RULE-2: Does the second thing\n\n## Proof\n'
-            '- PROOF-1 (RULE-1): Call it with 1, assert 2\n'
-            '- PROOF-2 (RULE-2): Call it with 3, assert 4\n'
+            '- RULE-1: {name} does the first thing\n'
+            '- RULE-2: {name} does the second thing\n\n## Proof\n'
+            '- PROOF-1 (RULE-1): Call {name} with 1, assert 2\n'
+            '- PROOF-2 (RULE-2): Call {name} with 3, assert 4\n'
         )
         for name in ('login', 'payments'):
             _write_spec(self.tmp, name, spec.format(name=name))
@@ -1888,3 +1972,165 @@ class TestMigrationsInPayload:
         for payload in (built, read):
             assert 'migrations' in payload, payload.keys()
             assert payload['migrations'] == [], payload['migrations']
+
+
+# ---------------------------------------------------------------------------
+# Digest provenance: which tree, and whose grades (RULE-39/40)
+# ---------------------------------------------------------------------------
+
+_STATIC_CHECKS_PY = os.path.join(
+    os.path.dirname(__file__), '..', 'scripts', 'audit', 'static_checks.py')
+
+
+def _scaffold_proofs(tmp_dir, feature, pairs, subdir='app'):
+    """Spec, proof records and marked test functions for `pairs`.
+
+    A cache key is computed from the rule text, the proof description and the
+    graded test's source, so a test that grades a proof and then edits it needs
+    all three to actually exist in the project. Each test body is distinct, so
+    one can be edited without touching the others.
+
+    Returns the path of the test file it wrote.
+    """
+    test_file = f'tests/test_{feature}.py'
+    spec = (
+        f'# Feature: {feature}\n\n> Scope: {test_file}\n\n## Rules\n'
+        + ''.join(f'- {rule}: {feature} enforces {rule} on every request\n'
+                  for _pid, rule in pairs)
+        + '\n## Proof\n'
+        + ''.join(f'- {pid} ({rule}): Call {feature}() and verify the {rule} '
+                  f'branch returns 200 @unit\n' for pid, rule in pairs)
+    )
+    _write_spec(tmp_dir, feature, spec, subdir=subdir)
+    _write_proofs(tmp_dir, feature, [
+        {'feature': feature, 'id': pid, 'rule': rule, 'test_file': test_file,
+         'test_name': f'test_{pid.lower().replace("-", "_")}',
+         'status': 'pass', 'tier': 'unit'}
+        for pid, rule in pairs
+    ], subdir=subdir)
+
+    blocks = ['import pytest']
+    for pid, rule in pairs:
+        n = int(pid.rsplit('-', 1)[1])
+        blocks.append(
+            f'@pytest.mark.proof("{feature}", "{pid}", "{rule}")\n'
+            f'def test_{pid.lower().replace("-", "_")}():\n'
+            f'    assert {n} + 1 == {n + 1}')
+    path = os.path.join(tmp_dir, *test_file.split('/'))
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write('\n\n\n'.join(blocks) + '\n')
+    return path
+
+
+class TestDigestProvenance:
+    """report_data RULE-39/40 — the payload says which tree it describes and
+    who produced the grades in it.
+
+    `git_sha: null` in a committed digest left a QA reader unable to say which
+    tree any number in it described, and a gauge with no auditor named cannot be
+    told apart from one produced by a tool nobody has heard of.
+    """
+
+    def setup_method(self):
+        self.tmp = tempfile.mkdtemp()
+        _make_project(self.tmp, report_enabled=True)
+
+    def teardown_method(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _payload(self):
+        data = purlin_server.read_report_payload(self.tmp)
+        assert data is not None, "the payload should build for this project"
+        return data
+
+    def _git(self, *args):
+        r = subprocess.run(['git'] + list(args), cwd=self.tmp,
+                           capture_output=True, text=True)
+        assert r.returncode == 0, f"git {' '.join(args)}: {r.stderr}"
+        return r.stdout.strip()
+
+    @pytest.mark.proof("report_data", "PROOF-40", "RULE-39", tier="integration")
+    def test_the_payload_always_says_which_tree_it_describes(self):
+        _scaffold_proofs(self.tmp, 'gate', [('PROOF-1', 'RULE-1')])
+        _git_init(self.tmp)  # stages and commits everything written so far
+
+        head = self._git('rev-parse', 'HEAD')
+        assert len(head) == 40, f"expected a full sha as the oracle, got {head!r}"
+        data = self._payload()
+        assert 'git_sha' in data, "the key must always be present"
+        assert data['git_sha'] == head, (
+            f"git_sha {data['git_sha']!r} is not HEAD {head!r}")
+
+        # It tracks HEAD rather than being stamped once.
+        with open(os.path.join(self.tmp, 'notes.md'), 'w') as f:
+            f.write('v2\n')
+        self._git('add', '.')
+        self._git('commit', '-m', 'change something')
+        moved = self._git('rev-parse', 'HEAD')
+        assert moved != head, "the fixture failed to produce a second commit"
+        assert self._payload()['git_sha'] == moved, (
+            "git_sha must be HEAD at generation time, not the first HEAD seen")
+
+        # No git at all: the literal `unknown`, never null and never absent.
+        shutil.rmtree(os.path.join(self.tmp, '.git'))
+        data = self._payload()
+        assert 'git_sha' in data, (
+            "the key must be present when git cannot answer, so a reader can "
+            "tell 'unknown tree' from 'old payload shape'")
+        assert data['git_sha'] == 'unknown', (
+            f"expected the literal 'unknown', got {data['git_sha']!r}")
+        assert data['git_sha'] is not None
+
+    @pytest.mark.proof("report_data", "PROOF-41", "RULE-40", tier="integration")
+    def test_the_payload_names_the_auditor_and_counts_the_stale_grades(self):
+        test_path = _scaffold_proofs(
+            self.tmp, 'gate', [('PROOF-1', 'RULE-1'), ('PROOF-2', 'RULE-2')])
+        config_path = os.path.join(self.tmp, '.purlin', 'config.json')
+        with open(config_path) as f:
+            config = json.load(f)
+        config['audit_llm_name'] = 'Gemini Pro'
+        with open(config_path, 'w') as f:
+            json.dump(config, f)
+
+        # Written through the real CLI: the auditor stamp is the writer's job,
+        # so a fixture that hand-wrote the entry would prove nothing about it.
+        entries = {
+            f'supplied-key-{n}': {
+                'assessment': 'STRONG', 'criterion': 'c', 'why': 'w', 'fix': 'f',
+                'feature': 'gate', 'proof_id': f'PROOF-{n}',
+                'rule_id': f'RULE-{n}', 'priority': 'LOW',
+                'cached_at': '2026-01-01T00:00:00+00:00',
+            } for n in (1, 2)
+        }
+        w = subprocess.run(
+            [sys.executable, _STATIC_CHECKS_PY, '--write-cache',
+             '--project-root', self.tmp],
+            input=json.dumps(entries), capture_output=True, text=True)
+        assert w.returncode == 0, w.stderr
+
+        summary = self._payload()['audit_summary']
+        assert summary['invalidated'] == 0, (
+            f"nothing has moved since the grades were written: {summary}")
+        assert 'auditors' in summary, (
+            f"the payload must carry an auditors map whenever a cache exists: "
+            f"{sorted(summary)}")
+        assert summary['auditors'] == {'Gemini Pro': 2}, (
+            f"the payload must name who produced the gauge: {summary['auditors']}")
+
+        # One character inside ONE graded test function.
+        src = open(test_path, encoding='utf-8').read()
+        edited = src.replace('assert 2 + 1 == 3', 'assert 2 + 1 >= 3')
+        assert edited != src, "the fixture's PROOF-2 body changed shape"
+        assert (len(edited) == len(src)
+                and sum(a != b for a, b in zip(src, edited)) == 1), \
+            "the edit must be exactly one character"
+        with open(test_path, 'w', encoding='utf-8') as f:
+            f.write(edited)
+
+        summary = self._payload()['audit_summary']
+        assert summary['invalidated'] == 1, (
+            f"the grade for the edited test must be counted as stale: {summary}")
+        assert summary['auditors'] == {'Gemini Pro': 1}, (
+            f"only the surviving grade may be attributed: {summary['auditors']}")
+        assert summary['valid_entries'] == 1, summary

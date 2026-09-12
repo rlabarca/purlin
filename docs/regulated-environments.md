@@ -114,15 +114,19 @@ Purlin's audit skill evaluates proof quality on two axes: whether the spec asked
 }
 ```
 
-The compliance team owns and versions the additional criteria file. Built-in Purlin criteria always apply as a baseline — the compliance file adds stricter checks on top. Developers cannot weaken the quality standards that judge their tests. The pinned SHA ensures audits are reproducible. `purlin:init --sync-audit-criteria` pulls updates when the compliance team publishes new criteria.
+The compliance team owns and versions the additional criteria file. Built-in Purlin criteria always apply as a baseline — the compliance file adds stricter checks on top. Developers cannot weaken the quality standards that judge their tests. `purlin:init --sync-audit-criteria` pulls updates when the compliance team publishes new criteria, and writes the commit it read into the cached copy as its first line: `<!-- purlin-criteria-sha: <sha> -->`.
+
+The pin is enforced rather than recorded. Every audit reads that header and compares it to `audit_criteria_pinned`; if the cached file is missing, carries no header, or names a different commit, the audit stops and prints why. There is no fall back to the built-in criteria, because a project graded against a standard it did not pin reads exactly like one graded correctly.
 
 This addresses the "test quality gate" concern: the audit pipeline (proof-description grading → structural defects → semantic alignment) deterministically catches unprovable proof descriptions and tautological tests, and separates out structural checks, before the LLM ever evaluates. The criteria — owned by the compliance team, versioned externally, applied by an independent subagent — provide a reviewable, traceable quality assessment layer.
 
 For teams concerned about shared-model bias (the "AI auditing AI" critique), Purlin experimentally supports cross-model auditing: configure Gemini, GPT, or any CLI-accessible LLM as the auditor while Claude remains the implementer. This eliminates shared-weight sycophancy — the auditor's biases are independent from the builder's. This feature is experimental — external LLM response formats vary and may require iteration.
 
 ```json
-{ "audit_llm": "gemini -m pro -p \"{prompt}\"" }
+{ "audit_llm": "gemini -m pro -p \"{prompt}\"", "audit_llm_name": "Gemini Pro" }
 ```
+
+`audit_llm` is executable configuration, not a label: it is the command the audit shells out to, so the compliance team pins it the same way it pins the criteria file. `audit_llm_name` is the name stamped on every grade the audit writes, and it appears in the digest as `audit_summary.auditors` with a count, so a reader can see that a whole gauge came from one tool. `purlin:status` warns, and never blocks, when the configured command is not on PATH, when it carries no `{prompt}` placeholder, or when a name is configured with no command.
 
 Note: cross-model auditing is an improvement over same-model auditing, but both are LLM-based judgment. Neither replaces human code review for critical systems. For regulated environments, the audit report should be reviewed by a human as part of the QA process, not treated as a final authority.
 

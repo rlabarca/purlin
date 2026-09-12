@@ -37,6 +37,10 @@ from static_checks import (
     write_audit_cache,
     _read_rule_descriptions,
     load_criteria,
+    cache_key_for,
+    rekey_cache_entries,
+    CriteriaError,
+    ProofInputsError,
 )
 
 _STATIC_CHECKS_PY = os.path.join(
@@ -53,6 +57,102 @@ def _write_tmp(content, suffix='.py'):
     f.write(content)
     f.close()
     return f.name
+
+
+def _scaffold_proof(root, feature='login', proof_id='PROOF-1', rule_id='RULE-1',
+                    test_file='tests/test_login.py', test_name='test_login',
+                    rule_text=None, description=None, tier='unit',
+                    test_body='    assert 1 + 1 == 2'):
+    """Write the spec, proof record and test function behind <feature>/<proof_id>.
+
+    write_audit_cache re-keys every entry through cache_key_for(), which resolves
+    the rule text, the proof description and the graded test's source out of the
+    project (RULE-38). A temp project with no specs therefore resolves nothing and
+    a whole batch is rejected, so every test that writes cache entries needs real
+    project state behind the (feature, proof_id) pairs it names.
+
+    Repeated calls accumulate: a second proof for the same feature is added to the
+    same spec, proof file and test file rather than replacing the first. Calling
+    again for the SAME proof_id replaces just that proof's test function, which is
+    how a test simulates an edit to the graded code.
+
+    Returns the path of the test file it wrote.
+    """
+    spec_dir = os.path.join(root, 'specs', 'app')
+    os.makedirs(spec_dir, exist_ok=True)
+    spec_path = os.path.join(spec_dir, f'{feature}.md')
+    rule_text = rule_text or f'{feature} enforces {rule_id} on every request'
+    description = description or (
+        f'Call {feature}() and verify the {rule_id} branch returns 200')
+
+    # --- spec: merge this rule/proof into any spec already scaffolded ---
+    rules, proofs = [], []
+    if os.path.isfile(spec_path):
+        for line in open(spec_path, encoding='utf-8').read().splitlines():
+            if re.match(r'^- RULE-\d+:', line):
+                rules.append(line)
+            elif re.match(r'^- PROOF-\d+ ', line):
+                proofs.append(line)
+    rules = [r for r in rules if not r.startswith(f'- {rule_id}:')]
+    rules.append(f'- {rule_id}: {rule_text}')
+    proofs = [p for p in proofs if not p.startswith(f'- {proof_id} ')]
+    proofs.append(f'- {proof_id} ({rule_id}): {description} @{tier}')
+    with open(spec_path, 'w', encoding='utf-8') as f:
+        f.write(
+            f'# Feature: {feature}\n\n'
+            f'> Scope: {test_file}\n\n'
+            '## Rules\n\n' + '\n'.join(sorted(rules)) + '\n\n'
+            '## Proof\n\n' + '\n'.join(sorted(proofs)) + '\n'
+        )
+
+    # --- proof file: the only record of which test function backs the proof ---
+    proof_path = os.path.join(spec_dir, f'{feature}.proofs-{tier}.json')
+    records = []
+    if os.path.isfile(proof_path):
+        try:
+            records = json.load(open(proof_path, encoding='utf-8')).get('proofs', [])
+        except (json.JSONDecodeError, OSError):
+            records = []
+    records = [r for r in records if r.get('id') != proof_id]
+    records.append({
+        'feature': feature, 'id': proof_id, 'rule': rule_id,
+        'test_file': test_file, 'test_name': test_name,
+        'status': 'pass', 'tier': tier,
+    })
+    with open(proof_path, 'w', encoding='utf-8') as f:
+        json.dump({'tier': tier, 'proofs': records}, f, indent=2)
+
+    # --- the test itself ---
+    test_path = os.path.join(root, *test_file.split('/'))
+    os.makedirs(os.path.dirname(test_path), exist_ok=True)
+    if test_file.endswith('.py'):
+        block = (f'@pytest.mark.proof("{feature}", "{proof_id}", "{rule_id}")\n'
+                 f'def {test_name}():\n{test_body}')
+        blocks = ['import pytest']
+        if os.path.isfile(test_path):
+            existing = open(test_path, encoding='utf-8').read().rstrip('\n')
+            blocks = existing.split('\n\n\n') or blocks
+            blocks = [blocks[0]] + [
+                b for b in blocks[1:]
+                if f'"{proof_id}"' not in b and f'def {test_name}(' not in b
+            ]
+        blocks.append(block)
+        with open(test_path, 'w', encoding='utf-8') as f:
+            f.write('\n\n\n'.join(blocks) + '\n')
+    else:
+        # A language with no extractor here (shell): the proof still resolves,
+        # but no test code enters the key.
+        with open(test_path, 'w', encoding='utf-8') as f:
+            f.write('#!/usr/bin/env bash\n'
+                    f'purlin_proof "{feature}" "{proof_id}" "{rule_id}" pass\n')
+    return test_path
+
+
+def _key(root, feature, proof_id, cache_name=None):
+    """The cache key static_checks computes for a proof — never hard-coded."""
+    if cache_name is None:
+        cache_name = static_checks.AUDIT_CACHE
+    return cache_key_for(root, feature, proof_id, cache_name)[0]
 
 
 def _write_spec(rules):
@@ -480,6 +580,7 @@ class TestAuditCache:
     @pytest.mark.proof("static_checks", "PROOF-12", "RULE-12")
     def test_write_cache_atomic(self):
         with tempfile.TemporaryDirectory() as tmpdir:
+            _scaffold_proof(tmpdir, 'login', 'PROOF-1', 'RULE-1')
             data = {
                 "a1b2c3d4e5f6a7b8": {
                     "assessment": "STRONG",
@@ -511,8 +612,13 @@ class TestAuditCache:
             assert os.path.abspath(dst) == os.path.abspath(cache_path), \
                 f"os.replace target {dst!r} is not the cache file"
 
+            # The written key is recomputed from project state, so look it up
+            # rather than asserting the arbitrary literal supplied above.
+            key = _key(tmpdir, 'login', 'PROOF-1')
             result = read_audit_cache(tmpdir)
-            assert result == data
+            assert set(result) == {key}, f"expected the recomputed key {key}, got {list(result)}"
+            for field, value in data['a1b2c3d4e5f6a7b8'].items():
+                assert result[key][field] == value, f"{field} did not round-trip"
             # No .tmp file left behind after the rename
             assert not os.path.exists(cache_path + '.tmp')
 
@@ -537,6 +643,18 @@ class TestWriteCacheMerge:
     def test_second_write_preserves_first_write_entries(self):
         """Two sequential writes for different features must both survive on disk."""
         with tempfile.TemporaryDirectory() as tmpdir:
+            for feat, proofs in (('feature_a', 3), ('feature_b', 2)):
+                for n in range(1, proofs + 1):
+                    _scaffold_proof(
+                        tmpdir, feat, f'PROOF-{n}', f'RULE-{n}',
+                        test_file=f'tests/test_{feat}.py',
+                        test_name=f'test_{feat}_{n}')
+            ka1 = _key(tmpdir, 'feature_a', 'PROOF-1')
+            ka2 = _key(tmpdir, 'feature_a', 'PROOF-2')
+            ka3 = _key(tmpdir, 'feature_a', 'PROOF-3')
+            kb1 = _key(tmpdir, 'feature_b', 'PROOF-1')
+            kb2 = _key(tmpdir, 'feature_b', 'PROOF-2')
+
             # First write: 3 entries for feature_a
             batch_a = {
                 "hash_a1": self._make_entry("STRONG", "feature_a", "PROOF-1", "RULE-1"),
@@ -555,21 +673,32 @@ class TestWriteCacheMerge:
             # Read back: ALL 5 entries must be present
             after = read_audit_cache(tmpdir)
             assert len(after) == 5, f"Expected 5 entries (3 from A + 2 from B), got {len(after)}"
-            assert "hash_a1" in after, "feature_a entry lost after feature_b write"
-            assert "hash_a2" in after, "feature_a entry lost after feature_b write"
-            assert "hash_a3" in after, "feature_a entry lost after feature_b write"
-            assert "hash_b1" in after, "feature_b entry missing"
-            assert "hash_b2" in after, "feature_b entry missing"
+            assert ka1 in after, "feature_a entry lost after feature_b write"
+            assert ka2 in after, "feature_a entry lost after feature_b write"
+            assert ka3 in after, "feature_a entry lost after feature_b write"
+            assert kb1 in after, "feature_b entry missing"
+            assert kb2 in after, "feature_b entry missing"
             # Verify assessments are correct (not swapped or corrupted)
-            assert after["hash_a3"]["assessment"] == "WEAK"
-            assert after["hash_a3"]["feature"] == "feature_a"
-            assert after["hash_b1"]["assessment"] == "STRONG"
-            assert after["hash_b1"]["feature"] == "feature_b"
+            assert after[ka3]["assessment"] == "WEAK"
+            assert after[ka3]["feature"] == "feature_a"
+            assert after[kb1]["assessment"] == "STRONG"
+            assert after[kb1]["feature"] == "feature_b"
 
     @pytest.mark.proof("static_checks", "PROOF-39", "RULE-24")
     def test_update_entry_preserves_other_features(self):
         """Updating one feature's entry must not disturb another feature's entries."""
         with tempfile.TemporaryDirectory() as tmpdir:
+            for feat in ('feature_a', 'feature_b'):
+                for n in (1, 2):
+                    _scaffold_proof(
+                        tmpdir, feat, f'PROOF-{n}', f'RULE-{n}',
+                        test_file=f'tests/test_{feat}.py',
+                        test_name=f'test_{feat}_{n}')
+            ka1 = _key(tmpdir, 'feature_a', 'PROOF-1')
+            ka2 = _key(tmpdir, 'feature_a', 'PROOF-2')
+            kb1 = _key(tmpdir, 'feature_b', 'PROOF-1')
+            kb2 = _key(tmpdir, 'feature_b', 'PROOF-2')
+
             # Seed: feature_a (2 entries) + feature_b (2 entries)
             seed = {
                 "hash_a1": self._make_entry("HOLLOW", "feature_a", "PROOF-1", "RULE-1"),
@@ -578,6 +707,15 @@ class TestWriteCacheMerge:
                 "hash_b2": self._make_entry("WEAK",   "feature_b", "PROOF-2", "RULE-2"),
             }
             write_audit_cache(tmpdir, seed)
+
+            # The graded test for feature_a PROOF-1 is edited, so its key really
+            # does change — the dedup below is then a dedup across two hashes.
+            _scaffold_proof(
+                tmpdir, 'feature_a', 'PROOF-1', 'RULE-1',
+                test_file='tests/test_feature_a.py', test_name='test_feature_a_1',
+                test_body='    assert 2 + 2 == 4')
+            ka1_v2 = _key(tmpdir, 'feature_a', 'PROOF-1')
+            assert ka1_v2 != ka1, "editing the graded test must move the key"
 
             # Update: feature_a PROOF-1 upgraded from HOLLOW to STRONG (new hash = test code changed)
             update = {
@@ -590,17 +728,17 @@ class TestWriteCacheMerge:
 
             after = read_audit_cache(tmpdir)
             # feature_b untouched
-            assert after["hash_b1"]["assessment"] == "STRONG"
-            assert after["hash_b1"]["feature"] == "feature_b"
-            assert after["hash_b2"]["assessment"] == "WEAK"
-            assert after["hash_b2"]["feature"] == "feature_b"
+            assert after[kb1]["assessment"] == "STRONG"
+            assert after[kb1]["feature"] == "feature_b"
+            assert after[kb2]["assessment"] == "WEAK"
+            assert after[kb2]["feature"] == "feature_b"
             # feature_a PROOF-1: old HOLLOW replaced by new STRONG (dedup by feature+proof_id)
-            assert "hash_a1_v2" in after, "Updated entry missing"
-            assert after["hash_a1_v2"]["assessment"] == "STRONG"
+            assert ka1_v2 in after, "Updated entry missing"
+            assert after[ka1_v2]["assessment"] == "STRONG"
             # Old hash for same (feature_a, PROOF-1) should be gone (dedup)
-            assert "hash_a1" not in after, "Stale entry for same (feature, proof_id) should be pruned"
+            assert ka1 not in after, "Stale entry for same (feature, proof_id) should be pruned"
             # feature_a PROOF-2 still present
-            assert after["hash_a2"]["assessment"] == "STRONG"
+            assert after[ka2]["assessment"] == "STRONG"
 
 
 class TestPruneAuditCache:
@@ -622,29 +760,40 @@ class TestPruneAuditCache:
     def test_prune_removes_dead_preserves_live(self):
         """Prune with 2 of 3 keys live removes the third, preserves the other 2."""
         with tempfile.TemporaryDirectory() as tmpdir:
+            for feat in ('feat_a', 'feat_b', 'feat_c'):
+                _scaffold_proof(tmpdir, feat, 'PROOF-1', 'RULE-1',
+                                test_file=f'tests/test_{feat}.py',
+                                test_name=f'test_{feat}')
+            aaa = _key(tmpdir, 'feat_a', 'PROOF-1')
+            bbb = _key(tmpdir, 'feat_b', 'PROOF-1')
+            ccc = _key(tmpdir, 'feat_c', 'PROOF-1')
             cache = {
                 "aaa": self._make_entry("STRONG", "feat_a", "PROOF-1", "RULE-1"),
                 "bbb": self._make_entry("WEAK", "feat_b", "PROOF-1", "RULE-1"),
                 "ccc": self._make_entry("STRONG", "feat_c", "PROOF-1", "RULE-1"),
             }
             write_audit_cache(tmpdir, cache)
-            result = prune_audit_cache(tmpdir, live_keys={"aaa", "ccc"})
+            result = prune_audit_cache(tmpdir, live_keys={aaa, ccc})
             assert result["pruned"] == 1
             assert result["kept"] == 2
             after = read_audit_cache(tmpdir)
-            assert "aaa" in after
-            assert "ccc" in after
-            assert "bbb" not in after
+            assert aaa in after
+            assert ccc in after
+            assert bbb not in after
             # Verify fields are intact
-            assert after["aaa"]["assessment"] == "STRONG"
-            assert after["aaa"]["feature"] == "feat_a"
-            assert after["ccc"]["assessment"] == "STRONG"
-            assert after["ccc"]["feature"] == "feat_c"
+            assert after[aaa]["assessment"] == "STRONG"
+            assert after[aaa]["feature"] == "feat_a"
+            assert after[ccc]["assessment"] == "STRONG"
+            assert after[ccc]["feature"] == "feat_c"
 
     @pytest.mark.proof("static_checks", "PROOF-37", "RULE-23")
     def test_prune_empty_live_keys_clears_all(self):
         """Prune with empty live_keys set produces empty cache."""
         with tempfile.TemporaryDirectory() as tmpdir:
+            for feat in ('feat_a', 'feat_b', 'feat_c'):
+                _scaffold_proof(tmpdir, feat, 'PROOF-1', 'RULE-1',
+                                test_file=f'tests/test_{feat}.py',
+                                test_name=f'test_{feat}')
             cache = {
                 "aaa": self._make_entry("STRONG", "feat_a", "PROOF-1", "RULE-1"),
                 "bbb": self._make_entry("STRONG", "feat_b", "PROOF-1", "RULE-1"),
@@ -661,24 +810,31 @@ class TestPruneAuditCache:
     def test_prune_all_keys_live_preserves_all(self):
         """Prune with all keys live preserves identical cache content."""
         with tempfile.TemporaryDirectory() as tmpdir:
+            for feat, n in (('feat_a', 1), ('feat_b', 2), ('feat_c', 3)):
+                _scaffold_proof(tmpdir, feat, f'PROOF-{n}', f'RULE-{n}',
+                                test_file=f'tests/test_{feat}.py',
+                                test_name=f'test_{feat}')
+            aaa = _key(tmpdir, 'feat_a', 'PROOF-1')
+            bbb = _key(tmpdir, 'feat_b', 'PROOF-2')
+            ccc = _key(tmpdir, 'feat_c', 'PROOF-3')
             cache = {
                 "aaa": self._make_entry("STRONG", "feat_a", "PROOF-1", "RULE-1"),
                 "bbb": self._make_entry("WEAK", "feat_b", "PROOF-2", "RULE-2"),
                 "ccc": self._make_entry("STRONG", "feat_c", "PROOF-3", "RULE-3"),
             }
             write_audit_cache(tmpdir, cache)
-            result = prune_audit_cache(tmpdir, live_keys={"aaa", "bbb", "ccc"})
+            result = prune_audit_cache(tmpdir, live_keys={aaa, bbb, ccc})
             assert result["pruned"] == 0
             assert result["kept"] == 3
             after = read_audit_cache(tmpdir)
             # All entries still present — verified against literal values from _make_entry args
-            assert set(after.keys()) == {"aaa", "bbb", "ccc"}
-            assert after["aaa"]["assessment"] == "STRONG"
-            assert after["aaa"]["feature"] == "feat_a"
-            assert after["bbb"]["assessment"] == "WEAK"
-            assert after["bbb"]["feature"] == "feat_b"
-            assert after["ccc"]["assessment"] == "STRONG"
-            assert after["ccc"]["feature"] == "feat_c"
+            assert set(after.keys()) == {aaa, bbb, ccc}
+            assert after[aaa]["assessment"] == "STRONG"
+            assert after[aaa]["feature"] == "feat_a"
+            assert after[bbb]["assessment"] == "WEAK"
+            assert after[bbb]["feature"] == "feat_b"
+            assert after[ccc]["assessment"] == "STRONG"
+            assert after[ccc]["feature"] == "feat_c"
 
 
 class TestShellIfElsePair:
@@ -1042,10 +1198,13 @@ class TestLoadCriteria:
         # Write config with audit_criteria source URL
         config_dir = os.path.join(project, '.purlin')
         with open(os.path.join(config_dir, 'config.json'), 'w') as f:
-            json.dump({'audit_criteria': 'git@example.com:team/quality.git#criteria.md'}, f)
-        # Write cached additional criteria
+            json.dump({'audit_criteria': 'git@example.com:team/quality.git#criteria.md',
+                       'audit_criteria_pinned': 'c0ffee1'}, f)
+        # Write cached additional criteria, pinned to the sha config records
+        # (RULE-41: a configured source must carry a matching pin).
         with open(os.path.join(cache_dir, 'additional_criteria.md'), 'w') as f:
-            f.write('## Team-Specific WEAK Criteria\n\n- No sleep() in tests\n')
+            f.write('<!-- purlin-criteria-sha: c0ffee1 -->\n'
+                    '## Team-Specific WEAK Criteria\n\n- No sleep() in tests\n')
         result = load_criteria(project)
         # Built-in must be present
         assert '## Assessment Levels' in result
@@ -1074,9 +1233,11 @@ class TestLoadCriteria:
         cache_dir = os.path.join(project, '.purlin', 'cache')
         os.makedirs(cache_dir, exist_ok=True)
         with open(os.path.join(project, '.purlin', 'config.json'), 'w') as f:
-            json.dump({'audit_criteria': 'git@example.com:team/q.git#c.md'}, f)
+            json.dump({'audit_criteria': 'git@example.com:team/q.git#c.md',
+                       'audit_criteria_pinned': 'c0ffee1'}, f)
         with open(os.path.join(cache_dir, 'additional_criteria.md'), 'w') as f:
-            f.write('## Team Rules\n\n- No mocking databases\n')
+            f.write('<!-- purlin-criteria-sha: c0ffee1 -->\n'
+                    '## Team Rules\n\n- No mocking databases\n')
         extra_file = str(tmp_path / 'extra.md')
         with open(extra_file, 'w') as f:
             f.write('## Project Rules\n\n- All tests under 100ms\n')
@@ -1090,15 +1251,29 @@ class TestLoadCriteria:
 
     @pytest.mark.proof("static_checks", "PROOF-35", "RULE-21")
     def test_no_additional_without_cache_file(self, tmp_path):
-        """load_criteria does not append when cache file doesn't exist."""
+        """Nothing is appended when there is no cached additional criteria.
+
+        With no `audit_criteria` configured there is nothing to append and the
+        built-in criteria stand alone. With `audit_criteria` configured the
+        missing cache is no longer a silent no-op: RULE-41 makes it an error,
+        because falling back to the built-in criteria would grade the project
+        against the wrong standard and say nothing.
+        """
         project = str(tmp_path)
         os.makedirs(os.path.join(project, '.purlin', 'cache'), exist_ok=True)
-        with open(os.path.join(project, '.purlin', 'config.json'), 'w') as f:
-            json.dump({'audit_criteria': 'git@example.com:team/q.git#c.md'}, f)
-        # No additional_criteria.md in cache
+        # No config, no additional_criteria.md in cache
         result = load_criteria(project)
         assert '## Assessment Levels' in result
         assert 'Additional Team Criteria (from' not in result
+
+        # Configured source, still no cache file: refuse rather than append nothing.
+        with open(os.path.join(project, '.purlin', 'config.json'), 'w') as f:
+            json.dump({'audit_criteria': 'git@example.com:team/q.git#c.md',
+                       'audit_criteria_pinned': 'c0ffee1'}, f)
+        with pytest.raises(CriteriaError) as exc:
+            load_criteria(project)
+        assert 'additional_criteria.md' in str(exc.value)
+        assert 'git@example.com:team/q.git#c.md' in str(exc.value)
 
 
 class TestWriteCacheLocking:
@@ -1125,6 +1300,8 @@ class TestWriteCacheLocking:
         so the test runs identically on Windows and POSIX.
         """
         with tempfile.TemporaryDirectory() as tmpdir:
+            _scaffold_proof(tmpdir, 'feat_a', 'PROOF-1', 'RULE-1',
+                            test_file='tests/test_feat_a.py', test_name='test_feat_a_1')
             lock_path = os.path.join(tmpdir, '.purlin', 'cache', 'audit_cache.json.lock')
             lock_seen = []
             real_lock = static_checks._lock_exclusive
@@ -1147,6 +1324,16 @@ class TestWriteCacheLocking:
         import threading
 
         with tempfile.TemporaryDirectory() as tmpdir:
+            for feat, proofs in (('feat_a', 2), ('feat_b', 3)):
+                for n in range(1, proofs + 1):
+                    _scaffold_proof(tmpdir, feat, f'PROOF-{n}', f'RULE-{n}',
+                                    test_file=f'tests/test_{feat}.py',
+                                    test_name=f'test_{feat}_{n}')
+            ka1 = _key(tmpdir, 'feat_a', 'PROOF-1')
+            ka2 = _key(tmpdir, 'feat_a', 'PROOF-2')
+            kb1 = _key(tmpdir, 'feat_b', 'PROOF-1')
+            kb2 = _key(tmpdir, 'feat_b', 'PROOF-2')
+            kb3 = _key(tmpdir, 'feat_b', 'PROOF-3')
             errors = []
 
             def writer_a():
@@ -1181,11 +1368,11 @@ class TestWriteCacheLocking:
                 f"Expected 5 entries (2 from feat_a + 3 from feat_b), got {len(after)}:\n"
                 + json.dumps(list(after.keys()), indent=2)
             )
-            assert "hash_a1" in after, "feat_a entry hash_a1 lost after concurrent write"
-            assert "hash_a2" in after, "feat_a entry hash_a2 lost after concurrent write"
-            assert "hash_b1" in after, "feat_b entry hash_b1 lost after concurrent write"
-            assert "hash_b2" in after, "feat_b entry hash_b2 lost after concurrent write"
-            assert "hash_b3" in after, "feat_b entry hash_b3 lost after concurrent write"
+            assert ka1 in after, "feat_a entry hash_a1 lost after concurrent write"
+            assert ka2 in after, "feat_a entry hash_a2 lost after concurrent write"
+            assert kb1 in after, "feat_b entry hash_b1 lost after concurrent write"
+            assert kb2 in after, "feat_b entry hash_b2 lost after concurrent write"
+            assert kb3 in after, "feat_b entry hash_b3 lost after concurrent write"
 
 
 class TestWriteCacheCLI:
@@ -1208,6 +1395,12 @@ class TestWriteCacheCLI:
     def test_write_cache_cli_merges_entries(self):
         """--write-cache reads JSON dict from stdin and merges into the cache file."""
         with tempfile.TemporaryDirectory() as tmpdir:
+            for n in (1, 2):
+                _scaffold_proof(tmpdir, 'feat_cli', f'PROOF-{n}', f'RULE-{n}',
+                                test_file='tests/test_feat_cli.py',
+                                test_name=f'test_feat_cli_{n}')
+            k1 = _key(tmpdir, 'feat_cli', 'PROOF-1')
+            k2 = _key(tmpdir, 'feat_cli', 'PROOF-2')
             entries = {
                 "cli_hash_1": self._make_entry("STRONG", "feat_cli", "PROOF-1", "RULE-1"),
                 "cli_hash_2": self._make_entry("WEAK",   "feat_cli", "PROOF-2", "RULE-2"),
@@ -1225,13 +1418,19 @@ class TestWriteCacheCLI:
 
             after = read_audit_cache(tmpdir)
             assert len(after) == 2
-            assert "cli_hash_1" in after
-            assert "cli_hash_2" in after
+            assert k1 in after
+            assert k2 in after
 
     @pytest.mark.proof("static_checks", "PROOF-41", "RULE-26")
     def test_write_cache_cli_merges_with_existing(self):
         """--write-cache preserves entries already on disk from a prior write."""
         with tempfile.TemporaryDirectory() as tmpdir:
+            for feat in ('feat_existing', 'feat_new'):
+                _scaffold_proof(tmpdir, feat, 'PROOF-1', 'RULE-1',
+                                test_file=f'tests/test_{feat}.py',
+                                test_name=f'test_{feat}')
+            k_existing = _key(tmpdir, 'feat_existing', 'PROOF-1')
+            k_new = _key(tmpdir, 'feat_new', 'PROOF-1')
             write_audit_cache(tmpdir, {
                 "existing_hash": self._make_entry("STRONG", "feat_existing", "PROOF-1", "RULE-1"),
             })
@@ -1249,8 +1448,8 @@ class TestWriteCacheCLI:
 
             after = read_audit_cache(tmpdir)
             assert len(after) == 2, f"Expected 2 entries (existing + new), got {len(after)}"
-            assert "existing_hash" in after, "existing entry was clobbered by --write-cache"
-            assert "new_hash" in after, "new entry not written by --write-cache"
+            assert k_existing in after, "existing entry was clobbered by --write-cache"
+            assert k_new in after, "new entry not written by --write-cache"
 
 
 class TestCheckJs:
@@ -1571,6 +1770,10 @@ class TestCacheEntryValidation:
     @pytest.mark.proof("static_checks", "PROOF-57", "RULE-33")
     def test_rejects_entries_missing_dedup_key(self):
         with tempfile.TemporaryDirectory() as tmpdir:
+            for n in (1, 2, 9):
+                _scaffold_proof(tmpdir, 'login', f'PROOF-{n}', 'RULE-1',
+                                test_file='tests/test_login.py',
+                                test_name=f'test_login_{n}')
             cache_path = os.path.join(tmpdir, '.purlin', 'cache', 'audit_cache.json')
 
             # Missing proof_id -> raises, naming the offending cache key
@@ -1607,6 +1810,8 @@ class TestCacheEntryValidation:
     @pytest.mark.proof("static_checks", "PROOF-57", "RULE-33")
     def test_write_cache_cli_reports_error_and_exits_2(self):
         with tempfile.TemporaryDirectory() as tmpdir:
+            _scaffold_proof(tmpdir, 'login', 'PROOF-1', 'RULE-1')
+
             def run(stdin_text):
                 return subprocess.run(
                     [sys.executable, _STATIC_CHECKS_PY, '--write-cache',
@@ -1658,6 +1863,12 @@ class TestCacheMutationLocking:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             cache_path = os.path.join(tmpdir, '.purlin', 'cache', 'audit_cache.json')
+            _scaffold_proof(tmpdir, 'login', 'PROOF-1', 'RULE-1')
+            for i in range(20):
+                _scaffold_proof(tmpdir, 'checkout', f'PROOF-{i}', 'RULE-1',
+                                test_file='tests/test_checkout.py',
+                                test_name=f'test_checkout_{i}')
+            seed_key = _key(tmpdir, 'login', 'PROOF-1')
 
             # Both mutators must go through the platform-neutral lock helper.
             for op in ('prune', 'clear'):
@@ -1671,7 +1882,7 @@ class TestCacheMutationLocking:
 
                 with mock.patch.object(static_checks, '_lock_exclusive', side_effect=spy):
                     if op == 'prune':
-                        prune_audit_cache(tmpdir, {'seed'})
+                        prune_audit_cache(tmpdir, {seed_key})
                     else:
                         clear_audit_cache(tmpdir)
                 assert calls, f"{op}_audit_cache did not acquire the exclusive lock"
@@ -1695,7 +1906,7 @@ class TestCacheMutationLocking:
             def pruner():
                 try:
                     for _ in range(20):
-                        prune_audit_cache(tmpdir, {'seed'})
+                        prune_audit_cache(tmpdir, {seed_key})
                 except Exception as exc:  # pragma: no cover
                     errors.append(exc)
 
@@ -1706,7 +1917,7 @@ class TestCacheMutationLocking:
             # The file must still be valid JSON — a torn write would break this.
             final = json.load(open(cache_path, encoding='utf-8'))
             assert isinstance(final, dict)
-            assert 'seed' in final, "the live key must survive every prune"
+            assert seed_key in final, "the live key must survive every prune"
 
 
 class TestCliSelfDocumentation:
@@ -1892,6 +2103,8 @@ class TestProofDesign:
             "cached_at": "2026-01-01T00:00:00+00:00",
         }
         with tempfile.TemporaryDirectory() as tmpdir:
+            _scaffold_proof(tmpdir, 'login', 'PROOF-4', 'RULE-4')
+            d1 = _key(tmpdir, 'login', 'PROOF-4', static_checks.DESIGN_CACHE)
             write_audit_cache(tmpdir, {"d1": entry}, static_checks.DESIGN_CACHE)
             cache_dir = os.path.join(tmpdir, '.purlin', 'cache')
             assert os.path.isfile(os.path.join(cache_dir, 'design_cache.json'))
@@ -1899,7 +2112,7 @@ class TestProofDesign:
                 "design results must not be written into the audit cache"
             assert os.path.isfile(os.path.join(cache_dir, 'design_cache.json.lock')), \
                 "the design cache must take the same exclusive lock"
-            assert read_audit_cache(tmpdir, static_checks.DESIGN_CACHE)['d1']['assessment'] \
+            assert read_audit_cache(tmpdir, static_checks.DESIGN_CACHE)[d1]['assessment'] \
                 == 'PROVABLE'
 
             # The RULE-33 validator guards this cache too.
@@ -1914,3 +2127,316 @@ class TestProofDesign:
         h3 = static_checks.compute_design_hash('RULE text', 'a different description')
         assert h1 == h2 and h1 != h3
         assert len(h1) == 16
+
+        # Two features whose rule text and proof description are byte-identical
+        # must not share a design-cache key, or one grade overwrites the other
+        # while the dedup key still says they are two proofs.
+        with tempfile.TemporaryDirectory() as tmpdir:
+            same_rule = 'the handler returns 204 on an empty body'
+            same_desc = 'Call the handler with an empty body and verify a 204'
+            for feature in ('alpha', 'beta'):
+                _scaffold_proof(tmpdir, feature, 'PROOF-1', 'RULE-1',
+                                test_file=f'tests/test_{feature}.py',
+                                test_name=f'test_{feature}',
+                                rule_text=same_rule, description=same_desc)
+            ka = _key(tmpdir, 'alpha', 'PROOF-1', static_checks.DESIGN_CACHE)
+            kb = _key(tmpdir, 'beta', 'PROOF-1', static_checks.DESIGN_CACHE)
+            assert ka != kb, (
+                "identical rule text and description in two features collided on "
+                f"one design-cache key: {ka}")
+
+
+def _cache_key_inputs(root, feature, proof_id, cache_name=None):
+    """The `inputs` half of cache_key_for, for tests that assert on it."""
+    if cache_name is None:
+        return static_checks.cache_key_for(root, feature, proof_id)[1]
+    return static_checks.cache_key_for(root, feature, proof_id, cache_name)[1]
+
+
+def _cache_entry(feature, proof_id, rule_id='RULE-1', assessment='STRONG'):
+    """A complete, valid audit-cache entry for the given proof."""
+    return {
+        "assessment": assessment, "criterion": "matches rule intent",
+        "why": "the test exercises the rule", "fix": "none",
+        "feature": feature, "proof_id": proof_id, "rule_id": rule_id,
+        "priority": "LOW", "cached_at": "2026-01-01T00:00:00+00:00",
+    }
+
+
+class TestCacheKeyFromProjectState:
+    """RULE-38 — the key is resolved from the project, never supplied by the caller.
+
+    A caller-supplied key described whatever text the caller happened to paste, so
+    a stored grade could not be rechecked against anything.
+    """
+
+    @pytest.mark.proof("static_checks", "PROOF-63", "RULE-38", tier="integration")
+    def test_write_cache_rekeys_every_entry_from_the_project(self):
+        # The proof's identity is in the key, so two features whose rule text and
+        # proof description are byte-identical still get two keys. The test files
+        # here are shell scripts, which have no extractor, so no test source
+        # enters either key and the two inputs that remain are identical. That is
+        # the case a key without the identity actually collides on.
+        with tempfile.TemporaryDirectory() as twin_dir:
+            same_rule = 'the handler returns 204 on an empty body'
+            same_desc = 'Call the handler with an empty body and verify a 204'
+            for feature in ('alpha', 'beta'):
+                _scaffold_proof(twin_dir, feature, 'PROOF-1', 'RULE-1',
+                                test_file=f'tests/{feature}.sh',
+                                test_name=f'test_{feature}',
+                                rule_text=same_rule, description=same_desc)
+            assert _cache_key_inputs(twin_dir, 'alpha', 'PROOF-1')['test_verifiable'] is False, \
+                "a shell proof must record test_verifiable false, or the twins differ"
+            ka = _key(twin_dir, 'alpha', 'PROOF-1')
+            kb = _key(twin_dir, 'beta', 'PROOF-1')
+            assert ka != kb, (
+                "two features with identical rule text, description and test body "
+                f"collided on one cache key: {ka}")
+            write_audit_cache(twin_dir, {
+                'x': _cache_entry('alpha', 'PROOF-1'),
+                'y': _cache_entry('beta', 'PROOF-1', assessment='HOLLOW'),
+            })
+            stored = read_audit_cache(twin_dir)
+            assert set(stored) == {ka, kb}, (
+                f"one of the two grades was lost to a key collision: {list(stored)}")
+            assert stored[ka]['assessment'] == 'STRONG'
+            assert stored[kb]['assessment'] == 'HOLLOW'
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _scaffold_proof(tmpdir, 'demo', 'PROOF-1', 'RULE-1',
+                            test_file='tests/test_demo.py', test_name='test_demo')
+
+            def run(args, stdin_text=None):
+                return subprocess.run(
+                    [sys.executable, _STATIC_CHECKS_PY, *args,
+                     '--project-root', tmpdir],
+                    input=stdin_text, capture_output=True, text=True)
+
+            # --cache-key prints the one key the project resolves to.
+            r = run(['--cache-key', '--feature', 'demo', '--proof-id', 'PROOF-1'])
+            assert r.returncode == 0, f"{r.stdout}{r.stderr}"
+            printed = json.loads(r.stdout)
+            assert printed['feature'] == 'demo' and printed['proof_id'] == 'PROOF-1'
+            key = printed['key']
+            assert re.fullmatch(r'[0-9a-f]{16}', key), f"not a proof hash: {key!r}"
+
+            # A deliberately wrong caller key is discarded, not stored.
+            r = run(['--write-cache'],
+                    json.dumps({'deadbeef': _cache_entry('demo', 'PROOF-1')}))
+            assert r.returncode == 0, f"{r.stdout}{r.stderr}"
+            r = run(['--read-cache'])
+            assert r.returncode == 0, r.stderr
+            stored = json.loads(r.stdout)
+            assert list(stored) == [key], \
+                f"expected only the resolved key {key}, got {list(stored)}"
+            assert 'deadbeef' not in stored, "the caller's key survived the write"
+
+            # The flag --cache-key replaced is gone from the help text, from the
+            # dispatch chain, and from the CLI.
+            tree = ast.parse(open(_STATIC_CHECKS_PY, encoding='utf-8').read())
+            main_fn = next(n for n in tree.body
+                           if isinstance(n, ast.FunctionDef) and n.name == 'main')
+            dispatched = set()
+            for node in ast.walk(main_fn):
+                if isinstance(node, ast.Compare) and isinstance(node.ops[0], ast.In):
+                    left, right = node.left, node.comparators[0]
+                    is_argv = (isinstance(right, ast.Attribute) and right.attr == 'argv') \
+                        or (isinstance(right, ast.Name) and right.id == 'argv')
+                    if is_argv and isinstance(left, ast.Constant) \
+                            and isinstance(left.value, str) and left.value.startswith('--'):
+                        dispatched.add(left.value)
+            assert '--cache-key' in dispatched, "detector is broken — no --cache-key found"
+            assert '--compute-proof-hash' not in dispatched, \
+                "main() still dispatches on the replaced flag"
+            assert '--compute-proof-hash' not in ' '.join(static_checks._USAGE), \
+                "_USAGE still advertises the replaced flag"
+            r = run(['--compute-proof-hash', '--rule', 'r', '--proof-desc', 'd',
+                     '--test-code', 'c'])
+            assert r.returncode == 2, \
+                f"--compute-proof-hash should be a bad invocation, got {r.returncode}"
+
+            # An entry the spec does not declare is rejected whole, before the
+            # filesystem is touched.
+            cache_path = os.path.join(tmpdir, '.purlin', 'cache', 'audit_cache.json')
+            before = open(cache_path, 'rb').read()
+            r = run(['--write-cache'],
+                    json.dumps({'whatever': _cache_entry('demo', 'PROOF-99')}))
+            assert r.returncode == 2, f"expected exit 2, got {r.returncode}: {r.stdout}"
+            assert 'demo/PROOF-99' in json.loads(r.stdout)['error']
+            assert open(cache_path, 'rb').read() == before, \
+                "a rejected batch must leave the cache byte-identical"
+
+
+class TestAuditorStamp:
+    """RULE-39 — every stored entry names who graded it and what fed the key."""
+
+    @pytest.mark.proof("static_checks", "PROOF-64", "RULE-39", tier="integration")
+    def test_entries_carry_the_auditor_and_input_provenance(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _scaffold_proof(tmpdir, 'demo', 'PROOF-1', 'RULE-1',
+                            test_file='tests/test_demo.py', test_name='test_demo')
+            config_path = os.path.join(tmpdir, '.purlin', 'config.json')
+
+            def write(entry_proof_id):
+                r = subprocess.run(
+                    [sys.executable, _STATIC_CHECKS_PY, '--write-cache',
+                     '--project-root', tmpdir],
+                    input=json.dumps({'ignored': _cache_entry('demo', entry_proof_id)}),
+                    capture_output=True, text=True)
+                assert r.returncode == 0, f"{r.stdout}{r.stderr}"
+                return read_audit_cache(tmpdir)
+
+            # Nothing configured: the default auditor, spelled out in full.
+            assert not os.path.exists(config_path)
+            stored = write('PROOF-1')[_key(tmpdir, 'demo', 'PROOF-1')]
+            assert stored['auditor'] == {'name': 'claude', 'command': None}, \
+                stored.get('auditor')
+
+            # A configured LLM: exactly the configured name and command.
+            os.makedirs(os.path.dirname(config_path), exist_ok=True)
+            with open(config_path, 'w', encoding='utf-8') as f:
+                json.dump({'audit_llm_name': 'Gemini Pro',
+                           'audit_llm': 'gemini -p "{prompt}"'}, f)
+            stored = write('PROOF-1')[_key(tmpdir, 'demo', 'PROOF-1')]
+            assert stored['auditor'] == {
+                'name': 'Gemini Pro', 'command': 'gemini -p "{prompt}"'}, \
+                stored.get('auditor')
+
+            # test_verifiable says whether a test edit could move this key.
+            _scaffold_proof(tmpdir, 'demo', 'PROOF-2', 'RULE-2',
+                            test_file='tests/check_demo.sh', test_name='check_demo')
+            after = write('PROOF-2')
+            shell_entry = after[_key(tmpdir, 'demo', 'PROOF-2')]
+            pytest_entry = after[_key(tmpdir, 'demo', 'PROOF-1')]
+            assert shell_entry['inputs']['test_verifiable'] is False, \
+                "a shell proof has no extractable test code, so it must say so"
+            assert pytest_entry['inputs']['test_verifiable'] is True, \
+                "a pytest proof's source does enter the key"
+
+
+class TestCacheKeyDeterminism:
+    """RULE-40 — the key is a function of the three resolved inputs and nothing else."""
+
+    @pytest.mark.proof("static_checks", "PROOF-65", "RULE-40", tier="unit")
+    def test_key_tracks_the_graded_test_and_nothing_else(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_path = _scaffold_proof(
+                tmpdir, 'demo', 'PROOF-1', 'RULE-1',
+                test_file='tests/test_demo.py', test_name='test_graded',
+                test_body='    graded = 1 + 1\n    assert graded == 2')
+            _scaffold_proof(
+                tmpdir, 'demo', 'PROOF-2', 'RULE-2',
+                test_file='tests/test_demo.py', test_name='test_neighbour',
+                test_body='    other = 3 + 3\n    assert other == 6')
+
+            # Deterministic: the same project gives the same key twice.
+            first = cache_key_for(tmpdir, 'demo', 'PROOF-1')
+            second = cache_key_for(tmpdir, 'demo', 'PROOF-1')
+            assert first == second, f"{first} != {second}"
+            key1, key2 = first[0], _key(tmpdir, 'demo', 'PROOF-2')
+            assert key1 != key2
+
+            # Re-keying an already re-keyed batch is a no-op on the key set.
+            once = rekey_cache_entries(tmpdir, {
+                'wrong-1': _cache_entry('demo', 'PROOF-1', 'RULE-1'),
+                'wrong-2': _cache_entry('demo', 'PROOF-2', 'RULE-2'),
+            })
+            assert set(once) == {key1, key2}
+            twice = rekey_cache_entries(tmpdir, once)
+            assert set(twice) == set(once), "re-keying moved a key that was already right"
+
+            original = open(test_path, encoding='utf-8').read()
+
+            # One character inside the graded function moves the key.
+            with open(test_path, 'w', encoding='utf-8') as f:
+                f.write(original.replace('graded == 2', 'graded == 3'))
+            assert _key(tmpdir, 'demo', 'PROOF-1') != key1, \
+                "editing the graded test left the key unchanged — a stale grade survives"
+
+            # Restored, the key comes back.
+            with open(test_path, 'w', encoding='utf-8') as f:
+                f.write(original)
+            assert _key(tmpdir, 'demo', 'PROOF-1') == key1
+
+            # A different marked function in the same file does not move it.
+            with open(test_path, 'w', encoding='utf-8') as f:
+                f.write(original.replace('other == 6', 'other == 7'))
+            assert _key(tmpdir, 'demo', 'PROOF-1') == key1, \
+                "an unrelated test edit invalidated this proof's grade"
+            assert _key(tmpdir, 'demo', 'PROOF-2') != key2, \
+                "the edited test's own key should have moved"
+
+
+class TestCriteriaPin:
+    """RULE-41 — criteria are never assembled from something that cannot be named."""
+
+    def _cli(self, project):
+        return subprocess.run(
+            [sys.executable, _STATIC_CHECKS_PY, '--load-criteria',
+             '--project-root', project],
+            capture_output=True, text=True)
+
+    @pytest.mark.proof("static_checks", "PROOF-66", "RULE-41", tier="integration")
+    def test_pinned_criteria_are_enforced(self, tmp_path):
+        project = str(tmp_path)
+        cache_dir = os.path.join(project, '.purlin', 'cache')
+        os.makedirs(cache_dir, exist_ok=True)
+        config_path = os.path.join(project, '.purlin', 'config.json')
+        cached_path = os.path.join(cache_dir, 'additional_criteria.md')
+
+        def set_pin(sha):
+            with open(config_path, 'w', encoding='utf-8') as f:
+                json.dump({'audit_criteria': 'git@example.com:team/q.git#c.md',
+                           'audit_criteria_pinned': sha}, f)
+
+        team_text = '## Team Rules\n\n- No network in unit tests\n'
+        set_pin('aaa1111')
+        with open(cached_path, 'w', encoding='utf-8') as f:
+            f.write('<!-- purlin-criteria-sha: aaa1111 -->\n' + team_text)
+
+        # Matching pin: both bodies present, the header line consumed.
+        result = load_criteria(project)
+        assert '## Assessment Levels' in result, "built-in criteria missing"
+        assert 'No network in unit tests' in result, "team criteria missing"
+        assert 'git@example.com:team/q.git#c.md' in result, "the source is not named"
+        assert 'purlin-criteria-sha' not in result, \
+            "the pin header leaked into the criteria text"
+
+        # Mismatched pin: named on both sides, and fatal to the CLI.
+        set_pin('bbb2222')
+        with pytest.raises(CriteriaError) as exc:
+            load_criteria(project)
+        assert 'aaa1111' in str(exc.value) and 'bbb2222' in str(exc.value), str(exc.value)
+        r = self._cli(project)
+        assert r.returncode == 2, f"expected exit 2, got {r.returncode}: {r.stdout}"
+        assert 'aaa1111' in r.stderr and 'bbb2222' in r.stderr, r.stderr
+
+        # Missing cache file.
+        set_pin('aaa1111')
+        os.remove(cached_path)
+        with pytest.raises(CriteriaError) as exc:
+            load_criteria(project)
+        assert 'additional_criteria.md' in str(exc.value)
+        r = self._cli(project)
+        assert r.returncode == 2, f"expected exit 2, got {r.returncode}: {r.stdout}"
+        assert 'additional_criteria.md' in r.stderr, r.stderr
+
+        # Cache present but with no pin header at all.
+        with open(cached_path, 'w', encoding='utf-8') as f:
+            f.write(team_text)
+        with pytest.raises(CriteriaError) as exc:
+            load_criteria(project)
+        assert 'purlin-criteria-sha' in str(exc.value)
+        r = self._cli(project)
+        assert r.returncode == 2, f"expected exit 2, got {r.returncode}: {r.stdout}"
+        assert 'purlin-criteria-sha' in r.stderr, r.stderr
+
+        # A plugin root with no built-in criteria: an error, never an empty string.
+        with open(cached_path, 'w', encoding='utf-8') as f:
+            f.write('<!-- purlin-criteria-sha: aaa1111 -->\n' + team_text)
+        empty_root = str(tmp_path / 'no_plugin')
+        os.makedirs(empty_root, exist_ok=True)
+        with mock.patch.dict(os.environ, {'CLAUDE_PLUGIN_ROOT': empty_root}):
+            with pytest.raises(CriteriaError) as exc:
+                load_criteria(project)
+        assert 'audit_criteria.md' in str(exc.value)

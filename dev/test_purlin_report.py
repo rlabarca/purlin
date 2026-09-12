@@ -3591,3 +3591,59 @@ class TestEvidenceStaleRendering:
         assert clean_row.locator(".pchip.ev-stale").count() == 0
         assert clean_row.locator(".col-status span").first.get_attribute(
             "class") == stale_badge_cls
+
+
+class TestInvalidatedGradesAndAuditorLabel:
+    """purlin_report RULE-45 — the Integrity card says when its number is built
+    on grades that no longer describe anything, and who produced them."""
+
+    def _audit(self, invalidated, auditors):
+        a = dict(make_data()["audit_summary"])
+        a["invalidated"] = invalidated
+        a["auditors"] = auditors
+        return a
+
+    @pytest.mark.proof("purlin_report", "PROOF-49", "RULE-45", tier="e2e")
+    def test_invalidated_grades_and_named_auditor_surface_on_the_card(
+            self, page, dashboard):
+        # platform_testing is what makes the Integrity card open its modal.
+        load_dashboard(page, dashboard, data=platform_data(
+            {"audit_summary": self._audit(2, {"Gemini Pro": 3})}))
+
+        card = page.locator(".summary-card[data-modal='integrity']")
+        sub = card.locator(".summary-card-sub")
+        sub_text = sub.inner_text()
+        assert "by Gemini Pro" in sub_text, (
+            "a gauge produced by an unfamiliar tool is a different claim and "
+            f"must name it, got {sub_text!r}")
+        title = sub.get_attribute("title") or ""
+        assert "2 grades invalidated, re-run purlin:audit" in title, (
+            "the tooltip must turn the quietly shrinking number into an "
+            f"instruction, got {title!r}")
+        assert "Gemini Pro (3)" in title, \
+            f"the tooltip must carry each auditor with its count, got {title!r}"
+
+        card.click()
+        note = page.locator("#modal .modal-note")
+        assert note.count() == 1, \
+            "the per-platform Integrity modal must repeat the invalidated note"
+        assert "2 grades invalidated, re-run purlin:audit" in note.inner_text(), \
+            note.inner_text()
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR,
+                                          "proof49_invalidated.png"))
+        page.keyboard.press("Escape")
+
+        # Nothing invalidated, and only the default auditor: the card says
+        # neither, because a label every project carries is one nobody reads.
+        load_dashboard(page, dashboard, data=platform_data(
+            {"audit_summary": self._audit(0, {"claude": 3})}))
+        card = page.locator(".summary-card[data-modal='integrity']")
+        sub = card.locator(".summary-card-sub")
+        assert " by " not in sub.inner_text(), (
+            "the default auditor is never named, got " + repr(sub.inner_text()))
+        title = sub.get_attribute("title") or ""
+        assert "invalidated" not in title, \
+            f"no grade is invalidated, so nothing to say: {title!r}"
+        card.click()
+        assert page.locator("#modal .modal-note").count() == 0, \
+            "the modal must carry no amber note when nothing is invalidated"

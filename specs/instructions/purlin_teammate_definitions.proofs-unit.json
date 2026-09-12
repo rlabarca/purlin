@@ -27,6 +27,15 @@
       "test_name": "test_auditor_routes_remediation_to_build_not_a_spawned_agent",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "purlin_teammate_definitions",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "test_file": "dev/test_purlin_teammate_definitions.py",
+      "test_name": "test_auditor_and_skill_agree_the_auditor_writes_its_own_cache",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

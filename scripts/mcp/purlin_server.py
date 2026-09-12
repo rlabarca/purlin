@@ -18,6 +18,8 @@ import json
 import os
 import platform
 import re
+import shlex
+import shutil
 import subprocess
 import sys
 
@@ -788,12 +790,37 @@ def _determine_status(proved, active_total, has_fail, has_current_receipt,
     return 'UNTESTED'
 
 
-def _read_audit_summary(project_root):
+def _head_sha(project_root):
+    """Full sha of HEAD, or the string `unknown` when git cannot answer.
+
+    Never None. The payload's `git_sha` used to be absent unless a caller passed
+    one in, so the committed digest carried `git_sha: null` and a QA reader had
+    no way to say which tree any number in it described.
+    """
+    try:
+        r = subprocess.run(
+            ['git', 'rev-parse', 'HEAD'],
+            capture_output=True, text=True, cwd=project_root, timeout=5,
+        )
+        if r.returncode == 0 and r.stdout.strip():
+            return r.stdout.strip()
+    except (subprocess.SubprocessError, OSError):
+        pass
+    return 'unknown'
+
+
+def _read_audit_summary(project_root, features=None):
     """Read audit cache and compute project-wide integrity summary.
 
     Integrity = (STRONG + MANUAL) / behavioral_total — measures proof quality
     only. Coverage (proved/total rules) is a separate metric.
     Returns dict with integrity stats or None if no cache exists.
+
+    Entries whose key no longer recomputes from project state are dropped and
+    reported as `invalidated`; they count as unmeasured, not as passing
+    (RULE-61). `features` supplies the manual stamps a MANUAL grade must be
+    backed by; with none supplied no stamp is current and every MANUAL grade is
+    invalidated, which is the safe direction.
     """
     cache_path = os.path.join(project_root, '.purlin', 'cache', 'audit_cache.json')
     if not os.path.isfile(cache_path):
@@ -806,10 +833,11 @@ def _read_audit_summary(project_root):
     if not isinstance(cache, dict) or not cache:
         return None
 
-    # Deduplicate via the shared helper. This function used to carry its own
-    # copy of the loop, which is exactly the drift _dedup_cache_entries exists
-    # to prevent.
-    latest = _dedup_cache_entries(cache)
+    # Deduplicate and drop the entries whose inputs have moved since they were
+    # graded. This function used to carry its own copy of the dedup loop, which
+    # is exactly the drift _dedup_cache_entries exists to prevent.
+    latest, invalidated = _partition_cache_entries(
+        project_root, cache, 'audit_cache.json', features)
 
     strong = 0
     weak = 0
@@ -834,11 +862,27 @@ def _read_audit_summary(project_root):
 
     integrity, behavioral_total = _compute_integrity(strong, weak, hollow, manual)
     if integrity is None:
+        # Every entry was invalidated: the cache exists, so "no audit data" would
+        # be the wrong sentence, but nothing in it can be believed either.
+        if invalidated:
+            return {
+                'integrity': None, 'strong': 0, 'weak': 0, 'hollow': 0,
+                'manual': 0, 'behavioral_total': 0,
+                'last_audit': latest_ts,
+                'last_audit_relative': _relative_time(latest_ts) if latest_ts else None,
+                'stale': _is_stale(latest_ts),
+                'invalidated': invalidated,
+                'valid_entries': 0,
+                'auditors': {},
+            }
         return None
 
     stale = _is_stale(latest_ts)
 
     return {
+        'invalidated': invalidated,
+        'valid_entries': len(latest),
+        'auditors': _auditor_counts(latest.values()),
         'integrity': integrity,
         'strong': strong,
         'weak': weak,
@@ -851,7 +895,7 @@ def _read_audit_summary(project_root):
     }
 
 
-def _read_design_summary(project_root):
+def _read_design_summary(project_root, features=None):
     """Read the design cache and compute the project-wide Proof Design summary.
 
     Design grades proof DESCRIPTIONS, so this is meaningful with no tests in the
@@ -870,7 +914,9 @@ def _read_design_summary(project_root):
 
     provable = loose = unprovable = structural = 0
     latest_ts = None
-    for entry in _dedup_cache_entries(cache).values():
+    latest, invalidated = _partition_cache_entries(
+        project_root, cache, 'design_cache.json', features)
+    for entry in latest.values():
         level = entry.get('assessment', '').upper()
         if level == 'PROVABLE':
             provable += 1
@@ -886,9 +932,22 @@ def _read_design_summary(project_root):
 
     design, gradeable = _compute_design(provable, loose, unprovable)
     if design is None:
+        if invalidated:
+            return {
+                'design': None, 'provable': 0, 'loose': 0, 'unprovable': 0,
+                'structural': 0, 'gradeable_total': 0,
+                'last_design_audit': latest_ts,
+                'last_design_audit_relative': (
+                    _relative_time(latest_ts) if latest_ts else None),
+                'stale': _is_stale(latest_ts),
+                'invalidated': invalidated,
+                'valid_entries': 0,
+            }
         return None
 
     return {
+        'invalidated': invalidated,
+        'valid_entries': len(latest),
         'design': design,
         'provable': provable,
         'loose': loose,
@@ -899,6 +958,115 @@ def _read_design_summary(project_root):
         'last_design_audit_relative': _relative_time(latest_ts) if latest_ts else None,
         'stale': _is_stale(latest_ts),
     }
+
+
+# ---------------------------------------------------------------------------
+# Audit cache integrity (sync_status RULE-61)
+# ---------------------------------------------------------------------------
+#
+# A cached grade is a claim about three inputs: the rule text, the proof
+# description and the graded test's source. `static_checks.write_audit_cache`
+# keys every entry on those inputs, so an entry whose key no longer recomputes
+# was graded against something that has since changed. Such an entry is dropped
+# and counted as `invalidated`, and the count lands in the unmeasured half of the
+# gauge rather than quietly propping up a percentage.
+
+_STATIC_CHECKS_UNSET = object()
+_STATIC_CHECKS_MODULE = _STATIC_CHECKS_UNSET
+
+
+def _static_checks():
+    """The static_checks module from the sibling scripts/audit directory, or None.
+
+    The MCP server and the audit CLI are separate programs; the server imports
+    the CLI only to ask what a cache key should be. A failed import means the
+    keys cannot be checked, and that is reported as unverifiable rather than
+    treated as valid: a reader that kept every grade when the checker was
+    missing would report a full gauge from a cache nobody could recompute.
+    """
+    global _STATIC_CHECKS_MODULE
+    if _STATIC_CHECKS_MODULE is not _STATIC_CHECKS_UNSET:
+        return _STATIC_CHECKS_MODULE
+    _STATIC_CHECKS_MODULE = None
+    path = os.path.join(os.path.dirname(SCRIPT_DIR), 'audit', 'static_checks.py')
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('purlin_static_checks', path)
+        if spec and spec.loader:
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            if hasattr(module, 'cache_key_for'):
+                _STATIC_CHECKS_MODULE = module
+    except Exception:
+        _STATIC_CHECKS_MODULE = None
+    return _STATIC_CHECKS_MODULE
+
+
+def _current_manual_proof_ids(project_root, features):
+    """{(feature, proof_id)} whose `@manual` stamp counts right now.
+
+    Reuses `_manual_ok_keys`, so the stamp that counts toward coverage and the
+    stamp that keeps a MANUAL grade alive are the same stamp by construction.
+    """
+    current = set()
+    for name, info in (features or {}).items():
+        for stamp in _manual_ok_keys(project_root, info):
+            current.add((name, stamp.get('proof_id')))
+    return current
+
+
+def _partition_cache_entries(project_root, cache, cache_name, features=None):
+    """(valid_latest, invalidated) for a quality cache.
+
+    `valid_latest` is the deduplicated survivors keyed by (feature, proof_id);
+    `invalidated` counts the deduplicated entries that did not survive. An entry
+    is invalidated when its stored key is not the key the project state now
+    produces, when the checker cannot be imported at all, or when it is a MANUAL
+    grade with no current `@manual` stamp behind it: a MANUAL grade is a human's
+    claim rather than a measurement, so it lives exactly as long as the stamp.
+    """
+    latest = _dedup_cache_entries(cache)
+    module = _static_checks()
+    if module is None:
+        return {}, len(latest)
+    manual_ok = _current_manual_proof_ids(project_root, features)
+    valid = {}
+    invalidated = 0
+    stored_key_by_dedup = {}
+    for stored_key, entry in cache.items():
+        if not isinstance(entry, dict):
+            continue
+        dedup_key = (entry.get('feature', ''), entry.get('proof_id', ''))
+        if latest.get(dedup_key) is entry:
+            stored_key_by_dedup[dedup_key] = stored_key
+    for dedup_key, entry in latest.items():
+        feature, proof_id = dedup_key
+        if (entry.get('assessment', '').upper() == 'MANUAL'
+                and dedup_key not in manual_ok):
+            invalidated += 1
+            continue
+        try:
+            key, _inputs = module.cache_key_for(
+                project_root, feature, proof_id, cache_name)
+        except Exception:
+            invalidated += 1
+            continue
+        if key != stored_key_by_dedup.get(dedup_key):
+            invalidated += 1
+            continue
+        valid[dedup_key] = entry
+    return valid, invalidated
+
+
+def _auditor_counts(entries):
+    """{auditor name: count} over graded entries, for the digest and the card."""
+    counts = {}
+    for entry in entries:
+        name = ((entry.get('auditor') or {}).get('name')
+                if isinstance(entry.get('auditor'), dict) else None)
+        name = name or 'unknown'
+        counts[name] = counts.get(name, 0) + 1
+    return counts
 
 
 def _count_cache_entries(project_root, cache_name):
@@ -959,7 +1127,13 @@ def _attach_gauge_coverage(project_root, features, all_proofs,
     ):
         if summary is None:
             continue
-        measured = _count_cache_entries(project_root, cache_name)
+        # Only entries whose key still recomputes are measurements. The
+        # invalidated ones move into `unmeasured` through the denominator below,
+        # so a cache full of stale grades reads as unmeasured rather than as a
+        # full gauge (RULE-61).
+        measured = summary.get('valid_entries')
+        if measured is None:
+            measured = _count_cache_entries(project_root, cache_name)
         summary['coverage'] = {
             'measured': measured,
             'total': total,
@@ -1250,6 +1424,11 @@ def _gauge_suffix(summary, which, audit_summary, design_summary):
         assessed = summary.get('assessed')
         if assessed is not None and assessed != _gauge_headline(summary, which):
             parts.append(f"{assessed}% of those assessed")
+    invalidated = summary.get('invalidated') or 0
+    if invalidated:
+        # Named before the age, because a grade whose inputs moved is a stronger
+        # reason to re-run than a grade that is merely old (RULE-61).
+        parts.append(f"{invalidated} invalidated, re-run purlin:audit")
     rel = summary.get('last_design_audit_relative' if which == 'design'
                       else 'last_audit_relative')
     if rel:
@@ -2180,6 +2359,48 @@ def _pending_migration_lines(pending):
     return lines
 
 
+def _audit_llm_advisory_lines(config):
+    """Warn when the configured external auditor cannot run (RULE-62).
+
+    Three ways a cross-model audit is configured and cannot happen: the command
+    is not on PATH, the command has no `{prompt}` placeholder so the criteria and
+    the test code are never passed to it, or a name is configured with no command
+    at all so every grade is stamped with an auditor that never ran. All three
+    warn and none of them blocks: a project can legitimately configure a tool it
+    installs on another machine, and a gate here would stop a build over a name.
+    """
+    command = (config.get('audit_llm') or '').strip()
+    name = (config.get('audit_llm_name') or '').strip()
+    problems = []
+    if command:
+        try:
+            executable = shlex.split(command)[0]
+        except ValueError:
+            executable = ''
+        if not executable:
+            problems.append(f'audit_llm is set to {command!r} but names no command')
+        elif shutil.which(executable) is None:
+            problems.append(
+                f'audit_llm names {executable!r}, which is not on PATH')
+        if '{prompt}' not in command:
+            problems.append(
+                f'audit_llm is set to {command!r} with no {{prompt}} placeholder, '
+                'so the criteria and the test code are never passed to it')
+    elif name:
+        problems.append(
+            f'audit_llm_name is {name!r} with no audit_llm command, so grades '
+            'would be stamped with an auditor that never ran')
+    if not problems:
+        return []
+    lines = ['\u26a0 External auditor is configured but cannot run:']
+    lines.extend(f'  {problem}' for problem in problems)
+    lines.append('\u2192 Fix: edit "audit_llm" in .purlin/config.json, or unset it '
+                 'to audit with Claude')
+    lines.append('Warning only: grades already in the cache are unaffected.')
+    lines.append('')
+    return lines
+
+
 def sync_status(project_root, role=None):
     """Generate the full sync_status report with directives."""
     _PROVENANCE_CACHE.clear()
@@ -2216,6 +2437,9 @@ def sync_status(project_root, role=None):
         preamble.append('Drift detection, staleness checks, and verification use committed state.')
         preamble.append('\u2192 Commit these files before running purlin:drift or purlin:verify')
         preamble.append('')
+
+    # The external auditor, when one is configured and cannot run (RULE-62).
+    preamble.extend(_audit_llm_advisory_lines(config))
 
     # Malformed `platforms` entries are dropped from the registry, never
     # silently: a typo that vanished would leave a proof matching every host
@@ -2262,8 +2486,9 @@ def sync_status(project_root, role=None):
     # Process regular features
     # Per-feature gauges for the table's two quality columns. Same readers the
     # dashboard uses, so the CLI and the dashboard cannot disagree.
-    audit_by_feature = _read_audit_cache_by_feature(project_root)
-    design_by_feature = _read_audit_cache_by_feature(project_root, 'design_cache.json')
+    audit_by_feature = _read_audit_cache_by_feature(project_root, features=features)
+    design_by_feature = _read_audit_cache_by_feature(project_root, 'design_cache.json',
+                                                 features=features)
     populations = _feature_populations(features, all_proofs)
     gauges_by_feature = {
         name: {
@@ -2360,8 +2585,8 @@ def sync_status(project_root, role=None):
 
     # Read both quality gauges. Design needs no tests, so it is meaningful even
     # when the audit cache is absent.
-    audit_summary = _read_audit_summary(project_root)
-    design_summary = _read_design_summary(project_root)
+    audit_summary = _read_audit_summary(project_root, features)
+    design_summary = _read_design_summary(project_root, features)
     _attach_gauge_coverage(project_root, features, all_proofs,
                            audit_summary, design_summary)
 
@@ -3181,7 +3406,8 @@ def _get_plugin_docs_url():
     return None
 
 
-def _read_audit_cache_by_feature(project_root, cache_name='audit_cache.json'):
+def _read_audit_cache_by_feature(project_root, cache_name='audit_cache.json',
+                                 features=None):
     """Read a quality cache and group entries by feature name.
 
     Returns dict of feature_name -> list of {assessment, criterion, fix, proof_id, rule_id, priority}.
@@ -3203,22 +3429,17 @@ def _read_audit_cache_by_feature(project_root, cache_name='audit_cache.json'):
     if not isinstance(cache, dict):
         return {}
 
-    # Collect all entries, deduplicating by (feature, proof_id) — keep latest
-    latest = {}  # (feature, proof_id) -> entry
-    for _key, entry in cache.items():
-        if not isinstance(entry, dict):
-            continue
-        feat = entry.get('feature')
-        if not feat:
-            continue
-        pid = entry.get('proof_id', '')
-        dedup_key = (feat, pid)
-        existing = latest.get(dedup_key)
-        if existing is None or entry.get('cached_at', '') > existing.get('cached_at', ''):
-            latest[dedup_key] = entry
+    # Deduplicate by (feature, proof_id) and drop the entries whose key no longer
+    # recomputes, so a feature row shows the same grades the roll-up counted
+    # (RULE-61). Sharing the partition with _read_audit_summary is what keeps the
+    # two from disagreeing.
+    latest, _invalidated = _partition_cache_entries(
+        project_root, cache, cache_name, features)
 
     by_feature = {}
     for (_feat, _pid), entry in latest.items():
+        if not _feat:
+            continue
         by_feature.setdefault(_feat, []).append(entry)
     return by_feature
 
@@ -3566,12 +3787,13 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
     }
     host_id = _host_id(registry, host)
     records_by_feature = {}
-    audit_by_feature = _read_audit_cache_by_feature(project_root)
+    audit_by_feature = _read_audit_cache_by_feature(project_root, features=features)
     # Read the design cache here rather than accepting it as a parameter. A
     # defaulted parameter is what let generate_digest silently blank the Design
     # gauge (report_data RULE-24); reading from the cache inside the builder
     # makes both entry points correct by construction.
-    design_by_feature = _read_audit_cache_by_feature(project_root, 'design_cache.json')
+    design_by_feature = _read_audit_cache_by_feature(project_root, 'design_cache.json',
+                                                 features=features)
     populations = _feature_populations(features, all_proofs)
     # Build per-proof audit lookup: (feature_name, proof_id) -> assessment
     audit_by_proof = {}
@@ -3894,6 +4116,12 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
         'design_summary': design_summary,
         'drift': None,
         'uncommitted': uncommitted_files,
+        # HEAD at generation time. Always present, never null: a reader with no
+        # commit cannot say which tree a number describes, and `git_sha: null`
+        # in the committed digest is exactly the shape that hid that. When the
+        # pre-commit hook writes the digest this is the PARENT of the commit
+        # that carries it, because the commit does not exist yet (RULE-39).
+        'git_sha': _head_sha(project_root),
     }
 
 
@@ -3921,8 +4149,8 @@ def read_report_payload(project_root):
         k: v for k, v in features.items()
         if v.get('is_anchor') and v.get('is_global')
     }
-    audit_summary = _read_audit_summary(project_root)
-    design_summary = _read_design_summary(project_root)
+    audit_summary = _read_audit_summary(project_root, features)
+    design_summary = _read_design_summary(project_root, features)
     _attach_gauge_coverage(project_root, features, all_proofs,
                            audit_summary, design_summary)
     return _build_report_data(
@@ -4528,8 +4756,8 @@ def generate_digest(project_root):
     # read here: the digest path used to take audit_summary alone and leave
     # design_summary at its None default, so every pre-commit refresh blanked
     # the Proof Design card that sync_status had just populated.
-    audit_summary = _read_audit_summary(project_root)
-    design_summary = _read_design_summary(project_root)
+    audit_summary = _read_audit_summary(project_root, features)
+    design_summary = _read_design_summary(project_root, features)
     _attach_gauge_coverage(project_root, features, all_proofs,
                            audit_summary, design_summary)
 

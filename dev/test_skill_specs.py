@@ -28,6 +28,21 @@ import purlin_server
 PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
 SKILLS_DIR = os.path.join(PROJECT_ROOT, 'skills')
 REFS_DIR = os.path.join(PROJECT_ROOT, 'references')
+AGENTS_DIR = os.path.join(PROJECT_ROOT, 'agents')
+
+# The sentence the skill and the auditor definition used to disagree over: one
+# forbade subagent writes while the other required them, so one of the pair was
+# wrong on every run. Any revival of the prohibition must fail PROOF-18.
+FORBIDS_SUBAGENT_WRITE = re.compile(
+    r'(?i)\bsub-?agents?\b[^.\n]{0,80}?'
+    r'\b(must not|may not|cannot|can not|never|do not|does not|should not|don\'t)\b'
+    r'[^.\n]{0,60}?\bwrit'
+)
+
+
+def _read_agent(name):
+    with open(os.path.join(AGENTS_DIR, name)) as f:
+        return f.read()
 
 
 def _read(skill_name):
@@ -300,11 +315,17 @@ class TestSkillAudit:
             purlin_dir = os.path.join(tmp_dir, '.purlin')
             cache_dir = os.path.join(purlin_dir, 'cache')
             os.makedirs(cache_dir)
+            # The cache must carry the pin config records, or load_criteria
+            # refuses rather than falling back to the built-in criteria.
+            sha = 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678'
             with open(os.path.join(purlin_dir, 'config.json'), 'w') as f:
-                json.dump({"version": "0.9.0", "audit_criteria": "team://custom-standards"}, f)
+                json.dump({"version": "0.9.0",
+                           "audit_criteria": "team://custom-standards",
+                           "audit_criteria_pinned": sha}, f)
+            header = '<!-- purlin-criteria-sha: %s -->' % sha
             additional_criteria = "## Custom Rule\n\nAll tests must use fixtures.\n"
             with open(os.path.join(cache_dir, 'additional_criteria.md'), 'w') as f:
-                f.write(additional_criteria)
+                f.write(header + '\n' + additional_criteria)
 
             combined = load_criteria(tmp_dir)
 
@@ -316,6 +337,9 @@ class TestSkillAudit:
                 "load_criteria must append additional team criteria"
             assert combined.index('Criteria-Version') < combined.index('Custom Rule'), \
                 "built-in criteria must appear before additional criteria (appended, not replaced)"
+            assert 'purlin-criteria-sha' not in combined, \
+                ("the pin header is provenance, not a criterion — an auditor must "
+                 "never be asked to grade against a comment")
 
             # Pass 1 catches assert True independently of criteria configuration
             hollow_code = (
@@ -423,6 +447,29 @@ class TestSkillAudit:
         assert re.search(r'(?i)empty live-keys', prune_body), \
             "the prune step must warn against pruning with an empty live-keys file"
 
+        # The skill and the auditor definition must agree on who writes. They
+        # used to say opposite things, so asserting on one file alone proves
+        # nothing: either can be made to read correctly while the pair conflicts.
+        auditor = _read_agent('purlin-auditor.md')
+        for name, text in (('skills/audit/SKILL.md', content),
+                           ('agents/purlin-auditor.md', auditor)):
+            hit = FORBIDS_SUBAGENT_WRITE.search(text)
+            assert not hit, (
+                f"{name} forbids a subagent from writing the cache, contradicting "
+                f"the other file: {hit.group(0)!r}")
+            assert '--write-cache' in text, \
+                f"{name} must name --write-cache as what an auditor writes through"
+            assert re.search(r'(?i)writes its own assessments through[^\n]{0,40}--write-cache',
+                             text), \
+                f"{name} must say the auditor writes its own assessments through --write-cache"
+            assert re.search(r'(?i)pipe', text), \
+                f"{name} must say the entries are piped to --write-cache"
+
+        assert re.search(r'(?i)read(?:ing|s)?\s+(?:the cache|it)\s+back', content), \
+            "the skill must state that the lead reads the cache back"
+        assert re.search(r'(?i)land(?:ed|s)?', content), \
+            "the read-back exists to verify the subagents' entries landed"
+
     @pytest.mark.proof("skill_audit", "PROOF-19", "RULE-19")
     def test_mode_is_derived_from_observable_state(self):
         """The agent must derive the mode, not guess. Without this, an audit on a
@@ -461,6 +508,41 @@ class TestSkillAudit:
             "a Design finding is fixed in the spec, not the build loop"
         assert re.search(r'STRONG/WEAK/HOLLOW', body), \
             "Design pass must forbid using test vocabulary for descriptions"
+
+    @pytest.mark.proof("skill_audit", "PROOF-22", "RULE-22")
+    def test_cache_key_is_asked_for_and_criteria_failure_stops_the_audit(self):
+        """The skill never computes a cache key and never pastes the key's inputs
+        in: a key computed by the reader is a key nobody else can reproduce, and a
+        criteria load that quietly fell back would grade against the wrong standard."""
+        content = _read('audit')
+
+        assert '--compute-proof-hash' not in content, \
+            "the skill must not tell the reader to compute a proof hash themselves"
+
+        # Lookup step: the key is read out of the project, keyed by the pair.
+        lookup = content[content.index('## Step 1.5'):content.index('## Step 1.6')]
+        assert re.search(r'--cache-key\s+--feature\s+\S+\s+--proof-id\s+PROOF-N', lookup), \
+            "the cache-lookup step must invoke --cache-key with --feature and --proof-id"
+        assert re.search(r'(?i)(you do not compute|do not compute|never compute)', lookup), \
+            "the lookup step must forbid computing the key by hand"
+
+        # Write step: the supplied key is discarded, and an unresolvable pair exits 2.
+        write = content[content.index('## Step 3.4'):content.index('## Step 3.5')]
+        assert re.search(r'(?i)key you supply is discarded', write), \
+            "the write step must state the supplied key is discarded"
+        assert re.search(r'(?i)re-keys', write), \
+            "the write step must state every entry is re-keyed from the project"
+        assert re.search(r'(?i)cannot resolve', write) and 'exit 2' in write, \
+            "the write step must state an unresolvable (feature, proof_id) exits 2"
+
+        # Criteria step: exit 2 stops the audit, with no fall back.
+        crit = content[content.index('## Step 1 '):content.index('## Step 1.5')]
+        assert re.search(r'(?i)exits 2, stop', crit), \
+            "the criteria step must stop the audit when --load-criteria exits 2"
+        assert 'purlin:init --sync-audit-criteria' in crit, \
+            "the criteria step must name the fix"
+        assert re.search(r'(?i)no fall ?back to the built-in criteria', crit), \
+            "the criteria step must forbid falling back to the built-in criteria"
 
 
 # ── skill_build ───────────────────────────────────────────────────────

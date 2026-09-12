@@ -108,6 +108,15 @@
       "test_name": "test_stale_evidence_is_an_amber_chip_and_a_row_title",
       "status": "pass",
       "tier": "e2e"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-49",
+      "rule": "RULE-45",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_invalidated_grades_and_named_auditor_surface_on_the_card",
+      "status": "pass",
+      "tier": "e2e"
     }
   ]
 }

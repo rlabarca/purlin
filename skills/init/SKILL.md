@@ -411,6 +411,12 @@ If **additional**: ask for the git URL and file path (e.g., `git@github.com:acme
 
 Clone the repo to a temp directory, read the file at HEAD, **save to `.purlin/cache/additional_criteria.md`**, record the commit SHA as `audit_criteria_pinned`, then clean up. The `load_criteria()` function in `static_checks.py` reads this cached file and appends it to the built-in criteria.
 
+**The cached file's first line must be `<!-- purlin-criteria-sha: <sha> -->`, naming the commit
+the file was read at**, followed by the file's own content. `load_criteria()` compares that sha
+to `audit_criteria_pinned` and refuses to grade anything when the two disagree; without the
+header line the cache is a file with no provenance and an audit cannot say what standard it
+applied.
+
 ## Step 7c — Audit LLM Configuration
 
 Ask the user which LLM should perform proof audits:
@@ -591,6 +597,7 @@ Syncs the additional team criteria file to the latest version.
 
 5. Compare to `audit_criteria_pinned` in config:
    - If same: `"Audit criteria up to date."` Clean up and stop.
-   - If different: read the file at HEAD, **save to `.purlin/cache/additional_criteria.md`**, update `audit_criteria_pinned` in config to the new SHA, print `"Audit criteria updated: <old SHA> → <new SHA>"`
+   - If different: read the file at HEAD, **save to `.purlin/cache/additional_criteria.md` with `<!-- purlin-criteria-sha: <new SHA> -->` as its first line** followed by the file's content, update `audit_criteria_pinned` in config to the new SHA, print `"Audit criteria updated: <old SHA> → <new SHA>"`
+   - If same: still rewrite the cached file with its header line when the header is missing or names a different sha, because `load_criteria()` reads the header and not the config alone, and a cache without one makes every audit exit 2
 
 6. Clean up: `rm -rf /tmp/purlin-audit-criteria-sync`

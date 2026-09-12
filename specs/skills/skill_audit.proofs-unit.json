@@ -6,7 +6,7 @@
       "id": "PROOF-14",
       "rule": "RULE-14",
       "test_file": "dev/test_e2e_additional_criteria.sh",
-      "test_name": "All 5 phases passed: built-in always active, load_criteria appends, criteria reach LLM, SHA staleness detected, --extra appends",
+      "test_name": "All 6 phases passed: built-in always active, load_criteria appends, criteria reach LLM, SHA staleness detected, --extra appends, pin mismatch and missing cache both stop the load",
       "status": "pass",
       "tier": "unit"
     },
@@ -88,6 +88,15 @@
       "rule": "RULE-20",
       "test_file": "dev/test_skill_specs.py",
       "test_name": "test_documents_the_proof_design_pass",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_audit",
+      "id": "PROOF-22",
+      "rule": "RULE-22",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_cache_key_is_asked_for_and_criteria_failure_stops_the_audit",
       "status": "pass",
       "tier": "unit"
     },

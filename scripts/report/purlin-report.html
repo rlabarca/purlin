@@ -250,6 +250,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .modal-table th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);padding:6px 8px;border-bottom:1px solid var(--border)}
 .modal-table td{padding:6px 8px;border-bottom:1px solid var(--border-light);color:var(--text-primary)}
 .modal-foot{padding:12px 18px;border-top:1px solid var(--border);font-size:11px;color:var(--text-secondary);line-height:1.6}
+.modal-note{margin:10px 0 0;font-size:11px;color:var(--amber)}
 .awr-tier{font-family:var(--font-mono);color:var(--amber);font-weight:600}
 .dst:first-child{margin-top:0}
 
@@ -570,7 +571,13 @@ table{min-width:830px}
         + '<td>' + (g.strong || 0) + ' / ' + (g.weak || 0) + ' / ' + (g.hollow || 0)
         + '</td></tr>';
     }
-    return h + '</tbody></table>';
+    h += '</tbody></table>';
+    var inv = (D.audit_summary && D.audit_summary.invalidated) || 0;
+    if (inv) {
+      h += '<p class="modal-note">' + inv + ' grade' + (inv === 1 ? '' : 's')
+        + ' invalidated, re-run purlin:audit</p>';
+    }
+    return h;
   }
 
   function platformFailingModal() {
@@ -975,6 +982,34 @@ table{min-width:830px}
       if (summary && summary.assessed != null) {
         subTitle += ' · ' + summary.assessed + '% of those assessed';
       }
+    }
+
+    /* A grade whose inputs moved since it was made is not evidence, and the
+       server has already moved it out of `measured`. Saying so here is what
+       turns a quietly shrinking number into an instruction (RULE-45). */
+    var inv = summary && summary.invalidated ? summary.invalidated : 0;
+    if (inv) {
+      subTitle += ' · ' + inv + ' grade' + (inv === 1 ? '' : 's')
+        + ' invalidated, re-run purlin:audit';
+    }
+
+    /* Who graded. Silent for the default auditor, because a label every project
+       carries is one nobody reads; named the moment it is somebody else, because
+       a gauge produced by an unfamiliar tool is a different claim. */
+    var auditors = (summary && summary.auditors) || {};
+    var named = [];
+    for (var an in auditors) {
+      if (!Object.prototype.hasOwnProperty.call(auditors, an)) continue;
+      if (an !== 'claude') named.push(an);
+    }
+    if (named.length) {
+      sub += ' · by ' + esc(named.join(', '));
+      var all = [];
+      for (var bn in auditors) {
+        if (!Object.prototype.hasOwnProperty.call(auditors, bn)) continue;
+        all.push(esc(bn) + ' (' + auditors[bn] + ')');
+      }
+      subTitle += ' · graded by ' + all.join(', ');
     }
 
     /* The band follows the number, because the number is already honest: pct is

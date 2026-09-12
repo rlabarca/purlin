@@ -14,7 +14,21 @@ from unittest.mock import patch
 import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'mcp'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'audit'))
 import purlin_server
+import static_checks
+
+
+def _cache_key(project_root, feature, proof_id, cache_name='audit_cache.json'):
+    """The key the real writer would give this entry — never hard-coded.
+
+    Every reader recomputes an entry's key from the rule text, the proof
+    description and the graded test source and drops the entries that no longer
+    match, so a fixture seeded under an invented key is an invalidated entry
+    rather than a graded one.
+    """
+    return static_checks.cache_key_for(
+        project_root, feature, proof_id, cache_name)[0]
 
 
 class TestMCPProtocol:
@@ -2634,12 +2648,13 @@ class TestPlatformsLineAndDetailLines:
         # executed entries, with its measurement coverage beside it.
         cache_dir = os.path.join(self.project_root, '.purlin', 'cache')
         os.makedirs(cache_dir, exist_ok=True)
+        key = _cache_key(self.project_root, 'locking', 'PROOF-1')
         with open(os.path.join(cache_dir, 'audit_cache.json'), 'w') as f:
-            json.dump({'k1': {'feature': 'locking', 'proof_id': 'PROOF-1',
-                              'rule_id': 'RULE-1', 'assessment': 'STRONG',
-                              'criterion': 'c', 'why': 'w', 'fix': 'f',
-                              'priority': 'LOW',
-                              'cached_at': '2026-01-01T00:00:00Z'}}, f)
+            json.dump({key: {'feature': 'locking', 'proof_id': 'PROOF-1',
+                             'rule_id': 'RULE-1', 'assessment': 'STRONG',
+                             'criterion': 'c', 'why': 'w', 'fix': 'f',
+                             'priority': 'LOW',
+                             'cached_at': '2026-01-01T00:00:00Z'}}, f)
         line = next(l for l in purlin_server.sync_status(self.project_root).splitlines()
                     if l.startswith('Platforms (host: '))
         assert 'Integrity 100% (1 of 1 measured)' in line.partition(' | ')[0], line
@@ -3044,3 +3059,127 @@ class TestEvidenceOlderThanCode:
         self._write('src/app.py', 'v2\n')
         self._commit('change the scope')
         assert self._payload()['login']['evidence_stale'] is True
+
+
+class TestAuditLLMAdvisory:
+    """sync_status RULE-62: a configured external auditor that cannot run warns,
+    and never blocks.
+
+    A project can legitimately configure a tool it installs on another machine,
+    so a gate here would stop a build over a name. What the reader needs is to
+    know the cross-model audit is not happening.
+    """
+
+    HEADING = '⚠ External auditor is configured but cannot run:'
+    DIRECTIVE = ('→ Fix: edit "audit_llm" in .purlin/config.json, or unset '
+                 'it to audit with Claude')
+    DISCLAIMER = 'Warning only: grades already in the cache are unaffected.'
+
+    def setup_method(self):
+        self.project_root = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.project_root, '.purlin'))
+        spec_dir = os.path.join(self.project_root, 'specs', 'app')
+        os.makedirs(spec_dir)
+        with open(os.path.join(spec_dir, 'demo.md'), 'w') as f:
+            f.write('# Feature: demo\n\n> Description: Demo.\n\n'
+                    '## Rules\n- RULE-1: does the thing\n\n'
+                    '## Proof\n- PROOF-1 (RULE-1): call it and assert the thing '
+                    '@unit\n')
+        with open(os.path.join(spec_dir, 'demo.proofs-unit.json'), 'w') as f:
+            json.dump({'tier': 'unit', 'proofs': [
+                {'feature': 'demo', 'id': 'PROOF-1', 'rule': 'RULE-1',
+                 'test_file': 'dev/t_demo.py', 'test_name': 'test_thing',
+                 'status': 'pass', 'tier': 'unit'}]}, f)
+
+    def teardown_method(self):
+        shutil.rmtree(self.project_root, ignore_errors=True)
+
+    def _status(self, **fields):
+        cfg = {'version': '0.10.0', 'test_framework': 'pytest',
+               'spec_dir': 'specs', 'report': False, 'digest': 'auto',
+               'pre_push': 'off', 'remote_verification': 'optional',
+               'mutation_checks': True}
+        cfg.update(fields)
+        with open(os.path.join(self.project_root, '.purlin', 'config.json'),
+                  'w') as f:
+            json.dump(cfg, f)
+        return purlin_server.sync_status(self.project_root)
+
+    def _advisory(self, out):
+        """The advisory block, heading through disclaimer, or '' if absent."""
+        lines = out.splitlines()
+        if self.HEADING not in lines:
+            return ''
+        start = lines.index(self.HEADING)
+        end = start
+        while end < len(lines) and lines[end] != '':
+            end += 1
+        return '\n'.join(lines[start:end])
+
+    def _verdict(self, out):
+        """The feature table row and the detail verdict — what must not move."""
+        rows = [l for l in out.splitlines()
+                if l.startswith('│ demo') or l.startswith('demo:')]
+        assert len(rows) == 2, f"the feature table did not render:\n{out}"
+        return rows
+
+    @pytest.mark.proof("sync_status", "PROOF-101", "RULE-62", tier="integration")
+    def test_a_configured_auditor_that_cannot_run_warns_and_never_blocks(self):
+        # Baseline: nothing configured, so nothing is warned about.
+        clean = self._status()
+        assert self._advisory(clean) == '', (
+            "no external auditor is configured, so no advisory belongs here:\n"
+            + clean)
+        assert self.HEADING not in clean, clean
+        baseline = self._verdict(clean)
+
+        # ── 1. The command is not on PATH. ───────────────────────────────
+        out = self._status(audit_llm='nonexistent-cmd -p "{prompt}"')
+        block = self._advisory(out)
+        assert block, f"a command that cannot run must warn:\n{out}"
+        assert 'nonexistent-cmd' in block, (
+            f"the advisory must name the offending value: {block}")
+        assert 'PATH' in block, (
+            f"the advisory must say why it cannot run: {block}")
+        assert self.DIRECTIVE in block, (
+            f"one directive, naming .purlin/config.json: {block}")
+        assert block.count('→') == 1, (
+            f"exactly one directive: {block}")
+        assert self.DISCLAIMER in block, (
+            f"it must state that it is a warning and that cached grades stand: "
+            f"{block}")
+        assert '{prompt}' not in block, (
+            f"the placeholder is present, so it is not the complaint: {block}")
+        # It warns; it does not gate.
+        assert self._verdict(out) == baseline, (
+            f"the feature table and every verdict must be untouched:\n{out}")
+
+        # ── 2. On PATH, but the prompt never reaches it. ─────────────────
+        on_path = next((c for c in ('echo', 'ls', 'cat') if shutil.which(c)), None)
+        assert on_path, "no ordinary command resolved on PATH in this environment"
+        out = self._status(audit_llm=f'{on_path} --run')
+        block = self._advisory(out)
+        assert block, f"a command with no placeholder must warn:\n{out}"
+        assert '{prompt}' in block, (
+            f"the advisory must name the missing placeholder: {block}")
+        assert 'PATH' not in block, (
+            f"the command resolves, so PATH is not the complaint: {block}")
+        assert on_path in block and self.DIRECTIVE in block, block
+        assert self._verdict(out) == baseline, out
+
+        # ── 3. A name with no command behind it. ─────────────────────────
+        out = self._status(audit_llm_name='Gemini Pro')
+        block = self._advisory(out)
+        assert block, f"a name with no command must warn:\n{out}"
+        assert 'Gemini Pro' in block, (
+            f"the advisory must name the offending value: {block}")
+        assert 'audit_llm' in block and 'no audit_llm command' in block, (
+            f"the advisory must name the absent command: {block}")
+        assert self.DIRECTIVE in block and self.DISCLAIMER in block, block
+        assert self._verdict(out) == baseline, out
+
+        # ── 4. Neither set: nothing is configured, so nothing is wrong. ──
+        out = self._status(audit_llm='', audit_llm_name='')
+        assert self._advisory(out) == '', (
+            "an unset auditor is not a broken one:\n" + out)
+        assert self._verdict(out) == baseline, out

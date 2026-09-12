@@ -127,6 +127,14 @@ This returns built-in criteria + any configured additional team criteria + any e
 
 Display: `Using audit criteria: built-in (Criteria-Version: N)` and if additional criteria are present: `+ team criteria from <source> (pinned: <sha>)`
 
+**If the command exits 2, stop and print its message verbatim.** It exits 2 when the built-in
+criteria cannot be read, or when `audit_criteria` is configured and the cached
+`.purlin/cache/additional_criteria.md` is missing, carries no
+`<!-- purlin-criteria-sha: <sha> -->` first line, or carries one that does not equal
+`audit_criteria_pinned`. There is no fall back to the built-in criteria: a project that pinned a
+compliance standard and got graded against something else would read exactly like one that was
+graded correctly. The fix is `purlin:init --sync-audit-criteria`, and the message says so.
+
 ## Step 1.5 — Load Audit Cache
 
 Read `.purlin/cache/audit_cache.json` via:
@@ -161,7 +169,19 @@ wrong percentage. `--write-cache` rejects such entries rather than merging them.
 
 `cached_at` is stamped by the writer, so a value supplied here is advisory.
 
-For each proof that reaches Pass 2, compute the proof hash from (rule text + proof description + test function code). If the hash exists in the cache, use the cached assessment — skip the LLM call. Report cached results with a `(cached)` label:
+For each proof that reaches Pass 2, ask for its cache key. You do not compute it and you do
+not paste the inputs in; the key is read out of the project so that the key you look up is the
+key the writer stored and the key every reader recomputes:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py \
+  --cache-key --feature <name> --proof-id PROOF-N --project-root <project_root>
+```
+
+It prints `{"key": "...", "inputs": {"test_verifiable": true|false}}`, and exits 2 naming the
+pair when the spec declares no such proof. `test_verifiable` false means no test source could be
+extracted for that proof, so a test edit will not move its key. If the key exists in the cache,
+use the cached assessment — skip the LLM call. Report cached results with a `(cached)` label:
 
 ```
 PROOF-1 (RULE-1): STRONG ✓ (cached)
@@ -189,7 +209,12 @@ Each subagent receives:
 - The audit cache (so it can check for hits on its assigned feature)
 - The feature's spec and test files to evaluate
 
-When all subagents complete, merge their results into the final report, then write every assessment to the cache via **Step 3.4**. Subagents must not write the cache themselves — a single writer keeps the merge under one lock.
+Each subagent writes its own assessments through `--write-cache`, which takes an exclusive lock
+around its read/merge/write cycle, so parallel auditors serialize rather than clobber each
+other. The lead does two things instead of writing on their behalf: it writes the grades it made
+in the main context (the cache-only features above), and it verifies that each subagent's
+entries actually landed by reading the cache back. An auditor that reported a grade it never
+wrote has produced no measurement, and only the read-back can tell you that happened.
 
 For "Cache-only" features, evaluate them in the main context (no subagent needed — they're fast).
 
@@ -481,7 +506,12 @@ The build loop never calls the external LLM. The lead relays.
 skill persists an assessment, and every later step assumes this one ran.
 
 Collect every assessment from this audit — cache hits and fresh results alike — into a JSON
-object keyed by proof hash, then pipe it to `--write-cache`:
+object and pipe it to `--write-cache`. The object still needs keys because it is JSON, but the
+key you supply is discarded: `--write-cache` re-keys every entry from the project through the
+same function `--cache-key` uses, and stamps each entry with `auditor` (`audit_llm_name` or
+`claude`, and the `audit_llm` command or null) and `inputs`. An entry naming a
+`(feature, proof_id)` the project cannot resolve is rejected with exit 2 and a JSON `error`
+naming every offender, and nothing on disk changes.
 
 ```bash
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py \

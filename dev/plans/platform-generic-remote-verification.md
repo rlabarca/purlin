@@ -1863,6 +1863,111 @@ Ordered by dependency; each item is one `fix`/`feat` commit with its rule and pr
   `dev/test_static_checks.py`, `dev/test_e2e_audit_cache_pipeline.py` (edit one character of a
   graded test function, `invalidated == 1`, measured drops by one), `dev/test_mcp_server.py`.
 
+
+## DONE — Phase 10.4: audit cache integrity and auditor identity (`feat(static_checks,sync_status,report_data,purlin_report,skill_audit): the audit cache re-keys, invalidates and names its auditor`; receipts in the `verify:` commit that follows it)
+
+- **Numbers taken (landing order).** `static_checks` RULE-38, 39, 40 and 41 with PROOF-63, 64, 65
+  and 66 (next free RULE-42/PROOF-67). `sync_status` RULE-61 with PROOF-100 and RULE-62 with
+  PROOF-101 (next free RULE-63/PROOF-102). `report_data` RULE-39 with PROOF-40 and RULE-40 with
+  PROOF-41 (next free RULE-41/PROOF-42). `purlin_report` RULE-45 with PROOF-49 (next free
+  RULE-46/PROOF-50). `skill_audit` RULE-22 with PROOF-22, with RULE-14 and RULE-18 amended and
+  PROOF-14 and PROOF-18 extended (next free RULE-23/PROOF-23; the phase text's "RULE-21" was
+  taken by 7.5's mutation-check rule, so `--cache-key` landed at 22). `purlin_teammate_definitions`
+  RULE-6 with PROOF-6 (next free RULE-7/PROOF-7). `references/audit_criteria.md` went to
+  Criteria-Version 19.
+- **One function decides what a grade is about.** `resolve_proof_inputs(project_root, feature,
+  proof_id)` reads the rule text and the proof description from `specs/**/<feature>.md` and the
+  graded test function's source from the file the proof JSON names, reusing the existing
+  extractors. Two of those extractors had to be lifted out of their Pass 1 loops first
+  (`_iter_js_proof_bodies`, `_iter_csharp_proof_bodies`) so the scan that finds a marked test
+  body exists once rather than once per caller. Python comes from the existing AST walk. Shell,
+  SQL, PHP and C have no extractor here, so their proofs are keyed on rule text and description
+  alone and the entry records `inputs.test_verifiable: false`, which says out loud that a test
+  edit cannot move that key.
+- **The caller no longer supplies the key.** `--cache-key --feature X --proof-id PROOF-N`
+  replaces `--compute-proof-hash <pasted text>`, and `--write-cache` discards whatever key it is
+  given and re-keys every entry through the same function. That is the whole fix: with
+  caller-supplied inputs the key described the text the auditor happened to send, so
+  "self-invalidates" was a promise with no mechanism behind it. An unresolvable
+  `(feature, proof_id)` is now rejected the way a missing dedup field is (RULE-33), naming every
+  offender before the filesystem is touched.
+- **Readers recompute.** `_partition_cache_entries` in `purlin_server.py` soft-imports
+  `static_checks` from the sibling directory and recomputes every deduplicated entry's key;
+  mismatches are dropped and counted as `invalidated`, and `_attach_gauge_coverage` takes
+  `measured` from the survivors, so an invalidated grade lands in the unmeasured half of the
+  denominator instead of propping up a percentage. A failed import invalidates everything: an
+  unverifiable cache is not a valid one. A MANUAL grade is valid only against a current
+  `@manual` stamp at read time, judged by 10.2's `_manual_ok_keys`, so the stamp that counts
+  toward coverage and the stamp that keeps a MANUAL grade alive cannot diverge.
+- **Who graded.** `--write-cache` stamps `auditor: {name, command}` from config (`audit_llm_name`
+  or `claude`, `audit_llm` or null); `audit_summary.auditors` counts the survivors per name and
+  the digest carries it, so a reader can see that a whole gauge came from one tool. `sync_status`
+  warns, never blocks, when `audit_llm` names a command that is not on PATH, carries no
+  `{prompt}`, or when `audit_llm_name` is set with no command at all.
+- **The criteria pin is enforced rather than recorded.** With `audit_criteria` set, the cached
+  `.purlin/cache/additional_criteria.md` must begin with
+  `<!-- purlin-criteria-sha: <sha> -->` equal to `audit_criteria_pinned`, which
+  `purlin:init --sync-audit-criteria` now writes. A missing cache, a missing header or a
+  different sha raises `CriteriaError`, which `--load-criteria` prints on stderr with exit 2 and
+  the audit skill prints verbatim and stops on. A missing built-in criteria file raises instead
+  of returning `''`. The header is stripped before the criteria reach a prompt, in the orphaned
+  case too: it is provenance, not a criterion, and an auditor must never be asked to grade
+  against a comment.
+- **`git_sha` is never null.** `_build_report_data` sets it from HEAD at generation time, or the
+  literal `unknown` when git cannot answer. When the pre-commit hook writes the digest, HEAD is
+  the parent of the commit that carries it, because that commit does not exist yet; the rule says
+  so, since the field's whole job is naming the tree the numbers describe.
+- **One contradiction closed.** `skills/audit/SKILL.md` said subagents must not write the cache;
+  `agents/purlin-auditor.md` told them to. Every auditor now writes its own assessments through
+  the locked `--write-cache`, whose exclusive lock is what makes parallel writers safe, and the
+  lead writes only the grades it made in the main context and reads the cache back to verify the
+  subagents' entries landed. Both proofs assert on both files, because either file alone can be
+  made to read correctly while the pair still disagrees.
+- **Three defects the proof work turned up, all fixed here.** (1) The cache key omitted the
+  proof's identity, so two features whose rule text and proof description were byte-identical
+  shared one key and one grade overwrote the other while the deduplication key still said they
+  were two proofs. `cache_key_for` now hashes `<feature>\0<proof_id>` in alongside the three
+  inputs, which makes `(feature, proof_id)` to key injective; RULE-37's formula sentence and
+  RULE-38 were amended and PROOF-62 and PROOF-63 gained the collision case, backed by a language
+  with no test extractor so the two remaining inputs really are identical. (2) Re-keying
+  collapsed intra-batch duplicates by dict insertion order, which quietly broke RULE-24's "keep
+  the latest `cached_at`" for entries arriving in one call; PROOF-30 now writes the same three
+  entries newest first and the comparison is back. (3) `sync_status` RULE-28 promised that an
+  entry with no `feature` field is still counted project-wide, which RULE-61 makes impossible: no
+  feature means no key and nothing to recompute. RULE-28 and PROOF-49 now say the reader
+  tolerates such an entry without raising and leaves it out of every number, with rejection still
+  the writer's job.
+- **Pass D.** Every rule this phase wrote or amended ships a PROVABLE proof: `static_checks`
+  PROOF-30, 62, 63, 64, 65 and 66; `sync_status` PROOF-49, 100 and 101; `report_data` PROOF-40 and
+  41; `purlin_report` PROOF-49; `skill_audit` PROOF-14, 18 and 22;
+  `purlin_teammate_definitions` PROOF-6. Zero UNPROVABLE and zero LOOSE among them. The
+  non-PROVABLE descriptions remaining in those specs (7 LOOSE in `sync_status`, 2 in
+  `report_data`, 2 in `purlin_report`, and the STRUCTURAL presence checks) all predate this
+  phase.
+- **Mutations (16, each restored).** Skipping the re-key kills PROOF-63; dropping the auditor
+  stamp kills PROOF-64; making `cache_key_for` ignore the test code kills PROOF-65; dropping the
+  pinned-sha comparison kills PROOF-66; dropping the identity from the key kills PROOF-62 and
+  PROOF-63; dropping the intra-batch `cached_at` comparison kills PROOF-30. On the server:
+  skipping the recompute kills PROOF-100, as do letting a MANUAL grade count with no current
+  stamp and trusting every entry when the checker cannot be imported; returning no advisory lines
+  kills PROOF-101; `_head_sha` returning None kills PROOF-40; dropping `auditors` kills PROOF-41.
+  On the prose: reinstating "subagents must not write the cache themselves" kills `skill_audit`
+  PROOF-18; putting `--compute-proof-hash` back in the lookup step kills PROOF-22; removing
+  `--write-cache` from the auditor definition kills `purlin_teammate_definitions` PROOF-6;
+  deleting the `by <name>` branch in `gaugeCard` kills `purlin_report` PROOF-49.
+- **This repo has no cache to invalidate.** Phase 10.5 untracked the four legacy
+  `.purlin/cache/` files and the directory is gone here, so `audit_summary` is None and both
+  gauges read `No audit data` rather than unmeasured. The first real `purlin:audit` writes a
+  cache whose keys are computed by the same function the readers use, which is the point: Tier 2a
+  is now worth running.
+- **Sweep.** `bash dev/run_tests.sh` (foreground) reads `776 passed, 27 skipped`, 14 suites, 0
+  failed, up from `765 passed, 27 skipped`. The +11 are the new tests: 4 in
+  `dev/test_static_checks.py`, 2 in `dev/test_report_data.py`, 1 in
+  `dev/test_e2e_audit_cache_pipeline.py`, 1 in `dev/test_mcp_server.py`, 1 in
+  `dev/test_skill_specs.py`, 1 in `dev/test_purlin_teammate_definitions.py` and 1 in
+  `dev/test_purlin_report.py`. `git diff --stat specs/` after the sweep: six specs and seven
+  proof files, additions only.
+
 ### 10.5 Housekeeping with rules
 
 - `git rm --cached` the four dead `.purlin/cache/` files; `report_data` RULE-32 with a

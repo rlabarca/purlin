@@ -8,7 +8,7 @@ Usage (see _USAGE below — it is the single source for this list):
     static_checks.py <test_file> <feature_name> [--spec-path <path>]
     static_checks.py --check-proof-file --proof-path <path> [--spec-path <path>]
     static_checks.py --check-spec-coverage --spec-path <path>
-    static_checks.py --compute-proof-hash --rule <text> --proof-desc <text> --test-code <text>
+    static_checks.py --cache-key --feature <name> --proof-id PROOF-N [--project-root <path>]
     static_checks.py --resolve-source <test_name> [--project-root <path>] [--ext .cs]
     static_checks.py --load-criteria [--project-root <path>] [--extra <path>]
     static_checks.py --read-cache [--project-root <path>]
@@ -569,11 +569,13 @@ def _find_test_body(content, i):
     return None, i
 
 
-def check_js(filepath, feature_name):
-    """Run JS/TS test checks. Returns list of proof result dicts."""
-    with open(filepath, encoding='utf-8') as f:
-        content = f.read()
-    results = []
+def _iter_js_proof_bodies(content, feature_name):
+    """Yield (proof_id, rule_id, title, body) for every marked test in a JS/TS file.
+
+    The scan is the expensive part (string, comment and regex aware), and both
+    Pass 1 and the cache-key resolver need the same bodies, so it lives here once
+    rather than once per caller (CLAUDE.md deduplication rule).
+    """
     call_re = re.compile(r'\b(?:it|test)\s*\(')
     marker_re = re.compile(
         r'\[proof:' + re.escape(feature_name) + r':([^:\]]+):([^:\]]+)'
@@ -596,16 +598,21 @@ def check_js(filepath, feature_name):
         if not marker:
             i = after_title
             continue
-        proof_id = marker.group(1)
-        rule_id = marker.group(2)
-
         body, after_body = _find_test_body(content, after_title)
         if body is None:
             # No block body to inspect — cannot run body checks; skip.
             i = after_title
             continue
         i = after_body
+        yield marker.group(1), marker.group(2), title, body
 
+
+def check_js(filepath, feature_name):
+    """Run JS/TS test checks. Returns list of proof result dicts."""
+    with open(filepath, encoding='utf-8') as f:
+        content = f.read()
+    results = []
+    for proof_id, rule_id, title, body in _iter_js_proof_bodies(content, feature_name):
         # Check assert_true
         if re.search(r'expect\s*\(\s*true\s*\)\s*\.toBe\s*\(\s*true\s*\)', body):
             results.append({
@@ -743,6 +750,25 @@ def _find_csharp_body(content, i):
     return None, i, method_name
 
 
+def _iter_csharp_proof_bodies(content, feature_name):
+    """Yield (proof_id, rule_id, test_name, body) for every marked C# test method.
+
+    The marker regex and the body finder are shared by Pass 1 and the cache-key
+    resolver, so they live here once (CLAUDE.md deduplication rule).
+    """
+    marker_re = re.compile(
+        r'\[\s*Trait\s*\(\s*"PurlinProof"\s*,\s*"'
+        + re.escape(feature_name)
+        + r':([^:"\]]+):([^:"\]]+):[^"]*"\s*\)\s*\]'
+    )
+    for m in marker_re.finditer(content):
+        body, _after, method_name = _find_csharp_body(content, m.end())
+        if body is None:
+            # No block body to inspect (expression-bodied or abstract) — skip.
+            continue
+        yield m.group(1), m.group(2), (method_name or m.group(1))[:60], body
+
+
 def check_csharp(filepath, feature_name, rule_descs=None):
     """Run C#/.NET (xUnit/NUnit/MSTest) test checks. Returns list of proof dicts.
 
@@ -754,19 +780,8 @@ def check_csharp(filepath, feature_name, rule_descs=None):
     with open(filepath, encoding='utf-8') as f:
         content = f.read()
     results = []
-    marker_re = re.compile(
-        r'\[\s*Trait\s*\(\s*"PurlinProof"\s*,\s*"'
-        + re.escape(feature_name)
-        + r':([^:"\]]+):([^:"\]]+):[^"]*"\s*\)\s*\]'
-    )
-    for m in marker_re.finditer(content):
-        proof_id = m.group(1)
-        rule_id = m.group(2)
-        body, _after, method_name = _find_csharp_body(content, m.end())
-        if body is None:
-            # No block body to inspect (expression-bodied or abstract) — skip.
-            continue
-        test_name = (method_name or proof_id)[:60]
+    for proof_id, rule_id, test_name, body in _iter_csharp_proof_bodies(
+            content, feature_name):
 
         # assert_true: tautological assertions across the supported frameworks.
         if (re.search(r'Assert\s*\.\s*(?:True|IsTrue)\s*\(\s*true\s*\)', body)
@@ -1400,6 +1415,216 @@ def compute_design_hash(spec_rule_text, proof_description):
     return hashlib.sha256(payload.encode()).hexdigest()[:16]
 
 
+class ProofInputsError(ValueError):
+    """A (feature, proof_id) pair does not resolve against project state.
+
+    Raised by resolve_proof_inputs. It is a hard error rather than a fallback:
+    a cache entry whose key cannot be recomputed from the project is an
+    assessment of something nobody can point at, and a silent fallback is how
+    "self-invalidates" became a promise with no mechanism.
+    """
+
+
+def _read_project_config(project_root):
+    """Read .purlin/config.json, or {} when absent or malformed."""
+    config_path = os.path.join(project_root, '.purlin', 'config.json')
+    if not os.path.isfile(config_path):
+        return {}
+    try:
+        with open(config_path, encoding='utf-8') as f:
+            data = json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _find_spec_path(project_root, feature):
+    """The spec file declaring `feature`, or None."""
+    if not feature:
+        return None
+    matches = sorted(glob.glob(
+        os.path.join(project_root, 'specs', '**', f'{feature}.md'), recursive=True))
+    return matches[0] if matches else None
+
+
+def _find_proof_record(project_root, feature, proof_id):
+    """(test_file, test_name) for an executed proof, or (None, None).
+
+    Reads the committed proof JSON, which is the only record of which test
+    function backs a proof id.
+    """
+    pattern = os.path.join(project_root, 'specs', '**', f'{feature}.proofs-*.json')
+    for pf in sorted(glob.glob(pattern, recursive=True)):
+        try:
+            with open(pf, encoding='utf-8') as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            continue
+        for entry in data.get('proofs', []):
+            if entry.get('feature') == feature and entry.get('id') == proof_id:
+                return entry.get('test_file') or None, entry.get('test_name') or None
+    return None, None
+
+
+# Extensions whose test code this module can extract. Anything else (shell, sql,
+# php, c) has no extractor here, so its proofs are keyed on rule text and proof
+# description alone and the entry records `inputs.test_verifiable: false` rather
+# than pretending a test edit would invalidate the grade.
+_TEST_CODE_EXTENSIONS = frozenset(
+    {'.py', '.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx', '.cs'})
+
+
+def _extract_test_code(project_root, feature, proof_id, test_file):
+    """Source of the test function backing `proof_id`, or None.
+
+    None means "not extractable here": no proof record, a file that is gone, a
+    language with no extractor, or a marker the extractor cannot find.
+    """
+    if not test_file:
+        return None
+    ext = os.path.splitext(test_file)[1].lower()
+    if ext not in _TEST_CODE_EXTENSIONS:
+        return None
+    path = os.path.join(project_root, *test_file.split('/'))
+    if not os.path.isfile(path):
+        return None
+    try:
+        with open(path, encoding='utf-8') as f:
+            content = f.read()
+    except OSError:
+        return None
+    if ext == '.py':
+        try:
+            for pid, _rid, _name, node in _get_python_proofs_and_functions(
+                    content, feature):
+                if pid == proof_id:
+                    return ast.get_source_segment(content, node)
+        except SyntaxError:
+            return None
+        return None
+    if ext == '.cs':
+        for pid, _rid, _name, body in _iter_csharp_proof_bodies(content, feature):
+            if pid == proof_id:
+                return body
+        return None
+    for pid, _rid, _title, body in _iter_js_proof_bodies(content, feature):
+        if pid == proof_id:
+            return body
+    return None
+
+
+def resolve_proof_inputs(project_root, feature, proof_id):
+    """(rule_text, proof_description, test_code) read from project state.
+
+    This is the ONE function that decides what an audit result is keyed on, and
+    both the writer and every reader call it. The inputs used to be pasted in by
+    the caller, which is why a cache entry could not be checked against anything:
+    the key described whatever text the auditor happened to send, not the project.
+
+    Raises ProofInputsError when the spec, the proof declaration or every rule the
+    proof cites is missing. `test_code` is None when no test code is extractable
+    (see _extract_test_code); the caller records that as
+    `inputs.test_verifiable: false` so a reader knows a test edit cannot move the
+    key for that entry.
+    """
+    spec_path = _find_spec_path(project_root, feature)
+    if not spec_path:
+        raise ProofInputsError(
+            f'{feature}/{proof_id}: no spec file matches specs/**/{feature}.md')
+    declared = _read_proof_descriptions(spec_path)
+    match = next((d for d in declared if d['proof_id'] == proof_id), None)
+    if match is None:
+        rel = os.path.relpath(spec_path, project_root).replace(os.sep, '/')
+        raise ProofInputsError(
+            f'{feature}/{proof_id}: {rel} declares no {proof_id}')
+    rule_descs = _read_rule_descriptions(spec_path)
+    cited = [r.strip() for r in match['rule_ids'].split(',') if r.strip()]
+    texts = [rule_descs[r] for r in cited if r in rule_descs]
+    if not texts:
+        rel = os.path.relpath(spec_path, project_root).replace(os.sep, '/')
+        raise ProofInputsError(
+            f'{feature}/{proof_id}: cites {match["rule_ids"]}, and {rel} defines '
+            'none of them')
+    test_file, _test_name = _find_proof_record(project_root, feature, proof_id)
+    test_code = _extract_test_code(project_root, feature, proof_id, test_file)
+    return '\n'.join(texts), match['description'], test_code
+
+
+def cache_key_for(project_root, feature, proof_id, cache_name=AUDIT_CACHE):
+    """(key, inputs) for a proof, computed from project state.
+
+    `inputs` records whether test code entered the key, so a reader can say why
+    an entry survived a test edit instead of guessing. Raises ProofInputsError
+    for an unresolvable pair.
+    """
+    rule_text, description, test_code = resolve_proof_inputs(
+        project_root, feature, proof_id)
+    # The proof's identity is part of the key. Without it two features whose
+    # rule text and proof description happen to be byte-identical produce the
+    # same key, and one grade silently overwrites the other in the cache dict
+    # while the deduplication key says they are two different proofs. With it,
+    # (feature, proof_id) -> key is injective and the cache cannot lose a grade
+    # to a coincidence.
+    identity = f'{feature}\x00{proof_id}\x00{rule_text}'
+    if cache_name == DESIGN_CACHE:
+        key = compute_design_hash(identity, description)
+    else:
+        key = compute_proof_hash(identity, description, test_code or '')
+    return key, {'test_verifiable': test_code is not None}
+
+
+def auditor_stamp(project_root):
+    """Who graded: {name, command} from config.
+
+    `audit_llm_name` or "claude" when nothing is configured, and the literal
+    `audit_llm` command or null. A reader that can see the whole gauge came from
+    one unnamed tool can weigh it accordingly; one that cannot, cannot.
+    """
+    config = _read_project_config(project_root)
+    return {
+        'name': config.get('audit_llm_name') or 'claude',
+        'command': config.get('audit_llm') or None,
+    }
+
+
+def rekey_cache_entries(project_root, cache, cache_name=AUDIT_CACHE):
+    """Re-key every entry from project state and stamp the auditor.
+
+    The caller's key is ignored entirely. An entry naming a (feature, proof_id)
+    that does not resolve is rejected the way a missing dedup field is (RULE-33):
+    ValueError naming every offender, raised before the filesystem is touched.
+    """
+    stamp = auditor_stamp(project_root)
+    rekeyed = {}
+    unresolved = []
+    for _supplied_key, entry in cache.items():
+        if not isinstance(entry, dict):
+            continue
+        try:
+            key, inputs = cache_key_for(
+                project_root, entry.get('feature'), entry.get('proof_id'),
+                cache_name)
+        except ProofInputsError as exc:
+            unresolved.append(str(exc))
+            continue
+        new_entry = dict(entry)
+        new_entry['inputs'] = inputs
+        new_entry['auditor'] = stamp
+        # Two entries in one batch for the same proof now collapse here rather
+        # than in write_audit_cache's merge, so RULE-24's "keep the latest
+        # cached_at" has to be honoured at this step too; dict insertion order
+        # is not a timestamp.
+        existing = rekeyed.get(key)
+        if existing is None or new_entry.get('cached_at', '') >= existing.get('cached_at', ''):
+            rekeyed[key] = new_entry
+    if unresolved:
+        raise ValueError(
+            'audit cache entries name a (feature, proof_id) that does not '
+            'resolve against the project, so their grades could never be '
+            'rechecked:\n  ' + '\n  '.join(unresolved))
+    return rekeyed
+
+
 def read_audit_cache(project_root, cache_name=AUDIT_CACHE):
     """Read .purlin/cache/<cache_name>. Returns dict of proof_hash → assessment.
 
@@ -1469,7 +1694,7 @@ _USAGE = (
     "--check-spec-coverage --spec-path <path>",
     "--check-proof-design --spec-path <path>",
     "--audit-scope [--project-root <path>]",
-    "--compute-proof-hash --rule <text> --proof-desc <text> --test-code <text>",
+    "--cache-key --feature <name> --proof-id PROOF-N [--project-root <path>] [--design]",
     "--resolve-source <test_name> [--project-root <path>] [--ext .cs]",
     "--load-criteria [--project-root <path>] [--extra <path>]",
     "--read-cache [--project-root <path>]",
@@ -1529,6 +1754,13 @@ def write_audit_cache(project_root, cache, cache_name=AUDIT_CACHE):
     # Validate before touching the filesystem, so a rejected batch leaves the
     # cache on disk exactly as it was.
     _validate_cache_entries(cache)
+
+    # The key is computed here, from the project, and the caller's key is
+    # discarded. A caller-supplied key described whatever text the caller sent,
+    # so nothing could ever be rechecked against it; re-keying is what makes the
+    # reader's recompute meaningful (RULE-38). The auditor stamp lands in the
+    # same pass (RULE-39).
+    cache = rekey_cache_entries(project_root, cache, cache_name)
 
     cache_dir = os.path.join(project_root, '.purlin', 'cache')
     os.makedirs(cache_dir, exist_ok=True)
@@ -1613,6 +1845,19 @@ def _find_plugin_root():
     return None
 
 
+class CriteriaError(RuntimeError):
+    """The criteria a grade would be made against cannot be assembled.
+
+    Raised rather than returning '' so an audit stops instead of grading against
+    nothing and reporting a number indistinguishable from a real one.
+    """
+
+
+# The first line `purlin:init --sync-audit-criteria` writes into the cached
+# additional criteria, naming the commit the file was read at.
+_CRITERIA_SHA_RE = re.compile(r'^<!--\s*purlin-criteria-sha:\s*(\S+)\s*-->$')
+
+
 def load_criteria(project_root, extra_path=None):
     """Load built-in audit criteria + any configured additional criteria.
 
@@ -1621,31 +1866,65 @@ def load_criteria(project_root, extra_path=None):
 
     Returns the combined criteria text (built-in + optional additional + optional extra).
     """
-    # 1. Always read built-in criteria
+    # 1. Always read built-in criteria. A missing built-in file is an error, not
+    # an empty string: silently grading against no criteria at all produces a
+    # number that looks like every other number.
     plugin_root = _find_plugin_root()
     if not plugin_root:
-        return ''
+        raise CriteriaError(
+            'cannot locate the Purlin plugin root, so references/audit_criteria.md '
+            'cannot be read; set CLAUDE_PLUGIN_ROOT')
     builtin_path = os.path.join(plugin_root, 'references', 'audit_criteria.md')
     if not os.path.isfile(builtin_path):
-        return ''
+        raise CriteriaError(
+            f'built-in criteria missing: {builtin_path} does not exist, so there '
+            'are no criteria to grade against')
     with open(builtin_path, encoding='utf-8') as f:
         criteria = f.read()
 
-    # 2. Check for cached additional criteria (saved by purlin:init --sync-audit-criteria)
+    # 2. Additional team criteria, cached by `purlin:init --sync-audit-criteria`.
+    # When `audit_criteria` is configured the cache must be present and must
+    # carry the pin that config records; a mismatch is an error the skill prints
+    # rather than a silent fall back to the built-in criteria, which would grade
+    # a regulated project against the wrong standard and say nothing (RULE-41).
     cached_path = os.path.join(project_root, '.purlin', 'cache', 'additional_criteria.md')
-    if os.path.isfile(cached_path):
+    config = _read_project_config(project_root)
+    configured = config.get('audit_criteria')
+    additional = None
+    source = configured or 'team criteria'
+    if configured:
+        if not os.path.isfile(cached_path):
+            raise CriteriaError(
+                f'audit_criteria is set to {configured} but '
+                '.purlin/cache/additional_criteria.md is missing; run '
+                'purlin:init --sync-audit-criteria')
         with open(cached_path, encoding='utf-8') as f:
-            additional = f.read()
-        # Read source URL from config for the separator header
-        source = 'team criteria'
-        config_path = os.path.join(project_root, '.purlin', 'config.json')
-        if os.path.isfile(config_path):
-            try:
-                with open(config_path, encoding='utf-8') as f:
-                    config = json.load(f)
-                source = config.get('audit_criteria', source)
-            except (json.JSONDecodeError, OSError):
-                pass
+            cached = f.read()
+        first_line, _, rest = cached.partition('\n')
+        m = _CRITERIA_SHA_RE.match(first_line.strip())
+        if not m:
+            raise CriteriaError(
+                '.purlin/cache/additional_criteria.md has no '
+                '<!-- purlin-criteria-sha: <sha> --> first line, so the cached '
+                'criteria cannot be matched to audit_criteria_pinned; run '
+                'purlin:init --sync-audit-criteria')
+        pinned = config.get('audit_criteria_pinned')
+        if m.group(1) != pinned:
+            raise CriteriaError(
+                f'cached criteria are at {m.group(1)} but audit_criteria_pinned '
+                f'is {pinned!r}; run purlin:init --sync-audit-criteria')
+        additional = rest
+    elif os.path.isfile(cached_path):
+        # An orphaned cache left behind after `audit_criteria` was removed from
+        # config. There is nothing to pin it against, so it is appended as it
+        # was, minus its provenance header: the header is a record of where the
+        # file came from, not a criterion, and an auditor must never be asked to
+        # grade against a comment.
+        with open(cached_path, encoding='utf-8') as f:
+            cached = f.read()
+        first_line, _, rest = cached.partition('\n')
+        additional = rest if _CRITERIA_SHA_RE.match(first_line.strip()) else cached
+    if additional is not None:
         criteria += f"\n\n---\n\n## Additional Team Criteria (from {source})\n\n{additional}"
 
     # 3. Append extra file if provided (--criteria flag)
@@ -1747,7 +2026,11 @@ def main():
             idx = sys.argv.index('--extra')
             if idx + 1 < len(sys.argv):
                 extra_path = sys.argv[idx + 1]
-        print(load_criteria(project_root, extra_path=extra_path))
+        try:
+            print(load_criteria(project_root, extra_path=extra_path))
+        except CriteriaError as exc:
+            print(json.dumps({'error': str(exc)}), file=sys.stderr)
+            sys.exit(2)
         sys.exit(0)
 
     # --resolve-source mode: locate a test's source file from its fully-qualified
@@ -1772,24 +2055,41 @@ def main():
         }))
         sys.exit(0)
 
-    # --compute-proof-hash mode: hash inputs for cache key
-    if '--compute-proof-hash' in sys.argv:
-        rule_text = ''
-        proof_desc = ''
-        test_code = ''
-        if '--rule' in sys.argv:
-            idx = sys.argv.index('--rule')
+    # --cache-key mode: the ONLY way to obtain a cache key. It takes a
+    # (feature, proof_id) and reads the rule text, the proof description and the
+    # test code out of the project itself, so the key a caller looks up is the
+    # key the writer and every reader compute for the same proof. The flag it
+    # replaced, --compute-proof-hash, hashed text the caller pasted in, which is
+    # why a cached grade could not be checked against anything.
+    if '--cache-key' in sys.argv:
+        project_root = os.getcwd()
+        if '--project-root' in sys.argv:
+            idx = sys.argv.index('--project-root')
             if idx + 1 < len(sys.argv):
-                rule_text = sys.argv[idx + 1]
-        if '--proof-desc' in sys.argv:
-            idx = sys.argv.index('--proof-desc')
+                project_root = sys.argv[idx + 1]
+        feature = proof_id = None
+        if '--feature' in sys.argv:
+            idx = sys.argv.index('--feature')
             if idx + 1 < len(sys.argv):
-                proof_desc = sys.argv[idx + 1]
-        if '--test-code' in sys.argv:
-            idx = sys.argv.index('--test-code')
+                feature = sys.argv[idx + 1]
+        if '--proof-id' in sys.argv:
+            idx = sys.argv.index('--proof-id')
             if idx + 1 < len(sys.argv):
-                test_code = sys.argv[idx + 1]
-        print(compute_proof_hash(rule_text, proof_desc, test_code))
+                proof_id = sys.argv[idx + 1]
+        if not feature or not proof_id:
+            print(json.dumps({
+                'error': '--cache-key requires --feature <name> --proof-id PROOF-N'}))
+            sys.exit(2)
+        cache_name = DESIGN_CACHE if '--design' in sys.argv else AUDIT_CACHE
+        try:
+            key, inputs = cache_key_for(project_root, feature, proof_id, cache_name)
+        except ProofInputsError as exc:
+            print(json.dumps({'error': str(exc)}))
+            sys.exit(2)
+        print(json.dumps({
+            'feature': feature, 'proof_id': proof_id, 'cache': cache_name,
+            'key': key, 'inputs': inputs,
+        }))
         sys.exit(0)
 
     # --read-cache mode: read and print audit cache

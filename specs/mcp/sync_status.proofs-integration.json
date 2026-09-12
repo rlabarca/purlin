@@ -174,10 +174,28 @@
     },
     {
       "feature": "sync_status",
+      "id": "PROOF-101",
+      "rule": "RULE-62",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_a_configured_auditor_that_cannot_run_warns_and_never_blocks",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
       "id": "PROOF-78",
       "rule": "RULE-46",
       "test_file": "dev/test_e2e_audit_cache_pipeline.py",
       "test_name": "test_project_gauge_is_weighted_by_measurement_coverage",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-100",
+      "rule": "RULE-61",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_a_cached_grade_dies_with_the_inputs_it_was_graded_against",
       "status": "pass",
       "tier": "integration"
     },

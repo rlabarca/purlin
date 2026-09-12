@@ -104,6 +104,109 @@ Login.
         subprocess.run(['git', 'commit', '-m', 'init'], cwd=tmp_dir, capture_output=True)
 
 
+def _scaffold_proof(root, feature, proof_id, rule_id, subdir='auth',
+                    test_file=None, test_name=None, rule_text=None,
+                    description=None, tier='unit',
+                    test_body='    assert 1 + 1 == 2'):
+    """Write the spec rule, proof record and marked test behind <feature>/<proof_id>.
+
+    `write_audit_cache` re-keys every entry through `cache_key_for()`, which
+    resolves the rule text, the proof description and the graded test's source
+    out of the project. A (feature, proof_id) the project does not declare
+    resolves to nothing, so the whole batch is rejected on write and any entry
+    seeded on disk under it is invalidated on read. A test that names a pair
+    therefore has to put real project state behind it.
+
+    Repeated calls accumulate: a second proof for the same feature joins the same
+    spec, proof file and test file rather than replacing the first, and an
+    existing `> Scope:` line is preserved. Calling again for the SAME proof_id
+    replaces just that proof's test function, which is how a test simulates an
+    edit to the graded code.
+
+    Returns the path of the test file it wrote.
+    """
+    spec_dir = os.path.join(root, 'specs', subdir)
+    os.makedirs(spec_dir, exist_ok=True)
+    spec_path = os.path.join(spec_dir, f'{feature}.md')
+    test_file = test_file or f'tests/test_{feature}.py'
+    test_name = test_name or f'test_{proof_id.lower().replace("-", "_")}'
+    rule_text = rule_text or f'{feature} enforces {rule_id} on every request'
+    description = description or (
+        f'Call {feature}() and verify the {rule_id} branch returns 200')
+
+    def _num(line):
+        m = re.search(r'-(\d+)', line)
+        return int(m.group(1)) if m else 0
+
+    # --- spec: merge this rule/proof into any spec already scaffolded ---
+    rules, proofs, scope, title = [], [], None, f'# Feature: {feature}'
+    if os.path.isfile(spec_path):
+        for line in open(spec_path, encoding='utf-8').read().splitlines():
+            if re.match(r'^- RULE-\d+:', line):
+                rules.append(line)
+            elif re.match(r'^- PROOF-\d+ ', line):
+                proofs.append(line)
+            elif line.startswith('> Scope:'):
+                scope = line
+    rules = [r for r in rules if not r.startswith(f'- {rule_id}:')]
+    rules.append(f'- {rule_id}: {rule_text}')
+    proofs = [p for p in proofs if not p.startswith(f'- {proof_id} ')]
+    proofs.append(f'- {proof_id} ({rule_id}): {description} @{tier}')
+    with open(spec_path, 'w', encoding='utf-8') as f:
+        f.write(
+            f'{title}\n\n'
+            f'{scope or f"> Scope: {test_file}"}\n\n'
+            '## What it does\nScaffolded for the cache pipeline.\n\n'
+            '## Rules\n' + '\n'.join(sorted(rules, key=_num)) + '\n\n'
+            '## Proof\n' + '\n'.join(sorted(proofs, key=_num)) + '\n'
+        )
+
+    # --- proof file: the only record of which test function backs the proof ---
+    proof_path = os.path.join(spec_dir, f'{feature}.proofs-{tier}.json')
+    records = []
+    if os.path.isfile(proof_path):
+        try:
+            records = json.load(open(proof_path, encoding='utf-8')).get('proofs', [])
+        except (json.JSONDecodeError, OSError):
+            records = []
+    records = [r for r in records if r.get('id') != proof_id]
+    records.append({
+        'feature': feature, 'id': proof_id, 'rule': rule_id,
+        'test_file': test_file, 'test_name': test_name,
+        'status': 'pass', 'tier': tier,
+    })
+    with open(proof_path, 'w', encoding='utf-8') as f:
+        json.dump({'tier': tier, 'proofs': records}, f, indent=2)
+
+    # --- the test itself: its source is the third input to the key ---
+    test_path = os.path.join(root, *test_file.split('/'))
+    os.makedirs(os.path.dirname(test_path), exist_ok=True)
+    block = (f'@pytest.mark.proof("{feature}", "{proof_id}", "{rule_id}")\n'
+             f'def {test_name}():\n{test_body}')
+    blocks = ['import pytest']
+    if os.path.isfile(test_path):
+        existing = open(test_path, encoding='utf-8').read().rstrip('\n')
+        blocks = existing.split('\n\n\n') or blocks
+        blocks = [blocks[0]] + [
+            b for b in blocks[1:]
+            if f'"{proof_id}"' not in b and f'def {test_name}(' not in b
+        ]
+    blocks.append(block)
+    with open(test_path, 'w', encoding='utf-8') as f:
+        f.write('\n\n\n'.join(blocks) + '\n')
+    return test_path
+
+
+def _key(root, feature, proof_id, cache_name=None):
+    """The cache key static_checks computes for a proof — never hard-coded.
+
+    The writer discards the caller's key and every reader recomputes it, so a
+    fixture key written by hand is an invalidated entry rather than a graded one.
+    """
+    return static_checks.cache_key_for(
+        root, feature, proof_id, cache_name or static_checks.AUDIT_CACHE)[0]
+
+
 def _make_cache_entries(feature='login', strong=2, weak=1, hollow=0, minutes_ago=5):
     """Create audit cache entries with timestamps."""
     ts = (datetime.datetime.now(datetime.timezone.utc)
@@ -377,21 +480,25 @@ class TestAuditCachePipeline:
 
     @pytest.mark.proof("sync_status", "PROOF-49", "RULE-28", tier="e2e")
     def test_cache_entries_without_feature_excluded_from_per_feature_but_counted_globally(self):
-        """RULE-28: a cache that ALREADY CONTAINS entries without a 'feature' field is read
-        tolerantly — excluded from per-feature grouping, still counted in the project summary.
+        """RULE-28 as RULE-61 now leaves it: an entry with no `feature` field is read
+        without raising — excluded from per-feature grouping — but it is INVALIDATED
+        rather than counted in the project-wide summary.
 
-        The reader must stay tolerant because such entries exist in caches written before
-        static_checks RULE-33 added the writer-side check, and because the cache is a local
-        artifact a user can hand-edit. The writer is the boundary that rejects them, so this
-        fixture is seeded directly on disk rather than through write_audit_cache(), which
-        would now (correctly) raise.
+        RULE-28 used to promise such an entry still counted project-wide, and this
+        test asserted that. RULE-61 keys every grade on the rule text, the proof
+        description and the graded test source, all of which are resolved through
+        the `feature` name; an entry with no feature resolves to nothing, so its key
+        can never be recomputed and it lands in `invalidated`. Tolerance survives —
+        the reader does not raise, and the writer is still the boundary that refuses
+        the entry — but "counted anyway" does not, because counting a grade nobody
+        can recheck is the thing RULE-61 exists to stop.
         """
         _make_project(self.tmp_dir, with_git=True)
 
         # One entry with feature, one without
         ts = datetime.datetime.now(datetime.timezone.utc).isoformat()
         cache = {
-            'hash_with_feature': {
+            _key(self.tmp_dir, 'login', 'PROOF-1'): {
                 'assessment': 'STRONG', 'criterion': 'matches rule intent', 'why': 'good test',
                 'fix': 'none', 'feature': 'login', 'proof_id': 'PROOF-1', 'rule_id': 'RULE-1',
                 'priority': 'LOW', 'cached_at': ts,
@@ -420,13 +527,28 @@ class TestAuditCachePipeline:
         assert len(by_feature['login']) == 1, (
             f"login should have 1 entry, got {len(by_feature['login'])}"
         )
+        assert list(by_feature) == ['login'], (
+            f"a no-feature entry must not invent a feature row: {list(by_feature)}"
+        )
 
-        # Project-wide summary counts all entries (both the STRONG and the WEAK)
+        # The project-wide summary reads the cache without raising, counts the
+        # resolvable entry, and reports the no-feature one as invalidated rather
+        # than folding an ungradeable claim into the denominator.
         summary = _read_audit_summary(self.tmp_dir)
         assert summary['strong'] == 1, f"Expected strong=1 globally, got {summary['strong']}"
-        assert summary['weak'] == 1, f"Expected weak=1 globally, got {summary['weak']}"
-        assert summary['behavioral_total'] == 2, (
-            f"Expected behavioral_total=2 globally, got {summary['behavioral_total']}"
+        assert summary['weak'] == 0, (
+            f"a no-feature entry cannot be rechecked, so it must not be counted as "
+            f"a WEAK measurement; got weak={summary['weak']}"
+        )
+        assert summary['invalidated'] == 1, (
+            f"Expected the no-feature entry to be reported as invalidated, got "
+            f"{summary['invalidated']}"
+        )
+        assert summary['behavioral_total'] == 1, (
+            f"Expected behavioral_total=1 globally, got {summary['behavioral_total']}"
+        )
+        assert summary['valid_entries'] == 1, (
+            f"only the resolvable entry is a measurement, got {summary['valid_entries']}"
         )
 
     @pytest.mark.proof("sync_status", "PROOF-50", "RULE-19", tier="e2e")
@@ -808,6 +930,22 @@ Beta feature.
         }
         write_audit_cache(self.tmp_dir, cache)
 
+        # Same three entries, supplied newest first. Every entry in one batch
+        # re-keys to the same key now, so the collapse happens during re-keying
+        # and the timestamp has to decide it there too; dict insertion order is
+        # not a timestamp, and ascending order alone would let a last-one-wins
+        # implementation pass.
+        reversed_cache = {k: cache[k] for k in reversed(list(cache))}
+        write_audit_cache(self.tmp_dir, reversed_cache)
+        raw_rev = read_audit_cache(self.tmp_dir)
+        survivors = [v for v in raw_rev.values()
+                     if v.get('feature') == 'login' and v.get('proof_id') == 'PROOF-1']
+        assert len(survivors) == 1, (
+            f"newest-first batch left {len(survivors)} entries for (login, PROOF-1)")
+        assert survivors[0]['assessment'] == 'STRONG', (
+            "the surviving entry must be the latest cached_at regardless of the "
+            f"order it was supplied in, got {survivors[0]['assessment']}")
+
         # Write-side dedup (RULE-24): the raw cache on disk must already hold
         # exactly 1 entry for (login, PROOF-1) — the latest (STRONG) — before any
         # read helper runs. This proves write_audit_cache deduplicates, not the reader.
@@ -899,17 +1037,48 @@ Beta feature.
             "Stale hash key should have been pruned"
         )
 
-        # The fresh hash for PROOF-1 should survive
-        assert 'fresh_hash_222' in data, (
-            "Fresh hash key for PROOF-1 should survive pruning"
+        # The caller's keys are discarded wholesale now: the writer keys every
+        # entry from project state so a reader can recompute it. The surviving
+        # PROOF-1 entry is therefore looked up by its computed key, and it must
+        # be the newer STRONG grade rather than the older HOLLOW one.
+        assert 'fresh_hash_222' not in data, (
+            "the caller's key must not survive — the writer keys from the project"
         )
-        assert data['fresh_hash_222']['assessment'] == 'STRONG', (
-            f"Surviving entry should be STRONG, got {data['fresh_hash_222']['assessment']}"
+        p1 = _key(self.tmp_dir, 'login', 'PROOF-1')
+        assert p1 in data, (
+            f"the computed key for PROOF-1 should survive pruning: {list(data)}"
+        )
+        assert data[p1]['assessment'] == 'STRONG', (
+            f"Surviving entry should be STRONG, got {data[p1]['assessment']}"
+        )
+        assert data[p1]['cached_at'] > ts_new, (
+            "the surviving entry carries the write's own stamp, not the caller's"
         )
 
         # The unrelated PROOF-2 entry should be untouched
-        assert 'other_hash_333' in data, (
-            "Unrelated PROOF-2 entry should survive pruning"
+        p2 = _key(self.tmp_dir, 'login', 'PROOF-2')
+        assert 'other_hash_333' not in data and p2 in data, (
+            f"Unrelated PROOF-2 entry should survive pruning: {list(data)}"
+        )
+        assert data[p2]['assessment'] == 'STRONG', data[p2]
+
+        # And the dedup holds across writes, not just inside one batch: a later
+        # grade for the same (feature, proof_id) replaces the earlier one rather
+        # than accumulating beside it.
+        write_audit_cache(self.tmp_dir, {
+            'ignored_key': {
+                'assessment': 'HOLLOW', 'criterion': 'no assertions',
+                'why': 'empty test', 'fix': 'add assertions',
+                'feature': 'login', 'proof_id': 'PROOF-1', 'rule_id': 'RULE-1',
+                'priority': 'CRITICAL', 'cached_at': ts_old,
+            },
+        })
+        data = read_audit_cache(self.tmp_dir)
+        assert len(data) == 2, (
+            f"a re-grade must replace, not accumulate: {list(data)}"
+        )
+        assert data[p1]['assessment'] == 'HOLLOW', (
+            f"the later grade must win, got {data[p1]['assessment']}"
         )
 
     @pytest.mark.proof("static_checks", "PROOF-32", "RULE-18", tier="e2e")
@@ -945,6 +1114,10 @@ Beta feature.
         Expected: JSON output shows pruned=2, kept=3. Cache has exactly 3 entries.
         """
         _make_project(self.tmp_dir, with_git=False)
+        # _make_project declares PROOF-1..3; the batch below grades five, and an
+        # entry naming a proof the project does not declare is refused outright.
+        for n in (4, 5):
+            _scaffold_proof(self.tmp_dir, 'login', f'PROOF-{n}', f'RULE-{n}')
 
         cache = _make_cache_entries(feature='login', strong=3, weak=2)
         write_audit_cache(self.tmp_dir, cache)
@@ -1025,8 +1198,10 @@ Beta feature.
         first_batch = {k: e['cached_at'] for k, e in read_audit_cache(self.tmp_dir).items()}
         assert first_batch, "first batch should be on disk"
 
-        # Distinct hash keys: _make_cache_entries restarts its key numbering at 1,
-        # so reusing it here would collide on 'hash_s1' and overwrite the first batch.
+        # A second feature, so the batch lands beside the first rather than
+        # deduplicating over it. It needs project state of its own: the writer
+        # resolves every (feature, proof_id) it is handed.
+        _scaffold_proof(self.tmp_dir, 'checkout', 'PROOF-1', 'RULE-1')
         second = {
             'hash_checkout_1': {
                 'assessment': 'STRONG', 'criterion': 'matches rule intent',
@@ -1810,6 +1985,8 @@ class TestCrossPlatformCachePipeline:
         and drives the msvcrt LK_LOCK / LK_UNLCK lock path."""
         fake = _FakeMsvcrt()
         with tempfile.TemporaryDirectory() as tmpdir:
+            for n in (1, 2):
+                _scaffold_proof(tmpdir, 'feat_a', f'PROOF-{n}', f'RULE-{n}')
             with mock.patch.object(static_checks, '_HAS_FCNTL', False), \
                  mock.patch.dict(sys.modules, {'msvcrt': fake}):
                 write_audit_cache(tmpdir, {
@@ -1818,7 +1995,14 @@ class TestCrossPlatformCachePipeline:
                 })
             after = read_audit_cache(tmpdir)
             assert len(after) == 2, f"entries lost on Windows lock path: {list(after)}"
-            assert "h1" in after and "h2" in after
+            # The caller's keys are discarded: each entry lands under the key the
+            # project state produces, which is what a reader recomputes.
+            k1 = _key(tmpdir, 'feat_a', 'PROOF-1')
+            k2 = _key(tmpdir, 'feat_a', 'PROOF-2')
+            assert k1 in after and k2 in after, (
+                f"expected the computed keys {k1!r} and {k2!r}, got {list(after)}")
+            assert after[k1]['assessment'] == 'STRONG', after[k1]
+            assert after[k2]['assessment'] == 'WEAK', after[k2]
             assert fake.calls == [fake.LK_LOCK, fake.LK_UNLCK], (
                 f"expected LK_LOCK then LK_UNLCK via msvcrt, got {fake.calls}"
             )
@@ -1828,6 +2012,7 @@ class TestCrossPlatformCachePipeline:
         """Drive the real CLI as a subprocess: write-cache (stdin) -> read-cache ->
         Pass-1 on a hollow .cs fixture; observe JSON output and the cache on disk."""
         with tempfile.TemporaryDirectory() as tmpdir:
+            _scaffold_proof(tmpdir, 'feat', 'PROOF-1', 'RULE-1')
             entries = {"h1": _audit_entry("STRONG", "feat", "PROOF-1", "RULE-1")}
             w = subprocess.run(
                 [sys.executable, _STATIC_CHECKS_PY, '--write-cache', '--project-root', tmpdir],
@@ -1842,7 +2027,9 @@ class TestCrossPlatformCachePipeline:
                 [sys.executable, _STATIC_CHECKS_PY, '--read-cache', '--project-root', tmpdir],
                 capture_output=True, text=True)
             assert r.returncode == 0, r.stderr
-            assert 'h1' in json.loads(r.stdout)
+            # The CLI re-keys on write, so the entry comes back under the key the
+            # project produces rather than the one stdin supplied.
+            assert _key(tmpdir, 'feat', 'PROOF-1') in json.loads(r.stdout), r.stdout
 
             cs = os.path.join(tmpdir, 'Tests.cs')
             with open(cs, 'w', encoding='utf-8') as f:
@@ -2215,8 +2402,11 @@ class TestStatusReportsBothGauges:
             ):
                 e = dict(entry)
                 e['cached_at'] = (now - datetime.timedelta(hours=hours)).isoformat()
+                # Keyed the way the writer would key it: a reader recomputes the
+                # key and an entry seeded under an invented one is invalidated,
+                # which would leave the gauge with no age to report at all.
                 with open(os.path.join(cache_dir, fname), 'w', encoding='utf-8') as f:
-                    json.dump({'k1': e}, f)
+                    json.dump({_key(self.tmp_dir, 'login', 'PROOF-1', fname): e}, f)
 
         def line():
             return next(l for l in sync_status(self.tmp_dir).splitlines()
@@ -2442,3 +2632,147 @@ class TestPerPlatformIntegrity:
         assert mac['coverage'] == {'measured': 1, 'total': 2,
                                    'complete': False}, mac['coverage']
         assert 'platforms' not in (payload['design_summary'] or {})
+
+
+class TestCachedGradeSelfInvalidation:
+    """sync_status RULE-61 — a cached grade is believed only while its key
+    still recomputes from project state.
+
+    A grade is a claim about three inputs: the rule text, the proof description
+    and the graded test's source. Nothing used to recheck that claim, so a cache
+    written against code that has since changed propped up the gauge forever.
+    """
+
+    def setup_method(self):
+        self.tmp_dir = tempfile.mkdtemp()
+        self.spec_path = os.path.join(self.tmp_dir, 'specs', 'app', 'gate.md')
+        self.cache_path = os.path.join(
+            self.tmp_dir, '.purlin', 'cache', 'audit_cache.json')
+
+    def teardown_method(self):
+        # This test forces the handle to None on purpose — the state a failed
+        # import leaves — so the sentinel goes back whatever happened.
+        purlin_server._STATIC_CHECKS_MODULE = purlin_server._STATIC_CHECKS_UNSET
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+    def _git(self, *args):
+        r = subprocess.run(['git'] + list(args), cwd=self.tmp_dir,
+                           capture_output=True, text=True)
+        assert r.returncode == 0, f"git {' '.join(args)}: {r.stderr}"
+        return r.stdout.strip()
+
+    def _integrity(self):
+        """The Proof Integrity segment of the summary line."""
+        line = next(l for l in sync_status(self.tmp_dir).splitlines()
+                    if 'features VERIFIED' in l)
+        _head, sep, tail = line.partition('| Proof Integrity:')
+        assert sep, f"no Proof Integrity segment in the summary line: {line}"
+        return tail
+
+    def _measured(self):
+        payload = purlin_server.read_report_payload(self.tmp_dir)
+        return payload['audit_summary']['coverage']['measured']
+
+    def _grade(self, assessment, proof_id='PROOF-1', rule_id='RULE-1'):
+        """Grade a proof through the real writer, which keys it from the project."""
+        write_audit_cache(self.tmp_dir, {
+            'a-key-the-writer-discards': {
+                'assessment': assessment, 'criterion': 'c', 'why': 'w',
+                'fix': 'f', 'feature': 'gate', 'proof_id': proof_id,
+                'rule_id': rule_id, 'priority': 'LOW',
+                'cached_at': '2026-01-01T00:00:00+00:00',
+            },
+        })
+
+    @pytest.mark.proof("sync_status", "PROOF-100", "RULE-61", tier="integration")
+    def test_a_cached_grade_dies_with_the_inputs_it_was_graded_against(self):
+        os.makedirs(os.path.join(self.tmp_dir, '.purlin', 'cache'))
+        with open(os.path.join(self.tmp_dir, '.purlin', 'config.json'), 'w') as f:
+            json.dump({'version': '0.9.0', 'test_framework': 'pytest',
+                       'spec_dir': 'specs'}, f)
+        test_path = _scaffold_proof(self.tmp_dir, 'gate', 'PROOF-1', 'RULE-1',
+                                    subdir='app')
+        self._git('init')
+        self._git('config', 'user.email', 'test@test.com')
+        self._git('config', 'user.name', 'Test')
+        self._git('add', '.')
+        self._git('commit', '-m', 'init')
+        sha0 = self._git('rev-parse', 'HEAD')
+
+        # ── One spec, one executed proof, one STRONG grade written through the
+        #    real writer. The gauge reports it and has nothing to complain about.
+        self._grade('STRONG')
+        part = self._integrity()
+        assert '100%' in part, f"the cached grade must be reported: {part}"
+        assert 'invalidated' not in part, (
+            f"nothing has moved, so no invalidated count belongs here: {part}")
+        assert self._measured() == 1, "the graded proof is a measurement"
+
+        # ── One character inside the graded test function. ───────────────
+        src = open(test_path, encoding='utf-8').read()
+        edited = src.replace('assert 1 + 1 == 2', 'assert 1 + 1 >= 2')
+        assert edited != src, "the fixture's test body changed shape"
+        assert (len(edited) == len(src)
+                and sum(a != b for a, b in zip(src, edited)) == 1), \
+            "the edit must be exactly one character"
+        with open(test_path, 'w', encoding='utf-8') as f:
+            f.write(edited)
+
+        part = self._integrity()
+        assert '1 invalidated, re-run purlin:audit' in part, (
+            f"a grade whose test source moved must be named and routed: {part}")
+        assert self._measured() == 0, (
+            "the invalidated grade must leave the measured count, not sit in it")
+
+        # ── A MANUAL grade lives exactly as long as the stamp behind it. ──
+        self._git('add', '.')
+        self._git('commit', '-m', 'edit the graded test')
+        spec = open(self.spec_path, encoding='utf-8').read()
+        stamp = f'@manual(dev@example.com, 2026-01-01, {sha0})'
+        # sha0 predates the commit above, which touched this spec's `> Scope:`,
+        # so the human's claim is out of date by the same test the coverage
+        # count uses.
+        assert '@unit' in spec, spec
+        with open(self.spec_path, 'w', encoding='utf-8') as f:
+            f.write(spec.replace('@unit', stamp))
+        self._grade('MANUAL')
+
+        stored = json.load(open(self.cache_path, encoding='utf-8'))
+        assert list(stored) == [_key(self.tmp_dir, 'gate', 'PROOF-1')], (
+            "the MANUAL entry's key recomputes, so the stale stamp is the only "
+            f"thing left that can invalidate it: {list(stored)}")
+        part = self._integrity()
+        assert '1 invalidated, re-run purlin:audit' in part, (
+            f"a MANUAL grade with no current stamp is not a measurement: {part}")
+        assert self._measured() == 0, part
+
+        # ── No checker at all: an unverifiable cache is not a valid one. ──
+        spec = open(self.spec_path, encoding='utf-8').read()
+        with open(self.spec_path, 'w', encoding='utf-8') as f:
+            f.write(spec.replace(stamp, '@unit'))
+        _scaffold_proof(self.tmp_dir, 'gate', 'PROOF-2', 'RULE-2', subdir='app')
+        self._grade('STRONG', 'PROOF-1', 'RULE-1')
+        self._grade('STRONG', 'PROOF-2', 'RULE-2')
+        part = self._integrity()
+        assert 'invalidated' not in part, (
+            f"both grades were just written against current state: {part}")
+        assert self._measured() == 2, part
+
+        # The state a failed import leaves: _static_checks() returns the handle
+        # directly once it is no longer the _STATIC_CHECKS_UNSET sentinel.
+        purlin_server._STATIC_CHECKS_MODULE = None
+        try:
+            assert purlin_server._static_checks() is None, \
+                "the forced state must survive the accessor's memoisation"
+            part = self._integrity()
+            assert '2 invalidated, re-run purlin:audit' in part, (
+                f"with no checker EVERY entry is invalidated, not counted: {part}")
+            assert self._measured() == 0, (
+                "a cache nobody can recompute must measure nothing, not "
+                f"everything: {part}")
+        finally:
+            purlin_server._STATIC_CHECKS_MODULE = purlin_server._STATIC_CHECKS_UNSET
+
+        part = self._integrity()
+        assert 'invalidated' not in part and self._measured() == 2, (
+            f"restoring the checker restores the gauge: {part}")

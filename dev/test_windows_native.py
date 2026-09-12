@@ -35,6 +35,26 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+def _scaffold(root, feature, pairs):
+    """Write a spec and a proof file so `(feature, proof_id)` resolves.
+
+    `write_audit_cache` re-keys every entry from project state (static_checks
+    RULE-38), so a cache entry for a proof the project does not declare is
+    rejected. A bare temp directory is no longer a project a grade can be
+    written into, which is the point of the rule.
+    """
+    spec_dir = os.path.join(root, 'specs', 'app')
+    os.makedirs(spec_dir, exist_ok=True)
+    rules = ''.join(f'- {rid}: {feature} rule {rid}\n' for _pid, rid in pairs)
+    proofs = ''.join(
+        f'- {pid} ({rid}): Call {feature}() and verify it returns 0 @unit\n'
+        for pid, rid in pairs)
+    with open(os.path.join(spec_dir, f'{feature}.md'), 'w', encoding='utf-8') as f:
+        f.write(f'# Feature: {feature}\n\n> Scope: src/{feature}.py\n\n'
+                f'## Rules\n{rules}\n## Proof\n{proofs}')
+    return spec_dir
+
+
 def _audit_entry(assessment, feature, proof_id, rule_id):
     return {
         "assessment": assessment,
@@ -58,13 +78,18 @@ def test_real_msvcrt_lock_path():
         "expected fcntl unavailable on Windows — the native msvcrt path would not be exercised"
     )
     with tempfile.TemporaryDirectory() as tmpdir:
+        _scaffold(tmpdir, "feat_a", [("PROOF-1", "RULE-1"), ("PROOF-2", "RULE-2")])
         write_audit_cache(tmpdir, {
             "h1": _audit_entry("STRONG", "feat_a", "PROOF-1", "RULE-1"),
             "h2": _audit_entry("WEAK", "feat_a", "PROOF-2", "RULE-2"),
         })
         after = read_audit_cache(tmpdir)
         assert len(after) == 2, f"entries lost on native Windows lock path: {list(after)}"
-        assert "h1" in after and "h2" in after
+        # The supplied keys are discarded and recomputed from the project, so the
+        # round-trip is checked against the keys the project produces.
+        expected = {static_checks.cache_key_for(tmpdir, "feat_a", pid)[0]
+                    for pid in ("PROOF-1", "PROOF-2")}
+        assert set(after) == expected, f"re-keyed entries not found: {list(after)}"
         lock_path = os.path.join(tmpdir, '.purlin', 'cache', 'audit_cache.json.lock')
         assert os.path.exists(lock_path), "msvcrt lock file was not created adjacent to the cache"
 
