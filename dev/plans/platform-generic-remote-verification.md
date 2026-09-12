@@ -1882,6 +1882,72 @@ Ordered by dependency; each item is one `fix`/`feat` commit with its rule and pr
   agent ignoring them are the layers below (`purlin_references` RULE-23 with a proof that the
   file has no hooks, so the sentence stays true).
 
+
+## DONE — Phase 10.5: housekeeping with rules (`fix(qa_report,purlin_references,skill_verify): QA report spec, no credentials in URLs, cache untracked, verify vocabulary`, built on `ed491a9c` in a worktree, cherry-picked onto `fb552485` as `a508dabd`; receipts in the `verify:` commit that follows it)
+
+- **Numbers taken (landing order).** `purlin_references` RULE-26 with PROOF-26 and RULE-27 with
+  PROOF-27 (spine max was RULE-25/PROOF-25 and 10.2 and 10.3 touched neither spec, so nothing
+  collided and nothing was renumbered; next free RULE-28/PROOF-28). `skill_verify` RULE-14 with
+  PROOF-14 (next free RULE-15/PROOF-15). New spec `specs/tools/qa_report.md` RULE-1..6 with
+  PROOF-1..6 in the new `dev/test_tools_qa.py` (next free RULE-7/PROOF-7). `purlin_references`
+  RULE-7 and PROOF-7 amended rather than renumbered, because the commit-conventions rule already
+  owned the question.
+- **The cache is untracked.** The four legacy files under `.purlin/cache/` were `git rm --cached`
+  and `git ls-files .purlin/cache` now returns nothing, which is what PROOF-27 asserts. The rule
+  lives in `purlin_references` rather than `report_data` as the phase text guessed: the claim is
+  about what the repository tracks, not about what the payload carries.
+- **The verify vocabulary.** `verify: [Complete:all] features=N/T anchors=A/B vhash=...`, in
+  `references/commit_conventions.md` (both the example block and the receipt-commit section, with
+  the sentence that the two counts are never summed), in `skills/verify/SKILL.md` Step 5, and on
+  `dev/issue_receipts.py`'s summary line so the message is copied from the issuer rather than
+  recounted by hand. `chore(update):` gained its row in the prefix table at the same time.
+- **The QA report spec.** `specs/tools/qa_report.md` covers the packaged skill under `tools/QA/`:
+  RULE-1 is FORBIDDEN (no `://user:secret@host` form anywhere in the file; `gh repo clone` or a
+  credential helper instead), RULE-2 names each digest field the report reads
+  (`coverage`/`assessed`/`weighted` as three separate numbers, `auditors`, per-feature `vhash`,
+  `receipt.vhash_version`, `receipt.test_run_commit`, `evidence_stale`, top-level `git_sha`),
+  RULE-3 pins the VERIFIED wording, RULE-4 requires `uncommitted` to be reported whenever it is
+  non-empty and names the three ways a committed digest can carry one, RULE-5 forbids the
+  approval vocabulary ("signed off", "compliance status"), and RULE-6 requires each `.skill` zip
+  to hold a `SKILL.md` byte-equal to its `.md`, for QA and for PM. `dev/pack_tools.sh`
+  regenerates both archives.
+- **Pass D.** `qa_report` 4 PROVABLE and 2 STRUCTURAL, `purlin_references` PROOF-27 PROVABLE and
+  PROOF-26 STRUCTURAL, `skill_verify` PROOF-14 PROVABLE. Zero UNPROVABLE and zero LOOSE in all
+  three specs. The STRUCTURAL grades are the presence checks over skill and reference prose that
+  the proof-quality gate allows for rules about prose; every one of them also parses the artifact
+  it reads (`hooks.json`, the zip archives) rather than grepping for a phrase.
+- **Mutations (7, each restored).** Six in the branch, all caught. The seventh, here: forcing
+  `anchors_issued = 0` in the issuer kills `skill_verify` PROOF-14 at the summary-line assertion.
+- **Integration into the spine.** `git cherry-pick 5d2036ea` applied with no textual conflict:
+  `dev/issue_receipts.py`, `dev/run_tests.sh`, `dev/test_skill_specs.py` and both spec files
+  auto-merged, and none of the numbering collisions the phase text warned about materialised. One
+  semantic conflict did: the branch widened the issuer's `issued` rows from
+  `(name, vhash, awaiting)` to a four-tuple carrying `is_anchor`, and seven tests on the spine
+  (from 6.5, 7 and 10.2, none of which the branch ran) unpack three. The resolution keeps both
+  intents without touching a caller: the rows stay three-tuples and `anchors_issued` is counted
+  from the `features` map the issuer already holds, so the public return shape is unchanged and
+  the summary line still prints the two counts separately. Amended into the cherry-picked commit
+  so rule, proof and code stay in one commit.
+- **Sweep.** `bash dev/run_tests.sh` (foreground) reads `765 passed, 27 skipped`, 14 suites, 0
+  failed, up from `756 passed, 27 skipped`. The +9 are the branch's new tests: 6 in
+  `dev/test_tools_qa.py`, 2 in `dev/test_purlin_references.py` (a third replaced
+  `test_commit_conventions_eight_prefixes`, which the amended RULE-7 outgrew) and 1 in
+  `dev/test_skill_specs.py`.
+  `git diff --stat specs/` after the sweep: one proof file,
+  `skill_verify.proofs-integration.json`, reordered into merge-key order with PROOF-14's entry
+  added and nothing else changed.
+- **Receipts: 40 of 42**, `vhash=977d671a`, printed by the issuer as `features=35/37 anchors=5/5`
+  in the new vocabulary this phase introduced. `qa_report` receipts on its first sweep, which is
+  what moved the feature total from 36 to 37. `figma_web` and `skill_spec` stay the two
+  witness-less features until 10.6 gives the externally-gated suites environment ids.
+- **A trap paid for once.** The mutation check above was run as `pytest dev/test_skill_specs.py -k
+  verify_commit_counts`, a subset inside one file, and the write-scoped overwrite reaped three of
+  `skill_verify`'s committed integration entries. The next full `dev/run_tests.sh` put them back,
+  which is exactly the "run whole files, finish with the sweep, read `git diff --stat specs/`"
+  discipline in the execution notes doing its job. The DONE section is a separate commit after
+  the `verify:` commit for the same reason 10.5c's was: a plan edit amended into the feature
+  commit moves HEAD and the run marker then no longer matches it.
+
 ### 10.5b (moved to 7.5: mutation checks are opt-in and belong with init and update)
 
 ### 10.5c Skipped tests must not lose their entries (found by 10.1)
