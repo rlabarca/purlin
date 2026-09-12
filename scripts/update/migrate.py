@@ -217,7 +217,13 @@ def _apply_plugin_copies_stale(ps, root, _platform_id, actions):
 
 def _apply_config_fields_missing(ps, root, _platform_id, actions,
                                  mutation_checks=None):
-    """Missing template fields are filled; `version` is stamped from VERSION."""
+    """Missing template fields are filled, retired ones are removed.
+
+    `version` is stamped from VERSION in the same write. A retired key rides
+    under this migration rather than getting an id of its own: it is the same
+    question (does this config hold what the template says it should) from the
+    other side, and the delta line names every key it touched either way.
+    """
     path = os.path.join(root, '.purlin', 'config.json')
     try:
         config = json.loads(_read(path))
@@ -233,6 +239,10 @@ def _apply_config_fields_missing(ps, root, _platform_id, actions,
             continue
         config[key] = template[key]
         filled.append(f'{key}={json.dumps(template[key])}')
+    for key in ps._RETIRED_CONFIG_FIELDS:
+        if key in config:
+            del config[key]
+            filled.append(f'{key} removed (retired)')
     installed = ps._read_version()
     if config.get('version') != installed:
         config['version'] = installed

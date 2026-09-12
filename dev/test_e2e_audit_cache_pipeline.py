@@ -52,7 +52,7 @@ def _make_project(tmp_dir, with_git=True, with_report=False):
     """Create a minimal Purlin project in tmp_dir."""
     purlin_dir = os.path.join(tmp_dir, '.purlin')
     os.makedirs(os.path.join(purlin_dir, 'cache'), exist_ok=True)
-    config = {"version": "0.9.0", "test_framework": "auto", "spec_dir": "specs"}
+    config = {"version": "0.9.0", "test_framework": "auto"}
     if with_report:
         config["report"] = True
     with open(os.path.join(purlin_dir, 'config.json'), 'w') as f:
@@ -1862,7 +1862,7 @@ Payments.
         purlin_dir = os.path.join(self.tmp_dir, '.purlin')
         os.makedirs(os.path.join(purlin_dir, 'cache'), exist_ok=True)
         config = {"version": "0.9.0", "test_framework": "auto",
-                  "spec_dir": "specs", "report": True}
+                  "report": True}
         with open(os.path.join(purlin_dir, 'config.json'), 'w') as f:
             json.dump(config, f)
 
@@ -2633,7 +2633,7 @@ class TestPerPlatformIntegrity:
 
     def _setup(self):
         self._write('.purlin/config.json', {
-            'version': '0.10.0', 'spec_dir': 'specs', 'report': True,
+            'version': '0.10.0', 'report': True,
             'platforms': {
                 'windows-2022': {'os': 'windows'},
                 'macos-14': {'os': 'macos'},
@@ -2765,8 +2765,7 @@ class TestCachedGradeSelfInvalidation:
     def test_a_cached_grade_dies_with_the_inputs_it_was_graded_against(self):
         os.makedirs(os.path.join(self.tmp_dir, '.purlin', 'cache'))
         with open(os.path.join(self.tmp_dir, '.purlin', 'config.json'), 'w') as f:
-            json.dump({'version': '0.9.0', 'test_framework': 'pytest',
-                       'spec_dir': 'specs'}, f)
+            json.dump({'version': '0.9.0', 'test_framework': 'pytest'}, f)
         test_path = _scaffold_proof(self.tmp_dir, 'gate', 'PROOF-1', 'RULE-1',
                                     subdir='app')
         self._git('init')

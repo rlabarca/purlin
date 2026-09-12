@@ -42,7 +42,7 @@ mkdir -p "$TMPDIR/scripts/mcp"
 mkdir -p "$TMPDIR/src"
 
 # Create default config
-echo '{"version":"0.9.0","test_framework":"shell","spec_dir":"specs"}' > "$TMPDIR/.purlin/config.json"
+echo '{"version":"0.9.0","test_framework":"shell"}' > "$TMPDIR/.purlin/config.json"
 
 # Copy the real MCP server files
 cp "$REAL_PROJECT_ROOT/scripts/mcp/purlin_server.py" "$TMPDIR/scripts/mcp/purlin_server.py"

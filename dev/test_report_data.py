@@ -2305,7 +2305,7 @@ class TestMigrationsInPayload:
         # A config that is present but missing a template field, plus a proof
         # file named with a platform where the tier belongs.
         self._config(version=purlin_server._read_version(),
-                     test_framework='pytest', spec_dir='specs',
+                     test_framework='pytest',
                      pre_push='warn', mutation_checks=False, report=True,
                      digest='auto')
         _write_spec(self.tmp, 'demo',
@@ -2333,7 +2333,7 @@ class TestMigrationsInPayload:
         # Repaired: the key stays, the list empties. Absent would be
         # indistinguishable from a payload an older plugin wrote.
         self._config(version=purlin_server._read_version(),
-                     test_framework='pytest', spec_dir='specs',
+                     test_framework='pytest',
                      pre_push='warn', remote_verification='off',
                      mutation_checks=False, report=True, digest='auto')
         _write_spec(self.tmp, 'demo',

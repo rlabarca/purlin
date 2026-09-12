@@ -74,7 +74,7 @@ mkdir -p "$TMPDIR/specs/auth"
 mkdir -p "$TMPDIR/scripts/mcp"
 
 # Strict mode config
-echo '{"version":"0.9.0","test_framework":"shell","spec_dir":"specs","pre_push":"strict"}' > "$TMPDIR/.purlin/config.json"
+echo '{"version":"0.9.0","test_framework":"shell","pre_push":"strict"}' > "$TMPDIR/.purlin/config.json"
 
 # Copy the real MCP server files
 cp "$REAL_PROJECT_ROOT/scripts/mcp/purlin_server.py" "$TMPDIR/scripts/mcp/purlin_server.py"

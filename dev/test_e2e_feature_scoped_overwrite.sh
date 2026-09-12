@@ -81,7 +81,7 @@ make_repo() {
   ALL_TMPDIRS="$ALL_TMPDIRS $dir"
 
   mkdir -p "$dir/.purlin" "$dir/specs/auth" "$dir/scripts/mcp"
-  echo '{"version":"0.9.0","test_framework":"shell","spec_dir":"specs"}' > "$dir/.purlin/config.json"
+  echo '{"version":"0.9.0","test_framework":"shell"}' > "$dir/.purlin/config.json"
 
   cp "$REAL_PROJECT_ROOT/scripts/mcp/purlin_server.py" "$dir/scripts/mcp/purlin_server.py"
   cp "$REAL_PROJECT_ROOT/scripts/mcp/config_engine.py" "$dir/scripts/mcp/config_engine.py"

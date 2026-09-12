@@ -197,7 +197,7 @@ class TestBumpVersionScriptPropagatesAndDetectsDrift:
             path = os.path.join(root, rel)
             os.makedirs(os.path.dirname(path), exist_ok=True)
             with open(path, 'w', encoding='utf-8') as f:
-                json.dump({'version': version, 'spec_dir': 'specs'}, f, indent=2)
+                json.dump({'version': version}, f, indent=2)
                 f.write('\n')
         # The script resolves the root as its own parent, so it must be invoked
         # from a dev/ directory inside the tree under test.

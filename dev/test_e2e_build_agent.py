@@ -101,7 +101,6 @@ def _make_project(root):
         json.dump({
             "version": "0.9.0",
             "test_framework": "pytest",
-            "spec_dir": "specs",
         }, f)
 
     # Copy proof plugin

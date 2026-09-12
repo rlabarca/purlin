@@ -37,7 +37,7 @@ def _make_project(tmp_dir, specs=None, features=None):
     tmp_dir = str(tmp_dir)
     os.makedirs(os.path.join(tmp_dir, '.purlin'), exist_ok=True)
     with open(os.path.join(tmp_dir, '.purlin', 'config.json'), 'w') as f:
-        json.dump({"version": "0.9.0", "test_framework": "pytest", "spec_dir": "specs"}, f)
+        json.dump({"version": "0.9.0", "test_framework": "pytest"}, f)
     os.makedirs(os.path.join(tmp_dir, 'specs', '_anchors'), exist_ok=True)
 
     for group in (specs, features):

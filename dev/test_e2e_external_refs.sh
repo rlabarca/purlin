@@ -79,7 +79,7 @@ init_project() {
 
   mkdir -p "$tmpdir/.purlin"
   mkdir -p "$tmpdir/specs/_anchors"
-  echo '{"version":"0.9.0","test_framework":"auto","spec_dir":"specs","pre_push":"warn","report":true}' > "$tmpdir/.purlin/config.json"
+  echo '{"version":"0.9.0","test_framework":"auto","pre_push":"warn","report":true}' > "$tmpdir/.purlin/config.json"
 
   # Copy MCP server for sync_status/drift to work
   mkdir -p "$tmpdir/scripts/mcp"

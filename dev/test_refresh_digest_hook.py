@@ -5,6 +5,7 @@ import importlib.util
 import io
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -48,7 +49,7 @@ def _git(cwd, *args):
 def _project(tmp, report=True, digest='auto', git=True, anchor=False):
     os.makedirs(os.path.join(tmp, '.purlin'), exist_ok=True)
     with open(os.path.join(tmp, '.purlin', 'config.json'), 'w') as f:
-        json.dump({'report': report, 'digest': digest, 'spec_dir': 'specs'}, f)
+        json.dump({'report': report, 'digest': digest}, f)
     os.makedirs(os.path.join(tmp, 'specs', 'app'), exist_ok=True)
     with open(os.path.join(tmp, 'specs', 'app', 'login.md'), 'w') as f:
         f.write(SPEC)
@@ -187,6 +188,27 @@ class TestDirtyCheck:
         os.utime(os.path.join(project, '.purlin', 'config.json'), None)
         _assert_silent_zero(_run(project), 'config newer')
         assert os.stat(digest).st_mtime > stamp, 'a newer config must trigger a run'
+
+        # The spec directory is the literal `specs`, not a config field: the
+        # retired `spec_dir` (`skill_init` RULE-76) must not come back as a
+        # reader here, so a config naming another directory changes nothing.
+        with io.open(HOOK, encoding='utf-8') as f:
+            source = f.read()
+        assert not re.search(r"config(?:\.get\(|\[)\s*['\"]spec_dir", source), \
+            "the hook reads spec_dir out of the config again"
+        config_path = os.path.join(project, '.purlin', 'config.json')
+        with io.open(config_path, encoding='utf-8') as f:
+            config = json.load(f)
+        config['spec_dir'] = 'elsewhere'
+        with open(config_path, 'w') as f:
+            json.dump(config, f)
+        stamp = os.stat(digest).st_mtime
+        time.sleep(0.01)
+        _write_proofs(project, [_entry('PROOF-1', 'RULE-1')])
+        _assert_silent_zero(_run(project), 'spec_dir in the config is ignored')
+        assert _read_digest(project)['features'][0]['proved'] == 1, \
+            "a stray spec_dir in the config redirected the dirty check"
+        assert os.stat(digest).st_mtime > stamp
 
 
 class TestSingleFlight:

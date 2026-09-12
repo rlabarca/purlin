@@ -57,8 +57,7 @@ def _make_project(tmpdir, digest="auto"):
     the hook actually finds.
     """
     _write(os.path.join(tmpdir, ".purlin", "config.json"),
-           json.dumps({"version": "0.9.0", "spec_dir": "specs",
-                       "test_framework": "pytest", "digest": digest},
+           json.dumps({"version": "0.9.0", "test_framework": "pytest", "digest": digest},
                       indent=2))
     _write(os.path.join(tmpdir, "specs", "hooks", "sample_feature.md"),
            SPEC_TEXT)

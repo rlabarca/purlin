@@ -252,6 +252,15 @@
       "test_name": "test_detection_reads_the_package_directories_not_only_the_root",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-81",
+      "rule": "RULE-76",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_retired_key_is_removed_and_named_and_nothing_else_moves",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

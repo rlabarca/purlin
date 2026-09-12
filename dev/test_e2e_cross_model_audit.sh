@@ -53,7 +53,6 @@ create_test_project() {
 {
   "version": "0.9.0",
   "test_framework": "shell",
-  "spec_dir": "specs",
   "audit_llm": "gemini -m pro -p \"{prompt}\"",
   "audit_llm_name": "Gemini Pro"
 }

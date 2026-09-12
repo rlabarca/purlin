@@ -128,8 +128,7 @@ def _make_legacy_project(with_mcp=True, with_mutation_field=False,
     os.makedirs(spec_dir)
 
     config = {'version': version, 'test_framework': 'pytest',
-              'spec_dir': 'specs', 'pre_push': 'warn', 'report': False,
-              'digest': 'auto'}
+              'pre_push': 'warn', 'report': False, 'digest': 'auto'}
     if with_mutation_field:
         config['mutation_checks'] = False
     _write(root, '.purlin/config.json', json.dumps(config, indent=2) + '\n')
@@ -615,5 +614,75 @@ class TestPlatformIdDefault:
             help_out = subprocess.run([sys.executable, MIGRATE, '--help'],
                                       capture_output=True, text=True).stdout
             assert f'default: {WIN}' in help_out, help_out
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------
+# skill_init RULE-76: a retired template key is removed by config-fields-missing
+# ---------------------------------------------------------------------------
+
+class TestRetiredConfigFields:
+
+    @pytest.mark.proof("skill_init", "PROOF-81", "RULE-76", tier="integration")
+    def test_a_retired_key_is_removed_and_named_and_nothing_else_moves(self):
+        """RULE-76: `spec_dir` leaves the template and leaves every config the
+        update touches, and the delta line names it so the user reads what
+        went before consenting."""
+        with open(os.path.join(ROOT, 'templates', 'config.json')) as f:
+            template = json.load(f)
+        assert 'spec_dir' not in template, (
+            "spec_dir is still a template key; new projects would be stamped "
+            "with a field nothing reads")
+
+        root = tempfile.mkdtemp()
+        try:
+            with open(os.path.join(ROOT, 'VERSION')) as f:
+                version = f.read().strip()
+            config = dict(template)
+            config['version'] = version
+            config['spec_dir'] = 'specs'
+            config['platforms'] = {'windows-2022': {'os': 'windows'}}
+            os.makedirs(os.path.join(root, '.purlin'))
+            _write(root, '.purlin/config.json',
+                   json.dumps(config, indent=2) + '\n')
+            _write(root, 'README.md', 'untouched\n')
+            _git(root, 'init', '-q')
+
+            code, out, err = _run(root, '--check')
+            assert code == 0, (code, err)
+            entry = _pending(out).get('config-fields-missing')
+            assert entry, out
+            assert '1 retired field to remove: spec_dir' in entry['summary'], \
+                entry['summary']
+
+            before = _tree_hashes(root)
+            code, out, err = _run(root, '--apply', 'config-fields-missing')
+            assert code == 0, (code, err)
+            assert 'spec_dir removed (retired)' in out, out
+
+            written = json.loads(_read(root, '.purlin/config.json'))
+            assert 'spec_dir' not in written, written
+            expected = dict(config)
+            del expected['spec_dir']
+            assert written == expected, written
+
+            after = _tree_hashes(root)
+            moved = sorted(rel for rel in set(before) | set(after)
+                           if before.get(rel) != after.get(rel))
+            assert moved == ['.purlin/config.json'], moved
+
+            # The migration is done: nothing pending, and a second apply is
+            # a no-op rather than a second rewrite.
+            code, out, err = _run(root, '--check')
+            assert code == 0, (code, err)
+            assert 'config-fields-missing' not in _pending(out), out
+
+            frozen = _read(root, '.purlin/config.json')
+            code, out, err = _run(root, '--apply', 'config-fields-missing')
+            assert code == 0, (code, err)
+            assert out.strip() == 'nothing to do', out
+            assert _read(root, '.purlin/config.json') == frozen, \
+                "a second apply rewrote the config"
         finally:
             shutil.rmtree(root, ignore_errors=True)

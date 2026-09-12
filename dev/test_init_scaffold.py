@@ -257,6 +257,15 @@ class TestArtifacts:
         written = _config(repo)
         assert set(written) == set(template), (sorted(written), sorted(template))
 
+        # RULE-9: seven required fields, `spec_dir` retired (RULE-76). The
+        # count is asserted as well as the names so a key added to the
+        # template without a row in RULE-9's list cannot slip through.
+        assert sorted(template) == ['digest', 'mutation_checks', 'pre_push',
+                                    'remote_verification', 'report',
+                                    'test_framework', 'version'], \
+            sorted(template)
+        assert len(template) == 7, sorted(template)
+
         answered = {'version', 'test_framework', 'pre_push', 'digest', 'report'}
         for key in set(template) - answered:
             assert written[key] == template[key], (

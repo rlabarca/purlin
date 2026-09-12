@@ -24,7 +24,7 @@ create_test_project() {
   mkdir -p "$tmpdir/scripts/mcp"
 
   # Create default config
-  echo '{"version":"0.9.0","test_framework":"shell","spec_dir":"specs"}' > "$tmpdir/.purlin/config.json"
+  echo '{"version":"0.9.0","test_framework":"shell"}' > "$tmpdir/.purlin/config.json"
 
   # Copy the real MCP server files so sync_status works
   cp "$REAL_PROJECT_ROOT/scripts/mcp/purlin_server.py" "$tmpdir/scripts/mcp/purlin_server.py"
@@ -360,7 +360,7 @@ mkdir -p "$TMPDIR_E/specs/auth"
 mkdir -p "$TMPDIR_E/specs/instructions"
 mkdir -p "$TMPDIR_E/scripts/mcp"
 
-echo '{"version":"0.9.0","test_framework":"shell","spec_dir":"specs"}' > "$TMPDIR_E/.purlin/config.json"
+echo '{"version":"0.9.0","test_framework":"shell"}' > "$TMPDIR_E/.purlin/config.json"
 cp "$REAL_PROJECT_ROOT/scripts/mcp/purlin_server.py" "$TMPDIR_E/scripts/mcp/purlin_server.py"
 cp "$REAL_PROJECT_ROOT/scripts/mcp/config_engine.py" "$TMPDIR_E/scripts/mcp/config_engine.py"
 cp "$REAL_PROJECT_ROOT/scripts/mcp/__init__.py" "$TMPDIR_E/scripts/mcp/__init__.py" 2>/dev/null || true

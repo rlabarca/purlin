@@ -132,7 +132,6 @@ Default config (`version` is set from the installed framework's `VERSION` file a
 {
   "version": "<installed version>",
   "test_framework": "auto",
-  "spec_dir": "specs",
   "pre_push": "warn",
   "remote_verification": "off",
   "mutation_checks": false,

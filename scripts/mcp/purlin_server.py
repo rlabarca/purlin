@@ -2625,6 +2625,12 @@ _MIGRATION_ORDER = ('legacy-tier-windows', 'legacy-proof-file', 'legacy-marker',
 # default (skill_init RULE-52), so it is never written on their behalf.
 _ASKED_CONFIG_FIELDS = ('mutation_checks',)
 
+# Keys the template used to stamp and nothing reads any more. A field
+# left in every project's config after its last reader went away is a
+# setting a user can change with no effect, so `--update` takes it out
+# under `config-fields-missing` and the delta names the key.
+_RETIRED_CONFIG_FIELDS = ('spec_dir',)
+
 # One entry per proof-marker syntax a plugin reads, with the extensions that
 # carry it. `windows` as a tier is the pre-platform spelling; the id is the
 # same text in every plugin, so the rewrite is per syntax and not per plugin
@@ -2732,10 +2738,11 @@ def _stale_plugin_copies(project_root):
 
 
 def _config_field_gaps(config):
-    """(backfill, asked, version_gap) for `.purlin/config.json`.
+    """(backfill, asked, retired, version_gap) for `.purlin/config.json`.
 
-    `backfill` is filled from the template, `asked` is put to the user, and
-    `version_gap` is (current, installed) when the stamp is not this plugin's.
+    `backfill` is filled from the template, `asked` is put to the user,
+    `retired` is removed, and `version_gap` is (current, installed) when the
+    stamp is not this plugin's.
     """
     template = _template_config()
     backfill, asked = [], []
@@ -2743,12 +2750,13 @@ def _config_field_gaps(config):
         if key in config:
             continue
         (asked if key in _ASKED_CONFIG_FIELDS else backfill).append(key)
+    retired = [key for key in _RETIRED_CONFIG_FIELDS if key in config]
     installed = _read_version()
     current = config.get('version')
     version_gap = None
     if current and installed and current != installed:
         version_gap = (current, installed)
-    return backfill, asked, version_gap
+    return backfill, asked, retired, version_gap
 
 
 def _v1_receipts(project_root):
@@ -2851,8 +2859,9 @@ def _pending_migrations(project_root, config=None, features=None,
     # project to bring up to date, which is purlin:init's case, not the
     # update's. Without this every fixture with a bare `.purlin/` would report
     # a migration it cannot act on.
-    backfill, asked, version_gap = _config_field_gaps(config) if config else ([], [], None)
-    if backfill or asked or version_gap:
+    backfill, asked, retired, version_gap = (
+        _config_field_gaps(config) if config else ([], [], [], None))
+    if backfill or asked or retired or version_gap:
         parts = []
         if backfill:
             parts.append(f'{len(backfill)} field'
@@ -2864,9 +2873,14 @@ def _pending_migrations(project_root, config=None, features=None,
             parts.append(f'{len(asked)} field'
                          f'{"s" if len(asked) != 1 else ""} to ask about, not '
                          f'backfill: {", ".join(asked)}')
+        if retired:
+            parts.append(f'{len(retired)} retired field'
+                         f'{"s" if len(retired) != 1 else ""} to remove: '
+                         f'{", ".join(retired)}')
         pending.append({
             'id': 'config-fields-missing',
-            'count': len(backfill) + len(asked) + (1 if version_gap else 0),
+            'count': (len(backfill) + len(asked) + len(retired)
+                      + (1 if version_gap else 0)),
             'summary': '; '.join(parts),
             'files': ['.purlin/config.json'],
         })

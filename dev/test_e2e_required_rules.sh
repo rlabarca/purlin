@@ -25,7 +25,7 @@ create_test_project() {
   mkdir -p "$tmpdir/scripts/mcp"
 
   # Create default config
-  echo '{"version":"0.9.0","test_framework":"shell","spec_dir":"specs"}' > "$tmpdir/.purlin/config.json"
+  echo '{"version":"0.9.0","test_framework":"shell"}' > "$tmpdir/.purlin/config.json"
 
   # Copy the real MCP server files
   cp "$REAL_PROJECT_ROOT/scripts/mcp/purlin_server.py" "$tmpdir/scripts/mcp/purlin_server.py"

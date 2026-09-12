@@ -61,7 +61,6 @@ create_test_project() {
 {
   "version": "0.9.0",
   "test_framework": "pytest",
-  "spec_dir": "specs",
   "audit_criteria": "$criteria_url",
   "audit_criteria_pinned": "$pinned_sha"
 }
@@ -70,8 +69,7 @@ CONF
     cat > "$projdir/.purlin/config.json" <<'CONF'
 {
   "version": "0.9.0",
-  "test_framework": "pytest",
-  "spec_dir": "specs"
+  "test_framework": "pytest"
 }
 CONF
   fi

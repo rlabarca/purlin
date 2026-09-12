@@ -112,7 +112,6 @@ def _create_test_project(tmpdir: str, num_rules: int = 3,
     config = {
         "version": "0.9.0",
         "test_framework": "auto",
-        "spec_dir": "specs",
         "pre_push": "warn",
     }
     config.update(config_extra or {})

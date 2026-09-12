@@ -1038,7 +1038,7 @@ class TestSyncStatus:
         config_path = os.path.join(self.project_root, '.purlin', 'config.json')
         with open(config_path, 'w') as f:
             json.dump({'version': '0.9.0', 'test_framework': 'auto',
-                       'spec_dir': 'specs', 'report': True}, f)
+                       'report': True}, f)
 
         features = purlin_server._scan_specs(self.project_root)
         all_proofs = purlin_server._read_proofs(self.project_root)
@@ -3136,7 +3136,7 @@ class TestPendingMigrationsAdvisory:
         win = self.WIN
         self._write('.purlin/config.json', json.dumps({
             'version': '0.9.0', 'test_framework': 'pytest',
-            'spec_dir': 'specs', 'pre_push': 'warn', 'report': False,
+            'pre_push': 'warn', 'report': False,
             'digest': 'auto'}, indent=2))
         self._write('specs/app/demo.md',
                     '# Feature: demo\n\n'
@@ -3265,7 +3265,7 @@ class TestPlatformsLineAndDetailLines:
     def _config(self, platforms=None, **extra):
         cfg = {'report': False, 'remote_verification': 'optional',
                'version': '0.10.0', 'test_framework': 'pytest',
-               'spec_dir': 'specs', 'pre_push': 'off', 'mutation_checks': True,
+               'pre_push': 'off', 'mutation_checks': True,
                'digest': 'auto'}
         cfg.update(extra)
         if platforms is not None:
@@ -3718,7 +3718,7 @@ class TestEvidenceOlderThanCode:
         os.makedirs(os.path.join(self.project_root, 'src'))
         with open(os.path.join(self.project_root, '.purlin', 'config.json'), 'w') as f:
             json.dump({'version': '0.9.0', 'test_framework': 'auto',
-                       'spec_dir': 'specs', 'report': True}, f)
+                       'report': True}, f)
         self._git('init')
         self._git('config', 'user.email', 'test@test.com')
         self._git('config', 'user.name', 'Test')
@@ -3864,7 +3864,7 @@ class TestAuditLLMAdvisory:
 
     def _status(self, **fields):
         cfg = {'version': '0.10.0', 'test_framework': 'pytest',
-               'spec_dir': 'specs', 'report': False, 'digest': 'auto',
+               'report': False, 'digest': 'auto',
                'pre_push': 'off', 'remote_verification': 'optional',
                'mutation_checks': True}
         cfg.update(fields)
@@ -4003,7 +4003,7 @@ class TestInheritedProofs:
         os.makedirs(self.spec_dir)
         with open(os.path.join(self.project_root, '.purlin', 'config.json'), 'w') as f:
             json.dump({'report': False, 'version': '0.10.0',
-                       'test_framework': 'pytest', 'spec_dir': 'specs'}, f)
+                       'test_framework': 'pytest'}, f)
         with open(os.path.join(self.spec_dir, 'locking.md'), 'w') as f:
             f.write('# Feature: locking\n\n## What it does\nLocks.\n\n## Rules\n'
                     '- RULE-1: Locks through the tsc path\n'

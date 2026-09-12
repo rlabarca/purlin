@@ -1,7 +1,6 @@
 {
   "version": "0.10.0",
   "test_framework": "pytest",
-  "spec_dir": "specs",
   "pre_push": "warn",
   "remote_verification": "optional",
   "mutation_checks": false,

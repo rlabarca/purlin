@@ -281,7 +281,6 @@ def _make_project(tmp_dir, specs=None):
         json.dump({
             "version": "0.9.0",
             "test_framework": "auto",
-            "spec_dir": "specs",
         }, f)
 
     if specs:

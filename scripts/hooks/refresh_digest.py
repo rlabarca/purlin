@@ -73,8 +73,13 @@ def _is_input(filename):
             or ('.proofs-' in filename and filename.endswith('.json')))
 
 
-def _dirty(root, spec_dir, since=None):
+def _dirty(root, since=None):
     """True when some input is newer than the digest (or than `since`).
+
+    The spec directory is `specs`. It was read from the config's `spec_dir`
+    until that key was retired (`skill_init` RULE-76): this hook was its last
+    reader and every other reader of the spec directory, the MCP server and
+    all twelve skills included, had always hardcoded the same literal.
 
     A missing digest is dirty. `since` lets the caller ask "did anything land
     after I started?", which is what closes the window between reading the
@@ -104,7 +109,7 @@ def _dirty(root, spec_dir, since=None):
     for name in cache_names:
         if name.endswith('.json') and newer(os.path.join(cache_dir, name)):
             return True
-    for dirpath, _dirnames, filenames in os.walk(os.path.join(root, spec_dir)):
+    for dirpath, _dirnames, filenames in os.walk(os.path.join(root, 'specs')):
         for name in filenames:
             if _is_input(name) and newer(os.path.join(dirpath, name)):
                 return True
@@ -126,8 +131,7 @@ def main():
         return
     if os.path.exists(os.path.join(git_dir, 'index.lock')):
         return
-    spec_dir = config.get('spec_dir') or 'specs'
-    if not _dirty(root, spec_dir):
+    if not _dirty(root):
         return
 
     sys.path.insert(0, os.path.join(_PLUGIN_ROOT, 'scripts', 'audit'))
@@ -145,7 +149,7 @@ def main():
                 started = time.time()
                 generate_digest(root, generated_by='hook', network=False,
                                 only_if_changed=True)
-                if not _dirty(root, spec_dir, since=started):
+                if not _dirty(root, since=started):
                     break
         finally:
             static_checks._unlock(lock)

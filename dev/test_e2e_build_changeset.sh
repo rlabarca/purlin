@@ -22,7 +22,7 @@ trap "rm -rf $TMPDIR" EXIT
 mkdir -p "$TMPDIR/specs/auth" "$TMPDIR/src" "$TMPDIR/tests" "$TMPDIR/.purlin/cache"
 
 cat > "$TMPDIR/.purlin/config.json" << 'CONF'
-{"version": "0.9.0", "test_framework": "pytest", "spec_dir": "specs"}
+{"version": "0.9.0", "test_framework": "pytest"}
 CONF
 
 cat > "$TMPDIR/specs/auth/login.md" << 'SPEC'

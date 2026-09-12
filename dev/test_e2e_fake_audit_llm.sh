@@ -144,7 +144,6 @@ cat > "$TMPDIR_E/.purlin/config.json" <<CONF
 {
   "version": "0.9.0",
   "test_framework": "pytest",
-  "spec_dir": "specs",
   "audit_llm": "$FAKE_LLM -p \"{prompt}\"",
   "audit_llm_name": "Fake Test LLM"
 }
