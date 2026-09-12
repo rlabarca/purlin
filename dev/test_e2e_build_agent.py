@@ -228,7 +228,7 @@ The spec MUST be committed before you finish.
 
 class TestBuildAgentSession:
 
-    @pytest.mark.proof("skill_build", "PROOF-17", "RULE-9", tier="e2e")
+    @pytest.mark.proof("skill_build", "PROOF-17", "RULE-9", tier="e2e", platforms=("claude-cli",))
     def test_changeset_summary_visible_with_real_decisions(self, build_project):
         """Agent output contains a visible changeset summary with substantive
         Decisions (not the empty placeholder) and Review items."""
@@ -267,7 +267,7 @@ class TestBuildAgentSession:
             "code (hashing, rate limiting, input sanitization)."
         )
 
-    @pytest.mark.proof("skill_build", "PROOF-18", "RULE-10", tier="e2e")
+    @pytest.mark.proof("skill_build", "PROOF-18", "RULE-10", tier="e2e", platforms=("claude-cli",))
     def test_build_commit_has_changeset_body(self, build_project):
         """Git commit message body contains the changeset summary."""
         root = build_project["root"]
@@ -277,7 +277,7 @@ class TestBuildAgentSession:
         assert re.search(r"RULE-[1-5]", log), \
             f"Build commit body missing RULE references:\n{log}"
 
-    @pytest.mark.proof("skill_build", "PROOF-19", "RULE-12", tier="e2e")
+    @pytest.mark.proof("skill_build", "PROOF-19", "RULE-12", tier="e2e", platforms=("claude-cli",))
     def test_build_exit_criteria_met(self, build_project):
         """After build, git status is clean and proof files are committed."""
         root = build_project["root"]
@@ -310,7 +310,7 @@ class TestBuildAgentSession:
 
 class TestSpecAgentSession:
 
-    @pytest.mark.proof("skill_spec", "PROOF-8", "RULE-7", tier="e2e")
+    @pytest.mark.proof("skill_spec", "PROOF-8", "RULE-7", tier="e2e", platforms=("claude-cli",))
     def test_spec_committed(self, spec_project):
         """After spec creation, the spec file is committed."""
         root = spec_project["root"]

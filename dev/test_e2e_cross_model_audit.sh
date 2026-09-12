@@ -12,6 +12,13 @@ SERVER_DIR="$(dirname "$SERVER_PY")"
 # Load proof harness
 source "$REAL_PROJECT_ROOT/scripts/proof/shell_purlin.sh"
 
+# This suite needs the gemini CLI, which no host detection can see, so the
+# registry calls it an environment (`gemini-cli` in .purlin/config.json) and
+# every entry this suite writes is scoped to it. Without the scope a host that
+# has gemini would commit results into the agnostic file, where nothing
+# records which machine could reproduce them (proof_common RULE-14/RULE-17).
+export PURLIN_PROOF_PLATFORMS="gemini-cli"
+
 echo "=== e2e_cross_model_audit tests ==="
 
 # --- Pre-flight: check gemini CLI ---

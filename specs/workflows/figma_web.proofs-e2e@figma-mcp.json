@@ -1,5 +1,6 @@
 {
   "tier": "e2e",
+  "platform": "figma-mcp",
   "proofs": [
     {
       "feature": "figma_web",
@@ -8,7 +9,8 @@
       "test_file": "dev/test_e2e_figma_web.py",
       "test_name": "test_init_config",
       "status": "pass",
-      "tier": "e2e"
+      "tier": "e2e",
+      "platform": "figma-mcp"
     },
     {
       "feature": "figma_web",
@@ -17,7 +19,8 @@
       "test_file": "dev/test_e2e_figma_web.py",
       "test_name": "test_anchor_metadata",
       "status": "pass",
-      "tier": "e2e"
+      "tier": "e2e",
+      "platform": "figma-mcp"
     },
     {
       "feature": "figma_web",
@@ -26,7 +29,8 @@
       "test_file": "dev/test_e2e_figma_web.py",
       "test_name": "test_anchor_visual_rule",
       "status": "pass",
-      "tier": "e2e"
+      "tier": "e2e",
+      "platform": "figma-mcp"
     },
     {
       "feature": "figma_web",
@@ -35,7 +39,8 @@
       "test_file": "dev/test_e2e_figma_web.py",
       "test_name": "test_spec_requires_anchor",
       "status": "pass",
-      "tier": "e2e"
+      "tier": "e2e",
+      "platform": "figma-mcp"
     },
     {
       "feature": "figma_web",
@@ -44,7 +49,8 @@
       "test_file": "dev/test_e2e_figma_web.py",
       "test_name": "test_figma_mcp_used",
       "status": "pass",
-      "tier": "e2e"
+      "tier": "e2e",
+      "platform": "figma-mcp"
     },
     {
       "feature": "figma_web",
@@ -53,7 +59,8 @@
       "test_file": "dev/test_e2e_figma_web.py",
       "test_name": "test_ui_renders",
       "status": "pass",
-      "tier": "e2e"
+      "tier": "e2e",
+      "platform": "figma-mcp"
     },
     {
       "feature": "figma_web",
@@ -62,7 +69,8 @@
       "test_file": "dev/test_e2e_figma_web.py",
       "test_name": "test_proof_markers",
       "status": "pass",
-      "tier": "e2e"
+      "tier": "e2e",
+      "platform": "figma-mcp"
     },
     {
       "feature": "figma_web",
@@ -71,7 +79,8 @@
       "test_file": "dev/test_e2e_figma_web.py",
       "test_name": "test_screenshot_pipeline",
       "status": "pass",
-      "tier": "e2e"
+      "tier": "e2e",
+      "platform": "figma-mcp"
     },
     {
       "feature": "figma_web",
@@ -80,7 +89,8 @@
       "test_file": "dev/test_e2e_figma_web.py",
       "test_name": "test_visual_fidelity",
       "status": "pass",
-      "tier": "e2e"
+      "tier": "e2e",
+      "platform": "figma-mcp"
     },
     {
       "feature": "figma_web",
@@ -89,7 +99,8 @@
       "test_file": "dev/test_e2e_figma_web.py",
       "test_name": "test_all_steps_produced_artifacts",
       "status": "pass",
-      "tier": "e2e"
+      "tier": "e2e",
+      "platform": "figma-mcp"
     },
     {
       "feature": "figma_web",
@@ -98,7 +109,8 @@
       "test_file": "dev/test_e2e_figma_web.py",
       "test_name": "test_no_framework_mods",
       "status": "pass",
-      "tier": "e2e"
+      "tier": "e2e",
+      "platform": "figma-mcp"
     },
     {
       "feature": "figma_web",
@@ -107,7 +119,8 @@
       "test_file": "dev/test_e2e_figma_web.py",
       "test_name": "test_failure_reports_error",
       "status": "pass",
-      "tier": "e2e"
+      "tier": "e2e",
+      "platform": "figma-mcp"
     },
     {
       "feature": "figma_web",
@@ -116,7 +129,8 @@
       "test_file": "dev/test_e2e_figma_web.py",
       "test_name": "test_audit_classification",
       "status": "pass",
-      "tier": "e2e"
+      "tier": "e2e",
+      "platform": "figma-mcp"
     },
     {
       "feature": "figma_web",
@@ -125,7 +139,8 @@
       "test_file": "dev/test_e2e_figma_web.py",
       "test_name": "test_screenshot_saved",
       "status": "pass",
-      "tier": "e2e"
+      "tier": "e2e",
+      "platform": "figma-mcp"
     },
     {
       "feature": "figma_web",
@@ -134,7 +149,8 @@
       "test_file": "dev/test_e2e_figma_web.py",
       "test_name": "test_verify_succeeds",
       "status": "pass",
-      "tier": "e2e"
+      "tier": "e2e",
+      "platform": "figma-mcp"
     }
   ]
 }

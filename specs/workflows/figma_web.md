@@ -44,18 +44,18 @@ The 5 documented messages (adapted for the modal-test design):
 
 ## Proof
 
-- PROOF-1 (RULE-1): Run purlin:init via claude -p in a temp dir; verify .purlin/config.json exists with required fields @e2e
-- PROOF-2 (RULE-2): Send message 1 (Figma URL) via claude -p --resume; verify anchor .md in specs/_anchors/ has > Source:, > Visual-Reference: figma://, > Pinned:, > Type: design @e2e
-- PROOF-3 (RULE-3): Read the anchor; verify it has a visual-match rule and an @e2e proof @e2e
-- PROOF-4 (RULE-4): Send message 2 via claude -p --resume; verify a feature spec exists with > Requires: referencing the anchor @e2e
-- PROOF-5 (RULE-5): Verify the anchor text contains the Figma file key TEZI0T6lObCJrC9mkmZT8v @e2e
-- PROOF-6 (RULE-6): Send message 3 via claude -p --resume; open the built HTML in Playwright; verify page renders visible content @e2e
-- PROOF-7 (RULE-7): Read test files; verify proof markers reference both feature and anchor names @e2e
-- PROOF-8 (RULE-8): Capture Playwright screenshot of built UI; verify it is a valid PNG alongside the MCP fixture reference @e2e
-- PROOF-9 (RULE-9): Compute pixel diff between built UI screenshot and MCP fixture reference; verify diff is within threshold @e2e
-- PROOF-10 (RULE-10): Verify all 5 steps produced artifacts: config, anchor, spec, HTML, tests @e2e
-- PROOF-11 (RULE-11): Check git diff of framework repo; verify no new changes to docs/, skills/, scripts/, references/ @e2e
-- PROOF-12 (RULE-12): Send a broken Figma URL via claude -p; verify Claude reports an error rather than silently succeeding @e2e
-- PROOF-13 (RULE-13): Run static_checks.py on the anchor test file; verify it returns proof classifications @e2e
-- PROOF-14 (RULE-14): Capture Playwright screenshot to dev/figma_web_result.png; verify valid PNG @e2e
-- PROOF-15 (RULE-15): Send messages 4+5 via claude -p --resume; run pytest in the built project; verify exit code 0 @e2e
+- PROOF-1 (RULE-1): Run purlin:init via claude -p in a temp dir; verify .purlin/config.json exists with required fields @e2e @on(figma-mcp)
+- PROOF-2 (RULE-2): Send message 1 (Figma URL) via claude -p --resume; verify anchor .md in specs/_anchors/ has > Source:, > Visual-Reference: figma://, > Pinned:, > Type: design @e2e @on(figma-mcp)
+- PROOF-3 (RULE-3): Read the anchor; verify it has a visual-match rule and an @e2e proof @e2e @on(figma-mcp)
+- PROOF-4 (RULE-4): Send message 2 via claude -p --resume; verify a feature spec exists with > Requires: referencing the anchor @e2e @on(figma-mcp)
+- PROOF-5 (RULE-5): Verify the anchor text contains the Figma file key TEZI0T6lObCJrC9mkmZT8v @e2e @on(figma-mcp)
+- PROOF-6 (RULE-6): Send message 3 via claude -p --resume; open the built HTML in Playwright; verify page renders visible content @e2e @on(figma-mcp)
+- PROOF-7 (RULE-7): Read test files; verify proof markers reference both feature and anchor names @e2e @on(figma-mcp)
+- PROOF-8 (RULE-8): Capture Playwright screenshot of built UI; verify it is a valid PNG alongside the MCP fixture reference @e2e @on(figma-mcp)
+- PROOF-9 (RULE-9): Compute pixel diff between built UI screenshot and MCP fixture reference; verify diff is within threshold @e2e @on(figma-mcp)
+- PROOF-10 (RULE-10): Verify all 5 steps produced artifacts: config, anchor, spec, HTML, tests @e2e @on(figma-mcp)
+- PROOF-11 (RULE-11): Check git diff of framework repo; verify no new changes to docs/, skills/, scripts/, references/ @e2e @on(figma-mcp)
+- PROOF-12 (RULE-12): Send a broken Figma URL via claude -p; verify Claude reports an error rather than silently succeeding @e2e @on(figma-mcp)
+- PROOF-13 (RULE-13): Run static_checks.py on the anchor test file; verify it returns proof classifications @e2e @on(figma-mcp)
+- PROOF-14 (RULE-14): Capture Playwright screenshot to dev/figma_web_result.png; verify valid PNG @e2e @on(figma-mcp)
+- PROOF-15 (RULE-15): Send messages 4+5 via claude -p --resume; run pytest in the built project; verify exit code 0 @e2e @on(figma-mcp)

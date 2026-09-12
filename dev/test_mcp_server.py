@@ -2417,6 +2417,71 @@ class TestPlatformRegistry:
         assert not sat(registry['win-2022'], host)
         assert purlin_server._host_platform_ids(registry, host) == ['macos']
 
+    ENVIRONMENTS = {
+        'figma-mcp': {'kind': 'environment', 'label': 'Figma MCP server'},
+        'gemini-cli': {'kind': 'environment',
+                       'runner': {'provider': 'github', 'workflow': 'gemini.yml'}},
+        'env-with-os': {'kind': 'environment', 'os': 'macos'},
+        'odd-kind': {'kind': 'container'},
+    }
+
+    @pytest.mark.proof("config_engine", "PROOF-14", "RULE-12", tier="integration")
+    def test_environment_entry_needs_no_os_and_only_the_env_var_satisfies_it(
+            self, monkeypatch):
+        registry, errors = purlin_server._platform_registry(
+            {'platforms': self.ENVIRONMENTS})
+
+        assert registry['figma-mcp'] == {
+            '_id': 'figma-mcp', 'kind': 'environment',
+            'label': 'Figma MCP server'}, registry['figma-mcp']
+        assert 'os' not in registry['figma-mcp'], (
+            "an environment names a tool, not a host: it must carry no os")
+        assert registry['gemini-cli']['runner']['workflow'] == 'gemini.yml', (
+            f"an environment may still name a runner: {registry['gemini-cli']}")
+
+        assert len(errors) == 2, errors
+        by_id = {e.split(':', 1)[0]: e for e in errors}
+        assert set(by_id) == {'env-with-os', 'odd-kind'}, errors
+        assert "'os'" in by_id['env-with-os'], (
+            f"a host key on an environment entry must be named: "
+            f"{by_id['env-with-os']}")
+        assert 'container' in by_id['odd-kind'], by_id['odd-kind']
+
+        # Host detection never satisfies an environment. The env var is the
+        # only claim, because nothing a machine reports about itself shows
+        # that the tool answers there.
+        monkeypatch.setattr(purlin_server.platform, 'system', lambda: 'Darwin')
+        monkeypatch.setattr(purlin_server.platform, 'mac_ver',
+                            lambda: ('14.7.1', ('', '', ''), ''))
+        monkeypatch.setattr(purlin_server.platform, 'machine', lambda: 'arm64')
+        monkeypatch.delenv('PURLIN_PLATFORM', raising=False)
+        host = purlin_server._detect_host_platform()
+        assert not purlin_server._platform_satisfied_by_host(
+            registry['figma-mcp'], host), (
+            "no host may satisfy an environment by detection alone")
+        assert purlin_server._host_platform_ids(registry, host) == ['macos'], (
+            purlin_server._host_platform_ids(registry, host))
+
+        monkeypatch.setenv('PURLIN_PLATFORM', 'figma-mcp')
+        host = purlin_server._detect_host_platform()
+        assert purlin_server._platform_satisfied_by_host(
+            registry['figma-mcp'], host), "PURLIN_PLATFORM must satisfy it"
+        assert 'figma-mcp' in purlin_server._host_platform_ids(registry, host)
+        monkeypatch.delenv('PURLIN_PLATFORM')
+
+        # The Platforms block says how the result can ever arrive.
+        self._write_spec('@unit @on(figma-mcp)')
+        self._config({'figma-mcp': self.ENVIRONMENTS['figma-mcp']})
+        out = purlin_server.sync_status(self.project_root)
+        expected = ('runner: figma-mcp (1 proof; environment; run with '
+                    'PURLIN_PLATFORM=figma-mcp on a host that has it, then '
+                    'commit with a Purlin-Runner: <user>@<host> trailer)')
+        assert expected in out, f"expected {expected!r} in:\n{out}"
+        for line in out.splitlines():
+            assert not (line.strip().startswith('local:')
+                        and 'figma-mcp' in line), (
+                f"an environment is never this host: {line}")
+
 
 class TestPendingMigrationsAdvisory:
     """sync_status RULE-55: everything `purlin:init --update` owns, in one

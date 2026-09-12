@@ -266,7 +266,7 @@ def framework_baseline():
 
 class TestFigmaWebWorkflow:
 
-    @pytest.mark.proof("figma_web", "PROOF-1", "RULE-1", tier="e2e")
+    @pytest.mark.proof("figma_web", "PROOF-1", "RULE-1", tier="e2e", platforms=("figma-mcp",))
     def test_init_config(self, project):
         """Prerequisite: purlin:init created a valid config."""
         cfg = os.path.join(project, ".purlin", "config.json")
@@ -275,7 +275,7 @@ class TestFigmaWebWorkflow:
         assert "version" in data
         assert os.path.isdir(os.path.join(project, "specs"))
 
-    @pytest.mark.proof("figma_web", "PROOF-2", "RULE-2", tier="e2e")
+    @pytest.mark.proof("figma_web", "PROOF-2", "RULE-2", tier="e2e", platforms=("figma-mcp",))
     def test_anchor_metadata(self, project):
         """Msg 1 created anchor with Figma metadata."""
         anchors = _find_anchor(project)
@@ -286,7 +286,7 @@ class TestFigmaWebWorkflow:
         assert re.search(r">\s*Pinned:", txt)
         assert re.search(r">\s*Type:\s*design", txt)
 
-    @pytest.mark.proof("figma_web", "PROOF-3", "RULE-3", tier="e2e")
+    @pytest.mark.proof("figma_web", "PROOF-3", "RULE-3", tier="e2e", platforms=("figma-mcp",))
     def test_anchor_visual_rule(self, project):
         """Anchor has visual-match rule + @e2e proof."""
         txt = _find_anchor(project)[0].read_text()
@@ -313,7 +313,7 @@ class TestFigmaWebWorkflow:
             "Anchor Proof section does not contain @e2e tag"
         )
 
-    @pytest.mark.proof("figma_web", "PROOF-4", "RULE-4", tier="e2e")
+    @pytest.mark.proof("figma_web", "PROOF-4", "RULE-4", tier="e2e", platforms=("figma-mcp",))
     def test_spec_requires_anchor(self, project):
         """Msg 2 created feature spec referencing anchor."""
         specs = _find_spec(project)
@@ -321,13 +321,13 @@ class TestFigmaWebWorkflow:
         anchor_name = _find_anchor(project)[0].stem
         assert any(anchor_name in s.read_text() for s in specs)
 
-    @pytest.mark.proof("figma_web", "PROOF-5", "RULE-5", tier="e2e")
+    @pytest.mark.proof("figma_web", "PROOF-5", "RULE-5", tier="e2e", platforms=("figma-mcp",))
     def test_figma_mcp_used(self, project):
         """Anchor has real Figma file key from MCP."""
         txt = _find_anchor(project)[0].read_text()
         assert FIGMA_FILE_KEY in txt
 
-    @pytest.mark.proof("figma_web", "PROOF-6", "RULE-6", tier="e2e")
+    @pytest.mark.proof("figma_web", "PROOF-6", "RULE-6", tier="e2e", platforms=("figma-mcp",))
     def test_ui_renders(self, project, pw_page):
         """Msg 3 built HTML that renders in a browser."""
         html_files = _find_html(project)
@@ -337,7 +337,7 @@ class TestFigmaWebWorkflow:
         body = pw_page.inner_text("body")
         assert len(body.strip()) > 20
 
-    @pytest.mark.proof("figma_web", "PROOF-7", "RULE-7", tier="e2e")
+    @pytest.mark.proof("figma_web", "PROOF-7", "RULE-7", tier="e2e", platforms=("figma-mcp",))
     def test_proof_markers(self, project):
         """Build wrote tests with proof markers."""
         tests = _find_tests(project)
@@ -345,7 +345,7 @@ class TestFigmaWebWorkflow:
         src = "\n".join(t.read_text() for t in tests)
         assert "proof" in src.lower()
 
-    @pytest.mark.proof("figma_web", "PROOF-8", "RULE-8", tier="e2e")
+    @pytest.mark.proof("figma_web", "PROOF-8", "RULE-8", tier="e2e", platforms=("figma-mcp",))
     def test_screenshot_pipeline(self, project, pw_page):
         """Screenshot can be captured and compared."""
         html_files = _find_html(project)
@@ -356,7 +356,7 @@ class TestFigmaWebWorkflow:
         assert _is_valid_png(local)
         assert _is_valid_png(FIXTURE_REF_PNG)
 
-    @pytest.mark.proof("figma_web", "PROOF-9", "RULE-9", tier="e2e")
+    @pytest.mark.proof("figma_web", "PROOF-9", "RULE-9", tier="e2e", platforms=("figma-mcp",))
     def test_visual_fidelity(self, project, pw_page):
         """Built UI matches reference within threshold."""
         html_files = _find_html(project)
@@ -371,7 +371,7 @@ class TestFigmaWebWorkflow:
             f"{100-diff:.1f}% fidelity ({diff:.1f}% diff, max "
             f"{MAX_PIXEL_DIFF_PCT}%). See {SCREENSHOT_PATH}")
 
-    @pytest.mark.proof("figma_web", "PROOF-10", "RULE-10", tier="e2e")
+    @pytest.mark.proof("figma_web", "PROOF-10", "RULE-10", tier="e2e", platforms=("figma-mcp",))
     def test_all_steps_produced_artifacts(self, project):
         """All 5 steps produced their expected artifacts."""
         assert os.path.isdir(os.path.join(project, ".purlin"))
@@ -380,7 +380,7 @@ class TestFigmaWebWorkflow:
         assert len(_find_html(project)) >= 1
         assert len(_find_tests(project)) >= 1
 
-    @pytest.mark.proof("figma_web", "PROOF-11", "RULE-11", tier="e2e")
+    @pytest.mark.proof("figma_web", "PROOF-11", "RULE-11", tier="e2e", platforms=("figma-mcp",))
     def test_no_framework_mods(self, project, framework_baseline):
         """FORBIDDEN — no framework files modified."""
         r = subprocess.run(["git", "diff", "--name-only", "HEAD"],
@@ -391,7 +391,7 @@ class TestFigmaWebWorkflow:
                                        "references/"))]
         assert violations == [], f"Framework files modified: {violations}"
 
-    @pytest.mark.proof("figma_web", "PROOF-12", "RULE-12", tier="e2e")
+    @pytest.mark.proof("figma_web", "PROOF-12", "RULE-12", tier="e2e", platforms=("figma-mcp",))
     def test_failure_reports_error(self, project):
         """FORBIDDEN — Claude must report errors, not silently fix."""
         try:
@@ -408,7 +408,7 @@ class TestFigmaWebWorkflow:
             "not found", "could not", "issue",
         )), f"Claude silently handled broken URL: {resp[:300]}"
 
-    @pytest.mark.proof("figma_web", "PROOF-13", "RULE-13", tier="e2e")
+    @pytest.mark.proof("figma_web", "PROOF-13", "RULE-13", tier="e2e", platforms=("figma-mcp",))
     def test_audit_classification(self, project):
         """static_checks returns classifications for anchor proofs."""
         anchors = _find_anchor(project)
@@ -424,7 +424,7 @@ class TestFigmaWebWorkflow:
         data = json.loads(r.stdout)
         assert len(data.get("proofs", [])) > 0
 
-    @pytest.mark.proof("figma_web", "PROOF-14", "RULE-14", tier="e2e")
+    @pytest.mark.proof("figma_web", "PROOF-14", "RULE-14", tier="e2e", platforms=("figma-mcp",))
     def test_screenshot_saved(self, project, pw_page):
         """Screenshot saved to dev/figma_web_result.png."""
         html_files = _find_html(project)
@@ -433,7 +433,7 @@ class TestFigmaWebWorkflow:
         pw_page.screenshot(path=SCREENSHOT_PATH)
         assert _is_valid_png(SCREENSHOT_PATH)
 
-    @pytest.mark.proof("figma_web", "PROOF-15", "RULE-15", tier="e2e")
+    @pytest.mark.proof("figma_web", "PROOF-15", "RULE-15", tier="e2e", platforms=("figma-mcp",))
     def test_verify_succeeds(self, project):
         """Tests pass in the built project (pytest exit 0)."""
         tests = _find_tests(project)

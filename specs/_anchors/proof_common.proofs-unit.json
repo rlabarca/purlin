@@ -276,7 +276,7 @@
       "id": "PROOF-18",
       "rule": "RULE-14",
       "test_file": "dev/test_sweep_completeness.py",
-      "test_name": "test_every_proof_named_test_file_is_swept_or_excepted",
+      "test_name": "test_every_proof_named_test_file_is_swept_or_platform_scoped",
       "status": "pass",
       "tier": "unit"
     }

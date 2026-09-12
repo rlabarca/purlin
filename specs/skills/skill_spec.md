@@ -26,7 +26,7 @@
 - PROOF-5 (RULE-5): Grep `skills/spec/SKILL.md` for `KEEPING`, `ADDING`, `UPDATING`, and `REMOVING`; verify the delta report structure is present
 - PROOF-6 (RULE-6): Grep `skills/spec/SKILL.md` for tier review instructions and tier tag references (`@integration`/`@e2e`/unit tier); verify present
 - PROOF-7 (RULE-7): Grep `skills/spec/SKILL.md` for "Exit Criteria" section; verify it requires spec committed and no uncommitted spec files
-- PROOF-8 (RULE-7): Run purlin:spec via claude -p in a temp project; verify spec .md is committed, git status clean for specs/, and git log shows spec(<name>): commit @e2e
+- PROOF-8 (RULE-7): Run purlin:spec via claude -p in a temp project; verify spec .md is committed, git status clean for specs/, and git log shows spec(<name>): commit @e2e @on(claude-cli)
 - PROOF-9 (RULE-8): Grep `skills/spec/SKILL.md` Validate-Before-Commit for the `@e2e` observable-flow check and its pointer to `spec_quality_guide.md` "E2E proof descriptions"; verify present
 - PROOF-10 (RULE-9): Grep `skills/spec/SKILL.md` for the pointer to `audit_criteria.md`; verify it names the Design levels or Pass D and states that spec edits do not move HOLLOW or EXCLUDED
 - PROOF-11 (RULE-10): Grep `skills/spec/SKILL.md` Exit Criteria; verify they invoke `--check-proof-design`, state the report is advisory, and enumerate the three next-step directives including `purlin:build` and `purlin:test`

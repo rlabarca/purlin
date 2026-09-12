@@ -6,28 +6,33 @@ code does. This test reads three things and compares them:
 
   1. every `$SCRIPT_DIR/test_*` path `dev/run_tests.sh` invokes,
   2. every `test_file` named by an entry in a tracked `*.proofs-*.json`,
-  3. the exception list written into RULE-14 itself (the backticked
-     `dev/test_*` paths in that rule's text).
+     together with the platform scope of the file that names it,
+  3. the platform registry resolved from `.purlin/config.json`.
 
-The proof-named files the sweep does not invoke must equal the exception list
-exactly. A file in neither set fails (a proof nothing regenerates); a listed
-exception the sweep now runs also fails (a stale exception). The list lives in
-the spec so the rule and the test cannot disagree about it.
+A proof-named test file the sweep does not invoke is allowed only when every
+entry naming it lives in a platform-scoped file (`<feature>.proofs-<tier>@<id>.json`)
+whose id the registry declares: the evidence then says which platform
+regenerates it. There is no hand-maintained exception list to go stale. The
+check runs in both directions, so an unswept file with an agnostic entry fails,
+and so does a scoped file whose id the registry dropped.
 """
 
 import json
 import os
 import re
 import subprocess
+import sys
 
 import pytest
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 SWEEP = os.path.join(PROJECT_ROOT, 'dev', 'run_tests.sh')
-ANCHOR = os.path.join(PROJECT_ROOT, 'specs', '_anchors', 'proof_common.md')
+
+sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'mcp'))
+import purlin_server  # noqa: E402
 
 _SWEEP_REF = re.compile(r'\$SCRIPT_DIR/(test_[A-Za-z0-9_]+\.(?:py|sh))\b')
-_EXCEPTION_REF = re.compile(r'`(dev/test_[A-Za-z0-9_]+\.(?:py|sh))`')
+_PROOF_FILE_RE = re.compile(r'\.proofs-[^/@]+(?:@([^/]+))?\.json$')
 
 
 def sweep_test_files(sweep_path=SWEEP):
@@ -37,54 +42,65 @@ def sweep_test_files(sweep_path=SWEEP):
     return {'dev/' + name for name in _SWEEP_REF.findall(text)}
 
 
-def tracked_proof_test_files(root=PROJECT_ROOT):
-    """Every `test_file` named by an entry in a git-tracked proof file."""
+def tracked_proof_files(root=PROJECT_ROOT):
+    """[(proof file, platform id or None, {test_file, ...})] for tracked proofs."""
     listed = subprocess.run(
         ['git', 'ls-files', '--', 'specs'],
         cwd=root, capture_output=True, text=True, check=True,
     ).stdout.split()
-    files = set()
+    out = []
     for rel in listed:
-        if not re.search(r'\.proofs-[^/]+\.json$', rel):
+        m = _PROOF_FILE_RE.search(rel)
+        if not m:
             continue
         with open(os.path.join(root, rel)) as f:
-            for entry in json.load(f).get('proofs', []):
-                files.add(entry['test_file'])
-    return files
+            named = {entry['test_file'] for entry in json.load(f).get('proofs', [])}
+        out.append((rel, m.group(1), named))
+    return out
 
 
-def rule_14_exceptions(anchor_path=ANCHOR):
-    """The exception list as written in RULE-14's own text."""
-    with open(anchor_path) as f:
-        for line in f:
-            if line.startswith('- RULE-14:'):
-                return set(_EXCEPTION_REF.findall(line))
-    raise AssertionError('proof_common.md has no RULE-14 line to read the exception list from')
+def registered_platform_ids(root=PROJECT_ROOT):
+    """Every id the project's `platforms` registry declares, families included."""
+    sys.path.insert(0, os.path.join(root, 'scripts', 'mcp'))
+    from config_engine import resolve_config
+    registry, _errors = purlin_server._platform_registry(resolve_config(root))
+    return set(registry)
 
 
 @pytest.mark.proof("proof_common", "PROOF-18", "RULE-14")
-def test_every_proof_named_test_file_is_swept_or_excepted():
+def test_every_proof_named_test_file_is_swept_or_platform_scoped():
     swept = sweep_test_files()
-    named = tracked_proof_test_files()
-    exceptions = rule_14_exceptions()
+    proof_files = tracked_proof_files()
+    registered = registered_platform_ids()
 
+    named = {path for _rel, _pid, paths in proof_files for path in paths}
     # Sanity on the three inputs, so a broken parser cannot pass vacuously.
     assert len(swept) >= 20, f'sweep parser found only {sorted(swept)}'
     assert len(named) >= 20, f'proof reader found only {sorted(named)}'
-    for path in swept | exceptions:
+    assert {'windows', 'macos', 'linux'} <= registered, sorted(registered)
+    for path in swept:
         assert os.path.exists(os.path.join(PROJECT_ROOT, path)), \
-            f'{path} is named by the sweep or the exception list but does not exist'
+            f'{path} is named by the sweep but does not exist'
 
-    unswept = named - swept
-    missing = unswept - exceptions
-    stale = exceptions - unswept
-    assert not missing, (
-        'proof entries name test files dev/run_tests.sh never runs and RULE-14 '
-        f'does not except: {sorted(missing)}. Add each to the sweep, or to the '
-        'exception list with its runner.'
+    # A scope is a claim about a platform the project defined.
+    unregistered = sorted(
+        (rel, pid) for rel, pid, _paths in proof_files
+        if pid is not None and pid not in registered
     )
-    assert not stale, (
-        'RULE-14 excepts test files that are no longer needed as exceptions '
-        f'(the sweep runs them, or no proof names them): {sorted(stale)}'
+    assert not unregistered, (
+        'platform-scoped proof files name ids that .purlin/config.json does '
+        f'not declare: {unregistered}. Register each under "platforms", or '
+        'rename the file to an id that is registered.'
     )
-    assert unswept == exceptions
+
+    # An unswept test file is exempt only while a scoped file carries it.
+    agnostic_unswept = sorted(
+        (path, rel) for rel, pid, paths in proof_files if pid is None
+        for path in paths if path not in swept
+    )
+    assert not agnostic_unswept, (
+        'proof entries in unscoped files name test files dev/run_tests.sh '
+        f'never runs: {agnostic_unswept}. Add each file to the sweep, or '
+        'scope its proofs with @on(<platform-id>) so the evidence names the '
+        'platform that regenerates them.'
+    )

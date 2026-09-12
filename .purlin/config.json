@@ -17,6 +17,18 @@
         "runs_on": "windows-2022",
         "workflow": "purlin-windows-2022-proofs"
       }
+    },
+    "figma-mcp": {
+      "kind": "environment",
+      "label": "Figma MCP server; no runner, run by hand with PURLIN_PLATFORM=figma-mcp on a host that has it"
+    },
+    "gemini-cli": {
+      "kind": "environment",
+      "label": "gemini CLI; no runner, run by hand with PURLIN_PLATFORM=gemini-cli on a host that has it"
+    },
+    "claude-cli": {
+      "kind": "environment",
+      "label": "claude CLI, spends money; no runner, run by hand with PURLIN_PLATFORM=claude-cli on a host that has it"
     }
   }
 }

@@ -1464,8 +1464,14 @@ _ARCH_ALIASES = {
     'arm64': 'arm64', 'aarch64': 'arm64',
 }
 _PLATFORM_VERSION_RE = re.compile(r'^(>=)?(\d+(?:\.\d+)*)$')
-_PLATFORM_ENTRY_KEYS = ('os', 'version', 'distro', 'arch', 'runner', 'label')
+_PLATFORM_ENTRY_KEYS = ('kind', 'os', 'version', 'distro', 'arch', 'runner', 'label')
 _PLATFORM_RUNNER_KEYS = ('provider', 'runs_on', 'workflow')
+# An environment names a tool a host either has or does not (a Figma MCP
+# server, a CLI that spends money), not a shape `platform.system()` can see.
+_PLATFORM_KIND_ENVIRONMENT = 'environment'
+# The keys that describe a host. Every one of them is meaningless on an
+# environment entry, so every one of them is an error there.
+_PLATFORM_HOST_KEYS = ('os', 'version', 'distro', 'arch')
 
 
 def _normalise_arch(value):
@@ -1490,6 +1496,8 @@ def _validate_platform_entry(pid, entry):
     if unknown:
         return None, (f'{pid}: unknown key {unknown[0]!r} '
                       f'(allowed: {", ".join(_PLATFORM_ENTRY_KEYS)})')
+    if entry.get('kind') is not None:
+        return _validate_environment_entry(pid, entry)
     os_name = entry.get('os')
     if not isinstance(os_name, str) or not os_name:
         return None, f'{pid}: "os" is required (one of {", ".join(_PLATFORM_OS_VALUES)})'
@@ -1521,6 +1529,32 @@ def _validate_platform_entry(pid, entry):
                           f'{", ".join(sorted(_ARCH_ALIASES))}')
         out['arch'] = norm
 
+    return _validate_platform_extras(pid, entry, out)
+
+
+def _validate_environment_entry(pid, entry):
+    """Return (normalised_entry, error) for a `kind: environment` entry.
+
+    An environment is a tool, not a host: no `os` is required and none of the
+    host keys is allowed, because a version or an arch on it would read as a
+    constraint detection could check, and nothing here is detectable. Only
+    `PURLIN_PLATFORM` can claim it (`_platform_satisfied_by_host`).
+    """
+    kind = entry.get('kind')
+    if kind != _PLATFORM_KIND_ENVIRONMENT:
+        return None, (f'{pid}: kind {kind!r} must be '
+                      f'{_PLATFORM_KIND_ENVIRONMENT!r}')
+    bad = sorted(k for k in _PLATFORM_HOST_KEYS if k in entry)
+    if bad:
+        return None, (f'{pid}: {bad[0]!r} is not valid on a kind '
+                      f'{_PLATFORM_KIND_ENVIRONMENT!r} entry, which names a '
+                      f'tool a host either has or does not')
+    return _validate_platform_extras(
+        pid, entry, {'_id': pid, 'kind': _PLATFORM_KIND_ENVIRONMENT})
+
+
+def _validate_platform_extras(pid, entry, out):
+    """Validate the two keys every entry may carry, host or environment."""
     runner = entry.get('runner')
     if runner is not None:
         if not isinstance(runner, dict):
@@ -1643,11 +1677,16 @@ def _platform_satisfied_by_host(platform_def, host):
     `PURLIN_PLATFORM` equal to the entry's id short-circuits: the runner
     asserts what it is. Otherwise os must match, distro and arch must match
     whenever the entry names them, and the version constraint must hold. A
-    family entry with only `os` is satisfied by any host of that family.
+    family entry with only `os` is satisfied by any host of that family. A
+    `kind: environment` entry is satisfied by nothing else at all.
     """
     host = host or {}
     if host.get('id') and host['id'] == platform_def.get('_id'):
         return True
+    if platform_def.get('kind') == _PLATFORM_KIND_ENVIRONMENT:
+        # A tool is not a host shape: nothing detection reports can prove that
+        # a Figma MCP server answers here. The env var above is the only claim.
+        return False
     if platform_def.get('os') != host.get('os'):
         return False
     if platform_def.get('distro') and platform_def['distro'] != host.get('distro'):
@@ -1702,6 +1741,11 @@ def _platform_dispatch_note(registry, platform_id):
     if entry is None:
         return 'unregistered'
     runner = entry.get('runner')
+    if not runner and entry.get('kind') == _PLATFORM_KIND_ENVIRONMENT:
+        # Nothing dispatches a tool. Name the one way the result can arrive.
+        return (f'environment; run with PURLIN_PLATFORM={platform_id} on a '
+                f'host that has it, then commit with a '
+                f'Purlin-Runner: <user>@<host> trailer')
     if not runner:
         return 'no runner configured'
     provider = runner.get('provider')

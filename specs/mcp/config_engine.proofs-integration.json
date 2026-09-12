@@ -1,0 +1,14 @@
+{
+  "tier": "integration",
+  "proofs": [
+    {
+      "feature": "config_engine",
+      "id": "PROOF-14",
+      "rule": "RULE-12",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_environment_entry_needs_no_os_and_only_the_env_var_satisfies_it",
+      "status": "pass",
+      "tier": "integration"
+    }
+  ]
+}
