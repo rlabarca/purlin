@@ -13,6 +13,7 @@ It is started automatically by Claude Code when the plugin is enabled.
 
 import contextlib
 import datetime
+import functools
 import glob
 import hashlib
 import json
@@ -993,6 +994,18 @@ def _key_run():
         return
     with scope():
         yield
+
+
+def _scoped(fn):
+    """Run `fn` inside one _key_run() scope. A decorator rather than a wrapper
+    function so the entry point keeps its own body: the call-site proofs
+    behind sync_status RULE-54 walk `sync_status`'s AST for the one verdict
+    call, and a body moved into a helper is invisible to them."""
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        with _key_run():
+            return fn(*args, **kwargs)
+    return wrapper
 
 
 def _static_checks():
@@ -2505,13 +2518,9 @@ def _audit_llm_advisory_lines(config):
     return lines
 
 
+@_scoped
 def sync_status(project_root, role=None):
     """Generate the full sync_status report with directives."""
-    with _key_run():
-        return _sync_status_impl(project_root, role)
-
-
-def _sync_status_impl(project_root, role=None):
     _PROVENANCE_CACHE.clear()
     features = _scan_specs(project_root)
     legacy_proof_files = []
@@ -4338,6 +4347,7 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
     }
 
 
+@_scoped
 def read_report_payload(project_root):
     """Assemble the structured status payload without writing anything.
 
@@ -4348,11 +4358,6 @@ def read_report_payload(project_root):
     rendered summary table. Returns None when the directory is not a readable
     Purlin project, which the gate turns into a bad-invocation exit.
     """
-    with _key_run():
-        return _read_report_payload_impl(project_root)
-
-
-def _read_report_payload_impl(project_root):
     _PROVENANCE_CACHE.clear()
     config = resolve_config(project_root)
     if not config:
@@ -4944,6 +4949,7 @@ def drift(project_root, since=None, role=None):
     return json.dumps(result, indent=2)
 
 
+@_scoped
 def generate_digest(project_root):
     """Generate the project digest file with coverage, drift, and git SHA.
 
@@ -4953,11 +4959,6 @@ def generate_digest(project_root):
     IMPORTANT: Does NOT trigger a new audit. Uses cached audit data only.
     Runs sync_status internals (coverage scan) and drift.
     """
-    with _key_run():
-        return _generate_digest_impl(project_root)
-
-
-def _generate_digest_impl(project_root):
     _PROVENANCE_CACHE.clear()
     config = resolve_config(project_root)
     if not config:
