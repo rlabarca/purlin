@@ -570,9 +570,12 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --prune-cache --liv
 
 This removes cache entries for features that no longer exist while preserving all entries from the current audit. For single-feature audits, skip this step — they don't know which other features are live.
 
-**Never run this with an empty live-keys file.** Pruning against zero live keys is a full sweep
-that deletes every entry, including the ones Step 3.4 just wrote. If no proof hashes were
-computed during this audit, skip the prune entirely.
+**If no proof hashes were computed during this audit, skip the prune entirely.** Pruning
+with an empty live-keys file would be a full sweep that deletes every entry, including the
+ones Step 3.4 just wrote, so `--prune-cache` refuses one rather than trusting the caller to
+remember: it prints a JSON `error` naming the file, exits 2, and leaves the cache untouched
+(`static_checks` RULE-53). Treat that exit as a signal that the key collection above
+produced nothing, not as something to work around.
 
 ## Step 4 — Refresh Status and Report Both Gauges
 

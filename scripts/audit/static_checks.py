@@ -3331,6 +3331,13 @@ def main():
             sys.exit(2)
         with open(live_keys_file, encoding='utf-8') as f:
             live_keys = set(line.strip() for line in f if line.strip())
+        if not live_keys:
+            # RULE-53: a live-keys file with nothing in it is an audit that
+            # computed no key, not an instruction to delete every grade.
+            print(json.dumps({'error': (
+                f'--prune-cache refused: {live_keys_file} lists no live keys, '
+                'and pruning against none would empty the cache')}))
+            sys.exit(2)
         result = prune_audit_cache(project_root, live_keys)
         print(json.dumps(result))
         sys.exit(0)

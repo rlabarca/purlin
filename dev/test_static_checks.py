@@ -3582,3 +3582,69 @@ class TestOneBodyCheckDriver:
                 assert got['literal'] is True, got
                 assert got['reason'] == reason, (
                     f"{wrapper} reason moved: {got['reason']!r} != {reason!r}")
+
+
+class TestPruneRefusesAnEmptyLiveKeySet:
+    """RULE-53 - an empty live-keys file is a refusal, not a full sweep."""
+
+    CLI = os.path.join(os.path.dirname(__file__), '..', 'scripts', 'audit',
+                       'static_checks.py')
+
+    @staticmethod
+    def _entry(feature):
+        return {
+            'assessment': 'STRONG',
+            'criterion': 'matches rule intent',
+            'why': 'test exercises the rule correctly',
+            'fix': 'none',
+            'feature': feature,
+            'proof_id': 'PROOF-1',
+            'rule_id': 'RULE-1',
+            'priority': 'LOW',
+            'cached_at': '2026-04-01T00:00:00+00:00',
+        }
+
+    def _prune(self, root, live_keys_path):
+        return subprocess.run(
+            [sys.executable, self.CLI, '--prune-cache',
+             '--live-keys-file', live_keys_path, '--project-root', root],
+            capture_output=True, text=True)
+
+    @pytest.mark.proof("static_checks", "PROOF-86", "RULE-53", tier="integration")
+    def test_an_empty_live_keys_file_is_refused_and_the_cache_survives(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            features = ('feat_a', 'feat_b', 'feat_c')
+            for feat in features:
+                _scaffold_proof(tmpdir, feat, 'PROOF-1', 'RULE-1',
+                                test_file=f'tests/test_{feat}.py',
+                                test_name=f'test_{feat}')
+            write_audit_cache(tmpdir, {
+                f'seed_{feat}': self._entry(feat) for feat in features})
+            cache_path = os.path.join(tmpdir, '.purlin', 'cache',
+                                      'audit_cache.json')
+            with open(cache_path, 'rb') as f:
+                before = f.read()
+            assert len(read_audit_cache(tmpdir)) == 3
+
+            empty = os.path.join(tmpdir, 'empty_keys.txt')
+            with open(empty, 'w', encoding='utf-8') as f:
+                f.write('\n   \n\n')
+            result = self._prune(tmpdir, empty)
+            assert result.returncode == 2, \
+                f'expected exit 2, got {result.returncode}: {result.stdout}'
+            payload = json.loads(result.stdout)
+            assert empty in payload['error'], payload
+            with open(cache_path, 'rb') as f:
+                assert f.read() == before, 'the refused prune rewrote the cache'
+            assert len(read_audit_cache(tmpdir)) == 3, \
+                'the refused prune emptied the cache it was supposed to leave alone'
+
+            # The refusal is about the empty set, not about pruning.
+            live = os.path.join(tmpdir, 'live_keys.txt')
+            keys = sorted(read_audit_cache(tmpdir))
+            with open(live, 'w', encoding='utf-8') as f:
+                f.write('\n'.join(keys[:2]) + '\n')
+            result = self._prune(tmpdir, live)
+            assert result.returncode == 0, result.stderr
+            output = json.loads(result.stdout)
+            assert (output['pruned'], output['kept']) == (1, 2), output
