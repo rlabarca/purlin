@@ -1,0 +1,14 @@
+{
+  "tier": "integration",
+  "proofs": [
+    {
+      "feature": "proof_plugins_jest",
+      "id": "PROOF-5",
+      "rule": "RULE-4",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_jest_pending_writes_nothing_and_leaves_an_existing_file_alone",
+      "status": "pass",
+      "tier": "integration"
+    }
+  ]
+}

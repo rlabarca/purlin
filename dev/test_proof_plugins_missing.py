@@ -490,6 +490,7 @@ def test_jest_failed_maps_to_fail(tmp_path):
 
 
 @pytest.mark.proof("proof_common", "PROOF-17", "RULE-13", tier="integration")
+@pytest.mark.proof("proof_plugins_jest", "PROOF-5", "RULE-4", tier="integration")
 def test_jest_pending_writes_nothing_and_leaves_an_existing_file_alone(tmp_path):
     """A jest status of 'pending' means the test did not run, so it writes no
     entry (proof_common RULE-13) and leaves a committed file byte-identical."""

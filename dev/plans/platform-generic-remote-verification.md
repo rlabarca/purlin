@@ -1812,6 +1812,51 @@ the optional `> Note:` line 10.1 introduced (Format-Version bump per CLAUDE.md),
 `dev/external-refs` fixture is recreated with `rm -rf dev/external-refs && bash
 dev/setup-external-refs.sh` so the anchor's reproducible pin reads current.
 
+## DONE — Phase 10.5c: skipped tests keep their entries (`fix(proof_common): a skipped test keeps its entry; anchor Note field`, built on `cf39b77f` in a worktree, cherry-picked onto `ed491a9c` as `f2b43d2c`; receipts in the `verify:` commit that follows it)
+
+- **Numbers taken (landing order).** `proof_common` RULE-18 with PROOF-23 and PROOF-24 (spine
+  max was RULE-17/PROOF-22, so nothing collided and nothing was renumbered; next free
+  RULE-19/PROOF-25). `schema_spec_format` RULE-11 with PROOF-11 (next free RULE-12/PROOF-12).
+  `proof_plugins_jest` PROOF-5 on the amended RULE-4, added during integration (next free
+  RULE-5/PROOF-6). `references/formats/anchor_format.md` went to Format-Version 5 for the
+  optional `> Note:` row, per the CLAUDE.md procedure.
+- **The fix.** Every plugin whose framework reports a skip collects `(feature, id, test_file)`
+  for the marked tests it skipped and keeps a matching existing entry with its old status:
+  pytest from the skip report (a `skip`/`skipif` marker, a skipping fixture, or `pytest.skip()`
+  in the body), jest from a `skipped`/`pending`/`todo`/`disabled` status, vitest from a task
+  with no terminal state, the .NET logger from a `Skipped` outcome. The kept-filter also
+  requires that the run did not itself write `(id, test_file, test_name)`, because several
+  tests in one file legitimately emit one proof id and the fresh write must win. pytest and
+  jest previously wrote `fail` for a skip and no longer do. shell, sql, phpunit and c have no
+  skip signal and RULE-18 states the exemption and its reason. The four `.purlin/plugins/`
+  copies were regenerated so RULE-16's byte-identity proof still passes.
+- **Proof housekeeping in the branch.** `test_jest_pending_maps_to_fail` was retired (it locked
+  in the behaviour the fix removes) and became
+  `test_jest_pending_writes_nothing_and_leaves_an_existing_file_alone`; its stale entry was
+  dropped from `proof_plugins_jest.proofs-unit.json`. The `schema_spec_format` PROOF-11 test
+  lives in `dev/test_schema_spec_format.py` because `dev/test_mcp_server.py` is outside that
+  spec's Scope.
+- **Integration amendment.** `proof_plugins_jest` RULE-4 now reads "all other executed statuses
+  map to fail; a skipped, pending, todo or disabled test did not execute, so it writes nothing
+  and keeps its committed entry (`proof_common` RULE-18)". PROOF-4 still matches the first
+  clause; the skip clause got PROOF-5, carried by a second `pytest.mark.proof` marker on the
+  jest pending test at `@integration`, so `proof_plugins_jest.proofs-integration.json` is new.
+- **Pass D.** `proof_common` 24/24, `schema_spec_format` 11/11, `proof_plugins_jest` 5/5 all
+  PROVABLE; zero UNPROVABLE and zero LOOSE among the descriptions this phase wrote.
+- **Mutations (7, each restored).** Six in the branch, all caught. The seventh, here: emptying
+  jest's `SKIPPED_STATUSES` set kills `proof_plugins_jest` PROOF-5.
+- **Integration into the spine.** `git cherry-pick 2293fc8e` applied with no conflict; Phase 8
+  touched no `scripts/proof/*` file and the two anchors' numbering was free.
+- **The php reap is gone.** `proof_plugins_php` PROOF-1/2 still skip (no `php` on this host) and
+  `dev/test_multilang_proof_plugins.py` still executes PROOF-3 from the same file for the same
+  feature, but `git diff --stat specs/` after the sweep shows no change to
+  `proof_plugins_php.proofs-integration.json`. Nothing was restored by hand for the first time
+  in three phases.
+- **Sweep.** `bash dev/run_tests.sh` (foreground) reads `750 passed, 27 skipped`, 14 suites, 0
+  failed, up from `739 passed, 27 skipped`. `git diff --stat specs/` after the sweep: one line
+  in `proof_plugins_jest.md` plus the new `proof_plugins_jest.proofs-integration.json`.
+
+
 ### 10.6 Environment ids for the externally-gated suites (after 6 and 7)
 
 The registry gains `"kind": "environment"` entries with no `os` (e.g. `figma-mcp`, `gemini-cli`,
