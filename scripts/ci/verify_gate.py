@@ -9,8 +9,10 @@ and decides whether the branch may merge. Governed by specs/ci/verify_gate.md.
 WHAT THIS READS, AND WHAT IT DOES NOT
     The input is the structured payload from `purlin_server.read_report_payload`,
     never the rendered Unicode summary table. The table's glyphs and column
-    order are presentation and move with the dashboard; `scripts/hooks/pre-push.sh`
-    parses them and is coupled to a layout as a result. A gate must not be.
+    order are presentation and move with the dashboard, so nothing that decides
+    what may merge or push reads them: this gate reads the payload, and
+    `scripts/hooks/pre-push.sh` shells to `scripts/hooks/pre_push_gate.py`,
+    which reads the same payload and hands the hook its exit code.
 
 DECLARATION VERSUS ENFORCEMENT
     `.purlin/config.json`'s `remote_verification` field DECLARES the mode. It is
