@@ -891,6 +891,93 @@ re-pins the literal (`dev/test_mcp_server.py:1778`), the mutation check being th
   `purlin_commands.md:20`, `hard_gates.md:29`, `testing-workflow-guide.md:93-101`,
   `skills/verify/SKILL.md:80-91` updated.
 
+## DONE — Phase 6.6: generic remote path (`feat(skill_test,purlin_references,purlin_commands): platform-generic remote path`, receipts in the `verify:` commit that follows it)
+
+- **Numbers taken (landing order).** `skill_test` RULE-7..11 reworded platform-generic and
+  PROOF-7..11 rewritten in place; no new number, next free RULE-12/PROOF-12. `purlin_references`
+  RULE-18 amended, RULE-22 (CI templates reach `scripts/` only through `PURLIN_PLUGIN_ROOT` and pin
+  a tag) and RULE-23 (runner-setup cell per listed framework) new; PROOF-18 extended, PROOF-22/23
+  new; next free RULE-24/PROOF-24. The reviewer table pencilled RULE-21/22 for these two, but 6.5
+  had already taken RULE-21 for `receipt_format.md`, so they land one higher. `verify_gate` RULE-10
+  (pull-rebase-retry loop plus both trailers) with PROOF-10 new; next free RULE-11/PROOF-11. The
+  `migrate.py --check` preflight rule stays Phase 7's, as allocated: the template references the
+  script now, and nothing yet requires it of every commit-back workflow.
+- **`skills/test/SKILL.md`.** Usage gains `purlin:test --platform <id>` and `--local` now reads
+  "report platform-scoped proofs as awaiting". Step 1.5 is "Classify Platforms": it prints the
+  `Platforms:` block `sync_status` renders rather than recomputing the split, names the registry and
+  the three family ids, and states the three invariants (no local substitute, a missing runner warns
+  and never blocks, `PURLIN_PLATFORM` is set for the local run or the plugins fall back to the OS
+  family). Every sample names `macos-14` and `windows-2022`; `@windows` appears nowhere in the file.
+  Step 2a prefixes the runner command with `PURLIN_PLATFORM=<id>` once per locally-satisfiable
+  declared id. Step 2b branches on `platforms.<id>.runner`: dispatch when the provider is `github`
+  and the workflow file exists, offer setup otherwise, and report any other provider as not
+  dispatchable. The loop is one push, one `gh workflow run` per remote platform in parallel, one
+  `gh run watch` each, one `git pull --ff-only` after all of them retried once, bounded at 3 rounds
+  with the not-converging block naming `<platform>` and `<runner>`. The setup offer writes both the
+  workflow and the config `runner` block, both or neither, only on a yes, and states that this is
+  the one place a skill other than `purlin:init` writes config, pointing at the `platforms` row
+  `drift_criteria.md` gained in 6.2. Step 3 reports the platform lines as `sync_status` prints them
+  and sources provenance per scoped file from both trailers. Step 4 keeps runner-committed files
+  untouched and offers `git rm` for an undeclared platform result. The freshness check now says
+  "the local run only".
+- **`references/remote_verification.md` rewritten around platforms.** New opening sections: what
+  `@on(...)` is and how it differs from a tier, family ids, the registry shape and who writes it,
+  `PURLIN_PLATFORM` as the only per-runner input, scoped files, and per-file provenance from the two
+  trailers. The template is parameterized by `<platform-id>` and `<runs-on>` and carries all of:
+  `name: purlin-<platform-id>-proofs`; `paths-ignore: '**/*.proofs-*@<platform-id>.json'` and
+  `workflow_dispatch`; `permissions: contents: write`; a job `env` with `PURLIN_PLATFORM` and
+  `PURLIN_PLUGIN_ROOT: ${{ runner.temp }}/purlin`; `persist-credentials: true`; an "Install Purlin
+  tooling" step cloning `--depth 1 --branch v<VERSION>` into `$PURLIN_PLUGIN_ROOT` with the comment
+  that this repository sets the root to `.` and deletes the step; a "Preflight" step running
+  `migrate.py --check` from that root, with the comment naming `purlin:init --update`; a
+  per-framework setup block covering all eight frameworks with the `actions/setup-python` sentence;
+  the test command; `shell: bash` on every `run:` step with the PowerShell splat comment; a `git
+  add` narrowed to the platform's own files with the reason (the same run writes agnostic files that
+  must not travel back); the `git diff --cached --quiet` guard; a commit with `[skip ci]` and both
+  trailers; and a three-attempt pull-rebase-retry loop ending in `exit 1`. "Three details are
+  load-bearing" became "What is load-bearing in that template", keeping the original three and
+  adding `PURLIN_PLATFORM`, both trailers, the narrowed `git add`, the retry loop, `shell: bash`,
+  the plugin root with its pinned tag, and the preflight. The "what travels" table gains a
+  scoped-proof-file row and a `.purlin/runtime/test_run.json` row.
+- **Other references and docs.** `supported_frameworks.md` gains a **Runner setup** column in both
+  tables with a non-empty cell for all eight frameworks, plus the paragraph naming the column as
+  what `purlin:test` reads when scaffolding; **Format-Version 5 to 6**, matching the precedent that
+  added the Additional Plugins section at 4 to 5. `purlin_commands.md` lists `--platform <id>`
+  beside `--local` and rewords `--local`. `hard_gates.md`'s non-gate list reads "A proof declared
+  `@on(<platform>)` with no result there". `docs/testing-workflow-guide.md`'s tier table replaces
+  its `@windows` row with an `@on(<platform-id>)` row pointing at `spec_format.md`'s Platform tags,
+  and the runner-gated paragraph is one short paragraph saying `@on(...)` is not a tier (Phase 11
+  owns the rest of the docs). `skills/verify/SKILL.md`'s platform-partial section uses
+  `@on(windows-2022)` and shows the `{"id", "tier", "platform"}` triple.
+- **`.github/workflows/windows-proofs.yml`** gains the three-attempt pull-rebase-retry loop and
+  nothing else; Phase 7.4 rewrites it from the template. `verify_gate`'s Scope line now globs
+  `.github/workflows/*-proofs.yml` rather than naming that one file, so a second runner workflow
+  joins the scope by existing.
+- **Pass D.** `--check-proof-design` on the three edited specs: every description this phase wrote
+  grades PROVABLE except `skill_test` PROOF-10 and `purlin_references` PROOF-22, which grade
+  STRUCTURAL (both read committed prose and workflow text, which is the only proof a rule about
+  documents can have, matching `verify_gate` PROOF-7 and `proof_common` PROOF-20). Zero UNPROVABLE
+  and zero LOOSE among them. No em-dashes or en-dashes in any line this phase wrote; the one
+  surviving em-dash in `remote_verification.md` and `skills/test/SKILL.md` is inside a sample of
+  `sync_status`'s own `AWAITING RUNNER` output.
+- **Mutations (each applied, its proof run with `PYTHONDONTWRITEBYTECODE=1`, restored; all five
+  caught).** Delete the `--platform` usage line (skill_test PROOF-7); delete the pull-retry sentence
+  (PROOF-8); drop `shell: bash` from the template's test step (purlin_references PROOF-18); rewrite
+  the preflight as a bare `scripts/update/migrate.py` (PROOF-22, and PROOF-18 independently); empty
+  the PHP runner-setup cell (PROOF-23); replace the workflow's retry loop with a bare
+  `git push origin "HEAD:$GITHUB_REF_NAME"` (verify_gate PROOF-10).
+- **Sweep.** `bash dev/run_tests.sh` (foreground): 14 suites, `688 passed, 27 skipped` (was 685/27;
+  +3 are `purlin_references` PROOF-22/23 and `verify_gate` PROOF-10; the five `skill_test` tests
+  were rewritten in place, not added). `git diff --stat specs/`: insertions only apart from the five
+  `skill_test` proof entries whose `test_name` changed with the test renames; no entry lost.
+  `.purlin/report-data.js` regenerated and committed with the proofs.
+- **Deviation, carried forward.** `specs/skills/skill_verify.md` RULE-9/PROOF-9 still describe the
+  `awaiting_runner` pair as `{id, tier}` and cite a `@windows` proof; `skills/init/SKILL.md` and
+  `skills/build/SKILL.md` still say "runner-gated". Those files are outside this phase's scope and
+  are allocated to Phase 11's `purlin_docs` RULE-1, which greps for `@windows` as a tier outside
+  `RELEASE_NOTES.md` and `dev/plans/`.
+- CLAUDE.md unchanged.
+
 ### 6.7 Commit sequence
 
 0. `test(proof_common): complete the sweep, record the run` (6.0), then `verify:`

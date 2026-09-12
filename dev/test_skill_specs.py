@@ -1611,17 +1611,19 @@ class TestSkillVerify:
 
 
 class TestSkillTestRemotePath:
-    """skill_test RULE-7 through RULE-11: tier classification and the remote path.
+    """skill_test RULE-7 through RULE-11: platform classification and the
+    remote path.
 
-    A @windows proof that had never run reported nothing: the rule read PASS
-    off a local proof while nothing had proved the platform. Phase 4 made the
-    gap visible; these rules are the skill that closes it.
+    A proof declared on a platform that had never run reported nothing: the
+    rule read PASS off a local proof while nothing had proved the platform.
+    Phase 4 made the gap visible; these rules are the skill that closes it,
+    and Phase 6.6 made them platform-generic rather than windows-shaped.
     """
 
     @pytest.mark.proof("skill_test", "PROOF-7", "RULE-7")
-    def test_tiers_are_classified_before_anything_runs(self):
+    def test_platforms_are_classified_before_anything_runs(self):
         content = _read('test')
-        assert 'Step 1.5' in content, "no tier-classification step"
+        assert 'Step 1.5' in content, "no platform-classification step"
         i_classify = content.index('Step 1.5')
         i_run = content.index('## Step 2')
         assert i_classify < i_run, (
@@ -1629,36 +1631,77 @@ class TestSkillTestRemotePath:
             "what cannot run here after running is not a warning")
 
         section = content[i_classify:i_run]
-        assert 'locally-runnable' in section and 'runner-gated' in section, (
-            "the step must name both groups")
-        assert 'windows' in section, "the runner-gated tier must be named"
-        assert 'schema_proof_format' in section, (
-            "the step must cite the closed tier set that defines runner-gated, "
-            "so adding a tier has one place to change")
-        assert re.search(r'(?i)never.*substitut|not a windows proof', section), (
-            "the step must forbid substituting a local approximation")
-        assert re.search(r'(?i)never block|does not block|warn, never block',
+        assert 'Platforms:' in section, (
+            "the step must print the Platforms: block sync_status renders, "
+            "not a split it recomputed itself")
+        assert 'PURLIN_PLATFORM' in section, (
+            "the local run must be told which platform it is proving")
+        assert '.purlin/config.json' in section, (
+            "the step must name the registry an @on(...) id resolves against")
+        for family in ('windows', 'macos', 'linux'):
+            assert re.search(r'`%s`' % family, section), (
+                f"the step must name the family id {family}, which needs no "
+                "registry entry")
+
+        # The three invariants.
+        assert re.search(r'(?i)no\s+local\s+substitute|not\s+a\s+Windows\s+proof',
                          section), (
-            "an absent runner warns; the step must say it does not block")
+            "invariant 1: there is no local substitute for a platform")
+        assert re.search(r'(?i)warn,\s+never\s+block|never\s+blocks?\b', section), (
+            "invariant 2: a missing runner warns and never blocks")
+        assert re.search(r'(?i)falls?\s+back\s+to\s+the\s+OS\s+family', section), (
+            "invariant 3: PURLIN_PLATFORM is set for the local run, or the "
+            "plugins fall back to the family")
+
+        # Concrete ids, never the host this happens to run on.
+        assert 'macos-14' in section and 'windows-2022' in section, (
+            "the samples must name concrete platform ids")
+
+        # The flag that targets one platform.
+        usage = content[content.index('## Usage'):content.index('## Step 1 ')]
+        assert '--platform <id>' in usage, (
+            "Usage must document --platform <id>; without it there is no way "
+            "to target a single platform")
+
+        # `windows` is not a tier and must not reappear as one.
+        offenders = re.findall(r'@windows\b(?!-)', content)
+        assert not offenders, (
+            f"skills/test/SKILL.md names @windows as a tier tag {offenders}; "
+            "windows is a platform, written @on(windows)")
 
     @pytest.mark.proof("skill_test", "PROOF-8", "RULE-8")
-    def test_the_remote_path_is_four_ordered_operations_and_says_why_it_is_here(self):
+    def test_the_remote_path_is_one_round_over_every_platform(self):
         content = _read('test')
         assert 'Step 2b' in content, "no remote-path step"
-        section = content[content.index('Step 2b'):content.index('### Proof File Freshness')]
+        section = content[content.index('Step 2b'):
+                          content.index('### Proof File Freshness')]
 
         order = []
         for label, pattern in (
                 ('push', r'(?i)push the current branch'),
-                ('dispatch', r'(?i)dispatch the workflow'),
-                ('await', r'(?i)await it'),
-                ('pull', r'(?i)pull the proof commits')):
+                ('dispatch', r'gh workflow run'),
+                ('await', r'gh run watch'),
+                ('pull', r'git pull --ff-only')):
             m = re.search(pattern, section)
             assert m, f"the remote path is missing the {label} operation"
             order.append((m.start(), label))
         assert order == sorted(order), (
             f"the four operations must appear in order, got "
             f"{[l for _, l in order]}")
+
+        # One dispatch per platform, awaited together.
+        assert re.search(r'(?i)per\s+(remote\s+)?platform', section), (
+            "the dispatch must be one per remote platform")
+        assert re.search(r'(?i)await\s+them\s+all|all\s+of\s+them\s+awaited', section), (
+            "the runs must be awaited together, not one at a time")
+
+        # One pull, retried once. The retry sentence is the mutation target.
+        assert re.search(r'(?i)one\s+pull,\s+not\s+one\s+per\s+runner', section), (
+            "a pull per runner races the runners still committing; the step "
+            "must say one pull")
+        assert re.search(r'(?i)retry\s+it\s+once|retried\s+once', section), (
+            "a late commit-back can land mid-pull; the step must say the pull "
+            "is retried once")
 
         # Why here and not in verify. The reason, not just the placement.
         assert re.search(r'(?i)read-only', content), (
@@ -1673,30 +1716,49 @@ class TestSkillTestRemotePath:
                 "read-only gate and must inherit the remote path by delegation")
 
     @pytest.mark.proof("skill_test", "PROOF-9", "RULE-9")
-    def test_remotely_proved_is_reported_distinctly_and_sourced_from_the_commit(self):
+    def test_remotely_proved_is_reported_per_file_from_the_commit(self):
         content = _read('test')
         step3 = content[content.index('## Step 3'):content.index('## Step 4')]
         assert re.search(r'(?i)locally-proved', step3) and \
                re.search(r'(?i)remotely-proved', step3), (
             "Step 3 must distinguish the two kinds of pass by name")
         assert 'proved remotely' in step3, (
-            "the sample output must mark a remotely-proved tier")
-        assert 'Purlin-Runner' in step3, (
+            "the sample output must mark a remotely-proved platform")
+        assert re.search(r'@on\([a-z0-9-]+\) proved remotely', step3), (
+            "the sample must name the platform with @on(<id>), not a tier tag")
+
+        # Provenance is per scoped file, from both trailers.
+        assert 'Purlin-Runner:' in step3, (
             "the runner identity must be sourced from the commit trailer")
+        assert 'Purlin-Platform:' in step3, (
+            "the platform trailer is what cross-checks the filename's claim")
+        assert re.search(r'(?i)per\s+scoped\s+proof\s+file', step3), (
+            "provenance is read per scoped proof file, not once per feature")
         assert re.search(r'(?i)not\s+from\s+the\s+proof\s+entry'
                          r'|only\s+the\s+commit\s+says\s+where', step3, re.S), (
             "Step 3 must say the proof entry does not record where it ran")
 
-        fresh = content[content.index('Proof File Freshness'):content.index('## Step 3')]
-        assert re.search(r'(?i)locally-runnable tiers only|does not apply', fresh), (
-            "the freshness check must exclude pulled runner-gated proof files, "
+        fresh = content[content.index('Proof File Freshness'):
+                        content.index('## Step 3')]
+        assert re.search(r'(?i)local\s+run\s+only|does\s+not\s+apply', fresh), (
+            "the freshness check must exclude proof files a runner wrote, "
             "whose mtime says when they were fetched")
 
     @pytest.mark.proof("skill_test", "PROOF-10", "RULE-10")
-    def test_the_remote_loop_bound_is_three_and_matches_the_other_skills(self):
+    def test_the_remote_loop_bound_is_three_and_names_platform_and_runner(self):
         content = _read('test')
         assert re.search(r'Bound the loop at 3 rounds', content), (
             "the remote loop must be bounded at a literal 3 rounds")
+
+        # The not-converging report must be actionable on a multi-platform
+        # project: "remote still failing" names nothing to act on.
+        block = content[content.index('NOT CONVERGING'):]
+        block = block[:block.index('```', block.index('\n'))]
+        assert '<platform>' in block, (
+            "the not-converging block must name the platform that failed")
+        assert '<runner>' in block, (
+            "the not-converging block must name the runner it failed on")
+
         # The three skills must not drift to different bounds.
         for skill in ('audit', 'verify'):
             other = _read(skill)
@@ -1705,19 +1767,41 @@ class TestSkillTestRemotePath:
                 "has drifted between skills")
 
     @pytest.mark.proof("skill_test", "PROOF-11", "RULE-11")
-    def test_setup_is_offered_on_discovery_and_never_at_init(self):
+    def test_setup_writes_both_the_workflow_and_the_config_runner_block(self):
         content = _read('test')
-        section = content[content.index('Step 2b'):content.index('### Proof File Freshness')]
-        assert re.search(r'(?i)no workflow is configured', section), (
-            "the offer must be conditioned on discovering no workflow")
+        section = content[content.index('Step 2b'):
+                          content.index('### Proof File Freshness')]
+        assert re.search(r'(?i)no\s+runner\s+block|no\s+workflow\s+proves\s+that\s+'
+                         r'platform|its\s+workflow\s+file\s+is\s+missing', section), (
+            "the offer must be conditioned on discovering a platform with no "
+            "dispatchable workflow")
         assert 'references/remote_verification.md' in section, (
             "the offer must point at the template")
-        assert re.search(r'(?i)only on a yes|never write a workflow file unasked',
-                         section), (
-            "writing a workflow changes what runs on every push; it needs consent")
-        assert re.search(r'(?i)init is not the place', section), (
+
+        # Both writes, named.
+        assert re.search(r'purlin-<id>-proofs\.yml', section), (
+            "the offer must name the workflow file it would write")
+        assert re.search(r'`runner` block', section) and \
+               'platforms.<id>' in section, (
+            "the offer must name the config runner block it would write")
+        assert re.search(r'(?i)both\s+or\s+neither', section), (
+            "a workflow the config does not name is one the skill will never "
+            "dispatch; the two writes go together")
+        assert re.search(r'(?i)only\s+on\s+a\s+yes|without\s+consent', section), (
+            "writing a workflow changes what runs on every push; it needs "
+            "consent")
+
+        # The config-writing exception, stated where drift_criteria records it.
+        assert re.search(r'(?i)one\s+place\s+a\s+skill\s+other\s+than\s+`?purlin:init`?'
+                         r'[\s\S]{0,60}?writes', section), (
+            "the skill must state that this is the one place a skill other "
+            "than init writes .purlin/config.json")
+        assert 'drift_criteria.md' in section, (
+            "and must point at the ownership table that records it")
+
+        assert re.search(r'(?i)init\s+is\s+not\s+the\s+place', section), (
             "the skill must state that init is not where this happens")
-        assert re.search(r'(?i)asks nothing about runners|has no answer yet',
+        assert re.search(r'(?i)asks\s+nothing\s+about\s+runners|has\s+no\s+answer\s+yet',
                          section), (
             "and must give the reason, not just the rule")
 

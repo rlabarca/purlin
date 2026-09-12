@@ -20,6 +20,45 @@ def _read(path):
         return f.read()
 
 
+def _markdown_under(*roots):
+    """Every .md file under the given directories, sorted."""
+    found = []
+    for root in roots:
+        for dirpath, _dirnames, filenames in os.walk(root):
+            found.extend(os.path.join(dirpath, fn)
+                         for fn in sorted(filenames) if fn.endswith('.md'))
+    return sorted(found)
+
+
+def _yaml_blocks(text):
+    """The bodies of every fenced ```yaml block, in order."""
+    return [m.group(1) for m in re.finditer(r'```ya?ml\n(.*?)```', text, re.S)]
+
+
+def _tables(text):
+    """[(header cells, [row cells])] for every pipe table in a markdown file."""
+    tables = []
+    header = None
+    rows = None
+    for line in text.split('\n'):
+        stripped = line.strip()
+        if stripped.startswith('|') and stripped.endswith('|'):
+            cells = [c.strip() for c in stripped.strip('|').split('|')]
+            if header is None:
+                header, rows = cells, []
+            elif set(''.join(cells)) <= set('-: '):
+                continue
+            else:
+                rows.append(cells)
+        else:
+            if header is not None and rows:
+                tables.append((header, rows))
+            header, rows = None, None
+    if header is not None and rows:
+        tables.append((header, rows))
+    return tables
+
+
 class TestPurlinReferences:
 
     @pytest.mark.proof("purlin_references", "PROOF-1", "RULE-1")
@@ -304,18 +343,61 @@ class TestRemoteVerificationReference:
         assert re.search(r'bounded at \*\*3 rounds\*\*|at \*\*3 rounds\*\*|3 rounds',
                          rv), "the 3-round bound must be stated as a literal"
 
-        # The template is what gets copied, so its load-bearing parts must be
+        # The template is what gets copied, so every load-bearing part must be
         # in the template block itself, not only in the prose around it.
-        m = re.search(r'```yaml(.*?)```', rv, re.S)
-        assert m, "no YAML workflow template block"
-        template = m.group(1)
-        assert 'paths-ignore' in template, (
-            "a template copied without paths-ignore loops forever")
-        assert '[skip ci]' in template, (
-            "a template copied without [skip ci] loops on other triggers")
-        assert 'Purlin-Runner:' in template, (
-            "a template copied without the trailer produces proofs whose "
-            "runner is unrecorded")
+        template = _yaml_blocks(rv)
+        assert template, "no YAML workflow template block"
+        template = template[0]
+
+        required = [
+            ('workflow name', r'name:\s*purlin-<platform-id>-proofs'),
+            ('paths-ignore', r"paths-ignore:"),
+            ('scoped paths-ignore entry',
+             r"'\*\*/\*\.proofs-\*@<platform-id>\.json'"),
+            ('workflow_dispatch', r'workflow_dispatch'),
+            ('write permission', r'permissions:\s*\n\s*contents:\s*write'),
+            ('PURLIN_PLATFORM in the job env',
+             r'PURLIN_PLATFORM:\s*<platform-id>'),
+            ('PURLIN_PLUGIN_ROOT in the job env', r'PURLIN_PLUGIN_ROOT:\s*\S'),
+            ('persist-credentials', r'persist-credentials:\s*true'),
+            ('pinned tooling clone',
+             r'git clone --depth 1 --branch v<VERSION>'),
+            ('clone target is the plugin root', r'"\$PURLIN_PLUGIN_ROOT"'),
+            ('migrate preflight',
+             r'"\$PURLIN_PLUGIN_ROOT/scripts/update/migrate\.py" --check'),
+            ('per-framework setup block', r'(?i)per-framework setup block'),
+            ('narrowed git add',
+             r"git add '\*\*/\*\.proofs-\*@<platform-id>\.json'"),
+            ('idempotency guard', r'git diff --cached --quiet'),
+            ('skip ci', r'\[skip ci\]'),
+            ('runner trailer', r'-m "Purlin-Runner: github-actions/<runs-on>"'),
+            ('platform trailer', r'-m "Purlin-Platform: <platform-id>"'),
+            ('rebase retry loop', r'git pull --rebase origin "\$GITHUB_REF_NAME"'),
+            ('three attempts', r'for attempt in 1 2 3; do'),
+            ('failure after the attempts', r'exit 1'),
+        ]
+        for label, pattern in required:
+            assert re.search(pattern, template), (
+                f"the workflow template is missing {label}: a copy of it "
+                f"without that element does not work ({pattern!r})")
+
+        # Every `run:` step is bash. PowerShell reads a leading `@` in a path
+        # as a splat, which silently mangles every scoped proof path.
+        run_steps = len(re.findall(r'^\s*run:', template, re.M))
+        bash_steps = len(re.findall(r'^\s*shell:\s*bash\s*$', template, re.M))
+        assert run_steps >= 5, (
+            f"the template should carry the install, preflight, setup, test "
+            f"and commit-back steps; found {run_steps} run: steps")
+        assert bash_steps >= run_steps, (
+            f"{run_steps} `run:` steps but only {bash_steps} `shell: bash`; "
+            "PowerShell is the default on windows runners and parses a "
+            "leading @ in a path as a splat")
+
+        # The reason each of the new elements is load-bearing is stated.
+        for phrase in ('splat', 'agnostic', 'at once'):
+            assert phrase in rv, (
+                f"the reference must say why the template needs {phrase!r}")
+
 
     @pytest.mark.proof("purlin_references", "PROOF-19", "RULE-19")
     def test_states_the_declaration_enforcement_split_and_the_gauge_gap(self):
@@ -414,3 +496,96 @@ class TestRemoteVerificationReference:
         assert null_marker, (
             "receipt_format.md must state that evidence.test_run is null for a "
             "receipt issued without a run marker")
+
+
+class TestCITemplatesGoThroughThePluginRoot:
+    """purlin_references RULE-22/23."""
+
+    RV = os.path.join(REFS, 'remote_verification.md')
+
+    @pytest.mark.proof("purlin_references", "PROOF-22", "RULE-22")
+    def test_no_template_invokes_a_bare_scripts_path(self):
+        """A consumer checkout holds specs, proofs, receipts and `.purlin/`,
+        and no Purlin `scripts/`. A template with a bare `scripts/` path runs
+        nowhere but in this repository."""
+        hits = 0
+        clones = 0
+        for path in _markdown_under(REFS, os.path.join(PROJECT_ROOT, 'docs')):
+            for block in _yaml_blocks(_read(path)):
+                rel = os.path.relpath(path, PROJECT_ROOT)
+                # Comments explain the rule; the rule is about what runs.
+                block = '\n'.join(
+                    '' if line.lstrip().startswith('#') else line
+                    for line in block.split('\n'))
+                for m in re.finditer(r'scripts/', block):
+                    before = block[max(0, m.start() - 40):m.start()]
+                    assert re.search(r'\$\{?PURLIN_PLUGIN_ROOT\}?/$', before), (
+                        f"{rel}: a workflow template invokes a bare "
+                        f"`scripts/` path: {block[max(0, m.start() - 60):m.start() + 40]!r}")
+                    hits += 1
+                # Join backslash continuations so a clone split over two
+                # lines is read as the one command it is.
+                joined = re.sub(r'\\\n\s*', ' ', block)
+                for m in re.finditer(r'git clone[^\n]*', joined):
+                    line = m.group(0)
+                    if 'purlin' not in line:
+                        continue
+                    assert '--branch v<VERSION>' in line or \
+                           re.search(r'--branch v\d', line), (
+                        f"{rel}: the tooling clone does not pin a tag: {line!r}")
+                    clones += 1
+        assert hits, (
+            "no template invokes a Purlin scripts/ path at all; this proof "
+            "must not pass by matching nothing")
+        assert clones, (
+            "no template installs the tooling; the pinned-tag half of the "
+            "rule would be unchecked")
+
+        rv = _read(self.RV)
+        assert re.search(r'PURLIN_PLUGIN_ROOT[`:\s]*(to\s*)?`?\.`?', rv) and \
+            re.search(r"(?i)this repos?itor(y|ies)['’]?s own workflows", rv), (
+            "the reference must record this repository's own workflows as the "
+            "PURLIN_PLUGIN_ROOT: . exception")
+
+    @pytest.mark.proof("purlin_references", "PROOF-23", "RULE-23")
+    def test_every_listed_framework_carries_a_runner_setup_cell(self):
+        content = _read(os.path.join(REFS, 'supported_frameworks.md'))
+        tables = 0
+        setups = {}
+        for header, rows in _tables(content):
+            if 'Runner setup' not in header:
+                continue
+            tables += 1
+            col = header.index('Runner setup')
+            for cells in rows:
+                name = cells[0].strip('* ').strip()
+                assert col < len(cells), (
+                    f"row {name!r} has no Runner setup cell at all")
+                assert cells[col].strip(), (
+                    f"{name} has an empty Runner setup cell; a scaffolded "
+                    "workflow would install nothing for it")
+                setups[name.lower()] = cells[col].strip()
+        assert tables == 2, (
+            f"both the built-in and the additional-plugin tables must carry "
+            f"the column; found {tables}")
+        assert len(setups) >= 7, (
+            f"only {len(setups)} frameworks carry a runner-setup cell: "
+            f"{sorted(setups)}")
+
+        # The column covers the frameworks the plugin column names, so a
+        # framework cannot pass by being dropped from the table.
+        plugins = set()
+        for header, rows in _tables(content):
+            if 'Plugin file' not in header:
+                continue
+            col = header.index('Plugin file')
+            for cells in rows:
+                if col < len(cells) and 'scripts/proof/' in cells[col]:
+                    plugins.add(cells[0].strip('* ').strip().lower())
+        assert plugins <= set(setups), (
+            f"frameworks with a plugin file but no runner setup: "
+            f"{sorted(plugins - set(setups))}")
+
+        assert re.search(r'(?i)runner setup.{0,200}scaffold', content, re.S), (
+            "the file must name the column as what purlin:test reads when it "
+            "scaffolds a runner workflow")

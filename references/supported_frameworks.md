@@ -1,4 +1,4 @@
-> Format-Version: 5
+> Format-Version: 6
 
 # Supported Test Frameworks
 
@@ -6,15 +6,21 @@ Proof plugins shipped with Purlin. `purlin:init` detects and scaffolds the appro
 
 ## Built-in Plugins
 
-| Framework | Display name | Languages | Plugin file | Detection | Marker syntax |
-|-----------|-------------|-----------|------------|-----------|---------------|
-| **pytest** | pytest (Python) | Python | `scripts/proof/pytest_purlin.py` | `conftest.py` or `[tool.pytest]` in `pyproject.toml` | `@pytest.mark.proof("feature", "PROOF-1", "RULE-1")` |
-| **Jest** | jest (JS/TS) | JavaScript, TypeScript | `scripts/proof/jest_purlin.js` | `package.json` contains `jest` | `[proof:feature:PROOF-1:RULE-1:unit]` in test title |
-| **Vitest** | vitest (JS/TS) | JavaScript, TypeScript | `scripts/proof/vitest_purlin.ts` | `package.json` contains `vitest` | `[proof:feature:PROOF-1:RULE-1:unit]` in test title (native TS reporter — Vitest loads `.ts` reporters via Vite, so it covers both JS and TS projects) |
-| **C** | c (C/gcc) | C | `scripts/proof/c_purlin.h` + `scripts/proof/c_purlin_emit.py` | `Makefile` or `CMakeLists.txt` present | `purlin_proof("feature", "PROOF-1", "RULE-1", passed, name, file, tier)` |
-| **PHP** | php (PHP) | PHP | `scripts/proof/phpunit_purlin.php` | `composer.json` or `phpunit.xml` present | `/** @purlin feature PROOF-1 RULE-1 unit */` docblock |
-| **SQL** | sql (sqlite3) | SQL (sqlite3) | `scripts/proof/sql_purlin.sh` | `.sql` test files in `tests/` | `-- @purlin feature PROOF-1 RULE-1 unit` comment |
-| **Shell** | shell (Bash) | Bash | `scripts/proof/shell_purlin.sh` | No auto-detection — user must select | `purlin_proof "feature" "PROOF-1" "RULE-1" pass "desc"` |
+| Framework | Display name | Languages | Plugin file | Detection | Marker syntax | Runner setup |
+|-----------|-------------|-----------|------------|-----------|---------------|--------------|
+| **pytest** | pytest (Python) | Python | `scripts/proof/pytest_purlin.py` | `conftest.py` or `[tool.pytest]` in `pyproject.toml` | `@pytest.mark.proof("feature", "PROOF-1", "RULE-1")` | `pip install pytest` |
+| **Jest** | jest (JS/TS) | JavaScript, TypeScript | `scripts/proof/jest_purlin.js` | `package.json` contains `jest` | `[proof:feature:PROOF-1:RULE-1:unit]` in test title | `npm ci` |
+| **Vitest** | vitest (JS/TS) | JavaScript, TypeScript | `scripts/proof/vitest_purlin.ts` | `package.json` contains `vitest` | `[proof:feature:PROOF-1:RULE-1:unit]` in test title (native TS reporter — Vitest loads `.ts` reporters via Vite, so it covers both JS and TS projects) | `npm ci` |
+| **C** | c (C/gcc) | C | `scripts/proof/c_purlin.h` + `scripts/proof/c_purlin_emit.py` | `Makefile` or `CMakeLists.txt` present | `purlin_proof("feature", "PROOF-1", "RULE-1", passed, name, file, tier)` | the platform's C toolchain (`gcc` from the image's package manager on linux, Xcode command line tools on macos, MSVC build tools on windows) |
+| **PHP** | php (PHP) | PHP | `scripts/proof/phpunit_purlin.php` | `composer.json` or `phpunit.xml` present | `/** @purlin feature PROOF-1 RULE-1 unit */` docblock | `composer install` |
+| **SQL** | sql (sqlite3) | SQL (sqlite3) | `scripts/proof/sql_purlin.sh` | `.sql` test files in `tests/` | `-- @purlin feature PROOF-1 RULE-1 unit` comment | nothing beyond `python3` (`actions/setup-python` puts it on PATH on all three runner OSes) |
+| **Shell** | shell (Bash) | Bash | `scripts/proof/shell_purlin.sh` | No auto-detection — user must select | `purlin_proof "feature" "PROOF-1" "RULE-1" pass "desc"` | nothing beyond `python3` (`actions/setup-python` puts it on PATH on all three runner OSes) |
+
+The **Runner setup** column is what `purlin:test` reads when it scaffolds a platform runner
+workflow: it becomes the per-framework install step of the template in
+[`remote_verification.md`](remote_verification.md). Every listed framework carries a cell,
+because a framework with no recorded setup is one a scaffolded workflow cannot run
+(`specs/instructions/purlin_references.md` RULE-23).
 
 `purlin:init` also offers an **other** option in the selection list. When the user selects "other", direct them to `purlin:init --add-plugin` to install a custom proof plugin.
 
@@ -22,9 +28,9 @@ Proof plugins shipped with Purlin. `purlin:init` detects and scaffolds the appro
 
 Shipped plugins that `purlin:init` does not yet auto-detect or scaffold — wire them in by hand (see the framework's section in [`formats/proofs_format.md`](formats/proofs_format.md)).
 
-| Framework | Display name | Languages | Plugin file | Detection | Marker syntax | Spec |
-|-----------|-------------|-----------|------------|-----------|---------------|------|
-| **xUnit** | xunit (.NET) | C#, F#, VB.NET | `scripts/proof/xunit_purlin.cs` | `*.csproj` or `*.sln` present | `[Trait("PurlinProof", "feature:PROOF-1:RULE-1:unit")]` test trait | `specs/proof/proof_plugins_xunit.md` |
+| Framework | Display name | Languages | Plugin file | Detection | Marker syntax | Runner setup | Spec |
+|-----------|-------------|-----------|------------|-----------|---------------|--------------|------|
+| **xUnit** | xunit (.NET) | C#, F#, VB.NET | `scripts/proof/xunit_purlin.cs` | `*.csproj` or `*.sln` present | `[Trait("PurlinProof", "feature:PROOF-1:RULE-1:unit")]` test trait | `dotnet restore` | `specs/proof/proof_plugins_xunit.md` |
 
 > **C# deterministic Pass-1 coverage:** the audit Pass-1 static checker (`scripts/audit/static_checks.py`) parses `.cs` test files directly — it reads the `[Trait("PurlinProof", ...)]` markers above, associates each with its `[Fact]`/`[Theory]` method body, and runs assert-true / no-assertion detection (recognizing xUnit `Assert.*`, NUnit `Assert.That`, MSTest `Assert.*`, FluentAssertions `.Should()`, and Playwright `Expect(...).To*Async()` as assertions). This is independent of the runtime proof plugin, which still records pass/fail during the actual test run.
 

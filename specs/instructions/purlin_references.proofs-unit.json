@@ -189,6 +189,24 @@
       "test_name": "test_receipt_format_is_the_receipt_contract",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-22",
+      "rule": "RULE-22",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_no_template_invokes_a_bare_scripts_path",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-23",
+      "rule": "RULE-23",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_every_listed_framework_carries_a_runner_setup_cell",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

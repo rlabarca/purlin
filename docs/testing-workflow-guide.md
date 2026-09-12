@@ -90,15 +90,17 @@ Tiers control which proofs run when:
 | unit (no tag) | Every build | Pure logic, no I/O |
 | `@integration` | On check-in / PR | Database, network, filesystem |
 | `@e2e` | On release / nightly | Full system, browser |
-| `@windows` | Only on a Windows runner | Behaviour that needs that platform: native `msvcrt` locking, the Windows console codec |
+| `@on(<platform-id>)` | Only on a host that satisfies that platform | Behaviour that needs a named platform: native `msvcrt` locking on `@on(windows-2022)`, an APFS rename on `@on(macos-14)`. Not a tier: it sits beside one. See `references/formats/spec_format.md`, "Platform tags" |
 | `@manual` | Human-initiated | Visual quality, UX judgment |
 
-`@windows` is the one **runner-gated** tier: it names a platform the test must run
-*on*, not a stack it needs. A proof tagged this way with no result reports
-`AWAITING RUNNER` rather than `NO PROOF`, does not count against coverage and does
-not block a receipt, and a receipt issued while one is outstanding records it as
-platform-partial. So tagging a test `@windows` that any host could run quietly
-removes it from the coverage denominator.
+`@on(...)` is not a tier. A tier says what kind of test a proof is; `@on(...)` says
+where it must run, and a proof carries both (`@unit @on(windows-2022)`). A proof
+declared on a platform no result satisfies reports `AWAITING RUNNER` rather than
+`NO PROOF`, does not count against coverage and does not block a receipt, and a
+receipt issued while one is outstanding records it as platform-partial. So
+declaring `@on(...)` on a test any host could run quietly removes it from the
+coverage denominator. `references/remote_verification.md` covers the runner loop
+that closes the gap.
 
 ```python
 @pytest.mark.proof("login", "PROOF-1", "RULE-1")                          # unit

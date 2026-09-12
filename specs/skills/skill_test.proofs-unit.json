@@ -60,7 +60,7 @@
       "id": "PROOF-7",
       "rule": "RULE-7",
       "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_tiers_are_classified_before_anything_runs",
+      "test_name": "test_platforms_are_classified_before_anything_runs",
       "status": "pass",
       "tier": "unit"
     },
@@ -69,7 +69,7 @@
       "id": "PROOF-8",
       "rule": "RULE-8",
       "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_the_remote_path_is_four_ordered_operations_and_says_why_it_is_here",
+      "test_name": "test_the_remote_path_is_one_round_over_every_platform",
       "status": "pass",
       "tier": "unit"
     },
@@ -78,7 +78,7 @@
       "id": "PROOF-9",
       "rule": "RULE-9",
       "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_remotely_proved_is_reported_distinctly_and_sourced_from_the_commit",
+      "test_name": "test_remotely_proved_is_reported_per_file_from_the_commit",
       "status": "pass",
       "tier": "unit"
     },
@@ -87,7 +87,7 @@
       "id": "PROOF-10",
       "rule": "RULE-10",
       "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_the_remote_loop_bound_is_three_and_matches_the_other_skills",
+      "test_name": "test_the_remote_loop_bound_is_three_and_names_platform_and_runner",
       "status": "pass",
       "tier": "unit"
     },
@@ -96,7 +96,7 @@
       "id": "PROOF-11",
       "rule": "RULE-11",
       "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_setup_is_offered_on_discovery_and_never_at_init",
+      "test_name": "test_setup_writes_both_the_workflow_and_the_config_runner_block",
       "status": "pass",
       "tier": "unit"
     }

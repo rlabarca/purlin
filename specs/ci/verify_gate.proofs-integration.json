@@ -45,6 +45,15 @@
       "test_name": "test_registry_errors_exit_two_in_every_mode_and_by_platform_counts",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "verify_gate",
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "test_file": "dev/test_verify_gate.py",
+      "test_name": "test_every_commit_back_workflow_retries_its_push",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

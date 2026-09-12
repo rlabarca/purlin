@@ -428,3 +428,46 @@ class TestRegistryErrorsAndByPlatform:
                     f"mode {mode!r}: unreadable evidence must never pass:\n{out}")
         finally:
             shutil.rmtree(root)
+
+
+class TestCommitBackPushSurvivesARace:
+
+    @pytest.mark.proof("verify_gate", "PROOF-10", "RULE-10", tier="integration")
+    def test_every_commit_back_workflow_retries_its_push(self):
+        """One branch, several platform workflows, one push target. A plain
+        `git push` fails a race it did nothing wrong to lose, and the job goes
+        red over scheduling rather than over a proof."""
+        workflows = [(fn, text) for fn, text in _workflows_that_commit_proofs()
+                     if 'proofs' in fn]
+        assert workflows, (
+            "no *proofs*.yml workflow commits a proof file back; this proof "
+            "must not pass by matching nothing")
+        for fn, text in workflows:
+            # The push is inside a retry loop, not on its own.
+            loop = re.search(r'for\s+attempt\s+in\s+([\d\s]+);\s*do(.*?)\bdone\b',
+                             text, re.S)
+            assert loop, (
+                f"{fn} pushes its proof commit without a retry loop; a second "
+                "platform runner committing first turns this job red")
+            attempts = loop.group(1).split()
+            assert len(attempts) == 3, (
+                f"{fn} retries {len(attempts)} times, not 3: an unbounded loop "
+                "hides a genuinely broken push and a single attempt loses "
+                "every race")
+            body = loop.group(2)
+            assert re.search(r'git pull --rebase origin "\$GITHUB_REF_NAME"',
+                             body), (
+                f"{fn}'s retry loop does not rebase onto the branch before "
+                "pushing, so the retry loses the same race again")
+            assert re.search(r'git push origin "HEAD:\$GITHUB_REF_NAME"', body), (
+                f"{fn}'s retry loop does not push inside the loop")
+
+            after = text[loop.end():]
+            assert re.search(r'^\s*exit 1\s*$', after, re.M), (
+                f"{fn} exits 0 after three failed pushes, so a genuinely "
+                "broken push reports success")
+
+            # The loop and the provenance trailers are required together.
+            for trailer in ('Purlin-Runner:', 'Purlin-Platform:'):
+                assert re.search(r'-m\s+["\']' + trailer, text), (
+                    f"{fn} retries its push but records no {trailer} trailer")

@@ -53,5 +53,17 @@ jobs:
             git commit -m "test(static_checks): windows-native proofs from windows-latest [skip ci]" \
                        -m "Purlin-Runner: github-actions/windows-latest" \
                        -m "Purlin-Platform: windows"
-            git push origin HEAD:${GITHUB_REF_NAME}
+            # Several platform runners may commit to this branch at once, so
+            # the first push can lose a race it did nothing wrong to lose.
+            # Three attempts, then fail: a genuinely broken push stays a
+            # failure (specs/ci/verify_gate.md RULE-10).
+            for attempt in 1 2 3; do
+              if git pull --rebase origin "$GITHUB_REF_NAME" && \
+                 git push origin "HEAD:$GITHUB_REF_NAME"; then
+                exit 0
+              fi
+              echo "push attempt $attempt lost a race; retrying"
+            done
+            echo "could not push the proof commit after 3 attempts"
+            exit 1
           fi

@@ -26,8 +26,8 @@ could ever get its first receipt. This is enforced in the skill logic, not a hoo
   neither blocks a commit, a push, or a receipt. They measure quality; the gate measures
   coverage.
 - Committing without running verify — allowed.
-- A runner-gated proof with no result — allowed. It reports `AWAITING RUNNER`, which warns and
-  never blocks (`specs/mcp/sync_status.md` RULE-47).
+- A proof declared `@on(<platform>)` with no result there — allowed. It reports
+  `AWAITING RUNNER`, which warns and never blocks (`specs/mcp/sync_status.md` RULE-47).
 
 Skills are optional tools, not gatekeepers.
 

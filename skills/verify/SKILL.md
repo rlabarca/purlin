@@ -80,12 +80,19 @@ nothing for that feature.
 
 #### Platform-partial receipts
 
-A feature declaring a proof `@on(<platform>)` that has no result there still earns
-a receipt: an absent runner is not a failure, and blocking on one would make a
-receipt unobtainable on every machine but the runner. The receipt records the gap
-in `awaiting_runner` instead, so it never claims more than was verified. The key
-is omitted when nothing is awaiting, so an ordinary receipt is unchanged. A
-receipt carrying it is a verified-here claim, not a verified-everywhere one.
+A feature declaring a proof `@on(windows-2022)` that has no result there still
+earns a receipt: an absent runner is not a failure, and blocking on one would make
+a receipt unobtainable on every machine but the runner. The receipt records the gap
+in `awaiting_runner` instead, as the triple that names which proof, at which tier,
+on which platform:
+
+```json
+"awaiting_runner": [{"id": "PROOF-53", "tier": "unit", "platform": "windows-2022"}]
+```
+
+so it never claims more than was verified. The key is omitted when nothing is
+awaiting, so an ordinary receipt is unchanged. A receipt carrying it is a
+verified-here claim, not a verified-everywhere one.
 `sync_status` reports the same proofs as `AWAITING RUNNER`, and re-running verify
 after CI commits the results clears the list. See `specs/skills/skill_verify.md`
 RULE-9 and `specs/mcp/sync_status.md` RULE-47.
