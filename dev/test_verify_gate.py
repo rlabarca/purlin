@@ -377,7 +377,10 @@ class TestRunnerWorkflowProvenance:
         for fn, text in workflows:
             assert 'paths-ignore' in text, (
                 f"{fn} has no paths-ignore, so its own proof commit retriggers it")
-            tiers = set(re.findall(r'\.proofs-(\w+)\.json', text))
+            # The scoped form is `.proofs-<tier>@<platform-id>.json`, so the
+            # tier group has to stop at the `@` or a platform workflow reads
+            # as writing no proof files at all.
+            tiers = set(re.findall(r'\.proofs-([\w*]+)(?:@[\w.*-]+)?\.json', text))
             ignored = re.search(r'paths-ignore:(.*?)(?:\n\s*\w+:|\Z)', text,
                                 re.S).group(1)
             assert any(t in ignored or '*' in ignored for t in tiers), (

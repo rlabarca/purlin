@@ -49,7 +49,7 @@ def _audit_entry(assessment, feature, proof_id, rule_id):
     }
 
 
-@pytest.mark.proof("static_checks", "PROOF-53", "RULE-29", tier="windows")
+@pytest.mark.proof("static_checks", "PROOF-53", "RULE-29", tier="unit", platforms=("windows-2022",))
 def test_real_msvcrt_lock_path():
     """On real Windows, fcntl is genuinely absent so write_audit_cache uses the native
     msvcrt.locking path with no fake. The cache must round-trip and the adjacent
@@ -69,7 +69,7 @@ def test_real_msvcrt_lock_path():
         assert os.path.exists(lock_path), "msvcrt lock file was not created adjacent to the cache"
 
 
-@pytest.mark.proof("static_checks", "PROOF-54", "RULE-30", tier="windows")
+@pytest.mark.proof("static_checks", "PROOF-54", "RULE-30", tier="unit", platforms=("windows-2022",))
 def test_load_criteria_native_console():
     """Under the native Windows console codec (no PYTHONUTF8/LC_ALL/LANG overrides),
     --load-criteria must read the tool's own non-ASCII audit_criteria.md and print it

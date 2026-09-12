@@ -1,0 +1,91 @@
+name: purlin-windows-2022-proofs
+
+# Regenerated from references/remote_verification.md, "Workflow template", for
+# the `windows-2022` platform registered in .purlin/config.json. This
+# repository is the plugin, so PURLIN_PLUGIN_ROOT is the checkout itself and
+# the template's "Install Purlin tooling" step is deleted.
+
+on:
+  push:
+    # Loop guard, half one: the runner's own proof commit must not retrigger it.
+    paths-ignore:
+      - '**/*.proofs-*@windows-2022.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  proofs:
+    runs-on: windows-2022
+    env:
+      # The only per-runner input any proof plugin reads. Without it the
+      # plugins fall back to the OS family and write `...@windows.json`, which
+      # satisfies @on(windows) and not @on(windows-2022).
+      PURLIN_PLATFORM: windows-2022
+      # This repository is the plugin.
+      PURLIN_PLUGIN_ROOT: .
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Preflight
+        # Fails the job when the project's `.purlin/plugins/` copies are stale
+        # or a legacy migration is pending. Stale copies predate platform
+        # scoping and write agnostic files that satisfy no platform, so the run
+        # would look green and prove nothing.
+        # -> Run: purlin:init --update and commit
+        shell: bash
+        run: python3 "$PURLIN_PLUGIN_ROOT/scripts/update/migrate.py" --check --project-root .
+
+      - name: Install the test runner
+        # Per-framework setup block for pytest; see
+        # references/supported_frameworks.md, "Runner setup".
+        shell: bash
+        run: pip install pytest
+
+      - name: Run the windows-2022 proofs
+        shell: bash
+        run: python -m pytest dev/test_windows_native.py -v
+
+      - name: Commit the proof files back to the branch
+        # Every `run:` step here is `shell: bash` on purpose. PowerShell is the
+        # default shell on windows runners and parses a leading `@` in a path
+        # as a splat, so '**/*.proofs-*@windows-2022.json' would not be the
+        # argument written here. Git Bash ships on the windows images.
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # This platform's files only. The same run also writes agnostic proof
+          # files for markers that declare no platform, and those must not
+          # travel back: they would overwrite the developer's own results.
+          git add '**/*.proofs-*@windows-2022.json'
+          if git diff --cached --quiet; then
+            echo "No proof-file changes to commit."
+          else
+            # Loop guard, half two, and the provenance sync_status reads back:
+            # proof entries carry no runner field, by design, so the commit
+            # trailers are the only record of which runner proved these
+            # (specs/ci/verify_gate.md RULE-7).
+            git commit -m "test(static_checks): windows-2022 proofs from windows-2022 [skip ci]" \
+                       -m "Purlin-Runner: github-actions/windows-2022" \
+                       -m "Purlin-Platform: windows-2022"
+            # Several platform runners may commit to this branch at once, so
+            # the first push can lose a race it did nothing wrong to lose.
+            # Three attempts, then fail (specs/ci/verify_gate.md RULE-10).
+            for attempt in 1 2 3; do
+              if git pull --rebase origin "$GITHUB_REF_NAME" && \
+                 git push origin "HEAD:$GITHUB_REF_NAME"; then
+                exit 0
+              fi
+              echo "push attempt $attempt lost a race; retrying"
+            done
+            echo "could not push the proof commit after 3 attempts"
+            exit 1
+          fi
