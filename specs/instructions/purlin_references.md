@@ -9,7 +9,12 @@
 ## Rules
 
 - RULE-1: `spec_format.md` documents the 2 required sections (`## Rules`, `## Proof`), the `> Description:` metadata field, and the RULE-N/PROOF-N numbering convention
-- RULE-2: `proofs_format.md` documents the proof JSON schema with all 7 required fields and the write-scoped overwrite merge behavior keyed by `(feature, tier, test_file)`
+- RULE-2: `proofs_format.md` documents the proof JSON schema with all 7 required fields, the
+  scoped-file eighth field `platform`, and the write-scoped overwrite merge behavior keyed by
+  `(feature, tier, platform, test_file)`. The three-part `(feature, tier, test_file)` appears
+  only where the file names it as the key the current one grew from, never as the key itself:
+  a format file that still states the three-part key tells a plugin author to address an entry
+  without its platform, which is a run on one platform clobbering another platform's file
 - RULE-3: `proofs_format.md` documents proof markers for all 3 frameworks: pytest, Jest, shell
 - RULE-4: `anchor_format.md` documents anchor file location (`specs/_anchors/`), metadata fields (`> Source:`, `> Pinned:`, `> Global:`), sync protocol, and global anchor behavior
 - RULE-5: `anchor_format.md` documents all 8 type values: `design`, `api`, `security`, `brand`, `platform`, `schema`, `legal`, `prodbrief`
@@ -98,10 +103,27 @@
   contract, and a consumer who implements only that half issues receipts whose `evidence.test_run`
   is null forever
 
+- RULE-33: Every framework the per-framework table of `proof_plugin_contract.md` registers has a
+  Pass 1 checker in `scripts/audit/static_checks.py`, reached from the `_CHECKERS` dispatch table by
+  each of that framework's test extensions, and a cache-key extractor covering those extensions,
+  with shell the single documented exception that has none. The table lists all eight shipped
+  plugins and its checker cell names the function the dispatch table actually holds. A registered
+  framework whose extension reaches no checker is a hole in the deterministic quality gate: a
+  tautology in that language is graded `unmeasurable` and passes a gate that fails the same
+  tautology in every other language; an extension with no extractor is a grade that survives an edit
+  to the very test it graded
+
 ## Proof
 
 - PROOF-1 (RULE-1): Grep `references/formats/spec_format.md` for `## Rules`, `## Proof`; verify both appear as required sections. Grep for `> Description:` in the metadata fields table. Grep for `RULE-N` pattern documentation
-- PROOF-2 (RULE-2): Grep `references/formats/proofs_format.md` for the 7 field names: `feature`, `id`, `rule`, `test_file`, `test_name`, `status`, `tier`; verify all appear. Grep for "write-scoped overwrite" and for the merge key `(feature, tier, test_file)`
+- PROOF-2 (RULE-2): Grep `references/formats/proofs_format.md` for the 7 field names: `feature`,
+  `id`, `rule`, `test_file`, `test_name`, `status`, `tier`; verify all appear, and that
+  `platform` appears as the field a scoped file carries. Grep for "write-scoped overwrite"
+  and for the merge key `(feature, tier, platform, test_file)`, then take a surrounding
+  window of text around every occurrence of the three-part `(feature, tier, test_file)` and
+  assert each window says the four-part key grew from it, so the old key survives only as
+  history. Replacing the four-part key with the three-part one fails the key assertion and
+  the window assertion together
 - PROOF-3 (RULE-3): Grep `references/formats/proofs_format.md` for `### pytest`, `### Jest`, `### Shell`; verify all 3 framework subsections exist
 - PROOF-4 (RULE-4): Grep `references/formats/anchor_format.md` for `_anchors/`, `> Source:`, `> Pinned:`, `> Global:`; verify all appear
 - PROOF-5 (RULE-5): Grep `references/formats/anchor_format.md` for all 8 type values: `design`, `api`, `security`, `brand`, `platform`, `schema`, `legal`, `prodbrief`; verify all appear in the type metadata documentation
@@ -182,3 +204,19 @@
   that the marker is written through a temp file named for the writing process and replaced in one
   operation. Renaming the section heading fails on the missing section; dropping a field from the
   table fails naming that field @unit
+- PROOF-33 (RULE-33): Drive a marked tautological fixture per extension through `analyze_test_file`,
+  the extensions read from the per-framework table in section B of
+  `references/proof_plugin_contract.md`. Assert first that the table's framework set is exactly the
+  eight shipped ids `pytest`, `jest`, `vitest`, `shell`, `xunit`, `phpunit`, `sql` and `c`; that the
+  checker cell of every row names a function `static_checks` defines and that `_CHECKERS` maps each
+  of that row's extensions to that same function object; and that the extension set the table
+  registers is exactly the set this proof carries a fixture for. Each fixture is written into a temp
+  project with the marker that language's own plugin reads and a tautology its checker is documented
+  to catch (`assert True`, `expect(true).toBe(true)`, `Assert.True(true)`, `assertTrue(true)`,
+  `CASE WHEN 1 = 1 THEN 'PASS'`, a literal `passed` argument for C, and for shell a `purlin_proof`
+  pass line with no test logic above it). Assert `analyze_test_file` returns exactly 1 result whose
+  `check` is `assert_true`, and that `_extract_test_code` returns a body for every extension but
+  `.sh`, for which it returns None and which `_TEST_CODE_EXTENSIONS` omits while its table row states
+  the exception. Deleting a row from the table fails the framework-set assertion naming the
+  framework; dropping an extension from `_TEST_CODE_EXTENSIONS` fails the extractor half naming it;
+  dropping an entry from `_CHECKERS` fails the dispatch half @unit

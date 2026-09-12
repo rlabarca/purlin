@@ -81,10 +81,24 @@ class TestPurlinReferences:
         content = _read(os.path.join(FORMATS, 'proofs_format.md'))
         for field in ('feature', 'id', 'rule', 'test_file', 'test_name', 'status', 'tier'):
             assert field in content, f"Missing field: {field}"
+        assert 'platform' in content, \
+            "proofs_format.md must document the scoped-file field `platform`"
         assert re.search(r'[Ww]rite.[Ss]coped [Oo]verwrite', content), \
             "proofs_format.md must name the merge behaviour"
-        assert '(feature, tier, test_file)' in content, \
-            "proofs_format.md must state the merge key, not just the pattern's name"
+        assert '(feature, tier, platform, test_file)' in content, \
+            ("proofs_format.md must state the merge key proof_common RULE-4 "
+             "carries, (feature, tier, platform, test_file), not just the "
+             "pattern's name")
+        # The three-part key survives only as the history of the four-part one.
+        # Stated as the key itself it tells a plugin author to address an entry
+        # without its platform, which is one platform's run clobbering another's.
+        old_key = '(feature, tier, test_file)'
+        for m in re.finditer(re.escape(old_key), content):
+            window = content[max(0, m.start() - 200):m.end() + 200]
+            assert 'grew from' in window, (
+                "proofs_format.md states the three-part key "
+                f"{old_key} at offset {m.start()} without saying the current "
+                "key grew from it: " + repr(window))
 
     @pytest.mark.proof("purlin_references", "PROOF-3", "RULE-3")
     def test_proofs_format_three_frameworks(self):

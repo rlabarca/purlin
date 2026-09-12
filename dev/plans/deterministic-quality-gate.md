@@ -1020,3 +1020,81 @@ with `test_file` `tests/test_greeting.py`; its Linux-only platform test fails on
 design. Mutation: the state before this commit (the plugin copy one commit behind) is the
 failing case, PROOF-2 `test_fixture_is_a_complete_tracked_consumer_project` failed on the
 byte comparison at 8460dabe; after the re-copy it passes.
+
+### B6
+
+`spec(purlin_references): every registered framework has a Pass 1 checker and a cache-key
+extractor`
+
+Files touched:
+
+- `specs/instructions/purlin_references.md` (new RULE-33 / PROOF-33; RULE-2 and PROOF-2 amended
+  in place to the four-part merge key)
+- `dev/test_plugin_contract.py` (`SHIPPED_FRAMEWORKS`, `FIXTURE_FEATURE`, `TAUTOLOGY_FIXTURES`,
+  `_framework_table`, `_extensions`, and
+  `TestEveryFrameworkHasACheckerAndAnExtractor.test_every_registered_extension_is_graded_and_extractable`)
+- `dev/test_purlin_references.py` (`test_proofs_format_fields_and_merge` now pins the four-part
+  key and the historical-mention window)
+- `specs/instructions/purlin_references.proofs-unit.json` (1 new PROOF-33 entry)
+
+Spec maxima left: `specs/instructions/purlin_references.md` RULE-33 / PROOF-33. No other spec
+touched. PROOF-33 grades PROVABLE under `static_checks.py --check-proof-design`; PROOF-2 stays
+STRUCTURAL, which is what it was before the amendment (it greps a reference file). Pass 1 grades
+both backings `pass`.
+
+Test counts (whole files, before -> after, passed/skipped):
+
+- `dev/test_plugin_contract.py` 3/0 -> 4/0 (+1)
+- `dev/test_purlin_references.py` 29/0 -> 29/0 (PROOF-2's test amended in place)
+- `dev/test_static_checks.py` 104/0 -> 104/0 (untouched; run whole because the proof drives
+  `analyze_test_file` and `_extract_test_code`)
+- `dev/test_skill_specs.py` and `dev/test_sweep_completeness.py` run as a spec-format sanity
+  check: 142 passed, unchanged, and neither wrote a proof file.
+
+Mutations, restored after each, the affected file run whole:
+
+1. `.php` dropped from `_TEST_CODE_EXTENSIONS` (`_CHECKER_EXTENSIONS - {'.sh', '.php'}`).
+   `dev/test_plugin_contract.py` 1 failed, 3 passed: "AssertionError: phpunit .php: no test code
+   entered the cache key (_extract_test_code returned None), so a HOLLOW or STRONG grade for that
+   language survives an edit to the very test it graded".
+2. `('.php', check_php)` removed from the `_CHECKERS` table. 1 failed, 3 passed: "AssertionError:
+   phpunit: .php is not dispatched to check_php by the _CHECKERS table, so a test in that language
+   is graded unmeasurable and `assert true` passes a gate that fails it in every other language".
+3. The `phpunit` row deleted from the contract's per-framework table. 1 failed, 3 passed:
+   "AssertionError: the per-framework table lists ['c', 'jest', 'pytest', 'shell', 'sql',
+   'vitest', 'xunit'], not ['c', 'jest', 'phpunit', 'pytest', 'shell', 'sql', 'vitest', 'xunit'].
+   A framework dropped from the table takes its checker requirement with it, and this proof would
+   then grade a language Purlin no longer claims to cover instead of failing". The row is not
+   skipped over silently: the framework set is pinned, so a deleted row fails.
+4. `proofs_format.md`'s merge key reverted to `(feature, tier, test_file)`.
+   `dev/test_purlin_references.py` 1 failed, 28 passed: "AssertionError: proofs_format.md must
+   state the merge key proof_common RULE-4 carries, (feature, tier, platform, test_file), not just
+   the pattern's name".
+5. The words `it grew from` dropped from the sentence that carries the three-part key, the
+   four-part key left in place. 1 failed, 28 passed: "AssertionError: proofs_format.md states the
+   three-part key (feature, tier, test_file) at offset 3672 without saying the current key grew
+   from it", with the offending window quoted. So the amended PROOF-2 pins both halves.
+
+Decisions:
+
+- The extractor half calls `_extract_test_code`, not `_test_bodies`. `_test_bodies` branches on
+  the extension directly and never reads `_TEST_CODE_EXTENSIONS`, so a `_TEST_CODE_EXTENSIONS`
+  entry removed would not move it; `_extract_test_code` is also the function the cache key
+  actually goes through.
+- The eight framework ids are pinned in the test rather than read from the table the test grades.
+  A table is not allowed to shrink its own obligations, which is exactly what mutation 3 checks.
+- One fixture per extension, thirteen in all (`.py`, six JS/TS extensions, `.sh`, `.cs`, `.php`,
+  `.sql`, `.c`, `.h`), each carrying the marker its own plugin reads. The extension set the table
+  registers is asserted equal to the fixture set, so an extension added to the table with no
+  fixture fails rather than being skipped.
+- PROOF-33's description leads with the act (`Drive a marked tautological fixture ...`) because
+  Pass D grades a description opening with `Parse` as STRUCTURAL. The wording change was made to
+  the description, not to the grader.
+
+Deferrals and adjacent findings:
+
+- None. No checker needed a fix: all thirteen extensions graded their tautology `assert_true` and
+  all twelve non-shell extensions returned a body on the first run, so `scripts/audit/static_checks.py`
+  was not edited.
+- `references/proof_plugin_contract.md` section C already states the shell exception, so the new
+  rule cites it rather than restating it. The contract file itself did not need an edit.

@@ -237,6 +237,15 @@
     },
     {
       "feature": "purlin_references",
+      "id": "PROOF-33",
+      "rule": "RULE-33",
+      "test_file": "dev/test_plugin_contract.py",
+      "test_name": "test_every_registered_extension_is_graded_and_extractable",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_references",
       "id": "PROOF-4",
       "rule": "RULE-4",
       "test_file": "dev/test_purlin_references.py",
