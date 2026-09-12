@@ -409,8 +409,10 @@ class ProofCollector:
             # merge, so the collection order never reaches the file.
             payload["proofs"] = sorted(kept + new_entries, key=_entry_order)
 
-            # Write fresh entries (atomic: tmp + rename)
-            tmp_path = path + ".tmp"
+            # Write fresh entries (atomic: tmp + rename). RULE-24: the temp
+            # name carries this process id, so two plugins writing the same
+            # file concurrently never share a temp path.
+            tmp_path = "%s.%d.tmp" % (path, os.getpid())
             with open(tmp_path, "w") as f:
                 json.dump(payload, f, indent=2)
                 f.write("\n")

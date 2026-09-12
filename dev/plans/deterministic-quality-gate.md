@@ -675,3 +675,93 @@ Deferrals and adjacent findings:
 - `references/hard_gates.md` is cited by the new SKILL.md config row and `docs/regulated-
   environments.md` by the installation-guide paragraph; C1 owns both files and adds the sections
   those citations point at.
+
+### B3
+
+`feat(proof_common): every plugin writes through a PID-unique temp file and needs no undeclared runtime dependency`
+
+Files touched:
+
+- `scripts/proof/pytest_purlin.py`, `shell_purlin.sh`, `jest_purlin.js`, `vitest_purlin.ts`,
+  `sql_purlin.sh`, `c_purlin_emit.py`, `phpunit_purlin.php`, `xunit_purlin.cs` (all eight:
+  the proof-file temp name now carries the process id, as the RULE-19 marker name already
+  did; xUnit's delete-then-move became one `File.Move(tmp, path, true)`; jest and vitest
+  dropped `require("glob")`/`import { globSync }` for a `findSpecFiles(root)` walk over
+  `fs.readdirSync(..., {withFileTypes: true})`)
+- `.purlin/plugins/pytest_purlin.py`, `jest_purlin.js`, `vitest_purlin.ts`, `purlin-proof.sh`
+  (the four synced copies, PROOF-20 byte identity)
+- `specs/_anchors/proof_common.md` (RULE-24, RULE-25, PROOF-30, PROOF-31; `> Description:`
+  and one new "What it does" paragraph)
+- `dev/test_multilang_proof_plugins.py` (`TestTempNameCarriesTheProcessId`,
+  `TestNoTempFileSurvivesARun`, `TestNoUndeclaredRuntimeDependency`, `_PLUGIN_SOURCES`,
+  `_PID_EXPRESSIONS`, `_source_lines`, `_NODE_BUILTINS` and the import extractors;
+  `_GLOB_SHIM` and its seven uses deleted)
+- `dev/test_proof_plugins_missing.py` (the `Module._load` glob mock in `_jest_run_in_process`
+  deleted), `dev/test_proof_plugins.sh` (three inline mocks), `dev/test_proof_jest.sh` (five),
+  `dev/test_init_e2e.sh` (two): every driver now loads the reporter as shipped, so a reporter
+  that re-acquires an npm dependency fails to load in all five
+- `references/formats/proofs_format.md` (one paragraph on the PID-unique temp file and the
+  single replace; no Format-Version bump, B4 owns that)
+- `specs/_anchors/proof_common.proofs-integration.json` (27 new entries, no deletions)
+
+Maxima left: `specs/_anchors/proof_common.md` RULE-25 / PROOF-31. No other spec touched.
+
+Test counts:
+
+- `dev/test_multilang_proof_plugins.py` run whole: 95 passed before, 122 after (+27:
+  PROOF-30 contributes 8 source arms, the xUnit single-move case and 8 run arms; PROOF-31
+  contributes 4 Python source arms, 2 node source arms, the xUnit and PHP cases and the two
+  empty-`node_modules` load cases), 0 skipped either way with
+  `/opt/homebrew/opt/dotnet@8/bin` first on PATH
+- `dev/test_proof_plugins_missing.py`: 31 passed before and after
+- `dev/test_init_scaffold.py`: 15 passed before and after
+- `bash dev/test_proof_plugins.sh`: 28/28 before and after
+- `bash dev/test_proof_jest.sh`, `dev/test_proof_pytest.sh`, `dev/test_proof_shell.sh`:
+  5 passed / 0 failed each, before and after
+- `bash dev/test_init_e2e.sh`: 34 passed / 0 failed / 0 skipped, before and after
+- `dev/test_purlin_references.py`, `test_sweep_completeness.py`, `test_skill_specs.py`,
+  `test_proof_stress.py` together: 188 passed, 1 skipped, unchanged
+
+Mutations, `dev/test_multilang_proof_plugins.py` run whole each time, restored after each:
+
+1. `const { globSync } = require("glob");` put back in `scripts/proof/jest_purlin.js`.
+   14 failed, 108 passed. PROOF-31's two jest arms read
+   "AssertionError: jest: jest_purlin.js imports ['glob'], which node does not ship. An npm
+   package the reporter alone needs makes every consumer project install it before its proofs
+   can be collected." and "AssertionError: the jest reporter must load in a project whose
+   node_modules is empty: ... Error: Cannot find module 'glob'". The other twelve are every
+   other jest arm in the file, which is the point of deleting the shims: with no stand-in on
+   disk the reporter no longer loads at all.
+2. `getmypid()` dropped from `phpunit_purlin.php`'s proof-file temp name. 1 failed, 121
+   passed, with "AssertionError: php: phpunit_purlin.php:362 builds a temp name without the
+   process id 'getmypid()', so two plugins writing this file at once share one temp path and
+   one truncates the other's write: \"$tmp = $path . '.tmp';\"".
+
+Decisions:
+
+- PROOF-30's source arm reads every non-comment line carrying `.tmp`, not only the proof-file
+  write, so the RULE-19 marker write is covered by the same arm and a third write site added
+  later cannot slip in without the process id.
+- The run arm looks for leftovers under `specs/` and `.purlin/runtime/` only. A .NET build
+  drops its own temp files under `obj/`, and RULE-24 governs what the plugin writes, not what
+  the toolchain does around it.
+- `_NODE_BUILTINS` is a literal set rather than `node -p "require('module').builtinModules"`,
+  so PROOF-31's source half needs no node and runs on every host. The two load arms are the
+  ones that skip.
+- The empty-`node_modules` arms create the directory and leave it empty rather than writing a
+  `package.json`: an empty `node_modules` is what node's resolver actually meets in a project
+  that installed nothing, and it is the shape a stale shim would be caught by.
+- `dev/test_proof_jest.sh`'s five mocks and `dev/test_init_e2e.sh`'s two were removed as well
+  as the three the plan named, and `dev/test_proof_plugins_missing.py`'s stayed a deletion
+  rather than a consolidation (B2's deferral): with the reporters free of npm dependencies
+  there is nothing left to share.
+
+Deferrals and adjacent findings:
+
+- `dev/fixtures/consumer-ci/.purlin/plugins/pytest_purlin.py` is a checked-in fixture copy of
+  an older pytest plugin (it still globs `specs/**/*.md` from the working directory, pre
+  RULE-22). It is a frozen consumer fixture, not a shipped plugin, so it was left alone; a
+  commit that regenerates the consumer fixture should refresh it.
+- `docs/testing-workflow-guide.md`'s "Writing a custom plugin" sample still writes its proof
+  file without a temp file at all. B4 rewrites that section and is the right place to make the
+  sample show the RULE-24 write.

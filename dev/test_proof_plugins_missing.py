@@ -77,33 +77,13 @@ def _run_pytest_with_plugin(tmp_path, test_code, allow_failure=False, platform_i
 
 
 def _jest_run_in_process(tmp_path, test_file_rel, test_results):
-    """Invoke jest_purlin.js reporter directly via node, mocking glob."""
+    """Invoke jest_purlin.js reporter directly via node.
+
+    Nothing is mocked: proof_common RULE-25 leaves the reporter with no
+    dependency outside node's own builtins, so it loads as shipped."""
     results_json = json.dumps(test_results)
     script = f"""
-const Module = require('module');
-const fs = require('fs');
 const path = require('path');
-const origLoad = Module._load;
-Module._load = function(request, parent, isMain) {{
-  if (request === 'glob') {{
-    return {{ globSync: function(pattern) {{
-      const results = [];
-      function walk(dir) {{
-        try {{
-          for (const e of fs.readdirSync(dir, {{withFileTypes: true}})) {{
-            const full = path.join(dir, e.name);
-            if (e.isDirectory()) walk(full);
-            else if (e.name.endsWith('.md')) results.push(full);
-          }}
-        }} catch(err) {{}}
-      }}
-      const base = pattern.split('*')[0].replace(/\\/$/, '') || '.';
-      if (fs.existsSync(base)) walk(base);
-      return results;
-    }}}};
-  }}
-  return origLoad.apply(this, arguments);
-}};
 const Reporter = require({json.dumps(JEST_REPORTER)});
 const r = new Reporter({{rootDir: {json.dumps(str(tmp_path))}}}, {{}});
 r.onTestResult(null, {{

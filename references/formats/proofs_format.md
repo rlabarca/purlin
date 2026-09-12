@@ -137,6 +137,13 @@ there.
 An entry whose `test_file` is empty or unresolvable fails the existence check and is reaped,
 then rewritten by the same write if the current run produced it. No special case is needed.
 
+The merged file is written in full to `<path>.<pid>.tmp` beside the target, where `<pid>` is the
+writing process's own id, and the target is then replaced with it in one filesystem operation.
+Nothing deletes the target first. A reader that opens the file while a plugin is writing it
+therefore sees either the previous content or the new, never a partial document, and two
+plugins writing one proof file in the same run never collide on the temp name. A run leaves no
+`*.tmp` file behind.
+
 ### Why the key includes the test file
 
 Scoping the overwrite per `(feature, tier)` alone means that whenever two test files cover

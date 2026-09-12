@@ -470,35 +470,6 @@ SELECT CASE WHEN (SELECT count(*) FROM items) = 99
 
 _REPORTER_SRC = os.path.join(PROOF_SCRIPTS, 'vitest_purlin.ts')
 
-# Minimal `glob` stand-in so the compiled/stripped reporter's require("glob")
-# resolves without an npm install. It performs the real filesystem walk the
-# reporter expects (globSync("specs/**/*.md", { cwd: root })) — only the
-# dependency is substituted; the reporter's collection and write logic run for
-# real. Like the real glob, it resolves the pattern against `cwd` and returns
-# paths relative to it, which is what lets the reporter root its scan at the
-# project root (proof_common RULE-22) rather than at the working directory.
-_GLOB_SHIM = '''\
-const fs = require('fs');
-const path = require('path');
-function walk(dir, out) {
-  let entries;
-  try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return; }
-  for (const e of entries) {
-    const full = path.join(dir, e.name);
-    if (e.isDirectory()) walk(full, out);
-    else if (e.name.endsWith('.md')) out.push(full);
-  }
-}
-function globSync(pattern, opts) {
-  const cwd = (opts && opts.cwd) || process.cwd();
-  const base = path.resolve(cwd, pattern.split('/**/')[0]);
-  const out = [];
-  walk(base, out);
-  return out.map(function (p) { return path.relative(cwd, p); });
-}
-module.exports = { globSync };
-'''
-
 
 def _node_can_run_ts():
     """True if `node` is present and can load .ts — via tsc, or native type-stripping (>=22.6)."""
@@ -524,11 +495,6 @@ class TestTypeScriptProofPlugin:
         """Load vitest_purlin.ts and call onFinished(files) with the given JS
         task-tree literal, with cwd=tmp_path so it writes proofs under specs/.
         `env` replaces the subprocess environment when given."""
-        glob_dir = tmp_path / 'node_modules' / 'glob'
-        # exist_ok: a caller may drive the reporter twice against one project.
-        glob_dir.mkdir(parents=True, exist_ok=True)
-        (glob_dir / 'package.json').write_text('{"name":"glob","version":"0.0.0","main":"index.js"}')
-        (glob_dir / 'index.js').write_text(_GLOB_SHIM)
 
         shutil.copy(_REPORTER_SRC, str(tmp_path / 'vitest_purlin.ts'))
 
@@ -780,7 +746,7 @@ class TestWriteScopedMergeKey:
     """proof_common RULE-4/11/12: two test files covering one (feature, tier) coexist.
 
     Every test here drives the real scripts/proof/pytest_purlin.py in a subprocess with
-    cwd set to a temp repo root, which is what the plugin's spec glob and its test-file
+    cwd set to a temp repo root, which is what the plugin's spec scan and its test-file
     existence check both assume.
     """
 
@@ -1264,10 +1230,6 @@ class TestJestPlatformScoping:
     def _run(self, tmp_path, test_file_path, platform_id):
         """Drive the real reporter's onTestResult/onRunComplete in node with a
         fake testFilePath under rootDir=tmp_path."""
-        glob_dir = tmp_path / 'node_modules' / 'glob'
-        glob_dir.mkdir(parents=True, exist_ok=True)
-        (glob_dir / 'package.json').write_text('{"name":"glob","version":"0.0.0","main":"index.js"}')
-        (glob_dir / 'index.js').write_text(_GLOB_SHIM)
         shutil.copy(os.path.join(PROOF_SCRIPTS, 'jest_purlin.js'), str(tmp_path / 'jest_purlin.js'))
         harness = tmp_path / 'harness.cjs'
         harness.write_text(
@@ -1736,11 +1698,6 @@ class TestSkippedTestKeepsItsEntry:
         js_path.write_text('// fixture\n')
         proof_path = _seed_two_failing_entries(spec_dir, 'tests/feat.test.js')
 
-        glob_dir = tmp_path / 'node_modules' / 'glob'
-        glob_dir.mkdir(parents=True, exist_ok=True)
-        (glob_dir / 'package.json').write_text(
-            '{"name":"glob","version":"0.0.0","main":"index.js"}')
-        (glob_dir / 'index.js').write_text(_GLOB_SHIM)
         shutil.copy(os.path.join(PROOF_SCRIPTS, 'jest_purlin.js'),
                     str(tmp_path / 'jest_purlin.js'))
         harness = tmp_path / 'harness.cjs'
@@ -2172,11 +2129,6 @@ class TestSkippedProofsInTheRunMarker:
         (tmp_path / 'tests').mkdir()
         js_path = tmp_path / 'tests' / 'feat.test.js'
         js_path.write_text('// fixture\n')
-        glob_dir = tmp_path / 'node_modules' / 'glob'
-        glob_dir.mkdir(parents=True, exist_ok=True)
-        (glob_dir / 'package.json').write_text(
-            '{"name":"glob","version":"0.0.0","main":"index.js"}')
-        (glob_dir / 'index.js').write_text(_GLOB_SHIM)
         shutil.copy(os.path.join(PROOF_SCRIPTS, 'jest_purlin.js'),
                     str(tmp_path / 'jest_purlin.js'))
         harness = tmp_path / 'harness.cjs'
@@ -2353,11 +2305,6 @@ class TestDeterministicProofEntryOrder:
     # ----- jest ------------------------------------------------------------
 
     def _run_jest(self, root, cases):
-        glob_dir = root / 'node_modules' / 'glob'
-        glob_dir.mkdir(parents=True, exist_ok=True)
-        (glob_dir / 'package.json').write_text(
-            '{"name":"glob","version":"0.0.0","main":"index.js"}')
-        (glob_dir / 'index.js').write_text(_GLOB_SHIM)
         shutil.copy(os.path.join(PROOF_SCRIPTS, 'jest_purlin.js'),
                     str(root / 'jest_purlin.js'))
         (root / 'tests').mkdir(exist_ok=True)
@@ -2539,10 +2486,6 @@ def _warn_shell(root, feature):
 
 
 def _warn_jest(root, feature):
-    glob_dir = root / 'node_modules' / 'glob'
-    glob_dir.mkdir(parents=True, exist_ok=True)
-    (glob_dir / 'package.json').write_text('{"name":"glob","version":"0.0.0","main":"index.js"}')
-    (glob_dir / 'index.js').write_text(_GLOB_SHIM)
     shutil.copy(os.path.join(PROOF_SCRIPTS, 'jest_purlin.js'), str(root / 'jest_purlin.js'))
     harness = root / 'harness.cjs'
     harness.write_text(
@@ -2734,11 +2677,6 @@ def _rooted_shell(workdir, absolute):
 
 
 def _rooted_jest(workdir, absolute):
-    glob_dir = workdir / 'node_modules' / 'glob'
-    glob_dir.mkdir(parents=True, exist_ok=True)
-    (glob_dir / 'package.json').write_text(
-        '{"name":"glob","version":"0.0.0","main":"index.js"}')
-    (glob_dir / 'index.js').write_text(_GLOB_SHIM)
     shutil.copy(os.path.join(PROOF_SCRIPTS, 'jest_purlin.js'),
                 str(workdir / 'jest_purlin.js'))
     (workdir / 'tests').mkdir(exist_ok=True)
@@ -2941,3 +2879,259 @@ class TestTestFileIsProjectRelative:
         assert os.pardir not in tf.split('/'), (
             f"{plugin} rewrote the path with parent segments instead of "
             f"measuring it from the project root: {tf!r}")
+
+
+# ---------------------------------------------------------------------------
+# proof_common RULE-24 and RULE-25, on all 8 plugins.
+#
+# RULE-24: every write goes through a temp file whose name carries the writing
+# process's own id, then one replace. Two plugins writing one proof file in the
+# same run, or two runs of one plugin, never share a temp path and never leave
+# a target missing between a delete and a move.
+# RULE-25: no plugin needs a runtime dependency its framework does not already
+# supply, so a project that installed only its test framework can run it.
+# ---------------------------------------------------------------------------
+
+_PLUGIN_SOURCES = (
+    ('pytest', 'pytest_purlin.py'),
+    ('shell', 'shell_purlin.sh'),
+    ('jest', 'jest_purlin.js'),
+    ('vitest', 'vitest_purlin.ts'),
+    ('c', 'c_purlin_emit.py'),
+    ('sql', 'sql_purlin.sh'),
+    ('php', 'phpunit_purlin.php'),
+    ('xunit', 'xunit_purlin.cs'),
+)
+
+# The expression each language builds a process id from. A temp name that does
+# not carry one is the defect RULE-24 forbids.
+_PID_EXPRESSIONS = {
+    'pytest_purlin.py': 'os.getpid()',
+    'shell_purlin.sh': 'os.getpid()',
+    'jest_purlin.js': 'process.pid',
+    'vitest_purlin.ts': 'process.pid',
+    'c_purlin_emit.py': 'os.getpid()',
+    'sql_purlin.sh': 'os.getpid()',
+    'phpunit_purlin.php': 'getmypid()',
+    'xunit_purlin.cs': 'Environment.ProcessId',
+}
+
+_COMMENT_PREFIXES = ('#', '//', '*', '--', '/*')
+
+
+def _source_lines(filename):
+    """Every non-comment, non-blank line of a plugin source, with its 1-based number."""
+    with open(os.path.join(PROOF_SCRIPTS, filename)) as f:
+        text = f.read()
+    out = []
+    for n, line in enumerate(text.splitlines(), 1):
+        stripped = line.strip()
+        if not stripped or stripped.startswith(_COMMENT_PREFIXES):
+            continue
+        out.append((n, line))
+    return out
+
+
+def _pid_arms():
+    return tuple(pytest.param(name, src, id=name) for name, src in _PLUGIN_SOURCES)
+
+
+class TestTempNameCarriesTheProcessId:
+    """proof_common RULE-24 / PROOF-30: the source half, on all 8 plugins."""
+
+    @pytest.mark.parametrize('plugin,filename', _pid_arms())
+    @pytest.mark.proof("proof_common", "PROOF-30", "RULE-24", tier="integration")
+    def test_every_temp_name_is_built_from_the_writing_process_id(
+            self, plugin, filename):
+        token = _PID_EXPRESSIONS[filename]
+        lines = [(n, line) for n, line in _source_lines(filename)
+                 if '.tmp' in line]
+        assert lines, (
+            f"{plugin}: no line of {filename} builds a .tmp name, so either the "
+            f"atomic write is gone or this proof no longer reads the writer")
+        for n, line in lines:
+            assert token in line, (
+                f"{plugin}: {filename}:{n} builds a temp name without the "
+                f"process id {token!r}, so two plugins writing this file at "
+                f"once share one temp path and one truncates the other's "
+                f"write: {line.strip()!r}")
+
+    @pytest.mark.proof("proof_common", "PROOF-30", "RULE-24", tier="integration")
+    def test_xunit_replaces_in_one_move_rather_than_deleting_first(self):
+        lines = _source_lines('xunit_purlin.cs')
+        deletes = [(n, l) for n, l in lines if 'File.Delete(path)' in l]
+        assert not deletes, (
+            "xunit_purlin.cs deletes the target before moving the temp file "
+            f"over it, so a concurrent reader sees no file at all: {deletes}")
+        moves = [l.strip() for _, l in lines if 'File.Move(' in l]
+        assert moves and all('true' in m for m in moves), (
+            "every xUnit File.Move over a target must pass overwrite:true so "
+            f"the replace is one operation; got {moves}")
+
+
+class TestNoTempFileSurvivesARun:
+    """proof_common RULE-24 / PROOF-30: the run half, one arm per plugin."""
+
+    @pytest.mark.parametrize('plugin,driver', _ROOTED_ARMS)
+    @pytest.mark.proof("proof_common", "PROOF-30", "RULE-24", tier="integration")
+    def test_a_run_leaves_no_temp_file_behind(self, tmp_path, plugin, driver):
+        root = tmp_path / 'proj'
+        spec_dir = _spec(root, 'feat', 'a')
+        (root / '.purlin').mkdir()
+
+        proc, recorded = driver(root, False)
+        assert proc.returncode == 0, f"{plugin}:\n{proc.stdout}\n{proc.stderr}"
+        assert (spec_dir / 'feat.proofs-unit.json').is_file(), (
+            f"{plugin} wrote no proof file:\n{proc.stdout}\n{proc.stderr}")
+
+        leftovers = sorted(
+            str(p.relative_to(root))
+            for d in ('specs', os.path.join('.purlin', 'runtime'))
+            for p in (root / d).rglob('*.tmp'))
+        assert not leftovers, (
+            f"{plugin} left a temp file behind, so the replace never happened "
+            f"and a reader can pick the half-written file up: {leftovers}")
+
+
+# ----- RULE-25: no undeclared runtime dependency ---------------------------
+
+# Node's builtin modules. A reporter may require any of these and nothing else;
+# `vitest` (the framework the vitest reporter is a plugin of) is allowed there
+# on top, the way `pytest` is allowed to the pytest plugin.
+_NODE_BUILTINS = frozenset('''
+assert async_hooks buffer child_process cluster console constants crypto dgram
+diagnostics_channel dns domain events fs http http2 https inspector module net
+os path perf_hooks process punycode querystring readline repl stream
+string_decoder sys timers tls trace_events tty url util v8 vm wasi
+worker_threads zlib
+'''.split())
+
+_PY_IMPORT_RE = re.compile(r'^\s*import\s+(.+)$')
+_PY_FROM_RE = re.compile(r'^\s*from\s+([A-Za-z_][\w.]*)\s+import\s')
+_JS_REQUIRE_RE = re.compile(r'require\(\s*[\'"]([^\'"]+)[\'"]\s*\)')
+_JS_IMPORT_RE = re.compile(r'^\s*import\s.*?\sfrom\s+[\'"]([^\'"]+)[\'"]')
+_CS_USING_RE = re.compile(r'^using\s+([A-Za-z_][\w.]*)\s*;')
+_PHP_DEP_RE = re.compile(r'^\s*(use|require|require_once|include|include_once)\b')
+
+
+def _python_imports(filename):
+    """Top-level module names imported by the Python in a .py or .sh plugin."""
+    mods = set()
+    for _, line in _source_lines(filename):
+        m = _PY_FROM_RE.match(line)
+        if m:
+            mods.add(m.group(1).split('.')[0])
+            continue
+        m = _PY_IMPORT_RE.match(line)
+        if m and ' import ' not in line:
+            for part in m.group(1).split(','):
+                mods.add(part.strip().split()[0].split('.')[0])
+    return mods
+
+
+def _node_imports(filename):
+    mods = set()
+    for _, line in _source_lines(filename):
+        mods.update(_JS_REQUIRE_RE.findall(line))
+        m = _JS_IMPORT_RE.match(line)
+        if m:
+            mods.add(m.group(1))
+    return {m[len('node:'):] if m.startswith('node:') else m for m in mods}
+
+
+class TestNoUndeclaredRuntimeDependency:
+    """proof_common RULE-25 / PROOF-31: what each source is allowed to import."""
+
+    @pytest.mark.parametrize('plugin,filename', [
+        pytest.param('pytest', 'pytest_purlin.py', id='pytest'),
+        pytest.param('shell', 'shell_purlin.sh', id='shell'),
+        pytest.param('sql', 'sql_purlin.sh', id='sql'),
+        pytest.param('c', 'c_purlin_emit.py', id='c'),
+    ])
+    @pytest.mark.proof("proof_common", "PROOF-31", "RULE-25", tier="integration")
+    def test_the_python_plugins_import_only_the_standard_library_and_pytest(
+            self, plugin, filename):
+        allowed = set(sys.stdlib_module_names) | {'pytest'}
+        extra = sorted(_python_imports(filename) - allowed)
+        assert not extra, (
+            f"{plugin}: {filename} imports {extra}, which is neither the Python "
+            f"standard library nor pytest. A plugin that needs an install its "
+            f"framework does not already provide fails to load in a project "
+            f"that installed only the framework.")
+
+    @pytest.mark.parametrize('plugin,filename,framework', [
+        pytest.param('jest', 'jest_purlin.js', None, id='jest'),
+        pytest.param('vitest', 'vitest_purlin.ts', 'vitest', id='vitest'),
+    ])
+    @pytest.mark.proof("proof_common", "PROOF-31", "RULE-25", tier="integration")
+    def test_the_node_reporters_import_only_builtins_and_their_framework(
+            self, plugin, filename, framework):
+        allowed = set(_NODE_BUILTINS)
+        if framework:
+            allowed.add(framework)
+        found = _node_imports(filename)
+        relative = sorted(m for m in found if m.startswith('.'))
+        extra = sorted(m for m in found - allowed if not m.startswith('.'))
+        assert not extra, (
+            f"{plugin}: {filename} imports {extra}, which node does not ship. "
+            f"An npm package the reporter alone needs makes every consumer "
+            f"project install it before its proofs can be collected.")
+        assert not relative, (
+            f"{plugin}: {filename} loads a sibling file {relative}; a plugin "
+            f"is one file, copied into .purlin/plugins/ on its own")
+
+    @pytest.mark.proof("proof_common", "PROOF-31", "RULE-25", tier="integration")
+    def test_the_xunit_logger_uses_only_the_bcl_and_the_object_model(self):
+        allowed_prefixes = ('System', 'Microsoft.VisualStudio.TestPlatform')
+        namespaces = [m.group(1) for _, line in _source_lines('xunit_purlin.cs')
+                      for m in [_CS_USING_RE.match(line)] if m]
+        assert namespaces, "xunit_purlin.cs declares no using directives"
+        extra = sorted(n for n in namespaces
+                       if not any(n == p or n.startswith(p + '.')
+                                  for p in allowed_prefixes))
+        assert not extra, (
+            f"xunit_purlin.cs uses {extra}, outside the .NET base class library "
+            f"and the test platform object model the logger is already built "
+            f"against; a NuGet package added here is one every consumer must "
+            f"restore")
+
+    @pytest.mark.proof("proof_common", "PROOF-31", "RULE-25", tier="integration")
+    def test_the_php_plugin_pulls_in_nothing_at_all(self):
+        deps = [(n, line.strip()) for n, line in _source_lines('phpunit_purlin.php')
+                if _PHP_DEP_RE.match(line)]
+        assert not deps, (
+            f"phpunit_purlin.php pulls in another file or namespace, so it is "
+            f"no longer the single self-contained file a project drops into "
+            f".purlin/plugins/: {deps}")
+
+    @pytest.mark.skipif(not shutil.which('node'), reason='node not available')
+    @pytest.mark.proof("proof_common", "PROOF-31", "RULE-25", tier="integration")
+    def test_jest_loads_and_runs_with_an_empty_node_modules(self, tmp_path):
+        root = tmp_path / 'proj'
+        spec_dir = _spec(root, 'feat', 'a')
+        (root / '.purlin').mkdir()
+        (root / 'node_modules').mkdir()
+
+        proc, recorded = _rooted_jest(root, False)
+        assert proc.returncode == 0, (
+            "the jest reporter must load in a project whose node_modules is "
+            f"empty:\n{proc.stdout}\n{proc.stderr}")
+        entries = json.load(open(spec_dir / 'feat.proofs-unit.json'))['proofs']
+        assert [e['id'] for e in entries] == ['PROOF-1'], entries
+
+    @pytest.mark.skipif(
+        not _node_can_run_ts(),
+        reason='node with a TS loader (tsc or type-stripping) not available')
+    @pytest.mark.proof("proof_common", "PROOF-31", "RULE-25", tier="integration")
+    def test_vitest_loads_and_runs_with_an_empty_node_modules(self, tmp_path):
+        root = tmp_path / 'proj'
+        spec_dir = _spec(root, 'feat', 'a')
+        (root / '.purlin').mkdir()
+        (root / 'node_modules').mkdir()
+
+        proc, recorded = _rooted_vitest(root, False)
+        assert proc.returncode == 0, (
+            "the vitest reporter must load in a project whose node_modules is "
+            f"empty:\n{proc.stdout}\n{proc.stderr}")
+        entries = json.load(open(spec_dir / 'feat.proofs-unit.json'))['proofs']
+        assert [e['id'] for e in entries] == ['PROOF-1'], entries

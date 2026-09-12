@@ -44,29 +44,7 @@ test_proof_marker_parsing() {
   echo -e "# Feature: my_feat\n\n## Rules\n- RULE-1: Must work" > "$tmpdir/specs/auth/my_feat.md"
 
   node -e "
-const Module = require('module');
 const fs = require('fs');
-const origLoad = Module._load;
-Module._load = function(request, parent, isMain) {
-  if (request === 'glob') {
-    return {
-      globSync: function(pattern) {
-        const results = [];
-        function walk(dir) {
-          for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-            const full = require('path').join(dir, entry.name);
-            if (entry.isDirectory()) walk(full);
-            else if (entry.name.endsWith('.md')) results.push(full);
-          }
-        }
-        const base = pattern.split('*')[0].replace(/\/$/, '') || '.';
-        if (fs.existsSync(base)) walk(base);
-        return results;
-      }
-    };
-  }
-  return origLoad.apply(this, arguments);
-};
 
 const Reporter = require('$REPORTER');
 const r = new Reporter({ rootDir: '$tmpdir' }, {});
@@ -101,29 +79,7 @@ test_all_fields_present() {
   echo -e "# Feature: my_feat\n\n## Rules\n- RULE-1: Must work" > "$tmpdir/specs/auth/my_feat.md"
 
   node -e "
-const Module = require('module');
 const fs = require('fs');
-const origLoad = Module._load;
-Module._load = function(request, parent, isMain) {
-  if (request === 'glob') {
-    return {
-      globSync: function(pattern) {
-        const results = [];
-        function walk(dir) {
-          for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-            const full = require('path').join(dir, entry.name);
-            if (entry.isDirectory()) walk(full);
-            else if (entry.name.endsWith('.md')) results.push(full);
-          }
-        }
-        const base = pattern.split('*')[0].replace(/\/$/, '') || '.';
-        if (fs.existsSync(base)) walk(base);
-        return results;
-      }
-    };
-  }
-  return origLoad.apply(this, arguments);
-};
 
 const Reporter = require('$REPORTER');
 const r = new Reporter({ rootDir: '$tmpdir' }, {});
@@ -162,29 +118,7 @@ test_proof_next_to_spec() {
   echo -e "# Feature: invoice\n\n## Rules\n- RULE-1: Must total" > "$tmpdir/specs/billing/invoice.md"
 
   node -e "
-const Module = require('module');
 const fs = require('fs');
-const origLoad = Module._load;
-Module._load = function(request, parent, isMain) {
-  if (request === 'glob') {
-    return {
-      globSync: function(pattern) {
-        const results = [];
-        function walk(dir) {
-          for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-            const full = require('path').join(dir, entry.name);
-            if (entry.isDirectory()) walk(full);
-            else if (entry.name.endsWith('.md')) results.push(full);
-          }
-        }
-        const base = pattern.split('*')[0].replace(/\/$/, '') || '.';
-        if (fs.existsSync(base)) walk(base);
-        return results;
-      }
-    };
-  }
-  return origLoad.apply(this, arguments);
-};
 
 const Reporter = require('$REPORTER');
 const r = new Reporter({ rootDir: '$tmpdir' }, {});
@@ -217,15 +151,7 @@ test_unknown_feature_fallback() {
   mkdir -p "$tmpdir/specs"
 
   node -e "
-const Module = require('module');
 const fs = require('fs');
-const origLoad = Module._load;
-Module._load = function(request, parent, isMain) {
-  if (request === 'glob') {
-    return { globSync: function() { return []; } };
-  }
-  return origLoad.apply(this, arguments);
-};
 
 const Reporter = require('$REPORTER');
 const r = new Reporter({ rootDir: '$tmpdir' }, {});
@@ -259,29 +185,7 @@ test_replace_on_rerun() {
   echo -e "# Feature: my_feat\n\n## Rules\n- RULE-1: Must work" > "$tmpdir/specs/auth/my_feat.md"
 
   node -e "
-const Module = require('module');
 const fs = require('fs');
-const origLoad = Module._load;
-Module._load = function(request, parent, isMain) {
-  if (request === 'glob') {
-    return {
-      globSync: function(pattern) {
-        const results = [];
-        function walk(dir) {
-          for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-            const full = require('path').join(dir, entry.name);
-            if (entry.isDirectory()) walk(full);
-            else if (entry.name.endsWith('.md')) results.push(full);
-          }
-        }
-        const base = pattern.split('*')[0].replace(/\/$/, '') || '.';
-        if (fs.existsSync(base)) walk(base);
-        return results;
-      }
-    };
-  }
-  return origLoad.apply(this, arguments);
-};
 
 const Reporter = require('$REPORTER');
 

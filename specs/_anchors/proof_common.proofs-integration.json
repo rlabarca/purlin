@@ -642,6 +642,249 @@
     },
     {
       "feature": "proof_common",
+      "id": "PROOF-30",
+      "rule": "RULE-24",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_a_run_leaves_no_temp_file_behind[c]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-30",
+      "rule": "RULE-24",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_a_run_leaves_no_temp_file_behind[jest]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-30",
+      "rule": "RULE-24",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_a_run_leaves_no_temp_file_behind[php]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-30",
+      "rule": "RULE-24",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_a_run_leaves_no_temp_file_behind[pytest]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-30",
+      "rule": "RULE-24",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_a_run_leaves_no_temp_file_behind[shell]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-30",
+      "rule": "RULE-24",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_a_run_leaves_no_temp_file_behind[sql]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-30",
+      "rule": "RULE-24",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_a_run_leaves_no_temp_file_behind[vitest]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-30",
+      "rule": "RULE-24",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_a_run_leaves_no_temp_file_behind[xunit]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-30",
+      "rule": "RULE-24",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_every_temp_name_is_built_from_the_writing_process_id[c]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-30",
+      "rule": "RULE-24",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_every_temp_name_is_built_from_the_writing_process_id[jest]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-30",
+      "rule": "RULE-24",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_every_temp_name_is_built_from_the_writing_process_id[php]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-30",
+      "rule": "RULE-24",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_every_temp_name_is_built_from_the_writing_process_id[pytest]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-30",
+      "rule": "RULE-24",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_every_temp_name_is_built_from_the_writing_process_id[shell]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-30",
+      "rule": "RULE-24",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_every_temp_name_is_built_from_the_writing_process_id[sql]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-30",
+      "rule": "RULE-24",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_every_temp_name_is_built_from_the_writing_process_id[vitest]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-30",
+      "rule": "RULE-24",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_every_temp_name_is_built_from_the_writing_process_id[xunit]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-30",
+      "rule": "RULE-24",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_xunit_replaces_in_one_move_rather_than_deleting_first",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-31",
+      "rule": "RULE-25",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_jest_loads_and_runs_with_an_empty_node_modules",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-31",
+      "rule": "RULE-25",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_the_node_reporters_import_only_builtins_and_their_framework[jest]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-31",
+      "rule": "RULE-25",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_the_node_reporters_import_only_builtins_and_their_framework[vitest]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-31",
+      "rule": "RULE-25",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_the_php_plugin_pulls_in_nothing_at_all",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-31",
+      "rule": "RULE-25",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_the_python_plugins_import_only_the_standard_library_and_pytest[c]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-31",
+      "rule": "RULE-25",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_the_python_plugins_import_only_the_standard_library_and_pytest[pytest]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-31",
+      "rule": "RULE-25",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_the_python_plugins_import_only_the_standard_library_and_pytest[shell]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-31",
+      "rule": "RULE-25",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_the_python_plugins_import_only_the_standard_library_and_pytest[sql]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-31",
+      "rule": "RULE-25",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_the_xunit_logger_uses_only_the_bcl_and_the_object_model",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-31",
+      "rule": "RULE-25",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_vitest_loads_and_runs_with_an_empty_node_modules",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
       "id": "PROOF-5",
       "rule": "RULE-5",
       "test_file": "dev/test_multilang_proof_plugins.py",

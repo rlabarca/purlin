@@ -313,32 +313,12 @@ run "proof_plugins_pytest" "PROOF-4" "RULE-4" "pytest_configure registers marker
 
 echo "--- Jest-specific ---"
 
-# Helper: create a node script that mocks 'glob' and exercises the reporter
+# Helper: create a node script that exercises the reporter as shipped
+# (proof_common RULE-25: no dependency outside node's builtins to stub)
 jest_run() {
   local tmpdir="$1" test_file="$2" title="$3" status="$4"
   node -e "
-const Module = require('module');
-const fs = require('fs');
 const path = require('path');
-const origLoad = Module._load;
-Module._load = function(request, parent, isMain) {
-  if (request === 'glob') {
-    return { globSync: function(pattern) {
-      const results = [];
-      function walk(dir) {
-        for (const e of fs.readdirSync(dir, {withFileTypes:true})) {
-          const full = path.join(dir, e.name);
-          if (e.isDirectory()) walk(full);
-          else if (e.name.endsWith('.md')) results.push(full);
-        }
-      }
-      const base = pattern.split('*')[0].replace(/\/$/, '') || '.';
-      if (fs.existsSync(base)) walk(base);
-      return results;
-    }};
-  }
-  return origLoad.apply(this, arguments);
-};
 const Reporter = require('$JEST_REPORTER');
 const r = new Reporter({rootDir: '$tmpdir'}, {});
 r.onTestResult(null, {
@@ -372,13 +352,7 @@ test_jest_no_marker() {
   local d=$(mktemp -d)
   mkdir -p "$d/specs"
   node -e "
-const Module = require('module');
 const fs = require('fs');
-const origLoad = Module._load;
-Module._load = function(r) {
-  if (r === 'glob') return {globSync: function() {return [];}};
-  return origLoad.apply(this, arguments);
-};
 const Reporter = require('$JEST_REPORTER');
 const r = new Reporter({rootDir: '$d'}, {});
 r.onTestResult(null, {
@@ -415,28 +389,7 @@ test_jest_status() {
   mkdir -p "$d/specs/a"
   echo -e "# Feature: feat\n\n## Rules\n- RULE-1: X\n- RULE-2: Y" > "$d/specs/a/feat.md"
   node -e "
-const Module = require('module');
-const fs = require('fs');
 const path = require('path');
-const origLoad = Module._load;
-Module._load = function(request) {
-  if (request === 'glob') {
-    return { globSync: function(pattern) {
-      const results = [];
-      function walk(dir) {
-        for (const e of fs.readdirSync(dir, {withFileTypes:true})) {
-          const full = path.join(dir, e.name);
-          if (e.isDirectory()) walk(full);
-          else if (e.name.endsWith('.md')) results.push(full);
-        }
-      }
-      const base = pattern.split('*')[0].replace(/\/$/, '') || '.';
-      if (fs.existsSync(base)) walk(base);
-      return results;
-    }};
-  }
-  return origLoad.apply(this, arguments);
-};
 const Reporter = require('$JEST_REPORTER');
 const r = new Reporter({rootDir: '$d'}, {});
 r.onTestResult(null, {

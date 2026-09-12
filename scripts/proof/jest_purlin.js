@@ -47,7 +47,6 @@ const { execFileSync } = require("child_process");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const { globSync } = require("glob");
 
 const PROOF_MARKER_RE =
   /\[proof:(\w+):(PROOF-\d+):(RULE-\d+)(?::(\w+))?(?::on\(([^)]*)\))?\]/;
@@ -101,6 +100,29 @@ function findRoot(start) {
 // `.purlin/`, and `start` itself when no ancestor holds either.
 function projectRoot(start) {
   return findRoot(start) || path.resolve(start);
+}
+
+// Every `specs/**/*.md` path under `root`, project-relative with `/`
+// separators. RULE-25: a walk over `fs.readdirSync(..., {withFileTypes: true})`
+// rather than a glob package, so the reporter needs no npm dependency beyond
+// node's own builtins and runs in a project with an empty `node_modules`.
+function findSpecFiles(root) {
+  const out = [];
+  const walk = (relDir) => {
+    let entries;
+    try {
+      entries = fs.readdirSync(path.join(root, relDir), { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      const rel = relDir ? `${relDir}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) walk(rel);
+      else if (entry.isFile() && entry.name.endsWith(".md")) out.push(rel);
+    }
+  };
+  walk("specs");
+  return out.sort();
 }
 
 // ── The run marker (proof_common RULE-19) ───────────────────────────────────
@@ -330,7 +352,7 @@ class PurlinProofReporter {
     // root so the scan finds the project's specs from a subdirectory too.
     const root = this.root;
     const specDirs = {};
-    const specs = globSync("specs/**/*.md", { cwd: root });
+    const specs = findSpecFiles(root);
     for (const spec of specs) {
       const stem = path.basename(spec, ".md");
       specDirs[stem] = path.dirname(spec);
@@ -387,8 +409,10 @@ class PurlinProofReporter {
         ? { tier, platform, proofs: ordered }
         : { tier, proofs: ordered };
 
-      // Atomic write: tmp + rename
-      const tmpPath = filePath + ".tmp";
+      // Atomic write: tmp + rename. RULE-24: the temp name carries this
+      // process id, so two plugins writing the same file concurrently
+      // never share a temp path.
+      const tmpPath = `${filePath}.${process.pid}.tmp`;
       fs.writeFileSync(tmpPath, JSON.stringify(payload, null, 2) + "\n");
       fs.renameSync(tmpPath, filePath);
     }

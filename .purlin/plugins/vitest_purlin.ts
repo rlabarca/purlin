@@ -51,7 +51,6 @@ import { execFileSync } from "child_process";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { globSync } from "glob";
 
 interface ProofEntry {
   feature: string;
@@ -104,6 +103,30 @@ function findRoot(start: string): string | null {
 // `.purlin/`, and `start` itself when no ancestor holds either.
 function projectRoot(start: string): string {
   return findRoot(start) || path.resolve(start);
+}
+
+// Every `specs/**/*.md` path under `root`, project-relative with `/`
+// separators. RULE-25: a walk over `fs.readdirSync(..., {withFileTypes: true})`
+// rather than a glob package, so the reporter needs no npm dependency beyond
+// node's own builtins and `vitest` itself, and runs in a project with an empty
+// `node_modules`.
+function findSpecFiles(root: string): string[] {
+  const out: string[] = [];
+  const walk = (relDir: string): void => {
+    let entries: fs.Dirent[];
+    try {
+      entries = fs.readdirSync(path.join(root, relDir), { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      const rel = relDir ? `${relDir}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) walk(rel);
+      else if (entry.isFile() && entry.name.endsWith(".md")) out.push(rel);
+    }
+  };
+  walk("specs");
+  return out.sort();
 }
 
 // ── The run marker (proof_common RULE-19) ───────────────────────────────────
@@ -393,7 +416,7 @@ class PurlinVitestReporter implements Reporter {
     // root so the scan finds the project's specs from a subdirectory too.
     const root = this.root;
     const specDirs: Record<string, string> = {};
-    const specs = globSync("specs/**/*.md", { cwd: root });
+    const specs = findSpecFiles(root);
     for (const spec of specs) {
       const stem = path.basename(spec, ".md");
       specDirs[stem] = path.dirname(spec);
@@ -453,8 +476,10 @@ class PurlinVitestReporter implements Reporter {
         ? { tier, platform, proofs: ordered }
         : { tier, proofs: ordered };
 
-      // Atomic write: tmp + rename
-      const tmpPath = filePath + ".tmp";
+      // Atomic write: tmp + rename. RULE-24: the temp name carries this
+      // process id, so two plugins writing the same file concurrently
+      // never share a temp path.
+      const tmpPath = `${filePath}.${process.pid}.tmp`;
       fs.writeFileSync(tmpPath, JSON.stringify(payload, null, 2) + "\n");
       fs.renameSync(tmpPath, filePath);
     }

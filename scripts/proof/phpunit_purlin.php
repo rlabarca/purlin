@@ -356,8 +356,10 @@ function write_proofs(array $proofs_by_key, string $root): void {
         $payload['proofs'] = sort_proof_entries(
             array_values(array_merge($kept, $new_entries)));
 
-        // Atomic write
-        $tmp = $path . '.tmp';
+        // Atomic write. RULE-24: the temp name carries this process id, so
+        // two plugins writing the same file concurrently never share a
+        // temp path.
+        $tmp = $path . '.' . getmypid() . '.tmp';
         file_put_contents($tmp, json_encode(
             $payload,
             JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES

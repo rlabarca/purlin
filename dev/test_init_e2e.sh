@@ -557,29 +557,7 @@ if command -v node >/dev/null 2>&1; then
 
   p15_result="fail"
   if node -e "
-const Module = require('module');
 const fs = require('fs');
-const origLoad = Module._load;
-Module._load = function(request, parent, isMain) {
-  if (request === 'glob') {
-    return {
-      globSync: function(pattern) {
-        const results = [];
-        function walk(dir) {
-          for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-            const full = require('path').join(dir, entry.name);
-            if (entry.isDirectory()) walk(full);
-            else if (entry.name.endsWith('.md')) results.push(full);
-          }
-        }
-        const base = pattern.split('*')[0].replace(/\/$/, '') || '.';
-        if (fs.existsSync(base)) walk(base);
-        return results;
-      }
-    };
-  }
-  return origLoad.apply(this, arguments);
-};
 
 const Reporter = require('$SCAFFOLDED_REPORTER');
 const r = new Reporter({ rootDir: '$TMP15' }, {});
@@ -1009,29 +987,7 @@ if command -v node >/dev/null 2>&1; then
   # Exercise the scaffolded reporter
   p27_proofs=false
   if node -e "
-const Module = require('module');
 const fs = require('fs');
-const origLoad = Module._load;
-Module._load = function(request, parent, isMain) {
-  if (request === 'glob') {
-    return {
-      globSync: function(pattern) {
-        const results = [];
-        function walk(dir) {
-          for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-            const full = require('path').join(dir, entry.name);
-            if (entry.isDirectory()) walk(full);
-            else if (entry.name.endsWith('.md')) results.push(full);
-          }
-        }
-        const base = pattern.split('*')[0].replace(/\/$/, '') || '.';
-        if (fs.existsSync(base)) walk(base);
-        return results;
-      }
-    };
-  }
-  return origLoad.apply(this, arguments);
-};
 
 const Reporter = require('$SCAFFOLDED_REPORTER_27');
 const r = new Reporter({ rootDir: '$TMP27' }, {});

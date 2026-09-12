@@ -350,10 +350,13 @@ namespace Purlin
                 // Atomic write: tmp + rename.
                 string fullDir = Path.GetDirectoryName(Path.GetFullPath(path)) ?? ".";
                 Directory.CreateDirectory(fullDir);
-                string tmp = path + ".tmp";
+                // RULE-24: the temp name carries this process id, so two
+                // plugins writing the same file concurrently never share a
+                // temp path, and the overwrite is one atomic move rather
+                // than a delete followed by a move.
+                string tmp = path + "." + Environment.ProcessId + ".tmp";
                 File.WriteAllText(tmp, json);
-                if (File.Exists(path)) File.Delete(path);
-                File.Move(tmp, path);
+                File.Move(tmp, path, true);
                 filesWritten++;
             }
 
