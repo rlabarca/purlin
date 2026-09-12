@@ -377,10 +377,6 @@ PLAIN_DESCRIPTION_INPUT = (
     "Only JPEG, PNG and PDF are allowed; anything else gets HTTP 415."
 )
 
-VAGUE_DESCRIPTION_INPUT = (
-    "Product search with filters. Make it fast and let people narrow it down."
-)
-
 # The six separate requirements the PRD scenario was written from.
 PRD_REQUIREMENTS = [
     "Step 1 reviews the cart",
@@ -389,12 +385,6 @@ PRD_REQUIREMENTS = [
     "A declined card returns the shopper to Step 2",
     "The cart survives a payment retry",
     "The confirmation email goes out within a minute",
-]
-
-# Each complaint and the literal the rule answering it must carry.
-CUSTOMER_COMPLAINTS = [
-    ("The dashboard takes forever to load once I have a lot of features", "2 seconds"),
-    ("Paging through the feature list reloads everything", "25 items per page"),
 ]
 
 ALL_SCENARIOS = {
@@ -536,32 +526,6 @@ def test_prd_scenario_requires_anchor_counts_toward_coverage(tmp_path):
     )
 
 
-@pytest.mark.proof("skill_spec_from_code", "PROOF-25", "RULE-16", tier="e2e")
-def test_vague_input_assumed_tags_carry_context(tmp_path):
-    """Only the (assumed — <context>) form is counted; a bare tag is not."""
-    assert 'fast' in VAGUE_DESCRIPTION_INPUT, "The vague input states no values"
-    tagged = re.findall(r'\(assumed — user said "([^"]+)"\)', VAGUE_INPUT_SPEC)
-    assert len(tagged) == 2, f"Expected 2 context-carrying tags, got {tagged}"
-    assert all(context.strip() for context in tagged), f"Empty context in {tagged}"
-
-    with_context = tmp_path / 'with_context'
-    _make_project(with_context, specs={'specs/search/search.md': VAGUE_INPUT_SPEC})
-    block = _feature_block(sync_status(str(with_context)), 'search')
-    assert ASSUMED_ADVISORY_2 in block, (
-        f"Both context-carrying tags should be counted, got:\n{block}"
-    )
-
-    # Same two rules, context stripped: the bare form RULE-16 forbids.
-    bare = re.sub(r'\(assumed — [^)]*\)', '(assumed)', VAGUE_INPUT_SPEC)
-    assert bare.count('(assumed)') == 2, "The stripped fixture should carry 2 bare tags"
-    without_context = tmp_path / 'without_context'
-    _make_project(without_context, specs={'specs/search/search.md': bare})
-    bare_block = _feature_block(sync_status(str(without_context)), 'search')
-    assert '(assumed) values' not in bare_block, (
-        f"A bare (assumed) with no context must not count, got:\n{bare_block}"
-    )
-
-
 @pytest.mark.proof("skill_spec_from_code", "PROOF-26", "RULE-17", tier="e2e")
 def test_assumed_tagged_rules_still_parse(tmp_path):
     """A rule carrying an (assumed) tag is still counted, printed and planned."""
@@ -584,37 +548,6 @@ def test_assumed_tagged_rules_still_parse(tmp_path):
     assert ASSUMED_ADVISORY_2 in block, (
         f"The 2 tagged rules should draw the assumed advisory, got:\n{block}"
     )
-
-
-@pytest.mark.proof("skill_spec_from_code", "PROOF-27", "RULE-18", tier="e2e")
-def test_customer_feedback_has_specific_thresholds(tmp_path):
-    """Each quoted complaint lands on a rule carrying its threshold."""
-    _make_project(tmp_path, specs={
-        'specs/dashboard/dashboard_load.md': CUSTOMER_FEEDBACK_SPEC,
-    })
-    block = _feature_block(sync_status(str(tmp_path)), 'dashboard_load')
-    assert 'dashboard_load: 0/4 rules proved' in block, (
-        f"Expected the 4 rules the complaints became, got:\n{block}"
-    )
-
-    rules = dict(_parse_rules(CUSTOMER_FEEDBACK_SPEC))
-    # The slowness complaint becomes a numeric latency bound.
-    latency = re.search(r'under (\d+) seconds', rules['RULE-1'])
-    assert latency and latency.group(1) == '2', (
-        f"RULE-1 should bound the slow load at 2 seconds, got: {rules['RULE-1']!r}"
-    )
-    # Every complaint is answered by exactly one rule carrying its literal.
-    for complaint, expected in CUSTOMER_COMPLAINTS:
-        matches = [rid for rid, text in rules.items() if expected in text]
-        assert len(matches) == 1, (
-            f"Complaint {complaint!r} should map to one rule carrying {expected!r}, "
-            f"got {matches}"
-        )
-    # No complaint survives as prose: every rule carries a number.
-    for rule_id, rule_text in rules.items():
-        assert re.search(r'\d', rule_text), (
-            f"{rule_id} carries no threshold: {rule_text!r}"
-        )
 
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-28", "RULE-19", tier="e2e")

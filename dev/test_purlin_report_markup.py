@@ -194,6 +194,7 @@ class TestModalHelper:
 
     @pytest.mark.proof("purlin_report", "PROOF-43", "RULE-41", tier="integration")
     def test_one_helper_mounted_on_the_body_with_the_aria_contract(self):
+        """The markup half of RULE-41: PROOF-44 and PROOF-50 drive the runtime half."""
         html = _html()
 
         for sig in ('function openModal(title, bodyHtml, footHtml) {',
@@ -202,13 +203,24 @@ class TestModalHelper:
             assert html.count(sig) == 1, (
                 f"expected exactly one definition of {sig!r}, got {html.count(sig)}")
 
-        assert 'document.body.appendChild(overlay)' in html, \
-            "the overlay must be appended to document.body"
+        assert html.count('document.body.appendChild(overlay)') == 1, (
+            "the overlay must be appended to document.body exactly once, got "
+            f"{html.count('document.body.appendChild(overlay)')}")
         assert not re.search(r'app\.appendChild\(\s*overlay', html), \
             "the overlay must never be mounted inside #app, which render() rewrites"
 
-        for attr in ('role="dialog"', 'aria-modal="true"', 'aria-labelledby="modal-title"'):
-            assert attr in html, f"the dialog must carry {attr}"
+        # Every dialog on the page goes through the one helper: the aria contract
+        # appears exactly once in the file and that one occurrence is inside
+        # openModal, so no second dialog is hand-rolled anywhere else.
+        start = html.index('function openModal(title, bodyHtml, footHtml) {')
+        helper = html[start:html.index('\n  }', start)]
+        for attr in ('role="dialog"', 'aria-modal="true"',
+                     'aria-labelledby="modal-title"', '<h2 id="modal-title">'):
+            assert html.count(attr) == 1, (
+                f"{attr} must appear exactly once in the page, got "
+                f"{html.count(attr)}: a second dialog would bypass openModal")
+            assert attr in helper, (
+                f"the dialog must carry {attr}, emitted by openModal")
 
         m = re.search(r'function render\(\) \{\s*(?:/\*.*?\*/\s*)?(.+?)\n', html, re.DOTALL)
         assert m, "render() not found"

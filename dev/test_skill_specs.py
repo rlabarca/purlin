@@ -1259,6 +1259,58 @@ class TestSkillSpec:
         assert 'purlin:build' in body and 'purlin:test' in body, \
             "exit criteria must print the next-step directive for the current state"
 
+    @pytest.mark.proof("skill_spec", "PROOF-12", "RULE-11")
+    def test_assumption_tagging_is_mandatory_with_context(self):
+        """Re-homed from skill_spec_from_code RULE-16: purlin:spec is the skill that
+        tags an inferred value, and spec-from-code forbids the tag outright."""
+        content = _read('spec')
+        assert '**Assumption tagging (mandatory):**' in content, \
+            "spec SKILL.md must head the tagging paragraph 'Assumption tagging (mandatory)'"
+        para = content.split('**Assumption tagging (mandatory):**', 1)[1]
+        para = para.split('## Step 6', 1)[0]
+        assert re.search(r'(?i)review each one', para), \
+            "the tagging paragraph must order every extracted rule reviewed"
+        for wording in ('fast', 'secure', 'handles errors'):
+            tag = '(assumed — user said "%s")' % wording
+            assert tag in para, \
+                f"the worked examples must spell the tag in full: missing {tag!r}"
+        # The explicit-value counterexamples carry no tag at all.
+        for explicit in ('RULE-3: Under 200ms', 'RULE-4: argon2 hashing'):
+            line = [ln for ln in para.splitlines() if explicit in ln]
+            assert len(line) == 1, \
+                f"expected one explicit-value counterexample line for {explicit!r}, got {line}"
+            assert '(assumed' not in line[0], \
+                f"an explicitly stated value must draw no tag, got {line[0]!r}"
+
+    @pytest.mark.proof("skill_spec", "PROOF-13", "RULE-12")
+    def test_customer_feedback_is_translated_into_rules(self):
+        """Re-homed from skill_spec_from_code RULE-18: spec-from-code reads code,
+        never customer feedback, so the translation belongs to purlin:spec."""
+        content = _read('spec')
+        accept = content.split('Accept ANY of these input types', 1)
+        assert len(accept) == 2, "spec SKILL.md must accept any input type in Step 1"
+        inputs = accept[1].split('**If a spec name was given**', 1)[0]
+        assert '- Customer feedback or feature request' in inputs, \
+            "Step 1 must accept customer feedback or a feature request as input"
+
+        table = content.split('When extracting rules from unstructured input', 1)
+        assert len(table) == 2, "spec SKILL.md must carry the rule-extraction table"
+        rows = table[1].split('**Assumption tagging', 1)[0]
+        boundary = [ln for ln in rows.splitlines()
+                    if '"fast", "under N seconds", "real-time"' in ln]
+        assert len(boundary) == 1, \
+            f"expected one boundary-condition signal row, got {boundary}"
+        assert 'Boundary condition' in boundary[0], \
+            f"a speed complaint must map to a Boundary condition, got {boundary[0]!r}"
+        assert 'RULE: API response time under 200ms at p95' in boundary[0], \
+            f"the boundary example must carry a numeric bound, got {boundary[0]!r}"
+        forbidden = [ln for ln in rows.splitlines()
+                     if '"never", "don\'t", "cannot", "forbidden"' in ln]
+        assert len(forbidden) == 1, \
+            f"expected one prohibition signal row, got {forbidden}"
+        assert 'FORBIDDEN pattern' in forbidden[0], \
+            f"a prohibition must map to a FORBIDDEN pattern, got {forbidden[0]!r}"
+
 
 # ── skill_spec_from_code ──────────────────────────────────────────────
 

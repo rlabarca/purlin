@@ -35,10 +35,6 @@ PLAIN_DESCRIPTION_INPUT = (
     "24 hours; after that it returns an error."
 )
 
-VAGUE_DESCRIPTION_INPUT = (
-    "We need password reset. Make the link expire quickly and handle expiry."
-)
-
 # The six separate requirements the PRD scenario was written from.
 PRD_REQUIREMENTS = [
     "The cart page lists every item with quantities and subtotals",
@@ -47,12 +43,6 @@ PRD_REQUIREMENTS = [
     "Stripe is reached over TLS 1.2 or higher",
     "A successful payment creates a confirmed order",
     "A failed payment shows the processor error and creates no order",
-]
-
-# Each complaint and the literal the rule answering it must carry.
-CUSTOMER_COMPLAINTS = [
-    ("Search takes forever, I wait several seconds for results", "500ms"),
-    ("Search does not handle typos: 'pyhton' finds nothing", "fuzzy matching"),
 ]
 
 
@@ -504,32 +494,6 @@ class TestVagueDescription:
     def teardown_method(self):
         shutil.rmtree(self.tmp_dir)
 
-    @pytest.mark.proof("skill_spec_from_code", "PROOF-25", "RULE-16", tier="e2e")
-    def test_assumed_tags_present(self):
-        """Only the (assumed — <context>) form is counted; a bare tag is not."""
-        assert 'quickly' in VAGUE_DESCRIPTION_INPUT, "The vague input states no values"
-        tagged = re.findall(r'\(assumed — user said "([^"]+)"\)', VAGUE_DESCRIPTION_SPEC)
-        assert len(tagged) == 2, f"Expected 2 context-carrying tags, got {tagged}"
-        assert all(context.strip() for context in tagged), f"Empty context in {tagged}"
-
-        block = _feature_block(sync_status(self.tmp_dir), 'password_reset_vague')
-        assert ASSUMED_ADVISORY_2 in block, \
-            f"Both context-carrying tags should be counted, got:\n{block}"
-
-        # Same two rules, context stripped: the bare form RULE-16 forbids.
-        bare = re.sub(r'\(assumed — [^)]*\)', '(assumed)', VAGUE_DESCRIPTION_SPEC)
-        assert bare.count('(assumed)') == 2, "The stripped fixture should carry 2 bare tags"
-        bare_dir = tempfile.mkdtemp()
-        try:
-            _make_project(bare_dir, specs={
-                'specs/auth/password_reset_vague.md': bare,
-            })
-            bare_block = _feature_block(sync_status(bare_dir), 'password_reset_vague')
-            assert '(assumed) values' not in bare_block, \
-                f"A bare (assumed) with no context must not count, got:\n{bare_block}"
-        finally:
-            shutil.rmtree(bare_dir)
-
     @pytest.mark.proof("skill_spec_from_code", "PROOF-26", "RULE-17", tier="e2e")
     def test_assumed_tagged_rules_still_parse(self):
         """A rule carrying an (assumed) tag is still counted, printed and planned."""
@@ -547,41 +511,6 @@ class TestVagueDescription:
             f"Each rule keeps its planned proof, got {planned}"
         assert ASSUMED_ADVISORY_2 in block, \
             f"The 2 tagged rules should draw the assumed advisory, got:\n{block}"
-
-
-# ---------------------------------------------------------------------------
-# Tests: Scenario 4 — Customer Feedback
-# ---------------------------------------------------------------------------
-
-class TestCustomerFeedback:
-
-    def setup_method(self):
-        self.tmp_dir = tempfile.mkdtemp()
-        _make_project(self.tmp_dir, specs={
-            'specs/search/search_improvements.md': CUSTOMER_FEEDBACK_SPEC,
-        })
-
-    def teardown_method(self):
-        shutil.rmtree(self.tmp_dir)
-
-    @pytest.mark.proof("skill_spec_from_code", "PROOF-27", "RULE-18", tier="e2e")
-    def test_feedback_translated_to_specific_rules(self):
-        """Each quoted complaint lands on a rule carrying its threshold."""
-        block = _feature_block(sync_status(self.tmp_dir), 'search_improvements')
-        assert 'search_improvements: 0/4 rules proved' in block, \
-            f"Expected the 4 rules the complaints became, got:\n{block}"
-
-        rules = dict(_parse_rules(CUSTOMER_FEEDBACK_SPEC))
-        # The slowness complaint becomes a numeric latency bound.
-        latency = re.search(r'under (\d+)ms', rules['RULE-1'])
-        assert latency and latency.group(1) == '500', \
-            f"RULE-1 should bound search latency at 500ms, got: {rules['RULE-1']!r}"
-        # Every complaint is answered by exactly one rule carrying its literal.
-        for complaint, expected in CUSTOMER_COMPLAINTS:
-            matches = [rid for rid, text in rules.items() if expected in text]
-            assert len(matches) == 1, \
-                (f"Complaint {complaint!r} should map to one rule carrying "
-                 f"{expected!r}, got {matches}")
 
 
 # ---------------------------------------------------------------------------

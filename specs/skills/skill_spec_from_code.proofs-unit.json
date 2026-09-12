@@ -5,8 +5,8 @@
       "feature": "skill_spec_from_code",
       "id": "PROOF-1",
       "rule": "RULE-1",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_has_frontmatter",
+      "test_file": "dev/test_e2e_ui_extraction.py",
+      "test_name": "test_skill_has_yaml_frontmatter",
       "status": "pass",
       "tier": "unit"
     },
@@ -14,8 +14,8 @@
       "feature": "skill_spec_from_code",
       "id": "PROOF-2",
       "rule": "RULE-2",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_has_usage_section",
+      "test_file": "dev/test_e2e_ui_extraction.py",
+      "test_name": "test_skill_has_usage_section",
       "status": "pass",
       "tier": "unit"
     },
@@ -23,8 +23,8 @@
       "feature": "skill_spec_from_code",
       "id": "PROOF-3",
       "rule": "RULE-3",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_name_matches_directory",
+      "test_file": "dev/test_e2e_ui_extraction.py",
+      "test_name": "test_skill_name_matches_directory",
       "status": "pass",
       "tier": "unit"
     },
@@ -32,17 +32,26 @@
       "feature": "skill_spec_from_code",
       "id": "PROOF-4",
       "rule": "RULE-4",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_has_tier_review",
+      "test_file": "dev/test_e2e_ui_extraction.py",
+      "test_name": "test_skill_has_tier_review_instructions",
       "status": "pass",
       "tier": "unit"
     },
     {
       "feature": "skill_spec_from_code",
-      "id": "PROOF-5",
+      "id": "PROOF-9",
       "rule": "RULE-9",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_phase4_cleanup_offer_and_overwrite_in_place",
+      "test_file": "dev/test_e2e_ui_extraction.py",
+      "test_name": "test_skill_has_migration_cleanup",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-32",
+      "rule": "RULE-23",
+      "test_file": "dev/test_e2e_ui_extraction.py",
+      "test_name": "test_skill_has_contract_extraction",
       "status": "pass",
       "tier": "unit"
     },
@@ -50,8 +59,26 @@
       "feature": "skill_spec_from_code",
       "id": "PROOF-34",
       "rule": "RULE-24",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_draft_and_evaluate_with_rebuild_test",
+      "test_file": "dev/test_e2e_ui_extraction.py",
+      "test_name": "test_skill_has_draft_evaluate_and_contract_filter",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-35",
+      "rule": "RULE-25",
+      "test_file": "dev/test_e2e_ui_extraction.py",
+      "test_name": "test_skill_reads_impl_deviations",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-37",
+      "rule": "RULE-26",
+      "test_file": "dev/test_e2e_ui_extraction.py",
+      "test_name": "test_skill_reads_discoveries_bugs",
       "status": "pass",
       "tier": "unit"
     },
@@ -59,8 +86,8 @@
       "feature": "skill_spec_from_code",
       "id": "PROOF-39",
       "rule": "RULE-27",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_discoveries_figma_preserved_as_visual_reference",
+      "test_file": "dev/test_e2e_ui_extraction.py",
+      "test_name": "test_skill_preserves_figma_references",
       "status": "pass",
       "tier": "unit"
     },
@@ -68,53 +95,8 @@
       "feature": "skill_spec_from_code",
       "id": "PROOF-40",
       "rule": "RULE-28",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_quality_guide_coverage_dimensions_not_fixed_count",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-41",
-      "rule": "RULE-29",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_no_single_spec_category_folders",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-42",
-      "rule": "RULE-30",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_tier_review_inverse_check",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-43",
-      "rule": "RULE-31",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_step11_proof_coupling_check",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-44",
-      "rule": "RULE-32",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_e2e_runner_reality_check",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-45",
-      "rule": "RULE-30",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_quality_guide_has_e2e_flow_section",
+      "test_file": "dev/test_e2e_ui_extraction.py",
+      "test_name": "test_quality_guide_uses_coverage_dimensions",
       "status": "pass",
       "tier": "unit"
     },
@@ -257,8 +239,8 @@
       "feature": "skill_spec_from_code",
       "id": "PROOF-1",
       "rule": "RULE-1",
-      "test_file": "dev/test_e2e_ui_extraction.py",
-      "test_name": "test_skill_has_yaml_frontmatter",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_has_frontmatter",
       "status": "pass",
       "tier": "unit"
     },
@@ -266,8 +248,8 @@
       "feature": "skill_spec_from_code",
       "id": "PROOF-2",
       "rule": "RULE-2",
-      "test_file": "dev/test_e2e_ui_extraction.py",
-      "test_name": "test_skill_has_usage_section",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_has_usage_section",
       "status": "pass",
       "tier": "unit"
     },
@@ -275,8 +257,8 @@
       "feature": "skill_spec_from_code",
       "id": "PROOF-3",
       "rule": "RULE-3",
-      "test_file": "dev/test_e2e_ui_extraction.py",
-      "test_name": "test_skill_name_matches_directory",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_name_matches_directory",
       "status": "pass",
       "tier": "unit"
     },
@@ -284,26 +266,17 @@
       "feature": "skill_spec_from_code",
       "id": "PROOF-4",
       "rule": "RULE-4",
-      "test_file": "dev/test_e2e_ui_extraction.py",
-      "test_name": "test_skill_has_tier_review_instructions",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_has_tier_review",
       "status": "pass",
       "tier": "unit"
     },
     {
       "feature": "skill_spec_from_code",
-      "id": "PROOF-9",
+      "id": "PROOF-5",
       "rule": "RULE-9",
-      "test_file": "dev/test_e2e_ui_extraction.py",
-      "test_name": "test_skill_has_migration_cleanup",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-32",
-      "rule": "RULE-23",
-      "test_file": "dev/test_e2e_ui_extraction.py",
-      "test_name": "test_skill_has_contract_extraction",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_phase4_cleanup_offer_and_overwrite_in_place",
       "status": "pass",
       "tier": "unit"
     },
@@ -311,26 +284,8 @@
       "feature": "skill_spec_from_code",
       "id": "PROOF-34",
       "rule": "RULE-24",
-      "test_file": "dev/test_e2e_ui_extraction.py",
-      "test_name": "test_skill_has_draft_evaluate_and_contract_filter",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-35",
-      "rule": "RULE-25",
-      "test_file": "dev/test_e2e_ui_extraction.py",
-      "test_name": "test_skill_reads_impl_deviations",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-37",
-      "rule": "RULE-26",
-      "test_file": "dev/test_e2e_ui_extraction.py",
-      "test_name": "test_skill_reads_discoveries_bugs",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_draft_and_evaluate_with_rebuild_test",
       "status": "pass",
       "tier": "unit"
     },
@@ -338,8 +293,8 @@
       "feature": "skill_spec_from_code",
       "id": "PROOF-39",
       "rule": "RULE-27",
-      "test_file": "dev/test_e2e_ui_extraction.py",
-      "test_name": "test_skill_preserves_figma_references",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_discoveries_figma_preserved_as_visual_reference",
       "status": "pass",
       "tier": "unit"
     },
@@ -347,8 +302,53 @@
       "feature": "skill_spec_from_code",
       "id": "PROOF-40",
       "rule": "RULE-28",
-      "test_file": "dev/test_e2e_ui_extraction.py",
-      "test_name": "test_quality_guide_uses_coverage_dimensions",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_quality_guide_coverage_dimensions_not_fixed_count",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-41",
+      "rule": "RULE-29",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_no_single_spec_category_folders",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-42",
+      "rule": "RULE-30",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_tier_review_inverse_check",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-43",
+      "rule": "RULE-31",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_step11_proof_coupling_check",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-44",
+      "rule": "RULE-32",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_e2e_runner_reality_check",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_spec_from_code",
+      "id": "PROOF-45",
+      "rule": "RULE-30",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_quality_guide_has_e2e_flow_section",
       "status": "pass",
       "tier": "unit"
     }
