@@ -201,6 +201,15 @@
     },
     {
       "feature": "pre_push_hook",
+      "id": "PROOF-32",
+      "rule": "RULE-6",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_e2e_tier_is_deselected_by_the_unit_arm",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
       "id": "PROOF-4",
       "rule": "RULE-4",
       "test_file": "dev/test_pre_push_hook.py",

@@ -17,6 +17,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import time
 
 import pytest
 
@@ -567,7 +568,7 @@ class TestRule6UnitTierOnly:
 
     @pytest.mark.proof("pre_push_hook", "PROOF-6", "RULE-6", tier="integration")
     def test_unit_test_runs_integration_skipped(self, tmp_path):
-        """The hook invokes pytest with -m 'not integration'. A plain test
+        """The hook invokes pytest with -m 'not integration and not e2e'. A plain test
         function must run (sentinel created); a function marked @integration
         must be skipped (no sentinel)."""
         tmpdir = str(tmp_path)
@@ -598,7 +599,7 @@ class TestRule6UnitTierOnly:
         _run_hook(tmpdir)
 
         assert os.path.exists(sentinel_unit), (
-            "Unit test did not run: the hook should invoke pytest -m 'not integration'")
+            "Unit test did not run: the hook should invoke pytest -m 'not integration and not e2e'")
         assert not os.path.exists(sentinel_int), (
             "Integration-marked test ran: the hook should have excluded it")
 
@@ -626,6 +627,70 @@ class TestRule6UnitTierOnly:
             f"The block must name the runner that crashed:\n{output}")
         assert "PUSH BLOCKED" in output, f"{output}"
 
+
+    @pytest.mark.proof("pre_push_hook", "PROOF-32", "RULE-6", tier="integration")
+    def test_e2e_tier_is_deselected_by_the_unit_arm(self, tmp_path):
+        """The unit arm must actually skip the slow tiers, measured on a clock.
+
+        The project's conftest.py is the real pytest proof plugin, so a proof
+        marker's tier becomes a pytest marker (proof_plugins_pytest RULE-5).
+        One unit-tier proof passes instantly, one e2e-tier proof sleeps 2
+        seconds. If the arm's `-m` expression selects what it claims to, the
+        whole hook returns in under 2 seconds; re-tagging the sleeper as
+        unit-tier puts the same 2 seconds back, which is what tells the two
+        runs apart rather than a timing guess.
+        """
+        tmpdir = str(tmp_path)
+        _create_test_project(tmpdir, num_rules=2)
+        _write_proof_file(tmpdir, "test_feature",
+                          [("PROOF-1", "RULE-1", "pass"),
+                           ("PROOF-2", "RULE-2", "pass")])
+        _set_config_field(tmpdir, "test_framework", "pytest")
+        # The real plugin, wired the way a project wires it.
+        shutil.copy2(os.path.join(PROJECT_ROOT, "scripts", "proof",
+                                  "pytest_purlin.py"),
+                     os.path.join(tmpdir, "conftest.py"))
+
+        test_path = os.path.join(tmpdir, "test_tiers.py")
+
+        def _write(slow_tier: str) -> None:
+            with open(test_path, "w") as fh:
+                fh.write(
+                    "import time\n"
+                    "import pytest\n\n"
+                    '@pytest.mark.proof("test_feature", "PROOF-1", "RULE-1")\n'
+                    "def test_fast():\n"
+                    "    assert True\n\n"
+                    '@pytest.mark.proof("test_feature", "PROOF-2", "RULE-2",'
+                    f' tier="{slow_tier}")\n'
+                    "def test_slow():\n"
+                    "    time.sleep(2)\n"
+                    "    assert True\n")
+
+        _write("e2e")
+        _commit(tmpdir, "tiered tests")
+        start = time.monotonic()
+        exit_code, output = _run_hook(tmpdir)
+        fast_elapsed = time.monotonic() - start
+
+        assert exit_code == 0, f"hook blocked the push:\n{output}"
+        assert "running unit-tier tests (pytest)" in output, output
+        assert fast_elapsed < 2.0, (
+            f"the unit arm took {fast_elapsed:.2f}s, so the 2 second e2e-tier "
+            f"test ran; -m did not deselect it:\n{output}")
+
+        # The same 2 seconds, now tagged unit, are back in the run: the clock
+        # difference is the tier expression and nothing else.
+        _write("unit")
+        _commit(tmpdir, "slow test re-tagged unit")
+        start = time.monotonic()
+        exit_code, output = _run_hook(tmpdir)
+        slow_elapsed = time.monotonic() - start
+
+        assert exit_code == 0, f"hook blocked the push:\n{output}"
+        assert slow_elapsed > 2.0, (
+            f"the unit-tagged sleeper took only {slow_elapsed:.2f}s, so the "
+            f"first run's speed proved nothing:\n{output}")
 
     @pytest.mark.proof("pre_push_hook", "PROOF-28", "RULE-6", tier="integration")
     def test_pytest_exit_5_is_success_but_a_real_failure_is_not(self, tmp_path):

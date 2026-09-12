@@ -8,7 +8,7 @@ the dashboard to the CI gate reports per platform rather than pretending one mac
 Alongside it, the compliance-adjacent promises that were not backed by mechanism are either
 backed or withdrawn.
 
-Test sweep at this commit: 1000 passed, 7 skipped across 15 suites, as recorded by
+Test sweep at this commit: 1001 passed, 7 skipped across 15 suites, as recorded by
 `dev/run_tests.sh` in `.purlin/runtime/test_run.json` (the pytest pool counts per test; each
 shell suite counts as one).
 

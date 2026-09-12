@@ -123,7 +123,10 @@ for FRAMEWORK in "${FRAMEWORK_LIST[@]}"; do
   case "$FRAMEWORK" in
     pytest)
       echo "purlin: running unit-tier tests ($FRAMEWORK)..."
-      (cd "$ROOT" && python3 -m pytest -m "not integration" -q) || RUNNER_RC=$?
+      # The tier a proof marker names is also a pytest marker on the test
+      # (proof_plugins_pytest RULE-5), so this expression actually deselects
+      # something: without it the "unit-tier" arm ran every tier there is.
+      (cd "$ROOT" && python3 -m pytest -m "not integration and not e2e" -q) || RUNNER_RC=$?
       # pytest exits 5 when it collected nothing. No tests is not a failure
       # here; the gate is about to report the coverage that fact produces.
       if [[ $RUNNER_RC -eq 5 ]]; then
