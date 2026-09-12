@@ -1351,6 +1351,10 @@ silently dropped.
       runner commits back with both trailers and the gate passes). Not possible from this repo's
       own workflows, so it is a manual check before publishing.
 - [ ] Anything a subagent reports as "deferred" during execution (appended as it happens).
+- [ ] (6.3) `proof_plugins_php` and `proof_plugins_xunit` gained platform proofs that are skipped on
+      this machine (no php, no dotnet); they have never executed anywhere. Run them on a host with
+      the toolchains, or model both as `kind: environment` platforms in 10.6 so the gap reads
+      AWAITING RUNNER instead of silently skipped.
 
 ---
 
