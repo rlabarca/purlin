@@ -23,7 +23,7 @@ live here.
 
 ## Proof
 
-- PROOF-1 (RULE-1): Call `purlin_proof "feat" "PROOF-1" "RULE-1" pass "desc"` with `PURLIN_PROOF_TIER=integration`; call `purlin_proof_finish`; verify the proof entry has `tier: "integration"` @integration
+- PROOF-1 (RULE-1): Call `purlin_proof "feat" "PROOF-1" "RULE-1" pass "desc"` with `PURLIN_PROOF_TIER=integration`, then `purlin_proof_finish`; verify the entry is written to `feat.proofs-integration.json` with the 5 positional args each in its own field, `feature: "feat"`, `id: "PROOF-1"`, `rule: "RULE-1"`, `status: "pass"`, `test_name: "desc"`, and `tier: "integration"` from the environment. Make the same 5-arg call with `PURLIN_PROOF_TIER` unset in the environment; verify the entry is written to `feat_default_tier.proofs-unit.json` with `tier: "unit"`, the default an unset variable takes @integration
 - PROOF-2 (RULE-2): Source `shell_purlin.sh` from a test script; call `purlin_proof`; verify `test_file` matches the caller's filename @integration
 - PROOF-3 (RULE-3): Call `purlin_proof` twice without calling `purlin_proof_finish`; verify no proof files exist yet. Then call `purlin_proof_finish`; verify files are written @integration
 - PROOF-4 (RULE-4): Call `purlin_proof_finish`; verify `_PURLIN_PROOFS` is empty afterwards; call again; verify it's a no-op @integration

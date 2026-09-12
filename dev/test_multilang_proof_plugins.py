@@ -108,9 +108,26 @@ int main(void) {
         )
         assert run_result.returncode == 0, f"C test runner failed:\n{run_result.stderr}"
 
-        # Parse the JSON output directly
+        # Parse the JSON output directly. RULE-1 is the marker signature, so the
+        # emitted entry must carry each argument of the purlin_proof() call above,
+        # not merely the 7 field names: a presence check passes with every value
+        # wrong, and a collector that dropped test_name or swapped rule for id
+        # would satisfy it.
         proof_data = json.loads(run_result.stdout)
         assert len(proof_data['proofs']) == 2
+        emitted = {p['id']: p for p in proof_data['proofs']}
+        # 'platforms' is the transport-only field c_purlin_emit.py consumes to pick the
+        # file name; purlin_proof() declares none, so it is the empty string here.
+        assert emitted['PROOF-1'] == {
+            'feature': 'math_ops', 'id': 'PROOF-1', 'rule': 'RULE-1',
+            'status': 'pass', 'test_name': 'test_addition',
+            'test_file': 'test_math.c', 'tier': 'unit', 'platforms': '',
+        }, emitted['PROOF-1']
+        assert emitted['PROOF-2'] == {
+            'feature': 'math_ops', 'id': 'PROOF-2', 'rule': 'RULE-2',
+            'status': 'pass', 'test_name': 'test_div_by_zero',
+            'test_file': 'test_math.c', 'tier': 'unit', 'platforms': '',
+        }, emitted['PROOF-2']
 
         # Pipe to emitter to test file writing
         emit_result = subprocess.run(
@@ -976,6 +993,9 @@ _TEST_CS = (
     '    public void Fails() { Assert.True(false); }\n'
     '    [Fact(Skip="nyi")][Trait("PurlinProof","feat:PROOF-9:RULE-9:unit")]\n'
     '    public void SkippedTagged() { Assert.True(false); }\n'
+    # RULE-1: the tier segment is optional and defaults to "unit".
+    '    [Fact][Trait("PurlinProof","feat:PROOF-7:RULE-7")]\n'
+    '    public void TierOmitted() { Assert.True(true); }\n'
     '    [Fact]\n'
     '    public void Untagged() { Assert.True(true); }\n'
     '  }\n'
@@ -992,8 +1012,8 @@ class TestXUnitProofPlugin:
         specs = root / "specs" / "svc"
         specs.mkdir(parents=True)
         (specs / "feat.md").write_text(
-            "# Feature: feat\n\n## Rules\n- RULE-1: a\n- RULE-2: b\n\n"
-            "## Proof\n- PROOF-1 (RULE-1): t\n- PROOF-2 (RULE-2): t\n"
+            "# Feature: feat\n\n## Rules\n- RULE-1: a\n- RULE-2: b\n- RULE-7: g\n\n"
+            "## Proof\n- PROOF-1 (RULE-1): t\n- PROOF-2 (RULE-2): t\n- PROOF-7 (RULE-7): t\n"
         )
         # Pre-seed with a DIFFERENT feature — must survive (feature-scoped overwrite).
         (specs / "feat.proofs-unit.json").write_text(json.dumps({
@@ -1034,6 +1054,12 @@ class TestXUnitProofPlugin:
     def test_trait_marker_parses(self, run):
         e = run["by_id"]["PROOF-1"]
         assert (e["feature"], e["id"], e["rule"], e["tier"]) == ("feat", "PROOF-1", "RULE-1", "unit"), e
+        # The tier segment is optional: "feat:PROOF-7:RULE-7" carries no tier, so the
+        # entry must still be written at "unit" (an empty or missing tier would route
+        # the entry to feat.proofs-.json, or drop it, instead of feat.proofs-unit.json).
+        d = run["by_id"]["PROOF-7"]
+        assert (d["feature"], d["id"], d["rule"], d["tier"]) == ("feat", "PROOF-7", "RULE-7", "unit"), d
+        assert run["proof_file"].name == "feat.proofs-unit.json", run["proof_file"]
 
     @pytest.mark.proof("proof_plugins_xunit", "PROOF-2", "RULE-2", tier="integration")
     def test_logger_runs_in_process(self, run):

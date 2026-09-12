@@ -21,8 +21,8 @@ syntax, title handling, path resolution, and status mapping live here.
 
 ## Proof
 
-- PROOF-1 (RULE-1): Create a test `it("works [proof:feat:PROOF-1:RULE-1:unit]", ...)`; run Jest; verify proof entry has `feature: "feat"`, `id: "PROOF-1"`, `rule: "RULE-1"` @e2e
+- PROOF-1 (RULE-1): Create a test `it("works [proof:feat:PROOF-1:RULE-1:unit]", ...)`; run Jest; verify the proof entry has `feature: "feat"`, `id: "PROOF-1"`, `rule: "RULE-1"`. Run Jest again over a title whose marker omits the tier segment, `name [proof:feat_tier_default:PROOF-1:RULE-1]`; verify that entry is written to `feat_tier_default.proofs-unit.json` with `tier: "unit"`, so the omitted segment takes the default @e2e
 - PROOF-2 (RULE-2): Create a test without `[proof:...]` in the title; run Jest; verify no proof entry is emitted for that test @e2e
 - PROOF-3 (RULE-3): Run Jest; verify `test_file` is relative to `rootDir` @e2e
-- PROOF-4 (RULE-4): Create a failing Jest test with a proof marker; verify `status` is `"fail"` @e2e
+- PROOF-4 (RULE-4): Run Jest over marked tests reporting each executed status: verify the test Jest reports as `passed` writes `status: "pass"` and the test Jest reports as `failed` writes `status: "fail"`, both in the same `feat.proofs-unit.json` @e2e
 - PROOF-5 (RULE-4): Run the reporter over a test file whose only marked test reports status `pending`, against a proof file that already holds a `pass` entry for that id from another host; verify the reporter writes no entry for the pending test and leaves the existing file byte-identical, so the committed entry survives; a reporter that maps `pending` to `fail`, or that reaps the entry, fails @integration

@@ -48,10 +48,16 @@ def _make_spec(tmp_path, subdir, feature, extra_rules=1):
     return spec_dir
 
 
-def _run_pytest_with_plugin(tmp_path, test_code, allow_failure=False):
-    """Run pytest with pytest_purlin in tmp_path; return CompletedProcess."""
+def _run_pytest_with_plugin(tmp_path, test_code, allow_failure=False, platform_id=None):
+    """Run pytest with pytest_purlin in tmp_path; return CompletedProcess.
+
+    `platform_id` sets PURLIN_PLATFORM for the child process (absent when None).
+    """
     test_file = tmp_path / "test_s.py"
     test_file.write_text(textwrap.dedent(test_code))
+    env = {k: v for k, v in os.environ.items() if k != "PURLIN_PLATFORM"}
+    if platform_id is not None:
+        env["PURLIN_PLATFORM"] = platform_id
     result = subprocess.run(
         [
             sys.executable, "-m", "pytest",
@@ -63,6 +69,7 @@ def _run_pytest_with_plugin(tmp_path, test_code, allow_failure=False):
         capture_output=True,
         text=True,
         cwd=str(tmp_path),
+        env=env,
     )
     if not allow_failure and result.returncode not in (0, 1):
         pytest.fail(f"pytest internal error:\n{result.stdout}\n{result.stderr}")
@@ -147,16 +154,52 @@ def _run_shell_proof(tmp_path, feature, proofs, tier=None):
 
 @pytest.mark.proof("proof_common", "PROOF-2", "RULE-2")
 def test_proof_file_naming(tmp_path):
-    """Proof file is named <feature>.proofs-<tier>.json inside the spec directory."""
-    spec_dir = _make_spec(tmp_path, "hooks", "gate_hook")
-    _run_pytest_with_plugin(tmp_path, """
+    """<feature>.proofs-<tier>.json for an undeclared marker, <feature>.proofs-<tier>@<id>.json
+    for a declared one, and an unchanged re-run rewrites both byte-identically.
+
+    The scoped file's top-level `platform` is constant per file (it equals the id in the
+    name), so nothing in a re-run that changed nothing can move: a plugin that stamped a
+    timestamp, reordered entries or recomputed the platform per entry would fail the
+    byte comparison.
+    """
+    spec_dir = _make_spec(tmp_path, "hooks", "gate_hook", extra_rules=2)
+    source = """
         import pytest
         @pytest.mark.proof("gate_hook", "PROOF-1", "RULE-1")
         def test_it(): assert 1 + 1 == 2
-    """)
-    proof_file = spec_dir / "gate_hook.proofs-unit.json"
-    assert proof_file.exists(), f"Expected {proof_file} to exist"
-    assert proof_file.name == "gate_hook.proofs-unit.json"
+        @pytest.mark.proof("gate_hook", "PROOF-2", "RULE-2", platforms=("p1",))
+        def test_declared(): assert 2 + 2 == 4
+    """
+    _run_pytest_with_plugin(tmp_path, source, platform_id="p1")
+
+    agnostic = spec_dir / "gate_hook.proofs-unit.json"
+    scoped = spec_dir / "gate_hook.proofs-unit@p1.json"
+    assert agnostic.exists(), f"Expected {agnostic} to exist, got {sorted(os.listdir(spec_dir))}"
+    assert agnostic.name == "gate_hook.proofs-unit.json"
+    assert scoped.exists(), f"Expected {scoped} to exist, got {sorted(os.listdir(spec_dir))}"
+    assert scoped.name == "gate_hook.proofs-unit@p1.json"
+
+    agnostic_data = json.loads(agnostic.read_text())
+    assert "platform" not in agnostic_data, (
+        f"an agnostic file carries no top-level platform: {agnostic_data}")
+    assert [e["id"] for e in agnostic_data["proofs"]] == ["PROOF-1"], agnostic_data
+    scoped_data = json.loads(scoped.read_text())
+    assert scoped_data["platform"] == "p1", (
+        f"the scoped file's top-level platform must equal the id in its name: {scoped_data}")
+    assert [e["id"] for e in scoped_data["proofs"]] == ["PROOF-2"], scoped_data
+
+    before_agnostic = agnostic.read_bytes()
+    before_scoped = scoped.read_bytes()
+
+    # Nothing changed: the same test file, the same host id, the same results.
+    _run_pytest_with_plugin(tmp_path, source, platform_id="p1")
+
+    assert scoped.read_bytes() == before_scoped, (
+        "a re-run that changed nothing must rewrite the scoped file byte-identically; "
+        f"before:\n{before_scoped.decode()}\nafter:\n{scoped.read_bytes().decode()}")
+    assert agnostic.read_bytes() == before_agnostic, (
+        "a re-run that changed nothing must rewrite the agnostic file byte-identically; "
+        f"before:\n{before_agnostic.decode()}\nafter:\n{agnostic.read_bytes().decode()}")
 
 
 # ---------------------------------------------------------------------------
@@ -522,7 +565,12 @@ def test_jest_pending_writes_nothing_and_leaves_an_existing_file_alone(tmp_path)
 
 @pytest.mark.proof("proof_plugins_shell", "PROOF-1", "RULE-1")
 def test_shell_proof_uses_purlin_proof_tier_env(tmp_path):
-    """PURLIN_PROOF_TIER env var sets the tier in the written proof entry."""
+    """The 5 positional args land in their own fields and PURLIN_PROOF_TIER sets the tier.
+
+    Asserting each of the 5 by value, not just the tier: the args are positional, so a
+    harness that swapped proof_id with rule_id, or dropped test_name, would still write
+    a well-formed entry at the right tier.
+    """
     _make_spec(tmp_path, "a", "feat_shell_tier")
     result = _run_shell_proof(
         tmp_path,
@@ -536,7 +584,9 @@ def test_shell_proof_uses_purlin_proof_tier_env(tmp_path):
     data = json.loads(proof_file.read_text())
     entry = data["proofs"][0]
     assert entry["tier"] == "integration"
-    assert entry["feature"] == "feat_shell_tier"
+    assert (
+        entry["feature"], entry["id"], entry["rule"], entry["status"], entry["test_name"]
+    ) == ("feat_shell_tier", "PROOF-1", "RULE-1", "pass", "my test desc"), entry
 
 
 @pytest.mark.proof("proof_plugins_shell", "PROOF-1", "RULE-1")

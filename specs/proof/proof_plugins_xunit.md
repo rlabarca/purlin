@@ -40,8 +40,8 @@ RULE-5 records as `test_file`; without it the source path is unavailable.
 
 ## Proof
 
-- PROOF-1 (RULE-1): Build an xUnit test annotated `[Trait("PurlinProof", "feat:PROOF-1:RULE-1:unit")]`; run `dotnet test --logger purlin`; verify the proof entry has `feature: "feat"`, `id: "PROOF-1"`, `rule: "RULE-1"`, `tier: "unit"` @integration
-- PROOF-2 (RULE-2): Run `dotnet test --logger purlin` on a project with one marked test; verify the logger is invoked and produces proof output during the run (no separate `.trx` parse step required) @integration
+- PROOF-1 (RULE-1): Build an xUnit project with one test annotated `[Trait("PurlinProof", "feat:PROOF-1:RULE-1:unit")]` and a second annotated `[Trait("PurlinProof", "feat:PROOF-7:RULE-7")]`, the tier segment omitted; run `dotnet test --logger purlin`; verify the first entry has `feature: "feat"`, `id: "PROOF-1"`, `rule: "RULE-1"`, `tier: "unit"`, and that the tier-less trait's entry lands in the same `feat.proofs-unit.json` with `id: "PROOF-7"`, `rule: "RULE-7"` and `tier: "unit"` rather than an empty or missing tier, so the omitted segment takes the default @integration
+- PROOF-2 (RULE-2): Run `dotnet test tests/tests.csproj --logger purlin` on a project with marked tests, with no `trx` token anywhere in the argv; verify the run's output carries the logger's own in-run line `[PurlinProofLogger] collected`, that `specs/svc/feat.proofs-unit.json` holds the `PROOF-1` entry afterwards, and that a recursive search for `*.trx` under the project root finds no file, so the proofs were collected in-process and not parsed out of a result file @integration
 - PROOF-3 (RULE-3): Run a test with no `PurlinProof` trait; verify no proof entry is emitted for that test @integration
 - PROOF-4 (RULE-4): Run a passing marked test and a failing marked test; verify `status: "pass"` and `status: "fail"` respectively; add a `[Fact(Skip="...")]` marked test and verify it is not recorded @integration
 - PROOF-5 (RULE-5): Run `dotnet test` from a project root; verify `test_file` is relative (not absolute) and `test_name` is the fully-qualified method name @integration
