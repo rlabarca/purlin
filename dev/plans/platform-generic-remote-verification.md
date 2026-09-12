@@ -1927,7 +1927,9 @@ number named earlier in this plan. Landing order and what each spec gains:
 
 The push of `main` publishes 39+ commits for the first time and is expected to happen in a later
 context, after these are resolved. Execution appends to this list whatever it defers; nothing is
-silently dropped.
+silently dropped. Sequence agreed 2026-09-12: this list is worked in a new context on THIS
+machine first; `dev/plans/ado-runner-provider.md` is then executed on the work machine, which
+has the Azure DevOps account. Do not start the ADO work here.
 
 - [ ] Both audits run for real on this repo and recorded (Design and Integrity bars above met, or
       the shortfall named per feature with its `purlin:spec` / `purlin:build` directive).
