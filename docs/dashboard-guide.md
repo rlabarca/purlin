@@ -166,11 +166,15 @@ A gauge is never reported as `excluded` or `structural` from a subset. If a feat
 proofs and two were assessed, the cell reads `not audited` however those two graded, because the
 answer is not known yet.
 
-The header carries one freshness label per gauge — `/design 3h ago`, `/integrity 78d ago` — each
-from its own cache, since the two age independently. A stale gauge names the narrowest command
-that refreshes it: `purlin:audit --design`, `purlin:audit --integrity`, or bare `purlin:audit`
-when both are stale. Design grading is deterministic and needs no tests; Integrity grading needs
-test code and costs LLM calls, so refreshing Design alone should not trigger a full audit.
+The header carries one freshness label per gauge: `Design: 3h ago`, `Integrity: 78d ago`, each
+from its own cache, since the two age independently. A gauge that has never been measured reads
+`Design: not measured`; a stale one adds `(stale)` and turns amber. The command stays out of the
+label: hover a stale or unmeasured label and its tooltip names the narrowest command that
+refreshes it, `Run purlin:audit --design`, `Run purlin:audit --integrity`, or `Run purlin:audit`
+when both need it. A fresh gauge has no tooltip, so a tooltip being there is itself the signal
+that something needs running. Design grading is deterministic and needs no tests; Integrity
+grading needs test code and costs LLM calls, so refreshing Design alone should not trigger a
+full audit.
 
 The Proof Integrity card reads `no tests yet` rather than `run purlin:audit` when every feature
 is UNTESTED, because a project being authored spec-first is not a neglected one.

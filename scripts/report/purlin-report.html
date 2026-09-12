@@ -903,27 +903,49 @@ table{min-width:830px}
 
   /* One gauge card. `cov` drives both the denominator sub-label and the amber
      override, so a score can never be read without knowing what it covers. */
+  /* The cache timestamp behind one gauge, and whether that gauge is asking to
+     be re-run. Unmeasured counts the same as stale here: both are gauges whose
+     number cannot be trusted until a command is run (RULE-37). */
+  function gaugeStamp(summary, which) {
+    return summary && (which === 'design' ? summary.last_design_audit
+                                          : summary.last_audit);
+  }
+
+  function gaugeNeedsRefresh(summary, which) {
+    return !summary || !gaugeStamp(summary, which) || !!summary.stale;
+  }
+
   /* The narrowest command that refreshes what is actually stale. Design grading
      is deterministic and needs no tests; Integrity grading needs test code and
      costs LLM calls, so sending someone to a full audit to refresh Design alone
      spends budget for nothing (RULE-37). */
   function refreshCommand(audit, design) {
-    var dStale = !design || design.stale;
-    var aStale = !audit || audit.stale;
+    var dStale = gaugeNeedsRefresh(design, 'design');
+    var aStale = gaugeNeedsRefresh(audit, 'integrity');
     if (dStale && aStale) return 'purlin:audit';
     if (dStale) return 'purlin:audit --design';
     return 'purlin:audit --integrity';
   }
 
-  function freshnessText(summary, which, audit, design) {
-    var ts = summary && (which === 'design' ? summary.last_design_audit
-                                            : summary.last_audit);
-    if (!summary || !ts) {
-      return '/' + which + ' not measured \u2014 run ' + refreshCommand(audit, design);
-    }
-    var txt = '/' + which + ' ' + (relTime(ts) || 'unknown');
-    if (summary.stale) txt += ' \u2014 run ' + refreshCommand(audit, design);
+  /* The label says which gauge and how old, and nothing else. The old text
+     spelled the command out inline ('/design not measured \u2014 run
+     purlin:audit --design'), which read as the name of a skill that does not
+     exist and made the label longer than the header it sat in. */
+  function freshnessText(summary, which) {
+    var name = which === 'design' ? 'Design' : 'Integrity';
+    var ts = gaugeStamp(summary, which);
+    if (!summary || !ts) return name + ': not measured';
+    var txt = name + ': ' + (relTime(ts) || 'unknown');
+    if (summary.stale) txt += ' (stale)';
     return txt;
+  }
+
+  /* The refresh directive, moved out of the label text into its tooltip. A
+     fresh gauge gets no tooltip at all, so a tooltip being there is itself the
+     signal that something needs running (RULE-37). */
+  function freshnessTitle(summary, which, audit, design) {
+    if (!gaugeNeedsRefresh(summary, which)) return '';
+    return 'Run ' + refreshCommand(audit, design);
   }
 
   /* The declared remote-verification mode. Read from the payload, never
@@ -945,12 +967,11 @@ table{min-width:830px}
   }
 
   function gaugeFreshness(summary, which, audit, design) {
-    var ts = summary && (which === 'design' ? summary.last_design_audit
-                                            : summary.last_audit);
-    var stale = !summary || !ts || summary.stale;
-    var cls = stale ? 'audit-time stale' : 'audit-time';
-    return '<span class="' + cls + '" data-gauge="' + which + '">'
-         + esc(freshnessText(summary, which, audit, design)) + '</span>';
+    var cls = gaugeNeedsRefresh(summary, which) ? 'audit-time stale' : 'audit-time';
+    var title = freshnessTitle(summary, which, audit, design);
+    return '<span class="' + cls + '" data-gauge="' + which + '"'
+         + (title ? ' title="' + esc(title) + '"' : '') + '>'
+         + esc(freshnessText(summary, which)) + '</span>';
   }
 
   /* Mirrors the server's _gauge_headline: report the coverage-weighted figure,
@@ -1346,7 +1367,11 @@ table{min-width:830px}
       app.querySelectorAll('.audit-time').forEach(function(el) {
         var which = el.getAttribute('data-gauge');
         var sum = which === 'design' ? D.design_summary : D.audit_summary;
-        el.textContent = freshnessText(sum, which, D.audit_summary, D.design_summary);
+        el.textContent = freshnessText(sum, which);
+        /* The tooltip ticks with the text: a label that went stale between
+           renders must gain its directive, not keep a stale absence. */
+        var tip = freshnessTitle(sum, which, D.audit_summary, D.design_summary);
+        if (tip) el.setAttribute('title', tip); else el.removeAttribute('title');
       });
     }, 30000);
 

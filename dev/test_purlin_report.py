@@ -764,16 +764,57 @@ class TestPurlinReport:
             f"Expected 'run purlin:audit' when integrity is null, got: '{strip_text_null}'"
         )
 
-    @pytest.mark.proof("purlin_report", "PROOF-15", "RULE-15")
-    def test_audit_time_stale_class(self, page, dashboard):
-        """PROOF-15: Header shows last audit time with amber warning when stale."""
-        data = make_data()
+    @pytest.mark.proof("purlin_report", "PROOF-15", "RULE-15", tier="e2e")
+    def test_header_shows_one_freshness_label_per_gauge(self, page, dashboard):
+        """PROOF-15: two labels, two caches, two ages.
+
+        The two caches age independently. One combined label reported the
+        Integrity cache's age as though it were the project's, so a repo graded
+        for Design 3 hours ago read as 78 days stale.
+        """
+        now = datetime.datetime.now(datetime.timezone.utc)
+        three_h = (now - datetime.timedelta(hours=3)).isoformat()
+        seventy_eight_d = (now - datetime.timedelta(days=78)).isoformat()
+        data = make_data({
+            "design_summary": {
+                "design": 90, "provable": 9, "loose": 1, "unprovable": 0,
+                "structural": 0, "gradeable_total": 10,
+                "last_design_audit": three_h,
+                "last_design_audit_relative": "3h ago",
+                "stale": False,
+            },
+        })
+        data["audit_summary"]["last_audit"] = seventy_eight_d
+        data["audit_summary"]["last_audit_relative"] = "78d ago"
         data["audit_summary"]["stale"] = True
-        data["audit_summary"]["last_audit_relative"] = "3h ago"
         load_dashboard(page, dashboard, data=data)
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof15_audit_stale.png"))
-        stale_el = page.query_selector(".audit-time.stale")
-        assert stale_el, "Expected element with class 'audit-time stale' when audit_summary.stale=true"
+
+        labels = page.query_selector_all(".audit-time")
+        assert len(labels) == 2, (
+            f"expected exactly two freshness labels, one per gauge, got {len(labels)}: "
+            f"{[e.text_content() for e in labels]!r}")
+
+        d = page.query_selector(".audit-time[data-gauge='design']")
+        i = page.query_selector(".audit-time[data-gauge='integrity']")
+        assert d and i, "expected a label for each of data-gauge=design and data-gauge=integrity"
+
+        d_txt, i_txt = d.text_content(), i.text_content()
+        assert d_txt == "Design: 3h ago", (
+            f"the Design label must name its own gauge and its own 3-hour cache: {d_txt!r}")
+        assert i_txt == "Integrity: 78d ago (stale)", (
+            f"the Integrity label must name its own gauge and its own 78-day cache: {i_txt!r}")
+
+        assert d.get_attribute("class") == "audit-time", (
+            f"a fresh Design cache must carry no stale class: {d.get_attribute('class')!r}")
+        assert i.get_attribute("class") == "audit-time stale", (
+            f"a stale Integrity cache must carry the stale class: {i.get_attribute('class')!r}")
+
+        # Neither label may report the other cache's age or name.
+        assert "Integrity" not in d_txt and "78d" not in d_txt, (
+            f"the Design label leaked the Integrity cache: {d_txt!r}")
+        assert "Design" not in i_txt and "3h" not in i_txt, (
+            f"the Integrity label leaked the Design cache: {i_txt!r}")
 
     @pytest.mark.proof("purlin_report", "PROOF-16", "RULE-16")
     def test_status_column_centered_at_multiple_widths(self, page, dashboard):
@@ -3271,27 +3312,31 @@ class TestGaugeCellsAndCoverage:
 
     @pytest.mark.proof("purlin_report", "PROOF-39", "RULE-37", tier="e2e")
     def test_refresh_directive_names_only_the_stale_gauge(self, page, dashboard):
-        """RULE-37: refresh the half that is stale, not both.
+        """RULE-37: refresh the half that is stale, not both, and say so in the tooltip.
 
         Design grading is deterministic and needs no tests; Integrity grading
         needs test code and costs LLM calls. A blanket `purlin:audit` directive
         spent that budget re-grading Integrity when only Design had gone stale.
+
+        The directive rides in the label's `title`, not its text: spelled out
+        inline it doubled the header's length and read as the name of a skill
+        ("/design not measured") that does not exist.
         """
-        def summaries(design_stale, audit_stale):
+        def summaries(design_stale, audit_stale, measured=True):
             old = "2026-01-01T00:00:00+00:00"
             new = datetime.datetime.now(datetime.timezone.utc).isoformat()
             return {
                 "design_summary": {
                     "design": 90, "provable": 9, "loose": 1, "unprovable": 0,
                     "structural": 0, "gradeable_total": 10,
-                    "last_design_audit": old if design_stale else new,
+                    "last_design_audit": (old if design_stale else new) if measured else None,
                     "last_design_audit_relative": "8 months ago" if design_stale else "just now",
                     "stale": design_stale,
                 },
                 "audit_summary": {
                     "integrity": 90, "strong": 9, "weak": 1, "hollow": 0, "manual": 0,
                     "behavioral_total": 10,
-                    "last_audit": old if audit_stale else new,
+                    "last_audit": (old if audit_stale else new) if measured else None,
                     "last_audit_relative": "8 months ago" if audit_stale else "just now",
                     "stale": audit_stale,
                 },
@@ -3304,36 +3349,71 @@ class TestGaugeCellsAndCoverage:
             "anchors_summary": {"total": 0, "with_source": 0, "global": 0},
         }
 
-        def header_text():
-            return " ".join(e.text_content() for e in
-                            page.query_selector_all(".audit-time"))
+        def label(which):
+            el = page.query_selector(".audit-time[data-gauge='%s']" % which)
+            assert el, "no freshness label for data-gauge=%s" % which
+            return el.text_content(), el.get_attribute("title")
+
+        def show(**kw):
+            load_dashboard(page, dashboard,
+                           data=make_data(dict(base, **summaries(**kw))))
+
+        # Neither gauge measured: both labels say so, and both ask for the
+        # full audit, in the tooltip and nowhere else.
+        show(design_stale=False, audit_stale=False, measured=False)
+        d_txt, d_tip = label("design")
+        i_txt, i_tip = label("integrity")
+        assert d_txt == "Design: not measured", (
+            f"an unmeasured Design gauge reads 'Design: not measured': {d_txt!r}")
+        assert i_txt == "Integrity: not measured", (
+            f"an unmeasured Integrity gauge reads 'Integrity: not measured': {i_txt!r}")
+        assert "purlin:audit" not in d_txt and "purlin:audit" not in i_txt, (
+            "the command belongs in the tooltip, never in the label text: "
+            f"{d_txt!r} / {i_txt!r}")
+        assert d_tip == "Run purlin:audit", (
+            f"both gauges unmeasured means the bare full audit: {d_tip!r}")
+        assert i_tip == "Run purlin:audit", (
+            f"both gauges unmeasured means the bare full audit: {i_tip!r}")
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof39_unmeasured.png"))
 
         # Only Design stale: refresh Design alone.
-        load_dashboard(page, dashboard,
-                       data=make_data(dict(base, **summaries(True, False))))
-        txt = header_text()
-        assert "purlin:audit --design" in txt, \
-            f"a stale Design gauge must name --design: {txt!r}"
-        assert "--integrity" not in txt, (
+        show(design_stale=True, audit_stale=False)
+        d_txt, d_tip = label("design")
+        i_txt, i_tip = label("integrity")
+        assert d_tip == "Run purlin:audit --design", (
+            f"a stale Design gauge must name --design and nothing wider: {d_tip!r}")
+        assert i_tip is None, (
             "refreshing Design must not drag Integrity along, which costs LLM "
-            f"calls for no reason: {txt!r}")
+            f"calls for no reason: a fresh gauge carries no tooltip, got {i_tip!r}")
+        assert "purlin:audit" not in d_txt, (
+            f"the command belongs in the tooltip, not the label text: {d_txt!r}")
 
         # Only Integrity stale: refresh Integrity alone.
-        load_dashboard(page, dashboard,
-                       data=make_data(dict(base, **summaries(False, True))))
-        txt = header_text()
-        assert "purlin:audit --integrity" in txt, \
-            f"a stale Integrity gauge must name --integrity: {txt!r}"
-        assert "--design" not in txt, f"Design is fresh and must not be named: {txt!r}"
+        show(design_stale=False, audit_stale=True)
+        d_txt, d_tip = label("design")
+        i_txt, i_tip = label("integrity")
+        assert i_tip == "Run purlin:audit --integrity", (
+            f"a stale Integrity gauge must name --integrity: {i_tip!r}")
+        assert d_tip is None, (
+            f"Design is fresh and must carry no directive: {d_tip!r}")
 
         # Both stale: the bare command is the right one.
-        load_dashboard(page, dashboard,
-                       data=make_data(dict(base, **summaries(True, True))))
-        txt = header_text()
-        assert "run purlin:audit" in txt
-        assert "--design" not in txt and "--integrity" not in txt, \
-            f"with both stale the directive is a bare full audit: {txt!r}"
+        show(design_stale=True, audit_stale=True)
+        d_txt, d_tip = label("design")
+        i_txt, i_tip = label("integrity")
+        assert d_tip == "Run purlin:audit" and i_tip == "Run purlin:audit", (
+            f"with both stale the directive is a bare full audit: {d_tip!r} / {i_tip!r}")
+        assert "--design" not in (d_tip or "") and "--integrity" not in (i_tip or ""), (
+            f"a bare full audit names no flag: {d_tip!r} / {i_tip!r}")
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof39_refresh_directive.png"))
+
+        # Both fresh: nothing to run, so no tooltip at all.
+        show(design_stale=False, audit_stale=False)
+        d_txt, d_tip = label("design")
+        i_txt, i_tip = label("integrity")
+        assert d_tip is None and i_tip is None, (
+            "a fresh gauge carries no command tooltip, so a tooltip being there "
+            f"is itself the signal: {d_tip!r} / {i_tip!r}")
 
 
 class TestRemoteVerificationChip:
