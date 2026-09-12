@@ -1,6 +1,6 @@
 {
-  "feature": "skill_drift",
-  "vhash": "191c983d",
+  "feature": "qa_report",
+  "vhash": "1975170c",
   "vhash_version": 2,
   "commit": "a508dabd0d3f963dc3ddb945b3e6964c9def71ad",
   "timestamp": "2026-09-12T05:07:43.556899+00:00",
@@ -13,72 +13,72 @@
     "RULE-6"
   ],
   "rule_hashes": {
-    "RULE-1": "d402581da42374f9",
-    "RULE-2": "f882d91d4488414b",
-    "RULE-3": "4b5dad8f05be72c4",
-    "RULE-4": "3cb3edc102751597",
-    "RULE-5": "147be94a0f74ff90",
-    "RULE-6": "749066c2f42d4d9d"
+    "RULE-1": "95677c5cf5d8da87",
+    "RULE-2": "8c13b597342d503e",
+    "RULE-3": "8fe781f10825c94d",
+    "RULE-4": "f7fb9bb7a7d2b164",
+    "RULE-5": "434ccb6b6ebae51c",
+    "RULE-6": "dc2037ae6784b525"
   },
   "proofs": [
     {
-      "feature": "skill_drift",
+      "feature": "qa_report",
       "id": "PROOF-1",
       "rule": "RULE-1",
       "status": "pass",
       "tier": "unit",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_has_frontmatter",
+      "test_file": "dev/test_tools_qa.py",
+      "test_name": "test_no_credential_bearing_url_and_a_real_private_repo_path",
       "platform": null
     },
     {
-      "feature": "skill_drift",
+      "feature": "qa_report",
       "id": "PROOF-2",
       "rule": "RULE-2",
       "status": "pass",
       "tier": "unit",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_has_usage_section",
+      "test_file": "dev/test_tools_qa.py",
+      "test_name": "test_each_field_name_is_read_and_the_two_scores_stay_separate",
       "platform": null
     },
     {
-      "feature": "skill_drift",
+      "feature": "qa_report",
       "id": "PROOF-3",
       "rule": "RULE-3",
       "status": "pass",
       "tier": "unit",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_name_matches_directory",
+      "test_file": "dev/test_tools_qa.py",
+      "test_name": "test_verified_is_described_as_proved_everywhere_with_a_matching_receipt",
       "platform": null
     },
     {
-      "feature": "skill_drift",
+      "feature": "qa_report",
       "id": "PROOF-4",
       "rule": "RULE-4",
       "status": "pass",
       "tier": "unit",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_references_drift_mcp_tool",
+      "test_file": "dev/test_tools_qa.py",
+      "test_name": "test_uncommitted_paragraph_names_all_three_causes",
       "platform": null
     },
     {
-      "feature": "skill_drift",
+      "feature": "qa_report",
       "id": "PROOF-5",
       "rule": "RULE-5",
       "status": "pass",
       "tier": "unit",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_requires_reading_diffs",
+      "test_file": "dev/test_tools_qa.py",
+      "test_name": "test_no_signoff_or_compliance_claims_and_the_prohibition_is_stated",
       "platform": null
     },
     {
-      "feature": "skill_drift",
+      "feature": "qa_report",
       "id": "PROOF-6",
       "rule": "RULE-6",
       "status": "pass",
       "tier": "unit",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_changed_specs_is_not_automatically_drift",
+      "test_file": "dev/test_tools_qa.py",
+      "test_name": "test_each_skill_zip_holds_one_skill_md_equal_to_its_sibling",
       "platform": null
     }
   ],
@@ -93,11 +93,11 @@
     },
     "proof_files": [
       {
-        "file": "specs/skills/skill_drift.proofs-unit.json",
+        "file": "specs/tools/qa_report.proofs-unit.json",
         "tier": "unit",
         "platform": null,
-        "commit": "b1ffb68f2eee20575365c4f5a088cd0e20b4ea85",
-        "committed_at": "2026-09-11T10:18:04-04:00",
+        "commit": "a508dabd0d3f963dc3ddb945b3e6964c9def71ad",
+        "committed_at": "2026-09-12T01:04:51-04:00",
         "runner": null,
         "executed_in_test_run": true
       }

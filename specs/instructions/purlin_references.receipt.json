@@ -1,9 +1,9 @@
 {
   "feature": "purlin_references",
-  "vhash": "800ca30d",
+  "vhash": "299910f8",
   "vhash_version": 2,
-  "commit": "9d58a4a79229c77d947373099a250cbfadd417f3",
-  "timestamp": "2026-09-12T04:50:04.556907+00:00",
+  "commit": "a508dabd0d3f963dc3ddb945b3e6964c9def71ad",
+  "timestamp": "2026-09-12T05:07:43.556899+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -23,6 +23,8 @@
     "RULE-23",
     "RULE-24",
     "RULE-25",
+    "RULE-26",
+    "RULE-27",
     "RULE-3",
     "RULE-4",
     "RULE-5",
@@ -69,11 +71,13 @@
     "RULE-23": "e356ba67012eea56",
     "RULE-24": "7d71814b5438f28f",
     "RULE-25": "22222d13c9fe0a31",
+    "RULE-26": "e2af04e4e882c73a",
+    "RULE-27": "37b240be93810c97",
     "RULE-3": "d839c931e0196ea4",
     "RULE-4": "07abc29ef83143f9",
     "RULE-5": "cbb9df44c4322774",
     "RULE-6": "0b2d842b85210bee",
-    "RULE-7": "1d5912bd147e5bf2",
+    "RULE-7": "ebe1ffcacb3ef2ed",
     "RULE-8": "ac87b8c242b133e0",
     "RULE-9": "e1ead8a8aeee5e25",
     "schema_proof_format/RULE-1": "b61d6b4948a9dd21",
@@ -279,6 +283,26 @@
     },
     {
       "feature": "purlin_references",
+      "id": "PROOF-26",
+      "rule": "RULE-26",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_hooks_json_registers_nothing_and_hard_gates_says_so",
+      "platform": null
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-27",
+      "rule": "RULE-27",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_nothing_under_purlin_cache_is_tracked",
+      "platform": null
+    },
+    {
+      "feature": "purlin_references",
       "id": "PROOF-3",
       "rule": "RULE-3",
       "status": "pass",
@@ -324,7 +348,7 @@
       "status": "pass",
       "tier": "unit",
       "test_file": "dev/test_purlin_references.py",
-      "test_name": "test_commit_conventions_eight_prefixes",
+      "test_name": "test_commit_conventions_prefixes_and_the_verify_vocabulary",
       "platform": null
     },
     {
@@ -590,10 +614,10 @@
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T04:50:04.327748+00:00",
-      "commit": "9d58a4a79229c77d947373099a250cbfadd417f3",
+      "at": "2026-09-12T05:07:39.469460+00:00",
+      "commit": "a508dabd0d3f963dc3ddb945b3e6964c9def71ad",
       "sweep": "dev/run_tests.sh",
-      "passed": 769,
+      "passed": 778,
       "failed": 0,
       "skipped": 27
     },
@@ -629,8 +653,8 @@
         "file": "specs/instructions/purlin_references.proofs-unit.json",
         "tier": "unit",
         "platform": null,
-        "commit": "d51bcb3431bd553d564cd69a6ac9d3bdf10a8a0c",
-        "committed_at": "2026-09-11T22:12:05-04:00",
+        "commit": "a508dabd0d3f963dc3ddb945b3e6964c9def71ad",
+        "committed_at": "2026-09-12T01:04:51-04:00",
         "runner": null,
         "executed_in_test_run": true
       }

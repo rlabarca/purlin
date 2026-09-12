@@ -1,15 +1,16 @@
 {
   "feature": "skill_verify",
-  "vhash": "dd3be860",
+  "vhash": "ab1715a4",
   "vhash_version": 2,
-  "commit": "9d58a4a79229c77d947373099a250cbfadd417f3",
-  "timestamp": "2026-09-12T04:50:04.556907+00:00",
+  "commit": "a508dabd0d3f963dc3ddb945b3e6964c9def71ad",
+  "timestamp": "2026-09-12T05:07:43.556899+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
     "RULE-11",
     "RULE-12",
     "RULE-13",
+    "RULE-14",
     "RULE-2",
     "RULE-3",
     "RULE-4",
@@ -25,6 +26,7 @@
     "RULE-11": "77b908d79191bce0",
     "RULE-12": "a97c7631ab1b04d9",
     "RULE-13": "3426b65eea466abc",
+    "RULE-14": "7f2876a80f5410c9",
     "RULE-2": "f882d91d4488414b",
     "RULE-3": "c7476bb886298e02",
     "RULE-4": "d678c1c2ae01571c",
@@ -127,6 +129,16 @@
     },
     {
       "feature": "skill_verify",
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_verify_commit_counts_features_and_anchors_separately",
+      "platform": null
+    },
+    {
+      "feature": "skill_verify",
       "id": "PROOF-2",
       "rule": "RULE-2",
       "status": "pass",
@@ -218,10 +230,10 @@
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T04:50:04.327748+00:00",
-      "commit": "9d58a4a79229c77d947373099a250cbfadd417f3",
+      "at": "2026-09-12T05:07:39.469460+00:00",
+      "commit": "a508dabd0d3f963dc3ddb945b3e6964c9def71ad",
       "sweep": "dev/run_tests.sh",
-      "passed": 769,
+      "passed": 778,
       "failed": 0,
       "skipped": 27
     },
@@ -239,8 +251,8 @@
         "file": "specs/skills/skill_verify.proofs-integration.json",
         "tier": "integration",
         "platform": null,
-        "commit": "d51bcb3431bd553d564cd69a6ac9d3bdf10a8a0c",
-        "committed_at": "2026-09-11T22:12:05-04:00",
+        "commit": "a508dabd0d3f963dc3ddb945b3e6964c9def71ad",
+        "committed_at": "2026-09-12T01:04:51-04:00",
         "runner": null,
         "executed_in_test_run": true
       },
