@@ -52,6 +52,7 @@ of writing a third project builder. `main` is still neither merged nor pushed, a
 | 17 | (2026-09-12, mid-session) The Pass D2 regrade found that `skill_spec_from_code` RULE-5 to RULE-19 describe agent-only detection, migration and generation that no code performs, so ten remediated proofs still pair a hand-written fixture with a grep. The user chose "Reclassify as document-content rules": those rules are rewritten as statements about what `skills/spec-from-code/SKILL.md` instructs, their proofs become honest STRUCTURAL greps excluded from the Design score, and no new mechanism is built. Item B14. |
 | 18 | (2026-09-12, mid-session) "no push.. just commit": the branch is not pushed after any group until the user says so; each group closes at its `verify:` commit. The CI-green and `git pull --ff-only` steps wait for the eventual push. |
 | 19 | (2026-09-12, mid-session) Item K's one approved run failed on three defects in the test itself (the rejection assertion read the index instead of HEAD, the build session's 600 s cap was too short for a real agent, and CLI 2.1.269 rejects a path for `--agents` and wants JSON); the agent fixed them without re-running. Asked whether to spend about $3 on one more run, the user chose "No, defer K": the fixes are committed, no witness, the command is recorded. |
+| 20 | (2026-09-12, mid-session) "watch out, another agent is working now": a second Claude session (`event-driven-dashboard-refresh`) commits directly to this branch's main tree (`ada91b46` one run scope per report build, with four more feat/fix commits announced: a report-data refresh hook, dashboard changes, a report_data payload field, a sync_status line rewrite). Coordination: it never issues receipts or `verify:` commits; the closeout session holds every sweep plus receipt window and asks it to hold commits meanwhile; taxonomy items T3 and T4 re-verify their rule numbers at start because that session takes next-free numbers in the same specs. |
 | 11 | "Remaining TODO items: CI green at head (check), backlog triage (this plan is the triage), figma_web witness (deferred with the command), anything new a subagent defers (append)." |
 
 ## How to work
@@ -452,8 +453,8 @@ Each item gets its section filled in as it lands, in the same commit as the item
 
 ## DONE - H: MCP hot-reload gated and logged
 
-- Commit `934932a9` on `closeout/H`, cherry-picked onto the spine after T2 (the last item of the
-  group to touch `scripts/mcp/purlin_server.py`). `main()` reads `PURLIN_DEV_RELOAD` once before the
+- Commit `934932a9` on `closeout/H`, cherry-picked as `ba2a5955` after T2 and after the other
+  session's `ada91b46` (the last items of the group to touch `scripts/mcp/purlin_server.py`). `main()` reads `PURLIN_DEV_RELOAD` once before the
   stdin loop; the reload block runs only when it equals `1` (unset or any other value: no `getmtime`,
   no reload, no message). A failed reload prints `Purlin MCP: reload failed` and the traceback to
   stderr and keeps answering with the already loaded module; stdout stays JSON-RPC only (RULE-7).
