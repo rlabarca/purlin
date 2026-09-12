@@ -90,15 +90,6 @@
       "test_name": "test_jest_failed_maps_to_fail",
       "status": "pass",
       "tier": "unit"
-    },
-    {
-      "feature": "proof_plugins_jest",
-      "id": "PROOF-4",
-      "rule": "RULE-4",
-      "test_file": "dev/test_proof_plugins_missing.py",
-      "test_name": "test_jest_pending_maps_to_fail",
-      "status": "pass",
-      "tier": "unit"
     }
   ]
 }

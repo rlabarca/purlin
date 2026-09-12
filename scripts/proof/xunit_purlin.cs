@@ -18,6 +18,8 @@
 //   - write-scoped overwrite keyed by (feature, tier, test_file): keep other features
 //     and this feature's other test files, replace only what this run ran (RULE-4),
 //     reaping entries whose test file no longer exists (RULE-11)
+//   - a skipped test writes no entry (RULE-13) and keeps the entry it already had,
+//     even when a sibling test in the same file did execute (RULE-18)
 //   - emit all 7 fields (RULE-5); status is "pass"/"fail" only (RULE-6)
 //   - no markers collected -> write nothing (RULE-7)
 //
@@ -77,6 +79,17 @@ namespace Purlin
 
         private readonly List<Proof> _proofs = new List<Proof>();
 
+        // SkipKey(feature, id, test_file) for every marked test this run skipped,
+        // so an existing entry for it survives the write-scoped overwrite instead
+        // of being reaped by a sibling test in the same file (RULE-18).
+        private readonly HashSet<string> _skipped = new HashSet<string>(StringComparer.Ordinal);
+
+        // The identity of a skipped marked test: (feature, id, test_file).
+        private static string SkipKey(string feature, string id, string testFile)
+        {
+            return feature + "\u0000" + id + "\u0000" + testFile;
+        }
+
         // The project root: the nearest ancestor of the working directory that
         // contains a `specs/` directory. vstest runs the logger with the test
         // project directory as the CWD, which is usually nested under the repo
@@ -120,9 +133,6 @@ namespace Purlin
             }
             if (marker == null) return;
 
-            // RULE-4: a skipped test is not recorded at all.
-            if (result.Outcome == TestOutcome.Skipped) return;
-
             // RULE-1: "feature:PROOF-N:RULE-N[:tier][:on(a, b)]" — tier defaults to "unit".
             string[] parts = marker.Split(':');
             if (parts.Length < 3) return;
@@ -151,6 +161,14 @@ namespace Purlin
             string testName = !string.IsNullOrEmpty(tc.FullyQualifiedName)
                 ? tc.FullyQualifiedName
                 : tc.DisplayName ?? "";
+
+            // RULE-13: a skipped test is not recorded at all. RULE-18: and the
+            // entry it would have written is protected from this run's reap.
+            if (result.Outcome == TestOutcome.Skipped)
+            {
+                _skipped.Add(SkipKey(feature, id, testFile));
+                return;
+            }
 
             // RULE-4 / RULE-6: Passed -> "pass"; every other non-skipped outcome -> "fail".
             string status = result.Outcome == TestOutcome.Passed ? "pass" : "fail";
@@ -212,6 +230,11 @@ namespace Purlin
                 // files this run did not execute, and reap entries whose test file is gone
                 // (RULE-11).
                 var runFiles = new HashSet<string>(group.Select(p => p.TestFile));
+                // What this run wrote, so a skipped test's protection never keeps an
+                // entry the run has just replaced (RULE-18: only an executed test
+                // replaces its entry).
+                var runWrote = new HashSet<string>(
+                    group.Select(p => SkipKey(p.Id, p.TestFile, p.TestName)), StringComparer.Ordinal);
                 var kept = new List<Dictionary<string, string>>();
                 if (File.Exists(path))
                 {
@@ -223,7 +246,15 @@ namespace Purlin
                             continue;
                         }
                         entry.TryGetValue("test_file", out string? tf);
-                        if (!string.IsNullOrEmpty(tf) && !runFiles.Contains(tf) && File.Exists(tf))
+                        entry.TryGetValue("id", out string? eid);
+                        entry.TryGetValue("test_name", out string? ename);
+                        if (string.IsNullOrEmpty(tf) || !File.Exists(tf)) continue;
+                        // RULE-18: an entry whose test this run skipped is kept with its
+                        // old status, even though a sibling test in the same file ran,
+                        // unless this run wrote that entry afresh.
+                        bool skipped = _skipped.Contains(SkipKey(feature, eid ?? "", tf))
+                            && !runWrote.Contains(SkipKey(eid ?? "", tf, ename ?? ""));
+                        if (!runFiles.Contains(tf) || skipped)
                             kept.Add(entry);
                     }
                 }

@@ -489,18 +489,30 @@ def test_jest_failed_maps_to_fail(tmp_path):
     assert data["proofs"][0]["status"] == "fail"
 
 
-@pytest.mark.proof("proof_plugins_jest", "PROOF-4", "RULE-4")
-def test_jest_pending_maps_to_fail(tmp_path):
-    """Jest status other than 'passed' (e.g., 'pending') maps to 'fail'."""
-    _make_spec(tmp_path, "a", "feat_pending")
+@pytest.mark.proof("proof_common", "PROOF-17", "RULE-13", tier="integration")
+def test_jest_pending_writes_nothing_and_leaves_an_existing_file_alone(tmp_path):
+    """A jest status of 'pending' means the test did not run, so it writes no
+    entry (proof_common RULE-13) and leaves a committed file byte-identical."""
+    spec_dir = _make_spec(tmp_path, "a", "feat_pending")
+    proof_file = spec_dir / "feat_pending.proofs-unit.json"
+    proof_file.write_text(json.dumps({
+        "tier": "unit",
+        "proofs": [{
+            "feature": "feat_pending", "id": "PROOF-1", "rule": "RULE-1",
+            "test_file": "tests/t.js", "test_name": "proved on a capable host",
+            "status": "pass", "tier": "unit",
+        }],
+    }, indent=2) + "\n")
+    before = proof_file.read_bytes()
+
     result = _jest_run_in_process(
         tmp_path,
         "tests/t.js",
         [{"title": "skip [proof:feat_pending:PROOF-1:RULE-1:unit]", "status": "pending"}],
     )
     assert result.returncode == 0
-    data = json.loads((tmp_path / "specs" / "a" / "feat_pending.proofs-unit.json").read_text())
-    assert data["proofs"][0]["status"] == "fail"
+    assert proof_file.read_bytes() == before, (
+        "a run whose only marked test was pending must not rewrite the proof file")
 
 
 # ---------------------------------------------------------------------------

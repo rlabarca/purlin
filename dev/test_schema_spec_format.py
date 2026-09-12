@@ -369,3 +369,48 @@ class TestTierTagParsing:
             "the description's final clause must not be truncated")
         assert info['proof_platforms_by_id'].get('PROOF-4') == [], (
             "a backticked `@on(` in prose is not a platform tag")
+
+
+class TestAnchorNoteMetadata:
+    """RULE-11: `> Note:` is free text the parser ignores.
+
+    The anchor-metadata tests for `> Source:`/`> Pinned:` live in
+    dev/test_mcp_server.py; this proof lives here because `> Note:` is a spec
+    metadata field, which is what schema_spec_format owns.
+    """
+
+    def setup_method(self):
+        self.project_root = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.project_root, '.purlin'))
+        self.spec_dir = os.path.join(self.project_root, 'specs', '_anchors')
+        os.makedirs(self.spec_dir)
+
+    def teardown_method(self):
+        shutil.rmtree(self.project_root)
+
+    @pytest.mark.proof("schema_spec_format", "PROOF-11", "RULE-11", tier="integration")
+    def test_note_field_is_ignored_by_the_parser(self):
+        path = os.path.join(self.spec_dir, 'policy.md')
+        with open(path, 'w') as f:
+            f.write(
+                '# Anchor: policy\n\n'
+                '> Description: Local policy\n'
+                '> Note: run bash dev/setup-external-refs.sh before the first sync\n'
+                '> Note: the second Note line is ignored too\n'
+                '> Source: ./dev/external-refs/policy.git\n'
+                '> Pinned: d1e2816\n\n'
+                '## Rules\n- RULE-1: No eval\n\n'
+                '## Proof\n- PROOF-1 (RULE-1): Grep src/ for eval(; verify zero matches\n'
+            )
+        features = purlin_server._scan_specs(self.project_root)
+        assert 'policy' in features, f"the anchor did not parse at all: {list(features)}"
+        info = features['policy']
+        assert info.get('description') == 'Local policy', (
+            f"the Note text leaked into the description: {info.get('description')!r}")
+        assert info.get('source_url') == './dev/external-refs/policy.git', (
+            f"the Note text displaced the Source: {info.get('source_url')!r}")
+        leaked = [k for k, v in info.items()
+                  if isinstance(v, str) and 'setup-external-refs' in v]
+        assert not leaked, f"the Note text reached parsed fields {leaked}: {info}"
+        assert info.get('rules', {}).get('RULE-1'), (
+            f"the rules still parse alongside a Note: {info.get('rules')}")

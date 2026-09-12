@@ -39,6 +39,15 @@ const PROOF_MARKER_RE =
 
 const FAMILIES = { win32: "windows", darwin: "macos", linux: "linux" };
 
+// Jest statuses for a test it did not execute. proof_common RULE-13 forbids
+// writing "fail" for one, and RULE-18 keeps its committed entry.
+const SKIPPED_STATUSES = new Set(["skipped", "pending", "todo", "disabled"]);
+
+// The identity of a skipped marked test: (feature, id, test_file).
+function skipKey(feature, proofId, testFile) {
+  return `${feature}\u0000${proofId}\u0000${testFile}`;
+}
+
 // PURLIN_PLATFORM when set, else the OS family. The only place the reporter
 // looks at the host; nothing else in it branches on the operating system.
 function hostPlatform() {
@@ -58,6 +67,10 @@ class PurlinProofReporter {
     this.globalConfig = globalConfig;
     this.options = reporterOptions || {};
     this.proofs = {}; // keyed by `${feature}:${tier}:${platform}` (platform "" when agnostic)
+    // skipKey(feature, id, test_file) for every marked test this run skipped, so
+    // an existing entry for it survives the write-scoped overwrite instead of
+    // being reaped by a sibling test in the same file (proof_common RULE-18).
+    this.skipped = new Set();
   }
 
   onTestResult(test, testResult) {
@@ -70,6 +83,16 @@ class PurlinProofReporter {
       if (!match) continue;
 
       const [, feature, proofId, ruleId, tier = "unit", onList] = match;
+      const testFile = relativeTestFile(rootDir, testResult.testFilePath);
+
+      // A test jest did not execute records nothing: it emits no entry
+      // (proof_common RULE-13) and protects the entry it would have written
+      // from this run's reap (RULE-18).
+      if (SKIPPED_STATUSES.has(result.status)) {
+        this.skipped.add(skipKey(feature, proofId, testFile));
+        continue;
+      }
+
       const declared = (onList || "").split(",").map((s) => s.trim()).filter(Boolean);
       const platform = declared.length ? hostPlatform() : "";
       const key = `${feature}:${tier}:${platform}`;
@@ -80,7 +103,7 @@ class PurlinProofReporter {
         feature,
         id: proofId,
         rule: ruleId,
-        test_file: relativeTestFile(rootDir, testResult.testFilePath),
+        test_file: testFile,
         test_name: result.title,
         status: result.status === "passed" ? "pass" : "fail",
         tier,
@@ -125,13 +148,23 @@ class PurlinProofReporter {
       // proof_common RULE-4 (the file carries tier and platform, so within it the
       // key is (feature, test_file)), plus orphan reaping of vanished test files (RULE-11).
       const runFiles = new Set(newEntries.map((e) => e.test_file));
-      const kept = existing.filter(
-        (e) =>
-          e.feature !== feature ||
-          (!runFiles.has(e.test_file) &&
-            !!e.test_file &&
-            fs.existsSync(e.test_file))
+      // What this run wrote, so a skipped test's protection never keeps an entry
+      // the run has just replaced (RULE-18: only an executed test replaces its
+      // entry).
+      const runWrote = new Set(
+        newEntries.map((e) => skipKey(e.id, e.test_file, e.test_name))
       );
+      const kept = existing.filter((e) => {
+        if (e.feature !== feature) return true;
+        if (!e.test_file || !fs.existsSync(e.test_file)) return false;
+        if (!runFiles.has(e.test_file)) return true;
+        // The file ran. RULE-18: an entry whose test the run skipped is kept
+        // with its old status, unless this run wrote it afresh.
+        return (
+          this.skipped.has(skipKey(feature, e.id, e.test_file)) &&
+          !runWrote.has(skipKey(e.id, e.test_file, e.test_name))
+        );
+      });
 
       const payload = platform
         ? { tier, platform, proofs: [...kept, ...newEntries] }

@@ -88,8 +88,17 @@ interface Reporter {
 const PROOF_MARKER_RE =
   /\[proof:(\w+):(PROOF-\d+):(RULE-\d+)(?::(\w+))?(?::on\(([^)]*)\))?\]/;
 
+// The identity of a skipped marked test: (feature, id, test_file).
+function skipKey(feature: string, proofId: string, testFile: string): string {
+  return `${feature}\u0000${proofId}\u0000${testFile}`;
+}
+
 class PurlinVitestReporter implements Reporter {
   private proofs: Map<string, ProofEntry[]> = new Map();
+  // skipKey(feature, id, test_file) for every marked task this run did not
+  // execute, so an existing entry for it survives the write-scoped overwrite
+  // instead of being reaped by a sibling test in the same file (RULE-18).
+  private skipped: Set<string> = new Set();
   private rootDir: string;
 
   constructor() {
@@ -119,16 +128,27 @@ class PurlinVitestReporter implements Reporter {
 
     if (task.type !== "test" && task.type !== "custom") return;
 
-    // Only record tasks that produced a terminal pass/fail result.
-    // Skipped, todo, and unrun tasks have no meaningful proof status.
-    const state = task.result?.state;
-    if (state !== "pass" && state !== "fail") return;
-
     const name = task.name ?? "";
     const match = name.match(PROOF_MARKER_RE);
     if (!match) return;
 
     const [, feature, proofId, ruleId, tier = "unit", onList] = match;
+
+    const filepath = file.filepath ?? file.file?.filepath;
+    const testFile = filepath
+      ? relativeTestFile(this.rootDir, filepath)
+      : "unknown";
+
+    // Only record tasks that produced a terminal pass/fail result. Skipped,
+    // todo, and unrun tasks have no meaningful proof status, so they emit no
+    // entry (proof_common RULE-13) and protect the entry they would have
+    // written from this run's reap (RULE-18).
+    const state = task.result?.state;
+    if (state !== "pass" && state !== "fail") {
+      this.skipped.add(skipKey(feature, proofId, testFile));
+      return;
+    }
+
     const declared = (onList || "").split(",").map((s) => s.trim()).filter(Boolean);
     const platform = declared.length ? hostPlatform() : "";
     const key = `${feature}:${tier}:${platform}`;
@@ -136,11 +156,6 @@ class PurlinVitestReporter implements Reporter {
     if (!this.proofs.has(key)) {
       this.proofs.set(key, []);
     }
-
-    const filepath = file.filepath ?? file.file?.filepath;
-    const testFile = filepath
-      ? relativeTestFile(this.rootDir, filepath)
-      : "unknown";
 
     const entry: ProofEntry = {
       feature,
@@ -193,13 +208,23 @@ class PurlinVitestReporter implements Reporter {
       // proof_common RULE-4 (the file carries tier and platform, so within it the
       // key is (feature, test_file)), plus orphan reaping of vanished test files (RULE-11).
       const runFiles = new Set(newEntries.map((e) => e.test_file));
-      const kept = existing.filter(
-        (e) =>
-          e.feature !== feature ||
-          (!runFiles.has(e.test_file) &&
-            !!e.test_file &&
-            fs.existsSync(e.test_file))
+      // What this run wrote, so a skipped test's protection never keeps an entry
+      // the run has just replaced (RULE-18: only an executed test replaces its
+      // entry).
+      const runWrote = new Set(
+        newEntries.map((e) => skipKey(e.id, e.test_file, e.test_name))
       );
+      const kept = existing.filter((e) => {
+        if (e.feature !== feature) return true;
+        if (!e.test_file || !fs.existsSync(e.test_file)) return false;
+        if (!runFiles.has(e.test_file)) return true;
+        // The file ran. RULE-18: an entry whose test the run skipped is kept
+        // with its old status, unless this run wrote it afresh.
+        return (
+          this.skipped.has(skipKey(feature, e.id, e.test_file)) &&
+          !runWrote.has(skipKey(e.id, e.test_file, e.test_name))
+        );
+      });
 
       const payload = platform
         ? { tier, platform, proofs: [...kept, ...newEntries] }

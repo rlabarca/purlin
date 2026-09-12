@@ -72,9 +72,22 @@ def _declared_platforms(marker):
 class ProofCollector:
     def __init__(self):
         self.proofs = {}  # keyed by (feature, tier, platform); platform is None when agnostic
+        # (feature, id, test_file) for every marked test this run skipped, so an
+        # existing entry for it survives the write-scoped overwrite instead of
+        # being reaped by a sibling test in the same file (proof_common RULE-18).
+        self.skipped = set()
 
     def pytest_runtest_makereport(self, item, call):
-        if call.when != "call":
+        # A skip surfaces as a Skipped exception: raised during setup by a
+        # `skip`/`skipif` marker or a fixture, and during the call phase by a
+        # `pytest.skip()` inside the test body. Both are the skip signal
+        # proof_common RULE-18 asks a capable plugin to observe.
+        if call.when not in ("setup", "call"):
+            return
+        was_skipped = call.excinfo is not None and call.excinfo.errisinstance(
+            pytest.skip.Exception
+        )
+        if call.when == "setup" and not was_skipped:
             return
         for marker in item.iter_markers("proof"):
             if len(marker.args) < 3:
@@ -83,15 +96,21 @@ class ProofCollector:
             proof_id = marker.args[1]
             rule_id = marker.args[2]
             tier = marker.kwargs.get("tier", "unit")
+            # Project-relative with `/` separators on every OS (proof_common
+            # RULE-15): a backslash is never written into a proof file.
+            test_file = str(item.fspath.relto(item.config.rootdir)).replace(os.sep, "/").replace("\\", "/")
+            if was_skipped:
+                # proof_common RULE-13: a skipped test emits no entry at all.
+                # RULE-18: and the entry it would have written is kept.
+                self.skipped.add((feature, proof_id, test_file))
+                continue
             plat = _host_platform() if _declared_platforms(marker) else None
             key = (feature, tier, plat)
             entry = {
                 "feature": feature,
                 "id": proof_id,
                 "rule": rule_id,
-                # Project-relative with `/` separators on every OS (proof_common
-                # RULE-15): a backslash is never written into a proof file.
-                "test_file": str(item.fspath.relto(item.config.rootdir)).replace(os.sep, "/").replace("\\", "/"),
+                "test_file": test_file,
                 "test_name": item.name,
                 "status": "pass" if call.excinfo is None else "fail",
                 "tier": tier,
@@ -135,15 +154,27 @@ class ProofCollector:
             # the repo root. If it is not, every path misses and the merge degrades to
             # the older feature-wide purge, never to something wider.
             run_files = {e["test_file"] for e in new_entries}
-            kept = [
-                e
-                for e in existing
-                if e.get("feature") != feature
-                or (
-                    e.get("test_file") not in run_files
-                    and os.path.exists(e.get("test_file") or "")
+            # What this run wrote, so a skipped test's protection never keeps an
+            # entry the run has just replaced (proof_common RULE-18: only an
+            # executed test replaces its entry).
+            run_wrote = {(e["id"], e["test_file"], e["test_name"]) for e in new_entries}
+
+            def _keep(e):
+                if e.get("feature") != feature:
+                    return True
+                test_file = e.get("test_file") or ""
+                if not os.path.exists(test_file):
+                    return False
+                if test_file not in run_files:
+                    return True
+                # The file ran. RULE-18: an entry whose test the run skipped is
+                # kept with its old status, unless this run wrote it afresh.
+                return (
+                    (feature, e.get("id"), test_file) in self.skipped
+                    and (e.get("id"), test_file, e.get("test_name")) not in run_wrote
                 )
-            ]
+
+            kept = [e for e in existing if _keep(e)]
 
             payload = {"tier": tier}
             if plat is not None:

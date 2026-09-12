@@ -1576,3 +1576,202 @@ class TestOnePluginEverywhere:
             a = open(os.path.join(PROOF_SCRIPTS, src), 'rb').read()
             b = open(os.path.join(_PLUGIN_COPIES, copy), 'rb').read()
             assert a == b, f".purlin/plugins/{copy} differs from scripts/proof/{src}"
+
+
+# ---------------------------------------------------------------------------
+# proof_common RULE-18: a skipped test keeps its committed entry.
+# A file with one passing marked test and one skipped marked test counts as
+# executed for the write-scoped overwrite, so without the skip check the
+# passing test reaps the skipped one's committed evidence.
+# ---------------------------------------------------------------------------
+
+_SEEDED_SKIP_ENTRY_NAME = 'proved_on_a_capable_host'
+
+
+def _seed_two_failing_entries(spec_dir, test_file, feature='feat'):
+    """A committed proof file holding a `fail` entry for each of two ids, both
+    from `test_file`. The run should replace PROOF-1 (it executes) and leave
+    PROOF-2 alone (it is skipped)."""
+    path = spec_dir / f'{feature}.proofs-unit.json'
+    path.write_text(json.dumps({
+        'tier': 'unit',
+        'proofs': [
+            {'feature': feature, 'id': 'PROOF-1', 'rule': 'RULE-1',
+             'test_file': test_file, 'test_name': 'ran_last_time',
+             'status': 'fail', 'tier': 'unit'},
+            {'feature': feature, 'id': 'PROOF-2', 'rule': 'RULE-2',
+             'test_file': test_file, 'test_name': _SEEDED_SKIP_ENTRY_NAME,
+             'status': 'fail', 'tier': 'unit'},
+        ],
+    }, indent=2) + '\n')
+    return path
+
+
+def _assert_skipped_entry_survived(proof_path):
+    """PROOF-2's committed entry is untouched (status `fail`, original
+    `test_name`) and PROOF-1's was replaced by this run's `pass`."""
+    entries = json.load(open(proof_path))['proofs']
+    by_id = {}
+    for e in entries:
+        by_id.setdefault(e['id'], []).append(e)
+    assert 'PROOF-2' in by_id, (
+        f"the skipped test's entry was reaped by the run that skipped it: {entries}")
+    assert len(by_id['PROOF-2']) == 1, by_id['PROOF-2']
+    kept = by_id['PROOF-2'][0]
+    assert kept['status'] == 'fail', (
+        f"a skipped test must not rewrite its own status: {kept}")
+    assert kept['test_name'] == _SEEDED_SKIP_ENTRY_NAME, kept
+    assert len(by_id.get('PROOF-1', [])) == 1, by_id.get('PROOF-1')
+    assert by_id['PROOF-1'][0]['status'] == 'pass', (
+        f"the executed test must replace its own entry: {by_id['PROOF-1'][0]}")
+
+
+class TestSkippedTestKeepsItsEntry:
+    """proof_common RULE-18, one arm per plugin that can observe a skip."""
+
+    # ----- pytest: the skip marker (setup phase) and pytest.skip() (call phase)
+
+    def _run_pytest(self, tmp_path, source):
+        shutil.copy(os.path.join(PROOF_SCRIPTS, 'pytest_purlin.py'),
+                    str(tmp_path / 'conftest.py'))
+        (tmp_path / 'test_feat.py').write_text(source)
+        result = subprocess.run(
+            [sys.executable, '-m', 'pytest', 'test_feat.py', '-q', '--no-header',
+             '-p', 'no:cacheprovider'],
+            capture_output=True, text=True, cwd=str(tmp_path), env=_env(None))
+        assert result.returncode == 0, f"pytest failed:\n{result.stdout}\n{result.stderr}"
+        return result
+
+    @pytest.mark.proof("proof_common", "PROOF-23", "RULE-18", tier="integration")
+    def test_pytest_skip_marker_keeps_the_committed_entry(self, tmp_path):
+        spec_dir = _spec(tmp_path, 'feat')
+        proof_path = _seed_two_failing_entries(spec_dir, 'test_feat.py')
+        self._run_pytest(tmp_path, (
+            'import pytest\n'
+            '@pytest.mark.proof("feat", "PROOF-1", "RULE-1")\n'
+            'def test_passes(): assert True\n'
+            '@pytest.mark.skip(reason="tool not installed")\n'
+            '@pytest.mark.proof("feat", "PROOF-2", "RULE-2")\n'
+            'def test_needs_a_tool(): assert False\n'
+        ))
+        _assert_skipped_entry_survived(proof_path)
+
+    @pytest.mark.proof("proof_common", "PROOF-23", "RULE-18", tier="integration")
+    def test_pytest_body_skip_keeps_the_committed_entry(self, tmp_path):
+        spec_dir = _spec(tmp_path, 'feat')
+        proof_path = _seed_two_failing_entries(spec_dir, 'test_feat.py')
+        self._run_pytest(tmp_path, (
+            'import pytest\n'
+            '@pytest.mark.proof("feat", "PROOF-1", "RULE-1")\n'
+            'def test_passes(): assert True\n'
+            '@pytest.mark.proof("feat", "PROOF-2", "RULE-2")\n'
+            'def test_needs_a_tool():\n'
+            '    pytest.skip("tool not installed")\n'
+        ))
+        _assert_skipped_entry_survived(proof_path)
+
+    # ----- jest: a `pending` result
+
+    @pytest.mark.skipif(not shutil.which('node'), reason='node not available')
+    @pytest.mark.proof("proof_common", "PROOF-23", "RULE-18", tier="integration")
+    def test_jest_pending_result_keeps_the_committed_entry(self, tmp_path):
+        spec_dir = _spec(tmp_path, 'feat')
+        (tmp_path / 'tests').mkdir()
+        js_path = tmp_path / 'tests' / 'feat.test.js'
+        js_path.write_text('// fixture\n')
+        proof_path = _seed_two_failing_entries(spec_dir, 'tests/feat.test.js')
+
+        glob_dir = tmp_path / 'node_modules' / 'glob'
+        glob_dir.mkdir(parents=True, exist_ok=True)
+        (glob_dir / 'package.json').write_text(
+            '{"name":"glob","version":"0.0.0","main":"index.js"}')
+        (glob_dir / 'index.js').write_text(_GLOB_SHIM)
+        shutil.copy(os.path.join(PROOF_SCRIPTS, 'jest_purlin.js'),
+                    str(tmp_path / 'jest_purlin.js'))
+        harness = tmp_path / 'harness.cjs'
+        harness.write_text(
+            'const Reporter = require("./jest_purlin.js");\n'
+            'const r = new Reporter({ rootDir: ' + json.dumps(str(tmp_path)) + ' }, {});\n'
+            'r.onTestResult(null, { testFilePath: ' + json.dumps(str(js_path)) + ', testResults: [\n'
+            '  { title: "runs [proof:feat:PROOF-1:RULE-1]", status: "passed" },\n'
+            '  { title: "needs a tool [proof:feat:PROOF-2:RULE-2]", status: "pending" },\n'
+            ']});\n'
+            'r.onRunComplete();\n')
+        result = subprocess.run(['node', str(harness)], capture_output=True, text=True,
+                                cwd=str(tmp_path), env=_env(None))
+        assert result.returncode == 0, f"jest harness failed:\n{result.stdout}\n{result.stderr}"
+        _assert_skipped_entry_survived(proof_path)
+
+    # ----- vitest: a task with no terminal pass/fail state
+
+    @pytest.mark.skipif(not _node_can_run_ts(),
+                        reason='node with a TS loader (tsc or type-stripping) not available')
+    @pytest.mark.proof("proof_common", "PROOF-23", "RULE-18", tier="integration")
+    def test_vitest_skip_state_keeps_the_committed_entry(self, tmp_path):
+        spec_dir = _spec(tmp_path, 'feat')
+        (tmp_path / 'feat.test.ts').write_text('// fixture\n')
+        proof_path = _seed_two_failing_entries(spec_dir, 'feat.test.ts')
+        files_js = (
+            '[{ type: "suite", filepath: process.cwd() + "/feat.test.ts", tasks: [\n'
+            '  { type: "test", name: "runs [proof:feat:PROOF-1:RULE-1:unit]",'
+            ' result: { state: "pass" } },\n'
+            '  { type: "test", name: "needs a tool [proof:feat:PROOF-2:RULE-2:unit]",'
+            ' result: { state: "skip" } },\n'
+            ']}]')
+        TestTypeScriptProofPlugin()._drive_reporter(tmp_path, files_js)
+        _assert_skipped_entry_survived(proof_path)
+
+    # ----- xunit: no dotnet toolchain on this host, so the source is the evidence
+
+    @pytest.mark.proof("proof_common", "PROOF-23", "RULE-18", tier="integration")
+    def test_xunit_logger_records_and_consults_the_skip_set(self):
+        """The .NET logger needs a `dotnet` SDK this host does not have (the
+        behavioural xUnit classes above are skipped for that same reason), so
+        this arm asserts on `scripts/proof/xunit_purlin.cs` itself: the Skipped
+        branch records the key, and the kept filter consults it."""
+        src = open(os.path.join(PROOF_SCRIPTS, 'xunit_purlin.cs'), encoding='utf-8').read()
+        m = _re.search(
+            r'if\s*\(result\.Outcome\s*==\s*TestOutcome\.Skipped\)\s*\{(?P<body>[^}]*)\}', src)
+        assert m, "no TestOutcome.Skipped branch in xunit_purlin.cs"
+        body = m.group('body')
+        assert '_skipped.Add(SkipKey(feature, id, testFile))' in body, (
+            f"the Skipped branch must record (feature, id, test_file): {body!r}")
+        assert 'return;' in body, body
+        assert _re.search(r'bool skipped = _skipped\.Contains\(SkipKey\(feature,', src), (
+            "the kept filter does not compute a skip key for the existing entry")
+        assert '!runFiles.Contains(tf) || skipped' in src, (
+            "the kept filter must admit an entry whose (feature, id, test_file) was skipped")
+
+
+class TestSkipExemptionListMatchesTheSources:
+    """proof_common RULE-18's exemption list, checked against the 8 sources."""
+
+    _CAPABLE = {
+        'pytest_purlin.py': 'self.skipped',
+        'jest_purlin.js': 'this.skipped',
+        'vitest_purlin.ts': 'this.skipped',
+        'xunit_purlin.cs': '_skipped',
+    }
+    _EXEMPT = ('shell_purlin.sh', 'sql_purlin.sh', 'phpunit_purlin.php', 'c_purlin_emit.py')
+
+    @pytest.mark.proof("proof_common", "PROOF-24", "RULE-18", tier="integration")
+    def test_the_exempt_plugins_named_in_rule_18_are_the_ones_without_a_skip_set(self):
+        spec = open(os.path.join(os.path.dirname(__file__), '..', 'specs', '_anchors',
+                                 'proof_common.md'), encoding='utf-8').read()
+        rule = [ln for ln in spec.splitlines() if ln.startswith('- RULE-18:')]
+        assert len(rule) == 1, "proof_common must state RULE-18 exactly once"
+        clause = _re.search(r'no skip signal \(([^)]*)\) are exempt', rule[0])
+        assert clause, f"RULE-18 must name its exempt plugins in parentheses: {rule[0]}"
+        named = [p.strip() for p in clause.group(1).split(',')]
+        assert named == ['shell', 'sql', 'phpunit', 'c'], (
+            f"RULE-18's exemption list drifted from the sources: {named}")
+
+        skip_set = _re.compile(r'\b(?:self\.skipped|this\.skipped|_skipped)\b')
+        for name in self._EXEMPT:
+            src = open(os.path.join(PROOF_SCRIPTS, name), encoding='utf-8').read()
+            assert not skip_set.search(src), (
+                f"{name} is listed exempt in RULE-18 but its source keeps a skip set")
+        for name, token in self._CAPABLE.items():
+            src = open(os.path.join(PROOF_SCRIPTS, name), encoding='utf-8').read()
+            assert token in src, (
+                f"{name} can observe a skip, so RULE-18 requires it to keep a skip set ({token})")

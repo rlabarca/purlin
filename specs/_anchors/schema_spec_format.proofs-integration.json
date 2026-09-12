@@ -1,0 +1,14 @@
+{
+  "tier": "integration",
+  "proofs": [
+    {
+      "feature": "schema_spec_format",
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_note_field_is_ignored_by_the_parser",
+      "status": "pass",
+      "tier": "integration"
+    }
+  ]
+}

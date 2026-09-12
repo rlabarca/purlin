@@ -108,15 +108,26 @@ When proof plugins write a proof file, they:
 
 1. Load the existing file (if any).
 2. Keep an existing entry only if it belongs to a different feature, **or** its `test_file`
-   was not executed in this run **and** that `test_file` still resolves to a file in the
-   working tree.
+   still resolves to a file in the working tree **and** either that `test_file` was not
+   executed in this run, or the run skipped the test the entry belongs to and did not write
+   that entry afresh.
 3. Append the new entries from the current test run.
 4. Write the merged result.
 
 ```python
 keep(e) = e["feature"] != feature
-          or (e["test_file"] not in this_run_files and os.path.exists(e["test_file"]))
+          or (os.path.exists(e["test_file"])
+              and (e["test_file"] not in this_run_files
+                   or ((feature, e["id"], e["test_file"]) in this_run_skipped
+                       and (e["id"], e["test_file"], e["test_name"]) not in this_run_wrote)))
 ```
+
+`this_run_skipped` holds a `(feature, id, test_file)` triple for each marked test the run
+skipped; `this_run_wrote` holds an `(id, test_file, test_name)` triple for each entry this
+write is about to append, so an executed test always replaces its own entry even when a
+skipped test in the same file carries the same proof id. A plugin whose framework has no skip
+signal (shell, sql, phpunit, c) leaves `this_run_skipped` empty, and the clause has no effect
+there.
 
 An entry whose `test_file` is empty or unresolvable fails the existence check and is reaped,
 then rewritten by the same write if the current run produced it. No special case is needed.
@@ -143,6 +154,10 @@ A narrower key reaps less, so two rules bound what survives:
   that `(feature, tier, platform)` is run again by something that executes the file. This is
   the deliberate cost of per-file scoping, and it is asserted by a proof so it cannot change
   silently.
+- **A test the run skipped is not reaped**, even though its file ran. Without this, one
+  passing test in a file would reap the committed entry of a sibling that a missing tool
+  skipped, and the evidence a capable host produced would disappear on a host that cannot
+  reproduce it. Only an executed test replaces its own entry.
 
 The existence check resolves `test_file` relative to the process's working directory, which
 the plugins already require to be the repository root (they glob `specs/**/*.md` from it). If
@@ -173,9 +188,17 @@ not a Windows proof without a second code path.
 
 `status` records execution, never availability. A test that could not run on this host emits no
 entry at all: `"fail"` means it ran and its assertion failed. Writing `"fail"` for a skipped test
-is forbidden, because nothing downstream can then tell a broken build from a missing tool. Under
-the merge key above, emitting nothing is safe: whatever a capable host last proved for those ids
-stays committed and untouched, so the skip neither falsifies nor destroys it.
+is forbidden, because nothing downstream can then tell a broken build from a missing tool.
+Emitting nothing is safe because the merge keeps the skipped test's entry: whatever a capable
+host last proved for those ids stays committed and untouched, so the skip neither falsifies nor
+destroys it. The merge key alone would not be enough, because a sibling test that did run in the
+same file puts that file in `this_run_files`.
+
+Every plugin whose framework reports a skip observes it: pytest reads the skip report (a
+`skip`/`skipif` marker, a skipping fixture, or a `pytest.skip()` in the body), jest a `skipped`,
+`pending` or `todo` status, vitest a task with no terminal `pass`/`fail` state, and the .NET
+logger a `Skipped` outcome. The shell, sql, phpunit and c plugins are exempt: their marker is an
+explicit call, so a script that never called it cannot be told apart from one that skipped.
 
 A proof the spec declares with `@on(...)` and no scoped result for a named platform is reported
 as `AWAITING RUNNER` rather than `NO PROOF`. It does not count against coverage and does not

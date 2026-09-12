@@ -1,4 +1,4 @@
-> Format-Version: 4
+> Format-Version: 5
 
 # Anchor Spec Format
 
@@ -61,6 +61,7 @@ These fields are written by the anchor author. All are optional.
 | `> Type:` | Suggested types: `design`, `api`, `security`, `brand`, `platform`, `schema`, `legal`, `prodbrief`. Not enforced. |
 | `> Global:` | When `true`, this anchor's rules auto-apply to ALL feature specs without needing `> Requires:`. |
 | `> Visual-Reference:` | Pointer to visual source: `figma://fileKey/nodeId`, `./path.png`, `./path.html`, `https://url`. |
+| `> Note:` | Free text for the reader: setup a checkout needs before the anchor works, why a Source points where it does, anything a maintainer should know. Optional, repeatable, and ignored by every parser: it is never read into the description, the Source, or any other field. |
 
 ## Part 2: Consumer Tracking Fields (added by Purlin tooling)
 
