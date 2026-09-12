@@ -1,6 +1,6 @@
 {
-  "feature": "skill_find",
-  "vhash": "e357c4b8",
+  "feature": "refresh_digest_hook",
+  "vhash": "5666c1d6",
   "vhash_version": 2,
   "commit": "092c582e74a83fbbfc0fca50d64f74f2582db9d7",
   "timestamp": "2026-09-12T17:28:42.237911+00:00",
@@ -8,53 +8,161 @@
     "RULE-1",
     "RULE-2",
     "RULE-3",
-    "RULE-4"
+    "RULE-4",
+    "RULE-5",
+    "RULE-6",
+    "RULE-7",
+    "security_no_dangerous_patterns/RULE-1",
+    "security_no_dangerous_patterns/RULE-2",
+    "security_no_dangerous_patterns/RULE-3",
+    "security_no_dangerous_patterns/RULE-4",
+    "security_no_dangerous_patterns/RULE-5",
+    "security_no_dangerous_patterns/RULE-6"
   ],
   "rule_hashes": {
-    "RULE-1": "d402581da42374f9",
-    "RULE-2": "f882d91d4488414b",
-    "RULE-3": "aa0e8e97b0d1b0a3",
-    "RULE-4": "31813cc5a5a7a2a9"
+    "RULE-1": "55cbb9bea3a3d3a9",
+    "RULE-2": "b743ae354f83e1d0",
+    "RULE-3": "e828fd437bac7bfb",
+    "RULE-4": "d61958b07656de9c",
+    "RULE-5": "c8d4b2accc5b0ebf",
+    "RULE-6": "21cf34580e63d1ac",
+    "RULE-7": "ce7a8c3941d051d7",
+    "security_no_dangerous_patterns/RULE-1": "088d6b3d2448029d",
+    "security_no_dangerous_patterns/RULE-2": "5472c9b7f8b25c0e",
+    "security_no_dangerous_patterns/RULE-3": "cf98992127576281",
+    "security_no_dangerous_patterns/RULE-4": "f53ddfe0e85bc1be",
+    "security_no_dangerous_patterns/RULE-5": "40da78efb052bece",
+    "security_no_dangerous_patterns/RULE-6": "1f7d90da54835852"
   },
   "proofs": [
     {
-      "feature": "skill_find",
+      "feature": "refresh_digest_hook",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_refresh_digest_hook.py",
+      "test_name": "test_every_path_exits_zero_and_prints_nothing",
+      "platform": null
+    },
+    {
+      "feature": "refresh_digest_hook",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_refresh_digest_hook.py",
+      "test_name": "test_regenerates_only_when_an_input_is_newer",
+      "platform": null
+    },
+    {
+      "feature": "refresh_digest_hook",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_refresh_digest_hook.py",
+      "test_name": "test_a_held_lock_means_leave",
+      "platform": null
+    },
+    {
+      "feature": "refresh_digest_hook",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_refresh_digest_hook.py",
+      "test_name": "test_a_write_during_generation_is_picked_up",
+      "platform": null
+    },
+    {
+      "feature": "refresh_digest_hook",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_refresh_digest_hook.py",
+      "test_name": "test_each_skip_condition_writes_nothing",
+      "platform": null
+    },
+    {
+      "feature": "refresh_digest_hook",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_refresh_digest_hook.py",
+      "test_name": "test_no_network_named_producer_and_touch_instead_of_rewrite",
+      "platform": null
+    },
+    {
+      "feature": "refresh_digest_hook",
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_refresh_digest_hook.py",
+      "test_name": "test_hooks_json_registers_exactly_this_script_async_on_three_events",
+      "platform": null
+    },
+    {
+      "feature": "security_no_dangerous_patterns",
       "id": "PROOF-1",
       "rule": "RULE-1",
       "status": "pass",
       "tier": "unit",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_has_frontmatter",
+      "test_file": "dev/test_security.py",
+      "test_name": "test_no_dynamic_code_execution",
       "platform": null
     },
     {
-      "feature": "skill_find",
+      "feature": "security_no_dangerous_patterns",
       "id": "PROOF-2",
       "rule": "RULE-2",
       "status": "pass",
       "tier": "unit",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_has_usage_section",
+      "test_file": "dev/test_security.py",
+      "test_name": "test_no_shell_true",
       "platform": null
     },
     {
-      "feature": "skill_find",
+      "feature": "security_no_dangerous_patterns",
       "id": "PROOF-3",
       "rule": "RULE-3",
       "status": "pass",
       "tier": "unit",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_name_matches_directory",
+      "test_file": "dev/test_security.py",
+      "test_name": "test_no_os_system",
       "platform": null
     },
     {
-      "feature": "skill_find",
+      "feature": "security_no_dangerous_patterns",
       "id": "PROOF-4",
       "rule": "RULE-4",
       "status": "pass",
       "tier": "unit",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_references_sync_status_mcp_tool",
+      "test_file": "dev/test_security.py",
+      "test_name": "test_no_hardcoded_credentials",
+      "platform": null
+    },
+    {
+      "feature": "security_no_dangerous_patterns",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_security.py",
+      "test_name": "test_subprocess_uses_list_args",
+      "platform": null
+    },
+    {
+      "feature": "security_no_dangerous_patterns",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_security.py",
+      "test_name": "test_source_url_never_reaches_git_in_option_position",
       "platform": null
     }
   ],
@@ -502,11 +610,38 @@
     },
     "proof_files": [
       {
-        "file": "specs/skills/skill_find.proofs-unit.json",
+        "file": "specs/_anchors/security_no_dangerous_patterns.proofs-integration.json",
+        "tier": "integration",
+        "platform": null,
+        "commit": "a5d71a013546313e7bc4cb298b89ed7e69720ea9",
+        "committed_at": "2026-09-11T22:36:11-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      },
+      {
+        "file": "specs/_anchors/security_no_dangerous_patterns.proofs-unit.json",
         "tier": "unit",
         "platform": null,
-        "commit": "5f42a16ba84ca8b20a9185eabe1d7a8f73a84b72",
-        "committed_at": "2026-04-04T18:47:16-04:00",
+        "commit": "a5d71a013546313e7bc4cb298b89ed7e69720ea9",
+        "committed_at": "2026-09-11T22:36:11-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      },
+      {
+        "file": "specs/hooks/refresh_digest_hook.proofs-integration.json",
+        "tier": "integration",
+        "platform": null,
+        "commit": "0f8a5909ad6bacb634522b0b8c2ba3de31e595a5",
+        "committed_at": "2026-09-12T12:28:03-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      },
+      {
+        "file": "specs/hooks/refresh_digest_hook.proofs-unit.json",
+        "tier": "unit",
+        "platform": null,
+        "commit": "0f8a5909ad6bacb634522b0b8c2ba3de31e595a5",
+        "committed_at": "2026-09-12T12:28:03-04:00",
         "runner": null,
         "executed_in_test_run": true
       }
