@@ -141,7 +141,7 @@ class TestProofFormatEnforcement:
             )
         # Run the real pytest plugin via subprocess
         result = subprocess.run(
-            ['python3', '-m', 'pytest', test_file, '-q'],
+            [sys.executable, '-m', 'pytest', test_file, '-q'],
             cwd=self.project_root,
             capture_output=True, text=True
         )
@@ -199,7 +199,7 @@ class TestProofFormatEnforcement:
                 'from pytest_purlin import pytest_configure  # noqa\n'
             )
         result = subprocess.run(
-            ['python3', '-m', 'pytest', 'test_first_half.py', '-q'],
+            [sys.executable, '-m', 'pytest', 'test_first_half.py', '-q'],
             cwd=self.project_root, capture_output=True, text=True,
         )
         assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
@@ -253,7 +253,7 @@ class TestScopedProofFiles(TestProofFormatEnforcement):
     def _pytest(self, *files, platform='p1'):
         import subprocess
         env = dict(os.environ, PURLIN_PLATFORM=platform)
-        result = subprocess.run(['python3', '-m', 'pytest', *files, '-q', '-p', 'no:cacheprovider'],
+        result = subprocess.run([sys.executable, '-m', 'pytest', *files, '-q', '-p', 'no:cacheprovider'],
                                 cwd=self.project_root, capture_output=True, text=True, env=env)
         assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
 
