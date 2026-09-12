@@ -30,23 +30,46 @@ purlin:init --mcp                       Run only the MCP step of --update
 
 Each `--flag` runs ONLY that step, not the full init.
 
+**Who does what.** This skill asks the questions; `scripts/init/scaffold.py` writes the files, exactly as `scripts/update/migrate.py` performs `--update`. The script handles the full init and the `--force` re-run (Steps 1, 2, 4, 5, 5b, 7 and 7a), and takes `--pre-push`, `--digest`, `--report` and `--mutation-checks` as answers. The single-step flags of the same names, `--add-plugin`, `--list-plugins`, `--sync-audit-criteria` and `--audit-llm` stay agent-driven; `--update` is `scripts/update/migrate.py` (Step 5d) and `--mcp` is its MCP step (Step 5c).
+
 ## Step 1 — Pre-flight
 
 - **Git check (mandatory):** Run `git rev-parse --git-dir`. If it fails, the project is not a git repository. Print: `"Purlin requires git. Run 'git init' first."` Stop. Do NOT proceed without git — proofs, receipts, manual stamps, drift detection, and the pre-push hook all depend on git.
-- If `.purlin/` exists and `--force` is not set: "Project already initialized. Use `--force` to re-initialize." Stop.
-- If `.purlin/` exists and `--force` is set: proceed, preserve existing `config.json`.
+- If `.purlin/config.json` exists and `--force` is not set: "Project already initialized. Use `--force` to re-initialize." Stop.
+- If it exists and `--force` is set: proceed. The scaffolder keeps every key the existing `config.json` carries that this run does not re-answer (`platforms`, `audit_criteria`, `audit_llm` among them), and keeps every plugin copy, wiring file, hook and dashboard already on disk.
 
-## Step 2 — Create Directory Structure
+The scaffolder re-checks all three: it prints the same git line and exits 2 without git, and exits 1 naming `--force` on an already-initialized project. Asking first is what keeps the user from watching a command fail; the script refusing is what keeps a half-initialized project from existing.
+
+## Step 2 — Scaffold the Project
+
+Ask the questions in Steps 3, 5b, 7, 7a and 7d first, then run the scaffolder
+once with the answers. It writes every file init creates and prints one line
+per path:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" \
+  --project-root . \
+  --test-framework <auto|id|id,id> \
+  --pre-push <warn|strict|off> \
+  --digest <auto|warn|off> \
+  --report <on|off> \
+  --mutation-checks <on|off> \
+  [--remote-verification <required|optional|off>] [--force] [--dry-run]
+```
 
 ```
 .purlin/
-  config.json         # from templates/config.json
-  plugins/            # proof plugin installed here
+  config.json         # from templates/config.json, version from VERSION
+  plugins/            # the selected frameworks' proof plugins
 specs/
   _anchors/           # anchor specs go here
 ```
 
-Read the Purlin framework version from `${CLAUDE_PLUGIN_ROOT}/VERSION` and write it as the `version` field in config.json. This ensures the config always matches the installed framework version.
+Every value above is an answer the user gave. The script decides nothing that
+was asked: it reads `templates/config.json`, writes the answers over it, stamps
+`version` from `${CLAUDE_PLUGIN_ROOT}/VERSION`, and never writes a proof entry,
+a receipt or a commit. `--dry-run` prints the same plan and writes nothing,
+which is what to run when the user wants to see the plan before agreeing to it.
 
 Config template fields (from `templates/config.json`), plus the optional `platforms` field that init never writes:
 
@@ -108,50 +131,36 @@ Which framework(s)? You can select multiple, e.g.: pytest, jest
 
 If the user selects "other", suggest `purlin:init --add-plugin` to install a custom proof plugin.
 
-Write selected frameworks to `.purlin/config.json` under `test_framework`. For multiple frameworks, use a comma-separated list: `"pytest,jest"`.
+Pass the selection to the scaffolder as `--test-framework`: one id, a comma-separated list (`pytest,jest`), or `auto` to record `auto` and let the scaffolder install the plugin for every framework its detection matches. When nothing is detected and the user selects nothing, `auto` installs no plugin and says so: shell is scaffolded because it was chosen, never as a silent fallback.
 
-## Step 4 — Scaffold Proof Plugins
+## Step 4 — Proof Plugins and Test Wiring
 
-Copy ALL selected proof plugins from `scripts/proof/` to `.purlin/plugins/`. Use the plugin file column in `references/supported_frameworks.md` to map each framework to its source file. If multiple frameworks were selected, scaffold ALL of them.
+The scaffolder installs the plugin file `references/supported_frameworks.md`
+registers for each selected framework into `.purlin/plugins/`, byte-identical
+to the installed plugin's `scripts/proof/` copy, and installs all of them when
+several were selected.
 
-For a framework listed under **Additional Plugins (manual setup)** (e.g. xUnit), `purlin:init` does not auto-wire it — after copying its plugin file, print the framework's setup steps from its section in `references/formats/proofs_format.md` and direct the user to complete the wiring manually.
+For a framework listed under **Additional Plugins (manual setup)** (e.g. xUnit), `purlin:init` does not auto-wire it — after the plugin file is copied, print the framework's setup steps from its section in `references/formats/proofs_format.md` and direct the user to complete the wiring manually.
 
-For pytest, also create or update `conftest.py` at the project root:
+For the three frameworks it does wire, the scaffolder writes the file below
+**only when the project has no file of that name**, and reports `kept` when it
+has one: a project's own test configuration is never rewritten by init.
 
-```python
-pytest_plugins = [".purlin.plugins.pytest_purlin"]
-```
+| Framework | File | What it contains |
+|-----------|------|------------------|
+| pytest | `conftest.py` | `.purlin/plugins` appended to `sys.path`, then `pytest_plugins = ["pytest_purlin"]`. `.purlin` is not an importable package name, so a dotted `.purlin.plugins.pytest_purlin` raises before any test runs |
+| jest | `jest.config.js` | `reporters: ['default', '.purlin/plugins/jest_purlin.js']` |
+| vitest | `vitest.config.ts` | `reporters: ['default', '.purlin/plugins/vitest_purlin.ts']` (Vitest loads `.ts` reporters natively via Vite — no Jest config) |
 
-For jest, add reporter config to `jest.config.js` or `package.json`:
+When the project already has one of those files, tell the user which line to
+add; the scaffolder's plan says which files it kept.
 
-```json
-{
-  "reporters": ["default", ".purlin/plugins/jest_purlin.js"]
-}
-```
+## Step 5 — .gitignore
 
-For vitest, add the TypeScript reporter to `vitest.config.ts` (Vitest loads `.ts` reporters natively via Vite — no Jest config):
-
-```typescript
-import { defineConfig } from 'vitest/config';
-export default defineConfig({
-  test: { reporters: ['default', '.purlin/plugins/vitest_purlin.ts'] },
-});
-```
-
-## Step 5 — Update .gitignore
-
-Ensure `.gitignore` contains:
-
-```
-# Purlin runtime (not committed)
-.purlin/runtime/
-.purlin/plugins/__pycache__/
-.purlin/cache/
-
-# Dashboard HTML (symlinked from framework)
-/purlin-report.html
-```
+The scaffolder appends `templates/gitignore.purlin` to the project's
+`.gitignore`, entry by entry, skipping any entry the file already carries so a
+re-init never duplicates one. That template is the single source for the
+block: read it rather than restating its entries here.
 
 **Note:** `.purlin/report-data.js` is NOT gitignored — it is the project digest and should be committed. If upgrading from a prior version, remove any existing `.purlin/report-data.js` entry from `.gitignore`.
 
@@ -165,9 +174,9 @@ HTML dashboard report:
   [off] Disable dashboard report generation
 ```
 
-If **on** (default): set `"report": true` in `.purlin/config.json`. Create a symlink at the project root: `purlin-report.html -> ${CLAUDE_PLUGIN_ROOT}/scripts/report/purlin-report.html`. This ensures the dashboard always reflects the latest Purlin version without manual copies. Print: `Dashboard: purlin-report.html (open in browser after running purlin:status)`
+If **on** (default): pass `--report on`. The scaffolder writes `"report": true` and symlinks `purlin-report.html` at the project root to the installed plugin's `scripts/report/purlin-report.html`, so the dashboard tracks plugin updates instead of going stale as a copy; it copies the file only when the link cannot be made, and its plan says which. Print: `Dashboard: purlin-report.html (open in browser after running purlin:status)`
 
-If **off**: set `"report": false` in `.purlin/config.json`. Do not copy the HTML file.
+If **off**: pass `--report off`. No dashboard is created, and an existing one is never deleted.
 
 When called via `purlin:init --report`, ONLY this step runs. Read the current config, show the current setting, and ask to toggle:
 
@@ -284,16 +293,12 @@ the script does not apply, and a second `--update` changes nothing.
 
 ## Step 6 — Confirmation
 
+Print the scaffolder's plan verbatim: it is one line per path, each beginning
+`wrote`, `kept`, `copied`, `linked` or `skipped`, so it says what was created
+and what was left alone without the tree being inspected a second time. Then:
+
 ```
 Project initialized for Purlin.
-
-Created:
-  .purlin/config.json
-  .purlin/plugins/<proof_plugin>
-  specs/
-  specs/_anchors/
-  purlin-report.html (if report enabled)
-  .git/hooks/pre-push (if installed)
 
 Test framework: <detected>
 Proof plugin: .purlin/plugins/<name>
@@ -324,25 +329,14 @@ Pre-push hook mode:
 
 Write the chosen mode to `.purlin/config.json` as `"pre_push": "warn"`, `"pre_push": "strict"` or `"pre_push": "off"`. Any other value makes the hook block every push until it is corrected: a typo must not disable enforcement invisibly.
 
-When called via `purlin:init --pre-push`, ONLY the mode selection above runs (no hook installation). The hook install steps below only run during the full init flow.
+When called via `purlin:init --pre-push`, ONLY the mode selection above runs (no hook installation). The hook install below happens during the full init flow, inside the scaffolder.
 
-1. Locate the Purlin plugin root (`$CLAUDE_PLUGIN_ROOT` or the framework scripts directory).
-2. Check if `.git/hooks/pre-push` already exists:
-   - If it exists and is already the Purlin hook (contains `purlin`): skip, print `Pre-push hook already installed.`
-   - If it exists and is a different hook: warn and skip — do NOT overwrite. Print: `Existing pre-push hook found — skipping Purlin hook install. To add manually, see scripts/hooks/pre-push.sh`
-   - If it does not exist: proceed.
-3. Create a symlink or copy:
-   ```bash
-   # Preferred: symlink (stays in sync with framework updates)
-   ln -s "$PURLIN_SCRIPTS/scripts/hooks/pre-push.sh" .git/hooks/pre-push
-   chmod +x .git/hooks/pre-push
-   ```
-   If the symlink target is not resolvable (e.g., consumer project without local framework checkout), copy the file instead:
-   ```bash
-   cp "$PURLIN_SCRIPTS/scripts/hooks/pre-push.sh" .git/hooks/pre-push
-   chmod +x .git/hooks/pre-push
-   ```
-4. Print: `Installed git pre-push hook (proof coverage check).`
+The scaffolder installs `.git/hooks/pre-push` as a symlink to the installed
+plugin's `scripts/hooks/pre-push.sh`, and copies the file only when the link
+cannot be made (a consumer project with no local framework checkout). A hook
+file that already exists is kept, whether or not it is Purlin's: an existing
+hook is someone's, and init does not overwrite it. Its plan line says which of
+the three happened. Print: `Installed git pre-push hook (proof coverage check).`
 
 ## Step 7a — Pre-commit Hook (Project Digest)
 
@@ -368,24 +362,13 @@ Run purlin:audit separately when you want fresh audit scores.
 
 Write the chosen mode to `.purlin/config.json` as `"digest": "auto"` (or `"warn"` or `"off"`).
 
-When called via `purlin:init --digest`, run the mode selection above AND the hook installation steps below. Also remove `.purlin/report-data.js` from `.gitignore` if present. This makes `--digest` a complete setup command for existing projects — the user runs one command and gets the full digest feature.
+When called via `purlin:init --digest`, run the mode selection above AND the hook installation below. Also remove `.purlin/report-data.js` from `.gitignore` if present. This makes `--digest` a complete setup command for existing projects — the user runs one command and gets the full digest feature.
 
-1. Check if `.git/hooks/pre-commit` already exists:
-   - If it exists and is already the Purlin hook (contains `purlin`): skip, print `Pre-commit hook already installed.`
-   - If it exists and is a different hook: warn and skip — do NOT overwrite. Print: `Existing pre-commit hook found — skipping Purlin hook install. To add manually, see scripts/hooks/pre-commit.sh`
-   - If it does not exist: proceed.
-2. Create a symlink or copy:
-   ```bash
-   # Preferred: symlink (stays in sync with framework updates)
-   ln -s "$PURLIN_SCRIPTS/scripts/hooks/pre-commit.sh" .git/hooks/pre-commit
-   chmod +x .git/hooks/pre-commit
-   ```
-   If the symlink target is not resolvable, copy the file instead:
-   ```bash
-   cp "$PURLIN_SCRIPTS/scripts/hooks/pre-commit.sh" .git/hooks/pre-commit
-   chmod +x .git/hooks/pre-commit
-   ```
-3. Print: `Installed git pre-commit hook (project digest).`
+The scaffolder installs `.git/hooks/pre-commit` by the same symlink-then-copy
+rule as the pre-push hook, and keeps an existing hook of either kind. At
+`"digest": "off"` it installs no pre-commit hook at all and says so: the mode
+that disables the digest should not leave a hook behind to read it. Print:
+`Installed git pre-commit hook (project digest).`
 
 ## Step 7b — Audit Criteria
 
@@ -477,7 +460,7 @@ Mutation checks:
   [on]  Every new or amended proof is mutation-checked before the commit that carries it
 ```
 
-Write the answer to `.purlin/config.json` as `"mutation_checks": true` or `"mutation_checks": false`.
+Pass the answer to the scaffolder as `--mutation-checks on|off`, which writes `"mutation_checks": true` or `"mutation_checks": false`.
 
 When called via `purlin:init --mutation-checks on|off`, ONLY this step runs: read the current
 value, show it, and write the new one, exactly as `--pre-push` does for its mode.

@@ -3,10 +3,127 @@
   "proofs": [
     {
       "feature": "skill_init",
-      "id": "PROOF-51",
-      "rule": "RULE-48",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_registry_covers_every_shipped_plugin",
+      "id": "PROOF-61",
+      "rule": "RULE-58",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_skill_delegates_the_mechanics_to_the_real_script",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-62",
+      "rule": "RULE-59",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_refuses_a_directory_that_is_not_a_git_repository",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-63",
+      "rule": "RULE-60",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_refuses_an_initialized_project_without_force",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-64",
+      "rule": "RULE-61",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_force_keeps_unanswered_keys_and_existing_artifacts",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-65",
+      "rule": "RULE-62",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_config_is_the_template_with_the_answers_and_the_version",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-66",
+      "rule": "RULE-63",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_plugin_copies_are_byte_identical_per_framework",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-67",
+      "rule": "RULE-64",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_runner_wiring_is_written_when_absent_and_kept_when_present",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-68",
+      "rule": "RULE-65",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_gitignore_block_is_the_template_and_is_written_once",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-69",
+      "rule": "RULE-66",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_dashboard_is_a_symlink_and_report_off_deletes_nothing",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-70",
+      "rule": "RULE-67",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_hooks_are_linked_kept_and_skipped_at_digest_off",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-71",
+      "rule": "RULE-68",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_plan_names_every_path_and_dry_run_writes_nothing",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-72",
+      "rule": "RULE-69",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_two_runs_with_the_same_answers_leave_the_same_bytes",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-73",
+      "rule": "RULE-70",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_every_answered_mode_is_written_verbatim",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-74",
+      "rule": "RULE-71",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_auto_scaffolds_what_it_detects_and_never_defaults_to_shell",
       "status": "pass",
       "tier": "integration"
     },
@@ -70,6 +187,15 @@
       "rule": "RULE-57",
       "test_file": "dev/test_init_update.py",
       "test_name": "test_mutation_checks_is_a_question_not_a_backfill",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-51",
+      "rule": "RULE-48",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_registry_covers_every_shipped_plugin",
       "status": "pass",
       "tier": "integration"
     }

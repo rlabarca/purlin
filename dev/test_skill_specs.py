@@ -912,74 +912,81 @@ class TestSkillInit:
 
     @pytest.mark.proof("skill_init", "PROOF-36", "RULE-34")
     def test_skill_always_presents_framework_selection_list(self):
-        """SKILL.md must instruct always showing the selection list, even on auto-detect."""
+        """RULE-34: the list is shown even when detection already answered.
+
+        Each assertion names the literal the skill must carry, so a rewrite
+        that drops the confirm step or the unselected marker fails here.
+        """
         content = _read('init')
-        # Must document presenting the list always (not just when no detection)
-        assert re.search(r'(?i)always present the framework selection list', content), \
-            "init SKILL.md missing 'always present the framework selection list' instruction"
-        # Must use checkbox-style markers [x] and [ ]
+        assert 'Always present the framework selection list to the user' in content, \
+            "init SKILL.md missing 'Always present the framework selection list to the user'"
+        assert 'even when auto-detection succeeds' in content, \
+            "init SKILL.md does not say the list is shown when detection succeeds"
         assert '[x]' in content, \
             "init SKILL.md missing [x] pre-selected checkbox marker"
         assert '[ ]' in content, \
             "init SKILL.md missing [ ] unselected checkbox marker"
-        # Must document pre-selection of detected frameworks
         assert re.search(r'(?i)pre-select.*detected|detected.*pre-selected', content), \
             "init SKILL.md missing pre-selection of detected frameworks"
-        # Must include a confirm prompt
-        assert re.search(r'(?i)confirm.*selection|confirm.*change', content), \
-            "init SKILL.md missing confirmation prompt for framework selection"
+        assert 'Confirm selection, or change? [enter to confirm]' in content, \
+            "init SKILL.md missing the exact confirm line the list ends with"
 
     @pytest.mark.proof("skill_init", "PROOF-37", "RULE-35")
     def test_skill_shows_single_detection_preselected(self):
-        """SKILL.md must show a template for single detection with [x] and [ ] markers."""
+        """RULE-35: one [x] with its reason, every other option [ ]."""
         content = _read('init')
         ref = _read_ref('supported_frameworks.md')
-        # SKILL.md must show [x] for detected and [ ] for unselected in same block
-        assert '[x]' in content and '[ ]' in content, \
-            "init SKILL.md missing [x]/[ ] checkbox markers for detection example"
-        # The template shows detected framework with detection reason
-        assert re.search(r'\[x\].*detection reason', content), \
-            "init SKILL.md missing [x] with detection reason template"
-        # supported_frameworks.md must have at least one detection heuristic
+
+        block = content[content.index(
+            'Test frameworks (detected frameworks are pre-selected):'):]
+        block = block[:block.index('Confirm selection')]
+        lines = [l for l in block.splitlines() if l.strip()]
+
+        selected = [l for l in lines if '[x]' in l]
+        assert len(selected) == 1, \
+            f"the single-detection block must show exactly one [x]: {selected}"
+        assert selected[0].startswith('  [x] <detected framework>'), selected[0]
+        assert '<detection reason>' in selected[0], \
+            "the pre-selected line must name the detection reason"
+        assert any(l.startswith('  [ ] <other framework>') for l in lines), \
+            "the block must show an undetected framework as [ ]"
+        assert lines[-1].strip() == '[ ] other', \
+            f"the list must end with an unselected 'other': {lines[-1]!r}"
         assert re.search(r'conftest\.py|package\.json|Makefile', ref), \
             "supported_frameworks.md missing detection heuristics"
 
     @pytest.mark.proof("skill_init", "PROOF-38", "RULE-36")
     def test_skill_shows_multi_detection_preselected(self):
-        """SKILL.md documents that multiple detected frameworks are all pre-selected."""
+        """RULE-36: two detections are two pre-selections and one config value."""
         content = _read('init')
         ref = _read_ref('supported_frameworks.md')
-        # SKILL.md must document that detected frameworks are pre-selected
-        assert re.search(r'(?i)pre-select.*detected|detected.*pre-selected',
-                         content), \
-            "init SKILL.md missing detected framework pre-selection instruction"
-        # supported_frameworks.md must list multiple frameworks
+        assert 'Pre-select detected frameworks with `[x]`' in content, \
+            "init SKILL.md must pre-select detected frameworks, plural, with [x]"
+        assert 'detects ALL matching frameworks' in ref, \
+            "supported_frameworks.md must say detection is not first-match-wins"
+        assert '"pytest,jest"' in ref, \
+            "supported_frameworks.md must show the comma-separated list value"
         frameworks = re.findall(r'^\| \*\*(\w+)\*\*', ref, re.MULTILINE)
         assert len(frameworks) >= 3, \
             f"supported_frameworks.md should list multiple frameworks, found {len(frameworks)}"
 
     @pytest.mark.proof("skill_init", "PROOF-39", "RULE-37")
     def test_skill_shows_no_detection_all_unselected(self):
-        """SKILL.md must show a no-detection example with all [ ] unselected."""
+        """RULE-37: nothing detected, nothing pre-selected, and no shell default."""
         content = _read('init')
-        # Must have a "no detection" section
-        assert re.search(r'(?i)no test framework.*detected|no framework.*detected', content), \
-            "init SKILL.md missing no-detection scenario"
-        # In the no-detection block, must show [ ] for framework and no [x]
-        lines = content.split('\n')
-        found_no_detect = False
-        in_no_detect_section = False
-        for i, line in enumerate(lines):
-            if re.search(r'(?i)no test framework.*detected|no framework.*detected', line):
-                in_no_detect_section = True
-            if in_no_detect_section and '[ ] <framework>' in line:
-                # Verify no [x] in nearby context
-                context = '\n'.join(lines[max(0, i-2):i+8])
-                if '[x]' not in context:
-                    found_no_detect = True
-                    break
-        assert found_no_detect, \
-            "init SKILL.md missing no-detection example with all [ ] unselected"
+        assert 'do NOT silently default to shell' in content, \
+            "init SKILL.md must forbid the silent shell default"
+        start = content.index('No test framework detected.')
+        prompt = 'Which framework(s)? You can select multiple, e.g.: pytest, jest'
+        assert prompt in content, \
+            "init SKILL.md missing the no-detection selection prompt"
+        block = content[start:content.index(prompt)]
+        assert '[ ] <framework>' in block, \
+            "the no-detection block must list frameworks as [ ]"
+        assert '[x]' not in block, \
+            f"the no-detection block pre-selects something: {block!r}"
+        assert content.index('do NOT silently default to shell') < start, \
+            "the no-detection block must be introduced by the no-default rule"
 
     # ── RULE-38 through RULE-40: MCP server configuration ────────────
 
@@ -993,10 +1000,25 @@ class TestSkillInit:
             ".claude-plugin/plugin.json missing 'purlin' entry under mcpServers"
 
         content = _read('init')
-        assert re.search(r'(?i)do not create a `?purlin`? entry', content), \
+        assert ("Do NOT create a `purlin` entry in the project's `.mcp.json`"
+                in content), \
             "init SKILL.md must forbid creating a purlin entry in the project's .mcp.json"
         assert 'Resolve `${CLAUDE_PLUGIN_ROOT}` to its absolute path at init time' not in content, \
             "init SKILL.md still instructs init-time path resolution (version-pins the MCP server)"
+
+        # The forbidden pattern, named: any sentence that would ADD a purlin
+        # entry. The migration step, which removes one, names both words
+        # legitimately, so a sentence is only a violation when it writes.
+        writes = re.compile(r'(?i)\b(add|adds|write|writes|create|creates)\b')
+        allowed = re.compile(r'(?i)\b(do not|never|remove|removes|removing|'
+                             r'without|legacy)\b')
+        for sentence in re.split(r'(?<=[.:])\s', content):
+            if 'mcp.json' not in sentence or 'purlin' not in sentence.lower():
+                continue
+            if writes.search(sentence) and not allowed.search(sentence):
+                raise AssertionError(
+                    "an init step writes a purlin entry into the project's "
+                    f".mcp.json: {sentence.strip()!r}")
 
     @pytest.mark.proof("skill_init", "PROOF-41", "RULE-39")
     def test_bundled_mcp_server_uses_plugin_root_variable(self):
@@ -1014,11 +1036,20 @@ class TestSkillInit:
     def test_documents_legacy_mcp_json_migration(self):
         """SKILL.md must document removing the legacy purlin entry, preserving other servers."""
         content = _read('init')
-        assert re.search(r'(?i)remove the `?purlin`? (key|entry)', content), \
+        step = content[content.index('## Step 5c'):content.index('## Step 5d')]
+        assert re.search(r'(?i)remove the `?purlin`? (key|entry)', step), \
             "init SKILL.md missing removal of the legacy purlin entry from .mcp.json"
-        assert re.search(r'(?i)preserve all other server entries', content), \
+        assert re.search(r'(?i)preserve all other server entries', step), \
             "init SKILL.md missing 'preserve all other server entries' guard"
-        assert '/reload-plugins' in content, \
+        # The fourth clause: the file is deleted only when nothing else is left,
+        # and written back otherwise. Without it a project with other servers
+        # could lose them all.
+        flat = ' '.join(step.split())
+        assert ('If `mcpServers` is now empty and the file contains nothing '
+                'else, delete `.mcp.json`' in flat), flat[:600]
+        assert 'Otherwise write the file back without the `purlin` entry' in flat, \
+            flat[:600]
+        assert '/reload-plugins' in step, \
             "init SKILL.md must tell the user to run /reload-plugins after migration"
 
     # ── RULE-41 through RULE-46: digest / pre-commit hook ────────────

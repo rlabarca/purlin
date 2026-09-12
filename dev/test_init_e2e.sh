@@ -36,10 +36,21 @@ PASS=0
 FAIL=0
 
 # ==========================================================================
-# Helper: simulate purlin:init output
-# Args: tmpdir, framework ("pytest"|"jest"|"shell"|"pytest,jest"|"auto"),
-#        pre_push ("warn"|"strict"), report ("true"|"false")
+# Helper: run the real purlin:init scaffolder
+#
+# `purlin:init` asks the questions; scripts/init/scaffold.py writes the files.
+# This helper is the script's caller, with the same argument shape every proof
+# below already used, so every @e2e proof here runs against the real mechanics
+# rather than a bash re-implementation of them.
+#
+# Args: tmpdir, framework ("pytest"|"jest"|"shell"|"pytest,jest"|"auto"|...),
+#        pre_push ("warn"|"strict"|"off"), report ("true"|"false"),
+#        digest ("auto"|"warn"|"off")
+# Sets: INIT_PLAN, the script's plan: one line per path it wrote or kept.
 # ==========================================================================
+SCAFFOLD="$REAL_PROJECT_ROOT/scripts/init/scaffold.py"
+INIT_PLAN=""
+
 init_project() {
   local tmpdir="$1"
   local framework="${2:-auto}"
@@ -47,100 +58,36 @@ init_project() {
   local report="${4:-true}"
   local digest="${5:-auto}"
 
-  local version
-  version=$(cat "$VERSION_FILE")
-
-  # Step 2: Create directory structure
-  mkdir -p "$tmpdir/.purlin/plugins"
-  mkdir -p "$tmpdir/specs/_anchors"
-
-  # Step 2: Write config.json.
-  # The base comes from templates/config.json, which is what purlin:init stamps
-  # into a new project. Hand-building the dict here made the required-fields
-  # proof assert against the test's own literal, so a field added to the
-  # template would never have been noticed missing.
-  local report_py
-  [[ "$report" == "true" ]] && report_py="True" || report_py="False"
-  python3 -c "
-import json
-with open('$CONFIG_TEMPLATE') as f:
-    config = json.load(f)
-config.update({
-    'version': '$version',
-    'test_framework': '$framework',
-    'pre_push': '$pre_push',
-    'report': $report_py,
-    'digest': '$digest',
-})
-with open('$tmpdir/.purlin/config.json', 'w') as f:
-    json.dump(config, f, indent=2)
-    f.write('\n')
-"
-
-  # Step 4: Scaffold plugins based on framework
-  local IFS=','
-  for fw in $framework; do
-    case "$fw" in
-      pytest) cp "$PYTEST_PLUGIN_SRC" "$tmpdir/.purlin/plugins/pytest_purlin.py" ;;
-      jest)   cp "$JEST_REPORTER_SRC" "$tmpdir/.purlin/plugins/jest_purlin.js" ;;
-      vitest) cp "$VITEST_REPORTER_SRC" "$tmpdir/.purlin/plugins/vitest_purlin.ts" ;;
-      shell)  cp "$SHELL_HARNESS_SRC" "$tmpdir/.purlin/plugins/purlin-proof.sh" ;;
-    esac
-  done
-
-  # Step 5: Update .gitignore (with duplicate prevention)
-  # NOTE: .purlin/report-data.js is NOT gitignored — it is the project digest
-  local gitignore="$tmpdir/.gitignore"
-  local -a entries=(
-    "# Purlin runtime (not committed)"
-    ".purlin/runtime/"
-    ".purlin/plugins/__pycache__/"
-    ".purlin/cache/"
-    ""
-    "# Dashboard HTML (symlinked from framework)"
-    "/purlin-report.html"
-  )
-  for entry in "${entries[@]}"; do
-    if [[ -z "$entry" ]]; then
-      echo "" >> "$gitignore"
-    elif ! grep -qF "$entry" "$gitignore" 2>/dev/null; then
-      echo "$entry" >> "$gitignore"
-    fi
-  done
-
-  # Step 5b: Dashboard report
-  if [[ "$report" == "true" ]]; then
-    cp "$REPORT_HTML_SRC" "$tmpdir/purlin-report.html"
+  # The scaffolder refuses a project that is not a git repository (Step 1), so
+  # the repo is created first and committed at the end, which is the order a
+  # real init runs in.
+  local created_repo=0
+  if [[ ! -d "$tmpdir/.git" ]]; then
+    (cd "$tmpdir" && git init -q)
+    created_repo=1
   fi
 
-  # Step 7: Install pre-push hook
-  if [[ -d "$tmpdir/.git" ]]; then
-    mkdir -p "$tmpdir/.git/hooks"
-    if [[ ! -f "$tmpdir/.git/hooks/pre-push" ]]; then
-      cp "$HOOK_SCRIPT" "$tmpdir/.git/hooks/pre-push"
-      chmod +x "$tmpdir/.git/hooks/pre-push"
-    elif ! grep -q "purlin" "$tmpdir/.git/hooks/pre-push" 2>/dev/null; then
-      : # Existing non-purlin hook: do not overwrite
-    fi
+  local report_flag="off"
+  [[ "$report" == "true" ]] && report_flag="on"
 
-    # Step 7a: Install pre-commit hook (project digest)
-    if [[ ! -f "$tmpdir/.git/hooks/pre-commit" ]]; then
-      cp "$PRECOMMIT_HOOK_SCRIPT" "$tmpdir/.git/hooks/pre-commit"
-      chmod +x "$tmpdir/.git/hooks/pre-commit"
-    elif ! grep -q "purlin" "$tmpdir/.git/hooks/pre-commit" 2>/dev/null; then
-      : # Existing non-purlin hook: do not overwrite
-    fi
-  fi
+  INIT_PLAN="$(python3 "$SCAFFOLD" \
+    --project-root "$tmpdir" \
+    --plugin-root "$REAL_PROJECT_ROOT" \
+    --test-framework "$framework" \
+    --pre-push "$pre_push" \
+    --report "$report_flag" \
+    --digest "$digest" \
+    --force)"
 
-  # Copy MCP server for sync_status to work
+  # Test scaffolding, not part of init: sync_status is imported from inside the
+  # temp project by run_sync_status below.
   mkdir -p "$tmpdir/scripts/mcp"
   cp "$REAL_PROJECT_ROOT/scripts/mcp/purlin_server.py" "$tmpdir/scripts/mcp/"
   cp "$REAL_PROJECT_ROOT/scripts/mcp/config_engine.py" "$tmpdir/scripts/mcp/"
   cp "$REAL_PROJECT_ROOT/scripts/mcp/__init__.py" "$tmpdir/scripts/mcp/" 2>/dev/null || true
 
-  # Initialize git repo if not already
-  if [[ ! -d "$tmpdir/.git" ]]; then
-    (cd "$tmpdir" && git init -q && git add -A && git commit -q -m "init" --allow-empty)
+  if [[ $created_repo -eq 1 ]]; then
+    (cd "$tmpdir" && git add -A && git commit -q -m "init" --allow-empty)
   fi
 }
 
@@ -228,16 +175,32 @@ run_hook() {
 # ==========================================================================
 echo "--- PROOF-1: Directory structure ---"
 TMP1=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP1"
+
+# Absent first: without this half the fixture would be asserting on directories
+# it created itself and the scaffolder could create none of them.
+p1_before=true
+for d in ".purlin" ".purlin/plugins" "specs" "specs/_anchors"; do
+  [[ -e "$TMP1/$d" ]] && p1_before=false
+done
+
 init_project "$TMP1" "shell" "warn" "true"
 
-if [[ -d "$TMP1/.purlin" ]] && [[ -d "$TMP1/.purlin/plugins" ]] && \
-   [[ -d "$TMP1/specs" ]] && [[ -d "$TMP1/specs/_anchors" ]]; then
-  echo "  PASS: all directories exist"
-  purlin_proof "skill_init" "PROOF-8" "RULE-8" pass "all init directories exist"
+p1_after=true
+for d in ".purlin" ".purlin/plugins" "specs" "specs/_anchors"; do
+  [[ -d "$TMP1/$d" ]] || { echo "  missing: $d"; p1_after=false; }
+done
+p1_plan=true
+for d in ".purlin/" ".purlin/plugins/" "specs/" "specs/_anchors/"; do
+  echo "$INIT_PLAN" | grep -qF "wrote $d" || { echo "  plan omits: $d"; p1_plan=false; }
+done
+
+if $p1_before && $p1_after && $p1_plan; then
+  echo "  PASS: the scaffolder created all four directories"
+  purlin_proof "skill_init" "PROOF-8" "RULE-8" pass "scaffold.py created .purlin/, .purlin/plugins/, specs/ and specs/_anchors/"
   PASS=$((PASS + 1))
 else
-  echo "  FAIL: missing directories"
-  purlin_proof "skill_init" "PROOF-8" "RULE-8" fail "missing directories"
+  echo "  FAIL: before=$p1_before after=$p1_after plan=$p1_plan"
+  purlin_proof "skill_init" "PROOF-8" "RULE-8" fail "init directories not created by scaffold.py"
   FAIL=$((FAIL + 1))
 fi
 
@@ -389,12 +352,18 @@ TMP8=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP8"
 echo '{"devDependencies":{"vitest":"^2.0.0"}}' > "$TMP8/package.json"
 init_project "$TMP8" "vitest" "warn" "true"
 
-if [[ -f "$TMP8/.purlin/plugins/vitest_purlin.ts" ]]; then
-  echo "  PASS: vitest project gets vitest_purlin.ts"
+p15_ts=false; p15_no_jest=false; p15_config=false
+[[ -f "$TMP8/.purlin/plugins/vitest_purlin.ts" ]] && p15_ts=true
+[[ ! -f "$TMP8/.purlin/plugins/jest_purlin.js" ]] && p15_no_jest=true
+cfg15=$(python3 -c "import json; print(json.load(open('$TMP8/.purlin/config.json'))['test_framework'])" 2>/dev/null)
+[[ "$cfg15" == "vitest" ]] && p15_config=true
+
+if $p15_ts && $p15_no_jest && $p15_config; then
+  echo "  PASS: vitest project gets vitest_purlin.ts and nothing else"
   purlin_proof "skill_init" "PROOF-15" "RULE-15" pass "vitest maps to native vitest_purlin.ts"
   PASS=$((PASS + 1))
 else
-  echo "  FAIL: vitest_purlin.ts not scaffolded"
+  echo "  FAIL: ts=$p15_ts no_jest=$p15_no_jest config=$cfg15"
   purlin_proof "skill_init" "PROOF-15" "RULE-15" fail "vitest_purlin.ts not scaffolded for vitest"
   FAIL=$((FAIL + 1))
 fi
@@ -408,13 +377,17 @@ touch "$TMP9/conftest.py"
 echo '{"devDependencies":{"jest":"^29.0.0"}}' > "$TMP9/package.json"
 init_project "$TMP9" "pytest,jest" "warn" "true"
 
-p9_pytest=false; p9_jest=false; p9_config=false
+p9_pytest=false; p9_jest=false; p9_config=false; p9_plan=true
 [[ -f "$TMP9/.purlin/plugins/pytest_purlin.py" ]] && p9_pytest=true
 [[ -f "$TMP9/.purlin/plugins/jest_purlin.js" ]] && p9_jest=true
 cfg_fw=$(python3 -c "import json; print(json.load(open('$TMP9/.purlin/config.json'))['test_framework'])" 2>/dev/null)
 [[ "$cfg_fw" == "pytest,jest" ]] && p9_config=true
+for line in "copied scripts/proof/pytest_purlin.py -> .purlin/plugins/pytest_purlin.py" \
+            "copied scripts/proof/jest_purlin.js -> .purlin/plugins/jest_purlin.js"; do
+  echo "$INIT_PLAN" | grep -qF "$line" || { echo "  plan omits: $line"; p9_plan=false; }
+done
 
-if $p9_pytest && $p9_jest && $p9_config; then
+if $p9_pytest && $p9_jest && $p9_config && $p9_plan; then
   echo "  PASS: both plugins scaffolded, config=pytest,jest"
   purlin_proof "skill_init" "PROOF-16" "RULE-16" pass "multi-framework scaffolding correct"
   PASS=$((PASS + 1))
@@ -431,13 +404,28 @@ echo "--- PROOF-10: Shell fallback ---"
 TMP10=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP10"
 init_project "$TMP10" "shell" "warn" "true"
 
-if [[ -f "$TMP10/.purlin/plugins/purlin-proof.sh" ]]; then
-  echo "  PASS: shell plugin scaffolded"
-  purlin_proof "skill_init" "PROOF-17" "RULE-17" pass "shell fallback scaffolds purlin-proof.sh"
+p10_shell=false; p10_config=false; p10_no_default=false
+[[ -f "$TMP10/.purlin/plugins/purlin-proof.sh" ]] && p10_shell=true
+cfg10=$(python3 -c "import json; print(json.load(open('$TMP10/.purlin/config.json'))['test_framework'])" 2>/dev/null)
+[[ "$cfg10" == "shell" ]] && p10_config=true
+
+# Selected, never defaulted: the same scaffolder in a directory with no
+# indicator file and no answer installs nothing at all.
+TMP10B=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP10B"
+init_project "$TMP10B" "auto" "warn" "true"
+if [[ -z "$(ls -A "$TMP10B/.purlin/plugins")" ]]; then
+  p10_no_default=true
+else
+  echo "  auto installed a plugin with nothing to detect: $(ls -A "$TMP10B/.purlin/plugins")"
+fi
+
+if $p10_shell && $p10_config && $p10_no_default; then
+  echo "  PASS: shell is scaffolded when selected, never as a fallback"
+  purlin_proof "skill_init" "PROOF-17" "RULE-17" pass "selected shell scaffolds purlin-proof.sh; auto with no indicator scaffolds nothing"
   PASS=$((PASS + 1))
 else
-  echo "  FAIL: purlin-proof.sh not found"
-  purlin_proof "skill_init" "PROOF-17" "RULE-17" fail "shell fallback missing"
+  echo "  FAIL: shell=$p10_shell config=$cfg10 no_default=$p10_no_default"
+  purlin_proof "skill_init" "PROOF-17" "RULE-17" fail "shell selection or the no-fallback guarantee failed"
   FAIL=$((FAIL + 1))
 fi
 
@@ -746,7 +734,22 @@ create_proof_file "$TMP19" "metrics" "core" "PROOF-1|RULE-1|pass"
 (cd "$TMP19" && git add -A && git commit -q -m "add spec and proofs")
 
 run_sync_status "$TMP19" >/dev/null
-if [[ -f "$TMP19/.purlin/report-data.js" ]] && head -1 "$TMP19/.purlin/report-data.js" | grep -q "const PURLIN_DATA"; then
+p19_payload=false
+if [[ -f "$TMP19/.purlin/report-data.js" ]] && python3 -c "
+import json, sys
+content = open('$TMP19/.purlin/report-data.js').read()
+if not content.startswith('const PURLIN_DATA = '):
+    sys.exit('no PURLIN_DATA assignment')
+data = json.loads(content.replace('const PURLIN_DATA = ', '', 1).rstrip().rstrip(';'))
+rows = [f for f in data['features'] if f['name'] == 'metrics']
+if len(rows) != 1:
+    sys.exit(f'metrics row missing: {[f[\"name\"] for f in data[\"features\"]]}')
+if (rows[0]['proved'], rows[0]['total']) != (1, 1):
+    sys.exit(f'metrics proved/total = {rows[0][\"proved\"]}/{rows[0][\"total\"]}')
+" 2>/dev/null; then
+  p19_payload=true
+fi
+if $p19_payload; then
   echo "  PASS: report-data.js generated with PURLIN_DATA"
   purlin_proof "skill_init" "PROOF-26" "RULE-26" pass "report-data.js generated correctly"
   PASS=$((PASS + 1))

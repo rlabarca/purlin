@@ -72,7 +72,7 @@ purlin:init
 
 This does 7 things:
 
-1. **Creates `.purlin/`** — config directory with `config.json` (team defaults) and `config.local.json` (per-user overrides, gitignored).
+1. **Creates `.purlin/`** — config directory with `config.json` (team defaults). `config.local.json` (per-user overrides) is gitignored by the block init writes and is created the first time something overrides a key.
 2. **Creates `specs/`** — directory for spec files, with a `_anchors/` subdirectory for cross-cutting constraints with external references.
 3. **Scaffolds proof plugin** — detects your test framework (pytest, Jest, Vitest, C, PHP, SQL — see [supported frameworks](../references/supported_frameworks.md)) and installs the appropriate proof collector so tests emit `*.proofs-*.json` files. The selection list offers every shipped plugin, including ones with no auto-detection (shell) or manual setup (xUnit/.NET).
 4. **Verifies the MCP server** — Purlin's MCP server (the `sync_status`, `purlin_config`, and `drift` tools) is bundled with the plugin and registers automatically wherever the plugin is enabled, always tracking the installed plugin version. Projects initialized before v0.9.4 have a legacy version-pinned `purlin` entry in `.mcp.json` that shadows the bundled server — init removes it (see [Upgrading the plugin](#upgrading-the-plugin), which owns every migration an older project needs).
@@ -80,11 +80,19 @@ This does 7 things:
 6. **Installs pre-commit hook (project digest)** — regenerates `.purlin/report-data.js` (coverage + drift data) on every commit so stakeholders see current status without running Purlin tools. Modes: `auto` (default), `warn`, or `off`.
 7. **Configures audit criteria** — built-in criteria always apply, covering both quality gauges. Optionally add team-specific criteria from a git-hosted file (appended to built-in defaults). See [references/audit_criteria.md](../references/audit_criteria.md).
 
+The skill asks the questions; `scripts/init/scaffold.py` writes the files and prints one line per path it wrote, kept, copied or linked, so what init did is on screen rather than inferred from the tree.
+
 ### Proof Plugin Setup by Framework
 
-**pytest** — Adds `conftest.py` that loads the proof plugin:
+**pytest** — Adds `conftest.py` that loads the proof plugin. `.purlin` is not an importable package name, so the plugin directory goes on `sys.path` and the plugin is named as a module:
 ```python
-pytest_plugins = [".purlin.plugins.pytest_purlin"]
+import os
+import sys
+
+sys.path.insert(0, os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), ".purlin", "plugins"))
+
+pytest_plugins = ["pytest_purlin"]
 ```
 
 **Jest** — Adds the reporter to `jest.config.js` or `package.json`:

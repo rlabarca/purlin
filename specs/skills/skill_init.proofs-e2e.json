@@ -6,7 +6,7 @@
       "id": "PROOF-8",
       "rule": "RULE-8",
       "test_file": "dev/test_init_e2e.sh",
-      "test_name": "all init directories exist",
+      "test_name": "scaffold.py created .purlin/, .purlin/plugins/, specs/ and specs/_anchors/",
       "status": "pass",
       "tier": "e2e"
     },
@@ -87,7 +87,7 @@
       "id": "PROOF-17",
       "rule": "RULE-17",
       "test_file": "dev/test_init_e2e.sh",
-      "test_name": "shell fallback scaffolds purlin-proof.sh",
+      "test_name": "selected shell scaffolds purlin-proof.sh; auto with no indicator scaffolds nothing",
       "status": "pass",
       "tier": "e2e"
     },
