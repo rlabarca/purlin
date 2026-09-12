@@ -1,5 +1,6 @@
 """Tests for MCP server specs: mcp_transport (7 rules), sync_status (15 rules), drift (11 rules), purlin_config (1 rule)."""
 
+import glob
 import hashlib
 import json
 import os
@@ -8,6 +9,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from io import StringIO
 from unittest.mock import patch
 
@@ -3722,3 +3724,36 @@ class TestAuditLLMAdvisory:
         assert self._advisory(out) == '', (
             "an unset auditor is not a broken one:\n" + out)
         assert self._verdict(out) == baseline, out
+
+
+class TestReportBuildRunScope:
+    """RULE-64: one report build parses each test file once, not once per proof."""
+
+    @pytest.mark.proof("sync_status", "PROOF-103", "RULE-64", tier="integration")
+    def test_a_build_parses_each_test_file_at_most_once(self, monkeypatch):
+        root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        named = set()
+        for pf in glob.glob(os.path.join(root, 'specs', '**', '*.proofs-*.json'),
+                            recursive=True):
+            try:
+                entries = json.load(open(pf, encoding='utf-8')).get('proofs', [])
+            except (json.JSONDecodeError, OSError):
+                continue
+            for entry in entries:
+                test_file = entry.get('test_file') or ''
+                if test_file.endswith('.py'):
+                    named.add(test_file)
+        assert named, "this repository names pytest test files in its proof files"
+
+        parses = []
+        real_parse = static_checks.ast.parse
+        monkeypatch.setattr(static_checks.ast, 'parse',
+                            lambda *a, **k: (parses.append(1), real_parse(*a, **k))[1])
+        started = time.time()
+        payload = purlin_server.read_report_payload(root)
+        elapsed = time.time() - started
+        assert payload is not None
+        assert len(parses) <= len(named), (
+            f"{len(parses)} parses for {len(named)} distinct test files: a file was "
+            "parsed once per proof it backs, so the build opened no run scope")
+        assert elapsed < 15, f"the build took {elapsed:.1f}s"

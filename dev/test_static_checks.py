@@ -2224,6 +2224,24 @@ class TestProofDesign:
                 "identical rule text and description in two features collided on "
                 f"one design-cache key: {ka}")
 
+        # The design half never opens a test file: the key excludes test code
+        # by construction, so extracting it would be work that cannot change
+        # the answer, and the entry says so through test_verifiable.
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _scaffold_proof(tmpdir, 'login', 'PROOF-4', 'RULE-4')
+            calls = []
+            real_extract = static_checks._extract_test_code
+            with mock.patch.object(static_checks, '_extract_test_code',
+                                   side_effect=lambda *a: (calls.append(a), real_extract(*a))[1]):
+                _dkey, inputs = static_checks.cache_key_for(
+                    tmpdir, 'login', 'PROOF-4', static_checks.DESIGN_CACHE)
+            assert calls == [], "a design key must not read the test file"
+            assert inputs['test_verifiable'] is False, \
+                "no test code entered a design key, so the entry must say so"
+            _akey, audit_inputs = static_checks.cache_key_for(
+                tmpdir, 'login', 'PROOF-4', static_checks.AUDIT_CACHE)
+            assert audit_inputs['test_verifiable'] is True
+
 
 def _cache_key_inputs(root, feature, proof_id, cache_name=None):
     """The `inputs` half of cache_key_for, for tests that assert on it."""
@@ -2519,3 +2537,85 @@ class TestCriteriaPin:
             with pytest.raises(CriteriaError) as exc:
                 load_criteria(project)
         assert 'audit_criteria.md' in str(exc.value)
+
+
+class TestRunScope:
+    """RULE-42: inside one run scope every file is read or parsed once."""
+
+    @pytest.mark.proof("static_checks", "PROOF-68", "RULE-42", tier="unit")
+    def test_one_parse_per_file_and_identical_keys(self, monkeypatch):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            pairs = []
+            for feature in ('alpha', 'beta'):
+                for n in (1, 2, 3):
+                    _scaffold_proof(
+                        tmpdir, feature, f'PROOF-{n}', f'RULE-{n}',
+                        test_file=f'tests/test_{feature}.py',
+                        test_name=f'test_{feature}_{n}',
+                        test_body=f'    value = {n} + 0\n    assert value == {n}')
+                    pairs.append((feature, f'PROOF-{n}'))
+            _scaffold_proof(tmpdir, 'gamma', 'PROOF-1', 'RULE-1',
+                            test_file='tests/test_gamma.sh', test_name='test_gamma')
+            pairs.append(('gamma', 'PROOF-1'))
+            caches = (static_checks.AUDIT_CACHE, static_checks.DESIGN_CACHE)
+
+            outside = {(f, p, c): cache_key_for(tmpdir, f, p, c)
+                       for f, p in pairs for c in caches}
+            assert len(outside) == 14
+
+            parses, segments = [], []
+            real_parse = static_checks.ast.parse
+            monkeypatch.setattr(static_checks.ast, 'parse',
+                                lambda *a, **k: (parses.append(1), real_parse(*a, **k))[1])
+            monkeypatch.setattr(static_checks.ast, 'get_source_segment',
+                                lambda *a, **k: (segments.append(1), None)[1])
+            with static_checks.run_scope():
+                inside = {k: cache_key_for(tmpdir, *k) for k in outside}
+                again = {k: cache_key_for(tmpdir, *k) for k in outside}
+            assert len(parses) == 2, (
+                f"two Python test files must mean two parses, not {len(parses)}")
+            assert segments == [], \
+                "function source must come from the one line split, never get_source_segment"
+            assert inside == outside, "a scoped key differs from the unscoped one"
+            assert again == outside
+
+            # Outside a scope nothing is memoized: an edit moves the key at once.
+            test_path = os.path.join(tmpdir, 'tests', 'test_alpha.py')
+            src = open(test_path, encoding='utf-8').read()
+            with open(test_path, 'w', encoding='utf-8') as f:
+                f.write(src.replace('value == 1', 'value == 10'))
+            assert cache_key_for(tmpdir, 'alpha', 'PROOF-1') != outside[('alpha', 'PROOF-1', static_checks.AUDIT_CACHE)], \
+                "the scope leaked past its block: an edited test kept its old key"
+            assert static_checks._RUN_CACHE is None
+
+    @pytest.mark.proof("static_checks", "PROOF-69", "RULE-42", tier="unit")
+    def test_segment_matches_the_stdlib_byte_for_byte(self):
+        source = (
+            "import pytest\r\n"
+            "\x0c\n"
+            "@pytest.mark.proof(\n"
+            "    'feat', 'PROOF-1',\n"
+            "    'RULE-1')\r"
+            "def test_a():\n"
+            "    value = 'é'  # \x0c form feed and 'ü' on a def line\r\n"
+            "    assert value == 'é'\n"
+            "@pytest.mark.proof('feat', 'PROOF-2', 'RULE-2')\n"
+            "def test_b(): assert 'ü' == 'ü'\n"
+            "def helper(): return 'ñ'"
+        )
+        tree = ast.parse(source)
+        lines = static_checks._split_source_lines(source)
+        assert lines == ast._splitlines_no_ff(source), \
+            "the line split must match the stdlib's, or every offset is off"
+        checked = 0
+        for node in ast.walk(tree):
+            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            for target in [node] + list(node.decorator_list):
+                expected = ast.get_source_segment(source, target)
+                assert static_checks._segment(lines, target) == expected, \
+                    f"segment for {type(target).__name__} at line {target.lineno} differs"
+                checked += 1
+        assert checked == 5
+        entries, _ = static_checks._python_proof_functions(source)
+        assert [(f, p) for f, p, *_ in entries] == [('feat', 'PROOF-1'), ('feat', 'PROOF-2')]

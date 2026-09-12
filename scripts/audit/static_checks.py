@@ -23,6 +23,7 @@ Output: JSON to stdout.
 """
 
 import ast
+import contextlib
 import datetime
 import glob
 import hashlib
@@ -62,21 +63,76 @@ _JEST_PROOF_RE = re.compile(
 # Python checks (ast-based)
 # ---------------------------------------------------------------------------
 
-def _get_python_proofs_and_functions(source, feature_name):
-    """Parse Python file, return list of (proof_id, rule_id, test_name, func_node)."""
+# ast.get_source_segment re-splits the whole file into lines on every call, in
+# pure Python, so calling it once per decorator made marker discovery quadratic
+# in file size: 79k calls and a minute of CPU on this repository's own suites.
+# The file is split once here and every segment is sliced from that split.
+# `_split_source_lines` and `_segment` replicate the stdlib byte-for-byte (a
+# line ends at \n, \r\n or \r and nowhere else, never at a form feed;
+# offsets are utf-8 byte offsets), which static_checks PROOF-69 pins.
+_SOURCE_LINE_RE = re.compile(r'[^\r\n]*(?:\r\n|\r|\n)|[^\r\n]+')
+
+
+def _split_source_lines(source):
+    """The lines of `source` as ast.get_source_segment splits them, ends kept.
+
+    The stdlib's own splitter is used when it exists so the two cannot drift;
+    the regex is the same rule for an interpreter that has renamed it.
+    """
+    splitter = getattr(ast, '_splitlines_no_ff', None)
+    if splitter is not None:
+        return splitter(source)
+    return _SOURCE_LINE_RE.findall(source)
+
+
+def _segment(lines, node):
+    """The source text of `node`, from lines split once by _split_source_lines.
+
+    Byte-identical to `ast.get_source_segment(source, node)` for any node the
+    parser produced, and None for a node with no end position, as the stdlib.
+    """
+    end_lineno = getattr(node, 'end_lineno', None)
+    end_col = getattr(node, 'end_col_offset', None)
+    if end_lineno is None or end_col is None:
+        return None
+    lineno = node.lineno - 1
+    end = end_lineno - 1
+    col = node.col_offset
+    if end == lineno:
+        return lines[lineno].encode()[col:end_col].decode()
+    first = lines[lineno].encode()[col:].decode()
+    last = lines[end].encode()[:end_col].decode()
+    return ''.join([first] + lines[lineno + 1:end] + [last])
+
+
+def _python_proof_functions(source):
+    """Every marked test in a Python file, from one parse and one line split.
+
+    Returns (entries, lines): `entries` is the list of
+    (feature, proof_id, rule_id, test_name, func_node) in source order, one per
+    marker, and `lines` is the split the caller slices function source from.
+    Raises SyntaxError as ast.parse does.
+    """
     tree = ast.parse(source)
-    results = []
+    lines = _split_source_lines(source)
+    entries = []
     for node in ast.walk(tree):
         if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
         if not node.name.startswith('test_'):
             continue
         for deco in node.decorator_list:
-            src_line = ast.get_source_segment(source, deco) or ''
-            m = _PROOF_MARKER_RE.search(src_line)
-            if m and m.group(1) == feature_name:
-                results.append((m.group(2), m.group(3), node.name, node))
-    return results
+            m = _PROOF_MARKER_RE.search(_segment(lines, deco) or '')
+            if m:
+                entries.append((m.group(1), m.group(2), m.group(3), node.name, node))
+    return entries, lines
+
+
+def _get_python_proofs_and_functions(source, feature_name):
+    """Parse Python file, return list of (proof_id, rule_id, test_name, func_node)."""
+    entries, _lines = _python_proof_functions(source)
+    return [(pid, rid, name, node)
+            for feature, pid, rid, name, node in entries if feature == feature_name]
 
 
 def _has_assertion(node):
@@ -1447,12 +1503,82 @@ def _find_spec_path(project_root, feature):
     return matches[0] if matches else None
 
 
-def _find_proof_record(project_root, feature, proof_id):
-    """(test_file, test_name) for an executed proof, or (None, None).
+# ---------------------------------------------------------------------------
+# Run scope (RULE-42)
+#
+# A cache key is resolved from three files: the spec, the proof file and the
+# test file. Validating a cache means resolving every entry's key, and the
+# entries outnumber the files by thirty to one, so without a scope each spec
+# was re-read, each proof file re-loaded and each test file re-parsed once per
+# proof it backs (1333 parses of 45 files on this repository). Inside a scope
+# every one of those is done once and the result reused; outside a scope
+# nothing is memoized, so RULE-40's edit-then-recompute contract holds for a
+# caller that never opens one. The scope is explicit rather than keyed on
+# mtimes because a same-size edit inside one second is exactly what RULE-40's
+# proof performs, and a key that depends on clock resolution is not
+# "deterministic in the three inputs and nothing else".
+# ---------------------------------------------------------------------------
+
+class _RunCache:
+    __slots__ = ('specs', 'proof_records', 'py_sources', 'test_bodies', 'keys')
+
+    def __init__(self):
+        self.specs = {}          # feature -> (spec_path, declared, rule_descs)
+        self.proof_records = {}  # feature -> {proof_id: (test_file, test_name)}
+        self.py_sources = {}     # abs test path -> {(feature, proof_id): src} | None
+        self.test_bodies = {}    # (abs test path, feature) -> {proof_id: src} | None
+        self.keys = {}           # (feature, proof_id, cache_name) -> (key, inputs)
+
+
+_RUN_CACHE = None
+
+
+@contextlib.contextmanager
+def run_scope():
+    """Memoize spec, proof-file and test-file reads for the block's duration.
+
+    Re-entrant: a scope opened inside another one shares it and never clears
+    it, so a caller that wraps a batch can call helpers that wrap their own.
+    """
+    global _RUN_CACHE
+    if _RUN_CACHE is not None:
+        yield _RUN_CACHE
+        return
+    _RUN_CACHE = _RunCache()
+    try:
+        yield _RUN_CACHE
+    finally:
+        _RUN_CACHE = None
+
+
+def _spec_inputs(project_root, feature):
+    """(spec_path, declared proofs, rule descriptions) for `feature`, read once
+    per scope. `spec_path` is None when no spec matches."""
+    cache = _RUN_CACHE
+    if cache is not None and feature in cache.specs:
+        return cache.specs[feature]
+    spec_path = _find_spec_path(project_root, feature)
+    if spec_path:
+        result = (spec_path, _read_proof_descriptions(spec_path),
+                  _read_rule_descriptions(spec_path))
+    else:
+        result = (None, [], {})
+    if cache is not None:
+        cache.specs[feature] = result
+    return result
+
+
+def _proof_records(project_root, feature):
+    """{proof_id: (test_file, test_name)} for every executed proof of `feature`.
 
     Reads the committed proof JSON, which is the only record of which test
-    function backs a proof id.
+    function backs a proof id. Files are read in sorted order and the first
+    record for an id wins, so the answer is the one the per-proof scan gave.
     """
+    cache = _RUN_CACHE
+    if cache is not None and feature in cache.proof_records:
+        return cache.proof_records[feature]
+    records = {}
     pattern = os.path.join(project_root, 'specs', '**', f'{feature}.proofs-*.json')
     for pf in sorted(glob.glob(pattern, recursive=True)):
         try:
@@ -1461,9 +1587,70 @@ def _find_proof_record(project_root, feature, proof_id):
         except (json.JSONDecodeError, OSError):
             continue
         for entry in data.get('proofs', []):
-            if entry.get('feature') == feature and entry.get('id') == proof_id:
-                return entry.get('test_file') or None, entry.get('test_name') or None
-    return None, None
+            if entry.get('feature') != feature or not entry.get('id'):
+                continue
+            records.setdefault(entry['id'], (entry.get('test_file') or None,
+                                             entry.get('test_name') or None))
+    if cache is not None:
+        cache.proof_records[feature] = records
+    return records
+
+
+def _find_proof_record(project_root, feature, proof_id):
+    """(test_file, test_name) for an executed proof, or (None, None)."""
+    return _proof_records(project_root, feature).get(proof_id, (None, None))
+
+
+def _python_proof_sources(path, content):
+    """{(feature, proof_id): source} for every marked test in a Python file,
+    or None when it does not parse. One parse per path per scope."""
+    cache = _RUN_CACHE
+    if cache is not None and path in cache.py_sources:
+        return cache.py_sources[path]
+    try:
+        entries, lines = _python_proof_functions(content)
+    except SyntaxError:
+        sources = None
+    else:
+        sources = {}
+        for feature, pid, _rid, _name, node in entries:
+            sources.setdefault((feature, pid), _segment(lines, node))
+    if cache is not None:
+        cache.py_sources[path] = sources
+    return sources
+
+
+def _test_bodies(path, ext, feature):
+    """{proof_id: source} for `feature`'s marked tests in the file at `path`,
+    or None when the file cannot be read or parsed. Computed once per
+    (path, feature) per scope."""
+    cache = _RUN_CACHE
+    memo_key = (path, feature)
+    if cache is not None and memo_key in cache.test_bodies:
+        return cache.test_bodies[memo_key]
+    bodies = None
+    try:
+        with open(path, encoding='utf-8') as f:
+            content = f.read()
+    except OSError:
+        content = None
+    if content is not None:
+        if ext == '.py':
+            sources = _python_proof_sources(path, content)
+            if sources is not None:
+                bodies = {pid: src for (feat, pid), src in sources.items()
+                          if feat == feature}
+        elif ext == '.cs':
+            bodies = {}
+            for pid, _rid, _name, body in _iter_csharp_proof_bodies(content, feature):
+                bodies.setdefault(pid, body)
+        else:
+            bodies = {}
+            for pid, _rid, _title, body in _iter_js_proof_bodies(content, feature):
+                bodies.setdefault(pid, body)
+    if cache is not None:
+        cache.test_bodies[memo_key] = bodies
+    return bodies
 
 
 # Extensions whose test code this module can extract. Anything else (shell, sql,
@@ -1488,32 +1675,13 @@ def _extract_test_code(project_root, feature, proof_id, test_file):
     path = os.path.join(project_root, *test_file.split('/'))
     if not os.path.isfile(path):
         return None
-    try:
-        with open(path, encoding='utf-8') as f:
-            content = f.read()
-    except OSError:
+    bodies = _test_bodies(path, ext, feature)
+    if not bodies:
         return None
-    if ext == '.py':
-        try:
-            for pid, _rid, _name, node in _get_python_proofs_and_functions(
-                    content, feature):
-                if pid == proof_id:
-                    return ast.get_source_segment(content, node)
-        except SyntaxError:
-            return None
-        return None
-    if ext == '.cs':
-        for pid, _rid, _name, body in _iter_csharp_proof_bodies(content, feature):
-            if pid == proof_id:
-                return body
-        return None
-    for pid, _rid, _title, body in _iter_js_proof_bodies(content, feature):
-        if pid == proof_id:
-            return body
-    return None
+    return bodies.get(proof_id)
 
 
-def resolve_proof_inputs(project_root, feature, proof_id):
+def resolve_proof_inputs(project_root, feature, proof_id, include_test_code=True):
     """(rule_text, proof_description, test_code) read from project state.
 
     This is the ONE function that decides what an audit result is keyed on, and
@@ -1525,19 +1693,20 @@ def resolve_proof_inputs(project_root, feature, proof_id):
     proof cites is missing. `test_code` is None when no test code is extractable
     (see _extract_test_code); the caller records that as
     `inputs.test_verifiable: false` so a reader knows a test edit cannot move the
-    key for that entry.
+    key for that entry. With `include_test_code` False the test file is never
+    opened and `test_code` is None: the design key excludes test code by
+    construction (RULE-37), so reading it would be work that cannot change the
+    answer.
     """
-    spec_path = _find_spec_path(project_root, feature)
+    spec_path, declared, rule_descs = _spec_inputs(project_root, feature)
     if not spec_path:
         raise ProofInputsError(
             f'{feature}/{proof_id}: no spec file matches specs/**/{feature}.md')
-    declared = _read_proof_descriptions(spec_path)
     match = next((d for d in declared if d['proof_id'] == proof_id), None)
     if match is None:
         rel = os.path.relpath(spec_path, project_root).replace(os.sep, '/')
         raise ProofInputsError(
             f'{feature}/{proof_id}: {rel} declares no {proof_id}')
-    rule_descs = _read_rule_descriptions(spec_path)
     cited = [r.strip() for r in match['rule_ids'].split(',') if r.strip()]
     texts = [rule_descs[r] for r in cited if r in rule_descs]
     if not texts:
@@ -1545,8 +1714,10 @@ def resolve_proof_inputs(project_root, feature, proof_id):
         raise ProofInputsError(
             f'{feature}/{proof_id}: cites {match["rule_ids"]}, and {rel} defines '
             'none of them')
-    test_file, _test_name = _find_proof_record(project_root, feature, proof_id)
-    test_code = _extract_test_code(project_root, feature, proof_id, test_file)
+    test_code = None
+    if include_test_code:
+        test_file, _test_name = _find_proof_record(project_root, feature, proof_id)
+        test_code = _extract_test_code(project_root, feature, proof_id, test_file)
     return '\n'.join(texts), match['description'], test_code
 
 
@@ -1557,8 +1728,13 @@ def cache_key_for(project_root, feature, proof_id, cache_name=AUDIT_CACHE):
     an entry survived a test edit instead of guessing. Raises ProofInputsError
     for an unresolvable pair.
     """
+    cache = _RUN_CACHE
+    memo_key = (feature, proof_id, cache_name)
+    if cache is not None and memo_key in cache.keys:
+        return cache.keys[memo_key]
     rule_text, description, test_code = resolve_proof_inputs(
-        project_root, feature, proof_id)
+        project_root, feature, proof_id,
+        include_test_code=(cache_name != DESIGN_CACHE))
     # The proof's identity is part of the key. Without it two features whose
     # rule text and proof description happen to be byte-identical produce the
     # same key, and one grade silently overwrites the other in the cache dict
@@ -1570,7 +1746,10 @@ def cache_key_for(project_root, feature, proof_id, cache_name=AUDIT_CACHE):
         key = compute_design_hash(identity, description)
     else:
         key = compute_proof_hash(identity, description, test_code or '')
-    return key, {'test_verifiable': test_code is not None}
+    result = (key, {'test_verifiable': test_code is not None})
+    if cache is not None:
+        cache.keys[memo_key] = result
+    return result
 
 
 def auditor_stamp(project_root):
@@ -1597,16 +1776,20 @@ def rekey_cache_entries(project_root, cache, cache_name=AUDIT_CACHE):
     stamp = auditor_stamp(project_root)
     rekeyed = {}
     unresolved = []
-    for _supplied_key, entry in cache.items():
-        if not isinstance(entry, dict):
-            continue
-        try:
-            key, inputs = cache_key_for(
-                project_root, entry.get('feature'), entry.get('proof_id'),
-                cache_name)
-        except ProofInputsError as exc:
-            unresolved.append(str(exc))
-            continue
+    resolved = []
+    # One scope for the batch: every entry of one feature shares one spec read
+    # and one parse of each test file (RULE-42).
+    with run_scope():
+        for _supplied_key, entry in cache.items():
+            if not isinstance(entry, dict):
+                continue
+            try:
+                resolved.append((entry, cache_key_for(
+                    project_root, entry.get('feature'), entry.get('proof_id'),
+                    cache_name)))
+            except ProofInputsError as exc:
+                unresolved.append(str(exc))
+    for entry, (key, inputs) in resolved:
         new_entry = dict(entry)
         new_entry['inputs'] = inputs
         new_entry['auditor'] = stamp

@@ -252,6 +252,15 @@
       "test_name": "test_a_configured_auditor_that_cannot_run_warns_and_never_blocks",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-103",
+      "rule": "RULE-64",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_a_build_parses_each_test_file_at_most_once",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }
