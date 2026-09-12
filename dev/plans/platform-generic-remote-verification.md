@@ -1341,6 +1341,29 @@ Ordered by dependency; each item is one `fix`/`feat` commit with its rule and pr
   agent ignoring them are the layers below (`purlin_references` RULE-23 with a proof that the
   file has no hooks, so the sentence stays true).
 
+### 10.5b Mutation checks become a written standard (user request, 2026-09-11)
+
+The practice every phase of this plan follows (break the behaviour, watch the proof fail, restore)
+appears nowhere in `references/`, `skills/`, `agents/` or `docs/`. It lives only in the handoff
+prompt and the DONE sections. Make it a standard:
+
+- `references/spec_quality_guide.md` gains a "Mutation check" section: definition, the three
+  steps, when to run it (every new or amended proof, before the commit that carries it), what a
+  surviving mutation means (a weak fixture, not a finished proof; add the discriminating case),
+  and two worked examples from this plan (the `>=` version flip that survived until the fixture
+  gained `>=13` against `14.7.1`; the underscore id that survived until an underscore-only id was
+  added).
+- `skills/build/SKILL.md`: the step that writes tests requires the mutation check before Step 4
+  commits, pointing at the section (no duplicated prose); `skills/test/SKILL.md` "Writing Tests
+  with Proof Markers" points at it; `agents/purlin.md` core loop names it in one line.
+- `references/audit_criteria.md` Pass 2 gains one sentence: an auditor may ask for the mutation
+  that was run; a proof whose author cannot name one is graded no higher than WEAK.
+- Rules: `purlin_references` next free rule (the section exists with the three steps and the
+  surviving-mutation clause; proof greps them); `purlin_skills` next free rule (build requires
+  it before commit; test and the agent point at the section; proof greps each file for the
+  anchor `spec_quality_guide.md#mutation-check`); `skill_build` next free rule with its proof.
+  Descriptions PROVABLE; no em-dashes.
+
 ### 10.6 Environment ids for the externally-gated suites (after 6 and 7)
 
 The registry gains `"kind": "environment"` entries with no `os` (e.g. `figma-mcp`, `gemini-cli`,
