@@ -1,8 +1,8 @@
 {
   "feature": "skill_anchor",
   "vhash": "001fe57a",
-  "commit": "aff8b08e6785b66fc186c4a3fac9dc942f15f99c",
-  "timestamp": "2026-09-11T23:47:26.867179+00:00",
+  "commit": "6bc61d2874dcbcd81892b0998a31ce84edc5c2a6",
+  "timestamp": "2026-09-12T00:16:17.461274+00:00",
   "rules": [
     "RULE-1",
     "RULE-2",
