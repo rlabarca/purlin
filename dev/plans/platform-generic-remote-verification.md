@@ -1547,6 +1547,10 @@ silently dropped.
       runner commits back with both trailers and the gate passes). Not possible from this repo's
       own workflows, so it is a manual check before publishing.
 - [ ] Anything a subagent reports as "deferred" during execution (appended as it happens).
+- [ ] (6.5) The evidence check refuses receipts for `figma_web`, `skill_spec` and `static_checks`:
+      their proof files were committed locally with no `Purlin-Runner:` trailer and the sweep does
+      not run them (RULE-14 exceptions). 38/41 VERIFIED until 7.4 (static_checks via the runner)
+      and 10.6 (environment ids for the other two) give them a witness.
 - [ ] (6.3) `proof_plugins_php` and `proof_plugins_xunit` gained platform proofs that are skipped on
       this machine (no php, no dotnet); they have never executed anywhere. Run them on a host with
       the toolchains, or model both as `kind: environment` platforms in 10.6 so the gap reads
