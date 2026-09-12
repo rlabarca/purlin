@@ -479,6 +479,30 @@ class TestSkillAudit:
         assert re.search(r'(?i)empty live-keys', prune_body), \
             "the prune step must warn against pruning with an empty live-keys file"
 
+        # The live-keys file lives beside the cache it prunes, not in /tmp: a
+        # fixed /tmp name is world-readable, shared by every checkout on the
+        # machine and absent on Windows.
+        live_keys = '.purlin/cache/live_keys.txt'
+        assert prune_body.count(live_keys) >= 2, (
+            f"the prune step must name {live_keys} as both the file it writes "
+            f"and the --live-keys-file argument it passes")
+        assert f'--live-keys-file {live_keys}' in prune_body, \
+            f"--live-keys-file must be passed {live_keys}"
+        # Prose may argue about /tmp; no command may use it. Scan what the step
+        # tells the agent to run, not what it says about the choice.
+        commands = '\n'.join(re.findall(r'```bash\n(.*?)```', prune_body, re.S))
+        assert commands.strip(), "the prune step shows no command to run"
+        stray = [line.strip() for line in commands.split('\n') if '/tmp' in line]
+        stray += [a for a in re.findall(r'--live-keys-file\s+(\S+)', prune_body)
+                  if a != live_keys]
+        assert not stray, \
+            f"the prune step still runs against a path that is not {live_keys}: {stray}"
+        with open(os.path.join(PROJECT_ROOT, 'templates',
+                               'gitignore.purlin')) as f:
+            gitignore = f.read()
+        assert '.purlin/cache/' in gitignore, \
+            "templates/gitignore.purlin must ignore .purlin/cache/ so the file is never committed"
+
         # The skill and the auditor definition must agree on who writes. They
         # used to say opposite things, so asserting on one file alone proves
         # nothing: either can be made to read correctly while the pair conflicts.

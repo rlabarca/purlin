@@ -557,16 +557,23 @@ never having audited at all.
 
 ## Step 3.5 — Prune Stale Cache Entries (full audit only)
 
-After writing all assessments to the cache, if this is a full audit (no specific feature argument), prune orphaned entries from deleted or renamed features. Collect all proof hashes that were computed during this audit (cache hits + fresh evaluations) into a temp file, one key per line:
+After writing all assessments to the cache, if this is a full audit (no specific feature argument), prune orphaned entries from deleted or renamed features. Collect all proof hashes that were computed during this audit (cache hits + fresh evaluations) into `.purlin/cache/live_keys.txt`, one key per line:
 
 ```bash
-# Write live keys to temp file
-echo "<hash1>" > /tmp/purlin_live_keys.txt
-echo "<hash2>" >> /tmp/purlin_live_keys.txt
+# Write live keys beside the cache they describe
+mkdir -p .purlin/cache
+echo "<hash1>" > .purlin/cache/live_keys.txt
+echo "<hash2>" >> .purlin/cache/live_keys.txt
 # ... one line per proof hash computed during this audit
 
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --prune-cache --live-keys-file /tmp/purlin_live_keys.txt
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --prune-cache --live-keys-file .purlin/cache/live_keys.txt
 ```
+
+The file belongs in `.purlin/cache/`, next to the cache it prunes: that
+directory is already gitignored, it is per project rather than shared by every
+project on the machine, and it exists on Windows, where `/tmp` does not. A
+world-readable `/tmp` file named the same in every checkout is one concurrent
+audit away from pruning against another project's keys.
 
 This removes cache entries for features that no longer exist while preserving all entries from the current audit. For single-feature audits, skip this step — they don't know which other features are live.
 
