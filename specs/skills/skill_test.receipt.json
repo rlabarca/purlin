@@ -2,8 +2,8 @@
   "feature": "skill_test",
   "vhash": "41b33924",
   "vhash_version": 2,
-  "commit": "8cba0466604ed4969f5fb92422217a21f5edbbda",
-  "timestamp": "2026-09-12T03:32:06.767836+00:00",
+  "commit": "9858956737af77f91c15d887c81af77787622e0e",
+  "timestamp": "2026-09-12T03:48:39.498099+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -144,10 +144,10 @@
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T03:32:06.534001+00:00",
-      "commit": "8cba0466604ed4969f5fb92422217a21f5edbbda",
+      "at": "2026-09-12T03:48:39.261002+00:00",
+      "commit": "9858956737af77f91c15d887c81af77787622e0e",
       "sweep": "dev/run_tests.sh",
-      "passed": 748,
+      "passed": 754,
       "failed": 0,
       "skipped": 27
     },
