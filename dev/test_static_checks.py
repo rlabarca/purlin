@@ -440,6 +440,28 @@ def test_bad():
         finally:
             os.unlink(path)
 
+    @pytest.mark.proof("static_checks", "PROOF-67", "RULE-7")
+    def test_exit_2_is_reserved_for_a_real_error(self):
+        """RULE-7's other half: exit 2 is reserved for real errors. A test file
+        that does not exist is one, and it must not be confused with the exit 0
+        a completed analysis returns however weak the test it graded."""
+        missing = os.path.join(tempfile.gettempdir(),
+                               'purlin_no_such_test_file_9184.py')
+        assert not os.path.exists(missing), missing
+        result = subprocess.run(
+            [sys.executable, STATIC_CHECKS_PY, missing, "testfeat"],
+            capture_output=True, text=True
+        )
+        assert result.returncode == 2, (
+            "a missing input file is a real error and must exit 2, got "
+            f"{result.returncode}\nstdout={result.stdout!r}\n"
+            f"stderr={result.stderr!r}")
+        data = json.loads(result.stdout)
+        assert data['error'] == f'File not found: {missing}', (
+            f"exit 2 did not name the missing file: {data!r}")
+        assert 'proofs' not in data, (
+            f"a real error must not report an analysis: {data!r}")
+
 
 class TestSpecCoverage:
 

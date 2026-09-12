@@ -450,11 +450,20 @@ class TestAuditCachePipeline:
             f"Expected audit_summary to be null, got: {data.get('audit_summary')}"
         )
 
-    @pytest.mark.proof("sync_status", "PROOF-48", "RULE-27", tier="e2e")
+    @pytest.mark.proof("sync_status", "PROOF-48", "RULE-27", tier="integration")
     def test_report_data_per_feature_audit_data(self):
-        """RULE-8: report-data.js per-feature audit data populated from cache with correct integrity."""
+        """RULE-27: per-feature audit data is populated from the cache entries
+        whose `feature` field names that feature, and from no others."""
         _make_project(self.tmp_dir, with_git=True)
+        # A second feature, so an implementation that ignored the `feature`
+        # field and folded every entry into every feature cannot pass.
+        _scaffold_proof(self.tmp_dir, 'billing', 'PROOF-1', 'RULE-1')
+        _scaffold_proof(self.tmp_dir, 'billing', 'PROOF-2', 'RULE-2')
         cache = _make_cache_entries(feature='login', strong=2, weak=1, minutes_ago=5)
+        for key, entry in _make_cache_entries(feature='billing', strong=1,
+                                              weak=0, hollow=1,
+                                              minutes_ago=5).items():
+            cache['billing_' + key] = entry
         write_audit_cache(self.tmp_dir, cache)
 
         features = _scan_specs(self.tmp_dir)
@@ -490,6 +499,26 @@ class TestAuditCachePipeline:
         )
         assert findings[0]['rule_id'] == 'RULE-3', (
             f"Expected the WEAK finding to name RULE-3, got {findings[0]['rule_id']}"
+        )
+
+        # The other feature's own entries, and only its own: 1 STRONG of 2
+        # graded is 50, and nothing of login's three entries leaks in.
+        billing_feature = next(
+            (f for f in report_data['features'] if f['name'] == 'billing'), None
+        )
+        assert billing_feature is not None, "billing feature not found in report data"
+        billing = billing_feature.get('audit')
+        assert billing['integrity'] == 50, (
+            f"Expected billing integrity=50, got {billing['integrity']}"
+        )
+        assert billing['strong'] == 1, f"Expected strong=1, got {billing['strong']}"
+        assert billing['hollow'] == 1, f"Expected hollow=1, got {billing['hollow']}"
+        assert billing['weak'] == 0, (
+            f"login's WEAK entry leaked into billing: {billing!r}"
+        )
+        assert {f['proof_id'] for f in billing.get('findings', [])} == {'PROOF-2'}, (
+            "billing's findings must name only its own graded proof, got "
+            f"{billing.get('findings')!r}"
         )
 
     @pytest.mark.proof("sync_status", "PROOF-49", "RULE-28", tier="integration")

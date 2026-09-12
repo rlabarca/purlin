@@ -3,105 +3,6 @@
   "proofs": [
     {
       "feature": "static_checks",
-      "id": "PROOF-28",
-      "rule": "RULE-12",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_write_cache_creates_file",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-29",
-      "rule": "RULE-17",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_cache_entry_required_fields",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-30",
-      "rule": "RULE-24",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_read_side_dedup_keeps_latest_entry",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-31",
-      "rule": "RULE-24",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_write_side_pruning_removes_stale_duplicates",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-32",
-      "rule": "RULE-18",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_clear_cache_produces_empty_dict",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-38",
-      "rule": "RULE-22",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_prune_cache_via_cli",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-33",
-      "rule": "RULE-19",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_write_cache_stamps_real_utc_time",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-51",
-      "rule": "RULE-29",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_cli_pipeline_subprocess",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-52",
-      "rule": "RULE-30",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_load_criteria_under_ascii_locale",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-42",
-      "rule": "RULE-27",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_check_js_assertion_detection",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "static_checks",
-      "id": "PROOF-43",
-      "rule": "RULE-28",
-      "test_file": "dev/test_static_checks.py",
-      "test_name": "test_check_js_tokenizer_handles_braces_and_apostrophes",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "static_checks",
       "id": "PROOF-17",
       "rule": "RULE-1",
       "test_file": "dev/test_e2e_hybrid_audit.sh",
@@ -196,6 +97,105 @@
       "rule": "RULE-13",
       "test_file": "dev/test_e2e_hybrid_audit.sh",
       "test_name": "if/else pair passes, bare hardcoded pass still caught",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-28",
+      "rule": "RULE-12",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_write_cache_creates_file",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-29",
+      "rule": "RULE-17",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_cache_entry_required_fields",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-30",
+      "rule": "RULE-24",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_read_side_dedup_keeps_latest_entry",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-31",
+      "rule": "RULE-24",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_write_side_pruning_removes_stale_duplicates",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-32",
+      "rule": "RULE-18",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_clear_cache_produces_empty_dict",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-38",
+      "rule": "RULE-22",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_prune_cache_via_cli",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-33",
+      "rule": "RULE-19",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_write_cache_stamps_real_utc_time",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-51",
+      "rule": "RULE-29",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_cli_pipeline_subprocess",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-52",
+      "rule": "RULE-30",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_load_criteria_under_ascii_locale",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-42",
+      "rule": "RULE-27",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_check_js_assertion_detection",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-43",
+      "rule": "RULE-28",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_check_js_tokenizer_handles_braces_and_apostrophes",
       "status": "pass",
       "tier": "e2e"
     }

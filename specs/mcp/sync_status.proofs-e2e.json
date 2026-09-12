@@ -48,15 +48,6 @@
     },
     {
       "feature": "sync_status",
-      "id": "PROOF-48",
-      "rule": "RULE-27",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_report_data_per_feature_audit_data",
-      "status": "pass",
-      "tier": "e2e"
-    },
-    {
-      "feature": "sync_status",
       "id": "PROOF-50",
       "rule": "RULE-19",
       "test_file": "dev/test_e2e_audit_cache_pipeline.py",

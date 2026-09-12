@@ -17,7 +17,7 @@
 
 ## Proof
 
-- PROOF-1 (RULE-1): Send an `initialize` request; verify `result.protocolVersion` equals `2024-11-05` and `result.serverInfo.name` equals `purlin` @integration
+- PROOF-1 (RULE-1): Send an `initialize` request; verify `result.protocolVersion` equals `2024-11-05`, `result.serverInfo.name` equals `purlin`, and `result.capabilities` is present and equals `{"tools": {}}`, the tools capability a client needs to discover that this server serves tools @integration
 - PROOF-2 (RULE-2): Send `tools/list`; verify the result holds exactly 3 tools whose sorted names are `drift`, `purlin_config`, `sync_status`, that those names equal the names declared in `scripts/mcp/manifest.json`, and that each tool carries a non-empty `description` plus an `inputSchema` of `type` `object` whose property names are `role` for `sync_status`, `action`, `key`, `value` for `purlin_config`, and `since`, `role` for `drift` @integration
 - PROOF-3 (RULE-3): Send the notification `notifications/initialized` with no `id`; verify `handle_request` returns `None` rather than a response object, so there is nothing for the loop to write @integration
 - PROOF-4 (RULE-4): Send invalid JSON; verify error code -32700 @integration

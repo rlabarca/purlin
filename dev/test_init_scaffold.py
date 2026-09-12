@@ -61,6 +61,33 @@ def _run(root, *args):
     return result.returncode, result.stdout, result.stderr
 
 
+def _run_without_symlink(root, *args):
+    """Run the real scaffolder in an interpreter where `os.symlink` raises.
+
+    The copy fallback in `_link_or_copy` is reached only when `os.symlink`
+    fails, which it never does on a developer machine. A `sitecustomize.py`
+    on PYTHONPATH replaces `os.symlink` with one that raises OSError before
+    the script is imported, which is the non-symlink host the rule names.
+    """
+    shim = tempfile.mkdtemp()
+    try:
+        with open(os.path.join(shim, 'sitecustomize.py'), 'w',
+                  encoding='utf-8') as f:
+            f.write('import os\n'
+                    'def _no_symlink(*a, **k):\n'
+                    "    raise OSError(1, 'symlinks are not available here')\n"
+                    'os.symlink = _no_symlink\n')
+        env = dict(os.environ)
+        env['PYTHONPATH'] = shim + os.pathsep + env.get('PYTHONPATH', '')
+        result = subprocess.run(
+            [sys.executable, SCAFFOLD, '--project-root', root,
+             '--plugin-root', ROOT] + list(args),
+            capture_output=True, text=True, env=env)
+        return result.returncode, result.stdout, result.stderr
+    finally:
+        shutil.rmtree(shim, ignore_errors=True)
+
+
 def _config(root):
     return json.loads(_read(os.path.join(root, '.purlin', 'config.json')))
 
@@ -181,6 +208,11 @@ class TestPreflight:
         config = _config(repo)
         config['platforms'] = {'windows-2022': {'os': 'windows'}}
         config['audit_llm'] = 'gemini -m pro -p "{prompt}"'
+        # A key the template carries but this older config does not: the
+        # re-init has to fill it from the template, not leave it out.
+        template = json.loads(_read(TEMPLATE_CONFIG))
+        assert 'remote_verification' in template, sorted(template)
+        del config['remote_verification']
         _write(repo, '.purlin/config.json', json.dumps(config, indent=2) + '\n')
 
         code, out, err = _run(repo, '--test-framework', 'shell',
@@ -194,6 +226,15 @@ class TestPreflight:
         assert after['report'] is False, after
         assert after['version'] == _read(os.path.join(ROOT, 'VERSION')).strip()
         assert 'kept .purlin/plugins/purlin-proof.sh' in out, out
+        assert 'remote_verification' in after, (
+            "--force dropped a template key the old config was missing: "
+            f"{sorted(after)}")
+        assert after['remote_verification'] == template['remote_verification'], (
+            "the missing template key was not filled with the template's own "
+            f"value {template['remote_verification']!r}, got "
+            f"{after['remote_verification']!r}")
+        assert set(template) - set(after) == set(), (
+            f"--force left template keys out: {sorted(set(template) - set(after))}")
 
 
 # ---------------------------------------------------------------------------
@@ -398,6 +439,29 @@ class TestGitArtifacts:
         finally:
             shutil.rmtree(off, ignore_errors=True)
 
+        # RULE-66's fallback: a host where os.symlink raises copies instead.
+        nolink = _tmp_repo()
+        try:
+            code, out, err = _run_without_symlink(
+                nolink, '--test-framework', 'shell', '--report', 'on')
+            assert code == 0, (code, out, err)
+            copy = os.path.join(nolink, 'purlin-report.html')
+            assert os.path.isfile(copy) and not os.path.islink(copy), \
+                "the fallback did not leave a real file"
+            source = os.path.join(ROOT, 'scripts', 'report',
+                                  'purlin-report.html')
+            with open(copy, 'rb') as f:
+                copied_bytes = f.read()
+            with open(source, 'rb') as f:
+                assert copied_bytes == f.read(), \
+                    "the copied dashboard is not byte-identical to the plugin's"
+            assert any(l.startswith('copied ') and
+                       l.endswith('-> purlin-report.html')
+                       for l in out.splitlines()), \
+                f"the plan never said `copied` for the dashboard: {out!r}"
+        finally:
+            shutil.rmtree(nolink, ignore_errors=True)
+
     @pytest.mark.proof("skill_init", "PROOF-70", "RULE-67", tier="integration")
     def test_hooks_are_linked_kept_and_skipped_at_digest_off(self, repo):
         """RULE-67: linked to the plugin, never over an existing hook, and
@@ -433,6 +497,33 @@ class TestGitArtifacts:
             assert 'skipped .git/hooks/pre-commit (digest mode "off")' in out, out
         finally:
             shutil.rmtree(quiet, ignore_errors=True)
+
+        # RULE-67's fallback: on a host where os.symlink raises, both hooks
+        # are copied, executable, and the plan says `copied` for each.
+        nolink = _tmp_repo()
+        try:
+            code, out, err = _run_without_symlink(
+                nolink, '--test-framework', 'shell', '--digest', 'auto')
+            assert code == 0, (code, out, err)
+            for name, script in (('pre-push', 'pre-push.sh'),
+                                 ('pre-commit', 'pre-commit.sh')):
+                hook = os.path.join(nolink, '.git', 'hooks', name)
+                assert os.path.isfile(hook) and not os.path.islink(hook), \
+                    f"{name} was not copied as a real file"
+                with open(hook, 'rb') as f:
+                    installed = f.read()
+                with open(os.path.join(ROOT, 'scripts', 'hooks', script),
+                          'rb') as f:
+                    assert installed == f.read(), \
+                        f"the copied {name} is not byte-identical to the plugin's"
+                assert os.stat(hook).st_mode & 0o111, \
+                    f"the copied {name} is not executable"
+                assert any(l.startswith('copied ') and
+                           l.endswith(f'-> .git/hooks/{name}')
+                           for l in out.splitlines()), \
+                    f"the plan never said `copied` for {name}: {out!r}"
+        finally:
+            shutil.rmtree(nolink, ignore_errors=True)
 
 
 # ---------------------------------------------------------------------------

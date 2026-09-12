@@ -31,6 +31,20 @@ def _cache_key(project_root, feature, proof_id, cache_name='audit_cache.json'):
         project_root, feature, proof_id, cache_name)[0]
 
 
+def _feature_block(report, name):
+    """The one blank-line separated block of a sync_status report for `name`.
+
+    The report prints a table, then one block per feature headed `<name>:`.
+    Asserting that an advisory is ABSENT is only meaningful against that
+    feature's own block: a sibling feature in the same report may legitimately
+    carry the very line being ruled out.
+    """
+    for block in report.split('\n\n'):
+        if block.lstrip().startswith(name + ':'):
+            return block
+    raise AssertionError(f"no block for feature {name!r} in:\n{report}")
+
+
 class TestMCPProtocol:
     """mcp_transport RULE-1 through RULE-7: JSON-RPC transport."""
 
@@ -53,6 +67,13 @@ class TestMCPProtocol:
         result = resp["result"]
         assert result["protocolVersion"] == "2024-11-05"
         assert result["serverInfo"]["name"] == "purlin"
+        # Without a capabilities object no client can discover the tools.
+        assert "capabilities" in result, (
+            f"the initialize response carries no capabilities: {result!r}")
+        assert "tools" in result["capabilities"], (
+            "capabilities must advertise the tools capability, got "
+            f"{result['capabilities']!r}")
+        assert result["capabilities"] == {"tools": {}}, result["capabilities"]
 
     @pytest.mark.proof("mcp_transport", "PROOF-2", "RULE-2")
     def test_tools_list(self):
@@ -197,10 +218,23 @@ class TestSyncStatus:
             '- RULE-1: A proper rule\n\n'
             '## Proof\n- PROOF-1 (RULE-1): Test\n'
         ))
+        # RULE-3's other half: a spec with a `## Proof` section and no
+        # `## Rules` section at all.
+        self._write_spec('billing', (
+            '# Feature: billing\n\n'
+            '## What it does\nCharges cards.\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): Charge a card\n'
+        ))
         result = purlin_server.sync_status(self.project_root)
         assert 'WARNING' in result
         assert 'not numbered' in result.lower(), \
             f"WARNING doesn't mention unnumbered rules: {result}"
+
+        billing = _feature_block(result, 'billing')
+        assert 'WARNING: No ## Rules section found.' in billing, (
+            "a spec with no ## Rules section drew no warning: "
+            f"{billing!r}")
+        assert '\u2192 Run: purlin:spec billing' in billing, billing
 
     @pytest.mark.proof("sync_status", "PROOF-4", "RULE-4")
     def test_requires_counts_for_coverage(self):
@@ -356,9 +390,29 @@ class TestSyncStatus:
             '## Rules\n- RULE-1: Return 200\n\n'
             '## Proof\n- PROOF-1 (RULE-1): POST valid creds\n'
         ))
+        # The suppression half of RULE-11: the same scope overlap, but the
+        # anchor is already in `> Requires:`, so no advisory fires.
+        self._write_spec('checkout', (
+            '# Feature: checkout\n\n'
+            '> Scope: src/api/checkout.js\n'
+            '> Requires: api_rest_conventions\n\n'
+            '## What it does\nTakes payment.\n\n'
+            '## Rules\n- RULE-1: Return 201\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): POST a basket\n'
+        ))
         result = purlin_server.sync_status(self.project_root)
-        assert '\u26a0 Anchor api_rest_conventions' in result
-        assert '\u2192 Consider: add > Requires: api_rest_conventions' in result
+        login = _feature_block(result, 'login')
+        assert '\u26a0 Anchor api_rest_conventions' in login, login
+        assert '\u2192 Consider: add > Requires: api_rest_conventions' in login, \
+            login
+
+        checkout = _feature_block(result, 'checkout')
+        assert '\u26a0 Anchor api_rest_conventions' not in checkout, (
+            "the advisory fired for a feature that already requires the "
+            f"anchor: {checkout!r}")
+        assert 'Consider: add > Requires:' not in checkout, (
+            "the directive fired for a feature that already requires the "
+            f"anchor: {checkout!r}")
 
     @pytest.mark.proof("sync_status", "PROOF-7", "RULE-7")
     def test_structural_only_detection(self):
@@ -1754,6 +1808,52 @@ class TestDrift:
         finally:
             shutil.rmtree(tagged)
 
+        # RULE-1's fourth source: no verify: commit and no tag, so the anchor
+        # is the commit that added .purlin/config.json, described with the
+        # number of commits made since Purlin was initialized.
+        fresh = tempfile.mkdtemp()
+        try:
+            for args in (['git', 'init'],
+                         ['git', 'config', 'user.email', 'test@test.com'],
+                         ['git', 'config', 'user.name', 'Test']):
+                subprocess.run(args, cwd=fresh, capture_output=True, check=True)
+            os.makedirs(os.path.join(fresh, '.purlin'))
+            with open(os.path.join(fresh, '.purlin', 'config.json'), 'w') as f:
+                f.write('{"version": "0.10.0"}\n')
+            subprocess.run(['git', 'add', '-A'], cwd=fresh,
+                           capture_output=True, check=True)
+            subprocess.run(['git', 'commit', '-m', 'chore: purlin init'],
+                           cwd=fresh, capture_output=True, check=True)
+            init_sha = subprocess.run(
+                ['git', 'rev-parse', 'HEAD'], cwd=fresh,
+                capture_output=True, text=True, check=True).stdout.strip()
+            for n in (1, 2):
+                with open(os.path.join(fresh, f'f{n}.txt'), 'w') as f:
+                    f.write('x')
+                subprocess.run(['git', 'add', '-A'], cwd=fresh,
+                               capture_output=True, check=True)
+                subprocess.run(['git', 'commit', '-m', f'feat: {n}'],
+                               cwd=fresh, capture_output=True, check=True)
+
+            assert subprocess.run(
+                ['git', 'log', '--grep=^verify:', '--format=%H'], cwd=fresh,
+                capture_output=True, text=True).stdout.strip() == '', \
+                "the fallback fixture must carry no verify: commit"
+            assert subprocess.run(
+                ['git', 'describe', '--tags', '--abbrev=0'], cwd=fresh,
+                capture_output=True, text=True).returncode != 0, \
+                "the fallback fixture must carry no tag"
+
+            ref, desc = purlin_server._resolve_since_anchor(fresh)
+            assert ref == init_sha, (
+                "the initialization fallback must anchor on the commit that "
+                f"added .purlin/config.json ({init_sha}), got {ref!r}")
+            assert desc == 'since Purlin init (2 commits)', (
+                "the fallback must name the commit count since init, got "
+                f"{desc!r}")
+        finally:
+            shutil.rmtree(fresh)
+
     @pytest.mark.proof("drift", "PROOF-2", "RULE-2")
     def test_file_classification(self):
         result_text = purlin_server.drift(self.project_root)
@@ -1813,6 +1913,47 @@ class TestDrift:
             f"{entry!r}")
         assert set(entry) == {'proved', 'total', 'status', 'failing_rules'}, (
             f"unexpected proof_status keys: {sorted(entry)}")
+
+        # The present half of RULE-4's "only when nonzero": a second feature
+        # carrying one deferred rule and one assumed rule reports both counts.
+        ledger_dir = os.path.join(self.project_root, 'specs', 'ledger')
+        os.makedirs(ledger_dir, exist_ok=True)
+        with open(os.path.join(ledger_dir, 'ledger.md'), 'w') as f:
+            f.write(
+                '# Feature: ledger\n\n'
+                '## What it does\nKeeps the books.\n\n'
+                '## Rules\n'
+                '- RULE-1: Debits and credits sum to zero\n'
+                '- RULE-2: Multi currency rounding (deferred)\n'
+                '- RULE-3: The vendor API returns ISO timestamps '
+                '(assumed \u2014 stated in the vendor contract)\n\n'
+                '## Proof\n'
+                '- PROOF-1 (RULE-1): Sum the ledger and verify 0\n'
+            )
+        with open(os.path.join(ledger_dir, 'ledger.proofs-unit.json'), 'w') as f:
+            json.dump({"tier": "unit", "proofs": [
+                {"feature": "ledger", "id": "PROOF-1", "rule": "RULE-1",
+                 "test_file": "tests/test.py", "test_name": "test_sum",
+                 "status": "pass", "tier": "unit"},
+            ]}, f)
+
+        subprocess.run(['git', 'add', '.'], cwd=self.project_root,
+                       capture_output=True, check=True)
+        subprocess.run(['git', 'commit', '-m', 'feat: add ledger spec'],
+                       cwd=self.project_root, capture_output=True, check=True)
+
+        data = json.loads(purlin_server.drift(self.project_root))
+        ledger = data['proof_status']['ledger']
+        assert ledger['deferred'] == 1, (
+            f"the deferred rule was not counted: {ledger!r}")
+        assert ledger['assumed'] == 1, (
+            f"the assumed rule was not counted: {ledger!r}")
+        assert set(ledger) == {'proved', 'total', 'status', 'failing_rules',
+                               'deferred', 'assumed'}, (
+            f"unexpected proof_status keys: {sorted(ledger)}")
+        assert ledger['proved'] == 1 and ledger['total'] == 2, (
+            "the deferred rule must be out of `total` and the assumed rule "
+            f"in it: {ledger!r}")
 
 
     @pytest.mark.proof("drift", "PROOF-5", "RULE-5")

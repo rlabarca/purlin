@@ -379,6 +379,33 @@ class TestRule4AutoStages:
             "a failed generation rewrote .purlin/report-data.js instead of "
             "leaving it as it was")
 
+    @pytest.mark.proof("pre_commit_hook", "PROOF-6", "RULE-4",
+                       tier="integration")
+    def test_auto_stages_from_a_project_root_holding_a_quote(self, tmp_path):
+        """RULE-4's argv clause: the project root reaches python as argv, so a
+        root whose name holds a single quote and a `$` still generates and
+        stages the digest instead of rewriting the python program."""
+        tmpdir = os.path.join(str(tmp_path), "it's $HOME weird")
+        os.makedirs(tmpdir)
+        _make_project(tmpdir, digest="auto")
+        assert "'" in tmpdir and "$" in tmpdir, tmpdir
+
+        code, out, err = _run_hook(
+            tmpdir, env=_env(PURLIN_PLUGIN_ROOT=PROJECT_ROOT))
+        output = out + err
+
+        assert code == 0, f"Expected exit 0, got {code}\n{output}"
+        assert "digest updated and staged: .purlin/report-data.js" in output, (
+            "a project root holding a quote did not reach python as argv: a "
+            f"spliced path would have raised a SyntaxError.\n{output!r}")
+        assert "SyntaxError" not in output, (
+            f"the project root was spliced into the python source.\n{output!r}")
+        assert _staged(tmpdir) == [".purlin/report-data.js"], (
+            "the digest was not staged from a quoted project root, staged: "
+            f"{_staged(tmpdir)}")
+        with open(os.path.join(tmpdir, ".purlin", "report-data.js"), "rb") as fh:
+            assert fh.read().startswith(b"const PURLIN_DATA = ")
+
 
 # ---------------------------------------------------------------------------
 # RULE-5: warn reports, never regenerates
