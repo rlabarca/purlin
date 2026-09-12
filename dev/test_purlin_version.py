@@ -1,4 +1,4 @@
-"""Tests for purlin_version — 9 rules.
+"""Tests for purlin_version: 9 rules.
 
 Ensures the Purlin version string is defined in exactly one place (the VERSION
 file) and all references to it read from that file or match its value.
@@ -7,6 +7,7 @@ file) and all references to it read from that file or match its value.
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -137,7 +138,7 @@ class TestNoHardcodedVersionInServer:
         ]
         non_comment_source = '\n'.join(non_comment_lines)
 
-        # Match quoted semver literals. Exclude '0.0.0' — that is the documented
+        # Match quoted semver literals. Exclude '0.0.0': that is the documented
         # sentinel returned by _read_version() when the VERSION file cannot be read,
         # not a hardcoded release version. The spec targets patterns like '0.9.0'
         # or '0.10.0' (real release versions that should live only in VERSION file).
@@ -327,81 +328,182 @@ class TestDocsCiteVersionFileInsteadOfALiteral:
 
 
 DEV_SWEEP = 'dev/run_tests.sh'
-RUN_MARKER = os.path.join(PROJECT_ROOT, '.purlin', 'runtime', 'test_run.json')
+RUN_TESTS_SH = os.path.join(PROJECT_ROOT, 'dev', 'run_tests.sh')
+RELEASE_NOTES = os.path.join(PROJECT_ROOT, 'RELEASE_NOTES.md')
+SWEEP_RECORD = os.path.join(PROJECT_ROOT, '.purlin', 'runtime', 'last_sweep.json')
 
 
-def _compare_notes_to_marker(notes_passed, notes_skipped, marker_path):
-    """Compare the notes counts to a run marker, or say why there is nothing
-    to compare against (RULE-9).
+def _parse_unreleased_counts():
+    """Return (passed, skipped) from the one counts line in the Unreleased
+    section of RELEASE_NOTES.md, asserting that there is exactly one."""
+    with open(RELEASE_NOTES, encoding='utf-8') as f:
+        notes = f.read()
+    assert '## Unreleased' in notes, "RELEASE_NOTES.md has no Unreleased section"
+    section = notes.split('## Unreleased', 1)[1]
+    section = re.split(r'^## ', section, maxsplit=1, flags=re.MULTILINE)[0]
+    hits = re.findall(r'(\d+) passed, (\d+) skipped', section)
+    assert len(hits) == 1, (
+        f"the Unreleased section must state the sweep counts exactly once "
+        f"as 'N passed, M skipped'; found {len(hits)}: {hits}")
+    return int(hits[0][0]), int(hits[0][1])
+
+
+def _compare_notes_to_sweep(notes_passed, notes_skipped, record_path):
+    """Compare the notes counts to the dev sweep's own record, or say why
+    there is nothing to compare against (RULE-9).
 
     Returns None once the comparison has been made and both counts agree, and
-    a skip reason when the marker at `marker_path` is not the dev sweep's
-    record: absent, or carrying a `sweep` other than `dev/run_tests.sh`
-    because a proof plugin wrote it mid-sweep with only its own counts.
-    Asserts, so a disagreement fails the caller naming both numbers.
+    a skip reason when no record exists at `record_path`: it is gitignored
+    runtime state, so a checkout that has never run the sweep has nothing to
+    compare. Asserts, so a disagreement fails the caller naming both numbers.
     """
-    if not os.path.isfile(marker_path):
-        return (f"no run marker at {marker_path}; run `bash dev/run_tests.sh` "
-                f"to record one, then the notes can be checked against it")
-    with open(marker_path, encoding='utf-8') as f:
-        marker = json.load(f)
-    sweep = marker.get('sweep')
-    if sweep != DEV_SWEEP:
-        return (f"the run marker at {marker_path} names sweep {sweep!r}, not "
-                f"{DEV_SWEEP!r}: a proof plugin wrote it as it finished and it "
-                f"carries only that plugin's counts, so it is not the run the "
-                f"Unreleased section describes; run `bash dev/run_tests.sh` "
-                f"for the sweep's own marker")
-    assert notes_passed == marker.get('passed'), (
+    if not os.path.isfile(record_path):
+        return (f"no sweep record at {record_path}; run `bash dev/run_tests.sh` "
+                f"to write one, then the notes can be checked against it")
+    with open(record_path, encoding='utf-8') as f:
+        record = json.load(f)
+    assert notes_passed == record.get('passed'), (
         f"RELEASE_NOTES.md Unreleased says {notes_passed} passed; the "
-        f"{DEV_SWEEP} run recorded in {marker_path} says "
-        f"{marker.get('passed')}")
-    assert notes_skipped == marker.get('skipped'), (
+        f"{DEV_SWEEP} record in {record_path} says {record.get('passed')}")
+    assert notes_skipped == record.get('skipped'), (
         f"RELEASE_NOTES.md Unreleased says {notes_skipped} skipped; the "
-        f"{DEV_SWEEP} run recorded in {marker_path} says "
-        f"{marker.get('skipped')}")
+        f"{DEV_SWEEP} record in {record_path} says {record.get('skipped')}")
     return None
 
 
+def _write_marker_function_text():
+    """The `write_marker` function as dev/run_tests.sh defines it, cut out
+    between its opening line and the closing brace on a line of its own."""
+    cut = subprocess.run(
+        ['sed', '-n', '/^write_marker()/,/^}$/p', RUN_TESTS_SH],
+        capture_output=True, text=True, check=True,
+    ).stdout
+    assert cut.startswith('write_marker()'), \
+        f"could not cut write_marker out of {RUN_TESTS_SH}"
+    assert cut.rstrip().endswith('}'), \
+        f"the write_marker cut from {RUN_TESTS_SH} is not closed: {cut[-200:]!r}"
+    return cut
+
+
 class TestReleaseNotesCounts:
-    """RULE-9 - the Unreleased counts are checked against the dev sweep's run
-    marker, not against a plugin's and not against the memory of whoever wrote
-    them."""
+    """RULE-9 - the Unreleased counts are checked against .purlin/runtime/
+    last_sweep.json, the dev sweep's own record of itself, not against the
+    shared marker a proof plugin rewrites mid-sweep and not against the memory
+    of whoever wrote the notes."""
 
     @pytest.mark.proof("purlin_version", "PROOF-9", "RULE-9")
-    def test_unreleased_counts_match_the_recorded_run(self, tmp_path):
-        notes_path = os.path.join(PROJECT_ROOT, 'RELEASE_NOTES.md')
-        with open(notes_path, encoding='utf-8') as f:
-            notes = f.read()
-        assert '## Unreleased' in notes, "RELEASE_NOTES.md has no Unreleased section"
-        section = notes.split('## Unreleased', 1)[1]
-        section = re.split(r'^## ', section, maxsplit=1, flags=re.MULTILINE)[0]
-        hits = re.findall(r'(\d+) passed, (\d+) skipped', section)
-        assert len(hits) == 1, (
-            f"the Unreleased section must state the sweep counts exactly once "
-            f"as 'N passed, M skipped'; found {len(hits)}: {hits}")
-        passed, skipped = int(hits[0][0]), int(hits[0][1])
+    def test_sweep_exit_trap_writes_its_own_sweep_record(self, tmp_path):
+        """Leg (a): drive the sweep's real writer and verify it writes
+        last_sweep.json, unmerged, beside the shared test_run.json."""
+        root = tmp_path / 'proj'
+        (root / '.purlin' / 'runtime').mkdir(parents=True)
+        git = ['git', '-c', 'user.email=t@example.com', '-c', 'user.name=t']
+        subprocess.run(['git', 'init', '-q'], cwd=str(root), check=True)
+        subprocess.run(git + ['commit', '-q', '--allow-empty', '-m', 'seed'],
+                       cwd=str(root), check=True, capture_output=True)
+        head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=str(root),
+                              capture_output=True, text=True,
+                              check=True).stdout.strip()
 
-        # A proof plugin's marker is not the record the notes describe: every
-        # plugin writes this file as it finishes, so mid-sweep the marker on
-        # disk carries one plugin's partial counts. Comparing against it would
-        # fail the notes for a number they never claimed.
-        plugin_marker = tmp_path / 'test_run.json'
-        plugin_marker.write_text(json.dumps({
-            'sweep': 'pytest_purlin',
+        marker = root / '.purlin' / 'runtime' / 'test_run.json'
+        record = root / '.purlin' / 'runtime' / 'last_sweep.json'
+        preamble = '\n'.join([
+            'ROOT=' + shlex.quote(str(root)),
+            'MARKER=' + shlex.quote(str(marker)),
+            'LAST_SWEEP=' + shlex.quote(str(record)),
+            'PYTEST_LOG=' + shlex.quote(str(tmp_path / 'pytest.log')),
+            # The pytest pool counts as one suite in PASS; its 11 tests are
+            # counted individually, so the record must report 11 + 1 = 12.
+            "SUITES=$'Proof Plugins (Shell)\\nAll Pytest Tests\\n'",
+            "TEST_FILES=$'dev/test_purlin_version.py\\n'",
+            'PASS=2',
+            'FAIL=0',
+            'PYTEST_PASSED=11',
+            'PYTEST_FAILED=0',
+            'PYTEST_SKIPPED=3',
+            'SWEEP_COMPLETE=1',
+        ])
+        run = subprocess.run(
+            ['bash', '-c', preamble + '\n' + _write_marker_function_text()
+             + '\nwrite_marker\n'],
+            cwd=str(root), capture_output=True, text=True,
+        )
+        assert run.returncode == 0, (
+            f"write_marker exited {run.returncode}\n"
+            f"stdout:{run.stdout}\nstderr:{run.stderr}")
+
+        assert marker.is_file(), (
+            f"the sweep's exit trap wrote no test_run.json at {marker}\n"
+            f"stdout:{run.stdout}\nstderr:{run.stderr}")
+        assert record.is_file(), (
+            f"the sweep's exit trap wrote no last_sweep.json at {record}: the "
+            f"dev sweep must record its own counts in last_sweep.json beside "
+            f"test_run.json, because the shared marker is rewritten by every "
+            f"proof plugin as it finishes\n"
+            f"stdout:{run.stdout}\nstderr:{run.stderr}")
+
+        sweep = json.loads(record.read_text(encoding='utf-8'))
+        assert sweep.get('passed') == 12, \
+            f"last_sweep.json passed is {sweep.get('passed')!r}, expected 12"
+        assert sweep.get('failed') == 0, \
+            f"last_sweep.json failed is {sweep.get('failed')!r}, expected 0"
+        assert sweep.get('skipped') == 3, \
+            f"last_sweep.json skipped is {sweep.get('skipped')!r}, expected 3"
+        assert sweep.get('ok') is True, \
+            f"last_sweep.json ok is {sweep.get('ok')!r}, expected True"
+        assert sweep.get('suites') == ['Proof Plugins (Shell)',
+                                       'All Pytest Tests'], \
+            f"last_sweep.json suites is {sweep.get('suites')!r}"
+        assert sweep.get('commit') == head, \
+            f"last_sweep.json commit is {sweep.get('commit')!r}, expected {head!r}"
+        assert sweep.get('at'), "last_sweep.json carries no `at` timestamp"
+        assert 'runs' not in sweep, (
+            f"last_sweep.json is the sweep's own record and is never merged "
+            f"with the plugin runs, so it must carry no `runs` key; it has "
+            f"{sweep.get('runs')!r}")
+
+        shared = json.loads(marker.read_text(encoding='utf-8'))
+        assert shared.get('sweep') == DEV_SWEEP, (
+            f"test_run.json sweep is {shared.get('sweep')!r}, expected "
+            f"{DEV_SWEEP!r}")
+        assert 'runs' in shared, \
+            "test_run.json is the merged marker and must carry a `runs` list"
+
+    @pytest.mark.proof("purlin_version", "PROOF-9", "RULE-9")
+    def test_unreleased_counts_match_the_sweep_record(self, tmp_path):
+        """Legs (b), (c) and (d): the notes parse, the comparison helper, and
+        the real record."""
+        # ── (b) exactly one counts line in the Unreleased section ──────
+        passed, skipped = _parse_unreleased_counts()
+
+        # ── (c) the helper fails loudly on a disagreement ──────────────
+        disagreeing = tmp_path / 'last_sweep.json'
+        disagreeing.write_text(json.dumps({
+            'at': '2026-01-01T00:00:00+00:00',
             'commit': 'deadbeef',
             'passed': passed + 1,
-            'skipped': skipped + 1,
+            'failed': 0,
+            'skipped': skipped,
+            'ok': True,
+            'suites': ['All Pytest Tests'],
         }), encoding='utf-8')
-        reason = _compare_notes_to_marker(passed, skipped, str(plugin_marker))
-        assert reason is not None, (
-            "a marker whose sweep is 'pytest_purlin' is a plugin's partial "
-            "record, not the dev sweep's: the counts must not be compared "
-            "against it")
-        assert "'pytest_purlin'" in reason and repr(DEV_SWEEP) in reason, (
-            f"the skip reason must name the marker's sweep value and "
-            f"{DEV_SWEEP!r}; got: {reason}")
+        with pytest.raises(AssertionError) as raised:
+            _compare_notes_to_sweep(passed, skipped, str(disagreeing))
+        message = str(raised.value)
+        assert str(passed) in message and str(passed + 1) in message, (
+            f"the failure must name the notes count and the sweep's count "
+            f"side by side; got: {message}")
 
-        reason = _compare_notes_to_marker(passed, skipped, RUN_MARKER)
+        # ── (c) an absent record is an absent observation, not a failure ─
+        absent = tmp_path / 'never-swept' / 'last_sweep.json'
+        reason = _compare_notes_to_sweep(passed, skipped, str(absent))
+        assert reason is not None, \
+            "an absent sweep record must yield a skip reason, not a comparison"
+        assert str(absent) in reason and 'bash dev/run_tests.sh' in reason, (
+            f"the skip reason must name the missing path and how to write it; "
+            f"got: {reason}")
+
+        # ── (d) the real record ────────────────────────────────────────
+        reason = _compare_notes_to_sweep(passed, skipped, SWEEP_RECORD)
         if reason is not None:
             pytest.skip(reason)

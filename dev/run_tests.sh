@@ -18,12 +18,24 @@
 # the sweep. Suites that need a runner this machine lacks (Windows, Figma MCP,
 # gemini CLI, a paid claude session) are the exceptions and stay out.
 #
-# On exit the sweep writes .purlin/runtime/test_run.json (gitignored) with the
-# commit, the suites and test files it invoked, and the counts, so a receipt
-# issuer can tell which run its evidence came from. The write is a merge under
-# proof_common RULE-19: the proof plugins write the same marker as each run
-# finishes, so their `runs` entries and any field they added are kept, and the
-# sweep replaces only the summary it owns (its own counts, ok and test_files).
+# On exit the sweep writes TWO files under .purlin/runtime/ (gitignored).
+#
+# 1. test_run.json, the shared marker, with the commit, the suites and test
+#    files it invoked, and the counts, so a receipt issuer can tell which run
+#    its evidence came from. The write is a merge under proof_common RULE-19:
+#    the proof plugins write the same marker as each run finishes, so their
+#    `runs` entries and any field they added are kept, and the sweep replaces
+#    only the summary it owns (its own counts, ok and test_files).
+#
+# 2. last_sweep.json, this script's own record of the same run: at, commit,
+#    passed, failed, skipped, ok and suites, written whole and never merged
+#    with anything. It exists because the shared marker cannot be trusted to
+#    still describe the sweep: the plugins rewrite test_run.json as each run
+#    finishes, the shell suites run before the pytest pool, so mid-sweep the
+#    marker on disk is a plugin's with only that plugin's share of the counts.
+#    Anything that needs the sweep's own counts (purlin_version RULE-9 checks
+#    the RELEASE_NOTES Unreleased counts line against them) reads this file,
+#    where no plugin writes, instead of guessing from a field on the shared one.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -41,6 +53,7 @@ PYTEST_FAILED=0
 PYTEST_SKIPPED=0
 SWEEP_COMPLETE=0
 MARKER="$ROOT/.purlin/runtime/test_run.json"
+LAST_SWEEP="$ROOT/.purlin/runtime/last_sweep.json"
 PYTEST_LOG="$(mktemp -t purlin-pytest.XXXXXX)"
 
 # Record each dev/test_* path an invocation names, project-relative.
@@ -86,9 +99,11 @@ run_pytest() {
 }
 
 # Written on every exit, including an abort partway: `ok` is true only when
-# the sweep reached its end with no failed suite.
+# the sweep reached its end with no failed suite. Writes both the shared
+# marker ($MARKER, merged with the plugin runs) and the sweep's own record
+# ($LAST_SWEEP, written whole, never merged).
 write_marker() {
-  mkdir -p "$(dirname "$MARKER")"
+  mkdir -p "$(dirname "$MARKER")" "$(dirname "$LAST_SWEEP")"
   PURLIN_RUN_SUITES="$SUITES" \
   PURLIN_RUN_TEST_FILES="$TEST_FILES" \
   PURLIN_RUN_SHELL_PASSED="$PASS" \
@@ -97,10 +112,11 @@ write_marker() {
   PURLIN_RUN_PYTEST_FAILED="$PYTEST_FAILED" \
   PURLIN_RUN_PYTEST_SKIPPED="$PYTEST_SKIPPED" \
   PURLIN_RUN_COMPLETE="$SWEEP_COMPLETE" \
-  python3 - "$MARKER" <<'PY'
+  python3 - "$MARKER" "$LAST_SWEEP" <<'PY'
 import datetime, json, os, subprocess, sys, time
 
 marker = sys.argv[1]
+last_sweep = sys.argv[2]
 env = os.environ
 lines = lambda key: [l for l in env.get(key, '').split('\n') if l]
 suites = lines('PURLIN_RUN_SUITES')
@@ -140,26 +156,52 @@ for _attempt in range(3):
         # A plugin is mid-replace: read again before giving up.
         time.sleep(0.05)
 
+at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+passed = py_passed + max(shell_passed, 0)
+failed = py_failed + max(shell_failed, 0)
+ok = (env['PURLIN_RUN_COMPLETE'] == '1'
+      and int(env['PURLIN_RUN_SHELL_FAILED']) == 0)
+
+
+def write_atomic(path, payload):
+    tmp = '%s.%d.tmp' % (path, os.getpid())
+    with open(tmp, 'w') as f:
+        json.dump(payload, f, indent=2)
+        f.write('\n')
+    os.replace(tmp, path)
+
+
 run.update({
-    'at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    'at': at,
     'commit': commit,
     'sweep': 'dev/run_tests.sh',
     'suites': suites,
     'test_files': lines('PURLIN_RUN_TEST_FILES'),
-    'passed': py_passed + max(shell_passed, 0),
-    'failed': py_failed + max(shell_failed, 0),
+    'passed': passed,
+    'failed': failed,
     'skipped': py_skipped,
-    'ok': env['PURLIN_RUN_COMPLETE'] == '1'
-          and int(env['PURLIN_RUN_SHELL_FAILED']) == 0,
+    'ok': ok,
 })
 run.setdefault('runs', [])
-tmp = '%s.%d.tmp' % (marker, os.getpid())
-with open(tmp, 'w') as f:
-    json.dump(run, f, indent=2)
-    f.write('\n')
-os.replace(tmp, marker)
-print(f'run marker: {marker} (ok={str(run["ok"]).lower()}, '
+write_atomic(marker, run)
+
+# The sweep's own record, written whole and never merged: no plugin writes
+# this path, so the counts here are always the whole sweep's. purlin_version
+# RULE-9 checks the RELEASE_NOTES Unreleased counts line against it.
+write_atomic(last_sweep, {
+    'at': at,
+    'commit': commit,
+    'passed': passed,
+    'failed': failed,
+    'skipped': py_skipped,
+    'ok': ok,
+    'suites': suites,
+})
+
+print(f'run marker: {marker} (ok={str(ok).lower()}, '
       f'{len(run["runs"])} plugin run(s) merged)')
+print(f'sweep record: {last_sweep} '
+      f'({passed} passed, {failed} failed, {py_skipped} skipped)')
 PY
   rm -f "$PYTEST_LOG"
 }
