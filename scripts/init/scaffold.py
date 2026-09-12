@@ -273,12 +273,41 @@ def _frameworks(plugin_root):
     return out
 
 
+def _search_roots(root):
+    """The project root and the package directories under it.
+
+    A monorepo keeps its `conftest.py` and its `package.json` in
+    `packages/api/` and `packages/web/`, not at the root, so a root-only
+    search reported "no framework detected" for every project that has more
+    than one. The two levels below the root are the shape every monorepo tool
+    lays down (`packages/*`, `apps/*`, `services/*`); deeper is a source tree,
+    not a package boundary. Dot directories and `node_modules` are skipped
+    (`_SKIP_DIRS`) and the order is sorted, so the framework list a project
+    gets does not depend on the order the filesystem hands back.
+    """
+    out = [root]
+    for name in _listdir(root, '.'):
+        if name.startswith('.') or name in _SKIP_DIRS:
+            continue
+        child = os.path.join(root, name)
+        if not os.path.isdir(child):
+            continue
+        out.append(child)
+        for sub in _listdir(child, '.'):
+            if sub.startswith('.') or sub in _SKIP_DIRS:
+                continue
+            if os.path.isdir(os.path.join(child, sub)):
+                out.append(os.path.join(child, sub))
+    return out
+
+
 def _detect(root, known):
     ids = []
+    bases = _search_roots(root)
     for framework_id, test in _DETECTORS:
         if framework_id not in known:
             raise KeyError(f'{framework_id} is not in the framework registry')
-        if test(root):
+        if any(test(base) for base in bases):
             ids.append(framework_id)
     return ids
 

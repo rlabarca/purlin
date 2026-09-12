@@ -243,6 +243,15 @@
       "test_name": "test_each_heuristic_names_a_fact_only_that_framework_has",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-80",
+      "rule": "RULE-71",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_detection_reads_the_package_directories_not_only_the_root",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

@@ -874,3 +874,28 @@ class TestDetectionPrecision:
         assert _detection_table_ids() == code_ids, (
             f"the Detection table of supported_frameworks.md says "
             f"{_detection_table_ids()} while _DETECTORS says {code_ids}")
+
+    @pytest.mark.proof("skill_init", "PROOF-80", "RULE-71", tier="integration")
+    def test_detection_reads_the_package_directories_not_only_the_root(self):
+        """RULE-71: a monorepo keeps its indicators one or two levels down,
+        and a root-only search told every one of them it had no framework."""
+        assert _detected({'packages/api/conftest.py': ''}) == \
+            ['pytest_purlin.py'], \
+            "packages/api/conftest.py was not seen: detection is root-only"
+
+        # The skip list is not decoration: a vendored package's conftest.py
+        # and a tool's cache are not this project's frameworks.
+        assert _detected({'node_modules/left-pad/conftest.py': ''}) == [], \
+            "a conftest.py inside node_modules selected pytest"
+        assert _detected({'.cache/conftest.py': ''}) == [], \
+            "a conftest.py inside a dot directory selected pytest"
+
+        mono = {
+            'packages/api/package.json': json.dumps(
+                {'devDependencies': {'vitest': '^2.0.0'}}),
+            'services/db/tests/test_schema.sql': 'SELECT 1;\n',
+        }
+        assert _detected(mono) == ['sql_purlin.sh', 'vitest_purlin.ts'], \
+            _detected(mono)
+        assert _detected(mono) == _detected(mono), \
+            "the same tree detected two different framework sets"
