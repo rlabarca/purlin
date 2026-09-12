@@ -63,6 +63,42 @@
       "test_name": "test_refresh_directive_names_only_the_stale_gauge",
       "status": "pass",
       "tier": "e2e"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-44",
+      "rule": "RULE-42",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_cards_open_the_modal_and_are_inert_without_platforms",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-45",
+      "rule": "RULE-3",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_verified_and_passing_sub_labels_name_the_binding_platform",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-46",
+      "rule": "RULE-43",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_chips_are_the_status_colours_and_the_badge_is_untouched",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-47",
+      "rule": "RULE-39",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_platforms_block_replaces_the_tier_block_when_records_exist",
+      "status": "pass",
+      "tier": "e2e"
     }
   ]
 }

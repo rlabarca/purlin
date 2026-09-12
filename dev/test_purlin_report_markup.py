@@ -55,7 +55,7 @@ class TestSummaryStripGauges:
 
         # Both cards are built by one helper, which is what keeps their colour
         # bands identical without a second definition to drift from.
-        m = re.search(r'function gaugeCard\(summary, label, pct, counts\) \{(.*?)\n  \}',
+        m = re.search(r'function gaugeCard\(summary, label, pct, counts, attrs\) \{(.*?)\n  \}',
                       html, re.DOTALL)
         assert m, "gaugeCard helper not found"
         block = m.group(1)
@@ -182,3 +182,55 @@ class TestFeatureTableColumns:
             "the unscorable token must come from each gauge's own vocabulary"
         assert "gaugeCell(dsnVal, f.design, 'Proof Design', 'design')" in html
         assert "gaugeCell(intVal, f.audit, 'Proof Integrity', 'integrity')" in html
+
+
+class TestModalHelper:
+    """purlin_report RULE-41 — one modal helper, mounted on the body.
+
+    `render()` rewrites `#app` on every sort, expand and theme toggle. A dialog
+    mounted inside it would be destroyed mid-interaction, so the overlay lives
+    on `document.body` and `render()` closes it before rebuilding.
+    """
+
+    @pytest.mark.proof("purlin_report", "PROOF-43", "RULE-41", tier="integration")
+    def test_one_helper_mounted_on_the_body_with_the_aria_contract(self):
+        html = _html()
+
+        for sig in ('function openModal(title, bodyHtml, footHtml) {',
+                    'function closeModal() {',
+                    'function onModalKey(e) {'):
+            assert html.count(sig) == 1, (
+                f"expected exactly one definition of {sig!r}, got {html.count(sig)}")
+
+        assert 'document.body.appendChild(overlay)' in html, \
+            "the overlay must be appended to document.body"
+        assert not re.search(r'app\.appendChild\(\s*overlay', html), \
+            "the overlay must never be mounted inside #app, which render() rewrites"
+
+        for attr in ('role="dialog"', 'aria-modal="true"', 'aria-labelledby="modal-title"'):
+            assert attr in html, f"the dialog must carry {attr}"
+
+        m = re.search(r'function render\(\) \{\s*(?:/\*.*?\*/\s*)?(.+?)\n', html, re.DOTALL)
+        assert m, "render() not found"
+        assert m.group(1).strip().startswith('closeModal();'), (
+            "render() must begin with closeModal() so no dialog outlives the "
+            f"content it described; got {m.group(1).strip()[:60]!r}")
+
+        # Both custom properties in both theme blocks.
+        for block in (r'\[data-theme="dark"\] \{(.*?)\n\}',
+                      r'\[data-theme="light"\] \{(.*?)\n\}'):
+            bm = re.search(block, html, re.DOTALL)
+            assert bm, f"theme block {block!r} not found"
+            for prop in ('--bg-overlay:', '--shadow:'):
+                assert prop in bm.group(1), \
+                    f"{prop} must be defined in the theme block {block!r}"
+
+        # The overlay and the dialog reference the properties, never a literal.
+        for sel in (r'\.modal-overlay\{([^}]*)\}', r'\.modal\{([^}]*)\}'):
+            rm = re.search(sel, html)
+            assert rm, f"{sel!r} rule not found"
+            assert not re.search(r'#[0-9a-fA-F]{3,8}\b', rm.group(1)), (
+                f"{sel!r} must carry no hex literal, only custom properties: "
+                f"{rm.group(1)!r}")
+        assert 'var(--bg-overlay)' in re.search(r'\.modal-overlay\{([^}]*)\}', html).group(1)
+        assert 'var(--shadow)' in re.search(r'\.modal\{([^}]*)\}', html).group(1)

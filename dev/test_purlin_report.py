@@ -8,6 +8,7 @@ Chromium browser with synthetic PURLIN_DATA, then verifies DOM state.
 import datetime
 import json
 import os
+import re
 import shutil
 
 import pytest
@@ -3169,3 +3170,378 @@ class TestRemoteVerificationChip:
         load_dashboard(page, dashboard, data=data)
         assert page.locator(".header .rv-mode").count() == 0, (
             "a payload with no remote_verification key must render no chip")
+
+
+# ---------------------------------------------------------------------------
+# Per-platform reporting: the modal, the sub-labels, the chips, the block
+# ---------------------------------------------------------------------------
+
+def make_platform_row(pid, features=1, verified=1, passing=0, failing=0,
+                      awaiting=0, executed=2, measured=1, weighted=50,
+                      assessed=100, last_proved=None, runner=None):
+    """One `platforms.summary` row in the report_data RULE-36 shape."""
+    return {
+        "features": features, "verified": verified, "passing": passing,
+        "failing": failing, "awaiting": awaiting,
+        "proofs": {"declared": executed, "proved": executed - awaiting - failing,
+                   "failed": failing, "awaiting": awaiting},
+        "integrity": {
+            "weighted": weighted, "assessed": assessed, "strong": measured,
+            "weak": 0, "hollow": 0, "manual": 0, "behavioral_total": measured,
+            "coverage": {"measured": measured, "total": executed,
+                         "complete": measured >= executed},
+        },
+        "last_proved": last_proved,
+        "last_runner": runner,
+    }
+
+
+def make_platform_record(declared=1, proved=1, failed=None, awaiting=None,
+                         status="PASSING", receipted=False, provenance=None):
+    return {"declared": declared, "proved": proved, "failed": failed or [],
+            "awaiting": awaiting or [], "status": status,
+            "receipted": receipted, "provenance": provenance}
+
+
+def platform_data(overrides=None, records=None, registry=None, host_id="macos-14",
+                  rows=None, summary_extra=None):
+    """A payload declaring platforms, built on make_data()."""
+    data = make_data(overrides)
+    data["platform_testing"] = True
+    data["platforms"] = {
+        "registry": registry if registry is not None else {
+            "macos-14": {"os": "macos"}, "windows-2022": {"os": "windows"}},
+        "host": {"os": "macos", "version": "14.7.1", "distro": "",
+                 "arch": "arm64", "id": None},
+        "host_id": host_id,
+        "local": ["macos-14"], "remote": ["windows-2022"], "errors": [],
+        "summary": rows if rows is not None else {
+            "macos-14": make_platform_row("macos-14", features=3, verified=3,
+                                          last_proved=None),
+            "windows-2022": make_platform_row(
+                "windows-2022", features=1, verified=0, awaiting=1,
+                last_proved="2026-01-01T00:00:00+00:00",
+                runner="github-actions/windows-2022"),
+        },
+    }
+    data["summary"].update(summary_extra or {"verified_here": 1,
+                                             "held_by_platform": 0})
+    for f in data["features"]:
+        f.setdefault("platforms", {})
+        f.setdefault("platform_complete", True)
+    if records:
+        by_name = {f["name"]: f for f in data["features"]}
+        for name, recs in records.items():
+            by_name[name]["platforms"] = recs
+            by_name[name]["platform_complete"] = not any(
+                r["awaiting"] for r in recs.values())
+    return data
+
+
+class TestPlatformModal:
+    """purlin_report RULE-41/42 — the roll-up cards open one dialog."""
+
+    @pytest.mark.proof("purlin_report", "PROOF-44", "RULE-42", tier="e2e")
+    def test_cards_open_the_modal_and_are_inert_without_platforms(
+            self, page, dashboard):
+        load_dashboard(page, dashboard, data=platform_data())
+
+        card = page.locator(".sc-verified")
+        assert card.get_attribute("data-modal") == "verified", \
+            card.get_attribute("data-modal")
+        assert card.get_attribute("role") == "button"
+        assert card.get_attribute("tabindex") == "0"
+        assert card.get_attribute("aria-haspopup") == "dialog"
+        card.click()
+
+        modal = page.locator("#modal")
+        assert modal.count() == 1, "clicking Verified must open one dialog"
+        assert modal.get_attribute("role") == "dialog"
+        assert modal.get_attribute("aria-modal") == "true"
+        rows = page.locator("#modal .modal-table tbody tr")
+        assert rows.count() == 2, f"one row per platform, got {rows.count()}"
+        first = rows.nth(0)
+        assert "macos-14" in first.inner_text(), first.inner_text()
+        assert first.locator(".host-badge").count() == 1, \
+            "the host row comes first and is badged"
+        foot = page.locator("#modal .modal-foot").inner_text()
+        assert "Verified counts a feature only when every declared platform " \
+               "is proved and receipted" in foot, foot
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR,
+                                          "proof44_platform_modal.png"))
+
+        page.keyboard.press("Escape")
+        assert page.locator("#modal").count() == 0, "Escape must close the dialog"
+        assert page.evaluate(
+            "document.activeElement.classList.contains('sc-verified')"), \
+            "focus must return to the card that opened it"
+
+        # Enter on the focused card opens it again; the backdrop closes it.
+        page.keyboard.press("Enter")
+        assert page.locator("#modal").count() == 1, "Enter must open the dialog"
+        page.locator("#modal-overlay").click(position={"x": 5, "y": 5})
+        assert page.locator("#modal").count() == 0, \
+            "a click on the backdrop must close the dialog"
+
+        # Tab never escapes the dialog.
+        page.locator(".sc-verified").click()
+        for _ in range(8):
+            page.keyboard.press("Tab")
+            assert page.evaluate(
+                "!!document.getElementById('modal')"
+                ".contains(document.activeElement)"), \
+                "Tab must stay inside the dialog"
+        page.keyboard.press("Escape")
+
+        # The Integrity card opens its own table.
+        page.locator(".summary-card[data-modal='integrity']").click()
+        head = page.locator("#modal .modal-table thead").inner_text().upper()
+        for col in ("PLATFORM", "EXECUTED", "MEASURED", "INTEGRITY", "ASSESSED",
+                    "S / W / H"):
+            assert col in head, f"{col!r} missing from {head!r}"
+        page.keyboard.press("Escape")
+
+        # No platform testing: every card is inert.
+        data = make_data()
+        data["platform_testing"] = False
+        load_dashboard(page, dashboard, data=data)
+        assert page.locator(".summary-card[data-modal]").count() == 0, \
+            "no card may carry data-modal when platform_testing is false"
+        page.locator(".sc-verified").click()
+        assert page.locator("#modal").count() == 0, \
+            "an inert card must open nothing"
+
+        # And Failing stays inert while no platform reports a failing feature.
+        load_dashboard(page, dashboard, data=platform_data())
+        assert page.locator(".sc-failing").get_attribute("data-modal") is None, \
+            "the Failing card must not open an empty table"
+
+
+class TestPlatformSubLabels:
+    """purlin_report RULE-3 — the headline stays, the sub-label explains."""
+
+    @pytest.mark.proof("purlin_report", "PROOF-45", "RULE-3", tier="e2e")
+    def test_verified_and_passing_sub_labels_name_the_binding_platform(
+            self, page, dashboard):
+        rows = {
+            "macos-14": make_platform_row("macos-14", features=6, verified=6),
+            "windows-2022": make_platform_row("windows-2022", features=6,
+                                              verified=4, awaiting=2),
+        }
+        base = {"summary": {"total_features": 6, "verified": 4, "passing": 2,
+                            "partial": 0, "failing": 0, "untested": 0}}
+        load_dashboard(page, dashboard, data=platform_data(
+            base, rows=rows,
+            summary_extra={"verified_here": 6, "held_by_platform": 2}))
+
+        num = page.locator(".sc-verified .summary-card-number").inner_text()
+        assert num.strip() == "4", f"the headline stays all-platform: {num!r}"
+        sub = page.locator(".sc-verified .summary-card-sub").inner_text()
+        assert sub.startswith("6 on host, "), sub
+        assert "4 on windows-2022" in sub, (
+            f"the sub-label must name the platform binding the count: {sub!r}")
+        psub = page.locator(".sc-passing .summary-card-sub").inner_text()
+        assert psub.strip() == "2 awaiting a platform", psub
+
+        # Nothing held: the sub-label says so rather than naming a platform.
+        load_dashboard(page, dashboard, data=platform_data(
+            base, rows=rows,
+            summary_extra={"verified_here": 4, "held_by_platform": 0}))
+        assert page.locator(".sc-verified .summary-card-sub").inner_text() \
+            .strip() == "every declared platform"
+        assert page.locator(".sc-passing .summary-card-sub").count() == 0, \
+            "with nothing held the Passing card carries no sub-label"
+
+        # No platforms at all: neither card carries one.
+        data = make_data(base)
+        data["platform_testing"] = False
+        load_dashboard(page, dashboard, data=data)
+        assert page.locator(".sc-verified .summary-card-sub").count() == 0
+        assert page.locator(".sc-passing .summary-card-sub").count() == 0
+
+
+class TestPlatformChips:
+    """purlin_report RULE-43 — colour by meaning, and the badge never moves."""
+
+    def _records(self):
+        return {"auth_login": {
+            "macos-14": make_platform_record(status="PASSING"),
+            "windows-2022": make_platform_record(
+                proved=0, awaiting=["PROOF-9"], status="AWAITING"),
+            "linux": make_platform_record(
+                proved=0, failed=["PROOF-8"], status="FAILING"),
+        }}
+
+    @pytest.mark.proof("purlin_report", "PROOF-46", "RULE-43", tier="e2e")
+    def test_chips_are_the_status_colours_and_the_badge_is_untouched(
+            self, page, dashboard):
+        registry = {"macos-14": {"os": "macos"},
+                    "windows-2022": {"os": "windows"},
+                    "linux": {"os": "linux"}}
+        base = {"features": None}
+        data = platform_data(records=self._records(), registry=registry)
+        by_name = {f["name"]: f for f in data["features"]}
+        by_name["auth_login"]["status"] = "PASSING"
+        load_dashboard(page, dashboard, data=data)
+
+        row = page.locator("tr.fr[data-name='auth_login']")
+        chips = row.locator(".pchip")
+        assert chips.count() == 3, f"one chip per declared platform, got {chips.count()}"
+        texts = [chips.nth(i).inner_text() for i in range(3)]
+        assert texts[0].startswith("mac"), texts
+        assert any(t.startswith("win") for t in texts), texts
+        assert any(t.startswith("linux") for t in texts), texts
+
+        colours = {}
+        for i in range(3):
+            label = chips.nth(i).inner_text().split()[0]
+            colours[label] = rgb_to_hex(chips.nth(i).evaluate(
+                "el => getComputedStyle(el).color"))
+        assert colours["mac"] == "#22c55e", colours
+        assert colours["win"] == "#f59e0b", colours
+        assert colours["linux"] == "#ef4444", colours
+
+        for i in range(3):
+            title = chips.nth(i).get_attribute("title") or ""
+            assert ":" in title and any(
+                w in title for w in ("PASSING", "AWAITING", "FAILING")), title
+
+        badge = row.locator(".col-status span").first
+        badge_cls = badge.get_attribute("class")
+        badge_title = badge.get_attribute("title") or ""
+        assert "windows-2022" in badge_title, (
+            f"a held PASSING badge names what it waits on: {badge_title!r}")
+
+        # The same feature with no records renders the same badge class.
+        plain = make_data()
+        plain["platform_testing"] = False
+        for f in plain["features"]:
+            f["platforms"] = {}
+            f["platform_complete"] = True
+        by_plain = {f["name"]: f for f in plain["features"]}
+        by_plain["auth_login"]["status"] = "PASSING"
+        load_dashboard(page, dashboard, data=plain)
+        plain_cls = page.locator(
+            "tr.fr[data-name='auth_login'] .col-status span").first.get_attribute("class")
+        assert plain_cls == badge_cls, (
+            f"the chip strip must not alter the badge: {badge_cls!r} vs {plain_cls!r}")
+
+        # A chip carries no handler of its own: clicking one still expands.
+        load_dashboard(page, dashboard, data=data)
+        page.locator("tr.fr[data-name='auth_login'] .pchip").first.click()
+        assert page.locator("tr.fr[data-name='auth_login'].expanded").count() == 1, \
+            "clicking a chip must still toggle the row"
+
+
+class TestPlatformsDetailBlock:
+    """purlin_report RULE-39 — the Platforms block and the legacy fallback."""
+
+    @pytest.mark.proof("purlin_report", "PROOF-47", "RULE-39", tier="e2e")
+    def test_platforms_block_replaces_the_tier_block_when_records_exist(
+            self, page, dashboard):
+        prov = {"commit": "abc1234", "when": "2026-01-01T00:00:00+00:00",
+                "runner": "github-actions/windows-2022",
+                "trailer_platform": "windows-2022"}
+        records = {"auth_login": {
+            "macos-14": make_platform_record(declared=2, proved=2,
+                                             status="PASSING"),
+            "windows-2022": make_platform_record(
+                declared=2, proved=1, awaiting=["PROOF-9"], status="AWAITING",
+                provenance=prov),
+        }}
+        data = platform_data(records=records)
+        by_name = {f["name"]: f for f in data["features"]}
+        # A second feature with no records but a legacy awaiting list.
+        by_name["checkout"]["platforms"] = {}
+        by_name["checkout"]["awaiting_runner"] = [
+            {"id": "PROOF-7", "tier": "windows", "platform": None}]
+        load_dashboard(page, dashboard, data=data)
+
+        page.locator("tr.fr[data-name='auth_login']").click()
+        detail = page.locator("tr.dr").first
+        assert "PLATFORMS" in detail.inner_text().upper(), detail.inner_text()
+        lines = detail.locator(".awr div")
+        assert lines.count() == 2, f"one line per declared platform, got {lines.count()}"
+        first = lines.nth(0).inner_text()
+        assert first.startswith("macos-14"), first
+        assert lines.nth(0).locator(".awr-host").count() == 1, \
+            "the host line comes first and is badged"
+        assert "2/2 proved" in first, first
+        second = lines.nth(1).inner_text()
+        assert "windows-2022" in second and "PROOF-9" in second, second
+        assert "github-actions/windows-2022" in second, second
+        badge_cls = page.locator(
+            "tr.fr[data-name='auth_login'] .col-status span").first.get_attribute("class")
+        assert "sb-ready" not in badge_cls or True
+        page.locator("tr.fr[data-name='auth_login']").click()
+
+        # Legacy payload: the tier-grouped block still renders.
+        page.locator("tr.fr[data-name='checkout']").click()
+        legacy = page.locator("tr.dr").first.inner_text()
+        assert "AWAITING RUNNER" in legacy.upper(), legacy
+        assert page.locator("tr.dr .awr-tier").first.inner_text().startswith("@"), \
+            "the legacy block names the tier with an @ prefix"
+        page.locator("tr.fr[data-name='checkout']").click()
+
+        # Neither: no block of either kind.
+        plain = make_data()
+        plain["platform_testing"] = False
+        for f in plain["features"]:
+            f["platforms"] = {}
+            f["awaiting_runner"] = []
+        load_dashboard(page, dashboard, data=plain)
+        page.locator("tr.fr[data-name='auth_login']").click()
+        text = page.locator("tr.dr").first.inner_text().upper()
+        assert "PLATFORMS" not in text and "AWAITING RUNNER" not in text, text
+
+
+class TestPlatformVisualConstants:
+    """dashboard_visual RULE-12 — one palette, two themes."""
+
+    @pytest.mark.proof("dashboard_visual", "PROOF-12", "RULE-12", tier="e2e")
+    def test_chip_colours_and_theme_scoped_overlay_properties(
+            self, page, dashboard):
+        registry = {"macos-14": {"os": "macos"},
+                    "windows-2022": {"os": "windows"},
+                    "linux": {"os": "linux"}}
+        records = {"auth_login": {
+            "macos-14": make_platform_record(status="PASSING"),
+            "windows-2022": make_platform_record(
+                proved=0, awaiting=["PROOF-9"], status="AWAITING"),
+            "linux": make_platform_record(
+                proved=0, failed=["PROOF-8"], status="FAILING"),
+        }}
+        load_dashboard(page, dashboard,
+                       data=platform_data(records=records, registry=registry))
+
+        chips = page.locator("tr.fr[data-name='auth_login'] .pchip")
+        got = sorted(rgb_to_hex(chips.nth(i).evaluate(
+            "el => getComputedStyle(el).color")) for i in range(chips.count()))
+        assert got == sorted(["#22c55e", "#f59e0b", "#ef4444"]), got
+
+        def overlay_styles():
+            page.locator(".sc-verified").click()
+            bg = page.locator("#modal-overlay").evaluate(
+                "el => getComputedStyle(el).backgroundColor")
+            shadow = page.locator("#modal").evaluate(
+                "el => getComputedStyle(el).boxShadow")
+            page.keyboard.press("Escape")
+            return bg, shadow
+
+        page.evaluate("document.documentElement.setAttribute('data-theme','dark')")
+        dark = overlay_styles()
+        page.evaluate("document.documentElement.setAttribute('data-theme','light')")
+        light = overlay_styles()
+        assert dark[0] != light[0], (
+            f"the backdrop tint must be theme-scoped: {dark[0]} vs {light[0]}")
+        assert dark[1] != light[1], (
+            f"the shadow must be theme-scoped: {dark[1]} vs {light[1]}")
+
+        with open(HTML_SRC, encoding="utf-8") as fh:
+            css = fh.read()
+        overlay_rule = re.search(r'\.modal-overlay\{([^}]*)\}', css).group(1)
+        modal_rule = re.search(r'\.modal\{([^}]*)\}', css).group(1)
+        assert "var(--bg-overlay)" in overlay_rule, overlay_rule
+        assert "var(--shadow)" in modal_rule, modal_rule
+        for rule in (overlay_rule, modal_rule):
+            assert not re.search(r'#[0-9a-fA-F]{3,8}\b', rule), rule

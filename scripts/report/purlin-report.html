@@ -41,6 +41,8 @@
   --border-light: #1e293b;
   --logo-fill: #e2e8f0;
   --logo-guide: #94a3b8;
+  --bg-overlay: rgba(2, 6, 23, 0.72);
+  --shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
 }
 
 /* ===== LIGHT THEME ===== */
@@ -57,6 +59,8 @@
   --border-light: #f1f5f9;
   --logo-fill: #1e293b;
   --logo-guide: #94a3b8;
+  --bg-overlay: rgba(15, 23, 42, 0.45);
+  --shadow: 0 20px 50px rgba(15, 23, 42, 0.22);
 }
 
 /* ===== BASE ===== */
@@ -225,6 +229,27 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .dc{background:var(--bg-expanded);padding:14px 24px 18px;border-top:1px solid var(--border);overflow:hidden}
 .dst{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);margin-bottom:6px;margin-top:14px}
 .awr{font-size:11px;color:var(--text-secondary);line-height:1.7}
+.host-badge{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--teal);border:1px solid var(--teal);border-radius:3px;padding:0 4px;margin-left:6px}
+.awr-host{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--teal);border:1px solid var(--teal);border-radius:3px;padding:0 4px;margin-left:6px}
+.pchips{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
+.pchip{font-family:var(--font-mono);font-size:9px;font-weight:600;letter-spacing:.03em;border-radius:3px;padding:0 4px;border:1px solid var(--border)}
+.pchip-ok{color:var(--green);border-color:var(--green);background:var(--green-dim)}
+.pchip-wait{color:var(--amber);border-color:var(--amber);background:var(--amber-dim)}
+.pchip-fail{color:var(--red);border-color:var(--red);background:var(--red-dim)}
+.summary-card.sc-click{cursor:pointer}
+.summary-card.sc-click:hover{background:var(--bg-hover)}
+.summary-card.sc-click:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.modal-overlay{position:fixed;inset:0;background:var(--bg-overlay);display:flex;align-items:center;justify-content:center;padding:24px;z-index:100}
+.modal{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);max-width:840px;width:100%;max-height:80vh;display:flex;flex-direction:column}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
+.modal-head h2{font-size:14px;font-weight:600;color:var(--text-primary);margin:0}
+.modal-close{background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);cursor:pointer;font-size:16px;line-height:1;padding:4px 9px}
+.modal-close:hover{color:var(--text-primary);background:var(--bg-hover)}
+.modal-body{padding:14px 18px;overflow:auto}
+.modal-table{width:100%;border-collapse:collapse;font-size:12px}
+.modal-table th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);padding:6px 8px;border-bottom:1px solid var(--border)}
+.modal-table td{padding:6px 8px;border-bottom:1px solid var(--border-light);color:var(--text-primary)}
+.modal-foot{padding:12px 18px;border-top:1px solid var(--border);font-size:11px;color:var(--text-secondary);line-height:1.6}
 .awr-tier{font-family:var(--font-mono);color:var(--amber);font-weight:600}
 .dst:first-child{margin-top:0}
 
@@ -368,6 +393,240 @@ table{min-width:830px}
 
   /* ===== HELPERS ===== */
   function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+  /* ===== MODAL =====
+     One helper for every modal on this page. It mounts on document.body and
+     not on #app, because render() rewrites #app wholesale: a dialog mounted
+     inside it would be destroyed mid-interaction by any sort, expand or theme
+     toggle. Escape, the backdrop and the close button all close it, Tab is
+     trapped inside it, and focus returns to whatever opened it. */
+  var modalEl = null;
+  var modalOpener = null;
+
+  function modalFocusables() {
+    if (!modalEl) return [];
+    return Array.prototype.slice.call(modalEl.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+      .filter(function (el) { return el.offsetParent !== null; });
+  }
+
+  function onModalKey(e) {
+    if (!modalEl) return;
+    if (e.key === 'Escape') { closeModal(); return; }
+    if (e.key !== 'Tab') return;
+    var items = modalFocusables();
+    if (!items.length) { e.preventDefault(); return; }
+    var first = items[0];
+    var last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault(); last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault(); first.focus();
+    } else if (modalEl.contains(document.activeElement) === false) {
+      e.preventDefault(); first.focus();
+    }
+  }
+
+  function closeModal() {
+    if (!modalEl) return;
+    document.removeEventListener('keydown', onModalKey, true);
+    if (modalEl.parentNode) modalEl.parentNode.removeChild(modalEl);
+    modalEl = null;
+    if (modalOpener && typeof modalOpener.focus === 'function') modalOpener.focus();
+    modalOpener = null;
+  }
+
+  function openModal(title, bodyHtml, footHtml) {
+    /* A second open replaces the first rather than stacking two dialogs. */
+    var opener = document.activeElement;
+    closeModal();
+    modalOpener = opener;
+    var overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.id = 'modal-overlay';
+    overlay.innerHTML =
+      '<div class="modal" id="modal" role="dialog" aria-modal="true" '
+      + 'aria-labelledby="modal-title">'
+      + '<div class="modal-head"><h2 id="modal-title">' + esc(title) + '</h2>'
+      + '<button class="modal-close" id="modal-close" aria-label="Close">&times;</button></div>'
+      + '<div class="modal-body">' + bodyHtml + '</div>'
+      + (footHtml ? '<div class="modal-foot">' + footHtml + '</div>' : '')
+      + '</div>';
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) closeModal();
+    });
+    document.body.appendChild(overlay);
+    modalEl = overlay;
+    document.getElementById('modal-close').addEventListener('click', closeModal);
+    document.addEventListener('keydown', onModalKey, true);
+    document.getElementById('modal-close').focus();
+  }
+
+  /* ===== PLATFORMS ===== */
+  function platformTesting() { return !!(D && D.platform_testing); }
+
+  function platformRows() {
+    var p = (D && D.platforms) || {};
+    var summary = p.summary || {};
+    var hostId = p.host_id || '';
+    /* The host first, then by id: what ran here needs no runner. */
+    return Object.keys(summary).sort(function (a, b) {
+      if ((a === hostId) !== (b === hostId)) return a === hostId ? -1 : 1;
+      return a < b ? -1 : a > b ? 1 : 0;
+    }).map(function (id) {
+      var row = summary[id] || {};
+      row.id = id;
+      row.isHost = (id === hostId);
+      return row;
+    });
+  }
+
+  function platformAbbrev(id) {
+    var reg = ((D.platforms || {}).registry || {})[id] || {};
+    var os = reg.os || '';
+    if (os === 'windows') return 'win';
+    if (os === 'macos') return 'mac';
+    if (os === 'linux') return 'linux';
+    return id;
+  }
+
+  /* Colour by meaning, from the RULE-3 status colours: green proved, amber
+     awaiting, red failing. The chip never alters the row's status badge. */
+  function pchipClass(status) {
+    if (status === 'FAILING') return 'pchip pchip-fail';
+    if (status === 'AWAITING') return 'pchip pchip-wait';
+    return 'pchip pchip-ok';
+  }
+
+  function pchipMark(status) {
+    if (status === 'FAILING') return '\u2717';
+    if (status === 'AWAITING') return '\u23f3';
+    return '\u2713';
+  }
+
+  function platformChips(f) {
+    var recs = f.platforms || {};
+    var ids = Object.keys(recs);
+    if (!ids.length) return '';
+    var hostId = (D.platforms || {}).host_id || '';
+    ids.sort(function (a, b) {
+      if ((a === hostId) !== (b === hostId)) return a === hostId ? -1 : 1;
+      return a < b ? -1 : a > b ? 1 : 0;
+    });
+    var out = '<div class="pchips">';
+    for (var i = 0; i < ids.length; i++) {
+      var rec = recs[ids[i]] || {};
+      var title = ids[i] + ': ' + rec.status + ', ' + (rec.proved || 0) + '/'
+        + (rec.declared || 0) + ' proved';
+      if (rec.awaiting && rec.awaiting.length) title += ', awaiting ' + rec.awaiting.join(', ');
+      if (rec.failed && rec.failed.length) title += ', failing ' + rec.failed.join(', ');
+      out += '<span class="' + pchipClass(rec.status) + '" title="' + esc(title) + '">'
+          + esc(platformAbbrev(ids[i])) + ' ' + pchipMark(rec.status) + '</span>';
+    }
+    return out + '</div>';
+  }
+
+  function heldPlatform() {
+    /* The platform binding Verified: the row with the fewest verified. */
+    var rows = platformRows();
+    var worst = null;
+    for (var i = 0; i < rows.length; i++) {
+      if (worst === null || (rows[i].verified || 0) < (worst.verified || 0)) worst = rows[i];
+    }
+    return worst;
+  }
+
+  function platformCountsModal() {
+    var rows = platformRows();
+    var h = '<table class="modal-table"><thead><tr><th>Platform</th><th>Features</th>'
+      + '<th>Verified</th><th>Passing</th><th>Awaiting</th><th>Failing</th>'
+      + '<th>Last proved</th></tr></thead><tbody>';
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      h += '<tr><td>' + esc(r.id)
+        + (r.isHost ? '<span class="host-badge">host</span>' : '') + '</td>'
+        + '<td>' + (r.features || 0) + '</td><td>' + (r.verified || 0) + '</td>'
+        + '<td>' + (r.passing || 0) + '</td><td>' + (r.awaiting || 0) + '</td>'
+        + '<td>' + (r.failing || 0) + '</td>'
+        + '<td>' + (r.last_proved ? esc(relTime(r.last_proved)) : '\u2014') + '</td></tr>';
+    }
+    return h + '</tbody></table>';
+  }
+
+  function platformIntegrityModal() {
+    var rows = platformRows();
+    var h = '<table class="modal-table"><thead><tr><th>Platform</th><th>Executed</th>'
+      + '<th>Measured</th><th>Integrity</th><th>Assessed</th><th>S / W / H</th>'
+      + '</tr></thead><tbody>';
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      var g = r.integrity || {};
+      var cov = g.coverage || {};
+      h += '<tr><td>' + esc(r.id)
+        + (r.isHost ? '<span class="host-badge">host</span>' : '') + '</td>'
+        + '<td>' + (cov.total || 0) + '</td><td>' + (cov.measured || 0) + '</td>'
+        + '<td>' + (g.weighted == null ? '\u2014' : g.weighted + '%') + '</td>'
+        + '<td>' + (g.assessed == null ? '\u2014' : g.assessed + '%') + '</td>'
+        + '<td>' + (g.strong || 0) + ' / ' + (g.weak || 0) + ' / ' + (g.hollow || 0)
+        + '</td></tr>';
+    }
+    return h + '</tbody></table>';
+  }
+
+  function platformFailingModal() {
+    var byPlatform = {};
+    var feats = (D.features || []);
+    for (var i = 0; i < feats.length; i++) {
+      var recs = feats[i].platforms || {};
+      for (var id in recs) {
+        if (!Object.prototype.hasOwnProperty.call(recs, id)) continue;
+        if (recs[id].status !== 'FAILING') continue;
+        var e = byPlatform[id] || (byPlatform[id] = {features: [], proofs: []});
+        e.features.push(feats[i].name);
+        e.proofs = e.proofs.concat(recs[id].failed || []);
+      }
+    }
+    var ids = Object.keys(byPlatform).sort();
+    var h = '<table class="modal-table"><thead><tr><th>Platform</th>'
+      + '<th>Failing features</th><th>Proofs</th></tr></thead><tbody>';
+    for (var j = 0; j < ids.length; j++) {
+      h += '<tr><td>' + esc(ids[j]) + '</td><td>'
+        + esc(byPlatform[ids[j]].features.join(', ')) + '</td><td>'
+        + esc(byPlatform[ids[j]].proofs.join(', ')) + '</td></tr>';
+    }
+    return h + '</tbody></table>';
+  }
+
+  var MODAL_COUNT_FOOT = 'Verified counts a feature only when every declared '
+    + 'platform is proved and receipted. Awaiting proofs leave the coverage '
+    + 'fraction and never fail a feature.';
+  var MODAL_INTEGRITY_FOOT = 'A grade describes the test, not the platform, so '
+    + 'this split reports measurement coverage per platform rather than a claim '
+    + 'that a proof is stronger on one machine. Proof Design is not split: a '
+    + 'description is graded from its text and has no platform.';
+  var MODAL_FAILING_FOOT = 'A failing proof on a declared platform fails the '
+    + 'feature everywhere, because the rule it covers reads FAIL in every '
+    + 'surface.';
+
+  function openPlatformModal(kind) {
+    if (kind === 'integrity') {
+      openModal('Proof Integrity by platform', platformIntegrityModal(),
+                MODAL_INTEGRITY_FOOT);
+    } else if (kind === 'failing') {
+      openModal('Failing by platform', platformFailingModal(), MODAL_FAILING_FOOT);
+    } else {
+      openModal(kind === 'passing' ? 'Passing by platform' : 'Verified by platform',
+                platformCountsModal(), MODAL_COUNT_FOOT);
+    }
+  }
+
+  function cardAttrs(kind) {
+    /* Only when the project actually declares a platform. With none, the
+       cards are inert exactly as they were before this existed. */
+    if (!platformTesting()) return '';
+    return ' role="button" tabindex="0" aria-haspopup="dialog" data-modal="'
+      + kind + '"';
+  }
 
   function relTime(iso) {
     if (!iso) return null;
@@ -536,10 +795,19 @@ table{min-width:830px}
 
   function proofCell(p) {
     var planned = (p.status === 'planned');
-    var h = planned ? '<div class="rprf-planned">' : '';
-    if (hasGlobalAudit && !planned) h += auditTag(p.audit, p.description);
+    var awaiting = (p.status === 'awaiting');
+    var h = (planned || awaiting) ? '<div class="rprf-planned">' : '';
+    if (hasGlobalAudit && !planned && !awaiting) h += auditTag(p.audit, p.description);
     if (p.id) h += '<span class="fid">' + esc(p.id) + '</span> ';
     if (planned) h += '<span class="rprf-planned-tag">not run</span> ';
+    /* "nobody wrote it" and "written and waiting on a runner" are different
+       states, so they get different tags; an executed entry says where it ran
+       so a two-platform proof's two rows can be told apart. */
+    if (awaiting) {
+      h += '<span class="pchip pchip-wait">awaiting ' + esc(p.platform || '?') + '</span> ';
+    } else if (p.platform) {
+      h += '<span class="pchip pchip-ok">@' + esc(p.platform) + '</span> ';
+    }
     if (p.description) {
       h += '<span>' + esc(p.description) + '</span>';
     }
@@ -547,7 +815,7 @@ table{min-width:830px}
     if (p.test_file) loc += p.test_file;
     if (p.test_name) loc += '::' + p.test_name;
     if (loc) h += '<div class="rprf-loc">' + esc(loc) + '</div>';
-    if (planned) h += '</div>';
+    if (planned || awaiting) h += '</div>';
     return h;
   }
 
@@ -686,7 +954,7 @@ table{min-width:830px}
     return which === 'design' ? summary.design : summary.integrity;
   }
 
-  function gaugeCard(summary, label, pct, counts) {
+  function gaugeCard(summary, label, pct, counts, attrs) {
     var cov = summary && summary.coverage ? summary.coverage : null;
     var covPct = (cov && cov.total) ? Math.round((cov.measured / cov.total) * 100) : null;
 
@@ -722,12 +990,17 @@ table{min-width:830px}
     }
     var num = pct == null ? '&mdash;' : pct + '%';
 
-    return '<div class="summary-card sc-integrity' + cls + '"><div class="summary-card-number">' + num + '</div>'
+    return '<div class="summary-card sc-integrity' + cls + (attrs ? ' sc-click' : '')
+         + '"' + (attrs || '') + '><div class="summary-card-number">' + num + '</div>'
          + '<div class="summary-card-label">' + label + '</div>'
          + '<div class="summary-card-sub' + subCls + '" title="' + subTitle + '">' + sub + '</div></div>';
   }
 
   function render() {
+    /* render() rewrites #app. The modal lives on document.body precisely so a
+       re-render cannot orphan it, and it is closed here so a sort or a theme
+       toggle never leaves a dialog open over rebuilt content. */
+    closeModal();
     var st = staleness(D.timestamp);
     var S = D.summary;
     var A = D.audit_summary;
@@ -766,15 +1039,39 @@ table{min-width:830px}
     h += '<div class="summary-card sc-total"><div class="summary-card-number">' + S.total_features + '</div><div class="summary-card-label">Specs</div>';
     if (D.anchors_summary.total) h += '<div class="summary-card-sub">+ ' + D.anchors_summary.total + ' anchors</div>';
     h += '</div>';
-    h += '<div class="summary-card sc-verified"><div class="summary-card-number">' + S.verified + '</div><div class="summary-card-label">Verified</div></div>';
-    h += '<div class="summary-card sc-passing"><div class="summary-card-number">' + (S.passing || 0) + '</div><div class="summary-card-label">Passing</div></div>';
+    /* The headline numbers are always the all-platform figures. The
+       sub-label names the platform holding them back, because a Verified count
+       that fell because a runner has not run yet reads as a regression without
+       it (report_data RULE-4). */
+    var held = S.held_by_platform || 0;
+    var bind = held > 0 ? heldPlatform() : null;
+    var vsub = '';
+    if (platformTesting()) {
+      vsub = held > 0 && bind
+        ? '<div class="summary-card-sub">' + (S.verified_here || 0) + ' on host, '
+          + (bind.verified || 0) + ' on ' + esc(bind.id) + '</div>'
+        : '<div class="summary-card-sub">every declared platform</div>';
+    }
+    h += '<div class="summary-card sc-verified' + (platformTesting() ? ' sc-click' : '') + '"'
+      + cardAttrs('verified') + '><div class="summary-card-number">' + S.verified
+      + '</div><div class="summary-card-label">Verified</div>' + vsub + '</div>';
+    var psub = (platformTesting() && held > 0)
+      ? '<div class="summary-card-sub">' + held + ' awaiting a platform</div>' : '';
+    h += '<div class="summary-card sc-passing' + (platformTesting() ? ' sc-click' : '') + '"'
+      + cardAttrs('passing') + '><div class="summary-card-number">' + (S.passing || 0)
+      + '</div><div class="summary-card-label">Passing</div>' + psub + '</div>';
     var incompleteCount = (S.partial || 0) + (S.untested || 0);
     h += '<div class="summary-card sc-partial"><div class="summary-card-number">' + incompleteCount + '</div><div class="summary-card-label">Incomplete</div>';
     if (S.partial && S.untested) h += '<div class="summary-card-sub">' + S.partial + ' partial, ' + S.untested + ' untested</div>';
     else if (S.untested) h += '<div class="summary-card-sub">' + S.untested + ' untested</div>';
     else if (S.partial) h += '<div class="summary-card-sub">' + S.partial + ' partial</div>';
     h += '</div>';
-    h += '<div class="summary-card sc-failing"><div class="summary-card-number">' + S.failing + '</div><div class="summary-card-label">Failing</div></div>';
+    /* Failing opens the modal only when a platform actually fails: a card
+       that opens an empty table is worse than one that does not open. */
+    var platformFails = platformRows().some(function (r) { return (r.failing || 0) > 0; });
+    h += '<div class="summary-card sc-failing' + (platformFails ? ' sc-click' : '') + '"'
+      + (platformFails ? cardAttrs('failing') : '') + '><div class="summary-card-number">'
+      + S.failing + '</div><div class="summary-card-label">Failing</div></div>';
     /* Both gauge cards. They reuse the same colour bands and CSS classes, so
        the dashboard_visual anchor (RULE-10) covers both.
 
@@ -788,7 +1085,8 @@ table{min-width:830px}
       G ? (G.provable + 'P ' + G.loose + 'L ' + G.unprovable + 'U') : 'run purlin:audit');
     h += gaugeCard(A, 'Proof Integrity', A ? gaugeHeadline(A, 'integrity') : null,
       A ? (A.strong + 'S ' + A.weak + 'W ' + A.hollow + 'H')
-        : (S.untested === S.total_features ? 'no tests yet' : 'run purlin:audit'));
+        : (S.untested === S.total_features ? 'no tests yet' : 'run purlin:audit'),
+      cardAttrs('integrity'));
     h += '</div>';
 
     /* Uncommitted work section */
@@ -910,7 +1208,21 @@ table{min-width:830px}
             bh += '<div class="cov-bar"><div class="cov-fill ' + covClass(f.status) + '" style="width:' + pct + '%"></div></div></div></td>';
 
             /* Status */
-            bh += '<td class="col-status"><span class="' + badgeClass(f.status) + '">' + badgeText(f.status) + '</span></td>';
+            /* The badge never changes; a held PASSING badge only gains a
+               title naming what it waits on. The chip strip is a second line
+               under it, with no click handler of its own so the row click
+               keeps working (RULE-43). */
+            var heldOn = [];
+            var frecs = f.platforms || {};
+            for (var pk in frecs) {
+              if (Object.prototype.hasOwnProperty.call(frecs, pk)
+                  && frecs[pk].status === 'AWAITING') heldOn.push(pk);
+            }
+            var badgeTitle = (f.status === 'PASSING' && heldOn.length)
+              ? ' title="' + esc('Awaiting ' + heldOn.join(', ')) + '"' : '';
+            bh += '<td class="col-status"><span class="' + badgeClass(f.status) + '"'
+              + badgeTitle + '>' + badgeText(f.status) + '</span>'
+              + platformChips(f) + '</td>';
 
             /* Design and Integrity. gaugeCell never emits an em dash: a blank
                cell under a populated summary card is what RULE-35 forbids. */
@@ -1017,6 +1329,19 @@ table{min-width:830px}
       });
     }
 
+    var modalCards = app.querySelectorAll('.summary-card[data-modal]');
+    for (var mi = 0; mi < modalCards.length; mi++) {
+      modalCards[mi].addEventListener('click', function () {
+        openPlatformModal(this.getAttribute('data-modal'));
+      });
+      modalCards[mi].addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+          e.preventDefault();
+          openPlatformModal(this.getAttribute('data-modal'));
+        }
+      });
+    }
+
     var frs = app.querySelectorAll('.fr');
     for (var fi = 0; fi < frs.length; fi++) {
       frs[fi].addEventListener('click', function() {
@@ -1062,7 +1387,38 @@ table{min-width:830px}
        project claims to support is unproven (sync_status RULE-47). Warn, never
        block: it carries no status change and no red. */
     var aw = f.awaiting_runner || [];
-    if (aw.length) {
+    var precs = f.platforms || {};
+    var pids = Object.keys(precs);
+    if (pids.length) {
+      /* One block, one line per declared platform, host first. The legacy
+         tier-grouped block below still serves a payload written before
+         platform records existed. */
+      var hostId = (D.platforms || {}).host_id || '';
+      pids.sort(function (a, b) {
+        if ((a === hostId) !== (b === hostId)) return a === hostId ? -1 : 1;
+        return a < b ? -1 : a > b ? 1 : 0;
+      });
+      h += '<div class="dst">Platforms</div>';
+      h += '<div class="awr">';
+      for (var pi = 0; pi < pids.length; pi++) {
+        var rec = precs[pids[pi]] || {};
+        var line = '<div><span class="awr-tier">' + esc(pids[pi]) + '</span>';
+        if (pids[pi] === hostId) line += '<span class="awr-host">host</span>';
+        line += ' ' + (rec.proved || 0) + '/' + (rec.declared || 0) + ' proved';
+        if (rec.failed && rec.failed.length) {
+          line += ', ' + rec.failed.length + ' failing (' + esc(rec.failed.join(', ')) + ')';
+        }
+        if (rec.awaiting && rec.awaiting.length) {
+          line += ', awaiting ' + esc(rec.awaiting.join(', '));
+        }
+        if (rec.provenance && rec.provenance.when) {
+          line += ' \u00b7 ' + esc(relTime(rec.provenance.when)) + ' ('
+            + esc(rec.provenance.runner || 'runner not recorded') + ')';
+        }
+        h += line + '</div>';
+      }
+      h += '</div>';
+    } else if (aw.length) {
       var awTiers = {};
       for (var ai = 0; ai < aw.length; ai++) {
         (awTiers[aw[ai].tier] = awTiers[aw[ai].tier] || []).push(aw[ai].id);
