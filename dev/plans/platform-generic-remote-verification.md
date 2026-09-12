@@ -846,7 +846,11 @@ warns when it has not been run and needs to be** (7.3).
   - `plugin-copies-stale`: any `.purlin/plugins/<name>` not byte-identical to `scripts/proof/<name>`.
   - `config-fields-missing`: required fields from `templates/config.json` absent from
     `.purlin/config.json`; `version` differing from `VERSION`.
-  - `receipt-v1`: receipts without `vhash_version`.
+  - `receipt-v1`: receipts without `vhash_version`. A v1 receipt reads STALE under the v2
+    formula for that reason alone, so `_report_feature`'s stale branch names it: "receipt is
+    version 1; the vhash formula changed; run `purlin:verify`" instead of the generic wording,
+    and the advisory counts them. `--apply` never re-issues a receipt (a receipt is a claim
+    that tests ran); `purlin:verify` does, from a fresh run.
   - `legacy-mcp`: what `_check_legacy_mcp_entry` (`:1018`) already detects.
 - `scripts/update/migrate.py --check` prints the list as JSON, exit 0 (none) / 1 (pending) / 2
   (bad invocation), never writes. `--apply <id>...` performs the mechanical rewrite for the
