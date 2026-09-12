@@ -2,8 +2,8 @@
   "feature": "purlin_skills",
   "vhash": "84af5adc",
   "vhash_version": 2,
-  "commit": "50638cb55001cf77c2c20da9b33eee30d6344d91",
-  "timestamp": "2026-09-12T12:17:00.813302+00:00",
+  "commit": "505f2e06931bf8b50e3fa513c02d9e97b5d78b0d",
+  "timestamp": "2026-09-12T15:32:34.732634+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -216,12 +216,12 @@
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T12:16:56.921747+00:00",
-      "commit": "50638cb55001cf77c2c20da9b33eee30d6344d91",
+      "at": "2026-09-12T15:31:58.622891+00:00",
+      "commit": "505f2e06931bf8b50e3fa513c02d9e97b5d78b0d",
       "sweep": "dev/run_tests.sh",
-      "passed": 802,
+      "passed": 858,
       "failed": 0,
-      "skipped": 27
+      "skipped": 6
     },
     "proof_files": [
       {

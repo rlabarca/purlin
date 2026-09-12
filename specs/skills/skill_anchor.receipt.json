@@ -1,9 +1,9 @@
 {
   "feature": "skill_anchor",
-  "vhash": "ee728022",
+  "vhash": "29a21837",
   "vhash_version": 2,
-  "commit": "50638cb55001cf77c2c20da9b33eee30d6344d91",
-  "timestamp": "2026-09-12T12:17:00.813302+00:00",
+  "commit": "505f2e06931bf8b50e3fa513c02d9e97b5d78b0d",
+  "timestamp": "2026-09-12T15:32:34.732634+00:00",
   "rules": [
     "RULE-1",
     "RULE-2",
@@ -120,18 +120,18 @@
       "status": "pass",
       "tier": "unit",
       "test_file": "dev/test_e2e_external_refs.sh",
-      "test_name": "Part 1\u21922 transition changes scan results",
+      "test_name": "Part 1\u21922 transition: sync_status gains Source/Pinned, scan gains values",
       "platform": null
     }
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T12:16:56.921747+00:00",
-      "commit": "50638cb55001cf77c2c20da9b33eee30d6344d91",
+      "at": "2026-09-12T15:31:58.622891+00:00",
+      "commit": "505f2e06931bf8b50e3fa513c02d9e97b5d78b0d",
       "sweep": "dev/run_tests.sh",
-      "passed": 802,
+      "passed": 858,
       "failed": 0,
-      "skipped": 27
+      "skipped": 6
     },
     "proof_files": [
       {
@@ -147,8 +147,8 @@
         "file": "specs/skills/skill_anchor.proofs-unit.json",
         "tier": "unit",
         "platform": null,
-        "commit": "746a3408724282faabdd46c0c1095d89146b9400",
-        "committed_at": "2026-09-11T19:19:59-04:00",
+        "commit": "d85d370be9774b2a9f5e665e2efc5bbe5b9de830",
+        "committed_at": "2026-09-12T11:00:09-04:00",
         "runner": null,
         "executed_in_test_run": true
       }

@@ -1,9 +1,9 @@
 {
   "feature": "report_data",
-  "vhash": "cd544a22",
+  "vhash": "0b10174c",
   "vhash_version": 2,
-  "commit": "50638cb55001cf77c2c20da9b33eee30d6344d91",
-  "timestamp": "2026-09-12T12:17:00.813302+00:00",
+  "commit": "505f2e06931bf8b50e3fa513c02d9e97b5d78b0d",
+  "timestamp": "2026-09-12T15:32:34.732634+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -40,6 +40,7 @@
     "RULE-39",
     "RULE-4",
     "RULE-40",
+    "RULE-41",
     "RULE-5",
     "RULE-6",
     "RULE-7",
@@ -76,12 +77,13 @@
     "RULE-33": "7c69bc327f22aab8",
     "RULE-34": "e81c551cfac50648",
     "RULE-35": "2fd481fc4adc0051",
-    "RULE-36": "0dd875823499b45c",
+    "RULE-36": "4536f19bb5517d61",
     "RULE-37": "6b8156e6b2d49f5d",
     "RULE-38": "1f2fa92074f5cef7",
     "RULE-39": "57e600ab09b686b8",
     "RULE-4": "21157cdfbb22486d",
     "RULE-40": "ed632f36332c526b",
+    "RULE-41": "8e4dccd18a71f293",
     "RULE-5": "25bcf9e30e9e2ef0",
     "RULE-6": "036c3482a0f33383",
     "RULE-7": "e244445cbbb272d9",
@@ -304,7 +306,7 @@
       "id": "PROOF-25",
       "rule": "RULE-24",
       "status": "pass",
-      "tier": "e2e",
+      "tier": "integration",
       "test_file": "dev/test_e2e_audit_cache_pipeline.py",
       "test_name": "test_both_entry_points_populate_both_gauges",
       "platform": null
@@ -491,6 +493,16 @@
     },
     {
       "feature": "report_data",
+      "id": "PROOF-42",
+      "rule": "RULE-41",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_host_row_covers_the_agnostic_results",
+      "platform": null
+    },
+    {
+      "feature": "report_data",
       "id": "PROOF-5",
       "rule": "RULE-5",
       "status": "pass",
@@ -542,20 +554,20 @@
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T12:16:56.921747+00:00",
-      "commit": "50638cb55001cf77c2c20da9b33eee30d6344d91",
+      "at": "2026-09-12T15:31:58.622891+00:00",
+      "commit": "505f2e06931bf8b50e3fa513c02d9e97b5d78b0d",
       "sweep": "dev/run_tests.sh",
-      "passed": 802,
+      "passed": 858,
       "failed": 0,
-      "skipped": 27
+      "skipped": 6
     },
     "proof_files": [
       {
         "file": "specs/mcp/report_data.proofs-e2e.json",
         "tier": "e2e",
         "platform": null,
-        "commit": "4f0cf1f7c3bb00c9bd10055f858a498e75316ce7",
-        "committed_at": "2026-09-11T12:44:32-04:00",
+        "commit": "74e68475b1d937eca1ed2379cc926ab9b9723796",
+        "committed_at": "2026-09-12T09:32:36-04:00",
         "runner": null,
         "executed_in_test_run": true
       },
@@ -563,8 +575,8 @@
         "file": "specs/mcp/report_data.proofs-integration.json",
         "tier": "integration",
         "platform": null,
-        "commit": "bed092fb363392284d3f9b62958d33e17811ea86",
-        "committed_at": "2026-09-12T01:52:55-04:00",
+        "commit": "348fca6e691df50cc9720f53c5816935fd1f59a3",
+        "committed_at": "2026-09-12T11:04:01-04:00",
         "runner": null,
         "executed_in_test_run": true
       },
