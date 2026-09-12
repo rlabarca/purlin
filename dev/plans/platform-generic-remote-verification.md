@@ -1006,6 +1006,48 @@ mechanism, one reference, no duplicated prose (CLAUDE.md dedup rule):
   says why). `hard_gates.md` unchanged: the verify refusal is stated as "declines to claim", not a
   second gate, in the same non-`## Gate N` framing Phase 5 used for CI gating.
 
+### 7.5 Mutation checks, opt-in (user decision, 2026-09-11)
+
+The practice every phase of this plan follows (break the behaviour, watch the proof fail,
+restore) appears nowhere in `references/`, `skills/`, `agents/` or `docs/`. It becomes a written,
+opt-in standard because it costs tokens and time: one extra test run per proof plus an edit and
+revert cycle, roughly doubling the cost of writing a proof.
+
+- Config field `mutation_checks` (`true` | `false`) in `templates/config.json`, default `false`.
+  `skill_init` RULE-9 goes to eight required fields, RULE-11 gains the default;
+  `references/drift_criteria.md` ownership row (RULE-20's proof covers it); `docs/installation-guide.md`
+  post-init table row.
+- `purlin:init` asks, with the value statement printed before the question: what it catches (a
+  proof that passes against broken code, which no static check or LLM grade can see), what it
+  costs (about twice the tokens and minutes per proof), and who should turn it on (regulated or
+  long-lived projects; off for throwaway prototypes). `purlin:init --mutation-checks on|off`
+  changes it later, like `--pre-push`. `purlin:init --update` asks the same question when the
+  field is absent instead of silently backfilling it (the `config-fields-missing` migration
+  fills every other field from the template; this one is passed as `--mutation-checks on|off`
+  to `migrate.py --apply`).
+- `references/spec_quality_guide.md` "Mutation check" section: definition, the three steps,
+  when (every new or amended proof, before the commit that carries it), what a surviving
+  mutation means (a weak fixture, not a finished proof; add the discriminating case), two worked
+  examples from this plan (the `>=` version flip that survived until the fixture gained `>=13`
+  against `14.7.1`; the underscore id that survived until an underscore-only id was added), and
+  the value statement `purlin:init` prints (one source; the skill quotes it by reference).
+- `skills/build/SKILL.md`: when `mutation_checks` is true the test-writing step requires the
+  check before the commit and records the mutation in the commit body; when false it prints one
+  line saying the check is off and how to turn it on, so the omission is visible.
+  `skills/test/SKILL.md` "Writing Tests with Proof Markers" and `agents/purlin.md` core loop point
+  at the section. `references/audit_criteria.md` Pass 2: when the project enables mutation
+  checks, the auditor may ask for the mutation that was run and grades a proof whose author
+  cannot name one no higher than WEAK.
+- Rules and proofs (next free numbers, PROVABLE, no em-dashes): `skill_init` (the question, the
+  value statement by reference, the `--mutation-checks` flag, `--update` asking when absent:
+  proof greps plus a `dev/test_init_update.py` case where the field is absent and `--check`
+  lists it as a question, not a backfill); `purlin_references` (the section with the three
+  steps, the surviving-mutation clause and the value statement); `purlin_skills` (build
+  branches on the field, test and agent link `spec_quality_guide.md#mutation-check`);
+  `skill_build` (the on and off behaviours, proof greps both literals); `skill_audit` (the WEAK
+  cap sentence).
+- This repo: `.purlin/config.json` `"mutation_checks": true`.
+
 ### 7.4 Migrate this repo through `purlin:init --update`
 
 1. Run `purlin:init --update --platform-id windows-2022`: `specs/audit/static_checks.md:97-98` become
@@ -1341,28 +1383,7 @@ Ordered by dependency; each item is one `fix`/`feat` commit with its rule and pr
   agent ignoring them are the layers below (`purlin_references` RULE-23 with a proof that the
   file has no hooks, so the sentence stays true).
 
-### 10.5b Mutation checks become a written standard (user request, 2026-09-11)
-
-The practice every phase of this plan follows (break the behaviour, watch the proof fail, restore)
-appears nowhere in `references/`, `skills/`, `agents/` or `docs/`. It lives only in the handoff
-prompt and the DONE sections. Make it a standard:
-
-- `references/spec_quality_guide.md` gains a "Mutation check" section: definition, the three
-  steps, when to run it (every new or amended proof, before the commit that carries it), what a
-  surviving mutation means (a weak fixture, not a finished proof; add the discriminating case),
-  and two worked examples from this plan (the `>=` version flip that survived until the fixture
-  gained `>=13` against `14.7.1`; the underscore id that survived until an underscore-only id was
-  added).
-- `skills/build/SKILL.md`: the step that writes tests requires the mutation check before Step 4
-  commits, pointing at the section (no duplicated prose); `skills/test/SKILL.md` "Writing Tests
-  with Proof Markers" points at it; `agents/purlin.md` core loop names it in one line.
-- `references/audit_criteria.md` Pass 2 gains one sentence: an auditor may ask for the mutation
-  that was run; a proof whose author cannot name one is graded no higher than WEAK.
-- Rules: `purlin_references` next free rule (the section exists with the three steps and the
-  surviving-mutation clause; proof greps them); `purlin_skills` next free rule (build requires
-  it before commit; test and the agent point at the section; proof greps each file for the
-  anchor `spec_quality_guide.md#mutation-check`); `skill_build` next free rule with its proof.
-  Descriptions PROVABLE; no em-dashes.
+### 10.5b (moved to 7.5: mutation checks are opt-in and belong with init and update)
 
 ### 10.6 Environment ids for the externally-gated suites (after 6 and 7)
 
