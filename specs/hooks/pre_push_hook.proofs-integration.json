@@ -3,6 +3,24 @@
   "proofs": [
     {
       "feature": "pre_push_hook",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_fail_proof_blocks_with_exit_1",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-8",
+      "rule": "RULE-1",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_lifecycle_fail_then_partial_then_complete",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
       "id": "PROOF-2",
       "rule": "RULE-2",
       "test_file": "dev/test_pre_push_hook.py",
@@ -42,7 +60,25 @@
       "id": "PROOF-5",
       "rule": "RULE-5",
       "test_file": "dev/test_pre_push_hook.py",
-      "test_name": "test_detects_framework_from_config_and_auto",
+      "test_name": "test_framework_from_config_and_auto",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-25",
+      "rule": "RULE-5",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_comma_list_deduped_unknown_reported_on_stderr",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-24",
+      "rule": "RULE-15",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_gate_stderr_is_not_swallowed_by_the_hook",
       "status": "pass",
       "tier": "integration"
     },
@@ -52,6 +88,15 @@
       "rule": "RULE-6",
       "test_file": "dev/test_pre_push_hook.py",
       "test_name": "test_unit_test_runs_integration_skipped",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-21",
+      "rule": "RULE-6",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_crashed_runner_blocks_even_with_all_pass_proofs",
       "status": "pass",
       "tier": "integration"
     },
@@ -87,7 +132,7 @@
       "id": "PROOF-10",
       "rule": "RULE-8",
       "test_file": "dev/test_pre_push_hook.py",
-      "test_name": "test_strict_mode_allows_passing_blocks_partial",
+      "test_name": "test_strict_mode_blocks_passing_until_receipted",
       "status": "pass",
       "tier": "integration"
     },
@@ -102,10 +147,73 @@
     },
     {
       "feature": "pre_push_hook",
+      "id": "PROOF-27",
+      "rule": "RULE-8",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_awaiting_runner_is_one_advisory_line_and_never_blocks",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
       "id": "PROOF-11",
       "rule": "RULE-9",
       "test_file": "dev/test_pre_push_hook.py",
       "test_name": "test_installed_hook_exists_is_executable_and_blocks",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-18",
+      "rule": "RULE-10",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_table_shaped_rule_text_does_not_change_the_verdict",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-19",
+      "rule": "RULE-11",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_off_prints_one_line_and_exits_0",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-20",
+      "rule": "RULE-12",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_unknown_mode_blocks_and_names_the_valid_modes",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-22",
+      "rule": "RULE-13",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_spec_four_levels_deep_is_discovered",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-23",
+      "rule": "RULE-14",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_missing_plugin_warns_in_warn_and_refuses_in_strict",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-26",
+      "rule": "RULE-16",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_feature_whose_name_contains_another_still_listed",
       "status": "pass",
       "tier": "integration"
     }

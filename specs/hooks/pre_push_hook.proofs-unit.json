@@ -24,7 +24,7 @@
       "id": "PROOF-16",
       "rule": "RULE-8",
       "test_file": "dev/test_e2e_strict_required.sh",
-      "test_name": "strict allows when all rules (own+required) proved",
+      "test_name": "strict blocks all-proved-unreceipted, allows once receipted",
       "status": "pass",
       "tier": "unit"
     }

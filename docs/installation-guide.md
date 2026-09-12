@@ -160,7 +160,7 @@ Already initialized? Use `purlin:init --force` to reconfigure, or change individ
 
 | What you want | How |
 |---------------|-----|
-| Switch pre-push mode (warn/strict) | `purlin:init --pre-push` |
+| Switch pre-push mode (warn/strict/off) | `purlin:init --pre-push` |
 | Turn mutation checks on or off | `purlin:init --mutation-checks on\|off` |
 | Migrate the project to the installed plugin | `purlin:init --update` |
 | Toggle HTML dashboard | `purlin:init --report` |

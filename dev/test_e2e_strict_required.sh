@@ -158,9 +158,9 @@ else
 fi
 
 # ==========================================================================
-# Phase B — All rules proved (own + required) → strict allows
+# Phase B0: all rules proved but unreceipted, strict still blocks
 # ==========================================================================
-echo "  --- Phase B: All rules proved → strict allows ---"
+echo "  --- Phase B0: All rules proved, no receipt, strict blocks ---"
 
 # Add proofs for api_conventions (required rules)
 create_proof_file "$TMPDIR" "specs/schema" "api_conventions" \
@@ -169,23 +169,51 @@ create_proof_file "$TMPDIR" "specs/schema" "api_conventions" \
 
 (cd "$TMPDIR" && git add -A && git commit -q -m "add api_conventions proofs")
 
+output_b0=""
+ec_b0=0
+output_b0=$(run_hook "$TMPDIR") || ec_b0=$?
+
+phase_b0_ok=false
+if [[ $ec_b0 -eq 1 ]] && echo "$output_b0" | grep -q "strict mode"; then
+  echo "    Phase B0 PASS: strict mode blocks (exit 1) with every rule proved but no receipt"
+  phase_b0_ok=true
+else
+  echo "    Phase B0 FAIL: expected exit 1 + strict mode, got exit=$ec_b0"
+  echo "    Output: $output_b0"
+fi
+
+# ==========================================================================
+# Phase B: receipted through the real issuer, strict allows
+# ==========================================================================
+echo "  --- Phase B: Receipts issued → strict allows ---"
+
+# Through dev/issue_receipts.py, never by hand: a hand-written receipt is free
+# to drift from the shape purlin:verify writes.
+python3 -c "
+import sys
+sys.path.insert(0, sys.argv[2])
+import issue_receipts
+issue_receipts.write_run_marker(sys.argv[1])
+issue_receipts.main(sys.argv[1], quiet=True)
+" "$TMPDIR" "$REAL_PROJECT_ROOT/dev"
+
 output_b=""
 ec_b=0
 output_b=$(run_hook "$TMPDIR") || ec_b=$?
 
 phase_b_ok=false
 if [[ $ec_b -eq 0 ]]; then
-  echo "    Phase B PASS: strict mode allows (exit 0) — all 4 rules proved"
+  echo "    Phase B PASS: strict mode allows (exit 0) with all 4 rules proved and receipted"
   phase_b_ok=true
 else
   echo "    Phase B FAIL: expected exit 0, got exit=$ec_b"
   echo "    Output: $output_b"
 fi
 
-if $phase_b_ok; then
-  purlin_proof "pre_push_hook" "PROOF-16" "RULE-8" pass "strict allows when all rules (own+required) proved"
+if $phase_b0_ok && $phase_b_ok; then
+  purlin_proof "pre_push_hook" "PROOF-16" "RULE-8" pass "strict blocks all-proved-unreceipted, allows once receipted"
 else
-  purlin_proof "pre_push_hook" "PROOF-16" "RULE-8" fail "strict allows when all rules (own+required) proved"
+  purlin_proof "pre_push_hook" "PROOF-16" "RULE-8" fail "strict blocks all-proved-unreceipted, allows once receipted (b0=$phase_b0_ok b=$phase_b_ok)"
 fi
 
 # --- Emit proof files ---

@@ -78,7 +78,7 @@ Pass a project back and forth between collaborators using git branches. Each per
 
 ### Pre-push mode matters
 
-The pre-push hook runs before every push. If it's set to **strict** mode, ALL features must be VERIFIED (every rule has a passing proof) before you can push. This blocks handoffs of work-in-progress.
+The pre-push hook runs before every push and has three modes. In **strict** mode ALL features must be VERIFIED (every rule proved AND a current verification receipt) before you can push, so a feature whose rules all pass but that nobody has run `purlin:verify` on is blocked too. This blocks handoffs of work-in-progress.
 
 **For branch collaboration, use warn mode:**
 
@@ -86,9 +86,11 @@ The pre-push hook runs before every push. If it's set to **strict** mode, ALL fe
 purlin:init --pre-push
 ```
 
-Select **warn** — the hook blocks only on FAILING proofs. Partial coverage (rules without tests yet) is allowed with a warning. This lets you push incomplete work for someone else to continue.
+Select **warn**: the hook blocks only on FAILING proofs. Partial coverage (rules without tests yet) and complete-but-unreceipted coverage are reported without blocking. This lets you push incomplete work for someone else to continue.
 
 **Use strict mode for protected branches** (main, release) where everything should be verified before merging.
+
+**Use off only deliberately.** The hook then prints one line saying it is off and checks nothing. It is not the same as a hook that passed: nothing ran, and nothing was read.
 
 ### What travels with the branch
 

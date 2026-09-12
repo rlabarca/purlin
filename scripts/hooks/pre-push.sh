@@ -1,187 +1,179 @@
 #!/usr/bin/env bash
-# Purlin pre-push hook — Layer 1 enforcement.
+# Purlin pre-push hook, Layer 1 enforcement.
 #
-# Modes (set in .purlin/config.json → "pre_push"):
-#   "warn"   — block on FAILING, allow VERIFIED+PARTIAL (default)
-#   "strict" — block on anything not VERIFIED (requires verification receipt)
-#   "off"    — disable hook
+# Modes (set in .purlin/config.json, "pre_push"):
+#   "warn"   (default) block on FAILING, report partial coverage
+#   "strict" block on anything not VERIFIED, PASSING included
+#   "off"    do nothing
+#
+# This half resolves paths and runs the test runners. It does NOT decide the
+# verdict: scripts/hooks/pre_push_gate.py reads the structured status payload
+# and decides, and this script propagates its exit code. Nothing here parses
+# the rendered summary table, so no column order or glyph can change what a
+# push is allowed to do.
 set -euo pipefail
 
-# --- Locate project root ---
-ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
+# --- Locate the project root ---
+ROOT="$(git rev-parse --show-toplevel)"
 if [[ ! -d "$ROOT/.purlin" ]]; then
   exit 0  # Not a Purlin project
 fi
 
-# --- Read mode from config ---
-MODE="warn"
-if [[ -f "$ROOT/.purlin/config.json" ]]; then
-  MODE=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1])).get('pre_push','warn'))" "$ROOT/.purlin/config.json" 2>/dev/null || echo "warn")
+# --- Locate the Purlin plugin root ---
+# In order: the directory this script actually lives in (resolved through a
+# symlink, which is how a plugin install wires .git/hooks/pre-push), then the
+# two environment variables, then the project root for a dev checkout of the
+# framework itself. The first candidate carrying the gate script wins.
+SELF="${BASH_SOURCE[0]}"
+if [[ -L "$SELF" ]]; then
+  LINK="$(readlink "$SELF")"
+  if [[ "$LINK" != /* ]]; then
+    LINK="$(dirname "$SELF")/$LINK"
+  fi
+  SELF="$LINK"
 fi
+SELF_DIR="$(cd "$(dirname "$SELF")" && pwd)"
+
+CANDIDATES=("$(cd "$SELF_DIR/../.." && pwd)")
+if [[ -n "${PURLIN_PLUGIN_ROOT:-}" ]]; then
+  CANDIDATES+=("$PURLIN_PLUGIN_ROOT")
+fi
+if [[ -n "${CLAUDE_PLUGIN_ROOT:-}" ]]; then
+  CANDIDATES+=("$CLAUDE_PLUGIN_ROOT")
+fi
+CANDIDATES+=("$ROOT")
+
+GATE=""
+for candidate in "${CANDIDATES[@]}"; do
+  if [[ -z "$GATE" && -f "$candidate/scripts/hooks/pre_push_gate.py" ]]; then
+    GATE="$candidate/scripts/hooks/pre_push_gate.py"
+  fi
+done
+
+# --- Read the mode ---
+# The gate owns config reading, so the inline python below exists only for the
+# one case where there is no gate to ask.
+MODE=""
+FRAMEWORKS=""
+if [[ -n "$GATE" ]]; then
+  CONFIG_RC=0
+  CONFIG_OUT="$(python3 "$GATE" config --project-root "$ROOT")" || CONFIG_RC=$?
+  if [[ $CONFIG_RC -ne 0 ]]; then
+    echo "purlin: the pre-push gate could not read this project's configuration"
+    echo "        (exit $CONFIG_RC, reason above). Blocking the push."
+    exit 1
+  fi
+  MODE="$(printf '%s\n' "$CONFIG_OUT" | sed -n 's/^mode=//p')"
+  FRAMEWORKS="$(printf '%s\n' "$CONFIG_OUT" | sed -n 's/^frameworks=//p')"
+else
+  # $ROOT is an argument, never text spliced into the program: a path
+  # containing a quote would otherwise rewrite the script that reads it.
+  MODE="$(python3 -c '
+import json, os, sys
+path = os.path.join(sys.argv[1], ".purlin", "config.json")
+if not os.path.isfile(path):
+    print("warn")
+    sys.exit(0)
+try:
+    with open(path) as handle:
+        print(json.load(handle).get("pre_push", "warn"))
+except Exception:
+    print("unreadable")
+' "$ROOT")"
+fi
+
 if [[ "$MODE" == "off" ]]; then
+  echo "purlin: pre-push mode is \"off\"; skipping the proof coverage check."
   exit 0
 fi
 
-SPEC_DIR="$ROOT/specs"
-if [[ ! -d "$SPEC_DIR" ]] || [[ -z "$(find "$SPEC_DIR" -maxdepth 2 -name '*.md' 2>/dev/null | head -1)" ]]; then
-  exit 0  # No specs yet
-fi
-
-# --- Run unit-tier tests ---
-FRAMEWORK="auto"
-if [[ -f "$ROOT/.purlin/config.json" ]]; then
-  FRAMEWORK=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1])).get('test_framework','auto'))" "$ROOT/.purlin/config.json" 2>/dev/null || echo "auto")
-fi
-if [[ "$FRAMEWORK" == "auto" ]]; then
-  if [[ -f "$ROOT/conftest.py" ]] || grep -q '\[tool\.pytest\]' "$ROOT/pyproject.toml" 2>/dev/null; then
-    FRAMEWORK="pytest"
-  elif [[ -f "$ROOT/package.json" ]] && grep -q jest "$ROOT/package.json" 2>/dev/null; then
-    FRAMEWORK="jest"
-  else
-    FRAMEWORK="shell"
-  fi
-fi
-
-echo "purlin: running unit-tier tests ($FRAMEWORK)..."
-case "$FRAMEWORK" in
-  pytest) (cd "$ROOT" && python3 -m pytest -m "not integration" -q 2>&1) || true ;;
-  jest)   (cd "$ROOT" && npx jest --testPathPattern=unit 2>&1) || true ;;
-  shell)  for t in "$ROOT"/*.test.sh; do [[ -f "$t" ]] && bash "$t" 2>&1; done || true ;;
-esac
-
-# --- Check sync_status ---
-SERVER="$ROOT/scripts/mcp/purlin_server.py"
-if [[ ! -f "$SERVER" ]]; then
-  if [[ -n "${CLAUDE_PLUGIN_ROOT:-}" && -f "$CLAUDE_PLUGIN_ROOT/scripts/mcp/purlin_server.py" ]]; then
-    SERVER="$CLAUDE_PLUGIN_ROOT/scripts/mcp/purlin_server.py"
-  else
-    echo "purlin: sync_status not available, skipping coverage check"
+# --- The plugin has to be present to check anything ---
+if [[ -z "$GATE" ]]; then
+  echo "purlin: WARNING: the Purlin plugin was not found, so proof coverage"
+  echo "        was NOT checked. Searched for scripts/hooks/pre_push_gate.py under:"
+  for candidate in "${CANDIDATES[@]}"; do
+    echo "          $candidate"
+  done
+  echo "        Set PURLIN_PLUGIN_ROOT to the plugin directory to fix this."
+  if [[ "$MODE" == "warn" ]]; then
     exit 0
   fi
-fi
-
-SERVER_DIR="$(dirname "$SERVER")"
-STATUS=$(python3 -c "
-import sys; sys.path.insert(0, '$SERVER_DIR')
-from purlin_server import sync_status
-print(sync_status('$ROOT'))
-" 2>/dev/null) || { echo "purlin: could not run sync_status, allowing push"; exit 0; }
-
-# --- Parse summary table ---
-# The summary table uses │-delimited rows: │ name │ N/M │ STATUS │
-# Parsing the table avoids false positives from rule descriptions that
-# contain status keywords (e.g. "RULE-8: FAIL status badge...").
-FAILS=""
-FAIL_FEATURES=""
-PASSES=""
-NON_READY=""
-while IFS= read -r line; do
-  # Match summary table rows: │ feature_name │ N/M │ STATUS │
-  if [[ "$line" == *"│"* ]]; then
-    # Extract fields by splitting on │
-    FEAT=$(echo "$line" | awk -F'│' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
-    STAT=$(echo "$line" | awk -F'│' '{gsub(/^[ \t]+|[ \t]+$/, "", $4); print $4}')
-    COVERAGE=$(echo "$line" | awk -F'│' '{gsub(/^[ \t]+|[ \t]+$/, "", $3); print $3}')
-    # Skip header/border rows
-    [[ -z "$FEAT" || "$FEAT" == "Feature" || "$FEAT" == *"─"* ]] && continue
-    # Strip "(anchor)" suffix for feature name
-    FEAT_NAME=$(echo "$FEAT" | sed 's/ *(anchor)$//')
-    case "$STAT" in
-      FAILING)
-        FAILS="${FAILS}  ${FEAT_NAME} (${COVERAGE})\n"
-        if [[ "$FAIL_FEATURES" != *"$FEAT_NAME"* ]]; then
-          FAIL_FEATURES="${FAIL_FEATURES} ${FEAT_NAME}"
-        fi
-        ;;
-      VERIFIED)
-        PASSES="${PASSES}  ${FEAT_NAME}\n"
-        ;;
-      PASSING)
-        PASSES="${PASSES}  ${FEAT_NAME}\n"
-        ;;
-      PARTIAL)
-        PASSES="${PASSES}  ${FEAT_NAME}\n"
-        NON_READY="${NON_READY}  ${FEAT_NAME} (${COVERAGE}, needs purlin:verify)\n"
-        ;;
-      UNTESTED)
-        NON_READY="${NON_READY}  ${FEAT_NAME} (${COVERAGE}, untested)\n"
-        ;;
-    esac
-  fi
-done <<< "$STATUS"
-
-# --- Report and decide ---
-if [[ -n "$PASSES" ]]; then
-  echo "purlin: passing features:"
-  echo -e "$PASSES"
-fi
-
-if [[ -n "$NON_READY" ]] && [[ "$MODE" != "strict" ]]; then
-  echo "purlin: partial coverage (not blocking in warn mode):"
-  echo -e "$NON_READY"
-fi
-
-# Always block on FAIL (both modes)
-if [[ -n "$FAILS" ]]; then
-  FAIL_FEATURES="$(echo "$FAIL_FEATURES" | xargs)"  # trim whitespace
-  echo ""
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "PUSH BLOCKED — failing proofs detected"
-  echo ""
-  echo "Failing rules:"
-  echo -e "$FAILS"
-  echo "RECOVERY STEPS"
-  echo ""
-  echo "Proofs may be stale (tests pass but proof files still record a"
-  echo "prior failure). Re-emitting proofs will fix this. If the tests"
-  echo "themselves are broken, fix the code first."
-  echo ""
-  echo "1. Re-run tests to re-emit proofs for each failing feature:"
-  for feat in $FAIL_FEATURES; do
-    echo "     /purlin:test ${feat}"
-  done
-  echo ""
-  echo "2. Confirm all rules pass:"
-  echo "     /purlin:status"
-  echo ""
-  echo "3. If any rules still show FAIL, the test is genuinely broken."
-  echo "   Fix with /purlin:build <feature>, then repeat from step 1."
-  echo ""
-  echo "4. Once status shows PASSING (no FAILs), retry the push."
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "purlin: mode is \"$MODE\", which cannot be enforced without the plugin."
+  echo "        Blocking the push rather than passing it unchecked."
   exit 1
 fi
 
-# In strict mode, also block on non-VERIFIED
-if [[ "$MODE" == "strict" ]] && [[ -n "$NON_READY" ]]; then
-  echo ""
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "PUSH BLOCKED (strict mode) — features not verified"
-  echo ""
-  echo -e "$NON_READY"
-  echo ""
-  echo "RECOVERY STEPS"
-  echo ""
-  echo "Strict mode requires all features to be VERIFIED (all rules"
-  echo "proved with a current verification receipt)."
-  echo ""
-  echo "1. Run tests for features showing PARTIAL coverage:"
-  echo "     /purlin:test <feature>"
-  echo ""
-  echo "2. Check status to confirm all rules pass:"
-  echo "     /purlin:status"
-  echo ""
-  echo "3. If any rules show FAIL, fix with /purlin:build <feature>,"
-  echo "   then re-run /purlin:test <feature>."
-  echo ""
-  echo "4. Once all features show PASSING, issue verification receipts:"
-  echo "     /purlin:verify"
-  echo ""
-  echo "5. Retry the push."
-  echo ""
-  echo "To switch to warn mode (allows PARTIAL/UNTESTED):"
-  echo "  Set \"pre_push\": \"warn\" in .purlin/config.json"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+# --- Find the specs ---
+# Recursive: specs nest by category, and a depth limit silently stopped
+# checking anything filed deeper than two levels.
+SPEC_DIR="$ROOT/specs"
+if [[ ! -d "$SPEC_DIR" ]]; then
+  exit 0  # No specs yet
+fi
+if [[ -z "$(find "$SPEC_DIR" -name '*.md')" ]]; then
+  exit 0  # No specs yet
+fi
+
+# --- Run the unit-tier tests ---
+# No `|| true` on any arm. A runner that crashes proved nothing, and a hook
+# that shrugs at a crashed runner is reading stale proof files.
+IFS=',' read -r -a FRAMEWORK_LIST <<< "$FRAMEWORKS"
+for FRAMEWORK in "${FRAMEWORK_LIST[@]}"; do
+  RUNNER_RC=0
+  case "$FRAMEWORK" in
+    pytest)
+      echo "purlin: running unit-tier tests ($FRAMEWORK)..."
+      (cd "$ROOT" && python3 -m pytest -m "not integration" -q) || RUNNER_RC=$?
+      # pytest exits 5 when it collected nothing. No tests is not a failure
+      # here; the gate is about to report the coverage that fact produces.
+      if [[ $RUNNER_RC -eq 5 ]]; then
+        RUNNER_RC=0
+      fi
+      ;;
+    jest)
+      echo "purlin: running unit-tier tests ($FRAMEWORK)..."
+      (cd "$ROOT" && npx jest --testPathPattern=unit --passWithNoTests) || RUNNER_RC=$?
+      ;;
+    vitest)
+      echo "purlin: running unit-tier tests ($FRAMEWORK)..."
+      (cd "$ROOT" && npx vitest run --passWithNoTests) || RUNNER_RC=$?
+      ;;
+    shell)
+      echo "purlin: running unit-tier tests ($FRAMEWORK)..."
+      for t in "$ROOT"/*.test.sh; do
+        if [[ -f "$t" ]]; then
+          bash "$t" || RUNNER_RC=$?
+          if [[ $RUNNER_RC -ne 0 ]]; then
+            break
+          fi
+        fi
+      done
+      ;;
+    *)
+      echo "purlin: no pre-push runner arm for \"$FRAMEWORK\"; its tests were not run."
+      ;;
+  esac
+  if [[ $RUNNER_RC -ne 0 ]]; then
+    echo ""
+    echo "PUSH BLOCKED: the $FRAMEWORK runner exited $RUNNER_RC"
+    echo ""
+    echo "RECOVERY STEPS"
+    echo ""
+    echo "The tests did not finish, so the proof files on disk describe an"
+    echo "earlier run. Fix the runner, then push again."
+    echo ""
+    echo "1. Reproduce it: run the $FRAMEWORK suite by hand and read the error."
+    echo "2. Re-run the proofs once it is green:"
+    echo "     /purlin:test"
+    exit 1
+  fi
+done
+
+# --- The verdict ---
+GATE_RC=0
+python3 "$GATE" check --project-root "$ROOT" --mode "$MODE" || GATE_RC=$?
+if [[ $GATE_RC -ne 0 ]]; then
+  # Exit 2 means the gate could not read the evidence and has already said so.
   exit 1
 fi
 

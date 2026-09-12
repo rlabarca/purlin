@@ -175,7 +175,7 @@ The proof count from `proof_status` reflects the state BEFORE the current change
 | `version` | `purlin:init` | — | from `VERSION` |
 | `test_framework` | `purlin:init` (Step 3) | `purlin:test` (Step 1) | `"auto"` |
 | `spec_dir` | `purlin:init` | `sync_status` MCP tool | `"specs"` |
-| `pre_push` | `purlin:init` | pre-push hook | `"warn"` |
+| `pre_push` | `purlin:init --pre-push` | pre-push hook (`scripts/hooks/pre_push_gate.py` reads it and decides) | `"warn"` (also `"strict"` and `"off"`) |
 | `remote_verification` | `purlin:init` | `sync_status`, the dashboard header, `scripts/ci/verify_gate.py` | `"off"` |
 | `audit_criteria` | `purlin:init --sync-audit-criteria` | `load_criteria()` (additional criteria, appended to built-in) | not set (built-in only) |
 | `audit_criteria_pinned` | `purlin:init --sync-audit-criteria` | `load_criteria()` (SHA pinning) | not set |

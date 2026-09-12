@@ -16,7 +16,7 @@ purlin:init --add-plugin <source>       Add a proof plugin
 purlin:init --list-plugins              List proof plugins
 purlin:init --sync-audit-criteria       Sync external audit criteria
 purlin:init --audit-llm                 Change audit LLM (default/external)
-purlin:init --pre-push                  Change pre-push mode (warn/strict)
+purlin:init --pre-push                  Change pre-push mode (warn/strict/off)
 purlin:init --report                    Toggle HTML dashboard report (on/off)
 purlin:init --digest                    Change digest mode (auto/warn/off)
 purlin:init --mutation-checks on|off    Change the mutation-check setting
@@ -55,7 +55,7 @@ Config template fields (from `templates/config.json`), plus the optional `platfo
 | `version` | from `VERSION` | Purlin framework version, stamped from `${CLAUDE_PLUGIN_ROOT}/VERSION` at init; never a literal in this table |
 | `test_framework` | `"auto"` | Detected test framework(s) |
 | `spec_dir` | `"specs"` | Directory containing specs |
-| `pre_push` | `"warn"` | Pre-push hook mode (`warn` or `strict`) |
+| `pre_push` | `"warn"` | Pre-push hook mode (`warn`, `strict` or `off`); any other value blocks every push |
 | `remote_verification` | `"off"` | Declared remote-verification mode (`required`, `optional`, `off`). A declaration, not the enforcement; see `references/remote_verification.md`. Init writes the default and does not ask: setup is offered when `purlin:test` discovers a runner-gated proof |
 | `mutation_checks` | `false` | Whether every new or amended proof is mutation-checked before the commit that carries it (Step 7d). Asked, never defaulted silently; what the check is worth and what it costs is stated once in `references/spec_quality_guide.md` § Mutation check |
 | `report` | `true` | HTML dashboard report generation |
@@ -309,18 +309,20 @@ Next steps:
 
 Install the Purlin pre-push hook so `git push` checks proof coverage before code reaches the remote.
 
-The hook has two modes, set in `.purlin/config.json` under `"pre_push"`:
-- **`"warn"`** (default) — blocks on FAILING proofs, warns on PARTIAL and UNTESTED coverage
-- **`"strict"`** — blocks on anything not VERIFIED (requires verification receipt)
+The hook has three modes, set in `.purlin/config.json` under `"pre_push"`:
+- **`"warn"`** (default): blocks on FAILING proofs, reports PARTIAL, UNTESTED and unreceipted coverage without blocking
+- **`"strict"`**: blocks on anything not VERIFIED (requires verification receipt)
+- **`"off"`**: the hook prints one line naming the mode and exits; no tests run and no coverage is checked
 
 Ask the user which mode they want:
 ```
 Pre-push hook mode:
   [warn]   Block on FAILING, allow PASSING and PARTIAL (default)
   [strict] Block on anything not VERIFIED (requires verification receipt)
+  [off]    Run nothing and check nothing
 ```
 
-Write the chosen mode to `.purlin/config.json` as `"pre_push": "warn"` or `"pre_push": "strict"`.
+Write the chosen mode to `.purlin/config.json` as `"pre_push": "warn"`, `"pre_push": "strict"` or `"pre_push": "off"`. Any other value makes the hook block every push until it is corrected: a typo must not disable enforcement invisibly.
 
 When called via `purlin:init --pre-push`, ONLY the mode selection above runs (no hook installation). The hook install steps below only run during the full init flow.
 

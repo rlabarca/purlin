@@ -1,9 +1,9 @@
 # Feature: pre_push_hook
 
 > Requires: security_no_dangerous_patterns
-> Scope: scripts/hooks/pre-push.sh
-> Stack: shell/bash, python3 (sync_status invocation, config parsing)
-> Description: Pre-push git hook that blocks pushes when tests are failing. Runs unit-tier tests and checks sync_status for proof coverage. Supports two modes: warn (default) blocks only on FAILING, while strict blocks anything not VERIFIED.
+> Scope: scripts/hooks/pre-push.sh, scripts/hooks/pre_push_gate.py
+> Stack: shell/bash, python3 (status payload, config parsing)
+> Description: Pre-push git hook that blocks pushes when the evidence does not support them. The shell half runs the unit-tier tests and resolves paths; `pre_push_gate.py` reads the structured status payload and decides. Three modes: warn (default) blocks only on FAILING, strict blocks anything not VERIFIED, off disables the hook.
 
 ## Rules
 
@@ -11,28 +11,45 @@
 - RULE-2: Allows push with exit 0 and prints a warning when any feature is PARTIAL (some behavioral rules proved, none failing)
 - RULE-3: Allows push with exit 0 silently when no specs directory exists or specs directory contains no .md files
 - RULE-4: Allows push with exit 0 when all features are PASSING or VERIFIED (all behavioral rules proved, no failures)
-- RULE-5: Detects test framework from `.purlin/config.json` `test_framework` field, falling back to auto-detection (pytest if conftest.py or pyproject.toml [tool.pytest] exists, jest if package.json contains jest, shell otherwise)
-- RULE-6: Runs only unit-tier tests (pytest excludes `not integration`, jest uses `--testPathPattern=unit`, shell runs `*.test.sh`)
+- RULE-5: Reads `test_framework` from `.purlin/config.json` as a comma-separated list: split, trimmed, deduplicated, order preserved. `auto` expands in place to every framework detected in `references/supported_frameworks.md` detection order (pytest, vitest, jest, c, php, sql, and shell when nothing else matches). A name Purlin does not ship a runner arm for is reported on stderr and dropped
+- RULE-6: Runs only unit-tier tests, one runner arm per resolved framework with no `|| true` on any arm: pytest with `-m "not integration"` where exit code 5 (nothing collected) counts as success, jest with `--testPathPattern=unit --passWithNoTests`, vitest with `run --passWithNoTests`, shell with `*.test.sh`. Any other non-zero exit from a runner blocks the push in both warn and strict mode, naming the runner and its exit code
 - RULE-7: Produces output showing which features passed, which have partial coverage, and which are blocked with FAIL proofs
-- RULE-8: In strict mode (`"pre_push": "strict"` in config), blocks push with exit 1 when any feature is not VERIFIED — this includes PASSING features (full coverage but no receipt) and PARTIAL features (incomplete behavioral rule coverage); allows push only when all features are VERIFIED
+- RULE-8: In strict mode (`"pre_push": "strict"` in config), blocks push with exit 1 when any non-anchor feature is not VERIFIED, which includes PASSING features (full coverage but no receipt) and PARTIAL features (incomplete behavioral rule coverage); allows push only when every non-anchor feature is VERIFIED. A proof declared `@on(<platform>)` with no result on that platform is reported as one advisory line and never blocks, in either mode
 - RULE-9: After `purlin:init`, `.git/hooks/pre-push` exists, is executable, and runs `scripts/hooks/pre-push.sh`
+- RULE-10: The verdict is computed by `scripts/hooks/pre_push_gate.py` from `purlin_server.read_report_payload`, never from the rendered summary table. Neither hook file contains a box-drawing character (U+2500 to U+257F) and the shell half matches no status word, so no change to the table's columns or glyphs can change what a push is allowed to do
+- RULE-11: With `"pre_push": "off"` the hook prints exactly one line naming the mode and exits 0, running no test runner and reading no proof file
+- RULE-12: A `pre_push` value that is not warn, strict or off blocks the push with exit 1 and a message naming the offending value together with all three valid modes, rather than falling back to warn
+- RULE-13: Specs are discovered recursively under the spec directory with no depth limit, so a spec nested at any depth is checked
+- RULE-14: The plugin root is resolved in order: the directory this script lives in (resolved through `readlink` for a symlinked install), `$PURLIN_PLUGIN_ROOT`, `$CLAUDE_PLUGIN_ROOT`, then the project root for a dev checkout of the framework. When no candidate carries `scripts/hooks/pre_push_gate.py`, warn mode prints a WARNING naming every path searched and exits 0, while strict mode blocks with exit 1 naming the same paths
+- RULE-15: No command in the hook has its stderr redirected to `/dev/null`. Only the gate's stdout is captured, for its `mode=` and `frameworks=` lines, so every diagnostic the gate writes reaches the developer running `git push`
+- RULE-16: Feature names are matched whole, never by substring, so a feature whose whole name occurs inside another feature's name still gets its own `/purlin:test <feature>` recovery line
 
 ## Proof
 
-- PROOF-1 (RULE-1): Set up temp project with .purlin/ and specs/; create a spec with 3 rules; create proof file with one FAIL entry; run pre-push.sh; verify exit code is 1 and stdout contains "PUSH BLOCKED" @integration
+- PROOF-1 (RULE-1): Create a temp project with 3 rules and a proof file whose PROOF-2 entry has status "fail"; run pre-push.sh; verify exit code 1 and stdout containing "PUSH BLOCKED" @integration
 - PROOF-2 (RULE-2): Set up temp project with .purlin/ and specs/; create proof file covering some but not all behavioral rules with no FAIL entries; run pre-push.sh; verify exit code is 0 and stdout contains "partial coverage" @integration
 - PROOF-3 (RULE-3): Set up temp project with .purlin/ but no specs/ directory; run pre-push.sh; verify exit code is 0 and stdout is empty @integration
 - PROOF-4 (RULE-4): Set up temp project with .purlin/ and specs/; create proof file with all PASS entries (PASSING status); run pre-push.sh; verify exit code is 0 @integration
-- PROOF-5 (RULE-5): Set up temp project with `.purlin/config.json` containing `{"test_framework": "pytest"}`; verify pre-push.sh selects pytest; repeat with `{"test_framework": "jest"}` and verify jest is selected @integration
-- PROOF-6 (RULE-6): Set up temp project with conftest.py and two test files (one unit, one @integration); run pre-push.sh; verify the unit test ran (sentinel file created) and the integration test was skipped (no sentinel) @integration
-- PROOF-7 (RULE-7): Set up temp project with specs containing PASSING, FAILING, and PARTIAL features; run pre-push.sh; verify stdout contains "PASSING features", "partial coverage", and "PUSH BLOCKED" sections @integration
-- PROOF-8 (RULE-1): Full lifecycle test: create temp git repo with .purlin/ and specs/; create spec with 3 rules; create proof file with 1 PASS, 1 FAIL, 1 unproved; run hook and verify exit 1 (blocked by FAIL); fix FAIL to PASS; run hook and verify exit 0 with warning (PARTIAL — unproved rules remain); add missing proof as PASS; run hook and verify exit 0 silently (all PASSING) @e2e
-- PROOF-9 (RULE-8): Set strict mode in config; create proofs for 2 of 3 behavioral rules (PARTIAL — no FAIL, but not fully covered); run hook; verify exit 1 and output contains "strict mode" @integration
-- PROOF-10 (RULE-8): Set strict mode in config; create proofs for all behavioral rules (PASSING — full coverage, no receipt); run hook; verify exit 1 and output contains "strict mode" (PASSING blocked in strict, only VERIFIED allowed) @integration
-- PROOF-11 (RULE-9): Run purlin:init on a fresh git repo; verify .git/hooks/pre-push exists, is executable, and a git push with failing proofs is intercepted and blocked @e2e
-- PROOF-12 (RULE-4): Create spec with rule description containing "FAIL" (e.g. "RULE-1: FAIL status badge is solid red pill"); create all-pass proofs; run hook; verify exit 0 and no "PUSH BLOCKED" — description text must not false-positive trigger blocking @integration
+- PROOF-5 (RULE-5): Run `pre_push_gate.py config` on a project configured `{"test_framework": "pytest"}` and verify stdout carries `frameworks=pytest`; repeat with `{"test_framework": "jest"}` and verify `frameworks=jest`; set `"auto"`, create `conftest.py`, and verify `frameworks=pytest` @integration
+- PROOF-6 (RULE-6): Set up a temp project with `conftest.py`, one unmarked test and one `@pytest.mark.integration` test, each writing its own sentinel file; run pre-push.sh; verify the unmarked test's sentinel exists and the integration test's sentinel does not @integration
+- PROOF-7 (RULE-7): Create a project whose PROOF-2 entry has status "fail"; run pre-push.sh; verify exit code 1 and stdout containing "PUSH BLOCKED", the feature name "test_feature", and "RECOVERY STEPS" @integration
+- PROOF-8 (RULE-1): Run the hook three times against one project: with PROOF-2 at "fail" verify exit 1 and "PUSH BLOCKED"; with PROOF-2 fixed to "pass" and RULE-3 still unproved verify exit 0 and "PARTIAL (2/3 rules proved)"; with all 3 rules proved verify exit 0, "PASSING (3/3 rules proved)" and no "PUSH BLOCKED" @integration
+- PROOF-9 (RULE-8): Set strict mode in config; create proofs for 2 of 3 behavioral rules (PARTIAL: no FAIL, but not fully covered); run hook; verify exit 1 and output contains "strict mode" @integration
+- PROOF-10 (RULE-8): Set strict mode and prove both rules with no receipt on disk; run the hook and verify exit 1 with "strict mode" and "PASSING (2/2 rules proved)" in the output; commit, issue receipts through `issue_receipts.main(root, quiet=True)`, run the hook again and verify exit 0 with no "PUSH BLOCKED" @integration
+- PROOF-11 (RULE-9): Copy pre-push.sh to `.git/hooks/pre-push` the way `purlin:init` does and chmod it executable; verify `os.access(path, os.X_OK)` is true, then run the installed copy against a proof file carrying one "fail" entry and verify exit 1 with "PUSH BLOCKED" @integration
+- PROOF-12 (RULE-4): Create spec with rule description containing "FAIL" (e.g. "RULE-1: FAIL status badge is solid red pill"); create all-pass proofs; run hook; verify exit 0 and no "PUSH BLOCKED"; description text must not false-positive trigger blocking @integration
 - PROOF-13 (RULE-7): Create spec with one failing proof; run hook; verify recovery message contains `/purlin:test test_feature`, `/purlin:status`, and `/purlin:build` @integration
 - PROOF-14 (RULE-8): Set strict mode; create partial proofs (no FAIL); run hook; verify exit 1 and output contains `RECOVERY STEPS`, `/purlin:test`, and `/purlin:verify` @integration
 - PROOF-15 (RULE-8): e2e: Strict mode with own rules proved but required rules unproved; verify exit 1 with strict mode block @e2e
-- PROOF-16 (RULE-8): e2e: Strict mode with all (own + required) rules proved; verify exit 0 @e2e
+- PROOF-16 (RULE-8): e2e: Strict mode with all 4 rules (own plus required) proved but no receipt; verify exit 1 and "strict mode"; issue receipts through `issue_receipts.main(root, quiet=True)` and verify the same project now exits 0 @e2e
 - PROOF-17 (RULE-1): e2e: Create external anchor; create feature requiring it; set anchor proof to FAIL; run pre-push; verify exit 1 blocked @e2e
+- PROOF-18 (RULE-10): Write a rule whose description is a rendered summary-table row reading `0/3` and `FAILING` between box-drawing pipes, with every proof entry at "pass"; run pre-push.sh and verify exit 0 with no "PUSH BLOCKED"; then read both hook files and verify zero characters in the range U+2500 to U+257F @integration
+- PROOF-19 (RULE-11): Set `"pre_push": "off"` with a proof entry at status "fail" on disk; run pre-push.sh; verify exit 0, exactly 1 non-empty line of output, and that the line contains `"off"` @integration
+- PROOF-20 (RULE-12): Set `"pre_push": "blocky"` with every proof entry at "pass"; run pre-push.sh; verify exit 1 and output naming "blocky" along with "warn", "strict" and "off" @integration
+- PROOF-21 (RULE-6): Write a `conftest.py` whose body raises RuntimeError at import, alongside a proof file where every entry is "pass"; run pre-push.sh; verify exit 1 with "PUSH BLOCKED" and "pytest" in the output, so the block came from the crashed runner rather than from the proof file @integration
+- PROOF-22 (RULE-13): Put the project's only spec at `specs/a/b/c/deep_feature.md` with a proof entry at "fail"; run pre-push.sh; verify exit 1 with "PUSH BLOCKED" and "deep_feature" in the output @integration
+- PROOF-23 (RULE-14): Copy pre-push.sh into `.git/hooks/` of a project carrying no `pre_push_gate.py`, with `PURLIN_PLUGIN_ROOT` and `CLAUDE_PLUGIN_ROOT` removed from the environment and a "fail" proof entry on disk; run it in warn mode and verify exit 0 with "WARNING" and the project path in the output; set strict and verify exit 1 with the same path named @integration
+- PROOF-24 (RULE-15): Set `"test_framework": "bogus,shell"` and run pre-push.sh; verify exit 0 and "bogus" present in the output the caller receives, then read `scripts/hooks/pre-push.sh` and verify it contains zero occurrences of `2>/dev/null` @integration
+- PROOF-25 (RULE-5): Set `"test_framework": "pytest, bogus ,pytest,shell"` and run `pre_push_gate.py config`; verify stdout contains `frameworks=pytest,shell` and does not contain "bogus", and that stderr names "bogus" @integration
+- PROOF-26 (RULE-16): Create two failing features named `auth_system` and `system`; run pre-push.sh; verify the recovery steps contain both `/purlin:test auth_system` and `/purlin:test system`, which a substring match drops to 1 line @integration
+- PROOF-27 (RULE-8): Declare platform `win11` in config and tag PROOF-2 `@on(win11)` with no result recorded there; run pre-push.sh in warn mode and verify exit 0 with exactly 1 output line naming "win11" and "advisory only"; issue receipts, switch to strict mode, and verify exit 0 with "advisory only" still printed @integration
