@@ -1472,6 +1472,25 @@ Ordered by dependency; each item is one `fix`/`feat` commit with its rule and pr
 
 ### 10.5b (moved to 7.5: mutation checks are opt-in and belong with init and update)
 
+### 10.5c Skipped tests must not lose their entries (found by 10.1)
+
+`proof_common` RULE-13 promises that a test which does not run emits nothing and that the merge
+key keeps whatever a capable host last proved. That holds per file, but not within a file: when
+one test in a file runs and another in the same file for the same feature is skipped, the
+write-scoped overwrite treats the file as executed and reaps the skipped test's committed entry
+(seen on `proof_plugins_php` PROOF-1/2 with no `php` on the host). Fix in every plugin that can
+observe a skip (pytest: the skip report; jest/vitest: `skipped`/`todo` status; xunit: skipped
+outcome; shell, sql, phpunit, c: no skip signal, so the rule states they are exempt and why):
+an existing entry whose `(feature, id, test_file)` matches a skipped test is kept, not reaped.
+Rule: `proof_common` next free ("a skipped test keeps its committed entry; only an executed
+test replaces it and only a deleted file reaps it"). Proof per capable plugin in
+`dev/test_multilang_proof_plugins.py` / the pytest fixture: a file with one passing and one
+skipped marked test, an existing entry for the skipped one, run, assert the entry survives with
+its old status; mutation: drop the skip check. Also: `references/formats/anchor_format.md` gains
+the optional `> Note:` line 10.1 introduced (Format-Version bump per CLAUDE.md), and this repo's
+`dev/external-refs` fixture is recreated with `rm -rf dev/external-refs && bash
+dev/setup-external-refs.sh` so the anchor's reproducible pin reads current.
+
 ### 10.6 Environment ids for the externally-gated suites (after 6 and 7)
 
 The registry gains `"kind": "environment"` entries with no `os` (e.g. `figma-mcp`, `gemini-cli`,
