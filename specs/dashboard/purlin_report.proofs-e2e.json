@@ -3,6 +3,15 @@
   "proofs": [
     {
       "feature": "purlin_report",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_data_script_loads_before_the_first_render",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "purlin_report",
       "id": "PROOF-34",
       "rule": "RULE-34",
       "test_file": "dev/test_purlin_report.py",
@@ -66,10 +75,28 @@
     },
     {
       "feature": "purlin_report",
+      "id": "PROOF-42",
+      "rule": "RULE-40",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_header_chip_names_the_mode_and_where_enforcement_lives",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "purlin_report",
       "id": "PROOF-44",
       "rule": "RULE-42",
       "test_file": "dev/test_purlin_report.py",
       "test_name": "test_cards_open_the_modal_and_are_inert_without_platforms",
+      "status": "pass",
+      "tier": "e2e"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-50",
+      "rule": "RULE-41",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_focus_single_dialog_and_render_closes_it",
       "status": "pass",
       "tier": "e2e"
     },

@@ -322,21 +322,50 @@ def load_dashboard(page, dashboard_dir, data=None, expand_categories=True):
 
 class TestPurlinReport:
 
-    @pytest.mark.proof("purlin_report", "PROOF-1", "RULE-1")
-    def test_script_tag_loads_data_js(self, page, dashboard):
-        """PROOF-1: HTML loads .purlin/report-data.js dynamically."""
+    @pytest.mark.proof("purlin_report", "PROOF-1", "RULE-1", tier="e2e")
+    def test_data_script_loads_before_the_first_render(self, page, dashboard):
+        """PROOF-1: the data script is injected and PURLIN_DATA is already
+        defined at the moment #app first renders, which is the rule's
+        'before rendering' half. A page that rendered first and loaded the
+        data afterwards records dataDefined=False here."""
+        # Installed before navigation: it watches the document and freezes the
+        # state of the world at the first mutation that gives #app children.
+        page.add_init_script("""
+            window.__firstRender = null;
+            (function () {
+                var obs = new MutationObserver(function () {
+                    if (window.__firstRender !== null) return;
+                    var app = document.getElementById('app');
+                    if (!app || !app.children.length) return;
+                    var s = document.querySelector('script[src*="report-data.js"]');
+                    window.__firstRender = {
+                        dataDefined: typeof PURLIN_DATA !== 'undefined',
+                        src: s ? s.getAttribute('src') : null
+                    };
+                    obs.disconnect();
+                });
+                obs.observe(document, {childList: true, subtree: true});
+            })();
+        """)
         load_dashboard(page, dashboard, data=make_data())
-        # The data is loaded dynamically with cache-busting query param
-        # Verify PURLIN_DATA is available in the page context
-        has_data = page.evaluate("() => typeof PURLIN_DATA !== 'undefined'")
-        assert has_data, "Expected PURLIN_DATA to be loaded from .purlin/report-data.js"
-        # Verify the script element was injected
-        src = page.evaluate("""() => {
-            const scripts = document.querySelectorAll('script[src*="report-data.js"]');
-            return scripts.length > 0 ? scripts[0].src : null;
-        }""")
-        assert src and 'report-data.js' in src, (
-            f"Expected a script tag loading report-data.js, got: {src}"
+
+        probe = page.evaluate("() => window.__firstRender")
+        assert probe, "Expected the #app render probe to fire on the first render"
+        assert probe["src"] is not None and probe["src"].startswith(
+            ".purlin/report-data.js?t="), (
+            "Expected the injected script src to be '.purlin/report-data.js' "
+            f"with a cache-busting ?t= query, got {probe['src']!r}"
+        )
+        assert probe["dataDefined"] is True, (
+            "Expected PURLIN_DATA to be defined at the first render of #app "
+            "(the data script must load before rendering), got "
+            f"dataDefined={probe['dataDefined']!r}"
+        )
+        # And what rendered is that payload, not the no-data fallback.
+        body_text = page.inner_text("body")
+        assert "auth_login" in body_text, (
+            "Expected the rendered dashboard to show 'auth_login' from the "
+            "loaded payload, got the fallback instead"
         )
 
     @pytest.mark.proof("purlin_report", "PROOF-2", "RULE-2")
@@ -576,12 +605,41 @@ class TestPurlinReport:
         })
         load_dashboard(page, dashboard, data=data)
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof10_anchor_pills.png"))
-        # security_policy is type=anchor, is_global=True => tp-global
-        global_pills = page.query_selector_all(".tp-global")
-        assert len(global_pills) > 0, "Expected at least one .tp-global pill for global anchor"
-        # local_policy is type=anchor, is_global=False => tp-anchor
-        anchor_pills = page.query_selector_all(".tp-anchor")
-        assert len(anchor_pills) > 0, "Expected at least one .tp-anchor pill for local anchor"
+
+        # Read what a person sees: the pill text inside each row's name cell,
+        # beside the feature name. A pill with the right class but empty or
+        # wrong text, or one outside the name cell, fails here.
+        pills = page.evaluate("""() => {
+            const out = {};
+            document.querySelectorAll('tr.fr').forEach(row => {
+                const cell = row.querySelector('.fn');
+                if (!cell) return;
+                out[row.getAttribute('data-name')] = {
+                    name: (cell.querySelector('.fnt') || {}).textContent || '',
+                    pills: Array.from(cell.querySelectorAll('.tp'))
+                                .map(p => p.textContent.trim()),
+                };
+            });
+            return out;
+        }""")
+
+        for name in ("security_policy", "local_policy", "auth_login"):
+            assert name in pills, f"Expected a row for {name}, got {sorted(pills)}"
+
+        assert pills["security_policy"]["pills"] == ["global"], (
+            "Expected the global anchor's name cell to hold one pill reading "
+            f"'global', got {pills['security_policy']['pills']}"
+        )
+        assert pills["security_policy"]["name"] == "security_policy"
+        assert pills["local_policy"]["pills"] == ["anchor"], (
+            "Expected the local anchor's name cell to hold one pill reading "
+            f"'anchor', got {pills['local_policy']['pills']}"
+        )
+        assert pills["local_policy"]["name"] == "local_policy"
+        assert pills["auth_login"]["pills"] == [], (
+            "Expected a plain feature to carry no type pill, got "
+            f"{pills['auth_login']['pills']}"
+        )
 
     @pytest.mark.proof("purlin_report", "PROOF-11", "RULE-11")
     def test_anchor_external_link_icon(self, page, dashboard):
@@ -629,22 +687,40 @@ class TestPurlinReport:
             },
         })
         load_dashboard(page, dashboard, data=data)
+
+        def row_names():
+            return page.evaluate(
+                "() => Array.from(document.querySelectorAll('tr.fr'))"
+                ".map(r => r.getAttribute('data-name'))"
+            )
+
         # Default sort (by status): beta (PARTIAL) comes first
-        rows_before = page.query_selector_all("tr.fr")
-        assert len(rows_before) == 2, f"Expected 2 feature rows, got {len(rows_before)}"
-        first_name_before = rows_before[0].get_attribute("data-name")
-        assert first_name_before == "beta", (
-            f"Expected 'beta' (PARTIAL) to be first under default status sort, got '{first_name_before}'"
+        assert row_names() == ["beta", "alpha"], (
+            f"Expected ['beta', 'alpha'] under the default status sort, got {row_names()}"
         )
         # Click the "Coverage" column header — ascending coverage sort: alpha (0%) first
         coverage_header = page.query_selector("th[data-col='coverage']")
         coverage_header.click()
         page.wait_for_timeout(200)
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof12_sorted.png"))
-        rows_after = page.query_selector_all("tr.fr")
-        first_name_after = rows_after[0].get_attribute("data-name")
-        assert first_name_after == "alpha", (
-            f"Expected 'alpha' (0% coverage) to be first after coverage-ascending sort, got '{first_name_after}'"
+        assert row_names() == ["alpha", "beta"], (
+            "Expected ['alpha', 'beta'] after one click on Coverage "
+            f"(0/3 before 3/3), got {row_names()}"
+        )
+        # The clicked column is the one marked as sorting the table.
+        active_cols = page.evaluate("""() => Array.from(
+            document.querySelectorAll('th[data-col]'))
+            .filter(th => th.querySelector('.sa.active'))
+            .map(th => th.getAttribute('data-col'))""")
+        assert active_cols and set(active_cols) == {"coverage"}, (
+            f"Expected only the coverage header marked active, got {active_cols}"
+        )
+        # A second click on the same header reverses the direction.
+        page.query_selector("th[data-col='coverage']").click()
+        page.wait_for_timeout(200)
+        assert row_names() == ["beta", "alpha"], (
+            "Expected ['beta', 'alpha'] after a second Coverage click "
+            f"(descending), got {row_names()}"
         )
 
     @pytest.mark.proof("purlin_report", "PROOF-13", "RULE-13")
@@ -1061,10 +1137,18 @@ class TestDashboardVisual:
             f"Expected .sb-failing background #ef4444 (red), got {bg!r}"
         )
 
+        color = page.evaluate(
+            "() => getComputedStyle(document.querySelector('.sb-failing')).color"
+        )
+        assert rgb_to_hex(color) == "#ffffff", (
+            f"Expected .sb-failing text color #ffffff (white), got {color!r}"
+        )
+
     @pytest.mark.proof("dashboard_visual", "PROOF-9", "RULE-9")
     def test_untested_badge_and_no_proofs_opacity(self, page, dashboard):
-        """PROOF-9: UNTESTED badge is gray pill with amber text (.sb-untested);
-        generic .sb-none has reduced opacity."""
+        """PROOF-9: the UNTESTED badge is the theme gray #64748b with amber
+        #f59e0b text at opacity 1; the no-proofs badge is the same gray at
+        opacity 0.45. Both are found by the label a reader sees."""
         now = datetime.datetime.now(datetime.timezone.utc).isoformat()
         features = [
             {
@@ -1109,25 +1193,51 @@ class TestDashboardVisual:
         })
         load_dashboard(page, dashboard, data=data)
 
-        # Verify UNTESTED badge has .sb-untested class with amber text
-        untested_badge = page.query_selector(".sb-untested")
-        assert untested_badge, "Expected .sb-untested badge for UNTESTED feature"
-        untested_color = page.evaluate(
-            "() => getComputedStyle(document.querySelector('.sb-untested')).color"
+        # Reach each badge through the row it belongs to and the label a
+        # reader sees, not through the class that styles it.
+        badges = page.evaluate("""() => {
+            const out = {};
+            document.querySelectorAll('tr.fr').forEach(row => {
+                const b = row.querySelector('td.col-status span.sb');
+                if (!b) return;
+                const cs = getComputedStyle(b);
+                out[row.getAttribute('data-name')] = {
+                    text: b.textContent.trim(),
+                    bg: cs.backgroundColor,
+                    color: cs.color,
+                    opacity: cs.opacity,
+                };
+            });
+            return out;
+        }""")
+
+        untested = badges.get("untested_feature")
+        assert untested, f"Expected a status badge on the UNTESTED row, got {sorted(badges)}"
+        assert untested["text"] == "Untested", (
+            f"Expected the UNTESTED badge to read 'Untested', got {untested['text']!r}"
         )
-        # Amber is #f59e0b = rgb(245, 158, 11)
-        assert "245" in untested_color and "158" in untested_color, (
-            f"Expected .sb-untested to have amber text color, got {untested_color!r}"
+        assert rgb_to_hex(untested["bg"]) == "#64748b", (
+            "Expected the UNTESTED badge on the theme gray #64748b, got "
+            f"{untested['bg']!r}"
+        )
+        assert rgb_to_hex(untested["color"]) == "#f59e0b", (
+            f"Expected the UNTESTED badge in amber #f59e0b, got {untested['color']!r}"
+        )
+        assert float(untested["opacity"]) == 1.0, (
+            f"Expected the UNTESTED badge at full opacity 1, got {untested['opacity']!r}"
         )
 
-        # Verify generic .sb-none (unknown status) has reduced opacity
-        none_badge = page.query_selector(".sb-none")
-        assert none_badge, "Expected .sb-none badge for unknown status"
-        opacity = page.evaluate(
-            "() => getComputedStyle(document.querySelector('.sb-none')).opacity"
+        none_badge = badges.get("unknown_status_feature")
+        assert none_badge, "Expected a status badge on the no-proofs row"
+        assert none_badge["text"] == "Untested", (
+            f"Expected the no-proofs badge to read 'Untested', got {none_badge['text']!r}"
         )
-        assert float(opacity) < 1.0, (
-            f"Expected .sb-none opacity < 1.0 (reduced), got {opacity!r}"
+        assert rgb_to_hex(none_badge["bg"]) == "#64748b", (
+            "Expected the no-proofs badge on the theme gray #64748b, got "
+            f"{none_badge['bg']!r}"
+        )
+        assert float(none_badge["opacity"]) == 0.45, (
+            f"Expected the no-proofs badge at reduced opacity 0.45, got {none_badge['opacity']!r}"
         )
 
     @pytest.mark.proof("dashboard_visual", "PROOF-10", "RULE-10")
@@ -1383,16 +1493,25 @@ class TestCategorySections:
         categories with untested features show amber coverage bar.
         Specs and Anchors are in separate sections with independent grouping."""
         data = make_categorized_data()
+        # A category holding a FAILING feature: the red band of the rule.
+        data["features"].append({
+            "name": "verify_gate", "category": "gate", "type": "feature",
+            "is_global": False, "source_url": None,
+            "proved": 2, "total": 5, "deferred": 0, "status": "FAILING",
+            "vhash": None, "receipt": None, "rules": [], "audit": None,
+        })
+        data["summary"]["total_features"] = 6
+        data["summary"]["failing"] = 1
         load_dashboard(page, dashboard, data=data, expand_categories=False)
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof19_categories.png"))
 
-        # Verify 3 category header rows exist total (2 in Specs, 1 in Anchors)
+        # Verify 4 category header rows exist total (3 in Specs, 1 in Anchors)
         cat_headers = page.query_selector_all(".cat-header")
-        assert len(cat_headers) == 3, (
-            f"Expected 3 category headers, got {len(cat_headers)}"
+        assert len(cat_headers) == 4, (
+            f"Expected 4 category headers, got {len(cat_headers)}"
         )
 
-        # Verify Specs section has 2 categories, Anchors section has 1
+        # Verify Specs section has 3 categories, Anchors section has 1
         section_cats = page.evaluate("""() => {
             const tables = document.querySelectorAll('.table-container');
             return {
@@ -1400,8 +1519,8 @@ class TestCategorySections:
                 anchors: tables[1] ? tables[1].querySelectorAll('.cat-header').length : 0
             };
         }""")
-        assert section_cats["specs"] == 2, (
-            f"Expected 2 spec categories, got {section_cats['specs']}"
+        assert section_cats["specs"] == 3, (
+            f"Expected 3 spec categories, got {section_cats['specs']}"
         )
         assert section_cats["anchors"] == 1, (
             f"Expected 1 anchor category, got {section_cats['anchors']}"
@@ -1441,6 +1560,17 @@ class TestCategorySections:
             f"Expected mcp bar amber (cov-partial) due to untested feature, got {mcp['barClass']}"
         )
 
+        # Verify gate category: 1 FAILING feature, 2/5 coverage, red bar
+        gate = next(c for c in cat_data if c["cat"] == "gate")
+        assert gate["count"] == "(1)", f"Gate count: {gate['count']}"
+        assert "2/5" in gate["cov"], f"Gate coverage: {gate['cov']}"
+        assert "1 failing" in gate["summary"].lower(), (
+            f"Expected '1 failing' in the gate breakdown, got {gate['summary']!r}"
+        )
+        assert "cov-fail" in gate["barClass"], (
+            f"Expected gate bar red (cov-fail) with a failing feature, got {gate['barClass']}"
+        )
+
         # Verify _anchors category in Anchors section: 1 feature, 11/11, green bar
         anchors = next(c for c in cat_data if c["cat"] == "_anchors")
         assert anchors["count"] == "(1)", f"Anchors count: {anchors['count']}"
@@ -1448,6 +1578,13 @@ class TestCategorySections:
         assert anchors["label"] == "anchors", (
             f"Expected _anchors displayed as 'anchors', got '{anchors['label']}'"
         )
+        assert "cov-verified" in anchors["barClass"], (
+            f"Expected anchors bar green (cov-verified), got {anchors['barClass']}"
+        )
+        # The green band means every feature passing or verified; skills also
+        # spells out its breakdown.
+        assert "1 verified" in skills["summary"].lower(), skills["summary"]
+        assert "1 passing" in skills["summary"].lower(), skills["summary"]
 
         # Verify category coverage bar fills are visible (have a background color)
         bar_fills = page.evaluate("""() => {
@@ -1576,6 +1713,29 @@ class TestCategorySections:
         )
 
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof21_after_reload.png"))
+
+        # The other half of the rule: a feature's own open state persists too.
+        page.click("tr.fr[data-name='config_engine']")
+        page.wait_for_timeout(300)
+        stored_expanded = page.evaluate(
+            "() => JSON.parse(localStorage.getItem('purlin-expanded') || '{}')"
+        )
+        assert stored_expanded.get("config_engine") is True, (
+            f"Expected config_engine=true in purlin-expanded, got {stored_expanded}"
+        )
+        page.reload()
+        page.wait_for_load_state("networkidle")
+        expanded_after = page.evaluate("""() =>
+            document.querySelectorAll("tr.fr[data-name='config_engine'].expanded").length
+        """)
+        assert expanded_after == 1, (
+            "Expected config_engine still expanded after reload, got "
+            f"{expanded_after} expanded rows"
+        )
+        detail_rows = page.evaluate("() => document.querySelectorAll('tr.dr').length")
+        assert detail_rows == 1, (
+            f"Expected 1 detail row restored after reload, got {detail_rows}"
+        )
 
         # Expand skills again, reload, verify expanded
         page.click(".cat-header[data-cat='skills']")
@@ -3135,7 +3295,7 @@ class TestRemoteVerificationChip:
     that the config field is the gate.
     """
 
-    @pytest.mark.proof("purlin_report", "PROOF-42", "RULE-40", tier="integration")
+    @pytest.mark.proof("purlin_report", "PROOF-42", "RULE-40", tier="e2e")
     def test_header_chip_names_the_mode_and_where_enforcement_lives(
             self, page, dashboard):
         for mode in ("required", "optional"):
@@ -3315,6 +3475,67 @@ class TestPlatformModal:
         load_dashboard(page, dashboard, data=platform_data())
         assert page.locator(".sc-failing").get_attribute("data-modal") is None, \
             "the Failing card must not open an empty table"
+
+
+class TestModalHelperRuntime:
+    """purlin_report RULE-41: the dialog's runtime half.
+
+    PROOF-43 reads the markup; these are the behaviours no source read can
+    show: where focus goes on open, that the close button closes it, that a
+    second open replaces the first, and that render() takes the dialog with it.
+    """
+
+    @pytest.mark.proof("purlin_report", "PROOF-50", "RULE-41", tier="e2e")
+    def test_focus_single_dialog_and_render_closes_it(self, page, dashboard):
+        load_dashboard(page, dashboard, data=platform_data())
+
+        # Focus moves to the close button on open.
+        page.locator(".sc-verified").click()
+        assert page.locator("#modal").count() == 1, \
+            "clicking Verified must open exactly one dialog"
+        assert page.evaluate("() => document.activeElement.id") == "modal-close", \
+            ("focus must move to the close button on open, got "
+             + page.evaluate("() => document.activeElement.id || document.activeElement.className"))
+
+        # The close button closes it and focus returns to the opener.
+        page.locator("#modal-close").click()
+        assert page.locator("#modal").count() == 0, \
+            "the close button must close the dialog"
+        assert page.evaluate(
+            "document.activeElement.classList.contains('sc-verified')"), \
+            "focus must return to the card that opened it"
+
+        # A second open replaces the first rather than stacking two dialogs.
+        page.locator(".sc-verified").click()
+        assert page.locator("#modal-title").inner_text() == "Verified by platform", \
+            page.locator("#modal-title").inner_text()
+        # Dispatched on the element: the open overlay covers the card, and the
+        # point is what a second openModal does, not how it was reached.
+        page.evaluate(
+            "() => document.querySelector(\"[data-modal='integrity']\").click()")
+        assert page.evaluate("() => document.querySelectorAll('#modal').length") == 1, \
+            "a second open must replace the first, never stack two dialogs"
+        assert page.evaluate(
+            "() => document.querySelectorAll('.modal-overlay').length") == 1, \
+            "a second open must leave exactly one overlay on the body"
+        assert page.locator("#modal-title").inner_text() == \
+            "Proof Integrity by platform", page.locator("#modal-title").inner_text()
+
+        # render() closes an open dialog: the theme toggle re-renders #app.
+        # Dispatched on the button so the open overlay cannot swallow the
+        # click: the theme flip below is the receipt that render() actually ran.
+        before_theme = page.evaluate(
+            "() => document.documentElement.getAttribute('data-theme')")
+        page.evaluate("() => document.getElementById('theme-btn').click()")
+        page.wait_for_timeout(200)
+        after_theme = page.evaluate(
+            "() => document.documentElement.getAttribute('data-theme')")
+        assert after_theme != before_theme, (
+            f"the theme toggle must have run, got {before_theme!r} both times")
+        assert page.locator("#modal").count() == 0, \
+            "render() must close an open dialog before rebuilding #app"
+        assert page.locator(".modal-overlay").count() == 0, \
+            "no overlay may outlive the content it described"
 
 
 class TestPlatformSubLabels:

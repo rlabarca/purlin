@@ -3,15 +3,6 @@
   "proofs": [
     {
       "feature": "purlin_report",
-      "id": "PROOF-1",
-      "rule": "RULE-1",
-      "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_script_tag_loads_data_js",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_report",
       "id": "PROOF-2",
       "rule": "RULE-2",
       "test_file": "dev/test_purlin_report.py",
