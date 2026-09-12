@@ -2,8 +2,8 @@
   "feature": "proof_plugins_c",
   "vhash": "6b442d5c",
   "vhash_version": 2,
-  "commit": "824f30f758e2f8bbca6b2f0886ebc263c3f508df",
-  "timestamp": "2026-09-12T04:18:52.724464+00:00",
+  "commit": "8ed83c4206829c6e1779a3f6f47f9faa8df6042f",
+  "timestamp": "2026-09-12T04:31:48.850402+00:00",
   "rules": [
     "RULE-1",
     "RULE-2",
@@ -1000,10 +1000,10 @@
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T04:18:52.495931+00:00",
-      "commit": "824f30f758e2f8bbca6b2f0886ebc263c3f508df",
+      "at": "2026-09-12T04:31:48.620371+00:00",
+      "commit": "8ed83c4206829c6e1779a3f6f47f9faa8df6042f",
       "sweep": "dev/run_tests.sh",
-      "passed": 763,
+      "passed": 766,
       "failed": 0,
       "skipped": 27
     },

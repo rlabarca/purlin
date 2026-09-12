@@ -1,9 +1,9 @@
 {
   "feature": "sync_status",
-  "vhash": "b7ca492b",
+  "vhash": "7f09ff2d",
   "vhash_version": 2,
-  "commit": "824f30f758e2f8bbca6b2f0886ebc263c3f508df",
-  "timestamp": "2026-09-12T04:18:52.724464+00:00",
+  "commit": "8ed83c4206829c6e1779a3f6f47f9faa8df6042f",
+  "timestamp": "2026-09-12T04:31:48.850402+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -59,6 +59,7 @@
     "RULE-56",
     "RULE-57",
     "RULE-58",
+    "RULE-59",
     "RULE-6",
     "RULE-7",
     "RULE-8",
@@ -134,7 +135,7 @@
     "RULE-47": "9bb0e92e298de225",
     "RULE-48": "3681388434d7236f",
     "RULE-49": "fef8c15d5141e6b4",
-    "RULE-5": "71bd019a08da6cb3",
+    "RULE-5": "92bae449800b7f7b",
     "RULE-50": "61638efe3c302305",
     "RULE-51": "84d502659d703f7b",
     "RULE-52": "9d5768c234261cde",
@@ -144,6 +145,7 @@
     "RULE-56": "7dbed947c37778e6",
     "RULE-57": "dc9e5b39fba0bd7f",
     "RULE-58": "772a021f565ca1c3",
+    "RULE-59": "327638338455d025",
     "RULE-6": "d7a520923fe66c2b",
     "RULE-7": "6928d520a82f7961",
     "RULE-8": "6f164a612b02694f",
@@ -692,7 +694,7 @@
       "status": "pass",
       "tier": "unit",
       "test_file": "dev/test_e2e_manual_staleness.sh",
-      "test_name": "stamped manual proof shows PASS with verified date",
+      "test_name": "current stamp counts: 2/2 PASSING with a vhash",
       "platform": null
     },
     {
@@ -702,7 +704,7 @@
       "status": "pass",
       "tier": "unit",
       "test_file": "dev/test_e2e_manual_staleness.sh",
-      "test_name": "scope file change makes manual proof STALE with directive",
+      "test_name": "a committed scope change takes the stamp back out: 1/2 PARTIAL",
       "platform": null
     },
     {
@@ -712,7 +714,7 @@
       "status": "pass",
       "tier": "unit",
       "test_file": "dev/test_e2e_manual_staleness.sh",
-      "test_name": "re-stamp clears stale state, shows PASS",
+      "test_name": "re-stamping at the new HEAD puts the rule back: 2/2 PASSING",
       "platform": null
     },
     {
@@ -1544,14 +1546,44 @@
       "test_file": "dev/test_mcp_server.py",
       "test_name": "test_the_status_column_is_ruled_from_the_tokens_rendered",
       "platform": null
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-96",
+      "rule": "RULE-5",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_a_current_stamp_counts_and_a_scope_change_takes_it_back",
+      "platform": null
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-97",
+      "rule": "RULE-59",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_re_stamping_after_a_receipt_stales_that_receipt",
+      "platform": null
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-98",
+      "rule": "RULE-5",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_a_stamp_without_scope_is_uncountable",
+      "platform": null
     }
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T04:18:52.495931+00:00",
-      "commit": "824f30f758e2f8bbca6b2f0886ebc263c3f508df",
+      "at": "2026-09-12T04:31:48.620371+00:00",
+      "commit": "8ed83c4206829c6e1779a3f6f47f9faa8df6042f",
       "sweep": "dev/run_tests.sh",
-      "passed": 763,
+      "passed": 766,
       "failed": 0,
       "skipped": 27
     },
@@ -1614,8 +1646,8 @@
         "file": "specs/mcp/sync_status.proofs-integration.json",
         "tier": "integration",
         "platform": null,
-        "commit": "8cba0466604ed4969f5fb92422217a21f5edbbda",
-        "committed_at": "2026-09-11T23:29:34-04:00",
+        "commit": "8ed83c4206829c6e1779a3f6f47f9faa8df6042f",
+        "committed_at": "2026-09-12T00:29:04-04:00",
         "runner": null,
         "executed_in_test_run": true
       },
@@ -1623,8 +1655,8 @@
         "file": "specs/mcp/sync_status.proofs-unit.json",
         "tier": "unit",
         "platform": null,
-        "commit": "d51bcb3431bd553d564cd69a6ac9d3bdf10a8a0c",
-        "committed_at": "2026-09-11T22:12:05-04:00",
+        "commit": "8ed83c4206829c6e1779a3f6f47f9faa8df6042f",
+        "committed_at": "2026-09-12T00:29:04-04:00",
         "runner": null,
         "executed_in_test_run": true
       }
