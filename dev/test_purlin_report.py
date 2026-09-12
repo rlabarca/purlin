@@ -337,7 +337,9 @@ class TestPurlinReport:
                     if (window.__firstRender !== null) return;
                     var app = document.getElementById('app');
                     if (!app || !app.children.length) return;
-                    var s = document.querySelector('script[src*="report-data.js"]');
+                    var fr = document.querySelector('iframe');
+                    var doc = fr && fr.contentDocument ? fr.contentDocument : null;
+                    var s = doc ? doc.querySelector('script[src*="report-data.js"]') : null;
                     window.__firstRender = {
                         dataDefined: typeof PURLIN_DATA !== 'undefined',
                         src: s ? s.getAttribute('src') : null
@@ -3897,8 +3899,8 @@ class TestPlatformChips:
         chips = row.locator(".pchip")
         assert chips.count() == 3, f"one chip per declared platform, got {chips.count()}"
         texts = [chips.nth(i).inner_text() for i in range(3)]
-        assert texts[0].startswith("mac"), texts
-        assert any(t.startswith("win") for t in texts), texts
+        assert texts[0].startswith("mac-14"), texts
+        assert any(t.startswith("win-2022") for t in texts), texts
         assert any(t.startswith("linux") for t in texts), texts
 
         colours = {}
@@ -3906,8 +3908,8 @@ class TestPlatformChips:
             label = chips.nth(i).inner_text().split()[0]
             colours[label] = rgb_to_hex(chips.nth(i).evaluate(
                 "el => getComputedStyle(el).color"))
-        assert colours["mac"] == "#22c55e", colours
-        assert colours["win"] == "#f59e0b", colours
+        assert colours["mac-14"] == "#22c55e", colours
+        assert colours["win-2022"] == "#f59e0b", colours
         assert colours["linux"] == "#ef4444", colours
 
         for i in range(3):
@@ -4246,3 +4248,157 @@ class TestInvalidatedGradesAndAuditorLabel:
         card.click()
         assert page.locator("#modal .modal-note").count() == 0, \
             "the modal must carry no amber note when nothing is invalidated"
+
+
+# ---------------------------------------------------------------------------
+# RULE-48 / RULE-49: the page re-reads its data on focus, and says who wrote it
+# ---------------------------------------------------------------------------
+
+def _iso_minutes_ago(minutes):
+    return (datetime.datetime.now(datetime.timezone.utc)
+            - datetime.timedelta(minutes=minutes)).isoformat()
+
+
+def _focus(page):
+    page.evaluate("() => window.dispatchEvent(new Event('focus'))")
+
+
+class TestLiveReload:
+
+    @pytest.mark.proof("purlin_report", "PROOF-53", "RULE-48", tier="e2e")
+    def test_focus_reloads_only_when_the_timestamp_moved(self, page, dashboard):
+        data = make_data()
+        load_dashboard(page, dashboard, data=data)
+        rows = page.locator("tr.fr")
+        n0 = rows.count()
+        assert n0 == len(data["features"])
+
+        # A sort and a theme change, both of which must survive a reload.
+        header = page.locator("th[data-col]").nth(1)
+        col = header.get_attribute("data-col")
+        header.click()
+        # One header per category table, so the marker count is the table count.
+        tables = page.locator(f"th[data-col='{col}']").count()
+        assert tables >= 1
+        assert page.locator(f"th[data-col='{col}'] .sa.active").count() == tables
+        theme_before = page.evaluate(
+            "() => document.documentElement.getAttribute('data-theme')")
+        page.click("#theme-btn")
+        theme = page.evaluate("() => document.documentElement.getAttribute('data-theme')")
+        assert theme != theme_before
+
+        # Same timestamp, different content: a focus re-reads but does not render.
+        fewer = json.loads(json.dumps(data))
+        fewer["features"] = fewer["features"][:-1]
+        fewer["summary"]["total_features"] = len(fewer["features"])
+        write_data(str(dashboard), fewer)
+        _focus(page)
+        page.wait_for_timeout(700)
+        assert rows.count() == n0, "an unchanged timestamp must not re-render"
+
+        # A newer file with no event: nothing happens, because nothing polls.
+        fewer["timestamp"] = _iso_minutes_ago(0)
+        write_data(str(dashboard), fewer)
+        page.wait_for_timeout(2000)
+        assert rows.count() == n0, "the page must not reload on a timer"
+
+        # The focus event is what picks it up, with sort and theme intact.
+        _focus(page)
+        page.wait_for_function(
+            "n => document.querySelectorAll('tr.fr').length === n", arg=n0 - 1,
+            timeout=5000)
+        assert page.locator(f"th[data-col='{col}'] .sa.active").count() == \
+            page.locator(f"th[data-col='{col}']").count(), \
+            "the active sort column must survive a reload"
+        assert page.evaluate(
+            "() => document.documentElement.getAttribute('data-theme')") == theme, \
+            "the theme must survive a reload"
+
+        # visibilitychange to visible does the same thing.
+        more = json.loads(json.dumps(data))
+        more["timestamp"] = _iso_minutes_ago(0)
+        write_data(str(dashboard), more)
+        page.evaluate("() => document.dispatchEvent(new Event('visibilitychange'))")
+        page.wait_for_function(
+            "n => document.querySelectorAll('tr.fr').length === n", arg=n0,
+            timeout=5000)
+
+    @pytest.mark.proof("purlin_report", "PROOF-54", "RULE-49", tier="e2e")
+    def test_the_freshness_label_names_the_source(self, page, dashboard):
+        data = make_data({"timestamp": _iso_minutes_ago(5), "generated_by": "hook"})
+        load_dashboard(page, dashboard, data=data)
+        text = page.locator(".staleness-text").inner_text()
+        assert text.startswith("Data: 5 min ago"), text
+        assert "(auto)" in text, text
+        assert "fresh" in page.locator(".staleness-dot").get_attribute("class")
+
+        data = make_data({"timestamp": _iso_minutes_ago(5), "generated_by": "sync_status"})
+        load_dashboard(page, dashboard, data=data)
+        assert "(purlin:status)" in page.locator(".staleness-text").inner_text()
+
+        data = make_data({"timestamp": _iso_minutes_ago(5), "generated_by": "pre-commit"})
+        load_dashboard(page, dashboard, data=data)
+        assert "(pre-commit)" in page.locator(".staleness-text").inner_text()
+
+        legacy = make_data({"timestamp": _iso_minutes_ago(5)})
+        legacy.pop("generated_by", None)
+        load_dashboard(page, dashboard, data=legacy)
+        text = page.locator(".staleness-text").inner_text()
+        assert text.startswith("Data: 5 min ago") and "(" not in text, text
+
+        stale = make_data({"timestamp": _iso_minutes_ago(180), "generated_by": "hook"})
+        load_dashboard(page, dashboard, data=stale)
+        label = page.locator(".staleness-text")
+        assert "run purlin:status" in label.inner_text()
+        assert "warning" in label.get_attribute("class")
+
+
+class TestPlatformChipGeometry:
+
+    @pytest.mark.proof("purlin_report", "PROOF-55", "RULE-4", tier="e2e")
+    def test_chips_are_centered_uniform_and_ellipsised(self, page, dashboard):
+        long_id = "an-unusually-long-linux-build-box"
+        registry = {"macos-14": {"os": "macos"}, "windows-2022": {"os": "windows"},
+                    "windows": {"os": "windows"}, long_id: {"os": "linux"}}
+        records = {"auth_login": {
+            "macos-14": make_platform_record(status="PASSING"),
+            "windows-2022": make_platform_record(
+                proved=0, awaiting=["PROOF-9"], status="AWAITING"),
+            "windows": make_platform_record(status="PASSING"),
+            long_id: make_platform_record(proved=0, failed=["PROOF-8"], status="FAILING"),
+        }}
+        data = platform_data(records=records, registry=registry)
+        load_dashboard(page, dashboard, data=data)
+        row = page.locator("tr.fr[data-name='auth_login']")
+        chips = row.locator(".pchip")
+        assert chips.count() == 4
+        labels = [chips.nth(i).inner_text().split()[0] for i in range(4)]
+        assert "win-2022" in labels and "win" in labels and "mac-14" in labels, labels
+        assert "win-2022" != "win", "two windows ids must not collapse into one word"
+
+        geometry = row.locator(".pchips").evaluate("""el => {
+            const box = el.getBoundingClientRect();
+            const chips = Array.from(el.querySelectorAll('.pchip'));
+            const rows = {};
+            chips.forEach(c => {
+                const r = c.getBoundingClientRect();
+                const key = Math.round(r.top);
+                (rows[key] = rows[key] || []).push({left: r.left, right: r.right,
+                    width: r.width, scroll: c.scrollWidth, client: c.clientWidth,
+                    title: c.getAttribute('title'), text: c.textContent});
+            });
+            return {left: box.left, right: box.right, rows: Object.values(rows)};
+        }""")
+        for line in geometry["rows"]:
+            left_gap = line[0]["left"] - geometry["left"]
+            right_gap = geometry["right"] - line[-1]["right"]
+            assert abs(left_gap - right_gap) <= 1.5, (
+                f"chips are not centered under the badge: left gap {left_gap:.1f}, "
+                f"right gap {right_gap:.1f}")
+            for chip in line:
+                assert 52 <= chip["width"] <= 96.5, chip
+        long_chip = next(c for line in geometry["rows"] for c in line
+                         if long_id in (c["title"] or ""))
+        assert long_chip["scroll"] > long_chip["client"], \
+            "a long id must be ellipsised inside the chip, not widen the column"
+        assert long_id in long_chip["title"], "the full id lives in the tooltip"

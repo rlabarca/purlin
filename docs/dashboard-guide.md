@@ -159,7 +159,7 @@ The **Design** and **Integrity** columns are separate because they are separate 
 | `not audited` | Nothing has assessed this feature, or only part of it. Amber, because it is actionable. |
 | `structural` | Design only. Every description is a structural presence check, which is the correct proof for a structural rule. Teal, because there is nothing to fix. |
 | `excluded` | Integrity only. Every proof is excluded from scoring, so nothing is gradeable. Teal. |
-| `win ✓` `mac ⏳` `linux ✗` | Status column, under the badge. One chip per platform the feature's proofs declare: green proved there, amber awaiting a runner, red failing there. |
+| `win-2022 ✓` `mac ⏳` `linux ✗` | Status column, centered under the badge. One chip per platform the feature's proofs declare: green proved there, amber awaiting a runner, red failing there. A bare family id reads `win`, `mac` or `linux`; an id named after its family keeps its suffix (`windows-2022` is `win-2022`); any other id is itself, ellipsised when long, with the full id in the tooltip. |
 
 `structural` and `excluded` are the same state in each gauge's own vocabulary: STRUCTURAL
 describes a description, EXCLUDED describes a test, and the two never mix. Hover any cell for
@@ -169,7 +169,14 @@ A gauge is never reported as `excluded` or `structural` from a subset. If a feat
 proofs and two were assessed, the cell reads `not audited` however those two graded, because the
 answer is not known yet.
 
-The header carries one freshness label per gauge: `Design: 3h ago`, `Integrity: 78d ago`, each
+The header's first label says how old the data is and who wrote it: `Data: 5 min ago (auto)`
+after the plugin's refresh hook, `(purlin:status)` after a status call, `(pre-commit)` after a
+commit. An open tab re-reads the data file whenever it regains focus or becomes visible and
+re-renders only if the data changed, so leave it open beside your editor; nothing runs while
+you are away, and the age turns amber after an hour and red after a day with the usual
+`run purlin:status` hint.
+
+Beside it sit one freshness label per gauge: `Design: 3h ago`, `Integrity: 78d ago`, each
 from its own cache, since the two age independently. A gauge that has never been measured reads
 `Design: not measured`; a stale one adds `(stale)` and turns amber. The command stays out of the
 label: hover a stale or unmeasured label and its tooltip names the narrowest command that

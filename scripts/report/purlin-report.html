@@ -232,8 +232,8 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .host-badge{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--teal);border:1px solid var(--teal);border-radius:3px;padding:0 4px;margin-left:6px}
 .env-badge{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--blue);border:1px solid var(--blue);border-radius:3px;padding:0 4px;margin-left:6px}
 .awr-host{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--teal);border:1px solid var(--teal);border-radius:3px;padding:0 4px;margin-left:6px}
-.pchips{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
-.pchip{font-family:var(--font-mono);font-size:9px;font-weight:600;letter-spacing:.03em;border-radius:3px;padding:0 4px;border:1px solid var(--border)}
+.pchips{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;justify-content:center}
+.pchip{font-family:var(--font-mono);font-size:9px;font-weight:600;letter-spacing:.03em;border-radius:3px;padding:0 4px;border:1px solid var(--border);display:inline-block;box-sizing:border-box;min-width:52px;max-width:96px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
 .pchip-ok{color:var(--green);border-color:var(--green);background:var(--green-dim)}
 .pchip-wait{color:var(--amber);border-color:var(--amber);background:var(--amber-dim)}
 .pchip-fail{color:var(--red);border-color:var(--red);background:var(--red-dim)}
@@ -361,17 +361,51 @@ table{min-width:830px}
 <script>
 'use strict';
 
-/* Load data with cache-busting to prevent stale reads on file:// */
-(function(callback) {
-  var s = document.createElement('script');
-  s.src = '.purlin/report-data.js?t=' + Date.now();
-  s.onload = callback;
-  s.onerror = callback;
-  document.head.appendChild(s);
-})(function() {
+/* ===== DATA LOADING (RULE-1, RULE-48) =====
+   The data file declares `const PURLIN_DATA`, and a const cannot be declared
+   twice in one window, so every load, the first one included, happens in a
+   throwaway iframe that posts the value back. `srcdoc` inherits this page's
+   base URL and origin, so `.purlin/report-data.js` resolves exactly as it did
+   from a script tag here, on file:// as well. The query string defeats the
+   browser's file:// cache. The frame stays in the document until the next
+   load replaces it, so what was loaded is inspectable. */
+var loadFrame = null;
+function loadData(callback) {
+  var done = false;
+  var frame = document.createElement('iframe');
+  frame.setAttribute('hidden', '');
+  frame.setAttribute('aria-hidden', 'true');
+  frame.style.display = 'none';
+  var src = '.purlin/report-data.js?t=' + Date.now();
+  function finish(value) {
+    if (done) return;
+    done = true;
+    window.removeEventListener('message', onMessage);
+    if (loadFrame && loadFrame !== frame && loadFrame.parentNode) {
+      loadFrame.parentNode.removeChild(loadFrame);
+    }
+    loadFrame = frame;
+    /* The page's own view of what it rendered, as a window property rather
+       than a declaration, so it can be replaced on every reload (RULE-1). */
+    if (value) window.PURLIN_DATA = value;
+    callback(value);
+  }
+  function onMessage(ev) {
+    if (ev.source !== frame.contentWindow) return;
+    if (!ev.data || typeof ev.data !== 'object' || !('purlin' in ev.data)) return;
+    finish(ev.data.purlin);
+  }
+  window.addEventListener('message', onMessage);
+  frame.srcdoc = '<script src="' + src + '"><\/script>'
+    + '<script>parent.postMessage({purlin: (typeof PURLIN_DATA === "undefined") ? null : PURLIN_DATA}, "*");<\/script>';
+  document.body.appendChild(frame);
+  setTimeout(function() { finish(null); }, 3000);
+}
+
+loadData(function(initial) {
 
   /* ===== DATA ===== */
-  var D = (typeof PURLIN_DATA !== 'undefined') ? PURLIN_DATA : null;
+  var D = initial;
 
   var app = document.getElementById('app');
 
@@ -533,9 +567,15 @@ table{min-width:830px}
     if (isEnvironment(id)) return id;
     var reg = ((D.platforms || {}).registry || {})[id] || {};
     var os = reg.os || '';
-    if (os === 'windows') return 'win';
-    if (os === 'macos') return 'mac';
-    if (os === 'linux') return 'linux';
+    var family = os === 'windows' ? 'win' : os === 'macos' ? 'mac' : os === 'linux' ? 'linux' : '';
+    if (!family) return id;
+    /* The bare family id reads as its abbreviation; an id named after its
+       family keeps its suffix (`windows-2022` to `win-2022`), so two windows
+       ids never collapse into one chip word; any other id is itself, with the
+       OS in the tooltip. Long labels are ellipsised by the chip's CSS and the
+       full id is always in the tooltip (RULE-4). */
+    if (id === os) return family;
+    if (id.indexOf(os + '-') === 0) return family + id.slice(os.length);
     return id;
   }
 
@@ -703,12 +743,24 @@ table{min-width:830px}
     return Math.floor(diff / 86400) + 'd ago';
   }
 
-  function staleness(iso) {
-    if (!iso) return { cls: 'stale', text: '/status never run', warn: '' };
+  /* Who wrote the data, in the words a developer uses (RULE-49). Silent for
+     a payload from before `generated_by` existed. */
+  function sourceLabel(by) {
+    if (by === 'sync_status') return 'purlin:status';
+    if (by === 'pre-commit') return 'pre-commit';
+    if (by === 'hook') return 'auto';
+    return '';
+  }
+
+  function staleness(iso, by) {
+    var src = sourceLabel(by);
+    var suffix = src ? ' (' + src + ')' : '';
+    if (!iso) return { cls: 'stale', text: 'Data: none', warn: ' \u2014 run purlin:status' };
     var diff = (Date.now() - new Date(iso).getTime()) / 1000;
-    if (diff < 3600) return { cls: 'fresh', text: '/status ' + relTime(iso), warn: '' };
-    if (diff < 86400) return { cls: 'warning', text: '/status ' + relTime(iso), warn: ' \u2014 run purlin:status to refresh' };
-    return { cls: 'stale', text: '/status ' + relTime(iso), warn: ' \u2014 run purlin:status to refresh' };
+    var text = 'Data: ' + relTime(iso) + suffix;
+    if (diff < 3600) return { cls: 'fresh', text: text, warn: '' };
+    if (diff < 86400) return { cls: 'warning', text: text, warn: ' \u2014 run purlin:status to refresh' };
+    return { cls: 'stale', text: text, warn: ' \u2014 run purlin:status to refresh' };
   }
 
   function covClass(status) {
@@ -1116,7 +1168,7 @@ table{min-width:830px}
        re-render cannot orphan it, and it is closed here so a sort or a theme
        toggle never leaves a dialog open over rebuilt content. */
     closeModal();
-    var st = staleness(D.timestamp);
+    var st = staleness(D.timestamp, D.generated_by);
     var S = D.summary;
     var A = D.audit_summary;
     var G = D.design_summary;
@@ -1135,7 +1187,7 @@ table{min-width:830px}
     h += '</svg></div>';
     h += '<span class="header-project">' + esc(D.project) + '</span>';
     h += '</div><div class="header-right">';
-    h += '<div class="staleness"><span class="staleness-dot ' + st.cls + '"></span><span class="staleness-text' + (st.warn ? ' ' + st.cls : '') + '">' + esc(st.text + st.warn) + '</span>';
+    h += '<div class="staleness" title="Re-read from .purlin/report-data.js whenever this tab regains focus or becomes visible; nothing runs while you are away"><span class="staleness-dot ' + st.cls + '"></span><span class="staleness-text' + (st.warn ? ' ' + st.cls : '') + '">' + esc(st.text + st.warn) + '</span>';
     h += '</div>';
     /* One freshness label per gauge. A single combined "audit" label reported
        the Integrity cache's age as though it were the project's, so a repo
@@ -1411,29 +1463,6 @@ table{min-width:830px}
     /* Attach event listeners */
     document.getElementById('theme-btn').addEventListener('click', function() { toggleTheme(); render(); });
 
-    /* Live staleness: update "X ago" text every 30s */
-    setInterval(function() {
-      var dot = app.querySelector('.staleness-dot');
-      var txt = app.querySelector('.staleness-text');
-      if (dot && txt && D.timestamp) {
-        var st = staleness(D.timestamp);
-        dot.className = 'staleness-dot ' + st.cls;
-        txt.className = 'staleness-text' + (st.warn ? ' ' + st.cls : '');
-        txt.textContent = st.text + st.warn;
-      }
-      /* Re-render both gauge labels from their own timestamps, so the 30s tick
-         cannot drift from what render() produced. */
-      app.querySelectorAll('.audit-time').forEach(function(el) {
-        var which = el.getAttribute('data-gauge');
-        var sum = which === 'design' ? D.design_summary : D.audit_summary;
-        el.textContent = freshnessText(sum, which);
-        /* The tooltip ticks with the text: a label that went stale between
-           renders must gain its directive, not keep a stale absence. */
-        var tip = freshnessTitle(sum, which, D.audit_summary, D.design_summary);
-        if (tip) el.setAttribute('title', tip); else el.removeAttribute('title');
-      });
-    }, 30000);
-
     var uwToggle = document.getElementById('uw-toggle');
     if (uwToggle) {
       uwToggle.addEventListener('click', function() {
@@ -1648,6 +1677,53 @@ table{min-width:830px}
   }
 
   render();
+
+  /* Live age labels: the "X ago" text ticks every 30s. Started once, here,
+     rather than inside render(): a timer created per render accumulated one
+     more copy on every sort, theme toggle and reload. It relabels only; it
+     never re-reads the data file. */
+  setInterval(function() {
+    var dot = app.querySelector('.staleness-dot');
+    var txt = app.querySelector('.staleness-text');
+    if (dot && txt && D.timestamp) {
+      var st = staleness(D.timestamp, D.generated_by);
+      dot.className = 'staleness-dot ' + st.cls;
+      txt.className = 'staleness-text' + (st.warn ? ' ' + st.cls : '');
+      txt.textContent = st.text + st.warn;
+    }
+    /* Re-render both gauge labels from their own timestamps, so the 30s tick
+       cannot drift from what render() produced. */
+    app.querySelectorAll('.audit-time').forEach(function(el) {
+      var which = el.getAttribute('data-gauge');
+      var sum = which === 'design' ? D.design_summary : D.audit_summary;
+      el.textContent = freshnessText(sum, which);
+      /* The tooltip ticks with the text: a label that went stale between
+         renders must gain its directive, not keep a stale absence. */
+      var tip = freshnessTitle(sum, which, D.audit_summary, D.design_summary);
+      if (tip) el.setAttribute('title', tip); else el.removeAttribute('title');
+    });
+  }, 30000);
+
+  /* ===== LIVE RELOAD (RULE-48) =====
+     No timer and no polling: the data file is re-read when this tab regains
+     focus or becomes visible, which is when someone is looking, and the page
+     re-renders only when the payload's timestamp moved. Sort, theme,
+     expansion and category state live outside render(), so they survive. An
+     open modal is left alone; the next focus retries. */
+  var refreshing = false;
+  function refreshIfChanged() {
+    if (refreshing || document.visibilityState !== 'visible') return;
+    refreshing = true;
+    loadData(function(fresh) {
+      refreshing = false;
+      if (!fresh || !fresh.timestamp || fresh.timestamp === D.timestamp) return;
+      if (modalEl) return;
+      D = fresh;
+      render();
+    });
+  }
+  window.addEventListener('focus', refreshIfChanged);
+  document.addEventListener('visibilitychange', refreshIfChanged);
 });
 </script>
 </body>
