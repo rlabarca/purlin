@@ -76,6 +76,12 @@ Developer / AI Agent
 
 These are not Purlin features to enable via config flags. They are interfaces where Purlin's output connects to external compliance infrastructure. Your compliance team builds and owns these integrations.
 
+### Pinned Plugin Version and Interpreter
+
+A regulated deployment pins the plugin by tag and never installs it from a branch head. On a workstation the thing that resolves the plugin is the marketplace entry the installation guide documents: `claude plugin marketplace add https://github.com/rlabarca/purlin.git --scope project` writes that entry into the project's `.claude/settings.json`, and `claude plugin marketplace update` later moves it to whatever the default branch holds at the moment it runs, which is not a version a change record can cite. So add the marketplace from a URL your change control holds at the validated release tag, and read back which release is installed from the `version` field of `.claude-plugin/plugin.json`. Neither the marketplace entry nor `plugin.json` carries a ref field of its own, so the tag is held by your process and not by a Purlin config flag. In CI the tag is explicit: the workflow examples install the tooling with `git clone --depth 1 --branch v<VERSION>` and point `PURLIN_PLUGIN_ROOT` at that clone (see [references/remote_verification.md](../references/remote_verification.md)). Both must name the same tag, because a proof result records nothing about which plugin produced it.
+
+A regulated deployment runs Python 3.11 or newer. That is the tested floor rather than a syntax limit: every workflow under `.github/workflows/` pins `python-version: '3.11'`, so 3.11 is the only interpreter this repository's proof results have been produced on. [docs/installation-guide.md](installation-guide.md) states a lower prerequisite for everyday development (`Python 3.8+`), which stays true there; a validated environment holds the higher floor so that the interpreter named in the qualification record is the one the evidence came from.
+
 ### Requirements Traceability
 
 Purlin's `RULE-N` lines in specs and `PROOF-N` entries in proof files create a machine-readable traceability matrix. A compliance tool can parse `specs/**/*.md` for rules and `specs/**/*.proofs-*.json` for proof results to generate the traceability documentation your QMS requires.

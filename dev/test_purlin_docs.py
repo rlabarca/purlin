@@ -441,3 +441,87 @@ class TestDiagramsAndImages:
             assert referring, (
                 f"docs/images/{name} is referenced by no markdown under "
                 f"docs/; nothing would notice it going stale")
+
+
+def _heading_section(text, title):
+    """The body of the section headed `title`, plus its enclosing `##` title.
+
+    Returns (body, parent) where `body` is every line after the heading up to
+    the next heading of the same or a shallower level, and `parent` is the
+    nearest preceding `##` heading. Lines inside a fenced block are not read
+    as headings. Returns (None, None) when the heading is absent.
+    """
+    body = None
+    parent = None
+    found_parent = None
+    depth = None
+    fenced = False
+    for line in text.splitlines():
+        if re.match(r'^\s{0,3}(```|~~~)', line):
+            fenced = not fenced
+            if body is not None:
+                body.append(line)
+            continue
+        heading = None
+        if not fenced:
+            heading = re.match(r'^\s{0,3}(#{1,6})\s+(.*\S)\s*$', line)
+        if heading:
+            level = len(heading.group(1))
+            name = _norm_heading(heading.group(2))
+            if level == 2:
+                parent = name
+            if body is not None and level <= depth:
+                break
+            if body is None and name == _norm_heading(title):
+                body = []
+                depth = level
+                found_parent = parent
+                continue
+        if body is not None:
+            body.append(line)
+    if body is None:
+        return None, None
+    return '\n'.join(body), found_parent
+
+
+PIN_SECTION = 'Pinned Plugin Version and Interpreter'
+
+PIN_LITERALS = (
+    'pins the plugin by tag',
+    'never installs it from a branch head',
+    'claude plugin marketplace add',
+    '.claude/settings.json',
+    '.claude-plugin/plugin.json',
+    'git clone --depth 1 --branch v<VERSION>',
+)
+
+PYTHON_LITERALS = (
+    'Python 3.11 or newer',
+    'tested floor',
+    "python-version: '3.11'",
+)
+
+
+class TestRegulatedDeploymentIsPinned:
+    """RULE-8 - the pin and the interpreter a validated install is held to."""
+
+    @pytest.mark.proof("purlin_docs", "PROOF-13", "RULE-8")
+    def test_regulated_page_pins_the_plugin_by_tag_and_names_python_311(self):
+        body, parent = _heading_section(
+            _read('docs/regulated-environments.md'), PIN_SECTION)
+        assert body is not None, (
+            f"docs/regulated-environments.md has no section headed "
+            f"'{PIN_SECTION}'; RULE-8's two statements have nowhere to live")
+        assert parent == 'Integration Points (not extensions)', (
+            f"'{PIN_SECTION}' must sit under '## Integration Points (not "
+            f"extensions)'; its enclosing section is {parent!r}")
+
+        missing = [lit for lit in PIN_LITERALS if lit not in body]
+        assert not missing, (
+            f"the '{PIN_SECTION}' section no longer states how a regulated "
+            f"deployment pins the plugin; missing literals: {missing}")
+
+        missing = [lit for lit in PYTHON_LITERALS if lit not in body]
+        assert not missing, (
+            f"the '{PIN_SECTION}' section no longer states the Python floor a "
+            f"regulated deployment runs; missing literals: {missing}")
