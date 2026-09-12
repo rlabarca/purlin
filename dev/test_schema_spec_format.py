@@ -68,6 +68,30 @@ class TestSpecFormatEnforcement:
         assert 'not numbered' in result, \
             f"WARNING doesn't mention unnumbered rules: {result}"
 
+        # A retired rule leaves its number vacant, so a gapped spec is legal:
+        # RULE-2 and RULE-4..19 are absent and nothing is reported.
+        self._write_spec('gapped_feat', (
+            '# Feature: gapped_feat\n\n'
+            '## What it does\nTesting.\n\n'
+            '## Rules\n'
+            '- RULE-1: The first rule\n'
+            '- RULE-3: The rule that outlived RULE-2\n'
+            '- RULE-20: The rule numbered after sixteen retirements\n\n'
+            '## Proof\n'
+            '- PROOF-1 (RULE-1): Test one\n'
+            '- PROOF-3 (RULE-3): Test three\n'
+            '- PROOF-20 (RULE-20): Test twenty\n'
+        ))
+        os.remove(os.path.join(self.spec_dir, 'test_feat.md'))
+        gapped = purlin_server.sync_status(self.project_root)
+        assert 'WARNING' not in gapped, (
+            "a gap in the rule numbers is legal: a retired rule leaves its "
+            f"number vacant and the rest are never renumbered:\n{gapped}")
+        for rule in ('RULE-1', 'RULE-3', 'RULE-20'):
+            assert rule in gapped, (
+                f"{rule} is missing from the report, so the gapped spec was "
+                f"not parsed at all:\n{gapped}")
+
     @pytest.mark.proof("schema_spec_format", "PROOF-4", "RULE-4")
     def test_rule_without_proof_shows_uncovered(self):
         self._write_spec('test_feat', (

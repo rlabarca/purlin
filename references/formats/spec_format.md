@@ -1,4 +1,4 @@
-> Format-Version: 9
+> Format-Version: 10
 
 # Spec Format
 
@@ -69,7 +69,7 @@ Each rule is a line under `## Rules`:
 - RULE-N: <description>
 ```
 
-Rules MUST be numbered sequentially: `RULE-1`, `RULE-2`, etc. The `sync_status` MCP tool parses these and tracks coverage. Unnumbered lines under `## Rules` trigger a WARNING.
+Rule ids are assigned in increasing order and never reused: `RULE-1`, `RULE-2`, and so on. A retired rule leaves its number vacant and the rules that remain keep the numbers they had, so a gap in the sequence is legal and the parser reports nothing for it. Renumbering would silently repoint every proof marker, receipt entry and audit cache key that already names the old id. The `sync_status` MCP tool parses these and tracks coverage. Unnumbered lines under `## Rules` trigger a WARNING.
 
 ### Rule Tags
 

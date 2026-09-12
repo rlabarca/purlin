@@ -254,7 +254,7 @@ If the rule already exists in the target spec, the test just needs a proof marke
 
 Before committing, verify:
 - `## What it does` has at least one full sentence
-- `## Rules` has at least one `RULE-N:` line, all numbered sequentially
+- `## Rules` has at least one `RULE-N:` line, with ids assigned in increasing order and never reused (a retired rule leaves its number vacant, so a gap is legal)
 - `## Proof` has at least one `PROOF-N (RULE-N):` line, each mapping to a rule
 - Proof descriptions are observable assertions, not vague instructions
 - Every proof description has an appropriate tier tag per `references/spec_quality_guide.md` ("Tier Tags on Proofs")
@@ -350,7 +350,7 @@ Waiting for your response...
 1. Preserve ALL unchanged rules exactly as they are — same text, same numbering
 2. Add new rules at the end of the existing sequence (RULE-9 after RULE-8)
 3. Update changed rules in place — same RULE-N number, new text
-4. For removed rules: renumber remaining rules sequentially (no gaps)
+4. For removed rules: delete the rule line and leave its number vacant. Never renumber the rules that remain: their ids are already named by proof markers, receipts and audit cache entries
 5. For each new or updated rule, add or update the corresponding PROOF-N line
 6. Apply tier tags to new proofs per `references/spec_quality_guide.md`
 7. Preserve any existing `@manual` stamps — do NOT remove manual proof stamps unless the rule they reference was removed
@@ -361,7 +361,7 @@ Waiting for your response...
 
 ### 7e — Validate and commit
 
-Same validation as new specs: no empty sections, sequential numbering, observable proofs, valid references, tier tags.
+Same validation as new specs: no empty sections, rule ids in increasing order with no reuse (gaps allowed), observable proofs, valid references, tier tags.
 
 ### Commit (mandatory)
 
@@ -378,7 +378,7 @@ This commit is mandatory — drift detection and staleness checks depend on comm
 
 - **Never silently change existing rules.** Every change must be shown to the user.
 - **Never remove `@manual` stamps** unless the rule was deleted.
-- **Preserve rule numbering** when possible — renumber only when rules are removed.
+- **Preserve rule numbering** always: a removed rule leaves its number vacant and nothing is renumbered.
 - **Show what's staying, not just what's changing.** The user needs to see the full picture to approve confidently.
 - **Ask before applying.** The delta report is a proposal, not a fait accompli.
 

@@ -9,7 +9,7 @@
 ## Rules
 
 - RULE-1: Every spec MUST contain exactly two required sections: `## Rules`, `## Proof`
-- RULE-2: Rules are numbered sequentially as `RULE-N` (RULE-1, RULE-2, ...). Unnumbered lines under `## Rules` trigger a sync_status WARNING
+- RULE-2: Rule ids are written as `RULE-N`, assigned in increasing order and never reused. A retired rule leaves its number vacant, so a gap in the sequence is legal and `sync_status` reports nothing for it; the rules that remain keep the numbers proof markers, receipts and caches already name. Unnumbered lines under `## Rules` trigger a sync_status WARNING
 - RULE-3: Proofs are numbered as `PROOF-N (RULE-N)` — each proof references the rule it covers
 - RULE-4: Every RULE must have at least one corresponding PROOF
 - RULE-5: `> Requires:` metadata, when present, is a comma-separated list of anchor names whose rules also apply to this feature
@@ -23,7 +23,7 @@
 ## Proof
 
 - PROOF-1 (RULE-1): Parse `references/formats/spec_format.md`; find the `## Required Sections` area; verify both sections (`## Rules`, `## Proof`) appear within it
-- PROOF-2 (RULE-2): Create a spec with an unnumbered line under `## Rules` (e.g., `- some constraint without RULE-N prefix`); run sync_status; verify it reports a WARNING about unnumbered rules
+- PROOF-2 (RULE-2): Create a spec with an unnumbered line under `## Rules` (e.g., `- some constraint without RULE-N prefix`); run sync_status; verify it reports a WARNING about unnumbered rules. Then create a second spec whose rules are `RULE-1`, `RULE-3` and `RULE-20`, each with a proof, and run sync_status over it; verify the report carries no warning at all and lists all three rules, so a retired rule that left its number vacant is not reported as a defect
 - PROOF-3 (RULE-3): Grep `specs/**/*.md` for lines under `## Proof`; verify every proof line matches the pattern `PROOF-\d+ \(RULE-\d+\)`
 - PROOF-4 (RULE-4): Create a spec with RULE-1 but no PROOF referencing RULE-1; run sync_status; verify it reports the rule as uncovered @integration
 - PROOF-5 (RULE-5): Create a spec with `> Requires: base_anchor`; run sync_status; verify the report includes `base_anchor/RULE-1` in the coverage output @integration

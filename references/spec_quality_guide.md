@@ -379,13 +379,13 @@ Proofs for boundary conditions and edge cases must include the **specific test i
 
 Bad:
 ```
-- PROOF-4 (RULE-4): Verify IDs are sequential with no gaps
+- PROOF-4 (RULE-4): Verify the id parser rejects a malformed id
 - PROOF-5 (RULE-5): Check that invalid input is rejected
 ```
 
 Good:
 ```
-- PROOF-4 (RULE-4): Create a spec with RULE-1 and RULE-3 (skipping RULE-2); verify sync_status reports a warning about non-sequential IDs
+- PROOF-4 (RULE-4): Call parse_id() with `RULE-` (the number missing); verify it raises ValueError naming the input
 - PROOF-5 (RULE-5): Call update_config() with key="" (empty string); verify it raises ValueError
 ```
 

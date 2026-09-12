@@ -76,8 +76,8 @@ external-LLM mode (see § External LLM Auditing).
 - **No expected value at all**: no literal, number, status code, or quoted string, so any
   assertion satisfies it.
 - **Edge case without its trigger**: a boundary-condition proof that names the expected
-  output but not the specific input that triggers it ("verify IDs are sequential with no gaps"
-  rather than "create a spec with RULE-1 and RULE-3, skipping RULE-2").
+  output but not the specific input that triggers it ("verify the id parser rejects a malformed
+  id" rather than "call parse_id() with `RULE-`, the number missing").
 - **Happy path only where the rule describes a constraint**: the rule says reject/block/limit
   but the description exercises only the accepted case. This is the design twin of the
   Integrity finding "missing negative test for constraint rules".
