@@ -339,6 +339,10 @@ def test_platform_specific_thing():
 Platform markers: `platforms=(...)` takes a tuple of ids, or one id as a bare string. A
 marker with it writes the scoped file; a marker without it writes the agnostic file.
 
+The tier a marker names is also added to the test as a registered pytest marker of its own,
+so a tier is selectable with `-m` (for example `-m "not integration and not e2e"` runs only
+the unit-tier proofs) without any test having to restate it.
+
 Plugin: `scripts/proof/pytest_purlin.py` (scaffolded to `.purlin/plugins/pytest_purlin.py` by `purlin:init`).
 
 ### Jest

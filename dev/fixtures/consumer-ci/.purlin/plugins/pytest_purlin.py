@@ -53,11 +53,23 @@ import time
 import pytest
 
 
+# The three tiers a proof marker can name. Each is registered as a pytest
+# marker of its own so that `-m` can select on it (RULE-5): a caller asking for
+# `-m "not integration and not e2e"` gets the unit-tier proofs and nothing
+# else, without every test file having to carry a second hand-written marker.
+_TIERS = ("unit", "integration", "e2e")
+
+
 def pytest_configure(config):
     config.addinivalue_line(
         "markers",
         'proof(feature, proof_id, rule_id, *, tier="unit", platforms=()): mark test as proof for a spec rule',
     )
+    for tier in _TIERS:
+        config.addinivalue_line(
+            "markers",
+            f"{tier}: proof tier, added to every test whose proof marker names it",
+        )
     collector = ProofCollector()
     config.pluginmanager.register(collector, "purlin_proof")
 
@@ -270,6 +282,23 @@ class ProofCollector:
         # run skipped, for the run marker's `skipped_proofs` (RULE-20). pytest
         # carries a reason on every skip, so `reason` is never null here.
         self.skipped_proofs = {}
+
+    def pytest_collection_modifyitems(self, config, items):
+        """Give every marked test the pytest marker its proof tier names.
+
+        RULE-5. The tier already decides which proof file the entry lands in;
+        adding it as a marker as well makes it selectable with `-m`, so a
+        fast arm can deselect the slow tiers. The marker is added, never
+        substituted: whatever markers the test already carries stay, and a
+        test whose proof markers name two tiers gets both. A tier outside
+        `_TIERS` is added under its own name verbatim rather than dropped or
+        rewritten, so the plugin never silently renames a caller's tier.
+        """
+        for item in items:
+            for marker in item.iter_markers("proof"):
+                if len(marker.args) < 3:
+                    continue
+                item.add_marker(marker.kwargs.get("tier", "unit"))
 
     def pytest_runtest_makereport(self, item, call):
         # A skip surfaces as a Skipped exception: raised during setup by a

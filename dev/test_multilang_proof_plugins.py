@@ -1222,6 +1222,63 @@ class TestPytestPlatformScoping:
         assert not [n for n in os.listdir(spec_dir) if '@' in n and n != f'feat.proofs-unit@{fam}.json']
 
 
+class TestPytestTierMarkers:
+    """The proof tier becomes a pytest marker, so `-m` can deselect a tier."""
+
+    _SRC = (
+        'import pytest\n'
+        '@pytest.mark.proof("feat", "PROOF-1", "RULE-1")\n'
+        'def test_unit_tier(): assert True\n'
+        '@pytest.mark.proof("feat", "PROOF-2", "RULE-2", tier="integration")\n'
+        'def test_integration_tier(): assert True\n'
+        '@pytest.mark.proof("feat", "PROOF-3", "RULE-3", tier="e2e")\n'
+        'def test_e2e_tier(): assert True\n'
+    )
+
+    def _run(self, tmp_path, *extra):
+        result = subprocess.run(
+            [sys.executable, '-m', 'pytest', 'test_feat.py', '-q', '--no-header',
+             '-p', 'no:cacheprovider', *extra],
+            capture_output=True, text=True, cwd=str(tmp_path), env=_env(None))
+        assert result.returncode == 0, f"pytest failed:\n{result.stdout}\n{result.stderr}"
+        return result
+
+    @pytest.mark.proof("proof_plugins_pytest", "PROOF-5", "RULE-5", tier="integration")
+    def test_tier_is_a_registered_marker_and_deselects(self, tmp_path):
+        spec_dir = _spec(tmp_path, 'feat')
+        (spec_dir / 'feat.md').write_text(
+            '# Feature: feat\n\n## Rules\n- RULE-1: a\n- RULE-2: b\n- RULE-3: c\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): t\n- PROOF-2 (RULE-2): t\n- PROOF-3 (RULE-3): t\n')
+        # The real plugin, loaded the way purlin:init wires it.
+        shutil.copy(os.path.join(PROOF_SCRIPTS, 'pytest_purlin.py'), str(tmp_path / 'conftest.py'))
+        (tmp_path / 'test_feat.py').write_text(self._SRC)
+
+        # No -m: every tier runs and every tier's file is written.
+        self._run(tmp_path)
+        written = sorted(n for n in os.listdir(spec_dir) if n.endswith('.json'))
+        assert written == ['feat.proofs-e2e.json', 'feat.proofs-integration.json',
+                           'feat.proofs-unit.json'], written
+
+        # The two slow tiers are deselectable by name, so only the unit file is
+        # written and it holds exactly the one unit-tier proof.
+        for name in written:
+            os.remove(spec_dir / name)
+        result = self._run(tmp_path, '-m', 'not integration and not e2e')
+        assert '2 deselected' in result.stdout, result.stdout
+        written = sorted(n for n in os.listdir(spec_dir) if n.endswith('.json'))
+        assert written == ['feat.proofs-unit.json'], written
+        data = json.load(open(spec_dir / 'feat.proofs-unit.json'))
+        assert len(data['proofs']) == 1, data['proofs']
+        assert data['proofs'][0]['id'] == 'PROOF-1', data['proofs'][0]
+
+        # The three tier markers are registered, not bare strings pytest warns about.
+        listed = subprocess.run(
+            [sys.executable, '-m', 'pytest', '--markers', '-p', 'no:cacheprovider'],
+            capture_output=True, text=True, cwd=str(tmp_path), env=_env(None)).stdout
+        for tier in ('unit', 'integration', 'e2e'):
+            assert f'@pytest.mark.{tier}:' in listed, (tier, listed)
+
+
 # ----- jest ----------------------------------------------------------------
 
 @pytest.mark.skipif(not shutil.which('node'), reason='node not available')

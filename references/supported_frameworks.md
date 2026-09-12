@@ -8,7 +8,7 @@ Proof plugins shipped with Purlin. `purlin:init` detects and scaffolds the appro
 
 | Framework | Display name | Languages | Plugin file | Detection | Marker syntax | Runner setup |
 |-----------|-------------|-----------|------------|-----------|---------------|--------------|
-| **pytest** | pytest (Python) | Python | `scripts/proof/pytest_purlin.py` | `conftest.py` or `[tool.pytest]` in `pyproject.toml` | `@pytest.mark.proof("feature", "PROOF-1", "RULE-1")` | `pip install pytest` |
+| **pytest** | pytest (Python) | Python | `scripts/proof/pytest_purlin.py` | `conftest.py` or `[tool.pytest]` in `pyproject.toml` | `@pytest.mark.proof("feature", "PROOF-1", "RULE-1")`; the marker's tier is also added as a registered pytest marker, so `-m "not integration and not e2e"` selects the unit tier | `pip install pytest` |
 | **Jest** | jest (JS/TS) | JavaScript, TypeScript | `scripts/proof/jest_purlin.js` | `package.json` contains `jest` | `[proof:feature:PROOF-1:RULE-1:unit]` in test title | `npm ci` |
 | **Vitest** | vitest (JS/TS) | JavaScript, TypeScript | `scripts/proof/vitest_purlin.ts` | `package.json` contains `vitest` | `[proof:feature:PROOF-1:RULE-1:unit]` in test title (native TS reporter — Vitest loads `.ts` reporters via Vite, so it covers both JS and TS projects) | `npm ci` |
 | **C** | c (C/gcc) | C | `scripts/proof/c_purlin.h` + `scripts/proof/c_purlin_emit.py` | `Makefile` or `CMakeLists.txt` present | `purlin_proof("feature", "PROOF-1", "RULE-1", passed, name, file, tier)` | the platform's C toolchain (`gcc` from the image's package manager on linux, Xcode command line tools on macos, MSVC build tools on windows) |

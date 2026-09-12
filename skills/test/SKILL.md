@@ -74,7 +74,7 @@ run.
 
 ```bash
 # pytest, proving the platform this host satisfies
-PURLIN_PLATFORM=macos-14 pytest -m "not integration"
+PURLIN_PLATFORM=macos-14 pytest -m "not integration and not e2e"
 
 # pytest (all tiers with --all)
 PURLIN_PLATFORM=macos-14 pytest
@@ -82,6 +82,9 @@ PURLIN_PLATFORM=macos-14 pytest
 # jest (unit tier)
 PURLIN_PLATFORM=macos-14 npx jest --testPathPattern="unit"
 ```
+
+The pytest plugin adds the tier a proof marker names to the test as a registered pytest
+marker of its own, so a tier is selectable with `-m` without any test restating it.
 
 The proof plugins (`scripts/proof/pytest_purlin.py`, `scripts/proof/jest_purlin.js`, `scripts/proof/shell_purlin.sh`) emit `<feature>.proofs-<tier>.json` next to the spec file for a marker that declares no platform, and `<feature>.proofs-<tier>@<id>.json` for one that does, where `<id>` is `PURLIN_PLATFORM`. This is a **write-scoped overwrite** keyed by `(feature, tier, platform, test_file)`: each run replaces the tested feature's entries from the test files it actually executed, reaps entries whose test file no longer exists, and preserves everything else. Two test files covering one feature at one tier can therefore run in any order, in separate processes. See `references/formats/proofs_format.md`.
 
