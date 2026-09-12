@@ -2128,6 +2128,64 @@ on their proofs and matching markers; their entries move to scoped files; `proof
 exception list shrinks to nothing and PROOF-18 proves it. This is the "expand later" seam the
 user asked for (mobile OS ids are the same mechanism with an `os`), exercised on real cases.
 
+## DONE — Phase 10.6: environment ids for the externally-gated suites (`feat(config_engine,proof_common): environment ids; the externally-gated suites become platform-scoped`, built on `ed491a9c` in a worktree, cherry-picked onto `2c813dda` as `92d02a18`; receipts in the `verify:` commit that follows it)
+
+- **Numbers taken.** `config_engine` RULE-12 (`kind: environment` entries) and PROOF-14, in a new
+  `specs/mcp/config_engine.proofs-integration.json` (the test lives in `dev/test_mcp_server.py`
+  class `TestPlatformRegistry`, where the other registry tests are, so the tier is integration);
+  next free `config_engine` RULE-13/PROOF-15. `sync_status` RULE-50 gained one clause naming
+  `kind: environment` and took no new proof; the spine maxima stay RULE-62/PROOF-101.
+  `proof_common` RULE-14 rewritten and PROOF-18 rewritten in place
+  (`dev/test_sweep_completeness.py`); next free `proof_common` RULE-19/PROOF-23.
+- **Registry.** `.purlin/config.json` gains `figma-mcp`, `gemini-cli` and `claude-cli` as
+  `kind: environment` entries with no runner block; each `label` says it is run by hand with
+  `PURLIN_PLATFORM` set, since JSON carries no comments. An environment entry is valid with no
+  `os`, each of `os`, `version`, `distro` and `arch` is an error on it, any other `kind` value is
+  an error, and only an explicit `PURLIN_PLATFORM` equal to its id satisfies it. Host detection
+  never can, so such an entry always lists under `runner:` naming the
+  `Purlin-Runner: <user>@<host>` trailer a hand run must carry.
+- **Scoped.** `specs/workflows/figma_web.proofs-e2e.json` became
+  `figma_web.proofs-e2e@figma-mcp.json` (15 entries) and `specs/skills/skill_spec.proofs-e2e.json`
+  became `skill_spec.proofs-e2e@claude-cli.json` (1 entry). `figma_web` PROOF-1..15 declare
+  `@on(figma-mcp)`; `skill_spec` PROOF-8 and `skill_build` PROOF-17/18/19 declare
+  `@on(claude-cli)`; `dev/test_e2e_cross_model_audit.sh` exports
+  `PURLIN_PROOF_PLATFORMS=gemini-cli`.
+- **`skill_audit` PROOF-9..13 deliberately keep no `@on` tag.** Their ids are also proved by
+  `dev/test_skill_specs.py`, which the sweep runs; tagging them would stop those five passing
+  results counting and drop `skill_audit` from 22/22 to 17/17. The shell suite is scoped anyway,
+  so a future gemini run lands in a registered scope. Recorded in "TODO before pushing main".
+- **RULE-14 has no exception list any more.** Every proof-named test file is either executed by
+  `dev/run_tests.sh` or named only by platform-scoped proof files whose id the registry declares;
+  PROOF-18 proves both directions, so an unswept file with an agnostic entry fails naming the
+  path and an id the registry does not declare fails naming the id.
+- **Integration.** `git cherry-pick 40368555` conflicted in exactly one file,
+  `specs/_anchors/proof_common.md`: 10.5c had amended RULE-12 and RULE-13 to name RULE-18 (the
+  skipped-test rule) while 10.6 rewrote RULE-14 in the same hunk. Resolved by keeping 10.5c's
+  RULE-12 and RULE-13 and taking 10.6's RULE-14. The registry hunks in
+  `scripts/mcp/purlin_server.py` and `specs/mcp/sync_status.md` auto-merged clean over 10.4's
+  readers, `config_engine` RULE-12/PROOF-14 were still free, and `.purlin/config.json` merged
+  with the Phase 7 `windows-2022` runner entry intact. The worktree
+  `.claude/worktrees/agent-a776b020033e0d589` and its branch are deleted.
+- **Sweep.** `bash dev/run_tests.sh` (foreground): 14 suites, `777 passed, 27 skipped` (was
+  776/27; +1 is `config_engine` PROOF-14, PROOF-18 being a rewrite in place). `git status` after
+  the sweep was clean: no proof file churned, because every scoped suite is one the sweep does
+  not run.
+- **Receipts: 40 of 42, `features=35/37 anchors=5/5 vhash=6c87ff78`, unchanged in count from
+  before the integration.** `skill_build` receipts and reads `PASSING*` with
+  `⚠ claude-cli: awaiting runner, 3 proofs (PROOF-17, PROOF-18, PROOF-19)` and
+  `⚠ Receipt is platform-partial: verified here, not on claude-cli`: its other 12 proofs run in
+  the sweep, so the feature keeps a witness. `skill_audit` receipts VERIFIED for the same reason
+  (its five gemini ids are also proved locally). `figma_web` and `skill_spec` are still the two
+  the issuer SKIPs as `evidence not in the recorded run`: every one of their contributing entries
+  now lives in a scoped file that no run has committed with a `Purlin-Runner:` trailer, so they
+  read `PASSING` with a stale v1 receipt. Phase 6.5's third refusal, `static_checks`, is gone:
+  the Windows runner witnesses it (`windows-2022 1/1 verified ... (github-actions/windows-2022)`).
+  The `Platforms:` block now reads `runner: claude-cli (4 proofs; environment; ...)`,
+  `runner: figma-mcp (15 proofs; environment; ...)` and
+  `runner: windows-2022 (2 proofs; github workflow purlin-windows-2022-proofs)`, with
+  `local: none of the declared platforms is this host`.
+- CLAUDE.md unchanged.
+
 ---
 
 ## Phase 11: docs, one enforcement model, diagrams, release notes
