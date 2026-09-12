@@ -849,6 +849,15 @@
     },
     {
       "feature": "static_checks",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_php_and_sql_both_claim_proof_1",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
       "id": "PROOF-4",
       "rule": "RULE-4",
       "test_file": "dev/test_proof_stress.py",
