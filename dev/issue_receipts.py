@@ -208,7 +208,7 @@ def main(root=None, quiet=False, run_check=True):
         print('WARNING: --no-run-check: issuing without a recorded test run; '
               'every receipt records evidence.test_run: null')
 
-    ps._PROVENANCE_CACHE.clear()
+    ps._clear_run_caches()
     features = ps._scan_specs(root)
     all_proofs = ps._read_proofs(root)
     # The platform registry decides which scoped result satisfies which

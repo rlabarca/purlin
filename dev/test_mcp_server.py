@@ -3737,6 +3737,10 @@ class TestEvidenceOlderThanCode:
             f.write(text)
 
     def _payload(self):
+        # A payload built straight from the helper is its own report build:
+        # the per-run memos (`_clear_run_caches`) are valid for one build, and
+        # this test commits to the scope between two of them.
+        purlin_server._clear_run_caches()
         features = purlin_server._scan_specs(self.project_root)
         all_proofs = purlin_server._read_proofs(self.project_root)
         config = purlin_server.resolve_config(self.project_root)
@@ -4227,3 +4231,180 @@ class TestNoRoleArgument:
         text = self._call("drift", {"role": "eng"})
         assert not text.startswith("Error running drift"), text
         assert isinstance(json.loads(text), dict), text
+
+
+class TestOneLogPerBaseSha:
+    """sync_status RULE-69: every feature's scope commit count comes from one
+    `git log --name-only` per distinct base sha, matched in process."""
+
+    # Every literal pathspec shape at once: a directory without its slash, a
+    # directory with it, three plain files, and the sibling whose name starts
+    # with the directory's and must never be taken for a file under it.
+    SCOPES = {
+        'alpha': 'src/api',
+        'bravo': 'src/apikeys.js',
+        'charlie': 'src/core.py',
+        'delta': 'docs/guide.md',
+        'echo': 'src/api/login.js',
+        'foxtrot': 'src/api/',
+    }
+
+    def setup_method(self):
+        self.project_root = os.path.realpath(tempfile.mkdtemp())
+        os.makedirs(os.path.join(self.project_root, '.purlin', 'runtime'))
+        with open(os.path.join(self.project_root, '.purlin', 'config.json'), 'w') as f:
+            json.dump({'version': '0.9.0', 'test_framework': 'auto',
+                       'spec_dir': 'specs', 'report': False}, f)
+        self._git('init')
+        self._git('config', 'user.email', 'test@test.com')
+        self._git('config', 'user.name', 'Test')
+
+    def teardown_method(self):
+        shutil.rmtree(self.project_root, ignore_errors=True)
+
+    def _git(self, *args):
+        return subprocess.run(['git'] + list(args), cwd=self.project_root,
+                              capture_output=True, text=True, check=True)
+
+    def _write(self, rel, text):
+        path = os.path.join(self.project_root, rel)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w') as f:
+            f.write(text)
+
+    def _commit(self, message):
+        self._git('add', '-A')
+        self._git('commit', '-m', message)
+        return self._git('rev-parse', 'HEAD').stdout.strip()
+
+    def _by_hand(self, scope, sha):
+        """The answer the retired per-feature call gave, run for real."""
+        out = self._git('rev-list', '--count', '--end-of-options',
+                        f'{sha}..HEAD', '--', scope).stdout
+        return int(out.strip() or 0)
+
+    def _receipt_everything(self):
+        sys.path.insert(0, os.path.dirname(__file__))
+        import issue_receipts
+        self._write('.purlin/runtime/test_run.json', json.dumps({
+            'at': '2026-09-12T00:00:00+00:00',
+            'commit': self._git('rev-parse', 'HEAD').stdout.strip(),
+            'sweep': 'dev/run_tests.sh', 'suites': ['All Pytest Tests'],
+            'test_files': ['dev/test_scoped.py'],
+            'passed': len(self.SCOPES), 'failed': 0, 'skipped': 0, 'ok': True,
+        }))
+        issued, skipped = issue_receipts.main(self.project_root, quiet=True)
+        assert sorted(n for n, _, _ in issued) == sorted(self.SCOPES), (
+            issued, skipped)
+
+    def _receipt_path(self, name):
+        return os.path.join(self.project_root, 'specs', 'f', f'{name}.receipt.json')
+
+    def _repoint_receipt(self, name, sha):
+        with open(self._receipt_path(name)) as f:
+            receipt = json.load(f)
+        receipt['evidence']['test_run']['commit'] = sha
+        with open(self._receipt_path(name), 'w') as f:
+            json.dump(receipt, f, indent=2)
+
+    def _build(self):
+        """A repo whose six features all carry a receipt naming C1, plus six
+        later commits touching one scope apiece."""
+        self._write('README.md', 'seed\n')
+        c0 = self._commit('chore: seed')
+
+        for name, scope in self.SCOPES.items():
+            self._write(f'specs/f/{name}.md',
+                        f'# Feature: {name}\n\n'
+                        f'> Scope: {scope}\n\n'
+                        f'## Rules\n- RULE-1: {name} answers\n\n'
+                        f'## Proof\n- PROOF-1 (RULE-1): call {name}; verify the '
+                        f'answer comes back @unit\n')
+            self._write(f'specs/f/{name}.proofs-unit.json', json.dumps({
+                'tier': 'unit',
+                'proofs': [{'feature': name, 'id': 'PROOF-1', 'rule': 'RULE-1',
+                            'test_file': 'dev/test_scoped.py',
+                            'test_name': f'test_{name}', 'status': 'pass',
+                            'tier': 'unit'}],
+            }, indent=2) + '\n')
+        for rel in ('src/api/login.js', 'src/apikeys.js', 'src/core.py',
+                    'src/lib/util.py', 'docs/guide.md'):
+            self._write(rel, 'v1\n')
+        c1 = self._commit('feat: the code, the specs and their proofs')
+
+        self._receipt_everything()
+        self._commit('verify: receipts')
+
+        # One commit per scope, and two for src/api/ so a count of 2 is
+        # distinguishable from the fact that something changed.
+        for n, rel in enumerate(('src/api/login.js', 'src/apikeys.js',
+                                 'src/core.py', 'src/lib/util.py',
+                                 'docs/guide.md', 'src/api/login.js')):
+            self._write(rel, f'v{n + 2}\n')
+            self._commit(f'feat: change {rel} ({n})')
+        return c0, c1
+
+    def _git_argvs(self, fn):
+        calls = []
+        real_run = subprocess.run
+
+        def spy(args, *rest, **kwargs):
+            calls.append(list(args) if isinstance(args, (list, tuple)) else [args])
+            return real_run(args, *rest, **kwargs)
+
+        purlin_server.subprocess.run = spy
+        try:
+            fn()
+        finally:
+            purlin_server.subprocess.run = real_run
+        return calls
+
+    @pytest.mark.proof("sync_status", "PROOF-108", "RULE-69", tier="integration")
+    def test_one_walk_per_base_sha_answers_every_scope(self):
+        c0, c1 = self._build()
+
+        out = {}
+        calls = self._git_argvs(
+            lambda: out.setdefault('report', purlin_server.sync_status(self.project_root)))
+        walks = [a for a in calls if 'log' in a and '--name-only' in a]
+        assert len(walks) == 1, (
+            f"six features sharing one base sha took {len(walks)} walks: {walks}")
+        assert not [a for a in calls if 'rev-list' in a], (
+            f"a per-feature rev-list survived: {[a for a in calls if 'rev-list' in a]}")
+        assert 'alpha: VERIFIED' in out['report'], out['report']
+
+        # Every count is the number the retired call gave, asked of git here.
+        purlin_server._clear_run_caches()
+        counts = {name: purlin_server._scope_commits_since(
+            self.project_root, [scope], c1)
+            for name, scope in self.SCOPES.items()}
+        for name, scope in self.SCOPES.items():
+            assert counts[name] == self._by_hand(scope, c1), (
+                name, scope, counts[name], self._by_hand(scope, c1))
+
+        # `src/api` takes the two commits under it and never `src/apikeys.js`,
+        # whose name merely starts the same way; the slashed spelling of the
+        # same directory gives the same two, and the file gives its own.
+        assert counts['alpha'] == 2, counts
+        assert counts['foxtrot'] == 2, counts
+        assert counts['bravo'] == 1, counts
+        assert counts['echo'] == 2, counts
+        # The commit no scope names is counted by none of them.
+        assert sum(counts.values()) == 9, counts
+
+        # Two receipts pointing at an older commit make two distinct base
+        # shas, and exactly two walks.
+        self._repoint_receipt('bravo', c0)
+        self._repoint_receipt('delta', c0)
+        self._commit('chore: repoint two receipts')
+        calls = self._git_argvs(
+            lambda: purlin_server.sync_status(self.project_root))
+        walks = [a for a in calls if 'log' in a and '--name-only' in a]
+        assert len(walks) == 2, (
+            f"two distinct base shas took {len(walks)} walks: {walks}")
+        assert not [a for a in calls if 'rev-list' in a], calls
+        purlin_server._clear_run_caches()
+        for name in ('bravo', 'delta'):
+            scope = self.SCOPES[name]
+            assert purlin_server._scope_commits_since(
+                self.project_root, [scope], c0) == self._by_hand(scope, c0), name

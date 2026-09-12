@@ -437,6 +437,111 @@ def _read_proofs(project_root, legacy=None):
     return all_proofs
 
 
+# Git reads a pathspec entry as a wildcard pattern when it carries one of these,
+# and as pathspec magic when it opens with `:`. An entry that does neither names
+# a literal path, which is the only shape the in-process matcher answers for.
+_PATHSPEC_MAGIC_RE = re.compile(r'[*?\[\]]')
+
+# One `git log --name-only` per (project root, base sha), and one answer per
+# (project root, scope, sha), for the whole report run. `_clear_run_caches()`
+# empties both on entry to every build, so no run answers from the previous
+# run's walk of a history that has since moved.
+_SCOPE_LOG_CACHE = {}
+_SCOPE_COUNT_CACHE = {}
+
+
+def _scope_entry_matches(entry, path):
+    """True when a `> Scope:` entry names `path`, as git's pathspec does.
+
+    Three shapes and no others, because a literal pathspec has no others: the
+    entry is the path, the entry ends in `/` and the path is under it, or the
+    entry names a directory without its slash and the path is under it. The
+    last one is why the match cannot be a bare `startswith`: `src/api` must
+    take `src/api/login.js` and must not take `src/apikeys.js`.
+    """
+    if entry == path:
+        return True
+    if entry.endswith('/'):
+        return path.startswith(entry)
+    return path.startswith(entry + '/')
+
+
+def _parse_commit_paths(text):
+    """[[path, ...], ...] from one `%x01%H %P` + `--name-only` log, or None.
+
+    None means the walk cannot answer the scope question and the caller must
+    ask git per scope: the range holds a merge, or a path came back quoted.
+    """
+    commits = []
+    current = None
+    for line in (text or '').splitlines():
+        if line.startswith('\x01'):
+            if len(line[1:].split()) > 2:
+                return None  # a merge commit: see _commit_paths_since
+            current = []
+            commits.append(current)
+        elif line:
+            if line.startswith('"'):
+                return None  # a path git had to quote
+            if current is not None:
+                current.append(line)
+    return commits
+
+
+def _commit_paths_since(project_root, sha):
+    """One list of changed paths per commit in `sha..HEAD`, or None.
+
+    One walk answers every scope question about one base sha. On this
+    repository 25 `git rev-list --count` calls asked 21 distinct questions
+    about 2 base shas and cost 0.305 s of a 0.555 s report; two walks answer
+    all of them.
+
+    None means "ask git per scope instead", and the two reasons are the two
+    ways a walk would answer a different question than `rev-list --count
+    <range> -- <scope>` does. A merge is the first: history simplification
+    follows only the parent a merge is TREESAME to, so a full walk counts
+    commits the pathspec question never counted, and a merge lists no paths of
+    its own anyway. A quoted path is the second: `core.quotePath=false` leaves
+    only names holding a control character quoted, and a quoted name cannot be
+    compared against a literal scope entry.
+    """
+    key = (os.path.abspath(project_root), sha)
+    if key in _SCOPE_LOG_CACHE:
+        return _SCOPE_LOG_CACHE[key]
+    commits = None
+    try:
+        result = subprocess.run(
+            ['git', '-c', 'core.quotePath=false', 'log', '--format=%x01%H %P',
+             '--name-only', '--end-of-options', f'{sha}..HEAD', '--'],
+            capture_output=True, text=True, cwd=project_root, timeout=20
+        )
+        if result.returncode == 0:
+            commits = _parse_commit_paths(result.stdout)
+    except (subprocess.SubprocessError, OSError):
+        commits = None
+    _SCOPE_LOG_CACHE[key] = commits
+    return commits
+
+
+def _git_scope_commit_count(project_root, scope, sha):
+    """`git rev-list --count <sha>..HEAD -- <scope>`, the fallback answer.
+
+    The `--` is what makes the answer about the scope at all: without it git
+    counts every commit in the range and the caller learns only that the
+    project moved. `--end-of-options` keeps a scope path that begins with `-`
+    from being read as a flag.
+    """
+    try:
+        result = subprocess.run(
+            ['git', 'rev-list', '--count', '--end-of-options',
+             f'{sha}..HEAD', '--'] + list(scope),
+            capture_output=True, text=True, cwd=project_root, timeout=5
+        )
+        return int((result.stdout or '').strip() or 0)
+    except (subprocess.SubprocessError, OSError, ValueError):
+        return 0
+
+
 def _scope_commits_since(project_root, scope, sha):
     """How many commits since `sha` touched a file named by `scope`.
 
@@ -447,10 +552,10 @@ def _scope_commits_since(project_root, scope, sha):
     still be refused by the counter, or the reverse, and nothing in the report
     would say which was right.
 
-    The `--` is what makes the answer about the scope at all: without it git
-    counts every commit in the range and the caller learns only that the
-    project moved. `--end-of-options` keeps a scope path that begins with `-`
-    from being read as a flag.
+    The answer comes from one walk per base sha and is matched in process
+    (RULE-69), and is memoized on `(project root, scope, sha)` so the three
+    callers never ask twice. A scope carrying git pathspec magic, and a walk
+    that cannot answer, fall back to one `git rev-list --count` for that scope.
 
     Returns 0 when there is no scope or no sha to compare against, and when
     git cannot answer: an unanswerable question is not evidence of change.
@@ -461,15 +566,24 @@ def _scope_commits_since(project_root, scope, sha):
         return 0
     if isinstance(scope, str):
         scope = [part.strip() for part in scope.split(',') if part.strip()]
-    try:
-        result = subprocess.run(
-            ['git', 'rev-list', '--count', '--end-of-options',
-             f'{sha}..HEAD', '--'] + list(scope),
-            capture_output=True, text=True, cwd=project_root, timeout=5
-        )
-        return int((result.stdout or '').strip() or 0)
-    except (subprocess.SubprocessError, OSError, ValueError):
-        return 0
+    entries = list(scope)
+    key = (os.path.abspath(project_root), tuple(entries), sha)
+    if key in _SCOPE_COUNT_CACHE:
+        return _SCOPE_COUNT_CACHE[key]
+
+    literal = entries and all(
+        entry and not entry.startswith(':') and not _PATHSPEC_MAGIC_RE.search(entry)
+        for entry in entries)
+    commits = _commit_paths_since(project_root, sha) if literal else None
+    if commits is None:
+        count = _git_scope_commit_count(project_root, entries, sha)
+    else:
+        count = sum(
+            1 for paths in commits
+            if any(_scope_entry_matches(entry, path)
+                   for path in paths for entry in entries))
+    _SCOPE_COUNT_CACHE[key] = count
+    return count
 
 
 def _scope_changed_since(project_root, scope, sha):
@@ -1320,6 +1434,19 @@ def _mark_undeclared_results(features, all_proofs, registry):
 # `generate_digest` clear it on entry so a run never reads the previous run's
 # answer for a file that has since been committed.
 _PROVENANCE_CACHE = {}
+
+
+def _clear_run_caches():
+    """Empty every per-run memo. Called on entry to each report build.
+
+    A report run is the unit these caches are valid for: within one build the
+    project state cannot move, and between two builds of a long-lived server it
+    can. One function rather than a clear per dict, so a memo added later
+    cannot be the one nobody remembered to clear.
+    """
+    _PROVENANCE_CACHE.clear()
+    _SCOPE_LOG_CACHE.clear()
+    _SCOPE_COUNT_CACHE.clear()
 
 
 def _platform_provenance(project_root, spec_path, feature, tier, platform_id):
@@ -2715,7 +2842,7 @@ def _rule_key_order(key):
 @_scoped
 def sync_status(project_root):
     """Generate the full sync_status report with directives."""
-    _PROVENANCE_CACHE.clear()
+    _clear_run_caches()
     features = _scan_specs(project_root)
     legacy_proof_files = []
     all_proofs = _read_proofs(project_root, legacy=legacy_proof_files)
@@ -4696,7 +4823,7 @@ def read_report_payload(project_root):
     rendered summary table. Returns None when the directory is not a readable
     Purlin project, which the gate turns into a bad-invocation exit.
     """
-    _PROVENANCE_CACHE.clear()
+    _clear_run_caches()
     config = resolve_config(project_root)
     if not config:
         return None
@@ -5345,7 +5472,7 @@ def generate_digest(project_root, generated_by='pre-commit', network=True,
     IMPORTANT: Does NOT trigger a new audit. Uses cached audit data only.
     Runs sync_status internals (coverage scan) and drift.
     """
-    _PROVENANCE_CACHE.clear()
+    _clear_run_caches()
     config = resolve_config(project_root)
     if not config:
         return None
