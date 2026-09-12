@@ -802,6 +802,31 @@ class TestSkillDrift:
         assert 'purlin:build' in content, \
             "with no implementation there is nothing to have drifted from — route to build"
 
+    @pytest.mark.proof("skill_drift", "PROOF-7", "RULE-7")
+    def test_every_field_the_analysis_reads_is_declared(self):
+        """The response-shape list omitted rule_details and
+        external_anchor_drift, the two fields Step 2d and the anchor step
+        parse, so the agent met them first as something to read."""
+        content = _read('drift')
+        shape = content[content.index('the tool returns structured JSON'):
+                        content.index('## Step 2 ')]
+        heads = set(re.findall(r'(?m)^- `([a-z_]+)`', shape))
+        assert len(heads) >= 7, "the response-shape list did not parse: %r" % heads
+        # Nested field names declared inside a bullet count as declared too.
+        declared = set(re.findall(r'`([a-z_]+)`', shape))
+
+        analysis = content[content.index('## Step 2 '):content.index('## Step 3 ')]
+        read = set(re.findall(r'`([a-z_]+)`\s+(?:field|array)\b', analysis))
+        assert read, "no field reads parsed out of the analysis steps"
+        for expected in ('rule_details', 'external_anchor_drift'):
+            assert expected in read, (
+                "%s is read by the analysis steps; the extraction missed it" % expected)
+        missing = sorted(read - declared)
+        assert not missing, (
+            "the analysis reads fields the Step 1 response shape never "
+            "declares: %s" % ', '.join(missing))
+
+
 # ── skill_find ────────────────────────────────────────────────────────
 
 class TestSkillFind:

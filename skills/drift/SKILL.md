@@ -51,6 +51,8 @@ Otherwise, the tool returns structured JSON containing:
 - `proof_status` — per-feature: `proved`, `total`, `status` (VERIFIED/PASSING/PARTIAL/FAILING/UNTESTED), `failing_rules`
 - `drift_flags` — precomputed drift indicators: features with structural-only coverage that have changed files. Each entry has `spec`, `reason`, and `files`.
 - `broken_scopes` — specs whose `> Scope:` references files or directories that no longer exist on disk. Each entry has `spec`, `missing_paths`, and `existing_paths`.
+- `rule_details`: for each spec with changed behavior files, its `rules` with descriptions and proof status, `total_rules`, `proved_rules`, and the `changed_files` that landed in its scope. Step 2d reads it.
+- `external_anchor_drift`: one entry per anchor carrying a `> Source:`, with `anchor`, `source_url`, `pinned`, `status` (stale, unpinned or error), and `remote_sha` or `error`. The Anchor External Reference Drift step reads it.
 
 The payload is serialized compact, with no indentation and no space after any separator: nobody reads it directly, and this skill is what formats it for a person. Parse it as JSON; never read it line by line.
 
