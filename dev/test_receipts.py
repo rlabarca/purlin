@@ -360,9 +360,15 @@ class TestOneVerdictFunction:
                 assert by_name[name]['vhash'] == vhash, (
                     f"{name}: receipt vhash {vhash} != payload vhash "
                     f"{by_name[name]['vhash']}")
-                assert by_name[name]['status'] == 'VERIFIED', (
+                # VERIFIED unless a declared platform is still awaiting, in
+                # which case the receipt is platform-partial and the status is
+                # held at PASSING (report_data RULE-35). Either way the issuer
+                # and the payload agree on the hash, which is what is proved
+                # here.
+                expected = 'PASSING' if by_name[name]['awaiting_runner'] else 'VERIFIED'
+                assert by_name[name]['status'] == expected, (
                     f"{name}: a receipt the payload agrees with must read "
-                    f"VERIFIED, got {by_name[name]['status']}")
+                    f"{expected}, got {by_name[name]['status']}")
 
             # The awaiting-only rule is still reported, not hidden by the
             # receipt it did not block.

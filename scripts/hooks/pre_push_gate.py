@@ -57,6 +57,7 @@ CHECK_MODES = ('warn', 'strict')
 
 _VERIFIED = 'VERIFIED'
 _FAILING = 'FAILING'
+_PASSING = 'PASSING'
 
 # Every framework the shell half has a runner arm for, plus the ones Purlin
 # ships a proof plugin for. Detection order is the order of the Detection
@@ -229,16 +230,18 @@ def _coverage(feature):
 
 
 def _findings(payload):
-    """(failing, not_verified, informational, awaiting) as report material.
+    """(failing, not_verified, informational, awaiting, held) as report material.
 
     `failing` is every feature carrying a FAIL proof, anchors included: a
     failing anchor rule is a failing rule of every feature that requires it.
     `not_verified` is what strict mode blocks on: non-anchor features that are
-    not VERIFIED, PASSING included. `informational` is what warn mode lists
+    not VERIFIED, PASSING included, except a feature held at PASSING only
+    because a declared platform has no result there while its receipt is
+    current: blocking that would let an awaiting platform block a push. `informational` is what warn mode lists
     without blocking. `awaiting` counts proofs declared on a platform with no
     result there.
     """
-    failing, not_verified, informational = [], [], []
+    failing, not_verified, informational, held_lines = [], [], [], []
     awaiting_count, awaiting_platforms = 0, set()
     for feature in payload.get('features') or []:
         name = feature.get('name', '?')
@@ -255,11 +258,22 @@ def _findings(payload):
             continue
         if status == _VERIFIED:
             continue
-        informational.append(f"{label}: {status} ({_coverage(feature)})")
-        if not is_anchor:
-            not_verified.append(f"{label}: {status} ({_coverage(feature)})")
-    return failing, not_verified, informational, (awaiting_count,
-                                                  sorted(awaiting_platforms))
+        held = (status == _PASSING and feature.get('platform_complete') is False
+                and (feature.get('receipt') or {}).get('stale') is False)
+        detail = _coverage(feature)
+        if held:
+            detail += ', awaiting a declared platform'
+            held_lines.append(f"{label}: {status} ({detail})")
+        informational.append(f"{label}: {status} ({detail})")
+        # A feature proved here, receipted, and held at PASSING only because a
+        # declared platform has not run is not a missing receipt. Blocking it
+        # would make an awaiting platform block a push, which RULE-8 forbids
+        # in either mode; it stays on the informational list so the reason is
+        # still printed.
+        if not is_anchor and not held:
+            not_verified.append(f"{label}: {status} ({detail})")
+    return (failing, not_verified, informational,
+            (awaiting_count, sorted(awaiting_platforms)), held_lines)
 
 
 def _failing_names(failing):
@@ -368,7 +382,7 @@ def check(project_root, mode, out=sys.stdout):
               "does not let the push through.", file=out)
         return EXIT_BAD_INVOCATION
 
-    failing, not_verified, informational, awaiting = _findings(payload)
+    failing, not_verified, informational, awaiting, held = _findings(payload)
     awaiting_count, awaiting_platforms = awaiting
 
     verified = [f.get('name', '?') for f in payload.get('features') or []
@@ -391,6 +405,12 @@ def check(project_root, mode, out=sys.stdout):
               f"{'s' if awaiting_count != 1 else ''} declared on "
               f"{', '.join(awaiting_platforms)} with no result there; "
               f"advisory only, this never blocks a push.", file=out)
+
+    # Printed in every mode, strict included. A feature exempted from the
+    # strict gate must say why it was exempted, or the exemption is invisible.
+    for line in held:
+        print(f"purlin: {line}; not blocked, the platform has not run yet.",
+              file=out)
 
     if failing:
         _report_failing(failing, out)

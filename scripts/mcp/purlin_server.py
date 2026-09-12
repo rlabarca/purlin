@@ -637,16 +637,26 @@ def _compute_integrity(strong, weak, hollow, manual):
     return round((strong + manual) / behavioral_total * 100), behavioral_total
 
 
-def _determine_status(proved, active_total, has_fail, has_current_receipt):
-    """Determine feature status from coverage and receipt state.
+def _determine_status(proved, active_total, has_fail, has_current_receipt,
+                     platform_complete=True):
+    """Determine feature status from coverage, receipt state and platforms.
 
     Returns one of: VERIFIED, PASSING, FAILING, PARTIAL, UNTESTED.
+
+    `platform_complete` is false when some proof declares a platform that has
+    no result there. VERIFIED then becomes PASSING and nothing worse: an
+    awaiting platform warns and never blocks (sync_status RULE-47), so it may
+    not demote a feature to PARTIAL or FAILING, and it may not let a feature
+    claim it was verified everywhere it says it runs. The receipt is still
+    issued platform-partial (skill_verify RULE-9); the claim the receipt makes
+    is about the platforms it names, and this is the surface that says the set
+    is incomplete.
     """
     if active_total == 0:
         return 'UNTESTED'
     if has_fail:
         return 'FAILING'
-    if proved == active_total and has_current_receipt:
+    if proved == active_total and has_current_receipt and platform_complete:
         return 'VERIFIED'
     if proved == active_total:
         return 'PASSING'
@@ -1351,6 +1361,28 @@ def _host_platform_ids(registry, host):
                   if _platform_satisfied_by_host(entry, host))
 
 
+def _host_id(registry, host):
+    """The one id this host reports itself as, or `unregistered`.
+
+    `PURLIN_PLATFORM` wins when it is set, because a runner that declares what
+    it is must be believed over detection. Otherwise it is a registry id the
+    host satisfies (sync_status RULE-51), preferring a project-registered id
+    over the family it belongs to, since `windows-2022` says more than
+    `windows`. A host that satisfies nothing in the registry is named
+    `unregistered` rather than left blank: agnostic results belong to it for
+    per-platform Integrity, and a blank owner reads as a missing measurement.
+    """
+    if host.get('id'):
+        return host['id']
+    ids = _host_platform_ids(registry, host)
+    specific = [pid for pid in ids if pid not in _BUILTIN_PLATFORMS]
+    if specific:
+        return specific[0]
+    if ids:
+        return ids[0]
+    return 'unregistered'
+
+
 def _declared_platform_counts(features):
     """{platform_id: number of proofs declaring it} across every spec."""
     counts = {}
@@ -2051,7 +2083,8 @@ def sync_status(project_root, role=None):
         verdict = _feature_verdict(name, info, features, all_proofs,
                                    global_anchors, project_root, registry)
         status = _determine_status(verdict['proved'], len(verdict['active_entries']),
-                                   verdict['has_fail'], verdict['has_current_receipt'])
+                                   verdict['has_fail'], verdict['has_current_receipt'],
+                                   verdict['platform_complete'])
 
         summary_rows.append((name, verdict['proved'],
                              len(verdict['active_entries']), status))
@@ -2100,7 +2133,8 @@ def sync_status(project_root, role=None):
                                        global_anchors, project_root, registry)
             a_status = _determine_status(
                 verdict['proved'], len(verdict['active_entries']),
-                verdict['has_fail'], verdict['has_current_receipt'])
+                verdict['has_fail'], verdict['has_current_receipt'],
+                verdict['platform_complete'])
 
             summary_rows.append((f"{name} (anchor)", verdict['proved'],
                                  len(verdict['active_entries']), a_status))
@@ -2494,6 +2528,9 @@ def _feature_verdict(name, info, all_features, all_proofs, global_anchors,
         'awaiting_rule_count': awaiting_rule_count,
         'undeclared': pres['undeclared'],
         'platforms': pres,
+        # False when some proof declares a platform with no result there. The
+        # feature is proved here and cannot claim more (report_data RULE-35).
+        'platform_complete': not awaiting,
         'unresolved_requires': unresolved_requires,
         'receipt': receipt,
         'has_current_receipt': has_current_receipt,
@@ -2627,10 +2664,13 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
         receipt = verdict['receipt']
         has_current_receipt = verdict['has_current_receipt']
 
-        if has_current_receipt:
-            header_status = "VERIFIED"
-        else:
-            header_status = "PASSING"
+        # Through the one status function (RULE-35). This branch used to
+        # decide VERIFIED with a ternary of its own, which is how a feature
+        # holding a current receipt could print VERIFIED in its own header
+        # while a declared platform had never been proved.
+        header_status = _determine_status(
+            proved, active_total, verdict['has_fail'], has_current_receipt,
+            verdict['platform_complete'])
 
         if visual_hash_changed:
             lines.append(f"{name}: {header_status} but visual reference changed")
@@ -3102,16 +3142,32 @@ def _check_uncommitted_all(project_root):
     return files
 
 
-def _feature_platform_records(project_root, name, info, pres):
+def _platform_status(proved, declared, failed, awaiting, receipted):
+    """One feature's verdict on one platform, from a closed set of four words.
+
+    `FAILING` (a proof failed there), `AWAITING` (a declared proof has no
+    result there), `PASSING` (every declared proof passed there, no current
+    receipt) and `VERIFIED` (every declared proof passed there and the feature
+    holds a current receipt). Four words, not the five a feature status uses:
+    a platform record has no PARTIAL, because "some proved, some awaiting" is
+    still waiting on a runner, and waiting warns rather than demotes
+    (sync_status RULE-47). `receipted` is what separates the last two, so a
+    reader can tell "proved here" from "claimed here".
+    """
+    if failed:
+        return 'FAILING'
+    if awaiting:
+        return 'AWAITING'
+    return 'VERIFIED' if receipted else 'PASSING'
+
+
+def _platform_records(project_root, name, info, pres, receipted):
     """Per-platform record for one feature (report_data RULE-32).
 
-    {platform_id: {total, proved, failing[], awaiting[], status, results{},
-    provenance{commit, when, runner, trailer_platform} | None}}, keyed by
-    every platform some proof of this feature declares; `{}` when none does.
-    Status: FAILING when any result on that platform failed, PROVED when
-    every declared proof passed there, AWAITING when none has a result,
-    PARTIAL otherwise. Provenance comes from the scoped file that satisfied
-    the platform, preferring the file named for the platform itself.
+    `{platform_id: {declared, proved, failed[], awaiting[], status, receipted,
+    provenance}}`, keyed by every platform some proof of this feature
+    declares; `{}` when none does. Provenance comes from the scoped file that
+    satisfied the platform, preferring the file named for the platform itself.
     """
     by_platform = {}
     for pid, (_tier, platforms) in _platform_scoped_proofs(info).items():
@@ -3120,17 +3176,9 @@ def _feature_platform_records(project_root, name, info, pres):
     records = {}
     for platform in sorted(by_platform):
         results = dict(sorted(by_platform[platform].items()))
-        failing = [pid for pid, st in results.items() if st == 'fail']
+        failed = [pid for pid, st in results.items() if st == 'fail']
         awaiting = [pid for pid, st in results.items() if st is None]
         proved = sum(1 for st in results.values() if st == 'pass')
-        if failing:
-            status = 'FAILING'
-        elif proved == len(results):
-            status = 'PROVED'
-        elif proved == 0:
-            status = 'AWAITING'
-        else:
-            status = 'PARTIAL'
         provenance = None
         files = sorted(pres['satisfied_by'].get(platform) or [],
                        key=lambda f: (f[1] != platform, f))
@@ -3140,15 +3188,104 @@ def _feature_platform_records(project_root, name, info, pres):
             if provenance:
                 break
         records[platform] = {
-            'total': len(results),
+            'declared': len(results),
             'proved': proved,
-            'failing': failing,
+            'failed': failed,
             'awaiting': awaiting,
-            'status': status,
-            'results': results,
+            'status': _platform_status(proved, len(results), failed, awaiting,
+                                       receipted),
+            'receipted': bool(receipted),
             'provenance': provenance,
         }
     return records
+
+
+def _platform_integrity(all_proofs, audit_by_proof, platform_id, host_id):
+    """Proof Integrity for one platform (sync_status RULE-56).
+
+    The population is every executed proof entry scoped to this platform, plus
+    every agnostic entry when this platform is the host: a test that names no
+    platform still ran somewhere, and that somewhere is here. `measured` is how
+    many of those entries the audit cache holds a grade for, and the headline
+    is weighted by that coverage exactly as RULE-46 weights the project figure.
+
+    A grade describes the test, not the platform, so this split is measurement
+    coverage per platform rather than a claim that the same proof is stronger
+    on one machine than another. Proof Design never splits: a description is
+    graded from the text and has no platform at all.
+    """
+    strong = weak = hollow = manual = 0
+    total = measured = 0
+    for feature, entries in all_proofs.items():
+        for entry in entries:
+            plat = entry.get('platform')
+            if plat != platform_id and not (plat is None and platform_id == host_id):
+                continue
+            total += 1
+            grade = (audit_by_proof.get((feature, entry.get('id', ''))) or '').upper()
+            if not grade:
+                continue
+            measured += 1
+            if grade == 'STRONG':
+                strong += 1
+            elif grade == 'WEAK':
+                weak += 1
+            elif grade == 'HOLLOW':
+                hollow += 1
+            elif grade == 'MANUAL':
+                manual += 1
+    assessed, behavioral_total = _compute_integrity(strong, weak, hollow, manual)
+    unmeasured = max(total - measured, 0)
+    denom = behavioral_total + unmeasured
+    weighted = (round((strong + manual) / denom * 100) if denom else assessed)
+    return {
+        'weighted': weighted,
+        'assessed': assessed,
+        'strong': strong,
+        'weak': weak,
+        'hollow': hollow,
+        'manual': manual,
+        'behavioral_total': behavioral_total,
+        'coverage': {
+            'measured': measured,
+            'total': total,
+            'complete': total > 0 and measured >= total,
+        },
+    }
+
+
+def _platform_summary(records_by_feature, all_proofs, audit_by_proof, host_id):
+    """The project roll-up per platform (report_data RULE-36).
+
+    One row per platform some proof declares, and none for a registry id
+    nothing names: a row for a platform the project never mentions would be a
+    column of zeroes claiming a gap that does not exist. Each row carries the
+    feature counts in the four record words, the proof counts behind them, the
+    platform's Integrity and when it was last proved, so a card that splits a
+    number per platform has every figure it needs from one object.
+    """
+    summary = {}
+    for _name, records in sorted(records_by_feature.items()):
+        for platform, record in records.items():
+            row = summary.setdefault(platform, {
+                'features': 0, 'verified': 0, 'passing': 0, 'failing': 0,
+                'awaiting': 0,
+                'proofs': {'declared': 0, 'proved': 0, 'failed': 0, 'awaiting': 0},
+                'integrity': None, 'last_proved': None,
+            })
+            row['features'] += 1
+            row[record['status'].lower()] += 1
+            row['proofs']['declared'] += record['declared']
+            row['proofs']['proved'] += record['proved']
+            row['proofs']['failed'] += len(record['failed'])
+            row['proofs']['awaiting'] += len(record['awaiting'])
+            when = (record['provenance'] or {}).get('when')
+            if when and (row['last_proved'] is None or when > row['last_proved']):
+                row['last_proved'] = when
+    for platform, row in summary.items():
+        row['integrity'] = _platform_integrity(all_proofs, audit_by_proof,
+                                               platform, host_id)
+    return {pid: summary[pid] for pid in sorted(summary)}
 
 
 def _build_report_data(project_root, features, all_proofs, config, global_anchors,
@@ -3163,7 +3300,8 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
         name: _platform_results(name, info, all_proofs, registry)
         for name, info in features.items()
     }
-    platform_summary = {}
+    host_id = _host_id(registry, host)
+    records_by_feature = {}
     audit_by_feature = _read_audit_cache_by_feature(project_root)
     # Read the design cache here rather than accepting it as a parameter. A
     # defaulted parameter is what let generate_digest silently blank the Design
@@ -3179,7 +3317,9 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             if pid:
                 audit_by_proof[(feat_name, pid)] = e.get('assessment', '')
     feature_list = []
-    summary = {'total_features': 0, 'verified': 0, 'passing': 0, 'partial': 0, 'failing': 0, 'untested': 0}
+    summary = {'total_features': 0, 'verified': 0, 'passing': 0, 'partial': 0,
+               'failing': 0, 'untested': 0, 'verified_here': 0,
+               'held_by_platform': 0}
     anchors_total = 0
     anchors_with_source = 0
     anchors_global = 0
@@ -3208,15 +3348,6 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
         awaiting_runner = verdict['awaiting']
         awaiting_rule_count = verdict['awaiting_rule_count']
         pres = pres_by_feature[name]
-        platform_records = _feature_platform_records(project_root, name, info, pres)
-        for platform, record in platform_records.items():
-            agg = platform_summary.setdefault(platform, {
-                'features': 0, 'proofs_awaiting': 0, 'proofs_failing': 0,
-                'proofs_proved': 0})
-            agg['features'] += 1
-            agg['proofs_awaiting'] += len(record['awaiting'])
-            agg['proofs_failing'] += len(record['failing'])
-            agg['proofs_proved'] += record['proved']
         deferred_count = sum(1 for _, _, _, d in rule_entries if d)
         active_total = len(active_entries)
 
@@ -3244,13 +3375,27 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
                 'platform_stale': _receipt_platform_stale(project_root, receipt),
             }
 
-        # Determine status
+        # Determine status. A feature awaiting one of its declared platforms
+        # is proved here and no more, so it reads PASSING however current its
+        # receipt is (report_data RULE-35).
         has_current_receipt = (receipt_data is not None and not receipt_data['stale'])
-        status = _determine_status(proved, active_total, has_fail, has_current_receipt)
+        platform_complete = verdict['platform_complete']
+        status = _determine_status(proved, active_total, has_fail,
+                                   has_current_receipt, platform_complete)
+        # What the verdict would have been with no platform in the picture.
+        # `held_by_platform` is the difference, and a dashboard that cannot
+        # name it can only report the drop as a regression.
+        status_here = _determine_status(proved, active_total, has_fail,
+                                        has_current_receipt)
+        platform_records = _platform_records(project_root, name, info, pres,
+                                             has_current_receipt)
+        records_by_feature[name] = platform_records
 
         # Update summary for non-anchor features
         if not is_anchor:
             summary['total_features'] += 1
+            if status_here == 'VERIFIED':
+                summary['verified_here'] += 1
             if status == 'VERIFIED':
                 summary['verified'] += 1
             elif status == 'PASSING':
@@ -3309,6 +3454,11 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
                     'test_file': p.get('test_file', ''),
                     'test_name': p.get('test_name', ''),
                     'tier': p.get('tier', 'unit'),
+                    # Where this entry ran: the id of the scoped file it came
+                    # from, null for an agnostic one. One object per executed
+                    # entry, so a proof run on two platforms appears twice and
+                    # a reader never has to reconstruct which result is which.
+                    'platform': p.get('platform'),
                     'status': p.get('status', ''),
                     'audit': proof_audit,
                     **platform_keys(pid),
@@ -3320,7 +3470,7 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             executed_ids = {p['id'] for p in proofs_data}
             tier_by_id = src_info.get('proof_tier_by_id', {})
             for pid in src_info.get('planned_proof_ids_by_rule', {}).get(bare_rule, []):
-                if pid in executed_ids:
+                if pid in executed_ids or pid in src_scoped:
                     continue
                 proofs_data.append({
                     'id': pid,
@@ -3328,10 +3478,36 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
                     'test_file': '',
                     'test_name': '',
                     'tier': tier_by_id.get(pid, 'unit'),
+                    'platform': None,
                     'status': 'planned',
                     'audit': '',
                     **platform_keys(pid),
                 })
+
+            # A declared platform with no result there is neither executed nor
+            # planned: the proof is written and waiting on a runner. It is
+            # emitted flat, one object per unsatisfied platform, so a consumer
+            # of RULE-8 keeps one walk over `proofs` and never has to join a
+            # second list to find out why a platform is blank.
+            for pid in sorted(src_scoped, key=lambda i: int(re.sub(r'\D', '', i) or 0)):
+                if pid not in {p['id'] for p in rule_proofs} and \
+                        pid not in src_info.get(
+                            'planned_proof_ids_by_rule', {}).get(bare_rule, []):
+                    continue
+                for platform, result in sorted((src_results.get(pid) or {}).items()):
+                    if result is not None:
+                        continue
+                    proofs_data.append({
+                        'id': pid,
+                        'description': desc_by_id.get(pid, ''),
+                        'test_file': '',
+                        'test_name': '',
+                        'tier': src_scoped[pid][0],
+                        'platform': platform,
+                        'status': 'awaiting',
+                        'audit': '',
+                        **platform_keys(pid),
+                    })
 
             if is_deferred:
                 rule_status = 'DEFERRED'
@@ -3388,6 +3564,9 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             'undeclared': [{'id': pid, 'tier': tier, 'platform': platform}
                            for pid, tier, platform in pres['undeclared']],
             'platforms': platform_records,
+            # True when every platform this feature's proofs declare has a
+            # result there. False is what holds the feature at PASSING.
+            'platform_complete': platform_complete,
             'status': status,
             'vhash': vhash,
             'receipt': receipt_data,
@@ -3397,6 +3576,8 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             'design': _build_feature_design(design_by_feature.get(name, []),
                                             populations.get(name, {}).get('design')),
         })
+
+    summary['held_by_platform'] = summary['verified_here'] - summary['verified']
 
     uncommitted_files = _check_uncommitted_all(project_root)
     declared_ids = sorted(_declared_platform_counts(features))
@@ -3421,7 +3602,9 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             'local': [pid for pid in declared_ids if pid in host_ids],
             'remote': [pid for pid in declared_ids if pid not in host_ids],
             'errors': list(registry_errors),
-            'summary': {pid: platform_summary[pid] for pid in sorted(platform_summary)},
+            'host_id': host_id,
+            'summary': _platform_summary(records_by_feature, all_proofs,
+                                         audit_by_proof, host_id),
         },
         'platform_testing': bool(declared_ids),
         # Always present, empty when the project is current (report_data
@@ -3900,7 +4083,8 @@ def _compute_drift(project_root, since=None):
                    if proof_by_rule.get(key, {}).get('status') == 'fail']
         has_fail = len(failing) > 0
         status = _determine_status(proved, active_total, has_fail,
-                                   verdict['has_current_receipt'])
+                                   verdict['has_current_receipt'],
+                                   verdict['platform_complete'])
         assumed_count = len(info.get('assumed_rules', set()))
         entry = {
             'proved': proved,

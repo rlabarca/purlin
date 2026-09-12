@@ -266,13 +266,20 @@ class TestReportDataStructure:
             f"+ failing={s['failing']} + untested={s['untested']} = {components}, "
             f"expected total={total}"
         )
+        # The two platform keys sit outside the invariant and are always
+        # present: `verified_here` is the verdict with no platform in the
+        # picture and `held_by_platform` is exactly the difference, so a drop
+        # in Verified can be told from a regression.
+        assert s['held_by_platform'] == s['verified_here'] - s['verified'], s
+        assert s['verified_here'] >= s['verified'], s
 
     @pytest.mark.proof("report_data", "PROOF-5", "RULE-5")
     def test_every_feature_has_required_fields(self):
         """Every feature entry has all required fields."""
         required_fields = {
             'name', 'type', 'is_global', 'proved', 'total', 'deferred',
-            'status', 'vhash', 'receipt', 'rules', 'audit',
+            'status', 'vhash', 'receipt', 'rules', 'audit', 'design',
+            'platforms', 'platform_complete',
         }
         data = self._build()
         for feat in data['features']:
@@ -340,12 +347,20 @@ class TestReportDataStructure:
             'id', 'description', 'label', 'source', 'is_deferred',
             'is_assumed', 'status', 'proofs',
         }
+        proof_fields = {
+            'id', 'description', 'test_file', 'test_name', 'tier', 'platform',
+            'status', 'audit',
+        }
         data = self._build()
         for feat in data['features']:
             for rule in feat['rules']:
                 missing = required_fields - set(rule.keys())
                 assert not missing, \
                     f"Rule '{rule.get('id', '?')}' in feature '{feat['name']}' missing fields: {missing}"
+                for proof in rule['proofs']:
+                    missing = proof_fields - set(proof.keys())
+                    assert not missing, \
+                        f"Proof '{proof.get('id', '?')}' missing fields: {missing}"
 
     @pytest.mark.proof("report_data", "PROOF-9", "RULE-9")
     def test_all_rule_statuses_are_valid(self):
@@ -954,6 +969,33 @@ class TestReportDataStructure:
         assert planned['description'] == 'Verify response via API', \
             f"Expected tier tag stripped from description, got '{planned['description']}'"
 
+        # A proof that declares `@on(...)` is never 'planned': each platform
+        # with no result there gets one flat 'awaiting' object naming it, so a
+        # consumer walks `proofs` once instead of joining awaiting_runner.
+        _write_spec(self.tmp, 'delta',
+                    '# Feature: delta\n\n'
+                    '> Description: Planned proof feature.\n\n'
+                    '## Rules\n- RULE-1: Returns 200\n\n'
+                    '## Proof\n'
+                    '- PROOF-1 (RULE-1): Verify response\n'
+                    '- PROOF-2 (RULE-1): Verify on a runner @integration '
+                    '@on(macos, windows)\n')
+        features = purlin_server._scan_specs(self.tmp)
+        proofs = purlin_server._read_proofs(self.tmp)
+        data = self._build(features=features, proofs=proofs)
+        rule = next(r for r in next(f for f in data['features']
+                                    if f['name'] == 'delta')['rules']
+                    if r['id'] == 'RULE-1')
+        p2 = [p for p in rule['proofs'] if p['id'] == 'PROOF-2']
+        assert [p['status'] for p in p2] == ['awaiting', 'awaiting'], p2
+        assert sorted(p['platform'] for p in p2) == ['macos', 'windows'], p2
+        for p in p2:
+            assert p['test_file'] == '' and p['test_name'] == '' and p['audit'] == ''
+            assert p['tier'] == 'integration', p
+        assert all(p['status'] != 'planned' for p in rule['proofs']), rule['proofs']
+        assert next(p for p in rule['proofs']
+                    if p['id'] == 'PROOF-1')['platform'] is None
+
     @pytest.mark.proof("report_data", "PROOF-22", "RULE-8")
     def test_planned_proofs_for_required_anchor_rules(self):
         """Required/global rules surface the source spec's planned proofs."""
@@ -1039,7 +1081,8 @@ def _entry(feature, pid, rule, status='pass'):
             "status": status, "tier": "unit"}
 
 
-_PLATFORM_KEYS = ('registry', 'host', 'local', 'remote', 'errors', 'summary')
+_PLATFORM_KEYS = ('registry', 'host', 'host_id', 'local', 'remote', 'errors',
+                  'summary')
 
 
 class TestAwaitingRunnerPayload:
@@ -1071,14 +1114,15 @@ class TestAwaitingRunnerPayload:
         entry points must agree on every platform key."""
         built = self._build(config)
         read = purlin_server.read_report_payload(self.tmp)
-        for key in ('platforms', 'platform_testing'):
+        for key in ('platforms', 'platform_testing', 'summary'):
             assert built[key] == read[key], (
                 f"top-level {key!r} differs between _build_report_data and "
                 f"read_report_payload:\n{built[key]}\n{read[key]}")
         by_built = {f['name']: f for f in built['features']}
         by_read = {f['name']: f for f in read['features']}
         for name, feat in by_built.items():
-            for key in ('platforms', 'awaiting_runner', 'undeclared'):
+            for key in ('platforms', 'awaiting_runner', 'undeclared',
+                        'platform_complete'):
                 assert feat[key] == by_read[name][key], (
                     f"{name}.{key} differs between the two entry points")
         return built, read
@@ -1176,12 +1220,13 @@ class TestAwaitingRunnerPayload:
         assert 'mac-typo' not in p['registry']
         assert len(p['errors']) == 1 and 'mac-typo' in p['errors'][0], p['errors']
         assert p['local'] == ['macos'] and p['remote'] == ['windows-2022'], (p['local'], p['remote'])
-        assert p['summary'] == {
-            'macos': {'features': 1, 'proofs_awaiting': 0, 'proofs_failing': 0,
-                      'proofs_proved': 1},
-            'windows-2022': {'features': 1, 'proofs_awaiting': 1, 'proofs_failing': 0,
-                             'proofs_proved': 0},
-        }, p['summary']
+        assert p['host_id'] == 'macos', p['host_id']
+        assert sorted(p['summary']) == ['macos', 'windows-2022'], sorted(p['summary'])
+        assert p['summary']['macos']['features'] == 1
+        assert p['summary']['macos']['proofs']['proved'] == 1, p['summary']['macos']
+        assert p['summary']['windows-2022']['features'] == 1
+        assert p['summary']['windows-2022']['proofs']['awaiting'] == 1, (
+            p['summary']['windows-2022'])
 
     @pytest.mark.proof("report_data", "PROOF-33", "RULE-32", tier="integration")
     def test_per_feature_platforms_record_and_status_vocabulary(self):
@@ -1205,11 +1250,12 @@ class TestAwaitingRunnerPayload:
         recs = by_name['locking']['platforms']
         assert set(recs) == {'macos', 'windows'}, sorted(recs)
         assert recs['macos'] == {
-            'total': 1, 'proved': 1, 'failing': [], 'awaiting': [], 'status': 'PROVED',
-            'results': {'PROOF-1': 'pass'}, 'provenance': None}, recs['macos']
+            'declared': 1, 'proved': 1, 'failed': [], 'awaiting': [],
+            'status': 'PASSING', 'receipted': False,
+            'provenance': None}, recs['macos']
         assert recs['windows'] == {
-            'total': 2, 'proved': 1, 'failing': ['PROOF-2'], 'awaiting': [],
-            'status': 'FAILING', 'results': {'PROOF-1': 'pass', 'PROOF-2': 'fail'},
+            'declared': 2, 'proved': 1, 'failed': ['PROOF-2'], 'awaiting': [],
+            'status': 'FAILING', 'receipted': False,
             'provenance': None}, recs['windows']
         assert by_name['plain']['platforms'] == {}, by_name['plain']['platforms']
 
@@ -1222,25 +1268,153 @@ class TestAwaitingRunnerPayload:
         plain_proof = by_name['plain']['rules'][0]['proofs'][0]
         assert 'platforms' not in plain_proof and 'results' not in plain_proof, plain_proof
 
-        # Windows with PROOF-1 passing and PROOF-2 unproved: PARTIAL.
+        # Windows with PROOF-1 passing and PROOF-2 unproved: still AWAITING.
+        # There is no PARTIAL in this vocabulary; some proved and the rest
+        # waiting is still waiting on a runner.
         _write_proofs(self.tmp, 'locking', [_entry('locking', 'PROOF-1', 'RULE-1')],
                       platform='windows')
         built, _ = self._both(cfg)
         win = {f['name']: f for f in built['features']}['locking']['platforms']['windows']
-        assert win['status'] == 'PARTIAL' and win['awaiting'] == ['PROOF-2'], win
-        assert win['results'] == {'PROOF-1': 'pass', 'PROOF-2': None}, win
+        assert win['status'] == 'AWAITING' and win['awaiting'] == ['PROOF-2'], win
+        assert win['proved'] == 1, win
 
-        # No windows file at all: AWAITING, every result None.
+        # No windows file at all: AWAITING, nothing proved.
         os.remove(os.path.join(self.tmp, 'specs', 'app', 'locking.proofs-unit@windows.json'))
         built, _ = self._both(cfg)
         win = {f['name']: f for f in built['features']}['locking']['platforms']['windows']
         assert win['status'] == 'AWAITING' and win['proved'] == 0, win
-        assert win['results'] == {'PROOF-1': None, 'PROOF-2': None}, win
         assert win['awaiting'] == ['PROOF-1', 'PROOF-2'], win
+
+        # A fully proved platform on a feature holding a current receipt reads
+        # VERIFIED, and `receipted` is what separates it from PASSING.
+        _write_spec(self.tmp, 'mac',
+                    '# Feature: mac\n\n## What it does\nM.\n\n'
+                    '## Rules\n- RULE-1: A\n\n'
+                    '## Proof\n- PROOF-1 (RULE-1): a @unit @on(macos)\n')
+        _write_proofs(self.tmp, 'mac', [_entry('mac', 'PROOF-1', 'RULE-1')],
+                      platform='macos')
+        built = self._build(cfg)
+        mac = {f['name']: f for f in built['features']}['mac']
+        _write_receipt(self.tmp, 'mac', 'abc1234', '2026-01-01T00:00:00Z',
+                       mac['vhash'])
+        built, _ = self._both(cfg)
+        mac = {f['name']: f for f in built['features']}['mac']['platforms']['macos']
+        assert mac['status'] == 'VERIFIED' and mac['receipted'] is True, mac
 
         for feat in built['features']:
             for rec in feat['platforms'].values():
-                assert rec['status'] in ('PROVED', 'FAILING', 'PARTIAL', 'AWAITING'), rec
+                assert rec['status'] in (
+                    'FAILING', 'AWAITING', 'PASSING', 'VERIFIED'), rec
+
+    @pytest.mark.proof("report_data", "PROOF-36", "RULE-35", tier="integration")
+    def test_platform_complete_holds_verified_at_passing(self):
+        """A feature proved here and receipted, awaiting one declared platform,
+        reads PASSING and never VERIFIED or PARTIAL."""
+        self._write_locking('@unit @on(windows-2022)')
+        _write_proofs(self.tmp, 'locking',
+                      [_entry('locking', 'PROOF-1', 'RULE-1')])
+        self._write_plain()
+        cfg = self._config(platforms={'windows-2022': {'os': 'windows'}})
+
+        built = self._build(cfg)
+        locking = {f['name']: f for f in built['features']}['locking']
+        _write_receipt(self.tmp, 'locking', 'abc1234', '2026-01-01T00:00:00Z',
+                       locking['vhash'])
+
+        built, _ = self._both(cfg)
+        by_name = {f['name']: f for f in built['features']}
+        locking = by_name['locking']
+        assert locking['platform_complete'] is False, locking['platform_complete']
+        assert locking['receipt']['stale'] is False, locking['receipt']
+        assert locking['status'] == 'PASSING', (
+            "a held feature must read PASSING, not VERIFIED and not PARTIAL; "
+            f"got {locking['status']}")
+        assert built['summary']['verified_here'] - built['summary']['verified'] == 1
+        assert built['summary']['held_by_platform'] == 1, built['summary']
+        # A feature that declares nothing is complete by definition.
+        assert by_name['plain']['platform_complete'] is True
+
+        # Prove the platform: the same receipt now earns VERIFIED.
+        _write_proofs(self.tmp, 'locking', [_entry('locking', 'PROOF-2', 'RULE-2')],
+                      platform='windows-2022')
+        built = self._build(cfg)
+        locking = {f['name']: f for f in built['features']}['locking']
+        _write_receipt(self.tmp, 'locking', 'abc1234', '2026-01-01T00:00:00Z',
+                       locking['vhash'])
+        built, _ = self._both(cfg)
+        locking = {f['name']: f for f in built['features']}['locking']
+        assert locking['platform_complete'] is True, locking
+        assert locking['status'] == 'VERIFIED', locking['status']
+        assert built['summary']['held_by_platform'] == 0, built['summary']
+
+    @pytest.mark.proof("report_data", "PROOF-37", "RULE-36", tier="integration")
+    def test_platform_summary_rows_carry_counts_and_integrity(self, monkeypatch):
+        """One row per declared platform, with the four record words, the proof
+        counts, a per-platform Integrity and last_proved."""
+        monkeypatch.setattr(purlin_server, '_detect_host_platform', lambda: {
+            'os': 'linux', 'version': '24.04', 'distro': 'ubuntu',
+            'arch': 'x86_64', 'id': None})
+        _write_spec(self.tmp, 'locking',
+                    '# Feature: locking\n\n## What it does\nLocks.\n\n'
+                    '## Rules\n- RULE-1: A\n- RULE-2: B\n\n'
+                    '## Proof\n'
+                    '- PROOF-1 (RULE-1): a @unit @on(windows-2022)\n'
+                    '- PROOF-2 (RULE-2): b @unit @on(windows-2022)\n')
+        _write_proofs(self.tmp, 'locking',
+                      [_entry('locking', 'PROOF-1', 'RULE-1'),
+                       _entry('locking', 'PROOF-2', 'RULE-2')],
+                      platform='windows-2022')
+        _write_spec(self.tmp, 'mac',
+                    '# Feature: mac\n\n## What it does\nM.\n\n'
+                    '## Rules\n- RULE-1: A\n\n'
+                    '## Proof\n- PROOF-1 (RULE-1): a @unit @on(macos)\n')
+        _write_audit_cache(self.tmp, {
+            'k1': {'feature': 'locking', 'proof_id': 'PROOF-1',
+                   'assessment': 'STRONG', 'cached_at': '2026-01-01T00:00:00Z'},
+        })
+        cfg = self._config(platforms={'windows-2022': {'os': 'windows'}})
+
+        built = self._build(cfg)
+        locking = {f['name']: f for f in built['features']}['locking']
+        _write_receipt(self.tmp, 'locking', 'abc1234', '2026-01-01T00:00:00Z',
+                       locking['vhash'])
+        built, _ = self._both(cfg)
+        rows = built['platforms']['summary']
+        assert sorted(rows) == ['macos', 'windows-2022'], sorted(rows)
+        assert 'linux' not in rows, "a registry id nothing declares gets no row"
+
+        win = rows['windows-2022']
+        assert (win['features'], win['verified'], win['passing'], win['failing'],
+                win['awaiting']) == (1, 1, 0, 0, 0), win
+        assert win['proofs'] == {'declared': 2, 'proved': 2, 'failed': 0,
+                                 'awaiting': 0}, win['proofs']
+        assert win['integrity']['coverage'] == {
+            'measured': 1, 'total': 2, 'complete': False}, win['integrity']
+        assert win['integrity']['weighted'] == 50, win['integrity']
+        assert win['integrity']['assessed'] == 100, win['integrity']
+
+        mac = rows['macos']
+        assert mac['awaiting'] == 1 and mac['verified'] == 0, mac
+        assert mac['last_proved'] is None, mac['last_proved']
+
+    @pytest.mark.proof("report_data", "PROOF-38", "RULE-37", tier="integration")
+    def test_every_platform_key_is_present_with_nothing_declared(self):
+        """A project where no proof declares a platform still carries every key."""
+        self._write_plain()
+        cfg = self._config()
+        built, _ = self._both(cfg)
+        assert built['platform_testing'] is False
+        assert set(built['platforms']) == set(_PLATFORM_KEYS), sorted(built['platforms'])
+        assert built['platforms']['summary'] == {}, built['platforms']['summary']
+        assert built['platforms']['host_id'], built['platforms']['host_id']
+        s = built['summary']
+        for key in ('verified_here', 'held_by_platform'):
+            assert key in s, f"summary must carry {key!r}"
+            assert isinstance(s[key], int), s
+        assert s['held_by_platform'] == 0, s
+        for feat in built['features']:
+            assert feat['platforms'] == {}, feat
+            assert feat['platform_complete'] is True, feat
 
     @pytest.mark.proof("report_data", "PROOF-19", "RULE-19", tier="integration")
     def test_feature_category_is_the_parent_directory_name(self):

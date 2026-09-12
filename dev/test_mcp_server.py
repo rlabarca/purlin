@@ -948,6 +948,70 @@ class TestPlatformProofs:
                    purlin_server.read_report_payload(self.project_root)['features']}
         return by_name['locking']
 
+    @pytest.mark.proof("sync_status", "PROOF-91", "RULE-35", tier="integration")
+    def test_a_held_feature_reads_passing_and_the_header_decides_nothing(self):
+        """RULE-35: a current receipt does not make a feature VERIFIED while a
+        declared platform has never run, and `_report_feature` no longer picks
+        the word with a ternary of its own."""
+        import ast
+        self._config({'windows-2022': {'os': 'windows'}})
+        self._write_spec('@unit @on(windows-2022)', rules=2)
+        self._write_proofs('unit', [self._entry("PROOF-1", "RULE-1")])
+
+        feat = self._payload()
+        receipt = {'feature': 'locking', 'vhash': feat['vhash'],
+                   'commit': 'abc1234', 'timestamp': '2026-01-01T00:00:00Z',
+                   'vhash_version': 2, 'rules': ['RULE-1']}
+        receipt_path = os.path.join(self.spec_dir, 'locking.receipt.json')
+        with open(receipt_path, 'w') as f:
+            json.dump(receipt, f)
+
+        out = purlin_server.sync_status(self.project_root)
+        assert 'locking: PASSING' in out, (
+            f"a current receipt must not earn VERIFIED while windows-2022 has "
+            f"never run:\n{out}")
+        assert 'locking: VERIFIED' not in out and 'locking: PARTIAL' not in out, out
+        row = next(l for l in out.splitlines()
+                   if l.startswith('\u2502 locking'))
+        assert 'PASSING' in row and 'VERIFIED' not in row, row
+        assert 'Receipt stale' not in out, (
+            f"the receipt is current; only the platform is missing:\n{out}")
+        feat = self._payload()
+        assert feat['status'] == 'PASSING' and feat['receipt']['stale'] is False, feat
+
+        # Prove the platform: the same receipt now earns VERIFIED.
+        self._write_proofs('unit', [self._entry("PROOF-2", "RULE-2")],
+                           platform='windows-2022')
+        feat = self._payload()
+        with open(receipt_path, 'w') as f:
+            json.dump({**receipt, 'vhash': feat['vhash']}, f)
+        out = purlin_server.sync_status(self.project_root)
+        assert 'locking: VERIFIED' in out, out
+
+        # The header may not contain a VERIFIED literal of its own.
+        server = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..',
+                              'scripts', 'mcp', 'purlin_server.py')
+        with open(server) as f:
+            tree = ast.parse(f.read())
+        report_feature = next(
+            n for n in ast.walk(tree)
+            if isinstance(n, ast.FunctionDef) and n.name == '_report_feature')
+        literals = [n.value for n in ast.walk(report_feature)
+                    if isinstance(n, ast.Constant) and n.value == 'VERIFIED']
+        assert not literals, (
+            "_report_feature must route its header through _determine_status, "
+            f"not decide VERIFIED itself; found {len(literals)} literal(s)")
+
+        platform_status = next(
+            n for n in ast.walk(tree)
+            if isinstance(n, ast.FunctionDef) and n.name == '_platform_status')
+        returned = {c.value for r in ast.walk(platform_status)
+                    if isinstance(r, ast.Return)
+                    for c in ast.walk(r)
+                    if isinstance(c, ast.Constant) and isinstance(c.value, str)}
+        assert returned == {'FAILING', 'AWAITING', 'PASSING', 'VERIFIED'}, (
+            f"the record vocabulary must be exactly four words, got {sorted(returned)}")
+
     @pytest.mark.proof("sync_status", "PROOF-79", "RULE-47", tier="integration")
     def test_awaiting_names_the_platform_and_only_a_satisfying_result_clears_it(self):
         self._config({'windows-2022': {'os': 'windows'}, 'macos-14': {'os': 'macos'}})
@@ -1159,8 +1223,9 @@ class TestPlatformProofs:
             {'id': 'PROOF-2', 'tier': 'unit', 'platform': 'ubuntu-24'}], feat['undeclared']
         assert feat['awaiting_runner'] == [
             {'id': 'PROOF-2', 'tier': 'unit', 'platform': 'windows'}], feat['awaiting_runner']
-        assert feat['platforms']['windows']['results'] == {'PROOF-2': None}, feat['platforms']
-        assert feat['platforms']['macos']['status'] == 'PROVED', feat['platforms']
+        assert feat['platforms']['windows']['awaiting'] == ['PROOF-2'], feat['platforms']
+        assert feat['platforms']['macos']['status'] in ('PASSING', 'VERIFIED'), \
+            feat['platforms']
         assert 'ubuntu-24' not in feat['platforms'], feat['platforms']
         assert feat['status'] in ('PASSING', 'VERIFIED'), feat['status']
         rule2 = next(r for r in feat['rules'] if r['id'] == 'RULE-2')
@@ -1195,7 +1260,8 @@ class TestPlatformProofs:
         assert feat['proved'] == 1 and feat['total'] == 1, (feat['proved'], feat['total'])
         assert feat['awaiting_runner'] == [
             {'id': 'PROOF-1', 'tier': 'unit', 'platform': 'windows'}], feat['awaiting_runner']
-        assert feat['platforms']['macos']['status'] == 'PROVED', feat['platforms']
+        assert feat['platforms']['macos']['status'] in ('PASSING', 'VERIFIED'), \
+            feat['platforms']
         assert feat['platforms']['windows']['status'] == 'AWAITING', feat['platforms']
 
         # RULE-2: two proofs, one awaiting on every platform it declares and

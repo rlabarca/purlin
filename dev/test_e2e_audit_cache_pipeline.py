@@ -2322,3 +2322,123 @@ class TestStatusReportsBothGauges:
         block = login_block(sync_status(self.tmp_dir))
         assert 'No action needed' in block, (
             "with both gauges clean the feature really is done:\n" + block)
+
+
+class TestPerPlatformIntegrity:
+    """sync_status RULE-56 — Proof Integrity splits per platform, Design does not.
+
+    A single project-wide Integrity figure said nothing about where the graded
+    proofs ran. Two platforms with identical coverage and a project figure of
+    100% hid that neither had been measured past half.
+    """
+
+    def setup_method(self):
+        self.tmp_dir = tempfile.mkdtemp()
+
+    def teardown_method(self):
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+    def _entry(self, assessment, feature, proof_id, rule_id):
+        return {
+            'assessment': assessment, 'criterion': 'c', 'why': 'w', 'fix': 'f',
+            'feature': feature, 'proof_id': proof_id, 'rule_id': rule_id,
+            'priority': 'LOW',
+            'cached_at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        }
+
+    def _write(self, rel, obj):
+        path = os.path.join(self.tmp_dir, rel)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(obj, f)
+
+    def _proofs(self, ids, platform=None):
+        data = {'tier': 'unit', 'proofs': [
+            {'feature': 'locking', 'id': pid, 'rule': rule,
+             'test_file': 'tests/test_lock.py', 'test_name': f'test_{pid.lower()}',
+             'status': 'pass', 'tier': 'unit'}
+            for pid, rule in ids]}
+        if platform:
+            data['platform'] = platform
+            for p in data['proofs']:
+                p['platform'] = platform
+        return data
+
+    def _setup(self):
+        self._write('.purlin/config.json', {
+            'version': '0.10.0', 'spec_dir': 'specs', 'report': True,
+            'platforms': {
+                'windows-2022': {'os': 'windows'},
+                'macos-14': {'os': 'macos'},
+            },
+        })
+        spec_dir = os.path.join(self.tmp_dir, 'specs', 'app')
+        os.makedirs(spec_dir, exist_ok=True)
+        with open(os.path.join(spec_dir, 'locking.md'), 'w', encoding='utf-8') as f:
+            f.write('# Feature: locking\n\n> Scope: src/lock.py\n\n'
+                    '## What it does\nLocks.\n\n'
+                    '## Rules\n- RULE-1: A\n- RULE-2: B\n- RULE-3: C\n- RULE-4: D\n'
+                    '- RULE-5: E\n\n'
+                    '## Proof\n'
+                    '- PROOF-1 (RULE-1): a @unit @on(windows-2022)\n'
+                    '- PROOF-2 (RULE-2): b @unit @on(windows-2022)\n'
+                    '- PROOF-3 (RULE-3): c @unit @on(macos-14)\n'
+                    '- PROOF-4 (RULE-4): d @unit @on(macos-14)\n'
+                    '- PROOF-5 (RULE-5): e @unit\n')
+        self._write('specs/app/locking.proofs-unit@windows-2022.json',
+                    self._proofs([('PROOF-1', 'RULE-1'), ('PROOF-2', 'RULE-2')],
+                                 'windows-2022'))
+        self._write('specs/app/locking.proofs-unit@macos-14.json',
+                    self._proofs([('PROOF-3', 'RULE-3'), ('PROOF-4', 'RULE-4')],
+                                 'macos-14'))
+
+    @pytest.mark.proof("sync_status", "PROOF-90", "RULE-56", tier="e2e")
+    def test_integrity_splits_per_platform_and_design_never_does(self, monkeypatch):
+        self._setup()
+        write_audit_cache(self.tmp_dir, {
+            'a1': self._entry('STRONG', 'locking', 'PROOF-1', 'RULE-1'),
+            'a2': self._entry('STRONG', 'locking', 'PROOF-3', 'RULE-3'),
+        })
+        # A host that satisfies neither declared id, so the agnostic entry
+        # belongs to neither population yet.
+        monkeypatch.setattr(purlin_server, '_detect_host_platform', lambda: {
+            'os': 'linux', 'version': '24.04', 'distro': 'ubuntu',
+            'arch': 'x86_64', 'id': None})
+        payload = purlin_server.read_report_payload(self.tmp_dir)
+        rows = payload['platforms']['summary']
+        assert sorted(rows) == ['macos-14', 'windows-2022'], sorted(rows)
+        for pid in rows:
+            integ = rows[pid]['integrity']
+            assert integ['coverage'] == {'measured': 1, 'total': 2,
+                                         'complete': False}, (pid, integ)
+            assert integ['assessed'] == 100, (pid, integ)
+            assert integ['weighted'] == 50, (
+                f"{pid}: one STRONG of two executed entries is 50% weighted, "
+                f"not {integ['weighted']}%")
+        assert 'platforms' not in (payload['design_summary'] or {}), \
+            "Proof Design has no platform to split on"
+
+        # The agnostic entry belongs to the host. Make the host windows-2022
+        # and grade it: only that platform's population grows.
+        write_audit_cache(self.tmp_dir, {
+            'a1': self._entry('STRONG', 'locking', 'PROOF-1', 'RULE-1'),
+            'a2': self._entry('STRONG', 'locking', 'PROOF-3', 'RULE-3'),
+            'a3': self._entry('HOLLOW', 'locking', 'PROOF-5', 'RULE-5'),
+        })
+        self._write('specs/app/locking.proofs-unit.json',
+                    self._proofs([('PROOF-5', 'RULE-5')]))
+        monkeypatch.setattr(purlin_server, '_detect_host_platform', lambda: {
+            'os': 'windows', 'version': '10.0.20348', 'distro': '',
+            'arch': 'x86_64', 'id': None})
+        payload = purlin_server.read_report_payload(self.tmp_dir)
+        rows = payload['platforms']['summary']
+        assert payload['platforms']['host_id'] == 'windows-2022', \
+            payload['platforms']['host_id']
+        win = rows['windows-2022']['integrity']
+        mac = rows['macos-14']['integrity']
+        assert win['coverage'] == {'measured': 2, 'total': 3,
+                                   'complete': False}, win['coverage']
+        assert win['hollow'] == 1, win
+        assert mac['coverage'] == {'measured': 1, 'total': 2,
+                                   'complete': False}, mac['coverage']
+        assert 'platforms' not in (payload['design_summary'] or {})

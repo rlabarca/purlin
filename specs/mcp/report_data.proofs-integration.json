@@ -30,6 +30,33 @@
     },
     {
       "feature": "report_data",
+      "id": "PROOF-36",
+      "rule": "RULE-35",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_platform_complete_holds_verified_at_passing",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-37",
+      "rule": "RULE-36",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_platform_summary_rows_carry_counts_and_integrity",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-38",
+      "rule": "RULE-37",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_every_platform_key_is_present_with_nothing_declared",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "report_data",
       "id": "PROOF-19",
       "rule": "RULE-19",
       "test_file": "dev/test_report_data.py",

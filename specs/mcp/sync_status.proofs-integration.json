@@ -3,6 +3,15 @@
   "proofs": [
     {
       "feature": "sync_status",
+      "id": "PROOF-91",
+      "rule": "RULE-35",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_a_held_feature_reads_passing_and_the_header_decides_nothing",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
       "id": "PROOF-79",
       "rule": "RULE-47",
       "test_file": "dev/test_mcp_server.py",

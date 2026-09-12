@@ -207,6 +207,15 @@
       "test_name": "test_fully_covered_feature_gets_gauge_directives",
       "status": "pass",
       "tier": "e2e"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-90",
+      "rule": "RULE-56",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_integrity_splits_per_platform_and_design_never_does",
+      "status": "pass",
+      "tier": "e2e"
     }
   ]
 }

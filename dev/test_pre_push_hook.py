@@ -689,6 +689,24 @@ class TestRule8StrictMode:
             f"awaiting_runner must never block in strict mode either, got "
             f"exit {exit_strict}\n{out_strict}")
         assert "advisory only" in out_strict, f"{out_strict}"
+        # The feature is held at PASSING by the awaiting platform, and the
+        # gate says so rather than silently exempting it.
+        assert "awaiting a declared platform" in out_strict, (
+            f"the reason a PASSING feature was not blocked must be printed:\n"
+            f"{out_strict}")
+
+        # Control: with nothing awaiting, a feature without a current receipt
+        # is blocked as before, so the exemption is provably the platform's.
+        _create_test_project(tmpdir2 := str(tmp_path / 'control'), num_rules=2)
+        _write_proof_file(tmpdir2, "test_feature",
+                          [("PROOF-1", "RULE-1", "pass"),
+                           ("PROOF-2", "RULE-2", "pass")])
+        _commit(tmpdir2, "both proved, no receipt")
+        _set_config_field(tmpdir2, "pre_push", "strict")
+        exit_control, out_control = _run_hook(tmpdir2)
+        assert exit_control == 1, (
+            f"strict must still block a PASSING feature with no receipt and "
+            f"nothing awaiting, got {exit_control}\n{out_control}")
 
 
 # ---------------------------------------------------------------------------

@@ -98,10 +98,11 @@ def _by_platform(payload):
     lines = []
     for platform in sorted(summary):
         agg = summary[platform] or {}
+        proofs = agg.get('proofs') or {}
         lines.append(
-            f"{platform}: {agg.get('proofs_proved', 0)} proved, "
-            f"{agg.get('proofs_awaiting', 0)} awaiting, "
-            f"{agg.get('proofs_failing', 0)} failing "
+            f"{platform}: {proofs.get('proved', 0)} proved, "
+            f"{proofs.get('awaiting', 0)} awaiting, "
+            f"{proofs.get('failed', 0)} failing "
             f"({agg.get('features', 0)} feature"
             f"{'s' if agg.get('features', 0) != 1 else ''})")
     return lines

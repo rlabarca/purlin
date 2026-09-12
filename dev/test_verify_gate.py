@@ -262,9 +262,16 @@ class TestAwaitingRunnerBlocksUnderRequired:
             for root, expect in ((awaiting, True), (clean, False)):
                 payload = purlin_server.read_report_payload(root)
                 feat = payload['features'][0]
-                assert feat['status'] == 'VERIFIED', (
-                    f"fixture must be VERIFIED to isolate the variable, got "
-                    f"{feat['status']} in {root}")
+                # Both hold a current receipt over the same vhash. The clean
+                # one reads VERIFIED; the awaiting one is held at PASSING by
+                # report_data RULE-35, which is the honest reading of a
+                # platform that never ran and is itself what the gate must
+                # refuse under `required`.
+                assert feat['receipt'] and feat['receipt']['stale'] is False, (
+                    f"fixture must hold a current receipt to isolate the "
+                    f"variable, got {feat['receipt']} in {root}")
+                assert feat['status'] == ('PASSING' if expect else 'VERIFIED'), (
+                    f"fixture status {feat['status']} in {root}")
                 assert bool(feat['awaiting_runner']) is expect, (
                     f"{root}: awaiting_runner={feat['awaiting_runner']}")
 
