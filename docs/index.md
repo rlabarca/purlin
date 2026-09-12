@@ -20,8 +20,8 @@
 | [Testing Workflow](testing-workflow-guide.md) | Proof markers, both quality gauges, custom plugins, tiers, manual proofs |
 | [Anchors and External References](anchors-guide.md) | Anchors, external references, FORBIDDEN patterns, cross-cutting constraints |
 | [Collaboration](collaboration-guide.md) | External anchors, branch handoff, merge conflicts |
-| [Dashboard](dashboard-guide.md) | Visual coverage dashboard — setup, usage, data flow |
-| [Regulated Environments](regulated-environments.md) | Integration points for FDA, HIPAA, SOC2 -- what Purlin is and isn't |
+| [Dashboard](dashboard-guide.md) | Visual coverage dashboard: setup, usage, data flow |
+| [Regulated Environments](regulated-environments.md) | Integration points for FDA, HIPAA and SOC2, and what Purlin is not |
 | [Remote Verification and Platforms](../references/remote_verification.md) | `@on(<platform-id>)` proofs, the `platforms` registry, runner workflows, what travels back |
 | [Hard Gates](../references/hard_gates.md) | The one gate, and the enforcement layers around it |
 
@@ -53,7 +53,7 @@ specs/
 | Component | Path | Purpose |
 |-----------|------|---------|
 | MCP server | `scripts/mcp/purlin_server.py` | Powers `purlin:status`, `purlin:drift`, and config tools |
-| Proof plugins | `scripts/proof/` | Proof collectors for pytest, Jest, Vitest, xUnit (.NET), C, PHP, SQL, and shell — see [supported frameworks](../references/supported_frameworks.md) |
+| Proof plugins | `scripts/proof/` | Proof collectors for pytest, Jest, Vitest, xUnit (.NET), C, PHP, SQL and shell. See [supported frameworks](../references/supported_frameworks.md) |
 
 ## Skills Reference
 
@@ -62,31 +62,33 @@ See [references/purlin_commands.md](../references/purlin_commands.md) for the fu
 | Resource | What it covers |
 |----------|---------------|
 | [Spec Quality Guide](../references/spec_quality_guide.md) | How to write good rules, proofs, tiers, anchors, and FORBIDDEN patterns |
-| [Audit Criteria](../references/audit_criteria.md) | Both gauges -- Proof Design (specs only) and Proof Integrity (Pass 1 structural, Pass 2 semantic) |
+| [Audit Criteria](../references/audit_criteria.md) | Both gauges: Proof Design (specs only) and Proof Integrity (Pass 1 structural, Pass 2 semantic) |
 | [Drift Criteria](../references/drift_criteria.md) | File classification, drift detection, config field ownership |
 | [Generating Specs from Code](spec-from-code-guide.md) | Onboarding existing projects with `purlin:spec-from-code` |
 
 Key skills:
 
-- `purlin:spec` -- create/edit specs
-- `purlin:build` -- implement from spec rules
-- `purlin:verify` -- run all tests, issue verification receipts
-- `purlin:test` -- run tests and emit proof files
-- `purlin:audit` -- evaluate proof quality: Proof Design (PROVABLE/LOOSE/UNPROVABLE/STRUCTURAL, no tests needed) and Proof Integrity (STRONG/WEAK/HOLLOW/EXCLUDED)
-- `purlin:status` -- show rule coverage plus both gauges, Proof Design and Proof Integrity
-- `purlin:drift` -- drift detection and change summary
-- `purlin:spec-from-code` -- reverse-engineer specs from existing code
-- `purlin:find` -- search specs by name
-- `purlin:rename` -- rename a feature across specs, proofs, markers, and references
-- `purlin:anchor` -- sync cross-cutting constraints from external sources
-- `purlin:init` -- initialize and configure a project; `purlin:init --update` migrates a project
+- `purlin:spec`: create and edit specs
+- `purlin:build`: implement from spec rules
+- `purlin:verify`: run all tests, issue verification receipts
+- `purlin:test`: run tests and emit proof files
+- `purlin:audit`: evaluate proof quality. Proof Design grades descriptions PROVABLE, LOOSE,
+  UNPROVABLE or STRUCTURAL and needs no tests; Proof Integrity grades tests STRONG, WEAK,
+  HOLLOW or EXCLUDED
+- `purlin:status`: show rule coverage plus both gauges, Proof Design and Proof Integrity
+- `purlin:drift`: drift detection and change summary
+- `purlin:spec-from-code`: reverse-engineer specs from existing code
+- `purlin:find`: search specs by name
+- `purlin:rename`: rename a feature across specs, proofs, markers and references
+- `purlin:anchor`: sync cross-cutting constraints from external sources
+- `purlin:init`: initialize and configure a project. `purlin:init --update` migrates a project
   after the plugin moves under it
 
 ## Hard Gate (only 1)
 
-1. **Proof coverage** -- `purlin:verify` won't issue a receipt unless every rule has a passing proof.
+1. **Proof coverage.** `purlin:verify` will not issue a receipt unless every rule has a passing proof.
 
-Neither quality gauge is a gate -- a low Proof Design or Proof Integrity score never blocks anything.
+Neither quality gauge is a gate. A low Proof Design or Proof Integrity score never blocks anything.
 
 Everything else is optional guidance.
 

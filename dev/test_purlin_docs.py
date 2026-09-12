@@ -525,3 +525,263 @@ class TestRegulatedDeploymentIsPinned:
         assert not missing, (
             f"the '{PIN_SECTION}' section no longer states the Python floor a "
             f"regulated deployment runs; missing literals: {missing}")
+
+
+# ---------------------------------------------------------------------------
+# RULE-9: docs/regulated-environments.md names a mechanism per section.
+# ---------------------------------------------------------------------------
+
+REGULATED = 'docs/regulated-environments.md'
+
+#: The closed set of config fields RULE-9 accepts as a mechanism name.
+CONFIG_FIELDS = (
+    'audit_llm', 'audit_llm_name', 'audit_criteria', 'audit_criteria_pinned',
+    'mutation_checks', 'platforms', 'remote_verification', 'pre_push',
+    'digest', 'report', 'test_framework', 'version', 'skipped_proofs',
+)
+
+#: RULE-9's five mechanism shapes, each as (name, pattern over raw text).
+MECHANISM_SHAPES = (
+    ('a script path under scripts/', re.compile(r'`scripts/[A-Za-z0-9_./-]+`')),
+    ('a rule id with its spec', re.compile(r'`[A-Za-z0-9_]+`\s+RULE-\d+')),
+    ('a config field', re.compile(
+        r'`(?:' + '|'.join(CONFIG_FIELDS) + r')`')),
+    ('a skill command', re.compile(r'`purlin:[a-z-]+(?:\s+--[a-z-]+)*`')),
+    ('a format or spec file', re.compile(
+        r'`(?:references|specs)/[A-Za-z0-9_./*<>-]+`')),
+)
+
+#: RULE-9's four forbidden approval phrases.
+APPROVAL_PHRASES = ('compliance status', 'sign-off', 'signs off', 'certified')
+
+
+def _level_two_sections(text):
+    """[(title, body)] for every `##` section, fenced blocks never headings."""
+    sections = []
+    title = None
+    body = []
+    fenced = False
+    for line in text.splitlines():
+        if re.match(r'^\s{0,3}(```|~~~)', line):
+            fenced = not fenced
+            if title is not None:
+                body.append(line)
+            continue
+        heading = None if fenced else re.match(r'^\s{0,3}##\s+(.*\S)\s*$',
+                                               line)
+        if heading and not line.lstrip().startswith('###'):
+            if title is not None:
+                sections.append((title, '\n'.join(body)))
+            title = _norm_heading(heading.group(1))
+            body = []
+            continue
+        if title is not None:
+            body.append(line)
+    if title is not None:
+        sections.append((title, '\n'.join(body)))
+    return sections
+
+
+def _sections_without_a_mechanism(text):
+    """Section titles whose body carries no RULE-9 mechanism name."""
+    missing = []
+    for title, body in _level_two_sections(text):
+        if not any(pattern.search(body) for _name, pattern in
+                   MECHANISM_SHAPES):
+            missing.append(title)
+    return missing
+
+
+class TestRegulatedPageNamesItsMechanisms:
+    """RULE-9 - a compliance reader cites the mechanism, not the claim."""
+
+    @pytest.mark.proof("purlin_docs", "PROOF-14", "RULE-9")
+    def test_every_section_names_a_mechanism_and_no_approval_vocabulary(self):
+        text = _read(REGULATED)
+        sections = _level_two_sections(text)
+        assert len(sections) >= 8, (
+            f"{REGULATED} parsed into {len(sections)} `##` sections; the "
+            f"scan is not reading the page it claims to check")
+
+        missing = _sections_without_a_mechanism(text)
+        assert not missing, (
+            f"these sections of {REGULATED} assert something with no "
+            f"mechanism a reader can act on; each needs one of "
+            f"{[name for name, _ in MECHANISM_SHAPES]}: {missing}")
+
+        offenders = []
+        for lineno, line in enumerate(text.splitlines(), 1):
+            for phrase in APPROVAL_PHRASES:
+                if phrase in line:
+                    offenders.append(f"{REGULATED}:{lineno}: {phrase!r}")
+        assert not offenders, (
+            "approval vocabulary for something Purlin never does:\n"
+            + "\n".join(offenders))
+
+        # A section that asserts an approval with no mechanism is rejected by
+        # title, so the sweep above is discriminating rather than vacuous.
+        injected = text + (
+            "\n## Release approval\n\n"
+            "The compliance team approves the release once the evidence is "
+            "complete.\n")
+        assert _sections_without_a_mechanism(injected) == \
+            ['Release approval'], (
+            f"a section asserting an approval with no mechanism must be "
+            f"rejected by title; got "
+            f"{_sections_without_a_mechanism(injected)}")
+
+
+# ---------------------------------------------------------------------------
+# RULE-10: the platform docs point at the one home of the rule set.
+# ---------------------------------------------------------------------------
+
+PLATFORM_DOCS = ('docs/testing-workflow-guide.md',
+                 'docs/collaboration-guide.md',
+                 'docs/installation-guide.md',
+                 'README.md')
+
+TAXONOMY_HOME = 'references/remote_verification.md'
+TAXONOMY_SECTION = 'Platforms, environments and prerequisites'
+
+CATEGORY_WORDS = ('platform', 'environment', 'prerequisite')
+
+MEMBERSHIP_QUESTIONS = (
+    'Would the same test passing on a different OS be evidence for this '
+    'claim?',
+    "Does the outcome depend on an external system's real answers, an "
+    "account, a model, or money, so that installing a package cannot "
+    "reproduce it?",
+    'Would any host with the tool installed produce the same evidence?',
+)
+
+
+def _paragraphs(text):
+    """Blank-line delimited paragraphs with whitespace collapsed."""
+    out = []
+    para = []
+    for line in text.splitlines():
+        if line.strip():
+            para.append(line)
+        elif para:
+            out.append(' '.join(' '.join(para).split()))
+            para = []
+    if para:
+        out.append(' '.join(' '.join(para).split()))
+    return out
+
+
+def _taxonomy_paragraphs(text):
+    """Paragraphs naming all three category words."""
+    found = []
+    for para in _paragraphs(text):
+        lowered = para.lower()
+        if all(re.search(rf'\b{word}s?\b', lowered)
+               for word in CATEGORY_WORDS):
+            found.append(para)
+    return found
+
+
+class TestPlatformDocsPointAtTheOneHome:
+    """RULE-10 - three category names, one link, no second copy."""
+
+    @pytest.mark.proof("purlin_docs", "PROOF-15", "RULE-10")
+    def test_each_platform_doc_has_one_pointer_and_no_membership_question(
+            self):
+        for rel in PLATFORM_DOCS:
+            text = _read(rel)
+            pointers = _taxonomy_paragraphs(text)
+            assert len(pointers) == 1, (
+                f"{rel} must carry exactly one paragraph naming all three of "
+                f"{CATEGORY_WORDS}; found {len(pointers)}: "
+                f"{[p[:120] for p in pointers]}")
+            pointer = pointers[0]
+            assert TAXONOMY_HOME in pointer, (
+                f"{rel}: the paragraph naming the three categories does not "
+                f"link {TAXONOMY_HOME}: {pointer!r}")
+            assert TAXONOMY_SECTION in pointer, (
+                f"{rel}: the paragraph names the file but not the section "
+                f"{TAXONOMY_SECTION!r}: {pointer!r}")
+
+            collapsed = ' '.join(text.split())
+            for question in MEMBERSHIP_QUESTIONS:
+                assert question not in collapsed, (
+                    f"{rel} restates a membership question the one home owns; "
+                    f"a second copy is a second answer: {question!r}")
+
+        # A copied question is found by the same collapse, so the scan above
+        # passes because the files are clean and not because it reads nothing.
+        rel = 'docs/testing-workflow-guide.md'
+        question = MEMBERSHIP_QUESTIONS[0]
+        injected = ' '.join((_read(rel) + '\n\n' + question + '\n').split())
+        assert question in injected, (
+            "the injected copy must be findable by the same collapse the "
+            "check uses, or the case proves nothing")
+
+
+# ---------------------------------------------------------------------------
+# RULE-11: no em-dash or en-dash in the prose these files carry.
+# ---------------------------------------------------------------------------
+
+DASHES = ('—', '–')
+
+DASH_FREE_REFERENCES = ('references/remote_verification.md',
+                        'references/spec_quality_guide.md',
+                        'references/hard_gates.md',
+                        'references/audit_criteria.md')
+
+
+def _dash_scope():
+    return [f for f in _tracked('docs') if f.endswith('.md')] + \
+        ['README.md'] + list(DASH_FREE_REFERENCES)
+
+
+def _dash_hits(text, rel):
+    """`<rel>:<lineno>: <line>` per dash outside a fenced block."""
+    hits = []
+    fenced = False
+    for lineno, line in enumerate(text.splitlines(), 1):
+        if re.match(r'^\s{0,3}(```|~~~)', line):
+            fenced = not fenced
+            continue
+        if fenced:
+            continue
+        if any(dash in line for dash in DASHES):
+            hits.append(f"{rel}:{lineno}: {line.strip()}")
+    return hits
+
+
+class TestProseCarriesNoDashes:
+    """RULE-11 - a dash is a joint the writer did not have to name."""
+
+    @pytest.mark.proof("purlin_docs", "PROOF-16", "RULE-11")
+    def test_no_em_dash_or_en_dash_outside_fenced_blocks(self):
+        scope = _dash_scope()
+        assert len(scope) >= 12, (
+            f"only {len(scope)} files in scope; the sweep is not reading the "
+            f"documentation set it claims to check: {scope}")
+        offenders = []
+        for rel in scope:
+            offenders.extend(_dash_hits(_read(rel), rel))
+        assert not offenders, (
+            "an em-dash or en-dash joins two ideas without stating the "
+            "relation; use a colon, a comma or a full stop:\n"
+            + "\n".join(offenders))
+
+        # An inserted dash is reported with its line, so a clean sweep is
+        # evidence about the files rather than about the scanner.
+        rel = 'README.md'
+        text = _read(rel)
+        marker = '**Rule-Proof Spec-Driven Development**'
+        assert marker in text, f"{rel} no longer carries {marker!r}"
+        injected = text.replace(
+            marker, marker + '\n\nPurlin is a plugin — nothing more.', 1)
+        expected_line = injected.splitlines().index(
+            'Purlin is a plugin — nothing more.') + 1
+        hits = _dash_hits(injected, rel)
+        assert len(hits) == 1 and hits[0].startswith(
+            f"{rel}:{expected_line}: "), (
+            f"the injected em-dash must be reported as {rel}:"
+            f"{expected_line}; got {hits}")
+        assert _dash_hits(text, rel) == [], (
+            f"the committed {rel} must pass the same sweep, so the failure "
+            f"above is the injection and not the file")

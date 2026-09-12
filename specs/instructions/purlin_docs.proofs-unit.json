@@ -117,6 +117,33 @@
       "test_name": "test_regulated_page_pins_the_plugin_by_tag_and_names_python_311",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "purlin_docs",
+      "id": "PROOF-14",
+      "rule": "RULE-9",
+      "test_file": "dev/test_purlin_docs.py",
+      "test_name": "test_every_section_names_a_mechanism_and_no_approval_vocabulary",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_docs",
+      "id": "PROOF-15",
+      "rule": "RULE-10",
+      "test_file": "dev/test_purlin_docs.py",
+      "test_name": "test_each_platform_doc_has_one_pointer_and_no_membership_question",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_docs",
+      "id": "PROOF-16",
+      "rule": "RULE-11",
+      "test_file": "dev/test_purlin_docs.py",
+      "test_name": "test_no_em_dash_or_en_dash_outside_fenced_blocks",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

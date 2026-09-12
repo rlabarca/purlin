@@ -13,9 +13,9 @@ build login                               ← code + tests, iterates until all r
 Three messages. Everything else is detail.
 
 That is the shortest path, not the only one. Purlin reads what exists rather than imposing an
-order, so you can also perfect a spec's proof descriptions first and grade them with
-`purlin:audit --design` before any code is written — which is worth doing, because a vague
-proof description caps what the eventual test can prove.
+order. You can also perfect a spec's proof descriptions first and grade them with
+`purlin:audit --design` before any code is written. That is worth doing: a vague proof
+description caps what the eventual test can prove.
 
 ---
 
@@ -34,7 +34,7 @@ Your project must be a git repository. Purlin uses git for verification receipts
 mkdir my-project && cd my-project
 git init
 
-# Existing project — just cd into it
+# Existing project: cd into it
 cd my-project
 ```
 
@@ -72,21 +72,21 @@ purlin:init
 
 This does 7 things:
 
-1. **Creates `.purlin/`** — config directory with `config.json` (team defaults). `config.local.json` (per-user overrides) is gitignored by the block init writes and is created the first time something overrides a key.
-2. **Creates `specs/`** — directory for spec files, with a `_anchors/` subdirectory for cross-cutting constraints with external references.
-3. **Scaffolds proof plugin** — detects your test framework (pytest, Jest, Vitest, C, PHP, SQL — see [supported frameworks](../references/supported_frameworks.md)) and installs the appropriate proof collector so tests emit `*.proofs-*.json` files. The selection list offers every shipped plugin, including ones with no auto-detection (shell) or manual setup (xUnit/.NET).
-4. **Verifies the MCP server** — Purlin's MCP server (the `sync_status`, `purlin_config`, and `drift` tools) is bundled with the plugin and registers automatically wherever the plugin is enabled, always tracking the installed plugin version. Projects initialized before v0.9.4 have a legacy version-pinned `purlin` entry in `.mcp.json` that shadows the bundled server — init removes it (see [Upgrading the plugin](#upgrading-the-plugin), which owns every migration an older project needs).
-5. **Installs pre-push hook** — a git hook that runs tests before push. You choose warn mode (block on failures, warn on partial) or strict mode (block unless all features are VERIFIED).
-6. **Installs pre-commit hook (project digest)** — regenerates `.purlin/report-data.js` (coverage + drift data) on every commit so stakeholders see current status without running Purlin tools. Modes: `auto` (default), `warn`, or `off`.
+1. **Creates `.purlin/`**: the config directory, with `config.json` for team defaults. `config.local.json` holds per-user overrides. It is gitignored by the block init writes, and it is created the first time something overrides a key.
+2. **Creates `specs/`**: the directory for spec files, with a `_anchors/` subdirectory for cross-cutting constraints and external references.
+3. **Scaffolds the proof plugin**: it detects your test framework (pytest, Jest, Vitest, C, PHP or SQL, see [supported frameworks](../references/supported_frameworks.md)) and installs the matching proof collector, so tests emit `*.proofs-*.json` files. The selection list offers every shipped plugin, including the ones with no auto-detection (shell) and the one with manual setup (xUnit for .NET).
+4. **Verifies the MCP server**: the server carrying the `sync_status`, `purlin_config` and `drift` tools ships with the plugin and registers itself wherever the plugin is enabled, always at the installed plugin version. A project initialized before v0.9.4 carries a legacy version-pinned `purlin` entry in `.mcp.json` that shadows the bundled server, and init removes it. See [Upgrading the plugin](#upgrading-the-plugin), which owns every migration an older project needs.
+5. **Installs the pre-push hook**: a git hook that runs tests before a push. Choose warn mode (block on failures, warn on partial coverage) or strict mode (block unless every feature is VERIFIED).
+6. **Installs the pre-commit hook for the project digest**: it regenerates `.purlin/report-data.js`, the coverage and drift data, on every commit, so stakeholders see the current status without running Purlin tools. The modes are `auto` (default), `warn` and `off`.
 
 The plugin also carries a Claude Code hook (`hooks/hooks.json`) that refreshes the same digest in the background after any tool call or turn that changed a spec, proof, receipt, gauge cache or the config, so the dashboard keeps up while agents work without anyone calling `purlin:status`. It needs no installation step: it comes with the plugin, honours `report` and `digest` in `.purlin/config.json` (`report: false` or `digest: off` disables it), never blocks, never prints, and never reaches the network.
-7. **Configures audit criteria** — built-in criteria always apply, covering both quality gauges. Optionally add team-specific criteria from a git-hosted file (appended to built-in defaults). See [references/audit_criteria.md](../references/audit_criteria.md).
+7. **Configures audit criteria**: the built-in criteria always apply and cover both quality gauges. You can add team criteria from a git-hosted file, appended to the built-in ones. See [references/audit_criteria.md](../references/audit_criteria.md).
 
 The skill asks the questions; `scripts/init/scaffold.py` writes the files and prints one line per path it wrote, kept, copied or linked, so what init did is on screen rather than inferred from the tree.
 
 ### Proof Plugin Setup by Framework
 
-**pytest** — Adds `conftest.py` that loads the proof plugin. `.purlin` is not an importable package name, so the plugin directory goes on `sys.path` and the plugin is named as a module:
+**pytest.** Adds a `conftest.py` that loads the proof plugin. `.purlin` is not an importable package name, so the plugin directory goes on `sys.path` and the plugin is named as a module:
 ```python
 import os
 import sys
@@ -97,22 +97,22 @@ sys.path.insert(0, os.path.join(
 pytest_plugins = ["pytest_purlin"]
 ```
 
-**Jest** — Adds the reporter to `jest.config.js` or `package.json`:
+**Jest.** Adds the reporter to `jest.config.js` or `package.json`:
 ```javascript
 reporters: ["default", ".purlin/plugins/jest_purlin.js"]
 ```
 
-**Vitest** — Adds the TypeScript reporter to `vitest.config.ts` (Vitest loads `.ts` reporters natively — don't reuse the Jest reporter):
+**Vitest.** Adds the TypeScript reporter to `vitest.config.ts`. Vitest loads `.ts` reporters natively, so do not reuse the Jest reporter:
 ```typescript
 test: { reporters: ['default', '.purlin/plugins/vitest_purlin.ts'] }
 ```
 
-**Shell** — Source the harness in your test scripts:
+**Shell.** Source the harness in your test scripts:
 ```bash
 source .purlin/plugins/shell_purlin.sh
 ```
 
-**xUnit (.NET)** — Manual setup. Compile `xunit_purlin.cs` into an assembly named `Purlin.TestLogger` (the .NET test platform only discovers loggers from `*TestLogger.dll` assemblies), reference it from your test project, then run:
+**xUnit (.NET).** Manual setup. Compile `xunit_purlin.cs` into an assembly named `Purlin.TestLogger` (the .NET test platform only discovers loggers from `*TestLogger.dll` assemblies), reference it from your test project, then run:
 ```bash
 dotnet test --logger purlin -- RunConfiguration.CollectSourceInformation=true
 ```
@@ -122,10 +122,10 @@ Full wiring steps: [references/formats/proofs_format.md](../references/formats/p
 
 Purlin uses a two-file config system:
 
-- **`.purlin/config.json`** — committed, team defaults
-- **`.purlin/config.local.json`** — gitignored, per-user overrides
+- **`.purlin/config.json`**: committed, team defaults
+- **`.purlin/config.local.json`**: gitignored, per-user overrides
 
-Resolution: `config.json` is the base layer. `config.local.json` overrides on top — local keys win for any key present in both. Keys only in `config.json` (like new framework defaults) are always visible. `config.local.json` should be sparse — only override what you need.
+Resolution: `config.json` is the base layer and `config.local.json` overrides on top, so a local key wins for any key present in both. A key that only `config.json` carries, such as a new framework default, is always visible. Keep `config.local.json` sparse: override only what you need.
 
 Default config (`version` is set from the installed framework's `VERSION` file at init time):
 ```json
@@ -159,7 +159,7 @@ Two further fields are optional and `purlin:init` never writes them. `platforms`
 }
 ```
 
-See [Testing Workflow Guide § Platforms](testing-workflow-guide.md#platforms). `audit_llm` and `audit_criteria` are the cross-model and compliance-criteria fields; see [Regulated Environments](regulated-environments.md).
+A proof can depend on a platform, on an environment or on a prerequisite, and each one has its own mechanism. The rule set has a single home: [references/remote_verification.md](../references/remote_verification.md), section "Platforms, environments and prerequisites". For the registry itself see [Testing Workflow Guide § Platforms](testing-workflow-guide.md#platforms). `audit_llm` and `audit_criteria` are the cross-model and compliance-criteria fields; see [Regulated Environments](regulated-environments.md).
 
 The HTML dashboard is enabled by default (`"report": true`). When enabled, `purlin:status` writes `.purlin/report-data.js` on every call, and `purlin:init` creates a `purlin-report.html` symlink at the project root. Open it in a browser to see live coverage. Toggle with `purlin:init --report`. See the [Dashboard Guide](dashboard-guide.md) for details.
 
@@ -201,7 +201,7 @@ Already initialized? Use `purlin:init --force` to reconfigure, or change individ
 
 ## Scaling
 
-Purlin uses the filesystem as its state — specs are Markdown files, proofs are JSON files next to specs. `purlin:status` scans both on every call. This is intentional: zero infrastructure, zero dependencies, works offline, nothing to configure.
+The filesystem is Purlin's state. Specs are Markdown files and proofs are JSON files beside them. `purlin:status` scans both on every call. That is deliberate: no infrastructure, no dependencies, it works offline and there is nothing to configure.
 
 **What this means for project size:**
 
@@ -263,7 +263,7 @@ The update never scaffolds a runner and never issues a receipt. Registering a pl
 
 If you have a pre-0.9.0 Purlin installation (with `features/`, companion files, sync ledger, etc.):
 
-**Keep your old `features/` directory.** `purlin:spec-from-code` reads your existing specs and uses them as migration context — old scenarios and rules are preserved in the new format. Don't throw away work you've already done.
+**Keep your old `features/` directory.** `purlin:spec-from-code` reads your existing specs and uses them as migration context, so old scenarios and rules survive in the new format. Do not throw away work you have already done.
 
 Remove old artifacts that are now managed by the plugin system:
 
@@ -274,11 +274,11 @@ rm -f .claude/agents/purlin-*.md
 ```
 
 This removes:
-- `.purlin/` — old config and state files (regenerated by `purlin:init`)
-- `pl-*` — old symlinks at project root
-- `*.sh` — old shell scripts at project root
-- `.claude/commands/` — old command definitions (now provided by the plugin)
-- `.claude/agents/purlin-*.md` — old project-local agent definitions. The independent auditor now ships with the plugin as `purlin:purlin-auditor`; the former `purlin-builder` and `purlin-reviewer` are retired
+- `.purlin/`: old config and state files, regenerated by `purlin:init`
+- `pl-*`: old symlinks at the project root
+- `*.sh`: old shell scripts at the project root
+- `.claude/commands/`: old command definitions, now provided by the plugin
+- `.claude/agents/purlin-*.md`: old project-local agent definitions. The independent auditor ships with the plugin as `purlin:purlin-auditor`; the former `purlin-builder` and `purlin-reviewer` are retired
 
 Then initialize and migrate:
 
@@ -287,11 +287,11 @@ purlin:init
 purlin:spec-from-code
 ```
 
-`purlin:spec-from-code` detects existing specs in any format — `features/` (pre-0.9.0) or non-compliant specs already in `specs/` — and migrates them to the current format. Your existing rules and descriptions are preserved as the primary input. Migration candidates are annotated `(migrating)` in the taxonomy review. After migration from `features/`, the skill offers to clean up the old directory.
+`purlin:spec-from-code` detects existing specs in any format, whether in `features/` (pre-0.9.0) or non-compliant specs already in `specs/`, and migrates them to the current format. Your existing rules and descriptions are preserved as the primary input. Migration candidates are annotated `(migrating)` in the taxonomy review. After migration from `features/`, the skill offers to clean up the old directory.
 
 ## Adding More Proof Plugins
 
-Purlin ships with proof plugins for Python (pytest), JavaScript/TypeScript (Jest, Vitest), .NET (xUnit — C#, F#, VB.NET), C, PHP, SQL, and Bash (shell) — see [supported frameworks](../references/supported_frameworks.md). If your project uses another language or framework, you can add a community or custom proof plugin.
+Purlin ships proof plugins for Python (pytest), JavaScript and TypeScript (Jest, Vitest), .NET (xUnit for C#, F# and VB.NET), C, PHP, SQL and Bash. See [supported frameworks](../references/supported_frameworks.md). If your project uses another language or framework, add a community or custom proof plugin.
 
 Proof plugins read proof markers from your tests and write the JSON files that Purlin reads for coverage reporting. See the [Testing Workflow Guide](testing-workflow-guide.md#proof-plugins) for details on what they are and how they work.
 

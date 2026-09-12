@@ -32,9 +32,9 @@ Claude scans the codebase, detects existing specs, proposes a feature taxonomy, 
 
 The skill launches up to 3 parallel exploration agents:
 
-- **Structure agent** — directory tree, entry points, routes, CLI commands
-- **Domain agent** — frameworks, module boundaries, public APIs, tech stack
-- **Comments agent** — TODOs, FIXMEs, architectural decisions, inline docs
+- **Structure agent**: directory tree, entry points, routes, CLI commands
+- **Domain agent**: frameworks, module boundaries, public APIs, tech stack
+- **Comments agent**: TODOs, FIXMEs, architectural decisions, inline docs
 
 It also scans for **existing specs to migrate**:
 - `features/` directory (pre-0.9.0 Given/When/Then format)
@@ -45,25 +45,25 @@ You choose which directories to scan before the agents launch. Results are synth
 
 ### Phase 2: Taxonomy Review
 
-The skill proposes feature categories. Existing specs seed the taxonomy — their category names and feature names are reused. Each feature is annotated:
+The skill proposes feature categories. Existing specs seed the taxonomy: their category names and feature names are reused. Each feature is annotated:
 
 ```
 Proposed category: auth/ (3 features)
-  login (migrating) — email/password authentication
-  session (migrating) — session management and refresh tokens
-  rate_limit (new) — brute force protection
+  login (migrating): email/password authentication
+  session (migrating): session management and refresh tokens
+  rate_limit (new): brute force protection
 
 Approve? Rename? Merge with another category?
 ```
 
-You confirm, rename, merge, or split categories. The skill also identifies cross-cutting concerns and proposes them as anchors — always including at least one `security_` anchor (dangerous-pattern checks, proposed even when the codebase is clean).
+You confirm, rename, merge or split categories. The skill also identifies cross-cutting concerns and proposes them as anchors. It always proposes at least one `security_` anchor for dangerous-pattern checks, even when the codebase is clean.
 
 ### Phase 3: Spec Generation
 
 For each approved category:
 
 1. Reads the source files
-2. If a migration candidate exists for a feature, uses it as the **primary input** — preserving the original rules, descriptions, and intent. Compares against current code and flags any discrepancies.
+2. If a migration candidate exists for a feature, uses it as the **primary input**, keeping the original rules, descriptions and intent. Compares against current code and flags any discrepancies.
 3. Writes or overwrites the spec in the current compliant format
 4. Asks you to confirm each category before proceeding
 
@@ -88,27 +88,27 @@ Completed categories are skipped. Questions already answered are not re-asked.
 
 ## After Generation: Proving the Specs
 
-Generated specs start UNTESTED — the code exists, but nothing proves it satisfies the rules. This is the reverse of the normal lifecycle: because the code was **not** built by `purlin:build`, the build loop's job here is to write the proof-marked tests, not to write code.
+Generated specs start UNTESTED: the code exists, but nothing proves it satisfies the rules. This reverses the normal lifecycle. The code was **not** built by `purlin:build`, so the build loop's job here is to write the proof-marked tests, not to write code.
 
 **Grade the generated proof descriptions before writing any tests.** This is the single best moment for it: `purlin:audit --design` needs no tests, and reverse-engineered proof descriptions are exactly where LOOSE and UNPROVABLE ones cluster, because they were inferred from code rather than written from intent. Every one you fix here is a test you do not have to write twice.
 
 Run the build loop with the existing code as the source of truth:
 
 ```
-build <feature> — the code already exists and is the source of truth.
+build <feature>: the code already exists and is the source of truth.
 Don't modify it; only write tests with proof markers.
 ```
 
 Two things matter in this mode:
 
-- **Don't let the build change the code.** Say so explicitly, as above. The rules were extracted *from* the code, so the code already satisfies them — the only missing artifact is tests.
-- **A failing test means the generated rule is probably wrong**, not the code. In a normal build, a failing test means "fix the code." Here it usually means spec-from-code extracted a rule inaccurately — review it with `purlin:spec <feature>` and correct the rule, then re-test. Only fix the code if the rule is right and you've found a genuine bug.
+- **Don't let the build change the code.** Say so explicitly, as above. The rules were extracted *from* the code, so the code already satisfies them. The only missing artifact is tests.
+- **A failing test means the generated rule is probably wrong**, not the code. In a normal build, a failing test means "fix the code." Here it usually means spec-from-code extracted a rule inaccurately. Review it with `purlin:spec <feature>`, correct the rule, then re-test. Only fix the code if the rule is right and you've found a genuine bug.
 
 The full loop:
 
 ```
-purlin:status               — see what needs tests (everything, initially)
-purlin:audit --design       — grade the generated proof descriptions; fix with purlin:spec
-build <feature>             — tests only, code is source of truth (see above)
-purlin:verify               — lock in verification receipts
+purlin:status               see what needs tests (everything, initially)
+purlin:audit --design       grade the generated proof descriptions; fix with purlin:spec
+build <feature>             tests only, the code is the source of truth (see above)
+purlin:verify               issue the verification receipts
 ```

@@ -2,11 +2,11 @@
 
 ## What You Need to Know
 
-Open `purlin-report.html` in a browser to see live coverage across your project. It's a static HTML file — no server needed.
+Open `purlin-report.html` in a browser to see live coverage across your project. It is a static HTML file. No server is needed.
 
 ```
-purlin:init --report    — toggle the dashboard on/off
-purlin:status           — updates the dashboard data (prints a clickable link)
+purlin:init --report    toggle the dashboard on or off
+purlin:status           update the dashboard data (prints a clickable link)
 ```
 
 The dashboard shows: summary strip, anchors section, feature table with coverage bars, and per-rule detail on click. Refresh the browser after running any Purlin command.
@@ -63,11 +63,11 @@ UNTESTED  →  PARTIAL  →  PASSING  →  VERIFIED
 
 A feature's "total rules" count includes rules from **all** sources:
 
-- **Own rules** — defined in the feature's `## Rules` section
-- **Required anchor rules** — from anchors listed in the feature's `> Requires:` field
-- **Global anchor rules** — from anchors with `> Global: true` (auto-applied to all features)
+- **Own rules**: defined in the feature's `## Rules` section
+- **Required anchor rules**: from anchors listed in the feature's `> Requires:` field
+- **Global anchor rules**: from anchors with `> Global: true`, applied to every feature
 
-A feature with 3 own rules and 2 global anchor rules has 5 total rules. It reaches PASSING only when all 5 are proved — including the anchor rules. This is why you may see a feature stuck at PARTIAL even after writing tests for all its own rules: the anchor rules need proofs too.
+A feature with 3 own rules and 2 global anchor rules has 5 total rules. It reaches PASSING only when all 5 are proved, the anchor rules included. That is why a feature can sit at PARTIAL after you have written tests for all of its own rules: the anchor rules need proofs too.
 
 ### Example
 
@@ -89,24 +89,24 @@ Even though all 3 of login's own rules pass, it's PARTIAL because 2 anchor rules
 
 ![Feature categories with coverage bars and status badges](images/dashboard-categories.png)
 
-- **Summary strip** — total features, verified count, passing count, incomplete count, failing count, and both quality gauges: Proof Design and Proof Integrity. Each gauge card headlines the figure weighted by measurement coverage, not the assessed score, so a score over a thin slice cannot read as a project-wide result: 100% Integrity from 11 graded proofs out of 643 reads `2%`. Beneath the headline the card states what it measured over (`566 of 586 measured`), coloured by that fraction, and its tooltip carries the per-level counts plus the unweighted assessed score, because a low headline caused by thin coverage needs a wider audit while one caused by bad proofs needs better tests
-- **Platform cards** — when some proof declares `@on(<platform>)`, the Verified, Passing and Proof Integrity cards become clickable and open a per-platform table; Failing joins them when a platform has a failing feature. The headline numbers stay the all-platform figures. Verified counts a feature only when every platform it declares is proved and receipted, so its sub-label names what is holding the count back: `34 on host, 30 on windows-2022` when a platform binds it, `every declared platform` when none does. Passing reads `4 awaiting a platform`. A Verified count that fell because a runner has not run yet is not a regression, and the sub-label is what says so. The first row of each table is this machine, badged `host` and labelled `this host` when it matches no registered platform: it covers the proofs that name no platform, which is where most of a project's Integrity coverage lives, and it is never read as a platform holding a feature back
+- **Summary strip**: total features, verified count, passing count, incomplete count, failing count, and both quality gauges, Proof Design and Proof Integrity. Each gauge card headlines the figure weighted by measurement coverage, not the assessed score, so a score over a thin slice cannot read as a project-wide result: 100% Integrity from 11 graded proofs out of 643 reads `2%`. Beneath the headline the card states what it measured over (`566 of 586 measured`), coloured by that fraction, and its tooltip carries the per-level counts plus the unweighted assessed score, because a low headline caused by thin coverage needs a wider audit while one caused by bad proofs needs better tests
+- **Platform cards**: when some proof declares `@on(<platform>)`, the Verified, Passing and Proof Integrity cards become clickable and open a per-platform table; Failing joins them when a platform has a failing feature. The headline numbers stay the all-platform figures. Verified counts a feature only when every platform it declares is proved and receipted, so its sub-label names what is holding the count back: `34 on host, 30 on windows-2022` when a platform binds it, `every declared platform` when none does. Passing reads `4 awaiting a platform`. A Verified count that fell because a runner has not run yet is not a regression, and the sub-label is what says so. The first row of each table is this machine, badged `host` and labelled `this host` when it matches no registered platform: it covers the proofs that name no platform, which is where most of a project's Integrity coverage lives, and it is never read as a platform holding a feature back
 
 ![The Verified card's per-platform table](images/dashboard-platforms.png)
 
-- **Platform chips** — a feature declaring a platform carries a chip per platform under its status badge: `win`, `mac` or `linux` with a mark, green when proved there, amber when awaiting a runner, red when failing. The badge itself never changes colour because of a platform; a PASSING badge held by an awaiting platform only gains a tooltip naming it. Hover a chip for the full record. The expanded detail carries the same information as a Platforms block, one line per platform with the host first and the runner and time that proved it. An id registered with `kind: environment`, such as `figma-mcp`, shows the id itself with an `env` badge rather than an OS abbreviation, and its tooltip says the id is satisfied only by a hand run with `PURLIN_PLATFORM=<id>` on a host that has it
-- **Anchors section** — all anchors from `specs/_anchors/` with coverage bars, status badges, and both quality gauges. Anchors are labeled with `ANCHOR` or `GLOBAL` pills.
-- **Features section** — features grouped by category (matching `specs/` subdirectories). Categories are expanded by default; click a category header to collapse one (the choice is remembered per browser).
-- **Expanded detail** — click any feature row to see per-rule proof status and audit findings (STRONG/WEAK/HOLLOW for tests, PROVABLE/LOOSE/UNPROVABLE for proof descriptions). Proofs declared in the spec's `## Proof` section that haven't been executed yet appear greyed with a "not run" tag — so the full coverage plan is visible even before any tests exist.
-- **Uncommitted files** — when `purlin:status` detects uncommitted spec or proof files, a collapsible section shows which files need committing
-- **Staleness indicator** — top-right corner shows time since last `purlin:status` run (amber after 1 hour, red after 24 hours)
+- **Platform chips**: a feature declaring a platform carries a chip per platform under its status badge: `win`, `mac` or `linux` with a mark, green when proved there, amber when awaiting a runner, red when failing. The badge itself never changes colour because of a platform; a PASSING badge held by an awaiting platform only gains a tooltip naming it. Hover a chip for the full record. The expanded detail carries the same information as a Platforms block, one line per platform with the host first and the runner and time that proved it. An id registered with `kind: environment`, such as `figma-mcp`, shows the id itself with an `env` badge rather than an OS abbreviation, and its tooltip says the id is satisfied only by a hand run with `PURLIN_PLATFORM=<id>` on a host that has it
+- **Anchors section**: every anchor from `specs/_anchors/`, with coverage bars, status badges and both quality gauges. Anchors are labeled with `ANCHOR` or `GLOBAL` pills.
+- **Features section**: features grouped by category, matching the `specs/` subdirectories. Categories are expanded by default; click a category header to collapse one (the choice is remembered per browser).
+- **Expanded detail**: click any feature row to see per-rule proof status and audit findings (STRONG, WEAK or HOLLOW for tests, PROVABLE, LOOSE or UNPROVABLE for proof descriptions). A proof declared in the spec's `## Proof` section that has not executed yet appears greyed with a "not run" tag, so the full coverage plan is visible before any tests exist.
+- **Uncommitted files**: when `purlin:status` detects uncommitted spec or proof files, a collapsible section shows which files need committing
+- **Staleness indicator**: the top-right corner shows the time since the last `purlin:status` run, amber after 1 hour and red after 24 hours
 
 ## Usage
 
 - **Refresh** the browser to pick up new data after running `purlin:status`, `purlin:verify`, or any skill that checks coverage.
-- **Dark/light mode** — toggle via the moon/sun icon in the top right.
-- **Sort** — click any column header to sort by that column.
-- **Expand** — click a feature row to see per-rule detail and audit findings.
+- **Dark and light mode**: toggle with the moon or sun icon in the top right.
+- **Sort**: click any column header to sort by that column.
+- **Expand**: click a feature row to see per-rule detail and audit findings.
 
 ## How Data Flows
 
@@ -204,5 +204,5 @@ The digest itself (`.purlin/report-data.js`) is never listed: it is rewritten by
 
 ## What's Committed, What's Not
 
-- **`purlin-report.html` is gitignored.** It's a symlink to the installed framework — each developer runs `purlin:init` to get their own.
-- **`.purlin/report-data.js` is committed.** It's the project digest — coverage and drift data that travels with the repo so stakeholders (QA, PM, compliance) can open the dashboard without running Purlin tools. A pre-commit hook installed by `purlin:init` regenerates it on every commit (configurable via `purlin:init --digest`: `auto`, `warn`, or `off`).
+- **`purlin-report.html` is gitignored.** It is a symlink to the installed framework, so each developer runs `purlin:init` to get their own.
+- **`.purlin/report-data.js` is committed.** It is the project digest: coverage and drift data that travels with the repo, so QA, PM and compliance readers can open the dashboard without running Purlin tools. The pre-commit hook `purlin:init` installs regenerates it on every commit. Set the mode with `purlin:init --digest`: `auto`, `warn` or `off`.

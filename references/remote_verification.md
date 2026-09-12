@@ -407,7 +407,7 @@ Test results:
   static_checks: PASSING (35/35 rules proved)
     ✓ @on(windows-2022) proved remotely 2 hours ago (github-actions/windows-2022)
   locking: PASSING (1/1 rules proved)
-    ⚠ AWAITING RUNNER: 1 proof declared @on(macos-14) with no result — PROOF-2
+    ⚠ AWAITING RUNNER: 1 proof declared @on(macos-14) with no result: PROOF-2
 ```
 
 "Proved remotely" is read from the commit trailer, never claimed from the proof entry: the entry

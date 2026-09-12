@@ -4,20 +4,20 @@
 
 Two ways to collaborate:
 
-- **External anchors** — designers, API teams, security teams publish specs to git repos or Figma. Your project creates an anchor pointing to it. Their rules become part of your coverage.
-- **Branch handoff** — push specs, proof files, and receipts on a branch. The next person pulls and sees exactly what's proved and what isn't.
+- **External anchors.** Designers, API teams and security teams publish specs to git repos or Figma. Your project creates an anchor pointing at one. Their rules become part of your coverage.
+- **Branch handoff.** Push specs, proof files and receipts on a branch. The next person pulls and sees what is proved and what is not.
 
 ```
-purlin:anchor create <name> --source <url>    — link to an external spec
-purlin:anchor sync <name>                     — pull latest from source
-purlin:init --pre-push                        — set warn mode for branch collaboration
+purlin:anchor create <name> --source <url>    link to an external spec
+purlin:anchor sync <name>                     pull the latest from the source
+purlin:init --pre-push                        set warn mode for branch collaboration
 ```
 
 ---
 
 ## External Anchors
 
-An anchor with `> Source:` is an external reference — a contract defined outside the project that shapes how code is written inside it. This is how designers, API teams, security teams, and product managers influence a project without touching its code.
+An anchor with `> Source:` is an external reference: a contract defined outside the project that shapes how code is written inside it. This is how designers, API teams, security teams and product managers influence a project without touching its code.
 
 ### How it works
 
@@ -30,7 +30,7 @@ An anchor with `> Source:` is an external reference — a contract defined outsi
    ```
    here's our design system: figma.com/design/abc123/Brand-System
    ```
-3. The anchor's rules become part of the project's coverage. Engineers must write tests proving compliance. Proof descriptions for anchor rules are graded like any other — but a LOOSE one must be fixed by strengthening the description, never by narrowing it, since the rule is a contract someone else owns.
+3. The anchor's rules become part of the project's coverage. Engineers must write tests proving compliance. Proof descriptions for anchor rules are graded like any other. Fix a LOOSE one by strengthening the description, never by narrowing it: the rule is a contract someone else owns.
 4. When the external source updates, `purlin:anchor sync` pulls the changes. If local rules conflict, `purlin:drift` surfaces them as PM action items.
 
 ### Examples
@@ -45,7 +45,7 @@ An anchor with `> Source:` is an external reference — a contract defined outsi
 
 ### The external reference is authoritative
 
-You can add local rules to an externally-referenced anchor — but you can't change the external source by editing the anchor file. The `> Source:` and `> Pinned:` fields point to what the external team published. `purlin:anchor sync` updates from that source. If your local rules conflict with a source update, `purlin:drift` surfaces the conflict for the PM to resolve.
+You can add local rules to an externally referenced anchor. You cannot change the external source by editing the anchor file. The `> Source:` and `> Pinned:` fields point to what the external team published. `purlin:anchor sync` updates from that source. If your local rules conflict with a source update, `purlin:drift` surfaces the conflict for the PM to resolve.
 
 ### CI staleness check
 
@@ -74,7 +74,7 @@ Pass a project back and forth between collaborators using git branches. Each per
 
 1. Person A works on the project, writes specs and code, pushes to a branch.
 2. Person B pulls the branch, continues where A left off.
-3. The specs, proof files, and receipts travel with the branch — the next person sees exactly what's proved and what isn't.
+3. The specs, proof files and receipts travel with the branch, so the next person sees what is proved and what is not.
 
 ### Pre-push mode matters
 
@@ -96,12 +96,14 @@ Select **warn**: the hook blocks only on FAILING proofs. Partial coverage (rules
 
 | Artifact | Purpose |
 |----------|---------|
-| `specs/**/*.md` | The rules — what the code must do |
-| `specs/**/*.proofs-*.json` | Test results — which rules are proved |
+| `specs/**/*.md` | The rules: what the code must do |
+| `specs/**/*.proofs-*.json` | Test results: which rules are proved |
 | `specs/**/*.proofs-*@<platform>.json` | Test results from one named platform, committed by whoever ran there |
-| `specs/**/*.receipt.json` | Verification receipts — certified completeness |
+| `specs/**/*.receipt.json` | Verification receipts: the record that every rule was proved at one commit |
 | `.purlin/config.json` | Team settings (test framework, pre-push mode, the `platforms` registry) |
 | `.purlin/report-data.js` | The derived numbers the dashboard reads |
+
+A proof can depend on a platform, on an environment or on a prerequisite, and each one has its own mechanism. The rule set has a single home: [references/remote_verification.md](../references/remote_verification.md), section "Platforms, environments and prerequisites".
 
 Platform-scoped proof files travel like any other proof file, and they are how a result from a machine you do not have reaches you: a `windows-2022` runner commits `<feature>.proofs-unit@windows-2022.json` with a `Purlin-Runner:` trailer, and your checkout reads it as evidence for that platform without ever running Windows. Your local run never rewrites it, because a run only writes the scope it ran in.
 

@@ -11,7 +11,7 @@ purlin:anchor sync <name>                       # Pull latest from external sour
 ```
 
 **Key concepts:**
-- Any spec in `specs/_anchors/` is an anchor — the directory is what makes it one
+- Any spec in `specs/_anchors/` is an anchor: the directory is what makes it one
 - Features must prove anchor rules to reach PASSING status
 - Global anchors (`> Global: true`) auto-apply to all features
 - Anchors can sync from external sources (git repos, Figma files)
@@ -73,7 +73,7 @@ Feature specs reference anchors in `> Requires:`:
 
 ## Forbidden Patterns
 
-Some rules define what code must **never** do. These are just rules with negative proofs -- there is no special FORBIDDEN mechanism in Purlin.
+Some rules define what code must **never** do. These are ordinary rules with negative proofs. Purlin has no special FORBIDDEN mechanism.
 
 ### Example
 
@@ -101,7 +101,7 @@ Input handling security standards. Prevents common injection attacks.
 
 A FORBIDDEN proof asserts absence, and `purlin:audit --design` grades it STRUCTURAL: the thing
 being checked (source text) exists independently of the test, so no code ran to produce it.
-STRUCTURAL is not a criticism — it is the correct shape for a FORBIDDEN rule, and it is
+STRUCTURAL is not a criticism. It is the correct shape for a FORBIDDEN rule, and it is
 excluded from the Design score rather than counted against it. The same proof will come back
 EXCLUDED from Proof Integrity for the same reason.
 
@@ -161,7 +161,7 @@ user_api: 3/5 rules proved
 
 ### Global anchors (automatic)
 
-Add `> Global: true` to make an anchor's rules apply to **every** non-anchor feature spec -- without needing `> Requires:`. Use this for project-wide constraints that no feature should opt out of: security baselines, coding standards, compliance requirements.
+Add `> Global: true` to make an anchor's rules apply to **every** non-anchor feature spec, with no `> Requires:` line. Use this for project-wide constraints that no feature should opt out of: security baselines, coding standards, compliance requirements.
 
 ```markdown
 # Anchor: no_eval
@@ -208,7 +208,7 @@ def test_no_eval_in_source():
 
 ## External References
 
-An anchor can optionally reference an external source (git repo, Figma file, compliance document). Purlin can sync the anchor's content from that source. The anchor file remains locally editable -- if local rules conflict with the external source, `purlin:anchor sync` flags the conflicts as drift.
+An anchor can optionally reference an external source (git repo, Figma file, compliance document). Purlin can sync the anchor's content from that source. The anchor file stays locally editable. If local rules conflict with the external source, `purlin:anchor sync` flags the conflicts as drift.
 
 ### Format
 
@@ -235,9 +235,9 @@ Color tokens from the design system.
 - PROOF-2 (RULE-2): CSS variable --color-error equals #d93025
 ```
 
-- **`> Source:`** -- git repo URL or Figma URL
-- **`> Path:`** -- file path within the source repo (git only)
-- **`> Pinned:`** -- commit SHA (git) or lastModified timestamp (Figma)
+- **`> Source:`**: git repo URL or Figma URL
+- **`> Path:`**: file path within the source repo (git only)
+- **`> Pinned:`**: commit SHA (git) or lastModified timestamp (Figma)
 
 Full format: [references/formats/anchor_format.md](../references/formats/anchor_format.md)
 
@@ -299,14 +299,14 @@ External sources can be unavailable. Handle this in CI:
     }
 ```
 
-- **Network failure** -- retry with backoff, then fail. Do not silently skip.
-- **Expired credentials** -- fail with a clear message pointing to credential setup.
-- **Deleted source repo** -- fail. The anchor's `> Source:` needs to be updated.
-- **Source file moved** -- fail. Update the anchor's `> Path:` field.
+- **Network failure**: retry with backoff, then fail. Do not silently skip.
+- **Expired credentials**: fail with a clear message pointing to credential setup.
+- **Deleted source repo**: fail. Update the anchor's `> Source:` field.
+- **Source file moved**: fail. Update the anchor's `> Path:` field.
 
 ### Figma anchors
 
-Figma design anchors are thin -- one rule per viewport, one screenshot comparison proof:
+Figma design anchors are thin: one rule per viewport, one screenshot comparison proof.
 
 ```markdown
 # Anchor: feedback_modal
@@ -327,6 +327,6 @@ Visual design constraints for the feedback modal, sourced from Figma.
 - PROOF-1 (RULE-1): Render component at same viewport size as Figma frame, capture screenshot, compare against Figma screenshot; verify visual match at design fidelity @e2e
 ```
 
-The anchor doesn't extract granular CSS values. During `purlin:build`, the agent reads Figma directly via MCP for full visual context -- the visual reference IS the spec. During `purlin:verify`, the system renders the component, captures a screenshot, and compares it against the Figma reference. Build time is creative; test time is mechanical.
+The anchor doesn't extract granular CSS values. During `purlin:build`, the agent reads Figma directly through MCP for full visual context: the visual reference is the spec. During `purlin:verify`, the system renders the component, captures a screenshot, and compares it against the Figma reference. Build time is creative; test time is mechanical.
 
 Behavioral annotations from the Figma design (interactions, validation, state changes) are documented in the anchor's "What it does" section but become rules in the feature spec that requires the anchor.

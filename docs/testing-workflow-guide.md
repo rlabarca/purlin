@@ -52,9 +52,9 @@ it("returns 200 on valid login [proof:auth_login:PROOF-1:RULE-1:integration]", a
 });
 ```
 
-Works with `ts-jest`. For **Vitest**, use the native TypeScript reporter `scripts/proof/vitest_purlin.ts` instead of `jest_purlin.js` — Vitest does not call Jest's reporter hooks. Register it in `vitest.config.ts`: `test: { reporters: ['default', '.purlin/plugins/vitest_purlin.ts'] }`.
+Works with `ts-jest`. For **Vitest**, use the native TypeScript reporter `scripts/proof/vitest_purlin.ts` instead of `jest_purlin.js`: Vitest does not call Jest's reporter hooks. Register it in `vitest.config.ts`: `test: { reporters: ['default', '.purlin/plugins/vitest_purlin.ts'] }`.
 
-### xUnit (.NET — C#, F#, VB.NET)
+### xUnit (.NET: C#, F#, VB.NET)
 
 The marker is a test trait, not a parsed string:
 
@@ -67,9 +67,9 @@ public void ValidLoginReturns200()
 }
 ```
 
-NUnit `[Category]`/`[Property]` and MSTest `[TestProperty]` surface the same way. Run with `dotnet test --logger purlin -- RunConfiguration.CollectSourceInformation=true`. Setup is manual — see [proofs_format.md](../references/formats/proofs_format.md) for wiring the `Purlin.TestLogger` assembly.
+NUnit `[Category]`/`[Property]` and MSTest `[TestProperty]` surface the same way. Run with `dotnet test --logger purlin -- RunConfiguration.CollectSourceInformation=true`. Setup is manual. See [proofs_format.md](../references/formats/proofs_format.md) for wiring the `Purlin.TestLogger` assembly.
 
-`CollectSourceInformation=true` (plus full PDBs) is what populates each proof's `test_file`; without surfaced source info `dotnet test` leaves it empty. `purlin:audit` handles that case anyway — it resolves the source from the fully-qualified `test_name` via `static_checks.py --resolve-source`, so C# Pass-1/Pass-2 works even when `test_file` is blank.
+`CollectSourceInformation=true` (plus full PDBs) is what populates each proof's `test_file`; without surfaced source info `dotnet test` leaves it empty. `purlin:audit` handles that case anyway: it resolves the source from the fully qualified `test_name` with `static_checks.py --resolve-source`, so Pass 1 and Pass 2 work on C# even when `test_file` is blank.
 
 ### Shell (Bash)
 
@@ -122,11 +122,11 @@ Not all proofs are equal:
 | **Level 2** | Code behavior with controlled inputs | `POST invalid password → 401` |
 | **Level 3** | End-to-end through the real system | `Open browser, enter wrong password, see error` |
 
-**Level 1 is UNPROVABLE** — reject it. `assert x is not None` proves nothing about behavior. `purlin:audit --design` flags a Level 1 *description* automatically, before any test is written against it. (HOLLOW is the matching verdict on the test side; the vocabularies stay separate on purpose — PROVABLE/LOOSE/UNPROVABLE describe descriptions, STRONG/WEAK/HOLLOW describe tests.)
+**Level 1 is UNPROVABLE.** Reject it. `assert x is not None` proves nothing about behaviour. `purlin:audit --design` flags a Level 1 *description* automatically, before any test is written against it. HOLLOW is the matching verdict on the test side. The two vocabularies stay separate on purpose: PROVABLE, LOOSE and UNPROVABLE describe descriptions, and STRONG, WEAK and HOLLOW describe tests.
 
-**Level 2 is the default** — fine for internal logic, data transforms, error handling, validation.
+**Level 2 is the default.** It is right for internal logic, data transforms, error handling and validation.
 
-**Level 3 is for certainty** — use when rules describe real-world outcomes:
+**Level 3 is for certainty.** Use it when a rule describes a real-world outcome:
 
 ```
 RULE: User completes checkout in under 3 clicks from cart
@@ -147,7 +147,7 @@ When a feature requires an anchor or is subject to a global anchor, those rules 
 
 ## Manual Proofs
 
-Some rules need human judgment — visual quality, UX flow, brand voice. Mark the proof `@manual` in the spec:
+Some rules need human judgment: visual quality, UX flow, brand voice. Mark the proof `@manual` in the spec:
 
 ```markdown
 - PROOF-5 (RULE-5): Verify error messages are clear and non-technical @manual
@@ -159,7 +159,7 @@ Some rules need human judgment — visual quality, UX flow, brand voice. Mark th
 verify login PROOF-5 manually
 ```
 
-This stamps the spec with who verified, when, and at what commit. If code changes after the stamp, Purlin flags it as stale — you re-verify.
+This stamps the spec with who verified, when and at what commit. If code changes after the stamp, Purlin flags it as stale and you re-verify.
 
 Manual proofs are first-class. A feature with 4 automated proofs and 1 manual stamp is VERIFIED.
 
@@ -175,7 +175,7 @@ Manual proofs are first-class. A feature with 4 automated proofs and 1 manual st
 
 There is no required order. This is the common path; `purlin:status` reads what exists and tells
 you the next step for the state you are actually in. Working spec-first, you stay at step 0
-until Proof Design is where you want it — nothing below needs to exist yet.
+until Proof Design is where you want it. Nothing below needs to exist yet.
 
 ### 0. Grade the proofs (no tests required)
 
@@ -317,8 +317,8 @@ The workflow template, both commit trailers (`Purlin-Runner:` and `Purlin-Platfo
 
 ## Proof Quality Auditing
 
-`purlin:audit` measures two gauges. It picks its mode from what exists — design-only when no
-proof has executed anywhere, both otherwise — and says which it chose.
+`purlin:audit` measures two gauges. It picks its mode from what exists, design only when no
+proof has executed anywhere and both otherwise, and says which it chose.
 
 **Proof Design** (`--design`) asks *is the claim provable?* It reads the rule and its proof
 description, needs no test code, and grades each description PROVABLE, LOOSE, UNPROVABLE or
@@ -328,11 +328,11 @@ EXCLUDED is excluded from Integrity. That is the assessed score; what the dashbo
 
 **Proof Integrity** (`--integrity`) asks *is the claim proven?* It reads test code. Three passes:
 
-**Pass 0.5 — Proof-file structural checks** (deterministic, JSON-only). Pre-audit validation of `.proofs-*.json` files before reading source code. Catches proof ID collisions (same PROOF-N targeting different RULE-N values) and orphaned proofs (PROOF-N targeting non-existent RULE-N).
+**Pass 0.5, proof-file structural checks** (deterministic, JSON only). It validates the `.proofs-*.json` files before any source code is read. It catches proof id collisions, where one PROOF-N targets two different RULE-N values, and orphaned proofs, where a PROOF-N targets a rule that does not exist.
 
-**Pass 1 — Static analysis: structural defect detection** (deterministic). Catches: `assert True`, no assertions, logic mirroring, mocking the thing being tested, bare `except: pass`. Any failure here is **HOLLOW** — no override possible.
+**Pass 1, static analysis for structural defects** (deterministic). It catches `assert True`, a test with no assertions, logic mirroring, mocking the thing being tested and a bare `except: pass`. Any failure here is **HOLLOW**, and no override is possible.
 
-**Pass 2 — Classification + semantic alignment** (LLM). First classifies each proof as structural or behavioral by examining test code AND fixture/setup context — structural proofs that only check pre-existing files are excluded from scoring. Then checks if behavioral assertions match the rule's intent. Returns **STRONG**, **WEAK**, or **EXCLUDED**.
+**Pass 2, classification and semantic alignment** (LLM). It first classifies each proof as structural or behavioural, reading the test code and its fixture and setup context. A structural proof that only checks pre-existing files is excluded from scoring. It then checks whether the behavioural assertions match the rule's intent, and returns **STRONG**, **WEAK** or **EXCLUDED**.
 
 ```
 Integrity score = (STRONG + MANUAL) / (STRONG + WEAK + HOLLOW + MANUAL) x 100%
@@ -340,9 +340,9 @@ Integrity score = (STRONG + MANUAL) / (STRONG + WEAK + HOLLOW + MANUAL) x 100%
 
 ### Assessed score vs reported score
 
-Both formulas above score the proofs the audit cache actually holds. Every project-wide surface
-— the dashboard cards, the `purlin:status` summary line — reports that score weighted by how
-much of the project it covers:
+Both formulas above score the proofs the audit cache holds. Every project-wide surface, the
+dashboard cards and the `purlin:status` summary line, reports that score weighted by how much
+of the project it covers:
 
 ```
 reported = passing / (gradeable + unmeasured)
@@ -361,16 +361,16 @@ description like "Verify authentication works" none of them can fire, so a test 
 almost nothing scores STRONG. A high Integrity score over LOOSE descriptions is evidence of an
 unfalsifiable spec, not of good tests.
 
-**What moves what.** HOLLOW is decided by static analysis of test code — no spec edit moves it.
-EXCLUDED is decided by the test's shape. WEAK is the only Integrity level spec prose can move,
-and narrowing a description to match a weak test lowers the claim instead of strengthening the
-evidence — never do that, and never on an anchor rule. The Design levels are the ones prose is
-meant to move.
+**What moves what.** HOLLOW is decided by static analysis of test code, so no spec edit moves
+it. EXCLUDED is decided by the test's shape. WEAK is the only Integrity level spec prose can
+move. Narrowing a description to match a weak test lowers the claim instead of strengthening
+the evidence. Never do that, and never on an anchor rule. The Design levels are the ones prose
+is meant to move.
 
 **Reaching a target.** With `N` behavioural proofs and `H` HOLLOW, the ceiling is `(N - H) / N`,
 a target `T` is reachable only if `H <= (1 - T) x N`, and the tests you must rewrite number
 `max(0, H - floor((1 - T) x N))`. For 287 proofs with 57 HOLLOW the ceiling is 80%, so a 90%
-target needs 29 tests rewritten — answer that before starting work, not after.
+target needs 29 tests rewritten. Answer that before starting the work, not after.
 
 Results are cached in `.purlin/cache/audit_cache.json`, and Design results in
 `.purlin/cache/design_cache.json` (keyed without test code, so a design grade survives test

@@ -9,9 +9,9 @@ This document defines how `purlin:audit` grades proofs. It measures two differen
 | **Proof Design** | *Is the claim provable?* | the rule and its proof description | No |
 | **Proof Integrity** | *Is the claim proven?* | the test code behind each proof | Yes |
 
-`purlin:verify` answers a third, separate question — *does it pass right now?* — and it alone owns pass/fail. Neither gauge is a gate.
+`purlin:verify` answers a third, separate question, *does it pass right now?*, and it alone owns pass/fail. Neither gauge is a gate.
 
-**Proof Design is a precondition for Proof Integrity meaning anything.** Many Integrity criteria below are comparisons against the proof description ("the description says verify X AND Y but the test only checks X"), so they can only fire when the description claims something specific. Against a description like `Verify authentication works`, a test asserting almost nothing satisfies every Integrity criterion trivially — there is nothing to contradict it. A high Integrity score over vague descriptions is not evidence of quality; it is evidence of an unfalsifiable spec. Criteria marked **[relative]** are the ones that depend on a `PROVABLE` description.
+**Proof Design is a precondition for Proof Integrity meaning anything.** Many Integrity criteria below are comparisons against the proof description ("the description says verify X AND Y but the test only checks X"), so they can only fire when the description claims something specific. Against a description like `Verify authentication works`, a test asserting almost nothing satisfies every Integrity criterion trivially: there is nothing to contradict it. A high Integrity score over vague descriptions is not evidence of quality; it is evidence of an unfalsifiable spec. Criteria marked **[relative]** are the ones that depend on a `PROVABLE` description.
 
 Pass D (Proof Design) needs only the spec. Pass 1 (deterministic static analysis) catches structural test defects like `assert True` and logic mirroring. Pass 2 (LLM) classifies proofs as structural or behavioral and checks whether behavioral tests prove their rules. Pass 1 is fast and always runs; Pass 2 runs only for proofs that survive it. To use custom criteria, set `audit_criteria` in `.purlin/config.json` (see below).
 
@@ -24,9 +24,9 @@ Graded from the rule and its proof description alone. No test code is read.
 | Level | Symbol | Meaning | Determined by |
 |-------|--------|---------|---------------|
 | PROVABLE | ✓ | Description names an observable outcome with concrete inputs and expected outputs; a faithful test can reach STRONG | Pass D |
-| LOOSE | ~ | Observable but underspecified — no expected value, happy path only, or a vague verb | Pass D |
-| UNPROVABLE | ✗ | Cannot yield behavioural evidence as written — tautological, or a presence/grep check while the rule describes runtime behaviour | Pass D |
-| STRUCTURAL | — | Legitimately a presence check, because the rule itself is structural. Excluded from Design scoring | Pass D |
+| LOOSE | ~ | Observable but underspecified, no expected value, happy path only, or a vague verb | Pass D |
+| UNPROVABLE | ✗ | Cannot yield behavioural evidence as written: tautological, or a presence/grep check while the rule describes runtime behaviour | Pass D |
+| STRUCTURAL |: | Legitimately a presence check, because the rule itself is structural. Excluded from Design scoring | Pass D |
 
 ### Proof Integrity levels
 
@@ -34,56 +34,56 @@ Graded from the test code.
 
 | Level | Symbol | Meaning | Determined by |
 |-------|--------|---------|---------------|
-| STRONG | ✓ | Test meaningfully proves the rule — assertions match proof description, tests real behavior | Pass 2 (LLM) |
-| WEAK | ~ | Test partially proves the rule — missing assertions, only happy path, looser than described | Pass 2 (LLM) |
-| HOLLOW | ✗ | Test passes but doesn't prove the rule — structural defect caught deterministically | Pass 1 (static) |
-| EXCLUDED | — | Structural presence check, not a behavioral proof. Excluded from Integrity scoring | Pass 2 (LLM) |
-| MANUAL | ● | Human-verified via @manual stamp — assess staleness only | Either pass |
+| STRONG | ✓ | Test meaningfully proves the rule: assertions match proof description, tests real behavior | Pass 2 (LLM) |
+| WEAK | ~ | Test partially proves the rule: missing assertions, only happy path, looser than described | Pass 2 (LLM) |
+| HOLLOW | ✗ | Test passes but doesn't prove the rule: structural defect caught deterministically | Pass 1 (static) |
+| EXCLUDED |: | Structural presence check, not a behavioral proof. Excluded from Integrity scoring | Pass 2 (LLM) |
+| MANUAL | ● | Human-verified via @manual stamp: assess staleness only | Either pass |
 
-**The two vocabularies never mix.** HOLLOW, WEAK, STRONG and EXCLUDED describe *tests*. PROVABLE, LOOSE, UNPROVABLE and STRUCTURAL describe *descriptions*. A `STRUCTURAL` description yields an `EXCLUDED` proof — that is the same judgment reached at two different stages.
+**The two vocabularies never mix.** HOLLOW, WEAK, STRONG and EXCLUDED describe *tests*. PROVABLE, LOOSE, UNPROVABLE and STRUCTURAL describe *descriptions*. A `STRUCTURAL` description yields an `EXCLUDED` proof: that is the same judgment reached at two different stages.
 
-## Pass D — Proof Design (specs only)
+## Pass D: Proof Design (specs only)
 
 Pass D grades the proof description against its rule. It reads no test code, so it runs on a
 spec-only project before any test exists. The criteria restated here are the authoring rules
 from `references/spec_quality_guide.md` ("Writing Proof Descriptions", "Proof Levels",
 "Visual proof descriptions", "E2E proof descriptions", "FORBIDDEN Grep Precision", "Edge Case
-Proof Specificity") — restated rather than linked because this file must be self-contained for
+Proof Specificity"): restated rather than linked because this file must be self-contained for
 external-LLM mode (see § External LLM Auditing).
 
 ### UNPROVABLE
 
-- **Level 1 description against a behavioural rule** — the description asks only that a value
+- **Level 1 description against a behavioural rule**: the description asks only that a value
   exists or has a type: "verify X exists", "check that Y is not null", "assert Z is present".
   A faithful test of such a description proves nothing about behaviour. This is the single most
   common design defect, and it guarantees a wasted build cycle: the test gets written, the
   audit rates it HOLLOW or EXCLUDED, and the work is redone.
-- **Presence check against a runtime rule** — the description greps a file or asserts a section
+- **Presence check against a runtime rule**: the description greps a file or asserts a section
   exists, while the rule uses runtime verbs (returns, rejects, responds, logs, retries,
   expires). Rewording the rule does not make the test behavioural; only new test code does.
-- **Tautological description** — the described assertion cannot fail, or compares a value to
+- **Tautological description**: the described assertion cannot fail, or compares a value to
   itself.
-- **`@e2e` description naming a source file or internal function** — an `@e2e` proof must read
+- **`@e2e` description naming a source file or internal function**: an `@e2e` proof must read
   as an observable flow (arrange → act → observe). "Call fetchWeather('Austin')" is not
   something a person does. Never assert a source constant; observe the value at the boundary it
   crosses.
 
 ### LOOSE
 
-- **Vague verb with no expected value** — "Test the login", "Verify authentication works",
+- **Vague verb with no expected value**: "Test the login", "Verify authentication works",
   "Check error handling". The description must be copy-pasteable into a test without
   interpretation.
-- **No expected value at all** — no literal, number, status code, or quoted string, so any
+- **No expected value at all**: no literal, number, status code, or quoted string, so any
   assertion satisfies it.
-- **Edge case without its trigger** — a boundary-condition proof that names the expected
+- **Edge case without its trigger**: a boundary-condition proof that names the expected
   output but not the specific input that triggers it ("verify IDs are sequential with no gaps"
   rather than "create a spec with RULE-1 and RULE-3, skipping RULE-2").
-- **Happy path only where the rule describes a constraint** — the rule says reject/block/limit
+- **Happy path only where the rule describes a constraint**: the rule says reject/block/limit
   but the description exercises only the accepted case. This is the design twin of the
   Integrity finding "missing negative test for constraint rules".
-- **Visual description coupled to implementation** — names CSS selectors, class names, or
+- **Visual description coupled to implementation**: names CSS selectors, class names, or
   `querySelector` instead of what a person would see.
-- **Implausible tier tag** — `@e2e` with no observable action verb, or an untagged description
+- **Implausible tier tag**: `@e2e` with no observable action verb, or an untagged description
   that needs a database, browser, or network. The design twin of "tier mismatch".
 - **Implausible platform tag**: `@on(<platform-id>[, ...])` is not a slower tier. It names the
   platforms the proof must be proved on and removes the proof from the local coverage path
@@ -93,12 +93,12 @@ external-LLM mode (see § External LLM Auditing).
   description under `@on(...)` that any host could verify is `LOOSE`: the tag hides a rule from
   local verification rather than merely mislabelling a test. The legacy `@windows` tier reads
   as `@unit @on(windows)` and is graded the same way.
-- **Imprecise FORBIDDEN grep** — a grep-for-absence pattern loose enough to match comments,
+- **Imprecise FORBIDDEN grep**: a grep-for-absence pattern loose enough to match comments,
   docstrings, or variable names containing the keyword.
 
 ### STRUCTURAL
 
-The rule itself is structural — a FORBIDDEN pattern, a document-content requirement, a
+The rule itself is structural: a FORBIDDEN pattern, a document-content requirement, a
 config-template field. "Grep src/ for eval(); verify zero matches" is a correct proof of a
 FORBIDDEN rule, not a defect. STRUCTURAL descriptions are excluded from Design scoring, exactly
 as EXCLUDED proofs are excluded from Integrity scoring.
@@ -116,58 +116,58 @@ A description is PROVABLE when all of these hold:
 - For constraint rules, it exercises the rejection, not only the acceptance
 - For `@e2e`, it reads as arrange → act → observe through the real running app
 
-## Pass 1 — Deterministic Checks (static_checks.py)
+## Pass 1: Deterministic Checks (static_checks.py)
 
-These are caught by static analysis (`scripts/audit/static_checks.py`). No LLM involved. A proof that fails any deterministic check is HOLLOW — no override possible.
+These are caught by static analysis (`scripts/audit/static_checks.py`). No LLM involved. A proof that fails any deterministic check is HOLLOW, no override possible.
 
 ### HOLLOW (always caught)
 
-- **Tautological assertions** — `assert True`, `assert result is not None`, `assert len(x) >= 0`, `self.assertTrue(True)`. These are true regardless of code behavior
-- **No assertion statements** — test function body contains zero assertion statements (`assert`, `self.assert*`, `pytest.raises`, `expect`). Test runs code but checks nothing
-- **Bare `except: pass`** — `except:` or `except Exception:` followed by `pass` around the code being tested. Failures are silently swallowed
-- **Logic mirroring** — the expected value is computed by the same function as the system under test. Example: `expected = hash_func(input); assert result == expected` where `hash_func` is the same code being tested. If the function has a bug, the test confirms the bug. Expected values must be literal constants or derived from an independent source
-- **Mock target match** — a `@patch` or `mock.patch` target contains the exact function name that the rule describes. Example: `@patch("auth.bcrypt.checkpw")` on a test proving a rule about bcrypt. The mock replaces the very behavior the rule requires
+- **Tautological assertions**: `assert True`, `assert result is not None`, `assert len(x) >= 0`, `self.assertTrue(True)`. These are true regardless of code behavior
+- **No assertion statements**: test function body contains zero assertion statements (`assert`, `self.assert*`, `pytest.raises`, `expect`). Test runs code but checks nothing
+- **Bare `except: pass`**: `except:` or `except Exception:` followed by `pass` around the code being tested. Failures are silently swallowed
+- **Logic mirroring**: the expected value is computed by the same function as the system under test. Example: `expected = hash_func(input); assert result == expected` where `hash_func` is the same code being tested. If the function has a bug, the test confirms the bug. Expected values must be literal constants or derived from an independent source
+- **Mock target match**: a `@patch` or `mock.patch` target contains the exact function name that the rule describes. Example: `@patch("auth.bcrypt.checkpw")` on a test proving a rule about bcrypt. The mock replaces the very behavior the rule requires
 
 ### Shell-specific checks
 
-- **Hardcoded pass** — `purlin_proof ... pass` with no preceding test logic (the result is hardcoded, not based on a check). Note: if/else pairs where the same proof ID appears in both branches (one pass, one fail) are recognized as conditional proofs — the if-condition is the assertion, and they are NOT flagged
-- **No assertion commands** — no `test`, `[`, `grep`, `diff`, or `||` patterns between proof markers
+- **Hardcoded pass**: `purlin_proof ... pass` with no preceding test logic (the result is hardcoded, not based on a check). Note: if/else pairs where the same proof ID appears in both branches (one pass, one fail) are recognized as conditional proofs: the if-condition is the assertion, and they are NOT flagged
+- **No assertion commands**: no `test`, `[`, `grep`, `diff`, or `||` patterns between proof markers
 
 ### JavaScript/TypeScript-specific checks
 
-- **`expect(true).toBe(true)`** — tautological, same as `assert True`
-- **No `expect()` calls** — test function body contains no assertions
+- **`expect(true).toBe(true)`**: tautological, same as `assert True`
+- **No `expect()` calls**: test function body contains no assertions
 
-### Proof-file structural checks (Pass 0.5 — language-agnostic)
+### Proof-file structural checks (Pass 0.5: language-agnostic)
 
 These checks operate on proof JSON files, not source code. They work for any language that emits proof files.
 
-- **Proof ID collision** — the same PROOF-N identifier appears in the proof file targeting different RULE-N values. This confuses proof tracking: one test's coverage may shadow another's, and the proof system cannot distinguish which test proves which rule. The test with the colliding ID must be reassigned a unique proof ID, or the extra marker must be removed
-- **Proof rule orphan** — a proof entry targets a RULE-N that does not exist in the spec file. This typically means the rule was removed or renumbered, but the test's proof marker was not updated. The proof claims to cover a non-existent rule
+- **Proof ID collision**: the same PROOF-N identifier appears in the proof file targeting different RULE-N values. This confuses proof tracking: one test's coverage may shadow another's, and the proof system cannot distinguish which test proves which rule. The test with the colliding ID must be reassigned a unique proof ID, or the extra marker must be removed
+- **Proof rule orphan**: a proof entry targets a RULE-N that does not exist in the spec file. This typically means the rule was removed or renumbered, but the test's proof marker was not updated. The proof claims to cover a non-existent rule
 
-## Pass 2 — Structural Classification + Semantic Alignment (LLM)
+## Pass 2: Structural Classification + Semantic Alignment (LLM)
 
-The LLM first classifies each proof as structural or behavioral, then evaluates behavioral proofs for semantic alignment with their rules. It does NOT check structural issues like `assert True` — those are handled by Pass 1. In Pass 2 the LLM can return STRONG, WEAK, or EXCLUDED; HOLLOW is reachable only from Pass 1, and the Design levels (PROVABLE/LOOSE/UNPROVABLE/STRUCTURAL) are reachable only from Pass D.
+The LLM first classifies each proof as structural or behavioral, then evaluates behavioral proofs for semantic alignment with their rules. It does NOT check structural issues like `assert True`: those are handled by Pass 1. In Pass 2 the LLM can return STRONG, WEAK, or EXCLUDED; HOLLOW is reachable only from Pass 1, and the Design levels (PROVABLE/LOOSE/UNPROVABLE/STRUCTURAL) are reachable only from Pass D.
 
 ### Structural vs Behavioral Classification (primary)
 
 The LLM examines the proof description, test code, AND fixture/setup code together to classify each proof.
 
-**Structural** — the content being checked exists independently of the test. The test reads pre-existing files or static content that no code in the test's setup chain produced. Examples:
+**Structural**: the content being checked exists independently of the test. The test reads pre-existing files or static content that no code in the test's setup chain produced. Examples:
 - Checking a config template has certain fields
 - Verifying a markdown doc has correct sections
 - Grepping source code for forbidden patterns
 - Reading a schema file and checking its structure
 
-**Behavioral** — the test verifies output produced by running code. This includes:
+**Behavioral**: the test verifies output produced by running code. This includes:
 - Direct function calls whose return value is asserted
 - E2E tests where a fixture runs the system (subprocess, API call, function invocation) and assertions check the artifacts it created
 - Tests that check files/strings CREATED by the test's setup chain
 - Tests where the "act" step is in a class-scoped fixture
 
-Key signal: if the fixture or setup runs code that produces the artifact being checked, the test is BEHAVIORAL — even if the assertions use string-matching or regex on file contents. The question is not "what do the assertions look like?" but "did code run to produce what's being asserted on?"
+Key signal: if the fixture or setup runs code that produces the artifact being checked, the test is BEHAVIORAL, even when the assertions use string matching or regex on file contents. The question is not "what do the assertions look like?" but "did code run to produce what's being asserted on?"
 
-Structural proofs are **excluded from the audit**. They are assessed as EXCLUDED, not scored, and not included in the Proof Integrity score. A proof description that Pass D graded `STRUCTURAL` is expected to land here — same judgment, reached earlier and more cheaply. They still run as checks in the test suite, but they are not proofs. Respond with `ASSESSMENT: EXCLUDED` and `CRITERION: structural presence check — not a behavioral proof`.
+Structural proofs are **excluded from the audit**. They are assessed as EXCLUDED, not scored, and not counted in the Proof Integrity score. A proof description that Pass D graded `STRUCTURAL` is expected to land here: the same judgment, reached earlier and more cheaply. They still run as checks in the test suite, but they are not proofs. Respond with `ASSESSMENT: EXCLUDED` and `CRITERION: structural presence check, not a behavioral proof`.
 
 ### WEAK (LLM judgment)
 
@@ -176,23 +176,23 @@ Structural proofs are **excluded from the audit**. They are assessed as EXCLUDED
 - Test only covers the happy path when the rule implies error handling
 - **[relative]** Assertion is looser than the proof description ("greater than 0" when proof says "exactly 3")
 - **[relative]** For API tests: checks status code but not the response shape or content
-- **Deep mocking** — for critical paths (auth, payments, data integrity), the test mocks the data-persistence layer entirely (database connector, file system, external API) rather than using an ephemeral real version (in-memory database, temp directory, test server). The test exercises application logic but the state is artificial — a real database constraint violation or network timeout would not be caught
-- **Assertion farming** — multiple assertions on the same object that test individual properties redundantly (`assert user.email is not None`, `assert "@" in user.email`, `assert len(user.email) > 5`) instead of one meaningful check (`assert user.email == "alice@example.com"` or schema validation)
-- **Missing negative test for constraint rules** (design twin: LOOSE "happy path only where the rule describes a constraint") — when the rule describes rejection or constraint behavior ("reject passwords under 8 characters", "block after 5 failed attempts"), the test only checks the happy path (valid password accepted). STRONG requires at least one negative test proving the constraint rejects what it should
-- **Catch-all assertions** — `assert resp.json()` (truthy check) instead of checking specific fields
-- **[relative] String containment instead of equality** — `assert "error" in resp.text` when the proof says "verify error message is 'invalid_credentials'"
-- **Presence/visibility-only assertion** (design twin: UNPROVABLE "Level 1 description against a behavioural rule") — the test asserts only that an element exists, is visible, or is attached (e.g. Playwright `Expect(locator).ToBeVisibleAsync()`, `.ToBeAttachedAsync()`; or a DOM `getByText(...)` truthy check) when the rule requires a specific value, text, count, or state. Visible ≠ correct content. STRONG requires asserting the value/text/count the rule describes (`ToHaveTextAsync`, `ToHaveValueAsync`, `ToHaveCountAsync`, or an equality check), not mere presence. The WEAK heuristics in this section apply to fluent / `Expect(...)`-style assertion chains the same as to `assert`/`expect()` — judge what the chain actually verifies, not its surface form
-- **Time-dependent tests without mocked clock** — `assert elapsed < 1.0` depends on machine speed, not code correctness
-- **Tautological escape hatch** — the assertion contains an OR/||/or branch that always evaluates to True, typically a comparison between test constants, fixture data, or literal values that makes the assertion pass regardless of what the code under test returns. Examples: Python `assert func() > 0 or CONSTANT not in OTHER_CONSTANT`, JavaScript `expect(result > 0 || FIXTURE === FIXTURE).toBe(true)`, Go `if result > 0 || expectedConst != "" { t.Log("ok") }`. The escape hatch may not be obvious — look for OR branches where both operands are defined in test setup rather than derived from code-under-test output
-- **Assertion validates test data, not code output** — the test's primary assertions check properties of the test's own setup data (constants, fixtures, mock return values) rather than output from the system under test. The test proves the test is correctly set up, not that the code works
-- **Name/value drift** — the test function name makes a numeric or behavioral claim (e.g. "fourteen_entries", "rejects_invalid") that contradicts the actual assertion values or logic (asserts 12, or doesn't test rejection). This suggests the code changed and the test was patched to pass without updating the name
-- **Fragile string parsing in assertions** — the assertion uses string splitting, slicing, or indexing to extract a value for comparison where a simpler direct check would be more robust. Example: `result.split('WARNING')[0]` to isolate a feature's output — this breaks with multiple features or reordered output
+- **Deep mocking**: for critical paths (auth, payments, data integrity), the test mocks the data-persistence layer entirely (database connector, file system, external API) rather than using an ephemeral real version (in-memory database, temp directory, test server). The test exercises application logic but the state is artificial: a real database constraint violation or network timeout would not be caught
+- **Assertion farming**: multiple assertions on the same object that test individual properties redundantly (`assert user.email is not None`, `assert "@" in user.email`, `assert len(user.email) > 5`) instead of one meaningful check (`assert user.email == "alice@example.com"` or schema validation)
+- **Missing negative test for constraint rules** (design twin: LOOSE "happy path only where the rule describes a constraint"): when the rule describes rejection or constraint behavior ("reject passwords under 8 characters", "block after 5 failed attempts"), the test only checks the happy path (valid password accepted). STRONG requires at least one negative test proving the constraint rejects what it should
+- **Catch-all assertions**: `assert resp.json()` (truthy check) instead of checking specific fields
+- **[relative] String containment instead of equality**: `assert "error" in resp.text` when the proof says "verify error message is 'invalid_credentials'"
+- **Presence/visibility-only assertion** (design twin: UNPROVABLE "Level 1 description against a behavioural rule"): the test asserts only that an element exists, is visible, or is attached (e.g. Playwright `Expect(locator).ToBeVisibleAsync()`, `.ToBeAttachedAsync()`; or a DOM `getByText(...)` truthy check) when the rule requires a specific value, text, count, or state. Visible ≠ correct content. STRONG requires asserting the value/text/count the rule describes (`ToHaveTextAsync`, `ToHaveValueAsync`, `ToHaveCountAsync`, or an equality check), not mere presence. The WEAK heuristics in this section apply to fluent / `Expect(...)`-style assertion chains the same as to `assert`/`expect()`: judge what the chain actually verifies, not its surface form
+- **Time-dependent tests without mocked clock**: `assert elapsed < 1.0` depends on machine speed, not code correctness
+- **Tautological escape hatch**: the assertion contains an OR/||/or branch that always evaluates to True, typically a comparison between test constants, fixture data, or literal values that makes the assertion pass regardless of what the code under test returns. Examples: Python `assert func() > 0 or CONSTANT not in OTHER_CONSTANT`, JavaScript `expect(result > 0 || FIXTURE === FIXTURE).toBe(true)`, Go `if result > 0 || expectedConst != "" { t.Log("ok") }`. The escape hatch may not be obvious: look for OR branches where both operands are defined in test setup rather than derived from code-under-test output
+- **Assertion validates test data, not code output**: the test's primary assertions check properties of the test's own setup data (constants, fixtures, mock return values) rather than output from the system under test. The test proves the test is correctly set up, not that the code works
+- **Name/value drift**: the test function name makes a numeric or behavioral claim (e.g. "fourteen_entries", "rejects_invalid") that contradicts the actual assertion values or logic (asserts 12, or doesn't test rejection). This suggests the code changed and the test was patched to pass without updating the name
+- **Fragile string parsing in assertions**: the assertion uses string splitting, slicing, or indexing to extract a value for comparison where a simpler direct check would be more robust. Example: `result.split('WARNING')[0]` to isolate a feature's output. That breaks with multiple features or reordered output
 
 **Mutation not named** (only when the project sets `mutation_checks: true` in `.purlin/config.json`): the author cannot name the mutation that was run for this proof: which behaviour was broken, and that the proof failed while it was broken. The project declared that every new or amended proof is mutation-checked before the commit that carries it (`references/spec_quality_guide.md` § Mutation check), so a proof with no mutation on record is graded no higher than WEAK regardless of how well its assertions read. A proof whose mutation is named and plausible is not promoted for that reason alone; the cap is removed, not the grade raised. When the project leaves `mutation_checks` at `false` this criterion does not apply and no proof is capped by it
 
-### Rule quality advisory (LLM judgment — WARNING, not a proof downgrade)
+### Rule quality advisory (LLM judgment: WARNING, not a proof downgrade)
 
-During Pass 2, the LLM also evaluates the **rule itself** (not just the proof). If the rule describes an implementation detail rather than observable behavior, emit a WARNING. This does not change the proof's assessment — a STRONG proof of an implementation-detail rule is still STRONG. The warning flags the rule for rewriting.
+During Pass 2, the LLM also evaluates the **rule itself** (not just the proof). If the rule describes an implementation detail rather than observable behavior, emit a WARNING. This does not change the proof's assessment: a STRONG proof of an implementation-detail rule is still STRONG. The warning flags the rule for rewriting.
 
 **Signals of an implementation-detail rule:**
 - Names a CSS value, variable, or technique (`margin-top: -66px`, `::before pseudo-element`, `var(--surface-primary)`)
@@ -202,9 +202,9 @@ During Pass 2, the LLM also evaluates the **rule itself** (not just the proof). 
 
 **Format:** `WARNING: RULE-N appears to describe implementation (names <what>). Consider rewriting as observable behavior.`
 
-The warning is informational — it helps the PM decide whether the rule is worth keeping. Some implementation-detail rules are intentional (e.g., "passwords hashed with bcrypt" in a compliance spec). The LLM flags, the human decides.
+The warning is informational: it helps the PM decide whether the rule is worth keeping. Some implementation-detail rules are intentional (e.g., "passwords hashed with bcrypt" in a compliance spec). The LLM flags, the human decides.
 
-Pass D findings use this same advisory mechanism: they report and never change an Integrity assessment. A proof can be STRONG against a LOOSE description — that combination is precisely the unfalsifiable case described at the top of this document, and it is reported as a Design finding, not an Integrity downgrade.
+Pass D findings use this same advisory mechanism: they report and never change an Integrity assessment. A proof can be STRONG against a LOOSE description: that combination is precisely the unfalsifiable case described at the top of this document, and it is reported as a Design finding, not an Integrity downgrade.
 
 ### STRONG (LLM judgment)
 
@@ -263,8 +263,8 @@ assessed or reads `not audited` (there is no partial case to weight).
 
 ### What moves which assessment
 
-- **HOLLOW** is decided by Pass 1 reading test code. No edit to a spec moves a HOLLOW proof —
-  only editing the test does, via `purlin:build`.
+- **HOLLOW** is decided by Pass 1 reading test code. No edit to a spec moves a HOLLOW proof:
+  only editing the test does, through `purlin:build`.
 - **EXCLUDED** is decided by the test's shape: did setup run code that produced the artifact
   being asserted on? Rewording a rule does not make a source-grep test behavioural. New test
   code does.
@@ -287,18 +287,18 @@ Worked example: 287 behavioural proofs, 57 HOLLOW. The ceiling is 230/287 = 80%.
 target, at most `0.10 × 287 = 28` HOLLOW proofs are tolerable, so **29 tests must be rewritten**
 and no amount of prose editing will reach it. An agent can state that before doing any work.
 
-The denominator includes only proofs that have been audited (STRONG + WEAK + HOLLOW + MANUAL). Rules with no proof at all (NONE) are excluded from both numerator and denominator — integrity measures proof quality only, while coverage (proved/total rules) is reported separately by purlin:status. Structural checks are excluded from both numerator and denominator. WEAK proofs count as 0 (they need strengthening). HOLLOW proofs count as 0 (they need rewriting).
+The denominator includes only proofs that have been audited (STRONG + WEAK + HOLLOW + MANUAL). Rules with no proof at all (NONE) are excluded from both numerator and denominator: integrity measures proof quality only, while coverage (proved/total rules) is reported separately by purlin:status. Structural checks are excluded from both numerator and denominator. WEAK proofs count as 0 (they need strengthening). HOLLOW proofs count as 0 (they need rewriting).
 
 ## Finding Priority
 
-Audit findings are grouped by the value of fixing them — how much real coverage the fix adds.
+Audit findings are grouped by the value of fixing them: how much real coverage the fix adds.
 
 | Tier | What it catches | Fix value |
 |------|----------------|-----------|
-| CRITICAL | Test proves nothing (no assertions, bare except, literal assert True) | Highest — the test is functionally absent |
-| HIGH | Real coverage gap (missing assertions, happy-path only, no negative test) | High — real behavior is untested |
-| MEDIUM | Self-confirming test (logic mirroring, mock target match) | Medium — test passes but could confirm bugs |
-| LOW | Weak assertion form (heuristic assert_true, assertion farming) | Low — test works but assertions are imprecise |
+| CRITICAL | Test proves nothing (no assertions, bare except, literal assert True) | Highest: the test is functionally absent |
+| HIGH | Real coverage gap (missing assertions, happy-path only, no negative test) | High: real behavior is untested |
+| MEDIUM | Self-confirming test (logic mirroring, mock target match) | Medium: test passes but could confirm bugs |
+| LOW | Weak assertion form (heuristic assert_true, assertion farming) | Low: test works but assertions are imprecise |
 
 When reporting, group findings by tier. When fixing (manually or via `purlin:build`), work top-down: CRITICAL first, then HIGH, MEDIUM, LOW. This ensures the highest-value fixes happen first, regardless of how many low-value findings exist.
 
@@ -306,7 +306,7 @@ When reporting, group findings by tier. When fixing (manually or via `purlin:bui
 
 - CRITICAL: `assert_true` (when `literal: true`), `no_assertions`, `bare_except`
 - MEDIUM: `logic_mirroring`, `mock_target_match`
-- LOW: `assert_true` (when `literal: false` — heuristic patterns like `assert x is not None`)
+- LOW: `assert_true` (when `literal: false`, meaning heuristic patterns like `assert x is not None`)
 
 **Pass 2 (LLM) tier mapping by criterion:**
 
@@ -327,7 +327,7 @@ Every cache entry, in either cache, must carry all nine fields:
 
 `feature` and `proof_id` are the deduplication key. An entry missing either one deduplicates
 under the empty key `('', '')`, so a whole batch of such entries collapses to a single
-surviving row and the score is then computed from one proof — a plausible, confident, wrong
+surviving row and the score is then computed from one proof: a plausible, confident, wrong
 percentage. `write_audit_cache` rejects such entries rather than merging them. `cached_at` is
 stamped by the writer, so a caller-supplied value is advisory.
 
@@ -341,8 +341,8 @@ Every entry also carries `auditor` as `{name, command}`, stamped by the writer f
 
 ### Cache behavior
 
-- Cache hits skip Pass 2 entirely — the cached STRONG/WEAK assessment is reused
-- Pass 0 (structural-only) and Pass 1 (deterministic) ALWAYS run — they are not cached. A test that was STRONG last time could have been edited to `assert True` — Pass 1 must catch this.
+- Cache hits skip Pass 2 entirely: the cached STRONG/WEAK assessment is reused
+- Pass 0 (structural-only) and Pass 1 (deterministic) ALWAYS run: they are not cached. A test that was STRONG last time could have been edited to `assert True`, and Pass 1 must catch that.
 - Cache misses go through Pass 2 normally, and the result is stored in the cache
 - The cache file is gitignored (per-machine, not shared)
 
@@ -361,17 +361,17 @@ No manual invalidation is needed. To force a full re-audit, delete `.purlin/cach
 
 ## E2E Proof Tier Integrity
 
-> "Integrity" here is the ordinary English word — these are Proof Integrity criteria scoped to
+> "Integrity" here is the ordinary English word: these are Proof Integrity criteria scoped to
 > the `@e2e` tier, not a third gauge.
 
-These criteria apply to **ALL proofs tagged `@e2e`** — feature specs and anchors alike, not just `design_*` anchors. The `@e2e` tag is a claim: the test exercises the real running app end-to-end. A test that carries the tag without delivering on the claim reports coverage that does not exist.
+These criteria apply to **ALL proofs tagged `@e2e`**: feature specs and anchors alike, not just `design_*` anchors. The `@e2e` tag is a claim: the test exercises the real running app end-to-end. A test that carries the tag without delivering on the claim reports coverage that does not exist.
 
-Both criteria are Pass 2 (LLM) judgments, not Pass 1 deterministic checks — static analysis cannot reliably tell whether a test drives a real UI (a shell-driven e2e run has no browser import; an MCP-driven browser leaves no framework fingerprint). The LLM sees the proof description, test code, and fixtures together and judges what actually ran.
+Both criteria are Pass 2 (LLM) judgments, not Pass 1 deterministic checks: static analysis cannot reliably tell whether a test drives a real UI (a shell-driven e2e run has no browser import; an MCP-driven browser leaves no framework fingerprint). The LLM sees the proof description, test code, and fixtures together and judges what actually ran.
 
 ### WEAK (LLM judgment)
 
-- **Tier mismatch** — the proof is tagged `@e2e` but the test never launches a browser, renderer, or full app stack: it imports a module and asserts return values, or reads a source/config file directly. The tag claims end-to-end coverage the test does not deliver. Fix: drive the real UI (navigate → interact → observe), or retag the proof to the tier the test actually exercises (unit or `@integration`). The converse also flags: a test that renders, routes, or inspects storage after a real flow but whose proof carries no tier tag is under-tagged — it cannot run in the unit tier
-- **Source-constant assertion** — the rule describes runtime or observable behavior, but the test imports a config constant or internal symbol and asserts its literal value (e.g. asserting `authConfig.scope === "access_as_user"` to prove a login-flow rule). This proves the constant is declared, not that the flow uses it. Fix: observe the value at the boundary it crosses — the outbound request, the rendered output, the persisted storage state after a real flow
+- **Tier mismatch**: the proof is tagged `@e2e` but the test never launches a browser, renderer, or full app stack: it imports a module and asserts return values, or reads a source/config file directly. The tag claims end-to-end coverage the test does not deliver. Fix: drive the real UI (navigate → interact → observe), or retag the proof to the tier the test actually exercises (unit or `@integration`). The converse also flags: a test that renders, routes, or inspects storage after a real flow but whose proof carries no tier tag is under-tagged, because it cannot run in the unit tier
+- **Source-constant assertion**: the rule describes runtime or observable behavior, but the test imports a config constant or internal symbol and asserts its literal value (e.g. asserting `authConfig.scope === "access_as_user"` to prove a login-flow rule). This proves the constant is declared, not that the flow uses it. Fix: observe the value at the boundary it crosses: the outbound request, the rendered output, the persisted storage state after a real flow
 
 For how to WRITE `@e2e` proof descriptions that avoid these findings, see `references/spec_quality_guide.md` ("E2E proof descriptions"). Pass D catches most of them before a test exists.
 
@@ -388,28 +388,28 @@ Design anchors (`design_*` specs) use a thin visual-match model: one rule per vi
 
 ### Automatic HOLLOW
 
-- **Stylesheet inspection without rendering** — test reads CSS/style values directly instead of rendering the component and comparing screenshots. The component might not render at all and the test would still pass
-- **Mocked DOM** — test creates a fake DOM structure instead of rendering the real component. Proves the mock, not the code
+- **Stylesheet inspection without rendering**: test reads CSS/style values directly instead of rendering the component and comparing screenshots. The component might not render at all and the test would still pass
+- **Mocked DOM**: test creates a fake DOM structure instead of rendering the real component. Proves the mock, not the code
 
 ### Automatic WEAK
 
-- **Missing screenshot comparison proof** — anchor has `> Visual-Reference:` but no screenshot comparison proof. Without it, visual drift from the reference is not caught
-- **Wrong viewport size** — Figma frame is 428px wide but test renders at 1024px. The comparison must use the same viewport size as the design
-- **Missing `@e2e` tag** — all design proofs require rendering and must be tagged `@e2e`
-- **Behavioral proofs in anchor** — behavioral proofs (click, type, select) belong in the feature spec that requires the anchor, not in the anchor itself
+- **Missing screenshot comparison proof**: anchor has `> Visual-Reference:` but no screenshot comparison proof. Without it, visual drift from the reference is not caught
+- **Wrong viewport size**: Figma frame is 428px wide but test renders at 1024px. The comparison must use the same viewport size as the design
+- **Missing `@e2e` tag**: all design proofs require rendering and must be tagged `@e2e`
+- **Behavioral proofs in anchor**: behavioral proofs (click, type, select) belong in the feature spec that requires the anchor, not in the anchor itself
 
 ## Anchor Rules
 
-When auditing proofs for rules that come from anchors (via `> Requires:` or `> Global: true`), the audit cannot recommend changing the rule — anchor files are read-only and externally owned.
+When auditing proofs for rules that come from anchors (through `> Requires:` or `> Global: true`), the audit cannot recommend changing the rule: anchor files are read-only and externally owned.
 
 For HOLLOW or WEAK proofs on anchor rules:
 - Recommend strengthening the TEST to fully satisfy the rule as written
 - If the rule itself seems wrong or unclear, output a separate "Recommendations for Anchor Author" section with the suggested change and the anchor source (`> Source:` URL)
-- Format: `→ Recommend to anchor author (<source>): RULE-N could be clearer — suggest: <proposed rewording>`
+- Format: `→ Recommend to anchor author (<source>): RULE-N could be clearer. Suggest: <proposed rewording>`
 
-The anchor rule is the contract. The test must satisfy it. If the contract is bad, flag it — but don't change it.
+The anchor rule is the contract. The test must satisfy it. If the contract is bad, flag it, but don't change it.
 
-The same constraint binds Pass D, and more tightly. A `LOOSE` or `UNPROVABLE` proof description for an anchor rule must be fixed by rewriting the *description* to demand stronger evidence — never by narrowing it to match whatever the test happens to do, and never by rewording the anchor rule. Narrowing a description on an anchor rule silently lowers a contract someone else owns.
+The same constraint binds Pass D, and more tightly. A `LOOSE` or `UNPROVABLE` proof description for an anchor rule must be fixed by rewriting the *description* to demand stronger evidence, never by narrowing it to match whatever the test happens to do, and never by rewording the anchor rule. Narrowing a description on an anchor rule silently lowers a contract someone else owns.
 
 ## External LLM Auditing
 
@@ -417,13 +417,13 @@ When Purlin is configured with an external audit LLM (`audit_llm` in config), th
 
 This eliminates shared-model bias: the implementing agent (Claude, via `purlin:build`) and the auditor (e.g., Gemini) use different model weights, different training data, and different biases. If Claude writes a subtly flawed test, the external LLM evaluates it independently.
 
-The audit criteria must be self-contained and unambiguous — the external LLM has no other context about Purlin. Every assessment level, every detection heuristic, and every quality check must be fully described in this document. **This is why Pass D restates the authoring criteria from `spec_quality_guide.md` rather than linking to them**: an external auditor cannot follow a link. It is a deliberate exception to the no-duplication rule in `CLAUDE.md`, not an oversight to consolidate later.
+The audit criteria must be self-contained and unambiguous: the external LLM has no other context about Purlin. Every assessment level, every detection heuristic, and every quality check must be fully described in this document. **This is why Pass D restates the authoring criteria from `spec_quality_guide.md` rather than linking to them**: an external auditor cannot follow a link. It is a deliberate exception to the no-duplication rule in `CLAUDE.md`, not an oversight to consolidate later.
 
 Both gauges are expressible in the structured response format. For a Design pass, `ASSESSMENT` is one of `PROVABLE|LOOSE|UNPROVABLE|STRUCTURAL`; for an Integrity pass it is one of `STRONG|WEAK|EXCLUDED`. Never mix the two vocabularies in one response.
 
 ## Additional Team Criteria
 
-Teams can add additional criteria that are **appended** to these built-in defaults. Built-in criteria always apply and cannot be weakened — additional criteria only add stricter checks. Additional criteria may target either gauge; state which one each added criterion grades, so a finding is never ambiguous about whether it is about a description or a test.
+Teams can add additional criteria that are **appended** to these built-in defaults. Built-in criteria always apply and cannot be weakened: additional criteria only add stricter checks. Additional criteria may target either gauge; state which one each added criterion grades, so a finding is never ambiguous about whether it is about a description or a test.
 
 ```json
 // .purlin/config.json
@@ -433,6 +433,6 @@ Teams can add additional criteria that are **appended** to these built-in defaul
 }
 ```
 
-When `audit_criteria` is set, `purlin:init --sync-audit-criteria` caches the external file locally. The `load_criteria()` function in `scripts/audit/static_checks.py` assembles the combined criteria (built-in + additional) — this is the single source for criteria loading logic. The `audit_criteria_pinned` SHA ensures reproducible audits.
+When `audit_criteria` is set, `purlin:init --sync-audit-criteria` caches the external file locally. The `load_criteria()` function in `scripts/audit/static_checks.py` assembles the combined criteria (built-in + additional): this is the single source for criteria loading logic. The `audit_criteria_pinned` SHA ensures reproducible audits.
 
 To sync: `purlin:init --sync-audit-criteria` pulls the latest version, saves to `.purlin/cache/additional_criteria.md`, and updates the pinned SHA.
