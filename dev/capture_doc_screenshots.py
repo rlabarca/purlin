@@ -1,6 +1,6 @@
 """Regenerate the dashboard screenshots embedded in docs/dashboard-guide.md.
 
-The two images under docs/images/ are hand-captured artifacts that go stale
+The three images under docs/images/ are hand-captured artifacts that go stale
 silently: they sat at the June six-card summary strip long after the Proof
 Design card shipped, because nothing regenerates them and nothing checks them.
 A third file, dashboard-features.png, was a byte-identical copy of
@@ -63,6 +63,21 @@ def main():
             },
         )
 
+        # dashboard-platforms.png: the Verified card's per-platform table,
+        # captured before anything is collapsed. Only when the project
+        # actually declares a platform; with none the card is inert and there
+        # is nothing to photograph.
+        if page.evaluate('!!(PURLIN_DATA && PURLIN_DATA.platform_testing)'):
+            page.click('.sc-verified')
+            page.wait_for_selector('#modal')
+            modal = page.query_selector('.modal').bounding_box()
+            page.screenshot(
+                path=os.path.join(IMAGES_DIR, 'dashboard-platforms.png'),
+                clip=modal,
+            )
+            page.keyboard.press('Escape')
+            page.wait_for_function('!document.getElementById("modal")')
+
         # dashboard-summary.png: every category collapsed, then the whole page.
         # Expanded, the table runs 5,400px tall and nothing is readable at the
         # width the guide renders it; collapsed, one frame carries what the alt
@@ -89,8 +104,12 @@ def main():
         )
         browser.close()
 
-    for name in ('dashboard-summary.png', 'dashboard-categories.png'):
+    for name in ('dashboard-summary.png', 'dashboard-categories.png',
+                 'dashboard-platforms.png'):
         path = os.path.join(IMAGES_DIR, name)
+        if not os.path.isfile(path):
+            print(f'  {name:28s} not captured (no platform declared)')
+            continue
         print(f'  {name:28s} {os.path.getsize(path):>9,} bytes')
 
 

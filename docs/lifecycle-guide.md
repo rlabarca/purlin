@@ -100,6 +100,7 @@ Quality guide: [references/spec_quality_guide.md](../references/spec_quality_gui
 | NO PROOF | No test linked to this rule |
 | MANUAL PROOF STALE | Manual stamp exists but code changed since |
 | MANUAL PROOF NEEDED | Manual proof declared but not stamped |
+| AWAITING RUNNER | The proof declares a platform that has no result here. It warns and never blocks: the rule leaves the coverage denominator rather than failing, and `purlin:test` dispatches a runner for it |
 
 ### Coverage at a glance
 
@@ -107,10 +108,19 @@ Quality guide: [references/spec_quality_guide.md](../references/spec_quality_gui
 
 ```
 22/42 features VERIFIED | Proof Design: 86% (566 of 586 measured, 91% of those assessed, 3 hours ago) | Proof Integrity: 2% (15 of 592 measured, 100% of those assessed, 78 days ago, run purlin:audit --integrity)
+Platforms (host: macos-14): macos-14 (host) 22/42 verified, Integrity 78% (40 of 51 measured) | windows-2022 18/42 verified, 4 proofs awaiting runner, proved 2 hours ago (github-actions/windows-2022)
 ```
 
 Each gauge states its own measurement coverage and its own age. A percentage without its
 denominator is what let 100% over 15 of 592 assessments read as a project-wide 100%.
+
+The `Platforms` line appears only when some proof declares `@on(<platform>)`. A proof tagged that
+way has to be proved on that platform and nowhere else: running it here proves nothing about
+there. Until a result arrives, the proof reports as awaiting a runner, its rule leaves the
+coverage denominator rather than failing, and the feature reads `PASSING*` with a legend under
+the table, whatever its receipt says. VERIFIED needs every declared platform proved and
+receipted. The receipt is still issued in the meantime and is still true about the platforms it
+names; the status is where the incompleteness is stated, and `purlin:test` is what closes it.
 
 Each feature gets detailed per-rule coverage. Features needing attention (FAILING, PARTIAL) sort to the top. Uncommitted spec/proof changes are flagged so you know the report may not reflect the latest state.
 

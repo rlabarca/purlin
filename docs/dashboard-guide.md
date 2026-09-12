@@ -90,6 +90,11 @@ Even though all 3 of login's own rules pass, it's PARTIAL because 2 anchor rules
 ![Feature categories with coverage bars and status badges](images/dashboard-categories.png)
 
 - **Summary strip** — total features, verified count, passing count, incomplete count, failing count, and both quality gauges: Proof Design and Proof Integrity. Each gauge card headlines the figure weighted by measurement coverage, not the assessed score, so a score over a thin slice cannot read as a project-wide result: 100% Integrity from 11 graded proofs out of 643 reads `2%`. Beneath the headline the card states what it measured over (`566 of 586 measured`), coloured by that fraction, and its tooltip carries the per-level counts plus the unweighted assessed score, because a low headline caused by thin coverage needs a wider audit while one caused by bad proofs needs better tests
+- **Platform cards** — when some proof declares `@on(<platform>)`, the Verified, Passing and Proof Integrity cards become clickable and open a per-platform table; Failing joins them when a platform has a failing feature. The headline numbers stay the all-platform figures. Verified counts a feature only when every platform it declares is proved and receipted, so its sub-label names what is holding the count back: `34 on host, 30 on windows-2022` when a platform binds it, `every declared platform` when none does. Passing reads `4 awaiting a platform`. A Verified count that fell because a runner has not run yet is not a regression, and the sub-label is what says so
+
+![The Verified card's per-platform table](images/dashboard-platforms.png)
+
+- **Platform chips** — a feature declaring a platform carries a chip per platform under its status badge: `win`, `mac` or `linux` with a mark, green when proved there, amber when awaiting a runner, red when failing. The badge itself never changes colour because of a platform; a PASSING badge held by an awaiting platform only gains a tooltip naming it. Hover a chip for the full record. The expanded detail carries the same information as a Platforms block, one line per platform with the host first and the runner and time that proved it
 - **Anchors section** — all anchors from `specs/_anchors/` with coverage bars, status badges, and both quality gauges. Anchors are labeled with `ANCHOR` or `GLOBAL` pills.
 - **Features section** — features grouped by category (matching `specs/` subdirectories). Categories are expanded by default; click a category header to collapse one (the choice is remembered per browser).
 - **Expanded detail** — click any feature row to see per-rule proof status and audit findings (STRONG/WEAK/HOLLOW for tests, PROVABLE/LOOSE/UNPROVABLE for proof descriptions). Proofs declared in the spec's `## Proof` section that haven't been executed yet appear greyed with a "not run" tag — so the full coverage plan is visible even before any tests exist.
@@ -151,6 +156,7 @@ The **Design** and **Integrity** columns are separate because they are separate 
 | `not audited` | Nothing has assessed this feature, or only part of it. Amber, because it is actionable. |
 | `structural` | Design only. Every description is a structural presence check, which is the correct proof for a structural rule. Teal, because there is nothing to fix. |
 | `excluded` | Integrity only. Every proof is excluded from scoring, so nothing is gradeable. Teal. |
+| `win ✓` `mac ⏳` `linux ✗` | Status column, under the badge. One chip per platform the feature's proofs declare: green proved there, amber awaiting a runner, red failing there. |
 
 `structural` and `excluded` are the same state in each gauge's own vocabulary: STRUCTURAL
 describes a description, EXCLUDED describes a test, and the two never mix. Hover any cell for
