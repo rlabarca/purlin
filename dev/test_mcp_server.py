@@ -1019,10 +1019,8 @@ class TestPlatformProofs:
         self._seed_unit()
         out = purlin_server.sync_status(self.project_root)
 
-        assert 'AWAITING RUNNER' in out, out
+        assert 'windows-2022: awaiting runner' in out, out
         assert 'PROOF-2' in out, "the awaiting line must name the proof id"
-        assert '@on(windows-2022)' in out, (
-            f"the awaiting line must name the platform, not the tier:\n{out}")
         assert 'NO PROOF' not in out, (
             "a platform proof that has not run there is waiting, not missing; "
             f"reporting NO PROOF sends someone to write a test that exists:\n{out}")
@@ -1038,7 +1036,7 @@ class TestPlatformProofs:
         # A result scoped to the declared id itself clears it (R == D).
         self._write_proofs('unit', [self._entry("PROOF-2", "RULE-2")], platform='windows-2022')
         out2 = purlin_server.sync_status(self.project_root)
-        assert 'AWAITING RUNNER' not in out2, out2
+        assert 'awaiting runner' not in out2, out2
         assert '2/2 rules proved' in out2, (
             f"the rule must rejoin the denominator once proved:\n{out2}")
 
@@ -1046,7 +1044,7 @@ class TestPlatformProofs:
         # it, because the registry says windows-2022 is a windows.
         self._write_spec('@unit @on(windows)')
         out3 = purlin_server.sync_status(self.project_root)
-        assert 'AWAITING RUNNER' not in out3, (
+        assert 'awaiting runner' not in out3, (
             f"a registered id of the declared family must satisfy the family:\n{out3}")
         assert '2/2 rules proved' in out3, out3
 
@@ -1055,7 +1053,7 @@ class TestPlatformProofs:
         self._remove_proofs('unit', 'windows-2022')
         self._write_proofs('unit', [self._entry("PROOF-2", "RULE-2")], platform='macos-14')
         out4 = purlin_server.sync_status(self.project_root)
-        assert 'AWAITING RUNNER' in out4 and '@on(windows)' in out4, (
+        assert 'windows: awaiting runner' in out4, (
             f"a result from another family must not satisfy windows:\n{out4}")
         assert '1/1 rules proved' in out4, out4
 
@@ -1094,7 +1092,7 @@ class TestPlatformProofs:
             'Purlin-Platform: windows')
 
         out = purlin_server.sync_status(self.project_root)
-        assert '@on(windows) proved remotely' in out, f"no provenance line:\n{out}"
+        assert 'windows: 1/1 proved remotely' in out, f"no provenance line:\n{out}"
         assert 'github-actions/windows-latest' in out, (
             f"the runner must come from the commit trailer:\n{out}")
         assert 'trailer says' not in out, (
@@ -1209,7 +1207,7 @@ class TestPlatformProofs:
         assert 'Undeclared platform result' in out, out
         assert 'locking.proofs-unit@ubuntu-24.json' in out and 'PROOF-2' in out, (
             f"the advisory must name the file and the proof:\n{out}")
-        assert 'AWAITING RUNNER' in out and '@on(windows)' in out, (
+        assert 'windows: awaiting runner' in out and 'PROOF-2' in out, (
             f"the undeclared result must not satisfy the declared platform:\n{out}")
         assert '2/2 rules proved' in out, f"coverage must be unchanged:\n{out}"
         assert 'locking: PASSING' in out, (
@@ -1251,7 +1249,7 @@ class TestPlatformProofs:
         assert '1/1 rules proved' in out, (
             f"the rule has a result, so it stays in the denominator:\n{out}")
         assert 'PARTIAL' not in out and '0/0' not in out, out
-        assert 'AWAITING RUNNER: 1 proof declared @on(windows)' in out, (
+        assert 'windows: awaiting runner, 1 proof (PROOF-1)' in out, (
             f"the unproved platform must still be reported:\n{out}")
         assert 'left the coverage denominator' not in out, (
             f"nothing left the denominator, so the line must not claim it:\n{out}")
@@ -1280,7 +1278,7 @@ class TestPlatformProofs:
         assert '2/2 rules proved' in out2 and 'locking: PASSING' in out2, (
             f"a rule with one awaiting proof and one proved proof stays in:\n{out2}")
         assert 'left the coverage denominator' not in out2, out2
-        assert 'AWAITING RUNNER: 2 proofs declared @on(windows)' in out2, out2
+        assert 'windows: awaiting runner, 2 proofs (PROOF-1, PROOF-2)' in out2, out2
 
 
 class TestRemoteVerificationMode:
@@ -1288,7 +1286,7 @@ class TestRemoteVerificationMode:
 
     Builds its own fixture rather than subclassing TestRunnerGatedProofs:
     inheriting would re-run every parent test under this class's name, and one
-    of those asserts `AWAITING RUNNER` is absent, which this line can contain.
+    of those asserts `awaiting runner` is absent, which this line can contain.
     """
 
     SPEC = (
@@ -1370,7 +1368,7 @@ class TestRemoteVerificationMode:
 
         # off, and the runner already proved it: nothing is stuck, so the line
         # must go. Keyed on declared rather than awaiting, this branch told a
-        # fully proved project its proofs "will stay AWAITING RUNNER".
+        # fully proved project its proofs "will stay awaiting".
         self._write_proofs('windows', [
             {"feature": "locking", "id": "PROOF-2", "rule": "RULE-2",
              "test_file": "dev/test_windows.py", "test_name": "test_msvcrt",
@@ -2542,3 +2540,257 @@ class TestPendingMigrationsAdvisory:
         assert 'Pending migration' not in result, result[:800]
         for mid in expected:
             assert mid not in result, f'{mid} still reported: {result[:800]}'
+
+
+class TestPlatformsLineAndDetailLines:
+    """sync_status RULE-57/58 and the RULE-18/40 marker.
+
+    The per-platform detail used to print an awaiting block, a denominator
+    note, a directive and one provenance line per satisfying file. Forty
+    features of that is not a report, and nothing said where the project stood
+    per platform at all.
+    """
+
+    def setup_method(self):
+        self.project_root = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.project_root, '.purlin'))
+        self.spec_dir = os.path.join(self.project_root, 'specs', 'app')
+        os.makedirs(self.spec_dir)
+
+    def teardown_method(self):
+        shutil.rmtree(self.project_root, ignore_errors=True)
+
+    def _config(self, platforms=None, **extra):
+        cfg = {'report': False, 'remote_verification': 'optional',
+               'version': '0.10.0', 'test_framework': 'pytest',
+               'spec_dir': 'specs', 'pre_push': 'off', 'mutation_checks': True,
+               'digest': 'auto'}
+        cfg.update(extra)
+        if platforms is not None:
+            cfg['platforms'] = platforms
+        with open(os.path.join(self.project_root, '.purlin', 'config.json'), 'w') as f:
+            json.dump(cfg, f)
+
+    def _spec(self, proofs, rules):
+        lines = ['# Feature: locking', '', '## What it does', 'Locks.', '', '## Rules']
+        lines += [f'- RULE-{i}: Rule {i}' for i in range(1, rules + 1)]
+        lines += ['', '## Proof'] + proofs
+        with open(os.path.join(self.spec_dir, 'locking.md'), 'w') as f:
+            f.write('\n'.join(lines) + '\n')
+
+    def _entry(self, pid, rule, status='pass'):
+        return {'feature': 'locking', 'id': pid, 'rule': rule,
+                'test_file': 'dev/test_locking.py', 'test_name': f'test_{pid.lower()}',
+                'status': status, 'tier': 'unit'}
+
+    def _proofs(self, entries, platform=None):
+        suffix = f'@{platform}' if platform else ''
+        data = {'tier': 'unit', 'proofs': entries}
+        if platform:
+            data['platform'] = platform
+            for e in entries:
+                e['platform'] = platform
+        with open(os.path.join(self.spec_dir,
+                               f'locking.proofs-unit{suffix}.json'), 'w') as f:
+            json.dump(data, f)
+
+    def _host(self, monkeypatch, os_name='macos', version='14.7.1', arch='arm64'):
+        monkeypatch.delenv('PURLIN_PLATFORM', raising=False)
+        monkeypatch.setattr(purlin_server, '_detect_host_platform', lambda: {
+            'os': os_name, 'version': version, 'distro': '', 'arch': arch,
+            'id': None})
+
+    @pytest.mark.proof("sync_status", "PROOF-92", "RULE-57", tier="integration")
+    def test_one_platforms_line_with_the_segment_grammar(self, monkeypatch):
+        self._host(monkeypatch)
+        self._config({'macos-14': {'os': 'macos', 'version': '14'},
+                      'windows-2022': {'os': 'windows'}})
+        self._spec(['- PROOF-1 (RULE-1): a @unit @on(macos-14)',
+                    '- PROOF-2 (RULE-2): b @unit @on(windows-2022)',
+                    '- PROOF-3 (RULE-3): c @unit @on(windows-2022)'], rules=3)
+        self._proofs([self._entry('PROOF-1', 'RULE-1')], platform='macos-14')
+
+        lines = purlin_server.sync_status(self.project_root).splitlines()
+        heads = [i for i, l in enumerate(lines) if l.startswith('Platforms (host: ')]
+        assert len(heads) == 1, f"exactly one Platforms line, got {len(heads)}"
+        line = lines[heads[0]]
+        assert line.startswith('Platforms (host: macos-14): '), line
+        mac, _, win = line.partition(' | ')
+        assert '(host)' in mac and 'verified' in mac, mac
+        assert '(host)' not in win, win
+        assert '2 proofs awaiting runner' in win, win
+        for zero in ('0 passing', '0 failing', '0 proofs awaiting runner'):
+            assert zero not in line, f"a zero clause must be omitted: {line}"
+        assert 'proved ' not in win, (
+            f"a platform never proved must carry no proved clause: {win}")
+
+        summary = next(i for i, l in enumerate(lines) if 'features VERIFIED' in l)
+        mode = next(i for i, l in enumerate(lines)
+                    if l.startswith('Remote verification:'))
+        assert heads[0] == summary + 1 and heads[0] == mode - 1, (
+            f"summary at {summary}, Platforms at {heads[0]}, mode at {mode}")
+
+        # Integrity appears once a grade exists for one of that platform's
+        # executed entries, with its measurement coverage beside it.
+        cache_dir = os.path.join(self.project_root, '.purlin', 'cache')
+        os.makedirs(cache_dir, exist_ok=True)
+        with open(os.path.join(cache_dir, 'audit_cache.json'), 'w') as f:
+            json.dump({'k1': {'feature': 'locking', 'proof_id': 'PROOF-1',
+                              'rule_id': 'RULE-1', 'assessment': 'STRONG',
+                              'criterion': 'c', 'why': 'w', 'fix': 'f',
+                              'priority': 'LOW',
+                              'cached_at': '2026-01-01T00:00:00Z'}}, f)
+        line = next(l for l in purlin_server.sync_status(self.project_root).splitlines()
+                    if l.startswith('Platforms (host: '))
+        assert 'Integrity 100% (1 of 1 measured)' in line.partition(' | ')[0], line
+
+        # Nothing declared: no line at all.
+        self._spec(['- PROOF-1 (RULE-1): a @unit'], rules=1)
+        os.remove(os.path.join(self.spec_dir, 'locking.proofs-unit@macos-14.json'))
+        self._proofs([self._entry('PROOF-1', 'RULE-1')])
+        out = purlin_server.sync_status(self.project_root)
+        assert 'Platforms (host: ' not in out, out
+
+    @pytest.mark.proof("sync_status", "PROOF-93", "RULE-58", tier="integration")
+    def test_one_detail_line_per_platform_in_four_forms(self, monkeypatch):
+        self._host(monkeypatch)
+        self._config({'macos-14': {'os': 'macos', 'version': '14'},
+                      'windows-2022': {'os': 'windows'}})
+        self._spec(['- PROOF-1 (RULE-1): a @unit @on(macos-14)',
+                    '- PROOF-2 (RULE-2): b @unit @on(windows-2022)',
+                    '- PROOF-3 (RULE-3): c @unit @on(windows-2022)',
+                    '- PROOF-4 (RULE-4): d @unit @on(linux)'], rules=4)
+        self._proofs([self._entry('PROOF-1', 'RULE-1')], platform='macos-14')
+        self._proofs([self._entry('PROOF-2', 'RULE-2'),
+                      self._entry('PROOF-3', 'RULE-3', 'fail')],
+                     platform='windows-2022')
+
+        def block(out):
+            lines = out.splitlines()
+            start = next(i for i, l in enumerate(lines) if l.startswith('locking:'))
+            end = next((i for i in range(start + 1, len(lines))
+                        if lines[i] == ''), len(lines))
+            return lines[start:end]
+
+        got = [l for l in block(purlin_server.sync_status(self.project_root))
+               if l[:4] in ('  ✓ ', '  ⚠ ', '  ✗ ')]
+        assert got == [
+            '  ✓ macos-14 (host): 1/1 proved',
+            '  ⚠ linux: awaiting runner, 1 proof (PROOF-4)',
+            '  ✗ windows-2022: 1/2 proved, 1 failing (PROOF-3)',
+        ], got
+
+        # A passing windows-2022 file turns its line into the remote form.
+        self._proofs([self._entry('PROOF-2', 'RULE-2'),
+                      self._entry('PROOF-3', 'RULE-3')], platform='windows-2022')
+        subprocess.run(['git', 'init', '-q'], cwd=self.project_root, capture_output=True)
+        for args in (['config', 'user.email', 't@t.com'], ['config', 'user.name', 'T'],
+                     ['add', '-A']):
+            subprocess.run(['git'] + args, cwd=self.project_root, capture_output=True)
+        subprocess.run(['git', 'commit', '-q', '-m',
+                        'test(locking): windows proofs\n\n'
+                        'Purlin-Runner: github-actions/windows-2022\n'
+                        'Purlin-Platform: windows-2022'],
+                       cwd=self.project_root, capture_output=True)
+        got = [l for l in block(purlin_server.sync_status(self.project_root))
+               if l.startswith('  ✓ windows-2022:')]
+        assert len(got) == 1 and 'proved remotely' in got[0] and \
+            'github-actions/windows-2022' in got[0] and got[0].startswith(
+                '  ✓ windows-2022: 2/2 proved remotely'), got
+
+        # Nothing awaiting: no directive, no platform-partial line.
+        self._spec(['- PROOF-1 (RULE-1): a @unit @on(macos-14)',
+                    '- PROOF-2 (RULE-2): b @unit @on(windows-2022)',
+                    '- PROOF-3 (RULE-3): c @unit @on(windows-2022)'], rules=3)
+        payload = purlin_server.read_report_payload(self.project_root)
+        vhash = payload['features'][0]['vhash']
+        with open(os.path.join(self.spec_dir, 'locking.receipt.json'), 'w') as f:
+            json.dump({'feature': 'locking', 'vhash': vhash, 'commit': 'abc1234',
+                       'timestamp': '2026-01-01T00:00:00Z', 'vhash_version': 2,
+                       'rules': ['RULE-1', 'RULE-2', 'RULE-3']}, f)
+        lines = block(purlin_server.sync_status(self.project_root))
+        assert not any('purlin:test' in l for l in lines), lines
+        assert not any('platform-partial' in l for l in lines), lines
+
+        # Restore the awaiting platform: both lines return.
+        self._spec(['- PROOF-1 (RULE-1): a @unit @on(macos-14)',
+                    '- PROOF-2 (RULE-2): b @unit @on(windows-2022)',
+                    '- PROOF-3 (RULE-3): c @unit @on(windows-2022)',
+                    '- PROOF-4 (RULE-4): d @unit @on(linux)'], rules=4)
+        payload = purlin_server.read_report_payload(self.project_root)
+        with open(os.path.join(self.spec_dir, 'locking.receipt.json'), 'w') as f:
+            json.dump({'feature': 'locking', 'vhash': payload['features'][0]['vhash'],
+                       'commit': 'abc1234', 'timestamp': '2026-01-01T00:00:00Z',
+                       'vhash_version': 2,
+                       'rules': ['RULE-1', 'RULE-2', 'RULE-3']}, f)
+        lines = block(purlin_server.sync_status(self.project_root))
+        assert any('purlin:test' in l for l in lines), lines
+        partial = [l for l in lines if 'platform-partial' in l]
+        assert len(partial) == 1 and partial[0].endswith('not on linux'), partial
+
+        # A feature declaring nothing prints none of these lines.
+        self._spec(['- PROOF-1 (RULE-1): a @unit'], rules=1)
+        for stale in ('locking.proofs-unit@macos-14.json',
+                      'locking.proofs-unit@windows-2022.json',
+                      'locking.receipt.json'):
+            os.remove(os.path.join(self.spec_dir, stale))
+        self._proofs([self._entry('PROOF-1', 'RULE-1')])
+        lines = block(purlin_server.sync_status(self.project_root))
+        assert not [l for l in lines if l[:4] in ('  ✓ ', '  ⚠ ', '  ✗ ')], lines
+
+    @pytest.mark.proof("sync_status", "PROOF-94", "RULE-18", tier="integration")
+    def test_the_marker_and_its_legend_render_and_vanish(self):
+        rows = [('alpha', 2, 2, 'PASSING'), ('beta', 2, 2, 'PASSING'),
+                ('gamma', 3, 3, 'VERIFIED'), ('delta', 1, 2, 'PARTIAL'),
+                ('epsilon', 0, 0, 'UNTESTED')]
+        marked = purlin_server._build_summary_table(
+            rows, platform_partial=frozenset({'beta', 'epsilon'}))
+        plain = purlin_server._build_summary_table(rows)
+
+        body = [l for l in marked if l.startswith('│')]
+        assert any('PASSING*' in l for l in body), body
+        assert any('UNTESTED*' in l for l in body), body
+        names = [l.split('│')[1].strip() for l in body[1:]]
+        assert names.index('beta') < names.index('alpha'), (
+            f"a held row must lead its status group: {names}")
+
+        legend = '* proved here, awaiting a declared platform. VERIFIED needs ' \
+                 'every declared platform proved and receipted'
+        assert marked.count(legend) == 1, marked
+        bottom = next(i for i, l in enumerate(marked) if l.startswith('└'))
+        assert marked[bottom + 1] == legend, marked[bottom:bottom + 2]
+
+        # Nothing marked: byte-identical to the pre-platform rendering.
+        assert not any('*' in l for l in plain if l.startswith('│')), plain
+        assert legend not in plain, plain
+        marked_box = [l for l in marked if l and l[0] in '┌│├└']
+        plain_box = [l for l in plain if l and l[0] in '┌│├└']
+        assert len(marked_box) == len(plain_box)
+
+    @pytest.mark.proof("sync_status", "PROOF-95", "RULE-40", tier="integration")
+    def test_the_status_column_is_ruled_from_the_tokens_rendered(self):
+        rows = [('alpha', 2, 2, 'PASSING'), ('beta', 2, 2, 'PASSING'),
+                ('gamma', 3, 3, 'VERIFIED'), ('delta', 1, 2, 'PARTIAL'),
+                ('epsilon', 0, 0, 'UNTESTED')]
+
+        def box(lines):
+            return [l for l in lines if l and l[0] in '┌│├└']
+
+        # `UNTESTED*` is 9 characters, one wider than any word in the status
+        # vocabulary. A column ruled from the vocabulary would push it through
+        # the right border, which is exactly how UNTESTED once overflowed.
+        marked = box(purlin_server._build_summary_table(
+            rows, platform_partial=frozenset({'epsilon'})))
+        assert len({len(l) for l in marked}) == 1, (
+            f"every rendered line must share a width: "
+            f"{sorted({len(l) for l in marked})}")
+        for line in [l for l in marked if l.startswith('│')]:
+            assert len(line.split('│')[3]) == 11, (
+                f"the status cell must be 9 wide plus its two spaces: {line!r}")
+
+        plain = box(purlin_server._build_summary_table(rows))
+        assert len({len(l) for l in plain}) == 1, (
+            f"{sorted({len(l) for l in plain})}")
+        for line in [l for l in plain if l.startswith('│')]:
+            assert len(line.split('│')[3]) == 10, (
+                f"the status cell must stay 8 wide plus its two spaces: {line!r}")

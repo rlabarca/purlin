@@ -107,7 +107,7 @@ on which platform:
 so it never claims more than was verified. The key is omitted when nothing is
 awaiting, so an ordinary receipt is unchanged. A receipt carrying it is a
 verified-here claim, not a verified-everywhere one.
-`sync_status` reports the same proofs as `AWAITING RUNNER`, and re-running verify
+`sync_status` reports the same proofs as awaiting a runner, and re-running verify
 after CI commits the results clears the list. See `specs/skills/skill_verify.md`
 RULE-9 and `specs/mcp/sync_status.md` RULE-47.
 

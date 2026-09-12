@@ -1724,8 +1724,9 @@ class TestSkillTestRemotePath:
             "Step 3 must distinguish the two kinds of pass by name")
         assert 'proved remotely' in step3, (
             "the sample output must mark a remotely-proved platform")
-        assert re.search(r'@on\([a-z0-9-]+\) proved remotely', step3), (
-            "the sample must name the platform with @on(<id>), not a tier tag")
+        assert re.search(r'[a-z0-9-]+: \d+/\d+ proved remotely', step3), (
+            "the sample must name the platform id and its fraction, not a tier "
+            "tag (sync_status RULE-58)")
 
         # Provenance is per scoped file, from both trailers.
         assert 'Purlin-Runner:' in step3, (

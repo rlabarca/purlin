@@ -50,7 +50,7 @@ Three invariants hold whatever the block says:
 1. **There is no local substitute for a platform.** A proof declared `@on(windows-2022)` is never
    run here by approximating it. A simulated Windows path is not a Windows proof.
 2. **A missing runner warns and never blocks.** A platform with no runner configured, or one whose
-   provider cannot be dispatched, leaves its proofs reporting `AWAITING RUNNER` and the run
+   provider cannot be dispatched, leaves its proofs reporting as awaiting a runner and the run
    continues. Warn, never block.
 3. **`PURLIN_PLATFORM` is set for the local run.** Without it the plugins fall back to the OS
    family, so a `macos-14` proof run here would land in `...@macos.json` and satisfy nothing the
@@ -139,7 +139,7 @@ yet.
 ```
 2 proofs are declared @on(windows-2022) and no workflow proves that platform.
 
-They will report AWAITING RUNNER until a host that satisfies windows-2022 runs them.
+They will report as awaiting a runner until a host that satisfies windows-2022 runs them.
 I can scaffold a GitHub Actions workflow that runs them on a windows-2022 runner and
 commits the scoped proof file back to this branch, and register that workflow under
 platforms.windows-2022 in .purlin/config.json so purlin:test can dispatch it.
@@ -203,9 +203,9 @@ remote one is the thing the developer cannot check by re-running:
 Test results:
   auth_login: PASSING (3/3 rules proved)
   static_checks: PASSING (35/35 rules proved)
-    ✓ @on(windows-2022) proved remotely 2 hours ago (github-actions/windows-2022)
+    ✓ windows-2022: 2/2 proved remotely 2 hours ago (github-actions/windows-2022)
   locking: PASSING (1/1 rules proved)
-    ⚠ AWAITING RUNNER: 1 proof declared @on(macos-14) with no result — PROOF-2
+    ⚠ macos-14: awaiting runner, 1 proof (PROOF-2)
   user_profile: PARTIAL (1/2 rules proved)
     RULE-2: NO PROOF → write a test with @pytest.mark.proof("user_profile", "PROOF-2", "RULE-2")
     → PARTIAL means more tests needed to reach PASSING.

@@ -102,6 +102,42 @@
     },
     {
       "feature": "sync_status",
+      "id": "PROOF-92",
+      "rule": "RULE-57",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_one_platforms_line_with_the_segment_grammar",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-93",
+      "rule": "RULE-58",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_one_detail_line_per_platform_in_four_forms",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-94",
+      "rule": "RULE-18",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_the_marker_and_its_legend_render_and_vanish",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-95",
+      "rule": "RULE-40",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_the_status_column_is_ruled_from_the_tokens_rendered",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
       "id": "PROOF-78",
       "rule": "RULE-46",
       "test_file": "dev/test_e2e_audit_cache_pipeline.py",

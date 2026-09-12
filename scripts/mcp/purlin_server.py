@@ -1452,6 +1452,48 @@ def _platforms_block(features, registry, host):
     return lines
 
 
+def _platforms_line(platform_summary, host_id):
+    """The one-line per-platform standing (sync_status RULE-57), or ''.
+
+    `Platforms (host: <id>): <segment> | <segment>`. A segment is the id, the
+    word `(host)` when it is this machine, the verified fraction, and up to
+    five clauses that are omitted when their count is zero: passing, failing,
+    proofs awaiting a runner, Integrity with its measurement coverage, and
+    when the platform was last proved and by which runner.
+
+    One line, because `purlin:status` is read in a terminal beside forty
+    feature rows: the per-platform detail belongs to the dashboard's modal and
+    to the per-feature lines, and a block here would push the table off the
+    screen. Empty when no proof declares a platform, so a project that never
+    opted in prints nothing.
+    """
+    if not platform_summary:
+        return ''
+    segments = []
+    for pid in sorted(platform_summary):
+        row = platform_summary[pid]
+        here = ' (host)' if pid == host_id else ''
+        parts = [f"{pid}{here} {row['verified']}/{row['features']} verified"]
+        if row['passing']:
+            parts.append(f"{row['passing']} passing")
+        if row['failing']:
+            parts.append(f"{row['failing']} failing")
+        awaiting = (row.get('proofs') or {}).get('awaiting') or 0
+        if awaiting:
+            parts.append(f"{awaiting} proof{'s' if awaiting != 1 else ''} "
+                         f"awaiting runner")
+        integrity = row.get('integrity') or {}
+        coverage = integrity.get('coverage') or {}
+        if coverage.get('total'):
+            parts.append(f"Integrity {integrity.get('weighted')}% "
+                         f"({coverage['measured']} of {coverage['total']} measured)")
+        if row.get('last_proved'):
+            prov = row.get('last_runner') or 'runner not recorded'
+            parts.append(f"proved {_relative_time(row['last_proved'])} ({prov})")
+        segments.append(', '.join(parts))
+    return f"Platforms (host: {host_id}): " + ' | '.join(segments)
+
+
 def _remote_verification_line(config, awaiting_count):
     """The project's declared remote-verification mode, or '' when silent.
 
@@ -1490,13 +1532,27 @@ def _remote_verification_line(config, awaiting_count):
             f"→ Run: purlin:test to set up a runner")
 
 
+def _bare(name):
+    """The feature name behind a table label: anchors render as `x (anchor)`."""
+    return name.split(' (', 1)[0]
+
+
 def _build_summary_table(summary_rows, audit_summary=None, design_summary=None,
                          gauges_by_feature=None, config=None, awaiting_count=0,
-                         platform_lines=None):
+                         platform_lines=None, platform_partial=frozenset(),
+                         platforms_line=''):
     """Build a coverage summary table with Unicode box-drawing characters.
 
     `platform_lines` is the Platforms block (sync_status RULE-52), printed
     after the remote-verification line and before the detail.
+
+    `platform_partial` names the features held at PASSING by a platform that
+    has not run. Their status token gains a `*` and one legend line under the
+    box explains it, because a PASSING row beside a VERIFIED one says nothing
+    about which of the two is waiting on a runner. `platforms_line` is the
+    RULE-57 one-liner, printed after the summary line and before the mode
+    line. Both default to empty, and with nothing declared the output is
+    byte-identical to what it was before platforms existed.
     """
     if not summary_rows:
         return []
@@ -1506,10 +1562,17 @@ def _build_summary_table(summary_rows, audit_summary=None, design_summary=None,
         _name, proved, total, status = row
         priority = {"FAILING": 0, "PARTIAL": 1, "PASSING": 2, "VERIFIED": 3, "UNTESTED": 4}.get(status, 5)
         ratio = proved / total if total else 0
-        return (priority, ratio, _name)
+        # Held rows lead their status group: within a block of PASSING rows
+        # the ones waiting on a platform are the ones with an action attached.
+        held = 0 if _bare(_name) in platform_partial else 1
+        return (priority, held, ratio, _name)
+
+    def _token(status, name):
+        return f"{status}*" if _bare(name) in platform_partial else status
 
     summary_rows = sorted(summary_rows, key=_sort_key)
     gauges_by_feature = gauges_by_feature or {}
+    marked = any(_bare(r[0]) in platform_partial for r in summary_rows)
 
     # Calculate column widths
     name_width = max(len(r[0]) for r in summary_rows)
@@ -1518,8 +1581,13 @@ def _build_summary_table(summary_rows, audit_summary=None, design_summary=None,
     # The longest status word is 8 characters (UNTESTED, VERIFIED). The column was
     # ruled for 9 and padded to 7, so those two overflowed the right border by one —
     # and a spec-only project is 100% UNTESTED, which misaligned every single row.
-    status_width = max(len(s) for s in
-                       ("VERIFIED", "PASSING", "FAILING", "PARTIAL", "UNTESTED", "Status"))
+    # Ruled from the tokens actually rendered, not from the vocabulary: a
+    # marked token is one character wider, and a column ruled for the word
+    # alone would push it through the right border the way UNTESTED once was.
+    status_width = max(
+        [len(s) for s in
+         ("VERIFIED", "PASSING", "FAILING", "PARTIAL", "UNTESTED", "Status")]
+        + [len(_token(r[3], r[0])) for r in summary_rows])
     # Both gauges share a width, ruled for the longest token ("unmeasured") so a
     # row cannot overflow its border the way UNTESTED once did.
     gauge_width = max(len('not audited'), len('structural'), len('Integrity'))
@@ -1546,7 +1614,8 @@ def _build_summary_table(summary_rows, audit_summary=None, design_summary=None,
             symbol = "UNTESTED"
         # Anchors are labelled "<name> (anchor)" in the row; the gauge lookup
         # keys on the bare feature name.
-        bare = name.split(' (', 1)[0]
+        symbol = _token(symbol, name)
+        bare = _bare(name)
         g = gauges_by_feature.get(bare, {})
         design_tok = _gauge_token(g.get('design'), 'design')
         integrity_tok = _gauge_token(g.get('audit'), 'integrity')
@@ -1555,6 +1624,10 @@ def _build_summary_table(summary_rows, audit_summary=None, design_summary=None,
             f"\u2502 {design_tok:>{gauge_width}} \u2502 {integrity_tok:>{gauge_width}} \u2502")
 
     lines.append(f"\u2514\u2500{'─' * name_width}\u2500\u2534{cov_rule}\u2534{status_rule}\u2534{gauge_rule}\u2534{gauge_rule}\u2518")
+    # One legend line, and only when a row carries the marker.
+    if marked:
+        lines.append("* proved here, awaiting a declared platform. VERIFIED "
+                     "needs every declared platform proved and receipted")
 
     # Summary line with optional integrity
     verified_count = sum(1 for _, _, _, s in summary_rows if s == "VERIFIED")
@@ -1590,6 +1663,12 @@ def _build_summary_table(summary_rows, audit_summary=None, design_summary=None,
             summary_line += " | No audit data \u2014 run purlin:audit for quality assessment"
 
     lines.append(summary_line)
+
+    # Where the project stands per platform, one line (RULE-57). It sits
+    # between the summary line and the mode line so the summary line, which
+    # skills/status/SKILL.md prints verbatim, keeps one job.
+    if platforms_line:
+        lines.append(platforms_line)
 
     # The declared remote-verification mode, on its own line rather than
     # appended: the summary line is already carrying two gauges with their own
@@ -2051,6 +2130,11 @@ def sync_status(project_root, role=None):
 
     summary_rows = []
     detail = []
+    # The per-platform records the Platforms line and the status marker are
+    # both read from, collected as each feature's verdict is computed rather
+    # than rebuilt afterwards (RULE-54).
+    records_by_feature = {}
+    platform_partial = set()
 
     # Process regular features
     # Per-feature gauges for the table's two quality columns. Same readers the
@@ -2085,6 +2169,12 @@ def sync_status(project_root, role=None):
         status = _determine_status(verdict['proved'], len(verdict['active_entries']),
                                    verdict['has_fail'], verdict['has_current_receipt'],
                                    verdict['platform_complete'])
+
+        records_by_feature[name] = _platform_records(
+            project_root, name, info, verdict['platforms'],
+            verdict['has_current_receipt'])
+        if not verdict['platform_complete']:
+            platform_partial.add(name)
 
         summary_rows.append((name, verdict['proved'],
                              len(verdict['active_entries']), status))
@@ -2136,6 +2226,12 @@ def sync_status(project_root, role=None):
                 verdict['has_fail'], verdict['has_current_receipt'],
                 verdict['platform_complete'])
 
+            records_by_feature[name] = _platform_records(
+                project_root, name, info, verdict['platforms'],
+                verdict['has_current_receipt'])
+            if not verdict['platform_complete']:
+                platform_partial.add(name)
+
             summary_rows.append((f"{name} (anchor)", verdict['proved'],
                                  len(verdict['active_entries']), a_status))
 
@@ -2152,14 +2248,28 @@ def sync_status(project_root, role=None):
         len(_awaiting_runner(name, info, all_proofs, registry))
         for name, info in features.items()
     )
+    host = _detect_host_platform()
     # The Platforms block (RULE-52): where each declared platform can be
     # proved from here. Empty when no proof declares one.
-    platform_lines = _platforms_block(features, registry, _detect_host_platform())
+    platform_lines = _platforms_block(features, registry, host)
+
+    # Where the project stands per platform, one line (RULE-57). Built from
+    # the same records the detail lines and the payload use.
+    audit_by_proof = {
+        (feat, e.get('proof_id', '')): e.get('assessment', '')
+        for feat, entries in audit_by_feature.items() for e in entries
+        if e.get('proof_id')
+    }
+    host_id = _host_id(registry, host)
+    platforms_line = _platforms_line(
+        _platform_summary(records_by_feature, all_proofs, audit_by_proof, host_id),
+        host_id)
 
     # Build summary table and combine output
     table_lines = _build_summary_table(summary_rows, audit_summary, design_summary,
                                        gauges_by_feature, config, awaiting_count,
-                                       platform_lines)
+                                       platform_lines, frozenset(platform_partial),
+                                       platforms_line)
 
     # Report data generation (side effect)
     if config.get('report'):
@@ -2348,36 +2458,64 @@ def _gauge_directives(name, gauges):
     return out
 
 
-def _runner_lines(project_root, name, info, pres, awaiting_rule_count):
-    """Report platform proofs: what is waiting, what does not count, and what
-    a runner already proved.
+def _platform_lines(project_root, name, info, pres, awaiting_rule_count,
+                    records, host_ids, receipted):
+    """One line per declared platform, host first, then at most three more.
 
-    A proof declaring a platform that has never run there reported nothing at
-    all. Its rule read PASS off a local proof, so the dashboard, the summary
-    line and the receipt were all silent about a platform the project claims
-    to support. That silence is the defect; the fix is a distinct AWAITING
-    RUNNER signal per platform that does not count against coverage and does
-    not block a receipt (sync_status RULE-47).
+    A proof declaring a platform that had never run there reported nothing at
+    all: its rule read PASS off a local proof, so every surface was silent
+    about a platform the project claims to support (sync_status RULE-47). The
+    fix is one line per platform saying what is proved there, what failed and
+    what is still waiting, in a fixed four-form grammar (RULE-58) so a reader
+    scanning forty features sees the same shape every time.
 
-    `pres` is the feature's `_platform_results`.
+    `records` is the feature's `_platform_records`; `host_ids` are the declared
+    ids this host satisfies; `receipted` says whether the feature holds a
+    current receipt, which is what makes a gap a platform-partial receipt
+    rather than an ordinary wait.
     """
     out = []
-    awaiting = pres['awaiting']
-    if awaiting:
-        by_platform = {}
-        for pid, _tier, platform in awaiting:
-            by_platform.setdefault(platform, []).append(pid)
-        for platform in sorted(by_platform):
-            ids = ', '.join(by_platform[platform])
-            n = len(by_platform[platform])
-            out.append(f"  \u26a0 AWAITING RUNNER: {n} proof{'s' if n != 1 else ''} "
-                       f"declared @on({platform}) with no result \u2014 {ids}")
+    # Host first: what was proved here needs no runner and is what the reader
+    # can act on without leaving the machine.
+    for platform in sorted(records, key=lambda pid: (pid not in host_ids, pid)):
+        rec = records[platform]
+        proved, declared = rec['proved'], rec['declared']
+        if rec['failed']:
+            n = len(rec['failed'])
+            out.append(f"  \u2717 {platform}: {proved}/{declared} proved, {n} failing "
+                       f"({', '.join(rec['failed'])})")
+        elif rec['awaiting']:
+            n = len(rec['awaiting'])
+            out.append(f"  \u26a0 {platform}: awaiting runner, {n} proof"
+                       f"{'s' if n != 1 else ''} ({', '.join(rec['awaiting'])})")
+        elif platform in host_ids:
+            out.append(f"  \u2713 {platform} (host): {proved}/{declared} proved")
+        else:
+            # Read from git, not from the proof file, which carries no
+            # timestamp on purpose (RULE-48).
+            prov = rec['provenance'] or {}
+            runner = prov.get('runner') or 'runner not recorded'
+            trailer = prov.get('trailer_platform')
+            if trailer and trailer != platform:
+                runner += f" (trailer says {trailer})"
+            when = f" {_relative_time(prov['when'])}" if prov.get('when') else ''
+            out.append(f"  \u2713 {platform}: {proved}/{declared} proved remotely"
+                       f"{when} ({runner})")
+
+    if pres['awaiting']:
         if awaiting_rule_count:
             out.append(f"  \u2192 {awaiting_rule_count} rule"
                        f"{'s' if awaiting_rule_count != 1 else ''} left the coverage "
                        f"denominator: every declared proof needs a runner")
         out.append("  \u2192 Run: purlin:test \u2014 it dispatches a runner for that platform "
                    "and pulls back the proofs it commits. Not a failure and not a blocker")
+        if receipted:
+            # The receipt is real and current; it just does not cover every
+            # platform the feature declares. Saying nothing here would let a
+            # VERIFIED-looking receipt stand in for a platform that never ran.
+            gaps = sorted({platform for _pid, _tier, platform in pres['awaiting']})
+            out.append("  \u26a0 Receipt is platform-partial: verified here, not on "
+                       + ', '.join(gaps))
 
     # A scoped file for a platform its proof does not declare (RULE-53).
     # Named, because a result that silently counts toward nothing looks like
@@ -2386,22 +2524,6 @@ def _runner_lines(project_root, name, info, pres, awaiting_rule_count):
         out.append(f"  \u26a0 Undeclared platform result: {pid} has a result in "
                    f"{name}.proofs-{tier}@{platform}.json but declares no platform "
                    f"it satisfies; it counts toward nothing")
-
-    # What a runner did prove, and when. Read from git rather than the proof
-    # file, which carries no timestamp on purpose (RULE-48).
-    for platform in sorted(pres['satisfied_by']):
-        for tier, result_platform in pres['satisfied_by'][platform]:
-            prov = _platform_provenance(project_root, info['path'], name, tier,
-                                        result_platform)
-            if not prov:
-                continue
-            when = _relative_time(prov['when']) if prov.get('when') else 'unknown'
-            runner = prov.get('runner') or 'runner not recorded'
-            trailer = prov.get('trailer_platform')
-            if trailer and trailer != result_platform:
-                runner += f" (trailer says {trailer})"
-            via = '' if result_platform == platform else f" via @{result_platform}"
-            out.append(f"  \u2713 @on({platform}) proved remotely {when} ({runner}){via}")
     return out
 
 
@@ -2588,6 +2710,14 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
     active_entries = verdict['active_entries']
     awaiting_rule_count = verdict['awaiting_rule_count']
     pres = verdict['platforms']
+    platform_records = _platform_records(project_root, name, info, pres,
+                                         verdict['has_current_receipt'])
+    host_ids = set(_host_platform_ids(registry, _detect_host_platform()))
+
+    def platform_detail():
+        return _platform_lines(project_root, name, info, pres,
+                               awaiting_rule_count, platform_records, host_ids,
+                               verdict['has_current_receipt'])
 
     total = len(rule_entries)
     deferred_count = sum(1 for _, _, _, is_def in rule_entries if is_def)
@@ -2678,7 +2808,7 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
             lines.append(f"{name}: {header_status}")
         lines.append(f"  {proved}/{active_total} rules proved \u2713{deferred_suffix}")
         lines.append(f"  vhash={vhash}")
-        lines.extend(_runner_lines(project_root, name, info, pres, awaiting_rule_count))
+        lines.extend(platform_detail())
 
         if receipt and not has_current_receipt:
             receipt_rules = set(receipt.get('rules', []))
@@ -2744,7 +2874,7 @@ def _report_feature(name, info, all_features, all_proofs, project_root, role,
     lines.append(f"{name}: {proved}/{active_total} rules proved{deferred_suffix}")
     lines.extend(warnings)
     lines.extend(advisories)
-    lines.extend(_runner_lines(project_root, name, info, pres, awaiting_rule_count))
+    lines.extend(platform_detail())
     if visual_hash_changed:
         lines.append("  \u26a0 Visual reference image was modified since rules were extracted")
         lines.append(f"  \u2192 Run: purlin:spec {name} (re-extract rules from updated image)")
@@ -3271,7 +3401,7 @@ def _platform_summary(records_by_feature, all_proofs, audit_by_proof, host_id):
                 'features': 0, 'verified': 0, 'passing': 0, 'failing': 0,
                 'awaiting': 0,
                 'proofs': {'declared': 0, 'proved': 0, 'failed': 0, 'awaiting': 0},
-                'integrity': None, 'last_proved': None,
+                'integrity': None, 'last_proved': None, 'last_runner': None,
             })
             row['features'] += 1
             row[record['status'].lower()] += 1
@@ -3279,9 +3409,11 @@ def _platform_summary(records_by_feature, all_proofs, audit_by_proof, host_id):
             row['proofs']['proved'] += record['proved']
             row['proofs']['failed'] += len(record['failed'])
             row['proofs']['awaiting'] += len(record['awaiting'])
-            when = (record['provenance'] or {}).get('when')
+            prov = record['provenance'] or {}
+            when = prov.get('when')
             if when and (row['last_proved'] is None or when > row['last_proved']):
                 row['last_proved'] = when
+                row['last_runner'] = prov.get('runner')
     for platform, row in summary.items():
         row['integrity'] = _platform_integrity(all_proofs, audit_by_proof,
                                                platform, host_id)
