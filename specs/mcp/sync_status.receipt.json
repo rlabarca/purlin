@@ -1,9 +1,9 @@
 {
   "feature": "sync_status",
-  "vhash": "88aa354d",
+  "vhash": "10e9e684",
   "vhash_version": 2,
-  "commit": "a508dabd0d3f963dc3ddb945b3e6964c9def71ad",
-  "timestamp": "2026-09-12T05:07:43.556899+00:00",
+  "commit": "bed092fb363392284d3f9b62958d33e17811ea86",
+  "timestamp": "2026-09-12T05:55:59.277010+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -62,6 +62,8 @@
     "RULE-59",
     "RULE-6",
     "RULE-60",
+    "RULE-61",
+    "RULE-62",
     "RULE-7",
     "RULE-8",
     "RULE-9",
@@ -112,7 +114,7 @@
     "RULE-25": "6133bf1071066205",
     "RULE-26": "07c50dd14d518760",
     "RULE-27": "f1c425084ec22126",
-    "RULE-28": "4d7fa129d851a675",
+    "RULE-28": "c9484935891fdacc",
     "RULE-29": "395315e070904cee",
     "RULE-3": "4f86c0932022b9f5",
     "RULE-30": "f6da2bf32dbe780d",
@@ -149,6 +151,8 @@
     "RULE-59": "327638338455d025",
     "RULE-6": "d7a520923fe66c2b",
     "RULE-60": "93d0da25667f794e",
+    "RULE-61": "7ad5cc4536278631",
+    "RULE-62": "e46003a3f6a9d781",
     "RULE-7": "6928d520a82f7961",
     "RULE-8": "6f164a612b02694f",
     "RULE-9": "4b189b05505f592d",
@@ -497,6 +501,26 @@
       "tier": "unit",
       "test_file": "dev/test_mcp_server.py",
       "test_name": "test_rule_labels",
+      "platform": null
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-100",
+      "rule": "RULE-61",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_a_cached_grade_dies_with_the_inputs_it_was_graded_against",
+      "platform": null
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-101",
+      "rule": "RULE-62",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_a_configured_auditor_that_cannot_run_warns_and_never_blocks",
       "platform": null
     },
     {
@@ -1592,10 +1616,10 @@
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T05:07:39.469460+00:00",
-      "commit": "a508dabd0d3f963dc3ddb945b3e6964c9def71ad",
+      "at": "2026-09-12T05:55:54.088606+00:00",
+      "commit": "bed092fb363392284d3f9b62958d33e17811ea86",
       "sweep": "dev/run_tests.sh",
-      "passed": 778,
+      "passed": 789,
       "failed": 0,
       "skipped": 27
     },
@@ -1658,8 +1682,8 @@
         "file": "specs/mcp/sync_status.proofs-integration.json",
         "tier": "integration",
         "platform": null,
-        "commit": "9d58a4a79229c77d947373099a250cbfadd417f3",
-        "committed_at": "2026-09-12T00:47:15-04:00",
+        "commit": "bed092fb363392284d3f9b62958d33e17811ea86",
+        "committed_at": "2026-09-12T01:52:55-04:00",
         "runner": null,
         "executed_in_test_run": true
       },

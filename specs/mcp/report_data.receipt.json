@@ -1,9 +1,9 @@
 {
   "feature": "report_data",
-  "vhash": "b27c4a7e",
+  "vhash": "cd544a22",
   "vhash_version": 2,
-  "commit": "a508dabd0d3f963dc3ddb945b3e6964c9def71ad",
-  "timestamp": "2026-09-12T05:07:43.556899+00:00",
+  "commit": "bed092fb363392284d3f9b62958d33e17811ea86",
+  "timestamp": "2026-09-12T05:55:59.277010+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -37,7 +37,9 @@
     "RULE-36",
     "RULE-37",
     "RULE-38",
+    "RULE-39",
     "RULE-4",
+    "RULE-40",
     "RULE-5",
     "RULE-6",
     "RULE-7",
@@ -77,7 +79,9 @@
     "RULE-36": "0dd875823499b45c",
     "RULE-37": "6b8156e6b2d49f5d",
     "RULE-38": "1f2fa92074f5cef7",
+    "RULE-39": "57e600ab09b686b8",
     "RULE-4": "21157cdfbb22486d",
+    "RULE-40": "ed632f36332c526b",
     "RULE-5": "25bcf9e30e9e2ef0",
     "RULE-6": "036c3482a0f33383",
     "RULE-7": "e244445cbbb272d9",
@@ -467,6 +471,26 @@
     },
     {
       "feature": "report_data",
+      "id": "PROOF-40",
+      "rule": "RULE-39",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_the_payload_always_says_which_tree_it_describes",
+      "platform": null
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-41",
+      "rule": "RULE-40",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_the_payload_names_the_auditor_and_counts_the_stale_grades",
+      "platform": null
+    },
+    {
+      "feature": "report_data",
       "id": "PROOF-5",
       "rule": "RULE-5",
       "status": "pass",
@@ -518,10 +542,10 @@
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T05:07:39.469460+00:00",
-      "commit": "a508dabd0d3f963dc3ddb945b3e6964c9def71ad",
+      "at": "2026-09-12T05:55:54.088606+00:00",
+      "commit": "bed092fb363392284d3f9b62958d33e17811ea86",
       "sweep": "dev/run_tests.sh",
-      "passed": 778,
+      "passed": 789,
       "failed": 0,
       "skipped": 27
     },
@@ -539,8 +563,8 @@
         "file": "specs/mcp/report_data.proofs-integration.json",
         "tier": "integration",
         "platform": null,
-        "commit": "9d58a4a79229c77d947373099a250cbfadd417f3",
-        "committed_at": "2026-09-12T00:47:15-04:00",
+        "commit": "bed092fb363392284d3f9b62958d33e17811ea86",
+        "committed_at": "2026-09-12T01:52:55-04:00",
         "runner": null,
         "executed_in_test_run": true
       },

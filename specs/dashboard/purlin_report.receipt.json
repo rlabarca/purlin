@@ -1,9 +1,9 @@
 {
   "feature": "purlin_report",
-  "vhash": "138a541e",
+  "vhash": "b33520d6",
   "vhash_version": 2,
-  "commit": "a508dabd0d3f963dc3ddb945b3e6964c9def71ad",
-  "timestamp": "2026-09-12T05:07:43.556899+00:00",
+  "commit": "bed092fb363392284d3f9b62958d33e17811ea86",
+  "timestamp": "2026-09-12T05:55:59.277010+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -44,6 +44,7 @@
     "RULE-42",
     "RULE-43",
     "RULE-44",
+    "RULE-45",
     "RULE-5",
     "RULE-6",
     "RULE-7",
@@ -102,6 +103,7 @@
     "RULE-42": "ea66da162dc443dd",
     "RULE-43": "302865a89a419154",
     "RULE-44": "b69684a11f01851a",
+    "RULE-45": "0c04b1ca104acc4b",
     "RULE-5": "fdfe653cd40722ec",
     "RULE-6": "81e8de2c1879a739",
     "RULE-7": "a6ab30281d9d4087",
@@ -703,6 +705,16 @@
     },
     {
       "feature": "purlin_report",
+      "id": "PROOF-49",
+      "rule": "RULE-45",
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_invalidated_grades_and_named_auditor_surface_on_the_card",
+      "platform": null
+    },
+    {
+      "feature": "purlin_report",
       "id": "PROOF-5",
       "rule": "RULE-5",
       "status": "pass",
@@ -754,10 +766,10 @@
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T05:07:39.469460+00:00",
-      "commit": "a508dabd0d3f963dc3ddb945b3e6964c9def71ad",
+      "at": "2026-09-12T05:55:54.088606+00:00",
+      "commit": "bed092fb363392284d3f9b62958d33e17811ea86",
       "sweep": "dev/run_tests.sh",
-      "passed": 778,
+      "passed": 789,
       "failed": 0,
       "skipped": 27
     },
@@ -784,8 +796,8 @@
         "file": "specs/dashboard/purlin_report.proofs-e2e.json",
         "tier": "e2e",
         "platform": null,
-        "commit": "9d58a4a79229c77d947373099a250cbfadd417f3",
-        "committed_at": "2026-09-12T00:47:15-04:00",
+        "commit": "bed092fb363392284d3f9b62958d33e17811ea86",
+        "committed_at": "2026-09-12T01:52:55-04:00",
         "runner": null,
         "executed_in_test_run": true
       },
