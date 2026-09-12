@@ -1,0 +1,24 @@
+{
+  "version": "0.10.0",
+  "test_framework": "pytest",
+  "spec_dir": "specs",
+  "pre_push": "warn",
+  "remote_verification": "optional",
+  "mutation_checks": false,
+  "report": true,
+  "digest": "auto",
+  "platforms": {
+    "ubuntu-24": {
+      "os": "linux",
+      "distro": "ubuntu",
+      "version": "24.04",
+      "arch": "x86_64",
+      "label": "Ubuntu 24.04 LTS",
+      "runner": {
+        "provider": "github",
+        "runs_on": "ubuntu-24.04",
+        "workflow": "purlin-ubuntu-24-proofs"
+      }
+    }
+  }
+}

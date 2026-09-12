@@ -1,0 +1,14 @@
+# Purlin runtime (generated, not committed)
+.purlin/runtime/
+
+# Purlin cache (Proof Integrity and Proof Design results, additional criteria)
+.purlin/cache/
+
+# Purlin plugin cache
+.purlin/plugins/__pycache__/
+
+# Per-user config overlay (machine-local overrides, never shared)
+.purlin/config.local.json
+
+# Dashboard HTML (symlinked from the installed plugin)
+/purlin-report.html

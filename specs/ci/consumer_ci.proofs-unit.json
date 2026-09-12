@@ -1,0 +1,23 @@
+{
+  "tier": "unit",
+  "proofs": [
+    {
+      "feature": "consumer_ci",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_consumer_ci.py",
+      "test_name": "test_fixture_workflows_equal_the_rendered_templates",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "consumer_ci",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_consumer_ci.py",
+      "test_name": "test_fixture_is_a_complete_tracked_consumer_project",
+      "status": "pass",
+      "tier": "unit"
+    }
+  ]
+}

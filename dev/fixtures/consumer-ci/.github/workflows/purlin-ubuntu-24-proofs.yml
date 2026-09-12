@@ -1,0 +1,110 @@
+name: purlin-ubuntu-24-proofs
+
+on:
+  push:
+    # Loop guard, half one: the runner's own proof commit must not retrigger it.
+    paths-ignore:
+      - '**/*.proofs-*@ubuntu-24.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  proofs:
+    runs-on: ubuntu-24.04
+    env:
+      # The only per-runner input any proof plugin reads. It names the scoped
+      # proof file the plugins write; without it they fall back to the OS
+      # family and this runner's results would land under `windows`.
+      PURLIN_PLATFORM: ubuntu-24
+      # Where the Purlin tooling is checked out. In the purlin repository
+      # itself set this to `.` and delete the "Install Purlin tooling" step
+      # below: that repository is the plugin.
+      PURLIN_PLUGIN_ROOT: ${{ runner.temp }}/purlin
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Purlin tooling
+        # A consumer checkout holds specs, proofs, receipts and `.purlin/`, and
+        # no Purlin `scripts/`. Pin the tag: an unpinned clone changes what the
+        # preflight enforces between one run and the next.
+        shell: bash
+        run: |
+          git clone --depth 1 --branch two-gauges-remote-verification \
+            https://github.com/rlabarca/purlin.git "$PURLIN_PLUGIN_ROOT"
+
+      - name: Preflight
+        # Fails the job when the project's `.purlin/plugins/` copies are stale
+        # or a legacy migration is pending. Stale copies predate platform
+        # scoping and write agnostic files that satisfy no platform, so the run
+        # would look green and prove nothing.
+        # -> Run: purlin:init --update and commit
+        shell: bash
+        run: python3 "$PURLIN_PLUGIN_ROOT/scripts/update/migrate.py" --check --project-root .
+
+      - name: Install the test runner
+        # Per-framework setup block, chosen from `test_framework`. See
+        # references/supported_frameworks.md, "Runner setup".
+        #   pytest        pip install pytest
+        #   jest, vitest  npm ci
+        #   xunit         dotnet restore
+        #   php           composer install
+        #   c             the platform's C toolchain (gcc via the image's
+        #                 package manager on linux, Xcode command line tools on
+        #                 macos, the MSVC build tools on windows)
+        #   shell, sql    nothing beyond python3; `actions/setup-python` above
+        #                 puts `python3` on PATH on all three runner OSes, which
+        #                 is what those two plugins' embedded interpreter needs
+        shell: bash
+        run: pip install pytest
+
+      - name: Run the ubuntu-24 proofs
+        shell: bash
+        run: python3 -m pytest tests/test_greeting.py -v
+
+      - name: Commit the proof files back to the branch
+        # Every `run:` step in this template is `shell: bash` on purpose.
+        # PowerShell is the default shell on windows runners and it parses a
+        # leading `@` in a path as a splat, so `'**/*.proofs-*@<id>.json'` is
+        # not the argument you wrote. Git Bash ships on the windows images.
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # This platform's files only. The same run also writes agnostic
+          # proof files for the markers that declare no platform, and those
+          # must not travel back: they would overwrite the developer's own
+          # results with this runner's.
+          git add '**/*.proofs-*@ubuntu-24.json'
+          if git diff --cached --quiet; then
+            echo "No proof-file changes to commit."
+          else
+            # Loop guard, half two, and the provenance sync_status reads back.
+            # Both trailers in ONE -m, joined by a newline through printf.
+            # Each -m is a separate paragraph and git parses trailers out of
+            # the LAST paragraph only, so two -m flags leave `Purlin-Runner`
+            # unreadable to `git log --format=%(trailers:key=Purlin-Runner)`
+            # and the report says `runner not recorded` after a green run.
+            # printf rather than a literal newline inside the argument: a bare
+            # newline there would end the YAML block scalar.
+            git commit -m "test: ubuntu-24 proofs from ubuntu-24.04 [skip ci]" \
+                       -m "$(printf 'Purlin-Runner: github-actions/ubuntu-24.04\nPurlin-Platform: ubuntu-24')"
+            # Several platform runners may commit to this branch at once, so
+            # the first push can lose a race it did nothing wrong to lose.
+            for attempt in 1 2 3; do
+              if git pull --rebase origin "$GITHUB_REF_NAME" && \
+                 git push origin "HEAD:$GITHUB_REF_NAME"; then
+                exit 0
+              fi
+              echo "push attempt $attempt lost a race; retrying"
+            done
+            echo "could not push the proof commit after 3 attempts"
+            exit 1
+          fi
