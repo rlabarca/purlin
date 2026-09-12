@@ -11,6 +11,7 @@ through sync_status parsing and (for PROOF-9) LLM evaluation.
 Run with: python3 -m pytest dev/test_e2e_spec_migration.py -v
 """
 
+import hashlib
 import json
 import os
 import re
@@ -22,7 +23,10 @@ import tempfile
 import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'mcp'))
-from purlin_server import sync_status, _scan_specs
+from purlin_server import sync_status, _scan_specs, read_report_payload
+
+SKILL_PATH = os.path.normpath(os.path.join(
+    os.path.dirname(__file__), '..', 'skills', 'spec-from-code', 'SKILL.md'))
 
 
 # ---------------------------------------------------------------------------
@@ -76,6 +80,33 @@ def _get_metadata(content, field):
 def _has_section(content, section):
     """Check if a markdown section exists."""
     return bool(re.search(r'^## ' + section, content, re.MULTILINE))
+
+
+def _skill_text():
+    """The skill definition under test (this spec's Scope)."""
+    with open(SKILL_PATH, encoding='utf-8') as f:
+        return f.read()
+
+
+def _feature_block(output, name):
+    """The lines of sync_status output that belong to one feature's section."""
+    block = []
+    capture = False
+    for line in output.splitlines():
+        if re.match(r'^[A-Za-z_][\w-]*: ', line):
+            capture = line.startswith(name + ': ')
+        if capture:
+            block.append(line)
+    return '\n'.join(block)
+
+
+def _payload_feature(project_root, name):
+    """One feature record from the project's dashboard payload."""
+    payload = read_report_payload(project_root)
+    assert payload, 'read_report_payload returned nothing for the fixture project'
+    by_name = {f['name']: f for f in payload['features']}
+    assert name in by_name, f'{name} missing from the dashboard payload: {sorted(by_name)}'
+    return by_name[name]
 
 
 # ---------------------------------------------------------------------------
@@ -198,30 +229,127 @@ Users can view and edit their profile, including uploading an avatar image.
 """
 
 
+# The legacy companion files Phase 1 step 3a must read past when it globs
+# features/**/*.md for migration candidates.
+LEGACY_IMPL_COMPANION = """\
+# Implementation Notes: login
+
+## Active Deviations
+
+| Spec says | Implementation does | Status |
+| --- | --- | --- |
+| Lockout after 10 failures | Lockout after 5 failures | PM-ACCEPTED |
+"""
+
+LEGACY_DISCOVERIES_COMPANION = """\
+# Discoveries: login
+
+- [BUG] M3: error banner overlaps the password field (RESOLVED)
+- [BUG] M7: expired session redirects to / instead of /login (OPEN)
+"""
+
+# The compliant spec a migration of features/auth/login.md would write. The
+# migration step is agent prose, so this file stands in for its output; what the
+# test proves is that specs/auth/login.md is the path the toolchain reads.
+MIGRATED_LOGIN_SPEC = """\
+# Feature: login
+
+> Description: Authenticates users via email and password.
+> Scope: src/auth/login.py
+> Stack: python/flask
+
+## What it does
+
+Authenticates users via email and password, with rate limiting.
+
+## Rules
+
+- RULE-1: POST /login with valid credentials returns 200 with a JWT token
+- RULE-2: POST /login with a wrong password returns 401 Unauthorized
+- RULE-3: The 11th login attempt after 10 failures returns 429 Too Many Requests
+
+## Proof
+
+- PROOF-1 (RULE-1): POST /login as alice@example.com with the right password; verify 200 and a JWT @integration
+- PROOF-2 (RULE-2): POST /login as alice@example.com with a wrong password; verify 401 @integration
+- PROOF-3 (RULE-3): Fail login 10 times then try again; verify 429 @integration
+"""
+
+# Same feature as MISSING_DESCRIPTION_SPEC, differing only by the
+# `> Description:` line: the contrast that makes the missing-field check fail
+# against a broken parser instead of restating the fixture.
+DOCUMENTED_DESCRIPTION_SPEC = """\
+# Feature: notifications_documented
+
+> Description: Sends email and SMS notifications to users.
+> Scope: src/notify/email.py, src/notify/sms.py
+> Stack: python/stdlib, twilio
+
+## What it does
+
+Sends email and SMS notifications to users.
+
+## Rules
+
+- RULE-1: Email notifications are sent for order confirmations
+- RULE-2: SMS notifications are sent for delivery updates
+- RULE-3: Users can opt out of SMS notifications
+
+## Proof
+
+- PROOF-1 (RULE-1): Create an order; verify confirmation email sent @integration
+- PROOF-2 (RULE-2): Update delivery status; verify SMS sent @integration
+- PROOF-3 (RULE-3): Set opt-out; trigger SMS; verify not sent @integration
+"""
+
+NO_RULES_SECTION_SPEC = """\
+# Feature: legacy_thing
+
+> Description: An old note that never became a spec.
+> Scope: src/legacy/thing.py
+
+## What it does
+
+Prose only: no rules, no proofs.
+"""
+
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-10", "RULE-5", tier="e2e")
-def test_legacy_given_when_then_converted_to_rules(tmp_path):
-    """Legacy Given/When/Then scenarios become numbered RULE-N lines."""
+def test_legacy_features_dir_is_phase1_detection_scope(tmp_path):
+    """A legacy features/ spec counts for nothing until Phase 1 finds it."""
     _make_project(tmp_path, features={
         'features/auth/login.md': LEGACY_GIVEN_WHEN_THEN,
+        'features/auth/login.impl.md': LEGACY_IMPL_COMPANION,
+        'features/auth/login.discoveries.md': LEGACY_DISCOVERIES_COMPANION,
     })
 
-    content = LEGACY_GIVEN_WHEN_THEN
-    scenarios = re.findall(r'### (.+)', content)
-    assert len(scenarios) == 3, "Expected 3 scenarios in the legacy spec"
-
-    # The migration would produce a compliant spec. For this test,
-    # we verify the detection logic identifies 3 scenarios that
-    # would each become a RULE-N line.
-    given_when_then_blocks = re.findall(
+    # The migration input: three Given/When/Then scenarios in the legacy file.
+    blocks = re.findall(
         r'(Given .+?\nWhen .+?\nThen .+?)(?=\n\n|\n###|\Z)',
-        content, re.DOTALL
+        LEGACY_GIVEN_WHEN_THEN, re.DOTALL
     )
-    assert len(given_when_then_blocks) == 3, (
-        f"Expected 3 Given/When/Then blocks, got {len(given_when_then_blocks)}"
+    assert len(blocks) == 3, f"Expected 3 Given/When/Then blocks, got {len(blocks)}"
+
+    # Observable half: the toolchain sees nothing, so the legacy spec is a
+    # migration candidate rather than covered work.
+    result = sync_status(str(tmp_path))
+    assert 'No specs found in specs/' in result, (
+        f"A features/-only project should report no specs, got:\n{result}"
+    )
+    assert 'login' not in result, (
+        f"sync_status must not count the legacy features/ spec:\n{result}"
+    )
+
+    # Checkable half of an agent-run phase: the step 3a instruction itself.
+    skill = _skill_text()
+    assert 'Read all `.md` files recursively (excluding `.impl.md` and `.discoveries.md`' in skill, (
+        "SKILL.md Phase 1 step 3a must scan features/ recursively, excluding companions"
+    )
+    assert 'scenarios (Given/When/Then blocks)' in skill, (
+        "SKILL.md Phase 1 step 3a must extract Given/When/Then scenarios"
     )
 
 
@@ -252,115 +380,207 @@ def test_unnumbered_rules_get_renumbered(tmp_path):
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-12", "RULE-6", tier="e2e")
 def test_missing_description_detected(tmp_path):
-    """Specs missing > Description: are flagged as non-compliant."""
+    """A missing > Description: shows up as a null description in the payload."""
     _make_project(tmp_path, specs={
         'specs/notify/notifications.md': MISSING_DESCRIPTION_SPEC,
+        'specs/notify/notifications_documented.md': DOCUMENTED_DESCRIPTION_SPEC,
     })
-
-    # Verify no Description field
-    desc = _get_description(MISSING_DESCRIPTION_SPEC)
-    assert desc is None, "This spec should be missing > Description:"
-
-    # But it has a What it does section that migration can use
     assert _has_section(MISSING_DESCRIPTION_SPEC, 'What it does'), (
-        "Spec should have ## What it does to derive Description from"
+        "Fixture should have ## What it does for the migration to derive from"
     )
 
-    # Rules are already compliant — migration should preserve them
-    rules = _parse_rules(MISSING_DESCRIPTION_SPEC)
-    assert len(rules) == 3, f"Expected 3 numbered rules, got {len(rules)}"
+    sync_status(str(tmp_path))
+
+    # The two specs differ only by the > Description: line, so the contrast is
+    # the parser's reading of that line and not the fixture restating itself.
+    missing = _payload_feature(str(tmp_path), 'notifications')
+    documented = _payload_feature(str(tmp_path), 'notifications_documented')
+    assert missing['description'] is None, (
+        f"Spec without > Description: should report no description, got {missing['description']!r}"
+    )
+    assert documented['description'] == 'Sends email and SMS notifications to users.', (
+        f"Spec with > Description: should report it verbatim, got {documented['description']!r}"
+    )
+
+    skill = _skill_text()
+    assert 'Missing `> Description:` metadata' in skill, (
+        "SKILL.md Phase 1 step 3b must list the missing Description criterion"
+    )
+    assert 'add missing `> Description:`' in skill, (
+        "SKILL.md Phase 3 step 3 must order the missing Description filled in"
+    )
 
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-13", "RULE-6", tier="e2e")
 def test_missing_proof_section_detected(tmp_path):
-    """Specs with Rules but no Proof section are flagged as non-compliant."""
+    """A spec with no ## Proof section plans no proof and gets the placeholder."""
     _make_project(tmp_path, specs={
         'specs/search/search.md': MISSING_PROOF_SECTION,
-    })
-
-    assert _has_section(MISSING_PROOF_SECTION, 'Rules'), "Should have Rules section"
-    assert not _has_section(MISSING_PROOF_SECTION, 'Proof'), "Should be missing Proof section"
-
-    # Rules exist and are numbered — migration should preserve them
-    rules = _parse_rules(MISSING_PROOF_SECTION)
-    assert len(rules) == 3, f"Expected 3 rules, got {len(rules)}"
-
-    # Proofs are absent — migration must generate them
-    proofs = _parse_proofs(MISSING_PROOF_SECTION)
-    assert len(proofs) == 0, "Should have 0 proofs before migration"
-
-
-@pytest.mark.proof("skill_spec_from_code", "PROOF-14", "RULE-7", tier="e2e")
-def test_compliant_spec_passes_sync_status(tmp_path):
-    """A fully compliant spec should pass sync_status with zero warnings."""
-    _make_project(tmp_path, specs={
-        'specs/users/profile.md': FULLY_COMPLIANT_SPEC,
+        'specs/notify/notifications.md': MISSING_DESCRIPTION_SPEC,
     })
 
     result = sync_status(str(tmp_path))
+    search = _feature_block(result, 'search')
+    assert 'search: 0/3 rules proved' in search, (
+        f"search should report its 3 rules, got:\n{search}"
+    )
+    assert 'planned PROOF' not in search, (
+        f"A spec with no ## Proof section can plan no proof, got:\n{search}"
+    )
+    assert '@pytest.mark.proof("search", "PROOF-N", "RULE-1")' in search, (
+        f"Missing ## Proof section should leave the PROOF-N placeholder, got:\n{search}"
+    )
 
-    assert 'profile' in result, "profile feature not found in sync_status output"
-    # Single-feature project — any WARNING means the compliant spec was flagged
-    assert 'WARNING' not in result, (
-        f"Compliant spec should not trigger format warnings, got:\n{result}"
+    # Contrast: the sibling spec that does have a ## Proof section.
+    notifications = _feature_block(result, 'notifications')
+    assert ('planned PROOF-1: Create an order; verify confirmation email sent @integration'
+            in notifications), (
+        f"A spec with proofs should print its planned proof, got:\n{notifications}"
+    )
+
+    skill = _skill_text()
+    assert 'Missing `## Proof` section' in skill, (
+        "SKILL.md Phase 1 step 3b must list the missing Proof section criterion"
+    )
+
+
+@pytest.mark.proof("skill_spec_from_code", "PROOF-14", "RULE-7", tier="e2e")
+def test_compliant_spec_bytes_untouched(tmp_path):
+    """A fully compliant spec is neither flagged nor rewritten."""
+    _make_project(tmp_path, specs={
+        'specs/users/profile.md': FULLY_COMPLIANT_SPEC,
+    })
+    spec_file = os.path.join(str(tmp_path), 'specs', 'users', 'profile.md')
+    with open(spec_file, 'rb') as f:
+        before_digest = hashlib.sha256(f.read()).hexdigest()
+    before_mtime = os.stat(spec_file).st_mtime_ns
+
+    result = sync_status(str(tmp_path))
+
+    with open(spec_file, 'rb') as f:
+        after_digest = hashlib.sha256(f.read()).hexdigest()
+    assert after_digest == before_digest, "The compliant spec's bytes were rewritten"
+    assert os.stat(spec_file).st_mtime_ns == before_mtime, (
+        "The compliant spec's mtime moved, so something wrote to it"
+    )
+
+    block = _feature_block(result, 'profile')
+    assert 'profile: 0/3 rules proved' in block, (
+        f"profile should report its 3 rules, got:\n{block}"
+    )
+    assert 'WARNING' not in block, (
+        f"A compliant spec should draw no format warning, got:\n{block}"
+    )
+
+    skill = _skill_text()
+    assert 'are left untouched' in skill, (
+        "SKILL.md Phase 1 step 3b must say compliant specs are left untouched"
+    )
+    assert 'they are not migration candidates' in skill, (
+        "SKILL.md Phase 1 step 3b must exclude compliant specs from the candidates"
     )
 
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-15", "RULE-7", tier="e2e")
-def test_compliant_spec_left_untouched(tmp_path):
-    """A fully compliant spec should not be modified by migration."""
+def test_compliant_spec_excluded_from_candidate_list(tmp_path):
+    """The flagged specs are the non-compliant ones; the compliant one is not."""
     _make_project(tmp_path, specs={
         'specs/users/profile.md': FULLY_COMPLIANT_SPEC,
+        'specs/cart/cart.md': UNNUMBERED_RULES_SPEC,
+        'specs/legacy/legacy_thing.md': NO_RULES_SECTION_SPEC,
     })
 
-    # Verify it IS compliant: has Description, numbered rules, proofs
-    rules = _parse_rules(FULLY_COMPLIANT_SPEC)
-    proofs = _parse_proofs(FULLY_COMPLIANT_SPEC)
-    assert len(rules) == 3
-    assert len(proofs) == 3
-    assert _has_section(FULLY_COMPLIANT_SPEC, 'Rules')
-    assert _has_section(FULLY_COMPLIANT_SPEC, 'Proof')
+    result = sync_status(str(tmp_path))
 
-    # A compliant spec should be excluded from migration candidates
-    # (verified by checking the compliance criteria in SKILL.md)
+    cart = _feature_block(result, 'cart')
+    assert 'WARNING: 4 lines under ## Rules are not numbered.' in cart, (
+        f"The unnumbered spec should be flagged with its line count, got:\n{cart}"
+    )
+    legacy = _feature_block(result, 'legacy_thing')
+    assert 'WARNING: No ## Rules section found.' in legacy, (
+        f"The spec with no ## Rules section should be flagged, got:\n{legacy}"
+    )
+    profile = _feature_block(result, 'profile')
+    assert 'profile: 0/3 rules proved' in profile, (
+        f"profile should report its 3 rules, got:\n{profile}"
+    )
+    assert 'WARNING' not in profile, (
+        f"The compliant spec must stay off the candidate list, got:\n{profile}"
+    )
 
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-16", "RULE-8", tier="e2e")
-def test_existing_metadata_preserved(tmp_path):
-    """Existing Scope, Stack, and Requires metadata should survive migration."""
-    _make_project(tmp_path, specs={
+def test_existing_metadata_is_load_bearing(tmp_path):
+    """Scope and Stack drive the tool's output, so losing them is observable."""
+    built = tmp_path / 'built'
+    _make_project(built, specs={
         'specs/notify/notifications.md': MISSING_DESCRIPTION_SPEC,
     })
+    # One of the files named in > Scope: exists here.
+    os.makedirs(os.path.join(str(built), 'src', 'notify'), exist_ok=True)
+    with open(os.path.join(str(built), 'src', 'notify', 'email.py'), 'w') as f:
+        f.write('def send_email():\n    return True\n')
 
-    # This spec is missing Description but HAS Scope and Stack
-    scope = _get_metadata(MISSING_DESCRIPTION_SPEC, 'Scope')
-    stack = _get_metadata(MISSING_DESCRIPTION_SPEC, 'Stack')
-    assert scope == 'src/notify/email.py, src/notify/sms.py'
-    assert stack == 'python/stdlib, twilio'
+    result = sync_status(str(built))
+    block = _feature_block(result, 'notifications')
+    assert '\u2192 Run: purlin:test' in block, (
+        f"With a > Scope: file on disk the directive is purlin:test, got:\n{block}"
+    )
+    assert _payload_feature(str(built), 'notifications')['stack'] == 'python/stdlib, twilio', (
+        "The > Stack: line must reach the dashboard payload verbatim"
+    )
 
-    # After migration, these fields must be preserved verbatim
-    # (the migration logic reads and re-emits existing metadata)
+    # The same spec with no scope file present: the directive flips, which is
+    # what a migration that dropped the > Scope: line would do to every reader.
+    unbuilt = tmp_path / 'unbuilt'
+    _make_project(unbuilt, specs={
+        'specs/notify/notifications.md': MISSING_DESCRIPTION_SPEC,
+    })
+    unbuilt_block = _feature_block(sync_status(str(unbuilt)), 'notifications')
+    assert '\u2192 Run: purlin:build notifications' in unbuilt_block, (
+        f"With no > Scope: file on disk the directive is purlin:build, got:\n{unbuilt_block}"
+    )
+
+    skill = _skill_text()
+    assert 'existing metadata (`> Scope:`, `> Stack:`, `> Requires:`)' in skill, (
+        "SKILL.md Phase 3 step 3 must order existing metadata preserved"
+    )
 
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-17", "RULE-5", tier="e2e")
 def test_legacy_feature_name_and_category_preserved(tmp_path):
-    """Legacy features/auth/login.md should produce specs/auth/login.md."""
+    """specs/auth/login.md is the destination the toolchain reads back."""
     _make_project(tmp_path, features={
         'features/auth/login.md': LEGACY_GIVEN_WHEN_THEN,
     })
+    before = sync_status(str(tmp_path))
+    assert 'No specs found in specs/' in before, (
+        f"Before migration the project has no spec, got:\n{before}"
+    )
 
-    # Extract feature name and category from the legacy path
-    legacy_path = 'features/auth/login.md'
-    parts = legacy_path.split('/')
-    category = parts[1]  # 'auth'
-    name = parts[2].replace('.md', '')  # 'login'
+    # Migration is agent prose, so the destination file is written by hand; what
+    # is proved is that this path is what category and name resolve to.
+    dest = os.path.join(str(tmp_path), 'specs', 'auth', 'login.md')
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    with open(dest, 'w') as f:
+        f.write(MIGRATED_LOGIN_SPEC)
 
-    assert category == 'auth'
-    assert name == 'login'
+    after = sync_status(str(tmp_path))
+    block = _feature_block(after, 'login')
+    assert 'login: 0/3 rules proved' in block, (
+        f"The migrated spec should report its 3 rules, got:\n{after}"
+    )
+    assert _payload_feature(str(tmp_path), 'login')['category'] == 'auth', (
+        "specs/auth/login.md must land in category auth"
+    )
 
-    # After migration, the expected output path is:
-    expected_output = f'specs/{category}/{name}.md'
-    assert expected_output == 'specs/auth/login.md'
+    skill = _skill_text()
+    assert 'Read the original `features/<category>/<name>.md` file in full' in skill, (
+        "SKILL.md Phase 3 step 3 must read features/<category>/<name>.md"
+    )
+    assert 'write `specs/<category>/<name>.md`' in skill, (
+        "SKILL.md Phase 3 step 6 must write specs/<category>/<name>.md"
+    )
 
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-18", "RULE-8", tier="e2e")
@@ -501,7 +721,7 @@ Searches products by keyword with filters for category and price range.
 ## Rules
 
 - RULE-1: Keyword search returns matching products ordered by relevance
-- RULE-2: Category filter restricts results to selected category
+- RULE-2: Category filter restricts results to selected category (assumed — user said "let people narrow it down")
 - RULE-3: Price range filter excludes products outside min/max bounds
 - RULE-4: Search returns in under 500ms (assumed — user said "fast")
 - RULE-5: Empty query returns no results
@@ -541,6 +761,23 @@ Loads the main dashboard with cached data and pagination to meet performance SLA
 - PROOF-4 (RULE-4): Update a feature; wait 30s; reload dashboard; verify updated data visible @integration
 """
 
+# The inputs the four scenario specs stand in for. Generation is agent work,
+# so these are quoted here to name what each spec was written from.
+PLAIN_DESCRIPTION_INPUT = (
+    "Uploads are accepted up to 10MB; anything bigger gets HTTP 413. "
+    "Only JPEG, PNG and PDF are allowed; anything else gets HTTP 415."
+)
+
+VAGUE_DESCRIPTION_INPUT = (
+    "Product search with filters. Make it fast and let people narrow it down."
+)
+
+# Each complaint and the literal the rule answering it must carry.
+CUSTOMER_COMPLAINTS = [
+    ("The dashboard takes forever to load once I have a lot of features", "2 seconds"),
+    ("Paging through the feature list reloads everything", "25 items per page"),
+]
+
 ALL_SCENARIOS = {
     'plain': PLAIN_DESCRIPTION_SPEC,
     'prd': PRD_SPEC,
@@ -556,14 +793,27 @@ ALL_SCENARIOS = {
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-19", "RULE-10", tier="e2e")
 def test_sequential_rule_numbering(tmp_path):
-    """Generated spec has sequentially numbered rules starting at RULE-1 with no gaps."""
+    """The rule ids sync_status reads back run RULE-1..RULE-4 with no gap."""
+    assert '10MB' in PLAIN_DESCRIPTION_INPUT and '413' in PLAIN_DESCRIPTION_INPUT, (
+        "The plain-description input states its values explicitly"
+    )
     _make_project(tmp_path, specs={
         'specs/upload/file_upload.md': PLAIN_DESCRIPTION_SPEC,
     })
-    rules = _parse_rules(PLAIN_DESCRIPTION_SPEC)
-    rule_nums = [int(r_id.split('-')[1]) for r_id, _ in rules]
-    assert rule_nums == list(range(1, len(rule_nums) + 1)), (
-        f"Rule numbers should be sequential starting at 1, got {rule_nums}"
+
+    block = _feature_block(sync_status(str(tmp_path)), 'file_upload')
+    assert 'file_upload: 0/4 rules proved' in block, (
+        f"Expected 4 rules read back from the generated spec, got:\n{block}"
+    )
+    printed = re.findall(r'^  (RULE-\d+):', block, re.MULTILINE)
+    assert printed == ['RULE-1', 'RULE-2', 'RULE-3', 'RULE-4'], (
+        f"Rule ids should run 1..4 in order with no gap, got {printed}"
+    )
+
+    skill = _skill_text()
+    assert ('- RULE-1: <Behavioral constraint extracted from code>\n'
+            '- RULE-2: <Another constraint>') in skill, (
+        "SKILL.md step 6 template must number feature rules RULE-1 then RULE-2"
     )
 
 
@@ -583,12 +833,23 @@ def test_every_rule_has_proof(tmp_path):
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-21", "RULE-12", tier="e2e")
 def test_no_assumed_tags_with_explicit_values(tmp_path):
-    """Plain-description spec with explicit values has no (assumed) tags."""
+    """Explicit input: no (assumed) line; vague input: two of them."""
     _make_project(tmp_path, specs={
         'specs/upload/file_upload.md': PLAIN_DESCRIPTION_SPEC,
+        'specs/search/search.md': VAGUE_INPUT_SPEC,
     })
     assert '(assumed' not in PLAIN_DESCRIPTION_SPEC, (
-        "Spec with explicit values should not contain (assumed) tags"
+        "Spec generated from explicit values should carry no (assumed) tag"
+    )
+
+    result = sync_status(str(tmp_path))
+    plain = _feature_block(result, 'file_upload')
+    assert '(assumed) values' not in plain, (
+        f"The explicit-values feature should draw no assumed advisory, got:\n{plain}"
+    )
+    vague = _feature_block(result, 'search')
+    assert '\u26a0 2 rules have (assumed) values \u2014 PM should confirm' in vague, (
+        f"The vague-input feature should report its 2 assumed rules, got:\n{vague}"
     )
 
 
@@ -694,17 +955,28 @@ def test_prd_requires_overlapping_anchor(tmp_path):
 
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-25", "RULE-16", tier="e2e")
-def test_vague_input_has_assumed_tags(tmp_path):
-    """Vague-input spec adds (assumed) tags where agent inferred values."""
-    _make_project(tmp_path, specs={
-        'specs/search/search.md': VAGUE_INPUT_SPEC,
-    })
-    assert '(assumed' in VAGUE_INPUT_SPEC, (
-        "Vague-input spec should contain at least one (assumed) tag"
+def test_vague_input_assumed_tags_carry_context(tmp_path):
+    """Only the (assumed \u2014 <context>) form is counted; a bare tag is not."""
+    assert 'fast' in VAGUE_DESCRIPTION_INPUT, "The vague input states no values"
+    tagged = re.findall(r'\(assumed \u2014 user said "([^"]+)"\)', VAGUE_INPUT_SPEC)
+    assert len(tagged) == 2, f"Expected 2 context-carrying tags, got {tagged}"
+    assert all(context.strip() for context in tagged), f"Empty context in {tagged}"
+
+    with_context = tmp_path / 'with_context'
+    _make_project(with_context, specs={'specs/search/search.md': VAGUE_INPUT_SPEC})
+    block = _feature_block(sync_status(str(with_context)), 'search')
+    assert '\u26a0 2 rules have (assumed) values \u2014 PM should confirm' in block, (
+        f"Both context-carrying tags should be counted, got:\n{block}"
     )
-    # Verify it includes context about what user said
-    assert 'user said' in VAGUE_INPUT_SPEC, (
-        "(assumed) tag should include context about user's original wording"
+
+    # Same two rules, context stripped: the bare form RULE-16 forbids.
+    bare = re.sub(r'\(assumed \u2014 [^)]*\)', '(assumed)', VAGUE_INPUT_SPEC)
+    assert bare.count('(assumed)') == 2, "The stripped fixture should carry 2 bare tags"
+    without_context = tmp_path / 'without_context'
+    _make_project(without_context, specs={'specs/search/search.md': bare})
+    bare_block = _feature_block(sync_status(str(without_context)), 'search')
+    assert '(assumed) values' not in bare_block, (
+        f"A bare (assumed) with no context must not count, got:\n{bare_block}"
     )
 
 
@@ -725,40 +997,79 @@ def test_assumed_tags_parseable_by_sync_status(tmp_path):
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-27", "RULE-18", tier="e2e")
 def test_customer_feedback_has_specific_thresholds(tmp_path):
-    """Customer feedback spec translates complaints into rules with specific thresholds."""
+    """Each quoted complaint lands on a rule carrying its threshold."""
     _make_project(tmp_path, specs={
         'specs/dashboard/dashboard_load.md': CUSTOMER_FEEDBACK_SPEC,
     })
-    rules = _parse_rules(CUSTOMER_FEEDBACK_SPEC)
-    # Each rule should have a concrete threshold, not vague language
-    for rule_id, rule_text in rules:
-        has_number = bool(re.search(r'\d+', rule_text))
-        assert has_number, (
-            f"{rule_id} should have a specific threshold/number, got: '{rule_text}'"
+    block = _feature_block(sync_status(str(tmp_path)), 'dashboard_load')
+    assert 'dashboard_load: 0/4 rules proved' in block, (
+        f"Expected the 4 rules the complaints became, got:\n{block}"
+    )
+
+    rules = dict(_parse_rules(CUSTOMER_FEEDBACK_SPEC))
+    # The slowness complaint becomes a numeric latency bound.
+    latency = re.search(r'under (\d+) seconds', rules['RULE-1'])
+    assert latency and latency.group(1) == '2', (
+        f"RULE-1 should bound the slow load at 2 seconds, got: {rules['RULE-1']!r}"
+    )
+    # Every complaint is answered by exactly one rule carrying its literal.
+    for complaint, expected in CUSTOMER_COMPLAINTS:
+        matches = [rid for rid, text in rules.items() if expected in text]
+        assert len(matches) == 1, (
+            f"Complaint {complaint!r} should map to one rule carrying {expected!r}, "
+            f"got {matches}"
+        )
+    # No complaint survives as prose: every rule carries a number.
+    for rule_id, rule_text in rules.items():
+        assert re.search(r'\d', rule_text), (
+            f"{rule_id} carries no threshold: {rule_text!r}"
         )
 
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-28", "RULE-19", tier="e2e")
 def test_all_scenarios_have_tier_tags(tmp_path):
-    """Every proof line across all four scenarios ends with an appropriate tier tag or is unit."""
-    tagged_count = 0
-    total_count = 0
-    for name, content in ALL_SCENARIOS.items():
-        proof_lines = re.findall(r'^- PROOF-\d+ \(RULE-\d+\): (.+)$', content, re.MULTILINE)
-        for line in proof_lines:
-            total_count += 1
-            has_tag = bool(re.search(r'@(integration|e2e|manual)(\([^)]*\))?\s*$', line))
-            if has_tag:
-                tagged_count += 1
-                # Verify the tag is one of the valid tiers
-                tag = re.search(r'@(\w+)', line).group(1)
-                assert tag in ('integration', 'e2e', 'manual'), (
-                    f"Scenario '{name}': invalid tier tag @{tag} in: '{line}'"
-                )
-    # Across 4 scenarios, the majority of proofs need external deps
-    assert tagged_count > 0, "At least some proofs should have tier tags"
-    assert tagged_count >= total_count * 0.7, (
-        f"Most proofs need tier tags: {tagged_count}/{total_count} tagged"
+    """Every planned proof parses to a valid tier; a doubled tag is rejected."""
+    clean = tmp_path / 'clean'
+    _make_project(clean, specs={
+        'specs/upload/file_upload.md': PLAIN_DESCRIPTION_SPEC,
+        'specs/checkout/checkout.md': PRD_SPEC,
+        'specs/search/search.md': VAGUE_INPUT_SPEC,
+        'specs/dashboard/dashboard_load.md': CUSTOMER_FEEDBACK_SPEC,
+    })
+    result = sync_status(str(clean))
+
+    planned = re.findall(r'^\s+planned (PROOF-\d+): (.*)$', result, re.MULTILINE)
+    assert len(planned) == 19, f"Expected the 19 planned proofs, got {len(planned)}"
+    for proof_id, desc in planned:
+        if '@' in desc:
+            assert re.search(r'@(integration|e2e|manual)(\([^)]*\))?$', desc), (
+                f"{proof_id} ends with something other than a tier tag: {desc!r}"
+            )
+    assert 'WARNING' not in result, (
+        f"Well-tagged proofs should draw no tag warning, got:\n{result}"
+    )
+
+    # Two tier tags on one line: the grammar RULE-19 allows is one or none.
+    doubled = PLAIN_DESCRIPTION_SPEC.replace(
+        '- PROOF-1 (RULE-1): Upload a 5MB JPEG; verify 200 response @integration',
+        '- PROOF-1 (RULE-1): Upload a 5MB JPEG; verify 200 response @e2e @integration',
+    )
+    assert doubled != PLAIN_DESCRIPTION_SPEC, "The doubled-tag fixture did not apply"
+    broken = tmp_path / 'broken'
+    _make_project(broken, specs={'specs/upload/file_upload.md': doubled})
+    broken_out = sync_status(str(broken))
+    assert ('WARNING: PROOF-1: a second tier tag @e2e precedes @integration'
+            in broken_out), (
+        f"A doubled tier tag should be flagged, got:\n{broken_out}"
+    )
+
+    skill = _skill_text()
+    assert 'Does the proof need a browser or full app stack? \u2192 append `@e2e`' in skill, (
+        "SKILL.md step 7 must route browser/full-stack proofs to @e2e"
+    )
+    assert ('Does the proof shell out to git, subprocess, or call an external service? '
+            '\u2192 append `@integration`') in skill, (
+        "SKILL.md step 7 must route external-dependency proofs to @integration"
     )
 
 
