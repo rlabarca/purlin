@@ -690,22 +690,37 @@ class TestRepoHygiene:
     fails the day the fact changes rather than quietly going stale."""
 
     @pytest.mark.proof("purlin_references", "PROOF-26", "RULE-26")
-    def test_hooks_json_registers_nothing_and_hard_gates_says_so(self):
+    def test_no_hook_gates_anything_and_hard_gates_says_so(self):
         with open(os.path.join(PROJECT_ROOT, 'hooks', 'hooks.json')) as f:
             hooks = json.load(f)
 
-        registered = 0
-        for event, entries in (hooks.get('hooks') or {}).items():
-            registered += len(entries or [])
-        assert registered == 0, (
-            f"hooks/hooks.json now registers {registered} hook(s): "
-            f"{hooks}. references/hard_gates.md says it registers none, so "
-            f"either the hook goes or the sentence is rewritten")
+        registered = hooks.get('hooks') or {}
+        for event in ('PreToolUse', 'PermissionRequest', 'UserPromptSubmit'):
+            assert event not in registered, (
+                f"hooks/hooks.json registers a {event} hook: that is the event "
+                f"through which a hook can gate or steer a turn, and "
+                f"references/hard_gates.md promises none does")
+        entries = [h for groups in registered.values() for g in groups
+                   for h in (g.get('hooks') or [])]
+        assert entries, "the digest refresh hook is expected to be registered"
+        for entry in entries:
+            assert entry.get('async') is True, (
+                f"a registered hook must run async so it can never hold a "
+                f"turn: {entry}")
+            command = entry.get('command', '')
+            m = re.search(r'scripts/hooks/([A-Za-z0-9_.-]+)', command)
+            assert m, f"a hook command must name a script under scripts/hooks/: {command!r}"
+            source = _read(os.path.join(PROJECT_ROOT, 'scripts', 'hooks', m.group(1)))
+            assert not re.search(r'sys\.exit\(\s*[1-9]', source), (
+                f"{m.group(1)} can exit non-zero, so it can block")
+            assert '"decision"' not in source and '"continue": false' not in source, (
+                f"{m.group(1)} emits hook output that can steer a turn")
 
         gates = _read(os.path.join(REFS, 'hard_gates.md'))
         assert 'hooks/hooks.json' in gates, (
             "hard_gates.md must name the file it is making a claim about")
-        assert 'registers no Claude Code hooks' in gates, gates[-1200:]
+        assert 'no Claude Code hook gates anything' in gates.lower() or \
+            'No Claude Code Hook Gates Anything' in gates, gates[-1500:]
         assert 'agents/purlin.md' in gates and 'instruction' in gates, (
             "hard_gates.md must say the NEVERs are instructions, not "
             "mechanisms")

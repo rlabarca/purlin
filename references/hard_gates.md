@@ -31,11 +31,15 @@ could ever get its first receipt. This is enforced in the skill logic, not a hoo
 
 Skills are optional tools, not gatekeepers.
 
-## No Claude Code Hook Enforces Anything
+## No Claude Code Hook Gates Anything
 
-`hooks/hooks.json` registers no Claude Code hooks: its `hooks` object is empty and the plugin
-installs no `PreToolUse`, `PostToolUse` or `Stop` handler. So every **NEVER** in `agents/purlin.md`
-is an instruction to the agent, not a mechanism that stops it. An agent that ignores one is not
+`hooks/hooks.json` registers one Claude Code hook, and it gates nothing: the digest refresh
+(`scripts/hooks/refresh_digest.py`, `specs/hooks/refresh_digest_hook.md`) runs `async` after a
+tool call or a turn, exits 0 on every path, prints nothing, and only rewrites
+`.purlin/report-data.js` when something it reports has changed. The plugin installs no
+`PreToolUse`, `PermissionRequest` or `UserPromptSubmit` handler, which are the events through
+which a hook could stop or steer a turn. So every **NEVER** in `agents/purlin.md` is an
+instruction to the agent, not a mechanism that stops it. An agent that ignores one is not
 blocked by anything inside this repository.
 
 The controls that survive an agent ignoring an instruction run outside the agent's turn: the

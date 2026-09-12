@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 
 import pytest
 
@@ -2485,3 +2486,112 @@ class TestDigestProvenance:
         assert summary['auditors'] == {'Gemini Pro': 1}, (
             f"only the surviving grade may be attributed: {summary['auditors']}")
         assert summary['valid_entries'] == 1, summary
+
+
+# ---------------------------------------------------------------------------
+# RULE-43: who produced the payload, and a build that never reaches the network
+# ---------------------------------------------------------------------------
+
+_ANCHOR_WITH_SOURCE = (
+    '# Anchor: shared_rules\n\n> Source: https://github.com/example/rules.git\n'
+    '> Pinned: abc1234\n\n## Rules\n\n- RULE-1: no secrets in logs\n\n'
+    '## Proof\n\n- PROOF-1 (RULE-1): grep the logs @unit\n'
+)
+
+
+class TestGeneratedByAndOfflineBuild:
+
+    def setup_method(self):
+        self.tmp = tempfile.mkdtemp()
+        _make_project(self.tmp, report_enabled=True)
+        _write_spec(self.tmp, 'feature', _minimal_spec_content())
+        _write_proofs(self.tmp, 'feature', _minimal_proofs())
+        _write_spec(self.tmp, 'shared_rules', _ANCHOR_WITH_SOURCE, subdir='_anchors')
+        _git_init(self.tmp)
+
+    def teardown_method(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _inputs(self):
+        features = purlin_server._scan_specs(self.tmp)
+        proofs = purlin_server._read_proofs(self.tmp)
+        anchors = {k: v for k, v in features.items() if v.get('is_global')}
+        return features, proofs, {'report': True}, anchors
+
+    def _build(self, **kw):
+        features, proofs, config, anchors = self._inputs()
+        return purlin_server._build_report_data(
+            self.tmp, features, proofs, config, anchors, None, **kw)
+
+    def _write(self, **kw):
+        features, proofs, config, anchors = self._inputs()
+        return purlin_server._write_report_data(
+            self.tmp, features, proofs, config, anchors, **kw)
+
+    @pytest.mark.proof("report_data", "PROOF-44", "RULE-43", tier="integration")
+    def test_producer_is_named_and_an_offline_build_never_reaches_the_network(self, monkeypatch):
+        for producer in ('sync_status', 'pre-commit', 'hook', 'read'):
+            assert self._build(generated_by=producer)['generated_by'] == producer
+        assert purlin_server.read_report_payload(self.tmp)['generated_by'] == 'read'
+        assert purlin_server.generate_digest(self.tmp) is not None
+        assert _read_report(self.tmp)['generated_by'] == 'pre-commit', \
+            "generate_digest is the pre-commit hook's path, so that is its default producer"
+        with pytest.raises(ValueError):
+            self._build(generated_by='bogus')
+
+        argvs = []
+        real_run = purlin_server.subprocess.run
+
+        def recording(argv, *a, **kw):
+            argvs.append(list(argv))
+            return real_run(argv, *a, **kw)
+
+        monkeypatch.setattr(purlin_server.subprocess, 'run', recording)
+        os.remove(os.path.join(self.tmp, '.purlin', 'report-data.js'))
+        offline = self._build(network=False)
+        anchor = next(f for f in offline['features'] if f['name'] == 'shared_rules')
+        assert anchor['ext_status'] == 'unchecked', anchor['ext_status']
+        assert not any('ls-remote' in argv for argv in argvs), argvs
+
+        # A digest on disk that already knows the anchor is stale, plus one
+        # drift row: both travel into the offline build untouched.
+        stale = dict(offline)
+        stale['features'] = [dict(f, ext_status='stale') if f['name'] == 'shared_rules' else f
+                             for f in offline['features']]
+        stale['drift'] = {'external_anchor_drift': [{'name': 'shared_rules', 'status': 'stale'}]}
+        with open(os.path.join(self.tmp, '.purlin', 'report-data.js'), 'w') as f:
+            f.write('const PURLIN_DATA = ' + json.dumps(stale) + ';\n')
+        carried = self._build(network=False)
+        assert next(f for f in carried['features'] if f['name'] == 'shared_rules')['ext_status'] == 'stale'
+        drift = purlin_server._compute_drift(self.tmp, network=False)
+        assert drift['external_anchor_drift'] == [{'name': 'shared_rules', 'status': 'stale'}]
+        assert not any('ls-remote' in argv for argv in argvs), \
+            f"an offline build reached the network: {[a for a in argvs if 'ls-remote' in a]}"
+
+        # only_if_changed: same state, same bytes, newer mtime.
+        monkeypatch.setattr(purlin_server, '_check_git_staleness',
+                            lambda *a, **k: {'status': 'current', 'remote_sha': 'abc1234'})
+        path = self._write(generated_by='hook', only_if_changed=True)
+        first = open(path, 'rb').read()
+        stamp = os.stat(path).st_mtime
+        time.sleep(0.01)
+        self._write(generated_by='hook', only_if_changed=True)
+        assert open(path, 'rb').read() == first, \
+            "an unchanged payload must not be rewritten (it would dirty the tree)"
+        assert os.stat(path).st_mtime > stamp, "the touch is what clears a mtime-based dirty check"
+        _write_proofs(self.tmp, 'feature', _minimal_proofs() + [
+            {'feature': 'feature', 'id': 'PROOF-9', 'rule': 'RULE-1', 'status': 'pass',
+             'tier': 'unit', 'test_file': 'tests/test_x.py', 'test_name': 'test_more'}])
+        self._write(generated_by='hook', only_if_changed=True)
+        assert open(path, 'rb').read() != first, "a changed state must be written"
+
+        # The digest's own git status is never in the list it carries.
+        subprocess.run(['git', 'add', '.'], cwd=self.tmp, capture_output=True, check=True)
+        subprocess.run(['git', 'commit', '-q', '-m', 'digest'], cwd=self.tmp,
+                       capture_output=True, check=True)
+        _write_proofs(self.tmp, 'feature', _minimal_proofs())
+        self._write(generated_by='hook', only_if_changed=True)
+        listed = _read_report(self.tmp)['uncommitted']
+        assert any(entry.endswith('feature.proofs-unit.json') for entry in listed), listed
+        assert not any(entry.endswith('.purlin/report-data.js') for entry in listed), (
+            f"the digest reported its own git status: {listed}")

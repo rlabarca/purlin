@@ -2743,6 +2743,7 @@ def sync_status(project_root, role=None):
         data_path = _write_report_data(
             project_root, features, all_proofs, config, global_anchors,
             audit_summary, design_summary=design_summary,
+            generated_by='sync_status',
         )
         if data_path:
             html_path = os.path.join(project_root, 'purlin-report.html')
@@ -3982,9 +3983,52 @@ def _platform_summary(records_by_feature, all_proofs, audit_by_proof, host_id,
     return ordered
 
 
+# Who produced a payload (report_data RULE-43). A closed set, so a reader can
+# tell a digest the hook refreshed from one a status call or a commit wrote.
+_GENERATED_BY = ('sync_status', 'pre-commit', 'hook', 'read')
+
+
+def _read_report_data_file(path):
+    """The payload inside an existing .purlin/report-data.js, or None."""
+    try:
+        with open(path, encoding='utf-8') as f:
+            content = f.read()
+    except OSError:
+        return None
+    prefix = 'const PURLIN_DATA = '
+    if not content.startswith(prefix):
+        return None
+    try:
+        return json.loads(content[len(prefix):].rstrip().rstrip(';'))
+    except json.JSONDecodeError:
+        return None
+
+
+def _previous_ext_status(project_root):
+    """{feature name: ext_status} from the digest already on disk, for a build
+    that must not reach the network (report_data RULE-43)."""
+    previous = _read_report_data_file(
+        os.path.join(project_root, '.purlin', 'report-data.js'))
+    if not previous:
+        return {}
+    return {f.get('name'): f.get('ext_status')
+            for f in previous.get('features', []) if isinstance(f, dict)}
+
+
 def _build_report_data(project_root, features, all_proofs, config, global_anchors,
-                       audit_summary=None, design_summary=None):
-    """Build the structured PURLIN_DATA dict for the dashboard."""
+                       audit_summary=None, design_summary=None,
+                       generated_by='sync_status', network=True):
+    """Build the structured PURLIN_DATA dict for the dashboard.
+
+    `network` False performs no `git ls-remote`: each pinned anchor keeps the
+    `ext_status` the previous digest recorded, or `unchecked` when there is
+    none. The refresh hook builds this way, because a background hook that
+    reaches the network on every tool call is a cost nobody asked for.
+    """
+    if generated_by not in _GENERATED_BY:
+        raise ValueError(f'generated_by must be one of {_GENERATED_BY}, '
+                         f'not {generated_by!r}')
+    previous_ext = None if network else _previous_ext_status(project_root)
     # The platform registry and host, resolved once per payload: every
     # feature's satisfaction model reads the same registry (report_data
     # RULE-31/32), and the CI gate reads the registry's errors from here.
@@ -4233,11 +4277,14 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
         # Check external anchor staleness for report data
         ext_status = None
         if is_anchor and info.get('source_url'):
-            staleness = _check_git_staleness(
-                info['source_url'], info.get('pinned'), project_root
-            )
-            if staleness:
-                ext_status = staleness.get('status')
+            if previous_ext is not None:
+                ext_status = previous_ext.get(name, 'unchecked')
+            else:
+                staleness = _check_git_staleness(
+                    info['source_url'], info.get('pinned'), project_root
+                )
+                if staleness:
+                    ext_status = staleness.get('status')
 
         feature_list.append({
             'name': name,
@@ -4286,12 +4333,19 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
 
     summary['held_by_platform'] = summary['verified_here'] - summary['verified']
 
-    uncommitted_files = _check_uncommitted_all(project_root)
+    # The digest is rewritten by every build, so its own git status is a
+    # consequence of building rather than a fact about the project, and a
+    # list that named it would differ from the file on disk after every
+    # write (report_data RULE-43).
+    uncommitted_files = [
+        line for line in _check_uncommitted_all(project_root)
+        if not line.endswith('.purlin/report-data.js')]
     declared_ids = sorted(_declared_platform_counts(features))
     host_ids = set(_host_platform_ids(registry, host))
 
     return {
         'timestamp': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        'generated_by': generated_by,
         'project': os.path.basename(os.path.abspath(project_root)),
         'version': config.get('version', ''),
         # Always present, defaulted here rather than at each reader. The CI gate
@@ -4378,27 +4432,52 @@ def read_report_payload(project_root):
                            audit_summary, design_summary)
     return _build_report_data(
         project_root, features, all_proofs, config, global_anchors,
-        audit_summary, design_summary=design_summary,
+        audit_summary, design_summary=design_summary, generated_by='read',
     )
+
+
+def _payload_without_stamp(data):
+    """A payload with the fields that change on every build removed, as JSON
+    would round-trip it, so two builds of the same state compare equal."""
+    return json.loads(json.dumps(
+        {k: v for k, v in data.items() if k not in ('timestamp', 'generated_by')}))
 
 
 def _write_report_data(project_root, features, all_proofs, config, global_anchors,
                        audit_summary=None, drift_data=None, git_sha=None,
-                       design_summary=None):
-    """Write .purlin/report-data.js for the dashboard. Returns the file path or None."""
+                       design_summary=None, generated_by='sync_status',
+                       network=True, only_if_changed=False):
+    """Write .purlin/report-data.js for the dashboard. Returns the file path or None.
+
+    With `only_if_changed`, a payload equal to the one on disk (timestamp and
+    producer aside) is not rewritten: the file's mtime is touched so a reader
+    keyed on it knows the inputs were looked at, and the working tree stays
+    as it was. The refresh hook passes it, because a hook that rewrote a
+    tracked file after every tool call would dirty every commit.
+    """
     purlin_dir = os.path.join(project_root, '.purlin')
     if not os.path.isdir(purlin_dir):
         return None
 
     data = _build_report_data(
         project_root, features, all_proofs, config, global_anchors, audit_summary,
-        design_summary=design_summary,
+        design_summary=design_summary, generated_by=generated_by, network=network,
     )
     if drift_data is not None:
         data['drift'] = drift_data
     if git_sha:
         data['git_sha'] = git_sha
     data_path = os.path.join(purlin_dir, 'report-data.js')
+
+    if only_if_changed and os.path.isfile(data_path):
+        previous = _read_report_data_file(data_path)
+        if previous is not None and (_payload_without_stamp(previous)
+                                     == _payload_without_stamp(data)):
+            try:
+                os.utime(data_path, None)
+            except OSError:
+                pass
+            return data_path
 
     tmp_path = data_path + '.tmp'
     try:
@@ -4654,7 +4733,7 @@ def _check_git_staleness(source_url, pinned, project_root=None):
         return {'status': 'error', 'remote_sha': None, 'error': str(e)[:200]}
 
 
-def _compute_drift(project_root, since=None):
+def _compute_drift(project_root, since=None, network=True):
     """Compute drift data as a Python dict.
 
     Returns a dict with drift results, or a dict with 'recommendation' key
@@ -4863,9 +4942,17 @@ def _compute_drift(project_root, since=None):
                 'existing_paths': existing_paths,
             })
 
-    # Detect external anchor drift — compare Pinned to remote HEAD
+    # Detect external anchor drift — compare Pinned to remote HEAD. With
+    # `network` False (the refresh hook) no ls-remote runs and the rows the
+    # previous digest recorded are carried forward instead (report_data
+    # RULE-43): a background hook must not reach the network on every call.
     external_anchor_drift = []
-    for name, info in features.items():
+    if not network:
+        previous = _read_report_data_file(
+            os.path.join(project_root, '.purlin', 'report-data.js')) or {}
+        external_anchor_drift = list(
+            (previous.get('drift') or {}).get('external_anchor_drift') or [])
+    for name, info in (features.items() if network else ()):
         if not info.get('is_anchor') or not info.get('source_url'):
             continue
         staleness = _check_git_staleness(
@@ -4950,11 +5037,14 @@ def drift(project_root, since=None, role=None):
 
 
 @_scoped
-def generate_digest(project_root):
+def generate_digest(project_root, generated_by='pre-commit', network=True,
+                    only_if_changed=False):
     """Generate the project digest file with coverage, drift, and git SHA.
 
-    This is called by the pre-commit hook to produce .purlin/report-data.js
-    with full project state for stakeholder consumption.
+    Called by the pre-commit hook (`generated_by='pre-commit'`) and by the
+    refresh hook (`'hook'`, `network=False`, `only_if_changed=True`) to
+    produce .purlin/report-data.js with full project state for stakeholder
+    consumption.
 
     IMPORTANT: Does NOT trigger a new audit. Uses cached audit data only.
     Runs sync_status internals (coverage scan) and drift.
@@ -5000,14 +5090,15 @@ def generate_digest(project_root):
     # Compute drift data (returns dict, or recommendation dict if no anchor)
     drift_data = None
     try:
-        drift_data = _compute_drift(project_root)
+        drift_data = _compute_drift(project_root, network=network)
     except Exception:
         pass  # Drift failure should not block digest generation
 
     return _write_report_data(
         project_root, features, all_proofs, config, global_anchors,
         audit_summary, design_summary=design_summary,
-        drift_data=drift_data, git_sha=git_sha,
+        drift_data=drift_data, git_sha=git_sha, generated_by=generated_by,
+        network=network, only_if_changed=only_if_changed,
     )
 
 

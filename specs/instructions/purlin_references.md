@@ -34,12 +34,14 @@
 
 - RULE-24: `purlin_commands.md` carries a `## Pending migrations` section, so every skill can point at one anchor (`purlin_commands.md#pending-migrations`) instead of restating the advisory. It states what a skill does when `sync_status` opens with the advisory (stop, print it and its directive, ask whether to run `purlin:init --update` now), that skills which do not call `sync_status` call it first when they would write specs or proofs, and that `purlin:verify` declines to issue receipts while a `legacy-*` migration is pending because the legacy alias makes coverage a guess, framed as a refusal to claim and not as a gate
 - RULE-25: `spec_quality_guide.md` carries a `## Mutation check` section: what a mutation check is, the three steps (break the behaviour, run that proof and watch it fail, restore and re-run), when it runs (every new or amended proof, before the commit that carries it), what a surviving mutation means (the fixture cannot tell correct from broken, so the proof is weak and needs the discriminating case), two worked examples, and the value statement `purlin:init` prints before its question. The value statement lives here once and is quoted by reference from the skill, per CLAUDE.md's deduplication rule
-- RULE-26: `hard_gates.md` states that `hooks/hooks.json` registers no Claude Code hooks, so
-  every **NEVER** in `agents/purlin.md` is an instruction to the agent rather than a mechanism
-  that stops it, and names the enforcement layers that survive an agent ignoring one: the
-  proof-coverage gate in the issuer, the pre-push hook, the CI gate job, and branch protection.
-  A reader who takes the NEVER list for enforcement will believe the repository stops an agent it
-  cannot stop
+- RULE-26: `hard_gates.md` states that no Claude Code hook gates anything: every hook
+  `hooks/hooks.json` registers is a post-event hook (`PostToolUse`, `SubagentStop`, `Stop`),
+  runs `async`, exits 0 on every path and blocks nothing, so every **NEVER** in
+  `agents/purlin.md` is an instruction to the agent rather than a mechanism that stops it,
+  and names the enforcement layers that survive an agent ignoring one: the proof-coverage
+  gate in the issuer, the pre-push hook, the CI gate job, and branch protection. The one
+  registered hook refreshes `.purlin/report-data.js` (`refresh_digest_hook`), which is
+  reporting, not enforcement.
 - RULE-27: Nothing under `.purlin/cache/` is tracked by git. The gauges are per machine by design
   and `.gitignore` already excludes the directory, so a tracked cache file is a stale number that
   travels: it arrives in every clone, is read before anything recomputes it, and reports a
@@ -94,12 +96,14 @@
 - PROOF-22 (RULE-22): Extract every fenced yaml block from every markdown file under `references/` and `docs/`; for each occurrence of a `scripts/` path in a block, assert it is immediately preceded by `$PURLIN_PLUGIN_ROOT/` or `${PURLIN_PLUGIN_ROOT}/`, and assert that any block cloning the plugin pins a tag matching `--branch v<VERSION>` rather than a branch name. Assert at least one such `scripts/` invocation was found, so the scan cannot pass by matching nothing, and grep the prose for the sentence recording this repository's own workflows as the `PURLIN_PLUGIN_ROOT: .` exception. Rewriting the preflight step to a bare `scripts/update/migrate.py` fails the proof
 - PROOF-23 (RULE-23): Parse the markdown tables of `references/supported_frameworks.md` that carry a `Runner setup` column, collect every framework row from both of them, and assert each row's `Runner setup` cell is non-empty after stripping whitespace. Assert the framework set is the same one the Detection section and the plugin file column name, so a framework cannot pass by being dropped from the table, and that at least seven frameworks were found. Emptying one cell fails the proof
 - PROOF-24 (RULE-24): Grep `references/purlin_commands.md` for a heading that anchors to `#pending-migrations` and verify its section names `purlin:init --update` as the directive, states that the skill stops before its own work, names the skills that see the advisory by construction, and contains the sentence that `purlin:verify` does not issue receipts while a `legacy-*` migration is pending together with the words refusal and gate. Deleting the section or the verify sentence fails the proof
-- PROOF-26 (RULE-26): Parse `hooks/hooks.json` and assert the total number of registered hook
-  entries is zero: the `hooks` object is empty and no event key holds a non-empty list. Then grep
-  `references/hard_gates.md` for the sentence naming `hooks/hooks.json` as registering no hooks,
-  for the words `instruction` and `agents/purlin.md`, and for all four enforcement layers
-  (`purlin:verify`, pre-push, CI, branch protection). Adding a single `PreToolUse` entry to
-  `hooks/hooks.json` fails the parse half, so the sentence cannot outlive the fact it states
+- PROOF-26 (RULE-26): Parse `hooks/hooks.json` and assert no event key is `PreToolUse`,
+  `PermissionRequest` or `UserPromptSubmit`, that every registered entry carries `async` true,
+  and that every command names a script under `scripts/hooks/` whose source contains no
+  `sys.exit(` with a non-zero literal and no `"decision"` or `"continue": false` hook output.
+  Then grep `references/hard_gates.md`: verify it names `hooks/hooks.json`, states that no hook
+  gates anything, says the NEVERs are instructions, and names all four enforcement layers.
+  Adding a single `PreToolUse` entry to `hooks/hooks.json` fails the parse half; deleting the
+  enforcement-layer list fails the grep half
 - PROOF-27 (RULE-27): Run `git ls-files .purlin/cache` from the project root and assert its
   output is empty. Assert the same command over the repository root returns a non-empty list, so
   the proof cannot pass in a directory where `git ls-files` returns nothing for every path, and

@@ -1,0 +1,59 @@
+{
+  "tier": "integration",
+  "proofs": [
+    {
+      "feature": "refresh_digest_hook",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "test_file": "dev/test_refresh_digest_hook.py",
+      "test_name": "test_every_path_exits_zero_and_prints_nothing",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "refresh_digest_hook",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "test_file": "dev/test_refresh_digest_hook.py",
+      "test_name": "test_regenerates_only_when_an_input_is_newer",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "refresh_digest_hook",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "test_file": "dev/test_refresh_digest_hook.py",
+      "test_name": "test_a_held_lock_means_leave",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "refresh_digest_hook",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_refresh_digest_hook.py",
+      "test_name": "test_a_write_during_generation_is_picked_up",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "refresh_digest_hook",
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "test_file": "dev/test_refresh_digest_hook.py",
+      "test_name": "test_each_skip_condition_writes_nothing",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "refresh_digest_hook",
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "test_file": "dev/test_refresh_digest_hook.py",
+      "test_name": "test_no_network_named_producer_and_touch_instead_of_rewrite",
+      "status": "pass",
+      "tier": "integration"
+    }
+  ]
+}

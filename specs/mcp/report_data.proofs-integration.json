@@ -171,6 +171,15 @@
       "test_name": "test_the_payload_names_the_auditor_and_counts_the_stale_grades",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-44",
+      "rule": "RULE-43",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_producer_is_named_and_an_offline_build_never_reaches_the_network",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

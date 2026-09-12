@@ -1,0 +1,14 @@
+{
+  "tier": "unit",
+  "proofs": [
+    {
+      "feature": "refresh_digest_hook",
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "test_file": "dev/test_refresh_digest_hook.py",
+      "test_name": "test_hooks_json_registers_exactly_this_script_async_on_three_events",
+      "status": "pass",
+      "tier": "unit"
+    }
+  ]
+}

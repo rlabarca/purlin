@@ -360,6 +360,11 @@ class TestRule4AutoStages:
             before = fh.read()
         assert before.startswith(b"const PURLIN_DATA = "), (
             f"digest does not start with the expected prefix: {before[:40]!r}")
+        staged_payload = json.loads(
+            before[len(b"const PURLIN_DATA = "):].decode("utf-8").rstrip().rstrip(";"))
+        assert staged_payload.get("generated_by") == "pre-commit", (
+            "the digest a commit stages must name the pre-commit hook as its "
+            f"producer, got {staged_payload.get('generated_by')!r}")
 
         # Now make generate_digest raise.
         _break_digest_generation(tmpdir)

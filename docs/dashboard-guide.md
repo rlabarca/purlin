@@ -113,14 +113,17 @@ Even though all 3 of login's own rules pass, it's PARTIAL because 2 anchor rules
 ### Coverage data
 
 ```
-purlin:status (or any skill that checks coverage,
-or the pre-commit digest hook on every commit)
+purlin:status (or any skill that checks coverage),
+the pre-commit digest hook on every commit,
+or the plugin's refresh hook after any tool call or turn
+that changed a spec, proof, receipt, gauge cache or config
     |
     v
-writes .purlin/report-data.js
+writes .purlin/report-data.js   (carries `generated_by`: sync_status, pre-commit or hook)
     |
     v
-purlin-report.html loads it (via <script> tag)
+purlin-report.html loads it, and reloads it whenever the tab
+regains focus or becomes visible (no timer; nothing happens while you are away)
     |
     v
 browser renders the dashboard
@@ -184,6 +187,7 @@ The HTML file loads `.purlin/report-data.js` through a script tag. No fetch call
 ## Uncommitted Files
 
 When `purlin:status` detects uncommitted changes to spec or proof files, the dashboard shows a collapsible **uncommitted files section** between the summary strip and the anchors table. This helps you remember to commit proof files after test runs or spec edits.
+The digest itself (`.purlin/report-data.js`) is never listed: it is rewritten by every refresh, so its own status would be noise.
 
 ## What's Committed, What's Not
 

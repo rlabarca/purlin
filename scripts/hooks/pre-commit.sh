@@ -116,7 +116,7 @@ if [[ "$MODE" == "auto" ]]; then
 import sys
 sys.path.insert(0, sys.argv[1])
 from purlin_server import generate_digest
-path = generate_digest(sys.argv[2])
+path = generate_digest(sys.argv[2], generated_by="pre-commit")
 print(path or "")
 ' "$SERVER_DIR" "$ROOT")" || GENERATE_RC=$?
 

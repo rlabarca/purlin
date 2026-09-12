@@ -1,3 +1,42 @@
 {
-  "hooks": {}
+  "description": "Refreshes .purlin/report-data.js in the background after a tool call or a turn changed what it reports. Every entry is async and exits 0: nothing here gates anything (references/hard_gates.md).",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash|Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/refresh_digest.py\"",
+            "async": true,
+            "timeout": 120
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/refresh_digest.py\"",
+            "async": true,
+            "timeout": 120
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/refresh_digest.py\"",
+            "async": true,
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
 }

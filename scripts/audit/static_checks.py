@@ -1850,8 +1850,28 @@ def _lock_exclusive(lock_file):
             continue
 
 
+def try_lock_exclusive(lock_file):
+    """Non-blocking twin of _lock_exclusive: True when the lock is now ours,
+    False when another process holds it. Released with _unlock."""
+    if _HAS_FCNTL:
+        try:
+            fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            return False
+        return True
+    import msvcrt
+    lock_file.write('\0')
+    lock_file.flush()
+    lock_file.seek(0)
+    try:
+        msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
+    except OSError:
+        return False
+    return True
+
+
 def _unlock(lock_file):
-    """Release a lock acquired by _lock_exclusive."""
+    """Release a lock acquired by _lock_exclusive or try_lock_exclusive."""
     if _HAS_FCNTL:
         fcntl.flock(lock_file, fcntl.LOCK_UN)
         return
