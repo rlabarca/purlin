@@ -209,9 +209,14 @@ jobs:
             echo "No proof-file changes to commit."
           else
             # Loop guard, half two, and the provenance sync_status reads back.
+            # Both trailers in ONE -m. Each -m is a separate paragraph, and
+            # git parses trailers out of the LAST paragraph only, so two -m
+            # flags leave `Purlin-Runner` unreadable to
+            # `git log --format=%(trailers:key=Purlin-Runner)` and the report
+            # says `runner not recorded` after a green run.
             git commit -m "test: <platform-id> proofs from <runs-on> [skip ci]" \
-                       -m "Purlin-Runner: github-actions/<runs-on>" \
-                       -m "Purlin-Platform: <platform-id>"
+                       -m "Purlin-Runner: github-actions/<runs-on>
+Purlin-Platform: <platform-id>"
             # Several platform runners may commit to this branch at once, so
             # the first push can lose a race it did nothing wrong to lose.
             for attempt in 1 2 3; do
@@ -233,10 +238,14 @@ which scoped file to write. Without it a `windows-2022` runner writes `...@windo
 satisfies `@on(windows)` but not `@on(windows-2022)`, and the report reads `AWAITING RUNNER` after
 a green CI run.
 
-**Both trailers (required).** `Purlin-Runner:` is the only record of which runner proved a file;
-without it the report reads `runner not recorded`, which is a gap, not a valid state.
-`Purlin-Platform:` is what lets `sync_status` cross-check the platform the filename claims against
-the one the runner was told. `specs/ci/verify_gate.md` RULE-7 enforces both.
+**Both trailers, in one `-m` (required).** `Purlin-Runner:` is the only record of which runner
+proved a file; without it the report reads `runner not recorded`, which is a gap, not a valid
+state. `Purlin-Platform:` is what lets `sync_status` cross-check the platform the filename claims
+against the one the runner was told. They must share a single `-m` argument: git builds one
+paragraph per `-m` and parses trailers out of the last paragraph only, so a trailer in its own
+`-m` is invisible to `git log --format=%(trailers:key=...)` while looking perfectly correct in
+the workflow file and in `git log`. `specs/ci/verify_gate.md` RULE-7 enforces both trailers and
+the single `-m`.
 
 **The loop guard, both halves.** `paths-ignore` stops a `push` trigger; `[skip ci]` stops the
 trigger paths `paths-ignore` does not cover. Either alone eventually loops.

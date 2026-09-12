@@ -370,8 +370,10 @@ class TestRemoteVerificationReference:
              r"git add '\*\*/\*\.proofs-\*@<platform-id>\.json'"),
             ('idempotency guard', r'git diff --cached --quiet'),
             ('skip ci', r'\[skip ci\]'),
-            ('runner trailer', r'-m "Purlin-Runner: github-actions/<runs-on>"'),
-            ('platform trailer', r'-m "Purlin-Platform: <platform-id>"'),
+            # One -m carrying both: git reads trailers from the last
+            # paragraph only, and each -m is a paragraph of its own.
+            ('both trailers in one -m',
+             r'-m "Purlin-Runner: github-actions/<runs-on>\nPurlin-Platform: <platform-id>"'),
             ('rebase retry loop', r'git pull --rebase origin "\$GITHUB_REF_NAME"'),
             ('three attempts', r'for attempt in 1 2 3; do'),
             ('failure after the attempts', r'exit 1'),

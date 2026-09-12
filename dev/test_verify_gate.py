@@ -364,11 +364,50 @@ class TestRunnerWorkflowProvenance:
             assert 'Purlin-Platform:' in text, (
                 f"{fn} commits a proof file with no Purlin-Platform trailer, so "
                 "sync_status cannot cross-check the platform against the filename")
-            # The trailers must be on the commit, not in a comment.
-            for trailer in ('Purlin-Runner:', 'Purlin-Platform:'):
-                assert re.search(r'-m\s+["\']' + trailer, text), (
-                    f"{fn} mentions {trailer} but not as a commit message "
-                    "trailer; git only reads it from the commit")
+            # The trailers must be on the commit, not in a comment, and in
+            # ONE -m: git builds a paragraph per -m and parses trailers out of
+            # the last paragraph only.
+            both = re.search(
+                r'-m\s+"Purlin-Runner:[^"]*\n\s*Purlin-Platform:[^"]*"', text)
+            assert both, (
+                f"{fn} does not carry both trailers in a single -m argument; "
+                "a trailer in its own -m is a paragraph of its own and "
+                "git log --format=%(trailers:key=...) returns nothing for it")
+
+        # Why one -m, proved rather than asserted: the same two trailers, once
+        # split across two -m flags and once in one, read back differently.
+        repo = tempfile.mkdtemp()
+        try:
+            subprocess.run(['git', 'init', '-q', repo], check=True)
+            for k, v in (('user.email', 't@e'), ('user.name', 't')):
+                subprocess.run(['git', 'config', k, v], cwd=repo, check=True)
+            open(os.path.join(repo, 'f'), 'w').write('x')
+            subprocess.run(['git', 'add', 'f'], cwd=repo, check=True)
+
+            def _runner_trailer():
+                return subprocess.run(
+                    ['git', 'log', '-1',
+                     '--format=%(trailers:key=Purlin-Runner,valueonly)'],
+                    cwd=repo, capture_output=True, text=True).stdout.strip()
+
+            subprocess.run(['git', 'commit', '-q', '-m', 'split [skip ci]',
+                            '-m', 'Purlin-Runner: gha/windows-2022',
+                            '-m', 'Purlin-Platform: windows-2022'],
+                           cwd=repo, check=True)
+            assert _runner_trailer() == '', (
+                "two -m flags must leave Purlin-Runner unreadable; if this "
+                "ever changes, RULE-7's single -m requirement can relax")
+
+            open(os.path.join(repo, 'f'), 'w').write('y')
+            subprocess.run(['git', 'add', 'f'], cwd=repo, check=True)
+            subprocess.run(['git', 'commit', '-q', '-m', 'joined [skip ci]',
+                            '-m', 'Purlin-Runner: gha/windows-2022\n'
+                                  'Purlin-Platform: windows-2022'],
+                           cwd=repo, check=True)
+            assert _runner_trailer() == 'gha/windows-2022', (
+                "both trailers in one -m must read back as trailers")
+        finally:
+            shutil.rmtree(repo, ignore_errors=True)
 
     @pytest.mark.proof("verify_gate", "PROOF-8", "RULE-8")
     def test_every_commit_back_workflow_carries_both_loop_guards(self):
@@ -474,10 +513,12 @@ class TestCommitBackPushSurvivesARace:
                 f"{fn} exits 0 after three failed pushes, so a genuinely "
                 "broken push reports success")
 
-            # The loop and the provenance trailers are required together.
-            for trailer in ('Purlin-Runner:', 'Purlin-Platform:'):
-                assert re.search(r'-m\s+["\']' + trailer, text), (
-                    f"{fn} retries its push but records no {trailer} trailer")
+            # The loop and the provenance trailers are required together,
+            # and the trailers share one -m (RULE-7).
+            assert re.search(
+                r'-m\s+"Purlin-Runner:[^"]*\n\s*Purlin-Platform:[^"]*"', text), (
+                f"{fn} retries its push but records no readable provenance "
+                "trailers")
 
 
 class TestCommitBackWorkflowsPreflightTheMigration:
