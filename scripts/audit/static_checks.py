@@ -362,8 +362,7 @@ def _check_mock_target_match(node, lines, rule_desc):
 def check_python(filepath, feature_name, rule_descs=None):
     """Run all Python checks. Returns list of proof result dicts."""
     rule_descs = rule_descs or {}
-    with open(filepath, encoding='utf-8') as f:
-        source = f.read()
+    source = _file_text(filepath)
     entries, lines = _python_parse(filepath, source)
     proofs = [(pid, rid, name, node)
               for feature, pid, rid, name, node in entries if feature == feature_name]
@@ -412,8 +411,7 @@ def check_shell(filepath, feature_name, rule_descs=None):
     `rule_descs` is accepted so every checker in the extension table has one
     signature; shell has no rule-aware check to spend it on.
     """
-    with open(filepath, encoding='utf-8') as f:
-        content = f.read()
+    content = _file_text(filepath)
     lines = content.splitlines()
     results = []
     proof_locations = []
@@ -1569,8 +1567,7 @@ def _read_rule_descriptions(spec_path):
     """Read rule descriptions from a spec file."""
     if not spec_path or not os.path.isfile(spec_path):
         return {}
-    with open(spec_path, encoding='utf-8') as f:
-        content = f.read()
+    content = _file_text(spec_path)
     return {m.group(1): m.group(2).strip() for m in _RULE_LINE_RE.finditer(content)}
 
 
@@ -1694,8 +1691,7 @@ def _read_proof_descriptions(spec_path):
     """
     if not spec_path or not os.path.isfile(spec_path):
         return []
-    with open(spec_path, encoding='utf-8') as f:
-        content = f.read()
+    content = _file_text(spec_path)
     proof_section_match = re.search(
         r'^## Proof\s*\n(.*?)(?=^## |\Z)',
         content, re.MULTILINE | re.DOTALL,
@@ -1795,11 +1791,10 @@ def _read_proof_tags(spec_path):
     platforms = {}
     if not spec_path or not os.path.isfile(spec_path):
         return tiers, platforms
-    with open(spec_path, encoding='utf-8') as f:
-        for m in _PROOF_DESC_RE.finditer(f.read()):
-            _, tier, ids, _ = _split_proof_tags(m.group(3))
-            tiers[m.group(1)] = tier
-            platforms[m.group(1)] = ids
+    for m in _PROOF_DESC_RE.finditer(_file_text(spec_path)):
+        _, tier, ids, _ = _split_proof_tags(m.group(3))
+        tiers[m.group(1)] = tier
+        platforms[m.group(1)] = ids
     return tiers, platforms
 
 
@@ -2356,12 +2351,13 @@ def _find_spec_path(project_root, feature):
 # ---------------------------------------------------------------------------
 
 class _RunCache:
-    __slots__ = ('specs', 'proof_backings', 'py_parses', 'py_sources', 'test_bodies',
-                 'keys')
+    __slots__ = ('specs', 'proof_backings', 'texts', 'py_parses', 'py_sources',
+                 'test_bodies', 'keys')
 
     def __init__(self):
         self.specs = {}           # feature -> (spec_path, declared, rule_descs)
         self.proof_backings = {}  # feature -> {proof_id: [(test_file, test_name)]}
+        self.texts = {}          # abs path -> file text (RULE-51)
         self.py_parses = {}      # test path -> (entries, lines) | SyntaxError
         self.py_sources = {}     # abs test path -> {(feature, proof_id): src} | None
         self.test_bodies = {}    # (abs test path, feature) -> {proof_id: src} | None
@@ -2369,6 +2365,31 @@ class _RunCache:
 
 
 _RUN_CACHE = None
+
+
+def _file_text(path):
+    """The UTF-8 text of `path`, read from disk once per scope (RULE-51).
+
+    Every reader that takes a path rather than a feature comes through here: the
+    three spec readers and every Pass 1 checker. Without it a sweep opened each
+    spec once per reader that wanted it (four times over) and each test file once
+    per feature declaring a proof in it, because those readers are called by path
+    and so never reach the feature-keyed `_spec_inputs` memo.
+
+    Keyed on the path and nothing else, for the reason `run_scope` gives above: a
+    key that consults an mtime or a size cannot see a same-size edit inside one
+    clock tick. Outside a scope nothing is memoized, so a caller that never opens
+    one always reads what is on disk.
+    """
+    cache = _RUN_CACHE
+    key = os.path.abspath(path)
+    if cache is not None and key in cache.texts:
+        return cache.texts[key]
+    with open(path, encoding='utf-8') as f:
+        content = f.read()
+    if cache is not None:
+        cache.texts[key] = content
+    return content
 
 
 @contextlib.contextmanager

@@ -7,6 +7,7 @@ proof-file structural checks (proof_id_collision, proof_rule_orphan).
 """
 
 import ast
+import builtins
 import glob
 import hashlib
 import json
@@ -3414,3 +3415,84 @@ def test_hashes(mock_checkpw):
         assert checked == 5
         entries, _ = static_checks._python_proof_functions(source)
         assert [(f, p) for f, p, *_ in entries] == [('feat', 'PROOF-1'), ('feat', 'PROOF-2')]
+
+
+class TestSingleReadPerFile:
+    """RULE-51 - one open per file inside one run scope."""
+
+    _SH = (
+        '#!/usr/bin/env bash\n'
+        'if [ "$(echo hi)" = "hi" ]; then\n'
+        '  purlin_proof "shfeat" "PROOF-1" "RULE-1" pass\n'
+        'else\n'
+        '  purlin_proof "shfeat" "PROOF-1" "RULE-1" fail\n'
+        'fi\n'
+    )
+
+    @staticmethod
+    def _project(root):
+        """Four specs: three features share one Python test file, one is shell."""
+        _scaffold_proof(root, 'alpha', 'PROOF-1', 'RULE-1',
+                        test_file='tests/test_shared.py',
+                        test_name='test_alpha', test_body='    assert 1 + 1 == 2')
+        _scaffold_proof(root, 'beta', 'PROOF-2', 'RULE-2',
+                        test_file='tests/test_shared.py',
+                        test_name='test_beta', test_body='    assert True')
+        _scaffold_proof(root, 'gamma', 'PROOF-3', 'RULE-3',
+                        test_file='tests/test_shared.py',
+                        test_name='test_gamma', test_body='    assert 2 + 2 == 4')
+        _scaffold_proof(root, 'shfeat', 'PROOF-1', 'RULE-1',
+                        test_file='tests/test_sh.sh', test_name='test_sh',
+                        write_test=False)
+        path = os.path.join(root, 'tests', 'test_sh.sh')
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(TestSingleReadPerFile._SH)
+
+    @staticmethod
+    def _verdicts(result):
+        return {(feat, pid): (entry['status'], entry['check'])
+                for feat, data in result['features'].items()
+                for pid, entry in data['integrity'].items()}
+
+    @pytest.mark.proof("static_checks", "PROOF-84", "RULE-51", tier="integration")
+    def test_sweep_opens_every_spec_and_test_file_exactly_once(self, monkeypatch):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._project(tmpdir)
+            plain = deterministic_sweep(tmpdir)
+
+            opens = {}
+            real_open = builtins.open
+
+            def spy(file, *args, **kwargs):
+                try:
+                    key = os.path.abspath(os.fspath(file))
+                except TypeError:          # an fd, not a path
+                    key = repr(file)
+                opens[key] = opens.get(key, 0) + 1
+                return real_open(file, *args, **kwargs)
+
+            monkeypatch.setattr(builtins, 'open', spy)
+            spied = deterministic_sweep(tmpdir)
+            monkeypatch.setattr(builtins, 'open', real_open)
+
+            for feature in ('alpha', 'beta', 'gamma', 'shfeat'):
+                spec = os.path.abspath(
+                    os.path.join(tmpdir, 'specs', 'app', f'{feature}.md'))
+                assert opens.get(spec) == 1, \
+                    f"{feature}.md was opened {opens.get(spec)} times, not once"
+            for rel in ('tests/test_shared.py', 'tests/test_sh.sh'):
+                test_path = os.path.abspath(os.path.join(tmpdir, *rel.split('/')))
+                assert opens.get(test_path) == 1, \
+                    f"{rel} was opened {opens.get(test_path)} times, not once"
+            repeated = {k: v for k, v in opens.items() if v > 1}
+            assert repeated == {}, f"paths opened more than once: {repeated}"
+
+            assert spied['counts'] == plain['counts']
+            assert self._verdicts(spied) == self._verdicts(plain)
+            assert self._verdicts(plain) == {
+                ('alpha', 'PROOF-1'): ('pass', 'none'),
+                ('beta', 'PROOF-2'): ('fail', 'assert_true'),
+                ('gamma', 'PROOF-3'): ('pass', 'none'),
+                ('shfeat', 'PROOF-1'): ('pass', 'none'),
+            }
