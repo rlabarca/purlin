@@ -611,10 +611,41 @@ Each item gets its section filled in as it lands, in the same commit as the item
 
 ## DONE - L: consumer run marker
 
-_Placeholder. Record: the marker's shape as each of the eight plugins writes or merges it; how
-concurrent writers are handled; the four `.purlin/plugins/` copies regenerated and their
-byte-identity proofs still green; `receipt_format.md`'s updated `evidence.test_run` paragraph;
-`purlin:verify` Step 3's new text; the per-plugin PROOF-25 tests; and the mutation._
+- Commit `bf0c97bf` on `closeout/L` (built in a worktree after all, since L touches neither
+  `purlin_server.py` nor `sync_status.md`), cherry-picked as `56b2e65a` with one union-resolved
+  conflict in `skill_verify.proofs-integration.json`.
+- **The marker** `.purlin/runtime/test_run.json`: `at` (ISO 8601 UTC), `commit` (`git rev-parse
+  HEAD`, null outside git), `sweep` (the writer: `pytest_purlin`, `jest_purlin`, `vitest_purlin`,
+  `shell_purlin`, `sql_purlin`, `c_purlin`, `phpunit_purlin`, `xunit_purlin`, or `dev/run_tests.sh`),
+  `test_files`, `passed` / `failed` / `skipped` (the marked results that run observed), `ok`, and
+  `runs` (one `{plugin, at, test_files, passed, failed, skipped}` per contributing run). Merge rule:
+  same `commit` unions `test_files`, sums the counts, appends to `runs`, ands `ok`, and carries
+  unknown top-level fields through (T3's `skipped_proofs` survives); a different commit starts
+  fresh; no `.purlin/` means no write. Every writer writes `<path>.<pid>.tmp` in the same directory
+  and renames over the target, retrying a read that lands on unparsable JSON. Python native in
+  `pytest_purlin.py` and `c_purlin_emit.py`; `shell_purlin.sh` and `sql_purlin.sh` extend their
+  `python3` block; native in `jest_purlin.js`, `vitest_purlin.ts`, `phpunit_purlin.php` and
+  `xunit_purlin.cs` (`JsonNode` with explicit casts and a `DefaultJsonTypeInfoResolver`, or the
+  writer threw inside vstest and silently wrote nothing). `dev/run_tests.sh`'s EXIT trap merges the
+  same way and replaces the summary with the sweep's own counts, `ok` and `test_files`.
+- **Rules and proofs.** `proof_common` RULE-19 / PROOF-25 (nine cases: the eight plugins plus the
+  sweep's writer, each driving the real writer twice at one commit and once at another);
+  `skill_verify` RULE-15 / PROOF-15 (Step 3 text plus an issuer half: a receipt from a project whose
+  marker only the pytest plugin wrote carries `evidence.test_run.sweep == "pytest_purlin"` and
+  `runs`); `purlin_references` RULE-21 amended and PROOF-21 extended for the rewritten
+  `evidence.test_run` paragraph. `dev/issue_receipts.py` passes `sweep` and `runs` through.
+  `references/formats/receipt_format.md` Format-Version 2 to 3. D1: proof_common 24 PROVABLE /
+  1 STRUCTURAL, skill_verify 8 / 7, purlin_references 9 / 20; zero UNPROVABLE.
+- **Counts.** `dev/test_multilang_proof_plugins.py` 51 to 59, `dev/test_skill_specs.py` 136 to 137,
+  `dev/test_receipts.py` 5 to 6, `dev/test_proof_plugins.sh` 26 to 27 proofs: net +11 pytest
+  functions and +1 shell proof. The four `.purlin/plugins/` copies were re-`cp`'d;
+  `dev/test_init_e2e.sh` 34/34 and `dev/test_init_scaffold.py` 14/14 green.
+- **Mutations.** `sql_purlin.sh`'s marker write dropped: PROOF-25 fails `sql_purlin wrote its proof
+  files without writing .purlin/runtime/test_run.json`; the pytest merge replacing `test_files`
+  instead of unioning: the merge case fails `test_files must be the union of both runs`.
+- **Consequence found, closed by L2.** The shell suites now write the marker before the pytest pool
+  runs, so `purlin_version` PROOF-9 would read a plugin's marker mid-sweep; RULE-9 now compares the
+  notes against the dev sweep's marker only (`sweep == dev/run_tests.sh`) and skips otherwise.
 
 ## Verification checklist
 
