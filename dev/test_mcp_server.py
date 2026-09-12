@@ -1,4 +1,4 @@
-"""Tests for MCP server specs: mcp_transport (7 rules), sync_status (15 rules), drift (11 rules), purlin_config (1 rule)."""
+"""Tests for MCP server specs: mcp_transport (8 rules), sync_status (15 rules), drift (11 rules), purlin_config (1 rule)."""
 
 import glob
 import hashlib
@@ -2418,6 +2418,136 @@ class TestDriftRuleDetails:
         assert 'src/api/handler.py' in details['changed_files'], (
             f"Expected handler.py in changed_files, got {details['changed_files']}"
         )
+
+
+_RELOAD_EDIT = '\nSERVER_INFO = {"name": "purlin", "version": "9.9.9-reloaded"}\n'
+
+
+def _append_and_touch(path, text):
+    """Append `text` to the server copy and push its mtime 10 seconds forward.
+
+    The mtime is moved explicitly rather than left to the clock: a rewrite
+    inside the same filesystem timestamp granularity would otherwise look
+    unchanged to the loop that compares `os.path.getmtime` against the mtime
+    recorded at startup.
+    """
+    with open(path, 'a') as fh:
+        fh.write(text)
+    st = os.stat(path)
+    os.utime(path, (st.st_atime + 10, st.st_mtime + 10))
+
+
+def _drive_server_subprocess(env_extra, edit_source):
+    """Run a COPY of the MCP server as a subprocess across two requests.
+
+    Sends `initialize`, runs `edit_source` on the copy, sends `initialize`
+    again, and returns (first_response, second_response, stderr_text). The
+    subprocess runs the copy and `edit_source` rewrites the copy, so the real
+    `scripts/mcp/purlin_server.py` is never edited by these tests.
+    """
+    mcp_dir = os.path.join(os.path.dirname(__file__), '..', 'scripts', 'mcp')
+    work = tempfile.mkdtemp()
+    try:
+        project_root = os.path.join(work, 'proj')
+        os.makedirs(os.path.join(project_root, '.purlin'))
+        server_copy = os.path.join(work, 'purlin_server.py')
+        shutil.copy(os.path.join(mcp_dir, 'purlin_server.py'), server_copy)
+        shutil.copy(os.path.join(mcp_dir, 'config_engine.py'),
+                    os.path.join(work, 'config_engine.py'))
+
+        env = dict(os.environ)
+        env.pop('PURLIN_DEV_RELOAD', None)
+        env['PURLIN_PROJECT_ROOT'] = project_root
+        env.update(env_extra)
+
+        def _initialize(req_id):
+            return json.dumps({"jsonrpc": "2.0", "id": req_id,
+                               "method": "initialize"}) + '\n'
+
+        stderr_path = os.path.join(work, 'stderr.txt')
+        with open(stderr_path, 'w') as stderr_file:
+            proc = subprocess.Popen(
+                [sys.executable, server_copy], cwd=work, env=env, text=True,
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                stderr=stderr_file)
+            try:
+                proc.stdin.write(_initialize(1))
+                proc.stdin.flush()
+                first = proc.stdout.readline()
+                edit_source(server_copy)
+                proc.stdin.write(_initialize(2))
+                proc.stdin.flush()
+                second = proc.stdout.readline()
+                proc.stdin.close()
+                proc.wait(timeout=60)
+            finally:
+                if proc.poll() is None:
+                    proc.kill()
+                    proc.wait(timeout=10)
+
+        with open(stderr_path) as fh:
+            stderr_text = fh.read()
+        assert first and second, (
+            "server stopped answering: "
+            f"first={first!r} second={second!r}\nstderr:\n{stderr_text}"
+        )
+        return json.loads(first), json.loads(second), stderr_text
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
+class TestServerHotReload:
+    """mcp_transport RULE-8: the hot-reload gate and its failure logging."""
+
+    @pytest.mark.proof("mcp_transport", "PROOF-8", "RULE-8", tier="integration")
+    def test_hot_reload_off_when_env_unset(self):
+        first, second, stderr = _drive_server_subprocess(
+            {}, lambda path: _append_and_touch(path, _RELOAD_EDIT))
+
+        assert "reloaded" not in stderr, (
+            f"source changed with PURLIN_DEV_RELOAD unset, stderr:\n{stderr}")
+        assert "reload failed" not in stderr, (
+            f"reload attempted with PURLIN_DEV_RELOAD unset, stderr:\n{stderr}")
+        assert first["result"]["protocolVersion"] == "2024-11-05"
+        assert second["result"]["protocolVersion"] == "2024-11-05"
+        # The edit would have moved the version had the module been reloaded.
+        assert second["result"]["serverInfo"]["version"] == \
+            first["result"]["serverInfo"]["version"], (
+                "the rewritten SERVER_INFO reached the answer without "
+                f"PURLIN_DEV_RELOAD=1: {second['result']['serverInfo']}")
+
+    @pytest.mark.proof("mcp_transport", "PROOF-8", "RULE-8", tier="integration")
+    def test_failed_reload_prints_traceback_and_keeps_serving(self):
+        first, second, stderr = _drive_server_subprocess(
+            {"PURLIN_DEV_RELOAD": "1"},
+            lambda path: _append_and_touch(path, "\ndef broken(:\n"))
+
+        assert "Purlin MCP: reload failed" in stderr, (
+            f"failed reload was swallowed, stderr:\n{stderr}")
+        assert "Traceback (most recent call last):" in stderr, (
+            f"no traceback for the failed reload, stderr:\n{stderr}")
+        assert "SyntaxError" in stderr, (
+            f"traceback does not name the SyntaxError, stderr:\n{stderr}")
+        # Still answered, by the module that was loaded before the bad edit.
+        assert second["id"] == 2
+        assert second["result"]["protocolVersion"] == "2024-11-05"
+        assert second["result"]["serverInfo"]["version"] == \
+            first["result"]["serverInfo"]["version"]
+
+    @pytest.mark.proof("mcp_transport", "PROOF-8", "RULE-8", tier="integration")
+    def test_valid_reload_logs_reloaded_and_takes_effect(self):
+        first, second, stderr = _drive_server_subprocess(
+            {"PURLIN_DEV_RELOAD": "1"},
+            lambda path: _append_and_touch(path, _RELOAD_EDIT))
+
+        assert "Purlin MCP: reloaded" in stderr, (
+            f"valid reload logged nothing, stderr:\n{stderr}")
+        assert "reload failed" not in stderr, (
+            f"valid reload reported a failure, stderr:\n{stderr}")
+        assert first["result"]["serverInfo"]["version"] != "9.9.9-reloaded"
+        assert second["result"]["serverInfo"]["version"] == "9.9.9-reloaded", (
+            "the reloaded module did not answer the second request: "
+            f"{second['result']['serverInfo']}")
 
 
 class TestServerOutput:

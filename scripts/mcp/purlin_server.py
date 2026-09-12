@@ -5221,6 +5221,9 @@ def main():
 
     mod = sys.modules[__name__]
     src_path = os.path.abspath(__file__)
+    # Hot-reload is a development aid, off unless PURLIN_DEV_RELOAD=1 is set
+    # in the environment: a production server never stats its own source.
+    dev_reload = os.environ.get('PURLIN_DEV_RELOAD') == '1'
 
     for line in sys.stdin:
         line = line.strip()
@@ -5239,16 +5242,27 @@ def main():
             sys.stdout.flush()
             continue
 
-        # Hot-reload: re-import module when source file changes
-        try:
-            current_mtime = os.path.getmtime(src_path)
-            if current_mtime != _SERVER_MTIME:
-                _SERVER_MTIME = current_mtime
-                import importlib
-                mod = importlib.reload(mod)
-                print("Purlin MCP: reloaded", file=sys.stderr)
-        except Exception:
-            pass
+        # Hot-reload: re-exec the source file when it changes, development only.
+        # A failed reload is reported on stderr with its traceback and leaves
+        # `mod` pointing at the module already loaded, so the request below is
+        # still answered by the last code that imported cleanly.
+        if dev_reload:
+            try:
+                current_mtime = os.path.getmtime(src_path)
+                if current_mtime != _SERVER_MTIME:
+                    _SERVER_MTIME = current_mtime
+                    import importlib.util
+                    spec = importlib.util.spec_from_file_location(
+                        '_purlin_server_reloaded', src_path)
+                    fresh = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(fresh)
+                    mod = fresh
+                    print("Purlin MCP: reloaded", file=sys.stderr)
+            except Exception:
+                import traceback
+                print("Purlin MCP: reload failed", file=sys.stderr)
+                traceback.print_exc(file=sys.stderr)
+                sys.stderr.flush()
 
         response = mod.handle_request(request, project_root)
         if response is not None:
