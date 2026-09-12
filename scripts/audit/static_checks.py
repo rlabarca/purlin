@@ -32,6 +32,7 @@ Output: JSON to stdout.
 """
 
 import ast
+import collections
 import contextlib
 import datetime
 import glob
@@ -707,35 +708,7 @@ def check_js(filepath, feature_name, rule_descs=None):
     `rule_descs` is accepted so every checker in the extension table has one
     signature; JS has no rule-aware check to spend it on.
     """
-    with open(filepath, encoding='utf-8') as f:
-        content = f.read()
-    results = []
-    for proof_id, rule_id, title, body in _iter_js_proof_bodies(content, feature_name):
-        # Check assert_true
-        if re.search(r'expect\s*\(\s*true\s*\)\s*\.toBe\s*\(\s*true\s*\)', body):
-            results.append({
-                'proof_id': proof_id, 'rule_id': rule_id,
-                'test_name': title[:60], 'status': 'fail',
-                'check': 'assert_true', 'reason': 'expect(true).toBe(true) is tautological',
-                'literal': True,
-            })
-            continue
-
-        # Check no_assertions
-        if not re.search(r'expect\s*\(', body):
-            results.append({
-                'proof_id': proof_id, 'rule_id': rule_id,
-                'test_name': title[:60], 'status': 'fail',
-                'check': 'no_assertions', 'reason': 'test function has no expect() calls',
-            })
-            continue
-
-        results.append({
-            'proof_id': proof_id, 'rule_id': rule_id,
-            'test_name': title[:60], 'status': 'pass',
-            'reason': 'structural checks passed',
-        })
-    return results
+    return _run_body_checks(filepath, feature_name, 'js')
 
 
 # ---------------------------------------------------------------------------
@@ -925,49 +898,7 @@ def check_csharp(filepath, feature_name, rule_descs=None):
     detection. Recognizes xUnit `Assert.*`, NUnit `Assert.That`, MSTest `Assert.*`,
     FluentAssertions `.Should()`, and Playwright `Expect(...).To*Async()` as assertions.
     """
-    with open(filepath, encoding='utf-8') as f:
-        content = f.read()
-    results = []
-    for proof_id, rule_id, test_name, body in _iter_csharp_proof_bodies(
-            content, feature_name):
-
-        # assert_true: tautological assertions across the supported frameworks.
-        if (re.search(r'Assert\s*\.\s*(?:True|IsTrue)\s*\(\s*true\s*\)', body)
-                or re.search(r'Assert\s*\.\s*(?:Equal|AreEqual)\s*\(\s*true\s*,\s*true\s*\)', body)):
-            results.append({
-                'proof_id': proof_id, 'rule_id': rule_id,
-                'test_name': test_name, 'status': 'fail',
-                'check': 'assert_true', 'reason': 'Assert.True(true) is tautological',
-                'literal': True,
-            })
-            continue
-
-        # no_assertions: no recognized assertion call in the body.
-        # xUnit/NUnit/MSTest `Assert.`, FluentAssertions `.Should(`, Moq `.Verify(`.
-        has_assert = re.search(r'\bAssert\s*\.', body)
-        has_should = re.search(r'\.\s*Should\s*\(', body)
-        has_verify = re.search(r'\.\s*Verify\s*\(', body)
-        # Playwright fluent assertions: Expect(...)/Assertions.Expect(...) chained to a
-        # To<Matcher>Async() call (ToBeVisibleAsync, ToHaveTextAsync, ToContainTextAsync, ...).
-        # Both tokens are required so a bare Expect(x) with no matcher is still flagged, and a
-        # plain LINQ `.ToListAsync()` (no Expect) is not mistaken for an assertion.
-        has_playwright = (re.search(r'\bExpect\s*\(', body)
-                          and re.search(r'\.\s*To\w+Async\s*\(', body))
-        if not (has_assert or has_should or has_verify or has_playwright):
-            results.append({
-                'proof_id': proof_id, 'rule_id': rule_id,
-                'test_name': test_name, 'status': 'fail',
-                'check': 'no_assertions',
-                'reason': 'test method has no Assert./.Should()/.Verify()/Expect(...).To*Async() call',
-            })
-            continue
-
-        results.append({
-            'proof_id': proof_id, 'rule_id': rule_id,
-            'test_name': test_name, 'status': 'pass',
-            'reason': 'structural checks passed',
-        })
-    return results
+    return _run_body_checks(filepath, feature_name, 'csharp')
 
 
 # ---------------------------------------------------------------------------
@@ -1127,38 +1058,7 @@ def check_php(filepath, feature_name, rule_descs=None):
     no-assertion detection. Known limit, shared with C#: a test that delegates
     every assertion to a helper method reads as `no_assertions` here.
     """
-    with open(filepath, encoding='utf-8') as f:
-        content = f.read()
-    results = []
-    for proof_id, rule_id, test_name, raw_body in _iter_php_proof_bodies(
-            content, feature_name):
-        # The author's comments are prose, not code: `// no throw = pass` is not
-        # an assertion and `// never assert(true)` is not a tautology.
-        body = _strip_c_like_comments(raw_body, _PHP_LINE_COMMENTS,
-                                      verbatim_strings=False)
-        tautology = _php_tautology(body)
-        if tautology:
-            results.append({
-                'proof_id': proof_id, 'rule_id': rule_id,
-                'test_name': test_name, 'status': 'fail',
-                'check': 'assert_true', 'reason': tautology,
-                'literal': True,
-            })
-            continue
-        if not _PHP_ASSERTION_RE.search(body):
-            results.append({
-                'proof_id': proof_id, 'rule_id': rule_id,
-                'test_name': test_name, 'status': 'fail',
-                'check': 'no_assertions',
-                'reason': 'test function has no assert*/expect*/throw call',
-            })
-            continue
-        results.append({
-            'proof_id': proof_id, 'rule_id': rule_id,
-            'test_name': test_name, 'status': 'pass',
-            'reason': 'structural checks passed',
-        })
-    return results
+    return _run_body_checks(filepath, feature_name, 'php')
 
 
 # ---------------------------------------------------------------------------
@@ -1279,36 +1179,7 @@ def check_sql(filepath, feature_name, rule_descs=None):
     a `CASE WHEN` whose predicate compares constants proves nothing about the
     schema. A predicate naming any column, function or subquery is left alone.
     """
-    with open(filepath, encoding='utf-8') as f:
-        content = f.read()
-    results = []
-    for proof_id, rule_id, test_name, block in _iter_sql_proof_blocks(
-            content, feature_name):
-        sql_exec = _sql_strip_comments(_sql_executable(block))
-        tautology = _sql_tautology(sql_exec)
-        if tautology:
-            results.append({
-                'proof_id': proof_id, 'rule_id': rule_id,
-                'test_name': test_name, 'status': 'fail',
-                'check': 'assert_true',
-                'reason': f'{tautology} passes whatever the data holds',
-                'literal': True,
-            })
-            continue
-        if not _SQL_SELECT_RE.search(sql_exec):
-            results.append({
-                'proof_id': proof_id, 'rule_id': rule_id,
-                'test_name': test_name, 'status': 'fail',
-                'check': 'no_assertions',
-                'reason': 'proof block runs no SELECT, so it observes nothing',
-            })
-            continue
-        results.append({
-            'proof_id': proof_id, 'rule_id': rule_id,
-            'test_name': test_name, 'status': 'pass',
-            'reason': 'structural checks passed',
-        })
-    return results
+    return _run_body_checks(filepath, feature_name, 'sql')
 
 
 # ---------------------------------------------------------------------------
@@ -1436,27 +1307,189 @@ def check_c(filepath, feature_name, rule_descs=None):
     test with no assertion is one whose `passed` argument is constant, which the
     constant check already catches.
     """
-    with open(filepath, encoding='utf-8') as f:
-        content = f.read()
-    results = []
+    return _run_body_checks(filepath, feature_name, 'c')
+
+
+# ---------------------------------------------------------------------------
+# The one brace-body driver, and the table the five languages differ in (RULE-52)
+#
+# JS/TS, C#, PHP, SQL and C all run the same Pass 1: read the file, walk the
+# marked proof bodies, fail the first one that is tautological, fail the next
+# that asserts nothing, pass the rest. Only six things differ per language, and
+# they are the six columns of `_BODY_CHECKS` below. `check_js`, `check_csharp`,
+# `check_php`, `check_sql` and `check_c` stay as named wrappers because the
+# extension table and every proof call them by name.
+# ---------------------------------------------------------------------------
+
+_JS_TAUTOLOGY_RE = re.compile(
+    r'expect\s*\(\s*true\s*\)\s*\.toBe\s*\(\s*true\s*\)')
+_JS_EXPECT_RE = re.compile(r'expect\s*\(')
+
+_CSHARP_TAUTOLOGY_RES = (
+    re.compile(r'Assert\s*\.\s*(?:True|IsTrue)\s*\(\s*true\s*\)'),
+    re.compile(r'Assert\s*\.\s*(?:Equal|AreEqual)\s*\(\s*true\s*,\s*true\s*\)'),
+)
+# xUnit/NUnit/MSTest `Assert.`, FluentAssertions `.Should(`, Moq `.Verify(`, and
+# Playwright's Expect(...)/Assertions.Expect(...) chained to a To<Matcher>Async()
+# call (ToBeVisibleAsync, ToHaveTextAsync, ToContainTextAsync, ...). Playwright
+# needs both tokens, so a bare Expect(x) with no matcher is still flagged and a
+# plain LINQ `.ToListAsync()` with no Expect is not mistaken for an assertion.
+_CSHARP_ASSERT_RE = re.compile(r'\bAssert\s*\.')
+_CSHARP_SHOULD_RE = re.compile(r'\.\s*Should\s*\(')
+_CSHARP_VERIFY_RE = re.compile(r'\.\s*Verify\s*\(')
+_CSHARP_EXPECT_RE = re.compile(r'\bExpect\s*\(')
+_CSHARP_MATCHER_RE = re.compile(r'\.\s*To\w+Async\s*\(')
+
+
+def _same(value):
+    """Identity: this language neither strips its bodies nor reshapes its names."""
+    return value
+
+
+def _js_tautology(body):
+    return ('expect(true).toBe(true) is tautological'
+            if _JS_TAUTOLOGY_RE.search(body) else None)
+
+
+def _js_has_assertion(body):
+    return bool(_JS_EXPECT_RE.search(body))
+
+
+def _csharp_tautology(body):
+    return ('Assert.True(true) is tautological'
+            if any(r.search(body) for r in _CSHARP_TAUTOLOGY_RES) else None)
+
+
+def _csharp_has_assertion(body):
+    return bool(_CSHARP_ASSERT_RE.search(body)
+                or _CSHARP_SHOULD_RE.search(body)
+                or _CSHARP_VERIFY_RE.search(body)
+                or (_CSHARP_EXPECT_RE.search(body)
+                    and _CSHARP_MATCHER_RE.search(body)))
+
+
+def _php_strip(raw_body):
+    """The author's comments are prose, not code: `// no throw = pass` is not an
+    assertion and `// never assert(true)` is not a tautology."""
+    return _strip_c_like_comments(raw_body, _PHP_LINE_COMMENTS,
+                                  verbatim_strings=False)
+
+
+def _php_has_assertion(body):
+    return bool(_PHP_ASSERTION_RE.search(body))
+
+
+def _sql_executable_statements(block):
+    return _sql_strip_comments(_sql_executable(block))
+
+
+def _sql_tautology_reason(sql_exec):
+    tautology = _sql_tautology(sql_exec)
+    return f'{tautology} passes whatever the data holds' if tautology else None
+
+
+def _sql_has_assertion(sql_exec):
+    return bool(_SQL_SELECT_RE.search(sql_exec))
+
+
+def _iter_c_proof_subjects(content, feature_name):
+    """(proof_id, rule_id, test_name, passed_arg) per `purlin_proof` call. C is
+    the one language whose subject is not a body: the checker judges the recorded
+    `passed` argument, so the enclosing block that `_iter_c_proof_bodies` also
+    yields (which the cache key wants) is dropped here."""
     for proof_id, rule_id, test_name, passed_arg, _block in _iter_c_proof_bodies(
             content, feature_name):
-        if _is_constant_expression(passed_arg):
-            results.append({
-                'proof_id': proof_id, 'rule_id': rule_id,
-                'test_name': test_name, 'status': 'fail',
-                'check': 'assert_true',
-                'reason': (f'purlin_proof passed argument `{passed_arg}` is a '
-                           'constant expression, so the recorded status cannot '
-                           'depend on the code under test'),
-                'literal': True,
-            })
+        yield proof_id, rule_id, test_name, passed_arg
+
+
+def _c_constant_passed(passed_arg):
+    if not _is_constant_expression(passed_arg):
+        return None
+    return (f'purlin_proof passed argument `{passed_arg}` is a '
+            'constant expression, so the recorded status cannot '
+            'depend on the code under test')
+
+
+# `subjects(content, feature)` yields (proof_id, rule_id, raw_name, subject);
+# `prepare` turns the subject into the text both predicates read; `tautology`
+# returns the reason the proof is hollow, or None; `has_assertion` is None for a
+# language with no no-assertion check (C, whose constant check already covers
+# it); `test_name` shapes the name the iterator produced.
+_BodyLang = collections.namedtuple(
+    '_BodyLang',
+    'subjects prepare tautology has_assertion no_assertion_reason test_name')
+
+
+_BODY_CHECKS = {
+    'js': _BodyLang(
+        subjects=_iter_js_proof_bodies,
+        prepare=_same,
+        tautology=_js_tautology,
+        has_assertion=_js_has_assertion,
+        no_assertion_reason='test function has no expect() calls',
+        test_name=lambda title: title[:60],
+    ),
+    'csharp': _BodyLang(
+        subjects=_iter_csharp_proof_bodies,
+        prepare=_same,
+        tautology=_csharp_tautology,
+        has_assertion=_csharp_has_assertion,
+        no_assertion_reason=(
+            'test method has no Assert./.Should()/.Verify()/Expect(...).To*Async() call'),
+        test_name=_same,
+    ),
+    'php': _BodyLang(
+        subjects=_iter_php_proof_bodies,
+        prepare=_php_strip,
+        tautology=_php_tautology,
+        has_assertion=_php_has_assertion,
+        no_assertion_reason='test function has no assert*/expect*/throw call',
+        test_name=_same,
+    ),
+    'sql': _BodyLang(
+        subjects=_iter_sql_proof_blocks,
+        prepare=_sql_executable_statements,
+        tautology=_sql_tautology_reason,
+        has_assertion=_sql_has_assertion,
+        no_assertion_reason='proof block runs no SELECT, so it observes nothing',
+        test_name=_same,
+    ),
+    'c': _BodyLang(
+        subjects=_iter_c_proof_subjects,
+        prepare=_same,
+        tautology=_c_constant_passed,
+        has_assertion=None,
+        no_assertion_reason='',
+        test_name=_same,
+    ),
+}
+
+
+def _run_body_checks(filepath, feature_name, lang):
+    """Pass 1 for one brace-body language. Returns list of proof result dicts.
+
+    The shape the five share: read the file once (RULE-51), walk the proof
+    bodies the language's iterator finds, and report the first defect each one
+    has, tautology before missing assertion, or pass.
+    """
+    spec = _BODY_CHECKS[lang]
+    content = _file_text(filepath)
+    results = []
+    for proof_id, rule_id, raw_name, subject in spec.subjects(content, feature_name):
+        judged = spec.prepare(subject)
+        base = {'proof_id': proof_id, 'rule_id': rule_id,
+                'test_name': spec.test_name(raw_name)}
+        tautology = spec.tautology(judged)
+        if tautology:
+            results.append(dict(base, status='fail', check='assert_true',
+                                reason=tautology, literal=True))
             continue
-        results.append({
-            'proof_id': proof_id, 'rule_id': rule_id,
-            'test_name': test_name, 'status': 'pass',
-            'reason': 'structural checks passed',
-        })
+        if spec.has_assertion is not None and not spec.has_assertion(judged):
+            results.append(dict(base, status='fail', check='no_assertions',
+                                reason=spec.no_assertion_reason))
+            continue
+        results.append(dict(base, status='pass',
+                            reason='structural checks passed'))
     return results
 
 

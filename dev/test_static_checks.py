@@ -3496,3 +3496,89 @@ class TestSingleReadPerFile:
                 ('gamma', 'PROOF-3'): ('pass', 'none'),
                 ('shfeat', 'PROOF-1'): ('pass', 'none'),
             }
+
+
+class TestOneBodyCheckDriver:
+    """RULE-52 - the five brace-body checkers are wrappers over one driver."""
+
+    _WRAPPERS = ('check_js', 'check_csharp', 'check_php', 'check_sql', 'check_c')
+
+    # (wrapper, filename, source, expected reason). Every reason is the string
+    # that language's own proofs assert, quoted here so a paraphrase in the
+    # driver fails this test as well as theirs.
+    _FIXTURES = (
+        ('check_js', 'hollow.mjs',
+         'it("t [proof:feat:PROOF-1:RULE-1]", () => { expect(true).toBe(true); });\n',
+         'expect(true).toBe(true) is tautological'),
+        ('check_csharp', 'Hollow.cs',
+         'using Xunit;\n'
+         'namespace Demo {\n'
+         '  public class HollowTests {\n'
+         '    [Fact]\n'
+         '    [Trait("PurlinProof", "feat:PROOF-1:RULE-1:unit")]\n'
+         '    public void Hollow() { Assert.True(true); }\n'
+         '  }\n'
+         '}\n',
+         'Assert.True(true) is tautological'),
+        ('check_php', 'hollow.php',
+         '<?php\n/** @purlin feat PROOF-1 RULE-1 unit */\n'
+         'function test_hollow() { $this->assertTrue(true); }\n',
+         'assertTrue(true) is tautological'),
+        ('check_sql', 'hollow.sql',
+         "-- @purlin feat PROOF-1 RULE-1 unit\n-- Test: hollow\nSELECT 'PASS';\n",
+         "an unconditional SELECT 'PASS' passes whatever the data holds"),
+        ('check_c', 'hollow.c',
+         '#include "c_purlin.h"\nint main(void) {\n'
+         '    purlin_proof("feat", "PROOF-1", "RULE-1", 1, "hollow", __FILE__, "unit");\n'
+         '    return 0;\n}\n',
+         'purlin_proof passed argument `1` is a constant expression, so the '
+         'recorded status cannot depend on the code under test'),
+    )
+
+    @pytest.mark.proof("static_checks", "PROOF-85", "RULE-52", tier="integration")
+    def test_five_wrappers_delegate_and_keep_every_reason_string(self):
+        path = os.path.join(os.path.dirname(__file__), '..', 'scripts', 'audit',
+                            'static_checks.py')
+        with open(path, encoding='utf-8') as f:
+            tree = ast.parse(f.read())
+        functions = [n for n in tree.body
+                     if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
+        by_name = {n.name: n for n in functions}
+
+        assert [n.name for n in functions].count('_run_body_checks') == 1, \
+            "the driver must be defined exactly once"
+
+        for name in self._WRAPPERS:
+            node = by_name[name]
+            body = node.body
+            if (body and isinstance(body[0], ast.Expr)
+                    and isinstance(body[0].value, ast.Constant)
+                    and isinstance(body[0].value.value, str)):
+                body = body[1:]          # the docstring is not an inlined check
+            assert len(body) == 1 and isinstance(body[0], ast.Return), \
+                f"{name} has {len(body)} statements, so its body is inlined again"
+            call = body[0].value
+            assert isinstance(call, ast.Call) and isinstance(call.func, ast.Name) \
+                and call.func.id == '_run_body_checks', \
+                f"{name} returns something other than a _run_body_checks(...) call"
+
+        langs = {n.args[-1].value for n in
+                 [by_name[w].body[-1].value for w in self._WRAPPERS]}
+        assert set(static_checks._BODY_CHECKS) == langs == {
+            'js', 'csharp', 'php', 'sql', 'c'}, \
+            "the table and the wrappers name different languages"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            for wrapper, filename, source, reason in self._FIXTURES:
+                path = os.path.join(tmpdir, filename)
+                with open(path, 'w', encoding='utf-8') as f:
+                    f.write(source)
+                results = getattr(static_checks, wrapper)(path, 'feat')
+                assert len(results) == 1, f"{wrapper} returned {results}"
+                got = results[0]
+                assert (got['proof_id'], got['rule_id']) == ('PROOF-1', 'RULE-1')
+                assert got['status'] == 'fail', got
+                assert got['check'] == 'assert_true', got
+                assert got['literal'] is True, got
+                assert got['reason'] == reason, (
+                    f"{wrapper} reason moved: {got['reason']!r} != {reason!r}")
