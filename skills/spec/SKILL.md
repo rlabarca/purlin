@@ -265,7 +265,9 @@ Before committing, verify:
 
 ### Commit (mandatory)
 
-After the spec is approved, commit immediately. Do not batch with other changes.
+After the spec is approved, commit immediately. Do not batch with other changes. The one
+exception is a spec carrying `> Visual-Reference:`: its reference image is committed together
+with the spec, as the visual-reference steps below require.
 
 ```
 git add specs/<category>/<name>.md
