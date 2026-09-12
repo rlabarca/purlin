@@ -26,6 +26,7 @@ SCAFFOLD = os.path.join(ROOT, 'scripts', 'init', 'scaffold.py')
 SKILL = os.path.join(ROOT, 'skills', 'init', 'SKILL.md')
 TEMPLATE_CONFIG = os.path.join(ROOT, 'templates', 'config.json')
 TEMPLATE_GITIGNORE = os.path.join(ROOT, 'templates', 'gitignore.purlin')
+MIGRATE = os.path.join(ROOT, 'scripts', 'update', 'migrate.py')
 
 GIT_REQUIRED = "Purlin requires git. Run 'git init' first."
 
@@ -156,7 +157,8 @@ class TestDelegation:
         code, out, err = _run(
             repo, '--test-framework', 'shell', '--pre-push', 'warn',
             '--mutation-checks', 'off', '--remote-verification', 'off',
-            '--report', 'on', '--digest', 'auto', '--force')
+            '--report', 'on', '--digest', 'auto', '--quality-gate', 'off',
+            '--force')
         assert code == 0, (code, out, err)
 
         # The two halves the skill keeps: --update is migrate.py, --mcp is 5c.
@@ -587,6 +589,8 @@ class TestPlanAndAnswers:
              {'mutation_checks': True, 'report': False}),
             (('--remote-verification', 'required'),
              {'remote_verification': 'required'}),
+            (('--quality-gate', 'deterministic'),
+             {'quality_gate': 'deterministic'}),
         )
         for flags, expected in cases:
             root = _tmp_repo()
@@ -658,6 +662,8 @@ class TestSingleStepReanswer:
             (('--report', 'off'), 'report', False),
             (('--digest', 'warn'), 'digest', 'warn'),
             (('--mutation-checks', 'on'), 'mutation_checks', True),
+            (('--quality-gate', 'deterministic'), 'quality_gate',
+             'deterministic'),
         )
         for flags, key, value in cases:
             named = ' '.join(flags)
@@ -702,3 +708,83 @@ class TestSingleStepReanswer:
                 f"{named} planned more than the config write: {stray}")
 
             before_config, before_tree = after_config, after_tree
+
+
+# ---------------------------------------------------------------------------
+# RULE-75: `quality_gate` is written only when it is answered
+# ---------------------------------------------------------------------------
+
+class TestQualityGate:
+
+    @pytest.mark.proof("skill_init", "PROOF-78", "RULE-75", tier="integration")
+    def test_quality_gate_is_written_only_when_answered(self, repo):
+        """RULE-75: the quality gate is project policy a project opts into.
+        A field written as null, or backfilled as `off`, would read as a
+        declaration nobody made."""
+        code, out, err = _run(repo, '--test-framework', 'shell')
+        assert code == 0, (code, out, err)
+
+        template_keys = set(json.loads(_read(TEMPLATE_CONFIG)))
+        written = _config(repo)
+        assert set(written) == template_keys, (
+            f"an unanswered run must write exactly the template's keys; "
+            f"added {sorted(set(written) - template_keys)}, missing "
+            f"{sorted(template_keys - set(written))}")
+        assert 'quality_gate' not in written, (
+            "an unanswered --quality-gate must write no key at all, not "
+            f"null: {written.get('quality_gate')!r}")
+
+        # Not a template key, so the update has nothing to backfill and
+        # nothing to ask: `--check` must not name it at all.
+        check = subprocess.run(
+            [sys.executable, MIGRATE, '--check', '--project-root', repo],
+            capture_output=True, text=True)
+        assert check.returncode == 0, (check.returncode, check.stderr)
+        pending = json.loads(check.stdout)['pending']
+        gaps = [entry for entry in pending
+                if entry['id'] == 'config-fields-missing']
+        assert not gaps, (
+            f"migrate.py --check reports a config gap on a project with no "
+            f"quality_gate: {gaps}")
+        assert 'quality_gate' not in check.stdout, (
+            f"migrate.py --check names quality_gate: {check.stdout}")
+
+        # Answered, it is written, and it is the only thing that moves.
+        before_config, before_tree = written, _tree(repo)
+        code, out, err = _run(repo, '--force', '--quality-gate',
+                              'deterministic')
+        assert code == 0, (code, out, err)
+        after_config = _config(repo)
+        assert after_config.get('quality_gate') == 'deterministic', \
+            after_config
+        changed = {k for k in set(before_config) | set(after_config)
+                   if before_config.get(k, '\0') != after_config.get(k, '\0')}
+        assert changed == {'quality_gate'}, (
+            f"--quality-gate deterministic alone must rewrite exactly "
+            f"'quality_gate'; it changed {sorted(changed)}")
+        after_tree = _tree(repo)
+        assert set(after_tree) == set(before_tree), (
+            f"added {sorted(set(after_tree) - set(before_tree))}, removed "
+            f"{sorted(set(before_tree) - set(after_tree))}")
+        differing = sorted(rel for rel in before_tree
+                           if rel != os.path.join('.purlin', 'config.json')
+                           and after_tree[rel] != before_tree[rel])
+        assert not differing, (
+            f"--quality-gate rewrote {differing[0] if differing else None}")
+
+        # A re-init that does not name the flag keeps the recorded mode.
+        assert _run(repo, '--force', '--pre-push', 'strict')[0] == 0
+        kept = _config(repo)
+        assert kept.get('quality_gate') == 'deterministic', (
+            f"--force without --quality-gate dropped the recorded mode: "
+            f"{kept.get('quality_gate')!r}")
+        assert set(kept) == template_keys | {'quality_gate'}, sorted(kept)
+
+        # A value outside the closed set is refused, and refused before any
+        # write: argparse rejects the choice and the config does not move.
+        frozen = _read(os.path.join(repo, '.purlin', 'config.json'))
+        code, out, err = _run(repo, '--force', '--quality-gate', 'always')
+        assert code == 2, (code, out, err)
+        assert 'invalid choice' in err, err
+        assert _read(os.path.join(repo, '.purlin', 'config.json')) == frozen, \
+            "a refused --quality-gate value still rewrote the config"

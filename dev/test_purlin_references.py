@@ -483,7 +483,7 @@ class TestRemoteVerificationReference:
         # Optional fields init never writes still need an owner and a default:
         # a skill reads them, so somebody has to say who sets them.
         optional = {'audit_llm', 'audit_llm_name', 'audit_criteria',
-                    'audit_criteria_pinned', 'platforms'}
+                    'audit_criteria_pinned', 'platforms', 'quality_gate'}
         missing_optional = sorted(optional - listed)
         assert not missing_optional, (
             f"optional config fields {missing_optional} are read by a skill but "

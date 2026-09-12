@@ -225,6 +225,15 @@
       "test_name": "test_one_flag_rewrites_one_field_and_nothing_else",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-78",
+      "rule": "RULE-75",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_quality_gate_is_written_only_when_answered",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

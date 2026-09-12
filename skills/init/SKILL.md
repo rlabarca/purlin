@@ -20,6 +20,8 @@ purlin:init --pre-push                  Change pre-push mode (warn/strict/off)
 purlin:init --report                    Toggle HTML dashboard report (on/off)
 purlin:init --digest                    Change digest mode (auto/warn/off)
 purlin:init --mutation-checks on|off    Change the mutation-check setting
+purlin:init --quality-gate off|deterministic
+                                        Set the deterministic quality gate
 purlin:init --update                    Bring the project up to the installed plugin
 purlin:init --update --check            Report what is pending; write nothing
 purlin:init --update --platform-id <id> What a legacy @windows tag becomes (default: windows)
@@ -30,7 +32,7 @@ purlin:init --mcp                       Run only the MCP step of --update
 
 Each `--flag` runs ONLY that step, not the full init.
 
-**Who does what.** This skill asks the questions; `scripts/init/scaffold.py` writes the files, exactly as `scripts/update/migrate.py` performs `--update`. The script handles the full init, the `--force` re-run (Steps 1, 2, 4, 5, 5b, 7 and 7a) and the single-step re-answers: it takes `--pre-push`, `--digest`, `--report` and `--mutation-checks` as answers, and `purlin:init --pre-push`, `--report`, `--digest` and `--mutation-checks` each ask their own question and then run it with `--force` and that one flag (see **Single-step re-answers** in Step 2). `--add-plugin`, `--list-plugins`, `--sync-audit-criteria` and `--audit-llm` stay agent-driven; `--update` is `scripts/update/migrate.py` (Step 5d) and `--mcp` is its MCP step (Step 5c).
+**Who does what.** This skill asks the questions; `scripts/init/scaffold.py` writes the files, exactly as `scripts/update/migrate.py` performs `--update`. The script handles the full init, the `--force` re-run (Steps 1, 2, 4, 5, 5b, 7 and 7a) and the single-step re-answers: it takes `--pre-push`, `--digest`, `--report`, `--mutation-checks` and `--quality-gate` as answers, and `purlin:init --pre-push`, `--report`, `--digest`, `--mutation-checks` and `--quality-gate` each ask their own question and then run it with `--force` and that one flag (see **Single-step re-answers** in Step 2). `--add-plugin`, `--list-plugins`, `--sync-audit-criteria` and `--audit-llm` stay agent-driven; `--update` is `scripts/update/migrate.py` (Step 5d) and `--mcp` is its MCP step (Step 5c).
 
 ## Step 1 — Pre-flight
 
@@ -54,7 +56,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" \
   --digest <auto|warn|off> \
   --report <on|off> \
   --mutation-checks <on|off> \
-  [--remote-verification <required|optional|off>] [--force] [--dry-run]
+  [--remote-verification <required|optional|off>] \
+  [--quality-gate <off|deterministic>] [--force] [--dry-run]
 ```
 
 ```
@@ -71,10 +74,10 @@ was asked: it reads `templates/config.json`, writes the answers over it, stamps
 a receipt or a commit. `--dry-run` prints the same plan and writes nothing,
 which is what to run when the user wants to see the plan before agreeing to it.
 
-**Single-step re-answers.** `purlin:init --pre-push`, `--report`, `--digest` and
-`--mutation-checks` change one setting on a project that is already initialized.
-Each asks only its own question, then runs the same scaffolder with `--force`
-and that one flag:
+**Single-step re-answers.** `purlin:init --pre-push`, `--report`, `--digest`,
+`--mutation-checks` and `--quality-gate` change one setting on a project that is
+already initialized. Each asks only its own question, then runs the same
+scaffolder with `--force` and that one flag:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" \
@@ -89,7 +92,17 @@ plugin. Do NOT hand-edit `.purlin/config.json` for one of these: the scaffolder
 owns that file, and a config edited by hand is how a key gets dropped, reordered
 or written in the wrong type.
 
-Config template fields (from `templates/config.json`), plus the optional `platforms` field that init never writes:
+**Setting the quality gate on an existing project.** `purlin:init --quality-gate
+<off|deterministic>` is one of those single-step re-answers: ask which mode the
+project wants, then run the scaffolder with `--force --quality-gate <mode>` and
+nothing else. That run writes `quality_gate` and changes no other key and no
+other file. Do not ask about the quality gate during a full init and do not pass
+`--quality-gate` on the Step 2 invocation unless the user asked for it:
+`quality_gate` is not a template field, so a project that never answered it
+carries no such key, and `purlin:init --update` neither backfills it nor asks
+about it.
+
+Config template fields (from `templates/config.json`), plus the optional `platforms` and `quality_gate` fields that a full init never writes:
 
 | Field | Default | Description |
 |-------|---------|-------------|
@@ -102,6 +115,7 @@ Config template fields (from `templates/config.json`), plus the optional `platfo
 | `report` | `true` | HTML dashboard report generation |
 | `digest` | `"auto"` | Digest generation mode (`auto`, `warn`, or `off`) |
 | `platforms` | not set (optional; not written by init) | Registry for `@on(...)` proof tags: `{"<id>": {"os": windows\|macos\|linux, "version", "distro", "arch", "runner", "label"}}`. The family ids `windows`, `macos`, `linux` are built in; an entry pins a version or attaches a runner. Written by `purlin:test`'s setup offer with consent, or by hand; see `references/drift_criteria.md` |
+| `quality_gate` | not set (optional; not written by a full init) | Project policy for `scripts/ci/verify_gate.py`: `"off"` (the default the gate assumes when the key is absent) or `"deterministic"`, which fails the gate on a HOLLOW executed test or an UNPROVABLE proof description. Written only by `purlin:init --quality-gate <mode>`; `purlin:init --update` never backfills it and never asks. A declaration, not the enforcement; see `references/hard_gates.md` |
 
 ## Step 3 — Detect Test Framework
 
@@ -261,6 +275,8 @@ UPDATING:
 
 KEEPING (unchanged):
   specs/audit/static_checks.receipt.json   a receipt is a claim that tests ran
+  .purlin/config.json  quality_gate        optional, not a template field: never
+                                           backfilled and never asked
   every other proof file, spec and test
 
 ASKING:

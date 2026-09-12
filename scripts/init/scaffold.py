@@ -5,6 +5,7 @@
         [--test-framework auto|<id>[,<id>...]] [--pre-push warn|strict|off]
         [--mutation-checks on|off] [--remote-verification required|optional|off]
         [--report on|off] [--digest auto|warn|off]
+        [--quality-gate off|deterministic]
         [--force] [--plugin-root DIR] [--dry-run]
 
 `purlin:init` is the user-facing command; this script is the part of it that
@@ -15,7 +16,11 @@ and nothing the skill decides is re-decided here.
 
 WHAT IT WRITES
     .purlin/config.json     the template with the answered values and the
-                            `version` stamped from VERSION
+                            `version` stamped from VERSION. `quality_gate` is
+                            the one answer the template does not carry: it is
+                            written only when `--quality-gate` answers it, so
+                            a project that never asked for the quality gate
+                            holds exactly the template's keys
     .purlin/plugins/<file>  a byte-identical copy of each selected framework's
                             plugin from scripts/proof/
     conftest.py             the pytest wiring, jest.config.js the jest
@@ -57,6 +62,13 @@ WHAT `--force` KEEPS
     this run did not ask about, and changes exactly what was re-answered.
     Nothing else on disk is replaced: an existing plugin copy, wiring file,
     hook or dashboard is kept and reported as `kept`.
+
+    `--quality-gate` keeps the same way, from the other side: it is not a
+    template key, so absent it is neither answered nor backfilled. A project
+    that recorded one keeps the recorded mode, and a project that never
+    recorded one still has no `quality_gate` key after a re-init. That is why
+    `scripts/update/migrate.py` has nothing to do for this field: it backfills
+    the template's keys, and this is not one of them.
 
     `--test-framework` keeps with the rest. Absent, it is the project's own
     recorded value (`auto` in a project that has no config yet), so the
@@ -424,6 +436,11 @@ def main(argv=None):
                         choices=('required', 'optional', 'off'), default=None)
     parser.add_argument('--report', choices=('on', 'off'), default=None)
     parser.add_argument('--digest', choices=('auto', 'warn', 'off'), default=None)
+    parser.add_argument('--quality-gate', choices=('off', 'deterministic'),
+                        default=None,
+                        help='the project-policy quality gate scripts/ci/'
+                             'verify_gate.py reads (default: unanswered, and '
+                             'an unanswered field is not written)')
     parser.add_argument('--force', action='store_true',
                         help='re-initialize a project that already has '
                              '.purlin/config.json')
@@ -494,6 +511,11 @@ def main(argv=None):
         'digest': args.digest,
         'mutation_checks': (None if args.mutation_checks is None
                             else args.mutation_checks == 'on'),
+        # Not a template key. `None` here means unanswered, and `_config`
+        # writes no key for an unanswered answer, so a project that never
+        # asked for the quality gate holds exactly the template's keys and
+        # `scripts/update/migrate.py` has nothing to backfill (RULE-75).
+        'quality_gate': args.quality_gate,
     }
 
     plan = []

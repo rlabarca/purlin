@@ -606,3 +606,72 @@ Deferrals and adjacent findings:
   The 24 unmeasurable are all `marker_not_found` in `dev/test_proof_plugins.sh`, whose
   `purlin_proof` calls are built from shell variables rather than the literal four-argument form
   `check_shell` matches.
+
+### C2
+
+`feat(skill_init): purlin:init --quality-gate sets the optional quality_gate field and nothing else`
+
+Files touched:
+
+- `scripts/init/scaffold.py` (`--quality-gate {off,deterministic}` with no default, the answers
+  entry, the usage line, the "WHAT IT WRITES" and "WHAT `--force` KEEPS" paragraphs)
+- `skills/init/SKILL.md` (usage line, "Who does what", the Step 2 invocation block, the
+  Single-step re-answers list, a **Setting the quality gate on an existing project** note, the
+  config-table heading and a `quality_gate` row after `platforms`, the Step 5d KEEPING block)
+- `specs/skills/skill_init.md` (RULE-70/PROOF-73 and RULE-74/PROOF-77 amended; new
+  RULE-75/PROOF-78)
+- `dev/test_init_scaffold.py` (`TestQualityGate`; PROOF-73's seventh case, PROOF-77's fifth
+  case, PROOF-61's invocation gains `--quality-gate off`)
+- `references/drift_criteria.md` (the `quality_gate` ownership row, the "six optional fields"
+  sentence)
+- `specs/instructions/purlin_references.md` (RULE-20 and PROOF-20 name the sixth optional field;
+  no new id taken)
+- `dev/test_purlin_references.py` (PROOF-20's `optional` set)
+- `docs/installation-guide.md` ("Three further fields are optional", a `quality_gate` paragraph)
+- `specs/skills/skill_init.proofs-integration.json` (one new entry)
+
+`scripts/update/migrate.py` and `templates/config.json` are untouched on purpose: the field is
+not a template key, so `_config_field_gaps` never lists it and `_ASKED_CONFIG_FIELDS` never asks.
+
+Maxima left: `specs/skills/skill_init.md` RULE-75 / PROOF-78;
+`specs/instructions/purlin_references.md` RULE-29 / PROOF-29 (unchanged, no id taken).
+
+Test counts (before -> after, whole files):
+
+- `dev/test_init_scaffold.py` 15 -> 16 passed, 0 skipped
+- `dev/test_init_update.py` 10 -> 10 passed
+- `dev/test_skill_specs.py` 141 -> 141 passed
+- `dev/test_purlin_references.py` 29 -> 29 passed
+- `dev/test_purlin_docs.py` 16 -> 16 passed
+- `bash dev/test_init_e2e.sh` 34 passed, 0 failed, 0 skipped (unchanged)
+
+Mutations, both on `scripts/init/scaffold.py`, `dev/test_init_scaffold.py` run whole each time:
+
+1. `_config` gained `config.setdefault('quality_gate', answers.get('quality_gate'))`, so an
+   unanswered run writes the key as null. Failed 2/16, PROOF-78 with "AssertionError: an
+   unanswered run must write exactly the template's keys; added ['quality_gate'], missing []"
+   (PROOF-65 failed too, on the template key set).
+2. `--force`'s base dropped the key: `base = {k: v for k, v in existing.items() if k !=
+   'quality_gate'}`. Failed 1/16, PROOF-78 with "AssertionError: --force without --quality-gate
+   dropped the recorded mode: None".
+
+Restored after each; 16 passed, and the whole set ran 212 passed.
+
+Decisions taken beyond the plan:
+
+- PROOF-61's hardcoded invocation gained `--quality-gate off`. Its description says every flag
+  the skill names is run against a real repo, and the Step 2 block now names this one, so leaving
+  the run alone would have made the proof's second half untrue.
+- The Step 2 note tells the agent NOT to ask about the quality gate during a full init and not to
+  pass the flag unless the user asked. The decision table says a full init never writes it; a
+  skill that offered the question would make the absent key an answer.
+- "Two further fields are optional" in `docs/installation-guide.md` became "Three", keeping the
+  sentence's own counting (`platforms`, the `audit_llm`/`audit_criteria` pair, `quality_gate`),
+  and "`purlin:init` never writes them" became "a full `purlin:init` never writes them", which
+  is what is true now that a flag writes one of them.
+
+Deferrals and adjacent findings:
+
+- `references/hard_gates.md` is cited by the new SKILL.md config row and `docs/regulated-
+  environments.md` by the installation-guide paragraph; C1 owns both files and adds the sections
+  those citations point at.

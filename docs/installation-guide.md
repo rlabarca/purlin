@@ -143,7 +143,7 @@ Default config (`version` is set from the installed framework's `VERSION` file a
 
 `mutation_checks` is off by default. When it is on, every new or amended proof is mutation-checked before the commit that carries it: break the behaviour, watch the proof fail, restore. It is the only check that catches a proof which passes against broken code, and it costs roughly twice the tokens and minutes per proof; see [spec_quality_guide.md § Mutation check](../references/spec_quality_guide.md#mutation-check). `purlin:init` asks; `purlin:init --mutation-checks on|off` changes it later.
 
-Two further fields are optional and `purlin:init` never writes them. `platforms` is the registry the `@on(<platform-id>)` proof tags resolve against; the family ids `windows`, `macos` and `linux` work with no config at all, and an entry is what adds a version, an architecture or a runner:
+Three further fields are optional and a full `purlin:init` never writes them. `platforms` is the registry the `@on(<platform-id>)` proof tags resolve against; the family ids `windows`, `macos` and `linux` work with no config at all, and an entry is what adds a version, an architecture or a runner:
 
 ```json
 {
@@ -160,6 +160,8 @@ Two further fields are optional and `purlin:init` never writes them. `platforms`
 ```
 
 A proof can depend on a platform, on an environment or on a prerequisite, and each one has its own mechanism. The rule set has a single home: [references/remote_verification.md](../references/remote_verification.md), section "Platforms, environments and prerequisites". For the registry itself see [Testing Workflow Guide § Platforms](testing-workflow-guide.md#platforms). `audit_llm` and `audit_criteria` are the cross-model and compliance-criteria fields; see [Regulated Environments](regulated-environments.md).
+
+`quality_gate` is the third. It is project policy for the CI gate `scripts/ci/verify_gate.py`, not a framework setting: `"off"`, which is also what the gate assumes when the key is absent, or `"deterministic"`, under which the gate fails on a test graded HOLLOW by the deterministic checks and on a proof description graded UNPROVABLE. A proof the checks cannot read is never a failure. Set it with `purlin:init --quality-gate off|deterministic`, which writes that one key and nothing else; `purlin:init --update` never backfills it and never asks, so a project that has not opted in carries no such key. The field declares the policy and branch protection on the gate job enforces it, exactly as `remote_verification` does; see [Regulated Environments](regulated-environments.md).
 
 The HTML dashboard is enabled by default (`"report": true`). When enabled, `purlin:status` writes `.purlin/report-data.js` on every call, and `purlin:init` creates a `purlin-report.html` symlink at the project root. Open it in a browser to see live coverage. Toggle with `purlin:init --report`. See the [Dashboard Guide](dashboard-guide.md) for details.
 
