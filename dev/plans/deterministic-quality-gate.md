@@ -1003,3 +1003,20 @@ B2 edited `scripts/proof/pytest_purlin.py` without syncing
 `dev/fixtures/consumer-ci/.purlin/plugins/pytest_purlin.py`, which the proof requires to be
 byte-identical. It is B2's fixture to re-copy; `specs/ci/consumer_ci.proofs-unit.json` was restored
 rather than committed with the failing entry.
+
+### Fixture re-sync (adjacent defect from B2 and B3)
+
+`fix(consumer_ci): the fixture's pytest plugin copy follows the plugin B2 and B3 changed`
+
+consumer_ci PROOF-2 compares `dev/fixtures/consumer-ci/.purlin/plugins/pytest_purlin.py` with
+`scripts/proof/pytest_purlin.py` byte for byte, and B2 and B3 changed the plugin without
+re-copying it, so the proof failed at HEAD from 64e535b3 to 8460dabe. The copy is re-synced.
+Two comments that cited `proofs_format.md v5` (`scripts/mcp/purlin_server.py`,
+`dev/test_report_data.py`) now cite v6, the version B4 set. No spec touched, no id taken.
+Test counts: `dev/test_consumer_ci.py`, `dev/test_report_data.py`, `dev/test_mcp_server.py`
+run whole together, 140 passed, every proof JSON byte-identical. Sanity: the fixture copied
+to a temp dir and run with `python3 -m pytest` writes `specs/core/greeting.proofs-unit.json`
+with `test_file` `tests/test_greeting.py`; its Linux-only platform test fails on macOS by
+design. Mutation: the state before this commit (the plugin copy one commit behind) is the
+failing case, PROOF-2 `test_fixture_is_a_complete_tracked_consumer_project` failed on the
+byte comparison at 8460dabe; after the re-copy it passes.

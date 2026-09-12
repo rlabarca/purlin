@@ -45,7 +45,7 @@ def _write_spec(tmp_dir, name, content, subdir='app'):
 def _write_proofs(tmp_dir, name, proofs, tier='unit', subdir='app', platform=None):
     """Write an agnostic proof file, or a platform-scoped one when `platform`
     is given (`<name>.proofs-<tier>@<platform>.json`, with `platform` at the
-    top level and on every entry, proofs_format.md v5)."""
+    top level and on every entry, proofs_format.md v6)."""
     spec_dir = os.path.join(tmp_dir, 'specs', subdir)
     os.makedirs(spec_dir, exist_ok=True)
     suffix = f'@{platform}' if platform else ''

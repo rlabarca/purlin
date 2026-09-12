@@ -25,6 +25,13 @@ agnostic `<feature>.proofs-<tier>.json` with the seven standard fields,
 whatever `PURLIN_PLATFORM` says. The plugin never evaluates version
 constraints: the ids a marker declares are recorded by the spec, not here.
 
+The project root is found by walking up from the working directory to the
+nearest ancestor holding `specs/` or `.purlin/` (proof_common RULE-22), and
+the spec scan, the `specs/` fallback, the orphan-reaping existence check, the
+run marker and every recorded `test_file` (RULE-23) are all rooted there, so
+running pytest from a subdirectory writes into the project's own `specs/`
+tree rather than a second one beside itself.
+
 At the end of the run, the same moment the proof files are written, the
 plugin writes or merges the project's run marker
 `.purlin/runtime/test_run.json` (proof_common RULE-19), so a receipt issued
@@ -70,6 +77,61 @@ def _host_platform():
         return env
     system = platform.system()
     return _FAMILIES.get(system, system.lower())
+
+
+# ── The project root (proof_common RULE-22, RULE-23) ────────────────────────
+# Everything the plugin addresses by a project-relative path is rooted here and
+# not at the working directory, so a run started from a subdirectory writes
+# into the project's own `specs/` tree instead of making a second one beside
+# itself.
+
+
+def _find_root(start):
+    """The nearest ancestor of `start`, `start` itself included, that holds a
+    `specs/` or a `.purlin/` directory (RULE-22); None when none does."""
+    d = os.path.realpath(start)
+    while True:
+        if (os.path.isdir(os.path.join(d, "specs"))
+                or os.path.isdir(os.path.join(d, ".purlin"))):
+            return d
+        parent = os.path.dirname(d)
+        if parent == d:
+            return None
+        d = parent
+
+
+def _project_root(start=None):
+    """The RULE-22 project root of `start` (the working directory by default):
+    the nearest ancestor holding `specs/` or `.purlin/`, and `start` itself
+    when no ancestor holds either."""
+    start = os.path.realpath(start or os.getcwd())
+    return _find_root(start) or start
+
+
+def _relativize(root, path):
+    """`path` recorded relative to `root` with `/` separators (RULE-23, RULE-15).
+
+    Whatever shape the framework handed over is resolved against the working
+    directory first, so an absolute path and a relative one naming the same
+    file record the same value: under the RULE-4 merge key a difference does
+    not collapse, it accumulates as a second entry for one proof. A file
+    outside `root` is made relative to the nearest project root above the file
+    itself, and left absolute when there is none, rather than rewritten with
+    `../` segments.
+    """
+    if not path:
+        return path
+    abs_path = os.path.realpath(path)
+    for base in (root, _find_root(os.path.dirname(abs_path))):
+        if not base:
+            continue
+        try:
+            rel = os.path.relpath(abs_path, base)
+        except ValueError:
+            continue
+        if rel != os.pardir and not rel.startswith(os.pardir + os.sep):
+            return rel.replace(os.sep, "/").replace("\\", "/")
+    return abs_path.replace(os.sep, "/").replace("\\", "/")
 
 
 # ── The run marker (proof_common RULE-19) ───────────────────────────────────
@@ -195,6 +257,10 @@ def _declared_platforms(marker):
 
 class ProofCollector:
     def __init__(self):
+        # RULE-22: resolved once, from the working directory pytest was started
+        # in, and used for the spec scan, the fallback, the existence check, the
+        # run marker and every recorded `test_file`.
+        self.root = _project_root()
         self.proofs = {}  # keyed by (feature, tier, platform); platform is None when agnostic
         # (feature, id, test_file) for every marked test this run skipped, so an
         # existing entry for it survives the write-scoped overwrite instead of
@@ -224,9 +290,11 @@ class ProofCollector:
             proof_id = marker.args[1]
             rule_id = marker.args[2]
             tier = marker.kwargs.get("tier", "unit")
-            # Project-relative with `/` separators on every OS (proof_common
-            # RULE-15): a backslash is never written into a proof file.
-            test_file = str(item.fspath.relto(item.config.rootdir)).replace(os.sep, "/").replace("\\", "/")
+            # Relative to the RULE-22 project root, with `/` separators on every
+            # OS (RULE-23, RULE-15): pytest hands over an absolute path and its
+            # own rootdir is not the project root when the run started from a
+            # subdirectory, so the root the writes use is the one that relativizes.
+            test_file = _relativize(self.root, str(item.fspath))
             if was_skipped:
                 # proof_common RULE-13: a skipped test emits no entry at all.
                 # RULE-18: and the entry it would have written is kept.
@@ -268,7 +336,7 @@ class ProofCollector:
         # recorded, plus the marked tests it skipped.
         entries = [e for group in self.proofs.values() for e in group]
         _write_run_marker(
-            os.getcwd(),
+            self.root,
             "pytest_purlin",
             [e["test_file"] for e in entries],
             sum(1 for e in entries if e["status"] == "pass"),
@@ -278,9 +346,12 @@ class ProofCollector:
         )
 
     def _write_proof_files(self):
-        # Build feature -> spec directory mapping
+        # Build feature -> spec directory mapping. Rooted at the RULE-22 project
+        # root, so the scan finds the project's specs from a subdirectory too.
+        root = self.root
         spec_dirs = {}
-        for spec in glob.glob("specs/**/*.md", recursive=True):
+        for spec in glob.glob(os.path.join(glob.escape(root), "specs", "**", "*.md"),
+                              recursive=True):
             stem = os.path.splitext(os.path.basename(spec))[0]
             spec_dirs[stem] = os.path.dirname(spec)
 
@@ -290,7 +361,7 @@ class ProofCollector:
             if spec_dir is None:
                 import sys
                 print(f'WARNING: No spec found for feature "{feature}" — writing proofs to specs/{feature}.proofs-{suffix}.json. Create a spec with: purlin:spec {feature}', file=sys.stderr)
-                spec_dir = "specs"
+                spec_dir = os.path.join(root, "specs")
             path = os.path.join(spec_dir, f"{feature}.proofs-{suffix}.json")
 
             # Load existing file for this feature+tier(+platform)
@@ -305,9 +376,9 @@ class ProofCollector:
             # untouched; keep this feature's entries from test files this run did not
             # execute, so two files covering one (feature, tier, platform) can run in
             # any order; reap entries whose test file is gone (RULE-11). The existence
-            # check is relative to cwd, which the spec glob above already assumes is
-            # the repo root. If it is not, every path misses and the merge degrades to
-            # the older feature-wide purge, never to something wider.
+            # check resolves each recorded path from the RULE-22 project root, the
+            # same root RULE-23 relativized it against, so a run started from a
+            # subdirectory reads the paths it wrote rather than reaping all of them.
             run_files = {e["test_file"] for e in new_entries}
             # What this run wrote, so a skipped test's protection never keeps an
             # entry the run has just replaced (proof_common RULE-18: only an
@@ -318,7 +389,7 @@ class ProofCollector:
                 if e.get("feature") != feature:
                     return True
                 test_file = e.get("test_file") or ""
-                if not os.path.exists(test_file):
+                if not test_file or not os.path.exists(os.path.join(root, test_file)):
                     return False
                 if test_file not in run_files:
                     return True
@@ -338,8 +409,10 @@ class ProofCollector:
             # merge, so the collection order never reaches the file.
             payload["proofs"] = sorted(kept + new_entries, key=_entry_order)
 
-            # Write fresh entries (atomic: tmp + rename)
-            tmp_path = path + ".tmp"
+            # Write fresh entries (atomic: tmp + rename). RULE-24: the temp
+            # name carries this process id, so two plugins writing the same
+            # file concurrently never share a temp path.
+            tmp_path = "%s.%d.tmp" % (path, os.getpid())
             with open(tmp_path, "w") as f:
                 json.dump(payload, f, indent=2)
                 f.write("\n")

@@ -1190,7 +1190,7 @@ def _attach_gauge_coverage(project_root, features, all_proofs,
 # result from a file scoped to a platform that satisfies it. A proof with no
 # result on a declared platform is not missing, it is waiting, and the two
 # must not report identically. Nothing here is runner-gated by tier: since
-# proofs_format.md v5 the tier says what kind of test a proof is and the
+# proofs_format.md v6 the tier says what kind of test a proof is and the
 # platform tag says where it must run.
 
 
