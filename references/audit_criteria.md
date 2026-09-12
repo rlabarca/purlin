@@ -179,6 +179,14 @@ A C proof is a `purlin_proof(...)` or `purlin_proof_on(...)` call of seven or mo
 
 A variable or a call in that position is an assertion computed before the call and is not flagged. There is no separate no-assertion check for C: a C test that asserts nothing is one whose `passed` argument is constant, which the check above already catches.
 
+### The deterministic sweep
+
+`scripts/audit/static_checks.py --deterministic-sweep [--project-root <path>]` runs both model-free halves of the audit over a whole project at once: Pass 1 over every executed proof backing, and Pass D1 (the deterministic half of Proof Design) over every declared proof description. Nothing else is involved. It reads no audit cache and no design cache, writes no file, and grades only what the checkout in front of it contains, so the same checkout always yields the same verdict and a CI job can recompute it from scratch.
+
+Its output names three groups: `hollow` (a Pass 1 defect in an executed test), `unprovable` (a Pass D1 UNPROVABLE description) and `unmeasurable` (a backing Pass 1 could not read, because no shipped checker reads its extension, because the file the proof record names is not on disk, or because the checker found no marker for that proof in it). Unmeasurable is a gap in coverage, never a defect. A proof backed by more than one test takes its worst verdict: a failure anywhere outranks an unmeasurable elsewhere, which outranks a pass. A proof stamped `@manual(...)` has no test to grade, so it is graded by Pass D1 alone and counts as neither hollow nor unmeasurable.
+
+The LLM passes (Pass 2 and Pass D2) are not part of the sweep and not recomputable this way. That split is the point: what the sweep reports is what a machine proved, and everything else is judgment.
+
 ### Proof-file structural checks (Pass 0.5: language-agnostic)
 
 These checks operate on proof JSON files, not source code. They work for any language that emits proof files.

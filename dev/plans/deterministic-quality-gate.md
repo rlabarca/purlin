@@ -522,3 +522,87 @@ Decisions:
 Deferral: the `require("glob")` shims in `dev/test_multilang_proof_plugins.py` and
 `dev/test_proof_plugins_missing.py` are still two copies of the same stand-in. B3 deletes
 both when jest and vitest stop depending on `glob`, so they were not consolidated here.
+
+### A2
+
+`feat(static_checks): deterministic_sweep grades every proof backing in a project without a
+model or a cache`
+
+Files touched:
+
+- `scripts/audit/static_checks.py` — `_proof_backings` (every executed backing, deduplicated by
+  `(test_file, proof_id)`), `_proof_records` re-derived from it as "first backing",
+  `_RunCache.proof_backings` replacing `proof_records`, `_SWEEP_STATUS_RANK`,
+  `_sweep_unmeasurable_reason`, `_sweep_file_verdicts`, `deterministic_sweep`, the
+  `--deterministic-sweep` dispatch, one new `_USAGE` line, the module docstring
+- `specs/audit/static_checks.md` — RULE-49, RULE-50, PROOF-82, PROOF-83, `> Description:`
+- `specs/audit/static_checks.proofs-unit.json` — PROOF-82
+- `specs/audit/static_checks.proofs-e2e.json` — PROOF-83
+- `dev/test_static_checks.py` — `TestDeterministicSweep`, module-level `_tree_snapshot`,
+  `hashlib` import
+- `references/audit_criteria.md` — a `### The deterministic sweep` subsection under Pass 1
+
+Spec maxima left: `specs/audit/static_checks.md` RULE-50 / PROOF-83. No other spec touched.
+
+Test counts (whole files): `dev/test_static_checks.py` 102 passed, 0 skipped to 104 passed, 0
+skipped. Run green and unchanged in count: `dev/test_purlin_references.py`,
+`dev/test_skill_specs.py`, `dev/test_cheat_matrix.py`, `dev/test_e2e_audit_cache_pipeline.py`,
+`dev/test_purlin_docs.py`, `dev/test_schema_spec_format.py`, `dev/test_schema_proof_format.py`
+(272 passed, 5 skipped together; none of their proof JSONs changed).
+
+Sweep over this worktree, `python3 scripts/audit/static_checks.py --deterministic-sweep
+--project-root .`: 46 features, 831 declared proofs, 826 executed, 914 backings, 720 pass,
+82 hollow, 0 unprovable, 24 unmeasurable, no `no_checker` row. `git status --porcelain` is
+identical before and after, and the bare CLI exits 2 printing the new usage line.
+
+Mutations run on `scripts/audit/static_checks.py`, `dev/test_static_checks.py` run whole each
+time, restored after each:
+
+1. A `no_checker` backing counted as `pass`. PROOF-82 failed with
+   `AssertionError: assert got == self._EXPECTED`, differing items
+   `{('mixed', 'PROOF-1'): ('pass', 'no_checker')} != {('mixed', 'PROOF-1'): ('unmeasurable',
+   'no_checker')}` and the same for `rbfeat`.
+2. `_SWEEP_STATUS_RANK` inverted to `{'pass': 0, 'unmeasurable': 2, 'fail': 1}`. PROOF-82 failed
+   with `{('worst', 'PROOF-1'): ('unmeasurable', 'no_checker')} != {('worst', 'PROOF-1'):
+   ('fail', 'assert_true')}`.
+3. `clear_audit_cache(project_root)` called at the top of the sweep, a cache write re-enabled.
+   PROOF-82 failed with `AssertionError: the sweep wrote to the project it was only supposed to
+   read`, naming `.purlin/cache/audit_cache.json` and `.purlin/cache/audit_cache.json.lock`;
+   PROOF-83 failed with `AssertionError: the sweep wrote under .purlin/ (a cache or a runtime
+   file)`.
+
+Decisions taken:
+
+- A proof stamped `@manual(...)` enters `design` only. It has no test backing, so it is neither
+  hollow nor unmeasurable: calling a human stamp unmeasurable would park every manual proof in a
+  gate's could-not-measure column forever, and calling it measured would claim a machine checked
+  it. PROOF-82 pins it.
+- An anchor under `specs/_anchors/` is swept like any other feature. Its proofs execute as real
+  tests and its proof files sit beside every other one, so excluding it would leave the
+  cross-cutting constraints ungraded. No code branch was needed; the `specs/**/*.md` glob already
+  reaches them, and the repository sweep grades `proof_common` today.
+- `backings` in an integrity entry is a count, not a list, and `test_file`/`test_name` name the
+  backing whose verdict was taken. The full list is reconstructible from the proof JSONs, and a
+  gate line wants one path.
+- Mutation 2 did not fail on the first attempt: the fixture had a pass-plus-fail proof and a
+  pass-plus-unmeasurable proof but no fail-plus-unmeasurable one, so inverting those two ranks
+  was unobservable. A `worst` feature was added (an `assert True` Python test plus a `.rb` file
+  that sorts ahead of it) before the mutation was recorded.
+- `references/audit_criteria.md` keeps Criteria-Version 20. The new subsection documents a tool
+  that recomputes existing criteria; it adds no criterion and changes no grade, so a consumer
+  who pinned team criteria against version 20 is not grading against a different standard.
+
+Deferrals and adjacent findings:
+
+- `_check_logic_mirroring` reads any top-level `x = f(...)` assignment and flags an assert that
+  calls `f` again, so a before/after invariance test (`before = snapshot(root)` ... `assert
+  snapshot(root) == before`) is a false HOLLOW. PROOF-83 hit it and was restructured to unpack
+  the snapshot into two names and assert the halves separately, which is a better test anyway
+  (it says whether a tracked file or a `.purlin/` file moved). Three of this spec's own proofs
+  (PROOF-12, PROOF-28, PROOF-33) are hollow for the same reason at HEAD. Fixing the checker is a
+  behaviour change RULE-4's proofs pin and belongs with a Pass 1 commit.
+- This repository's own sweep reads 82 HOLLOW and 24 unmeasurable, so turning the gate on here
+  is a separate decision with work behind it, exactly as the plan's compatibility section says.
+  The 24 unmeasurable are all `marker_not_found` in `dev/test_proof_plugins.sh`, whose
+  `purlin_proof` calls are built from shell variables rather than the literal four-argument form
+  `check_shell` matches.

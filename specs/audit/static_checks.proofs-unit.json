@@ -972,6 +972,15 @@
       "test_name": "test_pass_one_and_the_key_share_the_one_parse",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-82",
+      "rule": "RULE-49",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_sweep_grades_every_backing_and_writes_nothing",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

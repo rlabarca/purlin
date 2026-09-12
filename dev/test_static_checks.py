@@ -8,6 +8,7 @@ proof-file structural checks (proof_id_collision, proof_rule_orphan).
 
 import ast
 import glob
+import hashlib
 import json
 import os
 import re
@@ -34,6 +35,7 @@ from static_checks import (
     check_spec_coverage,
     clear_audit_cache,
     compute_proof_hash,
+    deterministic_sweep,
     prune_audit_cache,
     read_audit_cache,
     resolve_test_file_from_name,
@@ -2270,6 +2272,294 @@ int main(void) {
                     f"{'invalidated' if moved else 'did not invalidate'} this one")
                 assert _key(tmpdir, 'demo', 'PROOF-2') != key2, \
                     f"{lang}: the edited proof's own key should have moved"
+
+
+def _tree_snapshot(root):
+    """{relative path: sha256} for every file under `root`.
+
+    A sweep that opened anything for writing — a cache, a lock, a runtime file,
+    a rewritten proof JSON — changes this mapping, which is the whole assertion.
+    """
+    snapshot = {}
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames.sort()
+        for name in sorted(filenames):
+            path = os.path.join(dirpath, name)
+            rel = os.path.relpath(path, root).replace(os.sep, '/')
+            with open(path, 'rb') as f:
+                snapshot[rel] = hashlib.sha256(f.read()).hexdigest()
+    return snapshot
+
+
+class TestDeterministicSweep:
+    """RULE-49 and RULE-50 — both model-free passes over a whole project."""
+
+    _MJS = 'it("t [proof:jsfeat:PROOF-1:RULE-1]", () => { expect(true).toBe(true); });\n'
+    _CS = """using Xunit;
+namespace Demo {
+  public class CsharpTests {
+    [Fact]
+    [Trait("PurlinProof", "csfeat:PROOF-1:RULE-1:unit")]
+    public void Hollow() { Assert.True(true); }
+  }
+}
+"""
+    _PHP = ('<?php\n/** @purlin phpfeat PROOF-1 RULE-1 unit */\n'
+            'function test_hollow() { $this->assertTrue(true); }\n')
+    _SQL = "-- @purlin sqlfeat PROOF-1 RULE-1 unit\n-- Test: hollow\nSELECT 'PASS';\n"
+    _C = ('#include "c_purlin.h"\nint main(void) {\n'
+          '    purlin_proof("cfeat", "PROOF-1", "RULE-1", 1, "hollow", __FILE__, "unit");\n'
+          '    return 0;\n}\n')
+    _RB = 'it("t [proof:rbfeat:PROOF-1:RULE-1]", () => { expect(1).toBe(1); });\n'
+
+    # Every Python test file the project below actually has on disk. The sweep
+    # must parse each exactly once inside its one run scope, however many
+    # features or proofs point at it.
+    _PY_FILES = ('tests/test_shared.py', 'tests/test_marker.py',
+                 'tests/test_multi_ok.py', 'tests/test_multi_bad.py',
+                 'tests/test_mixed_ok.py', 'tests/test_worst_bad.py')
+
+    def _write(self, root, rel, source):
+        path = os.path.join(root, *rel.split('/'))
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(source)
+        return path
+
+    def _project(self, root):
+        """A project holding one test file per shipped language plus every way a
+        backing can go unmeasurable, and two features sharing one Python file."""
+        # alpha and beta share tests/test_shared.py.
+        _scaffold_proof(root, 'alpha', 'PROOF-1', 'RULE-1',
+                        test_file='tests/test_shared.py',
+                        test_name='test_alpha_hollow', test_body='    assert True')
+        _scaffold_proof(root, 'alpha', 'PROOF-2', 'RULE-2',
+                        test_file='tests/test_shared.py',
+                        test_name='test_alpha_ok', test_body='    assert 1 + 1 == 2')
+        _scaffold_proof(root, 'beta', 'PROOF-3', 'RULE-3',
+                        test_file='tests/test_shared.py',
+                        test_name='test_beta_ok', test_body='    assert 2 + 2 == 4')
+
+        # A stamped manual proof: declared, graded by Pass D1, backed by nothing.
+        with open(os.path.join(root, 'specs', 'app', 'alpha.md'),
+                  'a', encoding='utf-8') as f:
+            f.write('- PROOF-9 (RULE-1): Open the dashboard in Chrome and verify the '
+                    'header reads "Purlin" @manual(dev@example.com, 2026-03-31, a1b2c3d)\n')
+
+        # Shell: the helper writes a bare `purlin_proof ... pass`, which is the
+        # hardcoded-pass defect.
+        _scaffold_proof(root, 'shfeat', 'PROOF-1', 'RULE-1',
+                        test_file='tests/test_sh.sh', test_name='test_sh')
+
+        for feature, rel, source, test_name in (
+                ('jsfeat', 'tests/test_mod.mjs', self._MJS, 't'),
+                ('phpfeat', 'tests/test_php.php', self._PHP, 'test_hollow'),
+                ('sqlfeat', 'tests/test_sql.sql', self._SQL, 'hollow'),
+                ('cfeat', 'tests/test_c.c', self._C, 'hollow'),
+                ('rbfeat', 'tests/test_rb.rb', self._RB, 't')):
+            _scaffold_proof(root, feature, 'PROOF-1', 'RULE-1', test_file=rel,
+                            test_name=test_name, write_test=False)
+            self._write(root, rel, source)
+
+        # C#: the xUnit logger records an empty test_file when no source info is
+        # available, so the path has to come back from the fully-qualified name.
+        _scaffold_proof(root, 'csfeat', 'PROOF-1', 'RULE-1',
+                        test_file='tests/CsharpTests.cs',
+                        test_name='Demo.CsharpTests.Hollow', write_test=False)
+        self._write(root, 'tests/CsharpTests.cs', self._CS)
+        record = os.path.join(root, 'specs', 'app', 'csfeat.proofs-unit.json')
+        data = json.load(open(record, encoding='utf-8'))
+        data['proofs'][0]['test_file'] = ''
+        with open(record, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2)
+
+        # A record naming a file nobody wrote.
+        _scaffold_proof(root, 'gonefeat', 'PROOF-1', 'RULE-1',
+                        test_file='tests/test_gone.py', test_name='test_gone',
+                        write_test=False)
+
+        # A file the checker reads but that carries no marker for PROOF-2.
+        _scaffold_proof(root, 'markerfeat', 'PROOF-1', 'RULE-1',
+                        test_file='tests/test_marker.py', test_name='test_marker',
+                        test_body='    assert 7 % 2 == 1')
+        _scaffold_proof(root, 'markerfeat', 'PROOF-2', 'RULE-2',
+                        test_file='tests/test_marker.py', test_name='test_absent',
+                        write_test=False)
+
+        # Two backings, one clean and one hollow: fail wins.
+        _scaffold_proof(root, 'multi', 'PROOF-1', 'RULE-1',
+                        test_file='tests/test_multi_ok.py', test_name='test_ok',
+                        test_body='    assert 3 + 3 == 6', tier='unit')
+        _scaffold_proof(root, 'multi', 'PROOF-1', 'RULE-1',
+                        test_file='tests/test_multi_bad.py', test_name='test_bad',
+                        test_body='    assert True', tier='integration')
+
+        # Two backings, one clean and one in a language no checker reads:
+        # unmeasurable wins over pass.
+        _scaffold_proof(root, 'mixed', 'PROOF-1', 'RULE-1',
+                        test_file='tests/test_mixed_ok.py', test_name='test_ok',
+                        test_body='    assert 5 * 2 == 10', tier='unit')
+        _scaffold_proof(root, 'mixed', 'PROOF-1', 'RULE-1',
+                        test_file='tests/test_mixed.rb', test_name='t',
+                        write_test=False, tier='integration')
+        self._write(root, 'tests/test_mixed.rb', self._RB)
+
+        # Two backings, one hollow and one in a language no checker reads: the
+        # failure wins, because a defect outranks a measurement gap. The `.rb`
+        # file sorts first, so the ranking has to override a verdict already in
+        # hand rather than merely keep the first one it met.
+        _scaffold_proof(root, 'worst', 'PROOF-1', 'RULE-1',
+                        test_file='tests/test_worst_bad.py', test_name='test_bad',
+                        test_body='    assert True', tier='unit')
+        _scaffold_proof(root, 'worst', 'PROOF-1', 'RULE-1',
+                        test_file='tests/test_worst.rb', test_name='t',
+                        write_test=False, tier='integration')
+        self._write(root, 'tests/test_worst.rb', self._RB)
+
+    _EXPECTED = {
+        ('alpha', 'PROOF-1'): ('fail', 'assert_true'),
+        ('alpha', 'PROOF-2'): ('pass', 'none'),
+        ('beta', 'PROOF-3'): ('pass', 'none'),
+        ('cfeat', 'PROOF-1'): ('fail', 'assert_true'),
+        ('csfeat', 'PROOF-1'): ('fail', 'assert_true'),
+        ('gonefeat', 'PROOF-1'): ('unmeasurable', 'missing_file'),
+        ('jsfeat', 'PROOF-1'): ('fail', 'assert_true'),
+        ('markerfeat', 'PROOF-1'): ('pass', 'none'),
+        ('markerfeat', 'PROOF-2'): ('unmeasurable', 'marker_not_found'),
+        ('mixed', 'PROOF-1'): ('unmeasurable', 'no_checker'),
+        ('multi', 'PROOF-1'): ('fail', 'assert_true'),
+        ('phpfeat', 'PROOF-1'): ('fail', 'assert_true'),
+        ('rbfeat', 'PROOF-1'): ('unmeasurable', 'no_checker'),
+        ('shfeat', 'PROOF-1'): ('fail', 'assert_true'),
+        ('sqlfeat', 'PROOF-1'): ('fail', 'assert_true'),
+        ('worst', 'PROOF-1'): ('fail', 'assert_true'),
+    }
+
+    @pytest.mark.proof("static_checks", "PROOF-82", "RULE-49", tier="unit")
+    def test_sweep_grades_every_backing_and_writes_nothing(self, monkeypatch):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._project(tmpdir)
+            before = _tree_snapshot(tmpdir)
+
+            parses = []
+            real_parse = static_checks.ast.parse
+            monkeypatch.setattr(
+                static_checks.ast, 'parse',
+                lambda *a, **k: (parses.append(1), real_parse(*a, **k))[1])
+            result = deterministic_sweep(tmpdir)
+
+            assert result['project_root'] == tmpdir
+            specs = glob.glob(os.path.join(tmpdir, 'specs', '**', '*.md'),
+                              recursive=True)
+            assert result['counts']['features'] == len(specs) == 14, result['counts']
+
+            got = {(feat, pid): (entry['status'], entry['check'])
+                   for feat, data in result['features'].items()
+                   for pid, entry in data['integrity'].items()}
+            assert got == self._EXPECTED
+
+            # A .rb backing is a measurement gap, never a defect.
+            assert ('rbfeat', 'PROOF-1') not in {(r['feature'], r['proof_id'])
+                                                 for r in result['hollow']}
+
+            # An empty test_file resolved from the fully-qualified test name.
+            csharp = result['features']['csfeat']['integrity']['PROOF-1']
+            assert csharp['test_file'] == 'tests/CsharpTests.cs', csharp
+            assert csharp['test_name'] == 'Hollow', csharp
+
+            # Precedence across several backings.
+            multi = result['features']['multi']['integrity']['PROOF-1']
+            assert (multi['backings'], multi['test_file']) == (2, 'tests/test_multi_bad.py')
+            mixed = result['features']['mixed']['integrity']['PROOF-1']
+            assert (mixed['backings'], mixed['test_file']) == (2, 'tests/test_mixed.rb')
+            worst = result['features']['worst']['integrity']['PROOF-1']
+            assert (worst['backings'], worst['test_file']) == (2, 'tests/test_worst_bad.py'), \
+                "an unmeasurable backing outranked a hollow one"
+
+            # A manual stamp has no test backing: Pass D1 grades it, Pass 1 never
+            # sees it, and it is neither hollow nor unmeasurable.
+            alpha = result['features']['alpha']
+            assert alpha['design']['PROOF-9']['level'] in (
+                'PROVABLE', 'LOOSE', 'UNPROVABLE', 'STRUCTURAL')
+            assert 'PROOF-9' not in alpha['integrity']
+            assert ('alpha', 'PROOF-9') not in {
+                (r['feature'], r['proof_id'])
+                for r in result['unmeasurable'] + result['hollow']}
+
+            for name in ('hollow', 'unprovable', 'unmeasurable'):
+                rows = result[name]
+                assert rows == sorted(
+                    rows, key=lambda r: (r['feature'], r['proof_id'],
+                                         r.get('test_file', ''))), \
+                    f"{name} is not sorted by (feature, proof_id, test_file)"
+            assert result['counts']['hollow'] == len(result['hollow']) == 9
+            assert result['counts']['unmeasurable'] == len(result['unmeasurable']) == 4
+            assert result['counts']['backings'] == 19, result['counts']
+
+            assert len(parses) == len(self._PY_FILES), (
+                f"{len(self._PY_FILES)} Python test files must mean "
+                f"{len(self._PY_FILES)} parses, not {len(parses)}")
+
+            assert _tree_snapshot(tmpdir) == before, \
+                "the sweep wrote to the project it was only supposed to read"
+            assert not os.path.exists(os.path.join(tmpdir, '.purlin')), \
+                "the sweep created a runtime directory"
+
+    @staticmethod
+    def _repo_state(root):
+        """(git porcelain status, every file under .purlin with its size).
+
+        `.purlin/cache/` and `.purlin/runtime/` are gitignored, so a sweep that
+        wrote a cache would leave `git status` clean and has to be caught by the
+        listing instead.
+        """
+        status = subprocess.run(['git', 'status', '--porcelain'], cwd=root,
+                                capture_output=True, text=True).stdout
+        runtime = sorted(
+            (os.path.relpath(os.path.join(d, n), root).replace(os.sep, '/'),
+             os.path.getsize(os.path.join(d, n)))
+            for d, _sub, files in os.walk(os.path.join(root, '.purlin'))
+            for n in files)
+        return status, runtime
+
+    @pytest.mark.proof("static_checks", "PROOF-83", "RULE-50", tier="e2e")
+    def test_cli_sweeps_this_repository_without_touching_it(self):
+        """The real CLI over this repository: every spec graded, every backing in
+        a language a shipped checker reads, and the checkout byte-identical
+        afterwards."""
+        root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        before_status, before_runtime = self._repo_state(root)
+
+        proc = subprocess.run(
+            [sys.executable, _STATIC_CHECKS_PY, '--deterministic-sweep',
+             '--project-root', root],
+            capture_output=True, text=True)
+        assert proc.returncode == 0, proc.stderr
+        result = json.loads(proc.stdout)
+
+        specs = glob.glob(os.path.join(root, 'specs', '**', '*.md'), recursive=True)
+        assert result['counts']['features'] == len(specs) > 0, \
+            f"{len(specs)} specs on disk, {result['counts']['features']} swept"
+        assert set(result['features']) == {
+            os.path.splitext(os.path.basename(p))[0] for p in specs}
+
+        no_checker = [(r['feature'], r['proof_id'], r['test_file'])
+                      for r in result['unmeasurable'] if r['check'] == 'no_checker']
+        assert no_checker == [], (
+            "every language this repository's proofs are written in ships a Pass 1 "
+            f"checker, so no backing may be unmeasurable for want of one: {no_checker}")
+
+        after_status, after_runtime = self._repo_state(root)
+        assert after_status == before_status, \
+            "the sweep changed a tracked file in the checkout it was only reading"
+        assert after_runtime == before_runtime, \
+            "the sweep wrote under .purlin/ (a cache or a runtime file)"
+
+        bare = subprocess.run([sys.executable, _STATIC_CHECKS_PY],
+                              capture_output=True, text=True)
+        assert bare.returncode == 2
+        assert '--deterministic-sweep [--project-root <path>]' in bare.stderr, \
+            "the sweep mode is missing from the usage text"
 
 
 class TestCacheEntryValidation:

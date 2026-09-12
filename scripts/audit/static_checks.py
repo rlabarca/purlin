@@ -7,8 +7,14 @@ language Purlin ships a proof plugin for has a checker here: Python, JS/TS
 (.js .jsx .mjs .cjs .ts .tsx), shell, C#, PHP, SQL and C (.c .h). Which checker
 reads which extension is decided in one place, the extension table below.
 
+`deterministic_sweep` runs both deterministic halves (Pass 1 over every executed
+proof backing, Pass D1 over every declared proof description) across a whole
+project without an LLM and without reading or writing any cache, which is what
+lets a CI job recompute the same verdict from a clean checkout.
+
 Usage (see _USAGE below — it is the single source for this list):
     static_checks.py <test_file> <feature_name> [--spec-path <path>]
+    static_checks.py --deterministic-sweep [--project-root <path>]
     static_checks.py --check-proof-file --proof-path <path> [--spec-path <path>]
     static_checks.py --check-spec-coverage --spec-path <path>
     static_checks.py --cache-key --feature <name> --proof-id PROOF-N [--project-root <path>]
@@ -1984,6 +1990,227 @@ def audit_scope(project_root):
     }
 
 
+# ---------------------------------------------------------------------------
+# The deterministic sweep
+#
+# Pass 1 and Pass D1 are the two halves of the audit that need no model, no
+# judgment and no cache: Pass 1 grades executed test source, Pass D1 grades
+# declared proof descriptions, and both are recomputed from the three files they
+# read every time. `deterministic_sweep` is those two halves run over a whole
+# project in one pass, so a CI job can recompute the same verdict from a clean
+# checkout and a reader can tell what the machine proved from what a person
+# judged. It reads no cache and opens nothing for writing, on purpose: a sweep
+# that consulted `.purlin/cache/audit_cache.json` would report a grade somebody
+# once stored rather than one this checkout supports.
+# ---------------------------------------------------------------------------
+
+# fail beats unmeasurable beats pass. A proof backed by two tests is only as
+# good as its weakest backing, and "one of the two is hollow" is a defect, not a
+# measurement gap, so a fail anywhere wins over an unmeasurable elsewhere.
+_SWEEP_STATUS_RANK = {'pass': 0, 'unmeasurable': 1, 'fail': 2}
+
+
+def _sweep_unmeasurable_reason(check, test_file, feature):
+    """Why one backing could not be measured, in words a gate can print."""
+    if check == 'no_checker':
+        ext = os.path.splitext(test_file)[1].lower() or '(no extension)'
+        return (f'No deterministic checker reads {ext} files, so Pass 1 never looked '
+                'at this test. An unmeasurable proof is a gap in coverage, not a defect.')
+    if check == 'missing_file':
+        if not test_file:
+            return ('The proof record names no test file and none could be resolved '
+                    'from the test name, so there is no source to measure.')
+        return (f'{test_file} is named by the proof record but is not on disk, so '
+                'there is no source to measure.')
+    return (f'{test_file} carries no {feature} marker for this proof, so the '
+            'executed test could not be located in the file that recorded it.')
+
+
+def _sweep_file_verdicts(project_root, feature, test_file, rule_descs):
+    """({proof_id: Pass 1 result}, blanket) for one of `feature`'s test files.
+
+    `blanket` is None when the file was analysed. Otherwise it is the
+    `unmeasurable` check that applies to every proof the file backs:
+    `no_checker` for an extension outside `_CHECKER_EXTENSIONS` (a custom
+    plugin's language), `missing_file` for a path that is not on disk.
+    """
+    if not test_file:
+        return {}, 'missing_file'
+    ext = os.path.splitext(test_file)[1].lower()
+    if ext not in _CHECKER_EXTENSIONS:
+        return {}, 'no_checker'
+    path = os.path.join(project_root, *test_file.split('/'))
+    if not os.path.isfile(path):
+        return {}, 'missing_file'
+    results = {}
+    for result in analyze_test_file(path, feature, rule_descs):
+        results.setdefault(result['proof_id'], result)
+    return results, None
+
+
+def deterministic_sweep(project_root):
+    """Grade every proof in `project_root` with the two model-free passes.
+
+    For each `specs/**/*.md` feature: `check_proof_design` grades every declared
+    proof description (Pass D1), and every executed backing from
+    `_proof_backings` is graded by the Pass 1 checker for its language, one
+    `analyze_test_file` call per (test file, feature) so a file carrying two
+    features is still parsed once inside the single `run_scope()` this opens.
+
+    A backing that Pass 1 cannot measure is `unmeasurable`, never a failure, and
+    the `check` says which kind: `no_checker` for an extension outside
+    `_CHECKER_EXTENSIONS`, `missing_file` for a path that is not on disk (a
+    proof whose `test_file` is empty, as xUnit records when no source info is
+    available, is first resolved through `resolve_test_file_from_name`), and
+    `marker_not_found` for a file whose checker finds no marker for that proof.
+    Across several backings `fail` wins over `unmeasurable` wins over `pass`.
+
+    Two kinds of proof enter deliberately:
+
+    * An anchor (`specs/_anchors/*.md`) is swept like any other feature. Its
+      proofs execute as real tests and its proof files sit beside every other
+      one, so excluding it would leave the cross-cutting constraints ungraded.
+    * A proof stamped `@manual(...)` has no test to grade. It is graded by
+      Pass D1 like every other description and simply has no backing, so it
+      appears under `design` and never under `integrity`, `hollow` or
+      `unmeasurable`. Counting a human stamp as unmeasurable would put every
+      manual proof in a gate's "could not measure" column forever, and counting
+      it as measured would claim a machine checked it.
+
+    Returns::
+
+        {'project_root': str,
+         'features': {name: {'spec': str,
+                             'design': {pid: {rule_id, level, check, reason}},
+                             'integrity': {pid: {rule_id, status, check, reason,
+                                                 test_file, test_name, backings}}}},
+         'hollow': [...], 'unprovable': [...], 'unmeasurable': [...],
+         'counts': {...}}
+
+    where `backings` is how many executed backings the proof has and
+    `test_file`/`test_name` name the one whose verdict was taken. The three
+    lists are sorted by (feature, proof_id, test_file).
+
+    Opens nothing for writing: no cache is read or written, no runtime file is
+    created, and the working tree is byte-identical afterwards.
+    """
+    features = {}
+    hollow, unprovable, unmeasurable = [], [], []
+    declared_total = graded_total = backing_total = passing = 0
+
+    with run_scope():
+        spec_dir = os.path.join(project_root, 'specs')
+        for spec_path in sorted(glob.glob(os.path.join(spec_dir, '**', '*.md'),
+                                          recursive=True)):
+            feature = os.path.splitext(os.path.basename(spec_path))[0]
+            rule_descs = _read_rule_descriptions(spec_path)
+            declared = _read_proof_descriptions(spec_path)
+            declared_total += len(declared)
+            first_rule = {d['proof_id']: d['rule_ids'].split(',')[0].strip()
+                          for d in declared}
+
+            design = {}
+            for finding in check_proof_design(spec_path)['proofs']:
+                proof_id = finding['proof_id']
+                design[proof_id] = {
+                    'rule_id': finding['rule_id'], 'level': finding['level'],
+                    'check': finding['check'], 'reason': finding['reason'],
+                }
+                graded_total += 1
+                if finding['level'] == 'UNPROVABLE':
+                    unprovable.append({'feature': feature, 'proof_id': proof_id,
+                                       **design[proof_id]})
+
+            # Group the executed backings by the file they live in, so each
+            # (test file, feature) pair is analysed exactly once.
+            by_file = {}
+            for proof_id, entries in _proof_backings(project_root, feature).items():
+                for test_file, test_name in entries:
+                    resolved = test_file
+                    if not resolved and test_name:
+                        resolved = resolve_test_file_from_name(test_name, project_root)
+                    by_file.setdefault(resolved or '', []).append((proof_id, test_name))
+
+            best, counted = {}, {}
+            for test_file in sorted(by_file):
+                results, blanket = _sweep_file_verdicts(
+                    project_root, feature, test_file, rule_descs)
+                for proof_id, test_name in sorted(by_file[test_file]):
+                    counted[proof_id] = counted.get(proof_id, 0) + 1
+                    backing_total += 1
+                    result = results.get(proof_id)
+                    if blanket is not None or result is None:
+                        check = blanket or 'marker_not_found'
+                        verdict = {
+                            'status': 'unmeasurable', 'check': check,
+                            'reason': _sweep_unmeasurable_reason(
+                                check, test_file, feature),
+                            'test_file': test_file, 'test_name': test_name or '',
+                        }
+                    else:
+                        verdict = {
+                            'status': 'fail' if result['status'] == 'fail' else 'pass',
+                            'check': result.get('check', 'none'),
+                            'reason': result.get('reason', ''),
+                            'test_file': test_file,
+                            'test_name': result.get('test_name') or test_name or '',
+                        }
+                    current = best.get(proof_id)
+                    if current is None or (_SWEEP_STATUS_RANK[verdict['status']]
+                                           > _SWEEP_STATUS_RANK[current['status']]):
+                        best[proof_id] = verdict
+
+            integrity = {}
+            for proof_id in sorted(best):
+                verdict = best[proof_id]
+                integrity[proof_id] = {
+                    'rule_id': first_rule.get(proof_id, ''),
+                    'status': verdict['status'], 'check': verdict['check'],
+                    'reason': verdict['reason'], 'test_file': verdict['test_file'],
+                    'test_name': verdict['test_name'],
+                    'backings': counted[proof_id],
+                }
+                row = {'feature': feature, 'proof_id': proof_id, **integrity[proof_id]}
+                if verdict['status'] == 'fail':
+                    hollow.append(row)
+                elif verdict['status'] == 'unmeasurable':
+                    unmeasurable.append(row)
+                else:
+                    passing += 1
+
+            features[feature] = {
+                'spec': os.path.relpath(spec_path, project_root).replace(os.sep, '/'),
+                'design': design,
+                'integrity': integrity,
+            }
+
+    def _order(row):
+        return (row['feature'], row['proof_id'], row.get('test_file', ''))
+
+    hollow.sort(key=_order)
+    unprovable.sort(key=_order)
+    unmeasurable.sort(key=_order)
+
+    return {
+        'project_root': project_root,
+        'features': features,
+        'hollow': hollow,
+        'unprovable': unprovable,
+        'unmeasurable': unmeasurable,
+        'counts': {
+            'features': len(features),
+            'proofs_declared': declared_total,
+            'proofs_graded': graded_total,
+            'proofs_executed': sum(len(f['integrity']) for f in features.values()),
+            'backings': backing_total,
+            'pass': passing,
+            'hollow': len(hollow),
+            'unprovable': len(unprovable),
+            'unmeasurable': len(unmeasurable),
+        },
+    }
+
+
 def check_spec_coverage(spec_path):
     """Return rule and proof counts for a spec.
 
@@ -2136,12 +2363,12 @@ def _find_spec_path(project_root, feature):
 # ---------------------------------------------------------------------------
 
 class _RunCache:
-    __slots__ = ('specs', 'proof_records', 'py_parses', 'py_sources', 'test_bodies',
+    __slots__ = ('specs', 'proof_backings', 'py_parses', 'py_sources', 'test_bodies',
                  'keys')
 
     def __init__(self):
-        self.specs = {}          # feature -> (spec_path, declared, rule_descs)
-        self.proof_records = {}  # feature -> {proof_id: (test_file, test_name)}
+        self.specs = {}           # feature -> (spec_path, declared, rule_descs)
+        self.proof_backings = {}  # feature -> {proof_id: [(test_file, test_name)]}
         self.py_parses = {}      # test path -> (entries, lines) | SyntaxError
         self.py_sources = {}     # abs test path -> {(feature, proof_id): src} | None
         self.test_bodies = {}    # (abs test path, feature) -> {proof_id: src} | None
@@ -2186,17 +2413,26 @@ def _spec_inputs(project_root, feature):
     return result
 
 
-def _proof_records(project_root, feature):
-    """{proof_id: (test_file, test_name)} for every executed proof of `feature`.
+def _proof_backings(project_root, feature):
+    """{proof_id: [(test_file, test_name), ...]} for every executed proof of
+    `feature`, in proof-file then source order.
 
     Reads the committed proof JSON, which is the only record of which test
-    function backs a proof id. Files are read in sorted order and the first
-    record for an id wins, so the answer is the one the per-proof scan gave.
+    function backs a proof id. Files are read in sorted order and entries are
+    deduplicated by (test_file, proof_id), so a proof re-run across tiers or
+    platforms contributes one backing per distinct file rather than one per
+    record, while a proof genuinely backed by tests in two files keeps both.
+    That distinction is what `deterministic_sweep` grades: a proof is only as
+    good as its weakest backing, so every one of them has to be visible.
+
+    The cache-key resolver wants one answer, not a list, and takes the first
+    backing (see `_proof_records`).
     """
     cache = _RUN_CACHE
-    if cache is not None and feature in cache.proof_records:
-        return cache.proof_records[feature]
-    records = {}
+    if cache is not None and feature in cache.proof_backings:
+        return cache.proof_backings[feature]
+    backings = {}
+    seen = set()
     pattern = os.path.join(project_root, 'specs', '**', f'{feature}.proofs-*.json')
     for pf in sorted(glob.glob(pattern, recursive=True)):
         try:
@@ -2207,11 +2443,24 @@ def _proof_records(project_root, feature):
         for entry in data.get('proofs', []):
             if entry.get('feature') != feature or not entry.get('id'):
                 continue
-            records.setdefault(entry['id'], (entry.get('test_file') or None,
-                                             entry.get('test_name') or None))
+            test_file = entry.get('test_file') or None
+            test_name = entry.get('test_name') or None
+            dedup = (entry['id'], test_file)
+            if dedup in seen:
+                continue
+            seen.add(dedup)
+            backings.setdefault(entry['id'], []).append((test_file, test_name))
     if cache is not None:
-        cache.proof_records[feature] = records
-    return records
+        cache.proof_backings[feature] = backings
+    return backings
+
+
+def _proof_records(project_root, feature):
+    """{proof_id: (test_file, test_name)} — the FIRST backing of every executed
+    proof of `feature`, derived from `_proof_backings` so the two can never
+    disagree about which record a proof id resolves to."""
+    return {proof_id: entries[0]
+            for proof_id, entries in _proof_backings(project_root, feature).items()}
 
 
 def _find_proof_record(project_root, feature, proof_id):
@@ -2527,6 +2776,7 @@ _USAGE = (
     "--check-spec-coverage --spec-path <path>",
     "--check-proof-design --spec-path <path>",
     "--audit-scope [--project-root <path>]",
+    "--deterministic-sweep [--project-root <path>]",
     "--cache-key --feature <name> --proof-id PROOF-N [--project-root <path>] [--design]",
     "--resolve-source <test_name> [--project-root <path>] [--ext .cs]",
     "--load-criteria [--project-root <path>] [--extra <path>]",
@@ -3059,6 +3309,18 @@ def main():
             if idx + 1 < len(sys.argv):
                 project_root = sys.argv[idx + 1]
         print(json.dumps(audit_scope(project_root), indent=2))
+        sys.exit(0)
+
+    # --deterministic-sweep mode: grade the whole project with the two model-free
+    # passes and print the JSON. Reads no cache and writes nothing, so a CI job
+    # can recompute the verdict from a clean checkout.
+    if '--deterministic-sweep' in sys.argv:
+        project_root = os.getcwd()
+        if '--project-root' in sys.argv:
+            idx = sys.argv.index('--project-root')
+            if idx + 1 < len(sys.argv):
+                project_root = sys.argv[idx + 1]
+        print(json.dumps(deterministic_sweep(project_root), indent=2))
         sys.exit(0)
 
     # --check-proof-file mode: run proof-file structural checks (language-agnostic)
