@@ -89,7 +89,7 @@ A proof entry says a test passed. The run marker says a run happened.
 Every proof plugin writes or merges `.purlin/runtime/test_run.json` at the moment it writes its
 proof files (`proof_common` RULE-19), so a consumer project with no sweep script of its own still
 issues receipts that name a run. The marker records `at`, `commit`, `sweep` (the writer's name,
-such as `scripts/proof/pytest_purlin.py`), the files the run collected, the counts, `ok`, and one
+such as `pytest_purlin`, or `dev/run_tests.sh` for this repository's own sweep), the files the run collected, the counts, `ok`, and one
 entry per contributing run. Runs at the same commit merge; a different commit starts a new
 marker, because a count carried across commits would describe two trees. The issuer copies it
 into the receipt as `evidence.test_run`, and a receipt issued with no marker carries
@@ -300,7 +300,7 @@ the number carries; the contract is `references/formats/receipt_format.md`.
 
 #### What the vhash binds
 
-Version 2 of the receipt hashes these fields, `\x00`-separated so no value can be forged across a
+Version 2 of the vhash (`vhash_version: 2`; the receipt's own `Format-Version` moves independently) hashes these fields, `\x00`-separated so no value can be forged across a
 boundary:
 
 | Bound | Why it is in the hash |

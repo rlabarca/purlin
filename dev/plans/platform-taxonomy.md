@@ -217,10 +217,45 @@ visible as inherited entries); the mutations._
 
 ## DONE - T4: the docs pass
 
-_Placeholder. Record: every file rewritten with a one-line summary of the change; the
-regulated-environments.md section list with the mechanism each names; the three rules and
-proofs; the mutations; the screenshot refresh; and the controller's review note on the
-regulated-environments diff._
+- Commit `a4095074` on `taxonomy/T4` (merged onto the spine at `533ddf32` before committing, no
+  conflict), cherry-picked as `edab76e1`, plus the controller's two-literal correction in the
+  commit that follows (the run marker's `sweep` is the plugin's name such as `pytest_purlin`, and
+  "Version 2" is the vhash version, not the receipt's Format-Version).
+- **Files rewritten.** `README.md` (verify no longer "signs off"; dashboard, skills, tools, gate
+  and architecture paragraphs shortened; pointer to the rule set); `docs/index.md` (tables and
+  lists read as sentences); `docs/lifecycle-guide.md` (role workflows, coverage states, both gauge
+  paragraphs split; "before issuing receipts"); `docs/testing-workflow-guide.md` (proof levels,
+  manual proofs, Pass 0.5/1/2 restated as what each reads and returns); `docs/installation-guide.md`
+  (seven init steps, plugin wiring, config resolution, platforms pointer); `docs/dashboard-guide.md`
+  (every card, chip and cell bullet a labelled statement); `docs/collaboration-guide.md`,
+  `docs/anchors-guide.md`, `docs/spec-from-code-guide.md` (dashes to colons, single-idea bullets);
+  `references/hard_gates.md`, `references/remote_verification.md`, `references/spec_quality_guide.md`,
+  `references/audit_criteria.md` (prose de-dashed, every asserted literal intact);
+  `docs/regulated-environments.md` rewritten from 168 to 415 lines. No `skills/*/SKILL.md` prose
+  changed: the only overlaps are the status skill's printed vocabulary, init's own question and
+  spec-from-code's platform-tag step, none a restatement the dedup rule requires moving.
+- **regulated-environments.md, section by mechanism.** What You Need to Know (`purlin:verify`);
+  What Purlin Is NOT (`purlin:audit`, the RULE-1 negations kept); What Purlin Produces (the
+  artifact table plus the run marker row); The Two Gauges (`static_checks.py`, RULE-38/39/40, Pass
+  D1/D2 versus Pass 1/2); Where a Result Comes From (`proof_common` RULE-19, `sync_status`
+  RULE-5/59/60, `evidence.test_run`); Where a Result Was Produced (platform, environment,
+  prerequisite with `skipped_proofs`, pointing at the rule set's single home); Enforcement Layers
+  (by reference to `hard_gates.md`); Keeping the Installation Qualified (`scaffold.py`,
+  `migrate.py` and its seven ids, the three hook specs including the refresh-digest hook);
+  Mutation Checks (`mutation_checks`); How a Regulated Pipeline Would Use Purlin; Integration
+  Points (the pinned-plugin subsection's literals kept, traceability, what the vhash binds and does
+  not bind, the approval workflow, the criteria pin `static_checks` RULE-41, `audit_llm`); The
+  Bottom Line. The controller read the full file before the cherry-pick.
+- **Rules and proofs.** `purlin_docs` RULE-9 / PROOF-14 (each `##` section carries a mechanism
+  name from the rule's list; the four forbidden phrases absent; STRUCTURAL), RULE-10 / PROOF-15
+  (the platform docs carry the category names beside a link and never a membership question;
+  PROVABLE), RULE-11 / PROOF-16 (no em-dash or en-dash outside fenced code in `docs/`, `README.md`
+  and the four references; STRUCTURAL). `dev/test_purlin_docs.py` 13 to 16. Mutations: an approval
+  section with no mechanism fails PROOF-14 naming `['Release approval']`; a membership question
+  copied into the testing guide fails PROOF-15 naming the file and question; an em-dash in
+  `README.md` fails PROOF-16 naming `README.md:9`.
+- **Screenshots** are refreshed in the main tree after the final sweep (the worktree's digest
+  was pre-sweep), recorded in the closing entry of `dev/plans/todo-closeout.md`.
 
 ## Verification checklist
 
