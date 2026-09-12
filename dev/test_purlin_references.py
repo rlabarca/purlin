@@ -373,7 +373,8 @@ class TestRemoteVerificationReference:
             # One -m carrying both: git reads trailers from the last
             # paragraph only, and each -m is a paragraph of its own.
             ('both trailers in one -m',
-             r'-m "Purlin-Runner: github-actions/<runs-on>\nPurlin-Platform: <platform-id>"'),
+             r'-m "[^"]*Purlin-Runner: github-actions/<runs-on>'
+             r'(?:\\n|\n)\s*Purlin-Platform: <platform-id>[^"]*"'),
             ('rebase retry loop', r'git pull --rebase origin "\$GITHUB_REF_NAME"'),
             ('three attempts', r'for attempt in 1 2 3; do'),
             ('failure after the attempts', r'exit 1'),

@@ -73,12 +73,13 @@ jobs:
             # proof entries carry no runner field, by design, so the commit
             # trailers are the only record of which runner proved these
             # (specs/ci/verify_gate.md RULE-7).
-            # Both trailers in ONE -m: git parses trailers out of the last
-            # paragraph only, and each -m starts a new paragraph, so two -m
-            # flags leave Purlin-Runner unreadable.
+            # Both trailers in ONE -m, joined by a newline through printf:
+            # git parses trailers out of the last paragraph only and each -m
+            # starts a new paragraph, so two -m flags leave Purlin-Runner
+            # unreadable. printf because a literal newline inside the argument
+            # would end this YAML block scalar.
             git commit -m "test(static_checks): windows-2022 proofs from windows-2022 [skip ci]" \
-                       -m "Purlin-Runner: github-actions/windows-2022
-Purlin-Platform: windows-2022"
+                       -m "$(printf 'Purlin-Runner: github-actions/windows-2022\nPurlin-Platform: windows-2022')"
             # Several platform runners may commit to this branch at once, so
             # the first push can lose a race it did nothing wrong to lose.
             # Three attempts, then fail (specs/ci/verify_gate.md RULE-10).

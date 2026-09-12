@@ -368,7 +368,8 @@ class TestRunnerWorkflowProvenance:
             # ONE -m: git builds a paragraph per -m and parses trailers out of
             # the last paragraph only.
             both = re.search(
-                r'-m\s+"Purlin-Runner:[^"]*\n\s*Purlin-Platform:[^"]*"', text)
+                r'-m\s+"[^"]*Purlin-Runner:[^"]*?(?:\\n|\n)\s*'
+                r'Purlin-Platform:[^"]*"', text)
             assert both, (
                 f"{fn} does not carry both trailers in a single -m argument; "
                 "a trailer in its own -m is a paragraph of its own and "
@@ -516,7 +517,8 @@ class TestCommitBackPushSurvivesARace:
             # The loop and the provenance trailers are required together,
             # and the trailers share one -m (RULE-7).
             assert re.search(
-                r'-m\s+"Purlin-Runner:[^"]*\n\s*Purlin-Platform:[^"]*"', text), (
+                r'-m\s+"[^"]*Purlin-Runner:[^"]*?(?:\\n|\n)\s*'
+                r'Purlin-Platform:[^"]*"', text), (
                 f"{fn} retries its push but records no readable provenance "
                 "trailers")
 

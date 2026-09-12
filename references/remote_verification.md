@@ -209,14 +209,15 @@ jobs:
             echo "No proof-file changes to commit."
           else
             # Loop guard, half two, and the provenance sync_status reads back.
-            # Both trailers in ONE -m. Each -m is a separate paragraph, and
-            # git parses trailers out of the LAST paragraph only, so two -m
-            # flags leave `Purlin-Runner` unreadable to
-            # `git log --format=%(trailers:key=Purlin-Runner)` and the report
-            # says `runner not recorded` after a green run.
+            # Both trailers in ONE -m, joined by a newline through printf.
+            # Each -m is a separate paragraph and git parses trailers out of
+            # the LAST paragraph only, so two -m flags leave `Purlin-Runner`
+            # unreadable to `git log --format=%(trailers:key=Purlin-Runner)`
+            # and the report says `runner not recorded` after a green run.
+            # printf rather than a literal newline inside the argument: a bare
+            # newline there would end the YAML block scalar.
             git commit -m "test: <platform-id> proofs from <runs-on> [skip ci]" \
-                       -m "Purlin-Runner: github-actions/<runs-on>
-Purlin-Platform: <platform-id>"
+                       -m "$(printf 'Purlin-Runner: github-actions/<runs-on>\nPurlin-Platform: <platform-id>')"
             # Several platform runners may commit to this branch at once, so
             # the first push can lose a race it did nothing wrong to lose.
             for attempt in 1 2 3; do
