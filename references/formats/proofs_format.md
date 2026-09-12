@@ -349,7 +349,7 @@ Reporter: `scripts/proof/vitest_purlin.ts`. It collects proofs in the `onFinishe
 
 ### xUnit / .NET
 
-The marker is a test trait, not a parsed string — `[Trait]` (xUnit), `[Category]`/`[Property]` (NUnit), and `[TestProperty]` (MSTest) all surface as `TestCase.Traits`:
+The marker is a test trait, not a parsed string. The logger reads exactly one trait name, `PurlinProof`, compared ordinally: a trait named `Category`, `Property`, `TestProperty`, or `PurlinProof` in another casing is ignored, and NUnit and MSTest are not supported.
 
 ```csharp
 [Fact]

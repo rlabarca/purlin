@@ -997,6 +997,13 @@ _TEST_CS = (
     # RULE-1: the tier segment is optional and defaults to "unit".
     '    [Fact][Trait("PurlinProof","feat:PROOF-7:RULE-7")]\n'
     '    public void TierOmitted() { Assert.True(true); }\n'
+    # RULE-1: the trait NAME is the marker and it is matched ordinally. Neither of
+    # the next two is a marker: "Category" is a different name, and "purlinproof"
+    # differs from "PurlinProof" only in case. Nothing they name may be written.
+    '    [Fact][Trait("Category","feat:PROOF-9:RULE-9:unit")]\n'
+    '    public void CategoryTraitIgnored() { Assert.True(true); }\n'
+    '    [Fact][Trait("purlinproof","feat:PROOF-8:RULE-8:unit")]\n'
+    '    public void LowerCaseTraitNameIgnored() { Assert.True(true); }\n'
     '    [Fact]\n'
     '    public void Untagged() { Assert.True(true); }\n'
     '  }\n'
@@ -1061,6 +1068,17 @@ class TestXUnitProofPlugin:
         d = run["by_id"]["PROOF-7"]
         assert (d["feature"], d["id"], d["rule"], d["tier"]) == ("feat", "PROOF-7", "RULE-7", "unit"), d
         assert run["proof_file"].name == "feat.proofs-unit.json", run["proof_file"]
+        # The trait NAME is the marker, compared ordinally: the method tagged
+        # [Trait("Category","feat:PROOF-9:RULE-9:unit")] and the one tagged
+        # [Trait("purlinproof","feat:PROOF-8:RULE-8:unit")] (case differs) are not
+        # markers, so no proof file anywhere under the project root may name them.
+        written = {}
+        for pf in sorted(run["root"].rglob("*.proofs-*.json")):
+            for entry in json.loads(pf.read_text()).get("proofs", []):
+                written.setdefault(entry["id"], []).append((pf.name, entry["test_name"]))
+        assert "PROOF-9" not in written, f'Category trait was collected: {written.get("PROOF-9")}'
+        assert "PROOF-8" not in written, f'purlinproof trait was collected: {written.get("PROOF-8")}'
+        assert "PROOF-1" in written and "PROOF-7" in written, written
 
     @pytest.mark.proof("proof_plugins_xunit", "PROOF-2", "RULE-2", tier="integration")
     def test_logger_runs_in_process(self, run):

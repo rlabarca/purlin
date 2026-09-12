@@ -1,4 +1,4 @@
-// Purlin proof logger for .NET test projects (xUnit / NUnit / MSTest).
+// Purlin proof logger for .NET xUnit test projects.
 //
 // A custom `dotnet test` logger. Register it with:
 //
@@ -23,10 +23,13 @@
 //   - emit all 7 fields (RULE-5); status is "pass"/"fail" only (RULE-6)
 //   - no markers collected -> write nothing (RULE-7)
 //
-// The marker is a test trait rather than a parsed string because traits are the
-// framework-neutral metadata channel in the .NET test platform: xUnit's [Trait],
-// NUnit's [Category]/[Property], and MSTest's [TestProperty] all surface as
-// TestCase.Traits. The trait value is colon-delimited:
+// The marker is a test trait rather than a parsed string because TestCase.Traits
+// is the metadata channel the .NET test platform hands every logger. The logger
+// reads exactly one trait name, "PurlinProof", compared ordinally (RULE-1): a
+// trait named "Category", "Property", "TestProperty", or "PurlinProof" spelled
+// in any other casing is not a marker and is ignored. Only xUnit is supported
+// and tested; NUnit and MSTest support is not claimed. The trait value is
+// colon-delimited:
 // "feature:PROOF-N:RULE-N[:tier][:on(a, b)]" (tier optional, defaults to "unit";
 // on(...) may follow the tier or stand in its place).
 //

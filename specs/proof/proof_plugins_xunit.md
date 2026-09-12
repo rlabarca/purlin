@@ -2,7 +2,7 @@
 
 > Requires: proof_common, schema_proof_format, security_no_dangerous_patterns
 > Scope: scripts/proof/xunit_purlin.cs
-> Stack: dotnet/xunit, custom ITestLoggerWithParameters registered via `dotnet test --logger purlin`; trait-based marker, also compatible with NUnit/MSTest via TestCase.Traits
+> Stack: dotnet/xunit, custom ITestLoggerWithParameters registered via `dotnet test --logger purlin`; the marker is the xUnit trait named exactly `PurlinProof` (NUnit and MSTest are not supported)
 > Description: The xUnit/.NET proof plugin (`scripts/proof/xunit_purlin.cs`). A custom
 >   `dotnet test` logger collects proof markers expressed as the `PurlinProof` test trait,
 >   maps the test outcome to pass/fail, and emits standardized proof JSON. Inherits all
@@ -12,9 +12,11 @@
 ## What it does
 
 Collects Purlin proofs from .NET test projects. The marker is a test trait rather than a
-parsed string, because traits are the standard, framework-neutral metadata channel in the .NET
-test platform — xUnit's `[Trait]`, NUnit's `[Category]`/`[Property]`, and MSTest's
-`[TestProperty]` all surface as `TestCase.Traits`. A custom test logger registered via
+parsed string, because `TestCase.Traits` is the metadata channel the .NET test platform hands
+every logger. The logger reads exactly one trait name, `PurlinProof`, compared ordinally: a
+trait called `Category`, `Property`, `TestProperty`, or `purlinproof` in any other casing is
+not a marker and is ignored. Only xUnit is supported and tested; NUnit and MSTest are not
+claimed. A custom test logger registered via
 `dotnet test --logger purlin` receives each result during the run and writes proof files on
 completion, mirroring the reporter model of the pytest/Jest/Vitest plugins (collect in-process,
 no second XML-parsing step).
@@ -31,7 +33,7 @@ RULE-5 records as `test_file`; without it the source path is unavailable.
 
 ## Rules
 
-- RULE-1: The .NET marker is the test trait `[Trait("PurlinProof", "feature:PROOF-N:RULE-N:tier")]` (xUnit), equivalently `[Category]`/`[TestProperty]` in NUnit/MSTest; the trait value is a colon-delimited `feature:PROOF-N:RULE-N:tier` string where tier defaults to `"unit"`
+- RULE-1: The .NET marker is the xUnit test trait whose name is exactly `PurlinProof`: `[Trait("PurlinProof", "feature:PROOF-N:RULE-N:tier")]`. The trait name is compared ordinally, so a trait with any other name - `Category`, `Property`, `TestProperty`, or `PurlinProof` spelled in another case - is not a marker and is ignored; NUnit and MSTest support is not claimed. The trait value is a colon-delimited `feature:PROOF-N:RULE-N:tier` string where tier defaults to `"unit"`
 - RULE-2: The plugin is a custom `dotnet test` logger (`ITestLoggerWithParameters`) registered via `dotnet test --logger purlin`; it collects results during the run, not by post-parsing a `.trx` file
 - RULE-3: Tests without a `PurlinProof` trait are ignored — no proof entry is emitted for them
 - RULE-4: A test `Outcome` of `Passed` maps to `status: "pass"`; `Failed` and all other non-skipped outcomes (e.g. `NotExecuted`) map to `status: "fail"`; a `Skipped` test is not recorded at all
@@ -40,7 +42,7 @@ RULE-5 records as `test_file`; without it the source path is unavailable.
 
 ## Proof
 
-- PROOF-1 (RULE-1): Build an xUnit project with one test annotated `[Trait("PurlinProof", "feat:PROOF-1:RULE-1:unit")]` and a second annotated `[Trait("PurlinProof", "feat:PROOF-7:RULE-7")]`, the tier segment omitted; run `dotnet test --logger purlin`; verify the first entry has `feature: "feat"`, `id: "PROOF-1"`, `rule: "RULE-1"`, `tier: "unit"`, and that the tier-less trait's entry lands in the same `feat.proofs-unit.json` with `id: "PROOF-7"`, `rule: "RULE-7"` and `tier: "unit"` rather than an empty or missing tier, so the omitted segment takes the default @integration
+- PROOF-1 (RULE-1): Build an xUnit project whose `tests/Tests.cs` carries four marked methods - `[Trait("PurlinProof", "feat:PROOF-1:RULE-1:unit")]`, `[Trait("PurlinProof", "feat:PROOF-7:RULE-7")]` with the tier segment omitted, `[Trait("Category", "feat:PROOF-9:RULE-9:unit")]`, and `[Trait("purlinproof", "feat:PROOF-8:RULE-8:unit")]` whose name differs from the marker only in case - and run `dotnet test --logger purlin`; verify `specs/svc/feat.proofs-unit.json` holds an entry with `feature: "feat"`, `id: "PROOF-1"`, `rule: "RULE-1"`, `tier: "unit"` and an entry with `id: "PROOF-7"`, `rule: "RULE-7"`, `tier: "unit"` rather than an empty or missing tier, so the omitted segment takes the default; and verify that across every `*.proofs-*.json` file under the project root no entry has `id: "PROOF-9"` or `id: "PROOF-8"`, so the `Category` trait and the differently-cased `purlinproof` trait were both ignored (a logger matching trait names loosely would write a PROOF-8 or PROOF-9 entry) @integration
 - PROOF-2 (RULE-2): Run `dotnet test tests/tests.csproj --logger purlin` on a project with marked tests, with no `trx` token anywhere in the argv; verify the run's output carries the logger's own in-run line `[PurlinProofLogger] collected`, that `specs/svc/feat.proofs-unit.json` holds the `PROOF-1` entry afterwards, and that a recursive search for `*.trx` under the project root finds no file, so the proofs were collected in-process and not parsed out of a result file @integration
 - PROOF-3 (RULE-3): Run a test with no `PurlinProof` trait; verify no proof entry is emitted for that test @integration
 - PROOF-4 (RULE-4): Run a passing marked test and a failing marked test; verify `status: "pass"` and `status: "fail"` respectively; add a `[Fact(Skip="...")]` marked test and verify it is not recorded @integration

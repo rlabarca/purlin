@@ -67,7 +67,7 @@ public void ValidLoginReturns200()
 }
 ```
 
-NUnit `[Category]`/`[Property]` and MSTest `[TestProperty]` surface the same way. Run with `dotnet test --logger purlin -- RunConfiguration.CollectSourceInformation=true`. Setup is manual. See [proofs_format.md](../references/formats/proofs_format.md) for wiring the `Purlin.TestLogger` assembly.
+The logger collects only the trait whose name is exactly `PurlinProof` (compared ordinally), so a trait named `Category`, `Property`, `TestProperty`, or `PurlinProof` in another casing is ignored; NUnit and MSTest are not supported. Run with `dotnet test --logger purlin -- RunConfiguration.CollectSourceInformation=true`. Setup is manual. See [proofs_format.md](../references/formats/proofs_format.md) for wiring the `Purlin.TestLogger` assembly.
 
 `CollectSourceInformation=true` (plus full PDBs) is what populates each proof's `test_file`; without surfaced source info `dotnet test` leaves it empty. `purlin:audit` handles that case anyway: it resolves the source from the fully qualified `test_name` with `static_checks.py --resolve-source`, so Pass 1 and Pass 2 work on C# even when `test_file` is blank.
 
