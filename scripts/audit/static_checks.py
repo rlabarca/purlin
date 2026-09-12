@@ -1953,6 +1953,11 @@ def write_audit_cache(project_root, cache, cache_name=AUDIT_CACHE):
     The entire read→merge→write sequence is protected by an exclusive file lock
     (audit_cache.json.lock) so that concurrent subagent writers serialize
     correctly and no writer's entries are clobbered by a racing write.
+
+    The write itself goes to `<cache>.tmp` and is renamed over the cache. If that
+    rename raises, the temp file is removed and the original exception is
+    re-raised, so a failed write leaves the durable cache byte-identical and no
+    stray `.tmp` fragment beside it (RULE-43).
     """
     # Validate before touching the filesystem, so a rejected batch leaves the
     # cache on disk exactly as it was.
@@ -2030,7 +2035,20 @@ def write_audit_cache(project_root, cache, cache_name=AUDIT_CACHE):
             tmp_path = cache_path + '.tmp'
             with open(tmp_path, 'w', encoding='utf-8') as f:
                 json.dump(pruned, f, indent=2)
-            os.replace(tmp_path, cache_path)
+            try:
+                os.replace(tmp_path, cache_path)
+            except BaseException:
+                # The rename failed, so the durable cache is still the old file
+                # and this temp file holds a write nobody will ever read. Remove
+                # it before re-raising: left behind, `.purlin/cache/` accumulates
+                # one `<cache>.tmp` per failure, and the next reader listing the
+                # directory cannot tell a dead fragment from a live cache
+                # (RULE-43). A missing temp file is not an error here.
+                try:
+                    os.unlink(tmp_path)
+                except FileNotFoundError:
+                    pass
+                raise
         finally:
             _unlock(lock_file)
 

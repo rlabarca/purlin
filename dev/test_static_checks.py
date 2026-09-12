@@ -663,6 +663,63 @@ class TestAuditCache:
                 "the half-written HOLLOW entry became visible: the cache reads "
                 f"{survived[key]['assessment']!r}")
 
+    @pytest.mark.proof("static_checks", "PROOF-70", "RULE-43")
+    def test_failed_rename_leaves_no_temp_file(self):
+        """A rename that raises removes its .tmp, re-raises, cache byte-identical."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _scaffold_proof(tmpdir, 'login', 'PROOF-1', 'RULE-1')
+            entry = {
+                "assessment": "STRONG",
+                "criterion": "matches rule intent",
+                "why": "test exercises the rule correctly",
+                "fix": "none",
+                "feature": "login",
+                "proof_id": "PROOF-1",
+                "rule_id": "RULE-1",
+                "priority": "LOW",
+            }
+            write_audit_cache(tmpdir, {"a1b2c3d4e5f6a7b8": dict(entry)})
+
+            cache_dir = os.path.join(tmpdir, '.purlin', 'cache')
+            cache_path = os.path.join(cache_dir, 'audit_cache.json')
+            with open(cache_path, 'rb') as f:
+                before_bytes = f.read()
+            before_listing = sorted(os.listdir(cache_dir))
+
+            second = {'ignored-key': dict(entry, assessment='HOLLOW')}
+            with mock.patch.object(static_checks.os, 'replace',
+                                   side_effect=OSError('no space left on device')):
+                with pytest.raises(OSError) as excinfo:
+                    write_audit_cache(tmpdir, second)
+            assert str(excinfo.value) == 'no space left on device', (
+                "the rename's own exception must reach the caller unchanged, got "
+                f"{excinfo.value!r}")
+
+            with open(cache_path, 'rb') as f:
+                after_bytes = f.read()
+            assert after_bytes == before_bytes, (
+                "a failed rename rewrote the durable cache: "
+                f"{len(before_bytes)} bytes became {len(after_bytes)}")
+
+            key = _key(tmpdir, 'login', 'PROOF-1')
+            survived = read_audit_cache(tmpdir)
+            assert set(survived) == {key}, (
+                "the failed write's entry reached the cache, keys are "
+                f"{sorted(survived)}")
+            assert survived[key]['assessment'] == 'STRONG', (
+                "the HOLLOW entry of the failed write became visible: the cache "
+                f"reads {survived[key]['assessment']!r}")
+
+            # The point of the cleanup: the cache directory holds exactly the
+            # files it held before, so a leftover fragment is named here.
+            after_listing = sorted(os.listdir(cache_dir))
+            assert after_listing == before_listing, (
+                "a failed rename left files behind in .purlin/cache/: "
+                f"{sorted(set(after_listing) - set(before_listing))} "
+                f"(listing was {before_listing}, now {after_listing})")
+            assert not any(name.endswith('.tmp') for name in after_listing), \
+                f"a .tmp fragment survives in .purlin/cache/: {after_listing}"
+
 
 class TestWriteCacheMerge:
     """RULE-24: write_audit_cache merges into existing cache on disk."""
