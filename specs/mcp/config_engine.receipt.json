@@ -1,13 +1,14 @@
 {
   "feature": "config_engine",
-  "vhash": "c53d939f",
+  "vhash": "9fb9fc7a",
   "vhash_version": 2,
-  "commit": "bed092fb363392284d3f9b62958d33e17811ea86",
-  "timestamp": "2026-09-12T05:55:59.277010+00:00",
+  "commit": "92d02a18772f988aec53efa58c67cb0f40625823",
+  "timestamp": "2026-09-12T06:02:38.906756+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
     "RULE-11",
+    "RULE-12",
     "RULE-2",
     "RULE-3",
     "RULE-4",
@@ -27,6 +28,7 @@
     "RULE-1": "88f0892d5149bf0a",
     "RULE-10": "590c2661155b1bdb",
     "RULE-11": "4b7cacc7ac3db5b0",
+    "RULE-12": "b48b41f8ab586743",
     "RULE-2": "99664aaf9653df29",
     "RULE-3": "d989c5511fc1fdb7",
     "RULE-4": "ba3e580fb02ea1e9",
@@ -91,6 +93,16 @@
       "tier": "unit",
       "test_file": "dev/test_config_engine.py",
       "test_name": "test_nested_object_in_local_replaces_base_object_whole",
+      "platform": null
+    },
+    {
+      "feature": "config_engine",
+      "id": "PROOF-14",
+      "rule": "RULE-12",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_environment_entry_needs_no_os_and_only_the_env_var_satisfies_it",
       "platform": null
     },
     {
@@ -306,10 +318,10 @@
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T05:55:54.088606+00:00",
-      "commit": "bed092fb363392284d3f9b62958d33e17811ea86",
+      "at": "2026-09-12T06:02:28.269187+00:00",
+      "commit": "92d02a18772f988aec53efa58c67cb0f40625823",
       "sweep": "dev/run_tests.sh",
-      "passed": 789,
+      "passed": 790,
       "failed": 0,
       "skipped": 27
     },
@@ -329,6 +341,15 @@
         "platform": null,
         "commit": "a5d71a013546313e7bc4cb298b89ed7e69720ea9",
         "committed_at": "2026-09-11T22:36:11-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      },
+      {
+        "file": "specs/mcp/config_engine.proofs-integration.json",
+        "tier": "integration",
+        "platform": null,
+        "commit": "92d02a18772f988aec53efa58c67cb0f40625823",
+        "committed_at": "2026-09-12T01:59:27-04:00",
         "runner": null,
         "executed_in_test_run": true
       },

@@ -1,9 +1,9 @@
 {
   "feature": "proof_plugins_php",
-  "vhash": "39745058",
+  "vhash": "11d11b9e",
   "vhash_version": 2,
-  "commit": "bed092fb363392284d3f9b62958d33e17811ea86",
-  "timestamp": "2026-09-12T05:55:59.277010+00:00",
+  "commit": "92d02a18772f988aec53efa58c67cb0f40625823",
+  "timestamp": "2026-09-12T06:02:38.906756+00:00",
   "rules": [
     "RULE-1",
     "RULE-2",
@@ -50,7 +50,7 @@
     "proof_common/RULE-11": "564f7e45bbdf8ebf",
     "proof_common/RULE-12": "fa541e2d751034c1",
     "proof_common/RULE-13": "9d833a25ea533b33",
-    "proof_common/RULE-14": "cf4fab16ef3635e0",
+    "proof_common/RULE-14": "2c594b869cdbf76a",
     "proof_common/RULE-15": "37ad2ef295ed00fc",
     "proof_common/RULE-16": "12739c6ae8c04e68",
     "proof_common/RULE-17": "ffa53c690712d6ba",
@@ -216,7 +216,7 @@
       "status": "pass",
       "tier": "unit",
       "test_file": "dev/test_sweep_completeness.py",
-      "test_name": "test_every_proof_named_test_file_is_swept_or_excepted",
+      "test_name": "test_every_proof_named_test_file_is_swept_or_platform_scoped",
       "platform": null
     },
     {
@@ -942,10 +942,10 @@
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T05:55:54.088606+00:00",
-      "commit": "bed092fb363392284d3f9b62958d33e17811ea86",
+      "at": "2026-09-12T06:02:28.269187+00:00",
+      "commit": "92d02a18772f988aec53efa58c67cb0f40625823",
       "sweep": "dev/run_tests.sh",
-      "passed": 789,
+      "passed": 790,
       "failed": 0,
       "skipped": 27
     },
@@ -963,8 +963,8 @@
         "file": "specs/_anchors/proof_common.proofs-unit.json",
         "tier": "unit",
         "platform": null,
-        "commit": "6bc61d2874dcbcd81892b0998a31ce84edc5c2a6",
-        "committed_at": "2026-09-11T20:16:10-04:00",
+        "commit": "92d02a18772f988aec53efa58c67cb0f40625823",
+        "committed_at": "2026-09-12T01:59:27-04:00",
         "runner": null,
         "executed_in_test_run": true
       },
