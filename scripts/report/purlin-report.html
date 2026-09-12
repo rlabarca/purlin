@@ -119,6 +119,7 @@ body{font-family:var(--font-sans);background:var(--bg-primary);color:var(--text-
    required (the project committed to the bar), dim for optional. */
 .rv-mode{font-size:12px;margin-left:4px;padding:2px 8px;border-radius:10px;border:1px solid var(--border);color:var(--text-dim);white-space:nowrap}
 .rv-mode.required{color:var(--teal);border-color:var(--teal)}
+.rv-mode.rv-ok{color:var(--green);border-color:var(--green)}.rv-mode.rv-wait{color:var(--amber);border-color:var(--amber)}.rv-mode.rv-fail{color:var(--red);border-color:var(--red)}
 
 /* ===== TABLE ===== */
 .table-container{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;overflow-x:auto;margin-bottom:20px}
@@ -1067,14 +1068,43 @@ loadData(function(initial) {
      alone invites the reading that the config field is the gate. It is not:
      config.json is a file in the tree the agent can edit, and enforcement is
      branch protection marking the verify-gate job a required check. */
-  function remoteVerificationChip(mode) {
+  function remoteVerificationChip(mode, status) {
     if (!mode || mode === 'off') return '';
-    var title = 'Declared in .purlin/config.json. The field declares the mode; '
-              + 'enforcement is branch protection marking the verify-gate job a '
-              + 'required check.';
-    var cls = 'rv-mode' + (mode === 'required' ? ' required' : '');
-    return '<span class="' + cls + '" data-rv-mode="' + esc(mode) + '" title="'
-         + esc(title) + '">Remote verification: ' + esc(mode) + '</span>';
+    var st = status || {};
+    var proofs = st.proofs || {};
+    var state = st.state || 'none';
+    /* The words are the data's, not the config's (RULE-40): what a developer
+       waiting on runners wants to know is whether anything is still out. */
+    var text, cls;
+    if (state === 'failing') {
+      text = 'Remote: ' + (proofs.failed || 0) + ' failing';
+      cls = ' rv-fail';
+    } else if (state === 'awaiting') {
+      text = 'Remote: ' + (proofs.awaiting || 0) + ' awaiting';
+      cls = ' rv-wait';
+    } else if (state === 'proved') {
+      text = 'Remote: proved';
+      cls = ' rv-ok';
+    } else {
+      text = 'Remote: none declared';
+      cls = '';
+    }
+    if (mode === 'required') text += ' \u00b7 required';
+    var detail = '';
+    if (state !== 'none') {
+      detail = (proofs.proved || 0) + ' of ' + (proofs.declared || 0)
+             + ' platform proofs proved';
+      if (proofs.awaiting) detail += ', ' + proofs.awaiting + ' awaiting a runner';
+      if (proofs.failed) detail += ', ' + proofs.failed + ' failing';
+      if (st.platforms && st.platforms.length) detail += ' (' + st.platforms.join(', ') + ')';
+      detail += '. ';
+    }
+    var title = detail + 'Mode ' + mode + ', declared in .purlin/config.json. The field '
+              + 'declares the mode; enforcement is branch protection marking the '
+              + 'verify-gate job a required check.';
+    return '<span class="rv-mode' + (mode === 'required' ? ' required' : '') + cls
+         + '" data-rv-mode="' + esc(mode) + '" data-rv-state="' + esc(state)
+         + '" title="' + esc(title) + '">' + esc(text) + '</span>';
   }
 
   function gaugeFreshness(summary, which, audit, design) {
@@ -1194,7 +1224,7 @@ loadData(function(initial) {
        graded for Design an hour ago read as 78 days stale (RULE-15). */
     h += gaugeFreshness(G, 'design', A, G);
     h += gaugeFreshness(A, 'integrity', A, G);
-    h += remoteVerificationChip(D.remote_verification);
+    h += remoteVerificationChip(D.remote_verification, D.remote_status);
     h += '<button class="theme-toggle" id="theme-btn" title="Toggle dark/light mode">';
     h += '<svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
     h += '<svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';

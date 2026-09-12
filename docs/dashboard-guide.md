@@ -176,6 +176,12 @@ re-renders only if the data changed, so leave it open beside your editor; nothin
 you are away, and the age turns amber after an hour and red after a day with the usual
 `run purlin:status` hint.
 
+When the project declares remote verification (`remote_verification` other than `off`), a
+remote chip sits beside the gauge labels and reads the data, not the config: `Remote: proved`
+(green), `Remote: 3 awaiting` (amber, a runner has not run yet), `Remote: 2 failing` (red) or
+`Remote: none declared`; `· required` is appended when the mode is required, which is the one
+mode that blocks a merge. Hover it for the proved-of-declared count and the platforms involved.
+
 Beside it sit one freshness label per gauge: `Design: 3h ago`, `Integrity: 78d ago`, each
 from its own cache, since the two age independently. A gauge that has never been measured reads
 `Design: not measured`; a stale one adds `(stale)` and turns amber. The command stays out of the

@@ -1913,8 +1913,34 @@ def _platforms_line(platform_summary, host_id):
     return f"Platforms (host: {host_id}): " + ' | '.join(segments)
 
 
-def _remote_verification_line(config, awaiting_count):
+def _remote_state_clause(remote_status):
+    """`3 proofs awaiting a runner on windows-2022 (→ Run: purlin:test)`,
+    `2 proofs failing on linux`, `all 12 platform proofs proved` or `no proof
+    declares a platform`, from report_data RULE-44's remote_status."""
+    if not remote_status:
+        return ''
+    proofs = remote_status.get('proofs') or {}
+    ids = ', '.join(remote_status.get('platforms') or [])
+    state = remote_status.get('state')
+    if state == 'failing':
+        n = proofs.get('failed', 0)
+        return f"{n} proof{'s' if n != 1 else ''} failing on {ids}"
+    if state == 'awaiting':
+        n = proofs.get('awaiting', 0)
+        return (f"{n} proof{'s' if n != 1 else ''} awaiting a runner on {ids} "
+                f"(\u2192 Run: purlin:test)")
+    if state == 'proved':
+        n = proofs.get('declared', 0)
+        return f"all {n} platform proof{'s' if n != 1 else ''} proved"
+    return 'no proof declares a platform'
+
+
+def _remote_verification_line(config, awaiting_count, remote_status=None):
     """The project's declared remote-verification mode, or '' when silent.
+
+    Under `required` and `optional` the line also says where the platform
+    proofs stand (RULE-49): the mode alone told a reader what the project
+    declared and nothing about whether anything ran.
 
     Two things this line must not do. It must not present the field as the
     gate: `.purlin/config.json` is a file in the tree the agent can edit, and
@@ -1933,12 +1959,14 @@ def _remote_verification_line(config, awaiting_count):
     if mode not in _REMOTE_VERIFICATION_MODES:
         return (f"Remote verification: {mode!r} is not a recognized mode "
                 f"(" + " | ".join(_REMOTE_VERIFICATION_MODES) + ")")
+    clause = _remote_state_clause(remote_status)
+    clause = (clause + '; ') if clause else ''
     if mode == 'required':
-        return ("Remote verification: required — runner-gated proofs must be proved "
-                "before a merge." + declared)
+        return (f"Remote verification: required — {clause}platform proofs must be "
+                "proved before a merge." + declared)
     if mode == 'optional':
-        return ("Remote verification: optional — the remote loop is available and "
-                "reported; findings never block." + declared)
+        return (f"Remote verification: optional — {clause}the remote loop is "
+                "available and reported; findings never block." + declared)
     # off: silent unless something is actually waiting. Keyed on awaiting
     # rather than on declared, because a project whose runner-gated proofs
     # were already proved elsewhere has nothing stuck, and telling it those
@@ -1959,7 +1987,7 @@ def _bare(name):
 def _build_summary_table(summary_rows, audit_summary=None, design_summary=None,
                          gauges_by_feature=None, config=None, awaiting_count=0,
                          platform_lines=None, platform_partial=frozenset(),
-                         platforms_line=''):
+                         platforms_line='', remote_status=None):
     """Build a coverage summary table with Unicode box-drawing characters.
 
     `platform_lines` is the Platforms block (sync_status RULE-52), printed
@@ -2093,7 +2121,7 @@ def _build_summary_table(summary_rows, audit_summary=None, design_summary=None,
     # appended: the summary line is already carrying two gauges with their own
     # denominators and ages, and the declaration/enforcement split needs a
     # clause of its own to be readable at all.
-    rv_line = _remote_verification_line(config or {}, awaiting_count)
+    rv_line = _remote_verification_line(config or {}, awaiting_count, remote_status)
     if rv_line:
         lines.append(rv_line)
     lines.extend(platform_lines or [])
@@ -2727,16 +2755,16 @@ def sync_status(project_root, role=None):
         if e.get('proof_id')
     }
     host_id = _host_id(registry, host)
-    platforms_line = _platforms_line(
-        _platform_summary(records_by_feature, all_proofs, audit_by_proof,
-                          host_id, registry=registry),
-        host_id)
+    platform_rows = _platform_summary(records_by_feature, all_proofs,
+                                      audit_by_proof, host_id, registry=registry)
+    platforms_line = _platforms_line(platform_rows, host_id)
+    remote_status = _remote_status(platform_rows)
 
     # Build summary table and combine output
     table_lines = _build_summary_table(summary_rows, audit_summary, design_summary,
                                        gauges_by_feature, config, awaiting_count,
                                        platform_lines, frozenset(platform_partial),
-                                       platforms_line)
+                                       platforms_line, remote_status=remote_status)
 
     # Report data generation (side effect)
     if config.get('report'):
@@ -4015,6 +4043,37 @@ def _previous_ext_status(project_root):
             for f in previous.get('features', []) if isinstance(f, dict)}
 
 
+def _remote_status(summary):
+    """Where the project's platform-declared proofs stand, from the declared
+    rows of a `_platform_summary` (report_data RULE-44).
+
+    `state` is `failing` when some declared row has a failed proof, else
+    `awaiting` when some has a proof with no result, else `proved` when any
+    proof is declared, else `none`. The host row is not a declaration and is
+    left out. `platforms` names the ids holding the awaiting or failed proofs,
+    which is what a reader acts on.
+    """
+    proofs = {'declared': 0, 'proved': 0, 'failed': 0, 'awaiting': 0}
+    behind = []
+    for pid, row in (summary or {}).items():
+        if row.get('kind') != 'declared':
+            continue
+        counts = row.get('proofs') or {}
+        for key in proofs:
+            proofs[key] += int(counts.get(key, 0) or 0)
+        if counts.get('awaiting') or counts.get('failed'):
+            behind.append(pid)
+    if proofs['failed']:
+        state = 'failing'
+    elif proofs['awaiting']:
+        state = 'awaiting'
+    elif proofs['declared']:
+        state = 'proved'
+    else:
+        state = 'none'
+    return {'state': state, 'proofs': proofs, 'platforms': sorted(behind)}
+
+
 def _build_report_data(project_root, features, all_proofs, config, global_anchors,
                        audit_summary=None, design_summary=None,
                        generated_by='sync_status', network=True):
@@ -4343,6 +4402,10 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
     declared_ids = sorted(_declared_platform_counts(features))
     host_ids = set(_host_platform_ids(registry, host))
 
+    platform_rows = _platform_summary(records_by_feature, all_proofs,
+                                      audit_by_proof, host_id,
+                                      receipted_by_feature, host_row=True,
+                                      registry=registry)
     return {
         'timestamp': datetime.datetime.now(datetime.timezone.utc).isoformat(),
         'generated_by': generated_by,
@@ -4369,12 +4432,12 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             'remote': [pid for pid in declared_ids if pid not in host_ids],
             'errors': list(registry_errors),
             'host_id': host_id,
-            'summary': _platform_summary(records_by_feature, all_proofs,
-                                         audit_by_proof, host_id,
-                                         receipted_by_feature, host_row=True,
-                                         registry=registry),
+            'summary': platform_rows,
         },
         'platform_testing': bool(declared_ids),
+        # Where the platform-declared proofs stand, derived once here from the
+        # declared rows above and never recomputed by a reader (RULE-44).
+        'remote_status': _remote_status(platform_rows),
         # Always present, empty when the project is current (report_data
         # RULE-34). The dashboard's action banner reads it, and a key that is
         # sometimes absent cannot be told from a payload written by an older

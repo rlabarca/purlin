@@ -1560,6 +1560,10 @@ class TestRemoteVerificationMode:
                 f"the line must name the enforcement, not just the mode: {line!r}")
             assert 'Declared in config' in line, (
                 f"the line must say the field is a declaration: {line!r}")
+            # The mode alone said what was declared and nothing about whether
+            # anything ran; the derived state says where the proofs stand.
+            assert '1 proof awaiting a runner on windows' in line, line
+            assert 'purlin:test' in line, line
 
         # off, with a proof actually awaiting: say how many and where to go.
         # Silence here leaves a proof that can never fill in looking like one
@@ -1594,6 +1598,14 @@ class TestRemoteVerificationMode:
             "an off project whose runner-gated proofs are already proved has "
             f"nothing stuck and must print no mode line:\n{out}")
 
+        # required, with the runner's result in: the line says so, and points
+        # nowhere, because there is nothing left to run.
+        self._config('required')
+        line, out = self._mode_line()
+        assert line and 'all 1 platform proof proved' in line, line
+        assert 'awaiting' not in line and 'purlin:test' not in line, line
+        self._config('off')
+
         # And with no runner-gated proof declared at all, still silent: a
         # project that never opted in gains nothing from the line.
         os.remove(os.path.join(self.spec_dir, 'locking.proofs-windows.json'))
@@ -1604,6 +1616,12 @@ class TestRemoteVerificationMode:
         line, out = self._mode_line()
         assert line is None, (
             f"an off project with nothing gated must print no mode line:\n{out}")
+
+        # optional, with nothing declared: the mode is still reported, and the
+        # state says the loop has nothing to do yet.
+        self._config('optional')
+        line, out = self._mode_line()
+        assert line and 'no proof declares a platform' in line, line
 
 
 class TestIntegrityFormula:

@@ -3428,69 +3428,56 @@ class TestRemoteVerificationChip:
     """
 
     @pytest.mark.proof("purlin_report", "PROOF-42", "RULE-40", tier="e2e")
-    def test_header_chip_names_the_mode_and_where_enforcement_lives(
-            self, page, dashboard):
-        for mode in ("required", "optional"):
+    def test_header_chip_reads_the_data_and_names_the_mode(self, page, dashboard):
+        def status(state, declared=0, proved=0, awaiting=0, failed=0, platforms=()):
+            return {"state": state, "platforms": list(platforms),
+                    "proofs": {"declared": declared, "proved": proved,
+                               "failed": failed, "awaiting": awaiting}}
+
+        cases = [
+            (status("none"), "Remote: none declared", None),
+            (status("proved", 4, 4), "Remote: proved", "#22c55e"),
+            (status("awaiting", 4, 1, awaiting=3, platforms=["windows-2022"]),
+             "Remote: 3 awaiting", "#f59e0b"),
+            (status("failing", 4, 2, failed=2, platforms=["linux"]),
+             "Remote: 2 failing", "#ef4444"),
+        ]
+        for remote, text, colour in cases:
             data = make_data()
-            data["remote_verification"] = mode
+            data["remote_verification"] = "optional"
+            data["remote_status"] = remote
             load_dashboard(page, dashboard, data=data)
             chip = page.locator(".header .rv-mode")
-            assert chip.count() == 1, (
-                f"expected exactly one mode chip for {mode!r}, "
-                f"got {chip.count()}")
-            assert chip.get_attribute("data-rv-mode") == mode, (
-                f"chip must carry the declared mode, got "
-                f"{chip.get_attribute('data-rv-mode')!r}")
-            assert mode in chip.inner_text(), chip.inner_text()
+            assert chip.count() == 1, f"one chip for {remote['state']}, got {chip.count()}"
+            assert chip.inner_text() == text, chip.inner_text()
+            assert chip.get_attribute("data-rv-mode") == "optional"
+            assert chip.get_attribute("data-rv-state") == remote["state"]
             title = chip.get_attribute("title") or ""
-            assert title == (
-                "Declared in .purlin/config.json. The field declares the mode; "
-                "enforcement is branch protection marking the verify-gate job "
-                "a required check."), (
-                "the tooltip must carry both halves of the split verbatim: "
-                f"{title!r}")
+            assert "branch protection" in title and "optional" in title, title
+            if colour:
+                assert rgb_to_hex(chip.evaluate("el => getComputedStyle(el).color")) == colour
 
-        # Never recomputed here. The chip is the payload's field and nothing
-        # else, so a payload whose field disagrees with every other signal in
-        # it still renders the field. A dashboard that derived the mode from,
-        # say, the presence of remote platforms or of awaiting proofs would
-        # flip both of these.
-        data = platform_data()          # platforms.remote holds windows-2022,
-        data["remote_verification"] = "off"   # whose row has an awaiting proof
-        load_dashboard(page, dashboard, data=data)
-        assert page.locator(".rv-mode").count() == 0, (
-            "an 'off' payload renders no chip even with a remote platform and "
-            "an awaiting proof in it: the mode is read, never recomputed")
-
-        data = make_data()              # no platforms, nothing awaiting
-        data["platform_testing"] = False
+        data = make_data()
         data["remote_verification"] = "required"
+        data["remote_status"] = status("awaiting", 4, 1, awaiting=3, platforms=["windows-2022"])
         load_dashboard(page, dashboard, data=data)
         chip = page.locator(".header .rv-mode")
-        assert chip.count() == 1 and chip.get_attribute("data-rv-mode") == "required", (
-            "a 'required' payload renders the declared mode even with no "
-            "remote platform to justify recomputing it, got "
-            f"{chip.count()} chip(s) reading {chip.get_attribute('data-rv-mode')!r}")
+        assert chip.count() == 1
+        assert chip.inner_text().endswith("\u00b7 required"), chip.inner_text()
+        assert chip.get_attribute("data-rv-mode") == "required"
+        title = chip.get_attribute("title") or ""
+        assert "3 awaiting a runner" in title and "windows-2022" in title, title
 
-        # off renders nothing. A project that never opted in gains no chip.
-        data = make_data()
-        data["remote_verification"] = "off"
-        load_dashboard(page, dashboard, data=data)
-        assert page.locator(".header .rv-mode").count() == 0, (
-            "an 'off' project must render no mode chip")
-
-        # And a payload written before the field existed must not break or
-        # invent a mode.
-        data = make_data()
-        data.pop("remote_verification", None)
-        load_dashboard(page, dashboard, data=data)
-        assert page.locator(".header .rv-mode").count() == 0, (
-            "a payload with no remote_verification key must render no chip")
-
-
-# ---------------------------------------------------------------------------
-# Per-platform reporting: the modal, the sub-labels, the chips, the block
-# ---------------------------------------------------------------------------
+        for off in ("off", None):
+            data = make_data()
+            data["remote_status"] = status("awaiting", 4, 1, awaiting=3, platforms=["windows-2022"])
+            if off is None:
+                data.pop("remote_verification", None)
+            else:
+                data["remote_verification"] = off
+            load_dashboard(page, dashboard, data=data)
+            assert page.locator(".rv-mode").count() == 0, (
+                "an off (or absent) mode renders no chip whatever the data says")
 
 def make_platform_row(pid, features=1, verified=1, passing=0, failing=0,
                       awaiting=0, executed=2, measured=1, weighted=50,

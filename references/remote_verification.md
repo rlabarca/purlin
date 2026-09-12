@@ -397,6 +397,8 @@ unmeasured, which is honest but not useful. Two recommendations:
 
 ## Reporting
 
+The dashboard header carries a remote chip whenever the mode is not `off`. It reads the data, not the config: `Remote: proved`, `Remote: 3 awaiting`, `Remote: 2 failing` or `Remote: none declared`, with `· required` appended under that mode, from the payload's `remote_status` (`report_data` RULE-44). `purlin:status` prints the same state after the mode on its remote-verification line.
+
 `purlin:test` distinguishes the two kinds of pass, because they were verified on different
 machines and one of them is the thing the developer cannot check:
 

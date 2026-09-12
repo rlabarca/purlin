@@ -2595,3 +2595,84 @@ class TestGeneratedByAndOfflineBuild:
         assert any(entry.endswith('feature.proofs-unit.json') for entry in listed), listed
         assert not any(entry.endswith('.purlin/report-data.js') for entry in listed), (
             f"the digest reported its own git status: {listed}")
+
+
+# ---------------------------------------------------------------------------
+# RULE-44: where the platform-declared proofs stand, derived once
+# ---------------------------------------------------------------------------
+
+class TestRemoteStatus:
+
+    def setup_method(self):
+        self.tmp = tempfile.mkdtemp()
+        _make_project(self.tmp, report_enabled=True)
+
+    def teardown_method(self):
+        shutil.rmtree(self.tmp)
+
+    def _spec(self, tags=('@unit @on(windows-2022)', '@unit @on(macos-14)')):
+        _write_spec(self.tmp, 'locking',
+                    '# Feature: locking\n\n## What it does\nLocks.\n\n'
+                    '## Rules\n- RULE-1: Windows\n- RULE-2: Mac\n- RULE-3: Any\n\n'
+                    f'## Proof\n- PROOF-1 (RULE-1): win {tags[0]}\n'
+                    f'- PROOF-2 (RULE-2): mac {tags[1]}\n'
+                    '- PROOF-3 (RULE-3): any @unit\n')
+
+    def _build(self):
+        cfg = {'report': True, 'platforms': {
+            'windows-2022': {'os': 'windows'}, 'macos-14': {'os': 'macos'}}}
+        with open(os.path.join(self.tmp, '.purlin', 'config.json'), 'w') as f:
+            json.dump(cfg, f)
+        features = purlin_server._scan_specs(self.tmp)
+        proofs = purlin_server._read_proofs(self.tmp)
+        built = purlin_server._build_report_data(
+            self.tmp, features, proofs, cfg, {}, None)
+        read = purlin_server.read_report_payload(self.tmp)
+        assert built['remote_status'] == read['remote_status'], (
+            built['remote_status'], read['remote_status'])
+        return built
+
+    @pytest.mark.proof("report_data", "PROOF-45", "RULE-44", tier="integration")
+    def test_remote_status_is_derived_from_declared_rows_only(self, monkeypatch):
+        monkeypatch.setattr(purlin_server, '_detect_host_platform', lambda: {
+            'os': 'linux', 'version': '6.1', 'distro': 'ubuntu', 'arch': 'x86_64', 'id': None})
+        self._spec()
+        _write_proofs(self.tmp, 'locking', [_entry('locking', 'PROOF-3', 'RULE-3')])
+        _write_proofs(self.tmp, 'locking', [_entry('locking', 'PROOF-2', 'RULE-2')],
+                      platform='macos-14')
+        data = self._build()
+        rows = data['platforms']['summary']
+        assert 'linux' in rows and rows['linux']['kind'] == 'host', rows.keys()
+        assert data['remote_status'] == {
+            'state': 'awaiting',
+            'proofs': {'declared': 2, 'proved': 1, 'failed': 0, 'awaiting': 1},
+            'platforms': ['windows-2022']}, data['remote_status']
+        declared_sum = sum(r['proofs']['declared'] for r in rows.values()
+                           if r['kind'] == 'declared')
+        assert declared_sum == 2, "the host row must add nothing"
+
+        _write_proofs(self.tmp, 'locking',
+                      [_entry('locking', 'PROOF-1', 'RULE-1', status='fail')],
+                      platform='windows-2022')
+        data = self._build()
+        assert data['remote_status']['state'] == 'failing'
+        assert data['remote_status']['platforms'] == ['windows-2022']
+        assert data['remote_status']['proofs']['failed'] == 1
+
+        _write_proofs(self.tmp, 'locking', [_entry('locking', 'PROOF-1', 'RULE-1')],
+                      platform='windows-2022')
+        data = self._build()
+        assert data['remote_status'] == {
+            'state': 'proved',
+            'proofs': {'declared': 2, 'proved': 2, 'failed': 0, 'awaiting': 0},
+            'platforms': []}, data['remote_status']
+
+        self._spec(tags=('@unit', '@unit'))
+        for scoped in ('locking.proofs-unit@windows-2022.json',
+                       'locking.proofs-unit@macos-14.json'):
+            os.remove(os.path.join(self.tmp, 'specs', 'app', scoped))
+        data = self._build()
+        assert data['remote_status'] == {
+            'state': 'none',
+            'proofs': {'declared': 0, 'proved': 0, 'failed': 0, 'awaiting': 0},
+            'platforms': []}, data['remote_status']

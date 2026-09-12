@@ -12,15 +12,6 @@
     },
     {
       "feature": "report_data",
-      "id": "PROOF-25",
-      "rule": "RULE-24",
-      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
-      "test_name": "test_both_entry_points_populate_both_gauges",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "report_data",
       "id": "PROOF-30",
       "rule": "RULE-29",
       "test_file": "dev/test_report_data.py",
@@ -178,6 +169,24 @@
       "rule": "RULE-43",
       "test_file": "dev/test_report_data.py",
       "test_name": "test_producer_is_named_and_an_offline_build_never_reaches_the_network",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-45",
+      "rule": "RULE-44",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_remote_status_is_derived_from_declared_rows_only",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-25",
+      "rule": "RULE-24",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_both_entry_points_populate_both_gauges",
       "status": "pass",
       "tier": "integration"
     }
