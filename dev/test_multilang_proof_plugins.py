@@ -558,6 +558,7 @@ class TestTypeScriptProofPlugin:
         assert result.returncode == 0, (
             f"reporter harness failed:\nSTDOUT:{result.stdout}\nSTDERR:{result.stderr}"
         )
+        return result
 
     @pytest.mark.proof("proof_plugins_vitest", "PROOF-2", "RULE-2", tier="integration")
     def test_vitest_reporter_onfinished_walk(self, tmp_path):
@@ -2495,3 +2496,185 @@ class TestDeterministicProofEntryOrder:
     def test_xunit_entry_order_is_ordinal_and_stable(self, tmp_path):
         first, second = self._two_runs(tmp_path, self._run_xunit, sub='svc', seed=False)
         _assert_stable_order(first, second, 'xunit_purlin', _ORDINAL_IDS_NO_KEPT)
+
+
+# ---------------------------------------------------------------------------
+# proof_common RULE-9: the fallback warning, on all 8 plugins.
+# A feature with no spec still gets its evidence written, under specs/, and the
+# warning has to say where it went and how to stop it happening again.
+# ---------------------------------------------------------------------------
+
+def _warn_project(tmp_path):
+    """A project holding an empty `specs/` tree: the fallback directory exists,
+    so every plugin can write into it, and no spec in it matches the feature,
+    so every plugin takes its RULE-9 branch."""
+    (tmp_path / 'specs').mkdir(exist_ok=True)
+    return tmp_path
+
+
+def _warn_pytest(root, feature):
+    shutil.copy(os.path.join(PROOF_SCRIPTS, 'pytest_purlin.py'), str(root / 'conftest.py'))
+    (root / 'test_warn.py').write_text(
+        'import pytest\n'
+        f'@pytest.mark.proof("{feature}", "PROOF-1", "RULE-1")\n'
+        'def test_it(): assert True\n')
+    return subprocess.run(
+        [sys.executable, '-m', 'pytest', 'test_warn.py', '-q', '--no-header',
+         '-p', 'no:cacheprovider'],
+        capture_output=True, text=True, cwd=str(root), env=_env(None))
+
+
+def _warn_shell(root, feature):
+    script = root / 'warn.sh'
+    script.write_text(
+        '#!/usr/bin/env bash\nset -euo pipefail\n'
+        'source ' + os.path.join(PROOF_SCRIPTS, 'shell_purlin.sh') + '\n'
+        f'purlin_proof "{feature}" "PROOF-1" "RULE-1" pass "it"\n'
+        'purlin_proof_finish\n')
+    return subprocess.run(['bash', str(script)], capture_output=True, text=True,
+                          cwd=str(root), env=_env(None))
+
+
+def _warn_jest(root, feature):
+    glob_dir = root / 'node_modules' / 'glob'
+    glob_dir.mkdir(parents=True, exist_ok=True)
+    (glob_dir / 'package.json').write_text('{"name":"glob","version":"0.0.0","main":"index.js"}')
+    (glob_dir / 'index.js').write_text(_GLOB_SHIM)
+    shutil.copy(os.path.join(PROOF_SCRIPTS, 'jest_purlin.js'), str(root / 'jest_purlin.js'))
+    harness = root / 'harness.cjs'
+    harness.write_text(
+        'const Reporter = require("./jest_purlin.js");\n'
+        f'const r = new Reporter({{ rootDir: {json.dumps(str(root))} }}, {{}});\n'
+        'r.onTestResult(null, { testFilePath: '
+        + json.dumps(str(root / 'tests' / 'warn.test.js')) + ', testResults: [\n'
+        f'  {{ title: "it [proof:{feature}:PROOF-1:RULE-1]", status: "passed" }},\n'
+        ']});\n'
+        'r.onRunComplete();\n')
+    return subprocess.run(['node', str(harness)], capture_output=True, text=True,
+                          cwd=str(root), env=_env(None))
+
+
+def _warn_vitest(root, feature):
+    (root / 'tests').mkdir(exist_ok=True)
+    (root / 'tests' / 'warn.test.ts').write_text('// fixture\n')
+    files_js = (
+        '[{ type: "suite", filepath: '
+        + json.dumps(str(root / 'tests' / 'warn.test.ts')) + ', tasks: [\n'
+        f'  {{ type: "test", name: "it [proof:{feature}:PROOF-1:RULE-1:unit]",'
+        ' result: { state: "pass" } },\n'
+        ']}]')
+    return TestTypeScriptProofPlugin()._drive_reporter(root, files_js, env=_env(None))
+
+
+def _warn_c(root, feature):
+    shutil.copy(os.path.join(PROOF_SCRIPTS, 'c_purlin.h'), str(root))
+    src = root / 't.c'
+    src.write_text(
+        '#include "c_purlin.h"\nint main(void) {\n'
+        f'  purlin_proof("{feature}", "PROOF-1", "RULE-1", 1, "it", "tests/t.c", "unit");\n'
+        '  purlin_proof_finish();\n  return 0;\n}\n')
+    binary = root / 't'
+    cc = subprocess.run(['gcc', '-o', str(binary), str(src), '-I', str(root)],
+                        capture_output=True, text=True)
+    assert cc.returncode == 0, cc.stderr
+    run = subprocess.run([str(binary)], capture_output=True, text=True)
+    assert run.returncode == 0, run.stderr
+    return subprocess.run([sys.executable, os.path.join(PROOF_SCRIPTS, 'c_purlin_emit.py')],
+                          input=run.stdout, capture_output=True, text=True,
+                          cwd=str(root), env=_env(None))
+
+
+def _warn_sql(root, feature):
+    (root / 'tests').mkdir(exist_ok=True)
+    (root / 'tests' / 'warn.sql').write_text(
+        f"-- @purlin {feature} PROOF-1 RULE-1 unit\n-- Test: it\nSELECT 'PASS';\n")
+    return subprocess.run(
+        ['bash', os.path.join(PROOF_SCRIPTS, 'sql_purlin.sh'), 'tests/warn.sql'],
+        capture_output=True, text=True, cwd=str(root), env=_env(None))
+
+
+def _warn_php(root, feature):
+    (root / 'tests').mkdir(exist_ok=True)
+    (root / 'tests' / 'WarnTest.php').write_text(
+        '<?php\n'
+        f'/** @purlin {feature} PROOF-1 RULE-1 unit */\n'
+        'function test_it() { }\n')
+    return subprocess.run(
+        ['php', os.path.join(PROOF_SCRIPTS, 'phpunit_purlin.php'), 'tests/WarnTest.php'],
+        capture_output=True, text=True, cwd=str(root), env=_env(None))
+
+
+def _warn_xunit(root, feature):
+    (root / 'logger').mkdir()
+    shutil.copy(_XUNIT_LOGGER_SRC, str(root / 'logger' / 'PurlinProofLogger.cs'))
+    (root / 'logger' / 'logger.csproj').write_text(_LOGGER_CSPROJ)
+    (root / 'tests').mkdir()
+    (root / 'tests' / 'tests.csproj').write_text(_TEST_CSPROJ)
+    (root / 'tests' / 'Tests.cs').write_text(
+        'using Xunit;\nnamespace Svc.Tests {\n  public class WarnTests {\n'
+        f'    [Fact][Trait("PurlinProof","{feature}:PROOF-1:RULE-1:unit")]\n'
+        '    public void It() { Assert.True(true); }\n'
+        '  }\n}\n')
+    env = _env(None)
+    env.update(DOTNET_CLI_TELEMETRY_OPTOUT='1', DOTNET_NOLOGO='1')
+    return subprocess.run(
+        ['dotnet', 'test', 'tests/tests.csproj', '--logger', 'purlin',
+         '--', 'RunConfiguration.CollectSourceInformation=true'],
+        cwd=str(root), capture_output=True, text=True, env=env)
+
+
+# One arm per plugin, each skipped only for its own missing toolchain, so a host
+# without php still proves the other seven.
+_FALLBACK_ARMS = (
+    pytest.param('pytest', _warn_pytest, id='pytest'),
+    pytest.param('shell', _warn_shell, id='shell'),
+    pytest.param('jest', _warn_jest, id='jest',
+                 marks=pytest.mark.skipif(not shutil.which('node'),
+                                          reason='node not available')),
+    pytest.param('vitest', _warn_vitest, id='vitest',
+                 marks=pytest.mark.skipif(
+                     not _node_can_run_ts(),
+                     reason='node with a TS loader (tsc or type-stripping) not available')),
+    pytest.param('c', _warn_c, id='c',
+                 marks=pytest.mark.skipif(not shutil.which('gcc'),
+                                          reason='gcc not available')),
+    pytest.param('sql', _warn_sql, id='sql',
+                 marks=pytest.mark.skipif(not shutil.which('sqlite3'),
+                                          reason='sqlite3 not available')),
+    pytest.param('php', _warn_php, id='php',
+                 marks=pytest.mark.skipif(not shutil.which('php'),
+                                          reason='php not available')),
+    pytest.param('xunit', _warn_xunit, id='xunit',
+                 marks=pytest.mark.skipif(not shutil.which('dotnet'),
+                                          reason='dotnet SDK not available')),
+)
+
+
+class TestFallbackWarningPerPlugin:
+    """proof_common RULE-9 / PROOF-9: one arm per plugin, on the real writer."""
+
+    @pytest.mark.parametrize('plugin,driver', _FALLBACK_ARMS)
+    @pytest.mark.proof("proof_common", "PROOF-9", "RULE-9", tier="integration")
+    def test_fallback_warning_names_the_feature_the_path_and_the_command(
+            self, tmp_path, plugin, driver):
+        feature = f'unspecced_{plugin}_feature'
+        root = _warn_project(tmp_path)
+        proc = driver(root, feature)
+        assert proc.returncode == 0, f"{plugin}:\n{proc.stdout}\n{proc.stderr}"
+        # The .NET test platform owns the logger's streams and folds its stderr
+        # into the `dotnet test` console output, so this reads both.
+        out = proc.stderr + proc.stdout
+        assert feature in out, (
+            f"{plugin} must name the feature with no spec in its warning:\n{out}")
+        assert 'purlin:spec' in out, (
+            f"{plugin} must name the `purlin:spec` command that creates the "
+            f"missing spec:\n{out}")
+        assert f'specs/{feature}.proofs-' in out, (
+            f"{plugin} must name the path it wrote the evidence to, so the "
+            f"fallback is not silent about where the proofs went:\n{out}")
+        # The warning is not a substitute for the write: the evidence is there.
+        written = [n for n in os.listdir(str(root / 'specs'))
+                   if n.startswith(f'{feature}.proofs-')]
+        assert written, (
+            f"{plugin} warned but wrote nothing under specs/: "
+            f"{os.listdir(str(root / 'specs'))}")

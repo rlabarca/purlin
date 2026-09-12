@@ -333,3 +333,38 @@ Landed with C1. Exact sentences are in the design notes; the constraints that ma
    proof; `.mjs` removed from the table fails the dispatch proof.
 5. Full sweep `bash dev/run_tests.sh` before handing the tree to the closeout session for
    receipts and the `verify:` commit.
+
+## DONE
+
+### B1
+
+`fix(proof_common): the SQL plugin's no-spec warning names the path and the purlin:spec hint like the other seven`
+
+Files touched:
+
+- `scripts/proof/sql_purlin.sh` (one line: the RULE-9 warning, now byte-identical in wording to `shell_purlin.sh`'s)
+- `dev/test_multilang_proof_plugins.py` (`TestFallbackWarningPerPlugin`, eight `_warn_*` drivers, `_warn_project`; `TestTypeScriptProofPlugin._drive_reporter` now returns its `CompletedProcess` so the vitest arm can read stderr)
+- `specs/_anchors/proof_common.md` (PROOF-9 amended)
+- `specs/_anchors/proof_common.proofs-integration.json` (8 new PROOF-9 entries)
+
+Maxima left in `specs/_anchors/proof_common.md`: RULE-21 / PROOF-27, unchanged. PROOF-9 was
+amended in place, not added; no new RULE id.
+
+Test counts, `dev/test_multilang_proof_plugins.py` run whole:
+
+- before: 71 passed, 0 skipped
+- after: 79 passed, 0 skipped (+8, one parametrised arm per plugin)
+- `bash dev/test_proof_plugins.sh`: 28/28 before and after; it never drives the SQL plugin.
+
+Mutation: the short warning (`print(f'WARNING: No spec found for feature \"{feature}\"', ...)`)
+put back at `sql_purlin.sh:224`. 1 failed, 78 passed, on the `[sql]` arm with
+AssertionError: "sql must name the `purlin:spec` command that creates the missing
+spec:", with the one-clause warning printed under it. Restored; 79 passed.
+
+Adjacent defect found, not fixed: this host's `dotnet` on PATH is 10.0.400 and ships only the
+10.0.11 runtime, while `_LOGGER_CSPROJ` and `_TEST_CSPROJ` target `net8.0`. Every xUnit case in
+`dev/test_multilang_proof_plugins.py` (6 failures, 6 collection errors) therefore fails on the
+bare PATH. `/opt/homebrew/opt/dotnet@8/bin` is installed and carries 8.0.31, so every run
+recorded above was made with that directory prepended to PATH and the file is green there,
+at HEAD as well as after this commit. Nothing in the repository pins the runtime; a consumer
+or CI host with only .NET 10 sees the same failures.

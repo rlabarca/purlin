@@ -221,7 +221,7 @@ for (feature, tier, plat), new_entries in proofs_by_key.items():
     suffix = f'{tier}@{plat}' if plat is not None else tier
     spec_dir = spec_dirs.get(feature)
     if spec_dir is None:
-        print(f'WARNING: No spec found for feature \"{feature}\"', file=sys.stderr)
+        print(f'WARNING: No spec found for feature \"{feature}\" — writing proofs to specs/{feature}.proofs-{suffix}.json. Create a spec with: purlin:spec {feature}', file=sys.stderr)
         spec_dir = 'specs'
     path = os.path.join(spec_dir, f'{feature}.proofs-{suffix}.json')
     existing = []

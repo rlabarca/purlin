@@ -567,6 +567,78 @@
       "test_name": "test_xunit_declared_marker_scopes_and_unmarked_stays_agnostic",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_fallback_warning_names_the_feature_the_path_and_the_command[c]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_fallback_warning_names_the_feature_the_path_and_the_command[jest]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_fallback_warning_names_the_feature_the_path_and_the_command[php]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_fallback_warning_names_the_feature_the_path_and_the_command[pytest]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_fallback_warning_names_the_feature_the_path_and_the_command[shell]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_fallback_warning_names_the_feature_the_path_and_the_command[sql]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_fallback_warning_names_the_feature_the_path_and_the_command[vitest]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "proof_common",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_fallback_warning_names_the_feature_the_path_and_the_command[xunit]",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }
