@@ -34,17 +34,17 @@ this plan; the rest is a recorded backlog.
 | Reporting | Verified, Passing and Proof Integrity split per platform when any proof declares `@on`; cards roll up and open a modal; `purlin:status` stays concise; Proof Design never splits. |
 | Carried forward | Runner-gated proofs warn, never block. `remote_verification` declares, branch protection enforces. Remote execution lives in `purlin:test`; `verify` stays read-only. No em-dashes in new prose. Rule + proof in the same commit; specs and proofs before receipts; `verify:` commit separate; `git pull --ff-only` after every push because CI commits back. |
 
-### Branch, merge, and the push that does not happen (decision: user, this session)
+### Branch and hand-off (decision: user, 2026-09-12)
 
-All work on `two-gauges-remote-verification`. Branch pushes to `origin` continue, because the
-runner loop needs them (three workflows fire per push; `git pull --ff-only` after each).
-`main` is merged **locally only** (`git checkout main && git merge --ff-only
-two-gauges-remote-verification`) and **never pushed to the remote in this plan**. The merge
-happens only after every phase is done, `bash dev/run_tests.sh` is green, `sync_status` reads all
-VERIFIED, and both quality gauges have been run for real on this repo (Proof Design via
-`purlin:audit --design`, Proof Integrity via `purlin:audit`, i.e. Tier 2a, which Phase 10.4 makes
-meaningful) with the bars in "Proof-quality gate" below met. If `--ff-only` refuses, stop and
-ask. The push of `main` is a TODO for a later context (see "TODO before pushing main").
+All work on `two-gauges-remote-verification`, which is pushed to `origin` after every phase
+(the runner loop needs it). **`main` is neither merged nor pushed in this plan.** The branch is
+picked up as is on the user's work machine (`git fetch && git checkout
+two-gauges-remote-verification`) for the ADO runner plan; the TODO list below is worked in a
+new context on this machine first. The eventual `--ff-only` merge and push of `main` happen
+after the ADO work, after both quality gauges have been run for real on this repo (Proof
+Design via `purlin:audit --design`, Proof Integrity via `purlin:audit`, i.e. Tier 2a, which
+Phase 10.4 makes meaningful) with the "Proof-quality gate" bars met. If `--ff-only` ever
+refuses, stop and ask.
 
 ### Execution strategy (context budget; decision: user)
 
@@ -112,7 +112,7 @@ Aggressively delegate. The main context orchestrates and never holds a test log:
 | 9 | Pre-push hook: the four planned defects plus the adjacent ones; hook reads the payload | 6 |
 | 10 | Trust and GxP fixes: git argument hardening, security anchor scope, manual proofs, evidence age, audit-cache integrity, auditor identity, housekeeping, tools/QA, environment ids for the four externally-gated suites | 6, 7, 9 |
 | 11 | Docs, one enforcement-layer reference, diagrams, RELEASE_NOTES, screenshots | all |
-| end | Real `purlin:audit --design` and `purlin:audit`; local `--ff-only` merge to `main`; NO push of `main`; TODO list written for the next context | all |
+| end | Real `purlin:audit --design` and `purlin:audit`; branch pushed; NO merge and NO push of `main`; TODO list written for the next context | all |
 
 Commit rhythm for every phase: `feat(...)`/`fix(...)` carrying code + spec rules + proofs in one
 commit; `python3 dev/issue_receipts.py`; separate `verify:` commit; `git pull --ff-only` after
@@ -1807,9 +1807,8 @@ user asked for (mobile OS ids are the same mechanism with an `os`), exercised on
   the rebase loop; `command grep`).
 - Final: `bash dev/run_tests.sh`, `python3 dev/issue_receipts.py`, `verify:` commit; run
   `purlin:audit --design` then `purlin:audit` on this repo and record both results in the DONE
-  section (this is Tier 2a); if the proof-quality bars hold, tell the user and merge locally:
-  `git checkout main && git merge --ff-only two-gauges-remote-verification`. **Do not push
-  `main`.** If `--ff-only` refuses, stop and ask.
+  section (this is Tier 2a); push the branch; **do not merge or push `main`** (it happens after
+  the ADO work; see "Branch and hand-off").
 
 ---
 
