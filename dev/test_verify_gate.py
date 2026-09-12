@@ -338,18 +338,34 @@ class TestDeclarationVersusEnforcement:
         root = _make_project(mode='required')
         try:
             _, out = _run(root)
-            assert re.search(r'(?i)declared', out), (
-                f"the output must call the field a declaration:\n{out}")
-            assert 'branch protection' in out, (
-                f"the output must name branch protection as the enforcement:"
-                f"\n{out}")
-            assert re.search(r'(?i)not the enforcement', out), (
-                f"the output must say the field is not the enforcement:\n{out}")
+            flat = ' '.join(out.split())
+            for phrase in (
+                    'remote_verification is DECLARED in .purlin/config.json',
+                    'It is not the enforcement.',
+                    'Enforcement is branch protection marking this job a '
+                    'required check.'):
+                assert phrase in flat, (
+                    f"the output does not carry {phrase!r}:\n{out}")
 
-            header = open(GATE_PY).read().split('"""')[1]
-            assert 'branch protection' in header, (
-                "the source header must carry the same split")
-            assert re.search(r'(?i)declare', header), header[:400]
+            header = ' '.join(open(GATE_PY).read().split('"""')[1].split())
+            for phrase in (
+                    '`remote_verification` field DECLARES the mode',
+                    'It is not the enforcement',
+                    'Enforcement is branch protection marking this job a '
+                    'required check'):
+                assert phrase in header, (
+                    f"the source header does not carry {phrase!r}")
+
+            # The inverse claim, in either place, is the failure this rule
+            # exists to catch: the config field described as the enforcement.
+            for claim in ('remote_verification enforces',
+                          'remote_verification is the enforcement',
+                          'config.json enforces'):
+                assert claim not in flat, (
+                    f"the output describes the config field as the gate: {claim!r}")
+                assert claim not in header, (
+                    f"the source header describes the config field as the gate: "
+                    f"{claim!r}")
         finally:
             shutil.rmtree(root)
 

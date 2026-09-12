@@ -179,6 +179,10 @@ class TestSecurityPatterns:
 
 
 EVIL_SOURCE = '--upload-pack=/bin/echo'
+# The two transports git will run a command for. RULE-6 refuses both
+# before any subprocess starts, not after quoting them safely.
+EXT_SOURCE = 'ext::sh -c "touch /tmp/purlin-pwned"'
+FD_SOURCE = 'fd::7'
 
 
 def _git(args, cwd=None, check=True):
@@ -236,6 +240,10 @@ class TestGitArgvHardening:
         _write_anchor(str(anchors), 'good_policy', bare, good_sha)
         _write_anchor(str(anchors), 'evil_policy', EVIL_SOURCE,
                       '1234567890abcdef1234567890abcdef12345678')
+        _write_anchor(str(anchors), 'ext_policy', EXT_SOURCE,
+                      '1234567890abcdef1234567890abcdef12345678')
+        _write_anchor(str(anchors), 'fd_policy', FD_SOURCE,
+                      '1234567890abcdef1234567890abcdef12345678')
 
         _git(['init', '-q'], cwd=str(project))
         _git(['config', 'user.email', 'test@test.com'], cwd=str(project))
@@ -256,15 +264,13 @@ class TestGitArgvHardening:
 
         assert calls, "no subprocess calls captured"
 
-        # The rejected Source never reaches git at all, and certainly never
+        # Each rejected Source never reaches git at all, and certainly never
         # ahead of an end-of-options separator.
-        for argv in calls:
-            if EVIL_SOURCE in argv:
-                idx = argv.index(EVIL_SOURCE)
-                seps = [i for i, a in enumerate(argv)
-                        if a in ('--end-of-options', '--')]
-                assert seps and min(seps) < idx, \
-                    f"{EVIL_SOURCE} reached git in option position: {argv}"
+        for rejected in (EVIL_SOURCE, EXT_SOURCE, FD_SOURCE):
+            for argv in calls:
+                assert rejected not in argv, (
+                    f"{rejected!r} reached git; RULE-6 rejects it before any "
+                    f"subprocess starts: {argv}")
 
         # Positive control: the safe url did reach ls-remote, and
         # --end-of-options sits immediately in front of it every time.
@@ -273,12 +279,35 @@ class TestGitArgvHardening:
         assert ls_remotes, \
             "no git ls-remote captured; the positive control would be vacuous"
         for argv in ls_remotes:
-            assert EVIL_SOURCE not in argv, \
-                f"rejected Source reached ls-remote: {argv}"
             assert bare in argv, f"expected the safe url in {argv}"
             url_idx = argv.index(bare)
             assert url_idx > 0 and argv[url_idx - 1] == '--end-of-options', \
                 f"--end-of-options does not precede the url: {argv}"
 
-        assert '(source rejected: begins with "-")' in text, \
-            f"status text does not name the rejection:\n{text}"
+        # `--` precedes every path argument. The path operands the server hands
+        # git here are repository-relative: `specs/` and spec paths under it.
+        def _is_path_operand(arg):
+            return arg == 'specs/' or arg.startswith('specs/') or arg.endswith('.md')
+
+        carried_a_path = []
+        for argv in calls:
+            if not argv or argv[0] != 'git':
+                continue
+            operands = [i for i, a in enumerate(argv) if _is_path_operand(a)]
+            if not operands:
+                continue
+            carried_a_path.append(argv)
+            first = min(operands)
+            assert first > 0 and argv[first - 1] == '--', (
+                f"a path argument reaches git with no -- immediately before "
+                f"it, so a path beginning with '-' would be read as an "
+                f"option: {argv}")
+        assert carried_a_path, (
+            "no captured git argv carried a path operand, so the -- check "
+            "would pass by matching nothing")
+
+        for reason in ('(source rejected: begins with "-")',
+                       '(source rejected: names an ext:: transport)',
+                       '(source rejected: names an fd:: transport)'):
+            assert reason in text, (
+                f"status text does not name the rejection {reason!r}:\n{text}")

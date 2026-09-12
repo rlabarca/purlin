@@ -74,6 +74,13 @@ class TestPurlinTeammateDefinitions:
             "purlin-builder is retired — it was never a spawnable type in consumer projects"
         assert not re.search(r'(?i)spawn', content), \
             "auditor must not instruct spawning another agent; the audit is read-only"
+        # The two literals a spawn instruction is actually written with. Absent
+        # from the definition, they are what a reintroduced delegation would add.
+        for token in ('Task(', 'subagent_type'):
+            assert token not in content, (
+                f"auditor names {token!r}, which is how an agent spawn is "
+                "written; the audit is read-only and remediation goes to "
+                "purlin:build")
         assert 'purlin:build' in content, \
             "auditor must route remediation to purlin:build"
 

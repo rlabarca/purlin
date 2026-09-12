@@ -15,5 +15,5 @@
 
 - PROOF-1 (RULE-1): Read `agents/purlin-auditor.md`; verify YAML frontmatter contains `name: purlin-auditor`, a `description:` field, and a `model:` field
 - PROOF-4 (RULE-4): Glob `agents/purlin-*.md`; verify `agents/purlin-auditor.md` is found. Glob `.claude/agents/purlin-*.md`; verify zero matches
-- PROOF-5 (RULE-5): Grep `agents/purlin-auditor.md` for `purlin-builder` and for a spawn instruction; verify neither appears, and verify it routes remediation to `purlin:build`
+- PROOF-5 (RULE-5): Read `agents/purlin-auditor.md`; verify it contains none of the four literals a delegation would be written with, `purlin-builder`, `spawn` (case-insensitive), `Task(` and `subagent_type`, and that it does contain `purlin:build`, the route remediation takes instead
 - PROOF-6 (RULE-6): Grep `agents/purlin-auditor.md` and verify it names `--write-cache`, forbids writing `.purlin/cache/audit_cache.json` directly, and gives the exclusive lock as the reason. Grep `skills/audit/SKILL.md` for the same division and verify it contains no sentence forbidding a subagent from writing the cache, and that it states the lead reads the cache back to verify the entries landed. Asserting on both files is the point: either file alone can be made to read correctly while the pair still disagrees

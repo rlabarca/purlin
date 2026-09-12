@@ -33,7 +33,7 @@
       "id": "PROOF-3",
       "rule": "RULE-3",
       "test_file": "dev/test_pre_push_hook.py",
-      "test_name": "test_no_specs_dir_exits_0_silently",
+      "test_name": "test_no_specs_dir_and_empty_specs_dir_both_exit_0_silently",
       "status": "pass",
       "tier": "integration"
     },
@@ -97,6 +97,24 @@
       "rule": "RULE-6",
       "test_file": "dev/test_pre_push_hook.py",
       "test_name": "test_crashed_runner_blocks_even_with_all_pass_proofs",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-28",
+      "rule": "RULE-6",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_pytest_exit_5_is_success_but_a_real_failure_is_not",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-29",
+      "rule": "RULE-6",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_jest_vitest_and_shell_arms_each_run_with_their_flags",
       "status": "pass",
       "tier": "integration"
     },
@@ -205,6 +223,15 @@
       "rule": "RULE-14",
       "test_file": "dev/test_pre_push_hook.py",
       "test_name": "test_missing_plugin_warns_in_warn_and_refuses_in_strict",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-30",
+      "rule": "RULE-14",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_first_candidate_carrying_the_gate_wins",
       "status": "pass",
       "tier": "integration"
     },

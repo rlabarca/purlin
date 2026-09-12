@@ -35,11 +35,24 @@ class TestFindProjectRoot:
             os.environ['PURLIN_PROJECT_ROOT'] = self._old_env
 
     @pytest.mark.proof("config_engine", "PROOF-1", "RULE-1")
-    def test_env_var_takes_precedence(self):
+    def test_env_var_takes_precedence_only_when_the_directory_exists(self):
         os.makedirs(os.path.join(self.tmpdir, '.purlin'))
         os.environ['PURLIN_PROJECT_ROOT'] = self.tmpdir
-        result = find_project_root()
-        assert result == self.tmpdir
+        assert find_project_root() == self.tmpdir
+
+        # The 'and the directory exists' half of the rule: a stale root that
+        # was deleted (a worktree removed, a container rebuilt) is not handed
+        # back. The climb runs instead and finds the real marker.
+        gone = os.path.join(self.tmpdir, 'deleted_root')
+        assert not os.path.isdir(gone)
+        os.environ['PURLIN_PROJECT_ROOT'] = gone
+        marker_root = os.path.join(self.tmpdir, 'real_project')
+        os.makedirs(os.path.join(marker_root, '.purlin'))
+        deep = os.path.join(marker_root, 'src')
+        os.makedirs(deep)
+        assert find_project_root(start_dir=deep) == marker_root, (
+            "PURLIN_PROJECT_ROOT names a directory that does not exist; "
+            "find_project_root must fall through to the .purlin climb")
 
     @pytest.mark.proof("config_engine", "PROOF-2", "RULE-2")
     def test_climbs_to_purlin_marker(self):

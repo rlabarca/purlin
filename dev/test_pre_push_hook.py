@@ -305,9 +305,11 @@ class TestRule2PartialAllows:
 class TestRule3NoSpecsSilent:
 
     @pytest.mark.proof("pre_push_hook", "PROOF-3", "RULE-3", tier="integration")
-    def test_no_specs_dir_exits_0_silently(self, tmp_path):
-        """When no specs/ directory exists the hook must exit 0 with empty
-        stdout: it has nothing to check."""
+    def test_no_specs_dir_and_empty_specs_dir_both_exit_0_silently(self, tmp_path):
+        """Both branches of RULE-3. With no specs/ directory at all the hook
+        exits 0 with empty stdout; with specs/ present but holding zero .md
+        files (only specs/hooks/NOTES.txt) it does the same, so the walk stops
+        before any runner or gate is invoked."""
         tmpdir = str(tmp_path)
         os.makedirs(os.path.join(tmpdir, ".purlin"))
         _write_json(os.path.join(tmpdir, ".purlin", "config.json"),
@@ -321,6 +323,22 @@ class TestRule3NoSpecsSilent:
         assert exit_code == 0, f"Expected exit 0 (no specs), got {exit_code}\n{output}"
         assert output.strip() == "", (
             f"Expected empty output when no specs exist, got:\n{output!r}")
+
+        # Branch two: the directory exists and holds no .md file.
+        os.makedirs(os.path.join(tmpdir, "specs", "hooks"))
+        with open(os.path.join(tmpdir, "specs", "hooks", "NOTES.txt"), "w") as fh:
+            fh.write("not a spec\n")
+        assert os.path.isdir(os.path.join(tmpdir, "specs"))
+        _commit(tmpdir, "an empty specs directory")
+
+        exit_empty, out_empty = _run_hook(tmpdir)
+
+        assert exit_empty == 0, (
+            f"Expected exit 0 (specs/ holds no .md file), got {exit_empty}"
+            f"\n{out_empty}")
+        assert out_empty.strip() == "", (
+            f"Expected empty output when specs/ holds no .md file, got:"
+            f"\n{out_empty!r}")
 
 
 # ---------------------------------------------------------------------------
@@ -536,6 +554,100 @@ class TestRule6UnitTierOnly:
         assert "pytest" in output, (
             f"The block must name the runner that crashed:\n{output}")
         assert "PUSH BLOCKED" in output, f"{output}"
+
+
+    @pytest.mark.proof("pre_push_hook", "PROOF-28", "RULE-6", tier="integration")
+    def test_pytest_exit_5_is_success_but_a_real_failure_is_not(self, tmp_path):
+        """pytest exits 5 when it collected nothing. RULE-6 exempts exactly
+        that code: a project with conftest.py and no test file at all must
+        exit 0 with no PUSH BLOCKED, while the same project with one failing
+        test (pytest exit 1) must block naming the runner and its exit code."""
+        tmpdir = str(tmp_path)
+        _create_test_project(tmpdir, num_rules=1)
+        _write_proof_file(tmpdir, "test_feature",
+                          [("PROOF-1", "RULE-1", "pass")])
+        _set_config_field(tmpdir, "test_framework", "pytest")
+        open(os.path.join(tmpdir, "conftest.py"), "w").close()
+        _commit(tmpdir, "a project with no tests to collect")
+
+        exit_code, output = _run_hook(tmpdir)
+
+        assert "running unit-tier tests (pytest)" in output, (
+            f"the pytest arm did not run, so exit 5 was never reached:\n{output}")
+        assert exit_code == 0, (
+            f"pytest collected nothing (exit 5), which RULE-6 counts as "
+            f"success; got exit {exit_code}\n{output}")
+        assert "PUSH BLOCKED" not in output, output
+
+        # The exemption is for 5 and nothing else: one failing test is exit 1.
+        with open(os.path.join(tmpdir, "test_collected.py"), "w") as fh:
+            fh.write('def test_fails():\n    assert False\n')
+        _commit(tmpdir, "one failing test")
+
+        exit_fail, out_fail = _run_hook(tmpdir)
+
+        assert exit_fail == 1, (
+            f"a pytest exit of 1 must block the push, got {exit_fail}\n{out_fail}")
+        assert "PUSH BLOCKED: the pytest runner exited 1" in out_fail, out_fail
+
+    @pytest.mark.proof("pre_push_hook", "PROOF-29", "RULE-6", tier="integration")
+    def test_jest_vitest_and_shell_arms_each_run_with_their_flags(self, tmp_path):
+        """The three non-pytest arms. With `npx` replaced by a recorder on
+        PATH, `"test_framework": "jest,vitest,shell"` must produce exactly the
+        argument lines `jest --testPathPattern=unit --passWithNoTests` and
+        `vitest run --passWithNoTests`, in that order, and the shell arm must
+        run the project's *.test.sh file."""
+        tmpdir = str(tmp_path)
+        _create_test_project(tmpdir, num_rules=1)
+        _write_proof_file(tmpdir, "test_feature",
+                          [("PROOF-1", "RULE-1", "pass")])
+        _set_config_field(tmpdir, "test_framework", "jest,vitest,shell")
+
+        # A recorder on PATH in place of npx: the arms' flags are what the
+        # hook passes, so the recording is the observation.
+        record = os.path.join(tmpdir, "npx-calls.txt")
+        fakebin = os.path.join(tmpdir, "fakebin")
+        os.makedirs(fakebin)
+        npx = os.path.join(fakebin, "npx")
+        with open(npx, "w") as fh:
+            fh.write('#!/usr/bin/env bash\n'
+                     f'printf "%s\\n" "$*" >> "{record}"\n'
+                     'exit 0\n')
+        os.chmod(npx, 0o755)
+
+        sentinel_shell = os.path.join(tmpdir, ".sentinel_shell")
+        with open(os.path.join(tmpdir, "unit.test.sh"), "w") as fh:
+            fh.write(f'#!/usr/bin/env bash\ntouch "{sentinel_shell}"\n')
+
+        _commit(tmpdir, "three runner arms")
+
+        env = _clean_env()
+        env["PATH"] = fakebin + os.pathsep + env["PATH"]
+        exit_code, output = _run_hook(tmpdir, env=env)
+
+        assert exit_code == 0, f"{exit_code}\n{output}"
+        assert os.path.exists(record), (
+            f"npx was never invoked, so no jest or vitest arm ran:\n{output}")
+        with open(record) as fh:
+            lines = [line.strip() for line in fh if line.strip()]
+        assert lines == ["jest --testPathPattern=unit --passWithNoTests",
+                         "vitest run --passWithNoTests"], (
+            f"the jest and vitest arms did not run with RULE-6's flags: {lines}")
+        assert os.path.exists(sentinel_shell), (
+            f"the shell arm did not run unit.test.sh:\n{output}")
+
+        # No `|| true` on a non-pytest arm either: make npx exit 3 and the
+        # push must be blocked naming the runner and the code.
+        with open(npx, "w") as fh:
+            fh.write('#!/usr/bin/env bash\nexit 3\n')
+        os.chmod(npx, 0o755)
+
+        exit_broken, out_broken = _run_hook(tmpdir, env=env)
+
+        assert exit_broken == 1, (
+            f"a jest exit of 3 must block the push, got {exit_broken}"
+            f"\n{out_broken}")
+        assert "PUSH BLOCKED: the jest runner exited 3" in out_broken, out_broken
 
 
 # ---------------------------------------------------------------------------
@@ -929,6 +1041,85 @@ class TestRule14PluginResolution:
             f"strict must fail closed, got exit {exit_strict}\n{out_strict}")
         assert tmpdir in out_strict, (
             f"The searched paths must be named:\n{out_strict}")
+
+    @staticmethod
+    def _marker_plugin(base: str, marker: str) -> str:
+        """A plugin root whose gate announces itself before delegating.
+
+        The wrapper runs the real gate under __main__, so the verdict, the
+        exit code and the `mode=`/`frameworks=` lines are the real ones; only
+        the marker on stderr says which copy was chosen.
+        """
+        hooks = os.path.join(base, "scripts", "hooks")
+        os.makedirs(hooks, exist_ok=True)
+        with open(os.path.join(hooks, "pre_push_gate.py"), "w") as fh:
+            fh.write("import sys, runpy\n"
+                     f'sys.stderr.write("PLUGIN MARKER: {marker}\\n")\n'
+                     f'runpy.run_path({GATE_SCRIPT!r}, run_name="__main__")\n')
+        return base
+
+    @pytest.mark.proof("pre_push_hook", "PROOF-30", "RULE-14", tier="integration")
+    def test_first_candidate_carrying_the_gate_wins(self, tmp_path):
+        """The resolution order, with more than one candidate carrying a gate.
+        Each plugin root's gate prints `PLUGIN MARKER: <id>` on stderr and then
+        runs the real gate, so the marker in the output names the copy that
+        ran. With the script installed where its own ../.. holds no gate,
+        PURLIN_PLUGIN_ROOT beats CLAUDE_PLUGIN_ROOT; swapping the two swaps
+        the winner; and a symlinked install beats both, because readlink
+        resolves the candidate that comes first."""
+        tmpdir = str(tmp_path)
+        _create_test_project(tmpdir, num_rules=1, with_gate=False)
+        _write_proof_file(tmpdir, "test_feature",
+                          [("PROOF-1", "RULE-1", "pass")])
+        _set_config_field(tmpdir, "test_framework", "shell")
+        _commit(tmpdir, "project with no plugin of its own")
+
+        plugin_a = self._marker_plugin(os.path.join(tmpdir, "plugin_a"), "A")
+        plugin_b = self._marker_plugin(os.path.join(tmpdir, "plugin_b"), "B")
+
+        git_hooks_dir = os.path.join(tmpdir, ".git", "hooks")
+        os.makedirs(git_hooks_dir, exist_ok=True)
+        installed = os.path.join(git_hooks_dir, "pre-push")
+        shutil.copy2(HOOK_SCRIPT, installed)
+
+        env = _clean_env()
+        env["PURLIN_PLUGIN_ROOT"] = plugin_a
+        env["CLAUDE_PLUGIN_ROOT"] = plugin_b
+        exit_code, output = _run_hook(tmpdir, script=installed, env=env)
+        assert exit_code == 0, f"{exit_code}\n{output}"
+        assert "PLUGIN MARKER: A" in output, (
+            f"PURLIN_PLUGIN_ROOT must be tried before CLAUDE_PLUGIN_ROOT:"
+            f"\n{output}")
+        assert "PLUGIN MARKER: B" not in output, (
+            f"the later candidate ran as well, so the first did not win:"
+            f"\n{output}")
+
+        # Swap them: the winner follows the position, not the directory.
+        env["PURLIN_PLUGIN_ROOT"] = plugin_b
+        env["CLAUDE_PLUGIN_ROOT"] = plugin_a
+        exit_swap, out_swap = _run_hook(tmpdir, script=installed, env=env)
+        assert exit_swap == 0, f"{exit_swap}\n{out_swap}"
+        assert "PLUGIN MARKER: B" in out_swap, out_swap
+        assert "PLUGIN MARKER: A" not in out_swap, out_swap
+
+        # A symlinked install: readlink resolves the script to plugin_s, whose
+        # ../.. carries a gate, and that candidate is ahead of both variables.
+        plugin_s = self._marker_plugin(os.path.join(tmpdir, "plugin_s"), "S")
+        shutil.copy2(HOOK_SCRIPT,
+                     os.path.join(plugin_s, "scripts", "hooks", "pre-push.sh"))
+        linked = os.path.join(git_hooks_dir, "pre-push-linked")
+        os.symlink(os.path.join(plugin_s, "scripts", "hooks", "pre-push.sh"),
+                   linked)
+        assert os.path.islink(linked)
+
+        exit_link, out_link = _run_hook(tmpdir, script=linked, env=env)
+        assert exit_link == 0, f"{exit_link}\n{out_link}"
+        assert "PLUGIN MARKER: S" in out_link, (
+            f"the symlinked install's own root must be the first candidate:"
+            f"\n{out_link}")
+        for loser in ("PLUGIN MARKER: A", "PLUGIN MARKER: B"):
+            assert loser not in out_link, (
+                f"{loser} ran ahead of the symlink-resolved root:\n{out_link}")
 
 
 # ---------------------------------------------------------------------------

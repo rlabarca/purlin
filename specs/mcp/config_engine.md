@@ -22,7 +22,7 @@
 
 ## Proof
 
-- PROOF-1 (RULE-1): Set PURLIN_PROJECT_ROOT to a temp dir with .purlin/ inside; call find_project_root; verify it returns that dir without climbing
+- PROOF-1 (RULE-1): Set `PURLIN_PROJECT_ROOT` to a temp dir holding `.purlin/`; call `find_project_root()` and verify it returns exactly that dir without climbing. Then set `PURLIN_PROJECT_ROOT` to `<tmp>/deleted_root`, which is not created, put a real `.purlin/` marker at `<tmp>/real_project`, and call `find_project_root(start_dir="<tmp>/real_project/src")`; verify it returns `<tmp>/real_project` and never the nonexistent env path, so the rule's 'and the directory exists' condition is what decides
 - PROOF-2 (RULE-2): Create /tmp/a/b/c with .purlin/ in /tmp/a; call find_project_root(start_dir="/tmp/a/b/c"); verify returns /tmp/a
 - PROOF-3 (RULE-3): Call find_project_root on a dir with no .purlin/ ancestor; verify returns cwd
 - PROOF-4 (RULE-4): Create config.json with {"team": "default", "shared": "base"} and config.local.json with {"shared": "override", "local_only": true}; call resolve_config; verify result is {"team": "default", "shared": "override", "local_only": true} — base key preserved, shared key overridden, local-only key included
@@ -31,7 +31,7 @@
 - PROOF-7 (RULE-7): Call resolve_config in a dir with no config files; verify returns {}
 - PROOF-8 (RULE-8): Create config.json with {"team": "v1"}; call update_config(root, "user_pref", "dark"); verify config.json still has {"team": "v1"} unchanged and config.local.json has {"user_pref": "dark"}
 - PROOF-9 (RULE-9): Create config.local.json with {"existing": "keep"}; call update_config(root, "added", "new"); verify config.local.json has both {"existing": "keep", "added": "new"}
-- PROOF-10 (RULE-10): Call update_config; verify no .tmp file remains and os.replace is used in source
+- PROOF-10 (RULE-10): Wrap `os.replace` in a recording spy and call `update_config(root, "key", "val")`; verify the spy recorded at least one call, that the last call's source ends in `.tmp` and its destination is `config.local.json`, that the file on disk parses to `{"key": "val"}` and that no `config.local.json.tmp` remains. Then, with `config.local.json` already holding `{"key": "val"}`, patch `os.replace` to raise `OSError("simulated crash mid-rename")` and call `update_config(root, "key", "other")`; verify the file still parses to exactly `{"key": "val"}` and no `.tmp` file is left, so an interrupted replace leaves no partial write and an in-place write would fail both halves
 - PROOF-11 (RULE-4): Create config.json with {"report": true, "version": "0.9.0"} and config.local.json with {"pre_push": "strict"}; call resolve_config; verify result has all three keys — framework key "report" visible despite not being in local. This is the key scenario: framework adds a new default, existing user keeps their overrides, new default is visible
 - PROOF-13 (RULE-11): Create config.json with `platforms` holding two entries (`win-2022` and `mac-14`) and config.local.json with `platforms` holding only `ubuntu-24`; call resolve_config and verify `result["platforms"]` equals exactly `{"ubuntu-24": ...}` with neither base entry present, so a deep merge that kept `win-2022` or `mac-14` fails
 - PROOF-12 (RULE-8): Call update_config to set "report" to false; verify config.json is untouched and config.local.json now has "report": false; call resolve_config; verify merged result has "report": false (local override wins)

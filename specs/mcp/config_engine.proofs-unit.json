@@ -6,7 +6,7 @@
       "id": "PROOF-1",
       "rule": "RULE-1",
       "test_file": "dev/test_config_engine.py",
-      "test_name": "test_env_var_takes_precedence",
+      "test_name": "test_env_var_takes_precedence_only_when_the_directory_exists",
       "status": "pass",
       "tier": "unit"
     },
