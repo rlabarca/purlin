@@ -1151,6 +1151,122 @@ revert cycle, roughly doubling the cost of writing a proof.
    "runner not recorded" gap from the handoff closes by construction.
 4. Receipts; DONE section.
 
+## DONE — Phase 7: `purlin:init --update` and this repo's migration (`feat(sync_status,skill_init): purlin:init --update and the migration script`, `chore(update): migrate to 0.10.0 (...)`, two `fix(verify_gate):` commits, receipts in the `verify:` commit that follows them)
+
+- **Commits, in order.** `d51bcb34` feat (7.1, 7.2, 7.3, 7.5), `310b6c10` chore(update) (7.4 steps
+  1 and 2), `6c94a7b1` verify: 38/41, `0fb5b73c` test(static_checks) (removes the hand-moved proof
+  file so the runner commits it), `56b3d746` the runner's own commit, `8912d4df` and `8d08e612`
+  fix(verify_gate) (the trailer defect and the YAML slip it introduced), `c60ad919` the runner's
+  commit again, then the closing `verify:` 39/41 carrying this section.
+- **Numbers taken (landing order).** `sync_status` RULE-55 with PROOF-89, RULE-38 amended with
+  PROOF-68 rewritten; next free RULE-56/PROOF-90. `report_data` RULE-34 with PROOF-35; next free
+  RULE-35/PROOF-36. `verify_gate` RULE-11 with PROOF-11, RULE-7 amended with PROOF-7 rewritten and
+  PROOF-10 extended; next free RULE-12/PROOF-12. `skill_init` RULE-49..57 with PROOF-52..60,
+  RULE-9/11 and PROOF-9/11 amended for the eighth config field; next free RULE-58/PROOF-61.
+  `skill_verify` RULE-13 with PROOF-13; next free RULE-14/PROOF-14. `skill_build` RULE-15 with
+  PROOF-22; next free RULE-16/PROOF-23. `skill_audit` RULE-21 with PROOF-21; next free
+  RULE-22/PROOF-22. `purlin_references` RULE-24/25 with PROOF-24/25, PROOF-18 extended; next free
+  RULE-26/PROOF-26. `purlin_skills` RULE-16/17 with PROOF-16/17; next free RULE-18/PROOF-18.
+  `purlin_agent` RULE-12 with PROOF-12 (the agent file is outside `purlin_skills`' Scope, so the
+  agent half of 7.5 landed in its own spec); next free RULE-13/PROOF-13. `purlin_report` RULE-23
+  amended, PROOF-23 extended. `schema_proof_format` RULE-8 amended and PROOF-9 extended, because
+  the 6.3 legacy-file advisory lost its directive to the shared one.
+- **Detector.** `_pending_migrations(project_root, config)` in `purlin_server.py` with the seven
+  ids, `_pending_migration_lines` for the preamble, `_legacy_marker_hits`, `_stale_plugin_copies`,
+  `_config_field_gaps`, `_v1_receipts` and `_template_config` beside it. Seven marker syntaxes,
+  one per plugin grammar (pytest, jest/vitest, shell, C, phpunit, sql, xunit). The scan skips every
+  dot directory, so `.claude/worktrees/` (other agents' checkouts) and `.git` are never read or
+  rewritten.
+- **Decisions the phase text left open.** (1) `--check` exits 1 only for the migrations that make
+  the evidence a run is about to write unreliable (every `legacy-*` id and `plugin-copies-stale`),
+  and exits 0 while reporting `config-fields-missing` and `receipt-v1`. 7.1 said "exit 1 when
+  pending"; 6.3b said the preflight fails on those two classes. A preflight that failed on a
+  version 1 receipt would block the CI of every project that has not verified since the formula
+  changed, and this repository would have been the first. (2) An empty or unreadable
+  `.purlin/config.json` reports no `config-fields-missing`: an absent config is `purlin:init`'s
+  case. (3) The 6.3 legacy-file advisory keeps its detail lines and loses its directive; one
+  directive closes the shared advisory (`schema_proof_format` RULE-8 amended, PROOF-9 asserts
+  exactly one). (4) The legacy-MCP advisory is one entry of the shared list, as 7.1 asked.
+- **Migration output for this repository** (`--apply ... --platform-id windows-2022`):
+
+      rewrote 2 proof tags in specs/audit/static_checks.md to @unit @on(windows-2022)
+      git mv specs/audit/static_checks.proofs-windows.json specs/audit/static_checks.proofs-unit@windows-2022.json
+      stamped platform "windows-2022" on specs/audit/static_checks.proofs-unit@windows-2022.json and its 2 entries
+      rewrote 2 markers in dev/test_windows_native.py to tier unit with on(windows-2022)
+      -> Run: purlin:verify  (a receipt is a claim that tests ran; this script never writes one)
+
+  `plugin-copies-stale` and `config-fields-missing` were already current, so the script had nothing
+  to rewrite for them. `static_checks` PROOF-53/54 read `@unit @on(windows-2022)`, the scoped file
+  carries `platform` at the top level and on both entries, and `--check` now exits 0 with
+  `receipt-v1` as the only entry left.
+- **`--update` does not scaffold runners.** `platforms.windows-2022` and the workflow rename were
+  done by hand, as 7.4 step 2 says: registering a platform and writing its workflow is
+  `purlin:test`'s consent path, and the skill text says so.
+- **Two defects the dogfood found, both fixed under a rule.** (1) The migration produced a proof
+  file byte-identical to what the plugin writes on the runner, so the commit-back's
+  `git diff --cached --quiet` guard found nothing to commit and the file's provenance stayed the
+  local rename: `runner not recorded` after a green run. The fix is not a code change but an act:
+  the file was removed so the runner wrote and committed it (`0fb5b73c`). 7.4 step 3's "closes by
+  construction" holds only when the rename changes the file's content, which it does not.
+  (2) `git commit -m "subject" -m "Purlin-Runner: ..." -m "Purlin-Platform: ..."` puts each `-m`
+  in its own paragraph, and git parses trailers out of the last paragraph only, so `Purlin-Runner`
+  was invisible to `git log --format=%(trailers:key=Purlin-Runner,valueonly)` while looking
+  correct in the workflow and in `git log`. The old PROOF-7 asserted the text and not the effect.
+  RULE-7 now requires both trailers in one `-m`, joined with `printf` (a literal newline inside the
+  argument ends the YAML block scalar, which is what run `34667665739` failed on), and PROOF-7
+  proves the reason: two commits in a temp repository, one per spelling, read back through
+  `%(trailers:key=...)`.
+- **CI.** Push 1 (`6c94a7b1`): version-check `34667337667` success, verify-gate `34667337669`
+  success, purlin-windows-2022-proofs `34667337691` success but "No proof-file changes to commit".
+  Dispatch `34667424240` success, committing `56b3d746` with the trailers in two `-m`. Push 2
+  (`8912d4df`): `34667665739` failed at the workflow file (the raw newline). Push 3 (`8d08e612`):
+  purlin-windows-2022-proofs `34667718333` and verify-gate `34667718329` both success, the runner
+  committing `c60ad919`, whose `Purlin-Runner: github-actions/windows-2022` and
+  `Purlin-Platform: windows-2022` both parse. `sync_status` now reads
+  `✓ @on(windows-2022) proved remotely just now (github-actions/windows-2022)` and the Platforms
+  block reads `runner: windows-2022 (2 proofs; github workflow purlin-windows-2022-proofs)`.
+- **Receipts: 39 of 41.** `static_checks` is issuable now that a runner committed its scoped file
+  with a readable trailer. `figma_web` (`dev/test_e2e_figma_web.py`) and `skill_spec`
+  (`dev/test_e2e_build_agent.py`) stay witness-less until Phase 10.6 gives the externally-gated
+  suites environment ids. The issuer refuses every receipt while a `legacy-*` migration is pending,
+  so the order is fixed: migrate, then verify. That is why the feat commit carries no receipts of
+  its own and the first `verify:` after it reads 38/41.
+- **Pass D.** `--check-proof-design` on all twelve edited specs: every description this phase wrote
+  grades PROVABLE except `skill_audit` PROOF-21, `purlin_skills` PROOF-17 and `purlin_agent`
+  PROOF-12, which grade STRUCTURAL (greps over committed prose, the only proof a rule about
+  documents can have). Zero UNPROVABLE and zero LOOSE among them; the LOOSE descriptions that
+  remain in `sync_status`, `report_data`, `skill_init`, `skill_build` and `purlin_report` are all
+  older than this phase.
+- **Mutations (28, each applied with `PYTHONDONTWRITEBYTECODE=1`, its proof run, restored; all
+  caught).** No advisory in the preamble, and the version 1 receipt explained as a proof change
+  (PROOF-89); the legacy MCP entry not reported as a migration (PROOF-68); `migrations` omitted
+  when empty (PROOF-35); a version 1 receipt made blocking (verify_gate PROOF-11); detection
+  short-circuited on the version stamp (PROOF-52); the xunit marker syntax dropped (PROOF-53); the
+  check writing the plugin copies (PROOF-54); the rename done without `git mv` (PROOF-55); stale
+  copies left alone (PROOF-56); staleness compared by mtime instead of bytes (PROOF-57);
+  `mutation_checks` backfilled from the template (PROOF-60); the issuer claiming while legacy is
+  pending (skill_verify PROOF-13); the consent question, the provenance paragraph, the `--mcp`
+  usage line, the `--mutation-checks` flag and the refusal framing each removed from their skill
+  text (PROOF-54/58/59/60, skill_verify PROOF-13); the build skill's off branch silenced
+  (PROOF-22); the WEAK cap reworded away (skill_audit PROOF-21); the verify sentence and one
+  worked example deleted (purlin_references PROOF-24/25); one skill's pointer and the test skill's
+  anchor removed (purlin_skills PROOF-16/17); the agent's core-loop link removed (purlin_agent
+  PROOF-12); the migrations banner hidden on VERIFIED (purlin_report PROOF-23); `mutation_checks`
+  removed from `templates/config.json` (skill_init PROOF-9 and PROOF-11 both fail); and the two
+  trailers split back across two `-m` in the workflow and in the template (verify_gate PROOF-7 and
+  PROOF-10, purlin_references PROOF-18).
+- **Sweep.** `bash dev/run_tests.sh` (foreground): 15 suites counted as 14 runs plus the pytest
+  pool, `711 passed, 27 skipped` (was 688/27; +23 are the 8 in `dev/test_init_update.py`,
+  sync_status PROOF-89, report_data PROOF-35, verify_gate PROOF-11, the 7 in
+  `dev/test_skill_specs.py`'s `TestUpdateSkillText`, purlin_skills PROOF-16/17,
+  purlin_references PROOF-24/25 and purlin_agent PROOF-12). `dev/test_init_update.py` joined
+  `dev/run_tests.sh`, so `proof_common` RULE-14's completeness check covers it.
+- **One convention worth knowing.** `dev/test_init_update.py`, `dev/test_mcp_server.py` and
+  `dev/test_report_data.py` build the legacy tier name as `'win' + 'dows'` rather than writing it
+  out. The detector scans the repository for exactly those literals, so a fixture spelled in full
+  would make Purlin's own `--check` report a pending migration forever and fail the CI preflight.
+- CLAUDE.md unchanged.
+
 ---
 
 ## Phase 8: per-platform reporting

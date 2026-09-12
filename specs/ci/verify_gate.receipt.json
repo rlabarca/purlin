@@ -1,9 +1,9 @@
 {
   "feature": "verify_gate",
-  "vhash": "2c3ab6ee",
+  "vhash": "7e86b740",
   "vhash_version": 2,
-  "commit": "310b6c10a5ba087e5d38869d2598c50e58feee9f",
-  "timestamp": "2026-09-12T02:18:56.822154+00:00",
+  "commit": "c60ad919acc42da470151542a733ebede97c18eb",
+  "timestamp": "2026-09-12T02:30:53.732441+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -31,7 +31,7 @@
     "RULE-4": "7b72170a61644cfb",
     "RULE-5": "b8811bdc9a3c176b",
     "RULE-6": "33522399c2c45d52",
-    "RULE-7": "7b42f2eaffd5a800",
+    "RULE-7": "fe72f340117f543a",
     "RULE-8": "680bf041c8fd8bc4",
     "RULE-9": "ac76dd1129a0869d",
     "security_no_dangerous_patterns/RULE-1": "ed467a922f765cf7",
@@ -204,8 +204,8 @@
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T02:18:52.793555+00:00",
-      "commit": "310b6c10a5ba087e5d38869d2598c50e58feee9f",
+      "at": "2026-09-12T02:30:48.320144+00:00",
+      "commit": "c60ad919acc42da470151542a733ebede97c18eb",
       "sweep": "dev/run_tests.sh",
       "passed": 724,
       "failed": 0,

@@ -1,8 +1,9 @@
 {
   "feature": "static_checks",
-  "vhash": "1e26e464",
-  "commit": "6c573eca30579fdb8044c72155ab252267843861",
-  "timestamp": "2026-09-12T00:42:14.743896+00:00",
+  "vhash": "8f25adfe",
+  "vhash_version": 2,
+  "commit": "c60ad919acc42da470151542a733ebede97c18eb",
+  "timestamp": "2026-09-12T02:30:53.732441+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -40,586 +41,1251 @@
     "RULE-7",
     "RULE-8"
   ],
+  "rule_hashes": {
+    "RULE-1": "8f928006230c1cda",
+    "RULE-10": "e9041bf589019b53",
+    "RULE-11": "3dcbbdc21f778890",
+    "RULE-12": "006723466e835026",
+    "RULE-13": "2eeab36764c14e30",
+    "RULE-14": "3d67f9735fed5985",
+    "RULE-15": "7fcdda88225a2716",
+    "RULE-16": "09a16080d42a5af8",
+    "RULE-17": "3254f2b6acebfcc0",
+    "RULE-18": "144e8aed20c7ab39",
+    "RULE-19": "23d31fe7d00ddb45",
+    "RULE-2": "3c98f3fdf4a3894b",
+    "RULE-21": "a32d0f310e7558c8",
+    "RULE-22": "cb2c25f0c220eaa1",
+    "RULE-23": "cc44ac85382ea8dd",
+    "RULE-24": "a6489777ec56973a",
+    "RULE-25": "f21003342d20a589",
+    "RULE-26": "148b23006e899eaa",
+    "RULE-27": "8d17999c17d3d43a",
+    "RULE-28": "f983a71436709050",
+    "RULE-29": "49614367709e3ca1",
+    "RULE-3": "200f855a83130cf1",
+    "RULE-30": "9be56cab9eb42127",
+    "RULE-31": "f3b76a04437b8708",
+    "RULE-32": "fd20aace91215de6",
+    "RULE-33": "dc5d98deb528099a",
+    "RULE-34": "d27fd5de35b2fdf1",
+    "RULE-35": "ead3f5e8cf180f9e",
+    "RULE-36": "b2aa5e9b0cbdc625",
+    "RULE-37": "207e66fd1ec6cb38",
+    "RULE-4": "3575d5570c0c946d",
+    "RULE-5": "92b410589534a38b",
+    "RULE-6": "9cc57d2e4cd8503f",
+    "RULE-7": "addefa526db27785",
+    "RULE-8": "7b6215699686cfed"
+  },
   "proofs": [
     {
+      "feature": "static_checks",
       "id": "PROOF-1",
       "rule": "RULE-1",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_python_tautological",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-1",
       "rule": "RULE-1",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_python_asserts_constant_not_output",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-1",
       "rule": "RULE-1",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_static_checks_detects_assert_true_in_or",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-1",
       "rule": "RULE-1",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_assert_is_not_none",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-1",
       "rule": "RULE-1",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_assert_len_gte_zero",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-1",
       "rule": "RULE-1",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_assert_true",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-10",
       "rule": "RULE-10",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_compute_proof_hash_deterministic",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-10",
       "rule": "RULE-10",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_compute_proof_hash_different_inputs",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-10",
       "rule": "RULE-10",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_compute_proof_hash_no_separator_collision",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-11",
       "rule": "RULE-11",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_read_cache_corrupt_json_returns_empty",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-11",
       "rule": "RULE-11",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_read_cache_missing_file",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-11",
       "rule": "RULE-11",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_read_cache_non_dict_returns_empty",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-11",
       "rule": "RULE-11",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_read_cache_valid",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-12",
       "rule": "RULE-12",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_write_cache_atomic",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-13",
       "rule": "RULE-13",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_hardcoded_pass_still_caught",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-13",
       "rule": "RULE-13",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_if_else_pair_no_condition_flagged",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-13",
       "rule": "RULE-13",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_if_else_pair_not_flagged",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-14",
       "rule": "RULE-14",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_heuristic_assert_has_literal_false",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-14",
       "rule": "RULE-14",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_literal_assert_true_has_literal_true",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-15",
       "rule": "RULE-15",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_collision_detected_in_c_output",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-15",
       "rule": "RULE-15",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_collision_with_mixed_languages",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-15",
       "rule": "RULE-15",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_collision_per_language[c-_c_proof]",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-15",
       "rule": "RULE-15",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_collision_per_language[javascript-_jest_proof]",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-15",
       "rule": "RULE-15",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_collision_per_language[php-_php_proof]",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-15",
       "rule": "RULE-15",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_collision_per_language[python-_python_proof]",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-15",
       "rule": "RULE-15",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_collision_per_language[shell-_shell_proof]",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-15",
       "rule": "RULE-15",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_collision_per_language[sql-_sql_proof]",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-15",
       "rule": "RULE-15",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_collision_per_language[typescript-_typescript_proof]",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-15",
       "rule": "RULE-15",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_multiple_collisions_detected",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-15",
       "rule": "RULE-15",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_no_collision_when_ids_unique",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-16",
       "rule": "RULE-16",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_orphan_per_language[c-_c_proof]",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-16",
       "rule": "RULE-16",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_orphan_per_language[javascript-_jest_proof]",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-16",
       "rule": "RULE-16",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_orphan_per_language[php-_php_proof]",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-16",
       "rule": "RULE-16",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_orphan_per_language[python-_python_proof]",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-16",
       "rule": "RULE-16",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_orphan_per_language[shell-_shell_proof]",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-16",
       "rule": "RULE-16",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_orphan_per_language[sql-_sql_proof]",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-16",
       "rule": "RULE-16",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_orphan_per_language[typescript-_typescript_proof]",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-16",
       "rule": "RULE-16",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_no_orphan_check_without_spec",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-16",
       "rule": "RULE-16",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_no_orphan_when_all_rules_exist",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-16",
       "rule": "RULE-16",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_required_anchor_rules_not_flagged",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-17",
       "rule": "RULE-1",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_hybrid_audit.sh",
+      "test_name": "assert True detected as HOLLOW, valid test passes",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-18",
       "rule": "RULE-2",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_hybrid_audit.sh",
+      "test_name": "no_assertions detected",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-19",
       "rule": "RULE-4",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_hybrid_audit.sh",
+      "test_name": "logic mirroring detected",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-2",
       "rule": "RULE-2",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_python_no_assertion",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-2",
       "rule": "RULE-2",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_no_assertions_disguised_as_thorough_test",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-2",
       "rule": "RULE-2",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_no_assertions",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-20",
       "rule": "RULE-7",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_hybrid_audit.sh",
+      "test_name": "structurally valid test passes Pass 1",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-21",
       "rule": "RULE-7",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_hybrid_audit.sh",
+      "test_name": "all 3 strong tests pass structural checks with exit 0",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-22",
       "rule": "RULE-6",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_hybrid_audit.sh",
+      "test_name": "JSON output has all required fields",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-23",
       "rule": "RULE-7",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_hybrid_audit.sh",
+      "test_name": "exit 0 on clean and on failures; defects reported via JSON status=fail",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-24",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_hybrid_audit.sh",
+      "test_name": "mock_target_match detected",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-25",
       "rule": "RULE-3",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_hybrid_audit.sh",
+      "test_name": "bare except detected",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-26",
       "rule": "RULE-8",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_hybrid_audit.sh",
+      "test_name": "check_spec_coverage returns correct rule_count and proof_count",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-27",
       "rule": "RULE-13",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_e2e_hybrid_audit.sh",
+      "test_name": "if/else pair passes, bare hardcoded pass still caught",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-28",
       "rule": "RULE-12",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_write_cache_creates_file",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-29",
       "rule": "RULE-17",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_cache_entry_required_fields",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-3",
       "rule": "RULE-3",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_bare_except_no_type",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-3",
       "rule": "RULE-3",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_bare_except_pass",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-30",
       "rule": "RULE-24",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_read_side_dedup_keeps_latest_entry",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-31",
       "rule": "RULE-24",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_write_side_pruning_removes_stale_duplicates",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-32",
       "rule": "RULE-18",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_clear_cache_produces_empty_dict",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-33",
       "rule": "RULE-19",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_write_cache_stamps_real_utc_time",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-35",
       "rule": "RULE-21",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_all_three_sources",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-35",
       "rule": "RULE-21",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_builtin_only",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-35",
       "rule": "RULE-21",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_no_additional_without_cache_file",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-35",
       "rule": "RULE-21",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_with_additional_criteria",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-35",
       "rule": "RULE-21",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_with_extra_path",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-36",
       "rule": "RULE-22",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_prune_removes_dead_preserves_live",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-37",
       "rule": "RULE-23",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_prune_all_keys_live_preserves_all",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-37",
       "rule": "RULE-23",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_prune_empty_live_keys_clears_all",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-38",
       "rule": "RULE-22",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_prune_cache_via_cli",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-39",
       "rule": "RULE-24",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_second_write_preserves_first_write_entries",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-39",
       "rule": "RULE-24",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_update_entry_preserves_other_features",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-4",
       "rule": "RULE-4",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_logic_mirroring_across_function_boundary",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-4",
       "rule": "RULE-4",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_logic_mirroring",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-4",
       "rule": "RULE-4",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_no_mirroring_with_literal",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-40",
       "rule": "RULE-25",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_concurrent_writes_preserve_all_entries",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-40",
       "rule": "RULE-25",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_lock_file_created_alongside_cache",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-41",
       "rule": "RULE-26",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_write_cache_cli_merges_entries",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-41",
       "rule": "RULE-26",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_write_cache_cli_merges_with_existing",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-42",
       "rule": "RULE-27",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_check_js_assertion_detection",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-43",
       "rule": "RULE-28",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_check_js_tokenizer_handles_braces_and_apostrophes",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-44",
       "rule": "RULE-29",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_no_unconditional_fcntl_import",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-45",
       "rule": "RULE-30",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_all_text_open_calls_specify_utf8",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-46",
       "rule": "RULE-31",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_assert_true",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-47",
       "rule": "RULE-31",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_no_assertions",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-48",
       "rule": "RULE-31",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_recognizes_all_assertion_frameworks",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-49",
       "rule": "RULE-31",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_dispatch_routes_cs_to_check_csharp",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-5",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_proof_stress.py",
+      "test_name": "test_mock_replaces_the_thing_being_tested",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-5",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_mock_matching_rule",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-5",
       "rule": "RULE-5",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_no_match_when_mock_unrelated",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-50",
       "rule": "RULE-29",
-      "status": "pass"
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_windows_lock_path_via_fake_msvcrt",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-51",
       "rule": "RULE-29",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_cli_pipeline_subprocess",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-52",
       "rule": "RULE-30",
-      "status": "pass"
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_e2e_audit_cache_pipeline.py",
+      "test_name": "test_load_criteria_under_ascii_locale",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-53",
       "rule": "RULE-29",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_windows_native.py",
+      "test_name": "test_real_msvcrt_lock_path",
+      "platform": "windows-2022"
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-54",
       "rule": "RULE-30",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_windows_native.py",
+      "test_name": "test_load_criteria_native_console",
+      "platform": "windows-2022"
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-55",
       "rule": "RULE-31",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_recognizes_playwright_fluent_assertions",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-56",
       "rule": "RULE-32",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_resolve_test_file_from_name",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-57",
       "rule": "RULE-33",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_rejects_entries_missing_dedup_key",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-57",
       "rule": "RULE-33",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_write_cache_cli_reports_error_and_exits_2",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-58",
       "rule": "RULE-25",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_prune_and_clear_take_the_exclusive_lock",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-59",
       "rule": "RULE-34",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_bad_invocation_prints_every_usage_line",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-59",
       "rule": "RULE-34",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_usage_matches_dispatch_chain",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-6",
       "rule": "RULE-6",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_python_fixture_only",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-6",
       "rule": "RULE-6",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_python_happy_path_only",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-6",
       "rule": "RULE-6",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_cheat_matrix.py",
+      "test_name": "test_python_name_drift",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-6",
       "rule": "RULE-6",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_json_has_required_fields",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-60",
       "rule": "RULE-35",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_absence_assertions_are_not_unprovable",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-60",
       "rule": "RULE-35",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_grades_each_design_level",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-61",
       "rule": "RULE-36",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_audit_scope_derives_the_mode",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-62",
       "rule": "RULE-37",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_design_cache_is_separate_and_validated",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-7",
       "rule": "RULE-7",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_exit_0_when_all_pass",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-7",
       "rule": "RULE-7",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_exit_0_with_fail_status_when_defects_found",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-8",
       "rule": "RULE-8",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_spec_coverage_counts",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-8",
       "rule": "RULE-8",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_spec_coverage_empty",
+      "platform": null
     },
     {
+      "feature": "static_checks",
       "id": "PROOF-8",
       "rule": "RULE-8",
-      "status": "pass"
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_spec_coverage_via_cli",
+      "platform": null
     }
-  ]
+  ],
+  "evidence": {
+    "test_run": {
+      "at": "2026-09-12T02:30:48.320144+00:00",
+      "commit": "c60ad919acc42da470151542a733ebede97c18eb",
+      "sweep": "dev/run_tests.sh",
+      "passed": 724,
+      "failed": 0,
+      "skipped": 27
+    },
+    "proof_files": [
+      {
+        "file": "specs/audit/static_checks.proofs-e2e.json",
+        "tier": "e2e",
+        "platform": null,
+        "commit": "48de01116b31437562dc7213387dc3197e3e436f",
+        "committed_at": "2026-06-29T16:10:32-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      },
+      {
+        "file": "specs/audit/static_checks.proofs-integration.json",
+        "tier": "integration",
+        "platform": null,
+        "commit": "48de01116b31437562dc7213387dc3197e3e436f",
+        "committed_at": "2026-06-29T16:10:32-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      },
+      {
+        "file": "specs/audit/static_checks.proofs-unit.json",
+        "tier": "unit",
+        "platform": null,
+        "commit": "746a3408724282faabdd46c0c1095d89146b9400",
+        "committed_at": "2026-09-11T19:19:59-04:00",
+        "runner": null,
+        "executed_in_test_run": true
+      },
+      {
+        "file": "specs/audit/static_checks.proofs-unit@windows-2022.json",
+        "tier": "unit",
+        "platform": "windows-2022",
+        "commit": "c60ad919acc42da470151542a733ebede97c18eb",
+        "committed_at": "2026-09-12T02:27:58Z",
+        "runner": "github-actions/windows-2022",
+        "executed_in_test_run": false
+      }
+    ]
+  }
 }
