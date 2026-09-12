@@ -68,6 +68,47 @@ scoped proof file and reads two trailers off that commit: `Purlin-Runner:` for t
 the trailer records one; when they disagree the report says `trailer says <id>` rather than
 believing either silently.
 
+## Platforms, environments and prerequisites
+
+This section is the single home of the rule set. Every other file that needs the distinction links
+here and does not restate the questions.
+
+A proof can depend on three different things, and each gets a different mechanism. The test for
+membership is the question in bold.
+
+**Platform** (registry `kind` absent, an `os` present; ids `windows-2022`, `macos-14`, the family
+ids `windows`, `macos`, `linux`, later `ios` and `android`). **Would the same test passing on a
+different OS be evidence for this claim?** No: the identity of the execution target changes the
+behaviour being proved. A platform is satisfied by host detection (the machine running the sweep
+is that platform) or by a runner. A `runner.provider` (`github`, `ado`) is transport to reach a
+platform and is never itself a platform: no proof depends on GitHub. Evidence is per platform; a
+result elsewhere is never evidence.
+
+**Environment** (registry `kind: "environment"`, no `os`; ids `figma-mcp`, `gemini-cli`,
+`claude-cli`). **Does the outcome depend on an external system's real answers, an account, a
+model, or money, so that installing a package cannot reproduce it?** Yes. An environment is
+satisfied only by an explicit `PURLIN_PLATFORM` equal to its id, set by a person or a runner
+asserting the environment is present, and the result is committed with a `Purlin-Runner:` trailer
+so provenance is recorded. A toolchain that is merely needed to execute is never an environment
+entry and never a registry entry: it is a prerequisite. Every report surface calls it an
+environment, never a platform, and never says "runner" for it: the awaiting state reads "awaiting
+an environment run".
+
+**Prerequisite** (never registered; php, dotnet, node, gcc, tsc, sqlite3). **Would any host with
+the tool installed produce the same evidence?** Yes: the toolchain is needed to execute, and does
+not change the claim. A prerequisite is a property of the run, not of the proof, so it never
+appears in `@on(...)` and never in the registry. The mechanism is the framework's own skip guard
+(the pytest `skipif`) plus the committed proof entry, which is kept rather than deleted
+(`specs/proof/proof_common.md` RULE-18), so the report shows that entry as inherited from the
+commit that last proved it rather than as fresh. The run marker
+(`.purlin/runtime/test_run.json`) is where a run records which marked proofs it skipped and why,
+so the skip is visible instead of silent.
+
+Classification of the current ids: `windows-2022` is a platform, with a GitHub runner attached;
+`figma-mcp`, `gemini-cli` and `claude-cli` are environments; php, dotnet, node, gcc, tsc and
+sqlite3 are prerequisites. A future ADO runner attaches to a platform id as a second provider and
+changes nothing above.
+
 ## Where it lives, and why
 
 Remote execution belongs to **`purlin:test`**. It is the only skill that runs tests:

@@ -44,6 +44,21 @@
   and `.gitignore` already excludes the directory, so a tracked cache file is a stale number that
   travels: it arrives in every clone, is read before anything recomputes it, and reports a
   measurement taken on somebody else's machine at some earlier commit
+- RULE-28: `remote_verification.md` carries a `## Platforms, environments and prerequisites`
+  section, and that section is the single home of the three-category rule set. It names all three
+  categories in bold (`**Platform**`, `**Environment**`, `**Prerequisite**`); it states each
+  category's membership question in bold, `Would the same test passing on a different OS be
+  evidence for this claim?` for a platform, `Does the outcome depend on an external system's real
+  answers, an account, a model, or money, so that installing a package cannot reproduce it?` for
+  an environment, and `Would any host with the tool installed produce the same evidence?` for a
+  prerequisite; it carries the sentence that a `runner.provider` (`github`, `ado`) is transport to
+  reach a platform and is never itself a platform, so no proof depends on GitHub; and it
+  classifies the ids in use, `windows-2022` as a platform and `figma-mcp`, `gemini-cli` and
+  `claude-cli` as environments, against php, dotnet, node, gcc, tsc and sqlite3 as prerequisites.
+  None of the three questions appears in any other tracked markdown file under `docs/`,
+  `references/` or `skills/`: a second copy is a second answer the day one of them is edited, and
+  the repository already reached the state where one situation, a test needing something this host
+  lacks, was handled three different ways. Other files link this section rather than restating it
 
 ## Proof
 
@@ -83,3 +98,15 @@
   assert `.gitignore` carries a `.purlin/cache/` line. `git add -f .purlin/cache/status.json`
   fails the proof
 - PROOF-25 (RULE-25): Grep `references/spec_quality_guide.md` for a heading that anchors to `#mutation-check` and verify its section contains three numbered steps whose verbs are break, run and restore, the sentence that a surviving mutation means the fixture cannot tell the correct behaviour from the broken one, two worked examples each naming the discriminating case that was added, and a value statement naming what the check catches, that it costs roughly twice the tokens and minutes per proof, and who should turn it on. Verify `skills/init/SKILL.md` quotes that statement by reference rather than restating it, so the file that prints it and the file that owns it cannot disagree
+- PROOF-28 (RULE-28): Split `references/remote_verification.md` on its `## ` headings and take the
+  body of `Platforms, environments and prerequisites`; assert it is present, and that it carries
+  `**Platform**`, `**Environment**` and `**Prerequisite**` as bold labels, each of the three
+  membership questions verbatim and in bold, the literal sentence fragment `is transport to reach
+  a platform and is never itself a platform`, and a classification naming `windows-2022`,
+  `figma-mcp`, `gemini-cli`, `claude-cli`, php, dotnet, node, gcc, tsc and sqlite3. Then read
+  every git-tracked markdown file under `docs/`, `references/` and `skills/` and assert each
+  question's text occurs in exactly one of them, `references/remote_verification.md`, and exactly
+  once in that file, and that `docs/testing-workflow-guide.md` links
+  `references/remote_verification.md` and names the section without restating any question.
+  Deleting the provider sentence from the section fails the proof naming that sentence; pasting
+  one question into `docs/testing-workflow-guide.md` fails the uniqueness half naming that file

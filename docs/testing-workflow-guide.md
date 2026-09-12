@@ -273,6 +273,11 @@ A tier says what kind of test a proof is. A platform says where it has to run. A
 - PROOF-54 (RULE-30): the default console codec round-trips a non-ASCII path @unit @on(windows-2022, macos-14)
 ```
 
+Platforms, environments and prerequisites are three different things with three different
+mechanisms, and the single home of that rule set, with the question that decides which one an id
+is, is [references/remote_verification.md](../references/remote_verification.md) under "Platforms,
+environments and prerequisites".
+
 ### The registry
 
 Ids resolve against an optional `platforms` object in `.purlin/config.json`. Three family ids are built in and need no config at all: `windows`, `macos` and `linux`. A project writes an entry to pin a version, an architecture or a runner:

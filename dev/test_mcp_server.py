@@ -2702,6 +2702,43 @@ class TestPlatformRegistry:
                         and 'figma-mcp' in line), (
                 f"an environment is never this host: {line}")
 
+        # The text half. The registry accepts a kind; the rule set that says
+        # what belongs under it lives in one place, and the two must not drift.
+        question = ("Does the outcome depend on an external system's real "
+                    "answers, an account, a model, or money, so that "
+                    "installing a package cannot reproduce it?")
+
+        def collapse(text):
+            return re.sub(r'\s+', ' ', text)
+
+        repo = os.path.join(os.path.dirname(__file__), '..')
+        with open(os.path.join(repo, 'specs', 'mcp', 'config_engine.md')) as f:
+            spec = collapse(f.read())
+        rule12 = spec.split('- RULE-12:', 1)
+        assert len(rule12) == 2, "specs/mcp/config_engine.md has no RULE-12"
+        rule12 = rule12[1].split('- RULE-13:', 1)[0].split('## Proof', 1)[0]
+        assert question in rule12, (
+            f"RULE-12 must name the membership question for "
+            f"`kind: environment`: {question!r}")
+        assert 'prerequisite' in rule12, (
+            "RULE-12 must say what a toolchain is instead: a prerequisite")
+        assert 'never a registry entry' in rule12, (
+            "RULE-12 must say a toolchain is never a registry entry at all, "
+            "or a project will register node as an environment")
+
+        rv_rel = os.path.join('references', 'remote_verification.md')
+        with open(os.path.join(repo, rv_rel)) as f:
+            reference = f.read()
+        heading = 'Platforms, environments and prerequisites'
+        parts = re.split(r'^## ', reference, flags=re.M)[1:]
+        bodies = [p for p in parts if p.split('\n', 1)[0].strip() == heading]
+        assert len(bodies) == 1, (
+            f"{rv_rel} must carry exactly one `## {heading}` section, the "
+            f"single home of the rule set; found {len(bodies)}")
+        assert question in collapse(bodies[0]), (
+            f"the membership question RULE-12 names is missing from the "
+            f"`{heading}` section of {rv_rel}: {question!r}")
+
 
 class TestPendingMigrationsAdvisory:
     """sync_status RULE-55: everything `purlin:init --update` owns, in one

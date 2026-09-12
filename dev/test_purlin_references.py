@@ -734,3 +734,108 @@ class TestRepoHygiene:
         assert '.purlin/cache/' in ignore, (
             ".gitignore must exclude the directory, so a cache file cannot be "
             "added back without -f")
+
+
+MEMBERSHIP_QUESTIONS = {
+    'platform': (
+        'Would the same test passing on a different OS be evidence for this '
+        'claim?'),
+    'environment': (
+        "Does the outcome depend on an external system's real answers, an "
+        'account, a model, or money, so that installing a package cannot '
+        'reproduce it?'),
+    'prerequisite': (
+        'Would any host with the tool installed produce the same evidence?'),
+}
+
+PROVIDER_SENTENCE = (
+    'is transport to reach a platform and is never itself a platform')
+
+TAXONOMY_HEADING = 'Platforms, environments and prerequisites'
+
+
+def _collapse(text):
+    """One space for every run of whitespace, so a wrapped sentence matches."""
+    return re.sub(r'\s+', ' ', text)
+
+
+def _sections(text):
+    """{heading: body} for every `## ` section of a markdown file."""
+    parts = re.split(r'^## ', text, flags=re.M)[1:]
+    return {p.split('\n', 1)[0].strip(): p.split('\n', 1)[1] if '\n' in p
+            else '' for p in parts}
+
+
+def _tracked_markdown(*dirs):
+    """Every git-tracked .md path under the given repository directories."""
+    out = subprocess.run(
+        ['git', 'ls-files', '--', *dirs],
+        cwd=os.path.abspath(PROJECT_ROOT),
+        capture_output=True, text=True, check=True)
+    return sorted(p for p in out.stdout.splitlines() if p.endswith('.md'))
+
+
+class TestPlatformTaxonomyHasOneHome:
+    """RULE-28: platforms, environments and prerequisites are three things with
+    three mechanisms, and the rule set that tells them apart lives in exactly
+    one section. A second copy is a second answer the day one is edited."""
+
+    RV_REL = 'references/remote_verification.md'
+    RV = os.path.join(REFS, 'remote_verification.md')
+
+    @pytest.mark.proof("purlin_references", "PROOF-28", "RULE-28")
+    def test_the_rule_set_has_one_home_and_the_questions_appear_only_there(self):
+        sections = _sections(_read(self.RV))
+        assert TAXONOMY_HEADING in sections, (
+            f"references/remote_verification.md has no `## {TAXONOMY_HEADING}` "
+            f"section; its headings are {sorted(sections)}")
+        body = _collapse(sections[TAXONOMY_HEADING])
+
+        for label in ('**Platform**', '**Environment**', '**Prerequisite**'):
+            assert label in body, (
+                f"the section names no category {label}; all three category "
+                f"names belong in the one home of the rule set")
+
+        for category, question in MEMBERSHIP_QUESTIONS.items():
+            assert f'**{question}**' in body, (
+                f"the {category} membership question is missing from the "
+                f"section, or is not in bold: {question!r}")
+
+        assert PROVIDER_SENTENCE in body, (
+            f"the section must carry the sentence {PROVIDER_SENTENCE!r}: a "
+            f"`runner.provider` is transport, and a reader who takes github "
+            f"for a platform will look for a proof that depends on GitHub")
+
+        for platform_id in ('`windows-2022`', '`figma-mcp`', '`gemini-cli`',
+                            '`claude-cli`'):
+            assert platform_id in body, (
+                f"the classification of the current ids omits {platform_id}")
+        for tool in ('php', 'dotnet', 'node', 'gcc', 'tsc', 'sqlite3'):
+            assert re.search(rf'\b{re.escape(tool)}\b', body), (
+                f"the classification omits the prerequisite {tool}")
+
+        # One home means one copy. Every other file links the section.
+        tracked = _tracked_markdown('docs', 'references', 'skills')
+        assert len(tracked) > 10, (
+            f"git ls-files found only {tracked}; the uniqueness scan below "
+            f"would pass by matching nothing")
+        for category, question in MEMBERSHIP_QUESTIONS.items():
+            hits = {}
+            for rel in tracked:
+                text = _collapse(_read(os.path.join(PROJECT_ROOT, rel)))
+                count = text.count(question)
+                if count:
+                    hits[rel] = count
+            assert hits == {self.RV_REL: 1}, (
+                f"the {category} membership question must appear exactly once "
+                f"in {self.RV_REL} and nowhere else under docs/, references/ "
+                f"or skills/; found {hits}")
+
+        guide = _collapse(_read(os.path.join(
+            PROJECT_ROOT, 'docs', 'testing-workflow-guide.md')))
+        assert 'references/remote_verification.md' in guide, (
+            "docs/testing-workflow-guide.md must link the reference that owns "
+            "the rule set")
+        assert TAXONOMY_HEADING in guide, (
+            "docs/testing-workflow-guide.md must name the section it points "
+            "at, not just the file")
