@@ -916,6 +916,42 @@ class TestSkillDrift:
             "declares: %s" % ', '.join(missing))
 
 
+    @pytest.mark.proof("skill_drift", "PROOF-8", "RULE-8")
+    def test_the_report_format_and_the_level_table_each_have_one_home(self):
+        """RULE-8: Step 2e is the whole report body, and the significance
+        levels are cited from drift_criteria.md rather than tabled twice."""
+        content = _read('drift')
+        blocks = re.findall(r'```[\s\S]*?```', content)
+        grouped = [b for b in blocks if 'NEEDS ATTENTION' in b
+                   and 'FOR AWARENESS' in b and 'TRIVIAL' in b]
+        assert len(grouped) == 1, (
+            f"the report body must be written once; {len(grouped)} blocks "
+            f"carry all three group headings")
+        assert content.count('Since <since field from JSON>:') == 1, (
+            "the report header is written once")
+
+        levels = ('BEHAVIORAL', 'STRUCTURAL', 'OPERATIONAL',
+                  'DOCUMENTATION', 'TRIVIAL')
+        rows = [l for l in content.splitlines()
+                if l.startswith('|')
+                and l.strip('|').split('|')[0].strip().strip('*') in levels]
+        assert not rows, (
+            f"the skill carries its own significance table: {rows}")
+        assert 'references/drift_criteria.md' in content, (
+            "the skill must cite the reference that holds the level table")
+
+        ref = _read_ref('drift_criteria.md')
+        section = ref[ref.index('## Significance Classification'):]
+        section = section[:section.index('\n## ', 1)]
+        for level in levels:
+            row = [l for l in section.splitlines()
+                   if l.startswith('|')
+                   and l.strip('|').split('|')[0].strip() == level]
+            assert row, f"drift_criteria.md has no {level} row"
+            assert row[0].strip('|').split('|')[-1].strip(), (
+                f"the {level} row names nobody who cares about it")
+
+
 # ── skill_find ────────────────────────────────────────────────────────
 
 class TestSkillFind:

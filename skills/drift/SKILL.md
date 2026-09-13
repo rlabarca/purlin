@@ -13,9 +13,7 @@ Classification criteria: see `references/drift_criteria.md` (Criteria-Version: 1
 
 ```
 purlin:drift                            Summarize changes since last verification
-purlin:drift pm                         Summarize with PM priorities only
-purlin:drift eng                        Summarize with engineer priorities only
-purlin:drift qa                         Summarize with QA priorities only
+purlin:drift [pm|eng|qa]                Summarize with that role's priorities only
 purlin:drift --since <N>                Last N commits
 purlin:drift --since <date>             Since a date (YYYY-MM-DD)
 ```
@@ -83,15 +81,9 @@ describing spec changes as drift, check whether the files named in the spec's `>
 If they do not, there is no implementation to have drifted from: report the spec work as
 progress and point at `purlin:build`, not at a mismatch.
 
-| Significance | Meaning | Who cares |
-|-------------|---------|-----------|
-| **BEHAVIORAL** | Changes what the software does — new features, changed rules, removed capabilities | PM, Engineer, QA |
-| **STRUCTURAL** | Changes how the software is organized — refactors, renames, file moves, dependency updates | Engineer |
-| **OPERATIONAL** | Changes how the software runs — CI config, deployment, env vars, Dockerfiles, Makefiles | Engineer, QA |
-| **DOCUMENTATION** | Changes to docs, comments, READMEs, guides | PM (if user-facing), otherwise no one |
-| **TRIVIAL** | Formatting, whitespace, typo fixes, auto-generated files | No one |
-
-The MCP tool's NO_IMPACT category maps roughly to DOCUMENTATION and TRIVIAL, but many files classified as CHANGED_BEHAVIOR might actually be STRUCTURAL (a refactor that doesn't change behavior) or OPERATIONAL (a Makefile change). The diff tells you which.
+The five levels, what each means, which MCP category it comes from and who cares about it are
+listed once, in `references/drift_criteria.md` § Significance Classification. Read that table
+rather than a second copy here.
 
 ### 2c — Write individual change descriptions
 
@@ -212,21 +204,11 @@ TRIVIAL:
   (nothing this cycle)
 ```
 
-**NEEDS ATTENTION** includes all BEHAVIORAL and OPERATIONAL changes — anything that affects what the software does or how it runs. **FOR AWARENESS** includes STRUCTURAL and DOCUMENTATION changes. **TRIVIAL** includes formatting and whitespace. Omit empty sections.
+**NEEDS ATTENTION** carries every BEHAVIORAL and OPERATIONAL change, which is anything that affects what the software does or how it runs. **FOR AWARENESS** carries STRUCTURAL and DOCUMENTATION changes. **TRIVIAL** carries formatting and whitespace. Omit empty sections.
 
 ## Step 3 — Format Output
 
-Print the report header, then the grouped entries from Step 2e.
-
-```
-Since <since field from JSON>:
-
-<NEEDS ATTENTION section from 2e>
-
-<FOR AWARENESS section from 2e>
-
-<TRIVIAL section from 2e>
-```
+Print `Since <since field from JSON>:`, then the grouped entries exactly as Step 2e shapes them. Nothing here reformats or re-derives that block; the shape above is the whole report body.
 
 ## Step 4 — ACTION ITEMS
 
@@ -289,8 +271,7 @@ Omit any role section with no action items.
 
 ## Guidelines
 
-- **Read diffs for behavioral changes.** The MCP tool provides the file list; you must read the actual diffs to understand what changed. This is the only additional tool call this skill makes beyond the initial `drift` MCP call.
+- **Read the diffs (Step 2a).** The MCP tool gives the file list and a mechanical category; the `git diff` is what says whether a CHANGED_BEHAVIOR file is really STRUCTURAL or OPERATIONAL. This is the only tool call this skill makes beyond the initial `drift` call.
 - **Write for a PM, not a developer.** Summarize behavior, not implementation details.
 - **One entry per logical change.** Group related files under a single entry, but never collapse unrelated changes into one paragraph.
-- **Classify from the diff, not the MCP category.** The MCP tool's mechanical classification is a starting point. The diff tells you whether a CHANGED_BEHAVIOR file is actually STRUCTURAL or OPERATIONAL.
 - **No writes.** This skill reads and reports. It does not modify anything.

@@ -53,13 +53,17 @@ Prefix match enables directory-scoped specs without listing every file.
 
 The skill re-classifies MCP categories by reading the actual `git diff`. The MCP category is a starting point; the diff tells you the real significance.
 
-| Significance | Meaning | Source |
-|-------------|---------|--------|
-| BEHAVIORAL | Changes what the software does | CHANGED_BEHAVIOR or NEW_BEHAVIOR files where the diff adds/removes logic |
-| STRUCTURAL | Changes organization without changing behavior | CHANGED_BEHAVIOR files where the diff is a rename/refactor |
-| OPERATIONAL | Changes how the software runs (CI, deploy, env) | Makefiles, Dockerfiles, CI configs, env vars |
-| DOCUMENTATION | Changes to docs, comments, guides | NO_IMPACT files, or CHANGED_BEHAVIOR files where only comments changed |
-| TRIVIAL | Formatting, whitespace, typos | Any file where the diff is cosmetic |
+| Significance | Meaning | Source | Who cares |
+|-------------|---------|--------|-----------|
+| BEHAVIORAL | Changes what the software does: new features, changed rules, removed capabilities | CHANGED_BEHAVIOR or NEW_BEHAVIOR files where the diff adds/removes logic | PM, Engineer, QA |
+| STRUCTURAL | Changes organization without changing behavior: refactors, renames, file moves, dependency updates | CHANGED_BEHAVIOR files where the diff is a rename/refactor | Engineer |
+| OPERATIONAL | Changes how the software runs (CI, deploy, env vars, Dockerfiles, Makefiles) | Makefiles, Dockerfiles, CI configs, env vars | Engineer, QA |
+| DOCUMENTATION | Changes to docs, comments, READMEs, guides | NO_IMPACT files, or CHANGED_BEHAVIOR files where only comments changed | PM when user-facing, otherwise no one |
+| TRIVIAL | Formatting, whitespace, typo fixes, auto-generated files | Any file where the diff is cosmetic | No one |
+
+The MCP tool's NO_IMPACT category maps roughly to DOCUMENTATION and TRIVIAL, but a file it
+classifies CHANGED_BEHAVIOR may be STRUCTURAL (a refactor that changes nothing) or OPERATIONAL
+(a Makefile edit). The diff decides, not the category.
 
 ## Behavioral Gap Drift Detection
 

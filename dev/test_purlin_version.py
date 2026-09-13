@@ -298,33 +298,51 @@ class TestBumpVersionScriptPropagatesAndDetectsDrift:
 
 class TestDocsCiteVersionFileInsteadOfALiteral:
 
-    DOC_LINES = [
-        (os.path.join('skills', 'init', 'SKILL.md'), '| `version` |'),
-        (os.path.join('references', 'drift_criteria.md'), '| `version` |'),
-    ]
+    OWNER = os.path.join('references', 'drift_criteria.md')
+    MARKER = '| `version` |'
 
     @pytest.mark.proof("purlin_version", "PROOF-8", "RULE-8")
     def test_config_version_field_docs_carry_no_semver_literal(self):
-        """The config-field tables must name the VERSION file, not a number.
+        """The one config-field table must name the VERSION file, not a
+        number, and no second copy of the row may exist.
 
-        Both tables sat at `"0.9.0"`, two releases stale, because a literal in
-        prose has nothing keeping it honest.
+        The table sat in two files at `"0.9.0"`, two releases stale, because a
+        literal in prose has nothing keeping it honest.
         """
         semver_literal = re.compile(r'`?"?\d+\.\d+\.\d+"?`?')
-        for rel, marker in self.DOC_LINES:
-            path = os.path.join(PROJECT_ROOT, rel)
-            assert os.path.isfile(path), f"{rel} not found"
-            with open(path, encoding='utf-8') as f:
-                lines = [ln for ln in f.read().splitlines()
-                         if ln.strip().startswith(marker)]
-            assert lines, f"no `version` field row found in {rel}"
-            for ln in lines:
-                assert not semver_literal.search(ln), \
-                    (f"{rel} restates a version literal in its `version` row: "
-                     f"{ln.strip()!r}: cite the VERSION file instead")
-                assert 'VERSION' in ln, \
-                    (f"{rel} `version` row does not reference the VERSION file: "
-                     f"{ln.strip()!r}")
+        path = os.path.join(PROJECT_ROOT, self.OWNER)
+        assert os.path.isfile(path), f"{self.OWNER} not found"
+        with open(path, encoding='utf-8') as f:
+            lines = [ln for ln in f.read().splitlines()
+                     if ln.strip().startswith(self.MARKER)]
+        assert lines, f"no `version` field row found in {self.OWNER}"
+        for ln in lines:
+            assert not semver_literal.search(ln), \
+                (f"{self.OWNER} restates a version literal in its `version` "
+                 f"row: {ln.strip()!r}: cite the VERSION file instead")
+            assert 'VERSION' in ln, \
+                (f"{self.OWNER} `version` row does not reference the VERSION "
+                 f"file: {ln.strip()!r}")
+
+        copies = []
+        for base in ('skills', 'references'):
+            for dirpath, _dirs, files in os.walk(
+                    os.path.join(PROJECT_ROOT, base)):
+                for name in files:
+                    if not name.endswith('.md'):
+                        continue
+                    rel = os.path.relpath(
+                        os.path.join(dirpath, name), PROJECT_ROOT)
+                    if rel == self.OWNER:
+                        continue
+                    with open(os.path.join(dirpath, name),
+                              encoding='utf-8') as f:
+                        if any(ln.strip().startswith(self.MARKER)
+                               for ln in f.read().splitlines()):
+                            copies.append(rel)
+        assert not copies, (
+            f"a second `version` field row lives in {sorted(copies)}; "
+            f"{self.OWNER} is the field's one documented home")
 
 
 DEV_SWEEP = 'dev/run_tests.sh'
