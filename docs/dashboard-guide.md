@@ -197,6 +197,8 @@ is UNTESTED, because a project being authored spec-first is not a neglected one.
 
 The HTML file loads `.purlin/report-data.js` through a script tag. No fetch calls, no CORS, no server. Just a static file loading another static file.
 
+Beside the digest sits `.purlin/report-stamp.js`, a file of under 200 bytes holding the digest's `timestamp`, `git_sha` and `schema_version` and nothing else. It is written after the digest, so a stamp the page can read always has its digest already on disk. When the tab regains focus or becomes visible the page reads the stamp, not the digest, and re-reads the digest only when the stamp's timestamp differs from what is on screen; a project with no stamp falls back to loading the whole digest as before. The stamp is generated and gitignored, so it never travels with the repo.
+
 The digest carries a top-level `schema_version`, an integer naming the shape of the payload; a digest without the key is version 1. When the number is higher than the version the dashboard was built for, the page shows one banner reading `This digest was written by a newer Purlin. Run purlin:init --update to refresh the dashboard.` and renders everything it does recognise, which is the state you land in when the plugin updates ahead of your copy of the HTML.
 
 ## Uncommitted Files

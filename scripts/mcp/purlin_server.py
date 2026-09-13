@@ -4946,10 +4946,13 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
     # The digest is rewritten by every build, so its own git status is a
     # consequence of building rather than a fact about the project, and a
     # list that named it would differ from the file on disk after every
-    # write (report_data RULE-43).
+    # write (report_data RULE-43). Its stamp is left out for the same reason
+    # (RULE-50), and a project whose .gitignore predates the stamp would
+    # otherwise see it listed as untracked on every build.
     uncommitted_files = [
         line for line in _check_uncommitted_all(project_root)
-        if not line.endswith('.purlin/report-data.js')]
+        if not (line.endswith('.purlin/report-data.js')
+                or line.endswith('.purlin/report-stamp.js'))]
     declared_ids = sorted(_declared_platform_counts(features))
     host_ids = set(_host_platform_ids(registry, host))
 
@@ -5092,6 +5095,34 @@ def _render_report_data(data):
     return 'const PURLIN_DATA = {\n' + ',\n'.join(lines) + '\n};\n'
 
 
+def _write_report_stamp(purlin_dir, payload):
+    """Write `.purlin/report-stamp.js` beside the digest it describes.
+
+    Three fields, under 200 bytes: what the dashboard needs to decide whether
+    the digest it already rendered is still the current one. Without it the
+    page re-read and re-evaluated the whole multi-megabyte digest on every
+    window focus just to compare one timestamp, and then threw it away
+    (report_data RULE-50). Written AFTER the digest, never before, so a stamp
+    a reader can see always has the digest it names already on disk.
+    """
+    stamp = {'timestamp': payload.get('timestamp'),
+             'git_sha': payload.get('git_sha'),
+             'schema_version': payload.get('schema_version')}
+    text = 'const PURLIN_STAMP = ' + json.dumps(stamp, separators=(',', ':')) + ';\n'
+    path = os.path.join(purlin_dir, 'report-stamp.js')
+    tmp_path = path + '.tmp'
+    try:
+        with open(tmp_path, 'w') as f:
+            f.write(text)
+        os.replace(tmp_path, path)
+    except (IOError, OSError):
+        if os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
+
+
 def _write_report_data(project_root, features, all_proofs, config, global_anchors,
                        audit_summary=None, drift_data=None, git_sha=None,
                        design_summary=None, generated_by='sync_status',
@@ -5141,6 +5172,9 @@ def _write_report_data(project_root, features, all_proofs, config, global_anchor
                 os.utime(data_path, None)
             except OSError:
                 pass
+            # The stamp names the digest on disk, which is the previous
+            # payload, not the one this build assembled and discarded.
+            _write_report_stamp(purlin_dir, previous)
             return data_path
 
     tmp_path = data_path + '.tmp'
@@ -5148,6 +5182,7 @@ def _write_report_data(project_root, features, all_proofs, config, global_anchor
         with open(tmp_path, 'w') as f:
             f.write(_render_report_data(data))
         os.replace(tmp_path, data_path)
+        _write_report_stamp(purlin_dir, data)
         return data_path
     except (IOError, OSError):
         if os.path.exists(tmp_path):

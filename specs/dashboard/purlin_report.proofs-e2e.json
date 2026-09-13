@@ -216,6 +216,15 @@
       "test_name": "test_a_newer_schema_draws_one_banner_and_still_renders",
       "status": "pass",
       "tier": "e2e"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-58",
+      "rule": "RULE-48",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_focus_reads_the_stamp_and_the_digest_only_when_it_moved",
+      "status": "pass",
+      "tier": "e2e"
     }
   ]
 }

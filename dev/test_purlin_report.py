@@ -4506,3 +4506,76 @@ class TestSchemaVersionBanner:
         load_dashboard(page, dashboard, data=legacy)
         assert self._banner_count(page) == 0, (
             "a payload with no schema_version is version 1, not a newer one")
+
+
+def write_stamp(tmp_dir, data):
+    """Write report-stamp.js beside the digest, the way a digest write does."""
+    purlin_dir = os.path.join(tmp_dir, ".purlin")
+    os.makedirs(purlin_dir, exist_ok=True)
+    with open(os.path.join(purlin_dir, "report-stamp.js"), "w") as f:
+        f.write("const PURLIN_STAMP = ")
+        json.dump({"timestamp": data["timestamp"],
+                   "git_sha": data.get("git_sha"),
+                   "schema_version": data.get("schema_version", 2)}, f)
+        f.write(";\n")
+
+
+class TestFocusReadsTheStamp:
+    """purlin_report RULE-48 — focus reads 143 bytes, not 2.8 MB."""
+
+    COUNTER = """
+        window.__frames = 0;
+        (function () {
+            var obs = new MutationObserver(function (recs) {
+                for (var i = 0; i < recs.length; i++) {
+                    var added = recs[i].addedNodes;
+                    for (var j = 0; j < added.length; j++) {
+                        if (added[j].tagName === 'IFRAME') window.__frames++;
+                    }
+                }
+            });
+            obs.observe(document, {childList: true, subtree: true});
+        })();
+    """
+
+    @pytest.mark.proof("purlin_report", "PROOF-58", "RULE-48", tier="e2e")
+    def test_focus_reads_the_stamp_and_the_digest_only_when_it_moved(self, page, dashboard):
+        data = make_data()
+        page.add_init_script(self.COUNTER)
+        write_stamp(str(dashboard), data)
+        load_dashboard(page, dashboard, data=data)
+        rows = page.locator("tr.fr")
+        n0 = rows.count()
+        assert n0 == len(data["features"])
+
+        # An unchanged project: one iframe for the stamp, and the digest is
+        # never read at all.
+        page.evaluate("() => { window.__frames = 0; }")
+        _focus(page)
+        page.wait_for_timeout(700)
+        assert page.evaluate("() => window.__frames") == 1, (
+            "a focus on an unchanged project must read the stamp and nothing else")
+        assert rows.count() == n0, "an unchanged stamp must not re-render"
+
+        # A stamp that moved: the digest is read and the page re-renders.
+        fewer = json.loads(json.dumps(data))
+        fewer["features"] = fewer["features"][:-1]
+        fewer["summary"]["total_features"] = len(fewer["features"])
+        fewer["timestamp"] = _iso_minutes_ago(0)
+        write_data(str(dashboard), fewer)
+        write_stamp(str(dashboard), fewer)
+        _focus(page)
+        page.wait_for_function(
+            "n => document.querySelectorAll('tr.fr').length === n", arg=n0 - 1,
+            timeout=5000)
+
+        # No stamp at all: the full load is the fallback, so a project that
+        # has never written one is no worse off than before.
+        os.remove(os.path.join(str(dashboard), ".purlin", "report-stamp.js"))
+        more = json.loads(json.dumps(data))
+        more["timestamp"] = _iso_minutes_ago(0)
+        write_data(str(dashboard), more)
+        page.evaluate("() => document.dispatchEvent(new Event('visibilitychange'))")
+        page.wait_for_function(
+            "n => document.querySelectorAll('tr.fr').length === n", arg=n0,
+            timeout=5000)

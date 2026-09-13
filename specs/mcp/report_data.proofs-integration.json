@@ -234,6 +234,15 @@
       "test_name": "test_each_feature_and_each_top_level_key_owns_one_line",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-52",
+      "rule": "RULE-50",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_the_stamp_names_the_digest_beside_it_and_is_never_older",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

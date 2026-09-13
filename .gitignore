@@ -16,6 +16,7 @@ venv/
 .purlin/config.local.json
 .purlin/plugins/__pycache__/
 .purlin/cache/
+.purlin/report-stamp.js
 
 # Plugin data (persists across updates)
 .claude-plugin-data/

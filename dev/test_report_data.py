@@ -3046,3 +3046,80 @@ class TestDigestIsWrittenOneLinePerFeature:
                {k: v for k, v in read.items()
                 if k not in ('timestamp', 'generated_by')}, \
             "the line breaks must not change what the payload says"
+
+
+class TestReportStamp:
+    """report_data RULE-50 — a small file the dashboard can read on focus."""
+
+    STAMP_PREFIX = 'const PURLIN_STAMP = '
+
+    def setup_method(self):
+        self.tmp = tempfile.mkdtemp()
+        _make_project(self.tmp, report_enabled=True)
+        _write_spec(self.tmp, 'feature', _minimal_spec_content())
+        _write_proofs(self.tmp, 'feature', _minimal_proofs())
+        _git_init(self.tmp)
+        self.digest = os.path.join(self.tmp, '.purlin', 'report-data.js')
+        self.stamp = os.path.join(self.tmp, '.purlin', 'report-stamp.js')
+
+    def teardown_method(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _git(self, *args):
+        r = subprocess.run(['git'] + list(args), cwd=self.tmp,
+                           capture_output=True, text=True)
+        assert r.returncode == 0, f"git {' '.join(args)}: {r.stderr}"
+        return r.stdout
+
+    def _read_stamp(self):
+        text = open(self.stamp, encoding='utf-8').read()
+        assert text.startswith(self.STAMP_PREFIX), text[:40]
+        return json.loads(text[len(self.STAMP_PREFIX):].rstrip().rstrip(';'))
+
+    @pytest.mark.proof("report_data", "PROOF-52", "RULE-50", tier="integration")
+    def test_the_stamp_names_the_digest_beside_it_and_is_never_older(self):
+        purlin_server.sync_status(self.tmp)
+        assert os.path.isfile(self.stamp), (
+            "every digest write must leave a stamp beside it")
+        size = os.path.getsize(self.stamp)
+        assert size < 200, (
+            f"the stamp exists to be cheap to read; {size} bytes is not")
+
+        digest = _read_report(self.tmp)
+        stamp = self._read_stamp()
+        assert sorted(stamp) == ['git_sha', 'schema_version', 'timestamp'], sorted(stamp)
+        for key in stamp:
+            assert stamp[key] == digest[key], (
+                f"the stamp's {key} must equal the digest's: "
+                f"{stamp[key]!r} != {digest[key]!r}")
+
+        assert os.stat(self.stamp).st_mtime >= os.stat(self.digest).st_mtime, (
+            "the stamp is written after the digest, so a stamp a reader can "
+            "see always has its digest already on disk")
+
+        # It is regenerated, not written once.
+        os.remove(self.stamp)
+        with open(os.path.join(self.tmp, 'notes.md'), 'w') as f:
+            f.write('v2\n')
+        purlin_server.sync_status(self.tmp)
+        assert os.path.isfile(self.stamp), "a later write must restore the stamp"
+        assert self._read_stamp()['timestamp'] == _read_report(self.tmp)['timestamp']
+
+        # The skip path writes it too, naming the digest that stayed.
+        self._git('add', '-A')
+        self._git('commit', '-m', 'digest')
+        purlin_server.sync_status(self.tmp)
+        settled = _read_report(self.tmp)['timestamp']
+        os.remove(self.stamp)
+        purlin_server.sync_status(self.tmp)
+        assert os.path.isfile(self.stamp), (
+            "a status call that rewrote nothing must still leave a stamp")
+        assert self._read_stamp()['timestamp'] == settled, (
+            "the stamp must name the digest on disk, not the payload the "
+            "build assembled and discarded")
+        assert _read_report(self.tmp)['timestamp'] == settled
+
+        template = os.path.join(os.path.dirname(__file__), '..', 'templates',
+                                'gitignore.purlin')
+        assert '.purlin/report-stamp.js' in open(template, encoding='utf-8').read(), (
+            "the stamp is generated, not evidence, so it never travels")

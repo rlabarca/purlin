@@ -12,3 +12,6 @@
 
 # Dashboard HTML (symlinked from the installed plugin)
 /purlin-report.html
+
+# Dashboard focus stamp (regenerated beside the digest, never committed)
+.purlin/report-stamp.js

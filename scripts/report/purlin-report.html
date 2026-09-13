@@ -370,26 +370,30 @@ table{min-width:830px}
    base URL and origin, so `.purlin/report-data.js` resolves exactly as it did
    from a script tag here, on file:// as well. The query string defeats the
    browser's file:// cache. The frame stays in the document until the next
-   load replaces it, so what was loaded is inspectable. */
-var loadFrame = null;
-function loadData(callback) {
+   load of the same slot replaces it, so what was loaded is inspectable.
+   `.purlin/report-stamp.js` is read through the same mechanism and its own
+   slot (RULE-48): fetch is blocked on file://, so an iframe is the only way
+   to read either file. */
+var loadFrames = {data: null, stamp: null};
+function loadScriptValue(slot, src, globalName, callback) {
   var done = false;
   var frame = document.createElement('iframe');
   frame.setAttribute('hidden', '');
   frame.setAttribute('aria-hidden', 'true');
+  frame.setAttribute('data-purlin-slot', slot);
   frame.style.display = 'none';
-  var src = '.purlin/report-data.js?t=' + Date.now();
   function finish(value) {
     if (done) return;
     done = true;
     window.removeEventListener('message', onMessage);
-    if (loadFrame && loadFrame !== frame && loadFrame.parentNode) {
-      loadFrame.parentNode.removeChild(loadFrame);
+    var prev = loadFrames[slot];
+    if (prev && prev !== frame && prev.parentNode) {
+      prev.parentNode.removeChild(prev);
     }
-    loadFrame = frame;
+    loadFrames[slot] = frame;
     /* The page's own view of what it rendered, as a window property rather
        than a declaration, so it can be replaced on every reload (RULE-1). */
-    if (value) window.PURLIN_DATA = value;
+    if (value && slot === 'data') window.PURLIN_DATA = value;
     callback(value);
   }
   function onMessage(ev) {
@@ -398,10 +402,17 @@ function loadData(callback) {
     finish(ev.data.purlin);
   }
   window.addEventListener('message', onMessage);
-  frame.srcdoc = '<script src="' + src + '"><\/script>'
-    + '<script>parent.postMessage({purlin: (typeof PURLIN_DATA === "undefined") ? null : PURLIN_DATA}, "*");<\/script>';
+  frame.srcdoc = '<script src="' + src + '?t=' + Date.now() + '"><\/script>'
+    + '<script>parent.postMessage({purlin: (typeof ' + globalName
+    + ' === "undefined") ? null : ' + globalName + '}, "*");<\/script>';
   document.body.appendChild(frame);
   setTimeout(function() { finish(null); }, 3000);
+}
+function loadData(callback) {
+  loadScriptValue('data', '.purlin/report-data.js', 'PURLIN_DATA', callback);
+}
+function loadStamp(callback) {
+  loadScriptValue('stamp', '.purlin/report-stamp.js', 'PURLIN_STAMP', callback);
 }
 
 loadData(function(initial) {
@@ -1762,21 +1773,35 @@ loadData(function(initial) {
   }, 30000);
 
   /* ===== LIVE RELOAD (RULE-48) =====
-     No timer and no polling: the data file is re-read when this tab regains
-     focus or becomes visible, which is when someone is looking, and the page
-     re-renders only when the payload's timestamp moved. Sort, theme,
-     expansion and category state live outside render(), so they survive. An
-     open modal is left alone; the next focus retries. */
+     No timer and no polling: the digest is re-read when this tab regains
+     focus or becomes visible, which is when someone is looking. What focus
+     reads first is `.purlin/report-stamp.js`, a three-field file written
+     beside the digest and after it, so a stamp that is readable always has
+     its digest already on disk. The digest itself is read only when the
+     stamp's timestamp differs from the rendered one: a focus on an unchanged
+     project used to download and evaluate the whole multi-megabyte digest
+     and throw it away. No stamp to be had, from an older project or a write
+     that has not landed, falls back to the full load, so the page is never
+     worse off than it was. The page re-renders only when the payload's
+     timestamp moved. Sort, theme, expansion and category state live outside
+     render(), so they survive. An open modal is left alone; the next focus
+     retries. */
   var refreshing = false;
   function refreshIfChanged() {
     if (refreshing || document.visibilityState !== 'visible') return;
     refreshing = true;
-    loadData(function(fresh) {
-      refreshing = false;
-      if (!fresh || !fresh.timestamp || fresh.timestamp === D.timestamp) return;
-      if (modalEl) return;
-      D = fresh;
-      render();
+    loadStamp(function(stamp) {
+      if (stamp && stamp.timestamp && stamp.timestamp === D.timestamp) {
+        refreshing = false;
+        return;
+      }
+      loadData(function(fresh) {
+        refreshing = false;
+        if (!fresh || !fresh.timestamp || fresh.timestamp === D.timestamp) return;
+        if (modalEl) return;
+        D = fresh;
+        render();
+      });
     });
   }
   window.addEventListener('focus', refreshIfChanged);
