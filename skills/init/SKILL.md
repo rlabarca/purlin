@@ -289,7 +289,7 @@ ASKING:
 
 DIRECTIVES (nothing is written for these):
   receipt-v1   -> Run: purlin:verify
-  legacy-mcp   -> Run: purlin:init --mcp (then /reload-plugins)
+  legacy-mcp   -> Run: purlin:init --update (then /reload-plugins)
 ```
 
 Name the provenance loss explicitly for every renamed platform proof file: the commit that

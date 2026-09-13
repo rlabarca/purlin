@@ -42,7 +42,8 @@ WHAT --apply DOES, AND WHAT IT REFUSES TO DO
     one and the plugin has moved under it, which is the file the generated hook
     shims read (`skill_init` RULE-77). `receipt-v1` and `legacy-mcp` print a directive and change
     nothing: `purlin:verify` re-issues receipts from a fresh run, and
-    `purlin:init --mcp` owns the MCP entry.
+    `purlin:init --update` runs the MCP step (`legacy-mcp`) itself, in Step 5c
+    of the skill, before this script runs Step 5d.
 
     `mutation_checks` is the one config field that is asked rather than
     backfilled (`references/spec_quality_guide.md`, "Mutation check"): it costs
@@ -386,7 +387,7 @@ _APPLIERS = {
 _DIRECTIVES = {
     'receipt-v1': ('→ Run: purlin:verify  (a receipt is a claim that tests '
                    'ran; this script never writes one)'),
-    'legacy-mcp': '→ Run: purlin:init --mcp (then /reload-plugins)',
+    'legacy-mcp': '→ Run: purlin:init --update (then /reload-plugins)',
 }
 
 

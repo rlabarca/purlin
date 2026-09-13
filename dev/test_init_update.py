@@ -320,7 +320,8 @@ class TestApplyNeverClaims:
                        for line in status.splitlines()), status
 
             assert 'purlin:verify' in out, out
-            assert 'purlin:init --mcp' in out, out
+            assert 'purlin:init --update' in out, out
+            assert '--mcp' not in out, out
         finally:
             shutil.rmtree(root, ignore_errors=True)
 

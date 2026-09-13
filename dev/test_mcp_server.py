@@ -1125,7 +1125,8 @@ class TestSyncStatus:
     def test_legacy_mcp_entry_is_one_pending_migration(self):
         """RULE-38: the legacy entry reports as the `legacy-mcp` migration with
         the shared `--update` directive, not as an advisory of its own with a
-        `--mcp` directive nobody else prints."""
+        directive nobody else prints. The retired `--mcp` spelling names
+        nothing and reaches no output."""
         self._write_spec('login', (
             '# Feature: login\n\n'
             '## What it does\nHandles login.\n\n'
@@ -1145,8 +1146,8 @@ class TestSyncStatus:
         assert cache_path in result, 'The entry must show the pinned path'
         assert '\u2192 Run: purlin:init --update' in result, \
             'The advisory must close with the shared --update directive'
-        assert '\u2192 Run: purlin:init --mcp' not in result, \
-            'The --mcp directive must not be printed as a second advisory'
+        assert '--mcp' not in result, \
+            'The retired --mcp spelling must appear in no directive'
         preamble_section = result.split('login')[0]
         assert 'legacy-mcp' in preamble_section, \
             'The entry must appear in the preamble, before feature output'
