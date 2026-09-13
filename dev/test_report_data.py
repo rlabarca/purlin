@@ -201,6 +201,19 @@ def _minimal_proofs(feature='feature'):
     }]
 
 
+def _resolved(data, rule):
+    """A rule entry with the body it references merged under it.
+
+    Every reader of the payload resolves an inherited entry this way: the
+    shared body first, the entry's own keys over it, so `label` wins and an
+    entry that carries no `ref` is returned unchanged (report_data RULE-8).
+    """
+    shared = (data.get('shared_rules') or {}).get(rule.get('id'))
+    if rule.get('ref') and shared:
+        return dict(shared, **rule)
+    return rule
+
+
 def _git_init(tmp_dir):
     """Initialize a git repo in tmp_dir with a minimal commit."""
     subprocess.run(['git', 'init'], cwd=tmp_dir, capture_output=True, check=True)
@@ -470,10 +483,17 @@ class TestReportDataStructure:
             "Expected stale=True for a receipt whose vhash is 'deadbeef', "
             f"got {receipt['stale']!r}")
 
-    @pytest.mark.proof("report_data", "PROOF-8", "RULE-8")
-    def test_every_rule_entry_has_required_fields(self):
-        """Every rule entry has id, description, label, source, is_deferred, is_assumed, status, proofs."""
-        required_fields = {
+    @pytest.mark.proof("report_data", "PROOF-8", "RULE-8", tier="integration")
+    def test_an_inherited_rule_is_emitted_once_and_referenced_per_feature(self):
+        """An own rule is written in full; an inherited one is written once
+        under `shared_rules` and referenced by every feature that carries it.
+
+        Five features requiring one three-rule anchor is the shape the digest
+        is made of: written out per feature the same body was repeated once
+        per consumer, which is what made 473 inherited rows 1.66 MB of a
+        2.86 MB file.
+        """
+        rule_fields = {
             'id', 'description', 'label', 'source', 'is_deferred',
             'is_assumed', 'status', 'proofs',
         }
@@ -481,16 +501,132 @@ class TestReportDataStructure:
             'id', 'description', 'test_file', 'test_name', 'tier', 'platform',
             'status', 'audit',
         }
-        data = self._build()
-        for feat in data['features']:
-            for rule in feat['rules']:
-                missing = required_fields - set(rule.keys())
-                assert not missing, \
-                    f"Rule '{rule.get('id', '?')}' in feature '{feat['name']}' missing fields: {missing}"
-                for proof in rule['proofs']:
-                    missing = proof_fields - set(proof.keys())
-                    assert not missing, \
-                        f"Proof '{proof.get('id', '?')}' missing fields: {missing}"
+        anchor_dir = os.path.join(self.tmp, 'specs', '_anchors')
+        os.makedirs(anchor_dir, exist_ok=True)
+        with open(os.path.join(anchor_dir, 'money.md'), 'w') as f:
+            f.write(
+                '# Anchor: money\n\n'
+                '## Rules\n'
+                '- RULE-1: Every amount that crosses a module boundary is an '
+                'integer count of minor units, never a float and never a '
+                'decimal string, because a float amount is a rounding error '
+                'nobody can see until it is money and a decimal string is a '
+                'parser nobody wrote\n'
+                '- RULE-2: A currency travels with every amount, on the same '
+                'object rather than in a variable beside it, because an '
+                'amount without a currency is a number that means a different '
+                'sum in every country the product ships to and no reader can '
+                'tell which one it is\n'
+                '- RULE-3: Rounding is half to even at every boundary, chosen '
+                'once here rather than per call site, because two call sites '
+                'that round differently produce two totals for the same '
+                'basket and the difference lands in a ledger that has to '
+                'balance\n\n'
+                '## Proof\n'
+                '- PROOF-1 (RULE-1): Pass a float and a decimal string to the '
+                'amount parser and assert each raises, naming the field\n'
+                '- PROOF-2 (RULE-1): Round trip a minor-unit amount through '
+                'serialization and assert the integer is unchanged\n'
+                '- PROOF-3 (RULE-2): Construct an amount with no currency and '
+                'assert the constructor refuses it\n'
+                '- PROOF-4 (RULE-2): Add two amounts of one currency and '
+                'assert the sum carries it, then add two currencies and '
+                'assert the addition raises\n'
+                '- PROOF-5 (RULE-3): Round 2.5 and assert 2, so the mode is '
+                'half to even and not half up\n'
+                '- PROOF-6 (RULE-3): Round 3.5 and assert 4, so the same mode '
+                'answers both sides of the tie\n'
+            )
+        anchor_proofs = []
+        for i, rule in enumerate(['RULE-1', 'RULE-1', 'RULE-2', 'RULE-2',
+                                  'RULE-3', 'RULE-3'], start=1):
+            anchor_proofs.append({
+                'feature': 'money', 'id': f'PROOF-{i}', 'rule': rule,
+                'test_file': 'tests/test_money.py',
+                'test_name': f'test_money_{i}', 'status': 'pass',
+                'tier': 'unit',
+            })
+        _write_proofs(self.tmp, 'money', anchor_proofs, subdir='_anchors')
+
+        consumers = ['billing', 'invoicing', 'payouts', 'refunds', 'reporting']
+        for name in consumers:
+            _write_spec(self.tmp, name,
+                        f'# Feature: {name}\n\n'
+                        '> Requires: money\n\n'
+                        '## Rules\n'
+                        f'- RULE-1: Every total {name} reports is computed '
+                        'from minor units and rendered once at the edge, so '
+                        'no intermediate sum is ever a display string\n\n'
+                        '## Proof\n'
+                        f'- PROOF-1 (RULE-1): Sum three line items in {name} '
+                        'and assert the total is the integer sum of their '
+                        'minor units\n')
+            _write_proofs(self.tmp, name, [{
+                'feature': name, 'id': 'PROOF-1', 'rule': 'RULE-1',
+                'test_file': f'tests/test_{name}.py',
+                'test_name': f'test_{name}_total', 'status': 'pass',
+                'tier': 'unit',
+            }])
+
+        features = purlin_server._scan_specs(self.tmp)
+        proofs = purlin_server._read_proofs(self.tmp)
+        data = self._build(features=features, proofs=proofs)
+
+        shared = data['shared_rules']
+        assert sorted(shared) == ['money/RULE-1', 'money/RULE-2', 'money/RULE-3'], \
+            f"the anchor's three rules are emitted once for the payload: {sorted(shared)}"
+        for key, body in shared.items():
+            assert set(body) == rule_fields - {'label'}, \
+                (f"a shared body carries every field but `label`, which stays "
+                 f"per feature: {sorted(body)}")
+            assert body['id'] == key and body['source'] == 'money', body
+            assert body['description'], f"{key} lost its description"
+            assert body['status'] == 'PASS', body
+            assert len(body['proofs']) == 2, \
+                f"{key} is proved by two entries, got {len(body['proofs'])}"
+            for proof in body['proofs']:
+                assert proof_fields <= set(proof), \
+                    f"{key} proof missing {proof_fields - set(proof)}"
+
+        by_name = {f['name']: f for f in data['features']}
+        for name in consumers:
+            feat = by_name[name]
+            assert len(feat['rules']) == 4, \
+                (f"`rules` is still one complete walk over every rule "
+                 f"{name} carries: {feat['rules']}")
+            assert feat['total'] == 4, feat['total']
+            own = [r for r in feat['rules'] if r.get('label') == 'own']
+            refs = [r for r in feat['rules'] if r.get('ref')]
+            assert len(own) == 1 and len(refs) == 3, feat['rules']
+            assert rule_fields <= set(own[0]), \
+                f"an own rule is written in full: {sorted(own[0])}"
+            assert own[0]['description'], "an own rule keeps its description"
+            for proof in own[0]['proofs']:
+                assert proof_fields <= set(proof), sorted(proof)
+            assert sorted(r['id'] for r in refs) == [
+                'money/RULE-1', 'money/RULE-2', 'money/RULE-3'], refs
+            for ref in refs:
+                assert set(ref) == {'id', 'label', 'ref'}, \
+                    f"a reference is exactly id, label and ref: {sorted(ref)}"
+                assert ref['label'] == 'required', ref
+                assert ref['ref'] is True, ref
+                assert 'description' not in ref and 'proofs' not in ref, ref
+
+        inlined = json.loads(json.dumps(data['features']))
+        for feat in inlined:
+            feat['rules'] = [
+                dict(data['shared_rules'][r['id']], label=r['label'])
+                if r.get('ref') else r
+                for r in feat['rules']
+            ]
+        compact = {'separators': (',', ':')}
+        referencing = (len(json.dumps(data['features'], **compact))
+                       + len(json.dumps(shared, **compact)))
+        inline_bytes = len(json.dumps(inlined, **compact))
+        assert referencing <= inline_bytes * 0.6, \
+            (f"referencing the shared bodies must save at least 40% of what "
+             f"the rules cost: {referencing} bytes against {inline_bytes} "
+             f"inlined")
 
     @pytest.mark.proof("report_data", "PROOF-9", "RULE-9")
     def test_all_rule_statuses_are_valid(self):
@@ -1181,7 +1317,8 @@ class TestReportDataStructure:
         data = self._build(features=features, proofs=proofs)
 
         feat = next(f for f in data['features'] if f['name'] == 'epsilon')
-        global_rule = next(r for r in feat['rules'] if r['label'] == 'global')
+        global_rule = _resolved(
+            data, next(r for r in feat['rules'] if r['label'] == 'global'))
         assert len(global_rule['proofs']) == 1, \
             f"Expected the anchor's planned proof, got {global_rule['proofs']}"
         planned = global_rule['proofs'][0]
@@ -2983,12 +3120,12 @@ class TestSchemaVersion:
             f"the version must be an integer, got "
             f"{type(built['schema_version']).__name__}")
         assert not isinstance(built['schema_version'], bool)
-        assert built['schema_version'] == 2, built['schema_version']
+        assert built['schema_version'] == 3, built['schema_version']
 
         # No entry point may omit it.
-        assert purlin_server.read_report_payload(self.tmp)['schema_version'] == 2
+        assert purlin_server.read_report_payload(self.tmp)['schema_version'] == 3
         assert purlin_server.generate_digest(self.tmp) is not None
-        assert _read_report(self.tmp)['schema_version'] == 2
+        assert _read_report(self.tmp)['schema_version'] == 3
 
 
 class TestDigestIsWrittenOneLinePerFeature:

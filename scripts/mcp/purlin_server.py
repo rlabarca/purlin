@@ -4603,7 +4603,7 @@ def _remote_status(summary):
 # The shape of `.purlin/report-data.js`. Bumped when a reader that only
 # understands the previous shape would misread the new one; a payload with no
 # `schema_version` at all is schema 1 (report_data RULE-48).
-_REPORT_SCHEMA_VERSION = 2
+_REPORT_SCHEMA_VERSION = 3
 
 
 def _build_report_data(project_root, features, all_proofs, config, global_anchors,
@@ -4652,6 +4652,11 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             if pid:
                 audit_by_proof[(feat_name, pid)] = e.get('assessment', '')
     feature_list = []
+    # Every inherited rule body, emitted once for the whole payload and
+    # referenced from each consuming feature (report_data RULE-8). The same
+    # anchor rule is carried by every feature that requires it, and written
+    # out per feature it was 1.66 MB of the 2.86 MB digest.
+    shared_rules = {}
     summary = {'total_features': 0, 'verified': 0, 'passing': 0, 'partial': 0,
                'failing': 0, 'untested': 0, 'verified_here': 0,
                'held_by_platform': 0}
@@ -4871,7 +4876,7 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
             else:
                 rule_status = 'NONE'
 
-            rules_list.append({
+            entry = {
                 'id': key,
                 'description': rule_desc,
                 'label': label,
@@ -4880,7 +4885,24 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
                 'is_assumed': label == 'own' and key in info.get('assumed_rules', set()),
                 'status': rule_status,
                 'proofs': proofs_data,
-            })
+            }
+            # An own rule belongs to this feature and is written here. An
+            # inherited one is the same body under every feature that carries
+            # it, because its description, its status and its proofs are all
+            # read under the source feature, so it is emitted once under
+            # `shared_rules` and referenced here (report_data RULE-8). `label`
+            # stays on the reference: one anchor rule is `global` for one
+            # feature and `required` for another. A body that is somehow not
+            # the shared one is written inline rather than lost.
+            if label == 'own':
+                rules_list.append(entry)
+                continue
+            body = {k: v for k, v in entry.items() if k != 'label'}
+            known = shared_rules.setdefault(key, body)
+            if known == body:
+                rules_list.append({'id': key, 'label': label, 'ref': True})
+            else:
+                rules_list.append(entry)
 
         # Check external anchor staleness for report data
         ext_status = None
@@ -5012,6 +5034,11 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
         'docs_url': _get_plugin_docs_url(),
         'summary': summary,
         'features': feature_list,
+        # The bodies of every inherited rule, keyed by the same id the
+        # referencing entry carries (report_data RULE-8). Always present,
+        # `{}` when no feature inherits anything, so a reader can tell an
+        # empty map from a payload written before the key existed.
+        'shared_rules': shared_rules,
         'anchors_summary': {
             'total': anchors_total,
             'with_source': anchors_with_source,

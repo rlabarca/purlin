@@ -237,15 +237,6 @@
     },
     {
       "feature": "report_data",
-      "id": "PROOF-8",
-      "rule": "RULE-8",
-      "test_file": "dev/test_report_data.py",
-      "test_name": "test_every_rule_entry_has_required_fields",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "report_data",
       "id": "PROOF-9",
       "rule": "RULE-9",
       "test_file": "dev/test_report_data.py",
