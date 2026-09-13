@@ -1,7 +1,7 @@
 # Purlin runtime (generated, not committed)
 .purlin/runtime/
 
-# Purlin cache (Proof Integrity and Proof Design results, additional criteria)
+# Purlin cache
 .purlin/cache/
 
 # Purlin plugin cache
@@ -15,6 +15,10 @@
 
 # Dashboard focus stamp (regenerated beside the digest, never committed)
 .purlin/report-stamp.js
+
+# Dashboard data, regenerated locally, never committed
+.purlin/report-data.js
+
 # Where this machine keeps the installed plugin (read by .purlin/hooks/)
 .purlin/plugin-root
 
