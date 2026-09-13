@@ -14,11 +14,18 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 
 import pytest
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 HOOK_SCRIPT = os.path.join(PROJECT_ROOT, "scripts", "hooks", "pre-commit.sh")
+
+# The shim purlin:init generates is what finds the plugin now, so the proofs
+# for the resolution order drive the real generated file rather than a
+# hand-written stand-in (`skill_init` RULE-77).
+sys.path.insert(0, os.path.join(PROJECT_ROOT, "scripts", "init"))
+import scaffold  # noqa: E402
 
 SPEC_TEXT = """# Feature: sample_feature
 
@@ -111,19 +118,22 @@ def _nonempty_lines(text):
     return [line for line in text.splitlines() if line.strip()]
 
 
-def _copy_hook_outside_plugin(tmpdir):
-    """The hook at <tmp>/copy/scripts/hooks, whose own-dir candidate misses.
+def _install_shim(tmpdir, name="pre-commit"):
+    """Write the shim purlin:init generates into the project, and an empty HOME.
 
-    An installed hook resolves its plugin root from where the script lives.
-    Copying it under a directory tree that carries no scripts/mcp makes that
-    first candidate miss, which is the only way a test can reach the later
-    candidates at all.
+    Returns (shim path, empty candidate directory, fake HOME). The fake HOME
+    matters: the shim's fourth candidate is Claude Code's install registry
+    under the real one, and a test that left it alone would resolve whichever
+    plugin this machine happens to have installed.
     """
-    dest_dir = os.path.join(tmpdir, "copy", "scripts", "hooks")
-    os.makedirs(dest_dir, exist_ok=True)
-    dest = os.path.join(dest_dir, "pre-commit.sh")
-    shutil.copy2(HOOK_SCRIPT, dest)
-    return dest, os.path.join(tmpdir, "copy")
+    path = os.path.join(tmpdir, ".purlin", "hooks", name)
+    _write(path, scaffold._shim(name, "scripts/hooks/%s.sh" % name))
+    os.chmod(path, 0o755)
+    empty = os.path.join(tmpdir, "empty")
+    home = os.path.join(tmpdir, "home")
+    os.makedirs(empty, exist_ok=True)
+    os.makedirs(home, exist_ok=True)
+    return path, empty, home
 
 
 def _break_digest_generation(tmpdir):
@@ -215,18 +225,17 @@ class TestRule2PluginRoot:
     @pytest.mark.proof("pre_commit_hook", "PROOF-3", "RULE-2",
                        tier="integration")
     def test_empty_candidate_does_not_end_the_search(self, tmp_path):
-        """A candidate that carries no server is stepped over: with the
-        own-directory candidate and PURLIN_PLUGIN_ROOT both empty, the hook
-        still finds the server through CLAUDE_PLUGIN_ROOT and stages the
-        digest."""
+        """A candidate that carries no hook script is stepped over: with
+        PURLIN_PLUGIN_ROOT empty, the shim still finds the plugin through
+        CLAUDE_PLUGIN_ROOT, execs this checkout's pre-commit.sh, and the
+        digest is staged."""
         tmpdir = str(tmp_path)
         _make_project(tmpdir, digest="auto")
-        script, _copy_root = _copy_hook_outside_plugin(tmpdir)
-        empty = os.path.join(tmpdir, "empty")
-        os.makedirs(empty, exist_ok=True)
+        shim, empty, home = _install_shim(tmpdir)
 
-        code, out, err = _run_hook(tmpdir, script=script, env=_env(
-            PURLIN_PLUGIN_ROOT=empty, CLAUDE_PLUGIN_ROOT=PROJECT_ROOT))
+        code, out, err = _run_hook(tmpdir, script=shim, env=_env(
+            PURLIN_PLUGIN_ROOT=empty, CLAUDE_PLUGIN_ROOT=PROJECT_ROOT,
+            HOME=home))
 
         assert code == 0, f"Expected exit 0, got {code}\n{out}\n{err}"
         assert ".purlin/report-data.js" in _staged(tmpdir), (
@@ -236,32 +245,31 @@ class TestRule2PluginRoot:
 
     @pytest.mark.proof("pre_commit_hook", "PROOF-4", "RULE-2",
                        tier="integration")
-    def test_no_candidate_carries_the_server_names_every_path(self, tmp_path):
-        """When no candidate carries purlin_server.py the hook warns, names
-        every path it searched, stages nothing and exits 0."""
+    def test_no_candidate_carries_the_hook_names_every_path(self, tmp_path):
+        """When no candidate carries pre-commit.sh the shim warns, names every
+        path it searched, stages nothing and exits 0, because this hook never
+        blocks a commit on any path."""
         tmpdir = str(tmp_path)
         _make_project(tmpdir, digest="auto")
-        script, copy_root = _copy_hook_outside_plugin(tmpdir)
-        empty = os.path.join(tmpdir, "empty")
-        os.makedirs(empty, exist_ok=True)
+        shim, empty, home = _install_shim(tmpdir)
 
-        code, out, err = _run_hook(tmpdir, script=script, env=_env(
-            PURLIN_PLUGIN_ROOT=empty, CLAUDE_PLUGIN_ROOT=None))
+        code, out, err = _run_hook(tmpdir, script=shim, env=_env(
+            PURLIN_PLUGIN_ROOT=empty, CLAUDE_PLUGIN_ROOT=None, HOME=home))
         output = out + err
 
         assert code == 0, f"Expected exit 0, got {code}\n{output}"
         assert "WARNING" in output, (
             "the plugin-not-found fail-open path was silent: no candidate "
-            "carried scripts/mcp/purlin_server.py and the hook printed no "
+            "carried scripts/hooks/pre-commit.sh and the hook printed no "
             f"WARNING, so the skipped digest is invisible.\n{output!r}")
         assert "the Purlin plugin was not found" in output, (
             "the plugin-not-found fail-open path was silent: the hook skipped "
             "the digest without saying the plugin was missing.\n"
             f"{output!r}")
-        assert "scripts/mcp/purlin_server.py" in output, (
+        assert "scripts/hooks/pre-commit.sh" in output, (
             "the plugin-not-found line does not say what it searched for.\n"
             f"{output!r}")
-        for path in (copy_root, empty, os.path.realpath(tmpdir)):
+        for path in (empty, os.path.realpath(tmpdir)):
             assert path in output, (
                 f"the plugin-not-found line does not name {path}, so the "
                 f"developer cannot see where to install the plugin.\n{output!r}")

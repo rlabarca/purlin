@@ -160,7 +160,7 @@
       "rule": "RULE-6",
       "test_file": "dev/test_pre_push_hook.py",
       "test_name": "test_pytest_exit_5_is_success_but_a_real_failure_is_not",
-      "status": "pass",
+      "status": "fail",
       "tier": "integration"
     },
     {
@@ -186,7 +186,7 @@
       "id": "PROOF-30",
       "rule": "RULE-14",
       "test_file": "dev/test_pre_push_hook.py",
-      "test_name": "test_first_candidate_carrying_the_gate_wins",
+      "test_name": "test_first_candidate_carrying_the_hook_script_wins",
       "status": "pass",
       "tier": "integration"
     },
@@ -232,7 +232,7 @@
       "rule": "RULE-6",
       "test_file": "dev/test_pre_push_hook.py",
       "test_name": "test_unit_test_runs_integration_skipped",
-      "status": "pass",
+      "status": "fail",
       "tier": "integration"
     },
     {

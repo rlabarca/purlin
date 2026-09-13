@@ -28,38 +28,14 @@ if [[ ! -d "$ROOT/.purlin" ]]; then
   exit 0  # Not a Purlin project, and not this hook's business to say so
 fi
 
-# --- Locate the Purlin plugin root ---
-# The same order scripts/hooks/pre-push.sh uses: the directory this script
-# actually lives in (resolved through a symlink, which is how a plugin install
-# wires .git/hooks/pre-commit), then the two environment variables, then the
-# project root for a dev checkout of the framework itself. The first candidate
-# carrying the server wins, and a candidate that does not carry it is stepped
-# over rather than ending the search.
-SELF="${BASH_SOURCE[0]}"
-if [[ -L "$SELF" ]]; then
-  LINK="$(readlink "$SELF")"
-  if [[ "$LINK" != /* ]]; then
-    LINK="$(dirname "$SELF")/$LINK"
-  fi
-  SELF="$LINK"
-fi
-SELF_DIR="$(cd "$(dirname "$SELF")" && pwd)"
-
-CANDIDATES=("$(cd "$SELF_DIR/../.." && pwd)")
-if [[ -n "${PURLIN_PLUGIN_ROOT:-}" ]]; then
-  CANDIDATES+=("$PURLIN_PLUGIN_ROOT")
-fi
-if [[ -n "${CLAUDE_PLUGIN_ROOT:-}" ]]; then
-  CANDIDATES+=("$CLAUDE_PLUGIN_ROOT")
-fi
-CANDIDATES+=("$ROOT")
-
-SERVER=""
-for candidate in "${CANDIDATES[@]}"; do
-  if [[ -z "$SERVER" && -f "$candidate/scripts/mcp/purlin_server.py" ]]; then
-    SERVER="$candidate/scripts/mcp/purlin_server.py"
-  fi
-done
+# --- The Purlin plugin root ---
+# The shim at .purlin/hooks/pre-commit resolved it and exec'd this script out
+# of it (`skill_init` RULE-77), so this script is inside the plugin by
+# construction and its own directory is the answer. Nothing here searches: a
+# second resolution order is a second answer the day one of them is edited,
+# and the shim is the one that runs before this script exists to be run.
+PLUGIN_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+SERVER="$PLUGIN_ROOT/scripts/mcp/purlin_server.py"
 
 # --- Read the mode ---
 # $CONFIG is an argument, never text spliced into the program: a path
@@ -92,17 +68,6 @@ if [[ "$MODE" == "off" ]]; then
 fi
 
 if [[ "$MODE" == "auto" ]]; then
-  # --- The plugin has to be present to generate anything ---
-  if [[ -z "$SERVER" ]]; then
-    echo "purlin: WARNING: the Purlin plugin was not found, so the project"
-    echo "        digest was NOT refreshed. Searched for"
-    echo "        scripts/mcp/purlin_server.py under:"
-    for candidate in "${CANDIDATES[@]}"; do
-      echo "          $candidate"
-    done
-    echo "        Set PURLIN_PLUGIN_ROOT to the plugin directory to fix this."
-    exit 0
-  fi
   SERVER_DIR="$(dirname "$SERVER")"
 
   echo "purlin: generating the project digest (coverage and drift)..."

@@ -33,7 +33,7 @@
       "id": "PROOF-4",
       "rule": "RULE-2",
       "test_file": "dev/test_pre_commit_hook.py",
-      "test_name": "test_no_candidate_carries_the_server_names_every_path",
+      "test_name": "test_no_candidate_carries_the_hook_names_every_path",
       "status": "pass",
       "tier": "integration"
     },

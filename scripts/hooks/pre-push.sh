@@ -19,88 +19,33 @@ if [[ ! -d "$ROOT/.purlin" ]]; then
   exit 0  # Not a Purlin project
 fi
 
-# --- Locate the Purlin plugin root ---
-# In order: the directory this script actually lives in (resolved through a
-# symlink, which is how a plugin install wires .git/hooks/pre-push), then the
-# two environment variables, then the project root for a dev checkout of the
-# framework itself. The first candidate carrying the gate script wins.
-SELF="${BASH_SOURCE[0]}"
-if [[ -L "$SELF" ]]; then
-  LINK="$(readlink "$SELF")"
-  if [[ "$LINK" != /* ]]; then
-    LINK="$(dirname "$SELF")/$LINK"
-  fi
-  SELF="$LINK"
-fi
-SELF_DIR="$(cd "$(dirname "$SELF")" && pwd)"
-
-CANDIDATES=("$(cd "$SELF_DIR/../.." && pwd)")
-if [[ -n "${PURLIN_PLUGIN_ROOT:-}" ]]; then
-  CANDIDATES+=("$PURLIN_PLUGIN_ROOT")
-fi
-if [[ -n "${CLAUDE_PLUGIN_ROOT:-}" ]]; then
-  CANDIDATES+=("$CLAUDE_PLUGIN_ROOT")
-fi
-CANDIDATES+=("$ROOT")
-
-GATE=""
-for candidate in "${CANDIDATES[@]}"; do
-  if [[ -z "$GATE" && -f "$candidate/scripts/hooks/pre_push_gate.py" ]]; then
-    GATE="$candidate/scripts/hooks/pre_push_gate.py"
-  fi
-done
+# --- The Purlin plugin root ---
+# The shim at .purlin/hooks/pre-push resolved it and exec'd this script out of
+# it (`skill_init` RULE-77), so this script is inside the plugin by
+# construction and its own directory is the answer. Nothing here searches: a
+# second resolution order is a second answer the day one of them is edited,
+# and the shim is the one that runs before this script exists to be run. The
+# case where no plugin can be found is the shim's too, since a hook that
+# cannot reach the plugin cannot reach this file either.
+PLUGIN_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+GATE="$PLUGIN_ROOT/scripts/hooks/pre_push_gate.py"
 
 # --- Read the mode ---
-# The gate owns config reading, so the inline python below exists only for the
-# one case where there is no gate to ask.
-MODE=""
-FRAMEWORKS=""
-if [[ -n "$GATE" ]]; then
-  CONFIG_RC=0
-  CONFIG_OUT="$(python3 "$GATE" config --project-root "$ROOT")" || CONFIG_RC=$?
-  if [[ $CONFIG_RC -ne 0 ]]; then
-    echo "purlin: the pre-push gate could not read this project's configuration"
-    echo "        (exit $CONFIG_RC, reason above). Blocking the push."
-    exit 1
-  fi
-  MODE="$(printf '%s\n' "$CONFIG_OUT" | sed -n 's/^mode=//p')"
-  FRAMEWORKS="$(printf '%s\n' "$CONFIG_OUT" | sed -n 's/^frameworks=//p')"
-else
-  # $ROOT is an argument, never text spliced into the program: a path
-  # containing a quote would otherwise rewrite the script that reads it.
-  MODE="$(python3 -c '
-import json, os, sys
-path = os.path.join(sys.argv[1], ".purlin", "config.json")
-if not os.path.isfile(path):
-    print("warn")
-    sys.exit(0)
-try:
-    with open(path) as handle:
-        print(json.load(handle).get("pre_push", "warn"))
-except Exception:
-    print("unreadable")
-' "$ROOT")"
+# The gate owns config reading; this script asks it rather than parsing the
+# config a second way.
+CONFIG_RC=0
+CONFIG_OUT="$(python3 "$GATE" config --project-root "$ROOT")" || CONFIG_RC=$?
+if [[ $CONFIG_RC -ne 0 ]]; then
+  echo "purlin: the pre-push gate could not read this project's configuration"
+  echo "        (exit $CONFIG_RC, reason above). Blocking the push."
+  exit 1
 fi
+MODE="$(printf '%s\n' "$CONFIG_OUT" | sed -n 's/^mode=//p')"
+FRAMEWORKS="$(printf '%s\n' "$CONFIG_OUT" | sed -n 's/^frameworks=//p')"
 
 if [[ "$MODE" == "off" ]]; then
   echo "purlin: pre-push mode is \"off\"; skipping the proof coverage check."
   exit 0
-fi
-
-# --- The plugin has to be present to check anything ---
-if [[ -z "$GATE" ]]; then
-  echo "purlin: WARNING: the Purlin plugin was not found, so proof coverage"
-  echo "        was NOT checked. Searched for scripts/hooks/pre_push_gate.py under:"
-  for candidate in "${CANDIDATES[@]}"; do
-    echo "          $candidate"
-  done
-  echo "        Set PURLIN_PLUGIN_ROOT to the plugin directory to fix this."
-  if [[ "$MODE" == "warn" ]]; then
-    exit 0
-  fi
-  echo "purlin: mode is \"$MODE\", which cannot be enforced without the plugin."
-  echo "        Blocking the push rather than passing it unchecked."
-  exit 1
 fi
 
 # --- Find the specs ---

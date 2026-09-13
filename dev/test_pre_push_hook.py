@@ -30,6 +30,12 @@ SERVER_DIR = os.path.join(PROJECT_ROOT, "scripts", "mcp")
 if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# The shim purlin:init generates is what finds the plugin now, so the proofs
+# for the resolution order drive the real generated file rather than a
+# hand-written stand-in (`skill_init` RULE-77).
+sys.path.insert(0, os.path.join(PROJECT_ROOT, "scripts", "init"))
+import scaffold  # noqa: E402
+
 # Box drawing and block elements. The verdict is read from the structured
 # payload, so no glyph of the rendered table may appear in either hook file.
 BOX_DRAWING_RE = re.compile(r"[─-╿]")
@@ -964,24 +970,32 @@ class TestRule9HookInstalled:
 
     @pytest.mark.proof("pre_push_hook", "PROOF-11", "RULE-9", tier="integration")
     def test_installed_hook_exists_is_executable_and_blocks(self, tmp_path):
-        """Simulates what purlin:init does: copies pre-push.sh to
-        .git/hooks/pre-push and makes it executable. The installed hook must be
-        present, executable, and actually intercept a push carrying a FAIL
-        proof (exit 1 and PUSH BLOCKED)."""
+        """Runs what purlin:init installs, end to end: the delegator git runs,
+        the shim it points at, and this checkout's pre-push.sh at the far end.
+        Every file must be executable and the chain must actually intercept a
+        push carrying a FAIL proof (exit 1 and PUSH BLOCKED)."""
         tmpdir = str(tmp_path)
         _create_test_project(tmpdir, num_rules=3)
+
+        shim = os.path.join(tmpdir, ".purlin", "hooks", "pre-push")
+        os.makedirs(os.path.dirname(shim), exist_ok=True)
+        with open(shim, "w") as fh:
+            fh.write(scaffold._shim("pre-push", "scripts/hooks/pre-push.sh"))
+        os.chmod(shim, 0o755)
 
         git_hooks_dir = os.path.join(tmpdir, ".git", "hooks")
         os.makedirs(git_hooks_dir, exist_ok=True)
         installed_hook = os.path.join(git_hooks_dir, "pre-push")
-        shutil.copy2(HOOK_SCRIPT, installed_hook)
+        with open(installed_hook, "w") as fh:
+            fh.write(scaffold._DELEGATOR.replace("@NAME@", "pre-push"))
         os.chmod(installed_hook, os.stat(installed_hook).st_mode
                  | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
-        assert os.path.isfile(installed_hook), (
-            ".git/hooks/pre-push does not exist after install")
-        assert os.access(installed_hook, os.X_OK), (
-            ".git/hooks/pre-push is not executable after install")
+        for path in (installed_hook, shim):
+            assert os.path.isfile(path), f"{path} does not exist after install"
+            assert os.access(path, os.X_OK), f"{path} is not executable"
+        assert ".purlin/hooks/pre-push" in open(installed_hook).read(), (
+            "the installed hook does not reach the shim")
 
         _write_proof_file(tmpdir, "test_feature", [
             ("PROOF-1", "RULE-1", "pass"),
@@ -990,7 +1004,12 @@ class TestRule9HookInstalled:
         ])
         _commit(tmpdir, "failing-proofs")
 
-        exit_code, output = _run_hook(tmpdir, script=installed_hook)
+        home = os.path.join(tmpdir, "home")
+        os.makedirs(home, exist_ok=True)
+        env = _clean_env()
+        env["HOME"] = home
+        env["PURLIN_PLUGIN_ROOT"] = PROJECT_ROOT
+        exit_code, output = _run_hook(tmpdir, script=installed_hook, env=env)
 
         assert exit_code == 1, (
             f"Expected the installed hook to exit 1 on a FAIL proof, got "
@@ -1139,88 +1158,105 @@ class TestRule13NestedSpecs:
 
 class TestRule14PluginResolution:
 
-    def _project_without_plugin(self, tmpdir: str) -> str:
+    @staticmethod
+    def _install_shim(tmpdir: str) -> tuple:
+        """The real generated shim in the project, plus an empty HOME.
+
+        The fake HOME matters: the shim's fourth candidate is Claude Code's
+        install registry under the real one, and a test that left it alone
+        would resolve whichever plugin this machine happens to have installed.
+        """
+        path = os.path.join(tmpdir, ".purlin", "hooks", "pre-push")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as fh:
+            fh.write(scaffold._shim("pre-push", "scripts/hooks/pre-push.sh"))
+        os.chmod(path, 0o755)
+        empty = os.path.join(tmpdir, "empty")
+        home = os.path.join(tmpdir, "home")
+        os.makedirs(empty, exist_ok=True)
+        os.makedirs(home, exist_ok=True)
+        return path, empty, home
+
+    def _project_without_plugin(self, tmpdir: str) -> tuple:
         _create_test_project(tmpdir, num_rules=2, with_gate=False)
         _write_proof_file(tmpdir, "test_feature", [
             ("PROOF-1", "RULE-1", "fail"),
             ("PROOF-2", "RULE-2", "pass"),
         ])
         _commit(tmpdir, "failing proof, no plugin")
-        git_hooks_dir = os.path.join(tmpdir, ".git", "hooks")
-        os.makedirs(git_hooks_dir, exist_ok=True)
-        installed = os.path.join(git_hooks_dir, "pre-push")
-        shutil.copy2(HOOK_SCRIPT, installed)
-        return installed
+        return self._install_shim(tmpdir)
 
     @pytest.mark.proof("pre_push_hook", "PROOF-23", "RULE-14", tier="integration")
     def test_missing_plugin_warns_in_warn_and_refuses_in_strict(self, tmp_path):
-        """With PURLIN_PLUGIN_ROOT and CLAUDE_PLUGIN_ROOT unset and no
-        pre_push_gate.py under any candidate, warn mode exits 0 printing
-        WARNING and every path it searched, while strict mode exits 1 printing
-        the same paths. A FAIL proof is on disk in both runs, so warn's exit 0
-        is the unchecked push it says it is."""
+        """With no candidate carrying scripts/hooks/pre-push.sh, warn mode
+        exits 0 printing WARNING and every path it searched, while strict mode
+        exits 1 printing the same paths. A FAIL proof is on disk in both runs,
+        so warn's exit 0 is the unchecked push it says it is."""
         tmpdir = str(tmp_path)
-        installed = self._project_without_plugin(tmpdir)
+        shim, empty, home = self._project_without_plugin(tmpdir)
+        env = _clean_env()
+        env["PURLIN_PLUGIN_ROOT"] = empty
+        env["HOME"] = home
 
-        exit_warn, out_warn = _run_hook(tmpdir, script=installed)
+        exit_warn, out_warn = _run_hook(tmpdir, script=shim, env=env)
         assert exit_warn == 0, (
             f"warn must fail open, got exit {exit_warn}\n{out_warn}")
         assert "WARNING" in out_warn, f"{out_warn}"
-        assert "pre_push_gate.py" in out_warn, f"{out_warn}"
-        assert tmpdir in out_warn, (
-            f"The searched paths must be named:\n{out_warn}")
+        assert "scripts/hooks/pre-push.sh" in out_warn, f"{out_warn}"
+        for path in (empty, os.path.realpath(tmpdir)):
+            assert path in out_warn, (
+                f"The searched paths must be named:\n{out_warn}")
 
         _set_config_field(tmpdir, "pre_push", "strict")
-        exit_strict, out_strict = _run_hook(tmpdir, script=installed)
+        exit_strict, out_strict = _run_hook(tmpdir, script=shim, env=env)
         assert exit_strict == 1, (
             f"strict must fail closed, got exit {exit_strict}\n{out_strict}")
-        assert tmpdir in out_strict, (
+        assert os.path.realpath(tmpdir) in out_strict, (
             f"The searched paths must be named:\n{out_strict}")
 
     @staticmethod
     def _marker_plugin(base: str, marker: str) -> str:
-        """A plugin root whose gate announces itself before delegating.
+        """A plugin root whose pre-push script announces itself before running.
 
-        The wrapper runs the real gate under __main__, so the verdict, the
-        exit code and the `mode=`/`frameworks=` lines are the real ones; only
-        the marker on stderr says which copy was chosen.
+        The wrapper execs this checkout's real pre-push.sh, so the verdict,
+        the exit code and every message are the real ones; only the marker
+        line says which plugin root the shim chose.
         """
         hooks = os.path.join(base, "scripts", "hooks")
         os.makedirs(hooks, exist_ok=True)
-        with open(os.path.join(hooks, "pre_push_gate.py"), "w") as fh:
-            fh.write("import sys, runpy\n"
-                     f'sys.stderr.write("PLUGIN MARKER: {marker}\\n")\n'
-                     f'runpy.run_path({GATE_SCRIPT!r}, run_name="__main__")\n')
+        script = os.path.join(hooks, "pre-push.sh")
+        with open(script, "w") as fh:
+            fh.write("#!/bin/sh\n"
+                     f'echo "PLUGIN MARKER: {marker}"\n'
+                     f'exec {HOOK_SCRIPT!r} "$@"\n')
+        os.chmod(script, 0o755)
         return base
 
     @pytest.mark.proof("pre_push_hook", "PROOF-30", "RULE-14", tier="integration")
-    def test_first_candidate_carrying_the_gate_wins(self, tmp_path):
-        """The resolution order, with more than one candidate carrying a gate.
-        Each plugin root's gate prints `PLUGIN MARKER: <id>` on stderr and then
-        runs the real gate, so the marker in the output names the copy that
-        ran. With the script installed where its own ../.. holds no gate,
-        PURLIN_PLUGIN_ROOT beats CLAUDE_PLUGIN_ROOT; swapping the two swaps
-        the winner; and a symlinked install beats both, because readlink
-        resolves the candidate that comes first."""
+    def test_first_candidate_carrying_the_hook_script_wins(self, tmp_path):
+        """The resolution order, with more than one candidate carrying a hook
+        script. Each plugin root's pre-push.sh prints `PLUGIN MARKER: <id>`
+        and then execs the real one, so the marker in the output names the
+        root the shim chose. PURLIN_PLUGIN_ROOT beats .purlin/plugin-root,
+        which beats CLAUDE_PLUGIN_ROOT, and position and not identity
+        decides."""
         tmpdir = str(tmp_path)
         _create_test_project(tmpdir, num_rules=1, with_gate=False)
         _write_proof_file(tmpdir, "test_feature",
                           [("PROOF-1", "RULE-1", "pass")])
         _set_config_field(tmpdir, "test_framework", "shell")
         _commit(tmpdir, "project with no plugin of its own")
+        shim, _empty, home = self._install_shim(tmpdir)
 
         plugin_a = self._marker_plugin(os.path.join(tmpdir, "plugin_a"), "A")
         plugin_b = self._marker_plugin(os.path.join(tmpdir, "plugin_b"), "B")
-
-        git_hooks_dir = os.path.join(tmpdir, ".git", "hooks")
-        os.makedirs(git_hooks_dir, exist_ok=True)
-        installed = os.path.join(git_hooks_dir, "pre-push")
-        shutil.copy2(HOOK_SCRIPT, installed)
+        plugin_p = self._marker_plugin(os.path.join(tmpdir, "plugin_p"), "P")
 
         env = _clean_env()
+        env["HOME"] = home
         env["PURLIN_PLUGIN_ROOT"] = plugin_a
         env["CLAUDE_PLUGIN_ROOT"] = plugin_b
-        exit_code, output = _run_hook(tmpdir, script=installed, env=env)
+        exit_code, output = _run_hook(tmpdir, script=shim, env=env)
         assert exit_code == 0, f"{exit_code}\n{output}"
         assert "PLUGIN MARKER: A" in output, (
             f"PURLIN_PLUGIN_ROOT must be tried before CLAUDE_PLUGIN_ROOT:"
@@ -1232,29 +1268,25 @@ class TestRule14PluginResolution:
         # Swap them: the winner follows the position, not the directory.
         env["PURLIN_PLUGIN_ROOT"] = plugin_b
         env["CLAUDE_PLUGIN_ROOT"] = plugin_a
-        exit_swap, out_swap = _run_hook(tmpdir, script=installed, env=env)
+        exit_swap, out_swap = _run_hook(tmpdir, script=shim, env=env)
         assert exit_swap == 0, f"{exit_swap}\n{out_swap}"
         assert "PLUGIN MARKER: B" in out_swap, out_swap
         assert "PLUGIN MARKER: A" not in out_swap, out_swap
 
-        # A symlinked install: readlink resolves the script to plugin_s, whose
-        # ../.. carries a gate, and that candidate is ahead of both variables.
-        plugin_s = self._marker_plugin(os.path.join(tmpdir, "plugin_s"), "S")
-        shutil.copy2(HOOK_SCRIPT,
-                     os.path.join(plugin_s, "scripts", "hooks", "pre-push.sh"))
-        linked = os.path.join(git_hooks_dir, "pre-push-linked")
-        os.symlink(os.path.join(plugin_s, "scripts", "hooks", "pre-push.sh"),
-                   linked)
-        assert os.path.islink(linked)
-
-        exit_link, out_link = _run_hook(tmpdir, script=linked, env=env)
-        assert exit_link == 0, f"{exit_link}\n{out_link}"
-        assert "PLUGIN MARKER: S" in out_link, (
-            f"the symlinked install's own root must be the first candidate:"
-            f"\n{out_link}")
-        for loser in ("PLUGIN MARKER: A", "PLUGIN MARKER: B"):
-            assert loser not in out_link, (
-                f"{loser} ran ahead of the symlink-resolved root:\n{out_link}")
+        # .purlin/plugin-root sits between the two variables: with the first
+        # one pointing at a directory carrying no hook script it wins, and
+        # CLAUDE_PLUGIN_ROOT does not.
+        pinned = os.path.join(tmpdir, ".purlin", "plugin-root")
+        with open(pinned, "w") as fh:
+            fh.write(plugin_p + "\n")
+        env["PURLIN_PLUGIN_ROOT"] = os.path.join(tmpdir, "empty")
+        env["CLAUDE_PLUGIN_ROOT"] = plugin_a
+        exit_pin, out_pin = _run_hook(tmpdir, script=shim, env=env)
+        assert exit_pin == 0, f"{exit_pin}\n{out_pin}"
+        assert "PLUGIN MARKER: P" in out_pin, (
+            f".purlin/plugin-root must be tried before CLAUDE_PLUGIN_ROOT and "
+            f"after an unresolvable PURLIN_PLUGIN_ROOT:\n{out_pin}")
+        assert "PLUGIN MARKER: A" not in out_pin, out_pin
 
 
 # ---------------------------------------------------------------------------
