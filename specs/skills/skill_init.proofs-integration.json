@@ -414,6 +414,15 @@
       "test_name": "test_the_previous_bytes_survive_at_a_named_path",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-91",
+      "rule": "RULE-49",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_installation_guide_table_equals_the_id_list",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

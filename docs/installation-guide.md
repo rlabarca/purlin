@@ -340,12 +340,29 @@ It detects what is pending from the project's own contents (never from the `vers
 | `legacy-tier-windows` | Rewrites `@windows` proof tags to `@unit @on(<platform-id>)` |
 | `legacy-proof-file` | `git mv`s `<feature>.proofs-windows.json` to `<feature>.proofs-unit@<platform-id>.json` and stamps `platform` on it |
 | `legacy-marker` | Rewrites every plugin's `windows`-tier proof marker to tier `unit` plus the platform |
-| `plugin-copies-stale` | Replaces each `.purlin/plugins/` copy with the installed plugin's file |
-| `config-fields-missing` | Fills config fields from the template and stamps `version` from the installed `VERSION` |
+| `plugin-copies-stale` | Replaces each `.purlin/plugins/` copy with the installed plugin's file, keeping the bytes that were there at `.purlin/plugins/<name>.local-<sha8>.bak` first |
+| `config-fields-missing` | Fills config fields from the template, removes retired ones and stamps `version` from the installed `VERSION` |
+| `hooks-stale` | Rewrites `.purlin/hooks/pre-commit` and `.purlin/hooks/pre-push` from the installed plugin and reinstalls the hook git runs, when the one that is there is a Purlin hook in a shape the plugin stopped writing (a dangling symlink, a symlink into the plugin, a copy of the hook body, or a delegator without the missing-shim guard). A hook of your own is never touched |
+| `dashboard-stale` | Copies the installed `purlin-report.html` over a root dashboard that is a dangling symlink or whose bytes are not this plugin's |
+| `digest-schema-old` | Rebuilds `.purlin/report-data.js` when it was written at an older payload schema, so the dashboard and the QA report stop reading fields that are not there |
 | `receipt-v1` | Prints `→ Run: purlin:verify`. A receipt is a claim that tests ran, so the update never writes one |
 | `legacy-mcp` | Removes the legacy `purlin` entry from `.mcp.json` (this is what `purlin:init --mcp` runs on its own), then `/reload-plugins` |
 
 `purlin:init --update --check` reports what is pending and writes nothing; it is also what a CI preflight runs, so a runner never proves anything with stale plugin copies. `purlin:init --update --platform-id <id>` says what a legacy `@windows` tag becomes (default: the `windows` OS family). Every skill points at the same advisory: when `purlin:status` or any other skill opens with a pending-migrations block, that is this command asking to be run.
+
+### When the plugin is older than the project
+
+The opposite case is not a migration. A project stamped with a version newer than the installed
+plugin (a teammate who has not run the marketplace update yet, or a branch someone else
+initialized) gets one line saying so:
+
+```
+⚠ This project was initialized by Purlin 0.11.0 and the installed plugin is 0.10.0.
+→ Update the plugin, not the project: claude plugin marketplace update
+```
+
+Nothing is pending, and `purlin:init --update` is not the fix: it would stamp the project down to
+the older plugin and lose what the newer one wrote. Update the plugin and the line goes away.
 
 The update never scaffolds a runner and never issues a receipt. Registering a platform and writing its workflow is `purlin:test`'s consent path; receipts come from `purlin:verify` after a fresh run.
 

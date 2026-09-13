@@ -1189,3 +1189,35 @@ class TestVersionGapIsOneDirectional:
             assert gaps[3] is None and gaps[4] is None, gaps
         finally:
             shutil.rmtree(root, ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------
+# skill_init RULE-49: the guide carries one row per id
+# ---------------------------------------------------------------------------
+
+class TestTheGuideNamesEveryMigration:
+
+    @pytest.mark.proof("skill_init", "PROOF-91", "RULE-49", tier="integration")
+    def test_the_installation_guide_table_equals_the_id_list(self):
+        """RULE-49: an id a user consents to is one they can look up."""
+        guide = _read(ROOT, 'docs/installation-guide.md')
+        rows = []
+        for line in guide.splitlines():
+            if not line.startswith('| `legacy-') and not rows:
+                continue
+            if not line.startswith('|'):
+                break
+            cells = [c.strip() for c in line.strip('|').split('|')]
+            rows.append((cells[0].strip('`'), cells[1] if len(cells) > 1
+                         else ''))
+        assert [name for name, _ in rows] == list(ps._MIGRATION_ORDER), \
+            [name for name, _ in rows]
+        for name, description in rows:
+            assert description, f'{name} has an empty description cell'
+
+        flat = ' '.join(guide.split())
+        assert 'was initialized by Purlin' in flat, \
+            'the guide never names the newer-plugin case'
+        assert 'Update the plugin, not the project' in flat, flat[:0]
+        assert 'purlin:init --update` is not the fix' in flat, \
+            'the guide does not say the update is not the fix for it'
