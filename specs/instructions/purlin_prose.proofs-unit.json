@@ -102,6 +102,24 @@
     },
     {
       "feature": "purlin_prose",
+      "id": "PROOF-23",
+      "rule": "RULE-17",
+      "test_file": "dev/test_purlin_prose.py",
+      "test_name": "test_prerequisites_name_every_interpreter_and_the_override",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_prose",
+      "id": "PROOF-24",
+      "rule": "RULE-15",
+      "test_file": "dev/test_purlin_prose.py",
+      "test_name": "test_a_proof_common_rule_pasted_into_the_contract_is_named",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_prose",
       "id": "PROOF-3",
       "rule": "RULE-2",
       "test_file": "dev/test_purlin_prose.py",

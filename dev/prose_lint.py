@@ -642,6 +642,20 @@ HOME_SCOPE = ('docs/**.md', 'references/**.md', 'skills/**.md',
 
 TAXONOMY_HOME = 'references/remote_verification.md'
 
+PROOF_COMMON_HOME = 'specs/_anchors/proof_common.md'
+
+
+def _anchor_rule_lines(rel):
+    """A pattern matching any full `- RULE-N:` line of an anchor spec.
+
+    The alternation is built from the anchor's own rule bodies, so the row
+    catches a verbatim copy of a rule and nothing that merely talks about one.
+    A home outside the scanned trees is still read for its own count, which is
+    what `single_home` does when the home is not in the file list.
+    """
+    bodies = re.findall(r'^- RULE-\d+: (.+)$', _read(rel), re.M)
+    return re.compile('|'.join(re.escape(b.rstrip()) for b in bodies))
+
 #: Every row: (name, unit, pattern, home, scope, min_hits, pointer, note).
 #: `unit` is `line` (one line at a time, fenced blocks skipped), `text` (the
 #: whole file, so a sentence wrapped across lines still matches) or
@@ -674,6 +688,12 @@ HOMES = (
      TAXONOMY_HOME, HOME_SCOPE, 1, None,
      'a second copy of a membership question is a second answer the day one '
      'of the two is edited'),
+    ('proof_common rule text', 'line',
+     _anchor_rule_lines(PROOF_COMMON_HOME),
+     PROOF_COMMON_HOME, HOME_SCOPE, 25, None,
+     'the proof-plugin contract cites the anchor and never restates it, so a '
+     'verbatim rule line in a reference is a second source of truth that goes '
+     'stale the first time the anchor is edited'),
     ('platform, environment and prerequisite paragraph', 'paragraph',
      re.compile(r'(?=.*\bplatforms?\b)(?=.*\benvironments?\b)'
                 r'(?=.*\bprerequisites?\b)', re.IGNORECASE),
@@ -691,6 +711,10 @@ def single_home(root=PROJECT_ROOT, files=None, rows=HOMES, strict=True):
     for (name, unit, pattern, home, scope, min_hits, pointer,
          note) in rows:
         scanned = _scope_files(scope, files)
+        if home not in scanned:
+            # A home may live outside the scanned trees; it is still read for
+            # its own count, or `min_hits` would fail on the home's absence.
+            scanned = scanned + [home]
         at_home = 0
         for rel in scanned:
             try:

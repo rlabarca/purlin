@@ -11,47 +11,21 @@ format a plugin writes is `references/formats/proofs_format.md`.
 
 Four sections:
 
-- **A. Behavioural requirements**: one row per `proof_common` rule, and the two legitimate
-  shapes of the merge filter.
+- **A. Behavioural requirements**: where the rules are, and the two legitimate shapes of the
+  merge filter.
 - **B. Wiring a new language**: the ordered list of files a new framework has to touch, and
   the per-framework table of what the eight shipped plugins registered.
 - **C. Checker and extractor**: why a registered framework with no Pass 1 checker is a hole in
   the quality gate.
-- **D. How to prove a plugin**: which test class proves which row, and the per-plugin spec
+- **D. How to prove a plugin**: which test class proves which rule, and the per-plugin spec
   template.
 
 ## A. Behavioural requirements
 
-Every row is a requirement of the anchor. A plugin that fails one is not a proof plugin: it is
-a program that writes JSON files into `specs/`.
-
-| Rule | What the plugin must do |
-|------|-------------------------|
-| `RULE-1` | Resolve a feature's spec directory by scanning the project's `specs/**/*.md` and matching the feature name to a spec filename stem. |
-| `RULE-2` | Name its output `<feature>.proofs-<tier>.json` when the marker declares no platform, and `<feature>.proofs-<tier>@<platform>.json` when it declares one. A scoped file carries a top-level `platform` equal to the id in its name, constant for the whole file. |
-| `RULE-3` | Fall back to writing under `specs/` when no spec directory matches the feature, rather than dropping the result. |
-| `RULE-4` | Merge write-scoped on `(feature, tier, platform, test_file)`. Another feature's entries, and this feature's entries from test files this run did not execute, survive the write. |
-| `RULE-5` | Write all 7 required fields on every entry (`feature`, `id`, `rule`, `test_file`, `test_name`, `status`, `tier`), and in a scoped file exactly one more, `platform`. Never an eighth field in an agnostic file. |
-| `RULE-6` | Write `status` as `"pass"` or `"fail"` and nothing else. |
-| `RULE-7` | Write no file at all when the run collected no marker. A test suite with no Purlin markers must leave the tree untouched. |
-| `RULE-8` | Need no registration. `sync_status` finds proof files by globbing, so a plugin that writes the naming pattern works with no entry anywhere. |
-| `RULE-9` | Warn on stderr when it took the RULE-3 fallback, naming the feature, the literal `purlin:spec` hint that creates the missing spec, and the path it wrote to. |
-| `RULE-10` | Purge an entry whose test was removed from a file the run executed, rather than carrying it over from the file on disk. |
-| `RULE-11` | Reap the current feature's entries whose `test_file` no longer resolves to a file in the working tree, resolved from the RULE-22 project root. |
-| `RULE-12` | Reap only what the run can see: entries of files this run executed. A marker removed from a file the run did not execute stays until that file runs again, and one platform's run never reaps another's file. |
-| `RULE-13` | Emit nothing for a test that did not run. `"fail"` means the assertion failed; writing it for a skip makes a missing tool indistinguishable from a broken build. |
-| `RULE-14` | Be regenerable: every test file a committed entry names is either run by the project's sweep or proved only in platform-scoped files whose ids the registry declares. |
-| `RULE-15` | Write `test_file` with `/` separators on every operating system. A backslash never reaches a proof file. |
-| `RULE-16` | Be one file per framework, byte-identical between a developer machine and a runner, with no branch on the host OS outside its single host-platform helper. |
-| `RULE-17` | Let the marker decide and the environment name: a marker with platforms writes the scoped file named by `PURLIN_PLATFORM`, or by the detected OS family when it is unset. Never evaluate a version constraint, never read the registry. |
-| `RULE-18` | Keep the committed entry of a marked test the run skipped, with its old status, where the framework reports a skip at all. Plugins with no skip signal (shell, sql, phpunit, c) are exempt. |
-| `RULE-19` | Write or merge the run marker `.purlin/runtime/test_run.json` as it writes its proof files, carrying `at`, `commit`, `sweep`, `test_files`, `passed`, `failed`, `skipped`, `ok` and `runs`, merging into an existing marker at the same commit and starting fresh at any other. Write nothing when the project root holds no `.purlin/`. |
-| `RULE-20` | Record each marked test it skipped under the marker's `skipped_proofs` as `{feature, id, test_file, test_name, reason}`, with the reason the framework carried and never an invented one. Exempt where RULE-18 exempts. |
-| `RULE-21` | Sort every file it writes by `(id, test_file, test_name)` under ordinal string comparison, after the merge and before serialization, so two runs in any collection order write byte-identical bytes. |
-| `RULE-22` | Find the project root by walking up from the directory the run lives in to the nearest ancestor holding `specs/` or `.purlin/`, and root the spec scan, the fallback, the existence check and the run marker there rather than at the working directory. |
-| `RULE-23` | Record `test_file` relative to that root whatever shape the framework handed over, never absolute, never with a `..` segment. |
-| `RULE-24` | Write through `<path>.<pid>.tmp` beside the target and replace the target in one filesystem operation. Never delete the target first, and leave no `*.tmp` behind. |
-| `RULE-25` | Require no runtime dependency the framework does not already provide: its language's standard library plus the framework it is a plugin of, and nothing else. |
+Every requirement is a rule of `specs/_anchors/proof_common.md`, and that is where to read it.
+This file keeps no second list: a plugin that fails one of those rules is not a proof plugin,
+it is a program that writes JSON files into `specs/`. Section D says which test class proves
+which rule.
 
 ### The two legitimate merge shapes
 
@@ -96,7 +70,7 @@ it landed.
 
 | Step | Path | What it gains |
 |------|------|---------------|
-| 1 | `scripts/proof/` | The plugin itself, one file for the framework, meeting every row of section A. |
+| 1 | `scripts/proof/` | The plugin itself, one file for the framework, meeting every rule of `specs/_anchors/proof_common.md`. |
 | 2 | `references/supported_frameworks.md` | A row in the Built-in Plugins table (auto-detected) or the Additional Plugins table (manual wiring), with a non-empty **Runner setup** cell, plus a row in the Detection table when it is auto-detected. |
 | 3 | `scripts/init/scaffold.py` | A `_DETECTORS` entry matching the reference's Detection cell, a `_WIRING` entry when init writes the framework's config file, and a `_DEST_OVERRIDES` entry when the installed name differs from the plugin's basename. |
 | 4 | `scripts/hooks/pre_push_gate.py` | The framework id in `KNOWN_FRAMEWORKS`, so the hook resolves it instead of reporting it as a name Purlin does not know. |
@@ -174,8 +148,8 @@ So a new language brings three things to `scripts/audit/static_checks.py`, not o
 
 ## D. How to prove a plugin
 
-Each behavioural row of section A already has a proof in `specs/_anchors/proof_common.md`, and
-most of those proofs are parametrised over every shipped plugin. Proving a new plugin is
+Each rule of `specs/_anchors/proof_common.md` already has a proof there, and most of those
+proofs are parametrised over every shipped plugin. Proving a new plugin is
 therefore adding an arm, not writing a suite:
 
 | Behaviour | Where its arm goes |

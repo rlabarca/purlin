@@ -5,13 +5,15 @@ plugin. It is useful only while three things hold, and each is checked here:
 
   1. its wiring list names every file a new framework has to be wired into, and
      every path it names still exists;
-  2. every behavioural row cites a rule `specs/_anchors/proof_common.md`
-     actually carries, and every rule the anchor carries has a row;
-  3. `references/formats/proofs_format.md` documents the run marker, which is
+  2. `references/formats/proofs_format.md` documents the run marker, which is
      the one part of the plugin contract the format file used to omit;
-  4. every framework its per-framework table registers reaches a Pass 1 checker
+  3. every framework its per-framework table registers reaches a Pass 1 checker
      and a cache-key extractor, so no shipped language is a hole in the
      deterministic quality gate.
+
+The behavioural requirements themselves are not checked here: they are the
+rules of `specs/_anchors/proof_common.md`, the contract cites them rather than
+restating them, and `purlin_prose` RULE-15 is what keeps that one home.
 
 A checklist that has drifted from the tree is worse than none: it reads as
 authoritative and sends the next author to a file that moved.
@@ -32,9 +34,6 @@ from static_checks import analyze_test_file  # noqa: E402
 CONTRACT = os.path.join(PROJECT_ROOT, 'references', 'proof_plugin_contract.md')
 PROOFS_FORMAT = os.path.join(
     PROJECT_ROOT, 'references', 'formats', 'proofs_format.md')
-ANCHOR = os.path.join(
-    PROJECT_ROOT, 'specs', '_anchors', 'proof_common.md')
-
 # Every file a framework has to be named in before a project can select it, a
 # hook can run it, the quality gate can grade it and the sweep can regenerate
 # its evidence. Each entry is a site a half-wired framework breaks.
@@ -240,41 +239,6 @@ class TestTheChecklistNamesEveryWiringSite:
         assert len(named) >= len(WIRING_SITES), (
             f"only {sorted(named)} were read out of section B; the parser is "
             "not seeing the checklist it claims to check")
-
-
-class TestEveryRequirementRowCitesARealRule:
-    """purlin_references RULE-31."""
-
-    @pytest.mark.proof("purlin_references", "PROOF-31", "RULE-31")
-    def test_requirement_rows_and_anchor_rules_are_the_same_set(self):
-        requirements = _section_starting(_sections(_read(CONTRACT)), 'A.')
-        cited = set()
-        for line in requirements.split('\n'):
-            if not line.startswith('|'):
-                continue
-            first_cell = line.strip('|').split('|')[0].strip().strip('`')
-            if re.fullmatch(r'RULE-\d+', first_cell):
-                cited.add(first_cell)
-
-        anchored = set(re.findall(r'^- (RULE-\d+):', _read(ANCHOR), re.M))
-
-        assert len(anchored) >= 25, (
-            f"only {len(anchored)} rules were read from {ANCHOR}; the anchor "
-            "parser is not seeing the contract it grades against")
-
-        uncovered = sorted(anchored - cited,
-                           key=lambda r: int(r.split('-')[1]))
-        assert not uncovered, (
-            f"proof_common carries {uncovered} with no row in the contract's "
-            "requirement table. A rule the checklist does not mention is one "
-            "a plugin author never reads")
-
-        invented = sorted(cited - anchored,
-                          key=lambda r: int(r.split('-')[1]))
-        assert not invented, (
-            f"the requirement table cites {invented}, which "
-            "specs/_anchors/proof_common.md does not carry. A row citing no "
-            "rule is a requirement nothing proves")
 
 
 class TestProofsFormatDocumentsTheRunMarker:

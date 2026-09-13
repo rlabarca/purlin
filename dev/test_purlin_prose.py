@@ -614,6 +614,54 @@ class TestSingleHomeLint:
             f"the committed tree must carry the table only in {home}")
 
 
+    @pytest.mark.proof("purlin_prose", "PROOF-24", "RULE-15")
+    def test_a_proof_common_rule_pasted_into_the_contract_is_named(
+            self, tmp_path):
+        row = _row(HOMES, 'proof_common rule text')
+        pattern, home = row[2], row[3]
+        anchor = _read(home)
+        rule_lines = [line for line in anchor.splitlines()
+                      if re.match(r'^- RULE-\d+: ', line)]
+        assert len(rule_lines) >= 25, (
+            f"{home} carries {len(rule_lines)} rule lines; the row's pattern "
+            f"is built from them and would grade against an empty anchor")
+        assert len(pattern.findall(anchor)) >= row[5], (
+            f"the committed anchor must carry the row's pattern at least "
+            f"{row[5]} times")
+        _plant(tmp_path, home, anchor)
+
+        rel = 'references/proof_plugin_contract.md'
+        contract = _read(rel)
+        # The body alone, without the `- RULE-N: ` prefix: a contract that
+        # restates a rule restates its text, not the anchor's list markup.
+        body = rule_lines[3].split(': ', 1)[1]
+        injected = contract.rstrip('\n') + '\n\n' + body + '\n'
+        _plant(tmp_path, rel, injected)
+        expected = injected.splitlines().index(body) + 1
+
+        offenders = single_home(root=str(tmp_path), files=[home, rel],
+                                rows=(row,), strict=True)
+        assert len(offenders) == 1, (
+            f"the planted rule line must be the one offender; got {offenders}")
+        assert offenders[0].path == rel
+        assert offenders[0].lint == 'single_home'
+        assert offenders[0].line == expected, (
+            f"expected line {expected}, got {offenders[0].line}")
+        assert home in offenders[0].message, offenders[0].message
+
+        # Three restored rows of the retired requirement table fail together.
+        three = [line.split(': ', 1)[1] for line in rule_lines[:3]]
+        _plant(tmp_path, rel,
+               contract.rstrip('\n') + '\n\n' + '\n'.join(three) + '\n')
+        offenders = single_home(root=str(tmp_path), files=[home, rel],
+                                rows=(row,), strict=True)
+        assert [o.path for o in offenders] == [rel] * 3, (
+            f"all three restored rules must be reported; got {offenders}")
+
+        assert single_home(rows=(row,), strict=True) == [], (
+            f"the committed tree must carry the rule text only in {home}")
+
+
 class TestTheLintsReadTheTreeTheyClaimTo:
     """RULE-12 - a sweep that scans nothing passes on an empty repository."""
 

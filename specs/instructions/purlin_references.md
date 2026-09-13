@@ -88,12 +88,6 @@
   not at all, which is how a framework ships selectable in one file and unknown to the hook that
   runs it; a path the list names that does not exist is a checklist that outlived the tree it
   describes and sends the next author to a file that moved
-- RULE-31: The contract's requirement section carries one row per `proof_common` rule, keyed by
-  the rule id, and the two sets are equal in both directions: every id a row cites exists in
-  `specs/_anchors/proof_common.md`, and every rule the anchor carries is cited by a row. The
-  contract is a reader's view of the anchor and never a second source of truth, so a rule added to
-  the anchor with no row is a requirement the checklist never mentions and a row citing an id the
-  anchor does not carry is a requirement nothing proves
 - RULE-32: `proofs_format.md` carries a `## Run marker` section for `.purlin/runtime/test_run.json`:
   the nine top-level fields `proof_common` RULE-19 names (`at`, `commit`, `sweep`, `test_files`,
   `passed`, `failed`, `skipped`, `ok`, `runs`), the RULE-20 `skipped_proofs` key with the shape of
@@ -191,12 +185,6 @@
   least 19 tokens were collected so the scan cannot pass on an empty section. Dropping
   `scripts/hooks/pre_push_gate.py` from the checklist fails naming that path; leaving a path in the
   list after moving the file fails the existence half naming it @unit
-- PROOF-31 (RULE-31): Take the `RULE-N` id from the first cell of every row of the contract's
-  section A table, and every id matching `^- RULE-N:` in `specs/_anchors/proof_common.md`. Verify
-  at least 25 anchor rules were read, that no anchor rule is missing a row, and that no row cites
-  an id the anchor does not carry. Changing a row's id to `RULE-99` fails naming it as cited but
-  absent from the anchor; adding a rule to the anchor with no row fails the other direction naming
-  the rule @unit
 - PROOF-32 (RULE-32): Verify `references/formats/proofs_format.md` opens with a `> Format-Version:`
   of at least 6, split it on its `## ` headings and assert a `Run marker` section exists; verify
   its body names `.purlin/runtime/test_run.json`, carries each of the nine RULE-19 field names as a
