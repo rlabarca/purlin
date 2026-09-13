@@ -78,10 +78,11 @@ Specs migrated from `features/` are written to `specs/`. Non-compliant specs in 
 
 ## Resuming an Interrupted Run
 
-State is preserved in `.purlin/cache/sfc_state.json`. Resume with:
+State is preserved in `.purlin/cache/sfc_state.json`. Run the skill again and it resumes on its
+own: there is no flag, because the first thing the skill does is read that file.
 
 ```
-purlin:spec-from-code --resume
+purlin:spec-from-code
 ```
 
 Completed categories are skipped. Questions already answered are not re-asked.

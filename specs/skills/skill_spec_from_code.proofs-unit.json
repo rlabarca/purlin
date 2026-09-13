@@ -213,7 +213,7 @@
       "id": "PROOF-34",
       "rule": "RULE-24",
       "test_file": "dev/test_e2e_ui_extraction.py",
-      "test_name": "test_skill_has_draft_evaluate_and_contract_filter",
+      "test_name": "test_the_three_tests_are_stated_once_and_re_applied",
       "status": "pass",
       "tier": "unit"
     },
@@ -301,7 +301,7 @@
     {
       "feature": "skill_spec_from_code",
       "id": "PROOF-40",
-      "rule": "RULE-28",
+      "rule": "RULE-13",
       "test_file": "dev/test_e2e_ui_extraction.py",
       "test_name": "test_quality_guide_uses_coverage_dimensions",
       "status": "pass",
@@ -310,7 +310,7 @@
     {
       "feature": "skill_spec_from_code",
       "id": "PROOF-40",
-      "rule": "RULE-28",
+      "rule": "RULE-13",
       "test_file": "dev/test_skill_specs.py",
       "test_name": "test_quality_guide_coverage_dimensions_not_fixed_count",
       "status": "pass",

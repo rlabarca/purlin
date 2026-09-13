@@ -524,7 +524,7 @@ def test_prd_scenario_carries_one_rule_per_constraint(tmp_path):
     )
 
 
-@pytest.mark.proof("skill_spec_from_code", "PROOF-23", "RULE-14", tier="e2e")
+@pytest.mark.proof("skill_spec_from_code", "PROOF-23", "RULE-13", tier="e2e")
 def test_prd_scenario_metadata_is_load_bearing(tmp_path):
     """Description, Stack and Scope each change what a reader is told."""
     full = tmp_path / 'full'
@@ -582,7 +582,7 @@ def test_prd_scenario_metadata_is_load_bearing(tmp_path):
     )
 
 
-@pytest.mark.proof("skill_spec_from_code", "PROOF-24", "RULE-15", tier="e2e")
+@pytest.mark.proof("skill_spec_from_code", "PROOF-24", "RULE-13", tier="e2e")
 def test_prd_scenario_requires_anchor_counts_toward_coverage(tmp_path):
     """The required anchor's 2 rules join the feature's denominator."""
     _make_project(tmp_path, specs={
@@ -618,7 +618,7 @@ def test_prd_scenario_requires_anchor_counts_toward_coverage(tmp_path):
     )
 
 
-@pytest.mark.proof("skill_spec_from_code", "PROOF-26", "RULE-17", tier="e2e")
+@pytest.mark.proof("skill_spec_from_code", "PROOF-26", "RULE-13", tier="e2e")
 def test_assumed_tagged_rules_still_parse(tmp_path):
     """A rule carrying an (assumed) tag is still counted, printed and planned."""
     _make_project(tmp_path, specs={'specs/search/search.md': VAGUE_INPUT_SPEC})
@@ -642,7 +642,7 @@ def test_assumed_tagged_rules_still_parse(tmp_path):
     )
 
 
-@pytest.mark.proof("skill_spec_from_code", "PROOF-28", "RULE-19", tier="e2e")
+@pytest.mark.proof("skill_spec_from_code", "PROOF-28", "RULE-13", tier="e2e")
 def test_all_scenarios_have_tier_tags(tmp_path):
     """Every planned proof parses to a valid tier; a doubled tag is rejected."""
     clean = tmp_path / 'clean'
@@ -682,7 +682,7 @@ def test_all_scenarios_have_tier_tags(tmp_path):
              'service? → append `@integration`')
 
 
-@pytest.mark.proof("skill_spec_from_code", "PROOF-29", "RULE-20", tier="e2e")
+@pytest.mark.proof("skill_spec_from_code", "PROOF-29", "RULE-13", tier="e2e")
 def test_sync_status_parses_all_scenarios(tmp_path):
     """All four scenario specs parse, each with its own rule count, all UNTESTED."""
     _all_scenarios_project(tmp_path)
@@ -699,7 +699,7 @@ def test_sync_status_parses_all_scenarios(tmp_path):
     )
 
 
-@pytest.mark.proof("skill_spec_from_code", "PROOF-30", "RULE-21", tier="e2e")
+@pytest.mark.proof("skill_spec_from_code", "PROOF-30", "RULE-13", tier="e2e")
 def test_all_scenarios_have_rules_and_proof_sections(tmp_path):
     """Both sections are load-bearing: drop either and sync_status says so."""
     both = tmp_path / 'both'
@@ -744,7 +744,7 @@ def test_all_scenarios_have_rules_and_proof_sections(tmp_path):
     )
 
 
-@pytest.mark.proof("skill_spec_from_code", "PROOF-31", "RULE-22", tier="e2e")
+@pytest.mark.proof("skill_spec_from_code", "PROOF-31", "RULE-13", tier="e2e")
 def test_assumed_tag_removal_on_explicit_update(tmp_path):
     """Replacing the tag with an explicit value keeps the rule and drops the count."""
     before = tmp_path / 'before'

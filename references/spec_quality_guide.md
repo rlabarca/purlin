@@ -457,16 +457,19 @@ Anchors capture **cross-cutting constraints shared across features**. If 3+ feat
 
 **Anchor type detection heuristics:**
 
-| Prefix | Detection heuristics |
-|--------|---------------------|
-| `api_` | Shared route patterns, middleware chains, response envelope formats, error response shapes, pagination conventions. Look for: express Router, Flask blueprints, API versioning |
-| `security_` | Auth middleware, password hashing, token validation, input sanitization, CORS, rate limiting. Look for: bcrypt, JWT, helmet, csrf, rate-limit imports |
-| `design_` | Shared UI component libraries, CSS token files, theme configs, layout patterns. Look for: styled-components, tailwind config, design tokens, shared component dirs |
-| `schema_` | Database models, ORM definitions, migration files, validation schemas, shared types. Look for: sequelize/prisma/sqlalchemy models, zod/joi schemas, shared TypeScript interfaces |
-| `platform_` | Browser compat configs, polyfills, platform-specific code paths, accessibility. Look for: browserslist, babel config, a11y utilities |
-| `brand_` | Copy constants, i18n files, terminology glossaries, tone-of-voice docs. Look for: locales/, i18n imports, string constant files |
-| `prodbrief_` | User flow definitions, feature flags, A/B test configs, analytics events. Look for: feature flag configs, analytics track calls |
-| `legal_` | Cookie consent, privacy policy refs, data retention configs, GDPR helpers. Look for: consent managers, data deletion utilities, PII handling |
+| Prefix | Domain | Detection heuristics |
+|--------|--------|---------------------|
+| `api_` | API contracts, REST conventions | Shared route patterns, middleware chains, response envelope formats, error response shapes, pagination conventions. Look for: express Router, Flask blueprints, API versioning |
+| `security_` | Auth, access control, secrets | Auth middleware, password hashing, token validation, input sanitization, CORS, rate limiting. Look for: bcrypt, JWT, helmet, csrf, rate-limit imports |
+| `design_` | Visual standards, layout | Shared UI component libraries, CSS token files, theme configs, layout patterns. Look for: styled-components, tailwind config, design tokens, shared component dirs |
+| `schema_` | Data models, validation | Database models, ORM definitions, migration files, validation schemas, shared types. Look for: sequelize/prisma/sqlalchemy models, zod/joi schemas, shared TypeScript interfaces |
+| `platform_` | Platform constraints, browser support | Browser compat configs, polyfills, platform-specific code paths, accessibility. Look for: browserslist, babel config, a11y utilities |
+| `brand_` | Voice, naming, identity | Copy constants, i18n files, terminology glossaries, tone-of-voice docs. Look for: locales/, i18n imports, string constant files |
+| `prodbrief_` | User stories, UX requirements | User flow definitions, feature flags, A/B test configs, analytics events. Look for: feature flag configs, analytics track calls |
+| `legal_` | Privacy, data handling, compliance | Cookie consent, privacy policy refs, data retention configs, GDPR helpers. Look for: consent managers, data deletion utilities, PII handling |
+
+Search for each prefix's signals actively rather than waiting to notice them, and group what turns
+up: "these N features all use `<pattern>`, so propose anchor `<prefix>_<name>`."
 
 **Architecture choices should be anchors.** If the codebase uses a specific pattern consistently across multiple features (middleware auth, write-through caching, event-driven architecture), that pattern should become an anchor, not be buried in individual feature specs.
 

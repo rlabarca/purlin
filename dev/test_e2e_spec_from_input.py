@@ -459,7 +459,7 @@ class TestPRD:
         finally:
             shutil.rmtree(merged)
 
-    @pytest.mark.proof("skill_spec_from_code", "PROOF-23", "RULE-14", tier="e2e")
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-23", "RULE-13", tier="e2e")
     def test_prd_scenario_metadata_is_load_bearing(self):
         """Description, Stack and Scope each change what a reader is told."""
         sync_status(self.tmp_dir)
@@ -517,7 +517,7 @@ class TestPRD:
         assert '→ Run: purlin:build checkout_flow' in unbuilt_block, \
             f"With no > Scope: file on disk the directive is purlin:build, got:\n{unbuilt_block}"
 
-    @pytest.mark.proof("skill_spec_from_code", "PROOF-24", "RULE-15", tier="e2e")
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-24", "RULE-13", tier="e2e")
     def test_prd_scenario_requires_anchor_counts_toward_coverage(self):
         """The required anchor's 2 rules join the feature's denominator."""
         block = _feature_block(sync_status(self.tmp_dir), 'checkout_flow')
@@ -562,7 +562,7 @@ class TestVagueDescription:
     def teardown_method(self):
         shutil.rmtree(self.tmp_dir)
 
-    @pytest.mark.proof("skill_spec_from_code", "PROOF-26", "RULE-17", tier="e2e")
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-26", "RULE-13", tier="e2e")
     def test_assumed_tagged_rules_still_parse(self):
         """A rule carrying an (assumed) tag is still counted, printed and planned."""
         tagged = re.findall(r'\(assumed — user said "([^"]+)"\)', VAGUE_DESCRIPTION_SPEC)
@@ -594,7 +594,7 @@ class TestCrossScenario:
     def teardown_method(self):
         shutil.rmtree(self.tmp_dir)
 
-    @pytest.mark.proof("skill_spec_from_code", "PROOF-28", "RULE-19", tier="e2e")
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-28", "RULE-13", tier="e2e")
     def test_all_proofs_have_tier_tags(self):
         """Every planned proof parses to a valid tier; a doubled tag is rejected."""
         result = sync_status(self.tmp_dir)
@@ -635,7 +635,7 @@ class TestCrossScenario:
                  'Does the proof shell out to git, subprocess, or call an external '
                  'service? → append `@integration`')
 
-    @pytest.mark.proof("skill_spec_from_code", "PROOF-29", "RULE-20", tier="e2e")
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-29", "RULE-13", tier="e2e")
     def test_sync_status_parses_all_scenarios(self):
         """All four scenario specs parse, each with its own rule count, all UNTESTED."""
         result = sync_status(self.tmp_dir)
@@ -648,7 +648,7 @@ class TestCrossScenario:
             (f"Each of the {len(ALL_SCENARIOS)} features should read UNTESTED, "
              f"got {result.count('UNTESTED')}")
 
-    @pytest.mark.proof("skill_spec_from_code", "PROOF-30", "RULE-21", tier="e2e")
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-30", "RULE-13", tier="e2e")
     def test_all_specs_have_rules_and_proof_sections(self):
         """Both sections are load-bearing: drop either and sync_status says so."""
         result = sync_status(self.tmp_dir)
@@ -700,7 +700,7 @@ class TestCrossScenario:
 
 class TestAssumedCorrection:
 
-    @pytest.mark.proof("skill_spec_from_code", "PROOF-31", "RULE-22", tier="e2e")
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-31", "RULE-13", tier="e2e")
     def test_corrected_assumed_rule_is_valid(self):
         """Replacing the tag with an explicit value keeps the rule and drops the count."""
         before = tempfile.mkdtemp()

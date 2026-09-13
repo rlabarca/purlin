@@ -22,7 +22,7 @@
     {
       "feature": "skill_spec_from_code",
       "id": "PROOF-23",
-      "rule": "RULE-14",
+      "rule": "RULE-13",
       "test_file": "dev/test_e2e_spec_from_input.py",
       "test_name": "test_prd_scenario_metadata_is_load_bearing",
       "status": "pass",
@@ -31,7 +31,7 @@
     {
       "feature": "skill_spec_from_code",
       "id": "PROOF-23",
-      "rule": "RULE-14",
+      "rule": "RULE-13",
       "test_file": "dev/test_e2e_spec_migration.py",
       "test_name": "test_prd_scenario_metadata_is_load_bearing",
       "status": "pass",
@@ -40,7 +40,7 @@
     {
       "feature": "skill_spec_from_code",
       "id": "PROOF-24",
-      "rule": "RULE-15",
+      "rule": "RULE-13",
       "test_file": "dev/test_e2e_spec_from_input.py",
       "test_name": "test_prd_scenario_requires_anchor_counts_toward_coverage",
       "status": "pass",
@@ -49,7 +49,7 @@
     {
       "feature": "skill_spec_from_code",
       "id": "PROOF-24",
-      "rule": "RULE-15",
+      "rule": "RULE-13",
       "test_file": "dev/test_e2e_spec_migration.py",
       "test_name": "test_prd_scenario_requires_anchor_counts_toward_coverage",
       "status": "pass",
@@ -58,7 +58,7 @@
     {
       "feature": "skill_spec_from_code",
       "id": "PROOF-26",
-      "rule": "RULE-17",
+      "rule": "RULE-13",
       "test_file": "dev/test_e2e_spec_from_input.py",
       "test_name": "test_assumed_tagged_rules_still_parse",
       "status": "pass",
@@ -67,7 +67,7 @@
     {
       "feature": "skill_spec_from_code",
       "id": "PROOF-26",
-      "rule": "RULE-17",
+      "rule": "RULE-13",
       "test_file": "dev/test_e2e_spec_migration.py",
       "test_name": "test_assumed_tagged_rules_still_parse",
       "status": "pass",
@@ -76,7 +76,7 @@
     {
       "feature": "skill_spec_from_code",
       "id": "PROOF-28",
-      "rule": "RULE-19",
+      "rule": "RULE-13",
       "test_file": "dev/test_e2e_spec_from_input.py",
       "test_name": "test_all_proofs_have_tier_tags",
       "status": "pass",
@@ -85,7 +85,7 @@
     {
       "feature": "skill_spec_from_code",
       "id": "PROOF-28",
-      "rule": "RULE-19",
+      "rule": "RULE-13",
       "test_file": "dev/test_e2e_spec_migration.py",
       "test_name": "test_all_scenarios_have_tier_tags",
       "status": "pass",
@@ -94,7 +94,7 @@
     {
       "feature": "skill_spec_from_code",
       "id": "PROOF-29",
-      "rule": "RULE-20",
+      "rule": "RULE-13",
       "test_file": "dev/test_e2e_spec_from_input.py",
       "test_name": "test_sync_status_parses_all_scenarios",
       "status": "pass",
@@ -103,7 +103,7 @@
     {
       "feature": "skill_spec_from_code",
       "id": "PROOF-29",
-      "rule": "RULE-20",
+      "rule": "RULE-13",
       "test_file": "dev/test_e2e_spec_migration.py",
       "test_name": "test_sync_status_parses_all_scenarios",
       "status": "pass",
@@ -112,7 +112,7 @@
     {
       "feature": "skill_spec_from_code",
       "id": "PROOF-30",
-      "rule": "RULE-21",
+      "rule": "RULE-13",
       "test_file": "dev/test_e2e_spec_from_input.py",
       "test_name": "test_all_specs_have_rules_and_proof_sections",
       "status": "pass",
@@ -121,7 +121,7 @@
     {
       "feature": "skill_spec_from_code",
       "id": "PROOF-30",
-      "rule": "RULE-21",
+      "rule": "RULE-13",
       "test_file": "dev/test_e2e_spec_migration.py",
       "test_name": "test_all_scenarios_have_rules_and_proof_sections",
       "status": "pass",
@@ -130,7 +130,7 @@
     {
       "feature": "skill_spec_from_code",
       "id": "PROOF-31",
-      "rule": "RULE-22",
+      "rule": "RULE-13",
       "test_file": "dev/test_e2e_spec_from_input.py",
       "test_name": "test_corrected_assumed_rule_is_valid",
       "status": "pass",
@@ -139,7 +139,7 @@
     {
       "feature": "skill_spec_from_code",
       "id": "PROOF-31",
-      "rule": "RULE-22",
+      "rule": "RULE-13",
       "test_file": "dev/test_e2e_spec_migration.py",
       "test_name": "test_assumed_tag_removal_on_explicit_update",
       "status": "pass",

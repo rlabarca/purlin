@@ -1420,6 +1420,8 @@ class TestSkillSpecFromCode:
                      '4. Launch up to 3 Explore sub-agents')
     PHASE3_STEP3 = ('3. **Existing spec migration (per feature):**',
                     '4. **Data contract extraction (mandatory for ALL features):**')
+    PHASE3_STEP5 = ('5. **Draft and evaluate rules (mandatory):**',
+                    '6. For each feature in the category, write')
 
     @staticmethod
     def _step(bounds, name):
@@ -1479,11 +1481,24 @@ class TestSkillSpecFromCode:
 
     @pytest.mark.proof("skill_spec_from_code", "PROOF-34", "RULE-24")
     def test_draft_and_evaluate_with_rebuild_test(self):
+        """Step 5 states the three tests, and states them once.
+
+        A whole-file grep passed on any of the six copies the skill used to
+        carry, so it could not tell the single statement from the six.
+        """
         content = _read('spec-from-code')
-        assert re.search(r'(?i)draft and evaluate', content), \
+        step5 = self.PHASE3_STEP5[0] + self._step(self.PHASE3_STEP5,
+                                                  'Phase 3 step 5')
+        assert re.search(r'(?i)draft and evaluate', step5), \
             "spec-from-code skill missing 'Draft and evaluate' step"
-        assert re.search(r'(?i)rebuild test', content), \
-            "spec-from-code skill missing 'rebuild test' filter"
+        for criterion in ('Rebuild test', 'Behavior test', 'Overlap test'):
+            assert criterion in step5, \
+                f"Phase 3 step 5 missing the {criterion!r} criterion"
+            assert content.count(criterion) == 1, \
+                f"{criterion!r} appears {content.count(criterion)} times; " \
+                "step 5 is the one place that states it"
+        assert 'The rebuild test' in step5, \
+            "Phase 3 step 5 must cite spec_quality_guide.md (\"The rebuild test\")"
 
     @pytest.mark.proof("skill_spec_from_code", "PROOF-39", "RULE-27")
     def test_discoveries_figma_preserved_as_visual_reference(self):
@@ -1500,7 +1515,7 @@ class TestSkillSpecFromCode:
         assert '.discoveries.md' in content, \
             "legacy_features_migration.md missing .discoveries.md reference"
 
-    @pytest.mark.proof("skill_spec_from_code", "PROOF-40", "RULE-28")
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-40", "RULE-13")
     def test_quality_guide_coverage_dimensions_not_fixed_count(self):
         content = _read_ref('spec_quality_guide.md')
         assert re.search(r'(?i)coverage dimensions', content), \
@@ -1540,8 +1555,8 @@ class TestSkillSpecFromCode:
     def test_step11_proof_coupling_check(self):
         content = _read('spec-from-code')
         # The check must live inside the step 11 "Validate generated specs" block
-        m = re.search(r'11\.\s+\*\*Validate generated specs(.*?)(?=\n12\.)', content, re.DOTALL)
-        assert m, "spec-from-code skill missing step 11 'Validate generated specs'"
+        m = re.search(r'10\.\s+\*\*Validate generated specs(.*?)(?=\n11\.)', content, re.DOTALL)
+        assert m, "spec-from-code skill missing step 10 'Validate generated specs'"
         step11 = m.group(1)
         assert re.search(r'(?i)proof implementation-coupling', step11), \
             "spec-from-code skill step 11 missing proof implementation-coupling check"

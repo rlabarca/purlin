@@ -377,29 +377,47 @@ def test_skill_names_the_categories_and_the_guide_carries_them():
         )
 
 
+#: The rebuild/behavior/overlap tests are stated in Phase 3 step 5 and
+#: re-applied, never restated, by the later steps.
+PHASE3_STEP5 = ('5. **Draft and evaluate rules (mandatory):**',
+                '6. For each feature in the category, write')
+PHASE3_STEP9 = ('9. **Rebuild-risk filter and coverage check (mandatory):**',
+                '10. **Validate generated specs')
+
+
 @pytest.mark.proof("skill_spec_from_code", "PROOF-34", "RULE-24", tier="unit")
-def test_skill_has_draft_evaluate_and_contract_filter():
-    """SKILL.md contains draft-and-evaluate step and contract coverage filter."""
+def test_the_three_tests_are_stated_once_and_re_applied():
+    """Step 5 states the three tests; step 9 checks contract coverage.
+
+    The count is the point: this skill stated the rebuild test six times,
+    which is six wordings to keep in agreement. A whole-file grep passed on
+    every one of them, so the assertion is on where they are and how many.
+    """
     content = _read(SKILL_PATH)
+    step5 = PHASE3_STEP5[0] + _step(PHASE3_STEP5, 'Phase 3 step 5')
 
-    # Draft-and-evaluate step with three tests
-    assert 'Draft and evaluate' in content or 'draft and evaluate' in content.lower(), (
-        "SKILL.md missing 'Draft and evaluate' step"
-    )
     for criterion in ['Rebuild test', 'Behavior test', 'Overlap test']:
-        assert criterion in content, (
-            f"Draft-and-evaluate step missing '{criterion}'"
+        assert criterion in step5, (
+            f"Phase 3 step 5 missing '{criterion}'"
         )
-
-    # Rebuild-risk filter verifies contract coverage
-    assert 'contract coverage' in content.lower() or 'Verify contract coverage' in content, (
-        "Rebuild-risk filter must verify contract coverage"
+        assert content.count(criterion) == 1, (
+            f"'{criterion}' appears {content.count(criterion)} times in "
+            f"SKILL.md; step 5 is the one place that states it, and every "
+            f"later step re-applies it rather than restating it"
+        )
+    assert 'spec_quality_guide.md' in step5 and 'The rebuild test' in step5, (
+        "Phase 3 step 5 must cite spec_quality_guide.md (\"The rebuild test\") "
+        "as where the three tests are stated in full"
     )
-    # Filter references all five categories
-    for category in ['Inbound contracts', 'Outbound contracts', 'Transformation rules',
-                     'State transitions', 'Access contracts']:
-        assert category.lower() in content.lower(), (
-            f"Rebuild-risk filter missing contract category: '{category}'"
+
+    # Step 9 verifies contract coverage across all five categories.
+    step9 = _step(PHASE3_STEP9, 'Phase 3 step 9')
+    assert 'Verify contract coverage' in step9, (
+        "Phase 3 step 9 must verify contract coverage"
+    )
+    for category in FIVE_CATEGORIES:
+        assert category in step9, (
+            f"Phase 3 step 9 missing contract category: '{category}'"
         )
 
 
@@ -457,7 +475,7 @@ def test_the_reference_preserves_figma_references():
     )
 
 
-@pytest.mark.proof("skill_spec_from_code", "PROOF-40", "RULE-28", tier="unit")
+@pytest.mark.proof("skill_spec_from_code", "PROOF-40", "RULE-13", tier="unit")
 def test_quality_guide_uses_coverage_dimensions():
     """Quality guide references coverage dimensions, not a fixed rule count."""
     content = _read(QUALITY_GUIDE_PATH)

@@ -11,7 +11,6 @@ Scan an existing codebase and generate specs in 3-section format (`## What it do
 
 ```
 purlin:spec-from-code [directory]    Scan a directory (default: src/ or lib/ or .)
-purlin:spec-from-code --resume       Resume from last incomplete phase
 ```
 
 ## Resume Check
@@ -76,7 +75,7 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
    - Cross-cutting concerns detected (auth, logging, error handling, config patterns)
    - Code comments index (significant comments with file locations)
    - Test tier flags per module (from Agent B: which modules need integration, e2e, or manual tiers)
-   - **`e2e_capable` flag:** true only if an e2e-capable test runner is detectable — an e2e framework (Playwright, Cypress, Puppeteer, WebdriverIO, or similar) appears in the package manifest, or an e2e config file (`playwright.config.*`, `cypress.config.*`, etc.) exists. Record the detected runner name (or `none`). This drives the `@e2e` warning in Phase 3 step 12 and the Phase 4 summary.
+   - **`e2e_capable` flag:** true only if an e2e-capable test runner is detectable — an e2e framework (Playwright, Cypress, Puppeteer, WebdriverIO, or similar) appears in the package manifest, or an e2e config file (`playwright.config.*`, `cypress.config.*`, etc.) exists. Record the detected runner name (or `none`). This drives the `@e2e` warning in Phase 3 step 11 and the Phase 4 summary.
    - **Existing spec summary** (if migration candidates were found): list of feature names, source locations, compliance issues, and scenario/rule counts — cross-referenced with code modules discovered by the exploration agents
 
 6. **Generate environment anchor (mandatory):** Extract project-level environment data and write `specs/_anchors/project_environment.md`. This anchor captures what's needed to compile, run, and configure the project — information that no individual feature spec carries.
@@ -129,7 +128,7 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
 3. Propose a category taxonomy grouping feature candidates into logical categories. Follow the categorization rules in `references/spec_quality_guide.md` ("Spec Categories"):
    - Executable code (scripts, hooks, server) → category matches the source directory (e.g., `hooks/`, `mcp/`, `proof/`)
    - Cross-cutting contracts and format definitions → `schema/`
-   - Reference docs, skill definitions, and agent definitions (`references/`, `skills/`, `agents/`) → `instructions/`
+   - Reference docs and instruction files, where a project has them → `instructions/`
    - End-to-end lifecycle flows → `integration/`
 
    Explain this categorization to the user when presenting the taxonomy. For each category, list: name, feature count, and per-feature name + one-line description.
@@ -162,75 +161,24 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
    - Default: merge the feature into the closest related category (by domain or shared file scope) and note the merge when presenting the taxonomy.
    - If no existing category fits, ask the user via `AskUserQuestion`: "Category `<name>` would contain only `<feature>`. Merge into `<closest category>`, or keep it standalone?" If kept standalone, plan the spec at `specs/<name>.md` directly — do NOT create a folder for it. (Specs at the `specs/` root display under "other" in the dashboard.)
 
-7. **Detect anchor candidates** from cross-cutting concerns. Use the following heuristics per anchor type to actively search for candidates — do not rely on passive observation alone:
+7. **Detect anchor candidates** from cross-cutting concerns. Work through the per-prefix detection heuristics in `references/spec_quality_guide.md` ("When to Create Anchors"), which lists what to grep for under each of the eight prefixes and how to group the hits into a proposed anchor.
 
-   | Prefix | Domain | Detection heuristics |
-   |--------|--------|---------------------|
-   | `api_` | API contracts, REST conventions | Shared route patterns, middleware chains, response envelope formats, error response shapes, pagination conventions. Look for: express Router, Flask blueprints, API versioning patterns |
-   | `security_` | Auth, access control, secrets | Auth middleware, password hashing, token validation, input sanitization, CORS config, rate limiting. Look for: bcrypt, JWT, helmet, csrf, rate-limit imports |
-   | `design_` | Visual standards, layout | Shared UI component libraries, CSS token files, theme configs, layout patterns. Look for: styled-components, tailwind config, design token files, shared component directories |
-   | `schema_` | Data models, validation | Database models, ORM definitions, migration files, validation schemas, shared types. Look for: sequelize/prisma/sqlalchemy models, zod/joi schemas, TypeScript interfaces in shared dirs |
-   | `platform_` | Platform constraints, browser support | Browser compat configs, polyfills, platform-specific code paths, accessibility helpers. Look for: browserslist, babel config, a11y utilities |
-   | `brand_` | Voice, naming, identity | Copy constants, i18n files, terminology glossaries, tone-of-voice docs. Look for: locales/, i18n imports, string constant files |
-   | `prodbrief_` | User stories, UX requirements | User flow definitions, feature flags, A/B test configs, analytics event schemas. Look for: feature flag configs, analytics track calls, user journey comments |
-   | `legal_` | Privacy, data handling, compliance | Cookie consent, privacy policy references, data retention configs, GDPR helpers. Look for: consent managers, data deletion utilities, PII handling |
+   **API surface anchor (mandatory when API calls detected):** If Phase 1 exploration found HTTP client usage (fetch, axios, http.get, requests, net/http, etc.), generate an `api_surface` anchor listing every external endpoint the codebase calls. For each endpoint, capture: HTTP method, full path (including any base path prefix), and parameter shapes (query params, body fields). Trace from the HTTP call sites back to the URL construction: the relative path handed to the client is not the full path.
 
-   **API surface anchor (mandatory when API calls detected):** If Phase 1 exploration found HTTP client usage (fetch, axios, http.get, requests, net/http, etc.), generate an `api_surface` anchor listing every external endpoint the codebase calls. For each endpoint, capture: HTTP method, full path (including any base path prefix), and parameter shapes (query params, body fields). Trace from the HTTP call sites back to the URL construction to capture the full path — don't just capture the relative path passed to the client.
+   **Domain schema anchors (mandatory when shared types detected):** If Phase 1 found shared type definitions (TypeScript interfaces, Python dataclasses, Go structs, SQL schemas) consumed by 3+ features, generate a `schema_` anchor for each major domain entity. Its rules carry the **critical field names**: the ones that appear in transformations, display logic, or conditional gates across features. Do not list every field; list the ones that would cause wrong behavior if an engineer used the wrong name.
+
+   Either one takes this shape:
 
    ```markdown
-   # Anchor: api_surface
-   > Description: All external API endpoints with methods, paths, and parameter shapes.
-   > Global: true
+   # Anchor: <prefix>_<name>
+   > Description: <the cross-cutting contract this anchor fixes>
    ## Rules
-   - RULE-1: Base path prefix is /EdgeMobileService/EdgeService.svc/json/
-   - RULE-2: GetAnalysisDisplay — GET — params: {analysisId, reportType, isClient, ...}
-   - RULE-3: SaveLoanProductBenefit — POST — body: {analysisId, loanProductId, benefitTitle, benefitSubmessage}
+   - RULE-1: <the constraint, carrying the exact names an engineer would otherwise guess>
    ```
 
-   **Domain schema anchors (mandatory when shared types detected):** If Phase 1 found shared type definitions (TypeScript interfaces, Python dataclasses, Go structs, SQL schemas) consumed by 3+ features, generate a `schema_` anchor for each major domain entity. Rules must include the **critical field names** — the fields that appear in transformations, display logic, or conditional gates across features. Don't list every field; list the ones that would cause wrong behavior if an engineer used the wrong name.
+   **Security anchor (mandatory):** a `security_` anchor is always proposed, whether or not the grep finds anything. Step 8 is the gate and carries the pattern list. Its proofs are grep-based negative assertions (`grep -r "eval(" scripts/` returns zero matches).
 
-   ```markdown
-   # Anchor: schema_mortgage_report
-   > Description: Critical field names in the MortgageReport API response.
-   ## Rules
-   - RULE-1: Contact info is at response.contact (lowercase), not AnalysisContact
-   - RULE-2: User info is at response.user (lowercase), not User
-   - RULE-3: Loan product name is LoanProduct.Name, not ProductName
-   - RULE-4: Monthly payment is LoanProduct.Piti, not TotalMonthlyPayment
-   - RULE-5: 5-year cost is LoanProduct.FiveYrCost, not GraphShort
-   ```
-
-   **Architecture choices should be anchors.** If the codebase uses a specific pattern consistently across multiple features (middleware auth, write-through caching, event-driven architecture), that pattern should become an anchor — not be buried in individual feature specs. After detecting candidates, group them: "These N features all use `<pattern>` → propose anchor: `<prefix>_<name>`." Present the grouping evidence to the user for confirmation.
-
-   **Security anchor detection (mandatory):** In addition to the heuristic scan above, specifically grep the scanned directories for dangerous patterns:
-   - `eval(`, `exec(` — arbitrary code execution
-   - `os.system(` — unquoted shell execution
-   - `subprocess` calls with `shell=True` — shell injection vector
-   - Hardcoded strings resembling credentials (`password`, `secret`, `api_key`, `token = "..."`)
-   - Direct file path manipulation from user input without sanitization
-
-   Then:
-   - If **any dangerous patterns are found**: propose a `security_` anchor with FORBIDDEN rules as negative assertions verifying these patterns don't exist in unsafe contexts.
-   - If **no dangerous patterns are found**: propose a `security_` anchor anyway (e.g., `security_no_dangerous_patterns`) with rules confirming the codebase is clean — "No eval/exec calls", "No subprocess with shell=True", etc. Proving the absence of dangerous patterns is itself a valuable assertion.
-
-   The security anchor MUST always be proposed. Proofs should be grep-based negative assertions (e.g., `grep -r "eval(" scripts/` returns zero matches).
-
-   Present proposed anchors and ask for approval:
-
-   ```
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   ⚡ REVIEW ANCHORS — <N> cross-cutting constraints detected
-
-     [y] Approve all anchors
-     [rename] Rename an anchor
-     [remove] Remove an anchor
-     [add] Add a missing anchor
-
-   Waiting for your response...
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   ```
-
-   Use `AskUserQuestion` to pause. Do NOT proceed without an explicit response.
+   Present the proposed anchors in the approval-block shape from step 4, headed `⚡ REVIEW ANCHORS: <N> cross-cutting constraints detected`, offering `[y] Approve all anchors`, `[rename] Rename an anchor`, `[remove] Remove an anchor` and `[add] Add a missing anchor`. Use `AskUserQuestion` to pause. Do NOT proceed without an explicit response.
 
 8. **Security anchor gate (mandatory, not skippable):** Before proceeding to Phase 3, verify that at least one `security_` prefixed anchor exists in the confirmed taxonomy. If none was confirmed:
    - Run the FORBIDDEN pattern grep anyway (`eval(`, `exec(`, `os.system(`, `shell=True`, hardcoded credentials)
@@ -252,7 +200,7 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
 
 ## Phase 3 — Spec Generation
 
-**Resume logic:** If resuming Phase 3, read `completed_categories` from the state file. Skip those categories. Continue with the first incomplete category.
+**Resume logic:** If the Resume Check found a state file, read `completed_categories` from it. Skip those categories. Continue with the first incomplete category.
 
 ### Step 1 — Generate Anchor Specs
 
@@ -334,7 +282,7 @@ For each category:
 
    **e) Access contracts:** who can see or do what
 
-5. **Draft and evaluate rules (mandatory):** Before writing the spec file, draft all candidate rules as full `RULE-N:` lines and evaluate each against the rebuild test. This step applies to ALL features, not just UI.
+5. **Draft and evaluate rules (mandatory):** Before writing the spec file, draft all candidate rules as full `RULE-N:` lines and evaluate each against the three tests below, which are the ones `references/spec_quality_guide.md` ("The rebuild test") states in full. This step applies to ALL features, not just UI, and it is the only place in this skill that states them: later steps re-apply these three rather than restating a fourth wording.
 
    **Draft:** Combine candidate rules from standard extraction (step 1's code reading) and data contract extraction (step 4). Write each as a `RULE-N:` line.
 
@@ -372,7 +320,7 @@ For each category:
 
 ## Implementation Notes
 
-Extracted from source (include when architecturally significant):
+Extracted from source, when architecturally significant. Architecture decisions, library choices, caching strategies and design patterns go here and never in `## Rules`: they inform a rebuilding engineer but are not testable constraints.
 - Design pattern: <description> (file:line)
 - Caching strategy: <description> (file:line)
 - Concurrency model: <description> (file:line)
@@ -407,7 +355,7 @@ Examples:
 
    **Inverse check (mandatory):** After assigning tier tags, verify each description matches its tag per `references/spec_quality_guide.md` ("E2E proof descriptions"). Every `@e2e` proof must read as an observable flow — arrange → act → observe through the real running app — and must not name a source file or internal function. Rewrite any proof of the form "Assert `<file>` does X" or "Assert `<internalFn>` uses Y" as a boundary observation (the outbound network request, the rendered output, the storage state after a real flow). If a proof tagged `@e2e` could pass without launching the app, either rewrite it as a flow or retag it to the tier it actually exercises.
 
-8. **No test-only specs:** Never generate a spec whose purpose is to be a container for tests (e.g., `e2e_feature_scoped_overwrite`, `e2e_audit_cache_pipeline`). If integration or e2e tests validate a feature's behavior, those tests should prove rules in that feature's spec — not in a separate spec. When code analysis reveals e2e test files, map their assertions to the feature spec they exercise and add rules there.
+8. **No test-only specs:** Never generate a spec whose purpose is to be a container for tests. If integration or e2e tests validate a feature's behavior, those tests should prove rules in that feature's spec — not in a separate spec. When code analysis reveals e2e test files, map their assertions to the feature spec they exercise and add rules there.
 
 9. **Rebuild-risk filter and coverage check (mandatory):** Before presenting specs, apply three filters:
 
@@ -424,11 +372,9 @@ Examples:
    - State transitions — lifecycle states and transition rules (from step 4d, if applicable)
    - Access contracts — permission/flag/mode gates (from step 4e, if applicable)
 
-   **Filter 3 — Tier by rebuild risk:** Review each rule against the rebuild risk tiers in `references/spec_quality_guide.md` ("Rebuild risk tiers"). Every rule should pass the test: "If an engineer rebuilt from only this spec, would they get this wrong without this rule?" If the answer is no — the rule is noise, not signal. Cut it.
+   **Filter 3: tier by rebuild risk.** Re-apply step 5's three tests to the final list and cut every rule that fails one, ranking what is left by `references/spec_quality_guide.md` ("Rebuild risk tiers"). Fix any IMPLEMENTATION or NOISE rule here rather than deferring it to review time.
 
-10. **Rule quality review (mandatory):** For each spec just written, apply the `purlin:spec --review` logic internally: evaluate every rule against the rebuild/behavior/overlap tests. Fix any IMPLEMENTATION or NOISE rules before presenting to the user — don't defer quality problems to review time.
-
-11. **Validate generated specs (mandatory before user review):** Read back every spec just written for this category. For each spec, verify:
+10. **Validate generated specs (mandatory before user review):** Read back every spec just written for this category. For each spec, verify:
    - `## What it does` contains at least one full sentence (not empty, not just whitespace)
    - `## Rules` contains at least one `RULE-N:` line
    - `## Proof` contains at least one `PROOF-N (RULE-N):` line
@@ -441,31 +387,21 @@ Examples:
    - Fill the empty section immediately based on the source code
    - Do NOT present specs with empty sections to the user for confirmation
 
-12. Present the generated specs for this category and ask for approval. If the category's proofs include any `@e2e` tag AND the Phase 1 inventory's `e2e_capable` flag is false, include the warning line shown below (omit it otherwise):
+11. Present the generated specs for this category and ask for approval, in the approval-block shape from Phase 2 step 4, headed `⚡ REVIEW SPECS: <category_name> (<N> specs generated)` and offering `[y] Approve and commit this category`, `[n] Discard and regenerate` and `[edit] I want to change specific specs`. If the category's proofs include any `@e2e` tag AND the Phase 1 inventory's `e2e_capable` flag is false, put this warning above the options (omit it otherwise):
 
    ```
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   ⚡ REVIEW SPECS — <category_name> (<N> specs generated)
-
    ⚠ <K> proofs tagged @e2e but no e2e runner detected — they cannot execute
      until one is wired in (Playwright, Cypress, an MCP-driven browser, etc.).
      See references/supported_frameworks.md ("End-to-end (browser) proofs").
-
-     [y] Approve and commit this category
-     [n] Discard and regenerate
-     [edit] I want to change specific specs
-
-   Waiting for your response...
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
 
    Use `AskUserQuestion` to pause. Do NOT auto-approve or proceed without an explicit response.
 
-13. Commit the category batch per `references/commit_conventions.md`: `spec(sfc): generate <category_name> specs`
+12. Commit the category batch per `references/commit_conventions.md`: `spec(sfc): generate <category_name> specs`
 
-14. **Per-category sync check:** After committing, call `sync_status` and check the output for the specs just generated. If sync_status reports any warnings (unnumbered rules, missing `## Rules` section, structural problems), fix them immediately — edit the spec, re-commit — before moving to the next category. Do not accumulate broken specs across categories.
+13. **Per-category sync check:** After committing, call `sync_status` and check the output for the specs just generated. If sync_status reports any warnings (unnumbered rules, missing `## Rules` section, structural problems), fix them immediately — edit the spec, re-commit — before moving to the next category. Do not accumulate broken specs across categories.
 
-15. Update state: add category name to `completed_categories`.
+14. Update state: add category name to `completed_categories`.
 
 ---
 
@@ -516,12 +452,5 @@ For audit criteria (what makes a proof STRONG vs WEAK vs HOLLOW), see **`referen
 Additional spec-from-code-specific guidelines:
 
 - **Do not use the `(assumed)` tag.** Rules extracted from code are observed behavior, not assumptions. The code IS the specific value — `timeout=500` is a fact, not an assumption.
-- **Extract behavior, not implementation.** Rules describe what the code must do, not how it does it.
-- **E2E proofs are observable flows, not asserts.** `@e2e` proof descriptions must read as arrange → act → observe through the real running app and must not name source files or internal functions — see `references/spec_quality_guide.md` ("E2E proof descriptions"). When no e2e runner exists in the project, surface the warning (step 12 / Phase 4) rather than silently emitting unrunnable proofs.
 - **One feature per module boundary.** Spec the public interface, not internal helpers.
-- **Mark generated specs.** Add `<!-- Generated by purlin:spec-from-code. Review and refine. -->` at the top. For migrated specs, use `<!-- Migrated by purlin:spec-from-code. Review and refine. -->` instead.
-- **Implementation Notes are context, not rules.** Architecture decisions, library choices, caching strategies, and design patterns go in `## Implementation Notes` — never in `## Rules`. They inform a rebuilding engineer but are not testable behavioral constraints. A spec with 10 rules and 5 impl notes is better than a spec with 15 rules where 5 are really impl notes.
 - If Phase 1 Agent B flagged a module as requiring external dependencies, default its proofs to `@integration` unless the specific proof can be unit-tested in isolation.
-- **Rules scale with complexity, filtered by rebuild risk.** Cover all applicable dimensions from `references/spec_quality_guide.md` ("Coverage dimensions"), but every rule must pass the rebuild-risk test: "Would an engineer get this wrong without this rule?" CSS pixel values, library choices, and visual polish are not rules.
-- **Data contract extraction is mandatory for ALL features.** Step 4 applies to every feature, not just UI. Extract inbound contracts (exact API field names), outbound contracts (event names, payloads), transformation rules (field mappings, formulas), state transitions (lifecycle rules), and access contracts (permission gates). A spec that says "fetches data from the API" without field names fails the rebuild test.
-- **Companion files are migration inputs, not rule factories.** When migrating from `features/`, read `.impl.md` and `.discoveries.md` in full. Extract *behavioral* deviations and bug regressions as rules. Architecture decisions go to `## Implementation Notes`. Stale bugs and resolved cosmetic issues are not rules — they belong in git history.
