@@ -13,7 +13,7 @@
       "command": "sh",
       "args": [
         "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh",
-        "${CLAUDE_PLUGIN_ROOT}/scripts/mcp/purlin_server.py"
+        "${CLAUDE_PLUGIN_ROOT}/scripts/mcp/purlin/server.py"
       ]
     }
   },

@@ -16,7 +16,7 @@
 #   .purlin/config.json          .version   this repo's own project stamp (optional)
 #
 # NOT derived, and deliberately absent from that list:
-#   scripts/mcp/purlin_server.py  reads VERSION at runtime via _read_version()
+#   scripts/mcp/purlin/__init__.py  reads VERSION at runtime via _read_version()
 #   skills/init/SKILL.md          documents the field, never restates a number
 #
 # Governed by specs/instructions/purlin_version.md (RULE-6/7/8).

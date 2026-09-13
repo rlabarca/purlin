@@ -13,7 +13,7 @@ The files in `references/formats/` are **versioned contracts**. External tools, 
 - Clarifying documentation, adding examples, fixing typos → do NOT bump
 
 **Procedure when changing spec/proof/anchor parsing or emission:**
-1. Make the code change (in `scripts/mcp/purlin_server.py`, `scripts/proof/`, or skill definitions)
+1. Make the code change (in `scripts/mcp/purlin/`, `scripts/proof/`, or skill definitions)
 2. Update the corresponding format file in `references/formats/` to match
 3. If the change is structural (new field, removed field, changed structure): bump `> Format-Version:` by 1
 4. Update `references/spec_quality_guide.md` if the change affects quality guidance
@@ -71,7 +71,7 @@ and `--check` starts guarding it in the same edit):
 | `.claude-plugin/plugin.json` | what the Claude plugin loader reports |
 | `.purlin/config.json` | this repo's own project stamp; the dashboard reports it |
 
-`scripts/mcp/purlin_server.py` reads `VERSION` at runtime via `_read_version()`, so there is no
+`scripts/mcp/purlin/__init__.py` reads `VERSION` at runtime via `_read_version()`, so there is no
 literal and no change needed. Docs that describe the config `version` field cite the `VERSION` file by name
 rather than restating a number (`purlin_version` RULE-8), so no doc table can go stale.
 

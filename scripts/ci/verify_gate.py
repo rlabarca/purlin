@@ -7,7 +7,7 @@ Reads the structured status payload (the same dict the dashboard renders from)
 and decides whether the branch may merge. Governed by specs/ci/verify_gate.md.
 
 WHAT THIS READS, AND WHAT IT DOES NOT
-    The input is the structured payload from `purlin_server.read_report_payload`,
+    The input is the structured payload from `purlin.payload.read_report_payload`,
     never the rendered Unicode summary table. The table's glyphs and column
     order are presentation and move with the dashboard, so nothing that decides
     what may merge or push reads them: this gate reads the payload, and
@@ -130,10 +130,10 @@ def _load_payload(project_root):
     if server_dir not in sys.path:
         sys.path.insert(0, server_dir)
     try:
-        import purlin_server
+        from purlin import payload
     except ImportError:
         return None
-    return purlin_server.read_report_payload(project_root)
+    return payload.read_report_payload(project_root)
 
 
 def _load_static_checks():

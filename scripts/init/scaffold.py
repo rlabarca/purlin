@@ -689,7 +689,7 @@ _CI_SOURCE = os.path.join('.github', 'workflows', 'verify-gate.yml')
 _CI_REFERENCE = os.path.join('references', 'remote_verification.md')
 
 # What a consumer checkout can actually change. The plugin's own filters name
-# `scripts/ci/verify_gate.py` and `scripts/mcp/purlin_server.py`, two paths
+# `scripts/ci/verify_gate.py` and `scripts/mcp/purlin/server.py`, two paths
 # that exist in no consumer project, so a workflow that kept them would skip
 # the runs its own tooling change should have triggered.
 _CI_PATHS = ("'specs/**'", "'.purlin/config.json'", "'.github/workflows/**'")

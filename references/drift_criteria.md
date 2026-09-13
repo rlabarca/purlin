@@ -44,7 +44,7 @@ Note: `specs/` files are already caught by the CHANGED_SPECS rule (order 1) and 
 
 The tool builds a scope-to-spec map from all `> Scope:` metadata. Matching supports two modes:
 
-- **Exact match**: `> Scope: scripts/mcp/purlin_server.py` matches only that exact path
+- **Exact match**: `> Scope: scripts/mcp/purlin/specs.py` matches only that exact path
 - **Prefix match**: `> Scope: src/api/` (trailing slash) matches any file whose path starts with `src/api/`
 
 Prefix match enables directory-scoped specs without listing every file.
