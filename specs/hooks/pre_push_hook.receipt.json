@@ -1,9 +1,9 @@
 {
   "feature": "pre_push_hook",
-  "vhash": "d3909d0b",
+  "vhash": "884c152b",
   "vhash_version": 2,
-  "commit": "487ba3ff60b3df2d09d960d9546304526be4bbfa",
-  "timestamp": "2026-09-12T18:54:22.825237+00:00",
+  "commit": "876d365742293f39c46954ddb603dba1ad8a28f9",
+  "timestamp": "2026-09-13T03:21:50.565830+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -13,6 +13,7 @@
     "RULE-14",
     "RULE-15",
     "RULE-16",
+    "RULE-17",
     "RULE-2",
     "RULE-3",
     "RULE-4",
@@ -34,21 +35,22 @@
     "RULE-11": "a680752cefb0143d",
     "RULE-12": "de732e0f7e29c4a2",
     "RULE-13": "946bab0b5999cdd3",
-    "RULE-14": "8daf6a35a611e84c",
+    "RULE-14": "abce75adfd0f31fd",
     "RULE-15": "a421926c207937ea",
-    "RULE-16": "f0832169d2067c58",
+    "RULE-16": "2ad74fee8149f36f",
+    "RULE-17": "8086df02535f5217",
     "RULE-2": "20cca3670437f0d6",
     "RULE-3": "37b5e69cd1af9198",
     "RULE-4": "ca5c180699256933",
-    "RULE-5": "e5339d5de3ac9ec4",
-    "RULE-6": "b616e3e49d871cc2",
+    "RULE-5": "7db75611721f7ca2",
+    "RULE-6": "51ab5b87e4e703d3",
     "RULE-7": "371938f9eeed16e1",
     "RULE-8": "d1ba0c1dc98b78e9",
-    "RULE-9": "c8246802a49cec16",
-    "security_no_dangerous_patterns/RULE-1": "088d6b3d2448029d",
-    "security_no_dangerous_patterns/RULE-2": "5472c9b7f8b25c0e",
-    "security_no_dangerous_patterns/RULE-3": "cf98992127576281",
-    "security_no_dangerous_patterns/RULE-4": "f53ddfe0e85bc1be",
+    "RULE-9": "7c339e7b92e5e9ed",
+    "security_no_dangerous_patterns/RULE-1": "119e4abbb7a74e30",
+    "security_no_dangerous_patterns/RULE-2": "d5cb5945ca72889b",
+    "security_no_dangerous_patterns/RULE-3": "944e7060bfc8bf56",
+    "security_no_dangerous_patterns/RULE-4": "99533a93a840f532",
     "security_no_dangerous_patterns/RULE-5": "40da78efb052bece",
     "security_no_dangerous_patterns/RULE-6": "1f7d90da54835852"
   },
@@ -300,7 +302,67 @@
       "status": "pass",
       "tier": "integration",
       "test_file": "dev/test_pre_push_hook.py",
-      "test_name": "test_first_candidate_carrying_the_gate_wins",
+      "test_name": "test_first_candidate_carrying_the_hook_script_wins",
+      "platform": null
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-31",
+      "rule": "RULE-5",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_known_frameworks_equals_the_registry_id_set",
+      "platform": null
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-32",
+      "rule": "RULE-6",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_e2e_tier_is_deselected_by_the_unit_arm",
+      "platform": null
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-33",
+      "rule": "RULE-17",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_no_entry_point_names_an_interpreter",
+      "platform": null
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-33",
+      "rule": "RULE-17",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_no_interpreter_blocks_in_strict",
+      "platform": null
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-33",
+      "rule": "RULE-17",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_no_interpreter_reports_and_passes_in_warn",
+      "platform": null
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-33",
+      "rule": "RULE-17",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_python_only_host_runs_the_check",
       "platform": null
     },
     {
@@ -426,16 +488,16 @@
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T18:54:15.439303+00:00",
-      "commit": "487ba3ff60b3df2d09d960d9546304526be4bbfa",
+      "at": "2026-09-13T03:21:06.157895+00:00",
+      "commit": "876d365742293f39c46954ddb603dba1ad8a28f9",
       "sweep": "dev/run_tests.sh",
-      "passed": 924,
+      "passed": 1057,
       "failed": 0,
-      "skipped": 6,
+      "skipped": 7,
       "runs": [
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:15.105227+00:00",
+          "at": "2026-09-13T03:16:03.817879+00:00",
           "test_files": [
             "dev/test_proof_plugins.sh"
           ],
@@ -445,7 +507,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:15.206814+00:00",
+          "at": "2026-09-13T03:16:03.918127+00:00",
           "test_files": [
             "dev/test_e2e_teammate_audit_loop.sh"
           ],
@@ -455,7 +517,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:15.668320+00:00",
+          "at": "2026-09-13T03:16:04.357934+00:00",
           "test_files": [
             "dev/test_e2e_build_changeset.sh"
           ],
@@ -465,7 +527,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:25.661899+00:00",
+          "at": "2026-09-13T03:16:24.347796+00:00",
           "test_files": [
             "dev/test_init_e2e.sh"
           ],
@@ -475,7 +537,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:26.549057+00:00",
+          "at": "2026-09-13T03:16:25.319889+00:00",
           "test_files": [
             "dev/test_e2e_feature_scoped_overwrite.sh"
           ],
@@ -485,7 +547,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:34.255421+00:00",
+          "at": "2026-09-13T03:16:32.670305+00:00",
           "test_files": [
             "dev/test_e2e_external_refs.sh"
           ],
@@ -495,7 +557,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:35.099187+00:00",
+          "at": "2026-09-13T03:16:33.565863+00:00",
           "test_files": [
             "dev/test_e2e_strict_required.sh"
           ],
@@ -505,7 +567,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:35.586082+00:00",
+          "at": "2026-09-13T03:16:34.064968+00:00",
           "test_files": [
             "dev/test_e2e_manual_staleness.sh"
           ],
@@ -515,7 +577,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:35.969933+00:00",
+          "at": "2026-09-13T03:16:34.504834+00:00",
           "test_files": [
             "dev/test_e2e_required_rules.sh"
           ],
@@ -525,7 +587,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:36.817032+00:00",
+          "at": "2026-09-13T03:16:35.352248+00:00",
           "test_files": [
             "dev/test_e2e_verify_audit.sh"
           ],
@@ -535,7 +597,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:39.402618+00:00",
+          "at": "2026-09-13T03:16:37.781460+00:00",
           "test_files": [
             "dev/test_e2e_anchor_authority.sh"
           ],
@@ -545,7 +607,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:40.282719+00:00",
+          "at": "2026-09-13T03:16:38.646602+00:00",
           "test_files": [
             "dev/test_e2e_hybrid_audit.sh"
           ],
@@ -555,7 +617,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:41.239306+00:00",
+          "at": "2026-09-13T03:16:39.572971+00:00",
           "test_files": [
             "dev/test_e2e_additional_criteria.sh"
           ],
@@ -565,7 +627,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:41.469821+00:00",
+          "at": "2026-09-13T03:16:39.796324+00:00",
           "test_files": [
             "dev/test_e2e_fake_audit_llm.sh"
           ],
@@ -575,7 +637,7 @@
         },
         {
           "plugin": "pytest_purlin",
-          "at": "2026-09-12T18:54:15.269965+00:00",
+          "at": "2026-09-13T03:21:05.507561+00:00",
           "test_files": [
             "dev/test_cheat_matrix.py",
             "dev/test_claude_cli_helper.py",
@@ -590,12 +652,13 @@
             "dev/test_init_update.py",
             "dev/test_mcp_server.py",
             "dev/test_multilang_proof_plugins.py",
+            "dev/test_plugin_contract.py",
             "dev/test_pre_commit_hook.py",
             "dev/test_pre_push_hook.py",
             "dev/test_proof_plugins_missing.py",
             "dev/test_proof_stress.py",
             "dev/test_purlin_agent.py",
-            "dev/test_purlin_docs.py",
+            "dev/test_purlin_prose.py",
             "dev/test_purlin_references.py",
             "dev/test_purlin_report.py",
             "dev/test_purlin_report_markup.py",
@@ -614,9 +677,9 @@
             "dev/test_tools_qa.py",
             "dev/test_verify_gate.py"
           ],
-          "passed": 916,
+          "passed": 1049,
           "failed": 0,
-          "skipped": 2
+          "skipped": 3
         }
       ],
       "skipped_proofs": [
@@ -661,6 +724,13 @@
           "test_file": "dev/test_cheat_matrix.py",
           "test_name": "test_typescript_no_assertion",
           "reason": "tsc not available"
+        },
+        {
+          "feature": "consumer_ci",
+          "id": "PROOF-4",
+          "test_file": "dev/test_consumer_ci.py",
+          "test_name": "test_the_documented_clone_ref_exists_as_a_tag",
+          "reason": "the documented clone recipe pins --branch v0.10.0, and this repository has no such tag (owner action: tag v0.10.0 and push main); the tags it has are v0.9.3, v0.9.4, v0.9.5"
         }
       ]
     },
@@ -696,8 +766,8 @@
         "file": "specs/hooks/pre_push_hook.proofs-integration.json",
         "tier": "integration",
         "platform": null,
-        "commit": "487ba3ff60b3df2d09d960d9546304526be4bbfa",
-        "committed_at": "2026-09-12T14:50:12-04:00",
+        "commit": "1d99aabc2839d8b0152aee554a88a03d5c3b29fe",
+        "committed_at": "2026-09-12T22:29:55-04:00",
         "runner": null,
         "executed_in_test_run": true
       },

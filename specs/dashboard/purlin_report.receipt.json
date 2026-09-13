@@ -1,19 +1,16 @@
 {
   "feature": "purlin_report",
-  "vhash": "b84b4a91",
+  "vhash": "307dc1d7",
   "vhash_version": 2,
-  "commit": "487ba3ff60b3df2d09d960d9546304526be4bbfa",
-  "timestamp": "2026-09-12T18:54:22.825237+00:00",
+  "commit": "876d365742293f39c46954ddb603dba1ad8a28f9",
+  "timestamp": "2026-09-13T03:21:50.565830+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
-    "RULE-11",
     "RULE-12",
     "RULE-13",
-    "RULE-14",
     "RULE-15",
     "RULE-16",
-    "RULE-17",
     "RULE-18",
     "RULE-19",
     "RULE-2",
@@ -36,7 +33,6 @@
     "RULE-35",
     "RULE-36",
     "RULE-37",
-    "RULE-38",
     "RULE-39",
     "RULE-4",
     "RULE-40",
@@ -51,6 +47,8 @@
     "RULE-49",
     "RULE-5",
     "RULE-50",
+    "RULE-51",
+    "RULE-52",
     "RULE-6",
     "RULE-7",
     "RULE-8",
@@ -59,6 +57,8 @@
     "dashboard_visual/RULE-10",
     "dashboard_visual/RULE-11",
     "dashboard_visual/RULE-12",
+    "dashboard_visual/RULE-13",
+    "dashboard_visual/RULE-14",
     "dashboard_visual/RULE-2",
     "dashboard_visual/RULE-3",
     "dashboard_visual/RULE-4",
@@ -70,59 +70,59 @@
   ],
   "rule_hashes": {
     "RULE-1": "adb111023707ed46",
-    "RULE-10": "95cff66f0f6b6c1f",
-    "RULE-11": "82e703fe60db5ac2",
+    "RULE-10": "3629459f51b32151",
     "RULE-12": "d1c5fbf07a06095f",
-    "RULE-13": "98b886a4c64d3da9",
-    "RULE-14": "4fd6980c23ad72d0",
+    "RULE-13": "9214119b465c011f",
     "RULE-15": "bffeaf9b83b54ae1",
-    "RULE-16": "e98fd128269f1b81",
-    "RULE-17": "44a7f9dbce63f2e2",
-    "RULE-18": "c3a6465b8a83db1e",
-    "RULE-19": "4d98e95cfb3ad6be",
+    "RULE-16": "f4de09041d059399",
+    "RULE-18": "c29d8f88e3b0da7c",
+    "RULE-19": "0e16bdec39886b00",
     "RULE-2": "dabfa9f954433914",
     "RULE-20": "dfbd0de47022a336",
     "RULE-21": "1ad35cad8e86b285",
-    "RULE-22": "30c6515160c6779e",
+    "RULE-22": "133c939ae6685a72",
     "RULE-23": "eb510bbc241361b6",
-    "RULE-24": "9365ad31238f655b",
-    "RULE-25": "2414006fa2ef206d",
+    "RULE-24": "1bd10050855562cd",
+    "RULE-25": "9e60306b581da036",
     "RULE-26": "4110daf8a7b2c750",
-    "RULE-27": "d03d5068ed593293",
+    "RULE-27": "b5dcdbb35f765944",
     "RULE-28": "151e5866dc2e5a1f",
     "RULE-29": "787f6d134b68af44",
-    "RULE-3": "a3bfb28eb6b3f1fd",
-    "RULE-30": "4031db003750eb9e",
+    "RULE-3": "2d02d78435da9c82",
+    "RULE-30": "d6d6be86f6f4063c",
     "RULE-31": "950a4181636c3dd2",
     "RULE-32": "b9c094716af8cecb",
-    "RULE-33": "46680017a442c2e1",
-    "RULE-34": "276373a3c7f7c6d0",
-    "RULE-35": "98846b507462a74d",
-    "RULE-36": "fa220ca5a0cee86d",
+    "RULE-33": "347082d4b42e4584",
+    "RULE-34": "cea226b3632dc0f8",
+    "RULE-35": "2428257315e1ed27",
+    "RULE-36": "c20e7d7392fe9095",
     "RULE-37": "c9fa367d0ffe5f21",
-    "RULE-38": "afc96e33bdc0d5f8",
-    "RULE-39": "926fc43c48e0842e",
+    "RULE-39": "f29871e2b1f597f1",
     "RULE-4": "9f4746a894b2a022",
     "RULE-40": "4df513daaad3a520",
-    "RULE-41": "eda5f869ab84b30c",
+    "RULE-41": "dded09ce33d5da78",
     "RULE-42": "ea66da162dc443dd",
-    "RULE-43": "302865a89a419154",
-    "RULE-44": "b69684a11f01851a",
+    "RULE-43": "a0734f6a4c26942a",
+    "RULE-44": "9f3aa8873c0597f5",
     "RULE-45": "0c04b1ca104acc4b",
-    "RULE-46": "d67f11f3bb95f4e7",
+    "RULE-46": "6e6c6558bc0fdc91",
     "RULE-47": "cf916c543af23859",
-    "RULE-48": "0166c5be2bcdca87",
+    "RULE-48": "66e8e9ed82e05407",
     "RULE-49": "796723743e884e3d",
     "RULE-5": "fdfe653cd40722ec",
     "RULE-50": "fb542ec837aeeda0",
+    "RULE-51": "0f6e4a79e1bd5adb",
+    "RULE-52": "6f842d4a75d4da5e",
     "RULE-6": "81e8de2c1879a739",
     "RULE-7": "a6ab30281d9d4087",
-    "RULE-8": "a2773ab8bcd7645e",
-    "RULE-9": "acb44444f8e5b269",
+    "RULE-8": "82da2339b7f3eb44",
+    "RULE-9": "acb80127bbf15312",
     "dashboard_visual/RULE-1": "eaefd6cb025a789b",
     "dashboard_visual/RULE-10": "ee5bc4921f1932e7",
     "dashboard_visual/RULE-11": "e244281a20e40a2b",
     "dashboard_visual/RULE-12": "0838838b106b08aa",
+    "dashboard_visual/RULE-13": "44a7f9dbce63f2e2",
+    "dashboard_visual/RULE-14": "afc96e33bdc0d5f8",
     "dashboard_visual/RULE-2": "35dfc896c977ceef",
     "dashboard_visual/RULE-3": "9abf9b8c75a2e65e",
     "dashboard_visual/RULE-4": "2df44689e7c71f79",
@@ -171,6 +171,26 @@
       "tier": "e2e",
       "test_file": "dev/test_purlin_report.py",
       "test_name": "test_chip_colours_and_theme_scoped_overlay_properties",
+      "platform": null
+    },
+    {
+      "feature": "dashboard_visual",
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_responsive_layout",
+      "platform": null
+    },
+    {
+      "feature": "dashboard_visual",
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_summary_strip_rows_are_exactly_filled",
       "platform": null
     },
     {
@@ -275,16 +295,6 @@
     },
     {
       "feature": "purlin_report",
-      "id": "PROOF-11",
-      "rule": "RULE-11",
-      "status": "pass",
-      "tier": "unit",
-      "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_anchor_external_link_icon",
-      "platform": null
-    },
-    {
-      "feature": "purlin_report",
       "id": "PROOF-12",
       "rule": "RULE-12",
       "status": "pass",
@@ -306,7 +316,7 @@
     {
       "feature": "purlin_report",
       "id": "PROOF-14",
-      "rule": "RULE-14",
+      "rule": "RULE-34",
       "status": "pass",
       "tier": "unit",
       "test_file": "dev/test_purlin_report.py",
@@ -330,17 +340,7 @@
       "status": "pass",
       "tier": "unit",
       "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_status_column_centered_at_multiple_widths",
-      "platform": null
-    },
-    {
-      "feature": "purlin_report",
-      "id": "PROOF-17",
-      "rule": "RULE-17",
-      "status": "pass",
-      "tier": "unit",
-      "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_responsive_layout",
+      "test_name": "test_status_column_reads_the_same_at_every_width",
       "platform": null
     },
     {
@@ -420,7 +420,7 @@
       "status": "pass",
       "tier": "unit",
       "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_no_proof_rules_have_amber_border",
+      "test_name": "test_uncovered_rules_are_visually_distinct",
       "platform": null
     },
     {
@@ -430,7 +430,7 @@
       "status": "pass",
       "tier": "unit",
       "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_fail_rules_have_red_border",
+      "test_name": "test_failing_rules_are_distinct_from_proved_and_uncovered",
       "platform": null
     },
     {
@@ -625,16 +625,6 @@
     },
     {
       "feature": "purlin_report",
-      "id": "PROOF-40",
-      "rule": "RULE-38",
-      "status": "pass",
-      "tier": "e2e",
-      "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_summary_strip_rows_are_exactly_filled",
-      "platform": null
-    },
-    {
-      "feature": "purlin_report",
       "id": "PROOF-41",
       "rule": "RULE-39",
       "status": "pass",
@@ -805,6 +795,36 @@
     },
     {
       "feature": "purlin_report",
+      "id": "PROOF-57",
+      "rule": "RULE-51",
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_a_newer_schema_draws_one_banner_and_still_renders",
+      "platform": null
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-58",
+      "rule": "RULE-48",
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_focus_reads_the_stamp_and_the_digest_only_when_it_moved",
+      "platform": null
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-59",
+      "rule": "RULE-52",
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_a_referenced_rule_renders_as_its_shared_body",
+      "platform": null
+    },
+    {
+      "feature": "purlin_report",
       "id": "PROOF-6",
       "rule": "RULE-6",
       "status": "pass",
@@ -830,7 +850,7 @@
       "status": "pass",
       "tier": "unit",
       "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_staleness_warning_amber",
+      "test_name": "test_staleness_warning_state_is_visually_distinct",
       "platform": null
     },
     {
@@ -840,22 +860,22 @@
       "status": "pass",
       "tier": "unit",
       "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_staleness_stale_red",
+      "test_name": "test_staleness_stale_state_is_distinct_from_fresh_and_warning",
       "platform": null
     }
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T18:54:15.439303+00:00",
-      "commit": "487ba3ff60b3df2d09d960d9546304526be4bbfa",
+      "at": "2026-09-13T03:21:06.157895+00:00",
+      "commit": "876d365742293f39c46954ddb603dba1ad8a28f9",
       "sweep": "dev/run_tests.sh",
-      "passed": 924,
+      "passed": 1057,
       "failed": 0,
-      "skipped": 6,
+      "skipped": 7,
       "runs": [
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:15.105227+00:00",
+          "at": "2026-09-13T03:16:03.817879+00:00",
           "test_files": [
             "dev/test_proof_plugins.sh"
           ],
@@ -865,7 +885,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:15.206814+00:00",
+          "at": "2026-09-13T03:16:03.918127+00:00",
           "test_files": [
             "dev/test_e2e_teammate_audit_loop.sh"
           ],
@@ -875,7 +895,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:15.668320+00:00",
+          "at": "2026-09-13T03:16:04.357934+00:00",
           "test_files": [
             "dev/test_e2e_build_changeset.sh"
           ],
@@ -885,7 +905,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:25.661899+00:00",
+          "at": "2026-09-13T03:16:24.347796+00:00",
           "test_files": [
             "dev/test_init_e2e.sh"
           ],
@@ -895,7 +915,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:26.549057+00:00",
+          "at": "2026-09-13T03:16:25.319889+00:00",
           "test_files": [
             "dev/test_e2e_feature_scoped_overwrite.sh"
           ],
@@ -905,7 +925,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:34.255421+00:00",
+          "at": "2026-09-13T03:16:32.670305+00:00",
           "test_files": [
             "dev/test_e2e_external_refs.sh"
           ],
@@ -915,7 +935,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:35.099187+00:00",
+          "at": "2026-09-13T03:16:33.565863+00:00",
           "test_files": [
             "dev/test_e2e_strict_required.sh"
           ],
@@ -925,7 +945,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:35.586082+00:00",
+          "at": "2026-09-13T03:16:34.064968+00:00",
           "test_files": [
             "dev/test_e2e_manual_staleness.sh"
           ],
@@ -935,7 +955,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:35.969933+00:00",
+          "at": "2026-09-13T03:16:34.504834+00:00",
           "test_files": [
             "dev/test_e2e_required_rules.sh"
           ],
@@ -945,7 +965,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:36.817032+00:00",
+          "at": "2026-09-13T03:16:35.352248+00:00",
           "test_files": [
             "dev/test_e2e_verify_audit.sh"
           ],
@@ -955,7 +975,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:39.402618+00:00",
+          "at": "2026-09-13T03:16:37.781460+00:00",
           "test_files": [
             "dev/test_e2e_anchor_authority.sh"
           ],
@@ -965,7 +985,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:40.282719+00:00",
+          "at": "2026-09-13T03:16:38.646602+00:00",
           "test_files": [
             "dev/test_e2e_hybrid_audit.sh"
           ],
@@ -975,7 +995,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:41.239306+00:00",
+          "at": "2026-09-13T03:16:39.572971+00:00",
           "test_files": [
             "dev/test_e2e_additional_criteria.sh"
           ],
@@ -985,7 +1005,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:41.469821+00:00",
+          "at": "2026-09-13T03:16:39.796324+00:00",
           "test_files": [
             "dev/test_e2e_fake_audit_llm.sh"
           ],
@@ -995,7 +1015,7 @@
         },
         {
           "plugin": "pytest_purlin",
-          "at": "2026-09-12T18:54:15.269965+00:00",
+          "at": "2026-09-13T03:21:05.507561+00:00",
           "test_files": [
             "dev/test_cheat_matrix.py",
             "dev/test_claude_cli_helper.py",
@@ -1010,12 +1030,13 @@
             "dev/test_init_update.py",
             "dev/test_mcp_server.py",
             "dev/test_multilang_proof_plugins.py",
+            "dev/test_plugin_contract.py",
             "dev/test_pre_commit_hook.py",
             "dev/test_pre_push_hook.py",
             "dev/test_proof_plugins_missing.py",
             "dev/test_proof_stress.py",
             "dev/test_purlin_agent.py",
-            "dev/test_purlin_docs.py",
+            "dev/test_purlin_prose.py",
             "dev/test_purlin_references.py",
             "dev/test_purlin_report.py",
             "dev/test_purlin_report_markup.py",
@@ -1034,9 +1055,9 @@
             "dev/test_tools_qa.py",
             "dev/test_verify_gate.py"
           ],
-          "passed": 916,
+          "passed": 1049,
           "failed": 0,
-          "skipped": 2
+          "skipped": 3
         }
       ],
       "skipped_proofs": [
@@ -1081,6 +1102,13 @@
           "test_file": "dev/test_cheat_matrix.py",
           "test_name": "test_typescript_no_assertion",
           "reason": "tsc not available"
+        },
+        {
+          "feature": "consumer_ci",
+          "id": "PROOF-4",
+          "test_file": "dev/test_consumer_ci.py",
+          "test_name": "test_the_documented_clone_ref_exists_as_a_tag",
+          "reason": "the documented clone recipe pins --branch v0.10.0, and this repository has no such tag (owner action: tag v0.10.0 and push main); the tags it has are v0.9.3, v0.9.4, v0.9.5"
         }
       ]
     },
@@ -1089,8 +1117,8 @@
         "file": "specs/_anchors/dashboard_visual.proofs-e2e.json",
         "tier": "e2e",
         "platform": null,
-        "commit": "9858956737af77f91c15d887c81af77787622e0e",
-        "committed_at": "2026-09-11T23:45:53-04:00",
+        "commit": "9afa0c43de1e7b879d37e100fb99a1d486b3430b",
+        "committed_at": "2026-09-12T21:38:44-04:00",
         "runner": null,
         "executed_in_test_run": true
       },
@@ -1107,8 +1135,8 @@
         "file": "specs/dashboard/purlin_report.proofs-e2e.json",
         "tier": "e2e",
         "platform": null,
-        "commit": "487ba3ff60b3df2d09d960d9546304526be4bbfa",
-        "committed_at": "2026-09-12T14:50:12-04:00",
+        "commit": "9afa0c43de1e7b879d37e100fb99a1d486b3430b",
+        "committed_at": "2026-09-12T21:38:44-04:00",
         "runner": null,
         "executed_in_test_run": true
       },
@@ -1125,8 +1153,8 @@
         "file": "specs/dashboard/purlin_report.proofs-unit.json",
         "tier": "unit",
         "platform": null,
-        "commit": "487ba3ff60b3df2d09d960d9546304526be4bbfa",
-        "committed_at": "2026-09-12T14:50:12-04:00",
+        "commit": "2b1b88a60cfb388ae3861d28593272bb911bc1a7",
+        "committed_at": "2026-09-12T21:38:44-04:00",
         "runner": null,
         "executed_in_test_run": true
       }

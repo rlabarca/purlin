@@ -1,36 +1,72 @@
 {
-  "feature": "skill_rename",
-  "vhash": "1d48c2e5",
+  "feature": "pm_anchor_userstories",
+  "vhash": "ab48a997",
   "vhash_version": 2,
   "commit": "876d365742293f39c46954ddb603dba1ad8a28f9",
   "timestamp": "2026-09-13T03:21:50.565830+00:00",
   "rules": [
+    "RULE-1",
+    "RULE-2",
+    "RULE-3",
     "RULE-4",
     "RULE-5"
   ],
   "rule_hashes": {
-    "RULE-4": "86459e4f44e06db8",
-    "RULE-5": "68e1ff724e525588"
+    "RULE-1": "3267bee4926a94d0",
+    "RULE-2": "8d72ac036b63483d",
+    "RULE-3": "0ef27df08f716a09",
+    "RULE-4": "2d3404a8536e7f26",
+    "RULE-5": "d182d0fa2edcf691"
   },
   "proofs": [
     {
-      "feature": "skill_rename",
+      "feature": "pm_anchor_userstories",
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_tools_qa.py",
+      "test_name": "test_the_output_path_is_specs_anchors_and_never_a_dot_anchor_file",
+      "platform": null
+    },
+    {
+      "feature": "pm_anchor_userstories",
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_tools_qa.py",
+      "test_name": "test_the_banned_terms_are_gone_and_the_required_ones_are_present",
+      "platform": null
+    },
+    {
+      "feature": "pm_anchor_userstories",
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_tools_qa.py",
+      "test_name": "test_the_template_carries_the_anchor_formats_sections_and_fields",
+      "platform": null
+    },
+    {
+      "feature": "pm_anchor_userstories",
       "id": "PROOF-4",
       "rule": "RULE-4",
       "status": "pass",
       "tier": "unit",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_rename_covers_the_quality_caches",
+      "test_file": "dev/test_tools_qa.py",
+      "test_name": "test_the_commit_prefix_is_the_one_commit_conventions_defines",
       "platform": null
     },
     {
-      "feature": "skill_rename",
+      "feature": "pm_anchor_userstories",
       "id": "PROOF-5",
       "rule": "RULE-5",
       "status": "pass",
       "tier": "unit",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_rename_covers_every_shipped_frameworks_marker",
+      "test_file": "dev/test_tools_qa.py",
+      "test_name": "test_the_pm_skill_zip_holds_one_skill_md_equal_to_its_sibling",
       "platform": null
     }
   ],
@@ -284,11 +320,11 @@
     },
     "proof_files": [
       {
-        "file": "specs/skills/skill_rename.proofs-unit.json",
+        "file": "specs/tools/pm_anchor_userstories.proofs-unit.json",
         "tier": "unit",
         "platform": null,
-        "commit": "e0412a57216b4d8df44d09509c917f29d51ced3c",
-        "committed_at": "2026-09-12T21:31:17-04:00",
+        "commit": "7aac0d22ddd9ba2a180296e4489cbc15d76de990",
+        "committed_at": "2026-09-12T21:21:20-04:00",
         "runner": null,
         "executed_in_test_run": true
       }

@@ -1,44 +1,29 @@
 {
   "feature": "skill_init",
-  "vhash": "a448d998",
+  "vhash": "132f6401",
   "vhash_version": 2,
-  "commit": "487ba3ff60b3df2d09d960d9546304526be4bbfa",
-  "timestamp": "2026-09-12T18:54:22.825237+00:00",
+  "commit": "876d365742293f39c46954ddb603dba1ad8a28f9",
+  "timestamp": "2026-09-13T03:21:50.565830+00:00",
   "rules": [
-    "RULE-1",
     "RULE-10",
     "RULE-11",
     "RULE-12",
-    "RULE-13",
-    "RULE-14",
     "RULE-15",
     "RULE-16",
     "RULE-17",
-    "RULE-18",
-    "RULE-19",
-    "RULE-2",
-    "RULE-20",
     "RULE-21",
-    "RULE-22",
-    "RULE-23",
     "RULE-24",
-    "RULE-25",
     "RULE-26",
     "RULE-27",
     "RULE-28",
     "RULE-29",
-    "RULE-3",
     "RULE-30",
     "RULE-31",
     "RULE-32",
     "RULE-33",
     "RULE-34",
     "RULE-35",
-    "RULE-36",
-    "RULE-37",
     "RULE-38",
-    "RULE-39",
-    "RULE-4",
     "RULE-40",
     "RULE-41",
     "RULE-42",
@@ -46,7 +31,6 @@
     "RULE-44",
     "RULE-45",
     "RULE-46",
-    "RULE-47",
     "RULE-48",
     "RULE-49",
     "RULE-5",
@@ -56,7 +40,6 @@
     "RULE-53",
     "RULE-54",
     "RULE-55",
-    "RULE-56",
     "RULE-57",
     "RULE-58",
     "RULE-59",
@@ -71,70 +54,62 @@
     "RULE-67",
     "RULE-68",
     "RULE-69",
-    "RULE-7",
     "RULE-70",
     "RULE-71",
     "RULE-72",
     "RULE-73",
     "RULE-74",
+    "RULE-75",
+    "RULE-76",
+    "RULE-77",
+    "RULE-78",
+    "RULE-79",
     "RULE-8",
+    "RULE-80",
+    "RULE-81",
+    "RULE-82",
+    "RULE-83",
+    "RULE-84",
     "RULE-9"
   ],
   "rule_hashes": {
-    "RULE-1": "d402581da42374f9",
     "RULE-10": "fd3bc15f23ca977b",
-    "RULE-11": "650d08ffe03234b8",
-    "RULE-12": "8129e3dd7d0f543c",
-    "RULE-13": "3c3f117a935ecae6",
-    "RULE-14": "c7804e696487dd27",
-    "RULE-15": "e89ea36969eb4a00",
+    "RULE-11": "9ff99fa8e51dfdca",
+    "RULE-12": "81c263e308c82d4a",
+    "RULE-15": "6c81b3654905e78b",
     "RULE-16": "166eee3f22d2f5aa",
     "RULE-17": "90225802ae54de6d",
-    "RULE-18": "409ccc7cd0d620da",
-    "RULE-19": "3f29e9335d8f027c",
-    "RULE-2": "f882d91d4488414b",
-    "RULE-20": "d3196b174860329c",
-    "RULE-21": "c37582b874c4e58d",
-    "RULE-22": "21168c55903d8ea1",
-    "RULE-23": "e5c7c4e24068e517",
+    "RULE-21": "f2abca4eee5aa6db",
     "RULE-24": "b843859f06772859",
-    "RULE-25": "5a0740dc5633a1aa",
     "RULE-26": "0578ccf875f54a05",
     "RULE-27": "d8af29eca058b7b6",
     "RULE-28": "f4c6fbecf5ec662c",
     "RULE-29": "48216fa91ce5a1ce",
-    "RULE-3": "67aed7b9ce3ae904",
     "RULE-30": "10ba87d4f1c03ee9",
     "RULE-31": "3d9bb836532c585f",
-    "RULE-32": "23a96cd0558d9cfc",
+    "RULE-32": "f162294171f1cee2",
     "RULE-33": "befd51716aa672a7",
-    "RULE-34": "5b222e89b8b1a71a",
-    "RULE-35": "4e5f6ba6e17c7534",
-    "RULE-36": "31c0cd89d25b5887",
-    "RULE-37": "9a6530e7fe524fef",
-    "RULE-38": "feb3dd562fa84079",
-    "RULE-39": "2aac5077ef2e4073",
-    "RULE-4": "d678c1c2ae01571c",
+    "RULE-34": "7c49015071ee2d00",
+    "RULE-35": "371653e8ef68ddf7",
+    "RULE-38": "c40fce49c50c47f7",
     "RULE-40": "90262fabc4f02f62",
     "RULE-41": "d0c399e123d036f8",
     "RULE-42": "f5b69c2b395cc55b",
     "RULE-43": "b85b8610c13b5d6c",
     "RULE-44": "f452ba4d3fb1bba8",
     "RULE-45": "7acaa624a6eafd15",
-    "RULE-46": "832c807872b4f909",
-    "RULE-47": "5dac4716357a28cd",
-    "RULE-48": "186005798bc6fbea",
-    "RULE-49": "697796cb52364742",
-    "RULE-5": "14651aa1ed9ac2d9",
+    "RULE-46": "15e10747ed6b9e82",
+    "RULE-48": "1b0798c04476c5c6",
+    "RULE-49": "2293bf804f098134",
+    "RULE-5": "f2172858c427cb5e",
     "RULE-50": "1c9113b9c03d1d44",
     "RULE-51": "799639d2516b7c85",
-    "RULE-52": "4c342c160cd0e802",
-    "RULE-53": "d9d72aa11edbef4c",
+    "RULE-52": "60a57da9fef3c776",
+    "RULE-53": "74453dcf0f8fc452",
     "RULE-54": "18fea1d7d6371ae4",
     "RULE-55": "73dd5b89fbb7afc6",
-    "RULE-56": "c070949a3ec94a75",
-    "RULE-57": "1bddc46ddd6351f8",
-    "RULE-58": "d68baf76ea347d06",
+    "RULE-57": "d97dc1c1175addf2",
+    "RULE-58": "3fcf7e6242bcaccf",
     "RULE-59": "4b99a968ccabb728",
     "RULE-6": "9ac4e2875a7f7099",
     "RULE-60": "1ebf2fb51ba68468",
@@ -143,30 +118,29 @@
     "RULE-63": "31cb03d4789e2191",
     "RULE-64": "298ea03cd5701bce",
     "RULE-65": "92a751ca6ce474ea",
-    "RULE-66": "c8441e97609898bf",
-    "RULE-67": "2430ab9b2808231e",
-    "RULE-68": "36a92205f87cc002",
+    "RULE-66": "8b60462334127409",
+    "RULE-67": "2e49aa91b1d7aba1",
+    "RULE-68": "2e80fba2eba710f0",
     "RULE-69": "e3e8ea60a2932eb4",
-    "RULE-7": "ed80cdf4731a433e",
-    "RULE-70": "f3af2069416db14e",
-    "RULE-71": "b15544147f1ace0a",
+    "RULE-70": "dd327d765056ea10",
+    "RULE-71": "ca16ea921d58c35f",
     "RULE-72": "b4305944bb1c4bcc",
     "RULE-73": "df9d44cda2ae0a9b",
-    "RULE-74": "e6e8036c3786342b",
+    "RULE-74": "9d02411dcbe523e3",
+    "RULE-75": "4cd0307297a47b82",
+    "RULE-76": "ee025596d4f780a9",
+    "RULE-77": "70bad83efc90f480",
+    "RULE-78": "a831464a621bb7df",
+    "RULE-79": "38b22fdc720c6d3b",
     "RULE-8": "1d6c49a24b3e7505",
-    "RULE-9": "fcf7e082acad5cbb"
+    "RULE-80": "17a50bb4a79bf5bc",
+    "RULE-81": "10fccfaadea25fa1",
+    "RULE-82": "e074b7539aeb7c17",
+    "RULE-83": "04b4190755ea20ad",
+    "RULE-84": "7f1290b46a7fa39c",
+    "RULE-9": "89534872027cb404"
   },
   "proofs": [
-    {
-      "feature": "skill_init",
-      "id": "PROOF-1",
-      "rule": "RULE-1",
-      "status": "pass",
-      "tier": "unit",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_has_frontmatter",
-      "platform": null
-    },
     {
       "feature": "skill_init",
       "id": "PROOF-10",
@@ -200,7 +174,7 @@
     {
       "feature": "skill_init",
       "id": "PROOF-13",
-      "rule": "RULE-13",
+      "rule": "RULE-12",
       "status": "pass",
       "tier": "e2e",
       "test_file": "dev/test_init_e2e.sh",
@@ -210,7 +184,7 @@
     {
       "feature": "skill_init",
       "id": "PROOF-14",
-      "rule": "RULE-14",
+      "rule": "RULE-12",
       "status": "pass",
       "tier": "e2e",
       "test_file": "dev/test_init_e2e.sh",
@@ -250,7 +224,7 @@
     {
       "feature": "skill_init",
       "id": "PROOF-18",
-      "rule": "RULE-18",
+      "rule": "RULE-53",
       "status": "pass",
       "tier": "e2e",
       "test_file": "dev/test_init_e2e.sh",
@@ -260,7 +234,7 @@
     {
       "feature": "skill_init",
       "id": "PROOF-19",
-      "rule": "RULE-19",
+      "rule": "RULE-53",
       "status": "pass",
       "tier": "e2e",
       "test_file": "dev/test_init_e2e.sh",
@@ -269,18 +243,8 @@
     },
     {
       "feature": "skill_init",
-      "id": "PROOF-2",
-      "rule": "RULE-2",
-      "status": "pass",
-      "tier": "unit",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_has_usage_section",
-      "platform": null
-    },
-    {
-      "feature": "skill_init",
       "id": "PROOF-20",
-      "rule": "RULE-20",
+      "rule": "RULE-53",
       "status": "pass",
       "tier": "e2e",
       "test_file": "dev/test_init_e2e.sh",
@@ -300,7 +264,7 @@
     {
       "feature": "skill_init",
       "id": "PROOF-22",
-      "rule": "RULE-22",
+      "rule": "RULE-21",
       "status": "pass",
       "tier": "e2e",
       "test_file": "dev/test_init_e2e.sh",
@@ -310,7 +274,7 @@
     {
       "feature": "skill_init",
       "id": "PROOF-23",
-      "rule": "RULE-23",
+      "rule": "RULE-21",
       "status": "pass",
       "tier": "e2e",
       "test_file": "dev/test_init_e2e.sh",
@@ -330,7 +294,7 @@
     {
       "feature": "skill_init",
       "id": "PROOF-25",
-      "rule": "RULE-25",
+      "rule": "RULE-32",
       "status": "pass",
       "tier": "e2e",
       "test_file": "dev/test_init_e2e.sh",
@@ -375,16 +339,6 @@
       "tier": "e2e",
       "test_file": "dev/test_init_e2e.sh",
       "test_name": "pre-push hook installed correctly",
-      "platform": null
-    },
-    {
-      "feature": "skill_init",
-      "id": "PROOF-3",
-      "rule": "RULE-3",
-      "status": "pass",
-      "tier": "unit",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_name_matches_directory",
       "platform": null
     },
     {
@@ -470,7 +424,7 @@
     {
       "feature": "skill_init",
       "id": "PROOF-38",
-      "rule": "RULE-36",
+      "rule": "RULE-35",
       "status": "pass",
       "tier": "unit",
       "test_file": "dev/test_skill_specs.py",
@@ -480,21 +434,11 @@
     {
       "feature": "skill_init",
       "id": "PROOF-39",
-      "rule": "RULE-37",
+      "rule": "RULE-35",
       "status": "pass",
       "tier": "unit",
       "test_file": "dev/test_skill_specs.py",
       "test_name": "test_skill_shows_no_detection_all_unselected",
-      "platform": null
-    },
-    {
-      "feature": "skill_init",
-      "id": "PROOF-4",
-      "rule": "RULE-4",
-      "status": "pass",
-      "tier": "unit",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_has_commit_instructions",
       "platform": null
     },
     {
@@ -505,16 +449,6 @@
       "tier": "unit",
       "test_file": "dev/test_skill_specs.py",
       "test_name": "test_mcp_server_bundled_in_plugin_manifest",
-      "platform": null
-    },
-    {
-      "feature": "skill_init",
-      "id": "PROOF-41",
-      "rule": "RULE-39",
-      "status": "pass",
-      "tier": "unit",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_bundled_mcp_server_uses_plugin_root_variable",
       "platform": null
     },
     {
@@ -590,7 +524,7 @@
     {
       "feature": "skill_init",
       "id": "PROOF-49",
-      "rule": "RULE-47",
+      "rule": "RULE-53",
       "status": "pass",
       "tier": "e2e",
       "test_file": "dev/test_init_e2e.sh",
@@ -604,7 +538,7 @@
       "status": "pass",
       "tier": "unit",
       "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_add_plugin_validates_by_language",
+      "test_name": "test_add_plugin_validates_against_the_contract_table",
       "platform": null
     },
     {
@@ -705,16 +639,6 @@
       "tier": "unit",
       "test_file": "dev/test_skill_specs.py",
       "test_name": "test_step_5d_states_the_provenance_loss_before_consent",
-      "platform": null
-    },
-    {
-      "feature": "skill_init",
-      "id": "PROOF-59",
-      "rule": "RULE-56",
-      "status": "pass",
-      "tier": "unit",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_mcp_flag_is_the_mcp_step_of_update",
       "platform": null
     },
     {
@@ -834,17 +758,7 @@
       "status": "pass",
       "tier": "integration",
       "test_file": "dev/test_init_scaffold.py",
-      "test_name": "test_dashboard_is_a_symlink_and_report_off_deletes_nothing",
-      "platform": null
-    },
-    {
-      "feature": "skill_init",
-      "id": "PROOF-7",
-      "rule": "RULE-7",
-      "status": "pass",
-      "tier": "unit",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_list_plugins_labels_builtin_and_custom",
+      "test_name": "test_the_dashboard_is_a_copy_and_report_off_deletes_nothing",
       "platform": null
     },
     {
@@ -854,7 +768,7 @@
       "status": "pass",
       "tier": "integration",
       "test_file": "dev/test_init_scaffold.py",
-      "test_name": "test_hooks_are_linked_kept_and_skipped_at_digest_off",
+      "test_name": "test_the_delegator_lands_in_the_hooks_directory_git_actually_reads",
       "platform": null
     },
     {
@@ -929,12 +843,202 @@
     },
     {
       "feature": "skill_init",
+      "id": "PROOF-78",
+      "rule": "RULE-75",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_quality_gate_is_written_only_when_answered",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-79",
+      "rule": "RULE-71",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_each_heuristic_names_a_fact_only_that_framework_has",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
       "id": "PROOF-8",
       "rule": "RULE-8",
       "status": "pass",
       "tier": "e2e",
       "test_file": "dev/test_init_e2e.sh",
       "test_name": "scaffold.py created .purlin/, .purlin/plugins/, specs/ and specs/_anchors/",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-80",
+      "rule": "RULE-71",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_detection_reads_the_package_directories_not_only_the_root",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-81",
+      "rule": "RULE-76",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_retired_key_is_removed_and_named_and_nothing_else_moves",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-82",
+      "rule": "RULE-77",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_shim_survives_the_plugin_moving_to_a_new_version",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-83",
+      "rule": "RULE-78",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_a_slot_purlin_does_not_own_is_never_written",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-84",
+      "rule": "RULE-79",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_ci_writes_one_consumer_workflow_and_never_over_a_file",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-85",
+      "rule": "RULE-79",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_skill_asks_before_the_scaffolder_writes",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-86",
+      "rule": "RULE-53",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_shell_harness_is_seen_under_both_names[purlin-proof.sh]",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-86",
+      "rule": "RULE-53",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_shell_harness_is_seen_under_both_names[shell_purlin.sh]",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-87",
+      "rule": "RULE-80",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_broken_purlin_hook_is_pending_and_repaired[body-copy]",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-87",
+      "rule": "RULE-80",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_broken_purlin_hook_is_pending_and_repaired[dangling]",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-87",
+      "rule": "RULE-80",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_broken_purlin_hook_is_pending_and_repaired[guardless-delegator]",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-87",
+      "rule": "RULE-80",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_broken_purlin_hook_is_pending_and_repaired[plugin-symlink]",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-87",
+      "rule": "RULE-80",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_free_slot_and_a_foreign_hook_are_not_stale",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-88",
+      "rule": "RULE-81",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_project_without_a_dashboard_is_not_given_one",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-88",
+      "rule": "RULE-81",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_root_dashboard_becomes_the_installed_one[dangling-symlink]",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-88",
+      "rule": "RULE-81",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_root_dashboard_becomes_the_installed_one[old-copy]",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-89",
+      "rule": "RULE-78",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_a_checkout_without_the_shims_still_commits",
       "platform": null
     },
     {
@@ -946,20 +1050,80 @@
       "test_file": "dev/test_init_e2e.sh",
       "test_name": "config.json has all required fields",
       "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-90",
+      "rule": "RULE-82",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_newer_digest_and_no_digest_are_both_left_alone",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-90",
+      "rule": "RULE-82",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_an_older_digest_is_rebuilt_at_the_current_schema[None]",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-90",
+      "rule": "RULE-82",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_an_older_digest_is_rebuilt_at_the_current_schema[one-less]",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-91",
+      "rule": "RULE-83",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_previous_bytes_survive_at_a_named_path",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-92",
+      "rule": "RULE-84",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_the_update_re_syncs_pinned_audit_criteria_before_committing",
+      "platform": null
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-93",
+      "rule": "RULE-49",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_installation_guide_table_equals_the_id_list",
+      "platform": null
     }
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T18:54:15.439303+00:00",
-      "commit": "487ba3ff60b3df2d09d960d9546304526be4bbfa",
+      "at": "2026-09-13T03:21:06.157895+00:00",
+      "commit": "876d365742293f39c46954ddb603dba1ad8a28f9",
       "sweep": "dev/run_tests.sh",
-      "passed": 924,
+      "passed": 1057,
       "failed": 0,
-      "skipped": 6,
+      "skipped": 7,
       "runs": [
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:15.105227+00:00",
+          "at": "2026-09-13T03:16:03.817879+00:00",
           "test_files": [
             "dev/test_proof_plugins.sh"
           ],
@@ -969,7 +1133,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:15.206814+00:00",
+          "at": "2026-09-13T03:16:03.918127+00:00",
           "test_files": [
             "dev/test_e2e_teammate_audit_loop.sh"
           ],
@@ -979,7 +1143,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:15.668320+00:00",
+          "at": "2026-09-13T03:16:04.357934+00:00",
           "test_files": [
             "dev/test_e2e_build_changeset.sh"
           ],
@@ -989,7 +1153,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:25.661899+00:00",
+          "at": "2026-09-13T03:16:24.347796+00:00",
           "test_files": [
             "dev/test_init_e2e.sh"
           ],
@@ -999,7 +1163,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:26.549057+00:00",
+          "at": "2026-09-13T03:16:25.319889+00:00",
           "test_files": [
             "dev/test_e2e_feature_scoped_overwrite.sh"
           ],
@@ -1009,7 +1173,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:34.255421+00:00",
+          "at": "2026-09-13T03:16:32.670305+00:00",
           "test_files": [
             "dev/test_e2e_external_refs.sh"
           ],
@@ -1019,7 +1183,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:35.099187+00:00",
+          "at": "2026-09-13T03:16:33.565863+00:00",
           "test_files": [
             "dev/test_e2e_strict_required.sh"
           ],
@@ -1029,7 +1193,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:35.586082+00:00",
+          "at": "2026-09-13T03:16:34.064968+00:00",
           "test_files": [
             "dev/test_e2e_manual_staleness.sh"
           ],
@@ -1039,7 +1203,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:35.969933+00:00",
+          "at": "2026-09-13T03:16:34.504834+00:00",
           "test_files": [
             "dev/test_e2e_required_rules.sh"
           ],
@@ -1049,7 +1213,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:36.817032+00:00",
+          "at": "2026-09-13T03:16:35.352248+00:00",
           "test_files": [
             "dev/test_e2e_verify_audit.sh"
           ],
@@ -1059,7 +1223,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:39.402618+00:00",
+          "at": "2026-09-13T03:16:37.781460+00:00",
           "test_files": [
             "dev/test_e2e_anchor_authority.sh"
           ],
@@ -1069,7 +1233,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:40.282719+00:00",
+          "at": "2026-09-13T03:16:38.646602+00:00",
           "test_files": [
             "dev/test_e2e_hybrid_audit.sh"
           ],
@@ -1079,7 +1243,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:41.239306+00:00",
+          "at": "2026-09-13T03:16:39.572971+00:00",
           "test_files": [
             "dev/test_e2e_additional_criteria.sh"
           ],
@@ -1089,7 +1253,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:41.469821+00:00",
+          "at": "2026-09-13T03:16:39.796324+00:00",
           "test_files": [
             "dev/test_e2e_fake_audit_llm.sh"
           ],
@@ -1099,7 +1263,7 @@
         },
         {
           "plugin": "pytest_purlin",
-          "at": "2026-09-12T18:54:15.269965+00:00",
+          "at": "2026-09-13T03:21:05.507561+00:00",
           "test_files": [
             "dev/test_cheat_matrix.py",
             "dev/test_claude_cli_helper.py",
@@ -1114,12 +1278,13 @@
             "dev/test_init_update.py",
             "dev/test_mcp_server.py",
             "dev/test_multilang_proof_plugins.py",
+            "dev/test_plugin_contract.py",
             "dev/test_pre_commit_hook.py",
             "dev/test_pre_push_hook.py",
             "dev/test_proof_plugins_missing.py",
             "dev/test_proof_stress.py",
             "dev/test_purlin_agent.py",
-            "dev/test_purlin_docs.py",
+            "dev/test_purlin_prose.py",
             "dev/test_purlin_references.py",
             "dev/test_purlin_report.py",
             "dev/test_purlin_report_markup.py",
@@ -1138,9 +1303,9 @@
             "dev/test_tools_qa.py",
             "dev/test_verify_gate.py"
           ],
-          "passed": 916,
+          "passed": 1049,
           "failed": 0,
-          "skipped": 2
+          "skipped": 3
         }
       ],
       "skipped_proofs": [
@@ -1185,6 +1350,13 @@
           "test_file": "dev/test_cheat_matrix.py",
           "test_name": "test_typescript_no_assertion",
           "reason": "tsc not available"
+        },
+        {
+          "feature": "consumer_ci",
+          "id": "PROOF-4",
+          "test_file": "dev/test_consumer_ci.py",
+          "test_name": "test_the_documented_clone_ref_exists_as_a_tag",
+          "reason": "the documented clone recipe pins --branch v0.10.0, and this repository has no such tag (owner action: tag v0.10.0 and push main); the tags it has are v0.9.3, v0.9.4, v0.9.5"
         }
       ]
     },
@@ -1193,8 +1365,8 @@
         "file": "specs/skills/skill_init.proofs-e2e.json",
         "tier": "e2e",
         "platform": null,
-        "commit": "487ba3ff60b3df2d09d960d9546304526be4bbfa",
-        "committed_at": "2026-09-12T14:50:12-04:00",
+        "commit": "8168787ab5773178ecb377fc4421a41e403d500a",
+        "committed_at": "2026-09-12T21:45:36-04:00",
         "runner": null,
         "executed_in_test_run": true
       },
@@ -1202,8 +1374,8 @@
         "file": "specs/skills/skill_init.proofs-integration.json",
         "tier": "integration",
         "platform": null,
-        "commit": "487ba3ff60b3df2d09d960d9546304526be4bbfa",
-        "committed_at": "2026-09-12T14:50:12-04:00",
+        "commit": "23eca768e9e578872097278ee3c08fda253a4788",
+        "committed_at": "2026-09-12T21:45:36-04:00",
         "runner": null,
         "executed_in_test_run": true
       },
@@ -1211,8 +1383,8 @@
         "file": "specs/skills/skill_init.proofs-unit.json",
         "tier": "unit",
         "platform": null,
-        "commit": "487ba3ff60b3df2d09d960d9546304526be4bbfa",
-        "committed_at": "2026-09-12T14:50:12-04:00",
+        "commit": "b79f9cc188a7bc01e4d225b7182a4e69ecdb0adc",
+        "committed_at": "2026-09-12T21:49:38-04:00",
         "runner": null,
         "executed_in_test_run": true
       }

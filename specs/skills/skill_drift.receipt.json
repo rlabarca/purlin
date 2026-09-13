@@ -1,56 +1,24 @@
 {
   "feature": "skill_drift",
-  "vhash": "191c983d",
+  "vhash": "6a92683b",
   "vhash_version": 2,
-  "commit": "487ba3ff60b3df2d09d960d9546304526be4bbfa",
-  "timestamp": "2026-09-12T18:54:22.825237+00:00",
+  "commit": "876d365742293f39c46954ddb603dba1ad8a28f9",
+  "timestamp": "2026-09-13T03:21:50.565830+00:00",
   "rules": [
-    "RULE-1",
-    "RULE-2",
-    "RULE-3",
     "RULE-4",
     "RULE-5",
-    "RULE-6"
+    "RULE-6",
+    "RULE-7",
+    "RULE-8"
   ],
   "rule_hashes": {
-    "RULE-1": "d402581da42374f9",
-    "RULE-2": "f882d91d4488414b",
-    "RULE-3": "4b5dad8f05be72c4",
     "RULE-4": "3cb3edc102751597",
     "RULE-5": "147be94a0f74ff90",
-    "RULE-6": "749066c2f42d4d9d"
+    "RULE-6": "408fd157c995402d",
+    "RULE-7": "cad9048194fe63db",
+    "RULE-8": "62985fc244a11bc4"
   },
   "proofs": [
-    {
-      "feature": "skill_drift",
-      "id": "PROOF-1",
-      "rule": "RULE-1",
-      "status": "pass",
-      "tier": "unit",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_has_frontmatter",
-      "platform": null
-    },
-    {
-      "feature": "skill_drift",
-      "id": "PROOF-2",
-      "rule": "RULE-2",
-      "status": "pass",
-      "tier": "unit",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_has_usage_section",
-      "platform": null
-    },
-    {
-      "feature": "skill_drift",
-      "id": "PROOF-3",
-      "rule": "RULE-3",
-      "status": "pass",
-      "tier": "unit",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_name_matches_directory",
-      "platform": null
-    },
     {
       "feature": "skill_drift",
       "id": "PROOF-4",
@@ -80,20 +48,40 @@
       "test_file": "dev/test_skill_specs.py",
       "test_name": "test_changed_specs_is_not_automatically_drift",
       "platform": null
+    },
+    {
+      "feature": "skill_drift",
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_every_field_the_analysis_reads_is_declared",
+      "platform": null
+    },
+    {
+      "feature": "skill_drift",
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_the_report_format_and_the_level_table_each_have_one_home",
+      "platform": null
     }
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T18:54:15.439303+00:00",
-      "commit": "487ba3ff60b3df2d09d960d9546304526be4bbfa",
+      "at": "2026-09-13T03:21:06.157895+00:00",
+      "commit": "876d365742293f39c46954ddb603dba1ad8a28f9",
       "sweep": "dev/run_tests.sh",
-      "passed": 924,
+      "passed": 1057,
       "failed": 0,
-      "skipped": 6,
+      "skipped": 7,
       "runs": [
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:15.105227+00:00",
+          "at": "2026-09-13T03:16:03.817879+00:00",
           "test_files": [
             "dev/test_proof_plugins.sh"
           ],
@@ -103,7 +91,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:15.206814+00:00",
+          "at": "2026-09-13T03:16:03.918127+00:00",
           "test_files": [
             "dev/test_e2e_teammate_audit_loop.sh"
           ],
@@ -113,7 +101,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:15.668320+00:00",
+          "at": "2026-09-13T03:16:04.357934+00:00",
           "test_files": [
             "dev/test_e2e_build_changeset.sh"
           ],
@@ -123,7 +111,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:25.661899+00:00",
+          "at": "2026-09-13T03:16:24.347796+00:00",
           "test_files": [
             "dev/test_init_e2e.sh"
           ],
@@ -133,7 +121,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:26.549057+00:00",
+          "at": "2026-09-13T03:16:25.319889+00:00",
           "test_files": [
             "dev/test_e2e_feature_scoped_overwrite.sh"
           ],
@@ -143,7 +131,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:34.255421+00:00",
+          "at": "2026-09-13T03:16:32.670305+00:00",
           "test_files": [
             "dev/test_e2e_external_refs.sh"
           ],
@@ -153,7 +141,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:35.099187+00:00",
+          "at": "2026-09-13T03:16:33.565863+00:00",
           "test_files": [
             "dev/test_e2e_strict_required.sh"
           ],
@@ -163,7 +151,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:35.586082+00:00",
+          "at": "2026-09-13T03:16:34.064968+00:00",
           "test_files": [
             "dev/test_e2e_manual_staleness.sh"
           ],
@@ -173,7 +161,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:35.969933+00:00",
+          "at": "2026-09-13T03:16:34.504834+00:00",
           "test_files": [
             "dev/test_e2e_required_rules.sh"
           ],
@@ -183,7 +171,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:36.817032+00:00",
+          "at": "2026-09-13T03:16:35.352248+00:00",
           "test_files": [
             "dev/test_e2e_verify_audit.sh"
           ],
@@ -193,7 +181,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:39.402618+00:00",
+          "at": "2026-09-13T03:16:37.781460+00:00",
           "test_files": [
             "dev/test_e2e_anchor_authority.sh"
           ],
@@ -203,7 +191,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:40.282719+00:00",
+          "at": "2026-09-13T03:16:38.646602+00:00",
           "test_files": [
             "dev/test_e2e_hybrid_audit.sh"
           ],
@@ -213,7 +201,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:41.239306+00:00",
+          "at": "2026-09-13T03:16:39.572971+00:00",
           "test_files": [
             "dev/test_e2e_additional_criteria.sh"
           ],
@@ -223,7 +211,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:41.469821+00:00",
+          "at": "2026-09-13T03:16:39.796324+00:00",
           "test_files": [
             "dev/test_e2e_fake_audit_llm.sh"
           ],
@@ -233,7 +221,7 @@
         },
         {
           "plugin": "pytest_purlin",
-          "at": "2026-09-12T18:54:15.269965+00:00",
+          "at": "2026-09-13T03:21:05.507561+00:00",
           "test_files": [
             "dev/test_cheat_matrix.py",
             "dev/test_claude_cli_helper.py",
@@ -248,12 +236,13 @@
             "dev/test_init_update.py",
             "dev/test_mcp_server.py",
             "dev/test_multilang_proof_plugins.py",
+            "dev/test_plugin_contract.py",
             "dev/test_pre_commit_hook.py",
             "dev/test_pre_push_hook.py",
             "dev/test_proof_plugins_missing.py",
             "dev/test_proof_stress.py",
             "dev/test_purlin_agent.py",
-            "dev/test_purlin_docs.py",
+            "dev/test_purlin_prose.py",
             "dev/test_purlin_references.py",
             "dev/test_purlin_report.py",
             "dev/test_purlin_report_markup.py",
@@ -272,9 +261,9 @@
             "dev/test_tools_qa.py",
             "dev/test_verify_gate.py"
           ],
-          "passed": 916,
+          "passed": 1049,
           "failed": 0,
-          "skipped": 2
+          "skipped": 3
         }
       ],
       "skipped_proofs": [
@@ -319,6 +308,13 @@
           "test_file": "dev/test_cheat_matrix.py",
           "test_name": "test_typescript_no_assertion",
           "reason": "tsc not available"
+        },
+        {
+          "feature": "consumer_ci",
+          "id": "PROOF-4",
+          "test_file": "dev/test_consumer_ci.py",
+          "test_name": "test_the_documented_clone_ref_exists_as_a_tag",
+          "reason": "the documented clone recipe pins --branch v0.10.0, and this repository has no such tag (owner action: tag v0.10.0 and push main); the tags it has are v0.9.3, v0.9.4, v0.9.5"
         }
       ]
     },
@@ -327,8 +323,8 @@
         "file": "specs/skills/skill_drift.proofs-unit.json",
         "tier": "unit",
         "platform": null,
-        "commit": "b1ffb68f2eee20575365c4f5a088cd0e20b4ea85",
-        "committed_at": "2026-09-11T10:18:04-04:00",
+        "commit": "735582e02d0af52098b7ab321fe28282c152f4c7",
+        "committed_at": "2026-09-12T21:31:17-04:00",
         "runner": null,
         "executed_in_test_run": true
       }

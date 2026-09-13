@@ -1,14 +1,17 @@
 {
   "feature": "purlin_agent",
-  "vhash": "924f3631",
+  "vhash": "bf447a42",
   "vhash_version": 2,
-  "commit": "487ba3ff60b3df2d09d960d9546304526be4bbfa",
-  "timestamp": "2026-09-12T18:54:22.825237+00:00",
+  "commit": "876d365742293f39c46954ddb603dba1ad8a28f9",
+  "timestamp": "2026-09-13T03:21:50.565830+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
     "RULE-11",
     "RULE-12",
+    "RULE-13",
+    "RULE-14",
+    "RULE-15",
     "RULE-2",
     "RULE-3",
     "RULE-4",
@@ -30,23 +33,26 @@
     "schema_spec_format/RULE-9"
   ],
   "rule_hashes": {
-    "RULE-1": "c595bd6997977d1e",
-    "RULE-10": "41bfc595e9d6a1fe",
-    "RULE-11": "9bd16034deceeb30",
+    "RULE-1": "cdf1d48b56ab3b82",
+    "RULE-10": "816b7134e49ac0ce",
+    "RULE-11": "241876533a2a5d1f",
     "RULE-12": "0d16b51212bf8119",
-    "RULE-2": "b543b3583b2d8718",
+    "RULE-13": "e0ee430d7516da76",
+    "RULE-14": "4117b10e101f584c",
+    "RULE-15": "339702ba8ebb9285",
+    "RULE-2": "184f13619da9c834",
     "RULE-3": "56614cee8e174b23",
-    "RULE-4": "9d02f88105a525c8",
+    "RULE-4": "f22f98862d058a80",
     "RULE-5": "8c12aa493dcb36d2",
     "RULE-6": "7efbbc7e7f05ebb2",
-    "RULE-7": "21895eca706dfc11",
-    "RULE-8": "82c647c019dbae2a",
+    "RULE-7": "cad8a6ad525f5ef4",
+    "RULE-8": "5c5139cc87e0f385",
     "RULE-9": "b2db9c3e69b7b8d5",
-    "schema_spec_format/RULE-1": "f45914620174d07f",
+    "schema_spec_format/RULE-1": "1a95d27e14d2c3a5",
     "schema_spec_format/RULE-10": "a3f8447935e7723a",
     "schema_spec_format/RULE-11": "06b6e9e65f77c849",
-    "schema_spec_format/RULE-2": "cdd67c98e86b9dce",
-    "schema_spec_format/RULE-3": "8f08e518a4c1b77a",
+    "schema_spec_format/RULE-2": "6d12627a490a3351",
+    "schema_spec_format/RULE-3": "813183679861847c",
     "schema_spec_format/RULE-4": "c10c1885ca4abf0d",
     "schema_spec_format/RULE-5": "bb99f8999955b57e",
     "schema_spec_format/RULE-6": "53122a6f4cfa667b",
@@ -97,12 +103,42 @@
     },
     {
       "feature": "purlin_agent",
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_purlin_agent.py",
+      "test_name": "test_the_no_verify_never_names_layer_one_not_a_safety_gate",
+      "platform": null
+    },
+    {
+      "feature": "purlin_agent",
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_purlin_agent.py",
+      "test_name": "test_skills_are_optional_for_the_user_and_mandatory_for_the_agent",
+      "platform": null
+    },
+    {
+      "feature": "purlin_agent",
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_purlin_agent.py",
+      "test_name": "test_path_resolution_names_all_five_plugin_directories",
+      "platform": null
+    },
+    {
+      "feature": "purlin_agent",
       "id": "PROOF-2",
       "rule": "RULE-2",
       "status": "pass",
       "tier": "unit",
       "test_file": "dev/test_purlin_agent.py",
-      "test_name": "test_core_loop_four_steps",
+      "test_name": "test_core_loop_is_four_unnumbered_moves",
       "platform": null
     },
     {
@@ -122,7 +158,7 @@
       "status": "pass",
       "tier": "unit",
       "test_file": "dev/test_purlin_agent.py",
-      "test_name": "test_proof_markers_three_frameworks",
+      "test_name": "test_proof_markers_section_names_no_framework",
       "platform": null
     },
     {
@@ -152,7 +188,7 @@
       "status": "pass",
       "tier": "unit",
       "test_file": "dev/test_purlin_agent.py",
-      "test_name": "test_skills_table_twelve_entries",
+      "test_name": "test_every_skills_row_names_a_skill_that_exists",
       "platform": null
     },
     {
@@ -162,7 +198,7 @@
       "status": "pass",
       "tier": "unit",
       "test_file": "dev/test_purlin_agent.py",
-      "test_name": "test_references_table_eleven_entries",
+      "test_name": "test_every_references_row_leads_somewhere",
       "platform": null
     },
     {
@@ -308,16 +344,16 @@
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T18:54:15.439303+00:00",
-      "commit": "487ba3ff60b3df2d09d960d9546304526be4bbfa",
+      "at": "2026-09-13T03:21:06.157895+00:00",
+      "commit": "876d365742293f39c46954ddb603dba1ad8a28f9",
       "sweep": "dev/run_tests.sh",
-      "passed": 924,
+      "passed": 1057,
       "failed": 0,
-      "skipped": 6,
+      "skipped": 7,
       "runs": [
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:15.105227+00:00",
+          "at": "2026-09-13T03:16:03.817879+00:00",
           "test_files": [
             "dev/test_proof_plugins.sh"
           ],
@@ -327,7 +363,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:15.206814+00:00",
+          "at": "2026-09-13T03:16:03.918127+00:00",
           "test_files": [
             "dev/test_e2e_teammate_audit_loop.sh"
           ],
@@ -337,7 +373,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:15.668320+00:00",
+          "at": "2026-09-13T03:16:04.357934+00:00",
           "test_files": [
             "dev/test_e2e_build_changeset.sh"
           ],
@@ -347,7 +383,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:25.661899+00:00",
+          "at": "2026-09-13T03:16:24.347796+00:00",
           "test_files": [
             "dev/test_init_e2e.sh"
           ],
@@ -357,7 +393,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:26.549057+00:00",
+          "at": "2026-09-13T03:16:25.319889+00:00",
           "test_files": [
             "dev/test_e2e_feature_scoped_overwrite.sh"
           ],
@@ -367,7 +403,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:34.255421+00:00",
+          "at": "2026-09-13T03:16:32.670305+00:00",
           "test_files": [
             "dev/test_e2e_external_refs.sh"
           ],
@@ -377,7 +413,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:35.099187+00:00",
+          "at": "2026-09-13T03:16:33.565863+00:00",
           "test_files": [
             "dev/test_e2e_strict_required.sh"
           ],
@@ -387,7 +423,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:35.586082+00:00",
+          "at": "2026-09-13T03:16:34.064968+00:00",
           "test_files": [
             "dev/test_e2e_manual_staleness.sh"
           ],
@@ -397,7 +433,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:35.969933+00:00",
+          "at": "2026-09-13T03:16:34.504834+00:00",
           "test_files": [
             "dev/test_e2e_required_rules.sh"
           ],
@@ -407,7 +443,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:36.817032+00:00",
+          "at": "2026-09-13T03:16:35.352248+00:00",
           "test_files": [
             "dev/test_e2e_verify_audit.sh"
           ],
@@ -417,7 +453,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:39.402618+00:00",
+          "at": "2026-09-13T03:16:37.781460+00:00",
           "test_files": [
             "dev/test_e2e_anchor_authority.sh"
           ],
@@ -427,7 +463,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:40.282719+00:00",
+          "at": "2026-09-13T03:16:38.646602+00:00",
           "test_files": [
             "dev/test_e2e_hybrid_audit.sh"
           ],
@@ -437,7 +473,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:41.239306+00:00",
+          "at": "2026-09-13T03:16:39.572971+00:00",
           "test_files": [
             "dev/test_e2e_additional_criteria.sh"
           ],
@@ -447,7 +483,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:41.469821+00:00",
+          "at": "2026-09-13T03:16:39.796324+00:00",
           "test_files": [
             "dev/test_e2e_fake_audit_llm.sh"
           ],
@@ -457,7 +493,7 @@
         },
         {
           "plugin": "pytest_purlin",
-          "at": "2026-09-12T18:54:15.269965+00:00",
+          "at": "2026-09-13T03:21:05.507561+00:00",
           "test_files": [
             "dev/test_cheat_matrix.py",
             "dev/test_claude_cli_helper.py",
@@ -472,12 +508,13 @@
             "dev/test_init_update.py",
             "dev/test_mcp_server.py",
             "dev/test_multilang_proof_plugins.py",
+            "dev/test_plugin_contract.py",
             "dev/test_pre_commit_hook.py",
             "dev/test_pre_push_hook.py",
             "dev/test_proof_plugins_missing.py",
             "dev/test_proof_stress.py",
             "dev/test_purlin_agent.py",
-            "dev/test_purlin_docs.py",
+            "dev/test_purlin_prose.py",
             "dev/test_purlin_references.py",
             "dev/test_purlin_report.py",
             "dev/test_purlin_report_markup.py",
@@ -496,9 +533,9 @@
             "dev/test_tools_qa.py",
             "dev/test_verify_gate.py"
           ],
-          "passed": 916,
+          "passed": 1049,
           "failed": 0,
-          "skipped": 2
+          "skipped": 3
         }
       ],
       "skipped_proofs": [
@@ -543,6 +580,13 @@
           "test_file": "dev/test_cheat_matrix.py",
           "test_name": "test_typescript_no_assertion",
           "reason": "tsc not available"
+        },
+        {
+          "feature": "consumer_ci",
+          "id": "PROOF-4",
+          "test_file": "dev/test_consumer_ci.py",
+          "test_name": "test_the_documented_clone_ref_exists_as_a_tag",
+          "reason": "the documented clone recipe pins --branch v0.10.0, and this repository has no such tag (owner action: tag v0.10.0 and push main); the tags it has are v0.9.3, v0.9.4, v0.9.5"
         }
       ]
     },
@@ -569,8 +613,8 @@
         "file": "specs/instructions/purlin_agent.proofs-unit.json",
         "tier": "unit",
         "platform": null,
-        "commit": "487ba3ff60b3df2d09d960d9546304526be4bbfa",
-        "committed_at": "2026-09-12T14:50:12-04:00",
+        "commit": "4441b1addb4ed7f7621a1d5c6641839cc1d2c4d5",
+        "committed_at": "2026-09-12T22:29:55-04:00",
         "runner": null,
         "executed_in_test_run": true
       }

@@ -1,9 +1,9 @@
 {
   "feature": "static_checks",
-  "vhash": "bf90c32e",
+  "vhash": "dfb374e1",
   "vhash_version": 2,
-  "commit": "487ba3ff60b3df2d09d960d9546304526be4bbfa",
-  "timestamp": "2026-09-12T18:54:22.825237+00:00",
+  "commit": "876d365742293f39c46954ddb603dba1ad8a28f9",
+  "timestamp": "2026-09-13T03:21:50.565830+00:00",
   "rules": [
     "RULE-1",
     "RULE-10",
@@ -42,7 +42,17 @@
     "RULE-41",
     "RULE-42",
     "RULE-43",
+    "RULE-44",
+    "RULE-45",
+    "RULE-46",
+    "RULE-47",
+    "RULE-48",
+    "RULE-49",
     "RULE-5",
+    "RULE-50",
+    "RULE-51",
+    "RULE-52",
+    "RULE-53",
     "RULE-6",
     "RULE-7",
     "RULE-8"
@@ -54,28 +64,28 @@
     "RULE-12": "006723466e835026",
     "RULE-13": "2eeab36764c14e30",
     "RULE-14": "3d67f9735fed5985",
-    "RULE-15": "7fcdda88225a2716",
+    "RULE-15": "f85b1a410eb52b97",
     "RULE-16": "09a16080d42a5af8",
     "RULE-17": "3254f2b6acebfcc0",
     "RULE-18": "144e8aed20c7ab39",
-    "RULE-19": "23d31fe7d00ddb45",
+    "RULE-19": "b06b0603386f4dcc",
     "RULE-2": "3c98f3fdf4a3894b",
     "RULE-21": "a32d0f310e7558c8",
     "RULE-22": "cb2c25f0c220eaa1",
     "RULE-23": "cc44ac85382ea8dd",
-    "RULE-24": "a6489777ec56973a",
-    "RULE-25": "f21003342d20a589",
+    "RULE-24": "aa1537b4290ba78c",
+    "RULE-25": "700c672c4aef6dfb",
     "RULE-26": "148b23006e899eaa",
     "RULE-27": "8d17999c17d3d43a",
-    "RULE-28": "f983a71436709050",
-    "RULE-29": "49614367709e3ca1",
+    "RULE-28": "0af31a4b72f4a564",
+    "RULE-29": "fc0a9b2c3d7e199b",
     "RULE-3": "200f855a83130cf1",
     "RULE-30": "9be56cab9eb42127",
-    "RULE-31": "f3b76a04437b8708",
-    "RULE-32": "fd20aace91215de6",
-    "RULE-33": "dc5d98deb528099a",
+    "RULE-31": "9f92600de45cbda8",
+    "RULE-32": "73f9d0a79f0ee5ea",
+    "RULE-33": "f411a367ad2cd452",
     "RULE-34": "d27fd5de35b2fdf1",
-    "RULE-35": "ead3f5e8cf180f9e",
+    "RULE-35": "51b5e97fd9e144ab",
     "RULE-36": "b2aa5e9b0cbdc625",
     "RULE-37": "5a2c5aef04cf8ea4",
     "RULE-38": "4e576d3a89591f8b",
@@ -83,9 +93,19 @@
     "RULE-4": "3575d5570c0c946d",
     "RULE-40": "014aafb96d5240a3",
     "RULE-41": "5da4a8bb1529fdad",
-    "RULE-42": "dc9a6858d1bf29d9",
+    "RULE-42": "6ad89f220359f550",
     "RULE-43": "d4313dbb072a9a4b",
+    "RULE-44": "fc088408107542c4",
+    "RULE-45": "9b4ab139f2fbdf22",
+    "RULE-46": "6c17d2e15bde4912",
+    "RULE-47": "b5102e430a545fb5",
+    "RULE-48": "4fd8904190c4a052",
+    "RULE-49": "c6089a1709814596",
     "RULE-5": "92b410589534a38b",
+    "RULE-50": "38c0eb53465fe94b",
+    "RULE-51": "ef6ccf804537a4db",
+    "RULE-52": "1dcc62a29b1575fc",
+    "RULE-53": "bdb34a2234f647ca",
     "RULE-6": "9cc57d2e4cd8503f",
     "RULE-7": "addefa526db27785",
     "RULE-8": "7b6215699686cfed"
@@ -1323,6 +1343,96 @@
     },
     {
       "feature": "static_checks",
+      "id": "PROOF-71",
+      "rule": "RULE-44",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_every_shipped_extension_dispatches_and_nothing_else_does",
+      "platform": null
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-72",
+      "rule": "RULE-45",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_tautologies",
+      "platform": null
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-73",
+      "rule": "RULE-45",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_no_assertions_through_a_hash_comment",
+      "platform": null
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-74",
+      "rule": "RULE-45",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_real_assertion_forms_pass",
+      "platform": null
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-75",
+      "rule": "RULE-46",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_unconditional_pass",
+      "platform": null
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-76",
+      "rule": "RULE-46",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_block_with_no_select",
+      "platform": null
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-77",
+      "rule": "RULE-46",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_predicates_that_read_the_database_pass",
+      "platform": null
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-78",
+      "rule": "RULE-47",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_detects_constant_passed_argument",
+      "platform": null
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-79",
+      "rule": "RULE-47",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_computed_arguments_and_short_calls_pass",
+      "platform": null
+    },
+    {
+      "feature": "static_checks",
       "id": "PROOF-8",
       "rule": "RULE-8",
       "status": "pass",
@@ -1350,20 +1460,90 @@
       "test_file": "dev/test_static_checks.py",
       "test_name": "test_spec_coverage_via_cli",
       "platform": null
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-80",
+      "rule": "RULE-48",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_key_moves_when_the_graded_body_moves",
+      "platform": null
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-81",
+      "rule": "RULE-42",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_pass_one_and_the_key_share_the_one_parse",
+      "platform": null
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-82",
+      "rule": "RULE-49",
+      "status": "pass",
+      "tier": "unit",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_sweep_grades_every_backing_and_writes_nothing",
+      "platform": null
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-83",
+      "rule": "RULE-50",
+      "status": "pass",
+      "tier": "e2e",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_cli_sweeps_this_repository_without_touching_it",
+      "platform": null
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-84",
+      "rule": "RULE-51",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_sweep_opens_every_spec_and_test_file_exactly_once",
+      "platform": null
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-85",
+      "rule": "RULE-52",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_five_wrappers_delegate_and_keep_every_reason_string",
+      "platform": null
+    },
+    {
+      "feature": "static_checks",
+      "id": "PROOF-86",
+      "rule": "RULE-53",
+      "status": "pass",
+      "tier": "integration",
+      "test_file": "dev/test_static_checks.py",
+      "test_name": "test_an_empty_live_keys_file_is_refused_and_the_cache_survives",
+      "platform": null
     }
   ],
   "evidence": {
     "test_run": {
-      "at": "2026-09-12T18:54:15.439303+00:00",
-      "commit": "487ba3ff60b3df2d09d960d9546304526be4bbfa",
+      "at": "2026-09-13T03:21:06.157895+00:00",
+      "commit": "876d365742293f39c46954ddb603dba1ad8a28f9",
       "sweep": "dev/run_tests.sh",
-      "passed": 924,
+      "passed": 1057,
       "failed": 0,
-      "skipped": 6,
+      "skipped": 7,
       "runs": [
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:15.105227+00:00",
+          "at": "2026-09-13T03:16:03.817879+00:00",
           "test_files": [
             "dev/test_proof_plugins.sh"
           ],
@@ -1373,7 +1553,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:15.206814+00:00",
+          "at": "2026-09-13T03:16:03.918127+00:00",
           "test_files": [
             "dev/test_e2e_teammate_audit_loop.sh"
           ],
@@ -1383,7 +1563,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:15.668320+00:00",
+          "at": "2026-09-13T03:16:04.357934+00:00",
           "test_files": [
             "dev/test_e2e_build_changeset.sh"
           ],
@@ -1393,7 +1573,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:25.661899+00:00",
+          "at": "2026-09-13T03:16:24.347796+00:00",
           "test_files": [
             "dev/test_init_e2e.sh"
           ],
@@ -1403,7 +1583,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:26.549057+00:00",
+          "at": "2026-09-13T03:16:25.319889+00:00",
           "test_files": [
             "dev/test_e2e_feature_scoped_overwrite.sh"
           ],
@@ -1413,7 +1593,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:34.255421+00:00",
+          "at": "2026-09-13T03:16:32.670305+00:00",
           "test_files": [
             "dev/test_e2e_external_refs.sh"
           ],
@@ -1423,7 +1603,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:35.099187+00:00",
+          "at": "2026-09-13T03:16:33.565863+00:00",
           "test_files": [
             "dev/test_e2e_strict_required.sh"
           ],
@@ -1433,7 +1613,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:35.586082+00:00",
+          "at": "2026-09-13T03:16:34.064968+00:00",
           "test_files": [
             "dev/test_e2e_manual_staleness.sh"
           ],
@@ -1443,7 +1623,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:35.969933+00:00",
+          "at": "2026-09-13T03:16:34.504834+00:00",
           "test_files": [
             "dev/test_e2e_required_rules.sh"
           ],
@@ -1453,7 +1633,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:36.817032+00:00",
+          "at": "2026-09-13T03:16:35.352248+00:00",
           "test_files": [
             "dev/test_e2e_verify_audit.sh"
           ],
@@ -1463,7 +1643,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:39.402618+00:00",
+          "at": "2026-09-13T03:16:37.781460+00:00",
           "test_files": [
             "dev/test_e2e_anchor_authority.sh"
           ],
@@ -1473,7 +1653,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:40.282719+00:00",
+          "at": "2026-09-13T03:16:38.646602+00:00",
           "test_files": [
             "dev/test_e2e_hybrid_audit.sh"
           ],
@@ -1483,7 +1663,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:41.239306+00:00",
+          "at": "2026-09-13T03:16:39.572971+00:00",
           "test_files": [
             "dev/test_e2e_additional_criteria.sh"
           ],
@@ -1493,7 +1673,7 @@
         },
         {
           "plugin": "shell_purlin",
-          "at": "2026-09-12T18:50:41.469821+00:00",
+          "at": "2026-09-13T03:16:39.796324+00:00",
           "test_files": [
             "dev/test_e2e_fake_audit_llm.sh"
           ],
@@ -1503,7 +1683,7 @@
         },
         {
           "plugin": "pytest_purlin",
-          "at": "2026-09-12T18:54:15.269965+00:00",
+          "at": "2026-09-13T03:21:05.507561+00:00",
           "test_files": [
             "dev/test_cheat_matrix.py",
             "dev/test_claude_cli_helper.py",
@@ -1518,12 +1698,13 @@
             "dev/test_init_update.py",
             "dev/test_mcp_server.py",
             "dev/test_multilang_proof_plugins.py",
+            "dev/test_plugin_contract.py",
             "dev/test_pre_commit_hook.py",
             "dev/test_pre_push_hook.py",
             "dev/test_proof_plugins_missing.py",
             "dev/test_proof_stress.py",
             "dev/test_purlin_agent.py",
-            "dev/test_purlin_docs.py",
+            "dev/test_purlin_prose.py",
             "dev/test_purlin_references.py",
             "dev/test_purlin_report.py",
             "dev/test_purlin_report_markup.py",
@@ -1542,9 +1723,9 @@
             "dev/test_tools_qa.py",
             "dev/test_verify_gate.py"
           ],
-          "passed": 916,
+          "passed": 1049,
           "failed": 0,
-          "skipped": 2
+          "skipped": 3
         }
       ],
       "skipped_proofs": [
@@ -1589,6 +1770,13 @@
           "test_file": "dev/test_cheat_matrix.py",
           "test_name": "test_typescript_no_assertion",
           "reason": "tsc not available"
+        },
+        {
+          "feature": "consumer_ci",
+          "id": "PROOF-4",
+          "test_file": "dev/test_consumer_ci.py",
+          "test_name": "test_the_documented_clone_ref_exists_as_a_tag",
+          "reason": "the documented clone recipe pins --branch v0.10.0, and this repository has no such tag (owner action: tag v0.10.0 and push main); the tags it has are v0.9.3, v0.9.4, v0.9.5"
         }
       ]
     },
@@ -1597,8 +1785,8 @@
         "file": "specs/audit/static_checks.proofs-e2e.json",
         "tier": "e2e",
         "platform": null,
-        "commit": "487ba3ff60b3df2d09d960d9546304526be4bbfa",
-        "committed_at": "2026-09-12T14:50:12-04:00",
+        "commit": "a5a3a45c32e0600888f24af29d07225a083c0747",
+        "committed_at": "2026-09-12T16:10:28-04:00",
         "runner": null,
         "executed_in_test_run": true
       },
@@ -1606,8 +1794,8 @@
         "file": "specs/audit/static_checks.proofs-integration.json",
         "tier": "integration",
         "platform": null,
-        "commit": "487ba3ff60b3df2d09d960d9546304526be4bbfa",
-        "committed_at": "2026-09-12T14:50:12-04:00",
+        "commit": "1d99aabc2839d8b0152aee554a88a03d5c3b29fe",
+        "committed_at": "2026-09-12T22:29:55-04:00",
         "runner": null,
         "executed_in_test_run": true
       },
@@ -1615,8 +1803,8 @@
         "file": "specs/audit/static_checks.proofs-unit.json",
         "tier": "unit",
         "platform": null,
-        "commit": "487ba3ff60b3df2d09d960d9546304526be4bbfa",
-        "committed_at": "2026-09-12T14:50:12-04:00",
+        "commit": "a5a3a45c32e0600888f24af29d07225a083c0747",
+        "committed_at": "2026-09-12T16:10:28-04:00",
         "runner": null,
         "executed_in_test_run": true
       },
