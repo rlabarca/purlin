@@ -202,6 +202,16 @@ class TestPurlinReferences:
             "Missing tier assignment section heading or guidance"
         assert '@integration' in content, "Missing @integration tier tag documentation"
         assert '@e2e' in content, "Missing @e2e tier tag documentation"
+        # The section spec-from-code defers to for per-category extraction.
+        assert '### Data contract extraction' in content, \
+            "Missing '### Data contract extraction' subsection"
+        section = content.split('### Data contract extraction', 1)[1] \
+                         .split('\n## ', 1)[0]
+        for category in ('Inbound contracts', 'Outbound contracts',
+                         'Transformation rules', 'State transitions',
+                         'Access contracts'):
+            assert category in section, \
+                f"data contract extraction section missing '{category}'"
 
     @pytest.mark.proof("purlin_references", "PROOF-10", "RULE-10")
     def test_quality_guide_test_failure_diagnosis(self):

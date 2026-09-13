@@ -341,107 +341,17 @@ For each category:
 
    If no migration candidate exists, generate from code alone (standard behavior).
 
-4. **Data contract extraction (mandatory for ALL features):** For every feature, trace data across system boundaries and capture the contracts that an engineer would get wrong in a rebuild. This is organized by the five contract categories from `references/spec_quality_guide.md` ("Coverage dimensions"). Apply all five to every feature — not just UI.
+4. **Data contract extraction (mandatory for ALL features):** For every feature, trace data across system boundaries and capture the contracts that an engineer would get wrong in a rebuild. Capture the **exact field names** on every boundary: a rule that names the mechanism instead of the field is the number one rebuild risk. Apply all five categories below to every feature, not just UI, and follow `references/spec_quality_guide.md` ("Data contract extraction") for what to trace in each and how the rule reads.
 
-   **a) Inbound contracts — what data enters, in what shape:**
+   **a) Inbound contracts:** what data enters, in what shape
 
-   Trace every external data source the feature consumes. Capture the **exact field names** — this is the #1 rebuild risk across all codebases.
+   **b) Outbound contracts:** what data leaves, in what shape
 
-   What to trace:
-   - API response fields (exact names: `user.LogoFileName` not "logo field")
-   - Config/environment values (`NEXT_PUBLIC_API_URL`, `process.env.DATABASE_URL`)
-   - Props/parameters from parent modules or callers
-   - File contents, CLI arguments, webhook payloads, queue messages
-   - Database query results (table names, column names)
+   **c) Transformation rules:** what logic converts between inbound and outbound
 
-   **Extraction depth — env vars (mandatory):** Grep the feature's scope files for `process.env.`, `import.meta.env.`, `os.environ[`, `os.Getenv(`, `System.getenv(`, `ENV[`. Every env var the feature reads becomes a rule or references the `project_environment` anchor. If the feature reads 3+ env vars, verify they're all listed in the environment anchor.
+   **d) State transitions and initialization ordering:** lifecycle states, init and teardown order
 
-   **Extraction depth — schema cross-reference (mandatory):** If the feature consumes a typed API response or shared data structure, check whether a `schema_` anchor exists with field-level rules for that type. If not, flag: "Schema anchor missing field-level rules for `<TypeName>` — feature uses fields `<list>` that aren't documented." The feature spec's inbound rules must use the same field names as the schema anchor.
-
-   Write rules specifying **what the feature reads and from where**:
-   - Good: "Header logo comes from `formatImageUrl(user.LogoFileName)` via GET /EdgeMobileService/EdgeService.svc/json/GetAnalysisGuidDisplay"
-   - Good: "Contact name is built from `user.FirstName + ' ' + user.LastName`"
-   - Good: "Config reads `DATABASE_URL` from environment; falls back to `localhost:5432` if unset"
-   - Bad: "Fetches data from the API" (no field names — engineer guesses wrong)
-   - Bad: "Calls useProductQuery hook" (names mechanism, not the data contract)
-
-   **b) Outbound contracts — what data leaves, in what shape:**
-
-   Find every place the feature emits data to an external system. Capture event names, payload shapes, and trigger conditions.
-
-   What to trace:
-   - Analytics events (Firebase, Segment, Mixpanel — event name + parameter names + when fired)
-   - API calls to other services (endpoint, method, payload fields, query params)
-   - Database writes (which table, which columns, what triggers the write)
-   - Log entries (log level, message format, when emitted)
-   - Callbacks, events, or messages to other modules
-
-   Write rules specifying **what gets sent, when, and in what shape**:
-   - Good: "Fires Firebase event `report_viewed` with params `{reportId, reportType, contactId}` when report page loads"
-   - Good: "POST /api/orders with body `{items, total, paymentToken}` on checkout submit"
-   - Bad: "Sends analytics events on key interactions" (no event names, no params)
-   - Bad: "Logs errors" (no format, no conditions)
-
-   **Extraction depth — event payloads (mandatory):** For each analytics or event call, do NOT stop at the event name. Follow the call into the tracking/emit function and extract the full parameter object. If the function merges default params (e.g., `{...defaultParams, ...eventParams}`), capture both sets. The rule must include the complete payload shape, not just the event name.
-
-   **c) Transformation rules — what logic converts between inbound and outbound:**
-
-   Identify every place data changes shape between input and output. Capture the exact mapping, formula, or logic.
-
-   What to trace:
-   - Field mappings (API field → display field, with names on both sides)
-   - Calculations and formulas (interest rate computation, cost aggregation)
-   - Formatting functions (URL builders, phone/name formatters, currency display)
-   - Filters, sorts, and aggregations applied to collections
-   - Type conversions that affect correctness (string→number, date parsing)
-
-   Write rules specifying **the transformation, not the mechanism**:
-   - Good: "Monthly payment = principal * (rate/12) / (1 - (1 + rate/12)^-term)"
-   - Good: "`formatImageUrl` prepends CDN base URL to `user.LogoFileName`; returns empty string if null"
-   - Good: "Table rows filtered by `LoanProduct.IsHidden === false`, sorted by `LoanProduct.SortOrder`"
-   - Bad: "Formats data for display" (no mapping specified)
-   - Bad: "Uses lodash.groupBy for categorization" (names the library, not the grouping logic)
-
-   **d) State transitions and initialization ordering:**
-
-   Identify features with distinct states, transition rules, or bootstrap dependencies. Not every feature has these — skip if the feature is stateless and has no init ordering constraints.
-
-   What to trace:
-   - Enum/constant definitions that represent states
-   - Transition functions or state machines
-   - Timeout/expiry logic
-   - Forbidden transitions (can't go from X to Y)
-   - **Initialization ordering** — services, SDKs, or providers that must initialize before others can be used. Look for: provider nesting order in React, `await init()` chains, module-level setup calls, `useEffect` dependency ordering, `DOMContentLoaded` / `onMount` sequences. If service B reads from service A, A must initialize first.
-   - **Teardown ordering** — cleanup that must happen in reverse init order (close connections, flush analytics, revoke URLs)
-
-   Write rules specifying **valid states, transitions, and init order**:
-   - Good: "Recording lifecycle: idle → recording → paused → stopped. Cannot go from stopped back to recording."
-   - Good: "Analysis polling: starts on mount, pauses when tab hidden, resumes on tab focus, stops on unmount"
-   - Good: "Firebase initializes before Split SDK; Split SDK initializes before first render; theme applies before content renders"
-   - Good: "On unmount: flush pending analytics events, revoke blob URLs, clear polling interval"
-   - Bad: "Has multiple states" (no states named, no transitions specified)
-   - Bad: "Initializes services on startup" (no ordering specified)
-
-   **e) Access contracts — who can see or do what:**
-
-   Identify every gate that controls visibility or behavior based on user identity, permissions, flags, or modes.
-
-   What to trace:
-   - Role/permission checks (admin, editor, viewer)
-   - Feature flag evaluations
-   - Mode switches that change behavior (loan officer mode, debug mode)
-   - Subscription/entitlement gates
-   - Geographic or locale-based restrictions
-
-   Write rules specifying **what each segment sees or can do**:
-   - Good: "Loan officer mode (activated by `lo=true` URL hash param) shows editable benefit fields and save button"
-   - Good: "Password-gated reports show password form; authenticated reports show content directly"
-   - Bad: "Checks user permissions" (no specifics)
-
-   **Visual reference preservation:** If the code or old specs contain references to Figma files, design mockups, or screenshots:
-   - Extract Figma URLs → `> Visual-Reference: figma://fileKey/nodeId`
-   - Extract image paths → `> Visual-Reference: ./designs/component.png`
-   - Create `@manual` proofs for visual fidelity: "Visual layout matches design spec @manual"
+   **e) Access contracts:** who can see or do what
 
 5. **Draft and evaluate rules (mandatory):** Before writing the spec file, draft all candidate rules as full `RULE-N:` lines and evaluate each against the rebuild test. This step applies to ALL features, not just UI.
 

@@ -314,26 +314,48 @@ def test_skill_has_migration_cleanup():
 
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-32", "RULE-23", tier="unit")
-def test_skill_has_contract_extraction():
-    """SKILL.md contains data contract extraction with five categories."""
-    content = _read(SKILL_PATH)
+def test_skill_names_the_categories_and_the_guide_carries_them():
+    """Step 4 names the five categories and points at the guide; the guide
+    carries the procedure.
 
-    # Five contract categories
-    required_subsections = [
-        'Inbound contracts',
-        'Outbound contracts',
-        'Transformation rules',
-        'State transitions',
-        'Access contracts',
-    ]
-    for subsection in required_subsections:
-        assert subsection.lower() in content.lower(), (
-            f"SKILL.md missing contract extraction subsection: '{subsection}'"
+    The two halves are asserted separately: a whole-file grep of SKILL.md
+    survived the guide section being deleted, and the skill keeping the labels
+    while the pointer rots is the other half of the same defect.
+    """
+    # The step's own heading carries the "mandatory" wording, so read it back
+    # with the body rather than asserting on the body alone.
+    step4 = PHASE3_STEP4[0] + _step(PHASE3_STEP4, 'Phase 3 step 4')
+    for subsection in FIVE_CATEGORIES:
+        assert subsection in step4, (
+            f"SKILL.md step 4 missing contract category label: '{subsection}'"
         )
     # Must be mandatory for ALL features, not just UI
-    assert 'mandatory for ALL features' in content or 'mandatory for all features' in content.lower(), (
+    assert 'mandatory for ALL features' in step4, (
         "SKILL.md data contract extraction must be mandatory for ALL features"
     )
+    assert 'spec_quality_guide.md' in step4 and 'Data contract extraction' in step4, (
+        "SKILL.md step 4 must point at spec_quality_guide.md "
+        '("Data contract extraction") for the per-category procedure'
+    )
+
+    guide = _read(QUALITY_GUIDE_PATH)
+    assert '### Data contract extraction' in guide, (
+        "spec_quality_guide.md must carry the '### Data contract extraction' "
+        "section the skill points at"
+    )
+    section = guide.split('### Data contract extraction', 1)[1].split('\n## ', 1)[0]
+    for subsection in FIVE_CATEGORIES:
+        assert subsection in section, (
+            f"the guide's data contract section is missing '{subsection}'"
+        )
+    # The detail the skill no longer holds: it has to be here or nowhere.
+    for literal in ('os.environ[', 'project_environment',
+                    'Schema anchor missing field-level rules',
+                    'do not stop at\nthe event name'):
+        assert literal in section, (
+            f"the guide's data contract section must carry {literal!r}, which "
+            "left SKILL.md when the categories moved here"
+        )
 
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-34", "RULE-24", tier="unit")

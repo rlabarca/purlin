@@ -195,7 +195,7 @@
       "id": "PROOF-32",
       "rule": "RULE-23",
       "test_file": "dev/test_e2e_ui_extraction.py",
-      "test_name": "test_skill_has_contract_extraction",
+      "test_name": "test_skill_names_the_categories_and_the_guide_carries_them",
       "status": "pass",
       "tier": "unit"
     },
