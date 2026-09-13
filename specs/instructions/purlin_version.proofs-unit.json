@@ -97,7 +97,7 @@
       "rule": "RULE-9",
       "test_file": "dev/test_purlin_version.py",
       "test_name": "test_unreleased_counts_match_the_sweep_record",
-      "status": "pass",
+      "status": "fail",
       "tier": "unit"
     }
   ]
