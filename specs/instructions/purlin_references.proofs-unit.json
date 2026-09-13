@@ -246,6 +246,24 @@
     },
     {
       "feature": "purlin_references",
+      "id": "PROOF-34",
+      "rule": "RULE-34",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_the_reference_owns_the_procedure_and_the_skill_points_at_it",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_references",
+      "id": "PROOF-35",
+      "rule": "RULE-35",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_no_reference_cites_an_own_spec_and_the_exemption_is_by_name",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_references",
       "id": "PROOF-4",
       "rule": "RULE-4",
       "test_file": "dev/test_purlin_references.py",

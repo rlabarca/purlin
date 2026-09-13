@@ -12,6 +12,8 @@ read-only gate. See `references/remote_verification.md`.
 
 **Pending migrations:** when `sync_status` opens with a pending-migrations advisory, stop and follow `references/purlin_commands.md#pending-migrations` before doing this skill's work.
 
+**Paths in this skill:** every `references/`, `templates/`, `hooks/`, `scripts/` and `agents/` path below is relative to the plugin root; see `${CLAUDE_PLUGIN_ROOT}/references/purlin_commands.md#path-resolution`.
+
 ## Usage
 
 ```
@@ -179,7 +181,7 @@ Test results:
 The runner identity and the time come from `sync_status`, which reads them per scoped proof file
 from that file's own commit: `git log -1` on the file, the `Purlin-Runner:` trailer for the runner
 and the `Purlin-Platform:` trailer cross-checked against the platform in the filename
-(`specs/mcp/sync_status.md` RULE-48). Do not claim a proof was proved remotely from the proof entry
+(`references/remote_verification.md`). Do not claim a proof was proved remotely from the proof entry
 alone: the entry says a test passed, and only the commit says where.
 
 ## Step 4 — Commit proof files (mandatory)

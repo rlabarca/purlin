@@ -194,4 +194,7 @@ They are optional for the user, who may write specs, code and tests by hand, and
 
 ## Path Resolution
 
-All `scripts/` references resolve against `${CLAUDE_PLUGIN_ROOT}/scripts/`. Project files resolve against the project root.
+Every `references/`, `templates/`, `hooks/`, `scripts/` and `agents/` path in this file or in any
+skill resolves against the plugin root, `${CLAUDE_PLUGIN_ROOT}`. Project files, `specs/` and
+`.purlin/` among them, resolve against the project root. The full statement is
+`${CLAUDE_PLUGIN_ROOT}/references/purlin_commands.md#path-resolution`.

@@ -18,6 +18,15 @@
       "test_name": "test_fixture_is_a_complete_tracked_consumer_project",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "consumer_ci",
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "test_file": "dev/test_consumer_ci.py",
+      "test_name": "test_the_documented_clone_ref_exists_as_a_tag",
+      "status": "fail",
+      "tier": "unit"
     }
   ]
 }

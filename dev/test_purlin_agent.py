@@ -6,8 +6,13 @@ All tests are grep-based checks on the agent file content.
 
 import os
 import re
+import sys
 
 import pytest
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from prose_lint import _heading_slugs  # noqa: E402
 
 AGENT_PATH = os.path.join(os.path.dirname(__file__), '..', 'agents', 'purlin.md')
 
@@ -382,3 +387,30 @@ class TestThreePathways:
         assert 'agents/purlin.md' in gate_lines[0], (
             "the reference must name where the agent's obligation is "
             f"written:\n{gate_lines[0]}")
+
+    @pytest.mark.proof("purlin_agent", "PROOF-15", "RULE-15")
+    def test_path_resolution_names_all_five_plugin_directories(self):
+        """RULE-15: the section covered one of the five it had to cover."""
+        content = _read()
+        match = re.search(r'^##\s+Path Resolution\s*$(.*?)(?=^##\s|\Z)',
+                          content, re.MULTILINE | re.DOTALL)
+        assert match, "agents/purlin.md carries no `## Path Resolution`"
+        section = match.group(1).strip()
+        assert section, "the Path Resolution section is empty"
+        for token in ('`references/`', '`templates/`', '`hooks/`',
+                      '`scripts/`', '`agents/`'):
+            assert token in section, (
+                f"the section must name {token} as resolving against the "
+                f"plugin root:\n{section}")
+        assert '${CLAUDE_PLUGIN_ROOT}' in section, section
+        assert 'project root' in section, section
+        assert 'references/purlin_commands.md#path-resolution' in section, (
+            "the section must point at the full statement")
+
+        commands = os.path.join(os.path.dirname(AGENT_PATH), '..',
+                                'references', 'purlin_commands.md')
+        with open(commands, encoding='utf-8') as f:
+            body = f.read()
+        assert 'path-resolution' in _heading_slugs(body), (
+            "references/purlin_commands.md carries no heading whose slug is "
+            "path-resolution, so the pointer resolves to nothing")

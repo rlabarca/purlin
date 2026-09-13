@@ -15,7 +15,27 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from prose_lint import structure  # noqa: E402
+from prose_lint import (  # noqa: E402
+    BANNED_PATH_ROWS,
+    _heading_slugs,
+    _scope_files,
+    banned_paths,
+    paths_exist,
+    repo_files,
+    structure,
+)
+
+
+def _banned_path_row(name):
+    return next(row for row in BANNED_PATH_ROWS if row[0] == name)
+
+
+def _plant(root, rel, text):
+    dest = os.path.join(str(root), rel)
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    with open(dest, 'w', encoding='utf-8') as f:
+        f.write(text)
+    return dest
 
 PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
 SKILLS_DIR = os.path.join(PROJECT_ROOT, 'skills')
@@ -232,3 +252,85 @@ class TestPurlinSkills:
             "build skill does not record the mutation in the commit body"
         test_skill = _read(os.path.join(SKILLS_DIR, 'test', 'SKILL.md'))
         assert anchor in test_skill, f"test skill does not link {anchor}"
+
+    @pytest.mark.proof("purlin_skills", "PROOF-18", "RULE-18")
+    def test_every_skill_points_at_the_path_resolution_section(self):
+        """RULE-18: one pointer per skill, beside the migrations pointer."""
+        anchor = '${CLAUDE_PLUGIN_ROOT}/references/purlin_commands.md' \
+                 '#path-resolution'
+        files = _skill_files()
+        assert len(files) == 12, f"expected 12 skills, scanned {len(files)}"
+        for path in files:
+            lines = _read(path).splitlines()
+            carrying = [i for i, l in enumerate(lines) if anchor in l]
+            assert len(carrying) == 1, (
+                f"{path}: expected exactly one path-resolution pointer, "
+                f"found {len(carrying)}")
+            line = lines[carrying[0]]
+            for token in ('`references/`', '`templates/`', '`hooks/`',
+                          '`scripts/`', '`agents/`'):
+                assert token in line, f"{path}: pointer omits {token}: {line}"
+            migrations = [i for i, l in enumerate(lines)
+                          if 'purlin_commands.md#pending-migrations' in l]
+            assert migrations, f"{path}: no pending-migrations pointer"
+            assert min(abs(carrying[0] - m) for m in migrations) <= 3, (
+                f"{path}: the two pointers are not one block")
+
+        commands = os.path.join(PROJECT_ROOT, 'references',
+                                'purlin_commands.md')
+        body = _read(commands)
+        assert 'path-resolution' in _heading_slugs(body), (
+            "references/purlin_commands.md carries no heading whose slug is "
+            "path-resolution, so all 12 pointers resolve to nothing")
+        section = re.search(
+            r'^##\s+Path resolution\s*$(.*?)(?=^##\s|\Z)', body,
+            re.MULTILINE | re.DOTALL).group(1)
+        assert '${CLAUDE_PLUGIN_ROOT}' in section, section[:200]
+        assert 'project root' in section, section[:200]
+
+        files_scanned = repo_files()
+        assert len(_scope_files(('skills/*/SKILL.md',), files_scanned)) >= 12
+        assert len(_scope_files(('agents/*.md',), files_scanned)) >= 2
+        assert paths_exist(strict=True) == [], (
+            "every bare plugin-relative path a skill or an agent names must "
+            "resolve under the plugin root")
+
+    @pytest.mark.proof("purlin_skills", "PROOF-19", "RULE-19")
+    def test_no_skill_or_agent_cites_this_repositorys_specs(self, tmp_path):
+        """RULE-19: a consumer checkout carries neither specs/ nor dev/."""
+        row = _banned_path_row('own-spec-in-skill')
+        scanned = _scope_files(row[1], repo_files())
+        assert len(scanned) >= 12, (
+            f"the row resolved to {len(scanned)} files; the sweep would pass "
+            f"by scanning nothing")
+        assert banned_paths(rows=(row,), strict=True) == [], (
+            "no shipped skill or agent may cite this repository's own specs")
+
+        for rel in scanned:
+            _plant(tmp_path, rel, _read(os.path.join(PROJECT_ROOT, rel)))
+        # The row reports a token only when it resolves to a real file, so the
+        # temp root has to carry this repository's specs for the injection to
+        # be the citation it claims to be.
+        os.symlink(os.path.abspath(os.path.join(PROJECT_ROOT, 'specs')),
+                   os.path.join(str(tmp_path), 'specs'))
+        target = 'skills/find/SKILL.md'
+        base = _read(os.path.join(PROJECT_ROOT, target)).rstrip('\n')
+
+        planted = 'The field list is in `specs/mcp/sync_status.md`.'
+        injected = base + '\n\n' + planted + '\n'
+        _plant(tmp_path, target, injected)
+        offenders = banned_paths(root=str(tmp_path), files=[target],
+                                 rows=(row,), strict=False)
+        assert len(offenders) == 1, f"expected the injection; got {offenders}"
+        only = offenders[0]
+        assert only.path == target and only.lint == 'banned_paths'
+        assert only.line == injected.splitlines().index(planted) + 1
+        assert 'specs/mcp/sync_status.md' in only.message, only.message
+
+        for exempt in ('A spec is written to `specs/<category>/<name>.md`.',
+                       'Anchors live in `specs/_anchors/`.',
+                       'The example spec is `specs/auth/login.md`.'):
+            _plant(tmp_path, target, base + '\n\n' + exempt + '\n')
+            assert banned_paths(root=str(tmp_path), files=[target],
+                                rows=(row,), strict=False) == [], (
+                f"this token is not a citation of a shipped file: {exempt}")

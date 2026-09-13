@@ -7,6 +7,8 @@ Find a spec by name and display its rule coverage from `sync_status`.
 
 **Pending migrations:** call `sync_status` first when this skill would write specs or proofs, and follow `references/purlin_commands.md#pending-migrations` when it opens with a pending-migrations advisory.
 
+**Paths in this skill:** every `references/`, `templates/`, `hooks/`, `scripts/` and `agents/` path below is relative to the plugin root; see `${CLAUDE_PLUGIN_ROOT}/references/purlin_commands.md#path-resolution`.
+
 ## Usage
 
 ```

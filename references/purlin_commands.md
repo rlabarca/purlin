@@ -77,6 +77,23 @@ replacement. All six are removed in 0.12.0.
 | `purlin:rename` | Rename feature | Specs, proofs, markers, references |
 | `purlin:spec-from-code` | Generate specs from code | `specs/<category>/<name>.md` |
 
+## Path resolution
+
+Every `references/`, `templates/`, `hooks/`, `scripts/` and `agents/` path a skill or an agent
+names is relative to the plugin root, `${CLAUDE_PLUGIN_ROOT}`: `references/purlin_commands.md`
+means `${CLAUDE_PLUGIN_ROOT}/references/purlin_commands.md`. The paths are written bare because
+the reader is the agent, which resolves them once; spelling the variable into all of them would
+cost more to read than it explains.
+
+Everything else is relative to the project root: `specs/`, `.purlin/`, and the project's own
+source and test files. A consumer project carries no `references/`, no `scripts/` and no
+`templates/` of its own, and the plugin carries no `specs/` a consumer can read, so the two roots
+never collide over the same path.
+
+`${CLAUDE_PLUGIN_ROOT}` is set by Claude Code for the running plugin. A shell script that needs
+the same answer outside a skill resolves it the way the hook shims do, described in
+`docs/installation-guide.md`.
+
 ## Pending migrations
 
 When `sync_status` opens with a pending-migrations advisory, stop before doing the skill's work,

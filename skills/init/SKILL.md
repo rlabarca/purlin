@@ -7,6 +7,8 @@ Set up a project for spec-driven development. Creates `.purlin/`, `specs/`, dete
 
 **Pending migrations:** see `references/purlin_commands.md#pending-migrations`. `purlin:init --update` (Step 5d) is what clears them.
 
+**Paths in this skill:** every `references/`, `templates/`, `hooks/`, `scripts/` and `agents/` path below is relative to the plugin root; see `${CLAUDE_PLUGIN_ROOT}/references/purlin_commands.md#path-resolution`.
+
 ## Usage
 
 ```

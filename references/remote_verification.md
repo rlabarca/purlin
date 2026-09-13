@@ -11,7 +11,7 @@ platform-scoped proof files it wrote back to the branch. `purlin:test` pulls the
 as proved remotely, naming the platform.
 
 This file is the authoritative reference for that loop. `skills/test/SKILL.md` implements it;
-`specs/ci/verify_gate.md` governs the CI side.
+the gate script `scripts/ci/verify_gate.py` governs the CI side.
 
 ## Platforms
 
@@ -59,7 +59,7 @@ when set and the detected OS family otherwise. A marker that declares no platfor
 agnostic `<feature>.proofs-<tier>.json`, whatever `PURLIN_PLATFORM` says. The runner sets the
 variable once, in the job env; nothing else in a plugin branches on the host. That is what makes
 "a simulated Windows path is not a Windows proof" true without a second code path
-(`specs/_anchors/proof_common.md` RULE-16, RULE-17).
+(`references/proof_plugin_contract.md`).
 
 **Provenance is per file, from the commit.** Proof entries carry no timestamp and no runner field,
 so a re-run that proves the same things commits nothing. `sync_status` runs `git log -1` on each
@@ -99,7 +99,7 @@ the tool installed produce the same evidence?** Yes: the toolchain is needed to 
 not change the claim. A prerequisite is a property of the run, not of the proof, so it never
 appears in `@on(...)` and never in the registry. The mechanism is the framework's own skip guard
 (the pytest `skipif`) plus the committed proof entry, which is kept rather than deleted
-(`specs/_anchors/proof_common.md` RULE-18), so the report shows that entry as inherited from the
+(`references/proof_plugin_contract.md`), so the report shows that entry as inherited from the
 commit that last proved it rather than as fresh. The run marker
 (`.purlin/runtime/test_run.json`) is where a run records which marked proofs it skipped and why,
 so the skip is visible instead of silent.
@@ -324,12 +324,11 @@ state. `Purlin-Platform:` is what lets `sync_status` cross-check the platform th
 against the one the runner was told. They must share a single `-m` argument: git builds one
 paragraph per `-m` and parses trailers out of the last paragraph only, so a trailer in its own
 `-m` is invisible to `git log --format=%(trailers:key=...)` while looking perfectly correct in
-the workflow file and in `git log`. `specs/ci/verify_gate.md` RULE-7 enforces both trailers and
-the single `-m`.
+the workflow file and in `git log`.
 
 **The loop guard, both halves.** `paths-ignore` stops a `push` trigger; `[skip ci]` stops the
-trigger paths `paths-ignore` does not cover. Either alone eventually loops.
-`specs/ci/verify_gate.md` RULE-8 enforces both.
+trigger paths `paths-ignore` does not cover. Either alone eventually loops, so a workflow
+carries both.
 
 **`git diff --cached --quiet`.** Commit only when something changed. A workflow that commits
 unconditionally produces one empty commit per push forever.
@@ -341,7 +340,6 @@ runner's agnostic results back over the developer's.
 **The pull-rebase-retry loop.** One branch, several platform workflows, one push target. A plain
 `git push` fails when another runner committed first, and the job goes red over a race rather than
 a proof. Three attempts, then exit `1`, so a genuinely broken push is still a failure.
-`specs/ci/verify_gate.md` RULE-10 enforces the loop and the trailers together.
 
 **`shell: bash` on every `run:` step.** PowerShell is the default on windows runners and reads a
 leading `@` in a path as a splat, which silently mangles every scoped proof path.
@@ -401,7 +399,7 @@ reading that the field is the gate.
 values `"off"` (the default) and `"deterministic"`. It says whether the two model-free quality
 passes are read as a gate, and it has the same declaration/enforcement split for the same reason.
 The two verdicts are independent: either one can fail a branch on its own. See
-`references/hard_gates.md` and `specs/ci/verify_gate.md` RULE-14 and RULE-15.
+`references/hard_gates.md`.
 
 ## What travels with a branch, and what does not
 
@@ -457,7 +455,6 @@ says a test passed, and only the commit says where.
 - `references/formats/spec_format.md`: the `@on(...)` grammar and the family ids
 - `references/supported_frameworks.md`: the per-framework "Runner setup" cell the template needs
 - `references/drift_criteria.md`: who owns the `platforms` config field
-- `specs/ci/verify_gate.md`: the gate script and the runner-workflow rules
-- `specs/mcp/sync_status.md` RULE-47/48/52: `AWAITING RUNNER`, per-file provenance, the `Platforms:` block
-- `specs/skills/skill_test.md`: the skill rules this file backs
+- `scripts/ci/verify_gate.py`: the gate script the CI job runs
+- `skills/test/SKILL.md`: the skill this file backs
 - `references/hard_gates.md`: why CI gating is project policy and not a framework gate

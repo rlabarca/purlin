@@ -4,8 +4,7 @@
 
 A receipt is the record that one feature's rules were all proved at one commit.
 It lives next to the spec it covers, as `specs/<category>/<feature>.receipt.json`,
-and it is written by `purlin:verify` Step 3 (in this repository, by
-`dev/issue_receipts.py`, which drives the server's own verdict function).
+and it is written by `purlin:verify` Step 3.
 
 A receipt is not a signature and not tamper evidence. Anyone who can write the
 file can write any value in it. What a receipt buys is staleness detection: the
@@ -80,15 +79,15 @@ matches the current state is visibly out of date.
 The marker itself lives at `.purlin/runtime/test_run.json` and is written by
 whatever ran the tests. In a consumer project that is the proof plugins: each one
 writes or merges the marker at the moment it writes its proof files
-(`specs/_anchors/proof_common.md` RULE-19). In this repository `dev/run_tests.sh`
-merges its own summary over the plugin runs of that sweep. So a project with no
-sweep script of its own still issues receipts that name a run.
+(`references/proof_plugin_contract.md`). A project that also has a sweep script of
+its own merges that script's summary over the plugin runs of the same sweep. So a
+project with no sweep script of its own still issues receipts that name a run.
 
 | Key | Meaning |
 |---|---|
-| `sweep` | Who wrote the marker: a plugin name (`pytest_purlin`, `jest_purlin`, `vitest_purlin`, `shell_purlin`, `sql_purlin`, `c_purlin`, `phpunit_purlin`, `xunit_purlin`) or `dev/run_tests.sh` |
+| `sweep` | Who wrote the marker: a plugin name (`pytest_purlin`, `jest_purlin`, `vitest_purlin`, `shell_purlin`, `sql_purlin`, `c_purlin`, `phpunit_purlin`, `xunit_purlin`) or the path of a project's own sweep script |
 | `runs` | One `{plugin, at, test_files, passed, failed, skipped}` object per run that contributed to the marker at this commit. Empty when nothing appended to it |
-| `skipped_proofs` | One `{feature, id, test_file, test_name, reason}` object per marked test the run skipped (`specs/_anchors/proof_common.md` RULE-20). `reason` is the message the framework gave, `null` where it gave none. Empty when the run skipped nothing. A proof entry named here was kept from an earlier commit under RULE-18 rather than re-proved by this run |
+| `skipped_proofs` | One `{feature, id, test_file, test_name, reason}` object per marked test the run skipped (`references/proof_plugin_contract.md`). `reason` is the message the framework gave, `null` where it gave none. Empty when the run skipped nothing. A proof entry named here was kept from an earlier commit under RULE-18 rather than re-proved by this run |
 
 `evidence.test_run` is null for a receipt issued without a run marker, which is
 what `--no-run-check` produces. A null `test_run` means the receipt records proof

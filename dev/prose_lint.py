@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Four prose lints over the repository's committed text.
+"""The prose lints over the repository's committed text.
 
 `python3 dev/prose_lint.py` prints one line per offender,
 
@@ -7,9 +7,13 @@
 
 and exits 1 when there is at least one. `--json` prints the same offenders as
 a JSON array. `specs/instructions/purlin_prose.md` RULE-12 through RULE-15 own
-the four lints and name the file set each one covers today; widening a set is
-an edit to the row in this module and to the rule that states it, never a new
-rule and never a new module.
+the first four lints and name the file set each one covers today; widening a
+set is an edit to the row in this module and to the rule that states it, never
+a new rule and never a new module. The fifth, `banned_paths`, is owned from
+outside: `specs/instructions/purlin_skills.md` RULE-19 states it over the
+skills and the agents and `specs/instructions/purlin_references.md` RULE-35
+over the references, because the claim it makes is about those surfaces and
+not about this module.
 
 The five helpers below (`_tracked`, `_read`, `_prose_files`,
 `_sectioned_paragraphs`, `_yaml_blocks`, `_dash_hits`) were lifted from
@@ -444,9 +448,12 @@ def banned_strings(root=PROJECT_ROOT, files=None, rows=BANNED, strict=True):
 # Lint 2: paths_exist (RULE-13)
 # ---------------------------------------------------------------------------
 
-#: The four references `purlin_docs` RULE-11 named plus the guides and the
-#: README: the set held to resolving paths today.
-PATH_SCOPE = DASH_SCOPE[:6]
+#: The four references `purlin_docs` RULE-11 named plus the guides, the README,
+#: and every skill and agent definition: the set held to resolving paths. The
+#: skills are here because they are where the 115 bare plugin-relative paths
+#: live, and a bare path is only safe while something checks that it resolves
+#: under the plugin root.
+PATH_SCOPE = DASH_SCOPE[:6] + ('skills/**.md', 'agents/**.md')
 
 #: A backticked token carrying any of these is not a repository path: an
 #: angle bracket or a `$` marks a placeholder, a `*` a glob, a space a command
@@ -488,6 +495,18 @@ PATH_ALLOWLIST = (
     # The workflow purlin:init --ci writes into a consumer project; this
     # repository carries its own verify-gate.yml under a different name.
     '.github/workflows/purlin-verify-gate.yml',
+    # Two paths in the project a skill is run against, not in this one: the
+    # directory purlin:anchor writes design screenshots to, and an anchor
+    # purlin:spec-from-code offers to create. This repository has neither.
+    'specs/_anchors/screenshots/',
+    'specs/_anchors/project_environment.md',
+    # The Example column of spec_quality_guide.md's Spec Categories table and
+    # the e2e example under it. They show where a spec of that kind goes in
+    # the reader's project; naming one of this repository's own specs there
+    # sends a consumer looking for a file that did not ship.
+    'specs/_anchors/design_tokens.md',
+    'specs/instructions/agent_guides.md',
+    'specs/checkout/checkout_flow.md',
 )
 
 _BACKTICK = re.compile(r'`([^`\n]+)`')
@@ -871,10 +890,76 @@ def single_home(root=PROJECT_ROOT, files=None, rows=HOMES, strict=True):
 
 
 # ---------------------------------------------------------------------------
+# Lint 5: banned_paths (purlin_skills RULE-19, purlin_references RULE-35)
+# ---------------------------------------------------------------------------
+
+#: The two trees that ship with the plugin and mean nothing in a consumer
+#: checkout: this repository develops itself with itself, so its own specs and
+#: its own development scripts sit beside the shipped prose and are the
+#: easiest thing in the tree to cite by accident.
+OWN_TREES = ('specs/', 'dev/')
+
+#: Every row: (name, scope, exempt, min_files, note). A backticked token in a
+#: scanned file that resolves to a regular file under one of `OWN_TREES` is a
+#: citation the reader it is written for cannot follow. A token naming a
+#: directory is left alone: `specs/` and `specs/_anchors/` name the shape of
+#: any project's tree, which is what a skill is teaching. So is a token that
+#: resolves to nothing here, such as `specs/auth/login.md`: it is an example
+#: of a path in the reader's own project.
+BANNED_PATH_ROWS = (
+    ('own-spec-in-skill', ('skills/**.md', 'agents/**.md'), (), 12,
+     'a skill and an agent definition are read inside a consumer project, '
+     'which carries neither this repository\'s specs nor its dev tree, so a '
+     'citation of either is an instruction to open a file that is not there; '
+     'cite the shipped reference that carries the content, or drop the '
+     'citation'),
+    ('own-spec-in-reference',
+     ('references/**.md',), ('references/proof_plugin_contract.md',), 12,
+     'a reference under references/ ships to the consumer for the same '
+     'reason and cannot cite what did not ship with it; '
+     '`references/proof_plugin_contract.md` is exempt by name because it is '
+     'written for someone authoring a proof plugin in this repository'),
+)
+
+
+def banned_paths(root=PROJECT_ROOT, files=None, rows=BANNED_PATH_ROWS,
+                 strict=True):
+    """No shipped prose cites this repository's own `specs/` or `dev/` tree."""
+    files = repo_files() if files is None else files
+    offenders = []
+    for name, scope, exempt, min_files, note in rows:
+        scanned = [rel for rel in _scope_files(scope, files)
+                   if rel not in exempt]
+        if strict and len(scanned) < min_files:
+            offenders.append(Offender(
+                'dev/prose_lint.py', 0, 'banned_paths',
+                f"row {name!r} resolved to {len(scanned)} files, fewer than "
+                f"the {min_files} it must read; the sweep would pass by "
+                f"scanning nothing"))
+            continue
+        for rel in scanned:
+            try:
+                text = _read(rel, root)
+            except (UnicodeDecodeError, IsADirectoryError, FileNotFoundError):
+                continue
+            for lineno, line in _hits(text, _BACKTICK):
+                for token in _BACKTICK.findall(line):
+                    if '<' in token or not token.startswith(OWN_TREES):
+                        continue
+                    target = token.partition('#')[0]
+                    if not os.path.isfile(os.path.join(root, target)):
+                        continue
+                    offenders.append(Offender(
+                        rel, lineno, 'banned_paths',
+                        f"{name}: `{token}`: {note}: {line.strip()[:160]}"))
+    return offenders
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
-LINTS = (banned_strings, paths_exist, structure, single_home)
+LINTS = (banned_strings, paths_exist, structure, single_home, banned_paths)
 
 
 def run_all(root=PROJECT_ROOT, files=None):

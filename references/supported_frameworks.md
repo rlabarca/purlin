@@ -21,13 +21,12 @@ The **Installed as** column is the basename each plugin file takes inside a proj
 as `purlin-proof.sh` because that is the name every shell test sources. `purlin:init` reads this
 column when it copies a plugin, and `purlin:init --update` reads it backwards to find the source
 of a copy it has to refresh, so neither script holds the fact and the two cannot disagree about
-the name a project's file has (`specs/instructions/purlin_references.md` RULE-23).
+the name a project's file has.
 
 The **Runner setup** column is what `purlin:test` reads when it scaffolds a platform runner
 workflow: it becomes the per-framework install step of the template in
 [`remote_verification.md`](remote_verification.md). Every listed framework carries a cell,
-because a framework with no recorded setup is one a scaffolded workflow cannot run
-(`specs/instructions/purlin_references.md` RULE-23).
+because a framework with no recorded setup is one a scaffolded workflow cannot run.
 
 `purlin:init` also offers an **other** option in the selection list. When the user selects "other", direct them to `purlin:init --add-plugin` to install a custom proof plugin.
 
@@ -35,9 +34,9 @@ because a framework with no recorded setup is one a scaffolded workflow cannot r
 
 Shipped plugins that `purlin:init` does not yet auto-detect or scaffold — wire them in by hand (see the framework's section in [`formats/proofs_format.md`](formats/proofs_format.md)).
 
-| Framework | Display name | Languages | Plugin file | Installed as | Detection | Marker syntax | Runner setup | Spec |
-|-----------|-------------|-----------|------------|--------------|-----------|---------------|--------------|------|
-| **xUnit** | xunit (.NET) | C#, F#, VB.NET | `scripts/proof/xunit_purlin.cs` | `xunit_purlin.cs` | `*.csproj` or `*.sln` present | `[Trait("PurlinProof", "feature:PROOF-1:RULE-1:unit")]` test trait | `dotnet restore` | `specs/proof/proof_plugins_xunit.md` |
+| Framework | Display name | Languages | Plugin file | Installed as | Detection | Marker syntax | Runner setup |
+|-----------|-------------|-----------|------------|--------------|-----------|---------------|--------------|
+| **xUnit** | xunit (.NET) | C#, F#, VB.NET | `scripts/proof/xunit_purlin.cs` | `xunit_purlin.cs` | `*.csproj` or `*.sln` present | `[Trait("PurlinProof", "feature:PROOF-1:RULE-1:unit")]` test trait | `dotnet restore` |
 
 > **Deterministic Pass-1 coverage:** every framework in both tables above has a Pass-1 static checker in `scripts/audit/static_checks.py`. It reads the same markers the plugin reads, locates each marked test's body, and runs assert-true / no-assertion detection: Python, JavaScript/TypeScript (`.js` `.jsx` `.mjs` `.cjs` `.ts` `.tsx`), Shell, C# (`.cs`), PHP (`.php`), SQL (`.sql`) and C (`.c` `.h`). The per-language checks are listed in [`audit_criteria.md`](audit_criteria.md), Pass 1. This is independent of the runtime proof plugin, which still records pass/fail during the actual test run. A custom plugin for a language not listed here has no checker, so its proofs are simply not measured by Pass 1.
 
@@ -69,7 +68,7 @@ A project whose specs carry `@e2e` proofs but has no e2e-capable runner installe
 
 All detected frameworks are scaffolded. Shell has no auto-detection heuristic — the user must explicitly select it. If no framework is detected, the full selection list is shown with nothing pre-selected.
 
-The `test_framework` config field records the answer the user gave, not the detection result: `auto` when detection chose the frameworks, or the comma-separated list the user named (`"pytest,jest"`). `auto` is written verbatim so the hook resolves the frameworks from what is on disk on every run (`specs/skills/skill_init.md` RULE-71).
+The `test_framework` config field records the answer the user gave, not the detection result: `auto` when detection chose the frameworks, or the comma-separated list the user named (`"pytest,jest"`). `auto` is written verbatim so the hook resolves the frameworks from what is on disk on every run.
 
 ## Adding More Frameworks
 

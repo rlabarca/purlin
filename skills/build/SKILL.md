@@ -7,6 +7,8 @@ Read a spec, load all its rules (including from `> Requires:` dependencies), and
 
 **Pending migrations:** when `sync_status` opens with a pending-migrations advisory, stop and follow `references/purlin_commands.md#pending-migrations` before doing this skill's work.
 
+**Paths in this skill:** every `references/`, `templates/`, `hooks/`, `scripts/` and `agents/` path below is relative to the plugin root; see `${CLAUDE_PLUGIN_ROOT}/references/purlin_commands.md#path-resolution`.
+
 ## Usage
 
 ```

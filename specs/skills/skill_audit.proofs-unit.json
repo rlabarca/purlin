@@ -120,6 +120,15 @@
     },
     {
       "feature": "skill_audit",
+      "id": "PROOF-28",
+      "rule": "RULE-23",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_pass_two_prompt_names_the_criteria_file_as_the_whole_list",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_audit",
       "id": "PROOF-4",
       "rule": "RULE-4",
       "test_file": "dev/test_e2e_teammate_audit_loop.sh",

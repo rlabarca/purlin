@@ -425,7 +425,7 @@ class TestRegulatedPageNamesItsMechanisms:
 
 
 # ---------------------------------------------------------------------------
-# RULE-12 to RULE-15: the four lints of dev/prose_lint.py.
+# RULE-12 to RULE-15: the first four lints of dev/prose_lint.py.
 # ---------------------------------------------------------------------------
 
 EM_DASH = '\u2014'
@@ -873,7 +873,7 @@ class TestTheLintsReadTheTreeTheyClaimTo:
             assert count >= floor, (
                 f"the {name!r} row resolved to {count} files, under its floor "
                 f"of {floor}; the sweep would pass by scanning nothing")
-        assert len(_scope_files(PATH_SCOPE, files)) >= 15
+        assert len(_scope_files(PATH_SCOPE, files)) >= 27
         assert len(_scope_files((SKILL_GLOB,), files)) >= 12
         assert len(_scope_files((AGENT_GLOB,), files)) >= 2
         assert len(_scope_files(HOME_SCOPE, files)) >= 40
@@ -883,7 +883,7 @@ class TestTheLintsReadTheTreeTheyClaimTo:
             cwd=PROJECT_ROOT, capture_output=True, text=True)
         offenders = [line for line in run.stdout.splitlines()
                      if re.search(r': (banned_strings|paths_exist|structure'
-                                  r'|single_home): ', line)]
+                                  r'|single_home|banned_paths): ', line)]
         assert run.returncode == 0 and not offenders, (
             "dev/prose_lint.py must exit 0 on the committed tree:\n"
             + "\n".join(offenders) + run.stderr)

@@ -614,16 +614,16 @@ Where different types of specs belong. Both `purlin:spec` and `purlin:spec-from-
 | Category dir | What goes here | Tier expectations | Example |
 |-------------|---------------|-------------------|---------|
 | Component dirs (`hooks/`, `mcp/`, `proof/`) | Behavioral specs for executable code | Unit tier for unit-level proofs | `specs/hooks/gate-hook.md` |
-| `_anchors/` | Anchors defining formats, contracts, and cross-cutting standards | Unit tier | `specs/_anchors/schema_spec_format.md` |
+| `_anchors/` | Anchors defining formats, contracts, and cross-cutting standards | Unit tier | `specs/_anchors/design_tokens.md` |
 | `integration/` | **Legacy: avoid creating new specs here.** E2E rules belong in the feature spec they validate, tagged `@e2e`. | All proofs tagged `@e2e` | *(migrate existing to feature specs)* |
-| `instructions/` | Structural specs for agent instructions: reference docs, skill definitions, agent definitions | Unit tier (grep-based structural checks) | `specs/instructions/purlin_references.md` |
+| `instructions/` | Structural specs for agent instructions: reference docs, skill definitions, agent definitions | Unit tier (grep-based structural checks) | `specs/instructions/agent_guides.md` |
 
 ### Guidelines
 
 - **Executable code** (scripts, hooks, MCP server) → spec category matches the source directory.
 - **Cross-cutting contracts** (file formats, schemas, security rules) → `_anchors/`. `sync_status` reads anchors from `specs/_anchors/` and from nowhere else, so any other anchor directory holds specs nothing loads.
 - **AI instructions** (`references/`, `skills/`, `agents/`) → `instructions/`. Rules verify sections exist and contain required content. Proofs are grep-based. These catch accidental deletions and structural drift.
-- **E2E rules belong in the feature they validate.** If an e2e test proves that `sync_status` reads proofs from multiple tiers, that rule belongs in `specs/mcp/sync_status.md` tagged `@e2e`, not in a separate `e2e_multi_tier.md`. Test tier (`@unit`, `@e2e`) is a proof attribute, not a reason to create a separate spec.
+- **E2E rules belong in the feature they validate.** If an e2e test proves that checkout spans the cart and the payment service, that rule belongs in `specs/checkout/checkout_flow.md` tagged `@e2e`, not in a separate `e2e_multi_service.md`. Test tier (`@unit`, `@e2e`) is a proof attribute, not a reason to create a separate spec.
 - **Never create test-only specs.** A spec like `e2e_feature_scoped_overwrite` that exists solely to hold integration tests should not exist. Those tests prove `proof_common` RULE-4. Wire them there.
 
 ## Audience-Appropriate Language

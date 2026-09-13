@@ -12,6 +12,15 @@ import sys
 
 import pytest
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from prose_lint import (  # noqa: E402
+    BANNED_PATH_ROWS,
+    _scope_files,
+    banned_paths,
+    repo_files,
+)
+
 PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
 REFS = os.path.join(PROJECT_ROOT, 'references')
 FORMATS = os.path.join(REFS, 'formats')
@@ -686,10 +695,12 @@ class TestRemoteVerificationReference:
         assert 'proof plugins' in evidence, (
             "the evidence section must name the proof plugins as the writers "
             "of the marker in a consumer project")
-        assert 'dev/run_tests.sh' in evidence, \
-            "the evidence section must name this repository's writer too"
-        assert 'RULE-19' in evidence, \
-            "the evidence section must point at proof_common RULE-19"
+        assert "sweep script of its own" in evidence, (
+            "the evidence section must name a project's own sweep script as "
+            "the second writer")
+        assert 'references/proof_plugin_contract.md' in evidence, (
+            "the evidence section must point at the shipped contract rather "
+            "than at an anchor a consumer checkout does not carry")
         for key in ('sweep', 'runs', 'skipped_proofs'):
             assert f'| `{key}` |' in evidence, (
                 f"`{key}` must be documented as a key of evidence.test_run")
@@ -701,7 +712,7 @@ class TestRemoteVerificationReference:
                  if ln.startswith('| `skipped_proofs` |')]
         assert len(skips) == 1, evidence
         for token in ('feature', 'id', 'test_file', 'test_name', 'reason',
-                      'RULE-20'):
+                      'references/proof_plugin_contract.md'):
             assert token in skips[0], (
                 f"the skipped_proofs row must name {token}: {skips[0]}")
 
@@ -1224,3 +1235,55 @@ class TestLegacyFeaturesMigrationHasOneHome:
                 f"skills/spec-from-code/SKILL.md still carries {literal!r}: "
                 "the procedure has two copies and one edit away from two "
                 "answers")
+
+
+class TestNoReferenceCitesThisRepositorysSpecs:
+    """RULE-35: a reference ships without the specs that describe it."""
+
+    ROW_NAME = 'own-spec-in-reference'
+    EXEMPT = 'references/proof_plugin_contract.md'
+
+    @pytest.mark.proof("purlin_references", "PROOF-35", "RULE-35")
+    def test_no_reference_cites_an_own_spec_and_the_exemption_is_by_name(
+            self, tmp_path):
+        row = next(r for r in BANNED_PATH_ROWS if r[0] == self.ROW_NAME)
+        scanned = [rel for rel in _scope_files(row[1], repo_files())
+                   if rel not in row[2]]
+        assert len(scanned) >= 12, (
+            f"the row resolved to {len(scanned)} files; the sweep would pass "
+            f"by scanning nothing")
+        assert banned_paths(rows=(row,), strict=True) == [], (
+            "no shipped reference may cite this repository's own specs")
+
+        assert self.EXEMPT not in scanned, \
+            "the proof-plugin contract must be exempt by name"
+        assert '`specs/_anchors/proof_common.md`' in _read(
+            os.path.join(PROJECT_ROOT, self.EXEMPT)), (
+            "the exemption is load-bearing only while the contract really "
+            "does cite the anchor")
+        assert 'references/legacy_features_migration.md' in scanned, \
+            "the legacy-migration reference is inside the set"
+
+        os.symlink(os.path.abspath(os.path.join(PROJECT_ROOT, 'specs')),
+                   os.path.join(str(tmp_path), 'specs'))
+        planted = 'The verdict is computed by `specs/mcp/sync_status.md` ' \
+                  'RULE-6.'
+        for rel in ('references/hard_gates.md', self.EXEMPT):
+            base = _read(os.path.join(PROJECT_ROOT, rel)).rstrip('\n')
+            injected = base + '\n\n' + planted + '\n'
+            dest = os.path.join(str(tmp_path), rel)
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            with open(dest, 'w', encoding='utf-8') as f:
+                f.write(injected)
+            offenders = banned_paths(root=str(tmp_path), files=[rel],
+                                     rows=(row,), strict=False)
+            if rel == self.EXEMPT:
+                assert offenders == [], (
+                    "the exemption is by name, so the same line planted in "
+                    "the contract is not an offender")
+                continue
+            assert len(offenders) == 1, f"expected one; got {offenders}"
+            only = offenders[0]
+            assert only.path == rel and only.lint == 'banned_paths'
+            assert only.line == injected.splitlines().index(planted) + 1
+            assert 'specs/mcp/sync_status.md' in only.message, only.message

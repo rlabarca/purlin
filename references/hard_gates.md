@@ -30,7 +30,7 @@ could ever get its first receipt. This is enforced in the skill logic, not a hoo
   halves of both gauges never block anything.
 - Committing without running verify: allowed.
 - A proof declared `@on(<platform>)` with no result there: allowed. It reports
-  `AWAITING RUNNER`, which warns and never blocks (`specs/mcp/sync_status.md` RULE-47).
+  `AWAITING RUNNER`, which warns and never blocks (`references/remote_verification.md`).
 - A pending `legacy-*` migration: allowed, and nothing is blocked by it. While one stands,
   `purlin:verify` issues no receipt for any feature, because the legacy alias makes coverage a
   guess and a receipt would be a claim about a reading rather than about a result. That is the
@@ -42,7 +42,7 @@ Skills are optional for a human and mandatory for the agent: a person may write 
 ## No Claude Code Hook Gates Anything
 
 `hooks/hooks.json` registers one Claude Code hook, and it gates nothing: the digest refresh
-(`scripts/hooks/refresh_digest.py`, `specs/hooks/refresh_digest_hook.md`) runs `async` after a
+(`scripts/hooks/refresh_digest.py`) runs `async` after a
 tool call or a turn, exits 0 on every path, prints nothing, and only rewrites
 `.purlin/report-data.js` when something it reports has changed. The plugin installs no
 `PreToolUse`, `PermissionRequest` or `UserPromptSubmit` handler, which are the events through
