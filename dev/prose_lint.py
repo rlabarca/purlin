@@ -370,12 +370,6 @@ DASH_ALLOWLIST = (
     # `scripts/` retires it and these two exemptions with it.
     ('specs/mcp/sync_status.md', 'Rules'),
     ('specs/mcp/sync_status.md', 'Proof'),
-    # `specs/skills/skill_init.md` is held by another lane while the hook and
-    # `--update` work lands in it. Its five dashes are a follow-up, and these
-    # two pairs are the only reason `specs/**.md` could be widened without
-    # waiting for that lane; the follow-up removes them.
-    ('specs/skills/skill_init.md', 'Rules'),
-    ('specs/skills/skill_init.md', 'Proof'),
 )
 
 BANNED = (
