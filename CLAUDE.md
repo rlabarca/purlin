@@ -83,5 +83,16 @@ covers all four locations plus the script itself (RULE-6/7/8).
 
 ## Tool Folder Separation
 
-*   **`scripts/`** — Consumer-facing framework tooling. Consumer projects depend on this directory; it is the only directory included in the distributed framework contract.
-*   **`dev/`** — Purlin-repository maintenance scripts. Scripts here are specific to developing, building, and releasing the Purlin framework itself. They are NOT designed for consumer use.
+Everything in this repository ships. `.claude-plugin/marketplace.json` declares the plugin source
+as `./`, so an install carries `scripts/`, `dev/`, `specs/`, `references/`, `docs/`, `skills/`,
+`agents/`, `tools/`, `templates/` and the rest. The line between the two directories below is not
+what ships; it is what a consumer project may depend on.
+
+*   **`scripts/`**: the consumer-facing surface. A consumer project, a shipped skill, an agent
+    definition or a reference may name a path under it, and its layout is held stable across
+    releases. This is the only directory a consumer may depend on.
+*   **`dev/`**: this repository's own maintenance, build and release scripts, plus its proofs.
+    They ship because everything ships, but nothing consumer-facing may cite them. A path into
+    `dev/`, or into this repository's own `specs/`, never appears in a prose line of a skill, an
+    agent definition or a reference: the consumer's checkout has neither, so such a citation is an
+    instruction that cannot be followed. `purlin_skills` and `purlin_references` hold that scope.
