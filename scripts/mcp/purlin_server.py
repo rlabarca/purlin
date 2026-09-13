@@ -5067,6 +5067,31 @@ def _payload_without_stamp(data):
         {k: v for k, v in data.items() if k not in ('timestamp', 'generated_by')}))
 
 
+def _render_report_data(data):
+    """The digest's text: one line per top-level key, one line per feature.
+
+    The file is committed, so `git diff` is how a reader sees what a commit
+    moved. Written as a single line, every commit rewrote all 2.8 MB of it and
+    the diff said only that the file changed. Broken at these two joints, a
+    commit that reproved one feature shows one changed line naming it, and the
+    per-build stamps show as their own lines rather than dragging the payload
+    with them. Every value is still compact within its line, so the file grows
+    by one newline per feature and nothing else (report_data RULE-49).
+
+    The `const PURLIN_DATA = ` prefix and the trailing `;` are unchanged: the
+    dashboard loads this file as a script and the readers strip exactly those.
+    """
+    compact = {'separators': (',', ':')}
+    lines = []
+    for key, value in data.items():
+        if key == 'features' and isinstance(value, list) and value:
+            rows = ',\n'.join(json.dumps(f, **compact) for f in value)
+            lines.append('"features":[\n' + rows + '\n]')
+        else:
+            lines.append(json.dumps(key) + ':' + json.dumps(value, **compact))
+    return 'const PURLIN_DATA = {\n' + ',\n'.join(lines) + '\n};\n'
+
+
 def _write_report_data(project_root, features, all_proofs, config, global_anchors,
                        audit_summary=None, drift_data=None, git_sha=None,
                        design_summary=None, generated_by='sync_status',
@@ -5121,9 +5146,7 @@ def _write_report_data(project_root, features, all_proofs, config, global_anchor
     tmp_path = data_path + '.tmp'
     try:
         with open(tmp_path, 'w') as f:
-            f.write('const PURLIN_DATA = ')
-            json.dump(data, f, separators=(',', ':'))
-            f.write(';\n')
+            f.write(_render_report_data(data))
         os.replace(tmp_path, data_path)
         return data_path
     except (IOError, OSError):

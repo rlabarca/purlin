@@ -2989,3 +2989,60 @@ class TestSchemaVersion:
         assert purlin_server.read_report_payload(self.tmp)['schema_version'] == 2
         assert purlin_server.generate_digest(self.tmp) is not None
         assert _read_report(self.tmp)['schema_version'] == 2
+
+
+class TestDigestIsWrittenOneLinePerFeature:
+    """report_data RULE-49 — the committed digest's diff names what moved."""
+
+    def setup_method(self):
+        self.tmp = tempfile.mkdtemp()
+        _make_project(self.tmp, report_enabled=True)
+        for n in range(1, 5):
+            name = f'feature{n}'
+            _write_spec(self.tmp, name, _minimal_spec_content(name))
+            _write_proofs(self.tmp, name, _minimal_proofs(name))
+        _git_init(self.tmp)
+        self.digest = os.path.join(self.tmp, '.purlin', 'report-data.js')
+
+    def teardown_method(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    @pytest.mark.proof("report_data", "PROOF-51", "RULE-49", tier="integration")
+    def test_each_feature_and_each_top_level_key_owns_one_line(self):
+        purlin_server.sync_status(self.tmp)
+        text = open(self.digest, encoding='utf-8').read()
+        lines = text.rstrip('\n').split('\n')
+
+        assert lines[0] == 'const PURLIN_DATA = {', (
+            f"the prefix the dashboard's script tag expects must survive: {lines[0]!r}")
+        assert lines[-1] == '};', lines[-1]
+
+        feature_lines = [l for l in lines if re.match(r'^\{"name":', l)]
+        assert len(feature_lines) == 4, (
+            f"four features must own four lines, got {len(feature_lines)}")
+
+        payload = json.loads(re.sub(r'^const PURLIN_DATA = ', '', text).rstrip(';\n'))
+        assert len(payload['features']) == 4, payload['summary']
+
+        for key in payload:
+            if key == 'features':
+                continue
+            owned = [l for l in lines if l.startswith(json.dumps(key) + ':')]
+            assert len(owned) == 1, (
+                f"top-level key {key!r} must own exactly one line, got {len(owned)}")
+
+        # 3 structural lines: the `const ... {` opener, the `"features":[`
+        # opener and the `]` that closes it, plus the `};` terminator, less
+        # the one line `features` would otherwise have owned.
+        expected = 3 + len(payload) + len(payload['features'])
+        assert len(lines) == expected, (
+            f"expected {expected} lines for {len(payload)} keys and "
+            f"{len(payload['features'])} features, got {len(lines)}: no value "
+            f"may be pretty-printed inside its line")
+
+        read = purlin_server.read_report_payload(self.tmp)
+        assert {k: v for k, v in payload.items()
+                if k not in ('timestamp', 'generated_by')} == \
+               {k: v for k, v in read.items()
+                if k not in ('timestamp', 'generated_by')}, \
+            "the line breaks must not change what the payload says"
