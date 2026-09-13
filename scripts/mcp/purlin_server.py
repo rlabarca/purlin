@@ -2638,7 +2638,7 @@ def _check_legacy_mcp_entry(project_root):
 # count with no filename is not something a reader can act on.
 _MIGRATION_ORDER = ('legacy-tier-windows', 'legacy-proof-file', 'legacy-marker',
                     'plugin-copies-stale', 'config-fields-missing',
-                    'hooks-stale', 'dashboard-stale',
+                    'hooks-stale', 'dashboard-stale', 'digest-schema-old',
                     'receipt-v1', 'legacy-mcp')
 
 # Config fields the update asks about rather than backfilling from the
@@ -2998,6 +2998,30 @@ def _dashboard_stale(project_root):
     return 'bytes that differ from the installed dashboard'
 
 
+def _digest_schema_old(project_root):
+    """`(found, current)` when the digest predates the payload shape, else None.
+
+    A payload with no `schema_version` at all is schema 1 (`report_data`
+    RULE-48), which is what every digest written before the field carries, so
+    an absent field is read as old rather than as unknown. A digest written by
+    a newer plugin is not reported: the dashboard's own banner says so
+    (`purlin_report` RULE-51), and regenerating it here would throw away a
+    payload this plugin cannot rebuild.
+    """
+    path = os.path.join(project_root, '.purlin', 'report-data.js')
+    if not os.path.isfile(path):
+        return None
+    payload = _read_report_data_file(path)
+    if payload is None:
+        return None
+    found = payload.get('schema_version')
+    if not isinstance(found, int) or isinstance(found, bool):
+        found = 1
+    if found >= _REPORT_SCHEMA_VERSION:
+        return None
+    return (found, _REPORT_SCHEMA_VERSION)
+
+
 def _config_field_gaps(config):
     """(backfill, asked, retired, version_gap) for `.purlin/config.json`.
 
@@ -3166,6 +3190,18 @@ def _pending_migrations(project_root, config=None, features=None,
                         f'dashboard is a copy and this one is not the '
                         f'installed plugin\'s'),
             'files': ['purlin-report.html'],
+        })
+
+    digest_gap = _digest_schema_old(project_root) if config else None
+    if digest_gap:
+        pending.append({
+            'id': 'digest-schema-old',
+            'count': 1,
+            'summary': (f'.purlin/report-data.js is schema {digest_gap[0]} '
+                        f'and this plugin writes schema {digest_gap[1]}; the '
+                        f'dashboard and the QA report read fields it does not '
+                        f'carry'),
+            'files': ['.purlin/report-data.js'],
         })
 
     v1 = _v1_receipts(project_root)
@@ -4810,7 +4846,8 @@ def _platform_summary(records_by_feature, all_proofs, audit_by_proof, host_id,
 
 # Who produced a payload (report_data RULE-43). A closed set, so a reader can
 # tell a digest the hook refreshed from one a status call or a commit wrote.
-_GENERATED_BY = ('sync_status', 'pre-commit', 'hook', 'read')
+_GENERATED_BY = ('sync_status', 'pre-commit', 'hook', 'read',
+                 'update')
 
 
 def _read_report_data_file(path):

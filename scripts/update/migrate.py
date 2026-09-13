@@ -24,16 +24,17 @@ EXIT CODES  (aligned with scripts/ci/verify_gate.py and dev/bump_version.sh)
     that predate platform scoping write agnostic proof files from a platform
     runner, which satisfies nothing while the job goes green. The rest are
     reported in the JSON and do not fail the check: a config field is filled
-    without touching evidence, a stale hook or dashboard is a surface the
+    without touching evidence, a stale hook, dashboard or digest is a surface the
     developer reads rather than evidence a run writes, and a version 1 receipt
     is a claim that `purlin:verify` re-issues from a fresh run. A preflight that failed on those
     would block the CI of every project that has not verified since the vhash
     formula changed, which is a different problem than the one it guards.
 
 WHAT --apply DOES, AND WHAT IT REFUSES TO DO
-    It performs the seven mechanical rewrites: the spec tag, the proof-file
+    It performs the eight mechanical rewrites: the spec tag, the proof-file
     rename, the proof markers, the plugin copies, the config fields, the
-    generated hook shims with the hook git runs, and the root dashboard copy. It never
+    generated hook shims with the hook git runs, the root dashboard copy and
+    the project digest. It never
     writes a proof entry and never writes a receipt. A proof entry is a claim
     that a test ran and a receipt is a claim that a suite passed; renaming a file
     through `git mv` moves an existing record and keeps its history, which is not
@@ -64,7 +65,7 @@ EXIT_BAD_INVOCATION = 2
 
 # Reported by --check, not a reason to fail it. See the module docstring.
 _NON_BLOCKING = ('config-fields-missing', 'hooks-stale', 'dashboard-stale',
-                 'receipt-v1')
+                 'digest-schema-old', 'receipt-v1')
 
 
 def _server():
@@ -318,6 +319,26 @@ def _apply_dashboard_stale(ps, root, _platform_id, actions):
                    f'purlin-report.html (was {reason})')
 
 
+def _apply_digest_schema_old(ps, root, _platform_id, actions):
+    """The digest is rebuilt at the shape this plugin writes.
+
+    Not edited in place: the old payload is missing whole fields, and the one
+    honest way to produce them is to read the project again. The build is the
+    offline one, stamped `update` so a reader can tell a digest the update
+    rebuilt from one a commit or a status call wrote (`report_data` RULE-43).
+    """
+    gap = ps._digest_schema_old(root)
+    if not gap:
+        return
+    written = ps.generate_digest(root, generated_by='update', network=False)
+    if written is None:
+        actions.append('.purlin/report-data.js was left alone: this project '
+                       'has no readable config or no specs to build it from')
+        return
+    actions.append(f'regenerated .purlin/report-data.js at schema {gap[1]} '
+                   f'(it was schema {gap[0]})')
+
+
 _APPLIERS = {
     'legacy-tier-windows': _apply_legacy_tier_windows,
     'legacy-proof-file': _apply_legacy_proof_file,
@@ -326,6 +347,7 @@ _APPLIERS = {
     'config-fields-missing': _apply_config_fields_missing,
     'hooks-stale': _apply_hooks_stale,
     'dashboard-stale': _apply_dashboard_stale,
+    'digest-schema-old': _apply_digest_schema_old,
 }
 
 _DIRECTIVES = {
@@ -409,7 +431,7 @@ def apply(ps, root, ids, platform_id, mutation_checks):
 _MIGRATION_APPLY_ORDER = ('legacy-tier-windows', 'legacy-proof-file',
                           'legacy-marker', 'plugin-copies-stale',
                           'config-fields-missing', 'hooks-stale',
-                          'dashboard-stale')
+                          'dashboard-stale', 'digest-schema-old')
 
 
 def main(argv=None):

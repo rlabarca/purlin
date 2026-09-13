@@ -4990,5 +4990,13 @@ class TestTheThreeAdvisoryEntriesNeverBlock:
                 [sys.executable, migrate, '--check', '--project-root', root],
                 capture_output=True, text=True)
             assert done.returncode == 1, (done.stdout, done.stderr)
+
+            # The non-blocking set is exactly the four the rule names.
+            sys.path.insert(0, os.path.dirname(migrate))
+            import migrate as migrate_module
+            assert sorted(migrate_module._NON_BLOCKING) == [
+                'config-fields-missing', 'dashboard-stale',
+                'digest-schema-old', 'hooks-stale', 'receipt-v1'], \
+                migrate_module._NON_BLOCKING
         finally:
             shutil.rmtree(root, ignore_errors=True)

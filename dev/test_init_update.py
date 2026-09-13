@@ -951,3 +951,107 @@ class TestDashboardStale:
                 'the update handed a dashboard to a project that has none'
         finally:
             shutil.rmtree(root, ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------
+# skill_init RULE-81: a digest written at an older schema is rebuilt
+# ---------------------------------------------------------------------------
+
+def _make_digest_project():
+    """A plain project with one feature and a real digest on disk."""
+    root = _make_plain_project()
+    _write(root, 'specs/demo/demo.md', CURRENT_SPEC)
+    _write(root, 'tests/test_demo.py',
+           'import pytest\n\n\n'
+           '@pytest.mark.proof("demo", "PROOF-1", "RULE-1")\n'
+           'def test_thing():\n    assert 1\n')
+    config = json.loads(_read(root, '.purlin/config.json'))
+    config['report'] = True
+    _write(root, '.purlin/config.json', json.dumps(config, indent=2) + '\n')
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-q', '-m', 'a feature')
+    assert ps.generate_digest(root, generated_by='pre-commit',
+                              network=False) is not None
+    return root
+
+
+def _rewrite_schema(root, value):
+    """Put `value` in the digest's `schema_version`, or remove it when None."""
+    path = os.path.join(root, '.purlin', 'report-data.js')
+    payload = ps._read_report_data_file(path)
+    assert payload is not None
+    if value is None:
+        payload.pop('schema_version', None)
+    else:
+        payload['schema_version'] = value
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write('const PURLIN_DATA = ' + json.dumps(payload) + ';\n')
+
+
+class TestDigestSchemaOld:
+
+    @pytest.mark.proof("skill_init", "PROOF-88", "RULE-81", tier="integration")
+    @pytest.mark.parametrize('stamp', [None, 'one-less'])
+    def test_an_older_digest_is_rebuilt_at_the_current_schema(self, stamp):
+        """RULE-81: an absent field is schema 1, and both cases are rebuilt."""
+        root = _make_digest_project()
+        current = ps._REPORT_SCHEMA_VERSION
+        try:
+            _rewrite_schema(root, None if stamp is None else current - 1)
+            expected_found = 1 if stamp is None else current - 1
+
+            code, out, err = _run(root, '--check')
+            assert code == 0, (out, err)
+            entry = _pending(out).get('digest-schema-old')
+            assert entry, out
+            assert entry['files'] == ['.purlin/report-data.js'], entry
+            assert str(expected_found) in entry['summary'], entry['summary']
+            assert str(current) in entry['summary'], entry['summary']
+
+            code, out, err = _run(root, '--apply', 'digest-schema-old')
+            assert code == 0, err
+            payload = ps._read_report_data_file(
+                os.path.join(root, '.purlin', 'report-data.js'))
+            assert payload['schema_version'] == current, payload[
+                'schema_version']
+            assert payload['generated_by'] == 'update', payload['generated_by']
+
+            code, out, _ = _run(root, '--check')
+            assert 'digest-schema-old' not in _pending(out), out
+            before = _tree_hashes(root)
+            code, _out, err = _run(root, '--apply', 'digest-schema-old')
+            assert code == 0, err
+            assert _tree_hashes(root) == before, 'a second apply rebuilt it'
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    @pytest.mark.proof("skill_init", "PROOF-88", "RULE-81", tier="integration")
+    def test_a_newer_digest_and_no_digest_are_both_left_alone(self):
+        """RULE-81: the update never throws away a payload it cannot rebuild."""
+        root = _make_digest_project()
+        try:
+            _rewrite_schema(root, ps._REPORT_SCHEMA_VERSION + 1)
+            frozen = _read(root, '.purlin/report-data.js')
+            code, out, err = _run(root, '--check')
+            assert code == 0, (out, err)
+            assert 'digest-schema-old' not in _pending(out), out
+            code, _out, err = _run(root, '--apply', 'digest-schema-old')
+            assert code == 0, err
+            assert _read(root, '.purlin/report-data.js') == frozen, \
+                'a newer digest was rewritten'
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+        bare = _make_plain_project()
+        try:
+            code, out, err = _run(bare, '--check')
+            assert code == 0, (out, err)
+            assert 'digest-schema-old' not in _pending(out), out
+            code, _out, err = _run(bare, '--apply', *SCRIPTED_IDS,
+                                   'digest-schema-old')
+            assert code == 0, err
+            assert not os.path.exists(
+                os.path.join(bare, '.purlin', 'report-data.js')), \
+                'the update handed a digest to a project that has none'
+        finally:
+            shutil.rmtree(bare, ignore_errors=True)

@@ -12,69 +12,6 @@
     },
     {
       "feature": "skill_init",
-      "id": "PROOF-52",
-      "rule": "RULE-49",
-      "test_file": "dev/test_init_update.py",
-      "test_name": "test_check_lists_every_migration_with_its_files_and_ignores_version",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "skill_init",
-      "id": "PROOF-53",
-      "rule": "RULE-50",
-      "test_file": "dev/test_init_update.py",
-      "test_name": "test_every_plugin_marker_syntax_is_rewritten",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "skill_init",
-      "id": "PROOF-54",
-      "rule": "RULE-51",
-      "test_file": "dev/test_init_update.py",
-      "test_name": "test_check_leaves_the_tree_byte_identical",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "skill_init",
-      "id": "PROOF-55",
-      "rule": "RULE-52",
-      "test_file": "dev/test_init_update.py",
-      "test_name": "test_apply_renames_without_writing_a_claim",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "skill_init",
-      "id": "PROOF-56",
-      "rule": "RULE-53",
-      "test_file": "dev/test_init_update.py",
-      "test_name": "test_stale_copy_is_replaced_and_a_custom_plugin_is_left_alone",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "skill_init",
-      "id": "PROOF-57",
-      "rule": "RULE-54",
-      "test_file": "dev/test_init_update.py",
-      "test_name": "test_second_apply_changes_nothing",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "skill_init",
-      "id": "PROOF-60",
-      "rule": "RULE-57",
-      "test_file": "dev/test_init_update.py",
-      "test_name": "test_mutation_checks_is_a_question_not_a_backfill",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "skill_init",
       "id": "PROOF-61",
       "rule": "RULE-58",
       "test_file": "dev/test_init_scaffold.py",
@@ -201,24 +138,6 @@
     },
     {
       "feature": "skill_init",
-      "id": "PROOF-75",
-      "rule": "RULE-72",
-      "test_file": "dev/test_init_update.py",
-      "test_name": "test_nothing_pending_means_nothing_written",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "skill_init",
-      "id": "PROOF-76",
-      "rule": "RULE-73",
-      "test_file": "dev/test_init_update.py",
-      "test_name": "test_absent_platform_id_flag_stamps_the_os_family",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "skill_init",
       "id": "PROOF-77",
       "rule": "RULE-74",
       "test_file": "dev/test_init_scaffold.py",
@@ -255,15 +174,6 @@
     },
     {
       "feature": "skill_init",
-      "id": "PROOF-81",
-      "rule": "RULE-76",
-      "test_file": "dev/test_init_update.py",
-      "test_name": "test_a_retired_key_is_removed_and_named_and_nothing_else_moves",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "skill_init",
       "id": "PROOF-82",
       "rule": "RULE-77",
       "test_file": "dev/test_init_scaffold.py",
@@ -282,100 +192,28 @@
     },
     {
       "feature": "skill_init",
-      "id": "PROOF-84",
-      "rule": "RULE-53",
-      "test_file": "dev/test_init_update.py",
-      "test_name": "test_the_shell_harness_is_seen_under_both_names[purlin-proof.sh]",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "skill_init",
-      "id": "PROOF-84",
-      "rule": "RULE-53",
-      "test_file": "dev/test_init_update.py",
-      "test_name": "test_the_shell_harness_is_seen_under_both_names[shell_purlin.sh]",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "skill_init",
-      "id": "PROOF-85",
-      "rule": "RULE-79",
-      "test_file": "dev/test_init_update.py",
-      "test_name": "test_a_broken_purlin_hook_is_pending_and_repaired[body-copy]",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "skill_init",
-      "id": "PROOF-85",
-      "rule": "RULE-79",
-      "test_file": "dev/test_init_update.py",
-      "test_name": "test_a_broken_purlin_hook_is_pending_and_repaired[dangling]",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "skill_init",
-      "id": "PROOF-85",
-      "rule": "RULE-79",
-      "test_file": "dev/test_init_update.py",
-      "test_name": "test_a_broken_purlin_hook_is_pending_and_repaired[guardless-delegator]",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "skill_init",
-      "id": "PROOF-85",
-      "rule": "RULE-79",
-      "test_file": "dev/test_init_update.py",
-      "test_name": "test_a_broken_purlin_hook_is_pending_and_repaired[plugin-symlink]",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "skill_init",
-      "id": "PROOF-85",
-      "rule": "RULE-79",
-      "test_file": "dev/test_init_update.py",
-      "test_name": "test_a_free_slot_and_a_foreign_hook_are_not_stale",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "skill_init",
-      "id": "PROOF-86",
-      "rule": "RULE-80",
-      "test_file": "dev/test_init_update.py",
-      "test_name": "test_a_project_without_a_dashboard_is_not_given_one",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "skill_init",
-      "id": "PROOF-86",
-      "rule": "RULE-80",
-      "test_file": "dev/test_init_update.py",
-      "test_name": "test_the_root_dashboard_becomes_the_installed_one[dangling-symlink]",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "skill_init",
-      "id": "PROOF-86",
-      "rule": "RULE-80",
-      "test_file": "dev/test_init_update.py",
-      "test_name": "test_the_root_dashboard_becomes_the_installed_one[old-copy]",
-      "status": "pass",
-      "tier": "integration"
-    },
-    {
-      "feature": "skill_init",
       "id": "PROOF-87",
       "rule": "RULE-78",
       "test_file": "dev/test_init_scaffold.py",
       "test_name": "test_a_checkout_without_the_shims_still_commits",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-88",
+      "rule": "RULE-81",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_an_older_digest_is_rebuilt_at_the_current_schema[None]",
+      "status": "fail",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-88",
+      "rule": "RULE-81",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_an_older_digest_is_rebuilt_at_the_current_schema[one-less]",
       "status": "pass",
       "tier": "integration"
     }

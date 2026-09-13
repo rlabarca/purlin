@@ -2705,7 +2705,7 @@ class TestGeneratedByAndOfflineBuild:
 
     @pytest.mark.proof("report_data", "PROOF-44", "RULE-43", tier="integration")
     def test_producer_is_named_and_an_offline_build_never_reaches_the_network(self, monkeypatch):
-        for producer in ('sync_status', 'pre-commit', 'hook', 'read'):
+        for producer in ('sync_status', 'pre-commit', 'hook', 'read', 'update'):
             assert self._build(generated_by=producer)['generated_by'] == producer
         assert purlin_server.read_report_payload(self.tmp)['generated_by'] == 'read'
         assert purlin_server.generate_digest(self.tmp) is not None
