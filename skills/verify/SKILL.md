@@ -31,7 +31,7 @@ While any `legacy-*` migration is pending (`references/purlin_commands.md#pendin
 this skill issues NO receipt for any feature: the legacy `@windows` alias makes coverage a
 guess, so a receipt would be a claim about a reading. Print the advisory, print
 `→ Run: purlin:init --update`, and stop before Step 3. This is a refusal to claim, not a gate:
-nothing is blocked and `references/hard_gates.md` gains no entry. Every other pending migration
+nothing is blocked, and it is recorded in `references/hard_gates.md`'s What Is NOT a Gate list. Every other pending migration
 is reported and does not stop verification, and `receipt-v1` is the one a run of this skill
 clears.
 

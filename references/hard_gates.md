@@ -31,6 +31,11 @@ could ever get its first receipt. This is enforced in the skill logic, not a hoo
 - Committing without running verify: allowed.
 - A proof declared `@on(<platform>)` with no result there: allowed. It reports
   `AWAITING RUNNER`, which warns and never blocks (`specs/mcp/sync_status.md` RULE-47).
+- A pending `legacy-*` migration: allowed, and nothing is blocked by it. While one stands,
+  `purlin:verify` issues no receipt for any feature, because the legacy alias makes coverage a
+  guess and a receipt would be a claim about a reading rather than about a result. That is the
+  skill refusing to claim, not a gate: no commit, no push and no merge is stopped, and clearing
+  the migration (`references/purlin_commands.md#pending-migrations`) restores receipts.
 
 Skills are optional tools, not gatekeepers.
 

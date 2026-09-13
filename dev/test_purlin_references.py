@@ -460,6 +460,34 @@ class TestHardGatesAccuracy:
             "the list must name `quality_gate` as the opt-in that makes the "
             "deterministic half of the gauges a CI failure")
 
+        # The legacy-migration refusal belongs in the same list. The verify
+        # skill stops issuing receipts while one is pending; a reader
+        # counting gates who meets that behaviour and finds it written down
+        # nowhere reads it as a gate nobody told them about.
+        assert 'legacy-' in listing, (
+            "the list must name the pending `legacy-*` migration as a "
+            "non-gate")
+        migration = [b for b in re.split(r'(?m)^- ', listing)
+                     if 'legacy-' in b]
+        assert len(migration) == 1, (
+            f"expected one legacy-migration bullet, got {len(migration)}")
+        bullet = migration[0]
+        assert 'purlin:verify' in bullet and 'no receipt' in bullet, (
+            f"the bullet must say purlin:verify issues no receipt while a "
+            f"migration is pending:\n{bullet}")
+        assert re.search(r'(?i)nothing is blocked', bullet), (
+            f"the bullet must say the refusal blocks nothing:\n{bullet}")
+        assert 'purlin_commands.md#pending-migrations' in bullet, (
+            f"the bullet must link where the migration is cleared:\n{bullet}")
+
+        verify_skill = _read(os.path.join(
+            os.path.dirname(REFS), 'skills', 'verify', 'SKILL.md'))
+        assert 'gains no entry' not in verify_skill, (
+            "skills/verify/SKILL.md still says hard_gates.md gains no entry, "
+            "which is now false")
+        assert 'What Is NOT a Gate' in verify_skill, (
+            "the verify skill must cite the list the refusal is recorded in")
+
 
 class TestRemoteVerificationReference:
     """purlin_references RULE-18/19/20."""

@@ -2386,9 +2386,19 @@ class TestUpdateSkillText:
         assert 'legacy-*' in flat, flat[:200]
         assert 'purlin:init --update' in content
         assert 'refusal to claim, not a gate' in flat, flat[:400]
+        assert 'What Is NOT a Gate' in content, (
+            "the verify skill must cite the list the refusal is recorded in")
         gates = _read_ref('hard_gates.md')
-        assert 'migration' not in gates.lower(), (
-            "hard_gates.md must gain no migration gate: " + gates[:200])
+        assert re.search(r'(?i)exactly 1 hard gate', gates), (
+            "recording the refusal must not move the gate count")
+        listing = re.split(r'(?m)^## ',
+                           gates.split('What Is NOT a Gate', 1)[1])[0]
+        elsewhere = gates.replace(listing, '')
+        assert 'migration' not in elsewhere.lower(), (
+            "hard_gates.md must mention the migration only in its "
+            "'What Is NOT a Gate' list, never as a gate: " + elsewhere[:200])
+        assert 'migration' in listing.lower(), (
+            "the refusal must be recorded in the non-gate list")
 
     @pytest.mark.proof("skill_verify", "PROOF-14", "RULE-14", tier="integration")
     def test_verify_commit_counts_features_and_anchors_separately(self):
