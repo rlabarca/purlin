@@ -611,6 +611,142 @@ class TestGitArtifacts:
 
 
 # ---------------------------------------------------------------------------
+# RULE-77: the generated shim, .purlin/plugin-root and the install registry
+# ---------------------------------------------------------------------------
+
+def _fake_plugin(base, marker):
+    """A plugin root whose pre-push script records where it ran from.
+
+    The shim execs `<root>/scripts/hooks/pre-push.sh`, so a directory holding
+    that one file is everything a plugin has to be for a resolution test, and
+    the line it appends names the root the shim chose.
+    """
+    hooks = os.path.join(base, 'scripts', 'hooks')
+    os.makedirs(hooks, exist_ok=True)
+    script = os.path.join(hooks, 'pre-push.sh')
+    with open(script, 'w', encoding='utf-8') as f:
+        f.write('#!/bin/sh\n'
+                'printf "%s\\n" "$(cd "$(dirname "$0")/../.." && pwd)" >> '
+                f'"{marker}"\n'
+                'exit 0\n')
+    os.chmod(script, 0o755)
+    return base
+
+
+def _registry(home, project, install_path, version, last_updated):
+    """Write Claude Code's install registry with one entry for this project."""
+    directory = os.path.join(home, '.claude', 'plugins')
+    os.makedirs(directory, exist_ok=True)
+    with open(os.path.join(directory, 'installed_plugins.json'), 'w',
+              encoding='utf-8') as f:
+        json.dump({'version': 1, 'plugins': {'purlin@purlin': [{
+            'installPath': install_path,
+            'version': version,
+            'lastUpdated': last_updated,
+            'projectPath': project,
+            'scope': 'local',
+        }]}}, f)
+
+
+def _run_shim(repo, name, env):
+    """Run a generated shim in `repo` with `env`; returns (rc, out+err)."""
+    result = subprocess.run(['sh', os.path.join(repo, '.purlin', 'hooks', name)],
+                            cwd=repo, capture_output=True, text=True, env=env)
+    return result.returncode, result.stdout + result.stderr
+
+
+class TestShimResolution:
+
+    @pytest.mark.proof("skill_init", "PROOF-82", "RULE-77", tier="integration")
+    def test_the_shim_survives_the_plugin_moving_to_a_new_version(self, repo):
+        """RULE-77: the shim is tracked and machine independent, and it finds
+        the plugin through Claude Code's install registry, which is what moves
+        when the plugin updates and a version-pinned path does not."""
+        code, out, err = _run(repo, '--test-framework', 'shell',
+                              '--digest', 'auto')
+        assert code == 0, (code, err)
+
+        for name in ('pre-push', 'pre-commit'):
+            shim = os.path.join(repo, '.purlin', 'hooks', name)
+            assert os.path.isfile(shim) and not os.path.islink(shim), name
+            assert os.stat(shim).st_mode & 0o111, f"{name} is not executable"
+            body = _read(shim)
+            assert ROOT not in body, (
+                f"the {name} shim names this checkout, so the copy in the "
+                f"repository is wrong for every other clone of it")
+            assert f'PURLIN_SCRIPT="scripts/hooks/{name}.sh"' in body, \
+                f"the {name} shim does not name the plugin's hook script"
+            assert 'exec "$PURLIN_ROOT/$PURLIN_SCRIPT" "$@"' in body, \
+                f"the {name} shim does not exec that script with its arguments"
+        assert 'wrote .purlin/hooks/pre-push' in out, out
+        assert _read(os.path.join(repo, '.purlin', 'plugin-root')) == \
+            ROOT + '\n', "the plugin root was not recorded for this machine"
+
+        # git tracks the shims and ignores the machine-specific path.
+        subprocess.run(['git', 'add', '-A'], cwd=repo, capture_output=True)
+        tracked = subprocess.run(['git', 'ls-files'], cwd=repo,
+                                 capture_output=True, text=True).stdout.split()
+        assert '.purlin/hooks/pre-push' in tracked, tracked
+        assert '.purlin/hooks/pre-commit' in tracked, tracked
+        assert '.purlin/plugin-root' not in tracked, \
+            "the machine-specific plugin path was committed"
+
+        # Candidate 1 set to a directory with no hook script, and candidate 2
+        # likewise: both have to be stepped over for the registry to be
+        # reached at all.
+        home = os.path.join(repo, 'home')
+        marker = os.path.join(repo, 'marker.txt')
+        for name in ('empty_env', 'empty_pin'):
+            os.makedirs(os.path.join(repo, name), exist_ok=True)
+        _write(repo, '.purlin/plugin-root',
+               os.path.join(repo, 'empty_pin') + '\n')
+        env = dict(os.environ)
+        env.pop('CLAUDE_PLUGIN_ROOT', None)
+        env['PURLIN_PLUGIN_ROOT'] = os.path.join(repo, 'empty_env')
+        env['HOME'] = home
+
+        old = _fake_plugin(os.path.join(repo, 'cache', 'purlin', 'purlin',
+                                        '0.9.5'), marker)
+        _registry(home, repo, old, '0.9.5', '2026-08-20T13:05:56.278Z')
+        code, output = _run_shim(repo, 'pre-push', env)
+        assert code == 0, output
+        assert _read(marker).split() == [old], (
+            f"the registry entry's installPath did not run: {output}")
+
+        # The plugin updates: the directory moves to a new version and the
+        # registry entry moves with it. A symlink or a recorded path into the
+        # old directory dangles here; the shim must not.
+        os.remove(marker)
+        new = os.path.join(repo, 'cache', 'purlin', 'purlin', '0.11.0')
+        shutil.move(old, new)
+        _registry(home, repo, new, '0.11.0', '2026-09-01T09:00:00.000Z')
+        assert not os.path.exists(old), "the old version path still exists"
+        code, output = _run_shim(repo, 'pre-push', env)
+        assert code == 0, output
+        assert _read(marker).split() == [new], (
+            f"the shim did not follow the plugin to its new version path, so "
+            f"a plugin update leaves the hook pointing at nothing: {output}")
+
+        # Nothing resolves: the shim says so, names every path it searched,
+        # and honours pre-push's own contract per mode.
+        os.remove(os.path.join(home, '.claude', 'plugins',
+                               'installed_plugins.json'))
+        code, output = _run_shim(repo, 'pre-push', env)
+        assert code == 0, output
+        assert 'WARNING' in output and 'scripts/hooks/pre-push.sh' in output, \
+            output
+        for path in (os.path.join(repo, 'empty_env'),
+                     os.path.join(repo, 'empty_pin')):
+            assert path in output, f"the search never named {path}: {output}"
+        config = _config(repo)
+        config['pre_push'] = 'strict'
+        _write(repo, '.purlin/config.json', json.dumps(config, indent=2))
+        code, output = _run_shim(repo, 'pre-push', env)
+        assert code == 1, (
+            f"strict passed a push the plugin was not there to check: {output}")
+
+
+# ---------------------------------------------------------------------------
 # RULE-68, RULE-69, RULE-70, RULE-71: the plan, determinism, answers, auto
 # ---------------------------------------------------------------------------
 

@@ -261,6 +261,15 @@
       "test_name": "test_a_retired_key_is_removed_and_named_and_nothing_else_moves",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-82",
+      "rule": "RULE-77",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_shim_survives_the_plugin_moving_to_a_new_version",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

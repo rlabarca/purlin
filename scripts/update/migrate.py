@@ -35,7 +35,9 @@ WHAT --apply DOES, AND WHAT IT REFUSES TO DO
     writes a proof entry and never writes a receipt. A proof entry is a claim
     that a test ran and a receipt is a claim that a suite passed; renaming a file
     through `git mv` moves an existing record and keeps its history, which is not
-    the same act. `receipt-v1` and `legacy-mcp` print a directive and change
+    the same act. It also repoints `.purlin/plugin-root` when the project has
+    one and the plugin has moved under it, which is the file the generated hook
+    shims read (`skill_init` RULE-77). `receipt-v1` and `legacy-mcp` print a directive and change
     nothing: `purlin:verify` re-issues receipts from a fresh run, and
     `purlin:init --mcp` owns the MCP entry.
 
@@ -298,8 +300,33 @@ def check(ps, root):
     return EXIT_OK
 
 
+def _refresh_plugin_root(root, actions):
+    """Point `.purlin/plugin-root` at the plugin this script ships in.
+
+    Only when the project already has the file and it names somewhere else:
+    the shims in `.purlin/hooks/` read it as their second candidate, and a
+    plugin that moved is exactly what leaves it naming a directory that is no
+    longer there. A project that has no such file is not repaired here, since
+    the shims resolve the plugin three other ways without it and writing one
+    would make `--apply` touch a project with nothing pending (RULE-72).
+    """
+    path = os.path.join(root, '.purlin', 'plugin-root')
+    if not os.path.isfile(path):
+        return
+    installed = _plugin_root()
+    try:
+        recorded = _read(path).splitlines()[0].strip()
+    except (IOError, OSError, IndexError):
+        recorded = ''
+    if recorded == installed:
+        return
+    _write(path, installed + '\n')
+    actions.append(f'repointed .purlin/plugin-root at {installed}')
+
+
 def apply(ps, root, ids, platform_id, mutation_checks):
     actions = []
+    _refresh_plugin_root(root, actions)
     for migration_id in _MIGRATION_APPLY_ORDER:
         if migration_id not in ids:
             continue

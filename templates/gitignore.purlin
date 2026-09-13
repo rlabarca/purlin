@@ -15,3 +15,5 @@
 
 # Dashboard focus stamp (regenerated beside the digest, never committed)
 .purlin/report-stamp.js
+# Where this machine keeps the installed plugin (read by .purlin/hooks/)
+.purlin/plugin-root
