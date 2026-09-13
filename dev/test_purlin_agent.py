@@ -332,3 +332,53 @@ class TestThreePathways:
             "the Layer 1 row must still name the bypass and the off mode, or "
             f"the agent cites a reference that no longer says it:\n"
             f"{layer_one[0]}")
+
+    @pytest.mark.proof("purlin_agent", "PROOF-14", "RULE-14")
+    def test_skills_are_optional_for_the_user_and_mandatory_for_the_agent(self):
+        """RULE-14: an unqualified `optional` is permission to ignore the
+        NEVER list two screens above it."""
+        content = _read()
+        heading = '## Skills (optional for the user, mandatory for you)'
+        assert heading in content, (
+            "the Skills heading must name both audiences; an agent that "
+            "reads `optional tools` has been told its own NEVER list is "
+            "advice")
+        body = content[content.index(heading) + len(heading):]
+        body = re.split(r'(?m)^## ', body)[0]
+
+        paras = [b.strip() for b in body.split('\n\n')
+                 if 'optional' in b and not b.strip().startswith('|')]
+        assert len(paras) == 1, (
+            f"expected one paragraph below the Skills table saying optional, "
+            f"got {len(paras)}: {paras}")
+        para = paras[0]
+        for token in ('optional', 'mandatory', 'user', 'hand',
+                      'references/hard_gates.md', 'NEVER'):
+            assert token in para, (
+                f"the paragraph below the table does not carry {token!r}; it "
+                f"must name both audiences, say the user may write by hand, "
+                f"cite the NEVER list as the agent's contract and link "
+                f"hard_gates.md:\n{para}")
+        assert 'Skills are tools, not gatekeepers' not in content, (
+            "the unqualified closing line is back, and it is false of the "
+            "agent reading it")
+
+        gates_path = os.path.join(os.path.dirname(__file__), '..',
+                                  'references', 'hard_gates.md')
+        with open(gates_path) as f:
+            gates = f.read()
+        assert 'Skills are optional tools, not gatekeepers.' not in gates, (
+            "references/hard_gates.md carries the unqualified claim again, "
+            "so the two files can be read against each other")
+        gate_lines = [l for l in gates.splitlines()
+                      if 'Skills are optional' in l]
+        assert len(gate_lines) == 1, (
+            f"expected one `Skills are optional` line in hard_gates.md, got "
+            f"{gate_lines}")
+        sentence = gate_lines[0].split('. ')[0]
+        assert 'mandatory' in sentence, (
+            "the qualifier must sit in the same sentence as `optional`, or a "
+            f"reader takes the first half and stops:\n{sentence}")
+        assert 'agents/purlin.md' in gate_lines[0], (
+            "the reference must name where the agent's obligation is "
+            f"written:\n{gate_lines[0]}")

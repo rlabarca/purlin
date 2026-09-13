@@ -37,7 +37,7 @@ could ever get its first receipt. This is enforced in the skill logic, not a hoo
   skill refusing to claim, not a gate: no commit, no push and no merge is stopped, and clearing
   the migration (`references/purlin_commands.md#pending-migrations`) restores receipts.
 
-Skills are optional tools, not gatekeepers.
+Skills are optional for a human and mandatory for the agent: a person may write specs, code and tests by hand and Purlin reads what they wrote, while `agents/purlin.md`'s NEVER list tells the agent to invoke the skill and nothing in this repository enforces that.
 
 ## No Claude Code Hook Gates Anything
 

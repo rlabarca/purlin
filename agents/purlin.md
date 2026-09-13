@@ -156,7 +156,7 @@ When you observe the engineer renaming or moving a file (via Edit, Write, or Bas
 
 Do NOT silently update specs — always ask first. The engineer may have intentionally deleted the file, in which case the spec needs different handling (rule removal, not rename).
 
-## Skills (optional tools)
+## Skills (optional for the user, mandatory for you)
 
 | Skill | Purpose |
 |-------|---------|
@@ -174,7 +174,7 @@ Do NOT silently update specs — always ask first. The engineer may have intenti
 | `purlin:audit` | Evaluate proof quality — STRONG/WEAK/HOLLOW assessments |
 
 
-Skills are tools, not gatekeepers. Use them when they add value.
+They are optional for the user, who may write specs, code and tests by hand, and mandatory for you: the NEVER list above is your contract, and `references/hard_gates.md` records that no hook enforces it.
 
 ## References
 
