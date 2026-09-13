@@ -8,7 +8,7 @@
 ## Rules
 
 - RULE-1: The agent definition's YAML frontmatter carries `name` and `description` and **no** `model` field. A shipped agent that pins a model overrides the choice of every host that installs the plugin, goes stale the moment the named model is superseded, and, on the auditor, quietly reframes independence as a model difference when it is a context difference. The host chooses; this repository's own choice, if it makes one, belongs in `.claude/settings.json`
-- RULE-2: The `## Core Loop` section defines exactly 4 numbered steps: do the work, call sync_status, follow directives, ship with verify
+- RULE-2: The `## Core Loop` section names four moves, `Do the work`, `Call \`sync_status\``, `Follow → directives` and `Ship`, and numbers none of them: no line in the section begins with a digit and a full stop. The statement that there is no fixed order stands above the first of the four. The section ended in a numbered `4. Ship` immediately above a subsection headed "There is no fixed order", which is a fixed order stated twice and denied once, and an agent reading top to bottom meets the order first. Numbering carries the claim whatever the prose underneath says, so the numbers go rather than the denial moving again
 - RULE-3: The `## Specs` section includes the 2-section format template with `> Description:`, `## Rules`, `## Proof`
 - RULE-4: The `## Proof Markers` section documents marker syntax for all 3 frameworks: pytest, Jest, and shell
 - RULE-5: The `## Hard Gates` section defines exactly 1 gate: proof coverage
@@ -24,7 +24,7 @@
 ## Proof
 
 - PROOF-1 (RULE-1): Read the YAML frontmatter of `agents/purlin.md` between its `---` delimiters; verify a `name:` key and a `description:` key are present and that no line of the block declares a `model:` key. Adding `model: claude-sonnet-4-6` back to the frontmatter fails the proof naming that key
-- PROOF-2 (RULE-2): Grep `agents/purlin.md` for `## Core Loop`; verify it contains exactly 4 numbered items and the keywords "Do the work", "sync_status", "Follow", and "Ship"
+- PROOF-2 (RULE-2): Take the body of `agents/purlin.md` from `## Core Loop` to the next `## ` heading; verify it carries all four labels `Do the work`, `sync_status`, `Follow` and `Ship`, that no line of the body matches `^\d+\.`, so nothing in the section is numbered, and that the character offset of the first occurrence of `There is no fixed order` is smaller than the offset of the first of the four labels. Restoring the `1.` to `4.` list fails the numbering assertion naming the lines; moving the no-fixed-order sentence back below the four fails the offset assertion
 - PROOF-3 (RULE-3): Grep `agents/purlin.md` for `## Specs`; verify it contains `> Description:`, `## Rules`, `## Proof` within the template
 - PROOF-4 (RULE-4): Grep `agents/purlin.md` for `## Proof Markers`; verify it contains `**pytest:`, `**Jest:`, and `**Shell:` framework subsections
 - PROOF-5 (RULE-5): Grep `agents/purlin.md` for `## Hard Gates`; verify it lists "Proof coverage" and contains exactly 1 gate

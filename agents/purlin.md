@@ -19,11 +19,14 @@ Three separate questions, three separate answers:
 
 ## Core Loop
 
-1. **Do the work** — write specs, write code, fix bugs, add features. No permission system.
-2. **Call `sync_status`** (MCP tool) to see rule coverage and `→` directives.
-3. **Follow `→` directives** — they are computed from what actually exists, so follow them
-   rather than assuming an order.
-4. **Ship** — `purlin:verify` runs all tests and issues verification receipts.
+There is no fixed order. These are four moves, not four steps: read the state, then make the
+move the state calls for.
+
+- **Do the work**: write specs, write code, fix bugs, add features. No permission system.
+- **Call `sync_status`** (MCP tool) to see rule coverage and `→` directives.
+- **Follow `→` directives**: they are computed from what actually exists, so follow them
+  rather than assuming an order.
+- **Ship**: `purlin:verify` runs all tests and issues verification receipts.
 
 When a proof is written or amended, the check that catches a proof passing against broken code is
 the mutation check: `references/spec_quality_guide.md#mutation-check`. It runs before the commit

@@ -36,20 +36,35 @@ class TestPurlinAgent:
             f"stale the moment that model is superseded")
 
     @pytest.mark.proof("purlin_agent", "PROOF-2", "RULE-2")
-    def test_core_loop_four_steps(self):
+    def test_core_loop_is_four_unnumbered_moves(self):
+        """RULE-2: numbering is a claim about order that the subsection
+        underneath denies, and the agent reads the numbers first."""
         content = _read()
         assert '## Core Loop' in content
-        # Find the 4 numbered steps
         loop_match = re.search(r'## Core Loop\n(.*?)(?=^## |\Z)', content,
                                re.MULTILINE | re.DOTALL)
-        assert loop_match
+        assert loop_match, "agents/purlin.md has no ## Core Loop section"
         loop = loop_match.group(1)
-        steps = re.findall(r'^\d+\.', loop, re.MULTILINE)
-        assert len(steps) == 4
-        assert 'Do the work' in loop
-        assert 'sync_status' in loop
-        assert 'Follow' in loop
-        assert 'Ship' in loop
+
+        labels = ('Do the work', 'sync_status', 'Follow', 'Ship')
+        for label in labels:
+            assert label in loop, f"the Core Loop lost the move {label!r}"
+
+        numbered = [l for l in loop.splitlines() if re.match(r'^\d+\.', l)]
+        assert not numbered, (
+            "the Core Loop must number nothing: a numbered list is a fixed "
+            "order, and the subsection below it says there is none:\n"
+            + "\n".join(numbered))
+
+        denial = loop.find('There is no fixed order')
+        assert denial != -1, (
+            "the Core Loop must state that there is no fixed order")
+        first_label = min(loop.find(label) for label in labels)
+        assert denial < first_label, (
+            f"the no-fixed-order statement is at offset {denial} and the "
+            f"first move at {first_label}; an agent reading top to bottom "
+            f"meets the moves before the statement that they are not a "
+            f"sequence")
 
     @pytest.mark.proof("purlin_agent", "PROOF-3", "RULE-3")
     def test_specs_section_template(self):
