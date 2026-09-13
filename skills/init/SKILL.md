@@ -209,7 +209,7 @@ HTML dashboard report:
   [off] Disable dashboard report generation
 ```
 
-If **on** (default): pass `--report on`. The scaffolder writes `"report": true` and symlinks `purlin-report.html` at the project root to the installed plugin's `scripts/report/purlin-report.html`, so the dashboard tracks plugin updates instead of going stale as a copy; it copies the file only when the link cannot be made, and its plan says which. Print: `Dashboard: purlin-report.html (open in browser after running purlin:status)`
+If **on** (default): pass `--report on`. The scaffolder writes `"report": true` and copies the installed plugin's `scripts/report/purlin-report.html` to `purlin-report.html` at the project root. It is a copy on every host and a symlink on none: the only path a plugin install can be linked at is version-pinned, so the link would break on the first plugin update. `purlin:init --update` refreshes the copy. Print: `Dashboard: purlin-report.html (open in browser after running purlin:status)`
 
 If **off**: pass `--report off`. No dashboard is created, and an existing one is never deleted.
 
@@ -368,12 +368,24 @@ Pass the answer to the scaffolder as `--pre-push <mode>`. Any other value makes 
 
 When called via `purlin:init --pre-push`, ONLY the mode selection above runs: ask, then run the scaffolder with `--force --pre-push <mode>` and nothing else (Step 2, **Single-step re-answers**), which rewrites `pre_push` alone. No hook is installed by that run beyond the one it keeps; the hook install below happens during the full init flow, inside the same scaffolder.
 
-The scaffolder installs `.git/hooks/pre-push` as a symlink to the installed
-plugin's `scripts/hooks/pre-push.sh`, and copies the file only when the link
-cannot be made (a consumer project with no local framework checkout). A hook
-file that already exists is kept, whether or not it is Purlin's: an existing
-hook is someone's, and init does not overwrite it. Its plan line says which of
-the three happened. Print: `Installed git pre-push hook (proof coverage check).`
+The scaffolder installs the hook in two parts. The body is the generated shim
+`.purlin/hooks/pre-push`, tracked in git because it names no machine and no
+plugin version: it resolves the installed plugin at run time and runs that
+plugin's `scripts/hooks/pre-push.sh`, so a plugin update changes the hook and
+nothing in the project is rewritten. The file git runs is a three-line
+delegator to that shim, written into the hooks directory git reads
+(`core.hooksPath` when the repository sets one, the common hooks directory
+otherwise, so a linked worktree gets a hook that runs).
+
+Every path ends in one of five outcomes, each a plan line: the shim is `wrote`
+or `kept`; the delegator is `wrote` into a free slot, `kept` when Purlin's
+delegator is already there, and `skipped` when the slot holds anything else.
+A hook that is already there is someone's and init never writes over it: the
+plan line prints the one line to add to it instead. When husky, lefthook or the
+pre-commit framework owns the repository's hooks, the plan names the manager
+and the file to paste that line into. Read the plan lines back to the user when
+one of them says `skipped`. Print: `Installed git pre-push hook (proof coverage
+check).`
 
 ## Step 7a — Pre-commit Hook (Project Digest)
 
@@ -401,11 +413,12 @@ Pass the answer to the scaffolder as `--digest <mode>`, which takes `auto`, `war
 
 When called via `purlin:init --digest`, ask the mode above and then run the scaffolder with `--force --digest <mode>` and nothing else (Step 2, **Single-step re-answers**): that one run rewrites `digest` and installs the pre-commit hook below when the project has none. Also remove `.purlin/report-data.js` from `.gitignore` if present. This makes `--digest` a complete setup command for existing projects — the user runs one command and gets the full digest feature.
 
-The scaffolder installs `.git/hooks/pre-commit` by the same symlink-then-copy
-rule as the pre-push hook, and keeps an existing hook of either kind. At
-`"digest": "off"` it installs no pre-commit hook at all and says so: the mode
-that disables the digest should not leave a hook behind to read it. Print:
-`Installed git pre-commit hook (project digest).`
+The scaffolder installs `.purlin/hooks/pre-commit` and its delegator by the
+same rule as the pre-push hook, with the same five outcomes, and never writes
+over a hook that is already there. At `"digest": "off"` it writes neither the
+shim nor the delegator and says so: the mode that disables the digest should
+not leave a hook behind to read it. Print: `Installed git pre-commit hook
+(project digest).`
 
 ## Step 7b — Audit Criteria
 

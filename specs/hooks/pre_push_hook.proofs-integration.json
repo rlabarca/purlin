@@ -160,7 +160,7 @@
       "rule": "RULE-6",
       "test_file": "dev/test_pre_push_hook.py",
       "test_name": "test_pytest_exit_5_is_success_but_a_real_failure_is_not",
-      "status": "fail",
+      "status": "pass",
       "tier": "integration"
     },
     {
@@ -232,7 +232,7 @@
       "rule": "RULE-6",
       "test_file": "dev/test_pre_push_hook.py",
       "test_name": "test_unit_test_runs_integration_skipped",
-      "status": "fail",
+      "status": "pass",
       "tier": "integration"
     },
     {

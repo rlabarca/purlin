@@ -19,13 +19,13 @@ Purlin includes a static HTML dashboard that visualizes rule-proof coverage acro
 
 ## Setup
 
-The dashboard is enabled by default. When you run `purlin:init`, it creates a **symlink** at the project root:
+The dashboard is enabled by default. When you run `purlin:init`, it **copies** the installed plugin's dashboard to the project root:
 
 ```
-purlin-report.html -> <purlin-plugin>/scripts/report/purlin-report.html
+purlin-report.html    (a copy of <purlin-plugin>/scripts/report/purlin-report.html)
 ```
 
-The symlink ensures the dashboard always reflects the latest Purlin version. When the plugin updates, the dashboard updates automatically.
+It is a copy and not a symlink because the only path a plugin install can be linked at is version-pinned, so the link would break on the first plugin update and the dashboard would stop opening at all. The copy does not update itself: run `purlin:init --update` after a plugin update to refresh it. The data it renders, `.purlin/report-data.js`, is regenerated on every `purlin:status` either way, so a dashboard one release behind still shows current coverage.
 
 To toggle the dashboard on or off:
 
@@ -33,7 +33,7 @@ To toggle the dashboard on or off:
 purlin:init --report
 ```
 
-Turning **on** creates the symlink and enables data file generation. Turning **off** disables data file generation but does not remove an existing symlink.
+Turning **on** writes the copy and enables data file generation. Turning **off** disables data file generation but does not remove an existing dashboard.
 
 ### Open in a browser
 
@@ -208,5 +208,5 @@ The digest itself (`.purlin/report-data.js`) is never listed: it is rewritten by
 
 ## What's Committed, What's Not
 
-- **`purlin-report.html` is gitignored.** It is a symlink to the installed framework, so each developer runs `purlin:init` to get their own.
+- **`purlin-report.html` is gitignored.** It is a copy of the installed plugin's dashboard, so each developer runs `purlin:init` to get their own and `purlin:init --update` to refresh it.
 - **`.purlin/report-data.js` is committed.** It is the project digest: coverage and drift data that travels with the repo, so QA, PM and compliance readers can open the dashboard without running Purlin tools. The pre-commit hook `purlin:init` installs regenerates it on every commit. Set the mode with `purlin:init --digest`: `auto`, `warn` or `off`. Only the hooks compute the drift block; a `purlin:status` call carries forward the block already in the file rather than blanking it. A status call rewrites the digest only when the payload actually changed, and touches its mtime otherwise, so repeated status calls on an unchanged tree leave the committed file exactly as it was. The file is written one line per top-level key and one line per feature, so `git diff` names the feature a commit moved instead of reporting that a megabyte changed.
