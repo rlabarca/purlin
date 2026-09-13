@@ -2,9 +2,9 @@
 # Feature: purlin_references
 
 > Requires: schema_spec_format, schema_proof_format
-> Scope: references/spec_quality_guide.md, references/hard_gates.md, references/commit_conventions.md, references/purlin_commands.md, references/drift_criteria.md, references/audit_criteria.md, references/supported_frameworks.md, references/remote_verification.md, references/formats/spec_format.md, references/formats/proofs_format.md, references/formats/anchor_format.md, references/formats/receipt_format.md, references/proof_plugin_contract.md
+> Scope: references/spec_quality_guide.md, references/hard_gates.md, references/commit_conventions.md, references/purlin_commands.md, references/drift_criteria.md, references/audit_criteria.md, references/supported_frameworks.md, references/remote_verification.md, references/formats/spec_format.md, references/formats/proofs_format.md, references/formats/anchor_format.md, references/formats/receipt_format.md, references/proof_plugin_contract.md, references/legacy_features_migration.md
 > Stack: markdown (reference documentation)
-> Description: Thirteen reference documents that define Purlin's formats, conventions, and quality standards. These are the authoritative source that skills and agents reference, ensuring structural consistency across the framework.
+> Description: Fourteen reference documents that define Purlin's formats, conventions, and quality standards. These are the authoritative source that skills and agents reference, ensuring structural consistency across the framework.
 
 ## Rules
 
@@ -106,6 +106,8 @@
   tautology in that language is graded `unmeasurable` and passes a gate that fails the same
   tautology in every other language; an extension with no extractor is a grade that survives an edit
   to the very test it graded
+
+- RULE-34: `legacy_features_migration.md` is the one home of the legacy `features/` migration procedure. It names both migration-candidate locations `purlin:spec-from-code` looks in, a legacy `features/` directory at the project root and non-compliant specs globbed from `specs/**/*.md`, and states which of the two it owns. It carries the recursive read that skips the `.impl.md` and `.discoveries.md` companions, the extraction rules for both companions, and the Phase 4 question asked before `features/` is deleted. `skills/spec-from-code/SKILL.md` branches to it and carries no second copy, because a procedure written in two places is one edit away from two answers
 
 ## Proof
 
@@ -209,3 +211,5 @@
   the exception. Deleting a row from the table fails the framework-set assertion naming the
   framework; dropping an extension from `_TEST_CODE_EXTENSIONS` fails the extractor half naming it;
   dropping an entry from `_CHECKERS` fails the dispatch half @unit
+
+- PROOF-34 (RULE-34): Read `references/legacy_features_migration.md` and verify it names both candidate locations, the literal `features/` and the glob `specs/**/*.md`, says which one it owns, and carries the three procedure literals that left `skills/spec-from-code/SKILL.md`: "Read all `.md` files recursively (excluding `.impl.md` and `.discoveries.md`", "Active Deviations" and "Remove old features/ directory?". Then read `skills/spec-from-code/SKILL.md` and verify it branches to the file by path and carries none of those three literals itself, so the two files cannot drift into two procedures. Deleting the reference fails the first half; restoring the procedure into the skill fails the second

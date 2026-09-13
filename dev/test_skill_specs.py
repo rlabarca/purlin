@@ -1443,10 +1443,17 @@ class TestSkillSpecFromCode:
     def test_phase1_step3_names_both_candidate_locations(self):
         self._require_literals(self.PHASE1_STEP3, 'Phase 1 step 3', [
             'a) Legacy `features/` directory:',
+            'references/legacy_features_migration.md',
             'Glob `specs/**/*.md` and read each file',
         ])
+        # The branch has to resolve: a pointer at a file that is not there
+        # reads exactly like one at a file that is.
+        assert os.path.isfile(os.path.join(
+            PROJECT_ROOT, 'references', 'legacy_features_migration.md')), \
+            "Phase 1 step 3a branches to references/legacy_features_migration.md, " \
+            "which does not exist"
 
-    @pytest.mark.proof("skill_spec_from_code", "PROOF-6", "RULE-6")
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-6", "RULE-5")
     def test_phase1_step3b_lists_the_five_non_compliance_criteria(self):
         self._require_literals(self.PHASE1_STEP3B, 'Phase 1 step 3b', [
             'Missing `## Rules` section',
@@ -1456,7 +1463,7 @@ class TestSkillSpecFromCode:
             'Uses an outdated format',
         ])
 
-    @pytest.mark.proof("skill_spec_from_code", "PROOF-7", "RULE-7")
+    @pytest.mark.proof("skill_spec_from_code", "PROOF-7", "RULE-5")
     def test_phase1_step3b_excludes_compliant_specs(self):
         self._require_literals(self.PHASE1_STEP3B, 'Phase 1 step 3b', [
             '(with numbered rules, proofs, and proper sections) are left untouched',
@@ -1480,13 +1487,18 @@ class TestSkillSpecFromCode:
 
     @pytest.mark.proof("skill_spec_from_code", "PROOF-39", "RULE-27")
     def test_discoveries_figma_preserved_as_visual_reference(self):
-        content = _read('spec-from-code')
+        """The `.discoveries.md` extraction moved to its own reference, so this
+        reads that file. Grepping the skill would now pass on its branch line
+        while the instruction itself was gone."""
+        with open(os.path.join(PROJECT_ROOT, 'references',
+                               'legacy_features_migration.md')) as f:
+            content = f.read()
         assert 'Visual-Reference' in content, \
-            "spec-from-code skill missing Visual-Reference metadata"
+            "legacy_features_migration.md missing Visual-Reference metadata"
         assert 'Figma' in content, \
-            "spec-from-code skill missing Figma reference"
+            "legacy_features_migration.md missing Figma reference"
         assert '.discoveries.md' in content, \
-            "spec-from-code skill missing .discoveries.md reference"
+            "legacy_features_migration.md missing .discoveries.md reference"
 
     @pytest.mark.proof("skill_spec_from_code", "PROOF-40", "RULE-28")
     def test_quality_guide_coverage_dimensions_not_fixed_count(self):

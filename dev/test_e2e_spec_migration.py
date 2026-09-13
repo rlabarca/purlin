@@ -27,6 +27,13 @@ from purlin_server import sync_status, read_report_payload
 SKILL_PATH = os.path.normpath(os.path.join(
     os.path.dirname(__file__), '..', 'skills', 'spec-from-code', 'SKILL.md'))
 
+#: The legacy `features/` procedure moved out of SKILL.md into its own
+#: reference. A proof that greps the skill for a literal now living here would
+#: pass on the skill's branch line and never notice the procedure was gone.
+LEGACY_REF_PATH = os.path.normpath(os.path.join(
+    os.path.dirname(__file__), '..', 'references',
+    'legacy_features_migration.md'))
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -61,6 +68,12 @@ def _skill_text():
         return f.read()
 
 
+def _legacy_ref_text():
+    """The legacy `features/` migration reference the skill branches to."""
+    with open(LEGACY_REF_PATH, encoding='utf-8') as f:
+        return ' '.join(f.read().split())
+
+
 def _require(skill, section, literal):
     """The skill text must carry `literal` in `section`.
 
@@ -70,6 +83,18 @@ def _require(skill, section, literal):
     assert literal in skill, (
         f"skills/spec-from-code/SKILL.md {section} must carry the literal "
         f"{literal!r}"
+    )
+
+
+def _require_ref(text, section, literal):
+    """`references/legacy_features_migration.md` must carry `literal`.
+
+    The reference wraps its prose, so both sides are whitespace-normalised and
+    the literal is matched across line breaks.
+    """
+    assert ' '.join(literal.split()) in text, (
+        f"references/legacy_features_migration.md {section} must carry the "
+        f"literal {literal!r}"
     )
 
 
@@ -122,16 +147,17 @@ def _without_section(spec, section, next_section):
 
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-10", "RULE-5", tier="unit")
-def test_skill_orders_the_recursive_legacy_read():
-    """Phase 1 step 3a reads features/ recursively and skips the companions."""
-    skill = _skill_text()
-    _require(skill, 'Phase 1 step 3a',
-             'Read all `.md` files recursively (excluding `.impl.md` and '
-             '`.discoveries.md`')
-    _require(skill, 'Phase 1 step 3a', 'scenarios (Given/When/Then blocks)')
+def test_the_reference_orders_the_recursive_legacy_read():
+    """The migration reference reads features/ recursively and skips the
+    companions; SKILL.md carries only the branch to it."""
+    ref = _legacy_ref_text()
+    _require_ref(ref, 'Phase 1 detection',
+                 'Read all `.md` files recursively (excluding `.impl.md` and '
+                 '`.discoveries.md`')
+    _require_ref(ref, 'Phase 1 detection', 'scenarios (Given/When/Then blocks)')
 
 
-@pytest.mark.proof("skill_spec_from_code", "PROOF-11", "RULE-6", tier="unit")
+@pytest.mark.proof("skill_spec_from_code", "PROOF-11", "RULE-5", tier="unit")
 def test_skill_lists_the_outdated_format_criterion():
     """Phase 1 step 3b names the outdated format and what survives from it."""
     skill = _skill_text()
@@ -142,7 +168,7 @@ def test_skill_lists_the_outdated_format_criterion():
              'existing rules (even if unnumbered), existing proofs, description')
 
 
-@pytest.mark.proof("skill_spec_from_code", "PROOF-12", "RULE-6", tier="unit")
+@pytest.mark.proof("skill_spec_from_code", "PROOF-12", "RULE-8", tier="unit")
 def test_skill_orders_the_missing_description_fixed():
     """Phase 3 step 3 fills the metadata the step 3b criterion flags."""
     skill = _skill_text()
@@ -150,7 +176,7 @@ def test_skill_orders_the_missing_description_fixed():
              'Fix compliance issues: add missing `> Description:`')
 
 
-@pytest.mark.proof("skill_spec_from_code", "PROOF-13", "RULE-6", tier="unit")
+@pytest.mark.proof("skill_spec_from_code", "PROOF-13", "RULE-8", tier="unit")
 def test_skill_orders_the_other_three_criteria_fixed():
     """Phase 3 step 3 numbers rules, adds ## Proof and converts scenarios."""
     skill = _skill_text()
@@ -159,7 +185,7 @@ def test_skill_orders_the_other_three_criteria_fixed():
              'any Given/When/Then scenarios to Rules/Proof format')
 
 
-@pytest.mark.proof("skill_spec_from_code", "PROOF-14", "RULE-7", tier="unit")
+@pytest.mark.proof("skill_spec_from_code", "PROOF-14", "RULE-5", tier="unit")
 def test_skill_writes_only_candidates_to_the_ledger():
     """Phase 1 step 3 saves the candidates, and counts only those."""
     skill = _skill_text()
@@ -169,7 +195,7 @@ def test_skill_writes_only_candidates_to_the_ledger():
              'Found N specs to migrate: X from features/, Y non-compliant in specs/.')
 
 
-@pytest.mark.proof("skill_spec_from_code", "PROOF-15", "RULE-7", tier="unit")
+@pytest.mark.proof("skill_spec_from_code", "PROOF-15", "RULE-5", tier="unit")
 def test_skill_gates_migration_on_the_ledger():
     """Phase 3 step 3 consults the ledger before it rewrites anything."""
     skill = _skill_text()
@@ -191,12 +217,12 @@ def test_skill_orders_existing_metadata_preserved():
 
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-17", "RULE-5", tier="unit")
-def test_skill_maps_features_path_to_specs_path():
-    """The source path in step 3 and the destination path in step 6."""
-    skill = _skill_text()
-    _require(skill, 'Phase 3 step 3',
-             'Read the original `features/<category>/<name>.md` file in full')
-    _require(skill, 'Phase 3 step 6', 'specs/<category>/<name>.md')
+def test_the_features_path_maps_to_the_specs_path():
+    """The source path in the migration reference, the destination path in
+    step 6 of the skill."""
+    _require_ref(_legacy_ref_text(), 'Phase 3 migration',
+                 'Read the original `features/<category>/<name>.md` file in full')
+    _require(_skill_text(), 'Phase 3 step 6', 'specs/<category>/<name>.md')
 
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-18", "RULE-8", tier="unit")

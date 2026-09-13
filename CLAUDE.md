@@ -46,6 +46,7 @@ Each file has its own `> Format-Version: N` line — check the file directly for
 - `references/drift_criteria.md` — file classification, config field ownership, drift detection
 - `references/supported_frameworks.md` — test framework detection heuristics
 - `references/proof_plugin_contract.md`: the proof-plugin checklist, the ordered wiring list for a new language and how to prove a plugin, with the behavioural requirements cited from `specs/_anchors/proof_common.md` rather than restated
+- `references/legacy_features_migration.md`: the legacy `features/` read, the `.impl.md` and `.discoveries.md` companion extraction, and the cleanup `purlin:spec-from-code` branches to
 
 **When modifying a skill:** grep all other skills for the same concept. If you find duplicates, consolidate into the reference file and update all skills to point to it in the same commit.
 

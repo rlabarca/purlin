@@ -28,6 +28,12 @@ SKILL_PATH = os.path.join(
 QUALITY_GUIDE_PATH = os.path.join(
     os.path.dirname(__file__), '..', 'references', 'spec_quality_guide.md'
 )
+#: The legacy `features/` procedure lives here, not in SKILL.md: a whole-file
+#: grep of the skill would now pass on its branch line alone.
+LEGACY_REF_PATH = os.path.join(
+    os.path.dirname(__file__), '..', 'references',
+    'legacy_features_migration.md'
+)
 
 
 def _read(path):
@@ -66,6 +72,20 @@ def _require(bounds, name, literal):
     step = _step(bounds, name)
     assert literal in step, \
         f"skills/spec-from-code/SKILL.md {name} must carry the literal {literal!r}"
+
+
+def _legacy_ref():
+    """The legacy migration reference, whitespace-normalised.
+
+    The reference wraps its prose, so a literal is matched across line breaks.
+    """
+    return ' '.join(_read(LEGACY_REF_PATH).split())
+
+
+def _require_ref(name, literal):
+    assert ' '.join(literal.split()) in _legacy_ref(), (
+        f"references/legacy_features_migration.md {name} must carry the "
+        f"literal {literal!r}")
 
 
 def _extract_contracts(source):
@@ -294,15 +314,14 @@ def test_skill_has_tier_review_instructions():
     assert '@manual' in content, "SKILL.md must reference @manual tier tag"
 
 
-@pytest.mark.proof("skill_spec_from_code", "PROOF-9", "RULE-9", tier="unit")
-def test_skill_has_migration_cleanup():
-    """SKILL.md offers features/ cleanup and overwrites specs/ in place."""
+@pytest.mark.proof("skill_spec_from_code", "PROOF-9", "RULE-8", tier="unit")
+def test_cleanup_follows_the_source():
+    """The features/ question lives with the rest of the legacy procedure; the
+    specs/ half stays in the skill. Both halves are read, so deleting either
+    one fails."""
     content = _read(SKILL_PATH)
-    # Phase 4 offers to remove features/
-    assert 'Remove old features/' in content or 'remove it manually' in content, (
-        "SKILL.md must offer to remove features/ directory in Phase 4"
-    )
-    # Non-compliant specs are overwritten in place
+    _require_ref('Phase 4 cleanup', 'Remove old features/ directory?')
+    # Non-compliant specs are overwritten in place: that half is the skill's.
     assert 'overwritten in place' in content, (
         "SKILL.md must state non-compliant specs are overwritten in place"
     )
@@ -385,47 +404,56 @@ def test_skill_has_draft_evaluate_and_contract_filter():
 
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-35", "RULE-25", tier="unit")
-def test_skill_reads_impl_deviations():
-    """SKILL.md instructs reading .impl.md and converting PM-accepted deviations to rules."""
-    content = _read(SKILL_PATH)
+def test_the_reference_reads_impl_deviations():
+    """The migration reference instructs reading .impl.md and converting
+    PM-accepted deviations to rules; step 3 of the skill branches to it."""
+    ref = _legacy_ref()
 
-    assert '.impl.md' in content, "SKILL.md must reference .impl.md companion files"
-    assert 'Active Deviations' in content, (
-        "SKILL.md must reference Active Deviations table from .impl.md"
+    assert '.impl.md' in ref, (
+        "the reference must name .impl.md companion files"
     )
-    assert 'PM-ACCEPTED' in content or 'PM-accepted' in content.lower(), (
-        "SKILL.md must describe how PM-ACCEPTED deviations become rules"
+    assert 'Active Deviations' in ref, (
+        "the reference must name the Active Deviations table from .impl.md"
     )
+    assert 'PM-ACCEPTED' in ref, (
+        "the reference must describe how PM-ACCEPTED deviations become rules"
+    )
+    _require(PHASE3_STEP3, 'Phase 3 step 3',
+             'references/legacy_features_migration.md')
 
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-37", "RULE-26", tier="unit")
-def test_skill_reads_discoveries_bugs():
-    """SKILL.md instructs reading .discoveries.md and converting bugs to rules."""
-    content = _read(SKILL_PATH)
+def test_the_reference_reads_discoveries_bugs():
+    """The migration reference instructs reading .discoveries.md and converting
+    bugs to rules; step 3 of the skill branches to it."""
+    ref = _legacy_ref()
 
-    assert '.discoveries.md' in content, (
-        "SKILL.md must reference .discoveries.md companion files"
+    assert '.discoveries.md' in ref, (
+        "the reference must name .discoveries.md companion files"
     )
-    assert 'Resolved bugs' in content or 'resolved bugs' in content.lower(), (
-        "SKILL.md must describe how resolved bugs become regression rules"
+    assert 'Resolved bugs' in ref, (
+        "the reference must describe how resolved bugs become regression rules"
     )
-    assert '(deferred)' in content, (
-        "SKILL.md must describe how open bugs become (deferred) rules"
+    assert '(deferred)' in ref, (
+        "the reference must describe how open bugs become (deferred) rules"
     )
+    _require(PHASE3_STEP3, 'Phase 3 step 3',
+             'references/legacy_features_migration.md')
 
 
 @pytest.mark.proof("skill_spec_from_code", "PROOF-39", "RULE-27", tier="unit")
-def test_skill_preserves_figma_references():
-    """SKILL.md instructs preserving Figma references during migration."""
-    content = _read(SKILL_PATH)
+def test_the_reference_preserves_figma_references():
+    """The migration reference instructs preserving Figma references."""
+    ref = _legacy_ref()
 
-    # Check the .discoveries.md section specifically mentions Visual-Reference and Figma
-    assert 'Visual-Reference' in content, (
-        "SKILL.md must reference Visual-Reference metadata"
+    assert '.discoveries.md' in ref, (
+        "the reference must name .discoveries.md companion files"
     )
-    # Check that Figma references are mentioned in the discoveries migration context
-    assert 'Figma' in content, (
-        "SKILL.md must mention Figma reference preservation"
+    assert 'Visual-Reference' in ref, (
+        "the reference must name Visual-Reference metadata"
+    )
+    assert 'Figma' in ref, (
+        "the reference must mention Figma reference preservation"
     )
 
 
@@ -537,13 +565,13 @@ def test_impl_accepted_deviations_become_rules(tmp_path):
     impl.write_text(SIMULATED_IMPL_MD)
     content = impl.read_text()
 
-    # The instruction the conversion follows.
-    _require(PHASE3_STEP3, 'Phase 3 step 3',
-             "If the deviation was PM-ACCEPTED, use the implementation's "
-             "behavior as the rule.")
-    _require(PHASE3_STEP3, 'Phase 3 step 3',
-             'If PENDING or REJECTED, flag it for the user in the review step '
-             'as a discrepancy.')
+    # The instruction the conversion follows, in the file that now owns it.
+    _require_ref('Active Deviations',
+                 "If the deviation was PM-ACCEPTED, use the implementation's "
+                 "behavior as the rule.")
+    _require_ref('Active Deviations',
+                 'If PENDING or REJECTED, flag it for the user in the review '
+                 'step as a discrepancy.')
 
     rules, flagged = _impl_rules(content)
     assert rules == [
@@ -577,12 +605,12 @@ def test_discoveries_bugs_become_regression_and_deferred_rules(tmp_path):
     discoveries.write_text(SIMULATED_DISCOVERIES_MD)
     content = discoveries.read_text()
 
-    # The instruction the conversion follows.
-    _require(PHASE3_STEP3, 'Phase 3 step 3',
-             '(`[BUG]` entries with status RESOLVED) \u2014 each becomes a RULE-N '
-             'protecting against regression')
-    _require(PHASE3_STEP3, 'Phase 3 step 3',
-             '**Open bugs** \u2014 each becomes a RULE-N tagged `(deferred)`')
+    # The instruction the conversion follows, in the file that now owns it.
+    _require_ref('Resolved bugs',
+                 '(`[BUG]` entries with status RESOLVED): each becomes a '
+                 'RULE-N protecting against regression')
+    _require_ref('Open bugs',
+                 '**Open bugs**: each becomes a RULE-N tagged `(deferred)`')
 
     rules = _discovery_rules(content)
     assert rules == [

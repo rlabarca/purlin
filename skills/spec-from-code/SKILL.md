@@ -41,13 +41,8 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
 
 3. **Existing spec detection:** Scan for specs that can be used as migration context. Check two locations:
 
-   **a) Legacy `features/` directory:** If `features/` exists at the project root:
-   - Read all `.md` files recursively (excluding `.impl.md` and `.discoveries.md` companion files from the main spec list)
-   - For each spec, extract: feature name, category (subdirectory), description, scenarios (Given/When/Then blocks), and any behavioral constraints
-   - For each spec, check for companion files:
-     - **`.impl.md`** — deviations table, architecture details, test quality audit data
-     - **`.discoveries.md`** — bug entries (resolved and open), user testing observations, Figma/design references
-   - Note all companion files found — they are critical migration inputs in Phase 3
+   **a) Legacy `features/` directory:** If `features/` exists at the project root, follow
+   `${CLAUDE_PLUGIN_ROOT}/references/legacy_features_migration.md`: it owns the recursive read, the `.impl.md` and `.discoveries.md` companions, the per-feature migration and the cleanup Phase 4 offers.
 
    **b) Non-compliant specs in `specs/`:** Glob `specs/**/*.md` and read each file. A spec is non-compliant if any of the following are true:
    - Missing `## Rules` section
@@ -312,21 +307,7 @@ For each category:
 
 3. **Existing spec migration (per feature):** Before generating a spec, check if this feature has a migration candidate in `.purlin/cache/sfc_existing.md` (matched by name, or by file scope overlap if names differ). If one exists:
 
-   **From `features/` (legacy format):**
-   - Read the original `features/<category>/<name>.md` file in full
-   - Extract scenarios (Given/When/Then), descriptions, and behavioral constraints
-   - Old scenarios become RULE-N candidates; old descriptions inform `## What it does`
-
-   **Read ALL companion files:**
-   - **`.impl.md` companion** — read in full. Extract:
-     - **Active Deviations table** — each deviation where the spec says X but the implementation does Y becomes a rule reflecting the *actual* behavior. If the deviation was PM-ACCEPTED, use the implementation's behavior as the rule. If PENDING or REJECTED, flag it for the user in the review step as a discrepancy.
-     - **Architecture details** — design patterns, caching strategies, concurrency models, data flow, and tradeoffs go into `## Implementation Notes`
-     - **Test Quality Audit data** — note the last audit date and score in Implementation Notes for context
-   - **`.discoveries.md` companion** — read in full. Extract:
-     - **Resolved bugs** (`[BUG]` entries with status RESOLVED) — each becomes a RULE-N protecting against regression. E.g., `[BUG] M12: info bar overlaps disclaimer on mobile` → `RULE-N: Info bar does not overlap disclaimer on viewports below 768px`
-     - **Open bugs** — each becomes a RULE-N tagged `(deferred)`. The bug description becomes the rule, and the observed-vs-expected detail goes into a comment or Implementation Notes.
-     - **Figma/design references** — any URLs or references to visual designs become `> Visual-Reference:` metadata or `@manual` proof references
-     - **User testing observations** — behavioral observations that aren't bugs but document expected behavior become rule candidates
+   **From `features/` (legacy format):** follow `references/legacy_features_migration.md`, which carries the legacy read and the `.impl.md` / `.discoveries.md` companion extraction.
 
    **From `specs/` (non-compliant format):**
    - Read the existing `specs/<category>/<name>.md` file in full
@@ -492,14 +473,8 @@ Examples:
 
 1. Call `sync_status` to show the initial coverage state.
 
-2. **Migration cleanup (if applicable):**
-
-   If `features/` was detected and specs were migrated from it:
-   - Ask the user via `AskUserQuestion`: `Migration complete. Remove old features/ directory? The old specs have been migrated to specs/. [y/n]`
-   - If approved: delete `features/` and any companion files. Also delete old artifacts if present: `pl-*` symlinks, `*.sh` scripts at root.
-   - If declined: leave `features/` in place. Print: `Keeping features/ — you can remove it manually when ready: rm -rf features/`
-
-   Non-compliant specs in `specs/` are overwritten in place — no cleanup needed.
+2. **Migration cleanup (if applicable):** If `features/` was detected and specs were migrated from
+   it, run the cleanup step of `references/legacy_features_migration.md`, which asks before deleting anything. Non-compliant specs in `specs/` are overwritten in place: no cleanup needed.
 
 3. Summarize results:
 

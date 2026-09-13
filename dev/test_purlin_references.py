@@ -1069,3 +1069,56 @@ class TestNoJobEnvReadsTheRunnerContext:
             "`Locate Purlin tooling` step through $GITHUB_ENV")
         assert '- name: Locate Purlin tooling' in rv, (
             "the template must carry the `Locate Purlin tooling` step")
+
+
+# ---------------------------------------------------------------------------
+# purlin_references RULE-34: the legacy features/ migration has one home
+# ---------------------------------------------------------------------------
+
+
+class TestLegacyFeaturesMigrationHasOneHome:
+    """The procedure lives in the reference and the skill branches to it.
+
+    Both halves are asserted: the reference has to carry the procedure, and
+    the skill has to carry none of it. Asserting only the first would pass
+    while the skill held a second, divergeable copy.
+    """
+
+    REF = os.path.join(REFS, 'legacy_features_migration.md')
+    SKILL = os.path.join(PROJECT_ROOT, 'skills', 'spec-from-code', 'SKILL.md')
+
+    #: The literals that left SKILL.md when the procedure moved.
+    MOVED = (
+        'Read all `.md` files recursively (excluding `.impl.md` and '
+        '`.discoveries.md`',
+        'Active Deviations',
+        'Remove old features/ directory?',
+    )
+
+    @pytest.mark.proof("purlin_references", "PROOF-34", "RULE-34")
+    def test_the_reference_owns_the_procedure_and_the_skill_points_at_it(self):
+        assert os.path.isfile(self.REF), \
+            "references/legacy_features_migration.md does not exist"
+        ref = ' '.join(_read(self.REF).split())
+
+        # Both candidate locations, and which one this file owns.
+        assert 'features/' in ref, \
+            "the reference must name the legacy features/ directory"
+        assert 'specs/**/*.md' in ref, \
+            "the reference must name the other candidate location, the " \
+            "specs/**/*.md glob, so a reader knows what it does not cover"
+        assert 'This file owns the first' in ref, \
+            "the reference must say which of the two locations it owns"
+
+        for literal in self.MOVED:
+            assert ' '.join(literal.split()) in ref, \
+                f"the reference must carry the moved literal {literal!r}"
+
+        skill = _read(self.SKILL)
+        assert 'references/legacy_features_migration.md' in skill, \
+            "skills/spec-from-code/SKILL.md must branch to the reference"
+        for literal in self.MOVED:
+            assert literal not in skill, (
+                f"skills/spec-from-code/SKILL.md still carries {literal!r}: "
+                "the procedure has two copies and one edit away from two "
+                "answers")
