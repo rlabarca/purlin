@@ -2580,6 +2580,12 @@ class TestUpdateSkillText:
         assert 'Mutation checks are off (mutation_checks: false)' in flat, \
             "the off branch must carry the exact line the skill prints"
         assert 'purlin:init --mutation-checks on' in content
+        true_branch = flat[flat.index('`mutation_checks` is `true`'):
+                           flat.index('`mutation_checks` is `false`')]
+        for restated in ('watch it fail', 'restore, re-run'):
+            assert restated not in true_branch, (
+                f"the true branch restates the procedure ({restated!r}); "
+                f"spec_quality_guide.md#mutation-check owns it")
         commit_step = content[content.index('## Step 6'):]
         assert 'mutation' in commit_step.lower(), \
             "the commit step must carry the mutation lines"

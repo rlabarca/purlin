@@ -62,25 +62,16 @@ Write code that satisfies all rules. Use `> Scope:` paths as guidance for where 
 
 ## Step 3 — Write Tests with Proof Markers
 
-Write tests that prove each rule. Use proof markers so the test runner emits proof files. For marker syntax (pytest, Jest, Shell), see `references/formats/proofs_format.md`.
+Write tests that prove each rule, using proof markers so the test runner emits proof files.
+The marker syntax for every framework, and the `platforms=` argument that mirrors a spec's
+`@on(...)` tag and sends the result to the platform-scoped proof file, is stated once in
+`references/formats/proofs_format.md` ("Proof Markers by Framework"). A marker with no
+`platforms=` writes the agnostic file whatever `PURLIN_PLATFORM` says: the marker decides.
 
-Each RULE must have at least one PROOF — both own rules AND required rules. For required rules, use the **required spec's feature name** in the proof marker, not your own feature name:
-
-```python
-# Own rule — uses YOUR feature name
-@pytest.mark.proof("login", "PROOF-1", "RULE-1")
-
-# Required rule from api_rest_conventions — uses THE ANCHOR's name
-@pytest.mark.proof("api_rest_conventions", "PROOF-1", "RULE-1")
-
-# A proof the spec declared @on(...): the marker carries the same ids
-@pytest.mark.proof("login", "PROOF-9", "RULE-9", tier="unit", platforms=("windows-2022",))
-```
-
-The `platforms=` argument mirrors the spec's `@on(...)` tag and is what sends the result to
-`login.proofs-unit@<platform>.json` instead of the plain tier file. The marker decides: a marker
-with no `platforms=` writes the agnostic file whatever `PURLIN_PLATFORM` says. Every plugin has
-the same argument under its own syntax; see `references/formats/proofs_format.md`.
+Each RULE must have at least one PROOF, own rules and required rules alike. A proof of a
+required rule carries the **required spec's feature name** in the marker rather than your
+own, so a proof of `api_rest_conventions` RULE-1 is marked `api_rest_conventions` and the
+anchor's coverage counts where the anchor is read.
 
 **Tier review (mandatory before running tests):**
 Review every proof marker just written. Apply tier heuristics from `references/spec_quality_guide.md`:
@@ -99,10 +90,9 @@ RUNNER forever.
 **Mutation check (branches on `mutation_checks` in `.purlin/config.json`):**
 
 - When `mutation_checks` is `true`: every new or amended proof is mutation-checked before the
-  commit that carries it, per `references/spec_quality_guide.md#mutation-check`. Break the
-  behaviour, run that proof and watch it fail, restore, re-run. Record each mutation in the
-  commit body (Step 6) as one line per proof: `PROOF-N: <what was broken> -> failed, restored`.
-  A mutation that survives is a finding: strengthen the fixture and repeat.
+  commit that carries it, by the procedure in
+  `references/spec_quality_guide.md#mutation-check`. Record each mutation in the commit body
+  (Step 6) as one line per proof: `PROOF-N: <what was broken> -> failed, restored`.
 - When `mutation_checks` is `false`: print one visible line,
   `Mutation checks are off (mutation_checks: false); turn them on with purlin:init --mutation-checks on`,
   so the omission is visible rather than silent. Do not run the check.
@@ -140,14 +130,11 @@ Reason: API returns 400 for validation errors, not 401. Spec rule may need updat
 If you changed what a test asserts (not just how), the proof description in the spec may be
 wrong. The commit message MUST explain why the assertion changed.
 
-**Never resolve the disagreement by narrowing the proof description.** Editing the description
-down to match whatever the test now does makes the warning disappear without improving
-anything: it lowers Proof Design, and it leaves Proof Integrity looking healthy because most
-Integrity criteria are comparisons against the description — a vague description has nothing
-to contradict a weak test. The description and the assertion are two statements of the same
-claim, so exactly one of them is wrong. Find out which. If the description is genuinely wrong,
-say so explicitly and fix it deliberately via `purlin:spec`; if the test is wrong, fix the
-test. And never narrow a description for an anchor rule: that contract belongs to someone else.
+**Never resolve the disagreement by narrowing the proof description.** It lowers Proof Design
+and leaves Proof Integrity flatteringly high, because a vague description has nothing left to
+contradict a weak test. The description and the assertion state the same claim, so exactly one
+is wrong: fix the description deliberately through `purlin:spec`, or fix the test. Never narrow
+the description of an anchor rule at all; that contract belongs to someone else.
 
 After `purlin:test` has emitted proof files, ALWAYS spawn an independent auditor to review
 the proofs you just wrote. The auditor reads those files, so spawning it before the run leaves
@@ -168,35 +155,37 @@ Agent(subagent_type="purlin:purlin-auditor", prompt="Audit feature <name> only: 
 
 After the build/test loop reaches a stable state (all rules pass), output the changeset summary as a visible block in your response to the user. This is the engineer's primary review artifact — it must be visible in the conversation, not buried silently in git history. The same text is then reused as the commit message body in Step 6.
 
-The summary has three sections:
-
-**Changeset** — maps each rule to the file(s) and line(s) where it was implemented, with a one-line description of the change. Every rule addressed in this session must appear. Format: `RULE-N → file:line   description`. Rules satisfied by existing code (no changes needed): `RULE-N → (already satisfied)`. Rules mapping to multiple files get multiple lines.
+The summary has three sections, and the shape of all three is one block:
 
 ```
-── Changeset ──────────────────────────────────────
+── Changeset ─────────────────────────────────
 
 RULE-1 → src/auth.py:34         Added sanitize_input() before query
 RULE-2 → src/auth.py:71         Sliding window rate limiter (60/min)
          tests/test_auth.py:12  2 proofs covering RULE-1 and RULE-2
+
+── Decisions ─────────────────────────────────
+
+• Middleware over inline validation for RULE-1, reusable across routes
+• 60 req/min hardcoded, since the spec says "rate limit" with no threshold
+
+── Review ────────────────────────────────────
+
+→ src/auth.py:45   Regex for SQL injection, security-sensitive
+→ Spec gap: RULE-3 says "rate limit" but does not specify the window size
 ```
 
-**Decisions** — judgment calls where the agent chose between alternatives. Only genuine decisions, not mechanical translations. If there are no judgment calls: `(No judgment calls — all rules had unambiguous implementations)`.
+**Changeset** maps every rule addressed in this session to the file and line where it was
+implemented, as `RULE-N → file:line   description`. A rule that needed no change reads
+`RULE-N → (already satisfied)`; a rule touching several files gets several lines.
 
-```
-── Decisions ──────────────────────────────────────
+**Decisions** records judgment calls where the agent chose between alternatives, not
+mechanical translations. With none: `(No judgment calls, all rules had unambiguous
+implementations)`.
 
-• Middleware pattern over inline validation for RULE-1 — reusable across routes
-• 60 req/min hardcoded — spec says "rate limit" with no threshold
-```
-
-**Review** — curated list of areas where the engineer should focus attention. Flag security-sensitive code, spec ambiguities, performance-critical paths, and anything non-obvious. Not a list of every change — just the parts that need human eyes. If nothing notable: `(No notable risk areas — straightforward implementation)`.
-
-```
-── Review ─────────────────────────────────────────
-
-→ src/auth.py:45   Regex for SQL injection — security-sensitive
-→ Spec gap: RULE-3 says "rate limit" but doesn't specify the window size
-```
+**Review** is the curated list of what needs human eyes: security-sensitive code, spec
+ambiguities, performance-critical paths. Not every change. With nothing notable:
+`(No notable risk areas, straightforward implementation)`.
 
 **Corner cases:**
 - If no code changes were needed (tests already pass), show `RULE-N → (already satisfied)` for each rule
@@ -213,7 +202,7 @@ When spawned by the auditor to fix HOLLOW or WEAK proofs:
 5. Report back: "Fixed PROOF-N — now uses real bcrypt instead of mock. Re-audit please."
 6. Print a changeset summary mapping fixed proofs: `PROOF-N → file:line  description of fix`. Skip the Decisions section — proof fixes are mechanical, not judgment calls.
 
-Do NOT weaken assertions to satisfy audit — if the audit says a proof is HOLLOW because it mocks bcrypt, replace the mock with real bcrypt. Don't remove the assertion.
+The same prohibition applies here: a HOLLOW finding is fixed by replacing the mock with the real thing, never by removing the assertion that caught it.
 If fixing a proof requires changing the spec rule (because the rule is wrong), report the issue: "RULE-N in <feature> needs updating — <reason>."
 
 ## Step 6 — Commit (mandatory)
