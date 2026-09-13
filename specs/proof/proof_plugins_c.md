@@ -4,15 +4,9 @@
 > Scope: scripts/proof/c_purlin.h, scripts/proof/c_purlin_emit.py
 > Stack: c/gcc (header-only collector), python3 emitter reading stdin
 > Description: The C proof plugin. A header-only collector prints accumulated proofs as JSON to
->   stdout; a python emitter reads stdin and writes proof files. Inherits all shared
->   proof-plugin behavior from proof_common.
-
-## What it does
-
-`c_purlin.h` is included in C test code; `purlin_proof(...)` calls accumulate results and
-`purlin_proof_finish()` prints them as JSON. The compiled test's stdout is piped to
-`c_purlin_emit.py`, which performs the shared write-scoped overwrite. Only the C marker
-signature and the two-stage emit pipeline live here.
+>   stdout; a python emitter reads stdin and writes proof files. The C marker signature
+>   (`purlin_proof`, `purlin_proof_finish`) and that two-stage emit pipeline are all this
+>   spec adds; it inherits every other proof-plugin behavior from proof_common.
 
 ## Rules
 

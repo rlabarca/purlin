@@ -3,26 +3,13 @@
 > Description: End-to-end workflow proof that the exact 5-message sequence from
 >   docs/examples/figma-web-app.md produces a working web UI with high visual
 >   fidelity to the Figma design. Uses the modal-test Figma file as the design
->   reference. Each step is a real `claude -p` invocation — nothing is faked.
+>   reference (https://www.figma.com/design/TEZI0T6lObCJrC9mkmZT8v/modal-test?node-id=7-81).
+>   Each step is a real `claude -p` invocation — nothing is faked: the messages are sent
+>   verbatim and chained with `--resume` so one session carries the whole workflow, after a
+>   `purlin:init` prerequisite run that is not one of the five.
 > Scope: docs/examples/figma-web-app.md, skills/anchor/SKILL.md, skills/build/SKILL.md, dev/e2e_claude_cli.py
 > Stack: python/pytest, playwright, shell/bash
 > Requires: skill_anchor
-
-## What it does
-
-Proves that running the exact 5-message workflow documented in
-docs/examples/figma-web-app.md against the modal-test Figma design
-(https://www.figma.com/design/TEZI0T6lObCJrC9mkmZT8v/modal-test?node-id=7-81)
-produces a working, visually faithful web UI. The test uses `claude -p` with
-`--resume` for session continuity — each message is sent exactly as documented.
-Prerequisites (purlin:init) are run before the 5-message sequence.
-
-The 5 documented messages (adapted for the modal-test design):
-1. "here's our design: https://www.figma.com/design/TEZI0T6lObCJrC9mkmZT8v/modal-test?node-id=7-81"
-2. "I need a feature for the feedback modal from this design"
-3. "build it"
-4. "run the tests"
-5. "verify and ship"
 
 ## Rules
 

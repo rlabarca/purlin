@@ -120,6 +120,17 @@ Steps 15 to 19 are the spec pins. They are the reason a wiring step cannot be sk
 each is a committed rule with a proof behind it, so a framework added to the reference and
 nowhere else fails a test rather than shipping half wired.
 
+Step 14 is this repository's arrangement and not a consumer's. A consumer project has no
+`dev/run_tests.sh`, so nothing but the plugin itself is in a position to record that a run
+happened at all: that is why `RULE-19` puts the run marker in the plugin's hands and `RULE-20`
+puts the skipped markers in it. A plugin that writes correct proof files and no run marker
+leaves every receipt that project issues carrying `evidence.test_run: null`, which says only
+that some file on disk holds a `pass`. The marker's merge rule is what lets several plugins in
+one project, and several runs of one plugin, add up to one record of the commit they all ran
+at. The two silent failures to watch for while wiring are the same shape: `RULE-24` and
+`RULE-25` both break after the tests have passed, so the suite goes green and what reaches the
+repository is either nothing or a file that reads as complete and is not.
+
 ### What the eight shipped plugins registered
 
 | Framework | Plugin file | Test extensions | Pass 1 checker | Cache-key extractor |

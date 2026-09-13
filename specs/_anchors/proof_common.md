@@ -15,65 +15,8 @@
 >   runtime dependency the framework does not already provide. Each per-language proof plugin spec
 >   (proof_plugins_pytest, proof_plugins_jest, proof_plugins_shell, proof_plugins_c,
 >   proof_plugins_php, proof_plugins_sql, proof_plugins_vitest, proof_plugins_xunit)
->   requires this anchor and adds only its framework-specific rules.
-
-## What it does
-
-Defines the cross-cutting contract shared by all proof collection plugins. A plugin spec
-that declares `> Requires: proof_common` inherits these rules, so per-language specs only
-restate the marker syntax and status mapping unique to their framework. Keeping the shared
-behavior in one place means a change to the proof-file contract is made and proved once,
-not copied across eight specs.
-
-The merge key is `(feature, tier, platform, test_file)`. Two test files can cover the same
-feature at the same tier and be run in any order, in separate processes, without destroying
-each other's entries. That is what lets a platform-scoped proof be proven on a remote runner
-and a large suite be split across files. The cost of the narrower key is that a run only
-reaps what it can see: RULE-11 reaps entries whose test file is gone, RULE-12 states the
-bounded case that survives, and RULE-18 holds the entry of a test the run skipped, which is
-the one case where a file counts as executed and one of its tests did not.
-
-A proof the spec tags `@on(...)` must be proved on each platform it names. The marker in the
-test declares those platforms in the plugin's own syntax, and that declaration alone decides
-whether the result is scoped: a scoped entry goes to `<feature>.proofs-<tier>@<platform>.json`
-and carries `platform`, an unscoped entry goes to the agnostic file untouched. The id in the
-filename is the host's: `PURLIN_PLATFORM` when a runner sets it, the detected OS family
-otherwise. Plugins never compare versions, because the registry in `.purlin/config.json` and
-`sync_status` own that judgement (RULE-15, RULE-16, RULE-17). Every plugin is the same file
-on a developer machine and on a runner, and `test_file` is written with `/` on every OS, so
-the merge key and, later, the verification hash are the same for one test wherever it ran.
-
-A run leaves one more record beside the proof files: the run marker
-`.purlin/runtime/test_run.json` (RULE-19). A consumer project has no
-`dev/run_tests.sh`, so without it every receipt issued there records
-`evidence.test_run: null` and says only that some file on disk holds a `pass`.
-Each plugin writing the marker as it finishes is what makes the receipt name a
-run; the merge rule is what lets several plugins in one project, and several
-runs of one plugin, add up to a single record of the commit they all ran at.
-
-Every path in a proof file is relative to one place, and every plugin has to agree on which
-place that is. RULE-22 makes it the nearest ancestor of the working directory holding `specs/`
-or `.purlin/`, and roots the spec scan, the `specs/` fallback, the RULE-11 existence check and
-the run marker there; RULE-23 measures `test_file` against the same root. Without that pairing
-a runner whose working directory is not the repository root, which is every .NET test host,
-reads each committed path from the wrong place, finds nothing, and reaps the file it was asked
-to add one entry to.
-
-Two things keep a plugin from being the reason a run has no evidence. RULE-24 makes every
-write a full temp file named for the writing process plus one replace, so a reader never
-meets a half-written proof file and two writers never share a temp path; RULE-25 keeps each
-plugin to its language's standard library and its own framework, so a project that
-installed only the framework runs the plugin as shipped. Both failures are silent in the
-same way: the tests pass, the plugin breaks after them, and what reaches the repository is
-either nothing or a file that reads as complete and is not.
-
-A proof file is only evidence while something regenerates it. RULE-14 closes that gap for this
-repository's own proofs: a committed entry whose test file no sweep runs would stay green no
-matter what the code did, so every proof-named test file is either in `dev/run_tests.sh` or
-proved only in platform-scoped files whose ids the registry declares. The scope is the
-exemption, which is why no hand-maintained list of exceptions exists to outlive its reason: the
-evidence itself names the platform that regenerates it, and an id the registry dropped fails
-the same proof.
+>   requires this anchor and adds only its framework-specific rules, so a change to the
+>   proof-file contract is made and proved once here rather than copied across eight specs.
 
 ## Rules
 

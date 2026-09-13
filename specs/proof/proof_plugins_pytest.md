@@ -6,13 +6,8 @@
 > Description: The pytest proof plugin. Collects `@pytest.mark.proof(...)` markers during the
 >   test call phase and emits standardized proof JSON. Inherits all shared proof-plugin
 >   behavior (spec-dir resolution, naming, fallback, write-scoped overwrite, the 7 fields,
->   status, no-op, discovery, stderr warning, purge) from proof_common.
-
-## What it does
-
-Registers a pytest plugin that reads `@pytest.mark.proof` decorators from test functions as
-they run and writes one proof file per feature/tier. Only the pytest-specific marker syntax,
-arg handling, path resolution, and hook wiring live here; everything else is proof_common.
+>   status, no-op, discovery, stderr warning, purge) from proof_common. The pytest marker
+>   syntax, its argument handling, path resolution and hook wiring are all this spec adds.
 
 ## Rules
 

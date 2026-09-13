@@ -4,13 +4,9 @@
 > Scope: scripts/proof/sql_purlin.sh
 > Stack: sql/sqlite3 (shell driver + inline python3)
 > Description: The SQL proof plugin. Runs `-- @purlin`-marked test blocks against sqlite3 and
->   maps PASS/FAIL output to status. Inherits all shared proof-plugin behavior from proof_common.
-
-## What it does
-
-A bash driver that parses `-- @purlin` comment markers from a `.sql` file, runs each marked
-test block through sqlite3, and maps the block's output to pass/fail before writing proof
-files. Only the SQL comment marker syntax and the PASS/FAIL output convention live here.
+>   maps PASS/FAIL output to status. Each marked block runs through sqlite3 as its own unit, so
+>   the SQL comment marker syntax and the PASS/FAIL output convention are all this spec adds; it
+>   inherits every other proof-plugin behavior from proof_common.
 
 ## Rules
 

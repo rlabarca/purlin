@@ -4,13 +4,9 @@
 > Scope: scripts/proof/jest_purlin.js
 > Stack: node/jest, custom reporter (onTestResult + onRunComplete hooks)
 > Description: The Jest proof reporter. Parses `[proof:...]` markers from test titles and
->   emits standardized proof JSON. Inherits all shared proof-plugin behavior from proof_common.
-
-## What it does
-
-A Jest reporter that scans each test title for a `[proof:...]` marker, maps the Jest result
-status to pass/fail, and writes one proof file per feature/tier. Only the Jest-specific marker
-syntax, title handling, path resolution, and status mapping live here.
+>   emits standardized proof JSON, one file per feature and tier. The Jest marker syntax,
+>   title handling, path resolution and result-status mapping are all this spec adds; it
+>   inherits every other proof-plugin behavior from proof_common.
 
 ## Rules
 

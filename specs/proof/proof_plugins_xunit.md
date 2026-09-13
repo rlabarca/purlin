@@ -8,28 +8,14 @@
 >   maps the test outcome to pass/fail, and emits standardized proof JSON. Inherits all
 >   shared proof-plugin behavior (spec-dir resolution, naming, fallback, write-scoped
 >   overwrite, the 7 fields, status, no-op, discovery, stderr warning, purge) from proof_common.
-
-## What it does
-
-Collects Purlin proofs from .NET test projects. The marker is a test trait rather than a
-parsed string, because `TestCase.Traits` is the metadata channel the .NET test platform hands
-every logger. The logger reads exactly one trait name, `PurlinProof`, compared ordinally: a
-trait called `Category`, `Property`, `TestProperty`, or `purlinproof` in any other casing is
-not a marker and is ignored. Only xUnit is supported and tested; NUnit and MSTest are not
-claimed. A custom test logger registered via
-`dotnet test --logger purlin` receives each result during the run and writes proof files on
-completion, mirroring the reporter model of the pytest/Jest/Vitest plugins (collect in-process,
-no second XML-parsing step).
-
-**Setup (consumer projects):** the .NET test platform only discovers loggers from assemblies
-whose filename ends with `TestLogger.dll`, so compile `xunit_purlin.cs` into an assembly named
-`Purlin.TestLogger` (e.g. `<AssemblyName>Purlin.TestLogger</AssemblyName>`) and reference that
-project from your test project so the DLL lands in the test output directory. Run with:
-
-    dotnet test --logger purlin -- RunConfiguration.CollectSourceInformation=true
-
-The `CollectSourceInformation=true` switch is what populates `TestCase.CodeFilePath`, which
-RULE-5 records as `test_file`; without it the source path is unavailable.
+>   The marker is a trait rather than a parsed string because `TestCase.Traits` is the metadata
+>   channel the .NET test platform hands every logger; the logger reads exactly one trait name,
+>   `PurlinProof`, compared ordinally, so `Category`, `Property`, `TestProperty` or the same
+>   word in another casing is not a marker. Collecting in process during the run, rather than
+>   parsing a `.trx` afterwards, is what makes it the same reporter model as the pytest, Jest
+>   and Vitest plugins. Wiring the `Purlin.TestLogger` assembly and the
+>   `CollectSourceInformation=true` switch that populates `test_file` is documented once, in
+>   `references/formats/proofs_format.md`.
 
 ## Rules
 

@@ -4,14 +4,10 @@
 > Scope: scripts/proof/shell_purlin.sh
 > Stack: shell/bash, inline python3 for JSON (no jq dependency)
 > Description: The shell proof harness. Sourced by bash test scripts; accumulates entries in
->   memory and writes them on finish. Inherits all shared proof-plugin behavior from proof_common.
-
-## What it does
-
-Provides `purlin_proof` and `purlin_proof_finish` shell functions. Test scripts source the
-harness, record results as they run, and call finish once to flush proof files. Only the
-shell-specific arg order, tier source, caller-file resolution, and accumulate/finish lifecycle
-live here.
+>   memory and writes them on finish. It exposes `purlin_proof` and `purlin_proof_finish`, so the
+>   shell argument order, the tier source, caller-file resolution and the accumulate-then-finish
+>   lifecycle are all this spec adds; it inherits every other proof-plugin behavior from
+>   proof_common.
 
 ## Rules
 

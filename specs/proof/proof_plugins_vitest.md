@@ -4,14 +4,10 @@
 > Scope: scripts/proof/vitest_purlin.ts
 > Stack: typescript/vitest, custom reporter (onFinished(files) tree walk, Vitest 2.x–4.x)
 > Description: The Vitest TypeScript reporter. Reuses the Jest marker syntax in test titles and
->   collects proofs by walking the onFinished(files) task tree. Inherits all shared
->   proof-plugin behavior from proof_common.
-
-## What it does
-
-A Vitest reporter that, on run completion, recursively walks the file/suite/test task tree and
-reads the same `[proof:...]` marker the Jest reporter uses from each test's name. Only the
-shared-with-Jest marker syntax and the Vitest-specific tree-walk/state-mapping live here.
+>   collects proofs by walking the onFinished(files) file/suite/test task tree recursively on
+>   run completion. The marker syntax it shares with Jest and that Vitest-specific tree walk and
+>   state mapping are all this spec adds; it inherits every other proof-plugin behavior from
+>   proof_common.
 
 ## Rules
 

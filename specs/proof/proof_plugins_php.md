@@ -4,13 +4,10 @@
 > Scope: scripts/proof/phpunit_purlin.php
 > Stack: php (standalone runner, docblock annotations)
 > Description: The PHP proof runner. Runs each `@purlin`-annotated function individually and
->   maps thrown exceptions to fail. Inherits all shared proof-plugin behavior from proof_common.
-
-## What it does
-
-A standalone PHP script that parses `@purlin` docblock annotations from a test file, executes
-each annotated function, and maps the outcome to pass/fail before writing proof files. Only the
-PHP docblock marker syntax and the per-function exception-to-status mapping live here.
+>   maps thrown exceptions to fail. It parses the annotations out of a test file itself rather
+>   than hooking a runner, so the PHP docblock marker syntax and the per-function
+>   exception-to-status mapping are all this spec adds; it inherits every other proof-plugin
+>   behavior from proof_common.
 
 ## Rules
 
