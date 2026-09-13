@@ -200,7 +200,60 @@ Already initialized? Use `purlin:init --force` to reconfigure, or change individ
 | See installed plugins | `purlin:init --list-plugins` |
 | Set external audit criteria | `purlin:init --sync-audit-criteria` |
 | Change audit LLM (experimental) | `purlin:init --audit-llm` |
+| Write the CI workflow | `purlin:init --ci` |
 | Re-run full setup | `purlin:init --force` |
+
+## Continuous integration
+
+```
+purlin:init --ci
+```
+
+Purlin asks before it writes anything, then writes one file:
+`.github/workflows/purlin-verify-gate.yml`. It is the same verification gate
+this plugin runs on itself, in the form a project that clones the tooling
+needs. A file already at that path is kept and its bytes are left alone.
+
+What the job does, on a push or pull request that touches `specs/**`,
+`.purlin/config.json` or `.github/workflows/**`: it checks out the full
+history, clones Purlin at a pinned ref, and runs
+`scripts/ci/verify_gate.py --check`, which exits 1 when a feature is not
+VERIFIED or is awaiting a runner. Those three trigger paths are what a project
+can change; the plugin's own workflow also watches its `scripts/`, which no
+project that installs Purlin has.
+
+The trigger and the ref, as the written file carries them:
+
+```yaml
+on:
+  push:
+    paths:
+      - 'specs/**'
+      - '.purlin/config.json'
+      - '.github/workflows/**'
+
+jobs:
+  verify-gate:
+    runs-on: ubuntu-latest
+    env:
+      PURLIN_REF: v<VERSION>
+```
+
+`PURLIN_REF` is stamped with the version that was installed when the file was
+written, and the clone step reads it. Change that one line to move the job to
+another release; nothing else in the file names a version.
+
+Two things the file does not do. It does not run your tests: the gate reads
+the proof files the run leaves behind, so the job that regenerates them is
+yours to write, and the recipe for the two of them in one job is in
+[the testing workflow guide](testing-workflow-guide.md#ci-pipeline). And it is
+a check, not a gate, until branch protection marks it required; which layer
+that is, and what each layer can and cannot stop, is in
+[references/hard_gates.md](../references/hard_gates.md).
+
+For the platform side of CI, the runner workflow that proves an `@on(...)`
+proof on another operating system and commits the scoped proof file back, see
+[references/remote_verification.md](../references/remote_verification.md).
 
 ## Scaling
 

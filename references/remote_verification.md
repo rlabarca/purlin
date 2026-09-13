@@ -333,6 +333,13 @@ likely failed because of a workflow file issue", and creates no job, so there is
 This repository's own workflows are the exception: they set `PURLIN_PLUGIN_ROOT: .` and drop the
 install step, because this repository is the plugin.
 
+The pin itself is the opposite case and belongs in the job `env:` block. The workflow
+`purlin:init --ci` writes carries `PURLIN_REF: v<VERSION>` there, stamped with the version that
+was installed, and its clone step reads `--branch "$PURLIN_REF"`. A literal is legal at job level
+where `${{ runner.temp }}` is not, so the ref every step clones moves in one line rather than in
+each workflow that names it. The template above pins the tag on the clone directly, which is the
+same pin written the shorter way for a file a project pastes once.
+
 **The `migrate.py --check` preflight.** A project whose `.purlin/plugins/` copies predate platform
 scoping writes agnostic files from a platform runner, which satisfies nothing while looking green.
 The preflight fails the job instead, naming `purlin:init --update`.

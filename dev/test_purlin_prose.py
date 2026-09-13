@@ -166,6 +166,28 @@ class TestCIExamplesAreRunnable:
         assert 'docs/examples/figma-web-app.md' in checked, (
             "the worked example still has no runnable CI block")
 
+        # The trigger filters, over every yaml block and not only the gate
+        # ones. A consumer checkout has no Purlin `scripts/`, so a filter
+        # naming one is a trigger that can never fire.
+        filtered = []
+        for rel in _docs_markdown():
+            for block in _yaml_blocks(_read(rel)):
+                for group in re.findall(
+                        r"\n\s*paths(?:-ignore)?:\n((?:\s+- +'?[^\n]*\n)+)",
+                        block):
+                    for line in group.strip('\n').split('\n'):
+                        entry = line.strip()[2:].strip().strip("'\"")
+                        filtered.append((rel, entry))
+        assert filtered, (
+            "no yaml block under docs/ carries a trigger paths filter, so "
+            "this half of the rule is checked against nothing")
+        offenders = [(rel, entry) for rel, entry in filtered
+                     if entry.startswith('scripts/')]
+        assert not offenders, (
+            "a consumer checkout holds no Purlin scripts/, so these trigger "
+            "filters never fire: " + '; '.join(
+                f'{rel}: {entry}' for rel, entry in offenders))
+
 
 class TestDiagramsAndImages:
     """RULE-6 and RULE-7 - every rendered artifact has a source."""
