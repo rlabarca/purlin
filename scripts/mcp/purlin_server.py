@@ -251,7 +251,15 @@ def _spec_index(project_root):
         for root, dirs, files in os.walk(spec_dir, followlinks=True):
             walked.append(root)
             dirs[:] = [d for d in dirs if not d.startswith('.')]
-            for name in files:
+            # Directory names are matched too, because `specs/**/*.md` matched
+            # a path whether it was a file or a directory and the readers were
+            # written against that result set. A directory named
+            # `<feature>.md` is a broken spec tree, and `_scan_specs` opening
+            # it is how the developer hears about it: indexing `files` alone
+            # dropped that path silently, and a `generate_digest` that used to
+            # raise through the pre-commit hook's stderr instead returned an
+            # empty scan (`pre_commit_hook` RULE-4, RULE-6).
+            for name in files + dirs:
                 if name.startswith('.'):
                     continue
                 path = os.path.join(root, name)

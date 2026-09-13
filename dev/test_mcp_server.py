@@ -4544,6 +4544,20 @@ class TestOneWalkOfSpecs:
             purlin_server.sync_status(self.project_root), 'login')
         assert stale_nested == stale_at_root, (stale_nested, stale_at_root)
 
+        # The index holds the paths the glob held, directories included.
+        # `_scan_specs` opens every spec path with no guard, so a directory
+        # named `<feature>.md` is how a broken spec tree reaches the developer;
+        # an index of the walk's files alone drops it and the scan comes back
+        # a path short with nothing said.
+        os.makedirs(os.path.join(self.project_root, 'specs', 'auth', 'ghost.md'))
+        indexed = sorted(purlin_server._spec_index(self.project_root)['spec_files'])
+        globbed = sorted(real_glob(
+            os.path.join(self.project_root, 'specs', '**', '*.md'),
+            recursive=True))
+        assert indexed == globbed, (
+            f"the index and `specs/**/*.md` disagree: {indexed} vs {globbed}")
+        assert any(p.endswith('ghost.md') for p in indexed), indexed
+
 
 class TestVerdictComputedOnce:
     """sync_status RULE-54: a feature's verdict is computed once per report
