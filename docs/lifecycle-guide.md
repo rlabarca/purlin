@@ -146,9 +146,9 @@ that the tests are good.
 ### Just do this
 
 ```
-/purlin:drift pm        ← see what changed and what you need to do
+purlin:drift pm        ← see what changed and what you need to do
 handle PM items          ← Claude updates all affected specs, you review each one
-/purlin:status           ← confirm coverage looks right
+purlin:status           ← confirm coverage looks right
 ```
 
 That's the daily loop. Everything below is detail for when you want more control.
@@ -165,13 +165,13 @@ the PM owns: are the proofs we are asking for provable at all?
 | What you want | What you type |
 |---------------|---------------|
 | Grade the proof descriptions you wrote | `purlin:audit <feature> --design` |
-| See what changed | `/purlin:drift pm` |
+| See what changed | `purlin:drift pm` |
 | Handle all PM work | `handle PM items` |
-| See rule coverage | `/purlin:status` |
+| See rule coverage | `purlin:status` |
 | Write a new spec | `write a spec for notifications` |
 | Add a rule to a spec | `add a rule to login: passwords must expire after 90 days` |
 | Update a spec after code changed | `update the spec for login to reflect the recent changes` |
-| Stamp a manual proof | `/purlin:verify --manual login PROOF-3` |
+| Stamp a manual proof | `purlin:verify --manual login PROOF-3` |
 | Open the dashboard | Open `purlin-report.html` in a browser |
 
 ### Turning ideas into specs
@@ -233,7 +233,7 @@ Engineers change code. The PM needs to know: do the specs still match? Here's th
 
 **Step 1: See what changed**
 ```
-/purlin:drift pm
+purlin:drift pm
 ```
 
 The drift report shows NEEDS ATTENTION items and ends with ACTION ITEMS, a complete list of everything the PM needs to do:
@@ -286,7 +286,7 @@ The PM reviews and approves. Existing rules stay intact. New rules are added at 
 
 **Step 3: Check coverage**
 ```
-/purlin:status
+purlin:status
 ```
 
 After a spec update, the new rules show as NO PROOF, which is correct. The engineer writes tests for them.
@@ -312,8 +312,8 @@ After a spec update, the new rules show as NO PROOF, which is correct. The engin
 
 - Write code and tests (just ask Claude)
 - Run tests (`test login`)
-- Verify features (`/purlin:verify`)
-- Create anchors from external sources (`/purlin:anchor sync`)
+- Verify features (`purlin:verify`)
+- Create anchors from external sources (`purlin:anchor sync`)
 
 ---
 
@@ -322,9 +322,9 @@ After a spec update, the new rules show as NO PROOF, which is correct. The engin
 ### Just do this
 
 ```
-/purlin:drift eng        ← see what needs work
+purlin:drift eng        ← see what needs work
 handle engineer items    ← Claude builds code + tests for each gap, iterates until VERIFIED
-/purlin:verify           ← lock it in with a verification receipt
+purlin:verify           ← lock it in with a verification receipt
 ```
 
 That's it. Build, test, verify. Everything below is detail for when you want more control.
@@ -339,15 +339,15 @@ That's it. Build, test, verify. Everything below is detail for when you want mor
 
 | What you want | What you type |
 |---------------|---------------|
-| See what needs work | `/purlin:drift eng` |
+| See what needs work | `purlin:drift eng` |
 | Build a feature | `build login` |
 | Test a feature | `test login` |
 | Handle all engineer work | `handle engineer items` |
 | Work through all gaps | `work through the engineer action items` |
-| See coverage | `/purlin:status` |
+| See coverage | `purlin:status` |
 | Check proof quality (both gauges) | `purlin:audit login` |
 | Check proofs before building | `purlin:audit login --design` |
-| Ship it | `/purlin:verify` |
+| Ship it | `purlin:verify` |
 | Open the dashboard | Open `purlin-report.html` in a browser |
 
 ### The build/test loop
@@ -382,9 +382,9 @@ flatteringly high.
 ### Engineers can also
 
 - Write and edit specs (`write a spec for notifications`)
-- Stamp manual proofs (`/purlin:verify --manual login PROOF-3`)
-- Create anchors (`/purlin:anchor sync`)
-- Review drift reports for any role (`/purlin:drift pm`)
+- Stamp manual proofs (`purlin:verify --manual login PROOF-3`)
+- Create anchors (`purlin:anchor sync`)
+- Review drift reports for any role (`purlin:drift pm`)
 
 ---
 
@@ -393,9 +393,9 @@ flatteringly high.
 ### Just do this
 
 ```
-/purlin:drift qa         ← see what needs testing or re-verification
+purlin:drift qa         ← see what needs testing or re-verification
 handle QA items          ← Claude writes missing tests, you stamp manual proofs
-/purlin:verify           ← issue receipts for PASSING features (all rules proved → VERIFIED)
+purlin:verify           ← issue receipts for PASSING features (all rules proved → VERIFIED)
 ```
 
 Drift, verify, ship. Everything below is detail for when you want more control.
@@ -411,12 +411,12 @@ Drift, verify, ship. Everything below is detail for when you want more control.
 | What you want | What you type |
 |---------------|---------------|
 | Check proof quality before issuing receipts | `purlin:audit` |
-| See what needs testing | `/purlin:drift qa` |
+| See what needs testing | `purlin:drift qa` |
 | Handle all QA work | `handle QA items` |
-| See coverage gaps | `/purlin:status` |
-| Run all tests | `/purlin:test` |
-| Verify and ship | `/purlin:verify` |
-| Stamp a manual proof | `/purlin:verify --manual checkout PROOF-4` |
+| See coverage gaps | `purlin:status` |
+| Run all tests | `purlin:test` |
+| Verify and ship | `purlin:verify` |
+| Stamp a manual proof | `purlin:verify --manual checkout PROOF-4` |
 | Write a test for an unproved rule | `write a test for login RULE-3` |
 | Open the dashboard | Open `purlin-report.html` in a browser |
 
@@ -426,7 +426,7 @@ Some rules can't be automated ("brand voice must be playful", "checkout flow is 
 
 1. Read the proof description in the spec: `PROOF-3 (RULE-3): Review error copy against brand guide @manual`
 2. Perform the check
-3. Stamp it: `/purlin:verify --manual login PROOF-3`
+3. Stamp it: `purlin:verify --manual login PROOF-3`
 4. The stamp auto-captures your email, today's date, and the current commit SHA
 5. If code changes later, `purlin:status` flags the stamp as stale
 
@@ -453,7 +453,7 @@ The handoff pattern is typical but not required. A solo developer does all three
 write a spec for login with rules for auth, rate limiting, and session timeout
 build it
 test it
-/purlin:verify
+purlin:verify
 ```
 
 Four messages. Spec → code → tests → receipt.

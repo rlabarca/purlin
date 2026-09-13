@@ -133,7 +133,7 @@ for FRAMEWORK in "${FRAMEWORK_LIST[@]}"; do
     echo ""
     echo "1. Reproduce it: run the $FRAMEWORK suite by hand and read the error."
     echo "2. Re-run the proofs once it is green:"
-    echo "     /purlin:test"
+    echo "     purlin:test"
     exit 1
   fi
 done

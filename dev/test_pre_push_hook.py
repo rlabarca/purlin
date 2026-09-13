@@ -817,8 +817,8 @@ class TestRule7OutputFormat:
 
     @pytest.mark.proof("pre_push_hook", "PROOF-13", "RULE-7", tier="integration")
     def test_recovery_message_lists_feature_specific_commands(self, tmp_path):
-        """The recovery message must include /purlin:test <feature_name>,
-        /purlin:status and /purlin:build so the developer knows exactly which
+        """The recovery message must include purlin:test <feature_name>,
+        purlin:status and purlin:build so the developer knows exactly which
         commands to run."""
         tmpdir = str(tmp_path)
         _create_test_project(tmpdir, num_rules=2)
@@ -830,9 +830,9 @@ class TestRule7OutputFormat:
 
         _, output = _run_hook(tmpdir)
 
-        assert "/purlin:test test_feature" in output, f"{output}"
-        assert "/purlin:status" in output, f"{output}"
-        assert "/purlin:build" in output, f"{output}"
+        assert "purlin:test test_feature" in output, f"{output}"
+        assert "purlin:status" in output, f"{output}"
+        assert "purlin:build" in output, f"{output}"
 
 
 # ---------------------------------------------------------------------------
@@ -892,7 +892,7 @@ class TestRule8StrictMode:
     @pytest.mark.proof("pre_push_hook", "PROOF-14", "RULE-8", tier="integration")
     def test_strict_mode_recovery_includes_verify_command(self, tmp_path):
         """When strict mode blocks a push the recovery steps must include
-        RECOVERY STEPS, /purlin:verify and /purlin:test so the developer knows
+        RECOVERY STEPS, purlin:verify and purlin:test so the developer knows
         how to reach VERIFIED."""
         tmpdir = str(tmp_path)
         _create_test_project(tmpdir, num_rules=3)
@@ -907,8 +907,8 @@ class TestRule8StrictMode:
 
         assert exit_code == 1, f"Expected exit 1 in strict mode, got {exit_code}\n{output}"
         assert "RECOVERY STEPS" in output, f"{output}"
-        assert "/purlin:verify" in output, f"{output}"
-        assert "/purlin:test" in output, f"{output}"
+        assert "purlin:verify" in output, f"{output}"
+        assert "purlin:test" in output, f"{output}"
 
     @pytest.mark.proof("pre_push_hook", "PROOF-27", "RULE-8", tier="integration")
     def test_awaiting_runner_is_one_advisory_line_and_never_blocks(self, tmp_path):
@@ -1298,7 +1298,7 @@ class TestRule16WholeNameMatching:
     @pytest.mark.proof("pre_push_hook", "PROOF-26", "RULE-16", tier="integration")
     def test_feature_whose_name_contains_another_still_listed(self, tmp_path):
         """Two failing features named auth_system and system: the recovery
-        steps must list both /purlin:test auth_system and /purlin:test system.
+        steps must list both purlin:test auth_system and purlin:test system.
         Matching by substring drops the second, because its whole name occurs
         inside the first."""
         tmpdir = str(tmp_path)
@@ -1315,8 +1315,8 @@ class TestRule16WholeNameMatching:
         exit_code, output = _run_hook(tmpdir)
 
         assert exit_code == 1, f"{exit_code}\n{output}"
-        assert "/purlin:test auth_system" in output, f"{output}"
-        assert "/purlin:test system\n" in output, (
+        assert "purlin:test auth_system" in output, f"{output}"
+        assert "purlin:test system\n" in output, (
             f"'system' was dropped by a substring match:\n{output}")
 
 

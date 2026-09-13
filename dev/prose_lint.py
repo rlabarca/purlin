@@ -176,7 +176,9 @@ def _scope_files(scope, files):
 
 def repo_files():
     """Every git-tracked file the lints may be pointed at."""
-    return _prose_files() + _tracked('.claude-plugin') + ['CLAUDE.md']
+    specs = [rel for rel in _tracked('specs') if rel.endswith('.md')]
+    return (_prose_files() + _tracked('.claude-plugin') + ['CLAUDE.md']
+            + specs + list(SCRIPT_STRING_FILES))
 
 
 class Offender:
@@ -244,6 +246,29 @@ ANCHOR_HOME_SCOPE = ('docs/**', 'references/**', 'skills/**')
 #: used. `sync_status` reads anchors from `specs/_anchors/` only.
 ANCHOR_HOME_RE = re.compile(r'specs/schema/|`schema/`')
 
+#: The `slash-prefix` row's file set. `specs/**.md` is here because a spec
+#: asserts the literal a hook prints, and the two scripts are named one by one
+#: because the lints read markdown prose and have no scanner for the strings a
+#: program prints; naming the two files that print skill names is narrower and
+#: more honest than pretending `scripts/**` is prose.
+SLASH_PREFIX_SCOPE = ('docs/**', 'references/**', 'skills/**', 'agents/**',
+                      'specs/**.md',
+                      'scripts/hooks/pre_push_gate.py',
+                      'scripts/hooks/pre-push.sh')
+
+#: The skill invocation as Claude Code prints it and as every other surface
+#: writes it: `purlin:<skill>`, with no leading slash.
+SLASH_PREFIX_RE = re.compile(r'/purlin:')
+
+#: The one section that must still carry the banned spelling: the rule that
+#: states it. Written as an allowlist pair rather than a scope exclusion so
+#: the lint reports it the day the rule stops quoting the literal.
+SLASH_PREFIX_ALLOWLIST = (('specs/instructions/purlin_prose.md', 'Rules'),)
+
+#: Files outside the prose trees that the tables above point a row at.
+SCRIPT_STRING_FILES = ('scripts/hooks/pre_push_gate.py',
+                       'scripts/hooks/pre-push.sh')
+
 REGULATED = 'docs/regulated-environments.md'
 
 #: The `retired-format` row's file set. Narrower than `PROSE_SCOPE` on purpose:
@@ -291,6 +316,12 @@ BANNED = (
      'a spec and an anchor carry two sections, `## Rules` and `## Proof`, so '
      'the name is the 2-section format; `## What it does` is retired and what '
      'a feature does belongs on the `> Description:` continuation lines'),
+    ('slash-prefix', 'line', SLASH_PREFIX_RE, SLASH_PREFIX_SCOPE, 80,
+     SLASH_PREFIX_ALLOWLIST,
+     'a skill is invoked as `purlin:<name>`; the leading slash is a Claude '
+     'Code slash-command spelling that nothing else in this repository uses, '
+     'and a reader who copies it from one page and not another cannot tell '
+     'which one is right'),
     ('anchor-home', 'line', ANCHOR_HOME_RE, ANCHOR_HOME_SCOPE, 35, (),
      'an anchor spec lives at `specs/_anchors/<name>.md`; `sync_status` reads '
      'that directory and no other, so a `schema/` category routes an anchor '

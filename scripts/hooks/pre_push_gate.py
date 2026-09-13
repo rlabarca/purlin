@@ -316,14 +316,14 @@ def _report_failing(failing, out):
     print('1. Re-run tests to re-emit proofs for each failing feature:',
           file=out)
     for name in _failing_names(failing):
-        print(f"     /purlin:test {name}", file=out)
+        print(f"     purlin:test {name}", file=out)
     print('', file=out)
     print('2. Confirm all rules pass:', file=out)
-    print('     /purlin:status', file=out)
+    print('     purlin:status', file=out)
     print('', file=out)
     print('3. If any rules still show FAIL, the test is genuinely broken.',
           file=out)
-    print('   Fix with /purlin:build <feature>, then repeat from step 1.',
+    print('   Fix with purlin:build <feature>, then repeat from step 1.',
           file=out)
     print('', file=out)
     print('4. Once status shows PASSING (no FAILs), retry the push.', file=out)
@@ -348,18 +348,18 @@ def _report_strict(not_verified, out):
           file=out)
     print('', file=out)
     print('1. Run tests for features that are not fully proved:', file=out)
-    print('     /purlin:test <feature>', file=out)
+    print('     purlin:test <feature>', file=out)
     print('', file=out)
     print('2. Check status to confirm all rules pass:', file=out)
-    print('     /purlin:status', file=out)
+    print('     purlin:status', file=out)
     print('', file=out)
-    print('3. If any rules show FAIL, fix with /purlin:build <feature>,',
+    print('3. If any rules show FAIL, fix with purlin:build <feature>,',
           file=out)
-    print('   then re-run /purlin:test <feature>.', file=out)
+    print('   then re-run purlin:test <feature>.', file=out)
     print('', file=out)
     print('4. Once all features show PASSING, issue verification receipts:',
           file=out)
-    print('     /purlin:verify', file=out)
+    print('     purlin:verify', file=out)
     print('', file=out)
     print('5. Retry the push.', file=out)
     print('', file=out)
