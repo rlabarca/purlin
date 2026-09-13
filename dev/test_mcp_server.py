@@ -1,5 +1,6 @@
 """Tests for MCP server specs: mcp_transport (8 rules), sync_status (15 rules), drift (11 rules), purlin_config (1 rule)."""
 
+import builtins
 import glob
 import hashlib
 import inspect
@@ -2938,6 +2939,10 @@ class TestPlatformRegistry:
             monkeypatch.setattr(purlin_server.platform, 'freedesktop_os_release',
                                 os_release, raising=False)
             monkeypatch.setattr(purlin_server.platform, 'machine', lambda: machine)
+            # The four detected fields are memoized for one report run
+            # (RULE-71); a test that changes the machine under the process
+            # drops that memo the way the start of a build does.
+            purlin_server._detect_host_hardware.cache_clear()
             return purlin_server._detect_host_platform()
 
         monkeypatch.delenv('PURLIN_PLATFORM', raising=False)
@@ -4641,3 +4646,104 @@ class TestVerdictComputedOnce:
         assert {self._row(report, n)[1] for n in self.NAMES} == {
             'PASSING', 'PARTIAL', 'FAILING', 'UNTESTED'}, report
         assert 'RULE-1: FAIL (own)' in _feature_block(report, 'delta'), report
+
+
+class TestReadOncePerRun:
+    """sync_status RULE-71: the run marker, the host description and both
+    quality caches are read once per report run."""
+
+    NAMES = ('alpha', 'bravo', 'charlie', 'delta', 'echo')
+
+    def setup_method(self):
+        self.project_root = os.path.realpath(tempfile.mkdtemp())
+        os.makedirs(os.path.join(self.project_root, '.purlin', 'runtime'))
+        os.makedirs(os.path.join(self.project_root, '.purlin', 'cache'))
+        self._write('.purlin/config.json', json.dumps(
+            {'version': '0.9.0', 'test_framework': 'auto', 'spec_dir': 'specs',
+             'report': False}))
+        self._write('.purlin/runtime/test_run.json', json.dumps({
+            'at': '2026-09-12T00:00:00+00:00', 'commit': '0' * 40,
+            'sweep': 'dev/run_tests.sh', 'suites': ['All Pytest Tests'],
+            'test_files': ['dev/t.py'], 'passed': 5, 'failed': 0,
+            'skipped': 0, 'ok': True,
+        }))
+        for cache_name, level in (('audit_cache.json', 'STRONG'),
+                                  ('design_cache.json', 'PROVABLE')):
+            self._write(f'.purlin/cache/{cache_name}', json.dumps({
+                f'{name}:PROOF-1': {
+                    'feature': name, 'proof_id': 'PROOF-1', 'rule_id': 'RULE-1',
+                    'assessment': level, 'criterion': 'Tests real behavior',
+                    'fix': '', 'priority': 'LOW',
+                    'cached_at': '2026-09-11T00:00:00+00:00',
+                } for name in self.NAMES
+            }))
+        for name in self.NAMES:
+            self._write(f'specs/{name}.md',
+                        f'# Feature: {name}\n\n'
+                        f'## Rules\n- RULE-1: {name} answers\n\n'
+                        f'## Proof\n- PROOF-1 (RULE-1): call {name}; verify the '
+                        f'answer comes back @unit\n')
+            self._write(f'specs/{name}.proofs-unit.json', json.dumps({
+                'tier': 'unit',
+                'proofs': [{'feature': name, 'id': 'PROOF-1', 'rule': 'RULE-1',
+                            'test_file': 'dev/t.py', 'test_name': f'test_{name}',
+                            'status': 'pass', 'tier': 'unit'}],
+            }))
+
+    def teardown_method(self):
+        shutil.rmtree(self.project_root, ignore_errors=True)
+
+    def _write(self, rel, text):
+        path = os.path.join(self.project_root, rel)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w') as f:
+            f.write(text)
+
+    @pytest.mark.proof("sync_status", "PROOF-111", "RULE-71", tier="integration")
+    def test_one_read_each_and_the_platform_claim_stays_live(self, monkeypatch):
+        monkeypatch.delenv('PURLIN_PLATFORM', raising=False)
+
+        opens = {}
+        scans = {'n': 0}
+        real_open = builtins.open
+        real_scan = purlin_server._scan_specs
+
+        def spy_open(file, *rest, **kwargs):
+            try:
+                opens[os.path.basename(str(file))] = (
+                    opens.get(os.path.basename(str(file)), 0) + 1)
+            except Exception:
+                pass
+            return real_open(file, *rest, **kwargs)
+
+        def spy_scan(*args, **kwargs):
+            scans['n'] += 1
+            return real_scan(*args, **kwargs)
+
+        purlin_server._scan_specs = spy_scan
+        builtins.open = spy_open
+        try:
+            report = purlin_server.sync_status(self.project_root)
+        finally:
+            builtins.open = real_open
+            purlin_server._scan_specs = real_scan
+
+        assert all(f'{n}: PASSING' in report for n in self.NAMES), report
+        for basename in ('test_run.json', 'audit_cache.json',
+                         'design_cache.json'):
+            assert opens.get(basename) == 1, (
+                f"{basename} was opened {opens.get(basename)} times for "
+                f"{len(self.NAMES)} features")
+        # The pending-migrations advisory reads what the report already holds.
+        assert scans['n'] == 1, (
+            f"the spec tree was scanned {scans['n']} times in one report")
+
+        # The machine is detected once and every feature reads that one answer.
+        info = purlin_server._detect_host_hardware.cache_info()
+        assert info.misses == 1 and info.hits >= len(self.NAMES), info
+
+        # The one field a caller can change inside a process is never cached.
+        assert purlin_server._detect_host_platform()['id'] is None
+        monkeypatch.setenv('PURLIN_PLATFORM', 'windows-2022')
+        assert purlin_server._detect_host_platform()['id'] == 'windows-2022'
+        assert purlin_server._detect_host_hardware.cache_info().misses == 1

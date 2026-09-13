@@ -172,6 +172,22 @@ _VERDICT_CACHE = {}
 _SPEC_INDEX_CACHE = {}
 
 
+def _file_stamp(path):
+    """`(mtime_ns, size)` for a file, or None when there is no readable file.
+
+    What lets a per-run read of a file be reused without a caller having to
+    declare where its run begins: a stat is cheap where the read is not, and a
+    file that has not moved has not changed. It answers None for an absent file
+    rather than raising, so "there is no cache yet" and "the cache appeared" are
+    two different stamps and neither is an error.
+    """
+    try:
+        st = os.stat(path)
+    except OSError:
+        return None
+    return (st.st_mtime_ns, st.st_size)
+
+
 def _spec_tree_stamp(dirs):
     """`((dir, mtime_ns), ...)` for the directories one walk of `specs/` saw.
 
@@ -1010,6 +1026,39 @@ def _head_sha(project_root):
     return 'unknown'
 
 
+# The parsed contents of each quality cache, once per report run. Both are
+# read by the roll-up and again by the per-feature grouping; on this repository
+# they are 532 KB of JSON.
+_QUALITY_CACHE = {}
+
+
+def _read_quality_cache(project_root, cache_name):
+    """The parsed `.purlin/cache/<cache_name>`, or None, read once per run.
+
+    None covers every reason a reader must fall back to "no cache": the file is
+    absent, it is not JSON, it is not an object, or it is empty. Three readers
+    ask the same question of the same file within one build and none of them
+    needs to know which of them asked first.
+    """
+    key = (os.path.abspath(project_root), cache_name)
+    cache_path = os.path.join(project_root, '.purlin', 'cache', cache_name)
+    stamp = _file_stamp(cache_path)
+    held = _QUALITY_CACHE.get(key)
+    if held is not None and held[1] == stamp:
+        return held[0]
+    cache = None
+    if stamp is not None:
+        try:
+            with open(cache_path) as f:
+                loaded = json.load(f)
+        except (json.JSONDecodeError, IOError, OSError):
+            loaded = None
+        if isinstance(loaded, dict) and loaded:
+            cache = loaded
+    _QUALITY_CACHE[key] = (cache, stamp)
+    return cache
+
+
 def _read_audit_summary(project_root, features=None):
     """Read audit cache and compute project-wide integrity summary.
 
@@ -1023,15 +1072,8 @@ def _read_audit_summary(project_root, features=None):
     backed by; with none supplied no stamp is current and every MANUAL grade is
     invalidated, which is the safe direction.
     """
-    cache_path = os.path.join(project_root, '.purlin', 'cache', 'audit_cache.json')
-    if not os.path.isfile(cache_path):
-        return None
-    try:
-        with open(cache_path) as f:
-            cache = json.load(f)
-    except (json.JSONDecodeError, IOError, OSError):
-        return None
-    if not isinstance(cache, dict) or not cache:
+    cache = _read_quality_cache(project_root, 'audit_cache.json')
+    if cache is None:
         return None
 
     # Deduplicate and drop the entries whose inputs have moved since they were
@@ -1102,15 +1144,8 @@ def _read_design_summary(project_root, features=None):
     Design grades proof DESCRIPTIONS, so this is meaningful with no tests in the
     project at all — which is the point. Returns None if no design cache exists.
     """
-    cache_path = os.path.join(project_root, '.purlin', 'cache', 'design_cache.json')
-    if not os.path.isfile(cache_path):
-        return None
-    try:
-        with open(cache_path) as f:
-            cache = json.load(f)
-    except (json.JSONDecodeError, IOError, OSError):
-        return None
-    if not isinstance(cache, dict) or not cache:
+    cache = _read_quality_cache(project_root, 'design_cache.json')
+    if cache is None:
         return None
 
     provable = loose = unprovable = structural = 0
@@ -1534,6 +1569,9 @@ def _clear_run_caches():
     _SCOPE_COUNT_CACHE.clear()
     _SPEC_INDEX_CACHE.clear()
     _VERDICT_CACHE.clear()
+    _QUALITY_CACHE.clear()
+    _RUN_MARKER_CACHE.clear()
+    _detect_host_hardware.cache_clear()
 
 
 def _platform_provenance(project_root, spec_path, feature, tier, platform_id):
@@ -1611,20 +1649,35 @@ def _file_provenance(project_root, rel):
 # entries committed; these helpers are what let a surface say so.
 
 
+# The run marker, once per report run. Every feature's detail asked for it.
+_RUN_MARKER_CACHE = {}
+
+
 def _run_marker(project_root):
     """The project's run marker `.purlin/runtime/test_run.json` as a dict.
 
     `{}` when there is none, or when what is on disk is not a JSON object: the
     marker is a runtime file a test run owns, and a report must not fail over
     one that is absent, half-written or from a foreign tool.
+
+    Read once per report run (RULE-71). One recorded run is one answer for the
+    whole build, and asking it once per feature opened the same file 87 times.
     """
+    key = os.path.abspath(project_root)
     path = os.path.join(project_root, '.purlin', 'runtime', 'test_run.json')
+    stamp = _file_stamp(path)
+    held = _RUN_MARKER_CACHE.get(key)
+    if held is not None and held[1] == stamp:
+        return held[0]
     try:
         with open(path) as f:
             marker = json.load(f)
     except (OSError, ValueError):
-        return {}
-    return marker if isinstance(marker, dict) else {}
+        marker = {}
+    if not isinstance(marker, dict):
+        marker = {}
+    _RUN_MARKER_CACHE[key] = (marker, stamp)
+    return marker
 
 
 def _inherited_proofs(project_root, feature, proofs):
@@ -1936,7 +1989,26 @@ def _detect_host_platform():
 
     `id` is `PURLIN_PLATFORM` when set, which is how a runner (or a developer
     on a pinned machine) claims a registry id that detection alone cannot
-    prove, such as `windows-2022` versus any other Windows 10 build.
+    prove, such as `windows-2022` versus any other Windows 10 build. It is read
+    from the environment on every call and never cached, because it is the one
+    field a caller can change inside a process; the four detected fields come
+    from `_detect_host_hardware`, which the machine cannot change under us
+    (RULE-71).
+    """
+    host = dict(_detect_host_hardware())
+    host['id'] = os.environ.get('PURLIN_PLATFORM') or None
+    return host
+
+
+@functools.lru_cache(maxsize=1)
+def _detect_host_hardware():
+    """{os, version, distro, arch} for this machine, detected once per run.
+
+    On macOS `platform.mac_ver()` parses `/System/Library/CoreServices/
+    SystemVersion.plist`, and asking once per feature read that file 42 times
+    for one report. `_clear_run_caches()` drops the memo on entry to each
+    build, so a long lived server that outlives an OS upgrade still reports the
+    machine it is on.
     """
     system = platform.system()
     family = {'Darwin': 'macos', 'Windows': 'windows', 'Linux': 'linux'}.get(
@@ -1960,7 +2032,6 @@ def _detect_host_platform():
         'version': version,
         'distro': distro,
         'arch': _normalise_arch(machine) or machine.lower(),
-        'id': os.environ.get('PURLIN_PLATFORM') or None,
     }
 
 
@@ -2698,12 +2769,19 @@ def _v1_receipts(project_root):
     return found
 
 
-def _pending_migrations(project_root, config=None):
+def _pending_migrations(project_root, config=None, features=None,
+                        legacy_proof_files=None):
     """[{id, count, summary, files}] for everything `purlin:init --update` owns.
 
     Ordered by `_MIGRATION_ORDER`, empty when the project is current. Every
     entry names the files it counted, so the report and the script agree on
     what is pending and the user can read the list before consenting.
+
+    `features` and `legacy_proof_files` are what a caller already holds: the
+    advisory runs at the top of a report that has just scanned every spec and
+    read every proof file, and re-running both to answer it opened 127 files a
+    second time (RULE-71). A caller with neither, such as `purlin:init
+    --update`, passes neither and this reads them itself.
     """
     if config is None:
         config = resolve_config(project_root)
@@ -2713,7 +2791,8 @@ def _pending_migrations(project_root, config=None):
     # parser already warns about each one; reading its warning here means the
     # detector and the alias cannot disagree about what is legacy.
     tag_files, tag_count = [], 0
-    features = _scan_specs(project_root)
+    if features is None:
+        features = _scan_specs(project_root)
     for name in sorted(features):
         info = features[name]
         hits = [pid for pid, message in (info.get('proof_tag_warnings') or [])
@@ -2730,8 +2809,10 @@ def _pending_migrations(project_root, config=None):
             'files': sorted(tag_files),
         })
 
-    legacy_files = []
-    _read_proofs(project_root, legacy=legacy_files)
+    legacy_files = legacy_proof_files
+    if legacy_files is None:
+        legacy_files = []
+        _read_proofs(project_root, legacy=legacy_files)
     if legacy_files:
         n = len(legacy_files)
         pending.append({
@@ -2951,8 +3032,9 @@ def sync_status(project_root):
     # rather than an advisory of its own (RULE-38): a project that has not
     # been updated usually has several of these, and one directive that fixes
     # all of them is what a reader can act on.
-    preamble.extend(_pending_migration_lines(
-        _pending_migrations(project_root, config)))
+    preamble.extend(_pending_migration_lines(_pending_migrations(
+        project_root, config, features=features,
+        legacy_proof_files=legacy_proof_files)))
 
     # Check for uncommitted spec/proof changes
     uncommitted = _check_uncommitted_specs(project_root)
@@ -3991,15 +4073,8 @@ def _read_audit_cache_by_feature(project_root, cache_name='audit_cache.json',
     `assessment`), so one reader serves both, parameterized the way
     static_checks.read_audit_cache already is.
     """
-    cache_path = os.path.join(project_root, '.purlin', 'cache', cache_name)
-    if not os.path.isfile(cache_path):
-        return {}
-    try:
-        with open(cache_path) as f:
-            cache = json.load(f)
-    except (json.JSONDecodeError, IOError, OSError):
-        return {}
-    if not isinstance(cache, dict):
+    cache = _read_quality_cache(project_root, cache_name)
+    if cache is None:
         return {}
 
     # Deduplicate by (feature, proof_id) and drop the entries whose key no longer
@@ -4889,7 +4964,8 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
         # RULE-34). The dashboard's action banner reads it, and a key that is
         # sometimes absent cannot be told from a payload written by an older
         # plugin, which is the state it exists to report.
-        'migrations': _pending_migrations(project_root, config),
+        'migrations': _pending_migrations(project_root, config,
+                                          features=features),
         'docs_url': _get_plugin_docs_url(),
         'summary': summary,
         'features': feature_list,
