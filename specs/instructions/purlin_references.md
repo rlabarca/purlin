@@ -15,7 +15,15 @@
   only where the file names it as the key the current one grew from, never as the key itself:
   a format file that still states the three-part key tells a plugin author to address an entry
   without its platform, which is a run on one platform clobbering another platform's file
-- RULE-3: `proofs_format.md` documents proof markers for all 3 frameworks: pytest, Jest, shell
+- RULE-3: `proofs_format.md` documents the proof marker of every shipped framework: one `###`
+  subsection per framework under `## Proof Markers by Framework`, and a `### Feature-name token`
+  table in that same section whose rows name the framework id, the marker subsection that
+  documents it, and the exact literal in which the feature name sits. The table's
+  marker-section set equals the set of the section's other `###` headings, so a framework
+  documented without a token row, or a token row naming a subsection that is not there, fails.
+  That table is the one written record of what a rename has to rewrite: `skills/rename/SKILL.md`
+  cites it rather than restating markers, and a framework absent from it is a framework whose
+  markers a rename silently walks past
 - RULE-4: `anchor_format.md` documents anchor file location (`specs/_anchors/`), metadata fields (`> Source:`, `> Pinned:`, `> Global:`), sync protocol, and global anchor behavior
 - RULE-5: `anchor_format.md` documents all 8 type values: `design`, `api`, `security`, `brand`, `platform`, `schema`, `legal`, `prodbrief`
 - RULE-6: `hard_gates.md` documents exactly 1 gate: proof coverage. A project's own CI gate is documented there as project policy layered on that one gate, in a section that is not a `## Gate N` heading, so the framework's count cannot be inflated by describing what a project configures for itself
@@ -120,7 +128,13 @@
   assert each window says the four-part key grew from it, so the old key survives only as
   history. Replacing the four-part key with the three-part one fails the key assertion and
   the window assertion together
-- PROOF-3 (RULE-3): Grep `references/formats/proofs_format.md` for `### pytest`, `### Jest`, `### Shell`; verify all 3 framework subsections exist
+- PROOF-3 (RULE-3): Take the `## Proof Markers by Framework` section of
+  `references/formats/proofs_format.md`, collect its `###` headings other than
+  `Feature-name token`, and parse the `### Feature-name token` table. Verify `pytest`, `Jest`
+  and `Shell` are among those headings; that every table row carries a non-empty framework id
+  and at least one token literal containing `<feature>`; and that the set of marker-section
+  cells equals the set of those headings. Deleting the Vitest row, or naming a subsection the
+  file does not carry, fails the set equality
 - PROOF-4 (RULE-4): Grep `references/formats/anchor_format.md` for `_anchors/`, `> Source:`, `> Pinned:`, `> Global:`; verify all appear
 - PROOF-5 (RULE-5): Grep `references/formats/anchor_format.md` for all 8 type values: `design`, `api`, `security`, `brand`, `platform`, `schema`, `legal`, `prodbrief`; verify all appear in the type metadata documentation
 - PROOF-6 (RULE-6): Grep `references/hard_gates.md` for "Proof coverage"; verify it appears and no second gate is defined

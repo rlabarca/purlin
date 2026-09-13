@@ -61,6 +61,54 @@ def _tables(text):
     return tables
 
 
+#: The heading of the token table's own subsection, which is the one `###`
+#: under `## Proof Markers by Framework` that documents no framework.
+TOKEN_SECTION = 'Feature-name token'
+
+#: Sample feature names the shipped plugins use in their own documented
+#: examples. A token literal is proved against the emitter by substituting one
+#: of these for `<feature>`; a literal no plugin writes matches none of them.
+KNOWN_FEATURE_NAMES = ('my_feature', 'feature', 'auth_login', 'feature_name')
+
+
+def marker_section(text):
+    """The body of `## Proof Markers by Framework`."""
+    m = re.search(r'^## Proof Markers by Framework\n(.*?)(?=^## |\Z)', text,
+                  re.MULTILINE | re.DOTALL)
+    assert m, "proofs_format.md carries no '## Proof Markers by Framework'"
+    return m.group(1)
+
+
+def marker_subsections(text):
+    """Every `###` heading under the marker section, token table aside."""
+    return [h.strip() for h in re.findall(r'^### (.+)$', marker_section(text),
+                                          re.MULTILINE)
+            if h.strip() != TOKEN_SECTION]
+
+
+def feature_name_tokens(text):
+    """{framework id: (marker section, [token literals])} from the table.
+
+    The literals keep their inner whitespace: the trailing space of the PHP and
+    SQL tokens is the delimiter that stops a rename matching a longer name.
+    """
+    body = marker_section(text)
+    header, rows = next(
+        ((h, r) for h, r in _tables(body)
+         if h and h[0].strip().lower() == 'framework'
+         and any('token' in c.lower() for c in h)),
+        (None, None))
+    assert header is not None, (
+        "the marker section carries no Feature-name token table, so nothing "
+        "says where the feature name sits in each framework's marker")
+    parsed = {}
+    for cells in rows:
+        assert len(cells) >= 3, f"short token row: {cells}"
+        parsed[cells[0].strip('`')] = (
+            cells[1].strip(), re.findall(r'`([^`\n]+)`', cells[2]))
+    return parsed
+
+
 class TestPurlinReferences:
 
     @pytest.mark.proof("purlin_references", "PROOF-1", "RULE-1")
@@ -102,11 +150,37 @@ class TestPurlinReferences:
                 "key grew from it: " + repr(window))
 
     @pytest.mark.proof("purlin_references", "PROOF-3", "RULE-3")
-    def test_proofs_format_three_frameworks(self):
+    def test_proofs_format_documents_every_framework_marker(self):
+        """RULE-3: a framework with no token row is one a rename walks past.
+
+        The marker subsections and the token table have to name the same set.
+        A subsection with no row leaves `purlin:rename` no literal to rewrite;
+        a row naming no subsection points the rename at a marker the file never
+        documents.
+        """
         content = _read(os.path.join(FORMATS, 'proofs_format.md'))
         for fw in ('pytest', 'Jest', 'Shell'):
             assert re.search(rf'###\s+{fw}', content, re.IGNORECASE), \
                 f"Missing framework section: {fw}"
+
+        tokens = feature_name_tokens(content)
+        for framework, (section, literals) in sorted(tokens.items()):
+            assert framework, f"a token row names no framework: {section!r}"
+            assert literals, (
+                f"{framework}: the token row carries no backticked literal, so "
+                "nothing says where the feature name sits")
+            for literal in literals:
+                assert '<feature>' in literal, (
+                    f"{framework}: token {literal!r} carries no `<feature>` "
+                    "placeholder, so it names no renameable position")
+
+        documented = set(marker_subsections(content))
+        tabled = {section for section, _ in tokens.values()}
+        assert tabled == documented, (
+            f"the token table names {sorted(tabled)} and the marker "
+            f"subsections are {sorted(documented)}; the sets must be equal, or "
+            "a documented framework has no token to rename and a tokened one "
+            "has no marker documentation")
 
     @pytest.mark.proof("purlin_references", "PROOF-4", "RULE-4")
     def test_anchor_format_metadata(self):

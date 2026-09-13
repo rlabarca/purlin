@@ -1,4 +1,4 @@
-> Format-Version: 6
+> Format-Version: 7
 
 # Proof File Format
 
@@ -319,6 +319,31 @@ Nothing is written at all when the project root holds no `.purlin/` directory. T
 Purlin project, and a plugin must not create one.
 
 ## Proof Markers by Framework
+
+### Feature-name token
+
+One row per shipped framework: the subsection below that documents its marker, and the exact
+literal in which the feature name sits, with `<feature>` standing for the name itself. This is
+the whole of what a rename has to rewrite, and it is the only place the set is written down.
+A framework missing a row here is a framework whose markers a rename walks past, leaving live
+tests pointing at a name no spec carries any more. `purlin:rename` rewrites every literal in
+this column.
+
+| Framework | Marker section | Feature-name token |
+|-----------|----------------|--------------------|
+| pytest | pytest | `@pytest.mark.proof("<feature>",` |
+| jest | Jest | `[proof:<feature>:` |
+| vitest | Vitest (TypeScript-native) | `[proof:<feature>:` |
+| shell | Shell | `purlin_proof "<feature>"` |
+| xunit | xUnit / .NET | `[Trait("PurlinProof", "<feature>:` |
+| phpunit | PHP | `@purlin <feature> ` |
+| sql | SQL (sqlite3) | `-- @purlin <feature> ` |
+| c | C | `purlin_proof("<feature>",` and `purlin_proof_on("<feature>",` |
+
+The trailing space in the PHP and SQL tokens is part of the literal: it is the delimiter
+between the feature name and `PROOF-N`, and a rewrite that drops it also rewrites a longer
+name that merely starts with the old one. C is the one framework whose feature name sits in
+two call forms, the platform-bearing one and the plain one, so both are rewritten.
 
 ### pytest
 

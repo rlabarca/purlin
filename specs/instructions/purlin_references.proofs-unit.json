@@ -204,7 +204,7 @@
       "id": "PROOF-3",
       "rule": "RULE-3",
       "test_file": "dev/test_purlin_references.py",
-      "test_name": "test_proofs_format_three_frameworks",
+      "test_name": "test_proofs_format_documents_every_framework_marker",
       "status": "pass",
       "tier": "unit"
     },
