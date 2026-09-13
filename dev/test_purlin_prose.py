@@ -1030,3 +1030,79 @@ class TestInstalledShellHarnessName:
             f"the shell row's `Installed as` cell in {FRAMEWORKS} reads "
             f"{cell!r}; the two guides teach `purlin-proof.sh`, and the "
             f"scaffolder copies the plugin under whatever this column says")
+
+
+# ---------------------------------------------------------------------------
+# RULE-21: one .purlin/ layout, drawn the same way in both places
+# ---------------------------------------------------------------------------
+
+_FENCE = re.compile(r'^```[^\n]*\n(.*?)^```', re.MULTILINE | re.DOTALL)
+
+TREE_PAGES = ('README.md', 'docs/index.md')
+PURLIN_ENTRIES = {
+    'cache/', 'config.json', 'config.local.json', 'hooks/', 'plugin-root',
+    'plugins/', 'report-data.js', 'report-stamp.js', 'runtime/',
+}
+
+
+def _fenced_blocks(rel):
+    return _FENCE.findall(_read(rel))
+
+
+def _purlin_tree(rel):
+    """The entries of the fenced tree whose first line is `.purlin/`."""
+    for block in _fenced_blocks(rel):
+        lines = block.splitlines()
+        if not lines or lines[0].rstrip() != '.purlin/':
+            continue
+        entries = set()
+        for line in lines[1:]:
+            if not line.startswith('  '):
+                break
+            if line.startswith('   '):
+                continue
+            entries.add(line.strip().split()[0])
+        return block, entries
+    return None, set()
+
+
+class TestArchitectureTreesAgree:
+    """RULE-21: plugin content is not drawn inside the project tree."""
+
+    @pytest.mark.proof("purlin_prose", "PROOF-29", "RULE-21", tier="unit")
+    def test_both_purlin_trees_name_the_same_entries(self):
+        trees = {}
+        for rel in TREE_PAGES:
+            block, entries = _purlin_tree(rel)
+            assert block is not None, (
+                f"{rel} carries no fenced block whose first line is "
+                f"`.purlin/`; there is nothing to compare")
+            assert len(entries) >= 9, (
+                f"the `.purlin/` tree in {rel} names {len(entries)} entries, "
+                f"fewer than the nine an initialized project holds: "
+                f"{sorted(entries)}")
+            trees[rel] = (block, entries)
+
+        left, right = (trees[rel][1] for rel in TREE_PAGES)
+        assert left == right, (
+            f"the two `.purlin/` trees disagree; "
+            f"only in {TREE_PAGES[0]}: {sorted(left - right)}; "
+            f"only in {TREE_PAGES[1]}: {sorted(right - left)}")
+        assert left == PURLIN_ENTRIES, (
+            f"the drawn `.purlin/` layout is not the one a project holds; "
+            f"drawn but not held: {sorted(left - PURLIN_ENTRIES)}; "
+            f"held but not drawn: {sorted(PURLIN_ENTRIES - left)}")
+
+        project_tree = trees['README.md'][0]
+        for plugin_dir in ('tools/', 'scripts/'):
+            assert plugin_dir not in project_tree, (
+                f"README's project tree draws {plugin_dir}, which is plugin "
+                f"content `purlin:init` never writes into a project:\n"
+                f"{project_tree}")
+
+        plugin_tree = [b for b in _fenced_blocks('README.md')
+                       if 'tools/' in b and 'scripts/' in b]
+        assert plugin_tree, (
+            "README carries no fenced tree naming both `scripts/` and "
+            "`tools/`; the plugin content was deleted rather than moved into "
+            "a tree of its own")

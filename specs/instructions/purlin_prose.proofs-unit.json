@@ -165,6 +165,15 @@
     },
     {
       "feature": "purlin_prose",
+      "id": "PROOF-29",
+      "rule": "RULE-21",
+      "test_file": "dev/test_purlin_prose.py",
+      "test_name": "test_both_purlin_trees_name_the_same_entries",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_prose",
       "id": "PROOF-3",
       "rule": "RULE-2",
       "test_file": "dev/test_purlin_prose.py",

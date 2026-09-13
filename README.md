@@ -200,11 +200,23 @@ prerequisites".
 
 ## Architecture
 
+Two trees. The first is what Purlin writes into your project and what you commit. The second is
+the plugin itself, which Claude Code installs outside your repository and which init copies from
+rather than into your tree.
+
+**Your project:**
+
 ```
 .purlin/
-  config.json             # Project settings
-  report-data.js          # Project digest (auto-generated on commit)
-  plugins/                # Proof plugin (scaffolded by init)
+  cache/                  # Gauge caches (gitignored)
+  config.json             # Team defaults (committed)
+  config.local.json       # Per-user overrides (gitignored, written on first override)
+  hooks/                  # Generated hook shims git delegates to (committed)
+  plugin-root             # Where this machine keeps the installed plugin (gitignored)
+  plugins/                # Proof plugin copies (scaffolded by purlin:init)
+  report-data.js          # Project digest (committed, feeds the dashboard)
+  report-stamp.js         # Digest freshness stamp the dashboard polls (gitignored)
+  runtime/                # Run markers and lock files (gitignored)
 specs/
   <category>/
     <feature>.md          # Feature specs (2-section format)
@@ -212,6 +224,15 @@ specs/
     <feature>.receipt.json   # Verification receipts
   _anchors/
     <name>.md             # Cross-cutting constraints (optionally synced from external sources)
+```
+
+**The plugin:**
+
+```
+scripts/                  # The only directory a consumer project depends on
+  mcp/                    # The MCP server carrying sync_status, drift and purlin_config
+  proof/                  # Proof collectors, copied into .purlin/plugins/ by init
+  hooks/                  # pre-push and pre-commit bodies the generated shims run
 tools/
   QA/                     # QA report skill for Claude Desktop
   PM/                     # Product anchor skill for Claude Desktop

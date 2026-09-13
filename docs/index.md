@@ -35,10 +35,15 @@
 
 ```
 .purlin/
-  config.json              # Team defaults (committed)
-  config.local.json        # Per-user overrides (gitignored)
-  plugins/                 # Proof plugin (scaffolded by purlin:init)
-  report-data.js           # Project digest (committed, feeds the dashboard)
+  cache/                  # Gauge caches (gitignored)
+  config.json             # Team defaults (committed)
+  config.local.json       # Per-user overrides (gitignored, written on first override)
+  hooks/                  # Generated hook shims git delegates to (committed)
+  plugin-root             # Where this machine keeps the installed plugin (gitignored)
+  plugins/                # Proof plugin copies (scaffolded by purlin:init)
+  report-data.js          # Project digest (committed, feeds the dashboard)
+  report-stamp.js         # Digest freshness stamp the dashboard polls (gitignored)
+  runtime/                # Run markers and lock files (gitignored)
 specs/
   <category>/
     <feature>.md           # Spec (2-section format)
