@@ -5243,6 +5243,26 @@ _TEST_PATTERNS = ('.proofs-', 'test_', '_test.', '.test.', 'tests/', 'dev/test_'
 # See references/drift_criteria.md for rationale.
 _BEHAVIORAL_MD_PREFIXES = ('skills/', 'agents/', '.claude/agents/')
 
+# How much of a rule description `rule_details` carries (drift RULE-16). The
+# skill classifies a rule as potentially stale by reading what it says, and the
+# opening clause says it; this repo's descriptions averaged 339 characters and
+# ran to 2,224, which was 84,163 bytes of one tool call.
+_RULE_DESC_LIMIT = 200
+
+
+def _cap_rule_description(text, limit=_RULE_DESC_LIMIT):
+    """Return `text` cut to `limit` characters on a word boundary.
+
+    A cut description is suffixed ` ...`, so the reader can tell a whole rule
+    from the head of a long one and knows to open `spec_path` for the rest.
+    """
+    if len(text) <= limit:
+        return text
+    head = text[:limit]
+    if not text[limit].isspace() and ' ' in head:
+        head = head.rsplit(' ', 1)[0]
+    return head.rstrip() + ' ...'
+
 
 # A "since" value reaches drift from an LLM-authored tool call, so it is
 # untrusted input: it is accepted only as a commit count or an ISO date, and
@@ -5744,27 +5764,35 @@ def _compute_drift(project_root, since=None, network=True):
                                    global_anchors, project_root, registry)
         active_entries = verdict['active_entries']
         proof_by_rule = verdict['proof_by_rule']
+        manual_ok_rules = verdict['manual_ok_rules']
         changed_scope_files = [
             e['path'] for e in file_entries
             if e.get('spec') == spec_name
             and e['category'] == 'CHANGED_BEHAVIOR'
         ]
+        # The proof status of one rule is worth one id in a list, not a field
+        # on every rule: the statuses repeated the word `pass` once per rule
+        # and this repo's 248 rules are all passing.
+        unproved = [key for key, label, _ in active_entries
+                    if proof_by_rule.get(key, {}).get('status') != 'pass'
+                    and not (label == 'own' and key in manual_ok_rules)]
+        failing = [key for key, _, _ in active_entries
+                   if proof_by_rule.get(key, {}).get('status') == 'fail']
         per_rule = []
         for rule_id in sorted(rules.keys(),
                               key=lambda r: int(r.split('-')[1])):
-            rule_desc = rules[rule_id]
-            proof_info = proof_by_rule.get(rule_id, {})
-            proof_status_val = proof_info.get('status', 'unproved')
             per_rule.append({
                 'rule_id': rule_id,
-                'description': rule_desc,
-                'proof_status': proof_status_val,
+                'description': _cap_rule_description(rules[rule_id]),
             })
         rule_details[spec_name] = {
-            'rules': per_rule,
+            'spec_path': info.get('path', ''),
             'changed_files': changed_scope_files,
             'total_rules': len(active_entries),
             'proved_rules': verdict['proved'],
+            'unproved': unproved,
+            'failing': failing,
+            'rules': per_rule,
         }
 
     return {

@@ -503,7 +503,7 @@ _LEDGER_LONG_RULE = (
     "checks and the ledger is left exactly as it was before the call, with no "
     "partial entry written and no identifier consumed, so a retry after the "
     "caller fixes the input lands the same entry once and only once in the "
-    "journal file for that day. The refusal text is the same on every retry, "
+    "journal file for that day. The refusal text is the same on each retry, "
     "the journal keeps the bytes it held, and nothing downstream is replayed "
     "or reconciled by hand later on"
 )
@@ -640,12 +640,33 @@ class TestDriftRuleDetails:
         assert ledger['proved_rules'] == 6, (
             "proved_rules read %s, not 6" % ledger['proved_rules'])
 
-        # Own rules, in RULE number order, each with its proof status.
+        # One id per rule worth naming, no status field on the other six.
+        assert ledger['unproved'] == ['RULE-4'], ledger['unproved']
+        assert ledger['failing'] == [], ledger['failing']
+        assert ledger['spec_path'] == 'specs/ledger/ledger.md', ledger['spec_path']
+
+        # Own rules, in RULE number order, id and description and nothing else.
         assert [r['rule_id'] for r in ledger['rules']] == [
             'RULE-1', 'RULE-2', 'RULE-3', 'RULE-4'], ledger['rules']
-        status = {r['rule_id']: r['proof_status'] for r in ledger['rules']}
-        assert status == {'RULE-1': 'pass', 'RULE-2': 'pass',
-                          'RULE-3': 'pass', 'RULE-4': 'unproved'}, status
+        assert len(ledger['rules']) == 4, ledger['rules']
+        for rule in ledger['rules']:
+            assert set(rule) == {'rule_id', 'description'}, sorted(rule)
+
+        # The long description is cut on a word boundary and says it was cut;
+        # the short ones come back whole.
+        assert len(_LEDGER_LONG_RULE) == 600, len(_LEDGER_LONG_RULE)
+        capped = ledger['rules'][3]['description']
+        assert len(capped) == 204, (len(capped), capped)
+        assert capped.endswith(' ...'), capped
+        assert capped.startswith('A posting is refused when its debits'), capped
+        assert capped[:-4] == _LEDGER_LONG_RULE[:200], capped
+        assert ledger['rules'][0]['description'] == (
+            'Every posting writes one debit and one credit row')
+        assert ledger['rules'][1]['description'] == (
+            'A posting identifier is never reused')
+        assert ledger['rules'][2]['description'] == (
+            'The journal file is appended, never rewritten')
+
         assert 'src/ledger/posting.py' in ledger['changed_files'], ledger
 
         # Specs in name order.
