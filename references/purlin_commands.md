@@ -42,7 +42,6 @@ Purlin — Spec-Driven Development
   purlin:init --update          Bring the project up to the installed plugin
   purlin:init --update --check  Report pending migrations; write nothing
   purlin:init --add-plugin <src> Install a proof plugin from a file path or git URL
-  purlin:init --list-plugins    List installed proof plugins
   purlin:rename <old> <new>     Rename feature across all Purlin artifacts
   purlin:anchor <cmd>           Sync read-only constraints from external sources
   purlin:init --sync-audit-criteria

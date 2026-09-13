@@ -975,13 +975,25 @@ class TestSkillInit:
         _assert_commit_instructions(content, 'init')
 
     @pytest.mark.proof("skill_init", "PROOF-5", "RULE-5")
-    def test_add_plugin_validates_by_language(self):
+    def test_add_plugin_validates_against_the_contract_table(self):
+        """RULE-5: the skill cites the contract's table; the contract holds it."""
         content = _read('init')
-        for lang in ('Python', 'JavaScript', 'Shell', 'Java'):
-            assert lang in content, \
-                f"init skill missing validation entry for {lang}"
-        assert "doesn't look like a standard proof plugin" in content, \
+        section = content[content.index('## Subcommand: --add-plugin'):
+                          content.index('## Subcommand: --sync-audit-criteria')]
+        assert 'references/proof_plugin_contract.md' in section, \
+            "the --add-plugin section must cite the contract's pattern table"
+        assert "doesn't look like a standard proof plugin" in section, \
             "init skill missing validation warning text"
+        copied = [l for l in section.splitlines()
+                  if re.search(r'\(`\.\w+`\)', l)]
+        assert not copied, \
+            f"the skill carries a second copy of the pattern table: {copied}"
+
+        contract = _read_ref('proof_plugin_contract.md')
+        table = contract[contract.index('### What a plugin file must contain'):]
+        table = table[:table.index('\n## ')]
+        rows = set(re.findall(r'\(`(\.\w+)`\)', table))
+        assert rows == {'.py', '.js', '.ts', '.h', '.php', '.sh', '.cs'}, rows
 
     @pytest.mark.proof("skill_init", "PROOF-6", "RULE-6")
     def test_add_plugin_supports_file_and_git(self):
@@ -994,23 +1006,6 @@ class TestSkillInit:
             "init skill missing conditional step for local file path handling"
         assert re.search(r'(?i)if source is a git URL', content), \
             "init skill missing conditional step for git URL handling"
-
-    @pytest.mark.proof("skill_init", "PROOF-7", "RULE-7")
-    def test_list_plugins_labels_builtin_and_custom(self):
-        content = _read('init')
-        ref = _read_ref('supported_frameworks.md')
-        # Framework→plugin associations live in supported_frameworks.md
-        assert re.search(r'pytest_purlin\.py.*Python|Python.*pytest_purlin\.py',
-                         ref), \
-            "supported_frameworks.md missing pytest_purlin.py → Python association"
-        assert re.search(r'jest_purlin\.js.*JavaScript|JavaScript.*jest_purlin\.js',
-                         ref), \
-            "supported_frameworks.md missing jest_purlin.js → JavaScript association"
-        # SKILL.md must reference the file and document the custom label
-        assert 'supported_frameworks.md' in content, \
-            "init skill missing reference to supported_frameworks.md for plugin labels"
-        assert 'custom' in content, \
-            "init skill missing 'custom' label for non-built-in plugins"
 
     # ── RULE-8 through RULE-32 ────────────────────────────────────────
 
@@ -2467,19 +2462,6 @@ class TestUpdateSkillText:
         assert 'does not delete evidence' in flat, flat[:400]
         assert step.index('runner not recorded') < step.index('AskUserQuestion'), \
             "the provenance loss must be stated above the consent question"
-
-    @pytest.mark.proof("skill_init", "PROOF-59", "RULE-56")
-    def test_mcp_flag_is_the_mcp_step_of_update(self):
-        content = _read('init')
-        usage = content[content.index('## Usage'):content.index('## Step 1')]
-        mcp_line = [l for l in usage.splitlines()
-                    if l.startswith('purlin:init --mcp')]
-        assert mcp_line, "no --mcp usage line"
-        assert 'MCP step of --update' in mcp_line[0], mcp_line[0]
-        step5c = content[content.index('## Step 5c'):content.index('## Step 5d')]
-        assert 'MCP step of `--update`' in ' '.join(step5c.split()), step5c[-600:]
-        step5d = content[content.index('## Step 5d'):content.index('## Step 6')]
-        assert 'legacy-mcp' in step5d, "Step 5d does not list the legacy-mcp migration"
 
     @pytest.mark.proof("skill_init", "PROOF-60", "RULE-57")
     def test_mutation_checks_question_is_documented(self):

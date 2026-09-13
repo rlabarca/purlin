@@ -211,10 +211,9 @@ class TestDelegation:
             '--force')
         assert code == 0, (code, out, err)
 
-        # The two halves the skill keeps: --update is migrate.py, --mcp is 5c.
+        # The half the skill keeps for itself: --update is migrate.py.
         assert 'scripts/update/migrate.py' in skill, \
             "the skill must keep --update pointing at migrate.py"
-        assert '--mcp' in skill
 
         steps = skill[skill.index('## Step 1'):skill.index('## Step 8')]
         for by_hand in ('ln -s ', 'chmod +x', 'Copy ALL selected proof plugins'):

@@ -198,7 +198,6 @@ Already initialized? Use `purlin:init --force` to reconfigure, or change individ
 | Toggle HTML dashboard | `purlin:init --report` |
 | Change digest mode (auto/warn/off) | `purlin:init --digest` |
 | Add a proof plugin | `purlin:init --add-plugin ./my-plugin.py` |
-| See installed plugins | `purlin:init --list-plugins` |
 | Set external audit criteria | `purlin:init --sync-audit-criteria` |
 | Change audit LLM (experimental) | `purlin:init --audit-llm` |
 | Write the CI workflow | `purlin:init --ci` |
@@ -346,7 +345,7 @@ It detects what is pending from the project's own contents (never from the `vers
 | `dashboard-stale` | Copies the installed `purlin-report.html` over a root dashboard that is a dangling symlink or whose bytes are not this plugin's |
 | `digest-schema-old` | Rebuilds `.purlin/report-data.js` when it was written at an older payload schema, so the dashboard and the QA report stop reading fields that are not there |
 | `receipt-v1` | Prints `→ Run: purlin:verify`. A receipt is a claim that tests ran, so the update never writes one |
-| `legacy-mcp` | Removes the legacy `purlin` entry from `.mcp.json` (this is what `purlin:init --mcp` runs on its own), then `/reload-plugins` |
+| `legacy-mcp` | Removes the legacy `purlin` entry from `.mcp.json` (Step 5c of `purlin:init`), then `/reload-plugins` |
 
 `purlin:init --update --check` reports what is pending and writes nothing; it is also what a CI preflight runs, so a runner never proves anything with stale plugin copies. `purlin:init --update --platform-id <id>` says what a legacy `@windows` tag becomes (default: the `windows` OS family). Every skill points at the same advisory: when `purlin:status` or any other skill opens with a pending-migrations block, that is this command asking to be run.
 
@@ -407,8 +406,4 @@ purlin:init --add-plugin ./my-go-plugin.py
 purlin:init --add-plugin git@github.com:someone/purlin-rust-proof.git
 ```
 
-Plugins are installed to `.purlin/plugins/` and work immediately. To see what's installed:
-
-```
-purlin:init --list-plugins
-```
+Plugins are installed to `.purlin/plugins/` and work immediately; `ls .purlin/plugins/` is what lists them.

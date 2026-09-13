@@ -13,7 +13,6 @@ Set up a project for spec-driven development. Creates `.purlin/`, `specs/`, dete
 purlin:init                             Full setup (all steps)
 purlin:init --force                     Re-run full setup
 purlin:init --add-plugin <source>       Add a proof plugin
-purlin:init --list-plugins              List proof plugins
 purlin:init --sync-audit-criteria       Sync external audit criteria
 purlin:init --audit-llm                 Change audit LLM (default/external)
 purlin:init --pre-push                  Change pre-push mode (warn/strict/off)
@@ -28,12 +27,11 @@ purlin:init --update --check            Report what is pending; write nothing
 purlin:init --update --platform-id <id> What a legacy @windows tag becomes (default: windows)
 purlin:init --update --mutation-checks on|off
                                         Answer the mutation-check question during the update
-purlin:init --mcp                       Run only the MCP step of --update
 ```
 
 Each `--flag` runs ONLY that step, not the full init.
 
-**Who does what.** This skill asks the questions; `scripts/init/scaffold.py` writes the files, exactly as `scripts/update/migrate.py` performs `--update`. The script handles the full init, the `--force` re-run (Steps 1, 2, 4, 5, 5b, 7 and 7a) and the single-step re-answers: it takes `--pre-push`, `--digest`, `--report`, `--mutation-checks` and `--quality-gate` as answers, and `purlin:init --pre-push`, `--report`, `--digest`, `--mutation-checks` and `--quality-gate` each ask their own question and then run it with `--force` and that one flag (see **Single-step re-answers** in Step 2). `--ci` is a seventh answer the script takes, asked the same way and written the same way (see **Subcommand: --ci**). `--add-plugin`, `--list-plugins`, `--sync-audit-criteria` and `--audit-llm` stay agent-driven; `--update` is `scripts/update/migrate.py` (Step 5d) and `--mcp` is its MCP step (Step 5c).
+**Who does what.** This skill asks the questions; `scripts/init/scaffold.py` writes the files, exactly as `scripts/update/migrate.py` performs `--update`. The script handles the full init, the `--force` re-run (Steps 1, 2, 4, 5, 5b, 7 and 7a) and the single-step re-answers: it takes `--pre-push`, `--digest`, `--report`, `--mutation-checks` and `--quality-gate` as answers, and `purlin:init --pre-push`, `--report`, `--digest`, `--mutation-checks` and `--quality-gate` each ask their own question and then run it with `--force` and that one flag (see **Single-step re-answers** in Step 2). `--ci` is a seventh answer the script takes, asked the same way and written the same way (see **Subcommand: --ci**). `--add-plugin`, `--sync-audit-criteria` and `--audit-llm` stay agent-driven; `--update` is `scripts/update/migrate.py` (Step 5d), whose MCP migration is Step 5c.
 
 ## Step 1 — Pre-flight
 
@@ -111,28 +109,14 @@ ask about the quality gate during a full init and do not pass
 carries no such key, and `purlin:init --update` neither backfills it nor asks
 about it.
 
-Config template fields (from `templates/config.json`), plus the optional `platforms` and `quality_gate` fields that a full init never writes:
-
-| Field | Default | Description |
-|-------|---------|-------------|
-| `version` | from `VERSION` | Purlin framework version, stamped from `${CLAUDE_PLUGIN_ROOT}/VERSION` at init; never a literal in this table |
-| `test_framework` | `"auto"` | Detected test framework(s) |
-| `pre_push` | `"warn"` | Pre-push hook mode (`warn`, `strict` or `off`); any other value blocks every push |
-| `remote_verification` | `"off"` | Declared remote-verification mode (`required`, `optional`, `off`). A declaration, not the enforcement; see `references/remote_verification.md`. Init writes the default and does not ask: setup is offered when `purlin:test` finds a proof declared `@on(<platform-id>)` for a platform this host does not satisfy |
-| `mutation_checks` | `false` | Whether every new or amended proof is mutation-checked before the commit that carries it (Step 7d). Asked, never defaulted silently; what the check is worth and what it costs is stated once in `references/spec_quality_guide.md` § Mutation check |
-| `report` | `true` | HTML dashboard report generation |
-| `digest` | `"auto"` | Digest generation mode (`auto`, `warn`, or `off`) |
-| `platforms` | not set (optional; not written by init) | Registry for `@on(...)` proof tags: `{"<id>": {"os": windows\|macos\|linux, "version", "distro", "arch", "runner", "label"}}`. The family ids `windows`, `macos`, `linux` are built in; an entry pins a version or attaches a runner. Written by `purlin:test`'s setup offer with consent, or by hand; see `references/drift_criteria.md` |
-| `quality_gate` | not set (optional; not written by a full init) | Project policy for `scripts/ci/verify_gate.py`: `"off"` (the default the gate assumes when the key is absent) or `"deterministic"`, which fails the gate on a HOLLOW executed test or an UNPROVABLE proof description. Written only by `purlin:init --quality-gate <mode>`; `purlin:init --update` never backfills it and never asks. A declaration, not the enforcement; see `references/hard_gates.md` |
+Every config field's default, the command that writes it and the readers that consult it are
+listed once, in `references/drift_criteria.md` § Config Field Ownership: read that table rather
+than a second copy here. It covers the template fields and the optional `platforms` and
+`quality_gate` fields a full init never writes.
 
 ## Step 3 — Detect Test Framework
 
-**Print `DETECTING CODEBASE` before scanning.** Framework detection scans multiple files across the project and can take noticeable time — the user must see that work is happening:
-
-```
-DETECTING CODEBASE
-Scanning project files for test frameworks...
-```
+**Print `DETECTING CODEBASE` before scanning.** Framework detection scans multiple files across the project and can take noticeable time, so the user must see that work is happening; the sample below opens with that line.
 
 Read `references/supported_frameworks.md` for the complete framework list, detection heuristics, and plugin file mappings. That file is the single source of truth — do NOT hardcode framework names here. The complete list spans BOTH the **Built-in Plugins** table and the **Additional Plugins (manual setup)** table — present every framework from both. Check project files for ALL matching frameworks using the detection columns in that reference.
 
@@ -240,13 +224,11 @@ The Purlin MCP server (`sync_status`, `purlin_config`, and `drift` tools) is bun
 
 If `.mcp.json` has no `purlin` entry (or doesn't exist), print: `MCP server: bundled with plugin (sync_status, purlin_config, drift).`
 
-When called via `purlin:init --mcp`, ONLY this step runs. `--mcp` is the MCP step of `--update` (Step 5d) under its own name: `--update` runs it as one of its migrations (`legacy-mcp`), and `--mcp` runs that step alone, which is what an existing project needs after a plugin update when nothing else is pending.
-
 ## Step 5d — Update
 
 `purlin:init --update` brings an already-initialized project up to the installed plugin. It is
 the one command for "the plugin moved, this project has not": there is no separate update skill,
-and `--mcp` (Step 5c) is one of its steps.
+and the legacy `.mcp.json` migration (Step 5c) is one of its steps.
 
 Detection is content-based, never version-based. A project may have been initialized by any
 version, edited by hand, or half-migrated already, so what is on disk is the only honest input
@@ -627,17 +609,9 @@ Source can be:
    - Clean up the temp directory: `rm -rf /tmp/purlin-plugin-install`
    - Print: `Added proof plugin: .purlin/plugins/<filename>`
 
-4. **Validate the plugin** after copying:
-
-   | Language | Must contain |
-   |----------|-------------|
-   | Python (`.py`) | `proofs` and `json` |
-   | JavaScript (`.js`) | `proofs` and `JSON` |
-   | TypeScript (`.ts`) | `proofs` and `JSON` |
-   | C header (`.h`) | `purlin_proof` function |
-   | PHP (`.php`) | `proofs` and `json_encode` |
-   | Shell (`.sh`) | `purlin_proof` function |
-   | Java (`.java`) | `proofs` and `Proof` |
+4. **Validate the plugin** after copying. The pattern every language's plugin file must
+   contain is listed once, in `references/proof_plugin_contract.md` § C, under **What a
+   plugin file must contain**: look up the row for the copied file's extension and check it.
 
    If validation fails, warn but still install:
    ```
@@ -653,25 +627,6 @@ Source can be:
    2. Run your tests — the plugin emits .proofs-*.json files
    3. purlin:status shows coverage
    ```
-
----
-
-## Subcommand: --list-plugins
-
-```
-purlin:init --list-plugins
-```
-
-List all files in `.purlin/plugins/`. For built-in plugins, look up the framework name from `references/supported_frameworks.md` (match the plugin filename to the "Plugin file" column). Label anything not in that reference as `custom`.
-
-```
-Installed proof plugins:
-  .purlin/plugins/pytest_purlin.py (Python/pytest)
-  .purlin/plugins/jest_purlin.js (JavaScript/Jest)
-  .purlin/plugins/my_go_plugin.py (custom)
-```
-
-If `.purlin/plugins/` doesn't exist or is empty: `No proof plugins installed. Run purlin:init to set up.`
 
 ---
 

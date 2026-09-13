@@ -88,7 +88,7 @@ it landed.
 | 16 | `specs/skills/skill_init.md` | RULE-48 pins the dynamically built selection list, RULE-50 the marker rewrite covering every shipped syntax, RULE-64 the runner wiring init writes, RULE-71 the `auto` expansion. |
 | 17 | `specs/hooks/pre_push_hook.md` | RULE-5 pins how `test_framework` is read and how `auto` expands, in the reference's detection order. |
 | 18 | `specs/instructions/purlin_agent.md` | RULE-4 pins the marker syntax the agent definition documents. |
-| 19 | `specs/instructions/purlin_skills.md` | RULE-15 pins which plugins `--list-plugins` names as built in rather than labelling `custom`. |
+| 19 | `specs/instructions/purlin_skills.md` | RULE-13 pins that `purlin:init --add-plugin` reads its per-extension patterns from section C of this file rather than a copy of its own. |
 
 Steps 15 to 19 are the spec pins. They are the reason a wiring step cannot be skipped quietly:
 each is a committed rule with a proof behind it, so a framework added to the reference and
@@ -145,6 +145,26 @@ So a new language brings three things to `scripts/audit/static_checks.py`, not o
    body in the cache key;
 3. a subsection in `references/audit_criteria.md` saying what the checker flags, so a false
    HOLLOW is a documented behaviour rather than a surprise in a blocked merge.
+
+### What a plugin file must contain
+
+`purlin:init --add-plugin` copies a plugin the user names and then checks it against one row
+of this table, warning without refusing when the file does not match. The row is a smoke
+check on a file nobody has run yet, not the contract of section A:
+
+| Language | Must contain |
+|----------|-------------|
+| Python (`.py`) | `proofs` and `json` |
+| JavaScript (`.js`) | `proofs` and `JSON` |
+| TypeScript (`.ts`) | `proofs` and `JSON` |
+| C header (`.h`) | `purlin_proof` function |
+| PHP (`.php`) | `proofs` and `json_encode` |
+| Shell (`.sh`) | `purlin_proof` function |
+| C# (`.cs`) | `proofs` and `Proof` |
+
+Every extension here is one a shipped plugin uses, which is why there is no `.java` row: no
+plugin is written in Java, and a row for a language nothing ships tells the user a file will
+be recognised when it will not.
 
 ## D. How to prove a plugin
 

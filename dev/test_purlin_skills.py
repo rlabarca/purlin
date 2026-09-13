@@ -143,13 +143,18 @@ class TestPurlinSkills:
                  f"without it the review has no bar to apply")
 
     @pytest.mark.proof("purlin_skills", "PROOF-13", "RULE-13")
-    def test_init_add_plugin_validates_by_language(self):
+    def test_init_add_plugin_validates_against_the_contract(self):
         content = _read(os.path.join(SKILLS_DIR, 'init', 'SKILL.md'))
-        for lang in ('Python', 'JavaScript', 'Shell', 'Java'):
-            assert lang in content, \
-                f"init skill missing validation entry for {lang}"
-        assert "doesn't look like a standard proof plugin" in content, \
+        section = content[content.index('## Subcommand: --add-plugin'):
+                          content.index('## Subcommand: --sync-audit-criteria')]
+        assert 'references/proof_plugin_contract.md' in section, \
+            "the --add-plugin section must name the contract holding the table"
+        assert "doesn't look like a standard proof plugin" in section, \
             "init skill missing validation warning text"
+        copied = [l for l in section.splitlines()
+                  if re.search(r'\(`\.\w+`\)', l)]
+        assert not copied, \
+            f"the skill carries its own copy of the pattern table: {copied}"
 
     @pytest.mark.proof("purlin_skills", "PROOF-14", "RULE-14")
     def test_init_add_plugin_supports_file_and_git(self):
@@ -163,19 +168,6 @@ class TestPurlinSkills:
             "init skill missing conditional step for local file path handling"
         assert re.search(r'(?i)if source is a git URL', content), \
             "init skill missing conditional step for git URL handling"
-
-    @pytest.mark.proof("purlin_skills", "PROOF-15", "RULE-15")
-    def test_init_list_plugins_labels_builtin_and_custom(self):
-        content = _read(os.path.join(SKILLS_DIR, 'init', 'SKILL.md'))
-        # Verify pytest pair appears on the same line or table row
-        assert re.search(r'pytest_purlin\.py.*Python/pytest|Python/pytest.*pytest_purlin\.py',
-                         content), \
-            "init skill missing pytest_purlin.py → Python/pytest association on same line"
-        assert re.search(r'jest_purlin\.js.*JavaScript/Jest|JavaScript/Jest.*jest_purlin\.js',
-                         content), \
-            "init skill missing jest_purlin.js → JavaScript/Jest association on same line"
-        assert 'custom' in content, \
-            "init skill missing 'custom' label for non-built-in plugins"
 
     @pytest.mark.proof("purlin_skills", "PROOF-16", "RULE-16")
     def test_every_skill_points_at_the_pending_migrations_section(self):

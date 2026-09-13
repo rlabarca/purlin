@@ -42,7 +42,7 @@
       "id": "PROOF-13",
       "rule": "RULE-13",
       "test_file": "dev/test_purlin_skills.py",
-      "test_name": "test_init_add_plugin_validates_by_language",
+      "test_name": "test_init_add_plugin_validates_against_the_contract",
       "status": "pass",
       "tier": "unit"
     },
@@ -52,15 +52,6 @@
       "rule": "RULE-14",
       "test_file": "dev/test_purlin_skills.py",
       "test_name": "test_init_add_plugin_supports_file_and_git",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_skills",
-      "id": "PROOF-15",
-      "rule": "RULE-15",
-      "test_file": "dev/test_purlin_skills.py",
-      "test_name": "test_init_list_plugins_labels_builtin_and_custom",
       "status": "pass",
       "tier": "unit"
     },
