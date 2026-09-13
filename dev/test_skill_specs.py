@@ -2217,37 +2217,43 @@ class TestSkillTestRemotePath:
 
     @pytest.mark.proof("skill_test", "PROOF-8", "RULE-8")
     def test_the_remote_path_is_one_round_over_every_platform(self):
+        """RULE-8: the skill says when the round runs, the reference says how."""
         content = _read('test')
         assert 'Step 2b' in content, "no remote-path step"
         section = content[content.index('Step 2b'):
                           content.index('### Proof File Freshness')]
 
+        assert 'references/remote_verification.md' in section and \
+               'The loop' in section, (
+            "Step 2b must cite the reference section that drives the round")
+        assert re.search(r'(?i)provider:\s*github', section), (
+            "Step 2b must state which platforms are dispatchable")
+        assert re.search(r'(?i)stay\s+awaiting|proofs\s+stay\s+awaiting', section), (
+            "Step 2b must say what happens to a platform it cannot dispatch")
+        for copied in ('push the current branch', 'gh workflow run',
+                       'gh run watch', 'git pull --ff-only'):
+            assert copied.lower() not in section.lower(), (
+                f"Step 2b carries {copied!r}: the round is driven from "
+                "references/remote_verification.md, not from a second copy")
+
+        # The reference half: the four operations, in order, with the retry.
+        ref = _read_ref('remote_verification.md')
         order = []
         for label, pattern in (
                 ('push', r'(?i)push the current branch'),
                 ('dispatch', r'gh workflow run'),
                 ('await', r'gh run watch'),
                 ('pull', r'git pull --ff-only')):
-            m = re.search(pattern, section)
-            assert m, f"the remote path is missing the {label} operation"
+            m = re.search(pattern, ref)
+            assert m, f"remote_verification.md is missing the {label} operation"
             order.append((m.start(), label))
         assert order == sorted(order), (
             f"the four operations must appear in order, got "
             f"{[l for _, l in order]}")
-
-        # One dispatch per platform, awaited together.
-        assert re.search(r'(?i)per\s+(remote\s+)?platform', section), (
-            "the dispatch must be one per remote platform")
-        assert re.search(r'(?i)await\s+them\s+all|all\s+of\s+them\s+awaited', section), (
-            "the runs must be awaited together, not one at a time")
-
-        # One pull, retried once. The retry sentence is the mutation target.
-        assert re.search(r'(?i)one\s+pull,\s+not\s+one\s+per\s+runner', section), (
-            "a pull per runner races the runners still committing; the step "
-            "must say one pull")
-        assert re.search(r'(?i)retry\s+it\s+once|retried\s+once', section), (
-            "a late commit-back can land mid-pull; the step must say the pull "
-            "is retried once")
+        assert re.search(r'(?i)one\s+pull,\s+not\s+one\s+per\s+runner', ref), (
+            "a pull per runner races the runners still committing")
+        assert re.search(r'(?i)retry\s+it\s+once|retried\s+once', ref), (
+            "a late commit-back can land mid-pull; the pull is retried once")
 
         # Why here and not in verify. The reason, not just the placement.
         assert re.search(r'(?i)read-only', content), (
@@ -2293,25 +2299,28 @@ class TestSkillTestRemotePath:
 
     @pytest.mark.proof("skill_test", "PROOF-10", "RULE-10")
     def test_the_remote_loop_bound_is_three_and_names_platform_and_runner(self):
-        content = _read('test')
-        assert re.search(r'Bound the loop at 3 rounds', content), (
+        ref = _read_ref('remote_verification.md')
+        assert re.search(r'bounded at 3 rounds', ref), (
             "the remote loop must be bounded at a literal 3 rounds")
 
         # The not-converging report must be actionable on a multi-platform
         # project: "remote still failing" names nothing to act on.
-        block = content[content.index('NOT CONVERGING'):]
+        block = ref[ref.index('NOT CONVERGING'):]
         block = block[:block.index('```', block.index('\n'))]
         assert '<platform>' in block, (
             "the not-converging block must name the platform that failed")
         assert '<runner>' in block, (
             "the not-converging block must name the runner it failed on")
 
-        # The three skills must not drift to different bounds.
+        # One bound, three skills. The test skill restates neither half.
+        content = _read('test')
+        assert 'NOT CONVERGING' not in content, (
+            "skills/test/SKILL.md carries a second copy of the report")
+        assert not re.search(r'\b3 rounds\b', content), (
+            "the bound has one home; skills/test/SKILL.md restates it")
         for skill in ('audit', 'verify'):
-            other = _read(skill)
-            assert re.search(r'3 rounds', other), (
-                f"skills/{skill}/SKILL.md no longer says 3 rounds; the bound "
-                "has drifted between skills")
+            assert '3 rounds' in _read(skill), (
+                f"skills/{skill}/SKILL.md must carry the same literal bound")
 
     @pytest.mark.proof("skill_test", "PROOF-11", "RULE-11")
     def test_setup_writes_both_the_workflow_and_the_config_runner_block(self):

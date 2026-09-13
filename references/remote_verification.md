@@ -131,14 +131,39 @@ purlin:test  ->  ...  ->  green
 purlin:verify  ->  reads the returned proofs, issues receipts   (never edits a file)
 ```
 
-The branch is pushed **once**, not once per platform: every runner proves the same commit. The
-workflows are dispatched in parallel and awaited together, and a single `git pull --ff-only`
-follows all of them, because a pull per runner races the runners that are still committing. If a
-late commit-back lands during the pull, retry the pull once.
+The four operations, in order:
+
+1. **Push the current branch, once.** `git push -u origin HEAD`. Every runner proves the same
+   commit, so this happens once and not once per platform. The runner proves what is on the
+   branch, so anything uncommitted is not being verified: commit first, or report the gap.
+2. **Dispatch every remote platform's workflow** in parallel and capture each run id:
+   `gh workflow run <workflow> --ref <branch>` per platform, then `gh run list` to find the ids.
+3. **Await them all** (`gh run watch <id>` per run). Report the wait; a platform runner is
+   minutes, not seconds.
+4. **Pull once, after every run has completed.** `git pull --ff-only`. Each workflow commits the
+   scoped proof files it wrote, stamped with `Purlin-Runner:` and `Purlin-Platform:` trailers.
+   One pull, not one per runner: a pull while another runner is still committing races it. If the
+   pull reports that the branch moved because a late commit-back landed mid-pull, retry it once.
+   The proof files arrive already committed, so the calling skill does not re-commit them.
+
+A workflow that failed is reported with the diagnosis framework in
+`references/spec_quality_guide.md` ("When Tests Fail") and routed to `purlin:build`. It is never
+fixed from inside the test run.
 
 **The loop is bounded at 3 rounds**, matching `skills/audit/SKILL.md` and
 `skills/verify/SKILL.md`. A fourth round means the remote failure is not converging; report which
 platform failed on which runner and stop rather than spending another CI run on it.
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠ REMOTE VERIFICATION NOT CONVERGING: 3 rounds, <platform> still failing.
+
+  <feature>: PROOF-N (@on(<platform>)) failed on <runner>
+  → Run: purlin:build <feature>
+
+Stopping rather than dispatching a fourth run.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
 
 **An absent runner warns and never blocks.** A platform with no `runner` block, or one whose
 provider `purlin:test` cannot dispatch, leaves its proofs reading `AWAITING RUNNER`. That is a

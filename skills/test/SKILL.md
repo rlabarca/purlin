@@ -18,10 +18,13 @@ read-only gate. See `references/remote_verification.md`.
 purlin:test [feature]           Run tests for a specific feature (unit tier)
 purlin:test                     Run all unit-tier tests
 purlin:test --all               Run all tests across all tiers
-purlin:test --local             Skip the remote path; report platform-scoped proofs as awaiting
 purlin:test --platform <id>     Target one platform: run it here if this host satisfies it,
                                 otherwise dispatch just that platform's runner
+purlin:test --platform none     Skip the remote path; report platform-scoped proofs as awaiting
 ```
+
+`--local` is the deprecated spelling of `--platform none`. It still works for one release and
+prints one line naming its replacement; see `references/purlin_commands.md`.
 
 ## Step 1 — Detect Test Framework
 
@@ -94,80 +97,34 @@ The proof plugins (`scripts/proof/pytest_purlin.py`, `scripts/proof/jest_purlin.
 ### Step 2b — The remote path
 
 Run this only when Step 1.5 listed platforms under `runner:` whose proofs have no result, and
-`--local` was not passed.
+`--platform none` was not passed.
 
-For each such platform, check `platforms.<id>.runner` in `.purlin/config.json`. **If it has a
-`runner` block with `provider: github` and the workflow file it names exists**, dispatch it. **If
-it has no runner block, or its workflow file is missing**, do not run anything for that platform:
-offer setup instead (below). A `runner` block naming a provider other than `github` is reported as
-not dispatchable and its proofs stay awaiting.
+For each such platform, read `platforms.<id>.runner` in `.purlin/config.json`. A `runner` block
+naming `provider: github` whose workflow file exists is dispatchable. A platform with no runner
+block, a missing workflow file, or a provider this skill cannot dispatch is not: its proofs stay
+awaiting, the run continues, and the setup offer below applies.
 
-The dispatchable platforms run as one round:
-
-1. **Push the current branch, once.** `git push -u origin HEAD`. Every runner proves the same
-   commit, so this happens once and not once per platform. The runner proves what is on the
-   branch, so anything uncommitted is not being verified: commit first, or report the gap.
-2. **Dispatch every remote platform's workflow** in parallel and capture each run id:
-   `gh workflow run <workflow> --ref <branch>` per platform, then `gh run list` to find the ids.
-3. **Await them all** (`gh run watch <id>` per run). Report the wait; a platform runner is minutes,
-   not seconds.
-4. **Pull once, after every run has completed.** `git pull --ff-only`. Each workflow commits the
-   scoped proof files it wrote, stamped with `Purlin-Runner:` and `Purlin-Platform:` trailers. One
-   pull, not one per runner: a pull while another runner is still committing races it. If the pull
-   reports that the branch moved because a late commit-back landed mid-pull, retry it once. Step 4
-   below does not re-commit these files; they arrived already committed.
-5. If a workflow failed, report the failing proofs with the diagnosis framework in
-   `references/spec_quality_guide.md` ("When Tests Fail") and route to `purlin:build`. Do not fix
-   them here.
-
-**Bound the loop at 3 rounds**, matching `skills/audit/SKILL.md` and `skills/verify/SKILL.md`. A
-fourth round means the remote failure is not converging; report which platform failed on which
-runner and stop rather than spending another CI run on it.
-
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚠ REMOTE VERIFICATION NOT CONVERGING: 3 rounds, <platform> still failing.
-
-  <feature>: PROOF-N (@on(<platform>)) failed on <runner>
-  → Run: purlin:build <feature>
-
-Stopping rather than dispatching a fourth run.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
+Dispatch every dispatchable platform as one round, by the procedure in
+`references/remote_verification.md` ("The loop"): that file states the four operations, their
+order, the one retry and the round bound, and this skill does not restate them. Step 4 below does
+not re-commit the returned proof files, which arrive already committed. A workflow that fails is
+reported with the diagnosis framework in `references/spec_quality_guide.md` ("When Tests Fail")
+and routed to `purlin:build`; nothing is fixed here.
 
 #### Offering setup for a platform with no runner
 
-Setup is offered per platform, on discovery. **Init is not the place for this.** `purlin:init`
-writes the `remote_verification` config field at its default and asks nothing about runners. A
-project with no platform-declared proofs has no runner to configure and the question has no answer
-yet.
+When a platform's proofs are awaiting and no workflow proves that platform, offer, for that one
+platform, to write both `.github/workflows/purlin-<id>-proofs.yml` from the template in
+`references/remote_verification.md` and the `runner` block in `platforms.<id>` of
+`.purlin/config.json`. Both or neither, and neither without consent: a workflow file changes what
+runs on every push to the repository, and a workflow the config does not name is one this skill
+will never dispatch.
 
-```
-2 proofs are declared @on(windows-2022) and no workflow proves that platform.
-
-They will report as awaiting a runner until a host that satisfies windows-2022 runs them.
-I can scaffold a GitHub Actions workflow that runs them on a windows-2022 runner and
-commits the scoped proof file back to this branch, and register that workflow under
-platforms.windows-2022 in .purlin/config.json so purlin:test can dispatch it.
-
-→ Set it up? (the template is in references/remote_verification.md)
-```
-
-Only on a yes, and for that one platform, write both:
-
-1. `.github/workflows/purlin-<id>-proofs.yml` from the template in
-   `references/remote_verification.md`, substituting the platform id, the `runs-on` label, the
-   per-framework setup block from the **Runner setup** column of
-   `references/supported_frameworks.md`, and the test command.
-2. The `runner` block in `platforms.<id>` of `.purlin/config.json`:
-   `{"provider": "github", "runs_on": "<runs-on>", "workflow": "purlin-<id>-proofs.yml"}`,
-   creating the `platforms.<id>` entry if the id is a family id with no entry yet.
-
-Write neither without consent: a workflow file changes what runs on every push to the repository,
-and the config field is the record of what this project dispatches. **This consent path is the one
-place a skill other than `purlin:init` writes `.purlin/config.json`**, which is why
-`references/drift_criteria.md` records `purlin:test` as the `platforms` field's owner. Write both
-or neither: a workflow the config does not name is one this skill will never dispatch.
+**Init is not the place for this.** `purlin:init` writes the `remote_verification` field at its
+default and asks nothing about runners, because a project with no platform-declared proofs has no
+runner to configure. This consent path is the one place a skill other than `purlin:init` writes
+`.purlin/config.json`, which is why `references/drift_criteria.md` records `purlin:test` as the
+`platforms` field's owner.
 
 ### Proof File Freshness Check
 
