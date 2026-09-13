@@ -27,15 +27,13 @@ If the user says yes, commit the changes. If no, proceed but note the receipts m
 
 ### Pre-check: pending migrations
 
-`sync_status` opens with a pending-migrations advisory when the project has not been brought up to
-the installed plugin (`references/purlin_commands.md#pending-migrations`). While any `legacy-*`
-migration is pending, this skill issues NO receipt for any feature: the legacy `@windows` alias
-makes coverage a guess, so a receipt would be a claim about a reading rather than about the
-project. Print the advisory, print `→ Run: purlin:init --update`, and stop before Step 3. This is
-a refusal to claim, not a gate: nothing is blocked, no push is stopped, and
-`references/hard_gates.md` gains no entry. The other pending migrations (`config-fields-missing`,
-`receipt-v1`) are reported and do not stop verification; `receipt-v1` is what a run of this skill
-clears, by re-issuing those receipts under the version 2 formula from a fresh run.
+While any `legacy-*` migration is pending (`references/purlin_commands.md#pending-migrations`),
+this skill issues NO receipt for any feature: the legacy `@windows` alias makes coverage a
+guess, so a receipt would be a claim about a reading. Print the advisory, print
+`→ Run: purlin:init --update`, and stop before Step 3. This is a refusal to claim, not a gate:
+nothing is blocked and `references/hard_gates.md` gains no entry. Every other pending migration
+is reported and does not stop verification, and `receipt-v1` is the one a run of this skill
+clears.
 
 ### Step 1 — Run All Tests
 
@@ -71,10 +69,11 @@ This is informational — it does not block receipt issuance.
 
 For each feature with PASSING status:
 
-1. Compute the `vhash`. What it binds and how the segments are joined is stated
-   once, in `specs/mcp/sync_status.md` RULE-6; never restate the formula here.
+1. Compute the `vhash`. What it binds, and how the segments are joined, is stated
+   once in `references/formats/receipt_format.md` ("What the vhash binds"); never
+   restate the formula here.
 2. Get `commit = git rev-parse HEAD`.
-3. Write receipt to `specs/<category>/<feature>.receipt.json` in the shape
+3. Write the receipt to `specs/<category>/<feature>.receipt.json` in the shape
    `references/formats/receipt_format.md` defines (version 2: `vhash_version`,
    `rule_hashes`, full proof identity, an `evidence` block and the optional
    `manual` and `awaiting_runner` lists). That file is the contract; this skill
@@ -83,58 +82,53 @@ For each feature with PASSING status:
 #### The run the receipt rests on
 
 Do not issue a receipt without a recorded test run. The issuer refuses unless the
-run marker exists, records a sweep that passed, and names the commit that is HEAD
-now, because a receipt over proof files nobody re-ran is a claim about a file
-rather than about a test. The override exists (`--no-run-check`) and it is not
-silent: it warns, and the receipt records `evidence.test_run: null`.
+run marker exists, records a sweep that passed, and names the commit that is HEAD now,
+because a receipt over proof files nobody re-ran is a claim about a file rather than
+about a test. The override exists (`--no-run-check`) and it is not silent: it warns,
+and the receipt records `evidence.test_run: null`. A proof file that the recorded run
+did not execute and no runner committed is evidence with no witness; the issuer names
+the file and the count and issues nothing for that feature.
 
-A proof file that the recorded run did not execute and no runner committed is
-evidence with no witness. The issuer names the file and the count and issues
-nothing for that feature.
-
-The marker is `.purlin/runtime/test_run.json`, and every project has one: in a
-consumer project the proof plugins write it themselves, each one writing or
-merging it at the moment it writes its proof files, and in this repository
-`dev/run_tests.sh` merges its own summary over those plugin runs. The contract is
-stated once, in `specs/_anchors/proof_common.md` RULE-19; do not restate it here.
-The receipt carries the marker's `sweep` and its `runs` list, one entry per plugin
-run that contributed, so the reader can see which runs the evidence rests on. It
-carries the marker's `skipped_proofs` too, one `{feature, id, test_file,
-test_name, reason}` entry per marked test the run skipped, so the receipt says
-which of its proof entries were held from an earlier commit because a
+The marker is `.purlin/runtime/test_run.json`, and every project has one. The
+proof plugins write it themselves, each one writing or merging it as it writes its
+proof files, and the project's own sweep script, where it has one, merges its summary
+over those plugin runs. Its shape is stated once, in `references/formats/proofs_format.md`
+("Run marker"), and this skill does not restate it. The receipt carries the marker's
+`runs` list, one entry per plugin run that contributed, so the reader can see which
+runs the evidence rests on, and its `skipped_proofs` list, one `{feature, id,
+test_file, test_name, reason}` entry per marked test the run skipped, so the receipt
+says which of its proof entries were held from an earlier commit because a
 prerequisite was missing here rather than re-proved by this run
-(`specs/_anchors/proof_common.md` RULE-20). A project with no sweep script of
-its own therefore needs no `--no-run-check`.
+(`references/formats/proofs_format.md`, "Run marker", `skipped_proofs`).
 
 #### Manual stamps in the count
 
 A rule carrying a current `@manual(email, date, sha)` stamp counts as proved, so a
-feature can reach PASSING on a mix of tests and stamps and the issuer receipts it.
-A stamp is current only while nothing in the spec's `> Scope:` has been committed
-since its sha, and a spec with no `> Scope:` has no stamps that count at all. The
-stamps that counted go into the receipt's `manual` array and into the vhash, so
-re-stamping the same rule stales the receipt. See `specs/mcp/sync_status.md`
-RULE-5 and RULE-59. A stamp is coverage, not a signature: it records that a named
-person said they checked something on a named day.
+feature can reach PASSING on a mix of tests and stamps and the issuer receipts it. A
+stamp is current only while nothing in the spec's `> Scope:` has been committed since
+its sha, and a spec with no `> Scope:` has no stamps that count at all. The stamps
+that counted go into the receipt's `manual` array and into the vhash, so re-stamping
+the same rule stales the receipt. The stamp's syntax is in
+`references/formats/proofs_format.md` ("Manual Stamp Format"). A stamp is coverage,
+not a signature: it records that a named person said they checked something on a
+named day.
 
 #### Platform-partial receipts
 
-A feature declaring a proof `@on(windows-2022)` that has no result there still
-earns a receipt: an absent runner is not a failure, and blocking on one would make
-a receipt unobtainable on every machine but the runner. The receipt records the gap
-in `awaiting_runner` instead, as the triple that names which proof, at which tier,
-on which platform:
+A feature declaring a proof `@on(windows-2022)` that has no result there still earns a
+receipt: an absent runner is not a failure, and blocking on one would make a receipt
+unobtainable on every machine but the runner. The receipt records the gap in
+`awaiting_runner` instead, as the triple that names which proof, at which tier, on
+which platform:
 
 ```json
 "awaiting_runner": [{"id": "PROOF-53", "tier": "unit", "platform": "windows-2022"}]
 ```
 
-so it never claims more than was verified. The key is omitted when nothing is
-awaiting, so an ordinary receipt is unchanged. A receipt carrying it is a
-verified-here claim, not a verified-everywhere one.
-`sync_status` reports the same proofs as awaiting a runner, and re-running verify
-after CI commits the results clears the list. See `specs/skills/skill_verify.md`
-RULE-9 and `specs/mcp/sync_status.md` RULE-47.
+so it never claims more than was verified. The key is omitted when nothing is awaiting
+(`references/formats/receipt_format.md`, Fields), so an ordinary receipt is unchanged.
+A receipt carrying it is a verified-here claim, not a verified-everywhere one, and
+re-running verify after CI commits the results clears the list.
 
 ### Step 4 — Report
 
@@ -151,22 +145,6 @@ No receipt (M features):
 ```
 
 Where `N` is the number of features that received receipts and `T` is the total number of features (receipted + partial + failing). This fraction makes it obvious when the job is not complete.
-
-### Step 4a2 — Structural Check Summary
-
-After issuing receipts, check if any features have structural checks but are not PASSING (structural checks are not counted as proofs). If so, add a summary section after the receipts table:
-
-```
-Features with structural checks only (not PASSING):
-  purlin_agent (8 structural checks, 0 behavioral proofs)
-  skill_build (6 structural checks, 0 behavioral proofs)
-  purlin_references (9 structural checks, 0 behavioral proofs)
-
-These specs prove documents have the right content, not that the system follows them.
-→ Consider: create specs/integration/e2e_purlin_lifecycle.md with @e2e proofs that test actual agent behavior
-```
-
-This is informational — not a gate. The receipts are still valid. The note makes it visible that the coverage is structural, not behavioral.
 
 ### Step 4b — Directive Block for Remaining Work
 
@@ -268,28 +246,18 @@ Clean-room re-execution that compares results against committed receipts.
 1. Run the full test suite via `purlin:test --all` (same as default mode).
 2. Compute vhash for each feature.
 3. Compare against existing `*.receipt.json` files.
-4. For each feature with a matching receipt, verify it has behavioral proofs (structural-only features cannot have receipts).
-5. Report features:
+4. Report each feature as MATCH (receipt valid), MISMATCH (receipt stale, rules or
+   proofs changed) or MISSING (no receipt on file):
 
 ```
-AUDIT RESULTS:
-
-Behavioral features: 2/2 MATCH
+RECHECK RESULTS: 2/3 MATCH
   auth_login: MATCH (vhash=a1b2c3d4)
   user_profile: MATCH (vhash=e5f6a7b8)
-
-Structural-only features: 2/2 MATCH (not counted toward integrity score)
-  purlin_agent: MATCH (vhash=f1a2b3c4) — 8 proofs, all grep/existence
-  skill_build: MATCH (vhash=d5e6f7a8) — 6 proofs, all grep/existence
-  → Structural-only features need behavioral rules and E2E proofs for full audit credit
-
-Missing/Mismatched:
   webhook_delivery: MISMATCH (receipt stale)
 ```
 
-6. Report: MATCH (receipt valid), MISMATCH (receipt stale — rules or proofs changed), MISSING (no receipt on file).
-
-For CI integration: exit code 0 if all receipts match (both behavioral and structural-only), exit code 1 if any mismatch or missing. The structural-only separation is informational — it does not change the exit code, but it makes the coverage quality visible in audit reports.
+For CI integration: exit code 0 when every receipt matches, exit code 1 on any mismatch
+or missing receipt.
 
 ---
 

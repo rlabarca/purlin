@@ -1980,9 +1980,12 @@ class TestSkillVerify:
         assert 'references/formats/receipt_format.md' in content, (
             "the skill must point at the receipt format file rather than "
             "carry its own copy of the shape")
-        assert 'RULE-6' in content and 'sync_status' in content, (
-            "the vhash formula is stated once, in sync_status RULE-6; the "
-            "skill must point at it")
+        assert 'What the vhash binds' in content, (
+            "the vhash formula is stated once, in receipt_format.md's "
+            "\"What the vhash binds\"; the skill must point at that section")
+        assert 'specs/mcp/' not in content, (
+            "a consumer project has no specs/mcp/: the skill must cite the "
+            "format file it ships, not Purlin's own spec of its MCP server")
 
         for v2_field in ('vhash_version', 'rule_hashes', 'evidence',
                          'awaiting_runner'):
@@ -2026,10 +2029,15 @@ class TestSkillVerify:
             "Step 3 must name the marker path a consumer has to produce"
         assert 'proof plugins write it' in step3, \
             "Step 3 must say the proof plugins write the marker themselves"
-        assert 'dev/run_tests.sh' in step3, \
-            "Step 3 must say what writes the marker in this repository"
-        assert 'RULE-19' in step3 and 'proof_common' in step3, \
-            "Step 3 must point at the contract rather than restate it"
+        assert "project's own sweep script, where it has one" in step3, (
+            "Step 3 must describe the sweep script as optional; a consumer "
+            "project has none")
+        assert 'dev/run_tests.sh' not in step3, (
+            "Step 3 must not name this repository's own sweep script, which "
+            "no consumer has")
+        assert 'references/formats/proofs_format.md' in step3 and \
+               'Run marker' in step3, \
+            "Step 3 must cite the marker's format section rather than restate it"
         assert '`runs`' in step3, \
             "Step 3 must name the runs list the receipt carries"
 
@@ -2048,8 +2056,13 @@ class TestSkillVerify:
         assert 'prerequisite' in step3, (
             "Step 3 must say why the test did not run: a prerequisite this "
             "host lacks, not a failure")
-        assert 'RULE-20' in step3 and 'proof_common' in step3, \
-            "Step 3 must point at proof_common RULE-20 rather than restate it"
+        para = [b for b in step3.split('\n\n') if 'skipped_proofs' in b][0]
+        assert 'references/formats/proofs_format.md' in para, (
+            "Step 3 must point at the format file that defines skipped_proofs "
+            "rather than restate it")
+        assert 'specs/_anchors/' not in step3, (
+            "a consumer's specs/_anchors/ is empty: Step 3 must cite the "
+            "format file it ships, not Purlin's own anchor")
 
     @pytest.mark.proof("skill_verify", "PROOF-1", "RULE-1")
     def test_has_frontmatter(self):
