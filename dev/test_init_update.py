@@ -1123,3 +1123,69 @@ class TestLocalCopyIsBackedUp:
             assert done.returncode == 0, (done.stdout, done.stderr)
         finally:
             shutil.rmtree(root, ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------
+# sync_status RULE-55: the version gap runs one way
+# ---------------------------------------------------------------------------
+
+def _bump(version, delta):
+    """`version` with its minor release moved by `delta`."""
+    major, minor, patch = (int(p) for p in version.split('.')[:3])
+    return f'{major}.{minor + delta}.{patch}'
+
+
+def _with_version(root, version):
+    config = json.loads(_read(root, '.purlin/config.json'))
+    config['version'] = version
+    _write(root, '.purlin/config.json', json.dumps(config, indent=2) + '\n')
+    return config
+
+
+class TestVersionGapIsOneDirectional:
+
+    @pytest.mark.proof("sync_status", "PROOF-124", "RULE-55", tier="integration")
+    def test_a_newer_stamp_is_a_line_and_not_a_migration(self):
+        """RULE-55: the work is on the plugin's side, so there is no id."""
+        installed = ps._read_version()
+        root = _make_plain_project()
+        try:
+            newer = _bump(installed, 1)
+            config = _with_version(root, newer)
+            gaps = ps._config_field_gaps(config)
+            assert gaps[3] is None, gaps
+            assert gaps[4] == (newer, installed), gaps
+            assert ps._pending_migrations(root) == [], \
+                ps._pending_migrations(root)
+
+            code, out, err = _run(root, '--check')
+            assert code == 0, (out, err)
+            assert json.loads(out)['pending'] == [], out
+            assert newer in err and installed in err, err
+            assert 'Update the plugin, not the project' in err, err
+            for migration_id in ps._MIGRATION_ORDER:
+                assert migration_id not in err, (migration_id, err)
+
+            # Older, which is the direction the update repairs.
+            older = _bump(installed, -1) if not installed.startswith('0.0') \
+                else '0.0.1'
+            config = _with_version(root, older)
+            code, out, err = _run(root, '--check')
+            entry = _pending(out).get('config-fields-missing')
+            assert entry, out
+            assert f'version is {older}, VERSION is {installed}' in \
+                entry['summary'], entry['summary']
+            assert 'Update the plugin, not the project' not in err, err
+
+            # A stamp that is not a semver is still a gap a reader should see.
+            _with_version(root, 'not-a-version')
+            code, out, _err = _run(root, '--check')
+            entry = _pending(out).get('config-fields-missing')
+            assert entry and 'version is not-a-version' in entry['summary'], out
+
+            # Only the numeric release is compared.
+            config = _with_version(root, installed + '-rc1')
+            gaps = ps._config_field_gaps(config)
+            assert gaps[3] is None and gaps[4] is None, gaps
+        finally:
+            shutil.rmtree(root, ignore_errors=True)

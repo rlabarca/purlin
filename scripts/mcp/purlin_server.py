@@ -3022,12 +3022,39 @@ def _digest_schema_old(project_root):
     return (found, _REPORT_SCHEMA_VERSION)
 
 
+def _semver_key(version):
+    """`(major, minor, patch)` for comparison, or None when it is not a semver.
+
+    Only the numeric release is compared. A prerelease suffix orders below its
+    own release by the semver spec, which is a distinction no migration acts
+    on, so `0.10.0-rc1` and `0.10.0` are the same stamp here.
+    """
+    if not isinstance(version, str):
+        return None
+    core = re.split(r"[-+]", version.strip(), maxsplit=1)[0]
+    parts = core.split('.')
+    if not 1 <= len(parts) <= 3 or not all(p.isdigit() for p in parts):
+        return None
+    while len(parts) < 3:
+        parts.append('0')
+    return tuple(int(p) for p in parts)
+
+
 def _config_field_gaps(config):
-    """(backfill, asked, retired, version_gap) for `.purlin/config.json`.
+    """(backfill, asked, retired, version_gap, newer_stamp) for the config.
 
     `backfill` is filled from the template, `asked` is put to the user,
-    `retired` is removed, and `version_gap` is (current, installed) when the
-    stamp is not this plugin's.
+    `retired` is removed, `version_gap` is (current, installed) when the stamp
+    is older than this plugin, and `newer_stamp` is the same pair when it is
+    newer.
+
+    The gap is one-directional because the migration is. Comparing the two
+    strings for inequality reported a pending migration to everyone running a
+    plugin older than the project, and `--update` had nothing to do for them:
+    the work is on the plugin's side, and telling them to run a command that
+    would stamp the project back down is telling them to lose the state the
+    newer plugin wrote. A stamp that is not a semver at either end is compared
+    as text, so an unreadable value is still reported rather than ignored.
     """
     template = _template_config()
     backfill, asked = [], []
@@ -3038,10 +3065,35 @@ def _config_field_gaps(config):
     retired = [key for key in _RETIRED_CONFIG_FIELDS if key in config]
     installed = _read_version()
     current = config.get('version')
-    version_gap = None
+    version_gap = newer_stamp = None
     if current and installed and current != installed:
-        version_gap = (current, installed)
-    return backfill, asked, retired, version_gap
+        have, want = _semver_key(current), _semver_key(installed)
+        if have is None or want is None:
+            version_gap = (current, installed)
+        elif have > want:
+            newer_stamp = (current, installed)
+        elif have < want:
+            version_gap = (current, installed)
+    return backfill, asked, retired, version_gap, newer_stamp
+
+
+def _newer_plugin_lines(config):
+    """The advisory for a project stamped by a plugin newer than this one.
+
+    Not a pending migration and never part of the pending list: nothing in the
+    project is out of date, the installed plugin is, and `purlin:init --update`
+    would stamp the project down to it (`sync_status` RULE-55).
+    """
+    if not config:
+        return []
+    _backfill, _asked, _retired, _gap, newer = _config_field_gaps(config)
+    if not newer:
+        return []
+    return [f'⚠ This project was initialized by Purlin {newer[0]} and the '
+            f'installed plugin is {newer[1]}.',
+            '→ Update the plugin, not the project: '
+            'claude plugin marketplace update',
+            '']
 
 
 def _v1_receipts(project_root):
@@ -3144,8 +3196,8 @@ def _pending_migrations(project_root, config=None, features=None,
     # project to bring up to date, which is purlin:init's case, not the
     # update's. Without this every fixture with a bare `.purlin/` would report
     # a migration it cannot act on.
-    backfill, asked, retired, version_gap = (
-        _config_field_gaps(config) if config else ([], [], [], None))
+    backfill, asked, retired, version_gap, _newer = (
+        _config_field_gaps(config) if config else ([], [], [], None, None))
     if backfill or asked or retired or version_gap:
         parts = []
         if backfill:
@@ -3368,6 +3420,10 @@ def sync_status(project_root):
     preamble.extend(_pending_migration_lines(_pending_migrations(
         project_root, config, features=features,
         legacy_proof_files=legacy_proof_files)))
+
+    # The other direction, which is not a migration: the plugin is behind the
+    # project, and no command run here fixes that (RULE-55).
+    preamble.extend(_newer_plugin_lines(config))
 
     # Check for uncommitted spec/proof changes
     uncommitted = _check_uncommitted_specs(project_root)

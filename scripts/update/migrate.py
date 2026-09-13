@@ -403,6 +403,12 @@ def check(ps, root):
     pending = ps._pending_migrations(root)
     print(json.dumps({'project_root': os.path.abspath(root),
                       'pending': pending}, indent=2))
+    # A project stamped by a newer plugin than this one is not pending work:
+    # it is said on stderr, outside the JSON, because there is no id to apply
+    # and a reader who parses the list must not find one there.
+    for line in ps._newer_plugin_lines(ps.resolve_config(root)):
+        if line:
+            print(line, file=sys.stderr)
     blocking = _blocking(pending)
     if blocking:
         ids = ', '.join(entry['id'] for entry in blocking)
