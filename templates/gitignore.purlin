@@ -17,3 +17,6 @@
 .purlin/report-stamp.js
 # Where this machine keeps the installed plugin (read by .purlin/hooks/)
 .purlin/plugin-root
+
+# Plugin copies the update backed up before refreshing them
+.purlin/plugins/*.local-*.bak

@@ -52,6 +52,7 @@ WHAT --apply DOES, AND WHAT IT REFUSES TO DO
 """
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -212,6 +213,34 @@ def _apply_legacy_marker(ps, root, platform_id, actions):
                            f'in {rel} to tier unit with on({platform_id})')
 
 
+def _back_up_copy(path, rel):
+    """Keep the bytes about to be overwritten, and return where they went.
+
+    A stale copy is stale because it differs from the plugin's file, and this
+    script cannot tell an old plugin's bytes from a change the project made on
+    purpose: a consumer who added a line to the vitest reporter and a consumer
+    who is three releases behind look exactly alike on disk. Overwriting either
+    without a copy is destroying work that only exists here. The backup is
+    named for the sha256 of the bytes it holds, so re-applying the same
+    migration writes the same path rather than a second file, and
+    `templates/gitignore.purlin` excludes it because it is one machine's
+    working state and not the project's.
+    """
+    try:
+        with open(path, 'rb') as f:
+            previous = f.read()
+    except (IOError, OSError):
+        return None
+    digest = hashlib.sha256(previous).hexdigest()[:8]
+    backup = f'{path}.local-{digest}.bak'
+    try:
+        with open(backup, 'wb') as f:
+            f.write(previous)
+    except (IOError, OSError):
+        return None
+    return f'{rel}.local-{digest}.bak'
+
+
 def _apply_plugin_copies_stale(ps, root, _platform_id, actions):
     """Each `.purlin/plugins/` copy is replaced by the installed plugin's file.
 
@@ -224,9 +253,13 @@ def _apply_plugin_copies_stale(ps, root, _platform_id, actions):
     for rel in ps._stale_plugin_copies(root):
         name = os.path.basename(rel)
         source_name = sources.get(name, name)
-        shutil.copyfile(os.path.join(source_dir, source_name),
-                        os.path.join(root, rel))
-        actions.append(f'copied scripts/proof/{source_name} over {rel}')
+        path = os.path.join(root, rel)
+        backup_rel = _back_up_copy(path, rel)
+        shutil.copyfile(os.path.join(source_dir, source_name), path)
+        line = f'copied scripts/proof/{source_name} over {rel}'
+        if backup_rel:
+            line += f' (its previous bytes are at {backup_rel})'
+        actions.append(line)
 
 
 def _apply_config_fields_missing(ps, root, _platform_id, actions,

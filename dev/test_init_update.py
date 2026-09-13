@@ -1055,3 +1055,71 @@ class TestDigestSchemaOld:
                 'the update handed a digest to a project that has none'
         finally:
             shutil.rmtree(bare, ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------
+# skill_init RULE-82: a locally modified copy is kept before it is overwritten
+# ---------------------------------------------------------------------------
+
+PYTEST_SOURCE = os.path.join(ROOT, 'scripts', 'proof', 'pytest_purlin.py')
+
+
+def _drift_pytest_copy(root, line):
+    """Put the plugin's file plus one line of the project's own in the copy."""
+    dest = os.path.join(root, '.purlin', 'plugins', 'pytest_purlin.py')
+    shutil.copyfile(PYTEST_SOURCE, dest)
+    with open(dest, 'a') as f:
+        f.write(line)
+    with open(dest, 'rb') as f:
+        previous = f.read()
+    return previous, hashlib.sha256(previous).hexdigest()[:8]
+
+
+class TestLocalCopyIsBackedUp:
+
+    @pytest.mark.proof("skill_init", "PROOF-89", "RULE-82", tier="integration")
+    def test_the_previous_bytes_survive_at_a_named_path(self):
+        """RULE-82: a local change and an old plugin look alike, so both are kept."""
+        root = _make_plain_project()
+        try:
+            local = '\n# this project measures something of its own\n'
+            previous, digest = _drift_pytest_copy(root, local)
+            backup_rel = f'.purlin/plugins/pytest_purlin.py.local-{digest}.bak'
+
+            code, out, err = _run(root, '--apply', 'plugin-copies-stale')
+            assert code == 0, err
+            with open(PYTEST_SOURCE, 'rb') as f:
+                source = f.read()
+            with open(os.path.join(root, '.purlin', 'plugins',
+                                   'pytest_purlin.py'), 'rb') as f:
+                assert f.read() == source, 'the copy is not the plugin file'
+            with open(os.path.join(root, backup_rel), 'rb') as f:
+                assert f.read() == previous, 'the previous bytes are gone'
+            assert backup_rel in out, out
+
+            # The backup is not itself a plugin copy, and nothing is pending.
+            code, out, _ = _run(root, '--check')
+            assert 'plugin-copies-stale' not in _pending(out), out
+            assert backup_rel not in out, out
+
+            before = _tree_hashes(root)
+            code, _out, err = _run(root, '--apply', 'plugin-copies-stale')
+            assert code == 0, err
+            assert _tree_hashes(root) == before, 'a second apply wrote again'
+
+            # The same drift again writes the same path, not a second file.
+            _drift_pytest_copy(root, local)
+            code, _out, err = _run(root, '--apply', 'plugin-copies-stale')
+            assert code == 0, err
+            backups = sorted(n for n in os.listdir(
+                os.path.join(root, '.purlin', 'plugins'))
+                if n.endswith('.bak'))
+            assert backups == [os.path.basename(backup_rel)], backups
+
+            ignore = _read(ROOT, 'templates/gitignore.purlin')
+            assert '.purlin/plugins/*.local-*.bak' in ignore, ignore
+            _write(root, '.gitignore', ignore)
+            done = _git(root, 'check-ignore', backup_rel)
+            assert done.returncode == 0, (done.stdout, done.stderr)
+        finally:
+            shutil.rmtree(root, ignore_errors=True)

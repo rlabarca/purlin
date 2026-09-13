@@ -279,6 +279,8 @@ UPDATING:
   specs/audit/static_checks.md          2 proof tags @windows -> @unit @on(windows-2022)
   dev/test_windows_native.py            2 markers, windows tier -> tier unit, on(windows-2022)
   .purlin/plugins/pytest_purlin.py      replaced with the installed plugin's copy
+                                        (previous bytes kept at
+                                         pytest_purlin.py.local-3f9a1c04.bak)
   .purlin/config.json                   remote_verification="off", version=0.10.0
   .purlin/hooks/pre-commit              rewritten from the installed plugin
   .git/hooks/pre-commit                 a dangling symlink, replaced by the delegator
