@@ -687,7 +687,7 @@ class TestSingleHomeLint:
         assert single_home(rows=(row,), strict=True) == [], (
             f"the committed tree must carry the table only in {home}")
 
-    @pytest.mark.proof("purlin_prose", "PROOF-24", "RULE-15")
+    @pytest.mark.proof("purlin_prose", "PROOF-31", "RULE-15")
     def test_the_vhash_recipe_pasted_into_a_second_file_is_named(
             self, tmp_path):
         row = _row(HOMES, 'vhash segment list')
@@ -717,7 +717,7 @@ class TestSingleHomeLint:
         assert single_home(rows=(row,), strict=True) == [], (
             f"the committed tree must carry the recipe only in {home}")
 
-    @pytest.mark.proof("purlin_prose", "PROOF-25", "RULE-15")
+    @pytest.mark.proof("purlin_prose", "PROOF-32", "RULE-15")
     def test_the_design_formula_restated_in_a_guide_is_named(self, tmp_path):
         row = _row(HOMES, 'design formula')
         pattern, home = row[2], row[3]
