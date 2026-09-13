@@ -41,6 +41,9 @@ Purlin — Spec-Driven Development
   purlin:init                   Initialize project (.purlin/, specs/, proof plugin)
   purlin:init --update          Bring the project up to the installed plugin
   purlin:init --update --check  Report pending migrations; write nothing
+  purlin:init --set <key> <value>
+                                Change one setting: pre_push, report,
+                                digest, mutation_checks or quality_gate
   purlin:init --add-plugin <src> Install a proof plugin from a file path or git URL
   purlin:rename <old> <new>     Rename feature across all Purlin artifacts
   purlin:anchor <cmd>           Sync read-only constraints from external sources
@@ -51,8 +54,10 @@ Purlin — Spec-Driven Development
 ```
 
 **Deprecated for one release:** `purlin:test --local` is the old spelling of
-`purlin:test --platform none`. It still runs, and prints one line naming the replacement. It is
-removed in the release after next.
+`purlin:test --platform none`, and `purlin:init --pre-push`, `--report`, `--digest`,
+`--mutation-checks` and `--quality-gate` are the old spellings of the matching
+`purlin:init --set <key> <value>` key. Each still runs and prints one line naming its
+replacement. All six are removed in 0.12.0.
 
 ## Quick Reference
 

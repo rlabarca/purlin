@@ -23,8 +23,8 @@ purlin:test --platform <id>     Target one platform: run it here if this host sa
 purlin:test --platform none     Skip the remote path; report platform-scoped proofs as awaiting
 ```
 
-`--local` is the deprecated spelling of `--platform none`. It still works for one release and
-prints one line naming its replacement; see `references/purlin_commands.md`.
+`--local` is the old spelling of `--platform none`. It still runs and prints one line naming
+its replacement, and it is removed in 0.12.0; see `references/purlin_commands.md`.
 
 ## Step 1 — Detect Test Framework
 
