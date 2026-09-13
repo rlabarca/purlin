@@ -119,7 +119,7 @@ def update_config(project_root, key, value):
     purlin_dir = os.path.join(project_root, '.purlin')
     local_path = os.path.join(purlin_dir, 'config.local.json')
 
-    # Read existing local overrides (sparse — may have few or no keys)
+    # Read existing local overrides (sparse: may have few or no keys)
     local = {}
     if os.path.isfile(local_path):
         try:

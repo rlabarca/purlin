@@ -33,7 +33,7 @@ from config_engine import (PROJECT_ROOT_SOURCES, find_project_root,
                            update_config)
 
 # ---------------------------------------------------------------------------
-# sync_status — the core coverage tool
+# sync_status: the core coverage tool
 # ---------------------------------------------------------------------------
 
 _RULE_RE = re.compile(r'^-\s+(RULE-\d+):\s*(.+)', re.MULTILINE)
@@ -48,7 +48,7 @@ _MANUAL_UNSTAMPED_RE = re.compile(r'@manual(?:\s|$)')
 
 # A tier tag is metadata appended after the description: ` @e2e`, ` @manual(...)`.
 # It must NOT match a description whose prose merely ends in an @word, e.g.
-# "verify spec_format.md documents @integration, @e2e, and @windows" — which was
+# "verify spec_format.md documents @integration, @e2e, and @windows", which was
 # read as tier=windows and had its last clause silently truncated. Requiring that
 # the tag not follow a list connector (',' 'and' 'or') separates the two cases.
 _TIER_TAG_BODY = r'(?<!\band)(?<!\bor)(?<!,)\s+@(\w+)(?:\(([^)]*)\))?\s*$'
@@ -154,7 +154,7 @@ def _parse_description(content):
         if not stripped:
             continue
         if stripped.startswith('>') and not _META_FIELD_RE.match(stripped):
-            # Continuation line — strip leading > and whitespace
+            # Continuation line: strip leading > and whitespace
             text = stripped[1:].strip()
             if text:
                 lines.append(text)
@@ -524,7 +524,7 @@ def _read_proofs(project_root, legacy=None):
             if subdir_paths:
                 chosen = subdir_paths[0]
             else:
-                # No spec match — pick most recently modified
+                # No spec match: pick most recently modified
                 chosen = max(paths, key=os.path.getmtime)
 
         try:
@@ -2442,7 +2442,7 @@ def _build_summary_table(summary_rows, audit_summary=None, design_summary=None,
     name_width = max(name_width, len("Feature"))
 
     # The longest status word is 8 characters (UNTESTED, VERIFIED). The column was
-    # ruled for 9 and padded to 7, so those two overflowed the right border by one —
+    # ruled for 9 and padded to 7, so those two overflowed the right border by one,
     # and a spec-only project is 100% UNTESTED, which misaligned every single row.
     # Ruled from the tokens actually rendered, not from the vocabulary: a
     # marked token is one character wider, and a column ruled for the word
@@ -2514,7 +2514,7 @@ def _build_summary_table(summary_rows, audit_summary=None, design_summary=None,
                                          audit_summary, design_summary))
     else:
         # No audit cache. Distinguish "nothing has been tested yet" from "tests
-        # exist but were never audited" — reporting them identically made a
+    # exist but were never audited", reporting them identically made a
         # deliberate spec-first project look like a neglected one. summary_rows
         # carries (name, coverage_str, _, status); UNTESTED everywhere means no
         # proof has executed at all.
@@ -3715,7 +3715,7 @@ def _build_proof_lookup(name, rule_entries, all_proofs):
         if rule not in proof_by_rule or p.get('status') == 'fail':
             proof_by_rule[rule] = p
 
-    # Required/global proofs — filed under the source feature's name
+    # Required/global proofs: filed under the source feature's name
     source_features = {src for _, label, src, _ in rule_entries if label != 'own'}
     for src_name in source_features:
         for p in all_proofs.get(src_name, []):
@@ -4171,7 +4171,7 @@ def _report_feature(name, info, all_features, all_proofs, project_root,
     # Check manual proofs
     manual_proofs = info.get('manual_proofs', {})
 
-    # Header — no rules
+    # Header: no rules
     if total == 0:
         lines.append(f"{name}: no rules defined")
         lines.extend(warnings)
@@ -4187,7 +4187,7 @@ def _report_feature(name, info, all_features, all_proofs, project_root,
     # Build deferred suffix for header
     deferred_suffix = f" ({deferred_count} deferred)" if deferred_count else ""
 
-    # Header — all rules proved
+    # Header: all rules proved
     if all_proved_passing and not warnings:
         vhash = verdict['vhash']
         receipt = verdict['receipt']
@@ -5186,7 +5186,7 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
                 })
 
             # Planned proofs: spec PROOF-N entries with no executed result.
-            # Display-only — never affects proved/total, vhash, or status.
+            # Display-only: never affects proved/total, vhash, or status.
             bare_rule = key.split('/', 1)[1] if '/' in key else key
             executed_ids = {p['id'] for p in proofs_data}
             tier_by_id = src_info.get('proof_tier_by_id', {})
@@ -5693,7 +5693,7 @@ def _resolve_since_anchor(project_root, since_arg=None):
         count = int(count_str) if count_str.isdigit() else 0
         if count < 30:
             return init_sha, f'since Purlin init ({count} commits)'
-        # Too many commits — return recommendation instead of drift
+        # Too many commits: return recommendation instead of drift
         return None, json.dumps({
             'recommendation': 'spec-from-code',
             'reason': (f'No verification history found and {count} commits exist '
@@ -5704,7 +5704,7 @@ def _resolve_since_anchor(project_root, since_arg=None):
             'since_init_commit': init_sha,
         })
 
-    # No .purlin in git history — count all commits on current branch
+    # No .purlin in git history: count all commits on current branch
     count_str = _run_git(['rev-list', '--count', '--end-of-options', 'HEAD'])
     count = int(count_str) if count_str.isdigit() else 0
     if count < 30:
@@ -5887,7 +5887,7 @@ def _compute_drift(project_root, since=None, network=True):
     except (subprocess.SubprocessError, OSError):
         changed_files = []
 
-    # Filter deleted files — only keep files that exist on disk
+    # Filter deleted files: only keep files that exist on disk
     changed_files = [
         f for f in changed_files
         if os.path.exists(os.path.join(project_root, f))
@@ -6041,7 +6041,7 @@ def _compute_drift(project_root, since=None, network=True):
                           and e.get('behavioral_gap')],
             })
 
-    # Detect broken scopes — spec scope paths that no longer exist on disk
+    # Detect broken scopes: spec scope paths that no longer exist on disk
     broken_scopes = []
     for name, info in features.items():
         missing_paths = []
@@ -6063,7 +6063,7 @@ def _compute_drift(project_root, since=None, network=True):
                 'existing_paths': existing_paths,
             })
 
-    # Detect external anchor drift — compare Pinned to remote HEAD. With
+    # Detect external anchor drift: compare Pinned to remote HEAD. With
     # `network` False (the refresh hook) no ls-remote runs and the rows the
     # previous digest recorded are carried forward instead (report_data
     # RULE-43): a background hook must not reach the network on every call.
@@ -6200,7 +6200,7 @@ def generate_digest(project_root, generated_by='pre-commit', network=True,
         if v.get('is_anchor') and v.get('is_global')
     }
 
-    # Read cached audit data only — never trigger a new audit. Both gauges are
+    # Read cached audit data only: never trigger a new audit. Both gauges are
     # read here: the digest path used to take audit_summary alone and leave
     # design_summary at its None default, so every pre-commit refresh blanked
     # the Proof Design card that sync_status had just populated.

@@ -4,7 +4,7 @@
 >   docs/examples/figma-web-app.md produces a working web UI with high visual
 >   fidelity to the Figma design. Uses the modal-test Figma file as the design
 >   reference (https://www.figma.com/design/TEZI0T6lObCJrC9mkmZT8v/modal-test?node-id=7-81).
->   Each step is a real `claude -p` invocation — nothing is faked: the messages are sent
+>   Each step is a real `claude -p` invocation: nothing is faked: the messages are sent
 >   verbatim and chained with `--resume` so one session carries the whole workflow, after a
 >   `purlin:init` prerequisite run that is not one of the five.
 > Scope: docs/examples/figma-web-app.md, skills/anchor/SKILL.md, skills/build/SKILL.md, dev/e2e_claude_cli.py
@@ -13,21 +13,21 @@
 
 ## Rules
 
-- RULE-1: Prerequisites — purlin:init creates a valid Purlin project before the workflow starts
-- RULE-2: Message 1 — sharing the Figma URL creates a design anchor in specs/_anchors/ with Source, Visual-Reference, Pinned, and Type: design metadata
+- RULE-1: Prerequisites: purlin:init creates a valid Purlin project before the workflow starts
+- RULE-2: Message 1: sharing the Figma URL creates a design anchor in specs/_anchors/ with Source, Visual-Reference, Pinned, and Type: design metadata
 - RULE-3: The anchor contains at least one visual-match rule with an @e2e proof
-- RULE-4: Message 2 — describing the feature creates a spec with > Requires: referencing the anchor
+- RULE-4: Message 2: describing the feature creates a spec with > Requires: referencing the anchor
 - RULE-5: The anchor contains the real Figma file key, proving Figma MCP was used
-- RULE-6: Message 3 — "build it" produces a functioning HTML file that renders in a browser
+- RULE-6: Message 3: "build it" produces a functioning HTML file that renders in a browser
 - RULE-7: The build writes tests with proof markers referencing the feature and anchor
 - RULE-8: A Playwright screenshot of the built UI can be captured and compared against a reference
 - RULE-9: The built UI visually matches the Figma design within the fidelity threshold
-- RULE-10: All 5 documented steps produce their expected artifacts — no extra commands needed
-- RULE-11: FORBIDDEN — Modifying existing framework docs, proof files, skill definitions, or source code to make the workflow succeed
-- RULE-12: FORBIDDEN — Claude silently fixing errors; on failure it must report the issue
+- RULE-10: All 5 documented steps produce their expected artifacts: no extra commands needed
+- RULE-11: FORBIDDEN: Modifying existing framework docs, proof files, skill definitions, or source code to make the workflow succeed
+- RULE-12: FORBIDDEN: Claude silently fixing errors; on failure it must report the issue
 - RULE-13: The audit static_checks pipeline returns a classification for anchor proofs
 - RULE-14: Each test run saves screenshot(s) to dev/figma_web_result.png showing the built UI
-- RULE-15: Message 4+5 — "run the tests" and "verify and ship" result in passing tests (pytest exit 0)
+- RULE-15: Message 4+5: "run the tests" and "verify and ship" result in passing tests (pytest exit 0)
 - RULE-16: The figma-mcp suite drives `claude -p` through the shared helper dev/e2e_claude_cli.py and hands `--agents` the JSON object built from `agents/purlin.md` (`{"purlin": {"description": ..., "prompt": ...}}`), never a file path
 
 ## Proof

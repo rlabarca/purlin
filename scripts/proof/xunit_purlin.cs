@@ -4,7 +4,7 @@
 //
 //     dotnet test --logger purlin
 //
-// The assembly MUST be named `*.TestLogger.dll` (e.g. Purlin.TestLogger.dll) —
+// The assembly MUST be named `*.TestLogger.dll` (e.g. Purlin.TestLogger.dll)
 // the .NET test platform only scans assemblies matching that suffix for loggers.
 // Reference this logger project from the test project so the DLL lands in the
 // test output directory, where vstest discovers it by FriendlyName ("purlin").
@@ -182,7 +182,7 @@ namespace Purlin
             }
             if (marker == null) return;
 
-            // RULE-1: "feature:PROOF-N:RULE-N[:tier][:on(a, b)]" — tier defaults to "unit".
+            // RULE-1: "feature:PROOF-N:RULE-N[:tier][:on(a, b)]": tier defaults to "unit".
             string[] parts = marker.Split(':');
             if (parts.Length < 3) return;
             string feature = parts[0];
@@ -263,7 +263,7 @@ namespace Purlin
                 }
             }
 
-            // Group by (feature, tier, platform) — one file per group.
+            // Group by (feature, tier, platform): one file per group.
             int filesWritten = 0;
             foreach (var group in _proofs.GroupBy(p => (p.Feature, p.Tier, p.Platform)))
             {
@@ -369,7 +369,7 @@ namespace Purlin
                            _skipped.Count, _skippedProofs.Values);
 
             // Emitted during the run (TestRunComplete fires inside the test platform
-            // process) — this line is the in-process collection signal that
+        // process): this line is the in-process collection signal that
             // distinguishes the logger from a post-run .trx parse.
             Console.Error.WriteLine(
                 $"[PurlinProofLogger] collected {_proofs.Count} proof(s) in-process; wrote {filesWritten} file(s).");
@@ -626,7 +626,7 @@ namespace Purlin
             }
             catch (Exception)
             {
-                // Corrupt/unreadable file is treated as empty — the run still records fresh proofs.
+                // Corrupt/unreadable file is treated as empty: the run still records fresh proofs.
             }
             return result;
         }

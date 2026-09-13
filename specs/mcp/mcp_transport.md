@@ -13,7 +13,7 @@
 - RULE-4: Invalid JSON input returns error code `-32700` (Parse error)
 - RULE-5: Unknown methods return error code `-32601` with the method name in the message
 - RULE-6: Unknown tool names in `tools/call` return error code `-32601` with the tool name in the message
-- RULE-7: Server logs startup to stderr — stdout is reserved for JSON-RPC responses
+- RULE-7: Server logs startup to stderr: stdout is reserved for JSON-RPC responses
 - RULE-8: The main loop reloads its own source only when the environment sets `PURLIN_DEV_RELOAD=1`: with the variable unset or holding any other value the loop never stats the source and never reloads it. When a reload is attempted and raises, the server writes `Purlin MCP: reload failed` plus the traceback to stderr (never to stdout) and answers that request, and every later one, with the module it had already loaded
 - RULE-9: Claude Code launches the server through `sh`, never through an interpreter name. `.claude-plugin/plugin.json` sets `mcpServers.purlin.command` to `sh` and its `args` to `${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh` followed by `${CLAUDE_PLUGIN_ROOT}/scripts/mcp/purlin_server.py`, and the file names no interpreter anywhere. `scripts/purlin_python.sh` resolves one, the first that runs winning: `$PURLIN_PYTHON`, `python3`, `python` when it reports major version 3, then `py -3` resolved to that interpreter's own path. When none of the four runs it writes one line to stderr naming all four and exits 0, so the launch reports what is missing in the client's server log rather than dying without a word. A `command` of `python3` is a name a python.org install on Windows never creates, and a server that cannot start there is indistinguishable from a plugin that ships no server
 

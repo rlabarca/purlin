@@ -13,7 +13,7 @@
 
 - RULE-1: `purlin_proof` accepts 5 args: `feature`, `proof_id`, `rule_id`, `status`, `test_name`; tier comes from `PURLIN_PROOF_TIER` env var (default: `"unit"`)
 - RULE-2: `test_file` is recorded from `BASH_SOURCE[1]` (the caller's file)
-- RULE-3: `purlin_proof_finish` must be called to write proof files — entries are accumulated in memory until then
+- RULE-3: `purlin_proof_finish` must be called to write proof files: entries are accumulated in memory until then
 - RULE-4: After `purlin_proof_finish`, the accumulated entries are cleared (reset for next batch)
 - RULE-5: `test_file` is recorded as a project-relative POSIX path and is identical for a given test script however that script was invoked, so neither one machine's home directory nor the caller's choice of an absolute or relative path reaches a committed proof file. `BASH_SOURCE` is resolved to an absolute path when the proof is recorded, then made relative at write time against the project being written to, or failing that against the project the test script itself lives in. A path that resolves outside both is left absolute rather than rewritten with `../` segments
 

@@ -131,6 +131,47 @@ def _hits(text, pattern):
     return out
 
 
+#: How each scanned language opens a comment. A line whose first non-blank
+#: characters are one of these is a comment line; a `/* */` or `<!-- -->` block
+#: is scanned from its opener to its closer. Nothing else in the file is read,
+#: so a string literal a program prints is out of scope by construction: the
+#: separator rules `scripts/mcp/purlin_server.py` prints are output, and output
+#: is the program's business rather than the repository's prose.
+COMMENT_LINE_MARKERS = {'.py': ('#',), '.sh': ('#',), '.js': ('//',),
+                        '.ts': ('//',), '.cs': ('//',), '.php': ('//',),
+                        '.h': ('//',), '.c': ('//',), '.sql': ('--',)}
+COMMENT_BLOCK_MARKERS = {'.js': ('/*', '*/'), '.ts': ('/*', '*/'),
+                         '.cs': ('/*', '*/'), '.php': ('/*', '*/'),
+                         '.h': ('/*', '*/'), '.c': ('/*', '*/'),
+                         '.html': ('<!--', '-->')}
+COMMENT_EXTENSIONS = tuple(sorted(set(COMMENT_LINE_MARKERS)
+                                  | set(COMMENT_BLOCK_MARKERS)))
+
+
+def _comment_hits(text, rel, pattern):
+    """(lineno, line) per comment line of `rel` matching `pattern`."""
+    ext = os.path.splitext(rel)[1]
+    starts = COMMENT_LINE_MARKERS.get(ext, ())
+    block = COMMENT_BLOCK_MARKERS.get(ext)
+    out = []
+    inside = False
+    for lineno, line in enumerate(text.splitlines(), 1):
+        comment = False
+        if block:
+            if inside:
+                comment = True
+            if block[0] in line:
+                comment = True
+                inside = block[1] not in line.split(block[0], 1)[1]
+            elif inside and block[1] in line:
+                inside = False
+        if starts and line.strip().startswith(starts):
+            comment = True
+        if comment and pattern.search(line):
+            out.append((lineno, line))
+    return out
+
+
 def _dash_hits(text, rel):
     """`<rel>:<lineno>: <line>` per dash outside a fenced block.
 
@@ -181,8 +222,10 @@ def _scope_files(scope, files):
 def repo_files():
     """Every git-tracked file the lints may be pointed at."""
     specs = [rel for rel in _tracked('specs') if rel.endswith('.md')]
+    scripts = [rel for rel in _tracked('scripts')
+               if rel.endswith(COMMENT_EXTENSIONS)]
     return (_prose_files() + _tracked('.claude-plugin') + ['CLAUDE.md']
-            + specs + list(SCRIPT_STRING_FILES))
+            + specs + sorted(set(scripts) | set(SCRIPT_STRING_FILES)))
 
 
 class Offender:
@@ -222,7 +265,8 @@ DASH_SCOPE = ('docs/**.md', 'README.md',
               '.claude-plugin/plugin.json',
               '.claude-plugin/marketplace.json',
               'skills/**.md', 'agents/**.md',
-              'references/**.md', 'tools/**.md', 'CLAUDE.md')
+              'references/**.md', 'tools/**.md', 'CLAUDE.md',
+              'specs/**.md')
 
 #: `purlin_docs` RULE-1's closed list: the only (file, section) pairs where the
 #: bare `@windows` token may appear. A section is the nearest preceding
@@ -280,6 +324,11 @@ SLASH_PREFIX_ALLOWLIST = (('specs/instructions/purlin_prose.md', 'Rules'),)
 SCRIPT_STRING_FILES = ('scripts/hooks/pre_push_gate.py',
                        'scripts/hooks/pre-push.sh')
 
+#: The `em-dash-comment` row's file set: every shipped script whose language
+#: the comment scanner reads.
+SCRIPT_COMMENT_SCOPE = tuple('scripts/**' + ext for ext in
+                             COMMENT_EXTENSIONS)
+
 #: The `last-gate` row's file set and its three phrasings. `purlin:verify` is
 #: Layer 0 of the four in `references/hard_gates.md`, and the CI gate job is
 #: Layer 3, so any of these words in a guide tells a reader the opposite of
@@ -315,12 +364,27 @@ RETIRED_FORMAT_RE = re.compile(
 DASH_ALLOWLIST = (
     ('skills/spec/SKILL.md', 'Step 5: Rule Extraction Heuristics'),
     ('references/formats/spec_format.md', 'Rule Tags'),
+    # `sync_status` prints `(global - auto-applied to all features)` with an
+    # em dash, and RULE-67 and PROOF-106 quote that line character for
+    # character. The separator is program output; the commit that owns
+    # `scripts/` retires it and these two exemptions with it.
+    ('specs/mcp/sync_status.md', 'Rules'),
+    ('specs/mcp/sync_status.md', 'Proof'),
+    # `specs/skills/skill_init.md` is held by another lane while the hook and
+    # `--update` work lands in it. Its five dashes are a follow-up, and these
+    # two pairs are the only reason `specs/**.md` could be widened without
+    # waiting for that lane; the follow-up removes them.
+    ('specs/skills/skill_init.md', 'Rules'),
+    ('specs/skills/skill_init.md', 'Proof'),
 )
 
 BANNED = (
     ('em-dash', 'line', DASH_RE, DASH_SCOPE, 12, DASH_ALLOWLIST,
      'an em dash or en dash joins two ideas without stating the relation; '
      'use a colon, a comma or a full stop'),
+    ('em-dash-comment', 'comment', DASH_RE, SCRIPT_COMMENT_SCOPE, 20, (),
+     'a comment is prose and the same rule applies to it; only comment lines '
+     'are read, so a string literal the program prints is out of scope'),
     ('promise', 'line',
      re.compile('|'.join(re.escape(s) for s in (
          'signed verification', 'tamper-evident', 'The vhash proves',
@@ -436,6 +500,10 @@ def banned_strings(root=PROJECT_ROOT, files=None, rows=BANNED, strict=True):
             if rel.endswith('.json'):
                 units = [(lineno, value, None)
                          for lineno, value in _json_descriptions(text)]
+            elif unit == 'comment':
+                sections = {}
+                units = [(lineno, line, None)
+                         for lineno, line in _comment_hits(text, rel, pattern)]
             elif unit == 'paragraph':
                 units = list(_located_paragraphs(text))
             else:

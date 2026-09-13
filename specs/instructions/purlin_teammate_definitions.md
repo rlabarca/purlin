@@ -2,13 +2,13 @@
 
 > Scope: agents/purlin-auditor.md
 > Stack: markdown (agent definitions)
-> Description: Defines the independent auditor agent role used by the Purlin verify-audit loop. The definition lives in the plugin's `agents/` directory so it ships to consumer projects and resolves as a namespaced agent type (`purlin:purlin-auditor`). A definition under `.claude/agents/` would be project-local to this repository and unavailable to any project that installs Purlin as a plugin — which is why the former `purlin-builder` and `purlin-reviewer` definitions were retired rather than relocated: neither was ever invoked.
+> Description: Defines the independent auditor agent role used by the Purlin verify-audit loop. The definition lives in the plugin's `agents/` directory so it ships to consumer projects and resolves as a namespaced agent type (`purlin:purlin-auditor`). A definition under `.claude/agents/` would be project-local to this repository and unavailable to any project that installs Purlin as a plugin: which is why the former `purlin-builder` and `purlin-reviewer` definitions were retired rather than relocated: neither was ever invoked.
 
 ## Rules
 
 - RULE-1: `agents/purlin-auditor.md` exists with YAML frontmatter containing `name: purlin-auditor` and `description` and **no** `model` field, and the body states that the auditor's independence is a fresh context rather than a different model. Pinning the auditor to a model is how a reader concludes the independence claim rests on cross-model disagreement; it rests on the auditor not having written the tests it grades. The host chooses the model for both shipped agents
 - RULE-4: The agent definition is located in the plugin's `agents/` directory, not `.claude/agents/`, so it ships with the plugin. No `purlin-*.md` agent definitions remain under `.claude/agents/`
-- RULE-5: The auditor definition does not instruct spawning any other agent to remediate findings — the audit is read-only, and remediation is routed to `purlin:build`
+- RULE-5: The auditor definition does not instruct spawning any other agent to remediate findings: the audit is read-only, and remediation is routed to `purlin:build`
 - RULE-6: The auditor definition states that the auditor writes its own assessments through `static_checks.py --write-cache`, never to `.purlin/cache/audit_cache.json` directly, and says why: the flag holds an exclusive lock around its read/merge/write cycle, which is what lets several auditors run at once, and it re-keys and stamps every entry. The definition and `skills/audit/SKILL.md` agree on this division; they previously contradicted each other, with the skill forbidding subagent writes and the definition requiring them, so one of the two was wrong on every run
 
 ## Proof

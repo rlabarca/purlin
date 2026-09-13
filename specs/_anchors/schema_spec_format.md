@@ -9,7 +9,7 @@
 
 - RULE-1: Every spec MUST contain exactly two required sections: `## Rules`, `## Proof`, and no third section is part of the format: neither `references/formats/spec_format.md` nor `references/formats/anchor_format.md` names a third one. A spec that carries some other heading still parses and `sync_status` reports nothing for it, so a spec written against an older format keeps working; the format simply stops defining the heading
 - RULE-2: Rule ids are written as `RULE-N`, assigned in increasing order and never reused. A retired rule leaves its number vacant, so a gap in the sequence is legal and `sync_status` reports nothing for it; the rules that remain keep the numbers proof markers, receipts and caches already name. Unnumbered lines under `## Rules` trigger a sync_status WARNING
-- RULE-3: Proofs are numbered as `PROOF-N (RULE-N)` — each proof references the rule it covers
+- RULE-3: Proofs are numbered as `PROOF-N (RULE-N)`: each proof references the rule it covers
 - RULE-4: Every RULE must have at least one corresponding PROOF
 - RULE-5: `> Requires:` metadata, when present, is a comma-separated list of anchor names whose rules also apply to this feature
 - RULE-6: `> Scope:` metadata, when present, is a comma-separated list of source file paths the feature touches

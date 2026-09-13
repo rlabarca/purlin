@@ -21,7 +21,7 @@
 
 - RULE-1: The .NET marker is the xUnit test trait whose name is exactly `PurlinProof`: `[Trait("PurlinProof", "feature:PROOF-N:RULE-N:tier")]`. The trait name is compared ordinally, so a trait with any other name - `Category`, `Property`, `TestProperty`, or `PurlinProof` spelled in another case - is not a marker and is ignored; NUnit and MSTest support is not claimed. The trait value is a colon-delimited `feature:PROOF-N:RULE-N:tier` string where tier defaults to `"unit"`
 - RULE-2: The plugin is a custom `dotnet test` logger (`ITestLoggerWithParameters`) registered via `dotnet test --logger purlin`; it collects results during the run, not by post-parsing a `.trx` file
-- RULE-3: Tests without a `PurlinProof` trait are ignored — no proof entry is emitted for them
+- RULE-3: Tests without a `PurlinProof` trait are ignored: no proof entry is emitted for them
 - RULE-4: A test `Outcome` of `Passed` maps to `status: "pass"`; `Failed` and all other non-skipped outcomes (e.g. `NotExecuted`) map to `status: "fail"`; a `Skipped` test is not recorded at all
 - RULE-5: `test_file` is recorded as the source file path relative to the project root (resolved from `TestCase` source information / `CodeFilePath`); `test_name` is the fully-qualified test method name
 - RULE-6: On run completion the logger emits proof JSON to the resolved spec directory following the shared write-scoped overwrite contract

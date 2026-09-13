@@ -435,7 +435,7 @@ def check_shell(filepath, feature_name, rule_descs=None):
                 pair = (idx2, line_no2, pid2, rid2, status2)
                 break
         if pair is not None:
-            # if/else pair — use the earlier line, treat as single proof
+            # if/else pair: use the earlier line, treat as single proof
             earlier_line = min(line_no, pair[1])
             merged.append((earlier_line, proof_id, rule_id, 'pair'))
             seen.add(key)
@@ -451,7 +451,7 @@ def check_shell(filepath, feature_name, rule_descs=None):
         segment = '\n'.join(lines[start:line_no])
 
         if status == 'pair':
-            # if/else pair — check that the segment has real test logic
+            # if/else pair: check that the segment has real test logic
             # Include \bif\b since the if-condition IS the assertion for pairs
             has_logic = bool(re.search(r'\btest\b|\[|\bgrep\b|\bdiff\b|\|\||\bif\b', segment))
             if not has_logic:
@@ -469,7 +469,7 @@ def check_shell(filepath, feature_name, rule_descs=None):
                 })
             continue
 
-        # Single proof — original logic (no \bif\b in pattern)
+        # Single proof: original logic (no \bif\b in pattern)
         has_logic = bool(re.search(r'\btest\b|\[|\bgrep\b|\bdiff\b|\|\|', segment))
         if status == 'pass':
             if not has_logic:
@@ -695,7 +695,7 @@ def _iter_js_proof_bodies(content, feature_name):
             continue
         body, after_body = _find_test_body(content, after_title)
         if body is None:
-            # No block body to inspect — cannot run body checks; skip.
+            # No block body to inspect: cannot run body checks; skip.
             i = after_title
             continue
         i = after_body
@@ -885,7 +885,7 @@ def _iter_csharp_proof_bodies(content, feature_name):
     for m in marker_re.finditer(content):
         body, _after, method_name = _find_csharp_body(content, m.end())
         if body is None:
-            # No block body to inspect (expression-bodied or abstract) — skip.
+            # No block body to inspect (expression-bodied or abstract): skip.
             continue
         yield m.group(1), m.group(2), (method_name or m.group(1))[:60], body
 
@@ -1606,7 +1606,7 @@ def _read_rule_descriptions(spec_path):
 
 # A tier tag is metadata appended after the description: ` @e2e`, ` @manual(...)`.
 # It must NOT match a description whose prose merely ends in an @word, e.g.
-# "verify spec_format.md documents @integration, @e2e, and @windows" — which was
+    # "verify spec_format.md documents @integration, @e2e, and @windows", which was
 # read as tier=windows and had its last clause silently truncated. Requiring that
 # the tag not follow a list connector (',' 'and' 'or') separates the two cases.
 #
@@ -1744,7 +1744,7 @@ def _read_proof_descriptions(spec_path):
 
 
 # ---------------------------------------------------------------------------
-# Pass D — Proof Design (deterministic half)
+# Pass D: Proof Design (deterministic half)
 #
 # Grades a proof DESCRIPTION against its rule. Reads no test code, so it runs on
 # a spec-only project. The detectors are the authoring rules from
@@ -1754,7 +1754,7 @@ def _read_proof_descriptions(spec_path):
 #
 # Deliberately conservative. A false UNPROVABLE tells someone to rewrite a proof
 # that was already correct, which is worse than a miss, so anything needing real
-# interpretation is left to the LLM half (Pass D2) — the same division of labour
+    # interpretation is left to the LLM half (Pass D2), the same division of labour
 # Pass 1 and Pass 2 already use. In particular, "this rule deserved a behavioural
 # proof rather than a grep" requires understanding what the rule means, so a
 # presence-only description is graded STRUCTURAL here and D2 decides whether the
@@ -2250,7 +2250,7 @@ def check_spec_coverage(spec_path):
     }
 
 # ---------------------------------------------------------------------------
-# Proof-file structural checks (Pass 0.5 — language-agnostic, JSON-only)
+# Proof-file structural checks (Pass 0.5: language-agnostic, JSON-only)
 # ---------------------------------------------------------------------------
 
 def check_proof_file(proof_json_path, spec_path=None):
@@ -2271,7 +2271,7 @@ def check_proof_file(proof_json_path, spec_path=None):
 
     findings = []
 
-    # Check 1: proof_id_collision — same PROOF-N targeting different RULE-N values
+    # Check 1: proof_id_collision: same PROOF-N targeting different RULE-N values
     id_to_rules = {}
     for entry in proofs:
         pid = entry.get('id', '')
@@ -2289,13 +2289,13 @@ def check_proof_file(proof_json_path, spec_path=None):
                 'reason': f'{pid} targets multiple rules: {", ".join(sorted(rules))}',
             })
 
-    # Check 2: proof_rule_orphan — proof targets a rule not in the spec
+    # Check 2: proof_rule_orphan: proof targets a rule not in the spec
     if spec_path and os.path.isfile(spec_path):
         spec_rules = set(_read_rule_descriptions(spec_path).keys())
         if spec_rules:
             for entry in proofs:
                 rid = entry.get('rule', '')
-                # Only check own rules (no "/" prefix — required rules come from anchors)
+                # Only check own rules (no "/" prefix: required rules come from anchors)
                 if rid and '/' not in rid and rid not in spec_rules:
                     findings.append({
                         'check': 'proof_rule_orphan',
@@ -2815,7 +2815,7 @@ _CACHE_DEDUP_FIELDS = ('feature', 'proof_id')
 
 # Every CLI form this script accepts. Kept adjacent to the dispatch chain in main()
 # so the two cannot drift: RULE-34 asserts that every `--flag` main() dispatches on
-# appears here, which is what went wrong before — the help text had gone stale and
+    # appears here, which is what went wrong before: the help text had gone stale and
 # omitted five real flags.
 _USAGE = (
     "<test_file> <feature_name> [--spec-path <path>]",
@@ -2936,11 +2936,11 @@ def write_audit_cache(project_root, cache, cache_name=AUDIT_CACHE):
                     latest[dedup_key] = (hash_key, entry)
                     new_keys.add(dedup_key)
                 elif dedup_key not in new_keys:
-                    # First new entry for this (feature, proof_id) — always beats on-disk
+                    # First new entry for this (feature, proof_id): always beats on-disk
                     latest[dedup_key] = (hash_key, entry)
                     new_keys.add(dedup_key)
                 elif entry.get('cached_at', '') > existing_entry[1].get('cached_at', ''):
-                    # Intra-batch duplicate — use timestamp
+                    # Intra-batch duplicate: use timestamp
                     latest[dedup_key] = (hash_key, entry)
 
             # Stamp the real write time on entries this call actually supplied, so
@@ -3433,7 +3433,7 @@ def main():
     output = {'proofs': results}
     print(json.dumps(output, indent=2))
 
-    # Exit 0 even when defects are found — findings are communicated via
+    # Exit 0 even when defects are found: findings are communicated via
     # JSON output ("status": "fail"), not exit codes.  Non-zero exits (2)
     # are reserved for real errors (bad args, missing files).
     sys.exit(0)

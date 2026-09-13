@@ -5,14 +5,14 @@
 > Path: security_policy.md
 > Pinned: d1e2816ba07717d11542be09a64068ccf2f73038
 > Scope: scripts/**/*.py, scripts/**/*.sh, scripts/**/*.js, scripts/**/*.ts, scripts/**/*.php, scripts/**/*.cs
-> Description: Enforces the absence of dangerous code patterns across all executable Purlin framework code. The codebase is currently clean — this anchor exists to prove and maintain that state. Any feature requiring this anchor inherits these constraints.
+> Description: Enforces the absence of dangerous code patterns across all executable Purlin framework code. The codebase is currently clean: this anchor exists to prove and maintain that state. Any feature requiring this anchor inherits these constraints.
 
 ## Rules
 
-- RULE-1: FORBIDDEN — No dynamic-code or command-string execution anywhere in `scripts/`, in the form each language spells it: `eval()` and `exec()` in Python; `eval` and backtick command substitution in shell; `eval()`, `new Function()`, `execSync()` and `child_process.exec()` in JS/TS; `eval()`, `exec()`, `shell_exec()`, `system()`, `passthru()` and backticks in PHP; `Process.Start()` given a command string in C#
-- RULE-2: FORBIDDEN — No `subprocess` calls with `shell=True` in scripts/
-- RULE-3: FORBIDDEN — No `os.system()` calls in scripts/
-- RULE-4: FORBIDDEN — No hardcoded credential assignments (password/secret/api_key/token literals) in scripts/
+- RULE-1: FORBIDDEN: No dynamic-code or command-string execution anywhere in `scripts/`, in the form each language spells it: `eval()` and `exec()` in Python; `eval` and backtick command substitution in shell; `eval()`, `new Function()`, `execSync()` and `child_process.exec()` in JS/TS; `eval()`, `exec()`, `shell_exec()`, `system()`, `passthru()` and backticks in PHP; `Process.Start()` given a command string in C#
+- RULE-2: FORBIDDEN: No `subprocess` calls with `shell=True` in scripts/
+- RULE-3: FORBIDDEN: No `os.system()` calls in scripts/
+- RULE-4: FORBIDDEN: No hardcoded credential assignments (password/secret/api_key/token literals) in scripts/
 - RULE-5: Every subprocess launch passes an argument vector, never a command string: Python `subprocess.*` with a list, PHP `proc_open` with an array, JS/TS `spawn`/`execFile` with an args array, C# `ProcessStartInfo.ArgumentList`
 - RULE-6: No repository-supplied or tool-supplied string reaches git in option position: `--end-of-options` precedes every revision argument, `--` precedes every path argument, and a `> Source:` value that begins with `-` or names an `ext::` or `fd::` transport is rejected before any subprocess starts
 

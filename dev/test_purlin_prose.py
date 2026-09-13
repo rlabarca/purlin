@@ -22,6 +22,8 @@ import prose_lint  # noqa: E402
 from prose_lint import (  # noqa: E402
     BANNED,
     HOMES,
+    COMMENT_BLOCK_MARKERS,
+    COMMENT_LINE_MARKERS,
     PATH_SCOPE,
     RUNTIME_PATHS,
     PROJECT_ROOT,
@@ -573,6 +575,52 @@ class TestBannedStringsLint:
             "not the retired section")
 
 
+    @pytest.mark.proof("purlin_prose", "PROOF-36", "RULE-12")
+    def test_the_comment_row_reads_comments_and_not_string_literals(
+            self, tmp_path):
+        name, unit, pattern, scope, _min_files, allowlist, note = _row(
+            BANNED, 'em-dash-comment')
+        row = (name, unit, pattern, scope, 1, allowlist, note)
+
+        languages = sorted(set(COMMENT_LINE_MARKERS) |
+                           set(COMMENT_BLOCK_MARKERS))
+        assert len(languages) >= 9, languages
+
+        files, expected = [], {}
+        for ext in languages:
+            rel = 'scripts/probe/sample' + ext
+            line_marker = COMMENT_LINE_MARKERS.get(ext)
+            block = COMMENT_BLOCK_MARKERS.get(ext)
+            lines, want = [], []
+            if line_marker:
+                lines.append(f"{line_marker[0]} one idea \u2014 and another")
+                want.append(len(lines))
+            lines.append('value = "printed \u2014 separator"')
+            if block:
+                lines.append(block[0] + ' opening')
+                lines.append('a second idea \u2014 glossed ' + block[1])
+                want.append(len(lines))
+            _plant(tmp_path, rel, '\n'.join(lines) + '\n')
+            files.append(rel)
+            expected[rel] = want
+
+        offenders = banned_strings(root=str(tmp_path), files=files,
+                                   rows=(row,), strict=False)
+        by_file = {}
+        for offender in offenders:
+            by_file.setdefault(offender.path, []).append(offender.line)
+        assert by_file == expected, (
+            f"the row must report every comment line and no string literal; "
+            f"got {by_file}, wanted {expected}")
+
+        scanned = _scope_files(scope, repo_files())
+        assert len(scanned) >= 20, (
+            f"the row resolved to {len(scanned)} files; the sweep would pass "
+            f"by scanning nothing")
+        assert banned_strings(rows=(row,), strict=True) == [], (
+            "no comment line under scripts/ may carry a dash")
+
+
 class TestPathsExistLint:
     """RULE-13 - a path in backticks reads as a link."""
 
@@ -864,9 +912,9 @@ class TestTheLintsReadTheTreeTheyClaimTo:
     @pytest.mark.proof("purlin_prose","PROOF-21","RULE-12")
     def test_scoped_file_counts_and_a_clean_run_on_the_real_tree(self):
         files = repo_files()
-        floors = {'em-dash': 12, 'promise': 40, 'windows-tier': 40,
-                  'approval': 1, 'retired-format': 25, 'anchor-home': 35,
-                  'slash-prefix': 80, 'last-gate': 10}
+        floors = {'em-dash': 90, 'em-dash-comment': 20, 'promise': 40,
+                  'windows-tier': 40, 'approval': 1, 'retired-format': 25,
+                  'anchor-home': 35, 'slash-prefix': 80, 'last-gate': 10}
         for name, floor in floors.items():
             scope = _row(BANNED, name)[3]
             count = len(_scope_files(scope, files))

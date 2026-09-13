@@ -2,7 +2,7 @@
 
 > Scope: skills/rename/SKILL.md
 > Stack: markdown (skill definition)
-> Description: The `purlin:rename` skill renames a feature across all Purlin artifacts — specs, proofs, markers, and references — in one atomic operation.
+> Description: The `purlin:rename` skill renames a feature across all Purlin artifacts: specs, proofs, markers, and references: in one atomic operation.
 
 ## Rules
 
