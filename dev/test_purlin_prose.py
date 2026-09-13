@@ -693,3 +693,50 @@ class TestProjectRootIsDocumented:
             assert literal in body, (
                 f"the '{ROOT_REFERENCE_SECTION}' section of "
                 f"references/drift_criteria.md does not name {literal!r}")
+
+
+# ---------------------------------------------------------------------------
+# RULE-17: the prerequisites name every interpreter Purlin will try
+# ---------------------------------------------------------------------------
+
+INSTALL_GUIDE = 'docs/installation-guide.md'
+RESOLVER = 'scripts/purlin_python.sh'
+
+
+def _prerequisites_section(text):
+    """The body between `## Prerequisites` and the next `## ` heading."""
+    lines = text.splitlines()
+    start = lines.index('## Prerequisites')
+    for offset, line in enumerate(lines[start + 1:], start + 1):
+        if line.startswith('## '):
+            return '\n'.join(lines[start + 1:offset])
+    return '\n'.join(lines[start + 1:])
+
+
+class TestInterpreterPrerequisite:
+    """RULE-17: the names, the override, and the shell they are found from."""
+
+    @pytest.mark.proof("purlin_prose", "PROOF-23", "RULE-17", tier="unit")
+    def test_prerequisites_name_every_interpreter_and_the_override(self):
+        section = _prerequisites_section(_read(INSTALL_GUIDE))
+
+        for token in ('`python3`', '`python`', '`py`', '`PURLIN_PYTHON`',
+                      '`sh`', 'Git for Windows'):
+            assert token in section, (
+                f"the Prerequisites section of {INSTALL_GUIDE} does not name "
+                f"{token}, so a reader whose host carries it cannot tell that "
+                f"Purlin would have used it:\n{section}")
+
+        order = [section.index('`python3`'), section.index('`python`'),
+                 section.index('`py`')]
+        assert order == sorted(order), (
+            "the three interpreter names are not in the order the resolver "
+            f"tries them: {order}")
+
+        # The code the section describes. A doc that names a candidate the
+        # resolver never tries is the same defect as one that omits it.
+        resolver = _read(RESOLVER)
+        for name in ('PURLIN_PYTHON', 'python3', 'python', 'py'):
+            assert name in resolver, (
+                f"{RESOLVER} does not carry the candidate {name!r} the "
+                f"prerequisites promise")

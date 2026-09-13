@@ -22,7 +22,8 @@ description caps what the eventual test can prove.
 ## Prerequisites
 
 - git
-- Python 3.8+
+- A Python 3.8 or newer interpreter reachable on `PATH` as `python3`, `python` or `py`. Purlin tries those three names in that order and accepts a `python` only when it reports major version 3, so a Python 2 under that name is skipped rather than run. Set `PURLIN_PYTHON` to the interpreter's path when your host carries it under none of those names, or when the first name found is not the one you want: it is tried before all three
+- `sh` on `PATH`. Every git hook and the MCP server are launched through it, and it is what runs the interpreter lookup above. macOS and Linux ship it; on Windows, Git for Windows provides it
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
 
 ## Set Up a Project
