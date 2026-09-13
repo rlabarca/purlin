@@ -2881,3 +2881,77 @@ class TestDriftCarriedForward:
         fresh = _read_report(self.tmp)['drift']
         assert fresh['since'] != since, (
             f"a fresh drift build must replace the carried block, got {fresh['since']!r}")
+
+
+class TestStatusCallLeavesAnUnchangedDigestAlone:
+    """report_data RULE-1.
+
+    The digest is a tracked multi-megabyte file. A status call that rewrote it
+    whether or not anything had moved left it modified in `git status` after
+    every call, and put a whole-file diff in every commit.
+    """
+
+    def setup_method(self):
+        self.tmp = tempfile.mkdtemp()
+        _make_project(self.tmp, report_enabled=True)
+        _write_spec(self.tmp, 'feature', _two_rule_spec_content())
+        self.proofs_path = _write_proofs(
+            self.tmp, 'feature', [_two_rule_proofs()[0]])
+        _git_init(self.tmp)
+        self.digest = os.path.join(self.tmp, '.purlin', 'report-data.js')
+
+    def teardown_method(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _git(self, *args):
+        r = subprocess.run(['git'] + list(args), cwd=self.tmp,
+                           capture_output=True, text=True)
+        assert r.returncode == 0, f"git {' '.join(args)}: {r.stderr}"
+        return r.stdout
+
+    @pytest.mark.proof("report_data", "PROOF-49", "RULE-1", tier="integration")
+    def test_a_second_status_call_touches_the_digest_rather_than_rewriting_it(self):
+        purlin_server.sync_status(self.tmp)
+        assert os.path.isfile(self.digest), "the first call must write the digest"
+        self._git('add', '-A')
+        self._git('commit', '-m', 'digest')
+
+        # The commit moved HEAD, so the first call after it legitimately
+        # rewrites `git_sha`. Everything the rule is about happens from here:
+        # the tree has not moved since, so no further call may touch the file.
+        purlin_server.sync_status(self.tmp)
+        first = open(self.digest, 'rb').read()
+        before_mtime = os.stat(self.digest).st_mtime
+        churn = self._git('status', '--porcelain', '--', '.purlin/report-data.js')
+        time.sleep(0.01)
+
+        purlin_server.sync_status(self.tmp)
+        second = open(self.digest, 'rb').read()
+        assert second == first, (
+            "a status call that found nothing new must leave the bytes alone")
+        assert os.stat(self.digest).st_mtime >= before_mtime, (
+            "the mtime must be touched so a reader keyed on it knows the "
+            "inputs were looked at")
+        assert self._git('status', '--porcelain', '--', '.purlin/report-data.js') == churn, (
+            "the second call must add no churn of its own to the tracked digest")
+
+        # What churn is left is only the two per-build stamps: the commit
+        # above moved HEAD, so `git_sha` and `timestamp` differ from the
+        # committed copy and nothing else does.
+        committed = json.loads(re.sub(
+            r'^const PURLIN_DATA = ', '',
+            self._git('show', 'HEAD:.purlin/report-data.js')).rstrip(';\n'))
+        on_disk = _read_report(self.tmp)
+        differing = sorted(k for k in set(committed) | set(on_disk)
+                           if committed.get(k) != on_disk.get(k))
+        assert differing == ['git_sha', 'timestamp'], (
+            "a status call on an unmoved tree may rewrite nothing but the two "
+            f"per-build stamps, got {differing}")
+
+        # The skip compares the payload; it is not an unconditional refusal.
+        with open(self.proofs_path, 'w') as f:
+            json.dump({'tier': 'unit', 'proofs': _two_rule_proofs()}, f)
+        purlin_server.sync_status(self.tmp)
+        third = open(self.digest, 'rb').read()
+        assert third != first, (
+            "a status call that found new evidence must rewrite the digest")

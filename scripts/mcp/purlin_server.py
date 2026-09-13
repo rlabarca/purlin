@@ -3268,10 +3268,14 @@ def sync_status(project_root):
 
     # Report data generation (side effect)
     if config.get('report'):
+        # `only_if_changed`: a status call on an unchanged tree touches the
+        # digest's mtime and leaves its bytes alone. Rewriting a 2.8 MB
+        # tracked file on every call is what kept it modified in `git status`
+        # (report_data RULE-1).
         data_path = _write_report_data(
             project_root, features, all_proofs, config, global_anchors,
             audit_summary, design_summary=design_summary,
-            generated_by='sync_status',
+            generated_by='sync_status', only_if_changed=True,
         )
         if data_path:
             html_path = os.path.join(project_root, 'purlin-report.html')
