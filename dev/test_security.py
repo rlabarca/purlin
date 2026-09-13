@@ -18,7 +18,8 @@ PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
 SCRIPTS_DIR = os.path.join(PROJECT_ROOT, 'scripts')
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'mcp'))
-import purlin_server  # noqa: E402
+from purlin import drift as purlin_drift  # noqa: E402
+from purlin import status as purlin_status  # noqa: E402
 
 # Every executable language that ships under scripts/. The anchor's > Scope:
 # names exactly these six extensions; keep the two in step.
@@ -258,8 +259,8 @@ class TestGitArgvHardening:
             calls.append(list(args) if isinstance(args, (list, tuple)) else [args])
             return real_run(args, *rest, **kwargs)
 
-        monkeypatch.setattr(purlin_server.subprocess, 'run', spy)
-        text = purlin_server.sync_status(str(project))
+        monkeypatch.setattr(purlin_drift.subprocess, 'run', spy)
+        text = purlin_status.sync_status(str(project))
         monkeypatch.undo()
 
         assert calls, "no subprocess calls captured"

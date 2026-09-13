@@ -262,22 +262,33 @@ def _split_list(value):
     return [part.strip() for part in value.split(',') if part.strip()]
 
 
-def parse_source(value):
-    """`(url, path, globs)` for a `> Source:` value.
+_GLOB_CHARS = re.compile(r'[*?\[]')
 
-    Two shapes. A git URL followed by a path in that repo,
+
+def parse_source(value):
+    """`(source, path, globs)` for a `> Source:` value.
+
+    Two shapes. A repository followed by a path in it,
     `https://github.com/acme/policies.git specs/no_eval.md`, gives the first
-    two. Anything else is read as local file globs,
-    `designs/checkout/*.png, designs/checkout/*.pdf`, and gives the third.
+    two. A list of local file globs, `designs/checkout/*.png,
+    designs/checkout/*.pdf`, gives the third. A comma or a glob character is
+    what tells them apart, so a source that is neither a URL nor a glob (a
+    bare path, or a string a caller should refuse) still comes back as the
+    source rather than vanishing into an empty glob list.
+
     A `> Path:` line still names the path for a source written as a bare URL.
     """
     value = (value or '').strip()
     if not value:
         return None, None, []
-    if _looks_like_git_url(value.split()[0]):
-        parts = value.split(None, 1)
-        return parts[0], (parts[1].strip() if len(parts) > 1 else None), []
-    return None, None, _split_list(value)
+    if ',' in value or _GLOB_CHARS.search(value):
+        return None, None, _split_list(value)
+    parts = value.split(None, 1)
+    if len(parts) > 1 and _looks_like_git_url(parts[0]):
+        return parts[0], parts[1].strip(), []
+    # Not a URL and not a glob list: the whole line is the source, so a value
+    # that has to be refused is refused whole rather than by its first word.
+    return value, None, []
 
 
 def _looks_like_git_url(value):

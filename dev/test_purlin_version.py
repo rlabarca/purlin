@@ -18,12 +18,16 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 VERSION_FILE = os.path.join(PROJECT_ROOT, 'VERSION')
 CONFIG_TEMPLATE = os.path.join(PROJECT_ROOT, 'templates', 'config.json')
 PLUGIN_MANIFEST = os.path.join(PROJECT_ROOT, '.claude-plugin', 'plugin.json')
-SERVER_PY = os.path.join(PROJECT_ROOT, 'scripts', 'mcp', 'purlin_server.py')
+PACKAGE_INIT = os.path.join(PROJECT_ROOT, 'scripts', 'mcp', 'purlin',
+                            '__init__.py')
+SERVER_PY = os.path.join(PROJECT_ROOT, 'scripts', 'mcp', 'purlin',
+                         'server.py')
 PROJECT_CONFIG = os.path.join(PROJECT_ROOT, '.purlin', 'config.json')
 BUMP_SCRIPT = os.path.join(PROJECT_ROOT, 'dev', 'bump_version.sh')
 
 sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'mcp'))
-import purlin_server
+import purlin as purlin_package
+from purlin import server as purlin_srv
 
 
 class TestVersionFileSemver:
@@ -44,23 +48,25 @@ class TestVersionFileSemver:
 class TestServerReadsVersionFromFile:
 
     @pytest.mark.proof("purlin_version", "PROOF-2", "RULE-2")
-    def test_purlin_server_uses_read_version_function(self):
-        """purlin_server.py must define _read_version() and assign its result to
-        PURLIN_VERSION; SERVER_INFO must use PURLIN_VERSION for the version field."""
+    def test_the_package_reads_the_version_from_the_file(self):
+        """The package must define _read_version() and assign its result to
+        PURLIN_VERSION; SERVER_INFO must use PURLIN_VERSION."""
         # Verify _read_version is defined and callable
-        assert hasattr(purlin_server, '_read_version'), \
-            "_read_version() not found in purlin_server"
-        assert callable(purlin_server._read_version), \
+        assert hasattr(purlin_package, '_read_version'), \
+            "_read_version() not found in the purlin package"
+        assert callable(purlin_package._read_version), \
             "_read_version is not callable"
 
-        # Verify PURLIN_VERSION is set from the function (check the module source)
-        with open(SERVER_PY) as f:
-            source = f.read()
-        assert 'PURLIN_VERSION = _read_version()' in source, \
+        # Verify PURLIN_VERSION is set from the function
+        with open(PACKAGE_INIT, encoding='utf-8') as f:
+            init_source = f.read()
+        assert 'PURLIN_VERSION = _read_version()' in init_source, \
             "PURLIN_VERSION must be assigned via _read_version(), not a literal"
 
         # Verify SERVER_INFO uses PURLIN_VERSION
-        assert 'SERVER_INFO' in source, "SERVER_INFO not found in purlin_server.py"
+        with open(SERVER_PY, encoding='utf-8') as f:
+            source = f.read()
+        assert 'SERVER_INFO' in source, "SERVER_INFO not found in server.py"
         server_info_match = re.search(
             r'SERVER_INFO\s*=\s*\{[^}]*"version"\s*:\s*PURLIN_VERSION',
             source,
@@ -72,8 +78,8 @@ class TestServerReadsVersionFromFile:
         # Verify the runtime value matches the VERSION file
         with open(VERSION_FILE) as f:
             expected = f.read().strip()
-        assert purlin_server.PURLIN_VERSION == expected, \
-            (f"PURLIN_VERSION is '{purlin_server.PURLIN_VERSION}' at runtime "
+        assert purlin_package.PURLIN_VERSION == expected, \
+            (f"PURLIN_VERSION is '{purlin_package.PURLIN_VERSION}' at runtime "
              f"but VERSION file contains '{expected}'")
 
 
@@ -125,11 +131,15 @@ class TestPluginManifestVersionMatchesVersionFile:
 class TestNoHardcodedVersionInServer:
 
     @pytest.mark.proof("purlin_version", "PROOF-4", "RULE-4")
-    def test_no_hardcoded_version_strings_in_purlin_server(self):
-        """purlin_server.py must not contain hardcoded version literals like
-        '0.9.0' or any X.Y.Z pattern outside of comments."""
-        with open(SERVER_PY) as f:
-            raw = f.read()
+    def test_no_hardcoded_version_strings_in_the_package(self):
+        """No module of the package may carry a version literal like
+        '0.9.0' or any X.Y.Z pattern outside its comments."""
+        import glob as _glob
+        package_dir = os.path.dirname(PACKAGE_INIT)
+        raw = ''
+        for path in sorted(_glob.glob(os.path.join(package_dir, '*.py'))):
+            with open(path, encoding='utf-8') as f:
+                raw += f.read() + '\n'
 
         # Strip full-line comments before searching
         non_comment_lines = [
@@ -147,7 +157,7 @@ class TestNoHardcodedVersionInServer:
         release_matches = [v for v in all_matches if v != '0.0.0']
 
         assert release_matches == [], (
-            f"Found hardcoded release version string(s) in purlin_server.py "
+            f"Found hardcoded release version string(s) in scripts/mcp/purlin/ "
             f"(outside comments): {release_matches}. "
             f"Version must be read from the VERSION file via _read_version()."
         )

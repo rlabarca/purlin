@@ -254,7 +254,9 @@ def resolve_since(project_root, since_arg=None):
                                      'HEAD'])
     count = int(count_text) if count_text.isdigit() else 0
     if count < 30:
-        window = min(count, 20)
+        # `count` counts HEAD itself, so `HEAD~count` names a commit that is
+        # not there. The window is one short of the whole history.
+        window = max(min(count - 1, 20), 0)
         return 'HEAD~%d' % window, ('last %d commits (no record or tag found)'
                                     % window)
     return None, json.dumps({

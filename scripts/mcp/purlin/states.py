@@ -85,8 +85,13 @@ def rule_state(inp, cfg):
     for env in missing_env:
         reasons.append('%s: no record yet' % env)
 
-    re_verify_pending = bool(passes and current_approvals
-                             and (not at_head or not scope_matches))
+    # A record describes the current commit when it observed that commit, or
+    # when the scoped files still hash to what it recorded. The second is what
+    # makes the first usable at all: CI writes its record as a commit of its
+    # own on top of the one it observed, so a record is almost never at the
+    # literal HEAD and the scope tree is the honest comparison.
+    current = at_head or scope_matches
+    re_verify_pending = bool(passes and current_approvals and not current)
 
     flags = {
         're_verify_pending': re_verify_pending,
@@ -105,7 +110,7 @@ def rule_state(inp, cfg):
     if brief and _brief_matches(brief, inp):
         return _result(REVIEWED, flags, missing_env, reasons)
 
-    if passes and at_head:
+    if passes and current:
         return _result(RECORDED, flags, missing_env, reasons)
 
     if proofs and _local_passes(proofs, inp.get('local_status') or {}):

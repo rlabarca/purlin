@@ -82,13 +82,14 @@ def _has_xunit_csproj(root):
         for name in filenames:
             if not name.endswith('.csproj'):
                 continue
+            path = os.path.join(dirpath, name)
             try:
-                with open(os.path.join(dirpath, name), 'r',
-                          encoding='utf-8') as handle:
-                    if _XUNIT_REF.search(handle.read()):
-                        return True
+                with open(path, encoding='utf-8') as handle:
+                    text = handle.read()
             except (IOError, OSError, UnicodeDecodeError):
                 continue
+            if _XUNIT_REF.search(text):
+                return True
     return False
 
 

@@ -10,7 +10,7 @@ table would be coupled to a layout; this is the shape they all read instead.
       "generated_at": "2026-09-13T12:00:00Z",
       "generated_by": "sync_status",
       "project": "purlin",
-      "version": "0.10.0",
+      "version": "<the VERSION file>",
       "commit": "<sha>",
       "dirty": false,
       "gate": {"gate": "recorded", "min_strength": 70, ...},
@@ -62,7 +62,8 @@ _PREFIX = 'const PURLIN_DATA = '
 
 def now_iso():
     """The current time, ISO 8601 UTC with `Z`, the one format used anywhere."""
-    return datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+    return datetime.datetime.now(
+        datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 
 
 def build_payload(project_root, generated_by='sync_status', config=None):
@@ -75,6 +76,13 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     tag_warning = specs_module.unknown_tag_warning(features)
     if tag_warning:
         warnings.append(tag_warning)
+    for name in sorted(features):
+        unnumbered = features[name].get('unnumbered_lines') or []
+        if unnumbered:
+            warnings.append(
+                'WARNING: %d lines under ## Rules in %s are not numbered; a '
+                'rule is `- RULE-N: <text>`.'
+                % (len(unnumbered), features[name]['spec_path']))
 
     runtime_proofs = proofs_module.load_proofs(project_root)
     all_records = records_module.load_records(project_root)
@@ -310,13 +318,25 @@ def _record_summary(record):
 
 
 def _is_dirty(project_root):
+    """True when the working tree differs from the commit the payload names.
+
+    `.purlin/` is excluded. What Purlin writes about a project is not a change
+    to the project, and counting it would make the answer depend on whether
+    the report had been written yet: two builds of one unchanged tree would
+    then disagree.
+    """
     try:
         result = subprocess.run(
             ['git', 'status', '--porcelain'],
             capture_output=True, text=True, cwd=project_root, timeout=15)
     except (subprocess.SubprocessError, OSError):
         return False
-    return result.returncode == 0 and bool(result.stdout.strip())
+    if result.returncode != 0:
+        return False
+    for line in result.stdout.splitlines():
+        if len(line) > 3 and not line[3:].strip('"').startswith('.purlin/'):
+            return True
+    return False
 
 
 # ---------------------------------------------------------------------------

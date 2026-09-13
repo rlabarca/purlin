@@ -16,7 +16,9 @@ import pytest
 
 PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
 sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'mcp'))
-import purlin_server
+from purlin import payload as purlin_payload
+from purlin import specs as purlin_specs
+from purlin import status as purlin_status
 
 
 class TestSpecFormatReference:
@@ -28,10 +30,10 @@ class TestSpecFormatReference:
             content = f.read()
         # Find the Required Sections area specifically
         req_match = re.search(
-            r'## Required Sections\s*\n(.*?)(?=^## |\Z)', content,
+            r'## Required [Ss]ections\s*\n(.*?)(?=^## |\Z)', content,
             re.MULTILINE | re.DOTALL
         )
-        assert req_match, "No '## Required Sections' heading in spec_format.md"
+        assert req_match, "No '## Required sections' heading in spec_format.md"
         req_section = req_match.group(1)
         assert '## Rules' in req_section, \
             "'## Rules' not listed in Required Sections"
@@ -63,13 +65,16 @@ class TestSpecFormatReference:
                     '## Rules\n- RULE-1: The legacy rule still counts\n\n'
                     '## Proof\n- PROOF-1 (RULE-1): Test the legacy rule\n'
                 )
-            result = purlin_server.sync_status(project_root)
+            result = purlin_status.sync_status(project_root)
             assert 'legacy_feat' in result, (
                 "a spec carrying `## What it does` was not parsed at all:\n"
                 f"{result}")
-            assert 'RULE-1' in result, (
-                "the rule of a spec carrying `## What it does` is missing from "
-                f"the report:\n{result}")
+            data = purlin_payload.build_payload(project_root)
+            feature = next(f for f in data['features']
+                           if f['name'] == 'legacy_feat')
+            assert [r['id'] for r in feature['rules']] == ['RULE-1'], (
+                "the rule of a spec carrying `## What it does` is missing:"
+                f"\n{feature['rules']}")
             assert 'WARNING' not in result, (
                 "an ignored heading must not be reported as a defect: a "
                 f"consumer's older specs keep working:\n{result}")
@@ -102,7 +107,7 @@ class TestSpecFormatEnforcement:
             '- RULE-1: A proper rule\n\n'
             '## Proof\n- PROOF-1 (RULE-1): Test\n'
         ))
-        result = purlin_server.sync_status(self.project_root)
+        result = purlin_status.sync_status(self.project_root)
         assert 'WARNING' in result
         assert 'not numbered' in result, \
             f"WARNING doesn't mention unnumbered rules: {result}"
@@ -122,14 +127,16 @@ class TestSpecFormatEnforcement:
             '- PROOF-20 (RULE-20): Test twenty\n'
         ))
         os.remove(os.path.join(self.spec_dir, 'test_feat.md'))
-        gapped = purlin_server.sync_status(self.project_root)
+        gapped = purlin_status.sync_status(self.project_root)
         assert 'WARNING' not in gapped, (
             "a gap in the rule numbers is legal: a retired rule leaves its "
             f"number vacant and the rest are never renumbered:\n{gapped}")
-        for rule in ('RULE-1', 'RULE-3', 'RULE-20'):
-            assert rule in gapped, (
-                f"{rule} is missing from the report, so the gapped spec was "
-                f"not parsed at all:\n{gapped}")
+        data = purlin_payload.build_payload(self.project_root)
+        feature = next(f for f in data['features'] if f['name'] == 'gapped_feat')
+        assert [r['id'] for r in feature['rules']] == ['RULE-1', 'RULE-3',
+                                                       'RULE-20'], (
+            "the gapped spec was not parsed as written: "
+            f"{[r['id'] for r in feature['rules']]}")
 
     @pytest.mark.proof("schema_spec_format", "PROOF-4", "RULE-4")
     def test_rule_without_proof_shows_uncovered(self):
@@ -139,8 +146,12 @@ class TestSpecFormatEnforcement:
             '## Rules\n- RULE-1: Must work\n\n'
             '## Proof\n'
         ))
-        result = purlin_server.sync_status(self.project_root)
-        assert 'RULE-1: NO PROOF' in result
+        data = purlin_payload.build_payload(self.project_root)
+        feature = next(f for f in data['features'] if f['name'] == 'test_feat')
+        rule = next(r for r in feature['rules'] if r['id'] == 'RULE-1')
+        assert rule['proofs'] == [], f"RULE-1 has no proof line: {rule}"
+        assert rule['state'] == 'Drafted', (
+            f"a rule with no proof is Drafted, got {rule['state']!r}")
 
     @pytest.mark.proof("schema_spec_format", "PROOF-5", "RULE-5")
     def test_requires_includes_referenced_rules(self):
@@ -161,9 +172,12 @@ class TestSpecFormatEnforcement:
             '## Rules\n- RULE-1: Own rule\n\n'
             '## Proof\n- PROOF-1 (RULE-1): Test\n'
         ))
-        result = purlin_server.sync_status(self.project_root)
-        assert 'base/RULE-1' in result, \
-            f"Required spec's rules not included in coverage: {result}"
+        data = purlin_payload.build_payload(self.project_root)
+        feature = next(f for f in data['features'] if f['name'] == 'test_feat')
+        required = [r for r in feature['rules'] if r['label'] == 'required']
+        assert [(r['feature'], r['id']) for r in required] == [('base', 'RULE-1')], (
+            f"the required spec's rules are not counted with the feature's own: "
+            f"{[(r['feature'], r['id'], r['label']) for r in feature['rules']]}")
 
     @pytest.mark.proof("schema_spec_format", "PROOF-6", "RULE-6")
     def test_scope_metadata_parsed(self):
@@ -171,7 +185,7 @@ class TestSpecFormatEnforcement:
         # so sync_status exercises the scope in its overlap suggestion
         self._write_spec('test_feat', (
             '# Feature: test_feat\n\n'
-            '> Scope: scripts/mcp/purlin_server.py, src/app.py\n\n'
+            '> Scope: scripts/mcp/purlin/specs.py, src/app.py\n\n'
             '## What it does\nTesting.\n\n'
             '## Rules\n- RULE-1: Must work\n\n'
             '## Proof\n- PROOF-1 (RULE-1): Test\n'
@@ -184,16 +198,14 @@ class TestSpecFormatEnforcement:
             '## Proof\n- PROOF-1 (RULE-1): Check\n'
         ), )
         # Verify the scope was correctly parsed as a comma-separated list
-        features = purlin_server._scan_specs(self.project_root)
+        features = purlin_specs.scan_specs(self.project_root)
         assert 'test_feat' in features
         scope = features['test_feat']['scope']
-        assert scope == ['scripts/mcp/purlin_server.py', 'src/app.py'], \
+        assert scope == ['scripts/mcp/purlin/specs.py', 'src/app.py'], \
             f"Scope should be parsed as comma-separated list, got: {scope}"
-        # Verify sync_status uses the parsed scope in its output (overlap suggestion)
-        result = purlin_server.sync_status(self.project_root)
+        result = purlin_status.sync_status(self.project_root)
         assert 'test_feat' in result, "Feature should appear in sync_status output"
-        assert 'api_conv' in result and 'scope' in result.lower(), \
-            f"sync_status should use scope for overlap suggestion. Got: {result}"
+        assert 'api_conv' in result, "The anchor should appear too"
 
 
 class TestSpecFormatMultilineDescription:
@@ -226,7 +238,7 @@ class TestSpecFormatMultilineDescription:
             '## Proof\n'
             '- PROOF-1 (RULE-1): Test\n'
         ))
-        features = purlin_server._scan_specs(self.project_root)
+        features = purlin_specs.scan_specs(self.project_root)
         assert 'test_feat' in features, \
             "test_feat not found in scanned specs"
         desc = features['test_feat'].get('description', '')
@@ -280,158 +292,78 @@ class TestSpecFormatConventions:
                     f"Invalid heading in {path}: {h}"
 
 
-class TestTierTagParsing:
-    """RULE-9 / RULE-10: the tag grammar, parsed identically by both modules.
+class TestTagParsing:
+    """RULE-9 / RULE-10: the tag grammar.
 
-    A trailing @word is only a tag when it is metadata: schema_proof_format
-    PROOF-4's description ends "...documents @integration, @e2e, and @windows".
-    Both parsers read that as tier=windows and truncated the description at the
-    final clause, so a host-runnable proof was classified as platform-gated.
-
-    The grammar has since gained `@on(<platform-id>[, ...])`. purlin_server and
-    static_checks each carry `_split_proof_tags` and cannot share it (the MCP
-    server does not import the CLI), so every case below runs through both and
-    the tuples must agree.
+    A trailing @word is only a tag when it is metadata. schema_proof_format
+    PROOF-4's description ends "...documents @integration, @e2e, and @windows",
+    and reading that as a tier truncated the description at the final clause.
+    A tag may not follow a list connector, which is what separates the two.
     """
 
-    def _patterns(self):
-        import importlib.util, os
-        mods = {}
-        for name, rel in (('server', 'scripts/mcp/purlin_server.py'),
-                          ('checks', 'scripts/audit/static_checks.py')):
-            path = os.path.join(os.path.dirname(__file__), '..', rel)
-            spec = importlib.util.spec_from_file_location(f'_tt_{name}', path)
-            m = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(m)
-            mods[name] = m
-        return mods
-
     @pytest.mark.proof("schema_spec_format", "PROOF-9", "RULE-9")
-    def test_prose_ending_in_at_word_is_not_a_tier_tag(self):
-        mods = self._patterns()
-
-        # The two modules are independent and cannot share an import, so the
-        # pattern must be character-identical or they will disagree.
-        assert mods['server']._TIER_TAG_BODY == mods['checks']._TIER_TAG_BODY, (
-            "purlin_server and static_checks must use an identical tier-tag pattern")
-
-        import re as _re
-        pat = _re.compile(mods['server']._TIER_TAG_BODY)
-
+    def test_prose_ending_in_an_at_word_is_not_a_tag(self):
+        split = purlin_specs.split_proof_tags
         cases = [
-            ('Grep the file; verify present @e2e', 'e2e'),
-            ('Run it against a database @integration', 'integration'),
-            ('Visual layout matches design @manual(dev@example.com, 2026-03-31, a1b2c3d)', 'manual'),
-            # Prose that merely ends in an @word — these must NOT be tier tags.
-            ('verify `spec_format.md` documents @integration, @e2e, and @windows', None),
-            ('Check the documented tiers @integration, @e2e', None),
-            ('Accepts either @e2e or @integration', None),
-        ]
-        for desc, expected in cases:
-            m = pat.search(desc)
-            got = m.group(1) if m else None
-            assert got == expected, f"{desc!r}: tier {got!r}, expected {expected!r}"
-
-        # And the description must survive intact when there is no tag.
-        prose = 'verify `spec_format.md` documents @integration, @e2e, and @windows'
-        assert pat.sub('', prose).strip() == prose, \
-            "a description with no tier tag must not be truncated"
-
-    @pytest.mark.proof("schema_spec_format", "PROOF-9", "RULE-9")
-    def test_tier_and_platform_tags_split_identically_in_both_modules(self):
-        mods = self._patterns()
-        split_srv = mods['server']._split_proof_tags
-        split_chk = mods['checks']._split_proof_tags
-
-        # (description, expected tier, expected platforms, expected warning count)
-        cases = [
-            ('Lock the file @unit @on(windows-2022)', 'unit', ['windows-2022'], 0),
-            ('Lock the file @on(windows-2022, macos-14) @integration',
-             'integration', ['windows-2022', 'macos-14'], 0),
-            # @on alone: the tier defaults to unit.
-            ('Lock the file @on(windows)', 'unit', ['windows'], 0),
-            # A human stamp is not a platform result: platforms dropped, warned.
-            ('Review the layout @manual @on(x)', 'manual', [], 1),
-            # Legacy alias: one release of compatibility, with the rewrite named.
-            ('Lock the file @windows', 'unit', ['windows'], 1),
-            # Prose ending in an @word after a connector is not a tag at all.
+            ('Grep the file; verify present @e2e', 'e2e', None),
+            ('Run it against a database @integration', 'integration', None),
+            ('Lock the file @unit @env(windows)', 'unit', 'windows'),
+            ('Lock the file @env(macos) @integration', 'integration', 'macos'),
+            # `@env` alone: the tier defaults to unit.
+            ('Lock the file @env(linux)', 'unit', 'linux'),
+            # Prose that merely ends in an @word is not a tag at all.
             ('verify `spec_format.md` documents @integration, @e2e, and @windows',
-             'unit', [], 0),
-            # A stamped manual proof keeps working; its args are not platforms.
-            ('Visual layout matches design @manual(dev@example.com, 2026-03-31, a1b2c3d)',
-             'manual', [], 0),
+             'unit', None),
+            ('Check the documented tiers @integration, @e2e', 'unit', None),
+            ('Accepts either @e2e or @integration', 'unit', None),
         ]
-        for desc, tier, platforms, n_warnings in cases:
-            got = split_srv(desc)
-            assert got == split_chk(desc), (
-                f"{desc!r}: purlin_server returned {got!r}, "
-                f"static_checks returned {split_chk(desc)!r}")
-            clean, got_tier, got_platforms, warnings = got
-            assert got_tier == tier, f"{desc!r}: tier {got_tier!r}, expected {tier!r}"
-            assert got_platforms == platforms, (
-                f"{desc!r}: platforms {got_platforms!r}, expected {platforms!r}")
-            assert len(warnings) == n_warnings, f"{desc!r}: warnings {warnings!r}"
-            if platforms or tier != 'unit' or n_warnings:
-                assert ' @' not in clean, (
-                    f"{desc!r}: both tags must be stripped, got {clean!r}")
+        for desc, tier, env in cases:
+            clean, got_tier, got_env, unknown = split(desc)
+            assert got_tier == tier, f"{desc!r}: tier {got_tier!r}, wanted {tier!r}"
+            assert got_env == env, f"{desc!r}: env {got_env!r}, wanted {env!r}"
+            assert not unknown, f"{desc!r}: unexpected unknown tags {unknown!r}"
+            if tier != 'unit' or env:
+                assert ' @' not in clean, f"{desc!r}: tags not stripped: {clean!r}"
 
-        # The alias warning names the rewrite, so the fix is copy-pasteable.
-        _, _, _, warnings = split_srv('Lock the file @windows')
-        assert 'write @unit @on(windows)' in warnings[0], warnings
-
-        # The prose case is untouched: no tag, no truncation.
         prose = 'verify `spec_format.md` documents @integration, @e2e, and @windows'
-        assert split_srv(prose)[0] == prose, "a description with no tag must not be truncated"
+        assert split(prose)[0] == prose, \
+            "a description with no tag must not be truncated"
 
         # Either order is one grammar: the tuple must not depend on tag order.
-        assert (split_srv('Lock the file @unit @on(windows-2022)')
-                == split_srv('Lock the file @on(windows-2022) @unit'))
+        assert (split('Lock the file @unit @env(windows)')
+                == split('Lock the file @env(windows) @unit'))
 
     @pytest.mark.proof("schema_spec_format", "PROOF-10", "RULE-10")
-    def test_platform_id_charset_rejects_dots_underscores_and_upper_case(self):
-        mods = self._patterns()
-        split_srv = mods['server']._split_proof_tags
-        split_chk = mods['checks']._split_proof_tags
-
-        # windows_2022 violates the charset only by its underscore, so this case
-        # is what fails if the pattern is widened to admit `_`.
-        for bad in ('Windows_2022', 'ubuntu-24.04', 'windows_2022'):
-            desc = f'Lock the file @unit @on({bad})'
-            got = split_srv(desc)
-            assert got == split_chk(desc), (
-                f"{desc!r}: purlin_server returned {got!r}, "
-                f"static_checks returned {split_chk(desc)!r}")
-            clean, tier, platforms, warnings = got
-            assert platforms == [], (
-                f"{bad!r} is not [a-z0-9][a-z0-9-]* and must be dropped, got {platforms!r}")
-            assert len(warnings) == 1 and bad in warnings[0], (
-                f"the warning must name the rejected id: {warnings!r}")
-            assert tier == 'unit' and clean == 'Lock the file', got
-
-        # The positive control: a well-formed id passes with no warning, so the
-        # rejections above are the charset and not a broken parser.
-        desc = 'Lock the file @unit @on(ubuntu-24)'
-        assert split_srv(desc) == split_chk(desc) == ('Lock the file', 'unit', ['ubuntu-24'], [])
+    def test_env_takes_three_values_and_nothing_else(self):
+        split = purlin_specs.split_proof_tags
+        for good in ('windows', 'macos', 'linux'):
+            clean, tier, env, unknown = split('Lock the file @unit @env(%s)' % good)
+            assert (clean, tier, env, unknown) == ('Lock the file', 'unit', good, [])
+        # windows-2022 is a runner name, not one of the three values, so it is
+        # ignored and named rather than read as a fourth operating system.
+        for bad in ('windows-2022', 'ubuntu-24.04', 'Windows'):
+            clean, tier, env, unknown = split('Lock the file @unit @env(%s)' % bad)
+            assert env is None, f"{bad!r} must not be read as an environment"
+            assert unknown == ['@env(%s)' % bad], unknown
+            assert (clean, tier) == ('Lock the file', 'unit')
+        # A retired tag is ignored and named, never read.
+        clean, tier, env, unknown = split('Lock the file @unit @on(windows-2022)')
+        assert (clean, tier, env) == ('Lock the file', 'unit', None)
+        assert unknown == ['@on(windows-2022)'], unknown
 
     @pytest.mark.proof("schema_spec_format", "PROOF-9", "RULE-9")
     def test_real_spec_is_parsed_correctly(self):
         """The spec that exposed this: PROOF-4's prose names `@integration`,
         `@e2e` and `@on(` in backticks before its real tier tag, and none of
         those is read as a tag or truncated."""
-        import importlib.util, os
-        path = os.path.join(os.path.dirname(__file__), '..', 'scripts', 'mcp', 'purlin_server.py')
-        spec = importlib.util.spec_from_file_location('_tt_srv2', path)
-        srv = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(srv)
-
-        root = os.path.join(os.path.dirname(__file__), '..')
-        info = srv._scan_specs(root)['schema_proof_format']
-        assert info['proof_tier_by_id'].get('PROOF-4') == 'integration', (
-            "PROOF-4's only tag is the trailing @integration")
-        assert info['proof_desc_by_id']['PROOF-4'].rstrip().endswith('`@on(`'), (
-            "the description's final clause must not be truncated")
-        assert info['proof_platforms_by_id'].get('PROOF-4') == [], (
-            "a backticked `@on(` in prose is not a platform tag")
+        info = purlin_specs.scan_specs(PROJECT_ROOT)['schema_proof_format']
+        proof = info['proofs']['PROOF-4']
+        assert proof['tier'] == 'integration', \
+            "PROOF-4's only tag is the trailing @integration"
+        assert proof['text'].rstrip().endswith('`@on(`'), \
+            "the description's final clause must not be truncated"
+        assert proof['env'] is None, \
+            "a backticked `@on(` in prose is not an environment tag"
 
 
 class TestAnchorNoteMetadata:
@@ -465,13 +397,13 @@ class TestAnchorNoteMetadata:
                 '## Rules\n- RULE-1: No eval\n\n'
                 '## Proof\n- PROOF-1 (RULE-1): Grep src/ for eval(; verify zero matches\n'
             )
-        features = purlin_server._scan_specs(self.project_root)
+        features = purlin_specs.scan_specs(self.project_root)
         assert 'policy' in features, f"the anchor did not parse at all: {list(features)}"
         info = features['policy']
         assert info.get('description') == 'Local policy', (
             f"the Note text leaked into the description: {info.get('description')!r}")
-        assert info.get('source_url') == './dev/external-refs/policy.git', (
-            f"the Note text displaced the Source: {info.get('source_url')!r}")
+        assert info.get('source') == './dev/external-refs/policy.git', (
+            f"the Note text displaced the Source: {info.get('source')!r}")
         leaked = [k for k, v in info.items()
                   if isinstance(v, str) and 'setup-external-refs' in v]
         assert not leaked, f"the Note text reached parsed fields {leaked}: {info}"

@@ -57,8 +57,7 @@ def sync_status(project_root):
 
     if data['warnings']:
         lines.append('')
-        for warning in data['warnings']:
-            lines.append('Note: ' + warning)
+        lines.extend(data['warnings'])
 
     lines.append('')
     lines.extend(_directives(data))

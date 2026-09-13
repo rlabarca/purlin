@@ -1,301 +1,217 @@
 #!/usr/bin/env bash
-# E2E test: Required Rules + Global Anchors in sync_status
-# 4 proofs covering 4 rules — all @e2e (Level 3).
-# Creates a real temp git repo with anchor, global anchor, and feature specs.
+# End to end: a feature counts its own rules, the rules it requires and the
+# rules of every global anchor, and each one reaches its own state.
+#
+# A real temp git repository, the real package, the real status table. Exits
+# non-zero on the first failed check and says what it wanted.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REAL_PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-SERVER_PY="$REAL_PROJECT_ROOT/scripts/mcp/purlin_server.py"
-SERVER_DIR="$(dirname "$SERVER_PY")"
+PLUGIN_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+MCP_DIR="$PLUGIN_ROOT/scripts/mcp"
 
-# Load proof harness
-source "$REAL_PROJECT_ROOT/scripts/proof/shell_purlin.sh"
+echo "=== e2e_required_rules ==="
 
-echo "=== e2e_required_rules tests ==="
+FAILED=0
+TMPDIR_E2E="$(mktemp -d)"
+cleanup() { rm -rf "$TMPDIR_E2E"; }
+trap cleanup EXIT
 
-# --- Helper: create project with anchor, global anchor, and feature spec ---
-create_test_project() {
-  local tmpdir="$1"
+check() {
+  # check <label> <expected> <actual>
+  if [ "$2" = "$3" ]; then
+    echo "    ok: $1"
+  else
+    echo "    FAIL: $1"
+    echo "      wanted: $2"
+    echo "      got:    $3"
+    FAILED=1
+  fi
+}
 
-  mkdir -p "$tmpdir/.purlin"
-  mkdir -p "$tmpdir/specs/schema"
-  mkdir -p "$tmpdir/specs/_anchors"
-  mkdir -p "$tmpdir/specs/auth"
-  mkdir -p "$tmpdir/scripts/mcp"
+# ── the project ───────────────────────────────────────────────────────
+mkdir -p "$TMPDIR_E2E/.purlin" "$TMPDIR_E2E/specs/schema" \
+         "$TMPDIR_E2E/specs/_anchors" "$TMPDIR_E2E/specs/auth" \
+         "$TMPDIR_E2E/src/auth"
 
-  # Create default config
-  echo '{"version":"0.9.0","test_framework":"shell"}' > "$tmpdir/.purlin/config.json"
+echo '{"gate":"tested","test_framework":"shell","project_name":"e2e"}' \
+  > "$TMPDIR_E2E/.purlin/config.json"
+echo '.purlin/runtime/' > "$TMPDIR_E2E/.gitignore"
 
-  # Copy the real MCP server files
-  cp "$REAL_PROJECT_ROOT/scripts/mcp/purlin_server.py" "$tmpdir/scripts/mcp/purlin_server.py"
-  cp "$REAL_PROJECT_ROOT/scripts/mcp/config_engine.py" "$tmpdir/scripts/mcp/config_engine.py"
-  cp "$REAL_PROJECT_ROOT/scripts/mcp/__init__.py" "$tmpdir/scripts/mcp/__init__.py" 2>/dev/null || true
-
-  # Anchor spec: api_conventions with 2 rules
-  cat > "$tmpdir/specs/schema/api_conventions.md" << 'SPEC'
+cat > "$TMPDIR_E2E/specs/schema/api_conventions.md" << 'SPEC'
 # Anchor: api_conventions
 
 > Scope: src/api/
 
-## What it does
-
-API conventions anchor defining cross-cutting API rules.
-
 ## Rules
 
-- RULE-1: All API responses include Content-Type header
-- RULE-2: All error responses use standard error format
+- RULE-1: Every API response carries a Content-Type header
+- RULE-2: Every error response carries the fields "code" and "message"
 
 ## Proof
 
-- PROOF-1 (RULE-1): Verify API responses include Content-Type @e2e
-- PROOF-2 (RULE-2): Verify error responses use standard format @e2e
+- PROOF-1 (RULE-1): GET /health; verify the Content-Type header is "application/json" @e2e
+- PROOF-2 (RULE-2): GET /missing; verify 404 and the fields "code" and "message" @e2e
 SPEC
 
-  # Global anchor: security_no_eval with 1 rule
-  cat > "$tmpdir/specs/_anchors/security_no_eval.md" << 'SPEC'
+cat > "$TMPDIR_E2E/specs/_anchors/security_no_eval.md" << 'SPEC'
 # Anchor: security_no_eval
 
 > Type: security
 > Global: true
 
-## What it does
-
-Global security anchor prohibiting eval() usage.
-
 ## Rules
 
-- RULE-1: No eval() calls in source code
+- RULE-1: No eval() call in any source file [risk: high] [origin: qa]
 
 ## Proof
 
-- PROOF-1 (RULE-1): Grep source for eval(); verify zero matches
+- PROOF-1 (RULE-1): Grep src/ for "eval("; verify zero matches
 SPEC
 
-  # Feature spec: login with 2 own rules + Requires api_conventions
-  cat > "$tmpdir/specs/auth/login.md" << 'SPEC'
+cat > "$TMPDIR_E2E/specs/auth/login.md" << 'SPEC'
 # Feature: login
 
 > Requires: api_conventions
 > Scope: src/auth/login.js
 
-## What it does
-
-User login feature with authentication.
-
 ## Rules
 
-- RULE-1: Valid credentials return 200 with session token
-- RULE-2: Invalid credentials return 401 with error message
+- RULE-1: Valid credentials return 200 with a session token [risk: high] [origin: pm]
+- RULE-2: Invalid credentials return 401 and the body "denied"
 
 ## Proof
 
-- PROOF-1 (RULE-1): POST /login with valid creds; verify 200 and token @e2e
-- PROOF-2 (RULE-2): POST /login with bad creds; verify 401 @e2e
+- PROOF-1 (RULE-1): POST /login with valid credentials; verify 200 and a token @e2e
+- PROOF-2 (RULE-2): POST /login with a bad password; verify 401 and the body "denied" @e2e
 SPEC
 
-  # Initialize as a git repo
-  (cd "$tmpdir" && git init -q && git add -A && git commit -q -m "init")
+echo 'function login() { return 200; }' > "$TMPDIR_E2E/src/auth/login.js"
+
+(
+  cd "$TMPDIR_E2E"
+  git init -q
+  git config user.email 'dev@example.com'
+  git config user.name 'Dev'
+  git add -A
+  git commit -q -m 'chore: the project under test'
+)
+
+# ── helpers ───────────────────────────────────────────────────────────
+query() {
+  # query <python statements; `data`, `feature` and `rules` are in scope>
+  python3 - "$MCP_DIR" "$TMPDIR_E2E" "$1" << 'PY'
+import sys
+sys.path.insert(0, sys.argv[1])
+from purlin import payload
+data = payload.build_payload(sys.argv[2])
+feature = next(f for f in data['features'] if f['name'] == 'login')
+rules = feature['rules']
+
+
+def own(rule_id):
+    return [r for r in rules if r['id'] == rule_id and r['label'] == 'own'][0]
+
+
+def count(state):
+    return len([r for r in rules if r['state'] == state])
+
+
+exec(sys.argv[3])
+PY
 }
 
-# --- Helper: create a proof file in a specific spec dir ---
-create_proof_file() {
-  local tmpdir="$1"
-  local spec_dir="$2"
-  local feature="$3"
-  shift 3
-
-  local proofs="["
-  local first=true
-  for entry in "$@"; do
-    local proof_id rule_id status
-    proof_id=$(echo "$entry" | cut -d'|' -f1)
-    rule_id=$(echo "$entry" | cut -d'|' -f2)
-    status=$(echo "$entry" | cut -d'|' -f3)
-    if [ "$first" = true ]; then
-      first=false
-    else
-      proofs="$proofs,"
-    fi
-    proofs="$proofs
-    {
-      \"feature\": \"$feature\",
-      \"id\": \"$proof_id\",
-      \"rule\": \"$rule_id\",
-      \"test_file\": \"dev/test_example.sh\",
-      \"test_name\": \"test $proof_id\",
-      \"status\": \"$status\",
-      \"tier\": \"default\"
-    }"
-  done
-  proofs="$proofs
-  ]"
-
-  echo "{\"tier\": \"default\", \"proofs\": $proofs}" > "$tmpdir/$spec_dir/${feature}.proofs-unit.json"
+write_proofs() {
+  # write_proofs <feature> <PROOF-ID:RULE-ID> ...
+  local feature="$1"; shift
+  local dir="$TMPDIR_E2E/.purlin/runtime/proofs"
+  mkdir -p "$dir"
+  {
+    printf '{"tier": "unit", "proofs": ['
+    local first=1
+    for pair in "$@"; do
+      local pid="${pair%%:*}"
+      local rid="${pair##*:}"
+      [ $first -eq 1 ] || printf ','
+      first=0
+      printf '{"feature":"%s","id":"%s","rule":"%s","test_file":"dev/test_e2e_required_rules.sh","test_name":"%s","status":"pass","tier":"unit"}' \
+        "$feature" "$pid" "$rid" "$pid"
+    done
+    printf ']}'
+  } > "$dir/$feature.unit.json"
 }
 
-# --- Helper: run sync_status ---
-run_sync_status() {
-  local tmpdir="$1"
-  python3 -c "
-import sys; sys.path.insert(0, '$SERVER_DIR')
-from purlin_server import sync_status
-print(sync_status('$tmpdir'))
-"
-}
+# ── phase A: the count ────────────────────────────────────────────────
+echo "  --- phase A: own plus required plus global ---"
+check "login counts five rules" "5" "$(query 'print(len(rules))')"
+check "the labels split two, two and one" "own 2, required 2, global 1" \
+  "$(query "print(', '.join('%s %d' % (label, len([r for r in rules if r['label'] == label])) for label in ('own', 'required', 'global')))")"
+check "the required rules name their owner" "api_conventions" \
+  "$(query "print(sorted({r['feature'] for r in rules if r['label'] == 'required'})[0])")"
+check "the global rule names its owner" "security_no_eval" \
+  "$(query "print(sorted({r['feature'] for r in rules if r['label'] == 'global'})[0])")"
 
-# --- Cleanup ---
-ALL_TMPDIRS=""
-cleanup_all() { for d in $ALL_TMPDIRS; do rm -rf "$d" 2>/dev/null; done; }
-trap cleanup_all EXIT
+# ── phase B: the tags ─────────────────────────────────────────────────
+echo "  --- phase B: the rule tags ---"
+check "RULE-1 is high risk, owned by the PM" "high pm" \
+  "$(query "print(own('RULE-1')['risk'], own('RULE-1')['origin'])")"
+check "RULE-2 takes the defaults" "low eng" \
+  "$(query "print(own('RULE-2')['risk'], own('RULE-2')['origin'])")"
+check "the tags are stripped from the text" "Valid credentials return 200 with a session token" \
+  "$(query "print(own('RULE-1')['text'])")"
 
-# ==========================================================================
-# Phase A — Coverage includes required + global (0/5)
-# ==========================================================================
-TMPDIR=$(mktemp -d)
-ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR"
-create_test_project "$TMPDIR"
+# ── phase C: nothing proved yet ───────────────────────────────────────
+echo "  --- phase C: with no test run ---"
+check "every rule is Proof ready" "5" "$(query "print(count('Proof ready'))")"
+check "the feature's lowest state is Proof ready" "Proof ready" \
+  "$(query "print(feature['rollup']['lowest_state'])")"
 
-echo "  --- Phase A: Coverage includes required + global ---"
+# ── phase D: partial, then complete ───────────────────────────────────
+echo "  --- phase D: the feature's own tests run ---"
+write_proofs login PROOF-1:RULE-1 PROOF-2:RULE-2
+check "two rules are Tested" "2" "$(query "print(count('Tested'))")"
+check "the lowest state is still Proof ready" "Proof ready" \
+  "$(query "print(feature['rollup']['lowest_state'])")"
 
-STATUS_A=$(run_sync_status "$TMPDIR")
+echo "  --- phase E: the required and global tests run too ---"
+write_proofs api_conventions PROOF-1:RULE-1 PROOF-2:RULE-2
+write_proofs security_no_eval PROOF-1:RULE-1
+check "all five rules are Tested" "5" "$(query "print(count('Tested'))")"
+check "the lowest state is Tested" "Tested" \
+  "$(query "print(feature['rollup']['lowest_state'])")"
 
-# login should show 0/5 rules (2 own + 2 required + 1 global)
-phase_a_ok=false
-if echo "$STATUS_A" | grep -q "login: 0/5 rules proved"; then
-  echo "    Phase A PASS: login shows 0/5 rules"
-  phase_a_ok=true
-else
-  echo "    Phase A FAIL: expected 'login: 0/5 rules proved'"
-  echo "    Status output:"
-  echo "$STATUS_A"
-fi
+# ── phase F: the status table ─────────────────────────────────────────
+echo "  --- phase F: the table ---"
+STATUS="$(python3 -c "
+import sys
+sys.path.insert(0, '$MCP_DIR')
+from purlin import status
+print(status.sync_status('$TMPDIR_E2E'))
+")"
 
-if $phase_a_ok; then
-  purlin_proof "sync_status" "PROOF-22" "RULE-4" pass "sync_status counts required+global rules in total"
-else
-  purlin_proof "sync_status" "PROOF-22" "RULE-4" fail "sync_status counts required+global rules in total"
-fi
-
-# ==========================================================================
-# Phase A2 — Labels (own), (required), (global)
-# ==========================================================================
-echo "  --- Phase A2: Labels ---"
-
-has_own=false
-has_required=false
-has_global=false
-
-# Verify labels appear on the correct rule lines (not just anywhere in output)
-echo "$STATUS_A" | grep -q "RULE-1.*\(own\)\|RULE-2.*\(own\)" && has_own=true
-echo "$STATUS_A" | grep -q "api_conventions/RULE.*\(required\)" && has_required=true
-echo "$STATUS_A" | grep -q "security_no_eval/RULE.*\(global\)" && has_global=true
-
-phase_a2_ok=false
-if $has_own && $has_required && $has_global; then
-  echo "    Phase A2 PASS: labels on correct rule lines (own=$has_own, required=$has_required, global=$has_global)"
-  phase_a2_ok=true
-else
-  echo "    Phase A2 FAIL: missing labels on correct lines (own=$has_own, required=$has_required, global=$has_global)"
-  echo "    Status output:"
-  echo "$STATUS_A"
-fi
-
-if $phase_a2_ok; then
-  purlin_proof "sync_status" "PROOF-23" "RULE-9" pass "sync_status labels rules as own/required/global"
-else
-  purlin_proof "sync_status" "PROOF-23" "RULE-9" fail "sync_status labels rules as own/required/global"
-fi
-
-# ==========================================================================
-# Phase B — Partial proofs (own rules only → 2/5, NOT VERIFIED)
-# ==========================================================================
-echo "  --- Phase B: Partial proofs ---"
-
-# Create proofs for login's 2 own rules
-create_proof_file "$TMPDIR" "specs/auth" "login" \
-  "PROOF-1|RULE-1|pass" \
-  "PROOF-2|RULE-2|pass"
-
-(cd "$TMPDIR" && git add -A && git commit -q -m "add login own proofs")
-
-STATUS_B=$(run_sync_status "$TMPDIR")
-
-phase_b_ok=false
-if echo "$STATUS_B" | grep -q "login: 2/5 rules proved"; then
-  # RULE-21 forbids PASSING for partial coverage, so the forbidden state has to
-  # be exercised: the summary row must read PARTIAL, and neither PASSING nor
-  # VERIFIED may appear for login anywhere in the report.
-  b_partial=false; b_not_passing=true; b_not_verified=true
-  echo "$STATUS_B" | grep -E "^.*login.*PARTIAL" -q && b_partial=true
-  echo "$STATUS_B" | grep -q "login: PASSING" && b_not_passing=false
-  echo "$STATUS_B" | grep -q "login: VERIFIED" && b_not_verified=false
-  if $b_partial && $b_not_passing && $b_not_verified; then
-    echo "    Phase B PASS: login shows 2/5 and PARTIAL, never PASSING or VERIFIED"
-    phase_b_ok=true
+for wanted in 'login' 'api_conventions (anchor)' 'security_no_eval (anchor)' \
+              'Lowest state' 'Tested 5'; do
+  if printf '%s' "$STATUS" | grep -qF -- "$wanted"; then
+    echo "    ok: the table shows '$wanted'"
   else
-    echo "    Phase B FAIL: partial=$b_partial not_passing=$b_not_passing not_verified=$b_not_verified"
-    echo "    Status output:"
-    echo "$STATUS_B"
+    echo "    FAIL: the table does not show '$wanted'"
+    printf '%s\n' "$STATUS"
+    FAILED=1
   fi
+done
+
+if printf '%s' "$STATUS" | tail -1 | grep -q '^→'; then
+  echo "    ok: the table ends with a next step"
 else
-  echo "    Phase B FAIL: expected 'login: 2/5 rules proved'"
-  echo "    Status output:"
-  echo "$STATUS_B"
+  echo "    FAIL: the table does not end with a next step"
+  printf '%s\n' "$STATUS" | tail -3
+  FAILED=1
 fi
-
-if $phase_b_ok; then
-  purlin_proof "sync_status" "PROOF-24" "RULE-2" pass "partial proofs show 2/5 and not VERIFIED"
-else
-  purlin_proof "sync_status" "PROOF-24" "RULE-2" fail "partial proofs show 2/5 and not VERIFIED"
-fi
-
-# ==========================================================================
-# Phase C — Full proofs (all 5 proved → PASSING)
-# ==========================================================================
-echo "  --- Phase C: Full proofs ---"
-
-# Add proofs for api_conventions (2 rules)
-create_proof_file "$TMPDIR" "specs/schema" "api_conventions" \
-  "PROOF-1|RULE-1|pass" \
-  "PROOF-2|RULE-2|pass"
-
-# Add proofs for security_no_eval (1 rule)
-create_proof_file "$TMPDIR" "specs/_anchors" "security_no_eval" \
-  "PROOF-1|RULE-1|pass"
-
-(cd "$TMPDIR" && git add -A && git commit -q -m "add required+global proofs")
-
-STATUS_C=$(run_sync_status "$TMPDIR")
-
-phase_c_ok=false
-if echo "$STATUS_C" | grep -q "login: PASSING"; then
-  # Verify 5/5 in the detail line
-  if echo "$STATUS_C" | grep -q "5/5 rules proved"; then
-    echo "    Phase C PASS: login shows PASSING with 5/5"
-    phase_c_ok=true
-  else
-    echo "    Phase C FAIL: PASSING but missing 5/5 count"
-    echo "    Status output:"
-    echo "$STATUS_C"
-  fi
-else
-  echo "    Phase C FAIL: expected 'login: PASSING'"
-  echo "    Status output:"
-  echo "$STATUS_C"
-fi
-
-if $phase_c_ok; then
-  purlin_proof "sync_status" "PROOF-25" "RULE-2" pass "full proofs show 5/5 and PASSING"
-else
-  purlin_proof "sync_status" "PROOF-25" "RULE-2" fail "full proofs show 5/5 and PASSING"
-fi
-
-# --- Emit proof files ---
-export PROJECT_ROOT="$REAL_PROJECT_ROOT"
-cd "$PROJECT_ROOT"
-purlin_proof_finish
 
 echo ""
-echo "e2e_required_rules: 4 proofs recorded"
+if [ "$FAILED" -eq 0 ]; then
+  echo "e2e_required_rules: every check passed"
+else
+  echo "e2e_required_rules: FAILED"
+fi
+exit "$FAILED"

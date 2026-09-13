@@ -15,9 +15,10 @@ import pytest
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 HOOK = os.path.join(PROJECT_ROOT, 'scripts', 'hooks', 'refresh_digest.py')
 sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'mcp'))
-sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'audit'))
-import purlin_server
-import static_checks
+from purlin import drift as purlin_drift
+from purlin import payload as purlin_payload
+from purlin import specs as purlin_specs
+from purlin import server as purlin_srv
 
 STDIN = '{"tool_name": "Write", "tool_input": {"file_path": "specs/app/login.md"}}'
 
@@ -70,8 +71,15 @@ def _project(tmp, report=True, digest='auto', git=True, anchor=False):
 
 
 def _write_proofs(tmp, proofs):
-    with open(os.path.join(tmp, 'specs', 'app', 'login.proofs-unit.json'), 'w') as f:
+    directory = os.path.join(tmp, '.purlin', 'runtime', 'proofs')
+    os.makedirs(directory, exist_ok=True)
+    with open(os.path.join(directory, 'login.unit.json'), 'w') as f:
         json.dump({'tier': 'unit', 'proofs': proofs}, f)
+
+
+def _proved(digest):
+    feature = next(f for f in digest['features'] if f['name'] == 'login')
+    return feature['rollup']['proved']
 
 
 def _digest_path(tmp):
@@ -142,13 +150,14 @@ class TestSilentAndNonBlocking:
         assert not os.path.exists(_digest_path(off))
 
         locked = _project(str(tmp_path / 'locked'))
-        os.makedirs(os.path.join(locked, '.purlin', 'runtime'))
+        os.makedirs(os.path.join(locked, '.purlin', 'runtime'), exist_ok=True)
+        hook = _load_hook_module()
         with open(os.path.join(locked, '.purlin', 'runtime', 'refresh_digest.lock'), 'a+') as lock:
-            static_checks._lock_exclusive(lock)
+            hook.lock_exclusive(lock)
             try:
                 _assert_silent_zero(_run(locked), 'lock held')
             finally:
-                static_checks._unlock(lock)
+                hook.unlock(lock)
         assert not os.path.exists(_digest_path(locked))
 
         skipped = _project(str(tmp_path / 'skipped'))
@@ -177,10 +186,10 @@ class TestDirtyCheck:
         assert open(digest, 'rb').read() == first_bytes
         assert os.stat(digest).st_mtime == stamp, '.purlin/runtime/ is not an input'
 
-        assert _read_digest(project)['features'][0]['proved'] == 1
+        assert _proved(_read_digest(project)) == 1
         _write_proofs(project, [_entry('PROOF-1', 'RULE-1'), _entry('PROOF-2', 'RULE-2')])
         _assert_silent_zero(_run(project), 'proof file newer')
-        assert _read_digest(project)['features'][0]['proved'] == 2, \
+        assert _proved(_read_digest(project)) == 2, \
             'a newer proof file must regenerate the digest'
 
         stamp = os.stat(digest).st_mtime
@@ -206,7 +215,7 @@ class TestDirtyCheck:
         time.sleep(0.01)
         _write_proofs(project, [_entry('PROOF-1', 'RULE-1')])
         _assert_silent_zero(_run(project), 'spec_dir in the config is ignored')
-        assert _read_digest(project)['features'][0]['proved'] == 1, \
+        assert _proved(_read_digest(project)) == 1, \
             "a stray spec_dir in the config redirected the dirty check"
         assert os.stat(digest).st_mtime > stamp
 
@@ -216,16 +225,17 @@ class TestSingleFlight:
     @pytest.mark.proof("refresh_digest_hook", "PROOF-3", "RULE-3", tier="integration")
     def test_a_held_lock_means_leave(self, tmp_path):
         project = _project(str(tmp_path))
-        os.makedirs(os.path.join(project, '.purlin', 'runtime'))
+        os.makedirs(os.path.join(project, '.purlin', 'runtime'), exist_ok=True)
         lock_path = os.path.join(project, '.purlin', 'runtime', 'refresh_digest.lock')
+        hook = _load_hook_module()
         with open(lock_path, 'a+') as lock:
-            static_checks._lock_exclusive(lock)
+            hook.lock_exclusive(lock)
             try:
                 _assert_silent_zero(_run(project), 'lock held')
                 assert not os.path.exists(_digest_path(project)), \
                     'a second instance must not generate while the first holds the lock'
             finally:
-                static_checks._unlock(lock)
+                hook.unlock(lock)
         _assert_silent_zero(_run(project), 'lock released')
         assert os.path.isfile(_digest_path(project))
 
@@ -236,7 +246,7 @@ class TestRecheckAfterWriting:
     def test_a_write_during_generation_is_picked_up(self, tmp_path, monkeypatch):
         project = _project(str(tmp_path))
         module = _load_hook_module()
-        real = purlin_server.generate_digest
+        real = purlin_srv.generate_digest
         calls = []
 
         def once(root, **kw):
@@ -247,10 +257,10 @@ class TestRecheckAfterWriting:
             calls.append(kw)
             return path
 
-        monkeypatch.setattr(purlin_server, 'generate_digest', once)
+        monkeypatch.setattr(purlin_srv, 'generate_digest', once)
         _main_in(project, module)
         assert len(calls) == 2, f'expected a second generation for the write that landed, got {len(calls)}'
-        assert _read_digest(project)['features'][0]['proved'] == 2
+        assert _proved(_read_digest(project)) == 2
         assert all(kw == {'generated_by': 'hook', 'network': False, 'only_if_changed': True}
                    for kw in calls), calls
 
@@ -267,7 +277,7 @@ class TestRecheckAfterWriting:
 
         _age(_digest_path(project))
         os.utime(os.path.join(project, '.purlin', 'config.json'), None)
-        monkeypatch.setattr(purlin_server, 'generate_digest', always)
+        monkeypatch.setattr(purlin_srv, 'generate_digest', always)
         _main_in(project, module)
         assert len(calls) == 3, f'the re-check is bounded at three runs, got {len(calls)}'
 
@@ -313,13 +323,14 @@ class TestGenerationContract:
         project = _project(str(tmp_path), anchor=True)
         module = _load_hook_module()
         argvs = []
-        real_run = purlin_server.subprocess.run
+        real_run = purlin_payload.subprocess.run
 
         def recording(argv, *a, **kw):
             argvs.append(list(argv))
             return real_run(argv, *a, **kw)
 
-        monkeypatch.setattr(purlin_server.subprocess, 'run', recording)
+        for watched in (purlin_payload, purlin_drift, purlin_specs):
+            monkeypatch.setattr(watched.subprocess, 'run', recording)
         _main_in(project, module)
         assert argvs, 'the build shells out to git, so the recorder must have seen something'
         assert not any('ls-remote' in argv for argv in argvs), \
@@ -327,7 +338,8 @@ class TestGenerationContract:
         digest = _read_digest(project)
         assert digest['generated_by'] == 'hook'
         anchor = next(f for f in digest['features'] if f['name'] == 'shared_rules')
-        assert anchor['ext_status'] == 'unchecked'
+        assert anchor['source'] == 'https://github.com/example/rules.git', anchor
+        assert anchor['pinned'] == 'abc1234', anchor
 
         # The digest is tracked in a real project; commit it so its own
         # presence is not the thing that changes between two builds. Dating
@@ -376,34 +388,3 @@ class TestRegistration:
         assert 'python3' not in raw, (
             f'{path} still names an interpreter: '
             + next(line for line in raw.splitlines() if 'python3' in line))
-
-
-class TestNoSecondModuleLoad:
-    """sync_status RULE-64 - the hook's static_checks is the server's too."""
-
-    @pytest.mark.proof("sync_status", "PROOF-120", "RULE-64", tier="integration")
-    def test_the_hook_run_loads_static_checks_once(self, tmp_path, monkeypatch):
-        project = _project(str(tmp_path))
-        module = _load_hook_module()
-        monkeypatch.setattr(purlin_server, '_STATIC_CHECKS_MODULE',
-                            purlin_server._STATIC_CHECKS_UNSET)
-
-        loaded = []
-        real_spec_from_file = importlib.util.spec_from_file_location
-
-        def spy(name, location, *args, **kwargs):
-            loaded.append(str(location))
-            return real_spec_from_file(name, location, *args, **kwargs)
-
-        monkeypatch.setattr(importlib.util, 'spec_from_file_location', spy)
-        _main_in(project, module)
-        monkeypatch.setattr(importlib.util, 'spec_from_file_location',
-                            real_spec_from_file)
-
-        reloads = [p for p in loaded if p.endswith('static_checks.py')]
-        assert reloads == [], \
-            f'static_checks was loaded again by path during the hook run: {reloads}'
-        assert 'static_checks' in sys.modules
-        assert purlin_server._static_checks() is sys.modules['static_checks'], \
-            'the server built a second copy instead of reusing the imported one'
-        assert os.path.exists(_digest_path(project)), 'the hook wrote no digest'

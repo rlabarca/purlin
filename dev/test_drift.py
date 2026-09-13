@@ -11,7 +11,7 @@ import tempfile
 import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'mcp'))
-import purlin_server
+from purlin import drift as purlin_drift
 
 
 def _git(args, cwd, check=True):
@@ -144,17 +144,17 @@ class TestDriftExternalAndLocalModification:
         _git(['commit', '-m', 'feat: add RULE-2 to local anchor'], self.project_root)
 
         # Step 4: Run drift and parse results
-        result_text = purlin_server.drift(self.project_root)
+        result_text = purlin_drift.drift(self.project_root)
         data = json.loads(result_text)
 
         # Verify external_anchor_drift has a stale entry for security_policy
         stale_entries = [
-            e for e in data.get('external_anchor_drift', [])
-            if e.get('anchor') == 'security_policy' and e.get('status') == 'stale'
+            e for e in data.get('pins', [])
+            if e.get('anchor') == 'security_policy' and e.get('status') == 'behind'
         ]
         assert len(stale_entries) == 1, (
-            f"Expected 1 external_anchor_drift stale entry for security_policy, "
-            f"got: {data.get('external_anchor_drift', [])}"
+            f"Expected 1 pins entry that is behind for security_policy, "
+            f"got: {data.get('pins', [])}"
         )
 
         # Verify spec_changes includes security_policy with new_rules containing RULE-2
@@ -189,16 +189,16 @@ class TestDriftExternalAndLocalModification:
         _git(['commit', '-m', 'feat: add placeholder'], self.project_root)
 
         # Step 4: Run drift and verify anchor name in result
-        result_text = purlin_server.drift(self.project_root)
+        result_text = purlin_drift.drift(self.project_root)
         data = json.loads(result_text)
 
         stale_entries = [
-            e for e in data.get('external_anchor_drift', [])
-            if e.get('status') == 'stale'
+            e for e in data.get('pins', [])
+            if e.get('status') == 'behind'
         ]
         assert len(stale_entries) >= 1, (
-            f"Expected at least 1 stale external_anchor_drift entry, "
-            f"got: {data.get('external_anchor_drift', [])}"
+            f"Expected at least 1 pins entry that is behind, "
+            f"got: {data.get('pins', [])}"
         )
 
         # The anchor field must be 'local_security' (the spec name),
@@ -279,16 +279,16 @@ class TestDriftExternalAnchorStaleness:
         _git(['commit', '-m', 'feat: add placeholder'], self.project_root)
 
         # Step 4: Run drift and verify external_anchor_drift has a stale entry
-        result_text = purlin_server.drift(self.project_root)
+        result_text = purlin_drift.drift(self.project_root)
         data = json.loads(result_text)
 
         stale_entries = [
-            e for e in data.get('external_anchor_drift', [])
-            if e.get('anchor') == 'mixed_policy' and e.get('status') == 'stale'
+            e for e in data.get('pins', [])
+            if e.get('anchor') == 'mixed_policy' and e.get('status') == 'behind'
         ]
         assert len(stale_entries) == 1, (
-            f"Expected 1 stale external_anchor_drift entry for mixed_policy, "
-            f"got: {data.get('external_anchor_drift', [])}"
+            f"Expected 1 pins entry that is behind for mixed_policy, "
+            f"got: {data.get('pins', [])}"
         )
 
     @pytest.mark.proof("drift", "PROOF-17", "RULE-12", tier="e2e")
@@ -311,22 +311,22 @@ class TestDriftExternalAnchorStaleness:
         _git(['commit', '-m', 'feat: add placeholder'], self.project_root)
 
         # Step 4: Run drift and verify both status=stale and remote_sha is present
-        result_text = purlin_server.drift(self.project_root)
+        result_text = purlin_drift.drift(self.project_root)
         data = json.loads(result_text)
 
         stale_entries = [
-            e for e in data.get('external_anchor_drift', [])
-            if e.get('anchor') == 'external_anchor' and e.get('status') == 'stale'
+            e for e in data.get('pins', [])
+            if e.get('anchor') == 'external_anchor' and e.get('status') == 'behind'
         ]
         assert len(stale_entries) == 1, (
-            f"Expected 1 stale external_anchor_drift entry for external_anchor, "
-            f"got: {data.get('external_anchor_drift', [])}"
+            f"Expected 1 pins entry that is behind for external_anchor, "
+            f"got: {data.get('pins', [])}"
         )
         entry = stale_entries[0]
         assert 'remote_sha' in entry, (
             f"Expected remote_sha field in stale entry, got: {entry}"
         )
-        # remote_sha is truncated to 7 chars in purlin_server.py
+        # remote_sha is truncated to 7 characters by the pin check
         assert len(entry['remote_sha']) == 7, (
             f"Expected remote_sha to be 7 chars (truncated), got: {entry['remote_sha']!r}"
         )
@@ -369,15 +369,15 @@ class TestDriftSinceValidation:
             calls.append(list(args) if isinstance(args, (list, tuple)) else [args])
             return real_run(args, *rest, **kwargs)
 
-        purlin_server.subprocess.run = spy
+        purlin_drift.subprocess.run = spy
         try:
-            refused = json.loads(purlin_server.drift(root, since='--output=/tmp/x'))
+            refused = json.loads(purlin_drift.drift(root, since='--output=/tmp/x'))
             refused_calls = list(calls)
             calls.clear()
-            allowed = json.loads(purlin_server.drift(root, since='2'))
+            allowed = json.loads(purlin_drift.drift(root, since='2'))
             allowed_calls = list(calls)
         finally:
-            purlin_server.subprocess.run = real_run
+            purlin_drift.subprocess.run = real_run
 
         assert refused.get('error') == 'rejected since', refused
         reason = refused.get('reason', '')
@@ -428,11 +428,11 @@ class TestDriftBatchedDiffStat:
             calls.append(list(args) if isinstance(args, (list, tuple)) else [args])
             return real_run(args, *rest, **kwargs)
 
-        purlin_server.subprocess.run = spy
+        purlin_drift.subprocess.run = spy
         try:
-            data = json.loads(purlin_server.drift(root, since='1'))
+            data = json.loads(purlin_drift.drift(root, since='1'))
         finally:
-            purlin_server.subprocess.run = real_run
+            purlin_drift.subprocess.run = real_run
 
         numstat_calls = [c for c in calls if '--numstat' in c]
         assert len(numstat_calls) == 1, (
@@ -480,14 +480,15 @@ class TestDriftCompactPayload:
         os.makedirs(root)
         self._repo(root)
 
-        text = purlin_server.drift(root, since='1')
+        text = purlin_drift.drift(root, since='1')
 
         assert '\n  ' not in text, "payload still carries indentation"
         assert '": ' not in text, "payload still carries a space after the key separator"
 
         data = json.loads(text)
         assert isinstance(data, dict), type(data)
-        for key in ('since', 'commits', 'files', 'spec_changes', 'proof_status'):
+        for key in ('since', 'commits', 'files', 'spec_changes', 'pins',
+                    'rule_details', 'roles'):
             assert key in data, (key, sorted(data))
 
         indented = json.dumps(data, indent=2)
@@ -516,8 +517,10 @@ def _write(path, text):
         fh.write(text)
 
 
-def _proof_file(path, feature, rule_ids):
+def _proof_file(root, feature, rule_ids):
     """Write a unit proof file marking each of `rule_ids` as passing."""
+    path = os.path.join(root, '.purlin', 'runtime', 'proofs',
+                        '%s.unit.json' % feature)
     _write(path, json.dumps({'tier': 'unit', 'proofs': [
         {'feature': feature, 'id': 'PROOF-%s' % rid.split('-')[1],
          'rule': rid, 'test_file': 'tests/test_%s.py' % feature,
@@ -545,9 +548,7 @@ class TestDriftRuleDetails:
                '- PROOF-1 (RULE-1): Post 0.1 plus 0.2 and verify 30 cents\n'
                '- PROOF-2 (RULE-2): Post without a code and verify the refusal\n'
                '- PROOF-3 (RULE-3): Split 10 cents three ways and verify 4/3/3\n')
-        _proof_file(os.path.join(root, 'specs', '_anchors',
-                                 'money_anchor.proofs-unit.json'),
-                    'money_anchor', ['RULE-1', 'RULE-2', 'RULE-3'])
+        _proof_file(root, 'money_anchor', ['RULE-1', 'RULE-2', 'RULE-3'])
 
         # `ledger`: 4 own rules, 3 of them proved, requiring the anchor.
         _write(os.path.join(root, 'specs', 'ledger', 'ledger.md'),
@@ -566,9 +567,7 @@ class TestDriftRuleDetails:
                '- PROOF-3 (RULE-3): Post twice and verify the first bytes hold\n'
                '- PROOF-4 (RULE-4): Post an unbalanced entry and verify refusal\n'
                % _LEDGER_LONG_RULE)
-        _proof_file(os.path.join(root, 'specs', 'ledger',
-                                 'ledger.proofs-unit.json'),
-                    'ledger', ['RULE-1', 'RULE-2', 'RULE-3'])
+        _proof_file(root, 'ledger', ['RULE-1', 'RULE-2', 'RULE-3'])
 
         # Two more features with changed scope files, so the order of
         # `rule_details` is something a run can get wrong.
@@ -583,9 +582,7 @@ class TestDriftRuleDetails:
                    '## Proof\n\n'
                    '- PROOF-1 (RULE-1): Call it and verify the balance\n'
                    % (name, name, src))
-            _proof_file(os.path.join(root, 'specs', 'ledger',
-                                     '%s.proofs-unit.json' % name),
-                        name, ['RULE-1'])
+            _proof_file(root, name, ['RULE-1'])
 
         for src in ('posting.py', 'gateway.py', 'api.py'):
             _write(os.path.join(root, 'src', 'ledger', src), 'def run():\n    return 0\n')
@@ -610,10 +607,11 @@ class TestDriftRuleDetails:
         code = (
             'import json, sys\n'
             'sys.path.insert(0, %r)\n'
-            'import purlin_server\n'
-            "data = json.loads(purlin_server.drift(%r))\n"
+            'from purlin import drift\n'
+            "data = json.loads(drift.drift(%r))\n"
             "sys.stdout.write(json.dumps(data['rule_details'], sort_keys=False))\n"
-            % (os.path.dirname(os.path.abspath(purlin_server.__file__)), root)
+            % (os.path.dirname(os.path.dirname(
+                os.path.abspath(purlin_drift.__file__))), root)
         )
         r = subprocess.run([sys.executable, '-c', code], cwd=root, env=env,
                            capture_output=True, text=True)
@@ -626,7 +624,7 @@ class TestDriftRuleDetails:
         os.makedirs(root)
         self._repo(root)
 
-        data = json.loads(purlin_server.drift(root))
+        data = json.loads(purlin_drift.drift(root))
         details = data['rule_details']
 
         assert 'ledger' in details, sorted(details)
@@ -636,13 +634,11 @@ class TestDriftRuleDetails:
         # 4 own plus the anchor's 3, of which 3 own and all 3 anchor rules pass.
         assert ledger['total_rules'] == 7, (
             "total_rules counted %s, not the 4 own plus 3 inherited rules the "
-            "verdict counts" % ledger['total_rules'])
-        assert ledger['proved_rules'] == 6, (
-            "proved_rules read %s, not 6" % ledger['proved_rules'])
+            "one payload counts" % ledger['total_rules'])
 
-        # One id per rule worth naming, no status field on the other six.
+        # One id per rule worth naming, and nothing for the other six.
         assert ledger['unproved'] == ['RULE-4'], ledger['unproved']
-        assert ledger['failing'] == [], ledger['failing']
+        assert ledger['lowest_state'] == 'Drafted', ledger['lowest_state']
         assert ledger['spec_path'] == 'specs/ledger/ledger.md', ledger['spec_path']
 
         # Own rules, in RULE number order, id and description and nothing else.
@@ -650,7 +646,8 @@ class TestDriftRuleDetails:
             'RULE-1', 'RULE-2', 'RULE-3', 'RULE-4'], ledger['rules']
         assert len(ledger['rules']) == 4, ledger['rules']
         for rule in ledger['rules']:
-            assert set(rule) == {'rule_id', 'description'}, sorted(rule)
+            assert set(rule) == {'rule_id', 'description', 'state', 'risk',
+                                 'origin'}, sorted(rule)
 
         # The long description is cut on a word boundary and says it was cut;
         # the short ones come back whole.
