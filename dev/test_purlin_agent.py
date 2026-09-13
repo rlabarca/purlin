@@ -28,7 +28,12 @@ class TestPurlinAgent:
         fm = m.group(1)
         assert 'name:' in fm
         assert 'description:' in fm
-        assert 'model:' in fm
+        pinned = [ln for ln in fm.splitlines()
+                  if re.match(r'\s*model\s*:', ln)]
+        assert not pinned, (
+            f"agents/purlin.md pins a model {pinned}; a shipped agent "
+            f"overrides every host that installs the plugin, and the pin goes "
+            f"stale the moment that model is superseded")
 
     @pytest.mark.proof("purlin_agent", "PROOF-2", "RULE-2")
     def test_core_loop_four_steps(self):

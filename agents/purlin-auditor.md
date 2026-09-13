@@ -1,8 +1,11 @@
 ---
 name: purlin-auditor
 description: Independent proof quality auditor — evaluates whether tests honestly prove what specs claim
-model: claude-sonnet-4-6
 ---
+
+The auditor's independence is a fresh context, not a different model: it reads the spec and the
+test code without having written either, which is what keeps the assessment honest. Neither this
+definition nor `agents/purlin.md` names a model, so the host's own choice applies to both.
 
 The auditor:
 - Loads criteria via `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --load-criteria --project-root <project_root>` (built-in + any additional team criteria)

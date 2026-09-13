@@ -622,9 +622,6 @@ def structure(root=PROJECT_ROOT, files=None, strict=True):
                 rel, 1, 'structure',
                 'no `## Usage` section; it is where the skill declares the '
                 'flags references/purlin_commands.md and the guides cite'))
-        # A later commit drops the `model:` pin from every agent. The row
-        # asserting its absence lands with that commit, not before:
-        #   if _frontmatter_field(block, 'model'): offender
     for rel in agents:
         try:
             text = _read(rel, root)
@@ -641,6 +638,12 @@ def structure(root=PROJECT_ROOT, files=None, strict=True):
                     rel, 1, 'structure',
                     f"frontmatter carries no `{field}`; an agent the loader "
                     f"cannot name cannot be dispatched to"))
+        if _frontmatter_field(block, 'model'):
+            offenders.append(Offender(
+                rel, 1, 'structure',
+                'frontmatter pins a `model`; a shipped agent overrides the '
+                'choice of every host that installs the plugin, and the pin '
+                'goes stale the moment that model is superseded'))
     return offenders
 
 

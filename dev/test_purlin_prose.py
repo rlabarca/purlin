@@ -636,6 +636,18 @@ class TestStructureLint:
         assert "'find'" in offenders[0].message and \
             "'finder'" in offenders[0].message, offenders[0].message
 
+        pinned = 'agents/pinned.md'
+        _plant(tmp_path, pinned,
+               '---\nname: pinned\ndescription: a pinned agent\n'
+               'model: some-model\n---\n\nbody\n')
+        offenders = structure(root=str(tmp_path), files=[pinned], strict=False)
+        assert len(offenders) == 1, (
+            f"an agent pinning a model must be the one offender; got "
+            f"{offenders}")
+        assert offenders[0].path == pinned
+        assert offenders[0].lint == 'structure'
+        assert 'model' in offenders[0].message, offenders[0].message
+
         assert structure(strict=True) == [], (
             "every committed skill and agent must carry its shape")
 

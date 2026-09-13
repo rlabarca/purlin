@@ -1,7 +1,6 @@
 ---
 name: purlin
 description: Purlin agent — rule-proof spec-driven development
-model: claude-sonnet-4-6
 effort: high
 ---
 

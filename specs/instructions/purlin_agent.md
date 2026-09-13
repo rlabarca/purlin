@@ -8,7 +8,7 @@
 
 ## Rules
 
-- RULE-1: The agent definition contains a YAML frontmatter with `name`, `description`, and `model` fields
+- RULE-1: The agent definition's YAML frontmatter carries `name` and `description` and **no** `model` field. A shipped agent that pins a model overrides the choice of every host that installs the plugin, goes stale the moment the named model is superseded, and, on the auditor, quietly reframes independence as a model difference when it is a context difference. The host chooses; this repository's own choice, if it makes one, belongs in `.claude/settings.json`
 - RULE-2: The `## Core Loop` section defines exactly 4 numbered steps: do the work, call sync_status, follow directives, ship with verify
 - RULE-3: The `## Specs` section includes the 2-section format template with `> Description:`, `## Rules`, `## Proof`
 - RULE-4: The `## Proof Markers` section documents marker syntax for all 3 frameworks: pytest, Jest, and shell
@@ -23,7 +23,7 @@
 
 ## Proof
 
-- PROOF-1 (RULE-1): Grep `agents/purlin.md` for YAML frontmatter delimiters (`---`); verify `name:`, `description:`, and `model:` fields exist between them
+- PROOF-1 (RULE-1): Read the YAML frontmatter of `agents/purlin.md` between its `---` delimiters; verify a `name:` key and a `description:` key are present and that no line of the block declares a `model:` key. Adding `model: claude-sonnet-4-6` back to the frontmatter fails the proof naming that key
 - PROOF-2 (RULE-2): Grep `agents/purlin.md` for `## Core Loop`; verify it contains exactly 4 numbered items and the keywords "Do the work", "sync_status", "Follow", and "Ship"
 - PROOF-3 (RULE-3): Grep `agents/purlin.md` for `## Specs`; verify it contains `> Description:`, `## Rules`, `## Proof` within the template
 - PROOF-4 (RULE-4): Grep `agents/purlin.md` for `## Proof Markers`; verify it contains `**pytest:`, `**Jest:`, and `**Shell:` framework subsections

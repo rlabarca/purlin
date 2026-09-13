@@ -47,7 +47,16 @@ class TestPurlinTeammateDefinitions:
         assert fm, "No YAML frontmatter found in purlin-auditor.md"
         assert 'name: purlin-auditor' in fm
         assert 'description:' in fm
-        assert 'model:' in fm
+        pinned = [ln for ln in fm.splitlines()
+                  if re.match(r'\s*model\s*:', ln)]
+        assert not pinned, (
+            f"agents/purlin-auditor.md pins a model {pinned}; the host "
+            f"chooses, and a pin here reframes independence as a model "
+            f"difference when it is a context difference")
+        body = content[content.index('---', 4) + 3:]
+        assert re.search(r'(?i)fresh context,?\s+not\s+a\s+different\s+model',
+                         body), (
+            "the definition must say what independence actually is")
 
     @pytest.mark.proof("purlin_teammate_definitions", "PROOF-4", "RULE-4")
     def test_auditor_ships_with_plugin_not_project_local(self):
