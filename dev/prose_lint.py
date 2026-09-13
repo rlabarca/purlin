@@ -454,9 +454,29 @@ PATH_SCOPE = DASH_SCOPE[:6]
 #: `/` an absolute path, and a brace an attribute or a template.
 PATH_SKIP_CHARS = ('<', '>', '*', '$', ' ', '|', '{', '}')
 
-#: Runtime and user-local state. A checkout is not expected to carry it and a
-#: fresh clone never does, so the tokens naming it are not breakages.
-RUNTIME_PREFIXES = ('.purlin/cache/', '.purlin/runtime/', '.claude/')
+#: Generated at run time, gitignored, and named by the documentation on
+#: purpose: `.purlin/report-stamp.js` is written beside the digest on every
+#: build, the two `.purlin/` directories hold the caches and the run marker,
+#: and `.claude/` is the host's own state. A fresh clone and a fresh worktree
+#: carry none of it, so a token naming one is a live link for a reader with an
+#: initialized project and a dangling one only for a lint that mistakes a
+#: checkout for a running project. An entry ending in `/` covers everything
+#: beneath it. Each entry must still be named somewhere in the scanned set,
+#: the staleness bar `PATH_ALLOWLIST` carries, so a skip that outlives the
+#: documentation naming it is reported rather than kept.
+RUNTIME_PATHS = ('.purlin/report-stamp.js',
+                 '.purlin/cache/',
+                 '.purlin/runtime/',
+                 '.claude/')
+
+
+def _runtime_skip(token):
+    """The `RUNTIME_PATHS` entry covering `token`, or None."""
+    for entry in RUNTIME_PATHS:
+        if token == entry or (entry.endswith('/')
+                              and token.startswith(entry)):
+            return entry
+    return None
 
 #: Illustrative paths the guides use to show a shape rather than to point at a
 #: file. Each must still appear in the scanned set or the lint reports it as a
@@ -528,6 +548,7 @@ def paths_exist(root=PROJECT_ROOT, files=None, scope=PATH_SCOPE,
     names = _root_names(root)
     offenders = []
     seen_allowed = set()
+    seen_runtime = set()
     for rel in scanned:
         try:
             text = _read(rel, root)
@@ -544,7 +565,9 @@ def paths_exist(root=PROJECT_ROOT, files=None, scope=PATH_SCOPE,
                 # an example.
                 if token.split('/', 1)[0] not in names:
                     continue
-                if token.startswith(RUNTIME_PREFIXES):
+                runtime = _runtime_skip(token)
+                if runtime is not None:
+                    seen_runtime.add(runtime)
                     continue
                 if token in allowlist:
                     seen_allowed.add(token)
@@ -593,6 +616,13 @@ def paths_exist(root=PROJECT_ROOT, files=None, scope=PATH_SCOPE,
                     f"`{token}` is allowlisted as an illustrative path but "
                     f"appears nowhere in the scanned set, so the exemption "
                     f"is stale"))
+        for entry in RUNTIME_PATHS:
+            if entry not in seen_runtime:
+                offenders.append(Offender(
+                    'dev/prose_lint.py', 0, 'paths_exist',
+                    f"`{entry}` is skipped as generated runtime state but "
+                    f"appears nowhere in the scanned set, so the skip is "
+                    f"stale"))
     return offenders
 
 

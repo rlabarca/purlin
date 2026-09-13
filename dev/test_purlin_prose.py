@@ -9,17 +9,21 @@ same bytes the same way.
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+from unittest import mock
 
 import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import prose_lint  # noqa: E402
 from prose_lint import (  # noqa: E402
     BANNED,
     HOMES,
     PATH_SCOPE,
+    RUNTIME_PATHS,
     PROJECT_ROOT,
     SKILL_GLOB,
     AGENT_GLOB,
@@ -606,6 +610,66 @@ class TestPathsExistLint:
         assert paths_exist(strict=True) == [], (
             "the committed scope must resolve every path and flag, so the "
             "two offenders above are the injection")
+
+
+    @pytest.mark.proof("purlin_prose", "PROOF-35", "RULE-13")
+    def test_generated_runtime_state_is_skipped_and_nothing_else_is(
+            self, tmp_path):
+        rel = 'docs/dashboard-guide.md'
+        committed = _read(rel)
+        assert '`.purlin/report-stamp.js`' in committed, (
+            "the dashboard guide no longer names the stamp, so the "
+            "fresh-worktree case below proves nothing")
+        # A mirror of the checkout with one file missing: every other path
+        # the guide names still resolves, so the stamp is the only variable.
+        for entry in os.listdir(PROJECT_ROOT):
+            if entry in ('.purlin', 'docs'):
+                continue
+            os.symlink(os.path.join(PROJECT_ROOT, entry),
+                       os.path.join(str(tmp_path), entry))
+        shutil.copytree(os.path.join(PROJECT_ROOT, 'docs'),
+                        os.path.join(str(tmp_path), 'docs'))
+        os.makedirs(os.path.join(str(tmp_path), '.purlin'))
+        for entry in os.listdir(os.path.join(PROJECT_ROOT, '.purlin')):
+            if entry != 'report-stamp.js':
+                os.symlink(os.path.join(PROJECT_ROOT, '.purlin', entry),
+                           os.path.join(str(tmp_path), '.purlin', entry))
+        assert not os.path.exists(
+            os.path.join(str(tmp_path), '.purlin', 'report-stamp.js')), (
+            "the temp root must stand for a checkout that has not run a "
+            "build, so the stamp must be absent")
+        _plant(tmp_path, rel, committed)
+
+        assert paths_exist(root=str(tmp_path), files=[rel],
+                           strict=False) == [], (
+            "a fresh worktree carries no .purlin/report-stamp.js, and the "
+            "guide that names it is still correct")
+
+        planted = 'The page also reads `.purlin/nonesuch.js` on focus.'
+        injected = committed.rstrip('\n') + '\n\n' + planted + '\n'
+        _plant(tmp_path, rel, injected)
+        expected_line = injected.splitlines().index(planted) + 1
+        offenders = paths_exist(root=str(tmp_path), files=[rel], strict=False)
+        assert len(offenders) == 1, (
+            f"only the planted token is outside RUNTIME_PATHS; got "
+            f"{offenders}")
+        only = offenders[0]
+        assert only.path == rel and only.line == expected_line
+        assert '.purlin/nonesuch.js' in only.message and \
+            'does not resolve' in only.message, only.message
+
+        assert paths_exist(strict=True) == [], (
+            "every RUNTIME_PATHS entry and every PATH_ALLOWLIST token must "
+            "still be named somewhere in the committed scope")
+
+        with mock.patch.object(prose_lint, 'RUNTIME_PATHS',
+                               RUNTIME_PATHS + ('.purlin/never-named.js',)):
+            stale = paths_exist(strict=True)
+        assert len(stale) == 1, (
+            f"a skip nothing names must be reported; got {stale}")
+        assert stale[0].path == 'dev/prose_lint.py'
+        assert '.purlin/never-named.js' in stale[0].message and \
+            'stale' in stale[0].message, stale[0].message
 
 
 class TestStructureLint:

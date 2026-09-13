@@ -192,6 +192,51 @@
     },
     {
       "feature": "purlin_prose",
+      "id": "PROOF-31",
+      "rule": "RULE-15",
+      "test_file": "dev/test_purlin_prose.py",
+      "test_name": "test_the_vhash_recipe_pasted_into_a_second_file_is_named",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_prose",
+      "id": "PROOF-32",
+      "rule": "RULE-15",
+      "test_file": "dev/test_purlin_prose.py",
+      "test_name": "test_the_design_formula_restated_in_a_guide_is_named",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_prose",
+      "id": "PROOF-33",
+      "rule": "RULE-22",
+      "test_file": "dev/test_purlin_prose.py",
+      "test_name": "test_no_skill_or_agent_pins_a_version_number",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_prose",
+      "id": "PROOF-34",
+      "rule": "RULE-23",
+      "test_file": "dev/test_purlin_prose.py",
+      "test_name": "test_no_spec_still_carries_the_generator_draft_marker",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_prose",
+      "id": "PROOF-35",
+      "rule": "RULE-13",
+      "test_file": "dev/test_purlin_prose.py",
+      "test_name": "test_generated_runtime_state_is_skipped_and_nothing_else_is",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_prose",
       "id": "PROOF-4",
       "rule": "RULE-2",
       "test_file": "dev/test_purlin_prose.py",
