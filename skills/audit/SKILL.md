@@ -27,7 +27,7 @@ Two gauges, measured separately (`references/audit_criteria.md`):
 
 `purlin:verify` answers the third question, *does it pass right now?*, and owns pass/fail.
 Neither gauge is a gate by default: a project that sets `quality_gate` to `"deterministic"` in
-`.purlin/config.json` has the deterministic passes read as a CI gate too
+`.purlin/config.json` has the deterministic passes read by the CI gate job too
 (`references/hard_gates.md`).
 
 ## Step 0: Select Mode

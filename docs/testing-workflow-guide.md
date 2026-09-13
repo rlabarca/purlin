@@ -226,7 +226,7 @@ The pre-push hook, your own CI test run and the CI gate job branch protection ma
 
 ### CI pipeline
 
-Purlin ships no pipeline configs; you write them. A CI job that runs your tests and then reads the result is two steps. Example (GitHub Actions):
+Purlin ships no pipeline configs; you write them. A workflow job that runs your tests and then reads the result is two steps. Example (GitHub Actions):
 
 ```yaml
 on: [push, pull_request]

@@ -20,7 +20,7 @@ purlin:drift --since <N>                Last N commits
 purlin:drift --since <date>             Since a date (YYYY-MM-DD)
 ```
 
-The role can be passed as a bare positional argument (`purlin:drift pm`) or as a flag (`purlin:drift --role pm`). Both are equivalent. The `drift` MCP tool takes no role argument; this skill filters its own output by role. If no role is given, show all three priority sections.
+The role is a bare positional argument and there is one spelling of it: `purlin:drift pm`, `purlin:drift eng` or `purlin:drift qa`. Those three tokens are the only ones. The `drift` MCP tool takes no role argument at all; this skill filters its own output by role. If no role is given, show all three priority sections.
 
 ### Note on uncommitted changes
 

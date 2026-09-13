@@ -112,7 +112,7 @@ other key belongs to the scaffolder, and no other step writes that file.
 **Setting the quality gate on an existing project.** `purlin:init --set
 quality_gate <off|deterministic>` is one of the re-answers above. The mode is a
 declaration and `purlin:init --ci` is what makes it do anything: the workflow that subcommand writes is the job that reads
-`quality_gate` on every push, and a project with no CI job has set a field
+`quality_gate` on every push, and a project with no CI gate job has set a field
 nothing runs. Offer `--ci` when the user sets the gate to `deterministic`. Do not
 ask about the quality gate during a full init and do not pass
 `--quality-gate` on the Step 2 invocation unless the user asked for it:
@@ -551,7 +551,7 @@ git commit -m "chore: initialize purlin project"
 purlin:init --ci [github]
 ```
 
-Writes `.github/workflows/purlin-verify-gate.yml`: the verification gate this
+Writes `.github/workflows/purlin-verify-gate.yml`: the CI gate job this
 plugin runs on itself, in the form a project that clones the tooling needs.
 `github` is the only provider for now and is the default when none is given.
 

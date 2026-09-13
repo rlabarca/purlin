@@ -163,7 +163,7 @@ Three further fields are optional and a full `purlin:init` never writes them. `p
 
 A proof can depend on a platform, on an environment or on a prerequisite, and each one has its own mechanism. The rule set has a single home: [references/remote_verification.md](../references/remote_verification.md), section "Platforms, environments and prerequisites". For the registry itself see [Testing Workflow Guide § Platforms](testing-workflow-guide.md#platforms). `audit_llm` and `audit_criteria` are the cross-model and compliance-criteria fields; see [Regulated Environments](regulated-environments.md).
 
-`quality_gate` is the third. It is project policy for the CI gate `scripts/ci/verify_gate.py`, not a framework setting: `"off"`, which is also what the gate assumes when the key is absent, or `"deterministic"`, under which the gate fails on a test graded HOLLOW by the deterministic checks and on a proof description graded UNPROVABLE. A proof the checks cannot read is never a failure. Set it with `purlin:init --set quality_gate off|deterministic`, which writes that one key and nothing else; `purlin:init --update` never backfills it and never asks, so a project that has not opted in carries no such key. The field declares the policy and branch protection on the gate job enforces it, exactly as `remote_verification` does; see [Regulated Environments](regulated-environments.md).
+`quality_gate` is the third. It is project policy for the CI gate job (`scripts/ci/verify_gate.py`), not a framework setting: `"off"`, which is also what the gate assumes when the key is absent, or `"deterministic"`, under which the gate fails on a test graded HOLLOW by the deterministic checks and on a proof description graded UNPROVABLE. A proof the checks cannot read is never a failure. Set it with `purlin:init --set quality_gate off|deterministic`, which writes that one key and nothing else; `purlin:init --update` never backfills it and never asks, so a project that has not opted in carries no such key. The field declares the policy and branch protection on the CI gate job enforces it, exactly as `remote_verification` does; see [Regulated Environments](regulated-environments.md).
 
 The HTML dashboard is enabled by default (`"report": true`). When enabled, `purlin:status` writes `.purlin/report-data.js` on every call, and `purlin:init` copies the plugin's `purlin-report.html` to the project root. Open it in a browser to see live coverage. Toggle with `purlin:init --set report on|off`. See the [Dashboard Guide](dashboard-guide.md) for details.
 
@@ -212,7 +212,7 @@ purlin:init --ci
 ```
 
 Purlin asks before it writes anything, then writes one file:
-`.github/workflows/purlin-verify-gate.yml`. It is the same verification gate
+`.github/workflows/purlin-verify-gate.yml`. It is the same CI gate job
 this plugin runs on itself, in the form a project that clones the tooling
 needs. A file already at that path is kept and its bytes are left alone.
 

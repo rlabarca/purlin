@@ -1518,3 +1518,56 @@ class TestGlossaryIsTheSourceOfTheRetiredRows:
         assert only.line == planted.splitlines().index(
             'A runner is held for a platform tier.') + 1
         assert only.message.startswith('platform-tier:'), only.message
+
+
+class TestTheCIGateJobHasOneName:
+    """RULE-26 - one name for the job, one mention of the token it prints."""
+
+    NAMES = re.compile(
+        r'(?i)\b(gate job|gate script|CI gate|CI job|verification gate)\b')
+    #: The job id on its own: `purlin-verify-gate.yml` and `verify-gate.yml`
+    #: are file names, not the id, so neither is a mention of it.
+    TOKEN = re.compile(r'(?<![\w-])verify-gate(?![\w.])')
+    GATE = 'scripts/ci/verify_gate.py'
+
+    def _prose(self):
+        files = [f for f in _tracked('docs', 'references', 'skills', 'agents')
+                 if f.endswith('.md')]
+        return files + ['README.md']
+
+    @pytest.mark.proof("purlin_prose", "PROOF-39", "RULE-26", tier="unit")
+    def test_one_name_for_the_job_and_one_mention_of_its_token(self):
+        collected = 0
+        offenders = []
+        token_lines = []
+        for rel in self._prose():
+            text = _read(rel)
+            for lineno, line in _hits(text, self.NAMES):
+                collected += 1
+                if len(self.NAMES.findall(line)) != line.count('CI gate job'):
+                    offenders.append(f"{rel}:{lineno}: {line.strip()}")
+            for lineno, line in _hits(text, self.TOKEN):
+                token_lines.append((rel, lineno, line))
+
+        assert collected >= 18, (
+            f"only {collected} lines name the job; the sweep would pass by "
+            f"reading nothing")
+        assert offenders == [], (
+            "the job is `the CI gate job` everywhere in the prose:\n"
+            + "\n".join(offenders))
+
+        assert len(token_lines) == 1, (
+            f"`verify-gate:` belongs in one place, the Layer 3 row of "
+            f"references/hard_gates.md; found {token_lines}")
+        rel, _lineno, line = token_lines[0]
+        assert rel == 'references/hard_gates.md', rel
+        first_cell = line.strip().strip('|').split('|')[0].strip()
+        assert first_cell.startswith('**Layer 3:'), first_cell
+
+        gate = _read(self.GATE)
+        printed = [l for l in gate.splitlines()
+                   if re.search(r'''["']verify-gate: ''', l)]
+        assert len(printed) >= 8, (
+            f"{self.GATE} writes {len(printed)} lines opening "
+            f"`verify-gate: `; the reference names a token the script does "
+            f"not print")

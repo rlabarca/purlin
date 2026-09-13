@@ -266,7 +266,7 @@ coverage, not a defect, and a gate that failed on one would block every project 
 plugin of its own.
 
 The field is a declaration like `remote_verification`: it is a file in the tree the agent can
-edit, so the enforcement is branch protection marking the gate job a required check. The LLM
+edit, so the enforcement is branch protection marking the CI gate job a required check. The LLM
 halves of both gauges stay advisory under every value of the field.
 
 ### Approvals come from an identity provider
@@ -350,7 +350,7 @@ boundary:
 
 | Not bound | Consequence |
 |---|---|
-| The **content of the test code** | The named test can be rewritten to `assert True` and the hash does not move. Only the two quality gauges and human review look inside a test. Under `quality_gate` `"deterministic"` the CI gate refuses to merge that rewrite, which is a check on the branch and not a property of the hash |
+| The **content of the test code** | The named test can be rewritten to `assert True` and the hash does not move. Only the two quality gauges and human review look inside a test. Under `quality_gate` `"deterministic"` the CI gate job refuses to merge that rewrite, which is a check on the branch and not a property of the hash |
 | **Who ran it** | The receipt records a git author and a `Purlin-Runner:` trailer where a runner committed one. Neither is authenticated |
 | **When it ran** | The receipt carries a timestamp the machine that wrote it supplied |
 | **That the test is meaningful** | See "Not a test quality gate by default" above. A passing proof is a claim about execution, never about relevance. The deterministic passes rule out a fixed list of defects; whether the test is relevant to the rule is judgment, and stays with the LLM passes and human review |

@@ -9,7 +9,7 @@ This document defines how `purlin:audit` grades proofs. It measures two differen
 | **Proof Design** | *Is the claim provable?* | the rule and its proof description | No |
 | **Proof Integrity** | *Is the claim proven?* | the test code behind each proof | Yes |
 
-`purlin:verify` answers a third, separate question, *does it pass right now?*, and it alone owns pass/fail. Neither gauge is a gate by default. A project that sets `quality_gate` to `"deterministic"` in `.purlin/config.json` has the deterministic passes below read as a CI gate as well (`references/hard_gates.md`, Layer 3); the LLM passes stay advisory under every setting.
+`purlin:verify` answers a third, separate question, *does it pass right now?*, and it alone owns pass/fail. Neither gauge is a gate by default. A project that sets `quality_gate` to `"deterministic"` in `.purlin/config.json` has the deterministic passes below read by the CI gate job as well (`references/hard_gates.md`, Layer 3); the LLM passes stay advisory under every setting.
 
 **Proof Design is a precondition for Proof Integrity meaning anything.** Many Integrity criteria below are comparisons against the proof description ("the description says verify X AND Y but the test only checks X"), so they can only fire when the description claims something specific. Against a description like `Verify authentication works`, a test asserting almost nothing satisfies every Integrity criterion trivially: there is nothing to contradict it. A high Integrity score over vague descriptions is not evidence of quality; it is evidence of an unfalsifiable spec. Criteria marked **[relative]** are the ones that depend on a `PROVABLE` description.
 
@@ -181,7 +181,7 @@ A variable or a call in that position is an assertion computed before the call a
 
 ### The deterministic sweep
 
-`scripts/audit/static_checks.py --deterministic-sweep [--project-root <path>]` runs both model-free halves of the audit over a whole project at once: Pass 1 over every executed proof backing, and Pass D1 (the deterministic half of Proof Design) over every declared proof description. Nothing else is involved. It reads no audit cache and no design cache, writes no file, and grades only what the checkout in front of it contains, so the same checkout always yields the same verdict and a CI job can recompute it from scratch.
+`scripts/audit/static_checks.py --deterministic-sweep [--project-root <path>]` runs both model-free halves of the audit over a whole project at once: Pass 1 over every executed proof backing, and Pass D1 (the deterministic half of Proof Design) over every declared proof description. Nothing else is involved. It reads no audit cache and no design cache, writes no file, and grades only what the checkout in front of it contains, so the same checkout always yields the same verdict and the CI gate job can recompute it from scratch.
 
 Its output names three groups: `hollow` (a Pass 1 defect in an executed test), `unprovable` (a Pass D1 UNPROVABLE description) and `unmeasurable` (a backing Pass 1 could not read, because no shipped checker reads its extension, because the file the proof record names is not on disk, or because the checker found no marker for that proof in it). Unmeasurable is a gap in coverage, never a defect. A proof backed by more than one test takes its worst verdict: a failure anywhere outranks an unmeasurable elsewhere, which outranks a pass. A proof stamped `@manual(...)` has no test to grade, so it is graded by Pass D1 alone and counts as neither hollow nor unmeasurable.
 

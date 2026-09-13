@@ -11,7 +11,7 @@ platform-scoped proof files it wrote back to the branch. `purlin:test` pulls the
 as proved remotely, naming the platform.
 
 This file is the authoritative reference for that loop. `skills/test/SKILL.md` implements it;
-the gate script `scripts/ci/verify_gate.py` governs the CI side.
+the CI gate job, `scripts/ci/verify_gate.py`, governs the CI side.
 
 ## Platforms
 
@@ -380,7 +380,7 @@ The preflight fails the job instead, naming `purlin:init --update`.
 **The field declares the mode. It does not enforce it.** `config.json` is a file in the repository
 that the agent can edit, so it can never be the gate. `docs/regulated-environments.md` states the
 principle: "Policy lives outside the repo ... not by config files the agent can edit." Enforcement
-is **branch protection**: marking the `verify-gate` job a required check, and enabling auto-merge
+is **branch protection**: marking the CI gate job a required check, and enabling auto-merge
 only when it passes. That setting lives in the forge, not in the tree, which is exactly why it is
 the enforcement.
 
@@ -455,6 +455,6 @@ says a test passed, and only the commit says where.
 - `references/formats/spec_format.md`: the `@on(...)` grammar and the family ids
 - `references/supported_frameworks.md`: the per-framework "Runner setup" cell the template needs
 - `references/drift_criteria.md`: who owns the `platforms` config field
-- `scripts/ci/verify_gate.py`: the gate script the CI job runs
+- `scripts/ci/verify_gate.py`: the script the CI gate job runs
 - `skills/test/SKILL.md`: the skill this file backs
 - `references/hard_gates.md`: why CI gating is project policy and not a framework gate

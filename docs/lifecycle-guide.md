@@ -34,7 +34,7 @@ tests, and it is what most of this guide discusses.
 > `purlin:audit --design` grades proof descriptions before anything is built, and the full
 > `purlin:audit` measures Proof Integrity once tests exist. Only `purlin:verify` decides pass or
 > fail, unless the project set `quality_gate` to `"deterministic"`, which adds the deterministic
-> half of both gauges to the CI gate.
+> half of both gauges to the CI gate job.
 >
 > The diagrams are generated from `assets/src/*.mmd`. Run `bash dev/render-diagrams.sh` after
 > editing a source file.
