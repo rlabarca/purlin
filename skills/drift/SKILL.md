@@ -51,7 +51,7 @@ Otherwise, the tool returns structured JSON containing:
 - `proof_status` — per-feature: `proved`, `total`, `status` (VERIFIED/PASSING/PARTIAL/FAILING/UNTESTED), `failing_rules`
 - `drift_flags` — precomputed drift indicators: features with structural-only coverage that have changed files. Each entry has `spec`, `reason`, and `files`.
 - `broken_scopes` — specs whose `> Scope:` references files or directories that no longer exist on disk. Each entry has `spec`, `missing_paths`, and `existing_paths`.
-- `rule_details`: for each spec with changed behavior files, its `rules` with descriptions and proof status, `total_rules`, `proved_rules`, and the `changed_files` that landed in its scope. Step 2d reads it.
+- `rule_details`: for each spec with changed behavior files, its `spec_path`, the `changed_files` that landed in its scope, `total_rules`, `proved_rules`, the `unproved` and `failing` rule ids, and `rules`, each a `rule_id` and a `description` cut to 200 characters on a word boundary and suffixed ` ...` when cut. Step 2d reads it.
 - `external_anchor_drift`: one entry per anchor carrying a `> Source:`, with `anchor`, `source_url`, `pinned`, `status` (stale, unpinned or error), and `remote_sha` or `error`. The Anchor External Reference Drift step reads it.
 
 The payload is serialized compact, with no indentation and no space after any separator: nobody reads it directly, and this skill is what formats it for a person. Parse it as JSON; never read it line by line.
@@ -110,17 +110,17 @@ Each entry must include:
 
 ### 2d — Flag spec drift (rule-level analysis)
 
-For each BEHAVIORAL change, perform **rule-level** analysis using the `rule_details` field from the MCP tool. This field provides, for each spec with changed behavior files: the full list of rules with descriptions, their proof status, and which scope files changed.
+For each BEHAVIORAL change, perform **rule-level** analysis using the `rule_details` field from the MCP tool. This field provides, for each spec with changed behavior files: every rule with its description, the `unproved` and `failing` rule ids, the `spec_path` holding the full text, and which scope files changed.
 
 **Step 1 — Read the diff and identify changed behavior:**
-For each spec in `rule_details`, read the diffs for its `changed_files`. Identify what behavioral aspects changed: new functions, modified conditionals, changed return values, added/removed error handling, new UI sections, changed responsive behavior, etc.
+For each spec in `rule_details`, read the diffs for its `changed_files`. A description ending ` ...` was cut at 200 characters: when the head of it is not enough to judge the rule, open the spec at `spec_path` and read the rule whole. Identify what behavioral aspects changed: new functions, modified conditionals, changed return values, added/removed error handling, new UI sections, changed responsive behavior, etc.
 
 **Step 2 — Cross-reference changes against individual rules:**
 For each rule in the spec's `rules` array, ask: does this rule's description relate to any of the changed behavior? Classify each rule:
 
 - **Covered** — the rule describes behavior that was NOT changed, or was changed in a way that the rule still holds → `✓ RULE-N: <description>`
 - **Potentially stale** — the rule describes behavior that WAS changed and may no longer be accurate → `⚠ RULE-N: <description> — <what changed>`
-- **Unproved** — the rule has `proof_status: "unproved"` regardless of changes → `✗ RULE-N: <description> — no proof`
+- **Unproved** — the rule id is in the spec's `unproved` list regardless of changes → `✗ RULE-N: <description> — no proof`
 - **Missing** — the diff reveals new behavior that NO existing rule covers → `+ Suggested RULE: <description of uncovered behavior>`
 
 **Step 3 — Format rule-level findings per spec:**
