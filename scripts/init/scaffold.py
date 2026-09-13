@@ -325,14 +325,27 @@ fi
 exec "$PURLIN_ROOT/$PURLIN_SCRIPT" "$@"
 '''
 
-# Three lines, in the repository's hooks directory, which is the one place
-# git looks and the one place a project may already have a hook of its own.
+# In the repository's hooks directory, which is the one place git looks and the
+# one place a project may already have a hook of its own. It does nothing but
+# find the tracked shim and hand the hook to it, with one guard in front: a
+# branch or worktree checked out from before the shims existed does not carry
+# `.purlin/hooks/`, and an `exec` onto a path that is not there fails the hook,
+# which blocks every commit on that checkout. The guard says which path is
+# missing and exits 0, because a hook that cannot run is not a reason to stop
+# the user's work (`skill_init` RULE-78).
 _DELEGATOR_MARKER = 'purlin-delegator'
+_DELEGATOR_GUARD = 'purlin: no hook shim at'
 _DELEGATOR = ('#!/bin/sh\n'
               '# purlin-delegator (purlin:init): the hook body is '
               '.purlin/hooks/@NAME@, tracked in git.\n'
-              'exec "$(git rev-parse --show-toplevel)/.purlin/hooks/@NAME@"'
-              ' "$@"\n')
+              'PURLIN_SHIM="$(git rev-parse --show-toplevel)'
+              '/.purlin/hooks/@NAME@"\n'
+              'if [ ! -x "$PURLIN_SHIM" ]; then\n'
+              '  echo "' + _DELEGATOR_GUARD + ' $PURLIN_SHIM; run '
+              'purlin:init --update"\n'
+              '  exit 0\n'
+              'fi\n'
+              'exec "$PURLIN_SHIM" "$@"\n')
 
 
 def _shim(name, script):

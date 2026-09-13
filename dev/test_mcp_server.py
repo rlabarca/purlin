@@ -4937,3 +4937,58 @@ class TestStalePluginCopiesResolveThroughTheRegistry:
             assert 'plugin-copies-stale' not in pending, pending
         finally:
             shutil.rmtree(root, ignore_errors=True)
+
+
+class TestTheThreeAdvisoryEntriesNeverBlock:
+    """sync_status RULE-73: a surface the developer reads is not evidence."""
+
+    @pytest.mark.proof("sync_status", "PROOF-123", "RULE-73", tier="integration")
+    def test_hooks_dashboard_and_config_report_without_failing_the_preflight(self):
+        migrate = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            'scripts', 'update', 'migrate.py')
+        root = tempfile.mkdtemp()
+        try:
+            os.makedirs(os.path.join(root, '.purlin', 'plugins'))
+            config = dict(purlin_server._template_config())
+            config['version'] = purlin_server._read_version()
+            config.pop('remote_verification', None)     # one field to fill
+            with open(os.path.join(root, '.purlin', 'config.json'), 'w') as f:
+                json.dump(config, f, indent=2)
+            subprocess.run(['git', 'init', '-q'], cwd=root,
+                           capture_output=True)
+
+            # A dangling dashboard link and a copy of the plugin's own hook
+            # body in the slot git reads.
+            os.symlink(os.path.join(root, 'gone.html'),
+                       os.path.join(root, 'purlin-report.html'))
+            plugin_root = os.path.dirname(os.path.dirname(
+                os.path.abspath(purlin_server.__file__)))
+            shutil.copyfile(
+                os.path.join(plugin_root, 'hooks', 'pre-commit.sh'),
+                os.path.join(root, '.git', 'hooks', 'pre-commit'))
+
+            done = subprocess.run(
+                [sys.executable, migrate, '--check', '--project-root', root],
+                capture_output=True, text=True)
+            assert done.returncode == 0, (done.stdout, done.stderr)
+            pending = {e['id']: e for e in json.loads(done.stdout)['pending']}
+            assert sorted(pending) == ['config-fields-missing',
+                                       'dashboard-stale', 'hooks-stale'], \
+                sorted(pending)
+            for entry in pending.values():
+                assert entry['files'], entry
+
+            # One blocking id proves the exit code is the ids' doing.
+            source_dir = purlin_server._plugin_source_dir()
+            copy = os.path.join(root, '.purlin', 'plugins',
+                                'pytest_purlin.py')
+            shutil.copyfile(os.path.join(source_dir, 'pytest_purlin.py'), copy)
+            with open(copy, 'a') as f:
+                f.write('\n# drift\n')
+            done = subprocess.run(
+                [sys.executable, migrate, '--check', '--project-root', root],
+                capture_output=True, text=True)
+            assert done.returncode == 1, (done.stdout, done.stderr)
+        finally:
+            shutil.rmtree(root, ignore_errors=True)

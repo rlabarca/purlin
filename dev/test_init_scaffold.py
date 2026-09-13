@@ -573,12 +573,18 @@ class TestGitArtifacts:
                 f"{name} is not a regular file"
             assert os.stat(hook).st_mode & 0o111, f"{name} is not executable"
             body = _read(hook)
+            shim = f'"$(git rev-parse --show-toplevel)/.purlin/hooks/{name}"'
             assert body.splitlines() == [
                 '#!/bin/sh',
                 f'# purlin-delegator (purlin:init): the hook body is '
                 f'.purlin/hooks/{name}, tracked in git.',
-                f'exec "$(git rev-parse --show-toplevel)/.purlin/hooks/{name}"'
-                f' "$@"'], body
+                f'PURLIN_SHIM={shim}',
+                'if [ ! -x "$PURLIN_SHIM" ]; then',
+                '  echo "purlin: no hook shim at $PURLIN_SHIM; run '
+                'purlin:init --update"',
+                '  exit 0',
+                'fi',
+                'exec "$PURLIN_SHIM" "$@"'], body
             assert f'wrote .git/hooks/{name} (delegates to ' \
                    f'.purlin/hooks/{name})' in out, out
         # A second run keeps what it recognizes as its own.
@@ -1361,3 +1367,53 @@ class TestContinuousIntegration:
             assert named in section, (
                 f'the --ci section never names {named}, so the user consents '
                 f'to something the summary does not state')
+
+class TestDelegatorGuard:
+    """RULE-78: the hook git runs never fails because the shim is not there."""
+
+    @pytest.mark.proof("skill_init", "PROOF-87", "RULE-78", tier="integration")
+    def test_a_checkout_without_the_shims_still_commits(self):
+        sys.path.insert(0, os.path.join(ROOT, 'scripts', 'init'))
+        import scaffold
+
+        repo = _tmp_repo()
+        try:
+            code, out, err = _run(repo, '--test-framework', 'shell',
+                                  '--digest', 'auto')
+            assert code == 0, (code, out, err)
+            slot = os.path.join(repo, '.git', 'hooks', 'pre-commit')
+            # The delegator as this plugin writes it, installed by hand so the
+            # case does not depend on the slot having been free.
+            with open(slot, 'w') as f:
+                f.write(scaffold._DELEGATOR.replace('@NAME@', 'pre-commit'))
+            os.chmod(slot, 0o755)
+
+            # The branch, worktree or pre-init checkout that carries no shims.
+            shutil.rmtree(os.path.join(repo, '.purlin', 'hooks'))
+            _write(repo, 'a.txt', 'one\n')
+            subprocess.run(['git', 'add', '-A'], cwd=repo,
+                           capture_output=True)
+            done = subprocess.run(['git', 'commit', '-m', 'no shims'],
+                                  cwd=repo, capture_output=True, text=True)
+            assert done.returncode == 0, (done.stdout, done.stderr)
+            blob = done.stdout + done.stderr
+            expected = os.path.join(repo, '.purlin', 'hooks', 'pre-commit')
+            assert 'purlin: no hook shim at' in blob, blob
+            assert 'purlin:init --update' in blob, blob
+            assert os.path.basename(expected) in blob, blob
+            head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=repo,
+                                  capture_output=True, text=True).stdout.strip()
+            assert head, 'no commit was made'
+
+            # With the shims back the delegator runs the shim instead.
+            code, out, err = _run(repo, '--force', '--test-framework', 'shell')
+            assert code == 0, (code, out, err)
+            assert os.access(expected, os.X_OK), expected
+            _write(repo, 'b.txt', 'two\n')
+            subprocess.run(['git', 'add', '-A'], cwd=repo, capture_output=True)
+            done = subprocess.run(['git', 'commit', '-m', 'with shims'],
+                                  cwd=repo, capture_output=True, text=True)
+            assert done.returncode == 0, (done.stdout, done.stderr)
+            assert 'purlin: no hook shim at' not in (done.stdout + done.stderr)
+        finally:
+            shutil.rmtree(repo, ignore_errors=True)

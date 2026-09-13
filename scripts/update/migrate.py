@@ -22,16 +22,18 @@ EXIT CODES  (aligned with scripts/ci/verify_gate.py and dev/bump_version.sh)
     about to write unreliable: every `legacy-*` id, because the legacy alias
     makes coverage a guess, and `plugin-copies-stale`, because plugin copies
     that predate platform scoping write agnostic proof files from a platform
-    runner, which satisfies nothing while the job goes green. The other two are
+    runner, which satisfies nothing while the job goes green. The rest are
     reported in the JSON and do not fail the check: a config field is filled
-    without touching evidence, and a version 1 receipt is a claim that
-    `purlin:verify` re-issues from a fresh run. A preflight that failed on those
+    without touching evidence, a stale hook or dashboard is a surface the
+    developer reads rather than evidence a run writes, and a version 1 receipt
+    is a claim that `purlin:verify` re-issues from a fresh run. A preflight that failed on those
     would block the CI of every project that has not verified since the vhash
     formula changed, which is a different problem than the one it guards.
 
 WHAT --apply DOES, AND WHAT IT REFUSES TO DO
-    It performs the five mechanical rewrites: the spec tag, the proof-file
-    rename, the proof markers, the plugin copies and the config fields. It never
+    It performs the seven mechanical rewrites: the spec tag, the proof-file
+    rename, the proof markers, the plugin copies, the config fields, the
+    generated hook shims with the hook git runs, and the root dashboard copy. It never
     writes a proof entry and never writes a receipt. A proof entry is a claim
     that a test ran and a receipt is a claim that a suite passed; renaming a file
     through `git mv` moves an existing record and keeps its history, which is not
@@ -61,7 +63,8 @@ EXIT_PENDING = 1
 EXIT_BAD_INVOCATION = 2
 
 # Reported by --check, not a reason to fail it. See the module docstring.
-_NON_BLOCKING = ('config-fields-missing', 'receipt-v1')
+_NON_BLOCKING = ('config-fields-missing', 'hooks-stale', 'dashboard-stale',
+                 'receipt-v1')
 
 
 def _server():
@@ -271,12 +274,58 @@ def _apply_config_fields_missing(ps, root, _platform_id, actions,
         actions.append(f'filled .purlin/config.json: {", ".join(filled)}')
 
 
+def _apply_hooks_stale(ps, root, _platform_id, actions):
+    """The generated shims are rewritten and the hook git runs is reinstalled.
+
+    Purlin's own broken file in the hooks directory is removed first, so the
+    delegator writer sees a free slot: it refuses to write over an occupied
+    one, which is the rule that protects a foreign hook, and a dangling
+    symlink of Purlin's own is not a foreign hook.
+    """
+    defects = ps._hooks_stale(root)
+    if not defects:
+        return
+    scaffold = ps._scaffold_module()
+    resolved = scaffold._hooks_dir(root)
+    if resolved is None:
+        actions.append('left the hooks alone: this root is not in a git '
+                       'repository')
+        return
+    hooks_dir, setting = resolved
+    for defect in defects:
+        if defect['kind'] != 'slot' or not os.path.lexists(defect['path']):
+            continue
+        os.remove(defect['path'])
+        actions.append(f'removed {defect["rel"]} ({defect["reason"]})')
+    config = ps.resolve_config(root) or {}
+    plan = []
+    scaffold._hooks(plan, root, _plugin_root(), hooks_dir, setting,
+                    config.get('digest', 'auto'), False)
+    for line in plan:
+        actions.append(f'hooks: {line}')
+
+
+def _apply_dashboard_stale(ps, root, _platform_id, actions):
+    """The root dashboard becomes a copy of the installed plugin's."""
+    reason = ps._dashboard_stale(root)
+    if not reason:
+        return
+    dest = os.path.join(root, 'purlin-report.html')
+    if os.path.islink(dest):
+        os.unlink(dest)
+    shutil.copyfile(ps._dashboard_source(), dest)
+    actions.append(f'copied scripts/report/purlin-report.html over '
+                   f'purlin-report.html (was {reason})')
+
+
 _APPLIERS = {
     'legacy-tier-windows': _apply_legacy_tier_windows,
     'legacy-proof-file': _apply_legacy_proof_file,
     'legacy-marker': _apply_legacy_marker,
     'plugin-copies-stale': _apply_plugin_copies_stale,
     'config-fields-missing': _apply_config_fields_missing,
+    'hooks-stale': _apply_hooks_stale,
+    'dashboard-stale': _apply_dashboard_stale,
 }
 
 _DIRECTIVES = {
@@ -359,7 +408,8 @@ def apply(ps, root, ids, platform_id, mutation_checks):
 # still to move rather than a file naming a platform no spec declares.
 _MIGRATION_APPLY_ORDER = ('legacy-tier-windows', 'legacy-proof-file',
                           'legacy-marker', 'plugin-copies-stale',
-                          'config-fields-missing')
+                          'config-fields-missing', 'hooks-stale',
+                          'dashboard-stale')
 
 
 def main(argv=None):

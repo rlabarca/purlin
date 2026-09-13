@@ -269,7 +269,7 @@ When called as `purlin:init --update --check`, stop here: report and change noth
 per file, so the user reads what will change before consenting:
 
 ```
-Pending migrations: 4 (Purlin 0.10.0)
+Pending migrations: 7 (Purlin 0.10.0)
 
 RENAMING:
   specs/audit/static_checks.proofs-windows.json
@@ -280,6 +280,9 @@ UPDATING:
   dev/test_windows_native.py            2 markers, windows tier -> tier unit, on(windows-2022)
   .purlin/plugins/pytest_purlin.py      replaced with the installed plugin's copy
   .purlin/config.json                   remote_verification="off", version=0.10.0
+  .purlin/hooks/pre-commit              rewritten from the installed plugin
+  .git/hooks/pre-commit                 a dangling symlink, replaced by the delegator
+  purlin-report.html                    refreshed from the installed dashboard
 
 KEEPING (unchanged):
   specs/audit/static_checks.receipt.json   a receipt is a claim that tests ran

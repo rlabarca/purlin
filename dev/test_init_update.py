@@ -755,3 +755,199 @@ class TestShellCopyUnderEitherName:
             assert 'plugin-copies-stale' not in _pending(out), out
         finally:
             shutil.rmtree(root, ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------
+# skill_init RULE-79 and RULE-80: the hook install and the dashboard copy
+# ---------------------------------------------------------------------------
+
+sys.path.insert(0, os.path.join(ROOT, 'scripts', 'init'))
+import scaffold  # noqa: E402
+
+HOOK_BODY = os.path.join(ROOT, 'scripts', 'hooks', 'pre-commit.sh')
+DASHBOARD = os.path.join(ROOT, 'scripts', 'report', 'purlin-report.html')
+
+
+def _make_plain_project(with_shims=True):
+    """A temp git project with nothing pending: template config, no specs."""
+    root = tempfile.mkdtemp()
+    os.makedirs(os.path.join(root, '.purlin', 'plugins'))
+    config = dict(ps._template_config())
+    config['version'] = ps._read_version()
+    _write(root, '.purlin/config.json', json.dumps(config, indent=2) + '\n')
+    if with_shims:
+        for name in ('pre-commit', 'pre-push'):
+            rel = f'.purlin/hooks/{name}'
+            _write(root, rel, scaffold._shim(name, f'scripts/hooks/{name}.sh'))
+            os.chmod(os.path.join(root, rel), 0o755)
+    _write(root, 'README.md', 'a project\n')
+    _git(root, 'init', '-q')
+    for key, value in (('user.email', 't@e'), ('user.name', 't')):
+        _git(root, 'config', key, value)
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-q', '-m', 'plain project')
+    return root
+
+
+def _install_defect(root, defect):
+    """Put one shape of broken Purlin pre-commit hook in the hooks directory."""
+    slot = os.path.join(root, '.git', 'hooks', 'pre-commit')
+    if defect == 'dangling':
+        missing = os.path.join(root, 'gone', 'pre-commit.sh')
+        os.symlink(missing, slot)
+    elif defect == 'plugin-symlink':
+        target = os.path.join(root, 'fake-plugin', 'pre-commit.sh')
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        with open(target, 'w') as f:
+            f.write('#!/bin/sh\nexit 0\n')
+        os.symlink(target, slot)
+    elif defect == 'body-copy':
+        shutil.copyfile(HOOK_BODY, slot)
+        os.chmod(slot, 0o755)
+    elif defect == 'guardless-delegator':
+        text = scaffold._DELEGATOR.replace('@NAME@', 'pre-commit')
+        start = text.index('PURLIN_SHIM=')
+        with open(slot, 'w') as f:
+            f.write(text[:start] + 'exec "$(git rev-parse --show-toplevel)'
+                                   '/.purlin/hooks/pre-commit" "$@"\n')
+        os.chmod(slot, 0o755)
+    else:
+        raise KeyError(defect)
+    return slot
+
+
+class TestHooksStale:
+
+    @pytest.mark.proof("skill_init", "PROOF-85", "RULE-79", tier="integration")
+    @pytest.mark.parametrize('defect', ['dangling', 'plugin-symlink',
+                                        'body-copy', 'guardless-delegator'])
+    def test_a_broken_purlin_hook_is_pending_and_repaired(self, defect):
+        """RULE-79: every shape the plugin stopped writing is seen and rewritten."""
+        root = _make_plain_project()
+        try:
+            slot = _install_defect(root, defect)
+            code, out, err = _run(root, '--check')
+            assert code == 0, (out, err)   # not blocking
+            entry = _pending(out).get('hooks-stale')
+            assert entry, f'{defect} was not seen: {out}'
+            assert '.git/hooks/pre-commit' in entry['files'], entry
+            assert entry['summary'].strip(), entry
+
+            code, out, err = _run(root, '--apply', 'hooks-stale')
+            assert code == 0, err
+            want = scaffold._shim('pre-commit', 'scripts/hooks/pre-commit.sh')
+            assert _read(root, '.purlin/hooks/pre-commit') == want
+            assert _read(root, '.git/hooks/pre-commit') == \
+                scaffold._DELEGATOR.replace('@NAME@', 'pre-commit'), slot
+            assert os.stat(slot).st_mode & 0o111, slot
+
+            code, out, _ = _run(root, '--check')
+            assert 'hooks-stale' not in _pending(out), out
+            before = _tree_hashes(root)
+            code, _out, err = _run(root, '--apply', 'hooks-stale')
+            assert code == 0, err
+            assert _tree_hashes(root) == before, 'a second apply rewrote files'
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    @pytest.mark.proof("skill_init", "PROOF-85", "RULE-79", tier="integration")
+    def test_a_free_slot_and_a_foreign_hook_are_not_stale(self):
+        """RULE-79: RULE-78 owns both, so an update never touches either."""
+        free = _make_plain_project()
+        foreign = _make_plain_project()
+        try:
+            code, out, err = _run(free, '--check')
+            assert code == 0, (out, err)
+            assert 'hooks-stale' not in _pending(out), out
+
+            body = '#!/bin/sh\necho custom\n'
+            _write(foreign, '.git/hooks/pre-commit', body)
+            os.chmod(os.path.join(foreign, '.git', 'hooks', 'pre-commit'), 0o755)
+            code, out, err = _run(foreign, '--check')
+            assert code == 0, (out, err)
+            assert 'hooks-stale' not in _pending(out), out
+            code, _out, err = _run(foreign, '--apply', *SCRIPTED_IDS,
+                                   'hooks-stale', 'dashboard-stale')
+            assert code == 0, err
+            assert _read(foreign, '.git/hooks/pre-commit') == body, \
+                "a foreign hook was rewritten"
+
+            # A shim that drifted by one byte is the other half of the rule.
+            with open(os.path.join(free, '.purlin', 'hooks', 'pre-push'),
+                      'a') as f:
+                f.write('# drift\n')
+            code, out, _ = _run(free, '--check')
+            entry = _pending(out).get('hooks-stale')
+            assert entry and '.purlin/hooks/pre-push' in entry['files'], out
+            code, _out, err = _run(free, '--apply', 'hooks-stale')
+            assert code == 0, err
+            assert _read(free, '.purlin/hooks/pre-push') == \
+                scaffold._shim('pre-push', 'scripts/hooks/pre-push.sh')
+        finally:
+            shutil.rmtree(free, ignore_errors=True)
+            shutil.rmtree(foreign, ignore_errors=True)
+
+
+class TestDashboardStale:
+
+    @pytest.mark.proof("skill_init", "PROOF-86", "RULE-80", tier="integration")
+    @pytest.mark.parametrize('shape', ['dangling-symlink', 'old-copy'])
+    def test_the_root_dashboard_becomes_the_installed_one(self, shape):
+        """RULE-80: a link into a version-pinned cache and an old copy both go."""
+        root = _make_plain_project()
+        dest = os.path.join(root, 'purlin-report.html')
+        try:
+            if shape == 'dangling-symlink':
+                cache = os.path.join(root, 'cache', '0.9.5',
+                                     'purlin-report.html')
+                os.makedirs(os.path.dirname(cache))
+                with open(cache, 'w') as f:
+                    f.write('<html>cached</html>\n')
+                os.symlink(cache, dest)
+                shutil.rmtree(os.path.join(root, 'cache'))
+                expected_cue = 'does not resolve'
+            else:
+                with open(dest, 'w') as f:
+                    f.write('<html>old</html>\n')
+                expected_cue = 'differ'
+
+            code, out, err = _run(root, '--check')
+            assert code == 0, (out, err)
+            entry = _pending(out).get('dashboard-stale')
+            assert entry, out
+            assert entry['files'] == ['purlin-report.html'], entry
+            assert expected_cue in entry['summary'], entry['summary']
+
+            code, _out, err = _run(root, '--apply', 'dashboard-stale')
+            assert code == 0, err
+            assert not os.path.islink(dest), 'the dashboard is still a link'
+            with open(dest, 'rb') as f:
+                have = f.read()
+            with open(DASHBOARD, 'rb') as f:
+                assert have == f.read(), 'the copy is not the installed one'
+
+            code, out, _ = _run(root, '--check')
+            assert 'dashboard-stale' not in _pending(out), out
+            before = _tree_hashes(root)
+            code, _out, err = _run(root, '--apply', 'dashboard-stale')
+            assert code == 0, err
+            assert _tree_hashes(root) == before
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    @pytest.mark.proof("skill_init", "PROOF-86", "RULE-80", tier="integration")
+    def test_a_project_without_a_dashboard_is_not_given_one(self):
+        """RULE-80: the dashboard is an answer init asks for, not a backfill."""
+        root = _make_plain_project()
+        try:
+            code, out, err = _run(root, '--check')
+            assert code == 0, (out, err)
+            assert 'dashboard-stale' not in _pending(out), out
+            code, _out, err = _run(root, '--apply', *SCRIPTED_IDS,
+                                   'hooks-stale', 'dashboard-stale')
+            assert code == 0, err
+            assert not os.path.lexists(
+                os.path.join(root, 'purlin-report.html')), \
+                'the update handed a dashboard to a project that has none'
+        finally:
+            shutil.rmtree(root, ignore_errors=True)

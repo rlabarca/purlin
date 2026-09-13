@@ -297,6 +297,87 @@
       "test_name": "test_the_shell_harness_is_seen_under_both_names[shell_purlin.sh]",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-85",
+      "rule": "RULE-79",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_broken_purlin_hook_is_pending_and_repaired[body-copy]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-85",
+      "rule": "RULE-79",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_broken_purlin_hook_is_pending_and_repaired[dangling]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-85",
+      "rule": "RULE-79",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_broken_purlin_hook_is_pending_and_repaired[guardless-delegator]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-85",
+      "rule": "RULE-79",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_broken_purlin_hook_is_pending_and_repaired[plugin-symlink]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-85",
+      "rule": "RULE-79",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_free_slot_and_a_foreign_hook_are_not_stale",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-86",
+      "rule": "RULE-80",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_project_without_a_dashboard_is_not_given_one",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-86",
+      "rule": "RULE-80",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_root_dashboard_becomes_the_installed_one[dangling-symlink]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-86",
+      "rule": "RULE-80",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_root_dashboard_becomes_the_installed_one[old-copy]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-87",
+      "rule": "RULE-78",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_a_checkout_without_the_shims_still_commits",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

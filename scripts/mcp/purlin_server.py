@@ -2638,6 +2638,7 @@ def _check_legacy_mcp_entry(project_root):
 # count with no filename is not something a reader can act on.
 _MIGRATION_ORDER = ('legacy-tier-windows', 'legacy-proof-file', 'legacy-marker',
                     'plugin-copies-stale', 'config-fields-missing',
+                    'hooks-stale', 'dashboard-stale',
                     'receipt-v1', 'legacy-mcp')
 
 # Config fields the update asks about rather than backfilling from the
@@ -2827,6 +2828,176 @@ def _stale_plugin_copies(project_root):
     return stale
 
 
+def _scaffold_module():
+    """`scripts/init/scaffold.py`, imported by path, or None.
+
+    The generated hook shim and the delegator are its text, so the detector
+    that says a hook is stale asks the writer what it would write rather than
+    holding a second copy of it. `scripts/update/migrate.py` imports this
+    module the same way for the same reason.
+    """
+    init_dir = os.path.join(os.path.dirname(SCRIPT_DIR), 'init')
+    if init_dir not in sys.path:
+        sys.path.insert(0, init_dir)
+    try:
+        import scaffold
+    except ImportError:
+        return None
+    return scaffold
+
+
+# The first line of each hook body the plugin ships. A copy of one of these
+# sitting in the hooks directory is a pre-shim Purlin install: the body
+# resolves the plugin from its own location, which in `.git/hooks` is nowhere,
+# so it warns on every commit and blocks every strict push.
+_PRE_SHIM_HOOK_BODIES = {
+    'pre-commit': 'Purlin pre-commit hook',
+    'pre-push': 'Purlin pre-push hook',
+}
+
+
+def _hook_slot_defect(path, scaffold):
+    """Why the hook git runs at `path` is Purlin's and broken, or None.
+
+    A slot Purlin does not own is never a defect: a free slot is a project
+    that did not ask for the hook, and a foreign hook is somebody else's check
+    (`skill_init` RULE-78). Only a hook this plugin put there, in a shape it no
+    longer writes, is reported.
+    """
+    if not os.path.lexists(path):
+        return None
+    if os.path.islink(path):
+        if not os.path.exists(path):
+            return 'a symlink that does not resolve'
+        target = os.readlink(path)
+        name = os.path.basename(path)
+        if 'purlin' in target.lower() or os.path.basename(target) == f'{name}.sh':
+            return ('a symlink into the plugin, which dangles on the next '
+                    'plugin update')
+        return None
+    try:
+        with open(path, encoding='utf-8', errors='replace') as f:
+            text = f.read()
+    except (IOError, OSError):
+        return None
+    if scaffold._DELEGATOR_MARKER in text:
+        if scaffold._DELEGATOR_GUARD in text:
+            return None
+        return ('a delegator written before the missing-shim guard, which '
+                'fails the hook on a checkout carrying no .purlin/hooks/')
+    body = _PRE_SHIM_HOOK_BODIES.get(os.path.basename(path))
+    if body and body in text:
+        return ('a copy of the plugin hook body, which cannot find the '
+                'plugin from the hooks directory')
+    return None
+
+
+def _slot_rel(project_root, slot_path):
+    """The hook's path as the advisory names it, without following the link.
+
+    `os.path.realpath` on a dangling symlink resolves to the target that is
+    not there, which names the file the project lost rather than the file the
+    project has.
+    """
+    rel = os.path.relpath(
+        os.path.join(os.path.realpath(os.path.dirname(slot_path)),
+                     os.path.basename(slot_path)),
+        os.path.realpath(project_root))
+    if rel.startswith('..'):
+        return slot_path
+    return rel.replace(os.sep, '/')
+
+
+def _hooks_stale(project_root, config=None):
+    """[{path, rel, kind, reason}] for each hook file that is not what init writes.
+
+    Two kinds. A `shim` is `.purlin/hooks/<name>`, whose bytes this plugin
+    generates, so anything but those bytes is stale. A `slot` is the file git
+    runs, which is stale only when Purlin owns it and the shape is one the
+    plugin stopped writing (`_hook_slot_defect`).
+
+    A missing shim is reported only when the slot holds a defective Purlin
+    hook. A project that never installed hooks is not one this migration
+    repairs: `purlin:init` asks that question, and an update that wrote hooks
+    into a project that declined them would be changing an answer rather than
+    carrying it forward (RULE-72).
+    """
+    scaffold = _scaffold_module()
+    if scaffold is None:
+        return []
+    if config is None:
+        config = resolve_config(project_root) or {}
+    resolved = scaffold._hooks_dir(project_root)
+    if resolved is None:
+        return []
+    hooks_dir, _setting = resolved
+    found = []
+    for name in ('pre-commit', 'pre-push'):
+        if name == 'pre-commit' and config.get('digest') == 'off':
+            continue
+        slot_path = os.path.join(hooks_dir, name)
+        slot_reason = _hook_slot_defect(slot_path, scaffold)
+        shim_path = os.path.join(project_root, '.purlin', 'hooks', name)
+        shim_rel = f'.purlin/hooks/{name}'
+        want = scaffold._shim(name, f'scripts/hooks/{name}.sh')
+        have = None
+        if os.path.isfile(shim_path) and not os.path.islink(shim_path):
+            try:
+                with open(shim_path, encoding='utf-8') as f:
+                    have = f.read()
+            except (IOError, OSError, UnicodeDecodeError):
+                have = None
+        if have is None:
+            if slot_reason is not None:
+                found.append({'path': shim_path, 'rel': shim_rel,
+                              'kind': 'shim',
+                              'reason': 'missing, and the hook git runs '
+                                        'expects it'})
+        elif have != want:
+            found.append({'path': shim_path, 'rel': shim_rel, 'kind': 'shim',
+                          'reason': 'differs from the shim the installed '
+                                    'plugin generates'})
+        if slot_reason is not None:
+            found.append({'path': slot_path, 'rel': _slot_rel(project_root,
+                                                              slot_path),
+                          'kind': 'slot', 'reason': slot_reason})
+    return found
+
+
+def _dashboard_source():
+    """`scripts/report/purlin-report.html` inside the installed plugin."""
+    return os.path.join(os.path.dirname(SCRIPT_DIR), 'report',
+                        'purlin-report.html')
+
+
+def _dashboard_stale(project_root):
+    """Why the project's root dashboard is not the installed one, or None.
+
+    A project with no `purlin-report.html` is not repaired here: the dashboard
+    is an answer `purlin:init` asks for, and a project that turned it off or
+    deleted it is not one an update hands it back to.
+    """
+    path = os.path.join(project_root, 'purlin-report.html')
+    source = _dashboard_source()
+    if not os.path.lexists(path) or not os.path.isfile(source):
+        return None
+    if os.path.islink(path) and not os.path.exists(path):
+        return 'a symlink that does not resolve'
+    try:
+        with open(path, 'rb') as f:
+            have = f.read()
+        with open(source, 'rb') as f:
+            want = f.read()
+    except (IOError, OSError):
+        return None
+    if have == want:
+        return None
+    if os.path.islink(path):
+        return ('a symlink into the plugin, whose target is not this '
+                'version of the dashboard')
+    return 'bytes that differ from the installed dashboard'
+
+
 def _config_field_gaps(config):
     """(backfill, asked, retired, version_gap) for `.purlin/config.json`.
 
@@ -2973,6 +3144,28 @@ def _pending_migrations(project_root, config=None, features=None,
                       + (1 if version_gap else 0)),
             'summary': '; '.join(parts),
             'files': ['.purlin/config.json'],
+        })
+
+    hook_defects = _hooks_stale(project_root, config) if config else []
+    if hook_defects:
+        n = len(hook_defects)
+        pending.append({
+            'id': 'hooks-stale',
+            'count': n,
+            'summary': '; '.join(f'{d["rel"]} is {d["reason"]}'
+                                 for d in hook_defects),
+            'files': [d['rel'] for d in hook_defects],
+        })
+
+    dashboard_reason = _dashboard_stale(project_root) if config else None
+    if dashboard_reason:
+        pending.append({
+            'id': 'dashboard-stale',
+            'count': 1,
+            'summary': (f'purlin-report.html is {dashboard_reason}; the '
+                        f'dashboard is a copy and this one is not the '
+                        f'installed plugin\'s'),
+            'files': ['purlin-report.html'],
         })
 
     v1 = _v1_receipts(project_root)
