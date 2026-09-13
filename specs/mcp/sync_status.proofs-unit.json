@@ -13,7 +13,7 @@
     {
       "feature": "sync_status",
       "id": "PROOF-10",
-      "rule": "RULE-10",
+      "rule": "RULE-4",
       "test_file": "dev/test_mcp_server.py",
       "test_name": "test_rule_labels",
       "status": "pass",
@@ -40,7 +40,7 @@
     {
       "feature": "sync_status",
       "id": "PROOF-13",
-      "rule": "RULE-13",
+      "rule": "RULE-5",
       "test_file": "dev/test_mcp_server.py",
       "test_name": "test_manual_proof_with_scope_no_warning",
       "status": "pass",
@@ -49,7 +49,7 @@
     {
       "feature": "sync_status",
       "id": "PROOF-13",
-      "rule": "RULE-13",
+      "rule": "RULE-5",
       "test_file": "dev/test_mcp_server.py",
       "test_name": "test_manual_proof_without_scope_warning",
       "status": "pass",
@@ -94,7 +94,7 @@
     {
       "feature": "sync_status",
       "id": "PROOF-17",
-      "rule": "RULE-17",
+      "rule": "RULE-7",
       "test_file": "dev/test_mcp_server.py",
       "test_name": "test_grep_and_behavioral_detail_blocks_are_identical",
       "status": "pass",
@@ -148,7 +148,7 @@
     {
       "feature": "sync_status",
       "id": "PROOF-20",
-      "rule": "RULE-20",
+      "rule": "RULE-2",
       "test_file": "dev/test_mcp_server.py",
       "test_name": "test_untested_status_for_zero_proofs",
       "status": "pass",
@@ -157,7 +157,7 @@
     {
       "feature": "sync_status",
       "id": "PROOF-21",
-      "rule": "RULE-21",
+      "rule": "RULE-2",
       "test_file": "dev/test_mcp_server.py",
       "test_name": "test_partial_status_when_not_all_rules_proved",
       "status": "pass",
@@ -175,7 +175,7 @@
     {
       "feature": "sync_status",
       "id": "PROOF-23",
-      "rule": "RULE-10",
+      "rule": "RULE-9",
       "test_file": "dev/test_e2e_required_rules.sh",
       "test_name": "sync_status labels rules as own/required/global",
       "status": "pass",
@@ -184,7 +184,7 @@
     {
       "feature": "sync_status",
       "id": "PROOF-24",
-      "rule": "RULE-21",
+      "rule": "RULE-2",
       "test_file": "dev/test_e2e_required_rules.sh",
       "test_name": "partial proofs show 2/5 and not VERIFIED",
       "status": "pass",
@@ -481,7 +481,7 @@
     {
       "feature": "sync_status",
       "id": "PROOF-64",
-      "rule": "RULE-17",
+      "rule": "RULE-7",
       "test_file": "dev/test_mcp_server.py",
       "test_name": "test_proof_types_display_uniformly",
       "status": "pass",

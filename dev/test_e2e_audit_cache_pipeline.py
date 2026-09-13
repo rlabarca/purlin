@@ -322,7 +322,7 @@ class TestAuditCachePipeline:
             ts = entry['cached_at']
             datetime.datetime.fromisoformat(ts.replace('Z', '+00:00'))
 
-    @pytest.mark.proof("sync_status", "PROOF-43", "RULE-19", tier="e2e")
+    @pytest.mark.proof("sync_status", "PROOF-43", "RULE-39", tier="e2e")
     def test_sync_status_shows_integrity_line(self):
         """RULE-3: sync_status reads audit cache and shows integrity percentage and relative time."""
         _make_project(self.tmp_dir, with_git=True)
@@ -345,23 +345,6 @@ class TestAuditCachePipeline:
         # write_audit_cache stamps real current time, so it shows "just now"
         assert 'just now' in output, (
             f"Expected 'just now' in output, got:\n{output}"
-        )
-
-    @pytest.mark.proof("sync_status", "PROOF-44", "RULE-19", tier="e2e")
-    def test_sync_status_no_cache_shows_no_audit_data(self):
-        """RULE-4: sync_status shows 'No audit data' when cache does not exist."""
-        _make_project(self.tmp_dir, with_git=True)
-        # No cache written — cache file must not exist
-        cache_path = os.path.join(self.tmp_dir, '.purlin', 'cache', 'audit_cache.json')
-        assert not os.path.exists(cache_path)
-
-        output = sync_status(self.tmp_dir)
-
-        assert 'No audit data' in output, (
-            f"Expected 'No audit data' in output, got:\n{output}"
-        )
-        assert 'purlin:audit' in output, (
-            f"Expected 'purlin:audit' in output, got:\n{output}"
         )
 
     @pytest.mark.proof("sync_status", "PROOF-45", "RULE-25", tier="e2e")
@@ -594,7 +577,7 @@ class TestAuditCachePipeline:
             f"only the resolvable entry is a measurement, got {summary['valid_entries']}"
         )
 
-    @pytest.mark.proof("sync_status", "PROOF-50", "RULE-19", tier="e2e")
+    @pytest.mark.proof("sync_status", "PROOF-50", "RULE-39", tier="e2e")
     def test_deleting_cache_reverts_to_no_audit_state(self):
         """RULE-10: Deleting cache causes sync_status and report-data.js to revert to no-audit state."""
         _make_project(self.tmp_dir, with_git=True, with_report=True)

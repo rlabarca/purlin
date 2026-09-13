@@ -426,7 +426,7 @@ class TestSyncStatus:
         assert 'login: 0/2 rules proved' in result
         assert 'security_no_eval/RULE-1: NO PROOF (global)' in result
 
-    @pytest.mark.proof("sync_status", "PROOF-10", "RULE-10")
+    @pytest.mark.proof("sync_status", "PROOF-10", "RULE-4")
     def test_rule_labels(self):
         self._write_spec('api_conv', (
             '# Anchor: api_conv\n\n'
@@ -588,7 +588,7 @@ class TestSyncStatus:
         assert 'Required anchor "security" changed' in result
         assert 'RULE-2' in result
 
-    @pytest.mark.proof("sync_status", "PROOF-13", "RULE-13")
+    @pytest.mark.proof("sync_status", "PROOF-13", "RULE-5")
     def test_manual_proof_without_scope_warning(self):
         # Spec with manual proof but NO > Scope: → should warn
         self._write_spec('login', (
@@ -630,7 +630,7 @@ class TestSyncStatus:
         assert 'PASSING' in result
         assert 'FAIL' not in result
 
-    @pytest.mark.proof("sync_status", "PROOF-13", "RULE-13")
+    @pytest.mark.proof("sync_status", "PROOF-13", "RULE-5")
     def test_manual_proof_with_scope_no_warning(self):
         # Spec with manual proof AND > Scope: → should NOT warn
         self._write_spec('login', (
@@ -709,9 +709,9 @@ class TestSyncStatus:
         result = purlin_server.sync_status(self.project_root)
         assert 'Uncommitted' not in result
 
-    @pytest.mark.proof("sync_status", "PROOF-17", "RULE-17")
+    @pytest.mark.proof("sync_status", "PROOF-17", "RULE-7")
     def test_grep_and_behavioral_detail_blocks_are_identical(self):
-        """RULE-17: no visual distinction between grep-based and behavioral proofs.
+        """RULE-7: no visual distinction between grep-based and behavioral proofs.
 
         Not "both say PASSING somewhere" but "the two blocks are the same text
         once the feature name is swapped": that is what leaves no room for a
@@ -873,9 +873,9 @@ class TestSyncStatus:
         assert 'beta: 1/2 rules proved' in detail_text
         assert 'gamma: 0/2 rules proved' in detail_text
 
-    @pytest.mark.proof("sync_status", "PROOF-20", "RULE-20")
+    @pytest.mark.proof("sync_status", "PROOF-20", "RULE-2")
     def test_untested_status_for_zero_proofs(self):
-        """RULE-20: Features with zero behavioral proofs show UNTESTED."""
+        """RULE-2: Features with zero behavioral proofs show UNTESTED."""
         self._write_spec('empty', (
             '# Feature: empty\n\n'
             '## What it does\nEmpty feature.\n\n'
@@ -890,9 +890,9 @@ class TestSyncStatus:
             f"Expected UNTESTED in summary table for zero-proof feature, got:\n{result}"
         )
 
-    @pytest.mark.proof("sync_status", "PROOF-21", "RULE-21")
+    @pytest.mark.proof("sync_status", "PROOF-21", "RULE-2")
     def test_partial_status_when_not_all_rules_proved(self):
-        """RULE-21: Partial coverage = PARTIAL, not PASSING, even when all existing proofs pass."""
+        """RULE-2: Partial coverage = PARTIAL, not PASSING, even when all existing proofs pass."""
         self._write_spec('login', (
             '# Feature: login\n\n'
             '## What it does\nHandles login.\n\n'
@@ -1006,9 +1006,9 @@ class TestSyncStatus:
         result = purlin_server.sync_status(self.project_root)
         assert 'aim for' not in result.lower()
 
-    @pytest.mark.proof("sync_status", "PROOF-64", "RULE-17")
+    @pytest.mark.proof("sync_status", "PROOF-64", "RULE-7")
     def test_proof_types_display_uniformly(self):
-        """RULE-17: Grep-based and behavioral proofs both show PASS/FAIL with no visual distinction."""
+        """RULE-7: Grep-based and behavioral proofs both show PASS/FAIL with no visual distinction."""
         # One spec covered by a "grep-based" proof description, one by a behavioral proof description
         self._write_spec('grep_feature', (
             '# Feature: grep_feature\n\n'
@@ -3609,7 +3609,7 @@ class TestManualStampsCount:
         rows = [l for l in after.splitlines() if '│ login' in l]
         assert rows and 'PARTIAL' in rows[0], (rows, after)
 
-    @pytest.mark.proof("sync_status", "PROOF-97", "RULE-59", tier="integration")
+    @pytest.mark.proof("sync_status", "PROOF-97", "RULE-6", tier="integration")
     def test_re_stamping_after_a_receipt_stales_that_receipt(self):
         """The stamp is in the vhash, so re-stamping the same rule with a new
         date moves the hash and the receipt issued against the old one is

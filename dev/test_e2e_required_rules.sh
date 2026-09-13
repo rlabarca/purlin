@@ -203,9 +203,9 @@ else
 fi
 
 if $phase_a2_ok; then
-  purlin_proof "sync_status" "PROOF-23" "RULE-10" pass "sync_status labels rules as own/required/global"
+  purlin_proof "sync_status" "PROOF-23" "RULE-9" pass "sync_status labels rules as own/required/global"
 else
-  purlin_proof "sync_status" "PROOF-23" "RULE-10" fail "sync_status labels rules as own/required/global"
+  purlin_proof "sync_status" "PROOF-23" "RULE-9" fail "sync_status labels rules as own/required/global"
 fi
 
 # ==========================================================================
@@ -246,9 +246,9 @@ else
 fi
 
 if $phase_b_ok; then
-  purlin_proof "sync_status" "PROOF-24" "RULE-21" pass "partial proofs show 2/5 and not VERIFIED"
+  purlin_proof "sync_status" "PROOF-24" "RULE-2" pass "partial proofs show 2/5 and not VERIFIED"
 else
-  purlin_proof "sync_status" "PROOF-24" "RULE-21" fail "partial proofs show 2/5 and not VERIFIED"
+  purlin_proof "sync_status" "PROOF-24" "RULE-2" fail "partial proofs show 2/5 and not VERIFIED"
 fi
 
 # ==========================================================================

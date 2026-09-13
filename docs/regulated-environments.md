@@ -115,7 +115,7 @@ Two staleness signals sit beside that. A counted `@manual` stamp stops counting 
 commit touches a path in the spec's `> Scope:`, and the rule reads `MANUAL PROOF STALE`
 (`sync_status` RULE-5). Every counted stamp also enters the verification hash, so re-stamping
 with a new email, date or commit moves the feature's `vhash` and stales the receipt issued
-against the old stamp (`sync_status` RULE-59). Separately, a VERIFIED feature whose scope has
+against the old stamp (`sync_status` RULE-6). Separately, a VERIFIED feature whose scope has
 been committed to since the tests behind its receipt ran prints `EVIDENCE OLDER THAN CODE` with
 the number of commits and the run's commit (`sync_status` RULE-60). It warns and never blocks,
 and the payload carries it for the dashboard to render.
@@ -373,7 +373,7 @@ When `@manual` stamps are required, the compliant flow is:
 5. CI validates the QMS token before accepting the manual proof
 
 Be precise about what a `@manual` stamp is worth on its own. It counts toward coverage
-(`sync_status` RULE-5) and it enters the verification hash (`sync_status` RULE-59), so it is
+(`sync_status` RULE-5) and it enters the verification hash (`sync_status` RULE-6), so it is
 tracked. It records that the named person said they checked the rule on the named day, against
 the code as it stood at the named commit, and it stops counting the moment a commit touches the
 spec's `> Scope:`. Nothing authenticates the name, so the stamp is an audit trail entry rather
