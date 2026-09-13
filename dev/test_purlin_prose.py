@@ -907,3 +907,58 @@ class TestMarketplaceScopeIsThreeSteps:
                     f"the {SCOPE_TOKEN} paragraph of {rel} still says "
                     f"{claim!r}; the flag stores a marketplace entry and "
                     f"installs nothing:\n{para}")
+
+
+# ---------------------------------------------------------------------------
+# RULE-19: a documented cleanup names its files instead of globbing them
+# ---------------------------------------------------------------------------
+
+_BASH_BLOCK = re.compile(r'^```(?:ba)?sh\n(.*?)^```', re.MULTILINE | re.DOTALL)
+
+CLEANUP_PAGES = ('README.md', 'docs/installation-guide.md')
+PRE_090_SCRIPTS = ('pl-init.sh', 'pl-run.sh')
+
+
+def _bash_rm_lines(rel):
+    """(lineno, line) per `rm` line inside a fenced bash block of `rel`."""
+    text = _read(rel)
+    lines = text.splitlines()
+    out = []
+    for block in _BASH_BLOCK.findall(text):
+        for line in block.splitlines():
+            if line.strip().split()[:1] != ['rm']:
+                continue
+            out.append((lines.index(line) + 1, line))
+    return out
+
+
+class TestCleanupSnippetsNameTheirFiles:
+    """RULE-19: no `rm` in a pasteable snippet carries a glob."""
+
+    @pytest.mark.proof("purlin_prose", "PROOF-27", "RULE-19", tier="unit")
+    def test_no_rm_line_in_a_bash_fence_carries_a_star(self):
+        scanned = [('README.md', line_no, line)
+                   for line_no, line in _bash_rm_lines('README.md')]
+        for rel in _docs_markdown():
+            scanned += [(rel, line_no, line)
+                        for line_no, line in _bash_rm_lines(rel)]
+
+        assert len(scanned) >= 8, (
+            f"only {len(scanned)} `rm` lines were found in the fenced bash "
+            f"blocks of README.md and docs/; the sweep would pass by reading "
+            f"nothing")
+
+        offenders = [f"{rel}:{line_no}: {line.strip()}"
+                     for rel, line_no, line in scanned if '*' in line]
+        assert not offenders, (
+            "a cleanup snippet a reader pastes at their own project root "
+            "removes a glob, which takes files the project authored:\n"
+            + "\n".join(offenders))
+
+        for rel in CLEANUP_PAGES:
+            text = _read(rel)
+            for name in PRE_090_SCRIPTS:
+                assert name in text, (
+                    f"{rel} no longer names {name!r}, one of the two scripts "
+                    f"the pre-0.9.0 layout left at the project root; the glob "
+                    f"was dropped rather than replaced")

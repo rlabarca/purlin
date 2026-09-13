@@ -107,10 +107,13 @@ means the spec is unfalsifiable, not that the tests are good.
 
 ### Upgrading from an older version of Purlin
 
-If you have a pre-0.9.0 Purlin installation, keep your `features/` directory. `spec-from-code` migrates your old specs to the new format. Remove only the non-spec artifacts:
+If you have a pre-0.9.0 Purlin installation, keep your `features/` directory. `spec-from-code` migrates your old specs to the new format. Remove only the non-spec artifacts, each named in full: your project root holds shell scripts of its own, and the `rm -rf .purlin/ pl-* *.sh` this section used to print took every one of them.
 
 ```bash
-rm -rf .purlin/ pl-* *.sh
+rm -rf .purlin/
+rm -f pl-init.sh pl-run.sh
+rm -f pl-cdd-start.sh pl-cdd-stop.sh
+rm -f pl-run-architect.sh pl-run-builder.sh pl-run-qa.sh
 ```
 
 Then initialize and migrate:
