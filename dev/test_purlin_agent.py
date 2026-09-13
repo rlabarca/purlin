@@ -279,3 +279,41 @@ class TestThreePathways:
                 if l.startswith('|') and 'spec_quality_guide.md' in l]
         assert rows, "no reference-table row for spec_quality_guide.md"
         assert any('mutation check' in r.lower() for r in rows), rows
+
+    @pytest.mark.proof("purlin_agent", "PROOF-13", "RULE-13")
+    def test_the_no_verify_never_names_layer_one_not_a_safety_gate(self):
+        """RULE-13: the NEVER entry agrees with references/hard_gates.md."""
+        content = _read()
+        entries = [l for l in content.splitlines()
+                   if l.lstrip().startswith('- **NEVER')
+                   and '--no-verify' in l]
+        assert len(entries) == 1, (
+            f"expected exactly one NEVER entry naming --no-verify, "
+            f"got {len(entries)}: {entries}")
+        entry = entries[0]
+        assert 'references/hard_gates.md' in entry, (
+            "the entry must point at the reference that records the layers, "
+            f"so the claim can be checked: {entry}")
+        assert 'Layer 1' in entry, (
+            f"the entry must say which layer the hook is: {entry}")
+        banned = [phrase for phrase in
+                  ('safety gate', 'no legitimate reason',
+                   'defeats proof enforcement')
+                  if phrase in entry]
+        assert not banned, (
+            f"the entry still carries {banned}, which references/"
+            f"hard_gates.md contradicts: the hook is bypassable, `off` "
+            f"blocks nothing, and this repository runs pre_push: off\n{entry}")
+
+        gates_path = os.path.join(os.path.dirname(__file__), '..',
+                                  'references', 'hard_gates.md')
+        with open(gates_path) as f:
+            gates = f.read()
+        layer_one = [l for l in gates.splitlines()
+                     if l.startswith('|') and 'Layer 1' in l]
+        assert len(layer_one) == 1, (
+            f"expected one Layer 1 row in hard_gates.md, got {layer_one}")
+        assert '--no-verify' in layer_one[0] and '`off`' in layer_one[0], (
+            "the Layer 1 row must still name the bypass and the off mode, or "
+            f"the agent cites a reference that no longer says it:\n"
+            f"{layer_one[0]}")

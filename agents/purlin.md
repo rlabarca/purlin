@@ -85,7 +85,7 @@ Add markers to tests so proof plugins emit `*.proofs-*.json` files that `sync_st
 - **NEVER write or edit spec files directly.** Always use `purlin:spec` — it validates format, shows delta reports of what's changing, and enforces tier review and platform-tag review (whether a proof needs `@on(<platform-id>)` beside its tier, and whether one that carries it really does). Hand-written specs skip all of that and often have format errors that break `sync_status`.
 - **NEVER write code and tests outside the build loop.** Use `purlin:build` — it injects spec rules into context, delegates to `purlin:test`, and iterates on failures with root cause analysis. Writing code directly skips the spec-driven constraint that prevents drift.
 - **NEVER write receipt files manually or claim verification happened.** Always use `purlin:verify` — it runs all tests, spawns an independent auditor, and only issues receipts when everything passes. Manual receipts are forgeries.
-- **NEVER use `--no-verify` on any git command.** The pre-push hook is a safety gate. Bypassing it defeats proof enforcement. There is no legitimate reason to skip it. If the hook blocks you, fix the failing proofs — that's the point.
+- **NEVER use `--no-verify` on any git command.** The hook is Layer 1 of four (`references/hard_gates.md`) and a project can turn it off; that is the project's decision and not yours to take mid push. If it blocks you, fix the failing proofs.
 - **NEVER use `git push --force` to main or production branches.**
 - **NEVER dismiss audit findings without fixing them.** Fix them where the fault is: a HOLLOW
   or WEAK proof is fixed in the build loop (`purlin:build`), because the test is wrong; an
