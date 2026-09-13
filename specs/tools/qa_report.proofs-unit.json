@@ -72,6 +72,15 @@
       "test_name": "test_the_skill_resolves_a_referenced_rule_before_walking_rules",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "qa_report",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_tools_qa.py",
+      "test_name": "test_the_field_table_names_every_top_level_key_the_payload_carries",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

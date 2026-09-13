@@ -13,6 +13,7 @@ zip is what a user installs.
 
 import os
 import re
+import sys
 import zipfile
 
 import pytest
@@ -55,6 +56,30 @@ def _assert_skill_zip_matches_markdown(folder, name):
     assert packed == md_bytes, (
         f"{skill_path} ships {len(packed)} bytes while {md_path} has "
         f"{len(md_bytes)}; run `bash dev/pack_tools.sh`")
+
+
+def _digest_field_table_keys(text):
+    """The top-level key each row of the digest field table documents.
+
+    A row opens its first cell with a backticked name. A name carrying a `.` is
+    a sub-key (`audit_summary.auditors`) and documents no top-level key of its
+    own; `features[]` documents `features`.
+    """
+    lines = text.splitlines()
+    start = next(i for i, line in enumerate(lines)
+                 if line.startswith('| Field | What it means |'))
+    keys = []
+    for line in lines[start + 2:]:
+        if not line.startswith('|'):
+            break
+        cell = line.split('|')[1].strip()
+        match = re.match(r'^`([^`]+)`', cell)
+        assert match, f"field-table row does not open with a key: {line}"
+        name = match.group(1)
+        if '.' in name:
+            continue
+        keys.append(name[:-2] if name.endswith('[]') else name)
+    return keys
 
 
 def _offending_lines(text, needle, lower=False):
@@ -340,3 +365,29 @@ class TestThePmSkillWritesWherePurlinReads:
                        tier="unit")
     def test_the_pm_skill_zip_holds_one_skill_md_equal_to_its_sibling(self):
         _assert_skill_zip_matches_markdown('PM', 'purlin-anchor-userstories')
+
+
+@pytest.mark.proof("qa_report", "PROOF-9", "RULE-9", tier="unit")
+def test_the_field_table_names_every_top_level_key_the_payload_carries():
+    """qa_report RULE-9 - a key with no row is a fact the report never repeats,
+    so the table is compared against the payload rather than against a list
+    somebody kept up to date by hand."""
+    sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'mcp'))
+    import purlin_server
+
+    payload = purlin_server.read_report_payload(os.path.abspath(PROJECT_ROOT))
+    assert payload, (
+        "read_report_payload returned nothing for this repository, so the "
+        "comparison has no payload to make")
+
+    documented = set(_digest_field_table_keys(_read(QA_MD)))
+    emitted = set(payload)
+
+    missing = sorted(emitted - documented)
+    assert missing == [], (
+        f"the digest field table documents no row for {missing}; the report "
+        f"cannot repeat a field the skill never names")
+    invented = sorted(documented - emitted)
+    assert invented == [], (
+        f"the digest field table names {invented}, which read_report_payload "
+        f"does not emit; the skill is describing a shape the digest never has")

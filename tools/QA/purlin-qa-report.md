@@ -7,7 +7,7 @@ description: Fetches and analyzes a Purlin project digest from a git repository 
 
 Analyze a Purlin project digest and produce a triaged QA report. The user provides a git repository URL (and optionally a branch or tag), and you fetch the project digest, analyze it, and produce a clear, visual report of QA concerns.
 
-## Step 1 — Clone the Repo and Read the Digest
+## Step 1: Clone the Repo and Read the Digest
 
 The user provides a repo URL and optionally a branch or tag:
 - `https://github.com/org/project` (defaults to `main`)
@@ -44,7 +44,7 @@ If no branch/tag was specified, omit `--branch` (defaults to the repo's default 
 
 ### 1c. Handle auth failures
 
-If the clone fails, work through authentication — do not give up.
+If the clone fails, work through authentication. Do not give up.
 
 | Error message | Likely cause |
 |---|---|
@@ -96,7 +96,7 @@ If the file doesn't exist, tell the user: "This repo doesn't have a Purlin diges
 rm -rf /tmp/purlin-qa-digest
 ```
 
-## Step 2 — Parse the Digest
+## Step 2: Parse the Digest
 
 The digest is a JavaScript variable assignment: `const PURLIN_DATA = {...};`. Strip the prefix and trailing semicolon to get JSON. The data contains:
 
@@ -104,17 +104,27 @@ The digest is a JavaScript variable assignment: `const PURLIN_DATA = {...};`. St
 |-------|---------------|
 | `schema_version` | The shape of the payload, an integer. A digest with no `schema_version` is version 1. This skill reads version 3. When the digest carries a higher number it was written by a newer Purlin than this skill: say so in the report and treat the fields it describes as a shape this skill does not know, rather than describing its numbers as current |
 | `timestamp` | When this digest was generated (ISO 8601) |
+| `generated_by` | Which path assembled this digest: `sync_status`, `pre-commit`, `hook` or `read`. Absent on older digests, so read it defensively and say "not recorded" rather than naming a path |
 | `git_sha` | The commit this data was generated against |
+| `project` | The project's name. It titles the report and names the file the report is written to |
+| `version` | The Purlin version that wrote the digest. Report it in the footer beside the payload shape, so a reader can tell which plugin produced the numbers |
+| `docs_url` | Where the plugin's own documentation lives. Link it whenever the report names a Purlin command a QA reader may not know |
+| `quality_gate` | The project's configured quality gate, `off` when it has none. It says what a failing proof does to a merge, which no count in the digest records. Absent on older digests, so read it defensively and omit the line rather than reporting `off` |
+| `remote_verification` | Whether remote verification is `off`, `optional` or required for the project. This is the setting and not a result: `remote_status` is what has actually run. Absent on older digests, so read it defensively |
+| `remote_status` | `state`, a `proofs` block of `declared`, `proved`, `failed` and `awaiting`, and the `platforms` configured for the project. Absent on older digests, so read it defensively and skip the section rather than reporting zero remote proofs |
+| `migrations` | Pending plugin migrations, one entry per id with its `count`, `summary` and `files`. A non-empty list means the project is part-way through a plugin upgrade: report it above the counts, because some of them are measured against files the migration has not rewritten yet. Absent on older digests, so read it defensively |
 | `summary` | Feature counts: total, verified, passing, partial, failing, untested |
 | `features[]` | Array of every feature and anchor with rules, proofs, status, audit data |
 | `shared_rules` | The body of every rule a feature inherits from an anchor or from a `> Requires:`, written once for the whole digest and keyed by the id the feature's entry carries. A `rules[]` entry marked `ref` is resolved against this map before anything is read from it. A digest with no `shared_rules` carries every rule inline and needs no resolving |
-| `audit_summary` | Overall proof quality. Report `weighted` and `assessed` separately, never one as the other: `assessed` is the score over the proofs that were actually graded, `weighted` counts every ungraded proof against the score. A project with three graded proofs out of ninety can show `assessed` 100 and `weighted` 3, and only the pair says which. Report `audit_summary.coverage` as `measured` of `total` beside them, so the reader sees how much of the project the score rests on, plus the strong/weak/hollow counts |
+| `audit_summary` | Proof Integrity, the gauge that asks whether each proof actually proves the rule it names. Report `weighted` and `assessed` separately, never one as the other: `assessed` is the score over the proofs that were actually graded, `weighted` counts every ungraded proof against the score. A project with three graded proofs out of ninety can show `assessed` 100 and `weighted` 3, and only the pair says which. Report `audit_summary.coverage` as `measured` of `total` beside them, so the reader sees how much of the project the score rests on, plus the strong/weak/hollow counts |
 | `audit_summary.auditors` | Who or what produced the assessments, when present. Absent on digests written before auditor identity was recorded, so read it defensively and say "not recorded" rather than inventing one |
+| `design_summary` | Proof Design, the second gauge, reported beside Proof Integrity and never in place of it: `design` plus `provable`, `loose`, `unprovable`, `structural` and `gradeable_total`. Proof Integrity asks whether a proof proves its rule; Proof Design asks whether the proof as written could be proved at all, which is why a project with no tests yet can still carry a Design grade. `null` when nothing has been design-audited, and absent on older digests, so read it defensively and say "not assessed" |
 | `drift` | What changed since last verification: commits, files, spec changes |
 | `anchors_summary` | Anchor counts: total, with external source, global |
 | `platform_testing` | True when some proof declares a platform it must be proved on |
 | `platforms` | `registry`, `host`, `host_id`, `local`, `remote`, `errors` and `summary`, one summary row per declared platform with its feature counts, proof counts, per-platform Proof Integrity and when it was last proved |
 | `summary.held_by_platform` | Features that would read VERIFIED but for a platform that has not run. `summary.verified_here` is the count with no platform in the picture |
+| `uncommitted` | The files the digest was measured against that the commit does not carry. The paragraph below the table says what a non-empty list means and what the report does with it |
 
 **`uncommitted`**: report it whenever it is non-empty, naming the files. The old advice was to
 disregard the field, on the reasoning that a pre-commit hook wrote the digest, so everything must
@@ -157,32 +167,32 @@ measured against, and without it the report cannot be tied back to a state of th
 
 Analyze the digest in this order. Skip any section that has zero items.
 
-### 1. BROKEN — Features with FAILING status
+### 1. BROKEN: Features with FAILING status
 These are actively broken. Extract the specific rules with FAIL status and their proof details (test file, test name). This is the only true blocker.
 
-### 2. CHANGED WITHOUT COVERAGE — Drift blind spots
-From `drift.files`, find entries with category `CHANGED_BEHAVIOR` or `NEW_BEHAVIOR`. Cross-reference with `drift.proof_status` — if the associated feature is PARTIAL or UNTESTED, the changed code has no test coverage. Also check `drift.drift_flags` for features with only structural proofs (grep/file-exists checks) whose code changed.
+### 2. CHANGED WITHOUT COVERAGE: Drift blind spots
+From `drift.files`, find entries with category `CHANGED_BEHAVIOR` or `NEW_BEHAVIOR`. Cross-reference with `drift.proof_status`: if the associated feature is PARTIAL or UNTESTED, the changed code has no test coverage. Also check `drift.drift_flags` for features with only structural proofs (grep/file-exists checks) whose code changed.
 
 This is the highest-value QA insight: code shipped that nobody verified.
 
-### 3. SUSPICIOUS TESTS — HOLLOW proofs
-From each feature's `audit` data (or `audit_summary`), identify proofs rated HOLLOW. These are tests that exist but assert nothing meaningful — they create false confidence. Show the proof description and what makes it hollow if available.
+### 3. SUSPICIOUS TESTS: HOLLOW proofs
+From each feature's `audit` data (or `audit_summary`), identify proofs rated HOLLOW. These are tests that exist but assert nothing meaningful. They create false confidence. Show the proof description and what makes it hollow if available.
 
-If `audit_summary` is null, note: "No audit data available — run purlin:audit for proof quality assessment."
+If `audit_summary` is null, note: "No audit data available. Run purlin:audit for proof quality assessment."
 
 ### 4. MANUAL TESTS
-This section always appears if any manual proofs exist — it is not skipped even when all stamps are current. Scan all features for proofs with `@manual` stamps in the spec's `## Proof` section. For each manual proof, show:
+This section always appears if any manual proofs exist, and it is not skipped even when all stamps are current. Scan all features for proofs with `@manual` stamps in the spec's `## Proof` section. For each manual proof, show:
 
 - Feature name and rule description (what behavior is being verified)
 - Who verified it, when, and at what commit (`@manual(email, date, sha)`)
 - Whether it's **current** (no code changes to the feature since the stamp) or **stale** (drift shows changed files for this feature since the stamp date)
 
-Group into two subsections: **Stale** (needs re-verification — code changed since last manual check) and **Current** (verified and up to date). Stale items come first.
+Group into two subsections: **Stale** (needs re-verification: code changed since last manual check) and **Current** (verified and up to date). Stale items come first.
 
 If no manual proofs exist at all, skip this section.
 
-### 5. COVERAGE GAPS — PARTIAL and UNTESTED features
-List features that are PARTIAL (some rules have no proofs) or UNTESTED (no proofs at all). For PARTIAL features, list the specific rules with NONE status — these are the gaps.
+### 5. COVERAGE GAPS: PARTIAL and UNTESTED features
+List features that are PARTIAL (some rules have no proofs) or UNTESTED (no proofs at all). For PARTIAL features, list the specific rules with NONE status: those are the gaps.
 
 ### 6. EXTERNAL POLICY DRIFT
 From `drift.external_anchor_drift`, list any anchors with `status: "stale"`. These are security/compliance policies that updated upstream but haven't been synced. Flag the anchor name, what it enforces, and the pin mismatch.
@@ -203,7 +213,7 @@ here, and reporting them as ready would ask for a verification that cannot chang
 
 ## Output Format
 
-Write a complete HTML file into the current project directory and open it in the browser. Do NOT put HTML in the chat — the chat gets a text summary only.
+Write a complete HTML file into the current project directory and open it in the browser. Do NOT put HTML in the chat: the chat gets a text summary only.
 
 ### Step 1: Determine the file path
 
@@ -251,7 +261,7 @@ The HTML file should contain these sections. Skip any section that has zero item
 
   | Source | Timestamp field | What it tells you |
   |--------|----------------|-------------------|
-  | Coverage (status) | `timestamp` | When the coverage scan ran — this is the digest generation time |
+  | Coverage (status) | `timestamp` | When the coverage scan ran: this is the digest generation time |
   | Audit | `audit_summary.last_audit` | When proof quality was last assessed. May be days older than status. Show "not available" if `audit_summary` is null. Beside it print `weighted`% and `assessed`% as two numbers, `audit_summary.coverage.measured` of `.total` measured, and `audit_summary.auditors` when the digest carries it |
   | Drift | `drift.since` | The anchor point drift is measured from (e.g., "last verification (6 days ago)") |
 
@@ -263,7 +273,7 @@ The HTML file should contain these sections. Skip any section that has zero item
     Drift:    since last verification (6 days ago)
   ```
 
-  If audit is significantly older than coverage (>24h), highlight it in amber — audit scores may not reflect recent changes. If audit is null, highlight in red.
+  If audit is significantly older than coverage (>24h), highlight it in amber, since audit scores may not reflect recent changes. If audit is null, highlight in red.
 
 - **Freshness warning**: if the digest `timestamp` is more than 24 hours old, show a warning banner: "This digest is {age} old. Ask the team to commit to refresh it."
 - **Uncommitted-tree warning**: if `uncommitted` is non-empty, show a banner naming the files and
@@ -282,7 +292,7 @@ The HTML file should contain these sections. Skip any section that has zero item
 
 ### Theme
 
-The QA report must match the Purlin dashboard's dark theme. Before generating the HTML, read the CSS variables from the project's `scripts/report/purlin-report.html` (it was cloned in Step 1 — expand the sparse checkout to include it if needed: `git sparse-checkout add scripts/report`). Extract the `:root` and `[data-theme="dark"]` CSS blocks and use them in the generated HTML.
+The QA report must match the Purlin dashboard's dark theme. Before generating the HTML, read the CSS variables from the project's `scripts/report/purlin-report.html` (it was cloned in Step 1, so expand the sparse checkout to include it if needed: `git sparse-checkout add scripts/report`). Extract the `:root` and `[data-theme="dark"]` CSS blocks and use them in the generated HTML.
 
 The dark theme defaults (use these if the dashboard file is unavailable):
 
@@ -320,7 +330,7 @@ Section border colors: red (`--red`), orange (#f97316), yellow (`--amber`), purp
 
 4. **Freshness first.** If the digest is more than 24 hours old, show a warning banner at the top: "This digest is {age} old. Ask the team to commit to refresh it."
 
-5. **Anchors are special.** Security and compliance anchors with stale external references should always surface — even if all their rules pass. A stale pin means the rules themselves may be outdated.
+5. **Anchors are special.** Security and compliance anchors with stale external references should always surface, even if all their rules pass. A stale pin means the rules themselves may be outdated.
 
 6. **Counts in headers.** Every section header includes the count so QA can gauge scope at a glance.
 
@@ -331,13 +341,13 @@ Section border colors: red (`--red`), orange (#f97316), yellow (`--amber`), purp
    "all rules proved on every declared platform and a receipt matches" and let the reader draw
    the conclusion.
 
-8. **No jargon.** Don't say "HOLLOW proof" — say "test exists but doesn't verify the behavior." Don't say "drift flag" — say "code changed since last verification." Translate Purlin concepts into QA language.
+8. **No jargon.** Don't say "HOLLOW proof": say "test exists but doesn't verify the behavior." Don't say "drift flag": say "code changed since last verification." Translate Purlin concepts into QA language.
 
 ## Example Interactions
 
 **User:** "QA status for https://github.com/acme/payments"
 
-You fetch `.purlin/report-data.js` from `main`, parse it, and respond with a brief text summary followed by the HTML artifact: "3 features are ready for verification. No failures. 2 features have code changes without updated tests — those are your priority. Proof quality is at 84% but 5 tests are suspicious."
+You fetch `.purlin/report-data.js` from `main`, parse it, and respond with a brief text summary followed by the HTML artifact: "3 features are ready for verification. No failures. 2 features have code changes without updated tests, and those are your priority. Proof quality is at 84% but 5 tests are suspicious."
 
 **User:** "Same repo but check the release/2.0 branch"
 
@@ -349,11 +359,11 @@ You fetch both digests and highlight differences: new features, status changes, 
 
 **User:** "Tell me more about the suspicious tests"
 
-A focused breakdown of just the HOLLOW proofs — what each test claims to do, why the audit flagged it, and what a real test would look like.
+A focused breakdown of just the HOLLOW proofs: what each test claims to do, why the audit flagged it, and what a real test would look like.
 
 **User:** "What do I need to manually verify?"
 
-Just the manual proof section — features with @manual stamps, whether they're current or stale, and the specific behavior to verify.
+Just the manual proof section: features with @manual stamps, whether they're current or stale, and the specific behavior to verify.
 
 **User:** "Is the security policy enforced?"
 
