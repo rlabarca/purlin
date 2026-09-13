@@ -236,6 +236,18 @@ PROSE_SCOPE = ('docs/**', 'references/**', 'skills/**', 'tools/**',
 
 REGULATED = 'docs/regulated-environments.md'
 
+#: The `retired-format` row's file set. Narrower than `PROSE_SCOPE` on purpose:
+#: `skills/`, `agents/` and `tools/` still teach the retired section and are a
+#: separate lane's work, so widening this tuple to `PROSE_SCOPE` is the edit
+#: that finishes the retirement.
+RETIRED_FORMAT_SCOPE = ('docs/**', 'references/**', 'README.md')
+
+#: The retired phrases, as one alternation. The heading arm is anchored at both
+#: ends so `#### What it does not bind`, a real heading of
+#: `docs/regulated-environments.md`, is not read as the retired section.
+RETIRED_FORMAT_RE = re.compile(
+    r'^\s{0,3}#{1,6}\s+What it does\s*$|3-section format', re.MULTILINE)
+
 #: Every row: (name, unit, pattern, scope, min_files, allowlist, note).
 #: `unit` is `line` or `paragraph`. `min_files` is the least number of files
 #: the scope must resolve to, so a row cannot pass by scanning nothing. Each
@@ -265,6 +277,10 @@ BANNED = (
      (REGULATED,), 1, (),
      'approval vocabulary for something Purlin never does; the page is cited '
      'in a validation record, so it names mechanisms rather than approvals'),
+    ('retired-format', 'line', RETIRED_FORMAT_RE, RETIRED_FORMAT_SCOPE, 25, (),
+     'a spec and an anchor carry two sections, `## Rules` and `## Proof`, so '
+     'the name is the 2-section format; `## What it does` is retired and what '
+     'a feature does belongs on the `> Description:` continuation lines'),
 )
 
 

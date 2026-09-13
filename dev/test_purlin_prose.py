@@ -506,6 +506,67 @@ class TestBannedStringsLint:
             "the committed file still carries the occurrence, so the "
             "exemption is live")
 
+    @pytest.mark.proof("purlin_prose", "PROOF-17", "RULE-12")
+    def test_a_restored_three_section_name_is_named_by_file_and_line(
+            self, tmp_path):
+        rel = 'docs/index.md'
+        name, unit, pattern, scope, _min_files, allowlist, note = _row(
+            BANNED, 'retired-format')
+        row = (name, unit, pattern, scope, 1, allowlist, note)
+
+        sentence = 'Every spec is written in the 3-section format.'
+        text = _read(rel)
+        injected = text.rstrip('\n') + '\n\n' + sentence + '\n'
+        _plant(tmp_path, rel, injected)
+        expected_line = injected.splitlines().index(sentence) + 1
+
+        offenders = banned_strings(root=str(tmp_path), files=[rel],
+                                   rows=(row,), strict=False)
+        assert len(offenders) == 1, (
+            f"the restored name must be the one offender; got {offenders}")
+        found = offenders[0]
+        assert found.path == rel and found.line == expected_line, (
+            f"expected {rel}:{expected_line}, got {found.path}:{found.line}")
+        assert found.lint == 'banned_strings'
+        assert str(found).startswith(
+            f"{rel}:{expected_line}: banned_strings: retired-format: "), \
+            str(found)
+
+        assert banned_strings(files=[rel], rows=(row,), strict=False) == [], (
+            f"the committed {rel} must pass the same row, so the failure "
+            f"above is the injection and not the file")
+
+    @pytest.mark.proof("purlin_prose", "PROOF-17", "RULE-12")
+    def test_the_retired_heading_is_caught_and_the_vhash_heading_is_not(
+            self, tmp_path):
+        """The heading arm is anchored, so one real heading must survive it."""
+        rel = 'docs/index.md'
+        name, unit, pattern, scope, _min_files, allowlist, note = _row(
+            BANNED, 'retired-format')
+        row = (name, unit, pattern, scope, 1, allowlist, note)
+
+        heading = '## What it does'
+        injected = (_read(rel).rstrip('\n') + '\n\n' + heading
+                    + '\nAuthentication, end to end.\n')
+        _plant(tmp_path, rel, injected)
+        expected_line = injected.splitlines().index(heading) + 1
+
+        offenders = banned_strings(root=str(tmp_path), files=[rel],
+                                   rows=(row,), strict=False)
+        assert len(offenders) == 1 and offenders[0].line == expected_line, (
+            f"the retired heading must be the one offender at line "
+            f"{expected_line}; got {offenders}")
+
+        # `docs/regulated-environments.md` carries `#### What it does not bind`
+        # under RULE-2. The anchored arm must leave it alone.
+        regulated = _read(REGULATED)
+        assert '#### What it does not bind' in regulated, (
+            "the discriminating heading is gone, so this case proves nothing")
+        assert banned_strings(files=[REGULATED], rows=(row,),
+                              strict=False) == [], (
+            "`What it does not bind` is a live heading of the regulated page, "
+            "not the retired section")
+
 
 class TestPathsExistLint:
     """RULE-13 - a path in backticks reads as a link."""
@@ -669,7 +730,7 @@ class TestTheLintsReadTheTreeTheyClaimTo:
     def test_scoped_file_counts_and_a_clean_run_on_the_real_tree(self):
         files = repo_files()
         floors = {'em-dash': 12, 'promise': 40, 'windows-tier': 40,
-                  'approval': 1}
+                  'approval': 1, 'retired-format': 25}
         for name, floor in floors.items():
             scope = _row(BANNED, name)[3]
             count = len(_scope_files(scope, files))

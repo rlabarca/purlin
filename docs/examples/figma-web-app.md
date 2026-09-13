@@ -27,9 +27,6 @@ specs/_anchors/weather_design.md
 > Visual-Reference: figma://abc123/0-1
 > Pinned: 2026-04-01T14:30:00Z
 
-## What it does
-Visual design constraints for the weather app, sourced from Figma.
-
 ## Rules
 - RULE-1: Implementation must visually match the Figma design at the referenced node
 
@@ -50,15 +47,12 @@ Claude writes the spec. Behavioral requirements come from the PM, not the Figma 
 ```markdown
 # Feature: current_weather
 
-> Description: Displays current weather for a city using the OpenWeatherMap API.
+> Description: Fetches and displays the current weather for a given city using the
+>   OpenWeatherMap API. Shows temperature, condition, and icon matching the design
+>   system.
 > Requires: weather_design
 > Scope: src/components/WeatherDisplay.jsx, src/api/weather.js, src/utils/cache.js
 > Stack: react/tailwind, axios, openweathermap-api
-
-## What it does
-Fetches and displays the current weather for a given city using the
-OpenWeatherMap API. Shows temperature, condition, and icon matching
-the design system.
 
 ## Rules
 - RULE-1: Fetches weather data from OpenWeatherMap /weather endpoint

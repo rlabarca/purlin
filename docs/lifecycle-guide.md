@@ -61,9 +61,6 @@ That's it. No tracking system, no ledger, no state files. The filesystem is the 
 > Scope: src/auth/login.js, src/auth/session.js
 > Stack: node/express, bcrypt, jsonwebtoken
 
-## What it does
-User authentication with email and password.
-
 ## Rules
 - RULE-1: Passwords are hashed with bcrypt before storage
 - RULE-2: Failed logins are rate-limited to 5 per minute
@@ -209,7 +206,7 @@ RULE-3: Clicking valid link allows new password
 RULE-4: Expired link shows error message
 ```
 
-The PM sees `(assumed)` on RULE-2 and says "actually make it 1 hour, not 24." Claude updates and removes the tag. Rules without a tag are implicitly accepted; the PM can also change a tag to `(confirmed)` to signal explicit approval.
+The PM sees `(assumed)` on RULE-2 and says "actually make it 1 hour, not 24." Claude updates and removes the tag. Rules without a tag are already accepted, so accepting the value as written is the same edit: the tag goes.
 
 **From customer feedback:**
 ```

@@ -8,7 +8,7 @@ Purlin — Spec-Driven Development
 
   Authoring
   ──────
-  purlin:spec <name>            Scaffold or edit a feature spec (3-section format)
+  purlin:spec <name>            Scaffold or edit a feature spec (2-section format)
   purlin:spec-from-code [dir]   Reverse-engineer specs from existing code
   purlin:find [name]            Search specs by name, show coverage
 

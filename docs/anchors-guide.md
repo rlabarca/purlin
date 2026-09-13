@@ -41,9 +41,6 @@ Name anchors whatever makes sense for your team. The optional `> Type:` metadata
 > Scope: src/api/
 > Stack: node/express, REST/JSON
 
-## What it does
-REST API conventions for all endpoints.
-
 ## Rules
 - RULE-1: All endpoints return JSON with {data, error, meta} envelope
 - RULE-2: Error responses use standard HTTP status codes (400, 401, 403, 404, 500)
@@ -82,9 +79,6 @@ Some rules define what code must **never** do. These are ordinary rules with neg
 
 > Description: Input handling security standards. Prevents common injection attacks.
 > Scope: src/
-
-## What it does
-Input handling security standards. Prevents common injection attacks.
 
 ## Rules
 - RULE-1: No eval() in user-facing code
@@ -170,9 +164,6 @@ Add `> Global: true` to make an anchor's rules apply to **every** non-anchor fea
 > Type: security
 > Global: true
 
-## What it does
-Prohibits use of eval() and equivalent dynamic code execution across the entire codebase.
-
 ## Rules
 - RULE-1: No eval() calls in source code
 - RULE-2: No new Function() constructor with string arguments
@@ -212,7 +203,7 @@ An anchor can optionally reference an external source (git repo, Figma file, com
 
 ### Format
 
-Same 3-section format as regular anchors, plus source metadata:
+Same 2-section format as regular anchors, plus source metadata:
 
 ```markdown
 # Anchor: brand_colors
@@ -222,9 +213,6 @@ Same 3-section format as regular anchors, plus source metadata:
 > Source: git@github.com:acme/design-system.git
 > Path: tokens/colors.md
 > Pinned: a1b2c3d4
-
-## What it does
-Color tokens from the design system.
 
 ## Rules
 - RULE-1: Primary color is #1a73e8
@@ -317,9 +305,6 @@ Figma design anchors are thin: one rule per viewport, one screenshot comparison 
 > Visual-Reference: figma://ABC123/0-1
 > Pinned: 2026-04-03T00:00:00Z
 
-## What it does
-Visual design constraints for the feedback modal, sourced from Figma.
-
 ## Rules
 - RULE-1: Implementation must visually match the Figma design at the referenced node
 
@@ -329,4 +314,4 @@ Visual design constraints for the feedback modal, sourced from Figma.
 
 The anchor doesn't extract granular CSS values. During `purlin:build`, the agent reads Figma directly through MCP for full visual context: the visual reference is the spec. During `purlin:verify`, the system renders the component, captures a screenshot, and compares it against the Figma reference. Build time is creative; test time is mechanical.
 
-Behavioral annotations from the Figma design (interactions, validation, state changes) are documented in the anchor's "What it does" section but become rules in the feature spec that requires the anchor.
+Behavioral annotations from the Figma design (interactions, validation, state changes) are documented on the anchor's `> Description:` continuation lines but become rules in the feature spec that requires the anchor.

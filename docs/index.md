@@ -41,7 +41,7 @@
   report-data.js           # Project digest (committed, feeds the dashboard)
 specs/
   <category>/
-    <feature>.md           # Spec (3-section format)
+    <feature>.md           # Spec (2-section format)
     <feature>.proofs-*.json  # Proof files (emitted by test runners)
     <feature>.receipt.json   # Verification receipts
   _anchors/

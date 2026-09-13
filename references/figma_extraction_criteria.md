@@ -28,9 +28,6 @@ A Figma design anchor is thin — one rule per viewport, one screenshot comparis
 > Visual-Reference: figma://TEZI0T6lObCJrC9mkmZT8v/0-1
 > Pinned: 2026-04-03T00:00:00Z
 
-## What it does
-Visual design constraints for the feedback modal, sourced from Figma.
-
 ## Rules
 - RULE-1: Implementation must visually match the Figma design at the referenced node
 
@@ -42,19 +39,14 @@ One rule. One proof. The LLM reads Figma directly during build for full fidelity
 
 ## Behavioral Annotations
 
-When the Figma file contains annotations (spec frames, text nodes with behavioral descriptions, component descriptions, Figma comments), document them in the anchor's "What it does" section as context:
+When the Figma file contains annotations (spec frames, text nodes with behavioral descriptions, component descriptions, Figma comments), document them in the anchor's `> Description:` continuation lines as context:
 
 ```markdown
-## What it does
-Visual design constraints for the feedback modal, sourced from Figma.
-
-Behavioral annotations from design:
-- Clicking upload button triggers native file picker
-- Accepted file types: .jpg, .png, .pdf
-- Max file size: 5MB
-- After file selection, filename appears in attachment area
-
-These behavioral requirements should be added to feature specs that require this anchor.
+> Description: Visual design constraints for the feedback modal, sourced from Figma.
+>   Behavioral annotations from the design, to be added as rules to the feature specs
+>   that require this anchor: clicking the upload button triggers the native file
+>   picker; accepted file types are .jpg, .png and .pdf; max file size is 5MB; after
+>   file selection the filename appears in the attachment area.
 ```
 
 The annotations are listed for reference but do NOT become rules in the anchor. They become rules in the feature spec:

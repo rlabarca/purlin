@@ -204,7 +204,7 @@ prerequisites".
   plugins/                # Proof plugin (scaffolded by init)
 specs/
   <category>/
-    <feature>.md          # Feature specs (3-section format)
+    <feature>.md          # Feature specs (2-section format)
     <feature>.proofs-*.json  # Proof files (emitted by test runners)
     <feature>.receipt.json   # Verification receipts
   _anchors/

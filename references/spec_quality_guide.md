@@ -107,11 +107,7 @@ The AI picked 500ms. The user said "fast." The PM decides whether 500ms is right
 
 **When to add:** only when `purlin:spec` invents a specific number, threshold, algorithm, or constraint that the user didn't explicitly state. NOT when the user was explicit ("must return in under 200ms" → no tag needed).
 
-**When to remove:** PM either confirms the value (change to `(confirmed)`) or edits the value to what they actually want (and removes the tag).
-
-### (confirmed)
-
-Added by the PM to explicitly mark that this exact constraint was reviewed and approved. Optional: rules without any tag are implicitly accepted. Use `(confirmed)` when you want to signal "I specifically chose this value, don't second-guess it."
+**When to remove:** PM either accepts the value as written and deletes the tag, or edits the value to what they actually want and deletes the tag. A rule with no tag is already accepted, so there is no second tag to add.
 
 ### (deferred)
 
