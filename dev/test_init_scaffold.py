@@ -107,10 +107,10 @@ def _run(root, *args):
 def _run_without_symlink(root, *args):
     """Run the real scaffolder in an interpreter where `os.symlink` raises.
 
-    The copy fallback in `_link_or_copy` is reached only when `os.symlink`
-    fails, which it never does on a developer machine. A `sitecustomize.py`
-    on PYTHONPATH replaces `os.symlink` with one that raises OSError before
-    the script is imported, which is the non-symlink host the rule names.
+    Nothing the scaffolder writes is a symlink, and this is how that is
+    proved rather than asserted: a `sitecustomize.py` on PYTHONPATH replaces
+    `os.symlink` with one that raises OSError before the script is imported,
+    so a run that still tried to link would fail here.
     """
     shim = tempfile.mkdtemp()
     try:
@@ -499,16 +499,23 @@ class TestGitArtifacts:
             shutil.rmtree(other, ignore_errors=True)
 
     @pytest.mark.proof("skill_init", "PROOF-69", "RULE-66", tier="integration")
-    def test_dashboard_is_a_symlink_and_report_off_deletes_nothing(self, repo):
-        """RULE-66: a copy goes stale on the next plugin update; a link does not."""
+    def test_the_dashboard_is_a_copy_and_report_off_deletes_nothing(self, repo):
+        """RULE-66: a link's only possible target is version-pinned, so it
+        dangles on the next plugin update and the dashboard stops opening at
+        all. The copy is one release behind at worst."""
+        source = os.path.join(ROOT, 'scripts', 'report', 'purlin-report.html')
         code, out, err = _run(repo, '--test-framework', 'shell', '--report', 'on')
         assert code == 0, (code, err)
-        link = os.path.join(repo, 'purlin-report.html')
-        assert os.path.islink(link), "the dashboard is not a symlink"
-        assert os.path.realpath(link) == os.path.realpath(
-            os.path.join(ROOT, 'scripts', 'report', 'purlin-report.html'))
-        assert any(l.startswith('linked purlin-report.html') for l in
-                   out.splitlines()), out
+        dashboard = os.path.join(repo, 'purlin-report.html')
+        assert os.path.isfile(dashboard), "no dashboard at the project root"
+        assert not os.path.islink(dashboard), "the dashboard is a symlink"
+        with open(dashboard, 'rb') as f:
+            copied = f.read()
+        with open(source, 'rb') as f:
+            assert copied == f.read(), \
+                "the dashboard is not byte-identical to the plugin's"
+        assert ('copied scripts/report/purlin-report.html -> '
+                'purlin-report.html') in out, out
 
         off = _tmp_repo()
         try:
@@ -523,7 +530,8 @@ class TestGitArtifacts:
         finally:
             shutil.rmtree(off, ignore_errors=True)
 
-        # RULE-66's fallback: a host where os.symlink raises copies instead.
+        # No symlink is attempted, so a host where os.symlink raises gets the
+        # same regular file as every other host, and the same plan line.
         nolink = _tmp_repo()
         try:
             code, out, err = _run_without_symlink(
@@ -531,18 +539,14 @@ class TestGitArtifacts:
             assert code == 0, (code, out, err)
             copy = os.path.join(nolink, 'purlin-report.html')
             assert os.path.isfile(copy) and not os.path.islink(copy), \
-                "the fallback did not leave a real file"
-            source = os.path.join(ROOT, 'scripts', 'report',
-                                  'purlin-report.html')
+                "the dashboard is not a regular file on a host with no symlinks"
             with open(copy, 'rb') as f:
-                copied_bytes = f.read()
-            with open(source, 'rb') as f:
-                assert copied_bytes == f.read(), \
+                assert f.read() == copied, \
                     "the copied dashboard is not byte-identical to the plugin's"
-            assert any(l.startswith('copied ') and
-                       l.endswith('-> purlin-report.html')
-                       for l in out.splitlines()), \
-                f"the plan never said `copied` for the dashboard: {out!r}"
+            assert ('copied scripts/report/purlin-report.html -> '
+                    'purlin-report.html') in out, out
+            assert 'linked ' not in out, \
+                f"something still tries to link: {out!r}"
         finally:
             shutil.rmtree(nolink, ignore_errors=True)
 
@@ -874,7 +878,7 @@ class TestPlanAndAnswers:
         code, out, err = _run(repo, *args)
         assert code == 0, (code, err)
 
-        verbs = ('wrote ', 'kept ', 'copied ', 'linked ', 'skipped ')
+        verbs = ('wrote ', 'kept ', 'copied ', 'skipped ')
         for line in out.splitlines():
             assert line.startswith(verbs), f"plan line has no verb: {line!r}"
         for path in ('.purlin/config.json', '.gitignore', 'purlin-report.html',

@@ -28,7 +28,7 @@ WHAT IT WRITES
     vitest.config.ts        written only when the project has no such file
     .gitignore              templates/gitignore.purlin, entry by entry, with
                             entries the file already carries left alone
-    purlin-report.html      a symlink to the plugin's dashboard (report on)
+    purlin-report.html      a copy of the plugin's dashboard (report on)
     .purlin/hooks/pre-push  the generated shims, tracked, which find the
     .purlin/hooks/pre-commit  installed plugin and run its hook script
     .purlin/plugin-root     where this machine keeps the plugin (gitignored)
@@ -42,7 +42,7 @@ WHAT IT WRITES
 
 THE PLAN
     One line per path, on stdout, in a fixed order:
-    `wrote`, `kept`, `linked`, `copied`, `skipped`. `--dry-run` prints exactly
+    `wrote`, `kept`, `copied`, `skipped`. `--dry-run` prints exactly
     the same plan and touches nothing, so what a run would do can be read
     before it does it.
 
@@ -596,25 +596,16 @@ def _gitignore(plan, root, plugin_root, dry_run):
     plan.append('wrote .gitignore')
 
 
-def _link_or_copy(plan, source, dest, rel, dry_run):
-    """Symlink first, copy when the target does not resolve (Step 7)."""
-    if not os.path.exists(source):
-        plan.append(f'skipped {rel} (no {os.path.basename(source)} in the '
-                    f'plugin root)')
-        return
-    if not dry_run:
-        try:
-            os.symlink(source, dest)
-        except OSError:
-            shutil.copyfile(source, dest)
-            os.chmod(dest, 0o755)
-            plan.append(f'copied {source} -> {rel}')
-            return
-    plan.append(f'linked {rel} -> {source}')
-
-
 def _report(plan, root, plugin_root, report, dry_run):
-    """Step 5b: the dashboard, symlinked so it tracks plugin updates."""
+    """Step 5b: the dashboard, copied.
+
+    A copy on every host, not a symlink on the ones that have them. The only
+    target a plugin install can offer is version-pinned
+    (`~/.claude/plugins/cache/purlin/purlin/<version>/`), so the link dangles
+    on the next update and the dashboard stops opening at all, which is worse
+    than a copy that is one release behind. `purlin:init --update` refreshes
+    the copy.
+    """
     rel = 'purlin-report.html'
     dest = os.path.join(root, rel)
     if not report:
@@ -627,8 +618,14 @@ def _report(plan, root, plugin_root, report, dry_run):
     if os.path.lexists(dest):
         plan.append(f'kept {rel}')
         return
-    source = os.path.join(plugin_root, 'scripts', 'report', 'purlin-report.html')
-    _link_or_copy(plan, source, dest, rel, dry_run)
+    source_rel = os.path.join('scripts', 'report', 'purlin-report.html')
+    source = os.path.join(plugin_root, source_rel)
+    if not os.path.exists(source):
+        plan.append(f'skipped {rel} (no purlin-report.html in the plugin root)')
+        return
+    if not dry_run:
+        shutil.copyfile(source, dest)
+    plan.append(f'copied {source_rel} -> {rel}')
 
 
 def _generated(plan, path, rel, body, dry_run, mode=None):

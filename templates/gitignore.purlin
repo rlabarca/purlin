@@ -10,7 +10,7 @@
 # Per-user config overlay (machine-local overrides, never shared)
 .purlin/config.local.json
 
-# Dashboard HTML (symlinked from the installed plugin)
+# Dashboard HTML (copied by purlin:init and refreshed by purlin:init --update)
 /purlin-report.html
 
 # Dashboard focus stamp (regenerated beside the digest, never committed)
