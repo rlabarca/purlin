@@ -2818,3 +2818,66 @@ class TestInheritedProofsInThePayload:
         feature = self._feature()
         assert feature['inherited_count'] == 0, feature
         assert not any('inherited' in p for p in self._proofs_by_id(feature).values())
+
+
+# ---------------------------------------------------------------------------
+# RULE-47: a build with no drift of its own keeps the block on disk
+# ---------------------------------------------------------------------------
+
+class TestDriftCarriedForward:
+    """report_data RULE-47.
+
+    `generate_digest` is the only path that computes drift. `sync_status`
+    writes the digest with no drift data, so before this rule every status
+    call replaced the hooks' block with null and the next hook run wrote it
+    back, which is why the tracked digest was never clean.
+    """
+
+    def setup_method(self):
+        self.tmp = tempfile.mkdtemp()
+        _make_project(self.tmp, report_enabled=True)
+        _write_spec(self.tmp, 'feature', _minimal_spec_content())
+        _write_proofs(self.tmp, 'feature', _minimal_proofs())
+        _git_init(self.tmp)
+
+    def teardown_method(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _git(self, *args):
+        r = subprocess.run(['git'] + list(args), cwd=self.tmp,
+                           capture_output=True, text=True)
+        assert r.returncode == 0, f"git {' '.join(args)}: {r.stderr}"
+        return r.stdout.strip()
+
+    @pytest.mark.proof("report_data", "PROOF-48", "RULE-47", tier="integration")
+    def test_a_status_call_carries_the_previous_drift_block_forward(self):
+        assert purlin_server.generate_digest(self.tmp) is not None
+        written = _read_report(self.tmp)
+        block = written['drift']
+        assert isinstance(block, dict), (
+            f"the fixture must produce a real drift block, got {block!r}")
+        since = block.get('since')
+        assert isinstance(since, str) and since, (
+            f"the fixture's drift block must name a since anchor: {block!r}")
+
+        # The status call computes no drift at all. Before RULE-47 this wrote
+        # `drift: null` over the block above.
+        purlin_server.sync_status(self.tmp)
+        after = _read_report(self.tmp)
+        assert after['drift'] is not None, (
+            "a status call must not blank the drift block the hooks wrote")
+        assert after['drift'] == block, (
+            "the carried-forward block must equal the one on disk, not a "
+            f"rebuilt approximation of it: {after['drift']!r}")
+        assert after['drift']['since'] == since
+
+        # A build that computes its own drift still wins: the carry-forward
+        # must not freeze a block a real drift build would refresh.
+        with open(os.path.join(self.tmp, 'notes.md'), 'w') as f:
+            f.write('v2\n')
+        self._git('add', '-A')
+        self._git('commit', '-m', 'change something')
+        assert purlin_server.generate_digest(self.tmp) is not None
+        fresh = _read_report(self.tmp)['drift']
+        assert fresh['since'] != since, (
+            f"a fresh drift build must replace the carried block, got {fresh['since']!r}")

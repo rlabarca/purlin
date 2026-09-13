@@ -5064,6 +5064,10 @@ def _write_report_data(project_root, features, all_proofs, config, global_anchor
     keyed on it knows the inputs were looked at, and the working tree stays
     as it was. The refresh hook passes it, because a hook that rewrote a
     tracked file after every tool call would dirty every commit.
+
+    A build with no `drift_data` of its own keeps the block the digest on disk
+    already carries (report_data RULE-47), the way an offline build keeps the
+    `ext_status` it recorded.
     """
     purlin_dir = os.path.join(project_root, '.purlin')
     if not os.path.isdir(purlin_dir):
@@ -5073,14 +5077,25 @@ def _write_report_data(project_root, features, all_proofs, config, global_anchor
         project_root, features, all_proofs, config, global_anchors, audit_summary,
         design_summary=design_summary, generated_by=generated_by, network=network,
     )
+    data_path = os.path.join(purlin_dir, 'report-data.js')
+    # Read once and use for both questions below: the digest is a large file,
+    # and parsing it twice per write would cost more than either answer.
+    previous = None
+    if drift_data is None or only_if_changed:
+        previous = _read_report_data_file(data_path)
+
     if drift_data is not None:
         data['drift'] = drift_data
+    elif previous is not None and previous.get('drift') is not None:
+        # Only `generate_digest` computes drift. Without this, every status
+        # call blanked the block the hooks had written and the next hook run
+        # wrote it back, which is what kept the tracked digest permanently
+        # modified in `git status` (report_data RULE-47).
+        data['drift'] = previous['drift']
     if git_sha:
         data['git_sha'] = git_sha
-    data_path = os.path.join(purlin_dir, 'report-data.js')
 
     if only_if_changed and os.path.isfile(data_path):
-        previous = _read_report_data_file(data_path)
         if previous is not None and (_payload_without_stamp(previous)
                                      == _payload_without_stamp(data)):
             try:

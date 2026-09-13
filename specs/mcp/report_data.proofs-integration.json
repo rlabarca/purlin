@@ -198,6 +198,15 @@
       "test_name": "test_an_inherited_entry_is_marked_and_counted",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "report_data",
+      "id": "PROOF-48",
+      "rule": "RULE-47",
+      "test_file": "dev/test_report_data.py",
+      "test_name": "test_a_status_call_carries_the_previous_drift_block_forward",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }
