@@ -7,11 +7,11 @@
 
 ## Rules
 
-- RULE-1: Each skill file has YAML frontmatter with `name` and `description` fields
+- RULE-1: Every `skills/*/SKILL.md` carries a YAML frontmatter block with a `name` and a `description`. The `structure` lint in `dev/prose_lint.py` is the mechanism: it walks the whole glob in one pass, so this spec is the single home for the claim and the twelve per skill specs do not restate it
 - RULE-2: Exactly 12 skill files exist, one per directory under `skills/`
-- RULE-3: Each skill file contains a `## Usage` section documenting the command syntax
-- RULE-4: Skill names in frontmatter match their directory names (e.g., `skills/build/SKILL.md` has `name: build`)
-- RULE-5: Skills that modify files (build, spec, test, verify, init, anchor) include commit instructions or git operations
+- RULE-3: Every `skills/*/SKILL.md` carries a `## Usage` section documenting the command syntax, enforced by the same `structure` lint in `dev/prose_lint.py`. That section is where a skill declares the flags `references/purlin_commands.md` and the guides read back, so a skill without one documents nothing
+- RULE-4: The frontmatter `name` of every `skills/*/SKILL.md` equals its own directory (`skills/build/SKILL.md` carries `name: build`), enforced by the same `structure` lint in `dev/prose_lint.py`. The loader resolves a skill by its directory, so a `name` that disagrees is a skill that cannot be invoked by the name it prints
+- RULE-5: The six skills that write files (build, spec, test, verify, init, anchor) each carry a positive commit instruction. This spec is the single home for that claim over the named six, proved once here rather than restated once per skill spec
 - RULE-6: Skills that call MCP tools (status, drift, find) reference the tool by name (`sync_status`, `drift`)
 - RULE-7: Build and test skills require calling `sync_status` after tests and state it is not optional
 - RULE-8: Verify skill prohibits modifying code or test files during verification
@@ -26,11 +26,11 @@
 
 ## Proof
 
-- PROOF-1 (RULE-1): For each `skills/*/SKILL.md`, grep for YAML frontmatter delimiters (`---`); verify `name:` and `description:` fields exist
+- PROOF-1 (RULE-1): Glob `skills/*/SKILL.md` and verify exactly 12 files are scanned, so the proof cannot pass by reading nothing; for each, verify a frontmatter block delimited by `---` carrying both `name:` and `description:`. Then run `structure` from `dev/prose_lint.py` over the committed tree and verify it reports no offender, so the rule and the lint named as its mechanism agree. Deleting `description:` from any one skill fails the scan naming that file @unit
 - PROOF-2 (RULE-2): Glob `skills/*/SKILL.md`; verify exactly 12 files are returned
-- PROOF-3 (RULE-3): For each `skills/*/SKILL.md`, grep for `## Usage`; verify the section exists
-- PROOF-4 (RULE-4): For each `skills/*/SKILL.md`, extract the `name:` from frontmatter and the directory name; verify they match
-- PROOF-5 (RULE-5): Grep `skills/build/SKILL.md`, `skills/spec/SKILL.md`, `skills/test/SKILL.md`, `skills/verify/SKILL.md`, `skills/init/SKILL.md`, `skills/anchor/SKILL.md` for `git commit` or `commit the` or `create.*commit`; verify each contains positive commit instructions
+- PROOF-3 (RULE-3): Glob `skills/*/SKILL.md` and verify exactly 12 files are scanned, so the proof cannot pass by reading nothing; verify each carries a `## Usage` heading. Then run `structure` from `dev/prose_lint.py` over the committed tree and verify it reports no offender. Deleting `## Usage` from any one skill fails the proof naming that file @unit
+- PROOF-4 (RULE-4): Glob `skills/*/SKILL.md` and verify exactly 12 files are scanned, so the proof cannot pass by reading nothing; for each, extract the frontmatter `name:` and the directory name and verify they are equal. Then run `structure` from `dev/prose_lint.py` over the committed tree and verify it reports no offender. Changing the `name:` of any one skill fails the proof naming that file @unit
+- PROOF-5 (RULE-5): Read `skills/<name>/SKILL.md` for each of build, spec, test, verify, init and anchor, and verify each matches a positive commit instruction (`git commit`, `commit the`, `create.*commit` or `commit.*change`); verify exactly six files were read, so the proof cannot pass by scanning nothing. Deleting the commit step from any one of the six fails the proof naming that skill @unit
 - PROOF-6 (RULE-6): Grep `skills/status/SKILL.md` for `sync_status`; grep `skills/drift/SKILL.md` for `drift`; grep `skills/find/SKILL.md` for `sync_status`; verify each references its MCP tool
 - PROOF-7 (RULE-7): Grep `skills/build/SKILL.md` and `skills/test/SKILL.md` for `sync_status`; verify both contain the reference. Grep build for "not optional"; verify present.
 - PROOF-8 (RULE-8): Grep `skills/verify/SKILL.md` for `NEVER modify`; verify the read-only constraint is present

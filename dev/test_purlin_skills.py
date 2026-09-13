@@ -1,16 +1,25 @@
-"""Tests for purlin_skills — 15 rules.
+"""Tests for purlin_skills.
 
 Structural verification of the 12 skill definition files under skills/.
+RULE-1, RULE-3 and RULE-4 name the `structure` lint of `dev/prose_lint.py` as
+their mechanism, so each of their proofs runs that lint beside its own scan and
+requires the two to agree on the committed tree.
 """
 
 import glob
 import os
 import re
+import sys
 
 import pytest
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from prose_lint import structure  # noqa: E402
+
 PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
 SKILLS_DIR = os.path.join(PROJECT_ROOT, 'skills')
+WRITING_SKILLS = ('build', 'spec', 'test', 'verify', 'init', 'anchor')
 
 
 def _skill_files():
@@ -26,13 +35,18 @@ class TestPurlinSkills:
 
     @pytest.mark.proof("purlin_skills", "PROOF-1", "RULE-1")
     def test_each_skill_has_frontmatter(self):
-        for path in _skill_files():
+        files = _skill_files()
+        assert len(files) == 12, \
+            f"Expected 12 skills, scanned {len(files)}: {files}"
+        for path in files:
             content = _read(path)
             m = re.search(r'^---\n(.*?)\n---', content, re.DOTALL)
             assert m, f"No frontmatter in {path}"
             fm = m.group(1)
             assert 'name:' in fm, f"Missing name: in {path}"
             assert 'description:' in fm, f"Missing description: in {path}"
+        assert structure(strict=True) == [], \
+            "the structure lint RULE-1 names as its mechanism disagrees"
 
     @pytest.mark.proof("purlin_skills", "PROOF-2", "RULE-2")
     def test_exactly_twelve_skill_files(self):
@@ -41,30 +55,45 @@ class TestPurlinSkills:
 
     @pytest.mark.proof("purlin_skills", "PROOF-3", "RULE-3")
     def test_each_skill_has_usage_section(self):
-        for path in _skill_files():
+        files = _skill_files()
+        assert len(files) == 12, \
+            f"Expected 12 skills, scanned {len(files)}: {files}"
+        for path in files:
             content = _read(path)
             assert '## Usage' in content, \
                 f"No ## Usage section in {path}"
+        assert structure(strict=True) == [], \
+            "the structure lint RULE-3 names as its mechanism disagrees"
 
     @pytest.mark.proof("purlin_skills", "PROOF-4", "RULE-4")
     def test_skill_name_matches_directory(self):
-        for path in _skill_files():
+        files = _skill_files()
+        assert len(files) == 12, \
+            f"Expected 12 skills, scanned {len(files)}: {files}"
+        for path in files:
             content = _read(path)
             m = re.search(r'^name:\s*(.+)', content, re.MULTILINE)
             assert m, f"No name: field in {path}"
             name = m.group(1).strip()
             dirname = os.path.basename(os.path.dirname(path))
             assert name == dirname, f"name '{name}' != dir '{dirname}' in {path}"
+        assert structure(strict=True) == [], \
+            "the structure lint RULE-4 names as its mechanism disagrees"
 
     @pytest.mark.proof("purlin_skills", "PROOF-5", "RULE-5")
     def test_modify_skills_have_commit_instructions(self):
-        # Skills listed in PROOF-5 description (config excluded — modifies local-only file)
-        for skill in ('build', 'spec', 'test', 'verify', 'init', 'anchor'):
+        # The six skills RULE-5 names. This is the one home for the claim: no
+        # per skill spec restates it, so the count below is what keeps the
+        # proof from passing over an empty list.
+        read = 0
+        for skill in WRITING_SKILLS:
             path = os.path.join(SKILLS_DIR, skill, 'SKILL.md')
             content = _read(path)
+            read += 1
             # Assert a positive commit instruction, not just the word "commit"
             assert re.search(r'(?i)(git commit|commit the|create.*commit|commit.*change)', content), \
                 f"{skill} skill missing positive commit instruction"
+        assert read == 6, f"scanned {read} skills, expected 6"
 
     @pytest.mark.proof("purlin_skills", "PROOF-6", "RULE-6")
     def test_mcp_skills_reference_tools(self):
