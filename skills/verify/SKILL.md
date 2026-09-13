@@ -17,13 +17,13 @@ purlin:verify --recheck                   Clean-room re-execution, compare vhash
 purlin:verify --manual <feature> <PROOF-N>  Stamp a manual proof in the spec
 ```
 
-## Default Mode — Full Verification
+## Default Mode: Full Verification
 
 ### Pre-check: uncommitted changes
 
 Before running verification, call sync_status. If it reports uncommitted spec/proof changes, warn the user:
 
-"There are uncommitted spec/proof changes. Verification receipts reference committed state — uncommitted changes won't be included in the vhash. Commit first?"
+"There are uncommitted spec/proof changes. Verification receipts reference committed state: uncommitted changes won't be included in the vhash. Commit first?"
 
 If the user says yes, commit the changes. If no, proceed but note the receipts may not reflect current state.
 
@@ -37,21 +37,21 @@ nothing is blocked, and it is recorded in `references/hard_gates.md`'s What Is N
 is reported and does not stop verification, and `receipt-v1` is the one a run of this skill
 clears.
 
-### Step 1 — Run All Tests
+### Step 1: Run All Tests
 
 Run the full test suite across all tiers by calling `purlin:test --all`. This handles framework detection, test execution, proof file emission, and the post-test sync_status call.
 
-### Step 2 — Collect Results
+### Step 2: Collect Results
 
 Read the coverage output from `purlin:test --all` (which includes sync_status results). For each feature:
 
 - **PASSING** (ALL rules have passing proofs, no receipt yet): eligible for receipt.
-- **PARTIAL** (some rules proved, none failing): report which rules lack proofs. No receipt — all rules must be proved to reach PASSING.
+- **PARTIAL** (some rules proved, none failing): report which rules lack proofs. No receipt: all rules must be proved to reach PASSING.
 - **FAILING** (any proof has status FAIL): report failures. No receipt.
 - **UNTESTED** (no proof has executed for the feature at all): no receipt, and this is not a
   failure. Distinguish the two reasons, because the next step differs: when the files named in
-  the spec's `> Scope:` do not exist, nothing has been built yet — report
-  `→ Run: purlin:build <feature>`. When they do exist, the gap is tests —
+  the spec's `> Scope:` do not exist, nothing has been built yet, so report
+  `→ Run: purlin:build <feature>`. When they do exist, the gap is tests, so
   report `→ Run: purlin:test <feature>`. A project working spec-first will have every
   feature UNTESTED by design; say so plainly rather than reporting it as a shortfall, and
   point at `purlin:audit --design` for the gauge that is measurable in that state.
@@ -61,13 +61,13 @@ Read the coverage output from `purlin:test --all` (which includes sync_status re
 Before issuing receipts, check if any required anchor has `> Source:` with a stale or missing `> Pinned:`. If so, warn:
 
 ```
-⚠ Anchor <name> may be stale — external reference has not been synced recently.
+⚠ Anchor <name> may be stale: external reference has not been synced recently.
   Verification proceeds, but consider running: purlin:anchor sync <name>
 ```
 
-This is informational — it does not block receipt issuance.
+This is informational: it does not block receipt issuance.
 
-### Step 3 — Issue Receipts
+### Step 3: Issue Receipts
 
 For each feature with PASSING status:
 
@@ -132,7 +132,7 @@ so it never claims more than was verified. The key is omitted when nothing is aw
 A receipt carrying it is a verified-here claim, not a verified-everywhere one, and
 re-running verify after CI commits the results clears the list.
 
-### Step 4 — Report
+### Step 4: Report
 
 ```
 Verification complete: N/T features verified.
@@ -148,7 +148,7 @@ No receipt (M features):
 
 Where `N` is the number of features that received receipts and `T` is the total number of features (receipted + partial + failing). This fraction makes it obvious when the job is not complete.
 
-### Step 4b — Directive Block for Remaining Work
+### Step 4b: Directive Block for Remaining Work
 
 If ANY features are partial or failing (i.e., `N < T`), print a directive block **after** the receipts table:
 
@@ -171,11 +171,11 @@ This block MUST:
 2. Include a `→ Run:` directive for each one telling the agent which feature to test
 3. End with `Work through these, then run purlin:verify again.`
 
-The directive block ensures the agent does not stop after the first batch of receipts — it reads the remaining work and continues.
+The directive block ensures the agent does not stop after the first batch of receipts: it reads the remaining work and continues.
 
-### Step 4c — Handling Failing Proofs
+### Step 4c: Handling Failing Proofs
 
-**NEVER modify code or test files during `purlin:verify`.** Verify is a read-only gate. If you find yourself about to edit a file during verify, STOP — you are in the wrong skill. Exit verify and switch to `purlin:build`.
+**NEVER modify code or test files during `purlin:verify`.** Verify is a read-only gate. If you find yourself about to edit a file during verify, STOP: you are in the wrong skill. Exit verify and switch to `purlin:build`.
 
 When tests fail during verify:
 
@@ -190,7 +190,7 @@ When tests fail during verify:
 
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   ⚠ VERIFICATION INCOMPLETE — N proofs failing across M features.
+   ⚠ VERIFICATION INCOMPLETE: N proofs failing across M features.
 
    Fix these in the build loop, then run purlin:verify again:
      → Run: test <feature_1>
@@ -198,22 +198,22 @@ When tests fail during verify:
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
 
-### Step 4e — Independent Audit (automatic)
+### Step 4e: Independent Audit (automatic)
 
 After issuing receipts, ALWAYS spawn an independent audit. The auditor runs in a separate
 context for unbiased evaluation. No exceptions, regardless of the number of proofs.
 
 **This is the authoritative, project-wide audit.** `purlin:build` also runs one, but that is
-feature-scoped and advisory — fast feedback on the feature just built. This one measures the
+feature-scoped and advisory: fast feedback on the feature just built. This one measures the
 whole project and is the number to report.
 
 Spawn a `purlin:purlin-auditor` with prompt:
   "Audit all features that just received receipts: <feature list>.
    Load criteria via: python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --load-criteria --project-root <project_root>
-   Audit cache is at .purlin/cache/audit_cache.json — use cached results where proof hashes match.
+   Audit cache is at .purlin/cache/audit_cache.json: use cached results where proof hashes match.
    For each proof, read the spec description and the test code.
    Assess as STRONG/WEAK/HOLLOW.
-   Report any HOLLOW or WEAK findings — remediation happens via purlin:build, not by
+   Report any HOLLOW or WEAK findings: remediation happens via purlin:build, not by
    spawning a fixer agent. Loop until no HOLLOW proofs remain or 3 rounds per proof.
    Report the final integrity score."
 
@@ -223,8 +223,8 @@ If HOLLOW or WEAK proofs are found:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⚠ AUDIT FOUND QUALITY ISSUES
 
-  PROOF-3 (login): HOLLOW ✗ — mocks bcrypt, proves nothing
-  PROOF-2 (checkout): WEAK ~ — missing body assertion
+  PROOF-3 (login): HOLLOW ✗: mocks bcrypt, proves nothing
+  PROOF-2 (checkout): WEAK ~: missing body assertion
 
 Fix in the build loop, then re-verify:
   → Run: test login (fix PROOF-3: use real bcrypt)
@@ -235,7 +235,7 @@ Fix in the build loop, then re-verify:
 
 The loop: verify → audit → if issues → build fixes → verify again. Verify does NOT fix tests. Build fixes. Audit judges.
 
-### Step 5 — Commit
+### Step 5: Commit
 
 Commit per `references/commit_conventions.md` using the `verify:` prefix: `verify: [Complete:all] features=N/T anchors=A/B vhash=<combined-hash>`. `N/T` is the verified/total count of features and `A/B` the verified/total count of anchors; the two are counted separately and never summed, because a run that receipted every anchor and half the features is not the same result as the reverse. Take both counts from the issuer's summary line rather than recounting them. The combined hash covers all individual vhashes: `sha256(sorted vhashes joined by comma)[:8]`.
 

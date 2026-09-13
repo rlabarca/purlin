@@ -2,7 +2,7 @@
 
 > Scope: skills/spec/SKILL.md
 > Stack: markdown (skill definition)
-> Description: The `purlin:spec` skill scaffolds or edits feature specs in 3-section format. It accepts any input — plain English, PRDs, customer feedback, code files, images — and extracts structured rules.
+> Description: The `purlin:spec` skill scaffolds or edits feature specs in 2-section format. It accepts any input — plain English, PRDs, customer feedback, code files, images — and extracts structured rules.
 
 ## Rules
 

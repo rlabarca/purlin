@@ -87,7 +87,7 @@ it landed.
 | 15 | `specs/instructions/purlin_references.md` | RULE-3 pins the marker sections `proofs_format.md` documents; RULE-23 pins the non-empty **Runner setup** cell for every listed framework. |
 | 16 | `specs/skills/skill_init.md` | RULE-48 pins the dynamically built selection list, RULE-50 the marker rewrite covering every shipped syntax, RULE-64 the runner wiring init writes, RULE-71 the `auto` expansion. |
 | 17 | `specs/hooks/pre_push_hook.md` | RULE-5 pins how `test_framework` is read and how `auto` expands, in the reference's detection order. |
-| 18 | `specs/instructions/purlin_agent.md` | RULE-4 pins the marker syntax the agent definition documents. |
+| 18 | `specs/instructions/purlin_agent.md` | RULE-4 pins that the agent definition names no framework and links `references/formats/proofs_format.md` instead, so a new plugin needs no edit there. |
 | 19 | `specs/instructions/purlin_skills.md` | RULE-13 pins that `purlin:init --add-plugin` reads its per-extension patterns from section C of this file rather than a copy of its own. |
 
 Steps 15 to 19 are the spec pins. They are the reason a wiring step cannot be skipped quietly:

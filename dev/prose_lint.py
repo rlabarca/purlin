@@ -209,9 +209,9 @@ class Offender:
 # ---------------------------------------------------------------------------
 
 #: The dash-free set as `purlin_docs` RULE-11 enforced it, plus the two plugin
-#: manifests whose `description` values carried U+2014 as a JSON escape. Widening this
-#: to skills/, agents/, references/ and specs/ is an edit to these two scope
-#: tuples. `RELEASE_NOTES.md` and `dev/` (including `dev/plans/`) are exempt by
+#: manifests whose `description` values carried U+2014 as a JSON escape, plus
+#: every skill and agent definition. Widening this to the rest of
+#: `references/` and to `specs/` is an edit to this tuple. `RELEASE_NOTES.md` and `dev/` (including `dev/plans/`) are exempt by
 #: name: the notes are a historical record of what was once true, and this
 #: module and its proofs carry the banned literals themselves.
 DASH_SCOPE = ('docs/**.md', 'README.md',
@@ -220,7 +220,8 @@ DASH_SCOPE = ('docs/**.md', 'README.md',
               'references/hard_gates.md',
               'references/audit_criteria.md',
               '.claude-plugin/plugin.json',
-              '.claude-plugin/marketplace.json')
+              '.claude-plugin/marketplace.json',
+              'skills/**.md', 'agents/**.md')
 
 #: `purlin_docs` RULE-1's closed list: the only (file, section) pairs where the
 #: bare `@windows` token may appear. A section is the nearest preceding
@@ -233,18 +234,23 @@ WINDOWS_TOKEN_SECTIONS = (
     ('references/formats/spec_format.md', 'Platform tags'),
     ('references/spec_quality_guide.md', 'Tier Assignment'),
     ('skills/init/SKILL.md', 'Usage'),
-    ('skills/init/SKILL.md', 'Step 5d - Update'),
+    ('skills/init/SKILL.md', 'Step 5d: Update'),
     ('skills/verify/SKILL.md', 'Pre-check: pending migrations'),
 )
+
+#: The two trees the `em-dash`, `retired-format` and `anchor-home` rows
+#: reached in the commit that removed their 391 dashes and their last
+#: `3-section` and `## What it does` mentions.
+SKILL_AND_AGENT = ('skills/**.md', 'agents/**.md')
 
 PROSE_SCOPE = ('docs/**', 'references/**', 'skills/**', 'tools/**',
                'agents/**', 'README.md')
 
-#: The `anchor-home` row's file set. `skills/` is named here even though the
-#: older rows stop short of it: the two skills that route a new spec to a
-#: category are where a wrong anchor home is written into a project, so the
-#: row would prove nothing without them.
-ANCHOR_HOME_SCOPE = ('docs/**', 'references/**', 'skills/**')
+#: The `anchor-home` row's file set. `skills/` and `agents/` are named here
+#: because the two skills that route a new spec to a category are where a wrong
+#: anchor home is written into a project, and the agent definition is what
+#: routes a request to those skills.
+ANCHOR_HOME_SCOPE = ('docs/**', 'references/**', 'skills/**', 'agents/**')
 
 #: `specs/schema/` in any form, and the bare category token the routing lists
 #: used. `sync_status` reads anchors from `specs/_anchors/` only.
@@ -282,11 +288,11 @@ LAST_GATE_RE = re.compile(r'last gate|final gate|the last check')
 
 REGULATED = 'docs/regulated-environments.md'
 
-#: The `retired-format` row's file set. Narrower than `PROSE_SCOPE` on purpose:
-#: `skills/`, `agents/` and `tools/` still teach the retired section and are a
-#: separate lane's work, so widening this tuple to `PROSE_SCOPE` is the edit
-#: that finishes the retirement.
-RETIRED_FORMAT_SCOPE = ('docs/**', 'references/**', 'README.md')
+#: The `retired-format` row's file set. `tools/` is still outside it: the
+#: stakeholder templates are a separate lane's work, so widening this tuple to
+#: `PROSE_SCOPE` is the edit that finishes the retirement.
+RETIRED_FORMAT_SCOPE = ('docs/**', 'references/**', 'README.md',
+                        'skills/**', 'agents/**')
 
 #: The retired phrases, as one alternation. The heading arm is anchored at both
 #: ends so `#### What it does not bind`, a real heading of
@@ -299,8 +305,18 @@ RETIRED_FORMAT_RE = re.compile(
 #: the scope must resolve to, so a row cannot pass by scanning nothing. Each
 #: `(path, section)` in `allowlist` exempts a hit there AND must still be hit,
 #: so an exemption that outlives the text it covers is reported as stale.
+#: The one section that may still carry an em dash: the `(assumed - <context>)`
+#: rule tag is a literal `scripts/mcp/purlin_server.py` matches with
+#: `\\(assumed\\s*\u2014\\s*.+?\\)`, so the three worked examples of the tag are
+#: parser input rather than prose. Retiring the separator is one edit to that
+#: expression, to `references/formats/spec_format.md`, to `skill_spec` RULE-11
+#: and to the two end-to-end fixtures, and it belongs in the commit that owns
+#: `scripts/`; the exemption is written as an allowlist pair so it fails the
+#: day that lands.
+DASH_ALLOWLIST = (('skills/spec/SKILL.md', 'Step 5: Rule Extraction Heuristics'),)
+
 BANNED = (
-    ('em-dash', 'line', DASH_RE, DASH_SCOPE, 12, (),
+    ('em-dash', 'line', DASH_RE, DASH_SCOPE, 12, DASH_ALLOWLIST,
      'an em dash or en dash joins two ideas without stating the relation; '
      'use a colon, a comma or a full stop'),
     ('promise', 'line',
@@ -453,7 +469,7 @@ def banned_strings(root=PROJECT_ROOT, files=None, rows=BANNED, strict=True):
 #: skills are here because they are where the 115 bare plugin-relative paths
 #: live, and a bare path is only safe while something checks that it resolves
 #: under the plugin root.
-PATH_SCOPE = DASH_SCOPE[:6] + ('skills/**.md', 'agents/**.md')
+PATH_SCOPE = DASH_SCOPE[:6] + SKILL_AND_AGENT
 
 #: A backticked token carrying any of these is not a repository path: an
 #: angle bracket or a `$` marks a placeholder, a `*` a glob, a space a command

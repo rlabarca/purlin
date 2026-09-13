@@ -2,7 +2,7 @@
 
 > Scope: skills/spec-from-code/SKILL.md
 > Stack: markdown (skill definition)
-> Description: The `purlin:spec-from-code` skill scans codebases and migrates existing specs in any format to the current compliant 3-section format.
+> Description: The `purlin:spec-from-code` skill scans codebases and migrates existing specs in any format to the current compliant 2-section format.
 
 ## Rules
 

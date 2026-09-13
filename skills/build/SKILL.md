@@ -16,16 +16,16 @@ purlin:build <name>             Build a feature from its spec
 purlin:build                    Resume building the current feature
 ```
 
-## Step 1 — Load the Spec
+## Step 1: Load the Spec
 
 1. Find the spec: `specs/**/<name>.md`.
 2. Read the spec. Extract all `RULE-N` entries from `## Rules` and all `PROOF-N` entries from `## Proof`.
-3. Read all `> Requires:` specs (including anchors in `specs/_anchors/`). Extract their `RULE-N` and `PROOF-N` entries too — both rules and proof descriptions are needed for implementation.
+3. Read all `> Requires:` specs (including anchors in `specs/_anchors/`). Extract their `RULE-N` and `PROOF-N` entries too: both rules and proof descriptions are needed for implementation.
 4. **Read External References:** For each required anchor (and global anchors) with `> Source:`, read the external reference:
    - **Figma URL:** Call `get_design_context` and `get_screenshot` via Figma MCP for full visual fidelity.
    - **Git URL:** Fetch the file content from the repository.
    - **HTTP URL:** Fetch the page content.
-   Use the external reference content as context when implementing — it provides the full fidelity behind the anchor's rules. If a fetch fails: report the error and ask the user whether to continue without the external reference or fix and retry.
+   Use the external reference content as context when implementing: it provides the full fidelity behind the anchor's rules. If a fetch fails: report the error and ask the user whether to continue without the external reference or fix and retry.
 5. If the feature spec itself or any required spec has a `> Visual-Reference:` field, load the visual reference at **full fidelity**:
    - `figma://fileKey/nodeId` → call `get_design_context` and `get_screenshot` MCP tools
    - `./path/to/image.png` → read the image file
@@ -48,21 +48,21 @@ Required from design_modal:
 Scope: src/auth.js, src/auth.test.js
 ```
 
-## Step 2 — Implement
+## Step 2: Implement
 
 Write code that satisfies all rules. Use `> Scope:` paths as guidance for where to write.
 
-- Implement the feature naturally — there is no required order or ceremony.
+- Implement the feature naturally: there is no required order or ceremony.
 - Keep the rules visible. If a rule constrains behavior, make sure the code satisfies it.
 - If implementation reveals that a rule is wrong or missing, update the spec (this is expected).
 - **When building a feature that requires a design anchor with `> Visual-Reference:`:**
   - Read the visual reference at FULL FIDELITY (Figma MCP, image file, etc.)
-  - Build from the visual reference, not from rules — the anchor's rule just says "match the design," so the visual reference IS the spec
+  - Build from the visual reference, not from rules: the anchor's rule just says "match the design," so the visual reference IS the spec
   - The visual reference captures everything: layout relationships, alignment, visual hierarchy, spacing proportions, colors, typography
-  - Feature spec rules describe behavioral requirements — build those from the rules
-  - When the visual reference and a behavioral rule conflict, the visual reference wins for visual implementation — but the behavioral rule must still be satisfied for verification
+  - Feature spec rules describe behavioral requirements: build those from the rules
+  - When the visual reference and a behavioral rule conflict, the visual reference wins for visual implementation: but the behavioral rule must still be satisfied for verification
 
-## Step 3 — Write Tests with Proof Markers
+## Step 3: Write Tests with Proof Markers
 
 Write tests that prove each rule, using proof markers so the test runner emits proof files.
 The marker syntax for every framework, and the `platforms=` argument that mirrors a spec's
@@ -99,7 +99,7 @@ RUNNER forever.
   `Mutation checks are off (mutation_checks: false); turn them on with purlin:init --mutation-checks on`,
   so the omission is visible rather than silent. Do not run the check.
 
-## Step 4 — Run Tests and Iterate
+## Step 4: Run Tests and Iterate
 
 The iteration loop is: **write code → write tests → run `purlin:test` → read coverage output → fix → repeat**. The loop does NOT end until coverage output shows PASSING for the target feature (all rules proved). PARTIAL means more tests are still needed.
 
@@ -107,11 +107,11 @@ The iteration loop is: **write code → write tests → run `purlin:test` → re
 purlin:test <name>   # runs tests, emits proofs, calls sync_status, reports coverage
 ```
 
-`purlin:test` is the single owner of test execution: **never invoke a test runner directly from this skill** (no `pytest`, no `npx jest`, no `bash dev/*.sh`). Delegate to `purlin:test` and read its output. It handles test framework detection, tier classification, proof file emission, freshness checks, remote execution for platforms this host does not satisfy, and `sync_status`. Calling `sync_status` after tests is not optional — `purlin:test` does this automatically. Do NOT call `sync_status` separately — it would be redundant. Read the coverage output from `purlin:test` and follow any `→` directives for uncovered rules.
+`purlin:test` is the single owner of test execution: **never invoke a test runner directly from this skill** (no `pytest`, no `npx jest`, no `bash dev/*.sh`). Delegate to `purlin:test` and read its output. It handles test framework detection, tier classification, proof file emission, freshness checks, remote execution for platforms this host does not satisfy, and `sync_status`. Calling `sync_status` after tests is not optional: `purlin:test` does this automatically. Do NOT call `sync_status` separately: it would be redundant. Read the coverage output from `purlin:test` and follow any `→` directives for uncovered rules.
 
 **When a test fails, diagnose the root cause before fixing:**
-1. Read the failing assertion — what did the test expect vs what did it get?
-2. Read the spec rule the proof is linked to — is the test asserting the right behavior?
+1. Read the failing assertion: what did the test expect vs what did it get?
+2. Read the spec rule the proof is linked to: is the test asserting the right behavior?
 3. If the test is correct and the code is wrong → fix the code
 4. If the test has a bug (wrong mock, wrong expected value) → fix the test
 5. If the rule itself is wrong → update the spec first, then fix code and test
@@ -153,9 +153,9 @@ for one number, so scope this one:
 Agent(subagent_type="purlin:purlin-auditor", prompt="Audit feature <name> only: ...")
 ```
 
-## Step 5 — Changeset Summary (mandatory)
+## Step 5: Changeset Summary (mandatory)
 
-After the build/test loop reaches a stable state (all rules pass), output the changeset summary as a visible block in your response to the user. This is the engineer's primary review artifact — it must be visible in the conversation, not buried silently in git history. The same text is then reused as the commit message body in Step 6.
+After the build/test loop reaches a stable state (all rules pass), output the changeset summary as a visible block in your response to the user. This is the engineer's primary review artifact: it must be visible in the conversation, not buried silently in git history. The same text is then reused as the commit message body in Step 6.
 
 The summary has three sections, and the shape of all three is one block:
 
@@ -191,23 +191,23 @@ ambiguities, performance-critical paths. Not every change. With nothing notable:
 
 **Corner cases:**
 - If no code changes were needed (tests already pass), show `RULE-N → (already satisfied)` for each rule
-- For specs with 10+ rules, list every rule in Changeset but keep Decisions and Review curated (3–5 items max)
+- For specs with 10+ rules, list every rule in Changeset but keep Decisions and Review curated (3 to 5 items max)
 
 ## When Running as Proof Fixer
 
 When spawned by the auditor to fix HOLLOW or WEAK proofs:
 
-1. Read the audit findings — each has a PROOF-ID, issue description, and suggested fix
+1. Read the audit findings: each has a PROOF-ID, issue description, and suggested fix
 2. Read the spec rule and current test code
 3. Fix the test to address the specific issue
 4. Run purlin:test to verify the fix works
-5. Report back: "Fixed PROOF-N — now uses real bcrypt instead of mock. Re-audit please."
-6. Print a changeset summary mapping fixed proofs: `PROOF-N → file:line  description of fix`. Skip the Decisions section — proof fixes are mechanical, not judgment calls.
+5. Report back: "Fixed PROOF-N: now uses real bcrypt instead of mock. Re-audit please."
+6. Print a changeset summary mapping fixed proofs: `PROOF-N → file:line  description of fix`. Skip the Decisions section: proof fixes are mechanical, not judgment calls.
 
 The same prohibition applies here: a HOLLOW finding is fixed by replacing the mock with the real thing, never by removing the assertion that caught it.
-If fixing a proof requires changing the spec rule (because the rule is wrong), report the issue: "RULE-N in <feature> needs updating — <reason>."
+If fixing a proof requires changing the spec rule (because the rule is wrong), report the issue: "RULE-N in <feature> needs updating: <reason>."
 
-## Step 6 — Commit (mandatory)
+## Step 6: Commit (mandatory)
 
 After the changeset summary, commit all changed files. Use the changeset summary as the commit message body per `references/commit_conventions.md` ("Build Commit Body"):
 
@@ -220,13 +220,13 @@ When `mutation_checks` is `true`, the commit body carries the mutation lines fro
 alongside the changeset summary, so the mutation that was run is in git history with the proof it
 belongs to.
 
-Do NOT commit after each failed iteration — only when stable. Do NOT defer the commit to a later step. Uncommitted proof files are invisible to drift detection and verification.
+Do NOT commit after each failed iteration: only when stable. Do NOT defer the commit to a later step. Uncommitted proof files are invisible to drift detection and verification.
 
 ## Exit Criteria
 
 The build is NOT complete until all of the following are true. Verify each one before responding to the user.
 
 1. **Tests pass.** The last `purlin:test` run shows the target feature as PASSING or better.
-2. **Changeset summary printed.** The three-section summary (Changeset, Decisions, Review) was printed as visible text in your response — not only in the commit message. The engineer reviews it in the conversation before looking at git.
+2. **Changeset summary printed.** The three-section summary (Changeset, Decisions, Review) was printed as visible text in your response: not only in the commit message. The engineer reviews it in the conversation before looking at git.
 3. **All changes committed.** Run `git status`. If any source files, test files, or `specs/**/*.proofs-*.json` files are uncommitted, commit them now using the changeset summary as the commit message body per Step 6.
 4. **No uncommitted proof files.** `git status` must not show any modified or untracked `.proofs-*.json` files. These are invisible to `sync_status` until committed.

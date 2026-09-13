@@ -1,6 +1,6 @@
 ---
 name: anchor
-description: Create and manage anchor specs — cross-cutting constraints with optional external references
+description: Create and manage anchor specs: cross-cutting constraints with optional external references
 ---
 
 # purlin:anchor
@@ -53,8 +53,8 @@ Create an anchor from a Figma design URL. Read `references/figma_extraction_crit
 3. Call `get_design_context` MCP tool to read the design.
 4. Call `get_screenshot` MCP tool to capture the visual reference.
 5. Save screenshot to `specs/_anchors/screenshots/`.
-6. **Check for responsive variants** — if the design contains multiple frames at different widths (desktop, tablet, mobile), create one visual match rule per viewport and capture one screenshot per variant.
-7. **Check for annotations** — look for spec frames, text nodes with behavioral descriptions, component descriptions, and Figma comments. List them in the anchor's "What it does" section as context, and note: "Behavioral requirements from annotations should be added to feature specs that require this anchor."
+6. **Check for responsive variants**: if the design contains multiple frames at different widths (desktop, tablet, mobile), create one visual match rule per viewport and capture one screenshot per variant.
+7. **Check for annotations**: look for spec frames, text nodes with behavioral descriptions, component descriptions, and Figma comments. List them under the anchor's `> Description:` as context, and note: "Behavioral requirements from annotations should be added to feature specs that require this anchor."
 8. Create a thin anchor with:
    - `> Source:` pointing to the Figma URL
    - `> Visual-Reference: figma://<fileKey>/<nodeId>`
@@ -80,7 +80,7 @@ Compare `> Pinned:` value to the upstream source. Pull if different.
 4. If SHAs differ:
    a. Fetch the new content and update the anchor file's external reference data.
    b. Update `> Pinned:` with the new SHA.
-   c. If the anchor has local rules (rules not from the original sync), flag: "External reference changed. This anchor has N local rules — review for conflicts via purlin:drift."
+   c. If the anchor has local rules (rules not from the original sync), flag: "External reference changed. This anchor has N local rules: review for conflicts via purlin:drift."
    d. Commit per `references/commit_conventions.md`: `anchor(<name>): sync from upstream (<new-sha>[:7])`
 
 ### Figma-sourced

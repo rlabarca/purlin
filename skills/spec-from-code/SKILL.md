@@ -1,9 +1,9 @@
 ---
 name: spec-from-code
-description: Reverse-engineer 3-section specs from existing code
+description: Reverse-engineer 2-section specs from existing code
 ---
 
-Scan an existing codebase and generate specs in 3-section format (`## What it does`, `## Rules`, `## Proof`). Uses parallel exploration, interactive taxonomy review, and dependency-ordered generation with durable state for cross-session continuity.
+Scan an existing codebase and generate specs in 2-section format (`## Rules`, `## Proof`). Uses parallel exploration, interactive taxonomy review, and dependency-ordered generation with durable state for cross-session continuity.
 
 **Pending migrations:** call `sync_status` first when this skill would write specs or proofs, and follow `references/purlin_commands.md#pending-migrations` when it opens with a pending-migrations advisory.
 
@@ -24,9 +24,9 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
 
 ---
 
-## Phase 1 — Parallel Exploration
+## Phase 1: Parallel Exploration
 
-1. List the project's top-level directories (via `ls`). Ask the user (via `AskUserQuestion`) which directories to scan — offer the ones that look like source code as defaults. Everything not selected is automatically excluded. In the question, note which directories you will skip and why (e.g., "Skipping `docs/` (documentation), `templates/` (scaffolding), `.purlin/` (runtime)"). Base the skip list on what actually exists in the project, not a hardcoded list.
+1. List the project's top-level directories (via `ls`). Ask the user (via `AskUserQuestion`) which directories to scan: offer the ones that look like source code as defaults. Everything not selected is automatically excluded. In the question, note which directories you will skip and why (e.g., "Skipping `docs/` (documentation), `templates/` (scaffolding), `.purlin/` (runtime)"). Base the skip list on what actually exists in the project, not a hardcoded list.
 
 2. Create `.purlin/cache/sfc_state.json`:
 
@@ -54,7 +54,7 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
 
    For each non-compliant spec, extract: feature name, category, existing rules (even if unnumbered), existing proofs, description, and any metadata fields already present.
 
-   **Compliant specs** (with numbered rules, proofs, and proper sections) are left untouched — they are not migration candidates.
+   **Compliant specs** (with numbered rules, proofs, and proper sections) are left untouched: they are not migration candidates.
 
    Save all migration candidates to `.purlin/cache/sfc_existing.md` with per-feature entries: name, source location (`features/` or `specs/`), original content summary, and list of compliance issues.
 
@@ -78,15 +78,15 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
    - Code comments index (significant comments with file locations)
    - Test tier flags per module (from Agent B: which modules need integration, e2e, or manual tiers)
    - **`e2e_capable` flag:** true only if an e2e-capable test runner is detectable: an e2e framework (Playwright, Cypress, Puppeteer, WebdriverIO, or similar) appears in the package manifest, or an e2e config file (`playwright.config.*`, `cypress.config.*`, etc.) exists. Record the detected runner name (or `none`). This drives the `@e2e` warning in Phase 3 step 11 and the Phase 4 summary.
-   - **Existing spec summary** (if migration candidates were found): list of feature names, source locations, compliance issues, and scenario/rule counts — cross-referenced with code modules discovered by the exploration agents
+   - **Existing spec summary** (if migration candidates were found): list of feature names, source locations, compliance issues, and scenario/rule counts: cross-referenced with code modules discovered by the exploration agents
 
-6. **Generate environment anchor (mandatory):** Extract project-level environment data and write `specs/_anchors/project_environment.md`. This anchor captures what's needed to compile, run, and configure the project — information that no individual feature spec carries.
+6. **Generate environment anchor (mandatory):** Extract project-level environment data and write `specs/_anchors/project_environment.md`. This anchor captures what's needed to compile, run, and configure the project: information that no individual feature spec carries.
 
    **Extract from:**
    - **Runtime & framework:** `package.json` (engines field, main framework), `go.mod`, `pyproject.toml`, `Cargo.toml`, `Gemfile`, etc.
-   - **Key dependencies with versions:** Read the lock file (`package-lock.json`, `yarn.lock`, `poetry.lock`, `go.sum`) for pinned versions of direct dependencies. Don't list every transitive dep — list the top-level deps that appear in import statements.
+   - **Key dependencies with versions:** Read the lock file (`package-lock.json`, `yarn.lock`, `poetry.lock`, `go.sum`) for pinned versions of direct dependencies. Don't list every transitive dep: list the top-level deps that appear in import statements.
    - **Build config:** `next.config.js`, `webpack.config.js`, `tsconfig.json`, `Makefile`, `CMakeLists.txt`, `Dockerfile`, etc. Capture the build command and key overrides (output dir, asset prefix, compilation targets).
-   - **Environment variables:** Grep scanned directories for `process.env.`, `import.meta.env.`, `os.environ`, `os.Getenv`, `System.getenv`, `ENV[`. Collect every env var name. Group into: required (app fails without), optional (has fallback), and secret (API keys, tokens — note the name but not the value).
+   - **Environment variables:** Grep scanned directories for `process.env.`, `import.meta.env.`, `os.environ`, `os.Getenv`, `System.getenv`, `ENV[`. Collect every env var name. Group into: required (app fails without), optional (has fallback), and secret (API keys, tokens: note the name but not the value).
 
    **Write the anchor:**
    ```markdown
@@ -119,13 +119,13 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
 
 ---
 
-## Phase 2 — Interactive Taxonomy
+## Phase 2: Interactive Taxonomy
 
 1. Read `.purlin/cache/sfc_inventory.md`.
 
 2. **Check for existing specs:** If specs already exist (glob `specs/**/*.md`), read them to extract existing category names and naming conventions. The proposed taxonomy MUST reuse existing category names where applicable. Only propose new categories when no existing one fits.
 
-   **Check for migration candidates:** If `.purlin/cache/sfc_existing.md` exists (created in Phase 1), read it. Existing specs (from `features/` or non-compliant `specs/`) are the primary seed for the taxonomy — use their category names and feature names as starting points. When presenting the taxonomy, annotate each feature as `(migrating)` if it has an existing spec to migrate, or `(new)` if discovered only from code. This lets the user see what's being preserved vs. what's net-new.
+   **Check for migration candidates:** If `.purlin/cache/sfc_existing.md` exists (created in Phase 1), read it. Existing specs (from `features/` or non-compliant `specs/`) are the primary seed for the taxonomy: use their category names and feature names as starting points. When presenting the taxonomy, annotate each feature as `(migrating)` if it has an existing spec to migrate, or `(new)` if discovered only from code. This lets the user see what's being preserved vs. what's net-new.
 
 3. Propose a category taxonomy grouping feature candidates into logical categories. Follow the categorization rules in `references/spec_quality_guide.md` ("Spec Categories"):
    - Executable code (scripts, hooks, server) → category matches the source directory (e.g., `hooks/`, `mcp/`, `proof/`)
@@ -135,11 +135,11 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
 
    Explain this categorization to the user when presenting the taxonomy. For each category, list: name, feature count, and per-feature name + one-line description.
 
-4. Present categories in batches of 2–3 via `AskUserQuestion`. For each batch, show the proposed categories and end with the approval block:
+4. Present categories in batches of 2 to 3 via `AskUserQuestion`. For each batch, show the proposed categories and end with the approval block:
 
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   ⚡ REVIEW CATEGORIES — Does this grouping look right?
+   ⚡ REVIEW CATEGORIES: Does this grouping look right?
 
      [y] Approve these categories
      [rename] Rename a category
@@ -154,14 +154,14 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
 
    Do NOT proceed to the next batch without an explicit response.
 
-5. **Near-duplicate detection:** After the taxonomy is drafted but before presenting anchors, compare proposed features *within each category* for rule similarity. Two features are near-duplicates when they would have substantially the same behavioral constraints (same rules, different implementations — e.g., three proof plugins that all do "parse markers, emit JSON, feature-scoped overwrite"). For each cluster of 2+ near-duplicates:
+5. **Near-duplicate detection:** After the taxonomy is drafted but before presenting anchors, compare proposed features *within each category* for rule similarity. Two features are near-duplicates when they would have substantially the same behavioral constraints (same rules, different implementations: e.g., three proof plugins that all do "parse markers, emit JSON, feature-scoped overwrite"). For each cluster of 2+ near-duplicates:
    - Ask the user via `AskUserQuestion`: "These N features share similar behavior: `<names>`. Consolidate into one spec with per-implementation rules, or keep separate?"
    - If consolidated: merge into a single spec whose rules cover the shared behavior and add per-implementation rules only where behavior diverges (e.g., marker syntax differences).
    - If kept separate: proceed, but note the overlap so the user is aware.
 
 6. **Single-feature category check:** Scan the proposed taxonomy for categories containing exactly one feature. A category folder must never hold a single spec. For each single-feature category:
    - Default: merge the feature into the closest related category (by domain or shared file scope) and note the merge when presenting the taxonomy.
-   - If no existing category fits, ask the user via `AskUserQuestion`: "Category `<name>` would contain only `<feature>`. Merge into `<closest category>`, or keep it standalone?" If kept standalone, plan the spec at `specs/<name>.md` directly — do NOT create a folder for it. (Specs at the `specs/` root display under "other" in the dashboard.)
+   - If no existing category fits, ask the user via `AskUserQuestion`: "Category `<name>` would contain only `<feature>`. Merge into `<closest category>`, or keep it standalone?" If kept standalone, plan the spec at `specs/<name>.md` directly: do NOT create a folder for it. (Specs at the `specs/` root display under "other" in the dashboard.)
 
 7. **Detect anchor candidates** from cross-cutting concerns. Work through the per-prefix detection heuristics in `references/spec_quality_guide.md` ("When to Create Anchors"), which lists what to grep for under each of the eight prefixes and how to group the hits into a proposed anchor.
 
@@ -200,25 +200,21 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
 
 ---
 
-## Phase 3 — Spec Generation
+## Phase 3: Spec Generation
 
 **Resume logic:** If the Resume Check found a state file, read `completed_categories` from it. Skip those categories. Continue with the first incomplete category.
 
-### Step 1 — Generate Anchor Specs
+### Step 1: Generate Anchor Specs
 
 For each approved anchor from the taxonomy:
 
-1. Create `specs/<category>/<prefix_name>.md` using 3-section format:
+1. Create `specs/<category>/<prefix_name>.md` using 2-section format:
 
 ```markdown
 # Anchor: <prefix_name>
 
 > Description: <What cross-cutting concern this anchor defines>
 > Scope: <file patterns this anchor governs>
-
-## What it does
-
-<One paragraph: what cross-cutting concern this anchor defines.>
 
 ## Rules
 
@@ -233,7 +229,7 @@ For each approved anchor from the taxonomy:
 
 2. Commit each anchor individually per `references/commit_conventions.md`: `spec(sfc): create anchor <name>`
 
-### Step 2 — Generate Feature Specs per Category
+### Step 2: Generate Feature Specs per Category
 
 Process categories in dependency order: categories with fewer anchor dependencies first.
 
@@ -245,15 +241,15 @@ For each category:
 
    **Scope validation:** Before writing `> Scope:`, verify each file path exists on disk. If a file was detected in Phase 1 exploration but has since been deleted or moved, exclude it from the Scope line. Do not write broken scope references.
 
-   **Requires validation (blocking):** Before writing `> Requires:`, glob `specs/**/<name>.md` for EACH reference. A reference is valid only if it (a) already exists on disk from a prior category or anchor generation, or (b) is listed in the taxonomy and queued for generation in a later category. If a reference would be broken (neither exists nor queued), DO NOT write the spec with the broken reference — remove it from `> Requires:` and print: `Removed > Requires: <name> — spec not found. Create it first with purlin:spec <name>, then add the reference back.`
+   **Requires validation (blocking):** Before writing `> Requires:`, glob `specs/**/<name>.md` for EACH reference. A reference is valid only if it (a) already exists on disk from a prior category or anchor generation, or (b) is listed in the taxonomy and queued for generation in a later category. If a reference would be broken (neither exists nor queued), DO NOT write the spec with the broken reference: remove it from `> Requires:` and print: `Removed > Requires: <name>. Spec not found. Create it first with purlin:spec <name>, then add the reference back.`
 
    **Scope overlap suggestions:** After validating references, scan all existing anchors (all specs in `specs/_anchors/`). If an anchor's `> Scope:` patterns overlap with this feature's scope but the anchor is not in `> Requires:`, suggest it:
    ```
    Suggested > Requires: based on file overlap:
-     api_rest_conventions — Scope overlaps with src/api/
+     api_rest_conventions: Scope overlaps with src/api/
    Add to > Requires:? [y/n]
    ```
-   Global anchors (with `> Global: true`) are auto-applied and don't need `> Requires:` — note them for the user's awareness.
+   Global anchors (with `> Global: true`) are auto-applied and don't need `> Requires:`: note them for the user's awareness.
 
 3. **Existing spec migration (per feature):** Before generating a spec, check if this feature has a migration candidate in `.purlin/cache/sfc_existing.md` (matched by name, or by file scope overlap if names differ). If one exists:
 
@@ -266,7 +262,7 @@ For each category:
    - The existing spec is overwritten in place with the compliant version
 
    **For both sources:**
-   - Use the old spec as the **primary input** — preserve the author's intent, rules, and descriptions with minimal loss
+   - Use the old spec as the **primary input**: preserve the author's intent, rules, and descriptions with minimal loss
    - Compare the old spec's claims against the current code (from the deep code reading in step 1). If the code has diverged, flag the discrepancy for the user in the review step
    - Mark the generated spec: `<!-- Migrated by purlin:spec-from-code. Review and refine. -->` instead of the standard generated header
 
@@ -289,9 +285,9 @@ For each category:
    **Draft:** Combine candidate rules from standard extraction (step 1's code reading) and data contract extraction (step 4). Write each as a `RULE-N:` line.
 
    **Evaluate each rule:**
-   - **Rebuild test:** "If an engineer rebuilt this feature from only these rules, would they get this wrong without this rule?" If the answer is "no, they'd figure it out" or "QA would catch it" — cut the rule.
-   - **Behavior test:** "Does this describe what the feature does, or how the code does it?" If it names a library, hook, CSS value, or internal function — rewrite it as the observable behavior the code produces, or cut it.
-   - **Overlap test:** "Would this rule always pass or fail together with another rule?" If yes — merge them.
+   - **Rebuild test:** "If an engineer rebuilt this feature from only these rules, would they get this wrong without this rule?" If the answer is "no, they'd figure it out" or "QA would catch it": cut the rule.
+   - **Behavior test:** "Does this describe what the feature does, or how the code does it?" If it names a library, hook, CSS value, or internal function: rewrite it as the observable behavior the code produces, or cut it.
+   - **Overlap test:** "Would this rule always pass or fail together with another rule?" If yes: merge them.
 
    **Result:** A final rule list where every rule passes all three tests. This list goes into the spec file in step 6.
 
@@ -305,10 +301,6 @@ For each category:
 > Requires: <anchor_name> (if applicable)
 > Scope: <source files>
 > Stack: <language>/<framework>, <key libraries>, <patterns>
-
-## What it does
-
-<One paragraph describing the feature.>
 
 ## Rules
 
@@ -355,34 +347,34 @@ Examples:
    platform reads AWAITING RUNNER and leaves the coverage denominator, so a stray tag hides the
    rule rather than strengthening it. See `references/formats/spec_format.md` ("Platform tags").
 
-   **Inverse check (mandatory):** After assigning tier tags, verify each description matches its tag per `references/spec_quality_guide.md` ("E2E proof descriptions"). Every `@e2e` proof must read as an observable flow — arrange → act → observe through the real running app — and must not name a source file or internal function. Rewrite any proof of the form "Assert `<file>` does X" or "Assert `<internalFn>` uses Y" as a boundary observation (the outbound network request, the rendered output, the storage state after a real flow). If a proof tagged `@e2e` could pass without launching the app, either rewrite it as a flow or retag it to the tier it actually exercises.
+   **Inverse check (mandatory):** After assigning tier tags, verify each description matches its tag per `references/spec_quality_guide.md` ("E2E proof descriptions"). Every `@e2e` proof must read as an observable flow, arrange → act → observe through the real running app, and must not name a source file or internal function. Rewrite any proof of the form "Assert `<file>` does X" or "Assert `<internalFn>` uses Y" as a boundary observation (the outbound network request, the rendered output, the storage state after a real flow). If a proof tagged `@e2e` could pass without launching the app, either rewrite it as a flow or retag it to the tier it actually exercises.
 
 8. **No test-only specs:** Never generate a spec whose purpose is to be a container for tests. If integration or e2e tests validate a feature's behavior, those tests should prove rules in that feature's spec, not in a separate spec. When code analysis reveals e2e test files, map their assertions to the feature spec they exercise and add rules there.
 
 9. **Rebuild-risk filter and coverage check (mandatory):** Before presenting specs, apply three filters:
 
-   **Filter 1 — Drop implementation noise:** Review every rule just written. For each rule, ask: "Does this describe *what* the feature must do, or *how* the code does it?" Remove rules that specify:
-   - CSS pixel values, margins, padding (visual polish — QA catches these)
+   **Filter 1: Drop implementation noise:** Review every rule just written. For each rule, ask: "Does this describe *what* the feature must do, or *how* the code does it?" Remove rules that specify:
+   - CSS pixel values, margins, padding (visual polish: QA catches these)
    - Specific CSS techniques (`::before pseudo-element`, `rx={h/2}` for SVG)
    - Library or framework choices ("uses recharts", "uses `useMediaQuery`")
-   - Token/variable names ("uses `--surface-primary`") — instead say what the behavior is ("follows the active theme")
+   - Token/variable names ("uses `--surface-primary`"): instead say what the behavior is ("follows the active theme")
 
-   **Filter 2 — Verify contract coverage:** Verify the spec covers the applicable contract boundaries from `references/spec_quality_guide.md` ("Coverage dimensions"). The spec MUST have rules for each boundary the feature touches:
-   - Inbound contracts — exact field names from APIs, config, or upstream modules (from step 4a)
-   - Outbound contracts — event names, payload shapes, and trigger conditions (from step 4b)
-   - Transformation rules — field mappings, formulas, and formatting logic (from step 4c)
-   - State transitions — lifecycle states and transition rules (from step 4d, if applicable)
-   - Access contracts — permission/flag/mode gates (from step 4e, if applicable)
+   **Filter 2: Verify contract coverage:** Verify the spec covers the applicable contract boundaries from `references/spec_quality_guide.md` ("Coverage dimensions"). The spec MUST have rules for each boundary the feature touches:
+   - Inbound contracts: exact field names from APIs, config, or upstream modules (from step 4a)
+   - Outbound contracts: event names, payload shapes, and trigger conditions (from step 4b)
+   - Transformation rules: field mappings, formulas, and formatting logic (from step 4c)
+   - State transitions: lifecycle states and transition rules (from step 4d, if applicable)
+   - Access contracts: permission/flag/mode gates (from step 4e, if applicable)
 
    **Filter 3: tier by rebuild risk.** Re-apply step 5's three tests to the final list and cut every rule that fails one, ranking what is left by `references/spec_quality_guide.md` ("Rebuild risk tiers"). Fix any IMPLEMENTATION or NOISE rule here rather than deferring it to review time.
 
 10. **Validate generated specs (mandatory before user review):** Read back every spec just written for this category. For each spec, verify:
-   - `## What it does` contains at least one full sentence (not empty, not just whitespace)
+   - `> Description:` carries at least one full sentence (not empty, not just whitespace)
    - `## Rules` contains at least one `RULE-N:` line
    - `## Proof` contains at least one `PROOF-N (RULE-N):` line
    - **FORBIDDEN proof precision:** If any proof uses grep-based negative assertions, verify the grep pattern targets assignment patterns, not bare keywords. If a pattern would match comments or variable names, refine it per `references/spec_quality_guide.md` ("FORBIDDEN Grep Precision").
    - **Edge case specificity:** If any proof describes a boundary condition or edge case, verify the description includes the triggering test input, not just the expected outcome. If a proof says "verify X works correctly" without specifying the input, rewrite it per `references/spec_quality_guide.md` ("Edge Case Proof Specificity").
-   - **Proof implementation-coupling:** No proof description names a source file or an internal function/symbol as the thing being asserted. Such proofs force unit-style tests that import internals and audit WEAK per `references/audit_criteria.md` ("E2E Proof Tier Integrity" — tier mismatch, source-constant assertion). Rewrite them as boundary observations per `references/spec_quality_guide.md` ("E2E proof descriptions") before presenting to the user.
+   - **Proof implementation-coupling:** No proof description names a source file or an internal function/symbol as the thing being asserted. Such proofs force unit-style tests that import internals and audit WEAK per `references/audit_criteria.md` ("E2E Proof Tier Integrity": tier mismatch, source-constant assertion). Rewrite them as boundary observations per `references/spec_quality_guide.md` ("E2E proof descriptions") before presenting to the user.
 
    If any section is empty or missing content:
    - Re-read the source files listed in the spec's `> Scope:` line
@@ -392,7 +384,7 @@ Examples:
 11. Present the generated specs for this category and ask for approval, in the approval-block shape from Phase 2 step 4, headed `⚡ REVIEW SPECS: <category_name> (<N> specs generated)` and offering `[y] Approve and commit this category`, `[n] Discard and regenerate` and `[edit] I want to change specific specs`. If the category's proofs include any `@e2e` tag AND the Phase 1 inventory's `e2e_capable` flag is false, put this warning above the options (omit it otherwise):
 
    ```
-   ⚠ <K> proofs tagged @e2e but no e2e runner detected — they cannot execute
+   ⚠ <K> proofs tagged @e2e but no e2e runner detected: they cannot execute
      until one is wired in (Playwright, Cypress, an MCP-driven browser, etc.).
      See references/supported_frameworks.md ("End-to-end (browser) proofs").
    ```
@@ -407,7 +399,7 @@ Examples:
 
 ---
 
-## Phase 4 — Finalize
+## Phase 4: Finalize
 
 1. Call `sync_status` to show the initial coverage state.
 
@@ -423,15 +415,15 @@ Migrated: L (X from features/, Y updated in specs/)
 Features with implementation notes: J
 
 Next:
-  purlin:status      — see what needs tests
-  purlin:test   — write proof-marked tests
-  purlin:spec <name> — refine a generated spec
+  purlin:status     : see what needs tests
+  purlin:test  : write proof-marked tests
+  purlin:spec <name>: refine a generated spec
 ```
 
    If any generated proofs are tagged `@e2e` and the Phase 1 `e2e_capable` flag is false, append to the summary:
 
 ```
-⚠ <K> proofs tagged @e2e but no e2e runner detected — they cannot execute until
+⚠ <K> proofs tagged @e2e but no e2e runner detected: they cannot execute until
   one is wired in. See references/supported_frameworks.md ("End-to-end (browser) proofs").
 ```
 
@@ -449,10 +441,10 @@ Next:
 
 For quality guidelines on writing rules, proof descriptions, tier assignment, anchor detection, FORBIDDEN patterns, `> Stack:` metadata, `> Requires:` and `> Scope:` guidance, see **`references/spec_quality_guide.md`**.
 
-For audit criteria (what makes a proof STRONG vs WEAK vs HOLLOW), see **`references/audit_criteria.md`**. Write proof descriptions that will pass audit the first time — avoid patterns listed as HOLLOW (mocking the thing being tested, asserting existence instead of behavior, no assertions).
+For audit criteria (what makes a proof STRONG vs WEAK vs HOLLOW), see **`references/audit_criteria.md`**. Write proof descriptions that will pass audit the first time: avoid patterns listed as HOLLOW (mocking the thing being tested, asserting existence instead of behavior, no assertions).
 
 Additional spec-from-code-specific guidelines:
 
-- **Do not use the `(assumed)` tag.** Rules extracted from code are observed behavior, not assumptions. The code IS the specific value — `timeout=500` is a fact, not an assumption.
+- **Do not use the `(assumed)` tag.** Rules extracted from code are observed behavior, not assumptions. The code IS the specific value: `timeout=500` is a fact, not an assumption.
 - **One feature per module boundary.** Spec the public interface, not internal helpers.
 - If Phase 1 Agent B flagged a module as requiring external dependencies, default its proofs to `@integration` unless the specific proof can be unit-tested in isolation.

@@ -22,6 +22,29 @@ def _read():
         return f.read()
 
 
+def _shipped_framework_ids():
+    """The first column of the shipped-plugin table of the contract."""
+    path = os.path.join(os.path.dirname(AGENT_PATH), '..', 'references',
+                        'proof_plugin_contract.md')
+    with open(path, encoding='utf-8') as f:
+        lines = f.read().splitlines()
+    ids, inside = [], False
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith('### What the eight shipped plugins'):
+            inside = True
+            continue
+        if inside and stripped.startswith('#'):
+            break
+        if not (inside and stripped.startswith('|')):
+            continue
+        cell = stripped.strip('|').split('|')[0].strip()
+        if cell in ('Framework', '') or set(cell) <= set('-: '):
+            continue
+        ids.append(cell)
+    return ids
+
+
 class TestPurlinAgent:
 
     @pytest.mark.proof("purlin_agent", "PROOF-1", "RULE-1")
@@ -90,19 +113,27 @@ class TestPurlinAgent:
             "'## Proof' not found inside a code block template"
 
     @pytest.mark.proof("purlin_agent", "PROOF-4", "RULE-4")
-    def test_proof_markers_three_frameworks(self):
+    def test_proof_markers_section_names_no_framework(self):
+        """RULE-4: a list of three of eight is a list that goes stale."""
         content = _read()
-        assert '## Proof Markers' in content
-        markers_match = re.search(r'## Proof Markers\n(.*?)(?=^## |\Z)', content,
-                                  re.MULTILINE | re.DOTALL)
-        assert markers_match
-        section = markers_match.group(1)
-        # Proof markers delegate to reference file for all three frameworks
-        assert 'proofs_format.md' in section, \
-            "Proof Markers section must reference proofs_format.md"
-        for fw in ('pytest', 'Jest', 'Shell'):
-            assert fw in section, \
-                f"Missing framework mention for {fw} in ## Proof Markers"
+        match = re.search(r'^##\s+Proof Markers\s*$(.*?)(?=^##\s|\Z)',
+                          content, re.MULTILINE | re.DOTALL)
+        assert match, "agents/purlin.md carries no `## Proof Markers` section"
+        section = match.group(1).strip()
+        assert section, "the Proof Markers section is empty"
+        assert 'references/formats/proofs_format.md' in section, (
+            "the section must link the reference that documents every "
+            f"framework's marker:\n{section}")
+        ids = _shipped_framework_ids()
+        assert len(ids) >= 8, (
+            f"read {len(ids)} framework ids from the contract's table; the "
+            f"scan would pass on an empty list")
+        named = [i for i in ids
+                 if re.search(rf'\b{re.escape(i)}\b', section, re.I)]
+        assert not named, (
+            f"the section names {named}; a list of some frameworks is a list "
+            f"a reader trusts for all of them:\n{section}")
+
 
     @pytest.mark.proof("purlin_agent", "PROOF-5", "RULE-5")
     def test_hard_gates_exactly_one(self):

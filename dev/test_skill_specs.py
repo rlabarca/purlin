@@ -435,7 +435,7 @@ class TestSkillAudit:
         prune. Prose alone left every later step depending on something that never ran."""
         content = _read('audit')
 
-        m = re.search(r'^## (Step [\d.]+) [^\n]*Write Audit Cache[^\n]*$', content, re.M)
+        m = re.search(r'^## (Step [\d.]+)[^\n]*Write Audit Cache[^\n]*$', content, re.M)
         assert m, "audit SKILL.md has no numbered 'Write Audit Cache' step"
         heading = m.group(0)
         assert re.search(r'(?i)mandatory', heading), \
@@ -538,7 +538,7 @@ class TestSkillAudit:
         content = _read('audit')
         section = content.split('## Step 0', 1)
         assert len(section) == 2, "audit SKILL.md has no Step 0 mode-selection step"
-        body = section[1].split('## Step 1 ', 1)[0]
+        body = section[1].split('## Step 1:', 1)[0]
 
         assert '--audit-scope' in body, "Step 0 must invoke --audit-scope"
         assert 'design' in body and 'both' in body, \
@@ -596,7 +596,7 @@ class TestSkillAudit:
             "the write step must state an unresolvable (feature, proof_id) exits 2"
 
         # Criteria step: exit 2 stops the audit, with no fall back.
-        crit = content[content.index('## Step 1 '):content.index('## Step D')]
+        crit = content[content.index('## Step 1:'):content.index('## Step D')]
         assert re.search(r'(?i)exits 2, stop', crit), \
             "the criteria step must stop the audit when --load-criteria exits 2"
         assert 'purlin:init --sync-audit-criteria' in crit, \
@@ -843,13 +843,13 @@ class TestSkillDrift:
         parse, so the agent met them first as something to read."""
         content = _read('drift')
         shape = content[content.index('the tool returns structured JSON'):
-                        content.index('## Step 2 ')]
+                        content.index('## Step 2:')]
         heads = set(re.findall(r'(?m)^- `([a-z_]+)`', shape))
         assert len(heads) >= 7, "the response-shape list did not parse: %r" % heads
         # Nested field names declared inside a bullet count as declared too.
         declared = set(re.findall(r'`([a-z_]+)`', shape))
 
-        analysis = content[content.index('## Step 2 '):content.index('## Step 3 ')]
+        analysis = content[content.index('## Step 2:'):content.index('## Step 3:')]
         read = set(re.findall(r'`([a-z_]+)`\s+(?:field|array)\b', analysis))
         assert read, "no field reads parsed out of the analysis steps"
         for expected in ('rule_details', 'external_anchor_drift'):
@@ -2078,7 +2078,7 @@ class TestSkillTestRemotePath:
             "Step 3's sync_status call must be described as mandatory")
 
         # The flag that targets one platform.
-        usage = content[content.index('## Usage'):content.index('## Step 1 ')]
+        usage = content[content.index('## Usage'):content.index('## Step 1:')]
         assert '--platform <id>' in usage, (
             "Usage must document --platform <id>; without it there is no way "
             "to target a single platform")
@@ -2405,7 +2405,7 @@ class TestUpdateSkillText:
         """RULE-14: two counts, never one. The skill states the vocabulary and
         the issuer prints the numbers the commit message copies."""
         content = _read('verify')
-        step = content[content.index('### Step 5 \u2014 Commit'):]
+        step = content[content.index('### Step 5: Commit'):]
         assert 'features=N/T anchors=A/B' in step, step[:600]
         assert 'references/commit_conventions.md' in step, step[:600]
         flat = ' '.join(step.split())

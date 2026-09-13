@@ -41,7 +41,7 @@ purlin:rename <old-name> <new-name>    Rename a feature
 
 ## Steps
 
-### Step 1 — Find the Spec
+### Step 1: Find the Spec
 
 Search `specs/**/<old-name>.md`.
 
@@ -50,7 +50,7 @@ Search `specs/**/<old-name>.md`.
 - **Multiple matches:** List them and use `AskUserQuestion` to ask the user which one.
 - **Found:** Continue.
 
-### Step 2 — Show What Will Change
+### Step 2: Show What Will Change
 
 Scan for all artifacts that reference the old name and present a summary:
 
@@ -76,22 +76,22 @@ Waiting for your response...
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-### Step 3 — Wait for Approval
+### Step 3: Wait for Approval
 
 Use `AskUserQuestion` to pause and wait. Do NOT auto-proceed.
 
-### Step 4 — Execute Rename (if approved)
+### Step 4: Execute Rename (if approved)
 
 Perform all changes in this order:
 
-**a. Rename files** — use `git mv` for spec, proof, and receipt files:
+**a. Rename files**: use `git mv` for spec, proof, and receipt files:
 ```bash
 git mv specs/auth/login.md specs/auth/authentication.md
 git mv specs/auth/login.proofs-unit.json specs/auth/authentication.proofs-unit.json
 git mv specs/auth/login.receipt.json specs/auth/authentication.receipt.json  # if exists
 ```
 
-**b. Update proof markers in test files** — search and replace marker strings only, one pass per
+**b. Update proof markers in test files**: search and replace marker strings only, one pass per
 row of `references/formats/proofs_format.md#feature-name-token`: the table covers every shipped
 framework and the rename must rewrite all of them, not only the languages this project happens
 to have used so far.
@@ -113,14 +113,14 @@ to have used so far.
 **f2. Repoint quality cache entries:**
 - In `.purlin/cache/audit_cache.json` and `.purlin/cache/design_cache.json`, replace
   `"feature": "old-name"` with `"feature": "new-name"` in every entry. Skip silently if a
-  cache is absent. Do not re-stamp `cached_at` — the assessments are unchanged, only their key
+  cache is absent. Do not re-stamp `cached_at`: the assessments are unchanged, only their key
   moved, and re-stamping would defeat the 24-hour staleness check.
 
 **g. Run `sync_status`** to verify everything still resolves.
 
 **h. Commit** per `references/commit_conventions.md`: `rename(<old-name>): rename to <new-name>`
 
-### Step 5 — Verify
+### Step 5: Verify
 
 If `sync_status` shows issues after rename, warn the user and show the directives. Do not silently ignore resolution failures.
 
@@ -128,9 +128,9 @@ If `sync_status` shows issues after rename, warn the user and show the directive
 
 ## Edge Cases
 
-- **Old name has underscores, new name has hyphens (or vice versa)**: handle both. The rename is exact string replacement — no normalization.
-- **Old name appears in test function names**: do NOT rename test functions — only rename proof marker strings. `test_login_valid()` stays as-is; only `proof("login",` changes.
+- **Old name has underscores, new name has hyphens (or vice versa)**: handle both. The rename is exact string replacement: no normalization.
+- **Old name appears in test function names**: do NOT rename test functions: only rename proof marker strings. `test_login_valid()` stays as-is; only `proof("login",` changes.
 - **Old name appears in code comments or docs**: do NOT rename. Only rename in Purlin artifacts (specs, proofs, markers, `> Requires:`).
 - **Multiple specs match**: if `specs/**/login.md` matches multiple files, list them and ask the user which one.
-- **Anchors with `> Source:` (external)**: refuse to rename — anchors with external sources are read-only and synced from that source. The rename must happen at the external source.
+- **Anchors with `> Source:` (external)**: refuse to rename: anchors with external sources are read-only and synced from that source. The rename must happen at the external source.
 - **`> Requires:` partial matches**: use word-boundary matching when replacing in `> Requires:` lines. The old name must match as a complete comma-separated entry, not as a substring of another name.

@@ -87,7 +87,7 @@
       "id": "PROOF-4",
       "rule": "RULE-4",
       "test_file": "dev/test_purlin_agent.py",
-      "test_name": "test_proof_markers_three_frameworks",
+      "test_name": "test_proof_markers_section_names_no_framework",
       "status": "pass",
       "tier": "unit"
     },

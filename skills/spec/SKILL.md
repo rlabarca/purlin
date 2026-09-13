@@ -1,12 +1,12 @@
 ---
 name: spec
-description: Scaffold or edit feature specs in 3-section format
+description: Scaffold or edit feature specs in 2-section format
 ---
 
-Create or edit a spec from any input — plain English, PRDs, customer feedback, code files, or existing specs. The agent extracts structured rules from unstructured input. The user describes what they want; the agent writes the spec.
+Create or edit a spec from any input: plain English, PRDs, customer feedback, code files, or existing specs. The agent extracts structured rules from unstructured input. The user describes what they want; the agent writes the spec.
 
 For **syntax**: `references/formats/spec_format.md`. For **quality**: `references/spec_quality_guide.md`.
-For **how your proof descriptions will be graded**: `references/audit_criteria.md` § Pass D — `purlin:audit` scores every description as PROVABLE/LOOSE/UNPROVABLE/STRUCTURAL with no test code required, so you can drive that number up before anything is built. Editing spec prose moves that gauge and only that gauge: HOLLOW and EXCLUDED are decided by test code, so no rewording moves them.
+For **how your proof descriptions will be graded**: `references/audit_criteria.md` § Pass D: `purlin:audit` scores every description as PROVABLE/LOOSE/UNPROVABLE/STRUCTURAL with no test code required, so you can drive that number up before anything is built. Editing spec prose moves that gauge and only that gauge: HOLLOW and EXCLUDED are decided by test code, so no rewording moves them.
 
 **Pending migrations:** call `sync_status` first when this skill would write specs or proofs, and follow `references/purlin_commands.md#pending-migrations` when it opens with a pending-migrations advisory.
 
@@ -16,10 +16,10 @@ For **how your proof descriptions will be graded**: `references/audit_criteria.m
 
 ```
 purlin:spec <name>              Create or edit a spec
-purlin:spec                     (no name — extract from user's input)
+purlin:spec                     (no name: extract from user's input)
 ```
 
-## Step 1 — Accept Input
+## Step 1: Accept Input
 
 Accept ANY of these input types without asking which format it is:
 - Plain English description ("users should be able to reset their password via email")
@@ -28,7 +28,7 @@ Accept ANY of these input types without asking which format it is:
 - Slack/email thread describing a problem
 - Existing spec name to update
 - A file path to code that needs a spec
-- **Image** (screenshot, mockup, design comp, whiteboard photo) — create a **design anchor**. Images are locally owned. See "Image-Based Design Anchors" below.
+- **Image** (screenshot, mockup, design comp, whiteboard photo): create a **design anchor**. Images are locally owned. See "Image-Based Design Anchors" below.
 
 **If a spec name was given**, search `specs/**/<name>.md`:
 - **Found:** Read the spec. Call `sync_status` for coverage. Go to Step 7 (Update Existing Spec).
@@ -36,22 +36,22 @@ Accept ANY of these input types without asking which format it is:
 
 **If no name was given**, read the user's input and infer the feature name from the topic.
 
-## Step 2 — Extract Everything Before Asking
+## Step 2: Extract Everything Before Asking
 
 If the input is substantial (more than a sentence or two), extract as much as possible BEFORE asking any questions:
 
-- **Feature name** — infer from the topic
-- **Category** — infer from the domain per `references/spec_quality_guide.md` ("Spec Categories"):
+- **Feature name**: infer from the topic
+- **Category**: infer from the domain per `references/spec_quality_guide.md` ("Spec Categories"):
   - Auth, security → `security/` or component dir with `security_` anchor
   - File formats, contracts, cross-cutting standards → `_anchors/`
   - Reference docs, skill definitions, agent definitions → `instructions/`
   - End-to-end flows → the feature spec they validate, with the proofs tagged `@e2e`; `integration/` is legacy
   - Executable code → category matching the source directory
-- **Rules** — extract every testable constraint mentioned or implied (see Step 5 heuristics)
-- **Proof descriptions** — generate observable assertions with concrete inputs/outputs for each rule, with tier tags per the quality guide
-- **Anchors** — if the input mentions security, compliance, design standards, check `specs/` for matching anchors to reference via `> Requires:`
-- **Scope** — if code files are mentioned or inferable
-- **Stack** — if technologies are mentioned
+- **Rules**: extract every testable constraint mentioned or implied (see Step 5 heuristics)
+- **Proof descriptions**: generate observable assertions with concrete inputs/outputs for each rule, with tier tags per the quality guide
+- **Anchors**: if the input mentions security, compliance, design standards, check `specs/` for matching anchors to reference via `> Requires:`
+- **Scope**: if code files are mentioned or inferable
+- **Stack**: if technologies are mentioned
 
 Present the **complete draft spec** to the user, followed by the approval block. Assumed rules should be visually obvious in the draft:
 
@@ -66,9 +66,9 @@ The PM sees the assumed tag and either confirms, changes the value, or asks a ga
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚡ REVIEW DRAFT — Does this look right?
+⚡ REVIEW DRAFT: Does this look right?
 
-  [y] Looks good — continue to metadata
+  [y] Looks good: continue to metadata
   [n] Start over
   [edit] I want to change specific rules or proofs
 
@@ -78,18 +78,18 @@ Waiting for your response...
 
 Use `AskUserQuestion` to pause and wait. Do NOT skip this step. Then go to Step 3 for gap questions.
 
-## Step 3 — Gap Questions (only what's missing)
+## Step 3: Gap Questions (only what's missing)
 
-After presenting the draft, ask ONLY about gaps — don't re-ask things the input already answered:
+After presenting the draft, ask ONLY about gaps: don't re-ask things the input already answered:
 - "I couldn't determine the tech stack. What framework are you using?"
 - "The input mentions authentication but I don't see a security anchor in your project. Should I create one?"
-- "You mentioned 'fast response times' — what's the specific threshold? Under 200ms? Under 1 second?"
+- "You mentioned 'fast response times': what's the specific threshold? Under 200ms? Under 1 second?"
 - "Is the email notification handled by your app or a third-party service?"
-- "Your PRD mentions 3 requirements — are there others I missed?"
+- "Your PRD mentions 3 requirements: are there others I missed?"
 
 Questions must be **specific and gap-filling**, not generic ("what are the rules?" or "what are your requirements?").
 
-## Step 4 — Show an Example First (for novice users)
+## Step 4: Show an Example First (for novice users)
 
 If the input is **vague or minimal** (e.g., "write a spec for password reset" with no details), show a brief example BEFORE generating:
 
@@ -97,7 +97,7 @@ If the input is **vague or minimal** (e.g., "write a spec for password reset" wi
 >
 > **Feature: password_reset**
 >
-> *What it does* — Allows users to reset their password via a time-limited email link.
+> *Description:* Allows users to reset their password via a time-limited email link.
 >
 > *Rules:*
 > - RULE-1: POST /reset with valid email sends a reset link
@@ -115,14 +115,14 @@ If the input is **vague or minimal** (e.g., "write a spec for password reset" wi
 
 **Skip the example** if the input is already detailed (PRD, substantial description, pasted requirements).
 
-## Step 5 — Rule Extraction Heuristics
+## Step 5: Rule Extraction Heuristics
 
 When extracting rules from unstructured input, look for:
 
 | Signal in input | Rule type | Example |
 |----------------|-----------|---------|
 | "must", "should", "needs to", "has to" | Direct constraint | RULE: Return 200 with session token on valid login |
-| "never", "don't", "cannot", "forbidden" | FORBIDDEN pattern | RULE: FORBIDDEN — No plaintext password storage |
+| "never", "don't", "cannot", "forbidden" | FORBIDDEN pattern | RULE: FORBIDDEN: No plaintext password storage |
 | Error cases, "what if", "fails when" | Error handling | RULE: Return 404 when user ID does not exist |
 | "fast", "under N seconds", "real-time" | Boundary condition | RULE: API response time under 200ms at p95 |
 | "first... then... finally" | Multi-step workflow | RULE: After email verification, account status changes to active |
@@ -142,9 +142,9 @@ If the user WAS explicit, no tag:
 - User said "must return in under 200ms" → `RULE-3: Under 200ms` (no tag)
 - User said "use argon2" → `RULE-4: argon2 hashing` (no tag)
 
-## Step 6 — Enhance with Metadata
+## Step 6: Enhance with Metadata
 
-After the core spec (What it does, Rules, Proof) is solid, add metadata:
+After the core spec (Description, Rules, Proof) is solid, add metadata:
 
 1. **Scan for matching anchors** in `specs/` and suggest `> Requires:` based on scope overlap:
    - For each anchor (specs in `specs/_anchors/`), read its `> Scope:` patterns
@@ -153,8 +153,8 @@ After the core spec (What it does, Rules, Proof) is solid, add metadata:
    - Present suggestions:
      ```
      Suggested > Requires: based on file overlap:
-       api_rest_conventions — your Scope overlaps with src/api/
-       security_no_eval — global anchor (auto-applied, no action needed)
+       api_rest_conventions: your Scope overlaps with src/api/
+       security_no_eval: global anchor (auto-applied, no action needed)
      Add api_rest_conventions to > Requires:? [y/n]
      ```
 2. If the user mentioned code files, populate `> Scope:` (verify paths exist)
@@ -215,20 +215,20 @@ When the user asks for "an e2e spec" or "integration tests for X":
 3. Write proof descriptions under THAT spec's `## Proof` section
 4. Never create a parallel spec just because the tests are e2e tier
 
-If the rule already exists in the target spec, the test just needs a proof marker pointing to it — no new rule or spec needed.
+If the rule already exists in the target spec, the test just needs a proof marker pointing to it: no new rule or spec needed.
 
 ### Validate Before Commit
 
 Before committing, verify:
-- `## What it does` has at least one full sentence
+- `> Description:` carries at least one full sentence on its own line or its continuation lines
 - `## Rules` has at least one `RULE-N:` line, with ids assigned in increasing order and never reused (a retired rule leaves its number vacant, so a gap is legal)
 - `## Proof` has at least one `PROOF-N (RULE-N):` line, each mapping to a rule
 - Proof descriptions are observable assertions, not vague instructions
 - Every proof description has an appropriate tier tag per `references/spec_quality_guide.md` ("Tier Tags on Proofs")
 - Every proof whose rule is platform-specific carries `@on(<platform-id>)` beside its tier, and no proof any host could verify carries one
-- Every `@e2e` proof describes an observable flow (arrange → act → observe through the real running app) and does not name a source file or internal function, per `references/spec_quality_guide.md` ("E2E proof descriptions") — rewrite as a boundary observation or retag if not
+- Every `@e2e` proof describes an observable flow (arrange → act → observe through the real running app) and does not name a source file or internal function, per `references/spec_quality_guide.md` ("E2E proof descriptions"): rewrite as a boundary observation or retag if not
 - All `> Scope:` file paths exist on disk
-- **`> Requires:` validation (blocking):** For EACH reference in `> Requires:`, glob `specs/**/<name>.md`. If any referenced spec does not exist on disk, DO NOT commit the spec with the broken reference. Remove the broken reference from `> Requires:` and print: `Removed > Requires: <name> — spec not found. Create it first with purlin:spec <name>, then add the reference back.`
+- **`> Requires:` validation (blocking):** For EACH reference in `> Requires:`, glob `specs/**/<name>.md`. If any referenced spec does not exist on disk, DO NOT commit the spec with the broken reference. Remove the broken reference from `> Requires:` and print: `Removed > Requires: <name>. Spec not found. Create it first with purlin:spec <name>, then add the reference back.`
 
 ### Commit (mandatory)
 
@@ -241,20 +241,20 @@ git add specs/<category>/<name>.md
 git commit -m "spec(<name>): <description of change>"
 ```
 
-This commit is mandatory — drift detection and staleness checks depend on committed spec state. Do not skip or defer.
+This commit is mandatory: drift detection and staleness checks depend on committed spec state. Do not skip or defer.
 
-## Step 7 — Update Existing Spec
+## Step 7: Update Existing Spec
 
 When updating a spec that already exists on disk:
 
-### 7a — Understand what changed
+### 7a: Understand what changed
 
 1. Call the `drift` MCP tool to see what changed since the last verification
-2. Read the CURRENT spec in full — every rule, every proof, every metadata line
+2. Read the CURRENT spec in full: every rule, every proof, every metadata line
 3. Read the changed source files referenced in the diff or in `> Scope:`
 4. Read changed skill/reference files if the feature covers instructions
 
-### 7b — Identify deltas
+### 7b: Identify deltas
 
 Compare the current spec against the code changes. Categorize each finding:
 
@@ -267,7 +267,7 @@ Compare the current spec against the code changes. Categorize each finding:
 | METADATA STALE | `> Scope:` or `> Stack:` no longer accurate | Propose updating metadata |
 | NO CHANGE | Existing rule still matches code | Keep as-is (explicitly note this) |
 
-### 7c — Present the delta report
+### 7c: Present the delta report
 
 Show the user EXACTLY what will change and what will stay:
 
@@ -300,33 +300,33 @@ METADATA:
   ▎ Requires: unchanged
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚡ APPROVAL REQUIRED — Review the changes above.
+⚡ APPROVAL REQUIRED: Review the changes above.
 
   [y] Approve and apply all changes
-  [n] Cancel — make no changes
+  [n] Cancel: make no changes
   [edit] I want to adjust specific items
 
 Waiting for your response...
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-**This approval block is MANDATORY.** The agent MUST use `AskUserQuestion` to pause and wait for the user's response. Do NOT auto-approve. Do NOT proceed without an explicit answer. The bordered block above is the exact format to use — it must be visually distinct from the rest of the output so the user doesn't scroll past it.
+**This approval block is MANDATORY.** The agent MUST use `AskUserQuestion` to pause and wait for the user's response. Do NOT auto-approve. Do NOT proceed without an explicit answer. The bordered block above is the exact format to use: it must be visually distinct from the rest of the output so the user doesn't scroll past it.
 
-### 7d — Apply approved changes
+### 7d: Apply approved changes
 
-1. Preserve ALL unchanged rules exactly as they are — same text, same numbering
+1. Preserve ALL unchanged rules exactly as they are: same text, same numbering
 2. Add new rules at the end of the existing sequence (RULE-9 after RULE-8)
-3. Update changed rules in place — same RULE-N number, new text
+3. Update changed rules in place: same RULE-N number, new text
 4. For removed rules: delete the rule line and leave its number vacant. Never renumber the rules that remain: their ids are already named by proof markers, receipts and audit cache entries
 5. For each new or updated rule, add or update the corresponding PROOF-N line
 6. Apply tier tags to new proofs per `references/spec_quality_guide.md`
-7. Preserve any existing `@manual` stamps — do NOT remove manual proof stamps unless the rule they reference was removed
-8. Preserve rule tags on unchanged rules — `(assumed)`, `(confirmed)`, `(deferred)` stay as-is
+7. Preserve any existing `@manual` stamps: do NOT remove manual proof stamps unless the rule they reference was removed
+8. Preserve rule tags on unchanged rules: `(assumed)`, `(confirmed)`, `(deferred)` stay as-is
 9. If updating a rule that had `(confirmed)`, change the tag to `(assumed)` since the new value hasn't been confirmed yet
 10. Update `> Scope:` if new files were added to the feature
 11. Update `> Stack:` if new dependencies were introduced
 
-### 7e — Validate and commit
+### 7e: Validate and commit
 
 Same validation as new specs: no empty sections, rule ids in increasing order with no reuse (gaps allowed), observable proofs, valid references, tier tags.
 
@@ -339,7 +339,7 @@ git add specs/<category>/<name>.md
 git commit -m "spec(<name>): update rules for <description>"
 ```
 
-This commit is mandatory — drift detection and staleness checks depend on committed spec state. Do not skip or defer.
+This commit is mandatory: drift detection and staleness checks depend on committed spec state. Do not skip or defer.
 
 ### Key principles for updates
 
@@ -368,7 +368,7 @@ When the user provides an image (screenshot, mockup, design comp, whiteboard pho
    > Visual-Reference: ./specs/_anchors/screenshots/<name>.png
    > Visual-Hash: sha256:a1b2c3d4e5f6...
    ```
-   This enables staleness detection — if the image is later replaced, `sync_status` will warn that the anchor may need review.
+   This enables staleness detection: if the image is later replaced, `sync_status` will warn that the anchor may need review.
 
 3. Create an anchor spec with:
    - `> Visual-Reference:` and `> Visual-Hash:` as above
@@ -386,7 +386,7 @@ When the user provides an image (screenshot, mockup, design comp, whiteboard pho
 - The user describes what they want in **their** language. The agent writes RULE-N format.
 - Extract everything possible from the input before asking questions.
 - Questions are specific and gap-filling, not generic.
-- Show, don't tell. Present the draft spec, then refine — don't ask the user to write rules.
+- Show, don't tell. Present the draft spec, then refine: don't ask the user to write rules.
 - Progressive disclosure: core spec first, metadata second, anchors third.
 
 ## Exit Criteria
@@ -402,7 +402,7 @@ The spec operation is NOT complete until all of the following are true. Verify e
      --check-proof-design --spec-path <spec_path>
    ```
 
-   This needs no test code. Report the score and every `UNPROVABLE` or `LOOSE` finding —
+   This needs no test code. Report the score and every `UNPROVABLE` or `LOOSE` finding. It is
    advisory, never blocking. It costs seconds here and saves a whole write-test → audit →
    rewrite cycle later, because a `LOOSE` description caps what any test can prove and an
    `UNPROVABLE` one guarantees the test will have to be redone.

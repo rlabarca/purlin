@@ -28,11 +28,11 @@ purlin:test --platform none     Skip the remote path; report platform-scoped pro
 `--local` is the old spelling of `--platform none`. It still runs and prints one line naming
 its replacement, and it is removed in 0.12.0; see `references/purlin_commands.md`.
 
-## Step 1 — Detect Test Framework
+## Step 1: Detect Test Framework
 
 Read `.purlin/config.json` for `test_framework`. If set to a specific framework, use it. If `"auto"` or missing, detect from project files using the same heuristics as `purlin:init` Step 3 (see `references/supported_frameworks.md` for the full detection logic).
 
-## Step 1.5 — Classify Platforms
+## Step 1.5: Classify Platforms
 
 Read the `Platforms:` block from the `sync_status` output already in context and show it. When
 no such output is in context, call `sync_status` once here to obtain it. It is the authority on
@@ -71,9 +71,9 @@ while nothing had ever proved the platform the project claims to support.
 With `--platform <id>`, restrict this run to that one id: run it here when the `Platforms:` block
 lists it under `local:`, and dispatch only its runner when it lists it under `runner:`.
 
-## Step 2 — Run Tests
+## Step 2: Run Tests
 
-### Step 2a — The local run
+### Step 2a: The local run
 
 Run the test command once per declared platform id the `Platforms:` block lists under `local:`,
 prefixing each with `PURLIN_PLATFORM=<id>`, and once more with no prefix when the project has
@@ -96,7 +96,7 @@ marker of its own, so a tier is selectable with `-m` without any test restating 
 
 The proof plugins (`scripts/proof/pytest_purlin.py`, `scripts/proof/jest_purlin.js`, `scripts/proof/shell_purlin.sh`) emit `<feature>.proofs-<tier>.json` next to the spec file for a marker that declares no platform, and `<feature>.proofs-<tier>@<id>.json` for one that does, where `<id>` is `PURLIN_PLATFORM`. This is a **write-scoped overwrite** keyed by `(feature, tier, platform, test_file)`: each run replaces the tested feature's entries from the test files it actually executed, reaps entries whose test file no longer exists, and preserves everything else. Two test files covering one feature at one tier can therefore run in any order, in separate processes. See `references/formats/proofs_format.md`.
 
-### Step 2b — The remote path
+### Step 2b: The remote path
 
 Run this only when Step 1.5 listed platforms under `runner:` whose proofs have no result, and
 `--platform none` was not passed.
@@ -133,12 +133,12 @@ runner to configure. This consent path is the one place a skill other than `purl
 After tests run, before reporting results, verify that proof files (`*.proofs-*.json`) were modified AFTER the test command started.
 
 **First check whether any test ran at all.** If the runner collected zero tests, the proof
-plugin is working perfectly — there was simply nothing to emit. Report that instead, because
+plugin is working perfectly: there was simply nothing to emit. Report that instead, because
 sending someone to re-scaffold working infrastructure wastes their time and teaches them to
 distrust the warning:
 
 ```
-No tests found. The proof plugin is fine — there is nothing to emit yet.
+No tests found. The proof plugin is fine: there is nothing to emit yet.
 → Run: purlin:build <feature> to write code and tests from the spec
 ```
 
@@ -156,9 +156,9 @@ for those comes from the commit trailers, which is what Step 3 reports.
 
 Never write proof JSON files directly. Only the test framework plugin writes proof files.
 
-## Step 3 — Report Coverage
+## Step 3: Report Coverage
 
-Call `sync_status` after tests complete. Display the full result. **This is not optional** — without `sync_status`, the agent doesn't know if coverage is complete.
+Call `sync_status` after tests complete. Display the full result. **This is not optional**: without `sync_status`, the agent doesn't know if coverage is complete.
 
 Report the platform lines as `sync_status` prints them, which is what distinguishes
 **locally-proved** from **remotely-proved**. They were verified on different machines, and the
@@ -184,7 +184,7 @@ and the `Purlin-Platform:` trailer cross-checked against the platform in the fil
 (`references/remote_verification.md`). Do not claim a proof was proved remotely from the proof entry
 alone: the entry says a test passed, and only the commit says where.
 
-## Step 4 — Commit proof files (mandatory)
+## Step 4: Commit proof files (mandatory)
 
 After proof files are written, commit them:
 
@@ -211,7 +211,7 @@ Proof files are project records, not ephemeral build artifacts. Uncommitted proo
 
 ## Writing Tests with Proof Markers
 
-When tests are missing, write them with proof markers. For marker syntax (pytest, Jest, Shell), see `references/formats/proofs_format.md`. For test quality rules (what makes a proof STRONG vs HOLLOW), see `references/audit_criteria.md`. For the mutation check, which is what catches a proof that passes against broken code, see `references/spec_quality_guide.md#mutation-check`: it runs before the commit that carries the proof when the project sets `mutation_checks: true`.
+When tests are missing, write them with proof markers. For the marker syntax of every shipped framework, see `references/formats/proofs_format.md`. For test quality rules (what makes a proof STRONG vs HOLLOW), see `references/audit_criteria.md`. For the mutation check, which is what catches a proof that passes against broken code, see `references/spec_quality_guide.md#mutation-check`: it runs before the commit that carries the proof when the project sets `mutation_checks: true`.
 
 ## Note
 

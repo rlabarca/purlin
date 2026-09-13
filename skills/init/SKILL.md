@@ -31,15 +31,15 @@ Each `--flag` runs ONLY that step, not the full init.
 
 **Who does what.** This skill asks the questions; `scripts/init/scaffold.py` writes the files, exactly as `scripts/update/migrate.py` performs `--update`. The script handles the full init, the `--force` re-run (Steps 1, 2, 4, 5, 5b, 7 and 7a) and the single-step re-answers: it takes one long flag per setting as an answer, and `purlin:init --set <key> <value>` asks that one setting's own question and then runs the script with `--force` and the single flag the key maps to (the mapping is the table under **Single-step re-answers** in Step 2). `--ci` is a seventh answer the script takes, asked the same way and written the same way (see **Subcommand: --ci**). `--add-plugin`, `--sync-audit-criteria` and `--audit-llm` stay agent-driven; `--update` is `scripts/update/migrate.py` (Step 5d), whose MCP migration is Step 5c.
 
-## Step 1 — Pre-flight
+## Step 1: Pre-flight
 
-- **Git check (mandatory):** Run `git rev-parse --git-dir`. If it fails, the project is not a git repository. Print: `"Purlin requires git. Run 'git init' first."` Stop. Do NOT proceed without git — proofs, receipts, manual stamps, drift detection, and the pre-push hook all depend on git.
+- **Git check (mandatory):** Run `git rev-parse --git-dir`. If it fails, the project is not a git repository. Print: `"Purlin requires git. Run 'git init' first."` Stop. Do NOT proceed without git: proofs, receipts, manual stamps, drift detection, and the pre-push hook all depend on git.
 - If `.purlin/config.json` exists and `--force` is not set: "Project already initialized. Use `--force` to re-initialize." Stop.
 - If it exists and `--force` is set: proceed. The scaffolder keeps every key the existing `config.json` carries that this run does not re-answer (`platforms`, `audit_criteria`, `audit_llm` among them), and keeps every plugin copy, wiring file, hook and dashboard already on disk.
 
 The scaffolder re-checks all three: it prints the same git line and exits 2 without git, and exits 1 naming `--force` on an already-initialized project. Asking first is what keeps the user from watching a command fail; the script refusing is what keeps a half-initialized project from existing.
 
-## Step 2 — Scaffold the Project
+## Step 2: Scaffold the Project
 
 Ask the questions in Steps 3, 5b, 7, 7a and 7d first, then run the scaffolder
 once with the answers. It writes every file init creates and prints one line
@@ -125,11 +125,11 @@ listed once, in `references/drift_criteria.md` § Config Field Ownership: read t
 than a second copy here. It covers the template fields and the optional `platforms` and
 `quality_gate` fields a full init never writes.
 
-## Step 3 — Detect Test Framework
+## Step 3: Detect Test Framework
 
 **Print `DETECTING CODEBASE` before scanning.** Framework detection scans multiple files across the project and can take noticeable time, so the user must see that work is happening; the sample below opens with that line.
 
-Read `references/supported_frameworks.md` for the complete framework list, detection heuristics, and plugin file mappings. That file is the single source of truth — do NOT hardcode framework names here. The complete list spans BOTH the **Built-in Plugins** table and the **Additional Plugins (manual setup)** table — present every framework from both. Check project files for ALL matching frameworks using the detection columns in that reference.
+Read `references/supported_frameworks.md` for the complete framework list, detection heuristics, and plugin file mappings. That file is the single source of truth: do NOT hardcode framework names here. The complete list spans BOTH the **Built-in Plugins** table and the **Additional Plugins (manual setup)** table: present every framework from both. Check project files for ALL matching frameworks using the detection columns in that reference.
 
 **Always present the framework selection list to the user**, even when auto-detection succeeds. Build the list dynamically from `references/supported_frameworks.md` so every shipped plugin (built-in and manual-setup) is offered. Pre-select detected frameworks with `[x]`, show undetected as `[ ]`. Always include `other` as the last option for custom plugins. This lets the user confirm, add, or remove frameworks before scaffolding.
 
@@ -140,7 +140,7 @@ DETECTING CODEBASE
 Scanning project files for test frameworks...
 
 Test frameworks (detected frameworks are pre-selected):
-  [x] <detected framework>    — <detection reason>
+  [x] <detected framework>   : <detection reason>
   [ ] <other framework>
   ...
   [ ] other
@@ -168,14 +168,14 @@ If the user selects "other", suggest `purlin:init --add-plugin` to install a cus
 
 Pass the selection to the scaffolder as `--test-framework`: one id, a comma-separated list (`pytest,jest`), or `auto` to record `auto` and let the scaffolder install the plugin for every framework its detection matches. When nothing is detected and the user selects nothing, `auto` installs no plugin and says so: shell is scaffolded because it was chosen, never as a silent fallback.
 
-## Step 4 — Proof Plugins and Test Wiring
+## Step 4: Proof Plugins and Test Wiring
 
 The scaffolder installs the plugin file `references/supported_frameworks.md`
 registers for each selected framework into `.purlin/plugins/`, byte-identical
 to the installed plugin's `scripts/proof/` copy, and installs all of them when
 several were selected.
 
-For a framework listed under **Additional Plugins (manual setup)** (e.g. xUnit), `purlin:init` does not auto-wire it — after the plugin file is copied, print the framework's setup steps from its section in `references/formats/proofs_format.md` and direct the user to complete the wiring manually.
+For a framework listed under **Additional Plugins (manual setup)** (e.g. xUnit), `purlin:init` does not auto-wire it: after the plugin file is copied, print the framework's setup steps from its section in `references/formats/proofs_format.md` and direct the user to complete the wiring manually.
 
 For the three frameworks it does wire, the scaffolder writes the file below
 **only when the project has no file of that name**, and reports `kept` when it
@@ -185,27 +185,27 @@ has one: a project's own test configuration is never rewritten by init.
 |-----------|------|------------------|
 | pytest | `conftest.py` | `.purlin/plugins` appended to `sys.path`, then `pytest_plugins = ["pytest_purlin"]`. `.purlin` is not an importable package name, so a dotted `.purlin.plugins.pytest_purlin` raises before any test runs |
 | jest | `jest.config.js` | `reporters: ['default', '.purlin/plugins/jest_purlin.js']` |
-| vitest | `vitest.config.ts` | `reporters: ['default', '.purlin/plugins/vitest_purlin.ts']` (Vitest loads `.ts` reporters natively via Vite — no Jest config) |
+| vitest | `vitest.config.ts` | `reporters: ['default', '.purlin/plugins/vitest_purlin.ts']` (Vitest loads `.ts` reporters natively via Vite: no Jest config) |
 
 When the project already has one of those files, tell the user which line to
 add; the scaffolder's plan says which files it kept.
 
-## Step 5 — .gitignore
+## Step 5: .gitignore
 
 The scaffolder appends `templates/gitignore.purlin` to the project's
 `.gitignore`, entry by entry, skipping any entry the file already carries so a
 re-init never duplicates one. That template is the single source for the
 block: read it rather than restating its entries here.
 
-**Note:** `.purlin/report-data.js` is NOT gitignored — it is the project digest and should be committed. If upgrading from a prior version, remove any existing `.purlin/report-data.js` entry from `.gitignore`.
+**Note:** `.purlin/report-data.js` is NOT gitignored: it is the project digest and should be committed. If upgrading from a prior version, remove any existing `.purlin/report-data.js` entry from `.gitignore`.
 
-## Step 5b — Dashboard Report
+## Step 5b: Dashboard Report
 
 The HTML dashboard is enabled by default. Ask the user:
 
 ```
 HTML dashboard report:
-  [on]  Generate purlin-report.html — open in browser for live coverage (default)
+  [on]  Generate purlin-report.html: open in browser for live coverage (default)
   [off] Disable dashboard report generation
 ```
 
@@ -223,19 +223,19 @@ Dashboard report is currently: on
 
 After changing, run the re-answer of Step 2, **Single-step re-answers**. It links `purlin-report.html` when the answer is on and the file is absent, and never deletes an existing dashboard when the answer is off (the user may want to keep it).
 
-## Step 5c — MCP Server (plugin-bundled) + Legacy Migration
+## Step 5c: MCP Server (plugin-bundled) + Legacy Migration
 
-The Purlin MCP server (`sync_status`, `purlin_config`, and `drift` tools) is bundled with the plugin: `.claude-plugin/plugin.json` declares it under `mcpServers` with `${CLAUDE_PLUGIN_ROOT}`, which Claude Code resolves to the installed plugin path on every launch. It registers automatically wherever the plugin is enabled and tracks plugin updates. Do NOT create a `purlin` entry in the project's `.mcp.json` — a project-scope entry takes precedence over the plugin-provided server and pins a versioned cache path that silently goes stale on the next plugin update.
+The Purlin MCP server (`sync_status`, `purlin_config`, and `drift` tools) is bundled with the plugin: `.claude-plugin/plugin.json` declares it under `mcpServers` with `${CLAUDE_PLUGIN_ROOT}`, which Claude Code resolves to the installed plugin path on every launch. It registers automatically wherever the plugin is enabled and tracks plugin updates. Do NOT create a `purlin` entry in the project's `.mcp.json`: a project-scope entry takes precedence over the plugin-provided server and pins a versioned cache path that silently goes stale on the next plugin update.
 
 **Legacy migration (pre-0.9.4 projects):** If `.mcp.json` exists at the project root, read it as JSON. If it has a `purlin` key under `mcpServers`:
 
 1. Remove the `purlin` key. Preserve ALL other server entries unchanged.
 2. If `mcpServers` is now empty and the file contains nothing else, delete `.mcp.json`. Otherwise write the file back without the `purlin` entry.
-3. Print: `Removed legacy purlin entry from .mcp.json — the MCP server is now provided by the plugin. Run /reload-plugins (or restart the session) to pick it up.`
+3. Print: `Removed legacy purlin entry from .mcp.json: the MCP server is now provided by the plugin. Run /reload-plugins (or restart the session) to pick it up.`
 
 If `.mcp.json` has no `purlin` entry (or doesn't exist), print: `MCP server: bundled with plugin (sync_status, purlin_config, drift).`
 
-## Step 5d — Update
+## Step 5d: Update
 
 `purlin:init --update` brings an already-initialized project up to the installed plugin. It is
 the one command for "the plugin moved, this project has not": there is no separate update skill,
@@ -338,7 +338,7 @@ parentheses (see `references/commit_conventions.md`).
 **9. Idempotent.** Run `--check` again. It reports nothing pending apart from the two directives
 the script does not apply, and a second `--update` changes nothing.
 
-## Step 6 — Confirmation
+## Step 6: Confirmation
 
 Print the scaffolder's plan verbatim: it is one line per path, each beginning
 `wrote`, `kept`, `copied`, `linked` or `skipped`, so it says what was created
@@ -353,11 +353,11 @@ Dashboard: on (open purlin-report.html in browser)
 Digest: auto (regenerated on every commit)
 
 Next steps:
-  purlin:spec <topic>    — create your first spec
-  purlin:status          — see rule coverage
+  purlin:spec <topic>   : create your first spec
+  purlin:status         : see rule coverage
 ```
 
-## Step 7 — Install Git Pre-push Hook
+## Step 7: Install Git Pre-push Hook
 
 Install the Purlin pre-push hook so `git push` checks proof coverage before code reaches the remote.
 
@@ -397,25 +397,25 @@ and the file to paste that line into. Read the plan lines back to the user when
 one of them says `skipped`. Print: `Installed git pre-push hook (proof coverage
 check).`
 
-## Step 7a — Pre-commit Hook (Project Digest)
+## Step 7a: Pre-commit Hook (Project Digest)
 
 Install the Purlin pre-commit hook so `git commit` automatically regenerates the project digest (coverage + drift data in `.purlin/report-data.js`). The digest is committed to the repo so non-engineer stakeholders (QA, PM, compliance) can access project status without running Purlin tools.
 
 The digest has three modes, set in `.purlin/config.json` under `"digest"`:
-- **`"auto"`** (default) — regenerate digest before every commit, auto-stage the file
-- **`"warn"`** — warn if the digest is stale, don't regenerate or block
-- **`"off"`** — disable the pre-commit hook entirely
+- **`"auto"`** (default): regenerate digest before every commit, auto-stage the file
+- **`"warn"`**: warn if the digest is stale, don't regenerate or block
+- **`"off"`**: disable the pre-commit hook entirely
 
 Ask the user which mode they want:
 
 ```
 Project digest (auto-generates coverage + drift data for stakeholders):
-  [auto] Regenerate on every commit — always up-to-date (default)
+  [auto] Regenerate on every commit: always up-to-date (default)
   [warn] Warn if digest is stale, don't auto-regenerate
   [off]  Disable digest hook
 
 NOTE: Digest generation runs coverage scan and drift only.
-It NEVER triggers an audit — cached audit data is included.
+It NEVER triggers an audit: cached audit data is included.
 Run purlin:audit separately when you want fresh audit scores.
 ```
 
@@ -430,7 +430,7 @@ shim nor the delegator and says so: the mode that disables the digest should
 not leave a hook behind to read it. Print: `Installed git pre-commit hook
 (project digest).`
 
-## Step 7b — Audit Criteria
+## Step 7b: Audit Criteria
 
 Ask the user which audit criteria to use:
 
@@ -438,10 +438,10 @@ Ask the user which audit criteria to use:
 Audit criteria:
   [default] Use Purlin's built-in audit criteria only
   [additional] Add team-specific criteria from a git-hosted file
-               (appended to built-in — does not replace defaults)
+               (appended to built-in: does not replace defaults)
 ```
 
-If **default**: no config change needed — `purlin:audit` loads built-in criteria via `load_criteria()`.
+If **default**: no config change needed: `purlin:audit` loads built-in criteria via `load_criteria()`.
 
 If **additional**: ask for the git URL and file path (e.g., `git@github.com:acme/quality-standards.git#audit_criteria.md`). Set `audit_criteria` and `audit_criteria_pinned` in `.purlin/config.json`:
 
@@ -460,13 +460,13 @@ to `audit_criteria_pinned` and refuses to grade anything when the two disagree; 
 header line the cache is a file with no provenance and an audit cannot say what standard it
 applied.
 
-## Step 7c — Audit LLM Configuration
+## Step 7c: Audit LLM Configuration
 
 Ask the user which LLM should perform proof audits:
 
 ```
 Audit LLM:
-  [default] Claude audits (same model — fastest, independent context)
+  [default] Claude audits (same model: fastest, independent context)
   [external] Use a different LLM for cross-model auditing (experimental)
 ```
 
@@ -488,7 +488,7 @@ Command:
 
 After the user enters the command:
 
-1. **Test it:** shell out with a simple test prompt — replace `{prompt}` with `"Respond with exactly: PURLIN_AUDIT_OK"` and run the command.
+1. **Test it:** shell out with a simple test prompt: replace `{prompt}` with `"Respond with exactly: PURLIN_AUDIT_OK"` and run the command.
 2. **Check the response** contains `PURLIN_AUDIT_OK`.
 3. **If it works:** save to `.purlin/config.json`:
    ```json
@@ -502,7 +502,7 @@ After the user enters the command:
 
 This step is also callable independently via `purlin:init --audit-llm`.
 
-## Step 7d — Mutation Checks
+## Step 7d: Mutation Checks
 
 A mutation check is the practice of breaking the behaviour a proof covers, watching that proof
 fail, and restoring the code before committing. It is the only check that catches a proof which
@@ -535,7 +535,7 @@ prints one line saying the check is off when it is false; `purlin:audit` may ask
 name the mutation they ran and caps a proof whose author cannot name one at WEAK
 (`references/audit_criteria.md` § Pass 2).
 
-## Step 8 — Commit
+## Step 8: Commit
 
 Commit per `references/commit_conventions.md`:
 
@@ -634,7 +634,7 @@ Source can be:
    ```
    Plugin installed. To use it:
    1. Add proof markers to your tests using the plugin's marker syntax
-   2. Run your tests — the plugin emits .proofs-*.json files
+   2. Run your tests: the plugin emits .proofs-*.json files
    3. purlin:status shows coverage
    ```
 

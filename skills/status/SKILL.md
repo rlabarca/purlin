@@ -15,17 +15,17 @@ Show rule coverage across all features. Always outputs a consistent table follow
 purlin:status                   Show all features
 ```
 
-## Step 1 — Call sync_status
+## Step 1: Call sync_status
 
 ```
 sync_status()
 ```
 
-## Step 2 — Feature Table (mandatory)
+## Step 2: Feature Table (mandatory)
 
 **Always** display a table with five columns: Feature, Coverage, Status, Design and Integrity.
 Every feature and anchor must appear in it, sorted by status: FAILING first, then PARTIAL,
-PASSING, VERIFIED, and UNTESTED last — attention-first, so what needs work is at the top.
+PASSING, VERIFIED, and UNTESTED last: attention-first, so what needs work is at the top.
 Anchors are labeled with `(anchor)` after the name.
 
 ```
@@ -43,7 +43,7 @@ Anchors are labeled with `(anchor)` after the name.
   * proved here, awaiting a declared platform. VERIFIED needs every declared platform proved and receipted
 ```
 
-Coverage format is `proved/total` rules. The table must include **every** feature and anchor —
+Coverage format is `proved/total` rules. The table must include **every** feature and anchor:
 never omit rows or collapse them into a summary.
 
 The row reading `PASSING*` is proved on this host and waiting on a platform it declares. Print
@@ -67,7 +67,7 @@ Do NOT print the per-feature rule-by-rule breakdown in the table output. The tab
 overview; `purlin:find <name>` gives detail on one feature. Do surface the `→` directives that
 `sync_status` emits for features needing attention, including the gauge-driven ones in Step 3b.
 
-## Step 3 — Summary Line
+## Step 3: Summary Line
 
 Print the summary line **exactly as `sync_status` returned it**. Do not compose a replacement:
 a reconstructed status-count line cannot carry either gauge, which is why `purlin:status` showed
@@ -83,7 +83,7 @@ the two caches are independent:
 A percentage without its denominator is the thing to avoid: 100% over 15 of 592 assessments is
 not a project-wide 100%.
 
-## Step 3b — Gauge Recommendations
+## Step 3b: Gauge Recommendations
 
 After the summary line, surface what the gauges say to do next. **Design before Integrity**:
 most Integrity criteria compare a test against its proof description, so a LOOSE description
@@ -98,13 +98,13 @@ is unfalsifiable rather than that the tests are good.
 | A gauge is marked stale | Its cache is over 24h old | Run the command the summary line names |
 | `PASSING*` or a platform awaiting | its declared platform has no result here; warns, never blocks | `→ Run: purlin:test` |
 
-Never narrow a proof description to make a WEAK finding disappear — that lowers the claim
+Never narrow a proof description to make a WEAK finding disappear: that lowers the claim
 instead of strengthening the evidence, and on an anchor rule it is forbidden outright.
 
 Report the gauge scores `sync_status` returned. Do not compute either percentage yourself: the
 CLI and the dashboard must show the same number from the same computation.
 
-## Step 3c — Platforms Line
+## Step 3c: Platforms Line
 
 When some proof declares `@on(<platform>)`, `sync_status` returns one `Platforms (host: <id>):`
 line directly under the summary line. Print it **verbatim**, in that position, and print nothing
@@ -118,7 +118,7 @@ Platforms (host: macos-14): macos-14 (host) 12/12 verified, Integrity 78% (40 of
 Do not expand it into a block or recompute any figure in it. The per-platform detail belongs to
 the dashboard's cards and to the per-feature platform lines the detail already carries.
 
-## Step 4 — Dashboard Link
+## Step 4: Dashboard Link
 
 If `purlin-report.html` exists at the project root, print the clickable link:
 
@@ -134,7 +134,7 @@ Check for the file with a glob or ls before printing. If the file does not exist
 |--------|---------|
 | VERIFIED | All rules proved + verification receipt matches |
 | PASSING | All rules proved, no receipt yet |
-| PARTIAL | Some rules proved, none failing — more tests needed |
+| PARTIAL | Some rules proved, none failing: more tests needed |
 | FAILING | Any proof has status FAIL |
 | UNTESTED | No proofs at all |
 | AWAITING RUNNER | A proof declares a platform that has no result here. It warns and never blocks: the proof does not count against coverage, and a feature otherwise complete reads `PASSING*` rather than VERIFIED until a runner proves that platform. `purlin:test` dispatches one. |
