@@ -1,7 +1,7 @@
 # Feature: mcp_transport
 
 > Requires: security_no_dangerous_patterns
-> Scope: scripts/mcp/purlin_server.py
+> Scope: scripts/mcp/purlin_server.py, scripts/purlin_python.sh, .claude-plugin/plugin.json
 > Stack: python/stdlib, json
 > Description: JSON-RPC 2.0 transport layer for the Purlin MCP server. Reads requests from stdin, dispatches to tool handlers, writes responses to stdout. Implements MCP protocol initialization and error handling.
 
@@ -15,6 +15,7 @@
 - RULE-6: Unknown tool names in `tools/call` return error code `-32601` with the tool name in the message
 - RULE-7: Server logs startup to stderr — stdout is reserved for JSON-RPC responses
 - RULE-8: The main loop reloads its own source only when the environment sets `PURLIN_DEV_RELOAD=1`: with the variable unset or holding any other value the loop never stats the source and never reloads it. When a reload is attempted and raises, the server writes `Purlin MCP: reload failed` plus the traceback to stderr (never to stdout) and answers that request, and every later one, with the module it had already loaded
+- RULE-9: Claude Code launches the server through `sh`, never through an interpreter name. `.claude-plugin/plugin.json` sets `mcpServers.purlin.command` to `sh` and its `args` to `${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh` followed by `${CLAUDE_PLUGIN_ROOT}/scripts/mcp/purlin_server.py`, and the file names no interpreter anywhere. `scripts/purlin_python.sh` resolves one, the first that runs winning: `$PURLIN_PYTHON`, `python3`, `python` when it reports major version 3, then `py -3` resolved to that interpreter's own path. When none of the four runs it writes one line to stderr naming all four and exits 0, so the launch reports what is missing in the client's server log rather than dying without a word. A `command` of `python3` is a name a python.org install on Windows never creates, and a server that cannot start there is indistinguishable from a plugin that ships no server
 
 ## Proof
 
@@ -26,3 +27,4 @@
 - PROOF-6 (RULE-6): Send tools/call with unknown tool; verify error code -32601 with tool name @integration
 - PROOF-7 (RULE-7): Run the server main loop on empty stdin; verify stderr carries the startup text `Purlin MCP server` and that stdout is the empty string @integration
 - PROOF-8 (RULE-8): Run a COPY of `scripts/mcp/purlin_server.py` as a subprocess over two `initialize` requests and rewrite the copy between them, three ways. (a) `PURLIN_DEV_RELOAD` unset, the copy's `SERVER_INFO` rewritten to version `9.9.9-reloaded`: stderr carries neither `reloaded` nor `reload failed`, both responses carry `result.protocolVersion` `2024-11-05`, and the second `serverInfo.version` still equals the first, so no reload ran. (b) `PURLIN_DEV_RELOAD=1`, the line `def broken(:` appended to the copy: stderr carries `Purlin MCP: reload failed`, `Traceback (most recent call last):` and `SyntaxError`, and the second response is still the old module's, with `id` 2, `protocolVersion` `2024-11-05` and the first response's `serverInfo.version`. (c) `PURLIN_DEV_RELOAD=1`, the `9.9.9-reloaded` rewrite: stderr carries `Purlin MCP: reloaded` and the second response's `serverInfo.version` is `9.9.9-reloaded` while the first is not @integration
+- PROOF-9 (RULE-9): Parse `.claude-plugin/plugin.json`; verify `mcpServers.purlin.command` is `sh`, that `args` is exactly `["${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh", "${CLAUDE_PLUGIN_ROOT}/scripts/mcp/purlin_server.py"]`, and that the token `python3` appears nowhere in the file. Then run that argv three times with `${CLAUDE_PLUGIN_ROOT}` expanded to this checkout and `PATH` holding one synthetic directory and nothing else: with only a `python` shim that is this Python 3, send `initialize` then `tools/list` and verify the result names `drift`, `purlin_config` and `sync_status`; with only a `py` shim that accepts `-3`, verify the same; with the directory empty, verify exit 0, empty stdout, and exactly one line on stderr naming `PURLIN_PYTHON`, `python3`, `python` and `py -3`. Putting `python3` back as the command fails the first leg, and dropping any candidate from the resolver fails the leg that has only that name @integration

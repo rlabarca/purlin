@@ -44,7 +44,6 @@
 - RULE-36: When multiple frameworks are detected, all detected frameworks are pre-selected in the list
 - RULE-37: When no frameworks are detected, the selection list shows all options unselected
 - RULE-38: The Purlin MCP server is bundled with the plugin — `.claude-plugin/plugin.json` declares a `purlin` entry under `mcpServers`; init does NOT write a `purlin` entry into the project's `.mcp.json` (a project-scope entry would shadow the plugin server with a version-pinned path that breaks on every plugin update)
-- RULE-39: The bundled MCP server entry uses the `python3` command with `args` pointing to `${CLAUDE_PLUGIN_ROOT}/scripts/mcp/purlin_server.py`, so the path always resolves to the currently installed plugin version
 - RULE-40: Init migrates legacy MCP config: when the project's `.mcp.json` has a `purlin` entry under `mcpServers` (pre-0.9.4 version-pinned path), init removes that entry, preserves all other server entries, deletes the file only when nothing else remains in it, and tells the user to reload plugins or restart the session
 - RULE-41: Config has `"digest"` field with value `"auto"`, `"warn"`, or `"off"`
 - RULE-42: After init, `.git/hooks/pre-commit` exists, is executable, and contains `purlin`
@@ -128,7 +127,6 @@
 - PROOF-38 (RULE-36): Verify `skills/init/SKILL.md` Step 3 says `Pre-select detected frameworks with `[x]`` in the plural and that `references/supported_frameworks.md` says `purlin:init` detects ALL matching frameworks and stores them as the comma-separated list `"pytest,jest"`, so two detections are two pre-selections and one config value
 - PROOF-39 (RULE-37): Verify `skills/init/SKILL.md` Step 3's no-detection block carries `No test framework detected.`, the prompt `Which framework(s)? You can select multiple, e.g.: pytest, jest`, at least one `[ ]` line and no `[x]` anywhere between those two strings, and that the block is introduced by `do NOT silently default to shell`
 - PROOF-40 (RULE-38): Parse `.claude-plugin/plugin.json` and verify `mcpServers.purlin` exists. Then verify `skills/init/SKILL.md` Step 5c carries `Do NOT create a `purlin` entry in the project's `.mcp.json`` and that no line anywhere in the file matches `add|write|create` within the same sentence as a `purlin` key under `mcpServers`; the legacy migration step, which removes that key, is allowed to name both
-- PROOF-41 (RULE-39): Parse `.claude-plugin/plugin.json`; verify `mcpServers.purlin.command` is `python3` and `args` contains `${CLAUDE_PLUGIN_ROOT}/scripts/mcp/purlin_server.py`
 - PROOF-42 (RULE-40): Verify `skills/init/SKILL.md` Step 5c's legacy migration documents all four clauses: `Remove the `purlin` key`, `Preserve ALL other server entries unchanged`, deleting `.mcp.json` only `If `mcpServers` is now empty and the file contains nothing else` and writing the file back `Otherwise`, and telling the user to run `/reload-plugins`
 - PROOF-43 (RULE-41): e2e: Read config.json after init; verify `digest` field exists with value `auto` @e2e
 - PROOF-44 (RULE-42): e2e: Verify `.git/hooks/pre-commit` exists, is executable, and contains `purlin` @e2e

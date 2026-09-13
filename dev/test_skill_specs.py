@@ -1099,18 +1099,6 @@ class TestSkillInit:
                     "an init step writes a purlin entry into the project's "
                     f".mcp.json: {sentence.strip()!r}")
 
-    @pytest.mark.proof("skill_init", "PROOF-41", "RULE-39")
-    def test_bundled_mcp_server_uses_plugin_root_variable(self):
-        """Bundled MCP entry uses python3 with ${CLAUDE_PLUGIN_ROOT} so the path tracks updates."""
-        manifest_path = os.path.join(PROJECT_ROOT, '.claude-plugin', 'plugin.json')
-        with open(manifest_path) as f:
-            manifest = json.load(f)
-        entry = manifest['mcpServers']['purlin']
-        assert entry['command'] == 'python3', \
-            f"Expected python3 command in bundled MCP entry, got {entry.get('command')}"
-        assert '${CLAUDE_PLUGIN_ROOT}/scripts/mcp/purlin_server.py' in entry.get('args', []), \
-            f"Expected ${{CLAUDE_PLUGIN_ROOT}}/scripts/mcp/purlin_server.py in args, got {entry.get('args')}"
-
     @pytest.mark.proof("skill_init", "PROOF-42", "RULE-40")
     def test_documents_legacy_mcp_json_migration(self):
         """SKILL.md must document removing the legacy purlin entry, preserving other servers."""

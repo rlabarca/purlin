@@ -4878,3 +4878,124 @@ class TestProjectRootArgument:
         assert text.split('\n')[0] == (
             '⚠ No Purlin workspace at %s: .purlin/config.json is not '
             'there. That root came from the project_root argument.' % missing), text
+
+# ── mcp_transport RULE-9: the launch vector and the interpreter resolver ──
+
+_PLUGIN_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+_RESOLVER_NAMES = ('PURLIN_PYTHON', 'python3', 'python', 'py -3')
+
+
+def _interpreter_shim(directory, name):
+    """A PATH entry named `name` that is this interpreter.
+
+    `py` is the Windows launcher, so its shim swallows a leading `-3` the way
+    the launcher does; every other name passes its arguments straight through.
+    """
+    path = os.path.join(directory, name)
+    swallow = 'if [ "$1" = "-3" ]; then shift; fi\n' if name == 'py' else ''
+    with open(path, 'w', encoding='utf-8') as handle:
+        handle.write('#!/bin/sh\n' + swallow
+                     + 'exec "' + sys.executable + '" "$@"\n')
+    os.chmod(path, 0o755)
+    return path
+
+
+def _launch_argv():
+    """The argv `.claude-plugin/plugin.json` declares, expanded to this tree.
+
+    `sh` is taken by absolute path because the synthetic PATH these tests build
+    holds the interpreter shim and nothing else, including no shell.
+    """
+    with open(os.path.join(_PLUGIN_ROOT, '.claude-plugin', 'plugin.json'),
+              encoding='utf-8') as handle:
+        server = json.load(handle)['mcpServers']['purlin']
+    argv = [shutil.which(server['command']) or server['command']]
+    argv += [a.replace('${CLAUDE_PLUGIN_ROOT}', _PLUGIN_ROOT)
+             for a in server['args']]
+    return argv
+
+
+def _run_launch(shim_names, requests):
+    """Run the declared launch vector with PATH holding only `shim_names`.
+
+    Returns (returncode, stdout, stderr).
+    """
+    work = tempfile.mkdtemp()
+    try:
+        bindir = os.path.join(work, 'bin')
+        os.makedirs(bindir)
+        for name in shim_names:
+            _interpreter_shim(bindir, name)
+        project_root = os.path.join(work, 'proj')
+        os.makedirs(os.path.join(project_root, '.purlin'))
+
+        env = dict(os.environ)
+        env.pop('PURLIN_PYTHON', None)
+        env.pop('PURLIN_DEV_RELOAD', None)
+        env['PATH'] = bindir
+        env['PURLIN_PROJECT_ROOT'] = project_root
+
+        proc = subprocess.run(
+            _launch_argv(), cwd=work, env=env, text=True,
+            input=''.join(json.dumps(r) + '\n' for r in requests),
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120)
+        return proc.returncode, proc.stdout, proc.stderr
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
+class TestLaunchVector:
+    """mcp_transport RULE-9: `sh` plus the resolver, never an interpreter name."""
+
+    @pytest.mark.proof("mcp_transport", "PROOF-9", "RULE-9", tier="integration")
+    def test_plugin_json_launches_through_the_resolver(self):
+        path = os.path.join(_PLUGIN_ROOT, '.claude-plugin', 'plugin.json')
+        with open(path, encoding='utf-8') as handle:
+            raw = handle.read()
+        server = json.loads(raw)['mcpServers']['purlin']
+        assert server['command'] == 'sh', (
+            f'the launcher must run a shell, not an interpreter: {server!r}')
+        assert server['args'] == [
+            '${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh',
+            '${CLAUDE_PLUGIN_ROOT}/scripts/mcp/purlin_server.py',
+        ], server['args']
+        assert 'python3' not in raw, (
+            f'{path} still names an interpreter: '
+            + next(line for line in raw.splitlines() if 'python3' in line))
+
+    @pytest.mark.proof("mcp_transport", "PROOF-9", "RULE-9", tier="integration")
+    def test_server_starts_when_only_python_is_on_path(self):
+        code, out, err = _run_launch(['python'], [
+            {"jsonrpc": "2.0", "id": 1, "method": "initialize"},
+            {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
+        ])
+        lines = [line for line in out.splitlines() if line.strip()]
+        assert len(lines) == 2, f'rc={code} stdout={out!r} stderr={err!r}'
+        tools = json.loads(lines[1])['result']['tools']
+        assert sorted(t['name'] for t in tools) == \
+            ['drift', 'purlin_config', 'sync_status'], tools
+
+    @pytest.mark.proof("mcp_transport", "PROOF-9", "RULE-9", tier="integration")
+    def test_server_starts_when_only_py_is_on_path(self):
+        code, out, err = _run_launch(['py'], [
+            {"jsonrpc": "2.0", "id": 1, "method": "initialize"},
+            {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
+        ])
+        lines = [line for line in out.splitlines() if line.strip()]
+        assert len(lines) == 2, f'rc={code} stdout={out!r} stderr={err!r}'
+        tools = json.loads(lines[1])['result']['tools']
+        assert sorted(t['name'] for t in tools) == \
+            ['drift', 'purlin_config', 'sync_status'], tools
+
+    @pytest.mark.proof("mcp_transport", "PROOF-9", "RULE-9", tier="integration")
+    def test_no_interpreter_reports_one_line_and_exits_zero(self):
+        code, out, err = _run_launch([], [
+            {"jsonrpc": "2.0", "id": 1, "method": "initialize"},
+        ])
+        assert code == 0, f'rc={code} stderr={err!r}'
+        assert out == '', f'the launcher wrote to stdout: {out!r}'
+        lines = [line for line in err.splitlines() if line.strip()]
+        assert len(lines) == 1, f'expected one line of report, got {err!r}'
+        for name in _RESOLVER_NAMES:
+            assert name in lines[0], (
+                f'the report does not name {name}: {lines[0]!r}')

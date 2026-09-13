@@ -350,8 +350,10 @@ class TestRegistration:
 
     @pytest.mark.proof("refresh_digest_hook", "PROOF-7", "RULE-7", tier="unit")
     def test_hooks_json_registers_exactly_this_script_async_on_three_events(self):
-        with open(os.path.join(PROJECT_ROOT, 'hooks', 'hooks.json'), encoding='utf-8') as f:
-            manifest = json.load(f)
+        path = os.path.join(PROJECT_ROOT, 'hooks', 'hooks.json')
+        with open(path, encoding='utf-8') as f:
+            raw = f.read()
+        manifest = json.loads(raw)
         hooks = manifest['hooks']
         assert set(hooks) == {'PostToolUse', 'SubagentStop', 'Stop'}, sorted(hooks)
         for forbidden in ('PreToolUse', 'PermissionRequest', 'UserPromptSubmit'):
@@ -359,12 +361,21 @@ class TestRegistration:
         assert hooks['PostToolUse'][0]['matcher'] == 'Bash|Write|Edit|MultiEdit'
         entries = [h for event in hooks.values() for group in event for h in group['hooks']]
         assert len(entries) == 3
+        expected = ('sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" '
+                    '"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/refresh_digest.py"')
         for entry in entries:
             assert entry['type'] == 'command'
             assert entry.get('async') is True, entry
             assert isinstance(entry.get('timeout'), int), entry
-            assert 'scripts/hooks/refresh_digest.py' in entry['command'], entry
-            assert '${CLAUDE_PLUGIN_ROOT}' in entry['command'], entry
+            assert entry['command'] == expected, (
+                'the hook command must go through the interpreter resolver, '
+                f'not name one: {entry["command"]!r}')
+        # The interpreter the command must not name. `python3` is absent from
+        # a python.org install on Windows, so a hooks.json that names it
+        # registers three hooks that cannot start there.
+        assert 'python3' not in raw, (
+            f'{path} still names an interpreter: '
+            + next(line for line in raw.splitlines() if 'python3' in line))
 
 
 class TestNoSecondModuleLoad:

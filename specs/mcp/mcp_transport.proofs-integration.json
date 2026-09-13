@@ -3,28 +3,37 @@
   "proofs": [
     {
       "feature": "mcp_transport",
-      "id": "PROOF-8",
-      "rule": "RULE-8",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
       "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_failed_reload_prints_traceback_and_keeps_serving",
+      "test_name": "test_no_interpreter_reports_one_line_and_exits_zero",
       "status": "pass",
       "tier": "integration"
     },
     {
       "feature": "mcp_transport",
-      "id": "PROOF-8",
-      "rule": "RULE-8",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
       "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_hot_reload_off_when_env_unset",
+      "test_name": "test_plugin_json_launches_through_the_resolver",
       "status": "pass",
       "tier": "integration"
     },
     {
       "feature": "mcp_transport",
-      "id": "PROOF-8",
-      "rule": "RULE-8",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
       "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_valid_reload_logs_reloaded_and_takes_effect",
+      "test_name": "test_server_starts_when_only_py_is_on_path",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "mcp_transport",
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_server_starts_when_only_python_is_on_path",
       "status": "pass",
       "tier": "integration"
     }
