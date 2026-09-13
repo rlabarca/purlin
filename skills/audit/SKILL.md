@@ -277,7 +277,7 @@ For each feature being audited:
    - The fix directive must say "strengthen the test" not "update the rule"
    - If the rule itself is ambiguous or seems wrong, collect it for the anchor author recommendations section (see Step 3)
 8. If zero proofs remain after steps 5–6: skip Pass 2 entirely for this feature.
-9. If proofs remain: construct a single prompt containing ALL surviving proof descriptions, ALL test code, and ALL fixture/setup code. Send one LLM call per feature, not one per proof.
+9. If proofs remain: construct a single prompt containing the `--load-criteria` output from Step 1 verbatim, ALL surviving proof descriptions, ALL test code, and ALL fixture/setup code. Send one LLM call per feature, not one per proof. The criteria go in the prompt because they are what the grade is made against: a prompt that leaves them out is graded against whatever the model remembers.
 
 **For Claude (default auditor):**
 
@@ -312,16 +312,18 @@ STRUCTURAL proofs → EXCLUDED (not scored)
 
 STEP 2 — EVALUATE each BEHAVIORAL proof:
 
-For each behavioral proof, answer ONLY these questions:
-1. Does the test set up a scenario that exercises the rule's constraint?
-2. Does the test check the specific outcome the proof description claims?
-3. Is anything described in the proof missing from the test?
-4. Does the assertion contain a tautological escape hatch (OR branch that always passes)?
-5. Does the assertion validate test setup data instead of code-under-test output?
-6. Does the test function name contradict the actual assertion values?
+Grade each behavioral proof against the criteria included in this prompt:
+the `--load-criteria` output loaded in Step 1. These four of its sections are
+the complete list of what you grade against, and this prompt narrows none of
+them:
+  - Structural vs Behavioral Classification (primary)
+  - WEAK (LLM judgment)
+  - STRONG (LLM judgment)
+  - Rule quality advisory (LLM judgment: WARNING, not a proof downgrade)
+Cite the criterion you applied by the words the criteria file uses for it.
 
-Rate each: STRONG (test matches rule intent), WEAK (test partially matches — something is missing or too loose), or EXCLUDED (structural presence check, not behavioral).
-Do NOT check for structural issues — those were already handled.
+Rate each: STRONG (test matches rule intent), WEAK (test partially matches: something is missing or too loose), or EXCLUDED (structural presence check, not behavioral).
+Do NOT check for structural issues: those were already handled by Pass 1.
 ```
 
 **For external LLM (`audit_llm` configured):**

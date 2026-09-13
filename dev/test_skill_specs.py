@@ -605,6 +605,55 @@ class TestSkillAudit:
             "the criteria step must forbid falling back to the built-in criteria"
 
 
+    @pytest.mark.proof("skill_audit", "PROOF-28", "RULE-23")
+    def test_pass_two_prompt_names_the_criteria_file_as_the_whole_list(self):
+        """RULE-23: the prompt grades against audit_criteria.md, not against a
+        six-question shortlist that silently dropped most of the WEAK
+        criteria a project had pinned."""
+        content = _read('audit')
+
+        assert 'ONLY these questions' not in content, (
+            "the Pass 2 prompt must not enumerate its own criteria: the list "
+            "it carried overrode audit_criteria.md's WEAK and STRONG "
+            "sections")
+
+        marker = '**For Claude (default auditor):**'
+        assert marker in content, "the Claude Pass 2 prompt is gone"
+        prompt = content[content.index(marker):content.index('## Step 3')]
+
+        assert '--load-criteria' in prompt, (
+            "the prompt must name where the criteria came from")
+        for title in ('Structural vs Behavioral Classification',
+                      'WEAK (LLM judgment)', 'STRONG (LLM judgment)',
+                      'Rule quality advisory'):
+            assert title in prompt, (
+                f"the Pass 2 prompt does not name the criteria section "
+                f"{title!r}, so the grader cannot tell what it grades "
+                f"against")
+        assert 'complete list' in prompt, (
+            "the prompt must say the criteria sections are the complete "
+            "list, or a reader reads them as examples")
+
+        pipeline = content[content.index('## Step 2'):content.index(marker)]
+        assert '--load-criteria' in pipeline, (
+            "the prompt-construction step must put the --load-criteria "
+            "output into the prompt")
+
+        for field in ('PROOF-ID', 'ASSESSMENT', 'CRITERION', 'WHY', 'FIX'):
+            assert field in prompt, (
+                f"the structured response block lost {field}")
+
+        criteria = _read_ref('audit_criteria.md')
+        weak = criteria.split('### WEAK (LLM judgment)', 1)
+        assert len(weak) > 1, "audit_criteria.md has no WEAK section"
+        weak = weak[1].split('### ', 1)[0]
+        bullets = [l for l in weak.splitlines() if l.startswith('- ')]
+        assert len(bullets) >= 15, (
+            f"the WEAK section carries {len(bullets)} bullets; the prompt "
+            f"points at this file as the complete list, so an emptied file "
+            f"would make the pointer true and the audit worthless")
+
+
 # ── skill_build ───────────────────────────────────────────────────────
 
 class TestSkillBuild:
