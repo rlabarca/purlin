@@ -1,6 +1,6 @@
 # Developing Purlin
 
-This repo IS the Purlin plugin framework — and it uses Purlin to develop itself. The agent definition (`agents/purlin.md`) applies here: spec-driven development, rule-proof coverage, all of it. This CLAUDE.md provides **project-specific overrides and extensions** for developing the framework.
+This repo IS the Purlin plugin framework, and it uses Purlin to develop itself. The agent definition (`agents/purlin.md`) applies here: spec-driven development, rule-proof coverage, all of it. This CLAUDE.md provides **project-specific overrides and extensions** for developing the framework.
 
 ## Format Reference Versioning
 
@@ -17,20 +17,20 @@ The files in `references/formats/` are **versioned contracts**. External tools, 
 2. Update the corresponding format file in `references/formats/` to match
 3. If the change is structural (new field, removed field, changed structure): bump `> Format-Version:` by 1
 4. Update `references/spec_quality_guide.md` if the change affects quality guidance
-5. Grep for references to the changed format in `docs/`, `skills/`, and `agents/purlin.md` — update any that are now stale
-6. Commit the format change in the SAME commit as the code change — never let them drift
+5. Grep for references to the changed format in `docs/`, `skills/`, and `agents/purlin.md`: update any that are now stale
+6. Commit the format change in the SAME commit as the code change: never let them drift
 
 **Format files and what they govern:**
-- `spec_format.md` — parsed by `sync_status` (rule extraction, metadata)
-- `anchor_format.md` — anchor format (local and externally-referenced), parsed by `sync_status` + `purlin:anchor sync`
-- `proofs_format.md` — emitted by proof plugins, read by `sync_status`
+- `spec_format.md`: parsed by `sync_status` (rule extraction, metadata)
+- `anchor_format.md`: anchor format (local and externally-referenced), parsed by `sync_status` + `purlin:anchor sync`
+- `proofs_format.md`: emitted by proof plugins, read by `sync_status`
 - `receipt_format.md`: the verification receipt written by `purlin:verify`, read by `sync_status`
 
-Each file has its own `> Format-Version: N` line — check the file directly for the current version.
+Each file has its own `> Format-Version: N` line: check the file directly for the current version.
 
 ## Skill and Reference Deduplication (CRITICAL)
 
-**Never duplicate logic across skills or agent instructions.** When the same concept (proof markers, commit formats, test quality rules, framework detection, failure diagnosis) appears in multiple skills, it MUST live in a single reference file in `references/` and be pointed to from each skill. Skills that need the same behavior should call each other rather than reimplement — e.g., `purlin:build` and `purlin:verify` delegate test execution to `purlin:test` instead of inlining their own `pytest`/`jest`/`bash` commands.
+**Never duplicate logic across skills or agent instructions.** When the same concept (proof markers, commit formats, test quality rules, framework detection, failure diagnosis) appears in multiple skills, it MUST live in a single reference file in `references/` and be pointed to from each skill. Skills that need the same behavior should call each other rather than reimplement: e.g., `purlin:build` and `purlin:verify` delegate test execution to `purlin:test` instead of inlining their own `pytest`/`jest`/`bash` commands.
 
 **Before adding instructions to a skill, check:**
 1. Does another skill already have this logic? → Reference it or call that skill
@@ -40,11 +40,11 @@ Each file has its own `> Format-Version: N` line — check the file directly for
 **Authoritative reference files:**
 - `references/formats/proofs_format.md`: proof marker syntax for every shipped framework
 - `references/formats/receipt_format.md`: receipt shape, what the vhash binds
-- `references/audit_criteria.md` — test quality rules, HOLLOW/WEAK/STRONG criteria, scoring
-- `references/commit_conventions.md` — all commit message prefixes and formats
-- `references/spec_quality_guide.md` — rule writing, tier assignment, failure diagnosis
-- `references/drift_criteria.md` — file classification, config field ownership, drift detection
-- `references/supported_frameworks.md` — test framework detection heuristics
+- `references/audit_criteria.md`: test quality rules, HOLLOW/WEAK/STRONG criteria, scoring
+- `references/commit_conventions.md`: all commit message prefixes and formats
+- `references/spec_quality_guide.md`: rule writing, tier assignment, failure diagnosis
+- `references/drift_criteria.md`: file classification, config field ownership, drift detection
+- `references/supported_frameworks.md`: test framework detection heuristics
 - `references/proof_plugin_contract.md`: the proof-plugin checklist, the ordered wiring list for a new language and how to prove a plugin, with the behavioural requirements cited from `specs/_anchors/proof_common.md` rather than restated
 - `references/legacy_features_migration.md`: the legacy `features/` read, the `.impl.md` and `.discoveries.md` companion extraction, and the cleanup `purlin:spec-from-code` branches to
 

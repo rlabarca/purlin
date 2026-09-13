@@ -221,7 +221,8 @@ DASH_SCOPE = ('docs/**.md', 'README.md',
               'references/audit_criteria.md',
               '.claude-plugin/plugin.json',
               '.claude-plugin/marketplace.json',
-              'skills/**.md', 'agents/**.md')
+              'skills/**.md', 'agents/**.md',
+              'references/**.md', 'tools/**.md', 'CLAUDE.md')
 
 #: `purlin_docs` RULE-1's closed list: the only (file, section) pairs where the
 #: bare `@windows` token may appear. A section is the nearest preceding
@@ -288,11 +289,8 @@ LAST_GATE_RE = re.compile(r'last gate|final gate|the last check')
 
 REGULATED = 'docs/regulated-environments.md'
 
-#: The `retired-format` row's file set. `tools/` is still outside it: the
-#: stakeholder templates are a separate lane's work, so widening this tuple to
-#: `PROSE_SCOPE` is the edit that finishes the retirement.
-RETIRED_FORMAT_SCOPE = ('docs/**', 'references/**', 'README.md',
-                        'skills/**', 'agents/**')
+#: The `retired-format` row's file set, now every prose tree.
+RETIRED_FORMAT_SCOPE = PROSE_SCOPE
 
 #: The retired phrases, as one alternation. The heading arm is anchored at both
 #: ends so `#### What it does not bind`, a real heading of
@@ -307,13 +305,17 @@ RETIRED_FORMAT_RE = re.compile(
 #: so an exemption that outlives the text it covers is reported as stale.
 #: The one section that may still carry an em dash: the `(assumed - <context>)`
 #: rule tag is a literal `scripts/mcp/purlin_server.py` matches with
-#: `\\(assumed\\s*\u2014\\s*.+?\\)`, so the three worked examples of the tag are
-#: parser input rather than prose. Retiring the separator is one edit to that
+#: `\\(assumed\\s*\u2014\\s*.+?\\)`, so the worked examples of the tag in the skill
+#: and the row that documents it in the format contract are parser input
+#: rather than prose. Retiring the separator is one edit to that
 #: expression, to `references/formats/spec_format.md`, to `skill_spec` RULE-11
 #: and to the two end-to-end fixtures, and it belongs in the commit that owns
 #: `scripts/`; the exemption is written as an allowlist pair so it fails the
 #: day that lands.
-DASH_ALLOWLIST = (('skills/spec/SKILL.md', 'Step 5: Rule Extraction Heuristics'),)
+DASH_ALLOWLIST = (
+    ('skills/spec/SKILL.md', 'Step 5: Rule Extraction Heuristics'),
+    ('references/formats/spec_format.md', 'Rule Tags'),
+)
 
 BANNED = (
     ('em-dash', 'line', DASH_RE, DASH_SCOPE, 12, DASH_ALLOWLIST,

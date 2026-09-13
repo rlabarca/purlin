@@ -6,18 +6,18 @@ This document defines how `purlin:anchor add-figma` creates design anchors from 
 
 ## Core Principle
 
-A design anchor has ONE job: point to the visual reference and say "match this." The LLM reads the full Figma design during build for implementation fidelity. The anchor doesn't capture individual CSS values — the visual comparison proof catches drift.
+A design anchor has ONE job: point to the visual reference and say "match this." The LLM reads the full Figma design during build for implementation fidelity. The anchor doesn't capture individual CSS values: the visual comparison proof catches drift.
 
 ## What Goes Where
 
 | Information | Where it goes | Why |
 |------------|--------------|-----|
-| Visual design (layout, colors, typography, spacing) | Anchor: ONE visual match rule + screenshot comparison proof | LLM reads Figma directly during build — higher fidelity than extracted rules |
+| Visual design (layout, colors, typography, spacing) | Anchor: ONE visual match rule + screenshot comparison proof | LLM reads Figma directly during build: higher fidelity than extracted rules |
 | Behavioral annotations (interactions, validation, state changes) | Feature spec that `> Requires:` the anchor | Behavior is owned by the feature, not the design source |
 
 ## Anchor Structure
 
-A Figma design anchor is thin — one rule per viewport, one screenshot comparison proof per rule:
+A Figma design anchor is thin: one rule per viewport, one screenshot comparison proof per rule:
 
 ```markdown
 # Anchor: design_feedback_modal
@@ -72,7 +72,7 @@ The annotations are listed for reference but do NOT become rules in the anchor. 
 - PROOF-4 (RULE-4): Upload valid file; verify filename displayed @e2e
 ```
 
-The feature spec has `> Requires: design_feedback_modal` — so `purlin:status` includes the visual match rule in coverage. The feature must pass both its behavioral tests AND the visual comparison.
+The feature spec has `> Requires: design_feedback_modal`: so `purlin:status` includes the visual match rule in coverage. The feature must pass both its behavioral tests AND the visual comparison.
 
 ## Responsive Designs
 
@@ -133,7 +133,7 @@ When writing screenshot comparison proofs, use a named fidelity tier in the proo
 
 Default is **design** when no tier is specified.
 
-These are **naming conventions**, not built-in enforcement. Purlin does not ship a visual comparison tool. The actual comparison happens in your test framework — for example:
+These are **naming conventions**, not built-in enforcement. Purlin does not ship a visual comparison tool. The actual comparison happens in your test framework: for example:
 
 - **Playwright + Jest:** `expect(screenshot).toMatchSnapshot("ref.png", { threshold: 0.05 })`
 - **Playwright + pixelmatch:** Custom comparison with configurable tolerance
@@ -143,7 +143,7 @@ The convention tells the agent (and human readers) what level of strictness the 
 
 ## Tier Tags
 
-All proofs from Figma anchors require rendering — they are `@e2e` by definition. Do NOT leave Figma proofs untagged.
+All proofs from Figma anchors require rendering: they are `@e2e` by definition. Do NOT leave Figma proofs untagged.
 
 ## `> Stack:` for Anchors
 
@@ -153,4 +153,4 @@ Design anchors should include `> Stack:` with the rendering technology so the ag
 > Stack: react/tailwind (or vue/css, svelte, html/css)
 ```
 
-If the stack is unknown at anchor creation time, omit it — the feature spec that requires the anchor will have its own `> Stack:`.
+If the stack is unknown at anchor creation time, omit it: the feature spec that requires the anchor will have its own `> Stack:`.

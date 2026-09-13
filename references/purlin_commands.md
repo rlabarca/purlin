@@ -3,7 +3,7 @@
 > 12 skills, no permission system. The only mode is `purlin:audit`, and it derives that from what exists rather than asking.
 
 ```
-Purlin — Spec-Driven Development
+Purlin: Spec-Driven Development
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   Authoring
@@ -25,9 +25,9 @@ Purlin — Spec-Driven Development
 
   Quality
   ──────
-  purlin:audit [feature]        Evaluate proof quality — mode derived from state
+  purlin:audit [feature]        Evaluate proof quality: mode derived from state
   purlin:audit --design         Proof Design only: PROVABLE/LOOSE/UNPROVABLE
-                                (specs only — no tests needed)
+                                (specs only: no tests needed)
   purlin:audit --integrity      Proof Integrity only: STRONG/WEAK/HOLLOW
 
   Reporting

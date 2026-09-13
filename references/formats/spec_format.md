@@ -36,8 +36,8 @@ specs/<category>/<name>.md
 
 Every spec MUST have these 2 sections (case-insensitive heading match):
 
-1. `## Rules` — numbered constraints (`RULE-N: description`)
-2. `## Proof` — numbered proof blueprints (`PROOF-N (RULE-N): description`)
+1. `## Rules`: numbered constraints (`RULE-N: description`)
+2. `## Proof`: numbered proof blueprints (`PROOF-N (RULE-N): description`)
 
 These two are the whole structure: no third section is part of the format. A spec that carries some other heading still parses and `sync_status` reports nothing for it, so a spec written against an older format keeps working, but nothing reads that heading and new specs should not add one. What the feature does belongs in `> Description:`, which the dashboard displays.
 
@@ -87,7 +87,7 @@ Rules can have optional inline tags at the end:
 | `(assumed — <context>)` | AI inferred a specific value from vague input. The context shows what the user actually said. | `purlin:spec` during rule extraction | PM edits the value during review, or accepts it by deleting the tag |
 | `(deferred)` | Rule is accepted but not being built yet. No proof required until the tag is removed. | PM or engineer | Removed when work begins |
 
-Tags are part of the rule line — parsed by `sync_status`.
+Tags are part of the rule line: parsed by `sync_status`.
 
 ### Good Rules
 
@@ -107,7 +107,7 @@ Each proof is a line under `## Proof`:
 
 ```
 - PROOF-N (RULE-N): <observable assertion description>
-- PROOF-N (RULE-A, RULE-B, RULE-C): <multi-rule assertion — for Level 3 lifecycle tests>
+- PROOF-N (RULE-A, RULE-B, RULE-C): <multi-rule assertion: for Level 3 lifecycle tests>
 ```
 
 Proofs describe what a test should assert, not how to implement it. Each rule must have at least one proof. Multiple proofs can reference the same rule. A single proof can reference multiple rules when it tests a flow that exercises several rules in sequence (common in Level 3 E2E tests).
@@ -163,7 +163,7 @@ After manual verification, the stamp is added by `purlin:verify --manual`:
 
 ## FORBIDDEN Patterns (negative rules)
 
-Some rules define what code must **never** do. These are just regular rules with negative proofs — no special syntax needed:
+Some rules define what code must **never** do. These are just regular rules with negative proofs: no special syntax needed:
 
 ```markdown
 ## Rules

@@ -210,6 +210,42 @@
     },
     {
       "feature": "pre_push_hook",
+      "id": "PROOF-33",
+      "rule": "RULE-17",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_no_entry_point_names_an_interpreter",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-33",
+      "rule": "RULE-17",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_no_interpreter_blocks_in_strict",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-33",
+      "rule": "RULE-17",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_no_interpreter_reports_and_passes_in_warn",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
+      "id": "PROOF-33",
+      "rule": "RULE-17",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_python_only_host_runs_the_check",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_push_hook",
       "id": "PROOF-4",
       "rule": "RULE-4",
       "test_file": "dev/test_pre_push_hook.py",

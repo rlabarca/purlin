@@ -43,7 +43,7 @@ receipt, so this commit is followed by `purlin:verify` and its own `verify:` com
 
 ## Build Commit Body
 
-When `purlin:build` commits, the commit message body contains the changeset summary — a structured record of what the agent built and why. This is the engineer's review artifact and lives in git history permanently.
+When `purlin:build` commits, the commit message body contains the changeset summary, a structured record of what the agent built and why. This is the engineer's review artifact and lives in git history permanently.
 
 Format:
 
@@ -55,18 +55,18 @@ RULE-2 → src/auth.py:71         Sliding window rate limiter (60/min)
          tests/test_auth.py:12  2 proofs covering RULE-1 and RULE-2
 
 Decisions:
-  • Middleware over inline validation — reusable across routes
-  • 60 req/min hardcoded — spec says "rate limit" with no threshold
+  • Middleware over inline validation: reusable across routes
+  • 60 req/min hardcoded: spec says "rate limit" with no threshold
 
 Review:
-  → src/auth.py:45  Regex for SQL injection — security-sensitive
+  → src/auth.py:45  Regex for SQL injection: security-sensitive
 ```
 
 The first line uses the standard `feat(<name>):` prefix. The body has three sections:
 
 | Section | Purpose | When to omit |
 |---------|---------|-------------|
-| Changeset | Rule→file:line mapping for every rule addressed | Never — always present |
+| Changeset | Rule→file:line mapping for every rule addressed | Never: it is always present |
 | Decisions | Judgment calls the agent made between alternatives | Omit if all rules had unambiguous implementations |
 | Review | Risk areas the engineer should scrutinize | Omit if straightforward implementation |
 
@@ -95,12 +95,12 @@ verify(<feature>): manual stamp PROOF-N
 
 ## When to commit
 
-Skills commit at natural boundaries — after reaching a stable state, not after every file change.
+Skills commit at natural boundaries: after reaching a stable state, not after every file change.
 
 | Boundary | What to commit | Why |
 |----------|---------------|-----|
-| Spec approved | The spec .md file | Exit criteria enforce this — agent verifies git status |
-| Build stable | Code + tests + proofs + changeset summary in commit body | Exit criteria enforce this — agent verifies git status |
+| Spec approved | The spec .md file | Exit criteria enforce this: agent verifies git status |
+| Build stable | Code + tests + proofs + changeset summary in commit body | Exit criteria enforce this: agent verifies git status |
 | Proof files written | .proofs-*.json files | sync_status reads committed proofs |
 | Verification done | Receipt files + verify commit message | Already mandatory |
 | Anchor synced | Updated anchor file | Staleness checks use committed Pinned SHA |

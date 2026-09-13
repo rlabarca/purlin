@@ -6,12 +6,12 @@ Anchors define cross-cutting constraints that other features reference via `> Re
 
 This document has two parts:
 
-1. **Authoring format** — what you write when creating an anchor (either locally or in a remote repo for others to consume)
-2. **Consumer tracking fields** — metadata that Purlin tooling adds when a project pulls an anchor from an external source. You do NOT write these yourself.
+1. **Authoring format**: what you write when creating an anchor (either locally or in a remote repo for others to consume)
+2. **Consumer tracking fields**: metadata that Purlin tooling adds when a project pulls an anchor from an external source. You do NOT write these yourself.
 
 ## Part 1: Authoring Format
 
-This is the format to use when writing an anchor — whether it lives locally in `specs/_anchors/` or in a remote repo that other projects will pull from.
+This is the format to use when writing an anchor: whether it lives locally in `specs/_anchors/` or in a remote repo that other projects will pull from.
 
 ### Template
 
@@ -61,7 +61,7 @@ These fields are written by the anchor author. All are optional.
 
 ## Part 2: Consumer Tracking Fields (added by Purlin tooling)
 
-When a project pulls an anchor from an external source (a git repo, Figma file, or URL), Purlin adds tracking metadata to the local copy in `specs/_anchors/`. **These fields are NOT written by the anchor author** — they are added and maintained by `purlin:anchor sync` in the consuming project.
+When a project pulls an anchor from an external source (a git repo, Figma file, or URL), Purlin adds tracking metadata to the local copy in `specs/_anchors/`. **These fields are NOT written by the anchor author**: they are added and maintained by `purlin:anchor sync` in the consuming project.
 
 ### Tracking fields
 
@@ -96,7 +96,7 @@ The consuming project's `specs/_anchors/security_no_eval.md` might look like thi
 - PROOF-2 (RULE-2): grep -r "exec(" src/ returns zero matches
 ```
 
-The `> Source:`, `> Path:`, and `> Pinned:` lines were added by Purlin tooling — the original author's file in `acme/security-policies` does NOT contain them.
+The `> Source:`, `> Path:`, and `> Pinned:` lines were added by Purlin tooling: the original author's file in `acme/security-policies` does NOT contain them.
 
 ### Example: Figma-sourced anchor (consumer copy)
 
@@ -141,4 +141,4 @@ If the anchor has local rules and the external source changed, `purlin:drift` su
 
 ## Global Anchors
 
-An anchor with `> Global: true` has its rules auto-applied to every non-anchor feature spec. Features don't need `> Requires:` — the rules are included automatically. In `sync_status`, global anchor rules appear with a `(global)` label.
+An anchor with `> Global: true` has its rules auto-applied to every non-anchor feature spec. Features don't need `> Requires:`: the rules are included automatically. In `sync_status`, global anchor rules appear with a `(global)` label.
