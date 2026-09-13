@@ -399,26 +399,128 @@ BANNED = (
      (REGULATED,), 1, (),
      'approval vocabulary for something Purlin never does; the page is cited '
      'in a validation record, so it names mechanisms rather than approvals'),
-    ('retired-format', 'line', RETIRED_FORMAT_RE, RETIRED_FORMAT_SCOPE, 25, (),
-     'a spec and an anchor carry two sections, `## Rules` and `## Proof`, so '
-     'the name is the 2-section format; `## What it does` is retired and what '
-     'a feature does belongs on the `> Description:` continuation lines'),
     ('last-gate', 'line', LAST_GATE_RE, LAST_GATE_SCOPE, 10, (),
      '`purlin:verify` is Layer 0, the first of the four enforcement layers '
      'of `references/hard_gates.md`, and the CI gate job is Layer 3; a guide '
      'that calls any of them the last gate tells the reader the opposite of '
      'what the reference says'),
-    ('slash-prefix', 'line', SLASH_PREFIX_RE, SLASH_PREFIX_SCOPE, 80,
-     SLASH_PREFIX_ALLOWLIST,
+)
+
+# ---------------------------------------------------------------------------
+# The glossary-sourced half of banned_strings (RULE-25)
+# ---------------------------------------------------------------------------
+
+#: The file that owns the vocabulary and the one section of it where a retired
+#: spelling may still be written: the table that retires it.
+GLOSSARY_HOME = 'references/glossary.md'
+GLOSSARY_SECTION = 'Retired terms'
+GLOSSARY_EXEMPTION = ((GLOSSARY_HOME, GLOSSARY_SECTION),)
+
+#: Every prose tree plus the two prose files at the repository root. A retired
+#: term is retired everywhere a reader can meet it, so the glossary rows do not
+#: carry per-row scopes the way the older rows do.
+GLOSSARY_SCOPE = PROSE_SCOPE + ('CLAUDE.md',)
+
+
+def _words(*spellings):
+    """A pattern matching any of `spellings` as a whole token."""
+    return re.compile(r'(?<![\w-])(?:'
+                      + '|'.join(re.escape(s) for s in spellings)
+                      + r')(?![\w-])')
+
+
+#: The two sections that still print `--local`, because the flag is a
+#: deprecated alias rather than a deleted one: it runs until 0.12.0 and each
+#: page names it to say what replaced it. Written as allowlist pairs so the
+#: release that removes the alias also fails these exemptions.
+LOCAL_ALIAS_EXEMPTION = GLOSSARY_EXEMPTION + (
+    ('references/purlin_commands.md', 'Purlin Commands'),
+    ('skills/test/SKILL.md', 'Usage'),
+)
+
+#: One entry per row of `references/glossary.md`'s Retired table:
+#: `(terms, name, unit, pattern, scope, min_files, allowlist, note)`. `terms`
+#: holds the retired term exactly as the table's first cell spells it, and the
+#: `banned_strings` rows below are generated from this tuple by dropping it, so
+#: the table and the lint are one source rather than two. `purlin_prose`
+#: RULE-25 states the correspondence and its proof checks it both ways.
+GLOSSARY_RETIRED = (
+    (('3-section format', '## What it does'),
+     'retired-format', 'line', RETIRED_FORMAT_RE, RETIRED_FORMAT_SCOPE, 25,
+     GLOSSARY_EXEMPTION,
+     'a spec and an anchor carry two sections, `## Rules` and `## Proof`, so '
+     'the name is the 2-section format; `## What it does` is retired and what '
+     'a feature does belongs on the `> Description:` continuation lines'),
+    (('anchor file', '.anchor.md'),
+     'retired-anchor-file', 'line',
+     re.compile(r'anchor files?(?![\w-])|\.anchor\.md', re.IGNORECASE),
+     GLOSSARY_SCOPE, 40, GLOSSARY_EXEMPTION,
+     'an anchor is a spec: it carries rules, proofs and a status, and '
+     '`sync_status` reads it as one, so it is an anchor spec at '
+     '`specs/_anchors/<name>.md` and never an anchor file'),
+    (('specs/schema/',),
+     'anchor-home', 'line', ANCHOR_HOME_RE, ANCHOR_HOME_SCOPE, 35,
+     GLOSSARY_EXEMPTION,
+     'an anchor spec lives at `specs/_anchors/<name>.md`; `sync_status` reads '
+     'that directory and no other, so a `schema/` category routes an anchor '
+     'to a file nothing loads'),
+    (('toolkit',),
+     'toolkit', 'line', _words('toolkit', 'toolkits'), GLOSSARY_SCOPE, 40,
+     GLOSSARY_EXEMPTION,
+     'Purlin is one Claude Code plugin with skills, an MCP server and proof '
+     'plugins, not a collection the reader assembles'),
+    (('platform tier',),
+     'platform-tier', 'line', re.compile(r'platform tiers?(?![\w-])',
+                                         re.IGNORECASE),
+     GLOSSARY_SCOPE, 40, GLOSSARY_EXEMPTION,
+     'a tier says what kind of test a proof is and a platform says where it '
+     'must be proved; the two are independent axes and the compound name '
+     'collapses them into one'),
+    (('read-only',),
+     'read-only', 'line', re.compile(r'read-only', re.IGNORECASE),
+     GLOSSARY_SCOPE, 40, GLOSSARY_EXEMPTION,
+     'it meant three things on three pages; say `writes no code and no test '
+     'files` for a skill or a gate that does not touch them, and '
+     '`upstream-owned` for an anchor carrying a `> Source:`'),
+    (('dev as a role token',),
+     'dev-role', 'line',
+     re.compile(r'pm[,|/ ]+dev|dev[,|/ ]+qa|--role\s+dev'
+                r'|purlin:drift\s+dev(?![\w-])'),
+     GLOSSARY_SCOPE, 40, GLOSSARY_EXEMPTION,
+     'the three role tokens are `pm`, `eng` and `qa`; `dev` was a fourth '
+     'spelling of the second one that only the tool schemas ever used'),
+    (('/purlin:',),
+     'slash-prefix', 'line', SLASH_PREFIX_RE, SLASH_PREFIX_SCOPE, 80,
+     SLASH_PREFIX_ALLOWLIST + GLOSSARY_EXEMPTION,
      'a skill is invoked as `purlin:<name>`; the leading slash is a Claude '
      'Code slash-command spelling that nothing else in this repository uses, '
      'and a reader who copies it from one page and not another cannot tell '
      'which one is right'),
-    ('anchor-home', 'line', ANCHOR_HOME_RE, ANCHOR_HOME_SCOPE, 35, (),
-     'an anchor spec lives at `specs/_anchors/<name>.md`; `sync_status` reads '
-     'that directory and no other, so a `schema/` category routes an anchor '
-     'to a file nothing loads'),
+    (('--mcp', '--list-plugins', '--criteria', '--anchor', '--review',
+      '--resume'),
+     'retired-flag', 'line',
+     _words('--mcp', '--list-plugins', '--criteria', '--anchor', '--review',
+            '--resume'),
+     GLOSSARY_SCOPE, 40, GLOSSARY_EXEMPTION,
+     'the flag was removed; naming it in a guide is an instruction that '
+     'errors out on the first paste'),
+    (('--local',),
+     'deprecated-flag-local', 'line', _words('--local'),
+     GLOSSARY_SCOPE, 40, LOCAL_ALIAS_EXEMPTION,
+     '`purlin:test --platform none` is the spelling; `--local` survives only '
+     'in the two deprecation notices that name its replacement, and goes with '
+     'the alias in 0.12.0'),
+    (('(confirmed)',),
+     'retired-tag', 'line', re.compile(r'\(confirmed\)'),
+     GLOSSARY_SCOPE, 40, GLOSSARY_EXEMPTION,
+     'a rule with no tag is already accepted, so confirming one is deleting '
+     'its `(assumed)` tag rather than writing a second tag nothing reads'),
 )
+
+#: The rows the glossary generates, in the shape `banned_strings` reads.
+GLOSSARY_BANNED = tuple(row[1:] for row in GLOSSARY_RETIRED)
+
+BANNED = BANNED + GLOSSARY_BANNED
 
 
 def _json_descriptions(text):

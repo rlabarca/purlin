@@ -1428,3 +1428,93 @@ class TestEveryProseFileHasOneHome:
         assert offenders[0].path == target
         assert '2 specs' in offenders[0].message, offenders[0].message
         assert refs in offenders[0].message and prose in offenders[0].message
+
+
+GLOSSARY = 'references/glossary.md'
+
+
+def _table_rows(text, heading):
+    """The cell lists of the markdown table under `## <heading>`."""
+    body = re.search(rf'^##\s+{re.escape(heading)}\s*$(.*?)(?=^##\s|\Z)',
+                     text, re.MULTILINE | re.DOTALL)
+    assert body, f"{GLOSSARY} carries no `## {heading}` section"
+    rows = []
+    for line in body.group(1).splitlines():
+        line = line.strip()
+        if not line.startswith('|'):
+            continue
+        cells = [c.strip() for c in line.strip('|').split('|')]
+        if all(set(c) <= set('-: ') for c in cells):
+            continue
+        rows.append(cells)
+    return rows[1:] if rows else rows
+
+
+def _retired_terms(text):
+    """The first cell of every Retired-terms row, backticks stripped."""
+    return [row[0].replace('`', '').strip()
+            for row in _table_rows(text, 'Retired terms')]
+
+
+class TestGlossaryIsTheSourceOfTheRetiredRows:
+    """RULE-25 - the Retired table and the lint's rows are one list."""
+
+    @pytest.mark.proof("purlin_prose", "PROOF-38", "RULE-25")
+    def test_the_retired_table_and_the_generated_rows_agree_both_ways(
+            self, tmp_path):
+        from prose_lint import (GLOSSARY_RETIRED, GLOSSARY_HOME,
+                                GLOSSARY_SECTION)
+
+        text = _read(GLOSSARY)
+        table = _retired_terms(text)
+        assert len(table) >= 18, (
+            f"{GLOSSARY} retires {len(table)} terms; the comparison would "
+            f"pass on a table nobody wrote")
+
+        claimed = []
+        for entry in GLOSSARY_RETIRED:
+            claimed.extend(entry[0])
+        assert len(claimed) == len(set(claimed)), (
+            f"a term is claimed by two rows: {sorted(claimed)}")
+        assert set(table) == set(claimed), (
+            f"the glossary retires {sorted(set(table) - set(claimed))} with "
+            f"no lint row, and the lint enforces "
+            f"{sorted(set(claimed) - set(table))} with no glossary row")
+
+        by_name = {row[0]: row for row in BANNED}
+        for entry in GLOSSARY_RETIRED:
+            name = entry[1]
+            assert name in by_name, f"{name} is generated but not in BANNED"
+            assert by_name[name] == tuple(entry[1:]), (
+                f"the {name} row of BANNED is not the row the glossary "
+                f"generates")
+            allowlist = entry[6]
+            assert (GLOSSARY_HOME, GLOSSARY_SECTION) in allowlist, (
+                f"{name} does not exempt the table that retires the term")
+
+        # Direction one: a term the lint enforces that the table dropped.
+        dropped = [t for t in table if t != 'platform tier']
+        assert set(claimed) - set(dropped) == {'platform tier'}, (
+            "deleting the `platform tier` row must leave exactly that term "
+            "enforced with nothing retiring it")
+
+        # Direction two: a term the table retires that no row enforces.
+        added = table + ['gauge score']
+        assert set(added) - set(claimed) == {'gauge score'}, (
+            "a new row with no lint row must be reported as unenforced")
+
+        row = next(tuple(e[1:]) for e in GLOSSARY_RETIRED
+                   if e[1] == 'platform-tier')
+        index = _read('docs/index.md')
+        planted = index.rstrip('\n') + '\n\nA runner is held for a platform tier.\n'
+        _plant(tmp_path, 'docs/index.md', planted)
+        offenders = banned_strings(
+            root=str(tmp_path), files=['docs/index.md'],
+            rows=((row[0], row[1], row[2], row[3], 1, (), row[6]),),
+            strict=False)
+        assert len(offenders) == 1, f"expected one; got {offenders}"
+        only = offenders[0]
+        assert only.path == 'docs/index.md' and only.lint == 'banned_strings'
+        assert only.line == planted.splitlines().index(
+            'A runner is held for a platform tier.') + 1
+        assert only.message.startswith('platform-tier:'), only.message

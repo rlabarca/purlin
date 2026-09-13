@@ -103,7 +103,7 @@ Skills commit at natural boundaries: after reaching a stable state, not after ev
 | Build stable | Code + tests + proofs + changeset summary in commit body | Exit criteria enforce this: agent verifies git status |
 | Proof files written | .proofs-*.json files | sync_status reads committed proofs |
 | Verification done | Receipt files + verify commit message | Already mandatory |
-| Anchor synced | Updated anchor file | Staleness checks use committed Pinned SHA |
+| Anchor synced | Updated anchor spec | Staleness checks use committed Pinned SHA |
 
 Do NOT commit:
 - After each failed test iteration (pollutes history)

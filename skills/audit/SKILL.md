@@ -3,7 +3,7 @@ name: audit
 description: Evaluate proof quality: Proof Design (provable?) and Proof Integrity (proven?)
 ---
 
-Audit all proofs (or a specific feature) against configurable criteria. Read-only: never modifies code or test files.
+Audit all proofs (or a specific feature) against configurable criteria. It writes no code and no test files.
 
 **Pending migrations:** call `sync_status` first when this skill would write specs or proofs, and follow `references/purlin_commands.md#pending-migrations` when it opens with a pending-migrations advisory.
 
@@ -423,7 +423,7 @@ When spawned by purlin:verify or another agent:
 - Load criteria via `--load-criteria` (see Step 1)
 - For each proof, assess as STRONG/WEAK/HOLLOW using the three-pass pipeline
 - After completing the audit, if HOLLOW or WEAK proofs are found:
-  - Report the findings: the audit is read-only and never edits code or tests
+  - Report the findings: the audit writes no code and no test files
   - Format each finding with the three-part structure (PROOF-ID, finding, fix)
   - Remediation happens in the build loop: `purlin:build <feature>`. There is no separate
     fixer agent to spawn: on hosts where agent types are fixed by the harness, one would
@@ -436,7 +436,7 @@ When spawned by purlin:verify or another agent:
 ### Anchor Rule Handling
 
 When a HOLLOW or WEAK proof is for an anchor rule:
-- State the fix directive: "Fix the test to properly prove <anchor>/<rule>. The anchor is read-only: strengthen the test, don't suggest changing the rule."
+- State the fix directive: "Fix the test to properly prove <anchor>/<rule>. The anchor is upstream-owned: strengthen the test, don't suggest changing the rule."
 - If the rule itself is ambiguous: message the lead: "Recommend to anchor author (<source>): <rule> could be clearer: <suggestion>"
 
 ## External LLM Mode
@@ -587,7 +587,7 @@ dashboard computes.
 
 ## Key Principles
 
-- **Read-only.** Never modify code or test files.
+- **Writes no code and no test files.** Never modify code or test files.
 - **Independent.** When spawned as a subagent, has fresh context: no memory of writing the tests.
 - **Criteria-driven.** All judgments reference the criteria document, not ad hoc opinions.
 - **Transparent.** The report shows the criteria version and source so anyone can verify the assessment was made against known standards.

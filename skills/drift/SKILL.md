@@ -3,7 +3,7 @@ name: drift
 description: Detect spec drift and summarize changes since last verification, cross-referenced with specs
 ---
 
-Read-only skill. Calls the `drift` MCP tool for structured data, then interprets and formats the results into a PM/QA-readable report with actionable directives.
+This skill writes nothing. It calls the `drift` MCP tool for structured data, then interprets and formats the results into a PM/QA-readable report with actionable directives.
 
 Classification criteria: see `references/drift_criteria.md` (Criteria-Version: N).
 

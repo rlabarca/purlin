@@ -52,7 +52,7 @@ claim. The commands are the ones in [references/purlin_commands.md](../reference
 | **Proof files** | `specs/<category>/<name>.proofs-*.json` | Test results linked to rules, one file per tier and platform | Evidence of verification, read by the QMS |
 | **Verification receipts** | `specs/<category>/<name>.receipt.json`, plus the `verify: [Complete:all] vhash=...` commit | The rules, proofs, manual stamps and run evidence behind one feature at one commit | The primary machine-readable artifact; the commit message gives the ledger a timeline |
 | **Manual proof stamps** | `@manual(email, date, sha)` in the spec | The record that a named person checked a rule on a named day | A starting point. The QMS must re-authenticate and countersign |
-| **Anchor files** | `specs/_anchors/*.md` | External constraints with a `> Pinned:` version | Source-of-truth tracking for external standards |
+| **Anchor specs** | `specs/_anchors/*.md` | External constraints with a `> Pinned:` version | Source-of-truth tracking for external standards |
 | **Run marker** | `.purlin/runtime/test_run.json` | What ran, when, at which commit, and what it skipped | Proof that the evidence came from an observed run |
 
 These are inputs to your compliance pipeline, not the pipeline itself. The receipt shape is a
@@ -180,7 +180,7 @@ pending from the project's own contents rather than from the `version` field, sh
 asks before writing. `scripts/update/migrate.py` owns the migration ids:
 `legacy-tier-windows`, `legacy-proof-file`, `legacy-marker`, `plugin-copies-stale`,
 `config-fields-missing`, `receipt-v1` and `legacy-mcp`. The first three rewrite the retired
-platform tier tag, its proof files and its plugin markers to the `@on(<id>)` form.
+tier tag that named a platform, its proof files and its plugin markers to the `@on(<id>)` form.
 `plugin-copies-stale` replaces each `.purlin/plugins/` copy with the installed plugin's file.
 `receipt-v1` only prints a directive, because a receipt is a claim that tests ran and an update
 never writes one. `purlin:init --update --check` reports what is pending and writes nothing,

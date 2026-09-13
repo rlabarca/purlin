@@ -7,8 +7,8 @@ Run tests (unit tier unless `--all`), emit proof files via write-scoped overwrit
 
 This skill is the **single owner of test execution**. `purlin:build` and `purlin:verify` delegate
 here rather than invoking a runner themselves, which is also why remote execution lives here:
-pushing a branch and pulling a runner's proof commits is writing, and `purlin:verify` is a
-read-only gate. See `references/remote_verification.md`.
+pushing a branch and pulling a runner's proof commits is writing, and `purlin:verify` writes
+no code and no test files. See `references/remote_verification.md`.
 
 **Pending migrations:** when `sync_status` opens with a pending-migrations advisory, stop and follow `references/purlin_commands.md#pending-migrations` before doing this skill's work.
 

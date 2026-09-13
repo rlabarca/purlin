@@ -78,7 +78,7 @@ Compare `> Pinned:` value to the upstream source. Pull if different.
 2. Read `> Pinned:` to get the current SHA.
 3. Fetch the remote HEAD SHA: `git ls-remote <repo> HEAD`.
 4. If SHAs differ:
-   a. Fetch the new content and update the anchor file's external reference data.
+   a. Fetch the new content and update the anchor spec's external reference data.
    b. Update `> Pinned:` with the new SHA.
    c. If the anchor has local rules (rules not from the original sync), flag: "External reference changed. This anchor has N local rules: review for conflicts via purlin:drift."
    d. Commit per `references/commit_conventions.md`: `anchor(<name>): sync from upstream (<new-sha>[:7])`
@@ -90,7 +90,7 @@ Compare `> Pinned:` value to the upstream source. Pull if different.
 3. Call `get_metadata` MCP tool with the Figma file key to get `lastModified`.
 4. If timestamps differ:
    a. Call `get_design_context` to fetch the current design data.
-   b. Update the anchor file with refreshed visual data.
+   b. Update the anchor spec with refreshed visual data.
    c. Update `> Pinned:` with the new timestamp.
    d. If `> Visual-Reference:` exists, call `get_screenshot` to recapture the reference screenshot.
    e. If local rules exist, flag for drift review.

@@ -508,8 +508,8 @@ class TestRemoteVerificationReference:
         rv = _read(self.RV)
 
         assert 'purlin:test' in rv, "the reference must name the owning skill"
-        assert re.search(r'(?i)read-only', rv), (
-            "it must give verify's read-only contract as the reason the loop "
+        assert 'writes no code and no test files' in rv, (
+            "it must give verify's no-writes contract as the reason the loop "
             "lives in purlin:test")
 
         for label, pattern in (('push', r'(?i)push(es)? the (current )?branch'),
@@ -1287,3 +1287,79 @@ class TestNoReferenceCitesThisRepositorysSpecs:
             assert only.path == rel and only.lint == 'banned_paths'
             assert only.line == injected.splitlines().index(planted) + 1
             assert 'specs/mcp/sync_status.md' in only.message, only.message
+
+
+class TestGlossary:
+    """RULE-36 - the canonical term list, in three sections."""
+
+    GLOSSARY = os.path.join(REFS, 'glossary.md')
+
+    @staticmethod
+    def _rows(body):
+        rows = []
+        for line in body.splitlines():
+            line = line.strip()
+            if not line.startswith('|'):
+                continue
+            cells = [c.strip() for c in line.strip('|').split('|')]
+            if all(set(c) <= set('-: ') for c in cells):
+                continue
+            rows.append(cells)
+        return rows[1:] if rows else rows
+
+    @staticmethod
+    def _section(text, heading):
+        found = re.search(
+            rf'^##\s+{re.escape(heading)}\s*$(.*?)(?=^##\s|\Z)',
+            text, re.MULTILINE | re.DOTALL)
+        assert found, f"glossary.md carries no `## {heading}` section"
+        return found.group(1)
+
+    @pytest.mark.proof("purlin_references", "PROOF-37", "RULE-36", tier="unit")
+    def test_glossary_defines_the_terms_and_points_at_the_one_liners(self):
+        text = _read(self.GLOSSARY)
+        headings = re.findall(r'^##\s+(.*\S)\s*$', text, re.MULTILINE)
+        assert headings == ['Canonical terms', 'Retired terms',
+                            'Skill one-liners'], headings
+
+        canonical = self._rows(self._section(text, 'Canonical terms'))
+        assert len(canonical) >= 24, (
+            f"the canonical table names {len(canonical)} terms; the check "
+            f"would pass on a table nobody wrote")
+        for row in canonical:
+            assert len(row) == 3 and all(row), row
+        terms = {row[0].replace('`', '').strip() for row in canonical}
+        for required in ('spec', 'rule', 'proof', 'anchor spec',
+                         'upstream-owned anchor', 'receipt', 'vhash',
+                         'digest', 'drift', 'Proof Design', 'Proof Integrity',
+                         'the hard gate', 'the CI gate job'):
+            assert required in terms, f"{required!r} has no canonical row"
+        for row in canonical:
+            for token in re.findall(r'`([^`]+)`', row[2]):
+                assert os.path.isfile(
+                    os.path.join(PROJECT_ROOT, token)), (
+                    f"the authority cell for {row[0]!r} names {token}, "
+                    f"which is not a file under the repository root")
+
+        retired = self._rows(self._section(text, 'Retired terms'))
+        assert len(retired) >= 18, len(retired)
+        for row in retired:
+            assert len(row) == 3 and all(row), row
+
+        pointer = self._section(text, 'Skill one-liners')
+        anchor = 'references/purlin_commands.md#quick-reference'
+        assert anchor in pointer, (
+            "the one-liner section must point at the Quick Reference")
+        commands = _read(os.path.join(REFS, 'purlin_commands.md'))
+        slugs = {re.sub(r'\s+', '-',
+                        re.sub(r'[^\w\s-]', '', h.lower()).strip())
+                 for h in re.findall(r'^#{1,6}\s+(.*\S)\s*$', commands,
+                                     re.MULTILINE)}
+        assert 'quick-reference' in slugs, sorted(slugs)
+        assert not [l for l in pointer.splitlines()
+                    if l.strip().startswith('|')], (
+            "the one-liner section carries a table, which is a second copy "
+            "of the Quick Reference")
+        assert not re.search(r'`purlin:[a-z]', pointer), (
+            "the one-liner section names a skill, so it is starting to "
+            "become a copy of the Quick Reference")

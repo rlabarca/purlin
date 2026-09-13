@@ -199,7 +199,7 @@ def test_no_eval_in_source():
 
 ## External References
 
-An anchor can optionally reference an external source (git repo, Figma file, compliance document). Purlin can sync the anchor's content from that source. The anchor file stays locally editable. If local rules conflict with the external source, `purlin:anchor sync` flags the conflicts as drift.
+An anchor can optionally reference an external source (git repo, Figma file, compliance document). Purlin can sync the anchor's content from that source. The anchor spec stays locally editable. If local rules conflict with the external source, `purlin:anchor sync` flags the conflicts as drift.
 
 ### Format
 

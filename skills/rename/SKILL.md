@@ -46,7 +46,7 @@ purlin:rename <old-name> <new-name>    Rename a feature
 Search `specs/**/<old-name>.md`.
 
 - **Not found:** Stop with: `No spec found for '<old-name>'. Verify the spec exists in specs/.`
-- **Anchor with `> Source:` (external):** Stop with: `Cannot rename anchor '<old-name>'. Anchors with external sources are read-only and synced from that source. Rename at the source and re-sync.`
+- **Anchor with `> Source:` (external):** Stop with: `Cannot rename anchor '<old-name>'. Anchors with external sources are upstream-owned and synced from that source. Rename at the source and re-sync.`
 - **Multiple matches:** List them and use `AskUserQuestion` to ask the user which one.
 - **Found:** Continue.
 
@@ -132,5 +132,5 @@ If `sync_status` shows issues after rename, warn the user and show the directive
 - **Old name appears in test function names**: do NOT rename test functions: only rename proof marker strings. `test_login_valid()` stays as-is; only `proof("login",` changes.
 - **Old name appears in code comments or docs**: do NOT rename. Only rename in Purlin artifacts (specs, proofs, markers, `> Requires:`).
 - **Multiple specs match**: if `specs/**/login.md` matches multiple files, list them and ask the user which one.
-- **Anchors with `> Source:` (external)**: refuse to rename: anchors with external sources are read-only and synced from that source. The rename must happen at the external source.
+- **Anchors with `> Source:` (external)**: refuse to rename: anchors with external sources are upstream-owned and synced from that source. The rename must happen at the external source.
 - **`> Requires:` partial matches**: use word-boundary matching when replacing in `> Requires:` lines. The old name must match as a complete comma-separated entry, not as a substring of another name.

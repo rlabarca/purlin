@@ -113,8 +113,8 @@ class TestSkillAudit:
         section = _section(content, '## When Running as Independent Auditor')
         assert 'purlin:build <feature>' in section, \
             "independent auditor section must route remediation to `purlin:build <feature>`"
-        assert 'read-only and never edits code or tests' in section, \
-            "independent auditor section must state the audit is read-only and never edits code or tests"
+        assert 'writes no code and no test files' in section, \
+            "independent auditor section must state the audit writes no code and no test files"
         # The rule wants the section to SAY no fixer agent is spawned, not merely to
         # omit the retired agent name. The sentence wraps, so fold whitespace first.
         assert re.search(r'There is no separate\s+fixer agent to spawn', section), \
@@ -2130,16 +2130,17 @@ class TestSkillTestRemotePath:
             "a late commit-back can land mid-pull; the pull is retried once")
 
         # Why here and not in verify. The reason, not just the placement.
-        assert re.search(r'(?i)read-only', content), (
-            "the skill must name verify's read-only contract as the reason")
+        assert 'writes\nno code and no test files' in content, (
+            "the skill must name verify's no-writes contract as the reason")
         assert 'purlin:verify' in content
 
         # And verify must not have grown a write path of its own.
         verify = _read('verify')
         for forbidden in ('git push', 'gh workflow run', 'git pull'):
             assert forbidden not in verify, (
-                f"skills/verify/SKILL.md gained {forbidden!r}; verify is a "
-                "read-only gate and must inherit the remote path by delegation")
+                f"skills/verify/SKILL.md gained {forbidden!r}; verify "
+                "writes no code and no test files and must inherit the "
+                "remote path by delegation")
 
     @pytest.mark.proof("skill_test", "PROOF-9", "RULE-9")
     def test_remotely_proved_is_reported_per_file_from_the_commit(self):

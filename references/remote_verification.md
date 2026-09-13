@@ -115,8 +115,8 @@ Remote execution belongs to **`purlin:test`**. It is the only skill that runs te
 `purlin:build` and `purlin:verify` delegate to it rather than invoking a runner themselves, so
 both inherit the remote path with no change of their own.
 
-That placement is not a preference. `purlin:verify` is a read-only gate: "NEVER modify code or
-test files", and it must stay one. Pushing a branch, awaiting a workflow and pulling its commits
+That placement is not a preference. `purlin:verify` writes no code and no test files: "NEVER modify
+code or test files", and it must stay that way. Pushing a branch, awaiting a workflow and pulling its commits
 is writing. Putting it in `purlin:test`, which already commits proof files as its Step 4, keeps
 verify's contract intact: verify reads the proofs a runner returned, and issues receipts.
 

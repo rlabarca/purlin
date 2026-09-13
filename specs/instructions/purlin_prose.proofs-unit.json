@@ -255,6 +255,15 @@
     },
     {
       "feature": "purlin_prose",
+      "id": "PROOF-38",
+      "rule": "RULE-25",
+      "test_file": "dev/test_purlin_prose.py",
+      "test_name": "test_the_retired_table_and_the_generated_rows_agree_both_ways",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_prose",
       "id": "PROOF-4",
       "rule": "RULE-2",
       "test_file": "dev/test_purlin_prose.py",

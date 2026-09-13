@@ -46,7 +46,7 @@ Purlin: Spec-Driven Development
                                 digest, mutation_checks or quality_gate
   purlin:init --add-plugin <src> Install a proof plugin from a file path or git URL
   purlin:rename <old> <new>     Rename feature across all Purlin artifacts
-  purlin:anchor <cmd>           Sync read-only constraints from external sources
+  purlin:anchor <cmd>           Sync upstream-owned constraints from external sources
   purlin:init --sync-audit-criteria
                                 Sync external audit criteria to latest version
 
@@ -68,12 +68,12 @@ replacement. All six are removed in 0.12.0.
 | `purlin:verify` | Run all tests, issue receipts | `*.receipt.json` next to specs |
 | `purlin:test` | Run tests, emit proofs | `*.proofs-*.json` next to specs |
 | `purlin:audit` | Evaluate proof quality (both gauges) | Audit and design caches |
-| `purlin:status` | Show coverage + directives | Nothing (read-only) |
-| `purlin:drift` | Drift detection since last verify | Nothing (read-only) |
+| `purlin:status` | Show coverage + directives | Nothing |
+| `purlin:drift` | Drift detection since last verify | Nothing |
 | `purlin:init` | Initialize project | `.purlin/`, `specs/`, proof plugin |
 | `purlin:init --update` | Migrate the project to the installed plugin | Specs, proof filenames, markers, plugin copies, config |
 | `purlin:anchor` | Sync external constraints | `specs/_anchors/*.md` |
-| `purlin:find` | Search specs | Nothing (read-only) |
+| `purlin:find` | Search specs | Nothing |
 | `purlin:rename` | Rename feature | Specs, proofs, markers, references |
 | `purlin:spec-from-code` | Generate specs from code | `specs/<category>/<name>.md` |
 

@@ -7,7 +7,7 @@ Already installed? Here's the whole workflow:
 ```
 write a spec for login                    ← describe what the feature must do
 build login                               ← code + tests, iterates until all rules pass
-/purlin:verify                            ← verification receipt committed
+purlin:verify                             ← verification receipt committed
 ```
 
 Three messages. Everything else is detail.

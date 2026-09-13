@@ -29,5 +29,5 @@ The auditor:
   with exit 2. The cache must be written before returning results: `purlin:status` and the
   dashboard read it, and the lead reads it back to verify the entries landed.
 - **Also returns cache entries** in the response so the caller can see what was assessed
-- Reports findings in priority order for remediation via `purlin:build`, since the audit is read-only and never edits code or tests: "PROOF-3 in login is HOLLOW: mocks bcrypt, proves nothing. Rewrite with real bcrypt call."
+- Reports findings in priority order for remediation via `purlin:build`, since the audit writes no code and no test files: "PROOF-3 in login is HOLLOW: mocks bcrypt, proves nothing. Rewrite with real bcrypt call."
 - When done, creates a task summary with the integrity score (structural checks excluded from score)

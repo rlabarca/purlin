@@ -34,7 +34,7 @@
 - PROOF-5 (RULE-5): Read `skills/<name>/SKILL.md` for each of build, spec, test, verify, init and anchor, and verify each matches a positive commit instruction (`git commit`, `commit the`, `create.*commit` or `commit.*change`); verify exactly six files were read, so the proof cannot pass by scanning nothing. Deleting the commit step from any one of the six fails the proof naming that skill @unit
 - PROOF-6 (RULE-6): Grep `skills/status/SKILL.md` for `sync_status`; grep `skills/drift/SKILL.md` for `drift`; grep `skills/find/SKILL.md` for `sync_status`; verify each references its MCP tool
 - PROOF-7 (RULE-7): Grep `skills/build/SKILL.md` and `skills/test/SKILL.md` for `sync_status`; verify both contain the reference. Grep build for "not optional"; verify present.
-- PROOF-8 (RULE-8): Grep `skills/verify/SKILL.md` for `NEVER modify`; verify the read-only constraint is present
+- PROOF-8 (RULE-8): Grep `skills/verify/SKILL.md` for `NEVER modify`; verify the constraint that verify writes no code and no test files is present
 - PROOF-9 (RULE-9): Grep `skills/build/SKILL.md` for `diagnose` and `Never weaken`; verify both are present
 - PROOF-10 (RULE-10): Grep `skills/drift/SKILL.md` for `git diff`; verify the diff-reading requirement is present
 - PROOF-11 (RULE-11): Grep `skills/spec/SKILL.md` for `KEEPING`, `ADDING`, `UPDATING`, and `REMOVING`; verify the delta report structure is present

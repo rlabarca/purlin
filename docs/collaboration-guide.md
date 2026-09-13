@@ -45,7 +45,7 @@ An anchor with `> Source:` is an external reference: a contract defined outside 
 
 ### The external reference is authoritative
 
-You can add local rules to an externally referenced anchor. You cannot change the external source by editing the anchor file. The `> Source:` and `> Pinned:` fields point to what the external team published. `purlin:anchor sync` updates from that source. If your local rules conflict with a source update, `purlin:drift` surfaces the conflict for the PM to resolve.
+You can add local rules to an externally referenced anchor. You cannot change the external source by editing the anchor spec. The `> Source:` and `> Pinned:` fields point to what the external team published. `purlin:anchor sync` updates from that source. If your local rules conflict with a source update, `purlin:drift` surfaces the conflict for the PM to resolve.
 
 ### CI staleness check
 

@@ -60,7 +60,7 @@ argument.
 
 **HTTPS with a Personal Access Token (PAT):**
 
-Ask the user to generate a PAT with read-only repo access:
+Ask the user to generate a PAT with repository read access:
 - **GitHub**: Settings → Developer settings → Personal access tokens → `repo` scope
 - **Bitbucket**: Personal settings → App passwords → `Repositories: Read`
 - **GitLab**: User settings → Access Tokens → `read_repository`

@@ -319,7 +319,7 @@ assessed or reads `not audited` (there is no partial case to weight).
   code does.
 - **WEAK** is the only Integrity level that spec prose can move, and narrowing a proof
   description to match a weak test is not a fix. It lowers the claim instead of strengthening
-  the evidence, and it must never be done for anchor rules: an anchor is a read-only upstream
+  the evidence, and it must never be done for anchor rules: an anchor is an upstream-owned
   contract, so strengthen the test rather than reword the rule.
 - **The Design levels** are the ones prose is *supposed* to move. That is the point of Pass D.
 
@@ -462,7 +462,7 @@ Design anchors (`design_*` specs) use a thin visual-match model: one rule per vi
 
 ## Anchor Rules
 
-When auditing proofs for rules that come from anchors (through `> Requires:` or `> Global: true`), the audit cannot recommend changing the rule: anchor files are read-only and externally owned.
+When auditing proofs for rules that come from anchors (through `> Requires:` or `> Global: true`), the audit cannot recommend changing the rule: an anchor spec is upstream-owned, and its rules are changed at the source.
 
 For HOLLOW or WEAK proofs on anchor rules:
 - Recommend strengthening the TEST to fully satisfy the rule as written

@@ -24,7 +24,7 @@
 
 ## Proof
 
-- PROOF-5 (RULE-5): Grep `skills/verify/SKILL.md` for `NEVER modify`; verify the read-only constraint is present
+- PROOF-5 (RULE-5): Grep `skills/verify/SKILL.md` for `NEVER modify`; verify the constraint that verify writes no code and no test files is present
 - PROOF-6 (RULE-6): Extract the `### Step 4e` Independent Audit section of `skills/verify/SKILL.md`; verify the section heading names the Independent Audit step, that the section spawns a `purlin-auditor`, and that its spawn prompt carries the instruction `Report the final integrity score`
 - PROOF-7 (RULE-7): Grep `skills/verify/SKILL.md` Step 2 for the UNTESTED case; verify it issues no receipt, is not treated as a failure, branches on whether the scope files exist, and points at `purlin:audit --design`
 - PROOF-8 (RULE-8): Grep `skills/verify/SKILL.md` for the authoritative project-wide framing and `skills/build/SKILL.md` for the feature-scoped advisory framing; verify each names its scope so the two audits are not confused

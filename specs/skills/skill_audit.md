@@ -2,12 +2,12 @@
 
 > Scope: skills/audit/SKILL.md
 > Stack: markdown (skill definition)
-> Description: The `purlin:audit` skill evaluates proof quality with STRONG/WEAK/HOLLOW assessments. It is read-only: it never modifies code or test files.
+> Description: The `purlin:audit` skill evaluates proof quality with STRONG/WEAK/HOLLOW assessments. It writes no code and no test files.
 
 ## Rules
 
 - RULE-4: Independent auditor mode documents instructions to read audit criteria and assess proofs as STRONG/WEAK/HOLLOW
-- RULE-5: Independent auditor mode documents routing HOLLOW/WEAK findings to `purlin:build` for remediation, and states that no fixer agent is spawned because the audit is read-only
+- RULE-5: Independent auditor mode documents routing HOLLOW/WEAK findings to `purlin:build` for remediation, and states that no fixer agent is spawned because the audit writes no code and no test files
 - RULE-6: Independent auditor mode documents re-auditing the affected proofs after the fixes land
 - RULE-7: Independent auditor mode terminates after all findings addressed or after 3 rounds on any single proof
 - RULE-8: Anchor rule handling documents reporting to the lead for ambiguous anchor rules
@@ -29,7 +29,7 @@
 ## Proof
 
 - PROOF-4 (RULE-4): Extract the `## When Running as Independent Auditor` section of `skills/audit/SKILL.md`; verify the section body names the criteria loader `--load-criteria` and all three assessment literals `STRONG`, `WEAK` and `HOLLOW`
-- PROOF-5 (RULE-5): Extract the `## When Running as Independent Auditor` section of `skills/audit/SKILL.md`; verify it routes remediation to `purlin:build <feature>`, states the audit is `read-only and never edits code or tests`, states `There is no separate fixer agent to spawn`, and contains no mention of the retired `purlin-builder` agent type
+- PROOF-5 (RULE-5): Extract the `## When Running as Independent Auditor` section of `skills/audit/SKILL.md`; verify it routes remediation to `purlin:build <feature>`, states the audit `writes no code and no test files`, states `There is no separate fixer agent to spawn`, and contains no mention of the retired `purlin-builder` agent type
 - PROOF-6 (RULE-6): Extract the `## When Running as Independent Auditor` section of `skills/audit/SKILL.md`; verify it contains the literal re-audit step `After the fixes land, re-audit the affected proofs`
 - PROOF-7 (RULE-7): Extract the `## When Running as Independent Auditor` section of `skills/audit/SKILL.md`; verify it contains both termination conditions: `After 3 rounds on any single proof, move on` and `When all findings are addressed (or rounds exhausted)`
 - PROOF-8 (RULE-8): Extract the `### Anchor Rule Handling` section of `skills/audit/SKILL.md`; verify that for an ambiguous anchor rule it instructs `message the lead` with the template `Recommend to anchor author (<source>): <rule> could be clearer`

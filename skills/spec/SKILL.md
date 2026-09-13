@@ -321,8 +321,8 @@ Waiting for your response...
 5. For each new or updated rule, add or update the corresponding PROOF-N line
 6. Apply tier tags to new proofs per `references/spec_quality_guide.md`
 7. Preserve any existing `@manual` stamps: do NOT remove manual proof stamps unless the rule they reference was removed
-8. Preserve rule tags on unchanged rules: `(assumed)`, `(confirmed)`, `(deferred)` stay as-is
-9. If updating a rule that had `(confirmed)`, change the tag to `(assumed)` since the new value hasn't been confirmed yet
+8. Preserve rule tags on unchanged rules: `(assumed)` and `(deferred)` stay as-is
+9. A rule whose assumed value is now settled loses its `(assumed)` tag: an untagged rule is an accepted one, and there is no second tag to write
 10. Update `> Scope:` if new files were added to the feature
 11. Update `> Stack:` if new dependencies were introduced
 

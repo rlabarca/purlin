@@ -189,6 +189,7 @@ They are optional for the user, who may write specs, code and tests by hand, and
 | `references/commit_conventions.md` | Commit message format |
 | `references/purlin_commands.md` | Full skill reference |
 | `references/audit_criteria.md` | Assessment criteria for both proof gauges |
+| `references/glossary.md` | The canonical term for every concept, and the terms that are retired |
 | `agents/purlin-auditor.md` | Independent auditor, `purlin:purlin-auditor` (spawned by verify) |
 | Config: `audit_llm` | External LLM command for cross-model auditing |
 

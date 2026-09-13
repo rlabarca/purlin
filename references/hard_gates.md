@@ -21,7 +21,7 @@ could ever get its first receipt. This is enforced in the skill logic, not a hoo
 - Writing code without invoking a skill: allowed.
 - Writing tests without proof markers: allowed, though `sync_status` will not count them.
 - Writing specs in any format: allowed, though an unnumbered rule gets a WARNING from `sync_status`.
-- Editing anchor files, external references included: allowed.
+- Editing anchor specs, external references included: allowed.
 - A low **Proof Design** or **Proof Integrity** score: allowed. Both gauges are
   advisory by default, and neither blocks a commit, a push, or a receipt. They measure quality; the gate
   measures coverage. A project can opt in to more: with `quality_gate` set to `"deterministic"`

@@ -170,7 +170,7 @@ The `tools/` directory contains skills for non-engineer stakeholders who interac
 | Tool | Audience | What it does |
 |------|----------|-------------|
 | `tools/QA/purlin-qa-report.md` | QA | Fetches project digest, produces triaged HTML report of failures, drift, both quality gauges, per-platform holds, manual tests due, and readiness |
-| `tools/PM/purlin-anchor-userstories.md` | Product | Creates and maintains user story anchor files that drive spec-driven development |
+| `tools/PM/purlin-anchor-userstories.md` | Product | Creates and maintains user story anchor specs that drive spec-driven development |
 
 Install these as Claude Desktop skills (drag the `.skill` file or paste the `.md` contents into project instructions). They clone the repo, read the project digest and produce visual reports. No dev tools needed.
 
@@ -187,7 +187,7 @@ policy layered on the framework's one gate, not a second one.
 
 A project can add gates of its own, and one ships as a template: `scripts/ci/verify_gate.py
 --check` fails a branch whose features are not VERIFIED, or that are awaiting a runner for a
-platform tier. That is **project policy layered on the framework's single gate**, not a second
+declared platform. That is **project policy layered on the framework's single gate**, not a second
 one: the project owns it, configures it, and can turn it off. `.purlin/config.json`'s
 `remote_verification` field declares whether a project holds itself to that bar; branch protection
 marking the job a required check is what enforces it. See
