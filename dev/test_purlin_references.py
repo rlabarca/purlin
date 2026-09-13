@@ -8,6 +8,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 
 import pytest
 
@@ -684,6 +685,57 @@ class TestCITemplatesGoThroughThePluginRoot:
         assert re.search(r'(?i)runner setup.{0,200}scaffold', content, re.S), (
             "the file must name the column as what purlin:test reads when it "
             "scaffolds a runner workflow")
+
+
+    @pytest.mark.proof("purlin_references", "PROOF-34", "RULE-23")
+    def test_installed_as_column_is_what_both_scripts_read(self):
+        """RULE-23: the name a copy takes lives in the registry, once.
+
+        The scaffolder writes the copy and the update resolves it back. Both
+        read this column, so the table is asserted against each of them rather
+        than against a literal repeated here.
+        """
+        content = _read(os.path.join(REFS, 'supported_frameworks.md'))
+        expected = {}
+        tables = 0
+        for header, rows in _tables(content):
+            if 'Installed as' not in header or 'Plugin file' not in header:
+                continue
+            tables += 1
+            plugin_col = header.index('Plugin file')
+            name_col = header.index('Installed as')
+            for cells in rows:
+                label = cells[0].strip('* ').strip()
+                files = re.findall(r'scripts/proof/([A-Za-z0-9_.+-]+)',
+                                   cells[plugin_col])
+                names = re.findall(r'`([^`]+)`', cells[name_col])
+                assert files, f"{label} names no plugin file"
+                assert len(names) == len(files), (
+                    f"{label} ships {len(files)} plugin file(s) and records "
+                    f"{len(names)} installed name(s): {names}")
+                for name in names:
+                    assert '/' not in name and '\\' not in name, (
+                        f"{label} records {name!r}, which is a path and not a "
+                        "basename")
+                expected.update(dict(zip(files, names)))
+        assert tables == 2, (
+            f"both registry tables must carry the column; found {tables}")
+
+        sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'init'))
+        sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'mcp'))
+        import scaffold
+        import purlin_server
+
+        assert scaffold._install_names(PROJECT_ROOT) == expected, (
+            "the scaffolder's installed-name map is not the registry's: "
+            f"{scaffold._install_names(PROJECT_ROOT)} vs {expected}")
+        sources = purlin_server._plugin_copy_sources()
+        for source, installed in expected.items():
+            assert sources.get(installed) == source, (
+                f"the update cannot resolve {installed!r} back to {source!r}: "
+                f"{sources.get(installed)!r}")
+        assert sources.get('purlin-proof.sh') == 'shell_purlin.sh', sources
+        assert sources.get('shell_purlin.sh') == 'shell_purlin.sh', sources
 
 
 class TestSharedSectionsSkillsPointAt:

@@ -120,6 +120,24 @@
     },
     {
       "feature": "sync_status",
+      "id": "PROOF-121",
+      "rule": "RULE-72",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_project_root_argument_and_loud_no_workspace_line",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
+      "id": "PROOF-122",
+      "rule": "RULE-55",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_every_registered_name_is_seen_and_a_custom_plugin_is_not",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
       "id": "PROOF-48",
       "rule": "RULE-27",
       "test_file": "dev/test_e2e_audit_cache_pipeline.py",

@@ -2684,6 +2684,69 @@ def _plugin_source_dir():
     return os.path.join(os.path.dirname(SCRIPT_DIR), 'proof')
 
 
+# The registry row shape `scripts/init/scaffold.py` reads: framework id from
+# the Display name cell, the shipped plugin files, then the **Installed as**
+# names positionally beside them.
+_REGISTRY_ROW_RE = re.compile(
+    r'^\|\s*\*\*[^|]+\*\*\s*\|\s*([A-Za-z0-9_.+-]+)[^|]*\|[^|]*\|([^|]*)\|'
+    r'([^|]*)\|')
+
+# A copy sitting under a name the registry no longer gives it. The shell
+# harness was installed as `shell_purlin.sh` before it became
+# `purlin-proof.sh`, and a project that still holds the old name keeps it: its
+# own tests `source .purlin/plugins/shell_purlin.sh`, so a rename would break
+# every one of them to fix a name nobody reads.
+_LEGACY_PLUGIN_COPY_NAMES = {'shell_purlin.sh': 'shell'}
+
+
+def _plugin_registry_rows():
+    """[(id, [plugin file, ...], [installed name, ...])] from the registry."""
+    path = os.path.join(os.path.dirname(os.path.dirname(SCRIPT_DIR)),
+                        'references', 'supported_frameworks.md')
+    try:
+        with open(path, encoding='utf-8') as f:
+            registry = f.read()
+    except (IOError, OSError, UnicodeDecodeError):
+        return []
+    rows = []
+    for line in registry.splitlines():
+        match = _REGISTRY_ROW_RE.match(line)
+        if not match:
+            continue
+        files = re.findall(r'scripts/proof/([A-Za-z0-9_.+-]+)', match.group(2))
+        names = re.findall(r'`([A-Za-z0-9_.+-]+)`', match.group(3))
+        if match.group(1).strip() and files:
+            rows.append((match.group(1).strip(), files, names))
+    return rows
+
+
+def _plugin_copy_sources():
+    """The name a project's copy has -> the `scripts/proof/` file behind it.
+
+    Keying a copy by its own basename missed every plugin a project does not
+    install under the shipped file's name: `purlin-proof.sh` is the shell
+    harness under the name the registry gives it, and `shell_purlin.sh` is the
+    same harness under the name an older plugin gave it. Neither has a file of
+    that name in `scripts/proof/`, so both read as a plugin the project
+    installed itself and neither was ever reported stale. Resolution runs
+    through the registry, so a rename recorded there reaches the detector
+    (`skill_init` RULE-53).
+    """
+    rows = _plugin_registry_rows()
+    sources = {}
+    for _fid, files, names in rows:
+        for index, name in enumerate(files):
+            sources.setdefault(name, name)
+            installed = names[index] if index < len(names) else name
+            sources[installed] = name
+    by_id = {fid: files for fid, files, _names in rows}
+    for legacy, framework_id in _LEGACY_PLUGIN_COPY_NAMES.items():
+        files = by_id.get(framework_id) or []
+        if len(files) == 1:
+            sources.setdefault(legacy, files[0])
+    return sources
+
+
 def _template_config():
     """The shipped `templates/config.json`, or {} when it cannot be read."""
     path = os.path.join(os.path.dirname(os.path.dirname(SCRIPT_DIR)),
@@ -2732,17 +2795,24 @@ def _legacy_marker_hits(project_root):
 def _stale_plugin_copies(project_root):
     """[rel_path] for each `.purlin/plugins/` copy that differs from its source.
 
-    A copy with no counterpart in the plugin's `scripts/proof/` is a custom
-    plugin the project installed itself and is left alone.
+    Each copy is resolved to its source through the registry
+    (`_plugin_copy_sources`), so a plugin installed under a name of its own and
+    a copy left under an older plugin's name are both seen. A copy the registry
+    cannot resolve is a custom plugin the project installed itself and is left
+    alone.
     """
     copies_dir = os.path.join(project_root, '.purlin', 'plugins')
     source_dir = _plugin_source_dir()
     if not os.path.isdir(copies_dir) or not os.path.isdir(source_dir):
         return []
+    sources = _plugin_copy_sources()
     stale = []
     for name in sorted(os.listdir(copies_dir)):
         copy_path = os.path.join(copies_dir, name)
-        source_path = os.path.join(source_dir, name)
+        source_name = sources.get(name)
+        if source_name is None:
+            continue
+        source_path = os.path.join(source_dir, source_name)
         if not os.path.isfile(copy_path) or not os.path.isfile(source_path):
             continue
         try:

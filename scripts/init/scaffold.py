@@ -101,11 +101,11 @@ EXIT_BAD_INVOCATION = 2
 
 GIT_REQUIRED = "Purlin requires git. Run 'git init' first."
 
-# The registry is the single source of truth for which frameworks exist and
-# which file each one installs (`skill_init` RULE-48). The destination name is
-# the plugin's own basename, except for the shell harness: a project installs
-# it as `purlin-proof.sh`, which is the name every shell test sources.
-_DEST_OVERRIDES = {'shell_purlin.sh': 'purlin-proof.sh'}
+# The registry is the single source of truth for which frameworks exist, which
+# file each one installs and the name that file takes inside a project
+# (`skill_init` RULE-48). The destination name used to live here as a table of
+# one entry; it lives in the registry's **Installed as** column now, so this
+# script and the update's stale-copy detector read the same fact.
 
 # Directory names detection never descends into: dot directories are tool
 # state, and `node_modules` is other people's code, where a vendored package's
@@ -435,26 +435,51 @@ def _plugin_root():
 # ── the registry ──────────────────────────────────────────────────────
 
 _REGISTRY_ROW = re.compile(
-    r'^\|\s*\*\*[^|]+\*\*\s*\|\s*([A-Za-z0-9_.+-]+)[^|]*\|[^|]*\|([^|]*)\|')
+    r'^\|\s*\*\*[^|]+\*\*\s*\|\s*([A-Za-z0-9_.+-]+)[^|]*\|[^|]*\|([^|]*)\|'
+    r'([^|]*)\|')
 
 
-def _frameworks(plugin_root):
-    """id -> [plugin file, ...], read from references/supported_frameworks.md.
+def _registry_rows(plugin_root):
+    """[(id, [plugin file, ...], [installed name, ...])] from the registry.
 
     Both tables are read, so a framework that ships a plugin and is registered
-    is one this script can install without being edited (RULE-48).
+    is one this script can install without being edited (RULE-48). The two
+    lists are positional: the nth installed name is the name the nth plugin
+    file takes in `.purlin/plugins/`.
     """
     registry = _slurp(plugin_root, os.path.join('references',
                                                 'supported_frameworks.md'))
-    out = {}
+    rows = []
     for line in registry.splitlines():
         match = _REGISTRY_ROW.match(line)
         if not match:
             continue
         framework_id = match.group(1).strip()
         files = re.findall(r'scripts/proof/([A-Za-z0-9_.+-]+)', match.group(2))
+        names = re.findall(r'`([A-Za-z0-9_.+-]+)`', match.group(3))
         if framework_id and files:
-            out[framework_id] = files
+            rows.append((framework_id, files, names))
+    return rows
+
+
+def _frameworks(plugin_root):
+    """id -> [plugin file, ...], read from references/supported_frameworks.md."""
+    return {fid: files for fid, files, _names in _registry_rows(plugin_root)}
+
+
+def _install_names(plugin_root):
+    """plugin file -> the basename a project installs it under (RULE-48).
+
+    Read from the registry's **Installed as** column rather than held here: a
+    project's copy is named by this map and `purlin:init --update` resolves a
+    copy back to its source through the same one, so a name recorded in one
+    place cannot drift from the other. A row with no such cell installs the
+    plugin under its own basename.
+    """
+    out = {}
+    for _fid, files, names in _registry_rows(plugin_root):
+        for index, name in enumerate(files):
+            out[name] = names[index] if index < len(names) else name
     return out
 
 
@@ -535,13 +560,14 @@ def _plugins(plan, root, plugin_root, registry, selected, dry_run):
                     'run purlin:init --add-plugin or re-run with '
                     '--test-framework)')
         return
+    install_names = _install_names(plugin_root)
     for framework_id in selected:
         if framework_id == 'other':
             plan.append('skipped .purlin/plugins/ for "other" (install a '
                         'custom plugin with purlin:init --add-plugin)')
             continue
         for name in registry[framework_id]:
-            dest_name = _DEST_OVERRIDES.get(name, name)
+            dest_name = install_names.get(name, name)
             dest = os.path.join(root, '.purlin', 'plugins', dest_name)
             rel = f'.purlin/plugins/{dest_name}'
             if os.path.exists(dest):

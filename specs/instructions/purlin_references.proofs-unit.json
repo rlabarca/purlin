@@ -246,6 +246,15 @@
     },
     {
       "feature": "purlin_references",
+      "id": "PROOF-34",
+      "rule": "RULE-23",
+      "test_file": "dev/test_purlin_references.py",
+      "test_name": "test_installed_as_column_is_what_both_scripts_read",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_references",
       "id": "PROOF-4",
       "rule": "RULE-4",
       "test_file": "dev/test_purlin_references.py",

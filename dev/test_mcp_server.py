@@ -4883,3 +4883,57 @@ class TestLaunchVector:
         for name in _RESOLVER_NAMES:
             assert name in lines[0], (
                 f'the report does not name {name}: {lines[0]!r}')
+
+
+class TestStalePluginCopiesResolveThroughTheRegistry:
+    """sync_status RULE-55: the advisory sees a copy under the name it has."""
+
+    @pytest.mark.proof("sync_status", "PROOF-122", "RULE-55", tier="integration")
+    def test_every_registered_name_is_seen_and_a_custom_plugin_is_not(self):
+        root = tempfile.mkdtemp()
+        try:
+            plugins = os.path.join(root, '.purlin', 'plugins')
+            os.makedirs(plugins)
+            config = dict(purlin_server._template_config())
+            config['version'] = purlin_server._read_version()
+            with open(os.path.join(root, '.purlin', 'config.json'), 'w') as f:
+                json.dump(config, f, indent=2)
+
+            source_dir = purlin_server._plugin_source_dir()
+            sources = purlin_server._plugin_copy_sources()
+            assert sources.get('purlin-proof.sh') == 'shell_purlin.sh', sources
+            assert sources.get('shell_purlin.sh') == 'shell_purlin.sh', sources
+            assert 'custom_purlin.py' not in sources, sources
+
+            drifted = ['pytest_purlin.py', 'purlin-proof.sh',
+                       'shell_purlin.sh']
+            for name in drifted:
+                shutil.copyfile(
+                    os.path.join(source_dir, sources[name]),
+                    os.path.join(plugins, name))
+                with open(os.path.join(plugins, name), 'a') as f:
+                    f.write('\n# drift\n')
+            with open(os.path.join(plugins, 'custom_purlin.py'), 'w') as f:
+                f.write('# a plugin this project installed itself\n')
+
+            expected = sorted(f'.purlin/plugins/{n}' for n in drifted)
+            assert sorted(purlin_server._stale_plugin_copies(root)) == \
+                expected, purlin_server._stale_plugin_copies(root)
+
+            pending = {e['id']: e for e in
+                       purlin_server._pending_migrations(root, config=config)}
+            entry = pending.get('plugin-copies-stale')
+            assert entry, pending
+            assert sorted(entry['files']) == expected, entry
+            assert entry['count'] == 3, entry
+
+            for name in drifted:
+                shutil.copyfile(os.path.join(source_dir, sources[name]),
+                                os.path.join(plugins, name))
+            assert purlin_server._stale_plugin_copies(root) == [], \
+                purlin_server._stale_plugin_copies(root)
+            pending = {e['id']: e for e in
+                       purlin_server._pending_migrations(root, config=config)}
+            assert 'plugin-copies-stale' not in pending, pending
+        finally:
+            shutil.rmtree(root, ignore_errors=True)

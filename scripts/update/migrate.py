@@ -209,12 +209,20 @@ def _apply_legacy_marker(ps, root, platform_id, actions):
 
 
 def _apply_plugin_copies_stale(ps, root, _platform_id, actions):
-    """Each `.purlin/plugins/` copy is replaced by the installed plugin's file."""
+    """Each `.purlin/plugins/` copy is replaced by the installed plugin's file.
+
+    The copy keeps the name it has. A project's own tests source that path, so
+    a copy left under an older plugin's name is refreshed in place rather than
+    renamed to the name the registry gives it today.
+    """
     source_dir = ps._plugin_source_dir()
+    sources = ps._plugin_copy_sources()
     for rel in ps._stale_plugin_copies(root):
         name = os.path.basename(rel)
-        shutil.copyfile(os.path.join(source_dir, name), os.path.join(root, rel))
-        actions.append(f'copied scripts/proof/{name} over {rel}')
+        source_name = sources.get(name, name)
+        shutil.copyfile(os.path.join(source_dir, source_name),
+                        os.path.join(root, rel))
+        actions.append(f'copied scripts/proof/{source_name} over {rel}')
 
 
 def _apply_config_fields_missing(ps, root, _platform_id, actions,

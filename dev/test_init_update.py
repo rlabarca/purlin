@@ -686,3 +686,72 @@ class TestRetiredConfigFields:
                 "a second apply rewrote the config"
         finally:
             shutil.rmtree(root, ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------
+# skill_init RULE-53: a copy is resolved through the registry, under either name
+# ---------------------------------------------------------------------------
+
+SHELL_SOURCE = os.path.join(ROOT, 'scripts', 'proof', 'shell_purlin.sh')
+
+
+def _make_shell_project(copy_name):
+    """A temp project whose shell harness sits under `copy_name`, drifted."""
+    root = tempfile.mkdtemp()
+    os.makedirs(os.path.join(root, '.purlin', 'plugins'))
+    config = dict(ps._template_config())
+    config['version'] = ps._read_version()
+    config['test_framework'] = 'shell'
+    _write(root, '.purlin/config.json', json.dumps(config, indent=2) + '\n')
+    dest = os.path.join(root, '.purlin', 'plugins', copy_name)
+    shutil.copyfile(SHELL_SOURCE, dest)
+    with open(dest, 'a') as f:
+        f.write('\n# one byte of drift\n')
+    _write(root, 'tests/demo.sh',
+           f'. "$(git rev-parse --show-toplevel)/.purlin/plugins/{copy_name}"\n')
+    _git(root, 'init', '-q')
+    for key, value in (('user.email', 't@e'), ('user.name', 't')):
+        _git(root, 'config', key, value)
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-q', '-m', 'shell project')
+    return root
+
+
+class TestShellCopyUnderEitherName:
+
+    @pytest.mark.proof("skill_init", "PROOF-84", "RULE-53", tier="integration")
+    @pytest.mark.parametrize('copy_name',
+                             ['purlin-proof.sh', 'shell_purlin.sh'])
+    def test_the_shell_harness_is_seen_under_both_names(self, copy_name):
+        """RULE-53: the registry resolves the copy, so neither name is invisible.
+
+        Keying by basename against `scripts/proof/` saw neither: the installed
+        name has no file of that name in the plugin, and the legacy name is the
+        one the plugin stopped installing under.
+        """
+        root = _make_shell_project(copy_name)
+        rel = f'.purlin/plugins/{copy_name}'
+        try:
+            code, out, err = _run(root, '--check')
+            assert code == 1, (out, err)   # a stale copy blocks the preflight
+            entry = _pending(out).get('plugin-copies-stale')
+            assert entry, f'{copy_name} was not seen as stale: {out}'
+            assert entry['files'] == [rel], entry
+
+            code, _out, err = _run(root, '--apply', 'plugin-copies-stale')
+            assert code == 0, err
+            with open(SHELL_SOURCE, 'rb') as f:
+                source = f.read()
+            with open(os.path.join(root, rel), 'rb') as f:
+                assert f.read() == source, 'the copy is not the plugin''s file'
+
+            # Refreshed in place: the path the project's own test sources is
+            # still the path that exists.
+            sourced = _read(root, 'tests/demo.sh').strip().split('/')[-1]
+            assert sourced.rstrip('"') == copy_name, sourced
+            assert os.path.isfile(os.path.join(root, rel)), rel
+
+            code, out, _ = _run(root, '--check')
+            assert 'plugin-copies-stale' not in _pending(out), out
+        finally:
+            shutil.rmtree(root, ignore_errors=True)

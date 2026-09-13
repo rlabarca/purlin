@@ -279,6 +279,24 @@
       "test_name": "test_a_slot_purlin_does_not_own_is_never_written",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-84",
+      "rule": "RULE-53",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_shell_harness_is_seen_under_both_names[purlin-proof.sh]",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
+      "id": "PROOF-84",
+      "rule": "RULE-53",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_shell_harness_is_seen_under_both_names[shell_purlin.sh]",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }
