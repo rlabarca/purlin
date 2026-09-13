@@ -1,8 +1,8 @@
-> Format-Version: 5
+> Format-Version: 6
 
 # Anchor Spec Format
 
-Anchors define cross-cutting constraints that other features reference via `> Requires:`. They use the standard 3-section format (Rules, Proof, What it does).
+Anchors define cross-cutting constraints that other features reference via `> Requires:`. They use the standard 2-section format (Rules, Proof).
 
 This document has two parts:
 
@@ -21,10 +21,6 @@ This is the format to use when writing an anchor â€” whether it lives locally in
 > Description: <What cross-cutting concern this anchor defines>
 > Scope: <file patterns this anchor governs>
 > Type: <optional: design, api, security, brand, platform, schema, legal, prodbrief>
-
-## What it does
-
-<What cross-cutting concern this anchor defines.>
 
 ## Rules
 
@@ -89,10 +85,6 @@ The consuming project's `specs/_anchors/security_no_eval.md` might look like thi
 > Pinned: abc1234def5678
 > Type: security
 
-## What it does
-
-No eval() calls in production code.
-
 ## Rules
 
 - RULE-1: No eval() in source files
@@ -116,10 +108,6 @@ The `> Source:`, `> Path:`, and `> Pinned:` lines were added by Purlin tooling â
 > Pinned: 2026-03-31T12:00:00Z
 > Visual-Reference: figma://ABC123/1:234
 > Type: design
-
-## What it does
-
-Visual design constraints sourced from Figma.
 
 ## Rules
 

@@ -23,7 +23,8 @@ class TestSpecFormatReference:
 
     @pytest.mark.proof("schema_spec_format", "PROOF-1", "RULE-1")
     def test_format_documents_two_sections(self):
-        with open(os.path.join(PROJECT_ROOT, 'references', 'formats', 'spec_format.md')) as f:
+        formats = os.path.join(PROJECT_ROOT, 'references', 'formats')
+        with open(os.path.join(formats, 'spec_format.md')) as f:
             content = f.read()
         # Find the Required Sections area specifically
         req_match = re.search(
@@ -36,6 +37,44 @@ class TestSpecFormatReference:
             "'## Rules' not listed in Required Sections"
         assert '## Proof' in req_section, \
             "'## Proof' not listed in Required Sections"
+
+        # No third section is part of the format: neither format file names the
+        # retired `## What it does` heading.
+        for name in ('spec_format.md', 'anchor_format.md'):
+            with open(os.path.join(formats, name)) as f:
+                text = f.read()
+            assert 'What it does' not in text, (
+                f"{name} still names the retired `## What it does` heading; "
+                "the format defines two sections and no third")
+
+        # A spec written against the older three-section format still parses:
+        # the heading is ignored, not rejected, so a consumer's existing specs
+        # keep working after the format drops it.
+        project_root = tempfile.mkdtemp()
+        try:
+            os.makedirs(os.path.join(project_root, '.purlin'))
+            spec_dir = os.path.join(project_root, 'specs', 'test')
+            os.makedirs(spec_dir)
+            with open(os.path.join(spec_dir, 'legacy_feat.md'), 'w') as f:
+                f.write(
+                    '# Feature: legacy_feat\n\n'
+                    '> Description: A spec authored against the 3-section format\n\n'
+                    '## What it does\n\nIt does the legacy thing.\n\n'
+                    '## Rules\n- RULE-1: The legacy rule still counts\n\n'
+                    '## Proof\n- PROOF-1 (RULE-1): Test the legacy rule\n'
+                )
+            result = purlin_server.sync_status(project_root)
+            assert 'legacy_feat' in result, (
+                "a spec carrying `## What it does` was not parsed at all:\n"
+                f"{result}")
+            assert 'RULE-1' in result, (
+                "the rule of a spec carrying `## What it does` is missing from "
+                f"the report:\n{result}")
+            assert 'WARNING' not in result, (
+                "an ignored heading must not be reported as a defect: a "
+                f"consumer's older specs keep working:\n{result}")
+        finally:
+            shutil.rmtree(project_root)
 
 
 class TestSpecFormatEnforcement:

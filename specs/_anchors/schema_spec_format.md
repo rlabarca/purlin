@@ -8,7 +8,7 @@
 
 ## Rules
 
-- RULE-1: Every spec MUST contain exactly two required sections: `## Rules`, `## Proof`
+- RULE-1: Every spec MUST contain exactly two required sections: `## Rules`, `## Proof`, and no third section is part of the format: neither `references/formats/spec_format.md` nor `references/formats/anchor_format.md` names a third one. A spec that carries some other heading still parses and `sync_status` reports nothing for it, so a spec written against an older format keeps working; the format simply stops defining the heading
 - RULE-2: Rule ids are written as `RULE-N`, assigned in increasing order and never reused. A retired rule leaves its number vacant, so a gap in the sequence is legal and `sync_status` reports nothing for it; the rules that remain keep the numbers proof markers, receipts and caches already name. Unnumbered lines under `## Rules` trigger a sync_status WARNING
 - RULE-3: Proofs are numbered as `PROOF-N (RULE-N)` — each proof references the rule it covers
 - RULE-4: Every RULE must have at least one corresponding PROOF
@@ -22,7 +22,7 @@
 
 ## Proof
 
-- PROOF-1 (RULE-1): Parse `references/formats/spec_format.md`; find the `## Required Sections` area; verify both sections (`## Rules`, `## Proof`) appear within it
+- PROOF-1 (RULE-1): Parse `references/formats/spec_format.md`; find the `## Required Sections` area; verify both sections (`## Rules`, `## Proof`) appear within it. Then grep both format files for the heading `## What it does` and verify neither names it. Then write a spec that carries a `## What it does` heading between its metadata and its `## Rules`, run `sync_status` over it, and verify the rule is listed and the report carries no warning, so a spec written against the older three-section format still parses
 - PROOF-2 (RULE-2): Create a spec with an unnumbered line under `## Rules` (e.g., `- some constraint without RULE-N prefix`); run sync_status; verify it reports a WARNING about unnumbered rules. Then create a second spec whose rules are `RULE-1`, `RULE-3` and `RULE-20`, each with a proof, and run sync_status over it; verify the report carries no warning at all and lists all three rules, so a retired rule that left its number vacant is not reported as a defect
 - PROOF-3 (RULE-3): Grep `specs/**/*.md` for lines under `## Proof`; verify every proof line matches the pattern `PROOF-\d+ \(RULE-\d+\)`
 - PROOF-4 (RULE-4): Create a spec with RULE-1 but no PROOF referencing RULE-1; run sync_status; verify it reports the rule as uncovered @integration

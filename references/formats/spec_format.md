@@ -39,12 +39,13 @@ Every spec MUST have these 2 sections (case-insensitive heading match):
 1. `## Rules` — numbered constraints (`RULE-N: description`)
 2. `## Proof` — numbered proof blueprints (`PROOF-N (RULE-N): description`)
 
+These two are the whole structure: no third section is part of the format. A spec that carries some other heading still parses and `sync_status` reports nothing for it, so a spec written against an older format keeps working, but nothing reads that heading and new specs should not add one. What the feature does belongs in `> Description:`, which the dashboard displays.
+
 ## Metadata Fields
 
 | Field | Required | Description |
 |-------|----------|-------------|
 | `> Description:` | No | Plain-language description of the spec. Supports multi-line via `>` continuation lines. Displayed in the Purlin dashboard. |
-| `> Type:` | No | Optional type hint for any spec. Suggested values: `design`, `security`, `api`, `schema`, `platform`, `brand`, `prodbrief`, `legal`. Primarily useful on anchors to indicate their category. |
 | `> Requires:` | No | Comma-separated list of other spec names or anchor names whose rules also apply |
 | `> Scope:` | No | Comma-separated file paths this feature touches (used for manual proof staleness) |
 | `> Stack:` | No | Technology choices: `language/framework, key libraries, patterns` (helps rebuild from spec) |
@@ -78,14 +79,12 @@ Rules can have optional inline tags at the end:
 ```
 - RULE-1: Returns 200 with JWT on valid credentials
 - RULE-2: Search returns in under 500ms (assumed — user said "fast")
-- RULE-3: Passwords hashed with bcrypt (confirmed)
-- RULE-4: Offline mode support (deferred)
+- RULE-3: Offline mode support (deferred)
 ```
 
 | Tag | Meaning | Added by | Removed by |
 |-----|---------|----------|------------|
-| `(assumed — <context>)` | AI inferred a specific value from vague input. The context shows what the user actually said. | `purlin:spec` during rule extraction | PM changes it to `(confirmed)` or edits the value during review |
-| `(confirmed)` | PM explicitly validated this exact constraint. | PM during spec review | N/A |
+| `(assumed — <context>)` | AI inferred a specific value from vague input. The context shows what the user actually said. | `purlin:spec` during rule extraction | PM edits the value during review, or accepts it by deleting the tag |
 | `(deferred)` | Rule is accepted but not being built yet. No proof required until the tag is removed. | PM or engineer | Removed when work begins |
 
 Tags are part of the rule line — parsed by `sync_status`.
