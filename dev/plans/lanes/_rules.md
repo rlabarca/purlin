@@ -39,7 +39,9 @@ Each brief repeats the rules that matter to it. This file is the full list, kept
   through `${CLAUDE_PLUGIN_ROOT}` or the project's own `.purlin/` copies. Nothing under
   `scripts/`, `skills/`, `agents/`, `references/` or `templates/` may cite `dev/` or this
   repository's own `specs/`.
-- Before any xUnit run: `export PATH=/opt/homebrew/opt/dotnet@8/bin:$PATH`.
+- Before any test run: `export PATH=/Users/richlabarca/LocalCode/purlin/.venv/bin:$PATH`
+  (the repository's virtualenv with pytest and the proof plugins lives in the main tree, not
+  in a worktree). Before any xUnit run: `export PATH=/opt/homebrew/opt/dotnet@8/bin:$PATH`.
 - Never `git checkout -- specs/`. The old proof plugins still write
   `specs/**/*.proofs-*.json` when tests run until phase 2 lands: never add or commit those
   files; remove them with `git clean -f specs/` (untracked files only) before committing.
