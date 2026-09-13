@@ -234,6 +234,16 @@ WINDOWS_TOKEN_SECTIONS = (
 PROSE_SCOPE = ('docs/**', 'references/**', 'skills/**', 'tools/**',
                'agents/**', 'README.md')
 
+#: The `anchor-home` row's file set. `skills/` is named here even though the
+#: older rows stop short of it: the two skills that route a new spec to a
+#: category are where a wrong anchor home is written into a project, so the
+#: row would prove nothing without them.
+ANCHOR_HOME_SCOPE = ('docs/**', 'references/**', 'skills/**')
+
+#: `specs/schema/` in any form, and the bare category token the routing lists
+#: used. `sync_status` reads anchors from `specs/_anchors/` only.
+ANCHOR_HOME_RE = re.compile(r'specs/schema/|`schema/`')
+
 REGULATED = 'docs/regulated-environments.md'
 
 #: The `retired-format` row's file set. Narrower than `PROSE_SCOPE` on purpose:
@@ -281,6 +291,10 @@ BANNED = (
      'a spec and an anchor carry two sections, `## Rules` and `## Proof`, so '
      'the name is the 2-section format; `## What it does` is retired and what '
      'a feature does belongs on the `> Description:` continuation lines'),
+    ('anchor-home', 'line', ANCHOR_HOME_RE, ANCHOR_HOME_SCOPE, 35, (),
+     'an anchor spec lives at `specs/_anchors/<name>.md`; `sync_status` reads '
+     'that directory and no other, so a `schema/` category routes an anchor '
+     'to a file nothing loads'),
 )
 
 
@@ -406,7 +420,6 @@ RUNTIME_PREFIXES = ('.purlin/cache/', '.purlin/runtime/', '.claude/')
 #: stale exemption.
 PATH_ALLOWLIST = (
     'specs/hooks/gate-hook.md',
-    'specs/schema/schema_spec_format.md',
     'specs/integration/',
     '.purlin/config.local.json',
     # The workflow purlin:init --ci writes into a consumer project; this

@@ -41,9 +41,9 @@ If the input is substantial (more than a sentence or two), extract as much as po
 - **Feature name** — infer from the topic
 - **Category** — infer from the domain per `references/spec_quality_guide.md` ("Spec Categories"):
   - Auth, security → `security/` or component dir with `security_` anchor
-  - File formats, contracts, cross-cutting standards → `schema/`
+  - File formats, contracts, cross-cutting standards → `_anchors/`
   - Reference docs, skill definitions, agent definitions → `instructions/`
-  - End-to-end flows → `integration/`
+  - End-to-end flows → the feature spec they validate, with the proofs tagged `@e2e`; `integration/` is legacy
   - Executable code → category matching the source directory
 - **Rules** — extract every testable constraint mentioned or implied (see Step 5 heuristics)
 - **Proof descriptions** — generate observable assertions with concrete inputs/outputs for each rule, with tier tags per the quality guide

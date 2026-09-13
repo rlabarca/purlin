@@ -519,18 +519,18 @@ The E2E test exercises every instruction file in the system. If the agent defini
 
 | Category | What goes there |
 |----------|----------------|
-| `specs/integration/` | E2E flows testing the full system |
+| The feature spec the flow validates | E2E flows testing the full system, each proof tagged `@e2e`. `specs/integration/` is legacy and takes no new specs |
 | `specs/instructions/` | Structural specs for agent instructions (references, skills) |
 
 ### The bottom line
 
 You don't need to write simulation tests for every reference doc. You need:
 - **Structural specs** (cheap) that catch deletions and drift → `specs/instructions/`
-- **One solid E2E flow** (expensive, `@e2e` tier, runs nightly) that proves the whole system works → `specs/integration/`
+- **One solid E2E flow** (expensive, `@e2e` tier, runs nightly) that proves the whole system works → the feature spec it validates, with its proofs tagged `@e2e`
 
 The structural specs are the smoke detector. The E2E is the fire drill.
 
-Purlin's audit classifies each proof as structural or behavioral. A structural check (a grep, a file exists, a section is present) verifies document content rather than system behaviour. Such checks count toward rule coverage but are excluded from the Proof Integrity score, and `purlin:drift` flags a feature whose code changed with only structural coverage. Add E2E proofs in `specs/integration/` to get real behavioral coverage.
+Purlin's audit classifies each proof as structural or behavioral. A structural check (a grep, a file exists, a section is present) verifies document content rather than system behaviour. Such checks count toward rule coverage but are excluded from the Proof Integrity score, and `purlin:drift` flags a feature whose code changed with only structural coverage. Add `@e2e` proofs to the feature spec they validate to get real behavioral coverage; `specs/integration/` is legacy.
 
 The same judgment is reachable one stage earlier: a proof *description* whose only action is a grep is graded STRUCTURAL by Proof Design, and is likewise excluded from that score rather than counted against it. A STRUCTURAL description yields an EXCLUDED proof: one call, made twice.
 

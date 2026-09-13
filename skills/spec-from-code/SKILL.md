@@ -127,9 +127,9 @@ Before starting, check for `.purlin/cache/sfc_state.json`.
 
 3. Propose a category taxonomy grouping feature candidates into logical categories. Follow the categorization rules in `references/spec_quality_guide.md` ("Spec Categories"):
    - Executable code (scripts, hooks, server) → category matches the source directory (e.g., `hooks/`, `mcp/`, `proof/`)
-   - Cross-cutting contracts and format definitions → `schema/`
+   - Cross-cutting contracts and format definitions → `_anchors/`
    - Reference docs and instruction files, where a project has them → `instructions/`
-   - End-to-end lifecycle flows → `integration/`
+   - End-to-end lifecycle flows → the feature spec they validate, with the proofs tagged `@e2e`; `integration/` is legacy
 
    Explain this categorization to the user when presenting the taxonomy. For each category, list: name, feature count, and per-feature name + one-line description.
 
