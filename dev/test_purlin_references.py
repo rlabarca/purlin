@@ -810,7 +810,7 @@ class TestCITemplatesGoThroughThePluginRoot:
             "scaffolds a runner workflow")
 
 
-    @pytest.mark.proof("purlin_references", "PROOF-34", "RULE-23")
+    @pytest.mark.proof("purlin_references", "PROOF-36", "RULE-23")
     def test_installed_as_column_is_what_both_scripts_read(self):
         """RULE-23: the name a copy takes lives in the registry, once.
 
