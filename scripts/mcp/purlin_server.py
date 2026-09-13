@@ -2955,8 +2955,8 @@ def _hooks_stale(project_root, config=None):
                                         'expects it'})
         elif have != want:
             found.append({'path': shim_path, 'rel': shim_rel, 'kind': 'shim',
-                          'reason': 'differs from the shim the installed '
-                                    'plugin generates'})
+                          'reason': 'not the shim the installed plugin '
+                                    'generates'})
         if slot_reason is not None:
             found.append({'path': slot_path, 'rel': _slot_rel(project_root,
                                                               slot_path),
