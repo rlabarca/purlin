@@ -962,3 +962,71 @@ class TestCleanupSnippetsNameTheirFiles:
                     f"{rel} no longer names {name!r}, one of the two scripts "
                     f"the pre-0.9.0 layout left at the project root; the glob "
                     f"was dropped rather than replaced")
+
+
+# ---------------------------------------------------------------------------
+# RULE-20: the installed shell harness is purlin-proof.sh
+# ---------------------------------------------------------------------------
+
+PLUGIN_SOURCE = 'scripts/proof/shell_purlin.sh'
+INSTALLED_HARNESS = '.purlin/plugins/purlin-proof.sh'
+LEGACY_HARNESS = '.purlin/plugins/shell_purlin.sh'
+HARNESS_GUIDES = ('docs/installation-guide.md',
+                  'docs/testing-workflow-guide.md')
+FRAMEWORKS = 'references/supported_frameworks.md'
+
+
+def _installed_as(rel, framework):
+    """The `Installed as` cell of the row naming `framework`, by header."""
+    header = None
+    for line in _read(rel).splitlines():
+        cells = [c.strip() for c in line.strip().strip('|').split('|')]
+        if header is None:
+            if 'Installed as' in cells:
+                header = cells.index('Installed as')
+            continue
+        if framework in cells[:1] and len(cells) > header:
+            return cells[header]
+    return None
+
+
+class TestInstalledShellHarnessName:
+    """RULE-20: `shell_purlin.sh` is a source path and nothing else."""
+
+    @pytest.mark.proof("purlin_prose", "PROOF-28", "RULE-20", tier="unit")
+    def test_docs_name_purlin_proof_sh(self):
+        scanned = ['README.md'] + _docs_markdown()
+        assert len(scanned) >= 8, (
+            f"only {len(scanned)} files were read; the sweep would pass by "
+            f"grepping nothing")
+
+        offenders = []
+        for rel in scanned:
+            for lineno, line in enumerate(_read(rel).splitlines(), 1):
+                start = 0
+                while True:
+                    at = line.find('shell_purlin.sh', start)
+                    if at < 0:
+                        break
+                    if not line[:at].endswith('scripts/proof/'):
+                        offenders.append(f"{rel}:{lineno}: {line.strip()}")
+                    start = at + 1
+        assert not offenders, (
+            "`shell_purlin.sh` is the plugin source under `scripts/proof/`; "
+            "the copy a project carries is `purlin-proof.sh`:\n"
+            + "\n".join(offenders))
+
+        for rel in HARNESS_GUIDES:
+            text = _read(rel)
+            assert INSTALLED_HARNESS in text, (
+                f"{rel} no longer tells a shell user what to source; "
+                f"{INSTALLED_HARNESS} is absent")
+            assert LEGACY_HARNESS not in text, (
+                f"{rel} still sources {LEGACY_HARNESS}, a path no "
+                f"initialized project carries")
+
+        cell = _installed_as(FRAMEWORKS, '**Shell**')
+        assert cell == '`purlin-proof.sh`', (
+            f"the shell row's `Installed as` cell in {FRAMEWORKS} reads "
+            f"{cell!r}; the two guides teach `purlin-proof.sh`, and the "
+            f"scaffolder copies the plugin under whatever this column says")

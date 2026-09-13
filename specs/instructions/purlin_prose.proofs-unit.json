@@ -156,6 +156,15 @@
     },
     {
       "feature": "purlin_prose",
+      "id": "PROOF-28",
+      "rule": "RULE-20",
+      "test_file": "dev/test_purlin_prose.py",
+      "test_name": "test_docs_name_purlin_proof_sh",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_prose",
       "id": "PROOF-3",
       "rule": "RULE-2",
       "test_file": "dev/test_purlin_prose.py",

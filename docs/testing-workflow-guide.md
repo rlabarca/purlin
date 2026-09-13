@@ -74,7 +74,7 @@ The logger collects only the trait whose name is exactly `PurlinProof` (compared
 ### Shell (Bash)
 
 ```bash
-source .purlin/plugins/shell_purlin.sh
+source .purlin/plugins/purlin-proof.sh
 purlin_proof "auth_login" "PROOF-1" "RULE-1" pass "valid login returns 200"
 purlin_proof_finish
 ```

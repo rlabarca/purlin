@@ -79,9 +79,9 @@ This does 7 things:
 4. **Verifies the MCP server**: the server carrying the `sync_status`, `purlin_config` and `drift` tools ships with the plugin and registers itself wherever the plugin is enabled, always at the installed plugin version. A project initialized before v0.9.4 carries a legacy version-pinned `purlin` entry in `.mcp.json` that shadows the bundled server, and init removes it. See [Upgrading the plugin](#upgrading-the-plugin), which owns every migration an older project needs.
 5. **Installs the pre-push hook**: a git hook that runs tests before a push. Choose warn mode (block on failures, warn on partial coverage) or strict mode (block unless every feature is VERIFIED). Both hooks install the same way, in two parts. The body is a generated shim at `.purlin/hooks/<name>`, tracked in git because it names no machine and no plugin version: it finds the installed plugin at run time and runs that plugin's hook script, so a plugin update changes the hook and nothing in the project is rewritten. The file git itself runs is a three-line delegator to that shim, written into the hooks directory git reads, which is `core.hooksPath` when your repository sets one and the repository's common hooks directory otherwise, so a linked worktree gets a hook that runs. Every hook path ends in one of five outcomes and init prints which: the shim is **wrote** or **kept**, the delegator is **wrote** into a free slot, **kept** when Purlin's delegator is already there, and **skipped** when the slot holds anything else. A hook you or a manager put there is never written over. If husky, lefthook or the pre-commit framework owns your hooks, init names the manager and prints the one line to add to its hook, for example `exec "$(git rev-parse --show-toplevel)/.purlin/hooks/pre-push" "$@"` in `.husky/pre-push`.
 6. **Installs the pre-commit hook for the project digest**: it regenerates `.purlin/report-data.js`, the coverage and drift data, on every commit, so stakeholders see the current status without running Purlin tools. The modes are `auto` (default), `warn` and `off`.
+7. **Configures audit criteria**: the built-in criteria always apply and cover both quality gauges. You can add team criteria from a git-hosted file, appended to the built-in ones. See [references/audit_criteria.md](../references/audit_criteria.md).
 
 The plugin also carries a Claude Code hook (`hooks/hooks.json`) that refreshes the same digest in the background after any tool call or turn that changed a spec, proof, receipt, gauge cache or the config, so the dashboard keeps up while agents work without anyone calling `purlin:status`. It needs no installation step: it comes with the plugin, honours `report` and `digest` in `.purlin/config.json` (`report: false` or `digest: off` disables it), never blocks, never prints, and never reaches the network.
-7. **Configures audit criteria**: the built-in criteria always apply and cover both quality gauges. You can add team criteria from a git-hosted file, appended to the built-in ones. See [references/audit_criteria.md](../references/audit_criteria.md).
 
 The skill asks the questions; `scripts/init/scaffold.py` writes the files and prints one line per path it wrote, kept, copied or skipped, so what init did is on screen rather than inferred from the tree.
 
@@ -108,9 +108,11 @@ reporters: ["default", ".purlin/plugins/jest_purlin.js"]
 test: { reporters: ['default', '.purlin/plugins/vitest_purlin.ts'] }
 ```
 
-**Shell.** Source the harness in your test scripts:
+**Shell.** Source the harness in your test scripts. `purlin:init` copies `scripts/proof/shell_purlin.sh`
+into the project under the name every shell test sources, which is the **Installed as** column of
+[supported frameworks](../references/supported_frameworks.md):
 ```bash
-source .purlin/plugins/shell_purlin.sh
+source .purlin/plugins/purlin-proof.sh
 ```
 
 **xUnit (.NET).** Manual setup. Compile `xunit_purlin.cs` into an assembly named `Purlin.TestLogger` (the .NET test platform only discovers loggers from `*TestLogger.dll` assemblies), reference it from your test project, then run:
