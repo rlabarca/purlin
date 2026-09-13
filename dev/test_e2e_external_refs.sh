@@ -523,7 +523,7 @@ create_anchor "$TMP10" "unpinned_anchor" "$BARE10" "" "spec.md"
 (cd "$TMP10" && git add -A && git commit -q -m "add anchor")
 
 drift10=$(run_drift "$TMP10")
-if echo "$drift10" | grep -q '"status": "unpinned"'; then
+if echo "$drift10" | grep -Eq '"status": ?"unpinned"'; then
   echo "  PASS: drift detects unpinned"
   purlin_proof "drift" "PROOF-18" "RULE-15" pass "drift detects unpinned anchor"
   PASS=$((PASS + 1))

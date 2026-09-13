@@ -69,8 +69,8 @@ if ! echo "$auditor_section" | grep -q "purlin:build"; then
   echo "    FAIL: Missing purlin:build remediation route in independent auditor mode"
   proof2_ok=false
 fi
-if ! echo "$auditor_section" | grep -q -- "read-only and never edits code or tests"; then
-  echo "    FAIL: Missing 'read-only and never edits code or tests' statement in independent auditor mode"
+if ! echo "$auditor_section" | grep -q -- "writes no code and no test files"; then
+  echo "    FAIL: Missing 'writes no code and no test files' statement in independent auditor mode"
   proof2_ok=false
 fi
 # RULE-5 also requires the section to SAY no fixer agent is spawned, not merely to
