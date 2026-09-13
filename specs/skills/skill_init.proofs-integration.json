@@ -282,6 +282,15 @@
     },
     {
       "feature": "skill_init",
+      "id": "PROOF-84",
+      "rule": "RULE-79",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_ci_writes_one_consumer_workflow_and_never_over_a_file",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "skill_init",
       "id": "PROOF-86",
       "rule": "RULE-53",
       "test_file": "dev/test_init_update.py",

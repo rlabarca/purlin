@@ -120,6 +120,15 @@
     },
     {
       "feature": "skill_init",
+      "id": "PROOF-85",
+      "rule": "RULE-79",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_skill_asks_before_the_scaffolder_writes",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_init",
       "id": "PROOF-90",
       "rule": "RULE-83",
       "test_file": "dev/test_skill_specs.py",

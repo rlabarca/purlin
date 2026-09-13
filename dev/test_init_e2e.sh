@@ -315,12 +315,12 @@ create_proof_file "$TMP6" "test_feature" "hooks" "PROOF-1|RULE-1|pass" "PROOF-2|
 output6=$(run_hook "$TMP6" 2>&1) || true
 if echo "$output6" | grep -q "(pytest)"; then
   echo "  PASS: pyproject.toml triggers pytest"
-  purlin_proof "skill_init" "PROOF-13" "RULE-13" pass "pyproject.toml [tool.pytest] triggers pytest"
+  purlin_proof "skill_init" "PROOF-13" "RULE-12" pass "pyproject.toml [tool.pytest] triggers pytest"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: expected (pytest) in output"
   echo "  Output: $output6"
-  purlin_proof "skill_init" "PROOF-13" "RULE-13" fail "pyproject.toml did not trigger pytest"
+  purlin_proof "skill_init" "PROOF-13" "RULE-12" fail "pyproject.toml did not trigger pytest"
   FAIL=$((FAIL + 1))
 fi
 
@@ -338,12 +338,12 @@ create_proof_file "$TMP7" "test_feature" "hooks" "PROOF-1|RULE-1|pass" "PROOF-2|
 output7=$(run_hook "$TMP7" 2>&1) || true
 if echo "$output7" | grep -q "(jest)"; then
   echo "  PASS: package.json jest triggers jest"
-  purlin_proof "skill_init" "PROOF-14" "RULE-14" pass "package.json jest triggers jest detection"
+  purlin_proof "skill_init" "PROOF-14" "RULE-12" pass "package.json jest triggers jest detection"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: expected (jest) in output"
   echo "  Output: $output7"
-  purlin_proof "skill_init" "PROOF-14" "RULE-14" fail "package.json jest did not trigger jest"
+  purlin_proof "skill_init" "PROOF-14" "RULE-12" fail "package.json jest did not trigger jest"
   FAIL=$((FAIL + 1))
 fi
 
@@ -441,11 +441,11 @@ init_project "$TMP11" "pytest" "warn" "true"
 
 if diff -q "$TMP11/.purlin/plugins/pytest_purlin.py" "$PYTEST_PLUGIN_SRC" >/dev/null 2>&1; then
   echo "  PASS: pytest_purlin.py identical to source"
-  purlin_proof "skill_init" "PROOF-18" "RULE-18" pass "pytest plugin byte-identical"
+  purlin_proof "skill_init" "PROOF-18" "RULE-53" pass "pytest plugin byte-identical"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: pytest_purlin.py differs from source"
-  purlin_proof "skill_init" "PROOF-18" "RULE-18" fail "pytest plugin differs"
+  purlin_proof "skill_init" "PROOF-18" "RULE-53" fail "pytest plugin differs"
   FAIL=$((FAIL + 1))
 fi
 
@@ -458,16 +458,16 @@ init_project "$TMP12" "jest" "warn" "true"
 
 if diff -q "$TMP12/.purlin/plugins/jest_purlin.js" "$JEST_REPORTER_SRC" >/dev/null 2>&1; then
   echo "  PASS: jest_purlin.js identical to source"
-  purlin_proof "skill_init" "PROOF-19" "RULE-19" pass "jest reporter byte-identical"
+  purlin_proof "skill_init" "PROOF-19" "RULE-53" pass "jest reporter byte-identical"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: jest_purlin.js differs from source"
-  purlin_proof "skill_init" "PROOF-19" "RULE-19" fail "jest reporter differs"
+  purlin_proof "skill_init" "PROOF-19" "RULE-53" fail "jest reporter differs"
   FAIL=$((FAIL + 1))
 fi
 
 # ==========================================================================
-# PROOF-49 (RULE-47): vitest reporter byte-identical to source
+# PROOF-49 (RULE-53): vitest reporter byte-identical to source
 # ==========================================================================
 echo "--- PROOF-49: vitest reporter identical ---"
 TMP12B=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP12B"
@@ -475,11 +475,11 @@ init_project "$TMP12B" "vitest" "warn" "true"
 
 if diff -q "$TMP12B/.purlin/plugins/vitest_purlin.ts" "$VITEST_REPORTER_SRC" >/dev/null 2>&1; then
   echo "  PASS: vitest_purlin.ts identical to source"
-  purlin_proof "skill_init" "PROOF-49" "RULE-47" pass "vitest reporter byte-identical"
+  purlin_proof "skill_init" "PROOF-49" "RULE-53" pass "vitest reporter byte-identical"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: vitest_purlin.ts differs from source"
-  purlin_proof "skill_init" "PROOF-49" "RULE-47" fail "vitest reporter differs"
+  purlin_proof "skill_init" "PROOF-49" "RULE-53" fail "vitest reporter differs"
   FAIL=$((FAIL + 1))
 fi
 
@@ -492,11 +492,11 @@ init_project "$TMP13" "shell" "warn" "true"
 
 if diff -q "$TMP13/.purlin/plugins/purlin-proof.sh" "$SHELL_HARNESS_SRC" >/dev/null 2>&1; then
   echo "  PASS: purlin-proof.sh identical to source"
-  purlin_proof "skill_init" "PROOF-20" "RULE-20" pass "shell harness byte-identical"
+  purlin_proof "skill_init" "PROOF-20" "RULE-53" pass "shell harness byte-identical"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: purlin-proof.sh differs from source"
-  purlin_proof "skill_init" "PROOF-20" "RULE-20" fail "shell harness differs"
+  purlin_proof "skill_init" "PROOF-20" "RULE-53" fail "shell harness differs"
   FAIL=$((FAIL + 1))
 fi
 

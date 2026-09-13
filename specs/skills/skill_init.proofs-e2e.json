@@ -31,7 +31,7 @@
     {
       "feature": "skill_init",
       "id": "PROOF-13",
-      "rule": "RULE-13",
+      "rule": "RULE-12",
       "test_file": "dev/test_init_e2e.sh",
       "test_name": "pyproject.toml [tool.pytest] triggers pytest",
       "status": "pass",
@@ -40,7 +40,7 @@
     {
       "feature": "skill_init",
       "id": "PROOF-14",
-      "rule": "RULE-14",
+      "rule": "RULE-12",
       "test_file": "dev/test_init_e2e.sh",
       "test_name": "package.json jest triggers jest detection",
       "status": "pass",
@@ -76,7 +76,7 @@
     {
       "feature": "skill_init",
       "id": "PROOF-18",
-      "rule": "RULE-18",
+      "rule": "RULE-53",
       "test_file": "dev/test_init_e2e.sh",
       "test_name": "pytest plugin byte-identical",
       "status": "pass",
@@ -85,7 +85,7 @@
     {
       "feature": "skill_init",
       "id": "PROOF-19",
-      "rule": "RULE-19",
+      "rule": "RULE-53",
       "test_file": "dev/test_init_e2e.sh",
       "test_name": "jest reporter byte-identical",
       "status": "pass",
@@ -94,7 +94,7 @@
     {
       "feature": "skill_init",
       "id": "PROOF-20",
-      "rule": "RULE-20",
+      "rule": "RULE-53",
       "test_file": "dev/test_init_e2e.sh",
       "test_name": "shell harness byte-identical",
       "status": "pass",
@@ -283,7 +283,7 @@
     {
       "feature": "skill_init",
       "id": "PROOF-49",
-      "rule": "RULE-47",
+      "rule": "RULE-53",
       "test_file": "dev/test_init_e2e.sh",
       "test_name": "vitest reporter byte-identical",
       "status": "pass",
