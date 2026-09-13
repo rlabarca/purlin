@@ -547,28 +547,79 @@ class TestGitArtifacts:
             shutil.rmtree(nolink, ignore_errors=True)
 
     @pytest.mark.proof("skill_init", "PROOF-70", "RULE-67", tier="integration")
-    def test_hooks_are_linked_kept_and_skipped_at_digest_off(self, repo):
-        """RULE-67: linked to the plugin, never over an existing hook, and
-        no pre-commit hook at all when the digest is off."""
-        assert _run(repo, '--test-framework', 'shell', '--digest', 'auto')[0] == 0
-        for name, script in (('pre-push', 'pre-push.sh'),
-                             ('pre-commit', 'pre-commit.sh')):
+    def test_the_delegator_lands_in_the_hooks_directory_git_actually_reads(
+            self, repo):
+        """RULE-67: `core.hooksPath` when it is set, the common directory
+        otherwise, a delegator only into a free slot, and no pre-commit hook
+        at all when the digest is off."""
+        code, out, err = _run(repo, '--test-framework', 'shell',
+                              '--digest', 'auto')
+        assert code == 0, (code, err)
+        for name in ('pre-push', 'pre-commit'):
             hook = os.path.join(repo, '.git', 'hooks', name)
-            assert os.path.islink(hook), f"{name} is not a symlink"
-            assert os.path.realpath(hook) == os.path.realpath(
-                os.path.join(ROOT, 'scripts', 'hooks', script)), name
+            assert os.path.isfile(hook) and not os.path.islink(hook), \
+                f"{name} is not a regular file"
+            assert os.stat(hook).st_mode & 0o111, f"{name} is not executable"
+            body = _read(hook)
+            assert body.splitlines() == [
+                '#!/bin/sh',
+                f'# purlin-delegator (purlin:init): the hook body is '
+                f'.purlin/hooks/{name}, tracked in git.',
+                f'exec "$(git rev-parse --show-toplevel)/.purlin/hooks/{name}"'
+                f' "$@"'], body
+            assert f'wrote .git/hooks/{name} (delegates to ' \
+                   f'.purlin/hooks/{name})' in out, out
+        # A second run keeps what it recognizes as its own.
+        code, out, err = _run(repo, '--test-framework', 'shell', '--force')
+        assert code == 0, (code, err)
+        for name in ('pre-push', 'pre-commit'):
+            assert f'kept .git/hooks/{name} (purlin delegator already ' \
+                   f'installed)' in out, out
 
-        existing = _tmp_repo()
+        # core.hooksPath set: git reads nothing in .git/hooks, so nothing of
+        # Purlin's may be written there.
+        hooked = _tmp_repo()
         try:
-            body = '#!/bin/sh\necho custom\n'
-            _write(existing, '.git/hooks/pre-push', body)
-            code, out, err = _run(existing, '--test-framework', 'shell')
+            subprocess.run(['git', 'config', 'core.hooksPath', '.githooks'],
+                           cwd=hooked, capture_output=True)
+            code, out, err = _run(hooked, '--test-framework', 'shell')
             assert code == 0, (code, err)
-            assert _read(os.path.join(existing, '.git/hooks/pre-push')) == body
-            assert ('kept .git/hooks/pre-push (existing non-purlin hook '
-                    'preserved)') in out, out
+            for name in ('pre-push', 'pre-commit'):
+                assert os.path.isfile(
+                    os.path.join(hooked, '.githooks', name)), \
+                    f"{name} did not land in core.hooksPath"
+                assert not os.path.lexists(
+                    os.path.join(hooked, '.git', 'hooks', name)), \
+                    f"{name} was written where git would never read it"
+                assert f'wrote .githooks/{name} (delegates to ' \
+                       f'.purlin/hooks/{name})' in out, out
         finally:
-            shutil.rmtree(existing, ignore_errors=True)
+            shutil.rmtree(hooked, ignore_errors=True)
+
+        # A linked worktree: the hooks git runs are the common directory's,
+        # never `.git/worktrees/<name>/hooks`, which git never reads.
+        base = tempfile.mkdtemp()
+        try:
+            main = os.path.join(base, 'main')
+            os.makedirs(main)
+            for args in (['init', '-q'], ['config', 'user.email', 't@e'],
+                         ['config', 'user.name', 't'],
+                         ['commit', '-q', '--allow-empty', '-m', 'seed']):
+                subprocess.run(['git'] + args, cwd=main, capture_output=True)
+            tree = os.path.join(base, 'wt')
+            subprocess.run(['git', 'worktree', 'add', '-q', tree, '-b', 'lane'],
+                           cwd=main, capture_output=True)
+            code, out, err = _run(tree, '--test-framework', 'shell')
+            assert code == 0, (code, err)
+            for name in ('pre-push', 'pre-commit'):
+                assert os.path.isfile(
+                    os.path.join(main, '.git', 'hooks', name)), \
+                    f"{name} did not land in the common directory"
+                assert not os.path.exists(os.path.join(
+                    main, '.git', 'worktrees', 'wt', 'hooks', name)), \
+                    f"{name} landed where a worktree's git never reads hooks"
+        finally:
+            shutil.rmtree(base, ignore_errors=True)
 
         quiet = _tmp_repo()
         try:
@@ -578,36 +629,99 @@ class TestGitArtifacts:
             assert not os.path.lexists(
                 os.path.join(quiet, '.git', 'hooks', 'pre-commit')), \
                 "digest off still installed the pre-commit hook"
+            assert not os.path.lexists(
+                os.path.join(quiet, '.purlin', 'hooks', 'pre-commit')), \
+                "digest off still wrote the pre-commit shim"
             assert 'skipped .git/hooks/pre-commit (digest mode "off")' in out, out
+            assert 'skipped .purlin/hooks/pre-commit (digest mode "off")' in out, \
+                out
         finally:
             shutil.rmtree(quiet, ignore_errors=True)
 
-        # RULE-67's fallback: on a host where os.symlink raises, both hooks
-        # are copied, executable, and the plan says `copied` for each.
+        # No symlink is made anywhere, so a host where os.symlink raises gets
+        # the same working hooks as every other host.
         nolink = _tmp_repo()
         try:
             code, out, err = _run_without_symlink(
                 nolink, '--test-framework', 'shell', '--digest', 'auto')
             assert code == 0, (code, out, err)
-            for name, script in (('pre-push', 'pre-push.sh'),
-                                 ('pre-commit', 'pre-commit.sh')):
-                hook = os.path.join(nolink, '.git', 'hooks', name)
-                assert os.path.isfile(hook) and not os.path.islink(hook), \
-                    f"{name} was not copied as a real file"
-                with open(hook, 'rb') as f:
-                    installed = f.read()
-                with open(os.path.join(ROOT, 'scripts', 'hooks', script),
-                          'rb') as f:
-                    assert installed == f.read(), \
-                        f"the copied {name} is not byte-identical to the plugin's"
-                assert os.stat(hook).st_mode & 0o111, \
-                    f"the copied {name} is not executable"
-                assert any(l.startswith('copied ') and
-                           l.endswith(f'-> .git/hooks/{name}')
-                           for l in out.splitlines()), \
-                    f"the plan never said `copied` for {name}: {out!r}"
+            assert 'linked ' not in out, \
+                f"the hook install still tries to link: {out!r}"
+            for name in ('pre-push', 'pre-commit'):
+                for path in (os.path.join(nolink, '.git', 'hooks', name),
+                             os.path.join(nolink, '.purlin', 'hooks', name)):
+                    assert os.path.isfile(path) and not os.path.islink(path), \
+                        f"{path} is not a regular file"
+                    assert os.stat(path).st_mode & 0o111, \
+                        f"{path} is not executable"
         finally:
             shutil.rmtree(nolink, ignore_errors=True)
+
+    @pytest.mark.proof("skill_init", "PROOF-83", "RULE-78", tier="integration")
+    def test_a_slot_purlin_does_not_own_is_never_written(self, repo):
+        """RULE-78: an existing hook and a hook manager each get the line to
+        add, named, and neither has a byte written over it."""
+        body = '#!/bin/sh\necho custom\n'
+        _write(repo, '.git/hooks/pre-push', body)
+        code, out, err = _run(repo, '--test-framework', 'shell')
+        assert code == 0, (code, err)
+        assert _read(os.path.join(repo, '.git', 'hooks', 'pre-push')) == body, \
+            "an existing hook was overwritten"
+        line = ('exec "$(git rev-parse --show-toplevel)/.purlin/hooks/pre-push"'
+                ' "$@"')
+        assert ('skipped .git/hooks/pre-push (a hook is already installed '
+                f'there and is kept; add this line to it: {line})') in out, out
+
+        # husky: core.hooksPath names its directory, so its files are the only
+        # hooks git runs and Purlin writes into none of them.
+        husky = _tmp_repo()
+        try:
+            _write(husky, '.husky/pre-commit', '#!/bin/sh\necho husky\n')
+            subprocess.run(['git', 'config', 'core.hooksPath', '.husky'],
+                           cwd=husky, capture_output=True)
+            code, out, err = _run(husky, '--test-framework', 'shell')
+            assert code == 0, (code, err)
+            assert _read(os.path.join(husky, '.husky', 'pre-commit')) == \
+                '#!/bin/sh\necho husky\n', "husky's own hook was rewritten"
+            assert not os.path.lexists(
+                os.path.join(husky, '.husky', 'pre-push')), \
+                "a hook was written into the manager's directory"
+            for name in ('pre-push', 'pre-commit'):
+                assert os.path.isfile(
+                    os.path.join(husky, '.purlin', 'hooks', name)), \
+                    f"the {name} shim was not written for a husky project"
+                assert (f"skipped .husky/{name} (husky manages this "
+                        f"repository's hooks; add this line to .husky/{name}: "
+                        f'exec "$(git rev-parse --show-toplevel)/.purlin/'
+                        f'hooks/{name}" "$@")') in out, out
+        finally:
+            shutil.rmtree(husky, ignore_errors=True)
+
+        # lefthook and the pre-commit framework are named the same way.
+        left = _tmp_repo()
+        try:
+            subprocess.run(['git', 'config', 'core.hooksPath',
+                            '.git/hooks/lefthook'], cwd=left,
+                           capture_output=True)
+            code, out, err = _run(left, '--test-framework', 'shell')
+            assert code == 0, (code, err)
+            assert 'lefthook manages' in out and 'lefthook.yml' in out, out
+        finally:
+            shutil.rmtree(left, ignore_errors=True)
+
+        framework = _tmp_repo()
+        try:
+            _write(framework, '.pre-commit-config.yaml', 'repos: []\n')
+            code, out, err = _run(framework, '--test-framework', 'shell')
+            assert code == 0, (code, err)
+            assert 'the pre-commit framework manages' in out, out
+            assert '.pre-commit-config.yaml:' in out, out
+            for name in ('pre-push', 'pre-commit'):
+                assert not os.path.lexists(
+                    os.path.join(framework, '.git', 'hooks', name)), \
+                    f"{name} was written under a hook framework"
+        finally:
+            shutil.rmtree(framework, ignore_errors=True)
 
 
 # ---------------------------------------------------------------------------

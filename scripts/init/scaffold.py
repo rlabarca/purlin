@@ -32,8 +32,9 @@ WHAT IT WRITES
     .purlin/hooks/pre-push  the generated shims, tracked, which find the
     .purlin/hooks/pre-commit  installed plugin and run its hook script
     .purlin/plugin-root     where this machine keeps the plugin (gitignored)
-    .git/hooks/pre-push     a symlink to scripts/hooks/, copied when the
-    .git/hooks/pre-commit   symlink target does not resolve
+    <hooks>/pre-push        a three-line delegator to the shim, into the
+    <hooks>/pre-commit      repository's hooks directory and only when the
+                            slot is free
 
     It never writes a proof entry, never writes a receipt and never commits.
     Those are claims about a run that happened, and scaffolding a project is
@@ -160,7 +161,9 @@ _WIRING = {
                '});\n'),
 }
 
-_HOOKS = (('pre-push', 'pre-push.sh'), ('pre-commit', 'pre-commit.sh'))
+# Both hooks, in plan order. Each one's script in the plugin is its own name
+# with `.sh` on the end, which is what the generated shim execs.
+_HOOKS = ('pre-push', 'pre-commit')
 
 
 # ── the generated hook shims (Step 7) ─────────────────────────────────
@@ -661,45 +664,114 @@ def _plugin_root_file(plan, root, plugin_root, dry_run):
                '.purlin/plugin-root', plugin_root + '\n', dry_run)
 
 
-def _hooks(plan, root, plugin_root, git_dir, digest, dry_run):
+def _hook_manager(root, hooks_setting, name):
+    """`(manager, file)` when something else already owns this hook slot.
+
+    A hook manager runs its own file and only its own file, so writing into
+    the slot it points at either loses the project's hooks or has Purlin's
+    overwritten on the manager's next install. The user gets the one line to
+    paste instead, and the manager is named so they know where to paste it.
+    """
+    lowered = hooks_setting.replace('\\', '/').lower()
+    if '.husky' in lowered:
+        return 'husky', f'.husky/{name}'
+    if 'lefthook' in lowered:
+        return 'lefthook', 'lefthook.yml'
+    if _exists(root, '.pre-commit-config.yaml'):
+        return 'the pre-commit framework', '.pre-commit-config.yaml'
+    return None
+
+
+def _delegator(plan, root, hooks_dir, hooks_setting, name, dry_run):
+    """The hook git runs: three lines pointing at the tracked shim.
+
+    Only ever into a free slot. A hook already in it is someone's, and the
+    worst thing an initializer can do to a repository is silently replace a
+    check somebody else put there, so the exact line to add is printed and
+    nothing is written.
+    """
+    rel = _hooks_rel(root, hooks_dir, name)
+    line = f'exec "$(git rev-parse --show-toplevel)/.purlin/hooks/{name}" "$@"'
+    managed = _hook_manager(root, hooks_setting, name)
+    if managed is not None:
+        manager, where = managed
+        plan.append(f'skipped {rel} ({manager} manages this repository\'s '
+                    f'hooks; add this line to {where}: {line})')
+        return
+    dest = os.path.join(hooks_dir, name)
+    if os.path.lexists(dest):
+        if _DELEGATOR_MARKER in _slurp(hooks_dir, name):
+            plan.append(f'kept {rel} (purlin delegator already installed)')
+        else:
+            plan.append(f'skipped {rel} (a hook is already installed there '
+                        f'and is kept; add this line to it: {line})')
+        return
+    if not dry_run:
+        os.makedirs(hooks_dir, exist_ok=True)
+        _write(dest, _DELEGATOR.replace('@NAME@', name))
+        os.chmod(dest, 0o755)
+    plan.append(f'wrote {rel} (delegates to .purlin/hooks/{name})')
+
+
+def _hooks(plan, root, plugin_root, hooks_dir, hooks_setting, digest, dry_run):
     """Steps 7 and 7a: the tracked shims, then the hook git itself runs."""
-    hooks_dir = os.path.join(git_dir, 'hooks')
-    for name, script in _HOOKS:
-        rel = f'.git/hooks/{name}'
+    for name in _HOOKS:
+        rel = _hooks_rel(root, hooks_dir, name)
         shim_rel = f'.purlin/hooks/{name}'
-        dest = os.path.join(hooks_dir, name)
         if name == 'pre-commit' and digest == 'off':
             plan.append(f'skipped {shim_rel} (digest mode "off")')
             plan.append(f'skipped {rel} (digest mode "off")')
             continue
         _generated(plan, os.path.join(root, '.purlin', 'hooks', name),
-                   shim_rel, _shim(name, f'scripts/hooks/{script}'), dry_run,
+                   shim_rel, _shim(name, f'scripts/hooks/{name}.sh'), dry_run,
                    mode=0o755)
-        if os.path.lexists(dest):
-            body = _slurp(hooks_dir, name)
-            if 'purlin' in body:
-                plan.append(f'kept {rel} (purlin hook already installed)')
-            else:
-                plan.append(f'kept {rel} (existing non-purlin hook preserved)')
-            continue
-        if not dry_run:
-            os.makedirs(hooks_dir, exist_ok=True)
-        _link_or_copy(plan, os.path.join(plugin_root, 'scripts', 'hooks',
-                                         script), dest, rel, dry_run)
+        _delegator(plan, root, hooks_dir, hooks_setting, name, dry_run)
 
 
 # ── invocation ────────────────────────────────────────────────────────
 
-def _git_dir(root):
-    """The repository's git directory, or None when `root` is not one."""
+def _git(root, *args):
+    """Run git in `root`; returns `(ok, stripped stdout)`."""
     try:
-        result = subprocess.run(['git', 'rev-parse', '--absolute-git-dir'],
-                                cwd=root, capture_output=True, text=True)
+        result = subprocess.run(['git'] + list(args), cwd=root,
+                                capture_output=True, text=True)
     except (FileNotFoundError, OSError):
+        return False, ''
+    return result.returncode == 0, result.stdout.strip()
+
+
+def _hooks_dir(root):
+    """`(hooks directory, the core.hooksPath value)`, or None outside git.
+
+    `core.hooksPath` first, because a repository that sets it is one where git
+    reads nothing else: husky, lefthook and the pre-commit framework all work
+    by setting it, and a hook written into `.git/hooks` there is a file git
+    never runs. Otherwise the common directory's `hooks/`, which is the main
+    repository's for a linked worktree, since `--absolute-git-dir` in a
+    worktree names `.git/worktrees/<name>`, another directory git never reads
+    hooks from.
+    """
+    ok, toplevel = _git(root, 'rev-parse', '--show-toplevel')
+    if not ok or not toplevel:
         return None
-    if result.returncode != 0:
+    ok, common = _git(root, 'rev-parse', '--git-common-dir')
+    if not ok or not common:
         return None
-    return result.stdout.strip() or None
+    _, setting = _git(root, 'config', '--get', 'core.hooksPath')
+    if setting:
+        path = (setting if os.path.isabs(setting)
+                else os.path.join(toplevel, setting))
+        return os.path.abspath(path), setting
+    return os.path.abspath(os.path.join(root, common, 'hooks')), ''
+
+
+def _hooks_rel(root, hooks_dir, name):
+    """The hook's path as the plan names it: project-relative where it can be."""
+    path = os.path.join(hooks_dir, name)
+    rel = os.path.relpath(os.path.realpath(path), os.path.realpath(root))
+    if rel.startswith('..'):
+        return path
+    return rel.replace(os.sep, '/')
 
 
 def main(argv=None):
@@ -745,10 +817,11 @@ def main(argv=None):
 
     # Step 1, before anything is read or written: without git there is no
     # provenance for a proof, a receipt or a stamp, and neither hook can run.
-    git_dir = _git_dir(root)
-    if git_dir is None:
+    hooks = _hooks_dir(root)
+    if hooks is None:
         print(GIT_REQUIRED, file=sys.stderr)
         return EXIT_BAD_INVOCATION
+    hooks_dir, hooks_setting = hooks
 
     config_path = os.path.join(root, '.purlin', 'config.json')
     if os.path.exists(config_path) and not args.force:
@@ -820,7 +893,8 @@ def main(argv=None):
     _gitignore(plan, root, plugin_root, args.dry_run)
     _report(plan, root, plugin_root, bool(config.get('report')), args.dry_run)
     _plugin_root_file(plan, root, plugin_root, args.dry_run)
-    _hooks(plan, root, plugin_root, git_dir, config.get('digest'), args.dry_run)
+    _hooks(plan, root, plugin_root, hooks_dir, hooks_setting,
+           config.get('digest'), args.dry_run)
 
     for line in plan:
         print(line)
