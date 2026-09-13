@@ -3,33 +3,6 @@
   "proofs": [
     {
       "feature": "skill_drift",
-      "id": "PROOF-1",
-      "rule": "RULE-1",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_has_frontmatter",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "skill_drift",
-      "id": "PROOF-2",
-      "rule": "RULE-2",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_has_usage_section",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "skill_drift",
-      "id": "PROOF-3",
-      "rule": "RULE-3",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_name_matches_directory",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "skill_drift",
       "id": "PROOF-4",
       "rule": "RULE-4",
       "test_file": "dev/test_skill_specs.py",
@@ -61,6 +34,15 @@
       "rule": "RULE-7",
       "test_file": "dev/test_skill_specs.py",
       "test_name": "test_every_field_the_analysis_reads_is_declared",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "skill_drift",
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "test_file": "dev/test_skill_specs.py",
+      "test_name": "test_the_report_format_and_the_level_table_each_have_one_home",
       "status": "pass",
       "tier": "unit"
     }

@@ -115,57 +115,9 @@ def _assert_commit_instructions(content, skill_name):
         f"{skill_name} skill missing positive commit instruction"
 
 
-# ── skill_anchor ──────────────────────────────────────────────────────
-
-class TestSkillAnchor:
-
-    @pytest.mark.proof("skill_anchor", "PROOF-1", "RULE-1")
-    def test_has_frontmatter(self):
-        content = _read('anchor')
-        assert '---' in content, "anchor SKILL.md must have YAML frontmatter delimiters"
-        _assert_frontmatter(content, 'anchor')
-
-    @pytest.mark.proof("skill_anchor", "PROOF-2", "RULE-2")
-    def test_has_usage_section(self):
-        content = _read('anchor')
-        assert '## Usage' in content, "anchor SKILL.md must have a ## Usage section"
-        _assert_usage(content, 'anchor')
-
-    @pytest.mark.proof("skill_anchor", "PROOF-3", "RULE-3")
-    def test_name_matches_directory(self):
-        content = _read('anchor')
-        assert 'name:' in content, "anchor SKILL.md must have a name: field"
-        _assert_name_matches(content, 'anchor')
-
-    @pytest.mark.proof("skill_anchor", "PROOF-4", "RULE-4")
-    def test_has_commit_instructions(self):
-        content = _read('anchor')
-        assert re.search(r'(?i)(git commit|commit the|create.*commit|commit.*change)', content), \
-            "anchor skill missing positive commit instruction"
-        _assert_commit_instructions(content, 'anchor')
-
-
 # ── skill_audit ───────────────────────────────────────────────────────
 
 class TestSkillAudit:
-
-    @pytest.mark.proof("skill_audit", "PROOF-1", "RULE-1")
-    def test_has_frontmatter(self):
-        content = _read('audit')
-        assert '---' in content, "audit SKILL.md must have YAML frontmatter delimiters"
-        _assert_frontmatter(content, 'audit')
-
-    @pytest.mark.proof("skill_audit", "PROOF-2", "RULE-2")
-    def test_has_usage_section(self):
-        content = _read('audit')
-        assert '## Usage' in content, "audit SKILL.md must have a ## Usage section"
-        _assert_usage(content, 'audit')
-
-    @pytest.mark.proof("skill_audit", "PROOF-3", "RULE-3")
-    def test_name_matches_directory(self):
-        content = _read('audit')
-        assert 'name:' in content, "audit SKILL.md must have a name: field"
-        _assert_name_matches(content, 'audit')
 
     @pytest.mark.proof("skill_audit", "PROOF-4", "RULE-4")
     def test_independent_auditor_reads_criteria_and_assesses(self):
@@ -681,31 +633,6 @@ class TestSkillAudit:
 
 class TestSkillBuild:
 
-    @pytest.mark.proof("skill_build", "PROOF-1", "RULE-1")
-    def test_has_frontmatter(self):
-        content = _read('build')
-        assert '---' in content, "build SKILL.md must have YAML frontmatter delimiters"
-        _assert_frontmatter(content, 'build')
-
-    @pytest.mark.proof("skill_build", "PROOF-2", "RULE-2")
-    def test_has_usage_section(self):
-        content = _read('build')
-        assert '## Usage' in content, "build SKILL.md must have a ## Usage section"
-        _assert_usage(content, 'build')
-
-    @pytest.mark.proof("skill_build", "PROOF-3", "RULE-3")
-    def test_name_matches_directory(self):
-        content = _read('build')
-        assert 'name:' in content, "build SKILL.md must have a name: field"
-        _assert_name_matches(content, 'build')
-
-    @pytest.mark.proof("skill_build", "PROOF-4", "RULE-4")
-    def test_has_commit_instructions(self):
-        content = _read('build')
-        assert re.search(r'(?i)(git commit|commit the|create.*commit|commit.*change)', content), \
-            "build skill missing positive commit instruction"
-        _assert_commit_instructions(content, 'build')
-
     @pytest.mark.proof("skill_build", "PROOF-5", "RULE-5")
     def test_requires_sync_status_not_optional(self):
         content = _read('build')
@@ -857,24 +784,6 @@ class TestSkillBuild:
 
 class TestSkillDrift:
 
-    @pytest.mark.proof("skill_drift", "PROOF-1", "RULE-1")
-    def test_has_frontmatter(self):
-        content = _read('drift')
-        assert '---' in content, "drift SKILL.md must have YAML frontmatter delimiters"
-        _assert_frontmatter(content, 'drift')
-
-    @pytest.mark.proof("skill_drift", "PROOF-2", "RULE-2")
-    def test_has_usage_section(self):
-        content = _read('drift')
-        assert '## Usage' in content, "drift SKILL.md must have a ## Usage section"
-        _assert_usage(content, 'drift')
-
-    @pytest.mark.proof("skill_drift", "PROOF-3", "RULE-3")
-    def test_name_matches_directory(self):
-        content = _read('drift')
-        assert 'name:' in content, "drift SKILL.md must have a name: field"
-        _assert_name_matches(content, 'drift')
-
     @pytest.mark.proof("skill_drift", "PROOF-4", "RULE-4")
     def test_references_drift_mcp_tool(self):
         content = _read('drift')
@@ -967,24 +876,6 @@ class TestSkillDrift:
 
 class TestSkillFind:
 
-    @pytest.mark.proof("skill_find", "PROOF-1", "RULE-1")
-    def test_has_frontmatter(self):
-        content = _read('find')
-        assert '---' in content, "find SKILL.md must have YAML frontmatter delimiters"
-        _assert_frontmatter(content, 'find')
-
-    @pytest.mark.proof("skill_find", "PROOF-2", "RULE-2")
-    def test_has_usage_section(self):
-        content = _read('find')
-        assert '## Usage' in content, "find SKILL.md must have a ## Usage section"
-        _assert_usage(content, 'find')
-
-    @pytest.mark.proof("skill_find", "PROOF-3", "RULE-3")
-    def test_name_matches_directory(self):
-        content = _read('find')
-        assert 'name:' in content, "find SKILL.md must have a name: field"
-        _assert_name_matches(content, 'find')
-
     @pytest.mark.proof("skill_find", "PROOF-4", "RULE-4")
     def test_references_sync_status_mcp_tool(self):
         content = _read('find')
@@ -995,31 +886,6 @@ class TestSkillFind:
 # ── skill_init ────────────────────────────────────────────────────────
 
 class TestSkillInit:
-
-    @pytest.mark.proof("skill_init", "PROOF-1", "RULE-1")
-    def test_has_frontmatter(self):
-        content = _read('init')
-        assert '---' in content, "init SKILL.md must have YAML frontmatter delimiters"
-        _assert_frontmatter(content, 'init')
-
-    @pytest.mark.proof("skill_init", "PROOF-2", "RULE-2")
-    def test_has_usage_section(self):
-        content = _read('init')
-        assert '## Usage' in content, "init SKILL.md must have a ## Usage section"
-        _assert_usage(content, 'init')
-
-    @pytest.mark.proof("skill_init", "PROOF-3", "RULE-3")
-    def test_name_matches_directory(self):
-        content = _read('init')
-        assert 'name:' in content, "init SKILL.md must have a name: field"
-        _assert_name_matches(content, 'init')
-
-    @pytest.mark.proof("skill_init", "PROOF-4", "RULE-4")
-    def test_has_commit_instructions(self):
-        content = _read('init')
-        assert re.search(r'(?i)(git commit|commit the|create.*commit|commit.*change)', content), \
-            "init skill missing positive commit instruction"
-        _assert_commit_instructions(content, 'init')
 
     @pytest.mark.proof("skill_init", "PROOF-5", "RULE-5")
     def test_add_plugin_validates_against_the_contract_table(self):

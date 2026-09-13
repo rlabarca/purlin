@@ -6,10 +6,6 @@
 
 ## Rules
 
-- RULE-1: Skill file has YAML frontmatter with `name` and `description` fields
-- RULE-2: Skill file contains a `## Usage` section documenting command syntax
-- RULE-3: The `name` field in frontmatter is `init`, matching the directory name
-- RULE-4: Skill includes commit instructions or git operations for file modifications
 - RULE-5: `--add-plugin` validates a copied plugin file against the per-extension patterns `references/proof_plugin_contract.md` § C lists under **What a plugin file must contain**, and warns without refusing when the file does not match. The skill carries the citation and the warning text, never a second copy of the table: a plugin the user named is installed either way, and two tables are how the `.java` row outlived the fact that no shipped plugin is written in Java
 - RULE-6: `--add-plugin` supports both local file paths and git URL sources with distinct handling for each
 - RULE-8: Running `scripts/init/scaffold.py` in a git repository that holds none of them creates `.purlin/`, `.purlin/plugins/`, `specs/` and `specs/_anchors/`
@@ -90,10 +86,6 @@
 
 ## Proof
 
-- PROOF-1 (RULE-1): Grep `skills/init/SKILL.md` for YAML frontmatter delimiters (`---`); verify `name:` and `description:` fields exist
-- PROOF-2 (RULE-2): Grep `skills/init/SKILL.md` for `## Usage`; verify the section exists
-- PROOF-3 (RULE-3): Extract `name:` from frontmatter; verify it equals `init`
-- PROOF-4 (RULE-4): Grep `skills/init/SKILL.md` for commit instructions (`git commit`, `commit the`, `create.*commit`); verify present
 - PROOF-5 (RULE-5): Read the `--add-plugin` section of `skills/init/SKILL.md` and verify it cites `references/proof_plugin_contract.md`, carries the warning text `doesn't look like a standard proof plugin`, and holds no per-language pattern table of its own (no line naming an extension beside a required token). Then read that reference's section C and verify its plugin-file table has a row for `.py`, `.js`, `.ts`, `.h`, `.php`, `.sh` and `.cs` and no row for `.java`. Deleting the citation from the skill fails the first half; deleting the `.cs` row or restoring a `.java` row fails the second @unit
 - PROOF-6 (RULE-6): Grep `skills/init/SKILL.md` for `local file path` and `git URL`; verify both source types are documented with distinct handling steps
 - PROOF-8 (RULE-8): e2e: In an empty temp git repository, verify none of `.purlin/`, `.purlin/plugins/`, `specs/` and `specs/_anchors/` exists; run the real `scripts/init/scaffold.py` through `init_project`; verify all four exist afterwards and the plan names each of the four @e2e

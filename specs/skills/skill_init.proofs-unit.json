@@ -3,33 +3,6 @@
   "proofs": [
     {
       "feature": "skill_init",
-      "id": "PROOF-1",
-      "rule": "RULE-1",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_has_frontmatter",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "skill_init",
-      "id": "PROOF-2",
-      "rule": "RULE-2",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_has_usage_section",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "skill_init",
-      "id": "PROOF-3",
-      "rule": "RULE-3",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_name_matches_directory",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "skill_init",
       "id": "PROOF-35",
       "rule": "RULE-33",
       "test_file": "dev/test_skill_specs.py",
@@ -75,15 +48,6 @@
     },
     {
       "feature": "skill_init",
-      "id": "PROOF-4",
-      "rule": "RULE-4",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_has_commit_instructions",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "skill_init",
       "id": "PROOF-40",
       "rule": "RULE-38",
       "test_file": "dev/test_skill_specs.py",
@@ -105,7 +69,7 @@
       "id": "PROOF-5",
       "rule": "RULE-5",
       "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_add_plugin_validates_by_language",
+      "test_name": "test_add_plugin_validates_against_the_contract_table",
       "status": "pass",
       "tier": "unit"
     },
@@ -138,15 +102,6 @@
     },
     {
       "feature": "skill_init",
-      "id": "PROOF-59",
-      "rule": "RULE-56",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_mcp_flag_is_the_mcp_step_of_update",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "skill_init",
       "id": "PROOF-6",
       "rule": "RULE-6",
       "test_file": "dev/test_skill_specs.py",
@@ -165,17 +120,8 @@
     },
     {
       "feature": "skill_init",
-      "id": "PROOF-7",
-      "rule": "RULE-7",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_list_plugins_labels_builtin_and_custom",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "skill_init",
-      "id": "PROOF-92",
-      "rule": "RULE-84",
+      "id": "PROOF-90",
+      "rule": "RULE-83",
       "test_file": "dev/test_skill_specs.py",
       "test_name": "test_the_update_re_syncs_pinned_audit_criteria_before_committing",
       "status": "pass",

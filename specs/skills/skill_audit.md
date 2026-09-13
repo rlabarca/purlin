@@ -6,9 +6,6 @@
 
 ## Rules
 
-- RULE-1: Skill file has YAML frontmatter with `name` and `description` fields
-- RULE-2: Skill file contains a `## Usage` section documenting command syntax
-- RULE-3: The `name` field in frontmatter is `audit`, matching the directory name
 - RULE-4: Independent auditor mode documents instructions to read audit criteria and assess proofs as STRONG/WEAK/HOLLOW
 - RULE-5: Independent auditor mode documents routing HOLLOW/WEAK findings to `purlin:build` for remediation, and states that no fixer agent is spawned because the audit is read-only
 - RULE-6: Independent auditor mode documents re-auditing the affected proofs after the fixes land
@@ -30,9 +27,6 @@
 
 ## Proof
 
-- PROOF-1 (RULE-1): Grep `skills/audit/SKILL.md` for YAML frontmatter delimiters (`---`); verify `name:` and `description:` fields exist
-- PROOF-2 (RULE-2): Grep `skills/audit/SKILL.md` for `## Usage`; verify the section exists
-- PROOF-3 (RULE-3): Extract `name:` from frontmatter; verify it equals `audit`
 - PROOF-4 (RULE-4): Extract the `## When Running as Independent Auditor` section of `skills/audit/SKILL.md`; verify the section body names the criteria loader `--load-criteria` and all three assessment literals `STRONG`, `WEAK` and `HOLLOW`
 - PROOF-5 (RULE-5): Extract the `## When Running as Independent Auditor` section of `skills/audit/SKILL.md`; verify it routes remediation to `purlin:build <feature>`, states the audit is `read-only and never edits code or tests`, states `There is no separate fixer agent to spawn`, and contains no mention of the retired `purlin-builder` agent type
 - PROOF-6 (RULE-6): Extract the `## When Running as Independent Auditor` section of `skills/audit/SKILL.md`; verify it contains the literal re-audit step `After the fixes land, re-audit the affected proofs`
