@@ -163,6 +163,10 @@ def _parse_description(content):
     return result if result else None
 
 
+# One verdict per feature per report run, keyed by the identity of every
+# input and holding those inputs alive beside the answer (RULE-54).
+_VERDICT_CACHE = {}
+
 # One walk of `specs/` per report run, keyed by project root, held as
 # (index, stamp). `_clear_run_caches()` empties it on entry to each build.
 _SPEC_INDEX_CACHE = {}
@@ -1529,6 +1533,7 @@ def _clear_run_caches():
     _SCOPE_LOG_CACHE.clear()
     _SCOPE_COUNT_CACHE.clear()
     _SPEC_INDEX_CACHE.clear()
+    _VERDICT_CACHE.clear()
 
 
 def _platform_provenance(project_root, spec_path, feature, tier, platform_id):
@@ -3495,6 +3500,15 @@ def _feature_verdict(name, info, all_features, all_proofs, global_anchors,
     `_platform_results` record), `unresolved_requires`, `receipt` and
     `has_current_receipt`.
     """
+    # One computation per feature per run (RULE-54). The key is the identity
+    # of every input, and the inputs are kept alive beside the answer so no
+    # freed object's id can be reused under a key that outlived it.
+    key = (os.path.abspath(project_root), name, id(info), id(all_features),
+           id(all_proofs), id(global_anchors), id(registry))
+    memo = _VERDICT_CACHE.get(key)
+    if memo is not None:
+        return memo[0]
+
     # An anchor is not a consumer of the global anchors; it carries its own
     # rules and nothing else. Every caller but the issuer already did this, and
     # the issuer's omission was invisible only because this project registers
@@ -3536,7 +3550,7 @@ def _feature_verdict(name, info, all_features, all_proofs, global_anchors,
         active_total > 0 and proved == active_total
         and receipt is not None and receipt.get('vhash') == vhash
     )
-    return {
+    verdict = {
         'rule_entries': rule_entries,
         'active_entries': active_entries,
         'proof_by_rule': proof_by_rule,
@@ -3559,6 +3573,9 @@ def _feature_verdict(name, info, all_features, all_proofs, global_anchors,
         'receipt': receipt,
         'has_current_receipt': has_current_receipt,
     }
+    _VERDICT_CACHE[key] = (verdict, (info, all_features, all_proofs,
+                                     global_anchors, registry))
+    return verdict
 
 
 def _receipt_rules_changed(receipt, rules_text):

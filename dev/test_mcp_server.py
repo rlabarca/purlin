@@ -4527,3 +4527,117 @@ class TestOneWalkOfSpecs:
         stale_nested = _feature_block(
             purlin_server.sync_status(self.project_root), 'login')
         assert stale_nested == stale_at_root, (stale_nested, stale_at_root)
+
+
+class TestVerdictComputedOnce:
+    """sync_status RULE-54: a feature's verdict is computed once per report
+    run, and the summary row reads that one computation."""
+
+    def setup_method(self):
+        self.project_root = os.path.realpath(tempfile.mkdtemp())
+        os.makedirs(os.path.join(self.project_root, '.purlin'))
+        with open(os.path.join(self.project_root, '.purlin', 'config.json'), 'w') as f:
+            json.dump({'version': '0.9.0', 'test_framework': 'auto',
+                       'spec_dir': 'specs', 'report': False}, f)
+
+    def teardown_method(self):
+        shutil.rmtree(self.project_root, ignore_errors=True)
+
+    def _feature(self, name, rules, results):
+        """`results` is a status per rule number, or None for no proof entry."""
+        body = ''.join(f'- RULE-{n}: {name} rule {n}\n'
+                       for n in range(1, rules + 1))
+        proof = ''.join(f'- PROOF-{n} (RULE-{n}): call {name}; verify answer {n} '
+                        f'comes back @unit\n' for n in range(1, rules + 1))
+        path = os.path.join(self.project_root, 'specs', f'{name}.md')
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w') as f:
+            f.write(f'# Feature: {name}\n\n## Rules\n{body}\n## Proof\n{proof}')
+        entries = [{'feature': name, 'id': f'PROOF-{n}', 'rule': f'RULE-{n}',
+                    'test_file': 'dev/t.py', 'test_name': f'test_{name}_{n}',
+                    'status': status, 'tier': 'unit'}
+                   for n, status in enumerate(results, start=1)
+                   if status is not None]
+        if entries:
+            with open(os.path.join(self.project_root, 'specs',
+                                   f'{name}.proofs-unit.json'), 'w') as f:
+                json.dump({'tier': 'unit', 'proofs': entries}, f, indent=2)
+
+    NAMES = ('alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot')
+
+    def _row(self, report, name):
+        """(fraction, status) from the summary table row for `name`."""
+        for line in report.splitlines():
+            cells = [c.strip() for c in line.split('│')]
+            if len(cells) > 3 and cells[1] == name:
+                return cells[2], cells[3]
+        raise AssertionError(f"no summary row for {name!r} in:\n{report}")
+
+    def _detail(self, report, name):
+        """(fraction, header word) from the feature's own detail block.
+
+        The header reads `<name>: PASSING` for a covered feature and
+        `<name>: X/Y rules proved` for every other, so the fraction comes from
+        whichever line carries it.
+        """
+        block = _feature_block(report, name)
+        head = block.splitlines()[0].split(':', 1)[1].strip()
+        m = re.search(r'(\d+)/(\d+) rules proved', block)
+        assert m, block
+        return f'{m.group(1)}/{m.group(2)}', head
+
+    @pytest.mark.proof("sync_status", "PROOF-110", "RULE-54", tier="integration")
+    def test_six_features_are_six_verdicts_and_both_surfaces_read_them(self):
+        # Every status the table can render, so agreement is not agreement
+        # between two copies of the same easy answer.
+        self._feature('alpha', 1, ['pass'])
+        self._feature('bravo', 2, ['pass', 'pass'])
+        self._feature('charlie', 2, ['pass', None])
+        self._feature('delta', 1, ['fail'])
+        self._feature('echo', 2, [])
+        self._feature('foxtrot', 3, ['pass', 'pass', 'pass'])
+
+        counts = {'verdict': 0, 'computed': 0}
+        real_verdict = purlin_server._feature_verdict
+        real_active = purlin_server._active_rule_entries
+
+        def count_verdict(*args, **kwargs):
+            counts['verdict'] += 1
+            return real_verdict(*args, **kwargs)
+
+        def count_computed(*args, **kwargs):
+            # RULE-54 pins `_active_rule_entries` to exactly one call site and
+            # puts it inside `_feature_verdict` (PROOF-88), so counting it
+            # counts verdicts actually computed rather than verdicts asked for.
+            counts['computed'] += 1
+            return real_active(*args, **kwargs)
+
+        purlin_server._feature_verdict = count_verdict
+        purlin_server._active_rule_entries = count_computed
+        try:
+            report = purlin_server.sync_status(self.project_root)
+        finally:
+            purlin_server._feature_verdict = real_verdict
+            purlin_server._active_rule_entries = real_active
+
+        assert counts['computed'] == len(self.NAMES), (
+            f"six features took {counts['computed']} verdicts")
+        assert counts['verdict'] == 12, (
+            "the surfaces stopped asking twice, so this proof no longer shows "
+            f"that the second ask is free: {counts['verdict']}")
+
+        for name in self.NAMES:
+            fraction, status = self._row(report, name)
+            detail_fraction, head = self._detail(report, name)
+            assert fraction == detail_fraction, (
+                f"{name}: the summary row says {fraction} and its detail block "
+                f"says {detail_fraction}\n{report}")
+            if status in ('PASSING', 'VERIFIED'):
+                assert head == status, (name, head, status, report)
+            else:
+                assert head.endswith('rules proved'), (name, head, report)
+        # Four different statuses, so the agreement is not agreement between
+        # two copies of one easy answer.
+        assert {self._row(report, n)[1] for n in self.NAMES} == {
+            'PASSING', 'PARTIAL', 'FAILING', 'UNTESTED'}, report
+        assert 'RULE-1: FAIL (own)' in _feature_block(report, 'delta'), report
