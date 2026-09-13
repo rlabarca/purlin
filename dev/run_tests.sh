@@ -60,6 +60,9 @@ done
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# The shell suites and the hooks they drive call python3 by name; put the
+# repository venv first so that name carries pytest and the proof plugin.
+if [[ -x "$ROOT/.venv/bin/python3" ]]; then export PATH="$ROOT/.venv/bin:$PATH"; fi
 cd "$ROOT"
 
 PASS=0
