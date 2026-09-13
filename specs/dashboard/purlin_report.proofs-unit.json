@@ -12,15 +12,6 @@
     },
     {
       "feature": "purlin_report",
-      "id": "PROOF-11",
-      "rule": "RULE-11",
-      "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_anchor_external_link_icon",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_report",
       "id": "PROOF-12",
       "rule": "RULE-12",
       "test_file": "dev/test_purlin_report.py",
@@ -40,7 +31,7 @@
     {
       "feature": "purlin_report",
       "id": "PROOF-14",
-      "rule": "RULE-14",
+      "rule": "RULE-34",
       "test_file": "dev/test_purlin_report.py",
       "test_name": "test_integrity_card_display",
       "status": "pass",

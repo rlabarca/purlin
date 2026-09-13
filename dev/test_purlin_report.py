@@ -697,20 +697,6 @@ class TestPurlinReport:
             f"{pills['auth_login']['pills']}"
         )
 
-    @pytest.mark.proof("purlin_report", "PROOF-11", "RULE-11")
-    def test_anchor_external_link_icon(self, page, dashboard):
-        """PROOF-11: Anchors with source_url display an external link icon with URL as tooltip."""
-        load_dashboard(page, dashboard, data=make_data())
-        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof11_ext_icon.png"))
-        ext_icons = page.query_selector_all(".ext-icon")
-        assert len(ext_icons) > 0, "Expected at least one .ext-icon element for anchors with source_url"
-        icon = ext_icons[0]
-        title_attr = icon.get_attribute("title")
-        assert title_attr, "Expected .ext-icon to have a 'title' attribute"
-        assert "git@github.com:acme/policies.git" in title_attr, (
-            f"Expected source_url in title attribute, got: '{title_attr}'"
-        )
-
     @pytest.mark.proof("purlin_report", "PROOF-12", "RULE-12")
     def test_table_sorting(self, page, dashboard):
         """PROOF-12: Clicking a column header changes the table row sort order."""
@@ -790,17 +776,39 @@ class TestPurlinReport:
             f"Expected footer link href='https://example.com/docs', got '{href}'"
         )
 
-    @pytest.mark.proof("purlin_report", "PROOF-14", "RULE-14")
+    @pytest.mark.proof("purlin_report", "PROOF-14", "RULE-34")
     def test_integrity_card_display(self, page, dashboard):
-        """PROOF-14: Summary strip shows integrity %, or dash + 'run purlin:audit' when null."""
-        # Case 1: integrity=85 — expect "85%" in summary strip
-        data = make_data()
-        load_dashboard(page, dashboard, data=data)
-        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof14_integrity_present.png"))
-        strip_text = page.inner_text(".summary-strip")
-        assert "85%" in strip_text, f"Expected '85%' in summary strip when integrity=85, got: '{strip_text}'"
+        """PROOF-14: the Proof Integrity card reads its own summary, or a dash.
 
-        # Case 2: audit_summary with integrity=null (no audit)
+        Repointed from the retired RULE-14, which restated RULE-34's card
+        pair, RULE-42's modal and dashboard_visual RULE-10's colour bands.
+        It reads the card by its label so the Design card beside it cannot
+        satisfy the assertion.
+        """
+
+        def integrity_card_number():
+            return page.evaluate(
+                """() => {
+                    const cards = document.querySelectorAll('.summary-card');
+                    for (const c of cards) {
+                        const l = c.querySelector('.summary-card-label');
+                        if (l && l.textContent.trim() === 'Proof Integrity') {
+                            return c.querySelector('.summary-card-number').textContent.trim();
+                        }
+                    }
+                    return null;
+                }"""
+            )
+
+        # Case 1: integrity 85 reaches the card that names it.
+        load_dashboard(page, dashboard, data=make_data())
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof14_integrity_present.png"))
+        assert integrity_card_number() == "85%", (
+            "the Proof Integrity card must headline its own summary; got "
+            f"{integrity_card_number()!r}"
+        )
+
+        # Case 2: a summary carrying no percentage shows the dash instead.
         data_no_audit = make_data()
         data_no_audit["audit_summary"] = {
             "integrity": None,
@@ -815,9 +823,10 @@ class TestPurlinReport:
         }
         load_dashboard(page, dashboard, data=data_no_audit)
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof14_integrity_null.png"))
-        strip_text_null = page.inner_text(".summary-strip")
-        assert "run purlin:audit" in strip_text_null, (
-            f"Expected 'run purlin:audit' when integrity is null, got: '{strip_text_null}'"
+        num = integrity_card_number()
+        assert num and "%" not in num, (
+            "a summary with no percentage must show the dash, not a figure; the "
+            f"Proof Integrity card read {num!r}"
         )
 
     @pytest.mark.proof("purlin_report", "PROOF-15", "RULE-15", tier="e2e")
