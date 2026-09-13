@@ -112,7 +112,7 @@
     {
       "feature": "skill_init",
       "id": "PROOF-22",
-      "rule": "RULE-22",
+      "rule": "RULE-21",
       "test_file": "dev/test_init_e2e.sh",
       "test_name": "scaffolded jest reporter produces valid proofs",
       "status": "pass",
@@ -121,7 +121,7 @@
     {
       "feature": "skill_init",
       "id": "PROOF-23",
-      "rule": "RULE-23",
+      "rule": "RULE-21",
       "test_file": "dev/test_init_e2e.sh",
       "test_name": "scaffolded shell harness produces valid proofs",
       "status": "pass",
@@ -139,7 +139,7 @@
     {
       "feature": "skill_init",
       "id": "PROOF-25",
-      "rule": "RULE-25",
+      "rule": "RULE-32",
       "test_file": "dev/test_init_e2e.sh",
       "test_name": "status progression UNTESTED\u2192PASSING\u2192FAILING",
       "status": "pass",

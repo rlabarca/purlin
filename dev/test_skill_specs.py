@@ -1032,9 +1032,9 @@ class TestSkillInit:
         assert re.search(r'conftest\.py|package\.json|Makefile', ref), \
             "supported_frameworks.md missing detection heuristics"
 
-    @pytest.mark.proof("skill_init", "PROOF-38", "RULE-36")
+    @pytest.mark.proof("skill_init", "PROOF-38", "RULE-35")
     def test_skill_shows_multi_detection_preselected(self):
-        """RULE-36: two detections are two pre-selections and one config value."""
+        """RULE-35: two detections are two pre-selections and one config value."""
         content = _read('init')
         ref = _read_ref('supported_frameworks.md')
         assert 'Pre-select detected frameworks with `[x]`' in content, \
@@ -1047,9 +1047,9 @@ class TestSkillInit:
         assert len(frameworks) >= 3, \
             f"supported_frameworks.md should list multiple frameworks, found {len(frameworks)}"
 
-    @pytest.mark.proof("skill_init", "PROOF-39", "RULE-37")
+    @pytest.mark.proof("skill_init", "PROOF-39", "RULE-35")
     def test_skill_shows_no_detection_all_unselected(self):
-        """RULE-37: nothing detected, nothing pre-selected, and no shell default."""
+        """RULE-35: nothing detected, nothing pre-selected, and no shell default."""
         content = _read('init')
         assert 'do NOT silently default to shell' in content, \
             "init SKILL.md must forbid the silent shell default"

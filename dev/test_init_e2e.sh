@@ -581,11 +581,11 @@ if (proof.proofs[0].feature !== 'weather' || proof.proofs[0].status !== 'pass') 
 
   if [[ "$p15_result" == "pass" ]]; then
     echo "  PASS: jest reporter emitted valid proof"
-    purlin_proof "skill_init" "PROOF-22" "RULE-22" pass "scaffolded jest reporter produces valid proofs"
+    purlin_proof "skill_init" "PROOF-22" "RULE-21" pass "scaffolded jest reporter produces valid proofs"
     PASS=$((PASS + 1))
   else
     echo "  FAIL: jest reporter did not produce expected proof"
-    purlin_proof "skill_init" "PROOF-22" "RULE-22" fail "jest reporter proof emission failed"
+    purlin_proof "skill_init" "PROOF-22" "RULE-21" fail "jest reporter proof emission failed"
     FAIL=$((FAIL + 1))
   fi
 else
@@ -637,11 +637,11 @@ fi
 
 if [[ "$p16_result" == "pass" ]]; then
   echo "  PASS: shell harness emitted 2 passing proofs"
-  purlin_proof "skill_init" "PROOF-23" "RULE-23" pass "scaffolded shell harness produces valid proofs"
+  purlin_proof "skill_init" "PROOF-23" "RULE-21" pass "scaffolded shell harness produces valid proofs"
   PASS=$((PASS + 1))
 else
   echo "  FAIL: shell harness did not produce expected proofs"
-  purlin_proof "skill_init" "PROOF-23" "RULE-23" fail "shell harness proof emission failed"
+  purlin_proof "skill_init" "PROOF-23" "RULE-21" fail "shell harness proof emission failed"
   FAIL=$((FAIL + 1))
 fi
 
@@ -711,10 +711,10 @@ else
 fi
 
 if $phase_a && $phase_b && $phase_c; then
-  purlin_proof "skill_init" "PROOF-25" "RULE-25" pass "status progression UNTESTED→PASSING→FAILING"
+  purlin_proof "skill_init" "PROOF-25" "RULE-32" pass "status progression UNTESTED→PASSING→FAILING"
   PASS=$((PASS + 1))
 else
-  purlin_proof "skill_init" "PROOF-25" "RULE-25" fail "status progression failed (a=$phase_a b=$phase_b c=$phase_c)"
+  purlin_proof "skill_init" "PROOF-25" "RULE-32" fail "status progression failed (a=$phase_a b=$phase_b c=$phase_c)"
   FAIL=$((FAIL + 1))
 fi
 
