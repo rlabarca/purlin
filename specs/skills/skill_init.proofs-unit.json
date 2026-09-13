@@ -129,8 +129,8 @@
     },
     {
       "feature": "skill_init",
-      "id": "PROOF-90",
-      "rule": "RULE-83",
+      "id": "PROOF-92",
+      "rule": "RULE-84",
       "test_file": "dev/test_skill_specs.py",
       "test_name": "test_the_update_re_syncs_pinned_audit_criteria_before_committing",
       "status": "pass",

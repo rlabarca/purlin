@@ -2311,13 +2311,13 @@ class TestUpdateSkillText:
     """The prose halves of `purlin:init --update` and the two settings it
     introduces. The behavioural halves live in dev/test_init_update.py."""
 
-    @pytest.mark.proof("skill_init", "PROOF-90", "RULE-83")
+    @pytest.mark.proof("skill_init", "PROOF-92", "RULE-84")
     def test_the_update_re_syncs_pinned_audit_criteria_before_committing(self):
-        """RULE-83: the one moment the pinned state is already moving."""
+        """RULE-84: the one moment the pinned state is already moving."""
         content = _read('init')
         step = content[content.index('## Step 5d'):content.index('## Step 6')]
         sync = [para for para in step.split('\n\n')
-                if para.startswith('**') and 'audit_criteria' in para
+                if re.match(r'\*\*\d+\.', para) and 'audit_criteria' in para
                 and '--sync-audit-criteria' in para]
         assert sync, f"Step 5d has no audit-criteria step: {step[:200]}"
         offset = step.index(sync[0])
