@@ -408,6 +408,27 @@ If a proof description says "verify X exists", "check that Y is not null", or "a
 - Level 2: "POST to /login with valid credentials; verify 200 and JWT token in response"
 - Level 3: "Open browser, enter credentials, click login, verify dashboard loads"
 
+### Structural-only proofs
+
+A spec covering instruction files (anything under `references/`, `skills/` or `agents/`) can
+end up with every proof a grep or an existence check. That set catches deletion and drift,
+which is worth having, and proves nothing about whether the instructions work. When drafting
+finds all of a spec's proofs structural, say so and offer behavioural rules for that same
+spec, never a separate one:
+
+```
+All proofs for this spec are structural (grep/existence checks). This catches
+deletions and drift but does not prove the instructions work.
+
+Consider adding behavioral rules to this spec. For example:
+  RULE-N: Agent follows the core loop when given "build X" @e2e
+  RULE-N+1: Agent uses purlin:spec when asked to "update the spec" @e2e
+```
+
+A structural proof is not a defect on its own: `purlin:audit` grades it STRUCTURAL rather than
+HOLLOW, which says the proof is honest about what it checks. The defect is a spec where no
+proof observes behaviour at all.
+
 ## Tier Assignment
 
 *Graded as: a tier tag that does not match what verifying the description would actually require is `LOOSE`: the design twin of the Proof Integrity finding "tier mismatch".*

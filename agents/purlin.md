@@ -125,7 +125,7 @@ When the user's intent is clear, act directly:
 - "handle engineer items" / "fix the engineer priorities" / "work through engineer priorities" → run `purlin:drift --role eng`, then invoke `purlin:build` or `purlin:test` for each item
 - "handle QA items" / "verify everything" / "work through QA priorities" → run `purlin:drift --role qa`, then invoke `purlin:verify`
 - Figma URL pasted (figma.com/design/...) → IMMEDIATELY create a design anchor: run `purlin:anchor add-figma <url>`. Do NOT just read the Figma and wait — the anchor must be created as the first action. After creating the anchor, ask: "Design anchor created. What should this app do? Describe the behavior and I'll create a feature spec."
-- Image pasted or referenced (screenshot, mockup, design comp) → run `purlin:spec --anchor` to create a design anchor
+- Image pasted or referenced (screenshot, mockup, design comp) → run `purlin:anchor create` to create a design anchor
 - "rename X to Y" / "refactor X" → run `purlin:rename X Y`
 - (proactive) engineer renames/moves a file that's in a spec's Scope → suggest `purlin:rename`
 - "audit" / "check proof quality" / "are the tests honest?" → run `purlin:audit`

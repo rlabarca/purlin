@@ -14,60 +14,8 @@ For **how your proof descriptions will be graded**: `references/audit_criteria.m
 
 ```
 purlin:spec <name>              Create or edit a spec
-purlin:spec <name> --anchor     Delegate to purlin:anchor create
-purlin:spec <name> --review     Review an existing spec for rule quality
 purlin:spec                     (no name — extract from user's input)
 ```
-
----
-
-## --review Mode
-
-Lightweight rule quality check. Reads an existing spec and evaluates each rule — no test execution, no file modifications, no proof files. Use this to catch quality problems before anyone writes tests.
-
-### Step 1 — Load the spec
-
-Find `specs/**/<name>.md`. If not found, error: "Spec not found. Run `purlin:spec <name>` to create it."
-
-Read the spec in full. Also read the source files listed in `> Scope:` (if any) for context on what the code actually does.
-
-### Step 2 — Evaluate each rule
-
-For each `RULE-N:` line, apply the three tests from `references/spec_quality_guide.md` ("The rebuild test"):
-
-1. **Rebuild test:** "If an engineer rebuilt this feature from only this spec, would they get this wrong without this rule?" If the answer is no — flag as `NOISE`.
-2. **Behavior test:** Does this describe what the feature does, or how the code does it? Check for signals: names a library, hook, CSS value, token, internal function, or specific technique. If yes — flag as `IMPLEMENTATION`.
-3. **Overlap test:** Would this rule always pass or fail together with another rule in the same spec? If yes — flag as `OVERLAP` and name the paired rule.
-
-Also check:
-- **Missing coverage:** Read the source code in `> Scope:` and identify behavioral aspects not covered by any rule. Flag each as `GAP` with a suggested rule.
-- **Vague rules:** Rules that say "handle errors" or "work correctly" without specifying what happens. Flag as `VAGUE`.
-
-### Step 3 — Report
-
-```
-Spec review: <name> (<N> rules)
-
-  ✓ RULE-1: Returns 200 with JWT on valid credentials
-  ✓ RULE-2: Returns 401 on invalid password
-  ⚠ RULE-3: Uses bcrypt for password hashing — IMPLEMENTATION (names library; rewrite as: "Passwords are hashed before storage")
-  ⚠ RULE-4: Locks account after 5 failures — OVERLAP with RULE-5 (same trigger condition)
-  ✗ RULE-5: Handles rate limiting — VAGUE (what status code? what error message? what threshold?)
-
-Suggested rules (GAP):
-  + "Returns 429 with Retry-After header when rate limit exceeded" (rate limit response not specified)
-  + "Login audit log records every attempt with timestamp, IP, and success/failure" (audit trail in code but not in spec)
-
-Summary: 2 clean, 2 warnings, 1 vague, 2 gaps suggested
-```
-
-For bad→good rewrite examples, reference `references/rule_examples.md`.
-
-### No writes
-
-This mode is read-only. It does not modify the spec, create files, or run tests. The user takes the findings and applies them manually or via `purlin:spec <name>`.
-
----
 
 ## Step 1 — Accept Input
 
@@ -210,37 +158,54 @@ After the core spec (What it does, Rules, Proof) is solid, add metadata:
 2. If the user mentioned code files, populate `> Scope:` (verify paths exist)
 3. If the user mentioned technologies, populate `> Stack:`
 4. Apply tier tags to proofs per `references/spec_quality_guide.md`
-4b. **Platform tag review (mandatory):** for every proof whose rule names a platform (a
-    Windows path API, an APFS behaviour, a tool the host either has or does not), ask the
-    user which platform ids it must be proved on and append `@on(<id>[, <id>])` beside the
-    tier. Never append `@on(...)` to a proof any host could verify: an `@on` proof with no
-    result there reads AWAITING RUNNER and leaves the coverage denominator, so a stray tag
-    quietly hides the rule. See `references/formats/spec_format.md` ("Platform tags").
-5. Check if any rules are FORBIDDEN patterns and format proofs as grep-based assertions per "FORBIDDEN Grep Precision"
-6. Suggest the category per `references/spec_quality_guide.md` ("Spec Categories")
+5. **Platform tag review (mandatory):** for every proof whose rule names a platform (a
+   Windows path API, an APFS behaviour, a tool the host either has or does not), ask the
+   user which platform ids it must be proved on and append `@on(<id>[, <id>])` beside the
+   tier. Never append `@on(...)` to a proof any host could verify: an `@on` proof with no
+   result there reads AWAITING RUNNER and leaves the coverage denominator, so a stray tag
+   quietly hides the rule. See `references/formats/spec_format.md` ("Platform tags").
+6. Check if any rules are FORBIDDEN patterns and format proofs as grep-based assertions per "FORBIDDEN Grep Precision"
+7. Suggest the category per `references/spec_quality_guide.md` ("Spec Categories")
 
-**Rule quality check (mandatory):** Before presenting, apply the `--review` logic internally: evaluate every rule against the rebuild/behavior/overlap tests. Fix any IMPLEMENTATION or NOISE rules in the draft — don't present rules that fail the rebuild test.
+**Rule quality check (mandatory).** Before presenting, grade every rule against the three
+tests of `references/spec_quality_guide.md` ("The rebuild test"), and fix what they catch
+rather than presenting it:
+
+1. **Rebuild test.** An engineer rebuilding the feature from this spec alone: would they get
+   this wrong without the rule? If not, it is `NOISE`.
+2. **Behavior test.** Does the rule say what the feature does, or how the code does it? A
+   library, hook, CSS value, token, internal function or named technique makes it
+   `IMPLEMENTATION`.
+3. **Overlap test.** Would the rule always pass or fail together with another rule here? Then
+   it is `OVERLAP`, and the paired rule is named.
+
+Two more findings come from reading the `> Scope:` sources: behaviour no rule covers is a
+`GAP` with a suggested rule, and a rule that says "handle errors" or "work correctly" without
+saying what happens is `VAGUE`. `references/rule_examples.md` holds the bad-to-good rewrites.
+Report what is left after the fixes in this shape, one line per rule:
+
+```
+Spec review: <name> (<N> rules)
+  ✓ RULE-1: Returns 200 with a session token on valid credentials
+  ⚠ RULE-3: Uses bcrypt for password hashing. IMPLEMENTATION (rewrite as: "Passwords are hashed before storage")
+  ✗ RULE-5: Handles rate limiting. VAGUE (what status? what threshold?)
+  + GAP: "Returns 429 with Retry-After when the rate limit is exceeded"
+Summary: 1 clean, 1 warning, 1 vague, 1 gap suggested
+```
 
 Present the enhanced spec with metadata added and ask "anything to adjust?"
 
 ### Structural-Only Proof Check
 
-After drafting the rules and proofs, if the spec covers files in `references/`, `skills/`, or `agents/` (instruction files), check: are ALL proofs grep-based or existence checks? If yes, suggest adding behavioral rules to **this same spec** — not a separate spec:
-
-```
-All proofs for this spec are structural (grep/existence checks). This catches
-deletions and drift but doesn't prove the instructions work.
-
-Consider adding behavioral rules to this spec. For example:
-  RULE-N: Agent follows the core loop when given "build X" @e2e
-  RULE-N+1: Agent uses purlin:spec when asked to "update the spec" @e2e
-```
+A spec whose every proof is a grep or an existence check catches deletion and drift and
+proves nothing about behaviour. What to look for and what to add is stated once, in
+`references/spec_quality_guide.md` ("Structural-only proofs").
 
 ### NEVER Create Test-Only Specs
 
-**Tests must prove rules in the feature they validate — not in a separate spec.**
+**Tests must prove rules in the feature they validate, never in a separate spec.**
 
-Do NOT create specs whose sole purpose is to be a container for tests (e.g., `e2e_feature_scoped_overwrite`, `e2e_audit_cache_pipeline`). If a test validates that proof plugins preserve other features during overwrite, that test proves `proof_common` RULE-4 — wire it there.
+Do NOT create a spec whose sole purpose is to be a container for tests. A test that proves proof plugins preserve other features during an overwrite proves `proof_common` RULE-4: wire it there, under the feature whose behaviour it observes.
 
 When the user asks for "an e2e spec" or "integration tests for X":
 1. Identify which existing feature spec the behavior belongs to
@@ -305,24 +270,24 @@ Compare the current spec against the code changes. Categorize each finding:
 Show the user EXACTLY what will change and what will stay:
 
 ```
-Spec: specs/mcp/sync_status.md (15 rules currently)
+Spec: specs/<category>/<name>.md (15 rules currently)
 
 KEEPING (unchanged):
-  RULE-1: sync_status tool returns valid report ✓
-  RULE-2: Proof files are parsed correctly ✓
-  RULE-3: Coverage is computed for all features ✓
+  RULE-1: Returns 200 with a session token on valid credentials ✓
+  RULE-2: Returns 401 on an invalid password ✓
+  RULE-3: Locks the account after 5 consecutive failures ✓
   ...
 
 ADDING:
-  RULE-23 (new): sync_status scans specs/_anchors/ for anchor specs
-    Reason: Anchor directory support added
-    Proposed proof: PROOF-23 (RULE-23): Create anchor in specs/_anchors/, run sync_status, verify anchor rules appear
+  RULE-23 (new): Returns 429 with a Retry-After header when the rate limit is exceeded
+    Reason: rate limiting added in this change
+    Proposed proof: PROOF-23 (RULE-23): Send 11 requests in one minute; verify the 11th returns 429 with Retry-After
 
 UPDATING:
-  RULE-20 (changed): Global anchors auto-apply to all features
-    Was: "Global specs with > Global: true auto-apply"
-    Now: "Anchor specs in specs/_anchors/ with > Global: true auto-apply to all non-anchor features"
-    Reason: Anchor unification
+  RULE-20 (changed): A locked account unlocks after 15 minutes
+    Was: "A locked account stays locked until an admin unlocks it"
+    Now: "A locked account unlocks 15 minutes after the last failed attempt"
+    Reason: the lockout became time-based
 
 REMOVING:
   (none)
@@ -386,7 +351,7 @@ This commit is mandatory — drift detection and staleness checks depend on comm
 
 ## Anchor Specs
 
-When `--anchor` is specified, delegate to `purlin:anchor create` with the same arguments. Do not create the anchor directly in this skill.
+An anchor request routes to `purlin:anchor create`, which owns anchor creation end to end. This skill does not create anchors itself and takes no flag for them: a second entry point to one command is a second place for the two to drift.
 
 See `references/formats/anchor_format.md` for format, `references/spec_quality_guide.md` for when to create anchors and FORBIDDEN pattern guidance.
 
