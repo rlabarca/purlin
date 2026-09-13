@@ -166,8 +166,8 @@ The `tools/` directory contains skills for non-engineer stakeholders who interac
 
 | Tool | Audience | What it does |
 |------|----------|-------------|
-| `tools/QA/purlin-qa-report` | QA | Fetches project digest, produces triaged HTML report of failures, drift, both quality gauges, per-platform holds, manual tests due, and readiness |
-| `tools/PM/purlin-anchor-userstories` | Product | Creates and maintains user story anchor files that drive spec-driven development |
+| `tools/QA/purlin-qa-report.md` | QA | Fetches project digest, produces triaged HTML report of failures, drift, both quality gauges, per-platform holds, manual tests due, and readiness |
+| `tools/PM/purlin-anchor-userstories.md` | Product | Creates and maintains user story anchor files that drive spec-driven development |
 
 Install these as Claude Desktop skills (drag the `.skill` file or paste the `.md` contents into project instructions). They clone the repo, read the project digest and produce visual reports. No dev tools needed.
 

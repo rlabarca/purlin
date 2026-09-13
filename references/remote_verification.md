@@ -59,7 +59,7 @@ when set and the detected OS family otherwise. A marker that declares no platfor
 agnostic `<feature>.proofs-<tier>.json`, whatever `PURLIN_PLATFORM` says. The runner sets the
 variable once, in the job env; nothing else in a plugin branches on the host. That is what makes
 "a simulated Windows path is not a Windows proof" true without a second code path
-(`specs/proof/proof_common.md` RULE-16, RULE-17).
+(`specs/_anchors/proof_common.md` RULE-16, RULE-17).
 
 **Provenance is per file, from the commit.** Proof entries carry no timestamp and no runner field,
 so a re-run that proves the same things commits nothing. `sync_status` runs `git log -1` on each
@@ -99,7 +99,7 @@ the tool installed produce the same evidence?** Yes: the toolchain is needed to 
 not change the claim. A prerequisite is a property of the run, not of the proof, so it never
 appears in `@on(...)` and never in the registry. The mechanism is the framework's own skip guard
 (the pytest `skipif`) plus the committed proof entry, which is kept rather than deleted
-(`specs/proof/proof_common.md` RULE-18), so the report shows that entry as inherited from the
+(`specs/_anchors/proof_common.md` RULE-18), so the report shows that entry as inherited from the
 commit that last proved it rather than as fresh. The run marker
 (`.purlin/runtime/test_run.json`) is where a run records which marked proofs it skipped and why,
 so the skip is visible instead of silent.

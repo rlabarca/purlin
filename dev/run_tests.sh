@@ -273,7 +273,7 @@ fi
 PYTEST_FILES=(
   "$SCRIPT_DIR/test_config_engine.py" \
   "$SCRIPT_DIR/test_mcp_server.py" \
-  "$SCRIPT_DIR/test_purlin_docs.py" \
+  "$SCRIPT_DIR/test_purlin_prose.py" \
   "$SCRIPT_DIR/test_purlin_references.py" \
   "$SCRIPT_DIR/test_plugin_contract.py" \
   "$SCRIPT_DIR/test_tools_qa.py" \
