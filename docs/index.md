@@ -74,20 +74,22 @@ See [references/purlin_commands.md](../references/purlin_commands.md) for the fu
 
 Key skills:
 
-- `purlin:spec`: create and edit specs
-- `purlin:build`: implement from spec rules
-- `purlin:verify`: run all tests, issue verification receipts
-- `purlin:test`: run tests and emit proof files
-- `purlin:audit`: evaluate proof quality. Proof Design grades descriptions PROVABLE, LOOSE,
-  UNPROVABLE or STRUCTURAL and needs no tests; Proof Integrity grades tests STRONG, WEAK,
-  HOLLOW or EXCLUDED
-- `purlin:status`: show rule coverage plus both gauges, Proof Design and Proof Integrity
-- `purlin:drift`: drift detection and change summary
-- `purlin:spec-from-code`: reverse-engineer specs from existing code
-- `purlin:find`: search specs by name
-- `purlin:rename`: rename a feature across specs, proofs, markers and references
-- `purlin:anchor`: sync cross-cutting constraints from external sources
-- `purlin:init`: initialize and configure a project. `purlin:init --update` migrates a project
+- `purlin:spec`: Scaffold or edit feature specs in 2-section format
+- `purlin:build`: Inject spec rules into context, then implement
+- `purlin:verify`: Run all tests, issue verification receipts
+- `purlin:test`: Run tests and emit proof files with coverage report
+- `purlin:audit`: Evaluate proof quality: Proof Design (provable?) and Proof Integrity
+  (proven?). Proof Design grades descriptions PROVABLE, LOOSE, UNPROVABLE or STRUCTURAL and
+  needs no tests; Proof Integrity grades tests STRONG, WEAK, HOLLOW or EXCLUDED
+- `purlin:status`: Show rule coverage dashboard with feature table
+- `purlin:drift`: Detect spec drift and summarize changes since last verification,
+  cross-referenced with specs
+- `purlin:spec-from-code`: Reverse-engineer 2-section specs from existing code
+- `purlin:find`: Search specs by name and show coverage
+- `purlin:rename`: Rename a feature across specs, proofs, markers, and references
+- `purlin:anchor`: Create and manage anchor specs: cross-cutting constraints with optional
+  external references
+- `purlin:init`: Initialize a project for Purlin. `purlin:init --update` migrates a project
   after the plugin moves under it
 
 ## Hard Gate (only 1)

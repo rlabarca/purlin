@@ -1571,3 +1571,96 @@ class TestTheCIGateJobHasOneName:
             f"{self.GATE} writes {len(printed)} lines opening "
             f"`verify-gate: `; the reference names a token the script does "
             f"not print")
+
+
+def _collapse(text):
+    return ' '.join(text.split())
+
+
+def _skills_table(text, heading_re):
+    """{skill: purpose} from the first `## Skills`-style table of `text`."""
+    section = re.search(heading_re + r'(.*?)(?=^##\s|\Z)', text,
+                        re.MULTILINE | re.DOTALL)
+    assert section, f"no section matching {heading_re!r}"
+    out = {}
+    for line in section.group(1).splitlines():
+        match = re.match(r'^\|\s*`purlin:([a-z][a-z-]*)`\s*\|([^|]*)\|', line)
+        if match:
+            out[match.group(1)] = _collapse(match.group(2))
+    return out
+
+
+class TestOneSkillOneLiner:
+    """RULE-27 - the Quick Reference Purpose cell is the only home."""
+
+    @staticmethod
+    def _quick_reference():
+        text = _read('references/purlin_commands.md')
+        return _skills_table(text, r'^##\s+Quick Reference\s*$')
+
+    @staticmethod
+    def _index_first_sentences():
+        text = _read('docs/index.md')
+        block = re.search(r'^Key skills:\s*$(.*?)(?=^##\s|\Z)', text,
+                          re.MULTILINE | re.DOTALL)
+        assert block, "docs/index.md carries no key-skills list"
+        out = {}
+        for raw in re.split(r'\n(?=- )', block.group(1).strip('\n')):
+            match = re.match(r'^-\s+`purlin:([a-z][a-z-]*)`:\s*(.*)$',
+                             _collapse(raw), re.DOTALL)
+            if not match:
+                continue
+            body = match.group(2)
+            cut = re.search(r'\.\s', body)
+            out[match.group(1)] = (body[:cut.start()] if cut
+                                   else body).strip()
+        return out
+
+    @pytest.mark.proof("purlin_prose", "PROOF-40", "RULE-27", tier="unit")
+    def test_five_surfaces_carry_the_same_sentence_per_skill(self):
+        canonical = self._quick_reference()
+        on_disk = sorted(d.split('/')[1]
+                         for d in _tracked('skills')
+                         if d.endswith('/SKILL.md'))
+        assert len(canonical) == 12, sorted(canonical)
+        assert sorted(canonical) == on_disk, (
+            f"the Quick Reference names {sorted(canonical)}; the tree ships "
+            f"{on_disk}")
+
+        readme = _skills_table(_read('README.md'), r'^##\s+Skills\s*$')
+        agent = _skills_table(_read('agents/purlin.md'),
+                              r'^##\s+Skills\b[^\n]*$')
+        index = self._index_first_sentences()
+
+        mismatches = []
+        for name, purpose in sorted(canonical.items()):
+            block = _frontmatter_of(f'skills/{name}/SKILL.md')
+            surfaces = {
+                f'skills/{name}/SKILL.md description': block,
+                'README.md Skills table': readme.get(name),
+                'agents/purlin.md Skills table': agent.get(name),
+                'docs/index.md key-skills bullet': index.get(name),
+            }
+            for where, value in surfaces.items():
+                if value is None:
+                    mismatches.append(f"{name}: {where} carries no entry")
+                elif _collapse(value) != purpose:
+                    mismatches.append(
+                        f"{name}: {where} reads {_collapse(value)!r}; the "
+                        f"Quick Reference reads {purpose!r}")
+        assert mismatches == [], "\n".join(mismatches)
+
+        help_block = re.search(r'^```\nPurlin: Spec-Driven Development\n(.*?)^```',
+                               _read('references/purlin_commands.md'),
+                               re.MULTILINE | re.DOTALL)
+        assert help_block, "the ASCII help block is gone"
+        assert any(purpose not in help_block.group(1)
+                   for purpose in canonical.values()), (
+            "every canonical sentence fits the padded help block, so the "
+            "exclusion is no longer carrying anything")
+
+
+def _frontmatter_of(rel):
+    block = prose_lint._frontmatter(_read(rel))
+    return None if block is None else prose_lint._frontmatter_field(
+        block, 'description')

@@ -282,6 +282,15 @@
     },
     {
       "feature": "purlin_prose",
+      "id": "PROOF-40",
+      "rule": "RULE-27",
+      "test_file": "dev/test_purlin_prose.py",
+      "test_name": "test_five_surfaces_carry_the_same_sentence_per_skill",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_prose",
       "id": "PROOF-5",
       "rule": "RULE-2",
       "test_file": "dev/test_purlin_prose.py",

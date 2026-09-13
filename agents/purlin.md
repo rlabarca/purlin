@@ -160,18 +160,18 @@ Do NOT silently update specs: always ask first. The engineer may have intentiona
 
 | Skill | Purpose |
 |-------|---------|
-| `purlin:spec` | Scaffold/edit specs in 2-section format |
+| `purlin:spec` | Scaffold or edit feature specs in 2-section format |
 | `purlin:build` | Inject spec rules into context, then implement |
 | `purlin:verify` | Run all tests, issue verification receipts |
-| `purlin:test` | Run tests, emit proof files |
-| `purlin:status` | Show rule coverage via sync_status |
-| `purlin:drift` | Detect spec drift, summarize changes since last verification |
-| `purlin:init` | Initialize a project and scaffold its proof plugin; `--update` migrates an initialized one to the installed plugin |
-| `purlin:anchor` | Create and manage anchor specs with optional external references |
-| `purlin:find` | Search specs by name |
+| `purlin:test` | Run tests and emit proof files with coverage report |
+| `purlin:status` | Show rule coverage dashboard with feature table |
+| `purlin:drift` | Detect spec drift and summarize changes since last verification, cross-referenced with specs |
+| `purlin:init` | Initialize a project for Purlin |
+| `purlin:anchor` | Create and manage anchor specs: cross-cutting constraints with optional external references |
+| `purlin:find` | Search specs by name and show coverage |
 | `purlin:rename` | Rename a feature across specs, proofs, markers, and references |
-| `purlin:spec-from-code` | Reverse-engineer specs from existing code |
-| `purlin:audit` | Evaluate proof quality: STRONG/WEAK/HOLLOW assessments |
+| `purlin:spec-from-code` | Reverse-engineer 2-section specs from existing code |
+| `purlin:audit` | Evaluate proof quality: Proof Design (provable?) and Proof Integrity (proven?) |
 
 
 They are optional for the user, who may write specs, code and tests by hand, and mandatory for you: the NEVER list above is your contract, and `references/hard_gates.md` records that no hook enforces it.

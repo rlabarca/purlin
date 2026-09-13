@@ -147,19 +147,19 @@ auth_login: 2/3 rules proved
 
 | Skill | Purpose |
 |-------|---------|
-| `purlin:spec` | Create/edit specs |
-| `purlin:build` | Implement from spec rules |
-| `purlin:verify` | Run all tests, issue receipts |
-| `purlin:test` | Run tests, emit proof files |
-| `purlin:audit` | Evaluate proof quality: Proof Design and Proof Integrity |
-| `purlin:status` | Show coverage + directives |
-| `purlin:drift` | Drift detection and change summary |
-| `purlin:init` | Initialize project |
+| `purlin:spec` | Scaffold or edit feature specs in 2-section format |
+| `purlin:build` | Inject spec rules into context, then implement |
+| `purlin:verify` | Run all tests, issue verification receipts |
+| `purlin:test` | Run tests and emit proof files with coverage report |
+| `purlin:audit` | Evaluate proof quality: Proof Design (provable?) and Proof Integrity (proven?) |
+| `purlin:status` | Show rule coverage dashboard with feature table |
+| `purlin:drift` | Detect spec drift and summarize changes since last verification, cross-referenced with specs |
+| `purlin:init` | Initialize a project for Purlin |
 | `purlin:init --update` | Bring an initialized project up to the installed plugin |
-| `purlin:anchor` | Sync external constraints |
-| `purlin:find` | Search specs |
-| `purlin:rename` | Rename feature across artifacts |
-| `purlin:spec-from-code` | Generate specs from code |
+| `purlin:anchor` | Create and manage anchor specs: cross-cutting constraints with optional external references |
+| `purlin:find` | Search specs by name and show coverage |
+| `purlin:rename` | Rename a feature across specs, proofs, markers, and references |
+| `purlin:spec-from-code` | Reverse-engineer 2-section specs from existing code |
 
 Skills are **optional**. You can write specs, code and tests without invoking any skill. Skills provide scaffolding and workflow automation.
 

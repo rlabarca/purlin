@@ -63,19 +63,19 @@ replacement. All six are removed in 0.12.0.
 
 | Skill | Purpose | Writes |
 |-------|---------|--------|
-| `purlin:spec` | Create/edit specs | `specs/<category>/<name>.md` |
-| `purlin:build` | Implement from spec rules | Code files + test files |
-| `purlin:verify` | Run all tests, issue receipts | `*.receipt.json` next to specs |
-| `purlin:test` | Run tests, emit proofs | `*.proofs-*.json` next to specs |
-| `purlin:audit` | Evaluate proof quality (both gauges) | Audit and design caches |
-| `purlin:status` | Show coverage + directives | Nothing |
-| `purlin:drift` | Drift detection since last verify | Nothing |
-| `purlin:init` | Initialize project | `.purlin/`, `specs/`, proof plugin |
+| `purlin:spec` | Scaffold or edit feature specs in 2-section format | `specs/<category>/<name>.md` |
+| `purlin:build` | Inject spec rules into context, then implement | Code files + test files |
+| `purlin:verify` | Run all tests, issue verification receipts | `*.receipt.json` next to specs |
+| `purlin:test` | Run tests and emit proof files with coverage report | `*.proofs-*.json` next to specs |
+| `purlin:audit` | Evaluate proof quality: Proof Design (provable?) and Proof Integrity (proven?) | Audit and design caches |
+| `purlin:status` | Show rule coverage dashboard with feature table | Nothing |
+| `purlin:drift` | Detect spec drift and summarize changes since last verification, cross-referenced with specs | Nothing |
+| `purlin:init` | Initialize a project for Purlin | `.purlin/`, `specs/`, proof plugin |
 | `purlin:init --update` | Migrate the project to the installed plugin | Specs, proof filenames, markers, plugin copies, config |
-| `purlin:anchor` | Sync external constraints | `specs/_anchors/*.md` |
-| `purlin:find` | Search specs | Nothing |
-| `purlin:rename` | Rename feature | Specs, proofs, markers, references |
-| `purlin:spec-from-code` | Generate specs from code | `specs/<category>/<name>.md` |
+| `purlin:anchor` | Create and manage anchor specs: cross-cutting constraints with optional external references | `specs/_anchors/*.md` |
+| `purlin:find` | Search specs by name and show coverage | Nothing |
+| `purlin:rename` | Rename a feature across specs, proofs, markers, and references | Specs, proofs, markers, references |
+| `purlin:spec-from-code` | Reverse-engineer 2-section specs from existing code | `specs/<category>/<name>.md` |
 
 ## Path resolution
 
