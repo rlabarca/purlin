@@ -207,6 +207,15 @@
       "test_name": "test_an_inherited_proof_carries_an_amber_chip_with_its_reason",
       "status": "pass",
       "tier": "e2e"
+    },
+    {
+      "feature": "purlin_report",
+      "id": "PROOF-57",
+      "rule": "RULE-51",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_a_newer_schema_draws_one_banner_and_still_renders",
+      "status": "pass",
+      "tier": "e2e"
     }
   ]
 }

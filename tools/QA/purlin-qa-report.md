@@ -102,6 +102,7 @@ The digest is a JavaScript variable assignment: `const PURLIN_DATA = {...};`. St
 
 | Field | What it means |
 |-------|---------------|
+| `schema_version` | The shape of the payload, an integer. A digest with no `schema_version` is version 1. This skill reads version 2. When the digest carries a higher number it was written by a newer Purlin than this skill: say so in the report and treat the fields it describes as a shape this skill does not know, rather than describing its numbers as current |
 | `timestamp` | When this digest was generated (ISO 8601) |
 | `git_sha` | The commit this data was generated against |
 | `summary` | Feature counts: total, verified, passing, partial, failing, untested |

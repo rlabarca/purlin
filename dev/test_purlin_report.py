@@ -4475,3 +4475,34 @@ class TestInheritedProofChip:
         load_dashboard(page, dashboard, data=self._data(mark=False))
         self._expand(page)
         assert self._chips(page) == [], self._chips(page)
+
+
+class TestSchemaVersionBanner:
+    """purlin_report RULE-51 — a digest from a newer Purlin says so."""
+
+    BANNER = "This digest was written by a newer Purlin"
+
+    def _banner_count(self, page):
+        return page.evaluate(
+            "t => (document.body.innerText.match(new RegExp(t, 'g')) || []).length",
+            self.BANNER)
+
+    @pytest.mark.proof("purlin_report", "PROOF-57", "RULE-51", tier="e2e")
+    def test_a_newer_schema_draws_one_banner_and_still_renders(self, page, dashboard):
+        data = make_data({"schema_version": 99})
+        load_dashboard(page, dashboard, data=data)
+        assert self._banner_count(page) == 1, (
+            "a digest from a newer Purlin must say so exactly once")
+        assert "purlin:init --update" in page.locator(".ab-schema").inner_text()
+        assert page.locator("tr.fr").count() == len(data["features"]), (
+            "the banner must sit above the content, not replace it")
+
+        load_dashboard(page, dashboard, data=make_data({"schema_version": 2}))
+        assert self._banner_count(page) == 0, (
+            "the shape this page understands must draw no banner")
+
+        legacy = make_data()
+        legacy.pop("schema_version", None)
+        load_dashboard(page, dashboard, data=legacy)
+        assert self._banner_count(page) == 0, (
+            "a payload with no schema_version is version 1, not a newer one")

@@ -197,6 +197,8 @@ is UNTESTED, because a project being authored spec-first is not a neglected one.
 
 The HTML file loads `.purlin/report-data.js` through a script tag. No fetch calls, no CORS, no server. Just a static file loading another static file.
 
+The digest carries a top-level `schema_version`, an integer naming the shape of the payload; a digest without the key is version 1. When the number is higher than the version the dashboard was built for, the page shows one banner reading `This digest was written by a newer Purlin. Run purlin:init --update to refresh the dashboard.` and renders everything it does recognise, which is the state you land in when the plugin updates ahead of your copy of the HTML.
+
 ## Uncommitted Files
 
 When `purlin:status` detects uncommitted changes to spec or proof files, the dashboard shows a collapsible **uncommitted files section** between the summary strip and the anchors table. This helps you remember to commit proof files after test runs or spec edits.

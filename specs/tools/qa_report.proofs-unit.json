@@ -54,6 +54,15 @@
       "test_name": "test_each_skill_zip_holds_one_skill_md_equal_to_its_sibling",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "qa_report",
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "test_file": "dev/test_tools_qa.py",
+      "test_name": "test_the_field_table_documents_the_digest_schema_version",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }

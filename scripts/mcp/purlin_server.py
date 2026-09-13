@@ -4598,6 +4598,12 @@ def _remote_status(summary):
     return {'state': state, 'proofs': proofs, 'platforms': sorted(behind)}
 
 
+# The shape of `.purlin/report-data.js`. Bumped when a reader that only
+# understands the previous shape would misread the new one; a payload with no
+# `schema_version` at all is schema 1 (report_data RULE-48).
+_REPORT_SCHEMA_VERSION = 2
+
+
 def _build_report_data(project_root, features, all_proofs, config, global_anchors,
                        audit_summary=None, design_summary=None,
                        generated_by='sync_status', network=True):
@@ -4952,6 +4958,10 @@ def _build_report_data(project_root, features, all_proofs, config, global_anchor
                                       receipted_by_feature, host_row=True,
                                       registry=registry)
     return {
+        # The payload's own shape, so a reader can say whether it understands
+        # what it is holding (report_data RULE-48). Always present; a payload
+        # with no `schema_version` is schema 1, written before the field.
+        'schema_version': _REPORT_SCHEMA_VERSION,
         'timestamp': datetime.datetime.now(datetime.timezone.utc).isoformat(),
         'generated_by': generated_by,
         'project': os.path.basename(os.path.abspath(project_root)),

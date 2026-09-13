@@ -111,6 +111,15 @@
     },
     {
       "feature": "sync_status",
+      "id": "PROOF-120",
+      "rule": "RULE-64",
+      "test_file": "dev/test_refresh_digest_hook.py",
+      "test_name": "test_the_hook_run_loads_static_checks_once",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "sync_status",
       "id": "PROOF-48",
       "rule": "RULE-27",
       "test_file": "dev/test_e2e_audit_cache_pipeline.py",

@@ -185,3 +185,21 @@ class TestSkillArchivesMatchTheMarkdown:
 
         assert checked == len(PAIRS) and checked > 0, (
             f"only {checked} archives checked")
+
+
+@pytest.mark.proof("qa_report", "PROOF-7", "RULE-7", tier="unit")
+def test_the_field_table_documents_the_digest_schema_version():
+    """qa_report RULE-7 — a QA reader told to read a digest must be told what
+    to do with one written by a newer Purlin."""
+    text = _read(QA_MD)
+    rows = [line for line in text.splitlines()
+            if line.startswith('|') and '`schema_version`' in line]
+    assert len(rows) == 1, (
+        f"expected exactly one digest field-table row for schema_version, got {len(rows)}")
+    row = rows[0]
+    assert 'version 1' in row, (
+        "the row must say a digest without the key is version 1: " + row)
+    assert 'version 2' in row, (
+        "the row must name the version the skill reads: " + row)
+    assert 'newer' in row, (
+        "the row must tell the report to say so when the digest is newer: " + row)

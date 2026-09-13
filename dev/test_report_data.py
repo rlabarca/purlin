@@ -2955,3 +2955,37 @@ class TestStatusCallLeavesAnUnchangedDigestAlone:
         third = open(self.digest, 'rb').read()
         assert third != first, (
             "a status call that found new evidence must rewrite the digest")
+
+
+class TestSchemaVersion:
+    """report_data RULE-48 — the payload names its own shape."""
+
+    def setup_method(self):
+        self.tmp = tempfile.mkdtemp()
+        _make_project(self.tmp, report_enabled=True)
+        _write_spec(self.tmp, 'feature', _minimal_spec_content())
+        _write_proofs(self.tmp, 'feature', _minimal_proofs())
+        _git_init(self.tmp)
+
+    def teardown_method(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    @pytest.mark.proof("report_data", "PROOF-50", "RULE-48", tier="integration")
+    def test_every_payload_names_the_schema_it_was_written_to(self):
+        features = purlin_server._scan_specs(self.tmp)
+        built = purlin_server._build_report_data(
+            self.tmp, features, purlin_server._read_proofs(self.tmp),
+            purlin_server.resolve_config(self.tmp), {})
+        assert 'schema_version' in built, (
+            "a reader cannot say whether it understands a payload that does "
+            "not name its shape")
+        assert isinstance(built['schema_version'], int), (
+            f"the version must be an integer, got "
+            f"{type(built['schema_version']).__name__}")
+        assert not isinstance(built['schema_version'], bool)
+        assert built['schema_version'] == 2, built['schema_version']
+
+        # No entry point may omit it.
+        assert purlin_server.read_report_payload(self.tmp)['schema_version'] == 2
+        assert purlin_server.generate_digest(self.tmp) is not None
+        assert _read_report(self.tmp)['schema_version'] == 2

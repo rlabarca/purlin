@@ -290,6 +290,7 @@ td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);v
 .ab-passing{border-left-color:var(--green);background:var(--green-dim);color:var(--green)}
 .ab-untested{border-left-color:var(--gray-badge);background:rgba(100,116,139,.08);color:var(--text-dim)}
 .ab-migrations{border-left-color:var(--amber);background:var(--amber-dim);color:var(--amber)}
+.ab-schema{border-left-color:var(--amber);background:var(--amber-dim);color:var(--amber)}
 
 /* Rule row highlights */
 .rule-np td{border-left:3px solid var(--amber)}
@@ -873,6 +874,20 @@ loadData(function(initial) {
     return '';
   }
 
+  /* The payload shape this page understands (purlin_report RULE-51). A digest
+     whose `schema_version` is greater was written by a newer Purlin, so some
+     of what it carries has no renderer here; the page says so once and still
+     renders everything it does recognise, because half a dashboard beats a
+     blank one. A payload with no `schema_version` is schema 1. */
+  var SUPPORTED_SCHEMA = 2;
+  function schemaBanner() {
+    var v = (D && typeof D.schema_version === 'number') ? D.schema_version : 1;
+    if (v <= SUPPORTED_SCHEMA) return '';
+    return '<div class="ab ab-schema"><span class="ab-icon">&#9888;</span><span class="ab-text">'
+      + 'This digest was written by a newer Purlin. Run <span class="ab-cmd">purlin:init --update</span> to refresh the dashboard.'
+      + '</span></div>';
+  }
+
   /* The pending-migrations banner (purlin_report RULE-23). It is project
      state, not feature state, so it is shown above every feature's own banner
      and in every status including VERIFIED: a VERIFIED feature whose project
@@ -1214,6 +1229,10 @@ loadData(function(initial) {
     var features = sortFeatures(D.features);
 
     var h = '';
+
+    /* Project-wide, so it is rendered once above everything rather than per
+       feature the way the migrations banner is (RULE-51). */
+    h += schemaBanner();
 
     /* Header */
     h += '<header class="header"><div class="header-left">';
