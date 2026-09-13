@@ -2328,6 +2328,32 @@ class TestUpdateSkillText:
     """The prose halves of `purlin:init --update` and the two settings it
     introduces. The behavioural halves live in dev/test_init_update.py."""
 
+    @pytest.mark.proof("skill_init", "PROOF-90", "RULE-83")
+    def test_the_update_re_syncs_pinned_audit_criteria_before_committing(self):
+        """RULE-83: the one moment the pinned state is already moving."""
+        content = _read('init')
+        step = content[content.index('## Step 5d'):content.index('## Step 6')]
+        sync = [para for para in step.split('\n\n')
+                if para.startswith('**') and 'audit_criteria' in para
+                and '--sync-audit-criteria' in para]
+        assert sync, f"Step 5d has no audit-criteria step: {step[:200]}"
+        offset = step.index(sync[0])
+        assert offset > step.index('migrate.py" --apply'), \
+            "the criteria re-sync runs before the migrations are applied"
+        assert offset < step.index('chore(update): migrate to'), \
+            "the criteria re-sync runs after the commit step"
+        tail = step[offset:offset + 800]
+        assert 'unset' in tail or 'not set' in tail, \
+            "the step does not say what happens when audit_criteria is unset"
+
+        # It points at a procedure rather than restating one.
+        assert '## Subcommand: --sync-audit-criteria' in content, \
+            "the subcommand the step points at is not in the file"
+        sub = content[content.index('## Subcommand: --sync-audit-criteria'):]
+        sub = sub[:sub.index('\n## ', 1)] if '\n## ' in sub[1:] else sub
+        assert '.purlin/cache/additional_criteria.md' in sub, sub[:300]
+        assert 'audit_criteria_pinned' in sub, sub[:300]
+
     @pytest.mark.proof("skill_init", "PROOF-54", "RULE-51")
     def test_step_5d_shows_the_delta_and_asks_before_writing(self):
         content = _read('init')

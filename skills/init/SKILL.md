@@ -333,10 +333,16 @@ run `purlin:test <feature>` so the plugin emits the scoped file itself.
 and `purlin:verify` declines to issue while any `legacy-*` migration is pending, so this is the
 step that closes the loop.
 
-**7. Commit.** `chore(update): migrate to <VERSION> (<ids>)`, with the applied ids in the
+**7. Re-sync the pinned audit criteria.** If `.purlin/config.json` has `audit_criteria` set, run
+the `--sync-audit-criteria` step (below) now, before committing. The cached criteria at
+`.purlin/cache/additional_criteria.md` and the sha in `audit_criteria_pinned` are what
+`purlin:audit` grades against, and a project that pinned external criteria and then updated is one
+whose criteria have usually moved too. With `audit_criteria` unset, say so in one line and move on.
+
+**8. Commit.** `chore(update): migrate to <VERSION> (<ids>)`, with the applied ids in the
 parentheses (see `references/commit_conventions.md`).
 
-**8. Idempotent.** Run `--check` again. It reports nothing pending apart from the two directives
+**9. Idempotent.** Run `--check` again. It reports nothing pending apart from the two directives
 the script does not apply, and a second `--update` changes nothing.
 
 ## Step 6 — Confirmation
