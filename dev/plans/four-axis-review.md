@@ -387,7 +387,24 @@ make the number smaller.
 
 ## Audits
 
-AUDIT-RESULTS-PLACEHOLDER
+Both gauges were run for real at the verify commit by an independent auditor (18 parallel graders, every Pass 2 judgment fresh because the audit cache was empty; 885 of 885 proofs graded in both caches).
+
+| Gauge | Score | Counts |
+|---|---|---|
+| Proof Design | 92 percent (91.8 assessed) | PROVABLE 659, LOOSE 59, UNPROVABLE 0, STRUCTURAL 167 (excluded) |
+| Proof Integrity | 63 percent assessed over 667; 43 percent reported | STRONG 422, WEAK 141, HOLLOW 104, EXCLUDED 217, one stale MANUAL stamp (consumer_ci PROOF-3) |
+
+The reported Integrity figure lags the assessed one because the reported denominator counts 1195 executed proof records while a grade is one per feature and proof id; the gauge, not the tests, is what disagrees, and it is worth a rule.
+
+HOLLOW, all 104 from the deterministic Pass 1: logic mirroring 56, tautological assertion 26, no assertions 21, bare except 1. By feature: sync_status 18, purlin_report 15, skill_spec_from_code 15, report_data 10, skill_init 8, proof_common 6, static_checks 5, purlin_prose 4, the rest 3 or fewer. verify_gate PROOF-15 is a likely false positive (its `assert True` is fixture data).
+
+Lowest Design grades, all LOOSE: sync_status PROOF-74 and PROOF-107 (expected value contradicts RULE-39 and RULE-68), skill_init PROOF-70 (contradicts RULE-67), skill_audit PROOF-13 (tautological clause), sync_status PROOF-103 (existence only), skill_spec_from_code PROOF-33 (expected output differs from the named input), security_no_dangerous_patterns PROOF-4 (imprecise FORBIDDEN grep), proof_plugins_pytest PROOF-3 and figma_web PROOF-6 (no expected value), purlin_report PROOF-4 (visual description coupled to the implementation).
+
+Most consequential WEAK: figma_web PROOF-12 and PROOF-5, skill_build PROOF-13 to 16 (grep their own fixtures), proof_common PROOF-4 and PROOF-10 (reimplement the RULE-4 merge in the test), sync_status PROOF-32 and PROOF-45, dashboard_visual PROOF-10, proof_plugins_xunit PROOF-6, skill_verify PROOF-9, proof_plugins_jest PROOF-3, static_checks PROOF-29 to 32 (tier mismatch). 72 proofs are WEAK only under the mutation-on-record cap (the auditor derived mutation evidence from blame and commit bodies, having no author to ask); lifting that cap alone would put assessed Integrity at 74 percent.
+
+Anchor recommendations from the auditor: schema_spec_format RULE-2 ("increasing, never reused" is unobservable as written) and RULE-5; schema_proof_format RULE-1 and RULE-3; dashboard_visual PROOF-3, 4, 5 and 11 inspect stylesheets without rendering.
+
+Two audit-tool defects surfaced: `--prune-cache` prunes only the audit cache, so 66 orphan design-cache entries remain and read as invalidated; and the installed plugin's MCP server resolved a different project root than this checkout, so the auditor ran the repo's own server over stdio with `PURLIN_PROJECT_ROOT` set. Both are in the TODO.
 
 ## What still runs after this record
 
@@ -439,6 +456,9 @@ deferred items, both in the TODO below.
   `references/purlin_commands.md`, namely `purlin:anchor --check-only`, `purlin:anchor --source`,
   `purlin:init --audit-llm`, `purlin:init --ci`, `purlin:init --force` and
   `purlin:init --platform-id`. It is a count to drive down, not an offender.
+- Integrity's reported denominator counts executed proof records (1195), not graded (feature, proof id) pairs (667): 43 percent reported against 63 percent assessed. Give the gauge one denominator, with a rule.
+- `--prune-cache` prunes only the audit cache; 66 orphan design-cache entries read as invalidated. Prune both.
+- The 104 HOLLOW proofs are the Integrity ceiling; the biggest single lever is the 56 logic-mirroring ones, and the `logic_mirroring` detector still flags before-and-after invariance tests (noted in the previous plan too).
 
 ## Execution notes
 
