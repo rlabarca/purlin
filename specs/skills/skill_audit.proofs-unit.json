@@ -40,7 +40,7 @@
     {
       "feature": "skill_audit",
       "id": "PROOF-13",
-      "rule": "RULE-13",
+      "rule": "RULE-12",
       "test_file": "dev/test_skill_specs.py",
       "test_name": "test_config_stores_audit_llm_fields_and_skill_documents_external_llm_mode",
       "status": "pass",

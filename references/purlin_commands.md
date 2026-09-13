@@ -29,7 +29,6 @@ Purlin — Spec-Driven Development
   purlin:audit --design         Proof Design only: PROVABLE/LOOSE/UNPROVABLE
                                 (specs only — no tests needed)
   purlin:audit --integrity      Proof Integrity only: STRONG/WEAK/HOLLOW
-  purlin:audit --criteria <f>   Use a specific criteria file
 
   Reporting
   ──────

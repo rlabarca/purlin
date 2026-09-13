@@ -13,7 +13,7 @@
     {
       "feature": "skill_audit",
       "id": "PROOF-27",
-      "rule": "RULE-13",
+      "rule": "RULE-12",
       "test_file": "dev/test_e2e_fake_audit_llm.sh",
       "test_name": "custom audit LLM configured and used in the two-pass flow",
       "status": "pass",

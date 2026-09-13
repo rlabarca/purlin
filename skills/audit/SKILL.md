@@ -14,7 +14,6 @@ purlin:audit                        Audit — mode derived from project state
 purlin:audit <feature>              Audit a specific feature
 purlin:audit --design               Proof Design only (specs; no tests needed)
 purlin:audit --integrity            Proof Integrity only (requires tests)
-purlin:audit --criteria <path>      Use a specific criteria file
 ```
 
 Two gauges, measured separately (`references/audit_criteria.md`):
@@ -74,9 +73,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --load-criteria --p
 
 **Interpreter:** every `static_checks.py` invocation below is written as `python3`, but `python3` is not always on PATH (notably on Windows, where the launcher is `python` or `py -3`). Probe for an available interpreter and use the first that resolves — `python3`, then `python`, then `py -3` — for all `static_checks.py` commands in this skill.
 
-If `--criteria <path>` was passed by the user, add `--extra <path>` to append that file too.
-
-This returns built-in criteria + any configured additional team criteria + any extra file. Built-in criteria always apply — additional criteria are appended, never replace.
+This returns built-in criteria plus any configured additional team criteria. Built-in criteria always apply: additional criteria are appended, never replace. There is no flag for a one-off criteria file, because a file passed on the command line is not the file `audit_criteria_pinned` names, and an audit graded against an unpinned standard reports a number indistinguishable from one graded against the pinned one.
 
 Display: `Using audit criteria: built-in (Criteria-Version: N)` and if additional criteria are present: `+ team criteria from <source> (pinned: <sha>)`
 
@@ -442,46 +439,15 @@ When a HOLLOW or WEAK proof is for an anchor rule:
 
 When `.purlin/config.json` has `audit_llm` set, the audit still runs Pass 1 (deterministic) first. Proofs that pass Pass 1 go to the external LLM for Pass 2 (classification + semantic evaluation).
 
-1. Load criteria via Step 1 above (`--load-criteria` — respects additional team criteria and `--extra`).
+1. Load criteria via Step 1 above (`--load-criteria`, which respects additional team criteria).
 2. Run Pass 1 (deterministic) for all proofs. Any failures are HOLLOW — final.
-3. For proofs that passed Pass 1 and are not cache hits, **batch all proofs per feature** into a single shell-out. Construct the Pass 2 prompt:
-
-```
-You are evaluating semantic alignment between spec rules and test code.
-Structural issues (assert True, no assertions, logic mirroring) have already been checked and passed.
-
-SPEC PROOF DESCRIPTIONS:
-<paste the ## Proof section from the spec — only proofs that passed Pass 1>
-
-TEST CODE:
-<paste the actual test function code for each proof>
-
-For each proof, respond in EXACTLY this format:
-
-PROOF-ID: PROOF-N
-RULE-ID: RULE-N
-ASSESSMENT: STRONG|WEAK
-CRITERION: <what semantic aspect is missing, or "matches rule intent" if STRONG>
-WHY: <what behavior would slip through, or "test exercises the rule correctly" if STRONG>
-FIX: <specific change to align test with rule, or "none" if STRONG>
----
-```
+3. For proofs that passed Pass 1 and are not cache hits, **batch all proofs per feature** into a single shell-out. The prompt is the one Step 2 prints, in its external-LLM form: the same classification and evaluation questions, wrapped in the structured response format at the end of Step 2. Do not retype it here.
 
 4. Shell out: replace `{prompt}` in the configured command with the constructed prompt. Capture stdout.
 5. Parse the response: look for `PROOF-ID:`, `ASSESSMENT:`, `CRITERION:`, `WHY:`, `FIX:` lines. Be flexible — different LLMs format slightly differently. Look for the keywords, not exact whitespace.
 6. If the external LLM returns HOLLOW for a proof, override to WEAK — only Pass 1 can produce HOLLOW.
 7. If parsing fails for a proof (LLM didn't follow the format): mark that proof as `UNKNOWN — external LLM response could not be parsed` and include the raw response excerpt.
-8. Display the combined report:
-
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PROOF AUDIT: <feature> (<N> proofs)
-Criteria: references/audit_criteria.md (Criteria-Version: N)
-Auditor: Pass 1 — static_checks.py | Pass 2 — Gemini Pro (external — cross-model)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
-
-The report header shows both audit passes.
+8. Display the combined report in the Step 3 shape. Its `Auditor:` line is where the external model is named, so the header shows both passes: `Pass 1` is `static_checks.py` and `Pass 2` is the configured model, labelled external.
 
 ### External LLM with Independent Audit
 

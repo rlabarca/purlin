@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # E2E test: a custom audit LLM command in .purlin/config.json drives the
-# two-pass audit (skill_audit PROOF-27 for RULE-13).
+# two-pass audit (skill_audit PROOF-27 for RULE-12).
 #
 # This used to be Phase E of dev/test_e2e_cross_model_audit.sh, which is scoped
 # to the gemini-cli environment and skips whole when that CLI is absent. Nothing
@@ -263,10 +263,10 @@ done
 SUITE_RC=0
 if $ping_ok && $config_ok && $static_ok && $llm_ok && $fields_ok; then
   echo "    PASS: custom LLM configured, init ping works, two-pass audit completes"
-  purlin_proof "skill_audit" "PROOF-27" "RULE-13" pass "custom audit LLM configured and used in the two-pass flow"
+  purlin_proof "skill_audit" "PROOF-27" "RULE-12" pass "custom audit LLM configured and used in the two-pass flow"
 else
   echo "    FAIL: ping=$ping_ok config=$config_ok static=$static_ok llm=$llm_ok fields=$fields_ok"
-  purlin_proof "skill_audit" "PROOF-27" "RULE-13" fail "custom audit LLM flow incomplete"
+  purlin_proof "skill_audit" "PROOF-27" "RULE-12" fail "custom audit LLM flow incomplete"
   SUITE_RC=1
 fi
 

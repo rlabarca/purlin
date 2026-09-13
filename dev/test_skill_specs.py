@@ -265,13 +265,19 @@ class TestSkillAudit:
 
     @pytest.mark.proof("skill_audit", "PROOF-11", "RULE-11", tier="unit")
     def test_skill_documents_external_llm_response_fields(self):
-        """The skill documents that parsing must extract all required fields from LLM output."""
-        content = _read('audit')
+        """The response contract is asserted where it lives.
+
+        This was a whole-file grep, which passed on the copy in Step 2: it
+        would have gone on passing with `## External LLM Mode` deleted
+        outright. Scoping it to the section is what makes that a failure.
+        """
+        section = _section(_read('audit'), '## External LLM Mode')
         for field in ('PROOF-ID', 'ASSESSMENT', 'CRITERION', 'WHY', 'FIX'):
-            assert field in content, \
-                f"audit SKILL.md external LLM section missing required field: {field}"
-        assert re.search(r'(?i)(flexible|different LLMs|format slightly differently)', content), \
-            "audit SKILL.md missing flexible parsing note for external LLM responses"
+            assert field in section, \
+                f"audit SKILL.md External LLM Mode missing required field: {field}"
+        assert re.search(r'(?i)(flexible|different LLMs|format slightly differently)',
+                         section), \
+            "audit SKILL.md External LLM Mode missing the flexible parsing note"
 
     @pytest.mark.proof("skill_audit", "PROOF-12", "RULE-12", tier="unit")
     def test_two_pass_flow_hollow_caught_in_pass1_valid_passes_through(self):
@@ -306,17 +312,39 @@ class TestSkillAudit:
             if path:
                 os.unlink(path)
 
-    @pytest.mark.proof("skill_audit", "PROOF-13", "RULE-13", tier="unit")
+    @pytest.mark.proof("skill_audit", "PROOF-13", "RULE-12", tier="unit")
     def test_config_stores_audit_llm_fields_and_skill_documents_external_llm_mode(self):
-        """Config stores audit_llm and audit_llm_name; skill documents the external LLM two-pass flow."""
+        """The two-pass flow is asserted inside its own section, and the
+        section must not reprint what Step 2 and Step 3 already print.
+
+        Both halves matter: the whole-file greps this replaced survived the
+        section's deletion, and the section survived carrying a second copy
+        of the Pass 2 prompt and the report header.
+        """
         content = _read('audit')
-        assert 'audit_llm' in content, \
-            "audit SKILL.md missing audit_llm config field documentation"
-        assert re.search(r'(?i)(pass 1.*external|external.*pass 1|still runs pass 1)', content), \
-            "audit SKILL.md must document that Pass 1 runs before external LLM"
-        assert re.search(
-            r'(?i)(external llm.*independent audit|independent.*external llm)', content
-        ), "audit SKILL.md missing 'External LLM with Independent Audit' subsection"
+        section = _section(content, '## External LLM Mode')
+        assert 'audit_llm' in section, \
+            "External LLM Mode must name the audit_llm config field"
+        assert re.search(r'(?i)(pass 1.*external|external.*pass 1|still runs pass 1)',
+                         section), \
+            "External LLM Mode must document that Pass 1 runs first"
+        assert '### External LLM with Independent Audit' in section, \
+            "External LLM Mode missing the 'External LLM with Independent Audit' subsection"
+
+        # The two blocks it used to reprint. Each is printed once, in the
+        # step that owns it, and the section points back rather than copying.
+        for literal, owner in (
+                ('For each proof, respond in EXACTLY this format:', 'Step 2'),
+                ('PROOF AUDIT: <feature>', 'Step 3')):
+            assert literal not in section, (
+                f"External LLM Mode reprints {literal!r}, which {owner} "
+                f"already prints; a second copy is a second answer the day "
+                f"one of them is edited")
+            assert content.count(literal) == 1, \
+                f"{literal!r} appears {content.count(literal)} times in audit SKILL.md"
+        assert 'Step 2' in section and 'Step 3' in section, \
+            "External LLM Mode must point back at Step 2 for the prompt and " \
+            "Step 3 for the report shape"
         # Verify config fields round-trip through JSON
         tmp_dir = tempfile.mkdtemp()
         try:
