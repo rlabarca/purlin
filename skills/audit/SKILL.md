@@ -489,27 +489,10 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py \
 Pass `--project-root` explicitly. Every cache mode defaults to the current working directory,
 so a cwd that is not the project root silently reads or writes a different project's cache.
 
-Each entry needs all nine fields (see `references/audit_criteria.md` § Required entry fields):
-
-```json
-{
-  "a1b2c3d4e5f6a7b8": {
-    "assessment": "STRONG",
-    "criterion": "matches rule intent",
-    "why": "test exercises the rule correctly",
-    "fix": "none",
-    "feature": "login",
-    "proof_id": "PROOF-1",
-    "rule_id": "RULE-1",
-    "priority": "LOW",
-    "cached_at": "2026-04-03T00:00:00+00:00"
-  }
-}
-```
-
-`feature` and `proof_id` are the deduplication key — omit either and the whole batch collapses
-to one surviving entry, so the score gets computed from a single proof. `--write-cache` rejects
-such entries with exit 2 rather than merging them.
+Each entry needs all nine fields, in the shape Step 1.5 prints: `assessment`, `criterion`, `why`,
+`fix`, `feature`, `proof_id`, `rule_id`, `priority`, `cached_at` (`references/audit_criteria.md`
+§ Required entry fields). Step 1.5 also says why `feature` and `proof_id` are not optional, and
+`--write-cache` exits 2 on an entry missing either rather than merging it.
 
 Verify it landed before moving on:
 
@@ -591,24 +574,12 @@ agents guess this wrong and the guess is expensive:
 | WEAK | Pass 2 comparing test to description | A better test. Narrowing the description "fixes" it only by lowering the claim — never do this, and never on an anchor rule. |
 | PROVABLE / LOOSE / UNPROVABLE | Pass D reading the description | Editing the proof description. This is the gauge prose is *supposed* to move. |
 
-Two consequences worth stating outright:
-
-- **Marking something EXCLUDED or STRUCTURAL shrinks the denominator rather than improving
-  anything.** Never reclassify to raise a score.
-- **A high Proof Integrity score over LOOSE descriptions means nothing.** Most WEAK criteria are
-  comparisons against the description, so a vague description leaves them unable to fire. Fix
-  Design first or the Integrity number is measuring an unfalsifiable spec.
-
-**Both figures move differently.** Rewriting a test moves the assessed score. Grading more
-proofs moves the reported one, even with no test touched, because it shrinks the unmeasured part
-of the denominator. A project stuck at a low reported score with a high assessed score needs a
-wider audit, not better tests.
-
-**Reaching a target Integrity score.** With `N` behavioural proofs and `H` HOLLOW: the ceiling is
-`(N − H) / N`, a target `T` is reachable iff `H ≤ (1 − T) × N`, and the number of tests that must
-be rewritten is `max(0, H − floor((1 − T) × N))`. For 287 proofs with 57 HOLLOW the ceiling is
-80%, and a 90% target needs 29 tests rewritten. Answer this arithmetic before starting work, not
-after a full audit.
+Why each of those is true, what reclassifying costs, why a high Integrity score over LOOSE
+descriptions means nothing, why the assessed and reported figures move on different levers, and
+the arithmetic for reaching a target Integrity score (the ceiling, the reachability condition and
+the count of tests that must be rewritten) are all in `references/audit_criteria.md` § Scoring.
+Read it there before starting work: the answer is one step, and it is the same answer the
+dashboard computes.
 
 ## Key Principles
 

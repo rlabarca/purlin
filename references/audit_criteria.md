@@ -323,6 +323,19 @@ assessed or reads `not audited` (there is no partial case to weight).
   contract, so strengthen the test rather than reword the rule.
 - **The Design levels** are the ones prose is *supposed* to move. That is the point of Pass D.
 
+Two consequences worth stating outright:
+
+- **Marking something EXCLUDED or STRUCTURAL shrinks the denominator rather than improving
+  anything.** Never reclassify to raise a score.
+- **A high Proof Integrity score over LOOSE descriptions means nothing.** Most WEAK criteria are
+  comparisons against the description, so a vague description leaves them unable to fire. Fix
+  Design first, or the Integrity number is measuring an unfalsifiable spec.
+
+**The two figures move on different levers.** Rewriting a test moves the assessed score. Grading
+more proofs moves the reported one, even with no test touched, because it shrinks the unmeasured
+part of the denominator. A project stuck at a low reported score with a high assessed score needs
+a wider audit, not better tests.
+
 ### Reaching a target Integrity score
 
 With `N = STRONG + WEAK + HOLLOW + MANUAL` and `H` HOLLOW proofs, since only new test code can

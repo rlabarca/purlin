@@ -15,16 +15,9 @@ The auditor:
   ```bash
   python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --write-cache --project-root <project_root>
   ```
-  ```python
-  # Each cache entry must include:
-  # - assessment: STRONG/WEAK/HOLLOW/EXCLUDED
-  # - criterion, why, fix
-  # - feature: the feature name (needed by dashboard)
-  # - proof_id: PROOF-N
-  # - rule_id: RULE-N
-  # - priority: CRITICAL/HIGH/MEDIUM/LOW
-  # - cached_at: ISO 8601 timestamp
-  ```
+  Every entry carries all nine fields listed in `references/audit_criteria.md`
+  § Required entry fields. That file is the one place the list is written down, so the
+  auditor, the skill and the writer cannot disagree about what an entry needs.
   Never write `.purlin/cache/audit_cache.json` directly: `--write-cache` takes an exclusive file
   lock around its read/merge/write cycle, which is what lets several auditors run at once
   without clobbering each other, and a direct write bypasses the lock. It also re-keys every

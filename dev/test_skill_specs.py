@@ -448,15 +448,16 @@ class TestSkillAudit:
 
     @pytest.mark.proof("skill_audit", "PROOF-17", "RULE-17")
     def test_documents_which_lever_moves_which_assessment(self):
-        """The skill must say which lever moves which assessment, so an agent does not
-        try to raise Integrity by editing spec prose, and must carry the arithmetic."""
+        """The table is in the skill, the reasoning and the arithmetic are in the
+        criteria. Both halves are read here, so the pointer cannot outlive what
+        it points at and the arithmetic cannot come to exist in two places."""
         content = _read('audit')
         section = content.split('## Which Lever Moves Which Assessment', 1)
         assert len(section) == 2, \
             "audit SKILL.md missing 'Which Lever Moves Which Assessment' section"
         body = section[1].split('## Key Principles', 1)[0]
 
-        # Each level, and what actually moves it
+        # The skill's half: each level, and what actually moves it.
         for level in ('HOLLOW', 'EXCLUDED', 'WEAK', 'UNPROVABLE'):
             assert level in body, f"lever section must name {level}"
         assert 'purlin:build' in body, \
@@ -465,15 +466,29 @@ class TestSkillAudit:
             "lever section must warn against narrowing a proof description"
         assert re.search(r'(?i)anchor', body), \
             "lever section must forbid narrowing descriptions for anchor rules"
-        assert re.search(r'(?i)(shrink|denominator)', body), \
-            "lever section must warn that reclassifying shrinks the denominator"
+        assert re.search(r'audit_criteria\.md.*Scoring', body), \
+            "lever section must point at references/audit_criteria.md " \
+            "\u00a7 Scoring for the reasoning and the arithmetic"
 
-        # The arithmetic, so feasibility is a one-step answer
-        assert '(N \u2212 H) / N' in body or '(N - H) / N' in body, \
-            "lever section must state the ceiling formula"
-        assert re.search(r'H\s*\u2264\s*\(1\s*\u2212\s*T\)', body) or \
-               re.search(r'H\s*<=\s*\(1\s*-\s*T\)', body), \
-            "lever section must state the reachability condition"
+        # The criteria's half: the reasoning and the arithmetic the skill
+        # stopped restating.
+        crit = _read_ref('audit_criteria.md')
+        scoring = crit.split('## Scoring', 1)
+        assert len(scoring) == 2, "audit_criteria.md missing its Scoring section"
+        scoring = scoring[1].split('\n## ', 1)[0]
+        assert re.search(r'(?i)(shrink|denominator)', scoring), \
+            "Scoring must warn that reclassifying shrinks the denominator"
+        assert re.search(r'(?i)LOOSE descriptions means nothing', scoring), \
+            "Scoring must warn that a high Integrity score over LOOSE " \
+            "descriptions means nothing"
+        assert re.search(r'(?i)different levers', scoring), \
+            "Scoring must say the assessed and reported figures move on " \
+            "different levers"
+        assert '(N \u2212 H) / N' in scoring or '(N - H) / N' in scoring, \
+            "Scoring must state the ceiling formula"
+        assert re.search(r'H\s*\u2264\s*\(1\s*\u2212\s*T\)', scoring) or \
+               re.search(r'H\s*<=\s*\(1\s*-\s*T\)', scoring), \
+            "Scoring must state the reachability condition"
 
     @pytest.mark.proof("skill_audit", "PROOF-18", "RULE-18")
     def test_cache_write_is_its_own_mandatory_step(self):
@@ -501,6 +516,16 @@ class TestSkillAudit:
             "the step must state that an audit without a cache write produced no measurement"
         for field in ('feature', 'proof_id'):
             assert field in body, f"the documented entry shape must include {field}"
+
+        # The nine-field entry is printed once, in the cache-load step, and
+        # the list itself is written down in one file. Two copies of a
+        # required-field list is two lists the day one of them gains a field.
+        assert content.count('"cached_at"') == 1, (
+            f'the nine-field cache entry is printed {content.count(chr(34) + "cached_at" + chr(34))} '
+            f'times in audit SKILL.md; Step 1.5 prints it and Step 3.4 names it')
+        assert 'Required entry fields' in body, \
+            "the cache-write step must name references/audit_criteria.md " \
+            "\u00a7 Required entry fields as where the list lives"
 
         # The prune must warn against the empty-live-keys full sweep
         prune_body = content[prune:content.find('## Step 4')]
@@ -553,6 +578,18 @@ class TestSkillAudit:
             "the skill must state that the lead reads the cache back"
         assert re.search(r'(?i)land(?:ed|s)?', content), \
             "the read-back exists to verify the subagents' entries landed"
+
+        # Neither file lists the nine fields itself: both name the one file
+        # that does, so an added field lands in one place.
+        assert 'Required entry fields' in auditor, \
+            "agents/purlin-auditor.md must name references/audit_criteria.md " \
+            "\u00a7 Required entry fields rather than listing the fields itself"
+        assert '# - cached_at' not in auditor, \
+            "agents/purlin-auditor.md still carries its own copy of the " \
+            "required-field list"
+        crit = _read_ref('audit_criteria.md')
+        assert '### Required entry fields' in crit, \
+            "references/audit_criteria.md must carry the section both files point at"
 
     @pytest.mark.proof("skill_audit", "PROOF-19", "RULE-19")
     def test_mode_is_derived_from_observable_state(self):
