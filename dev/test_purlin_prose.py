@@ -1664,3 +1664,100 @@ def _frontmatter_of(rel):
     block = prose_lint._frontmatter(_read(rel))
     return None if block is None else prose_lint._frontmatter_field(
         block, 'description')
+
+
+class TestOptionalConfigFieldsAreListed:
+    """RULE-28 - the guide names the optional fields and counts none."""
+
+    GUIDE = 'docs/installation-guide.md'
+    OWNERSHIP = 'references/drift_criteria.md'
+    NUMBERS = re.compile(
+        r'(?i)\b(\d+|first|second|third|fourth|fifth|sixth|seventh|eighth|'
+        r'ninth|tenth|one|two|three|four|five|six|seven|eight|nine|ten)\b')
+
+    def _sentence(self, text):
+        start = text.index('The remaining fields are optional')
+        assert text.count('The remaining fields are optional') == 1
+        cut = re.search(r'\.\s', text[start:])
+        return text[start:start + cut.start() + 1]
+
+    def _optional_rows(self):
+        body = _read(self.OWNERSHIP).split('Config Field Ownership', 1)
+        assert len(body) == 2, "drift_criteria.md has no ownership section"
+        body = body[1].split('\n## ', 1)[0]
+        rows = {}
+        for line in body.splitlines():
+            if not line.strip().startswith('|'):
+                continue
+            cells = [c.strip() for c in line.strip().strip('|').split('|')]
+            if len(cells) < 4:
+                continue
+            name = re.match(r'^`([^`]+)`$', cells[0])
+            if name:
+                rows[name.group(1)] = cells[-1]
+        return {f for f, default in rows.items()
+                if default.startswith('not set')}
+
+    @pytest.mark.proof("purlin_prose", "PROOF-41", "RULE-28", tier="unit")
+    def test_the_optional_list_equals_the_ownership_table(self):
+        text = _read(self.GUIDE)
+        sentence = self._sentence(text)
+        tail = sentence.split('never writes them:', 1)
+        assert len(tail) == 2, sentence
+        listed = set(re.findall(r'`([^`]+)`', tail[1]))
+        assert listed, f"no field list in {sentence!r}"
+
+        optional = self._optional_rows()
+        assert len(optional) >= 6, (
+            f"the ownership table yields {sorted(optional)}; the comparison "
+            f"would pass on a table it failed to parse")
+        assert listed == optional, (
+            f"the guide lists {sorted(listed - optional)} with no optional "
+            f"row, and the table has {sorted(optional - listed)} the guide "
+            f"does not name")
+
+        assert not self.NUMBERS.search(sentence), (
+            f"the sentence counts the fields: {sentence!r}")
+        fenced = False
+        offenders = []
+        for para_line, para, _section in prose_lint._located_paragraphs(text):
+            if para.lstrip().startswith('```'):
+                continue
+            if not any(f"`{f}`" in para for f in optional):
+                continue
+            for match in self.NUMBERS.finditer(para):
+                window = para[max(0, match.start() - 90):match.end() + 90]
+                if 'optional' in window and 'field' in window:
+                    offenders.append(f"{self.GUIDE}:{para_line}: "
+                                     f"{match.group(0)}: {window}")
+        assert offenders == [], "\n".join(offenders)
+
+
+class TestReadmeSaysWhoSkillsAreOptionalFor:
+    """RULE-29 - the front page names the audience beside `optional`."""
+
+    @pytest.mark.proof("purlin_prose", "PROOF-42", "RULE-29", tier="unit")
+    def test_all_three_pages_state_the_same_qualifier(self):
+        readme = _read('README.md')
+        lines = [l for l in readme.splitlines() if 'Skills are optional' in l]
+        assert len(lines) == 1, (
+            f"expected one `Skills are optional` line in README.md, got "
+            f"{lines}")
+        line = lines[0]
+        first = re.split(r'\.\s', line)[0]
+        assert 'mandatory' in first, (
+            f"the audience belongs in the same sentence as `optional`: "
+            f"{first!r}")
+        assert 'user' in first and 'agent' in first, first
+        assert 'agents/purlin.md' in line, line
+        assert 'Skills are **optional**.' not in readme, (
+            "the unqualified sentence is retired")
+
+        for rel in ('references/hard_gates.md', 'agents/purlin.md'):
+            text = _read(rel)
+            paired = [l for l in text.splitlines()
+                      if 'optional' in l and 'mandatory' in l
+                      and 'kill' in l]
+            assert paired, (
+                f"{rel} states `optional` without `mandatory`, so README "
+                f"and it can be read against each other")

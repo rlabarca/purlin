@@ -161,7 +161,7 @@ auth_login: 2/3 rules proved
 | `purlin:rename` | Rename a feature across specs, proofs, markers, and references |
 | `purlin:spec-from-code` | Reverse-engineer 2-section specs from existing code |
 
-Skills are **optional**. You can write specs, code and tests without invoking any skill. Skills provide scaffolding and workflow automation.
+Skills are optional for the user and mandatory for the agent: you can write specs, code and tests by hand and Purlin reads what you wrote, while `agents/purlin.md`'s NEVER list tells the agent to invoke the skill and nothing in this repository enforces that. What a skill gives you is scaffolding and workflow automation.
 
 ## Stakeholder Tools
 

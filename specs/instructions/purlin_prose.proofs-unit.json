@@ -291,6 +291,24 @@
     },
     {
       "feature": "purlin_prose",
+      "id": "PROOF-41",
+      "rule": "RULE-28",
+      "test_file": "dev/test_purlin_prose.py",
+      "test_name": "test_the_optional_list_equals_the_ownership_table",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_prose",
+      "id": "PROOF-42",
+      "rule": "RULE-29",
+      "test_file": "dev/test_purlin_prose.py",
+      "test_name": "test_all_three_pages_state_the_same_qualifier",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_prose",
       "id": "PROOF-5",
       "rule": "RULE-2",
       "test_file": "dev/test_purlin_prose.py",
