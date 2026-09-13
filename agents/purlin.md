@@ -41,16 +41,12 @@ Read the state, then act. These are the states, not a sequence to march through:
 | A spec and code, no tests | Design; coverage shows UNTESTED | `purlin:test` |
 | A spec, code and tests | Design **and** Proof Integrity | `purlin:verify` |
 
-All three of these are legitimate, and users pick between them deliberately:
-
-- **Specs and proofs first** — perfect the proof descriptions before anything is built. Design
-  is measurable with zero tests, so this is real work with a real number attached, not a
-  waiting room. A user who wants 100% Proof Design before building is doing it right.
-- **Specs, then code and tests together** — `purlin:build` does both in one pass.
-- **Specs, then code, then tests, then verify** — tests arrive later.
-
-`sync_status` tells the two spec-only states apart by checking whether the files named in
-`> Scope:` exist, and its `→` directive already reflects that. Trust the directive.
+All three pathways are legitimate and users pick between them deliberately.
+**Specs and proofs first** (Proof Design is measurable with zero tests, so a user perfecting descriptions before
+building is doing real work, not waiting). **Specs, then code and tests together**, in one
+`purlin:build` pass. **Specs, then code, then tests, then verify.** `sync_status` tells the two
+spec-only states apart by checking whether the `> Scope:` files exist, and its `→` directive
+already reflects that. Trust the directive.
 
 ## Specs
 
@@ -80,7 +76,11 @@ Add markers to tests so proof plugins emit `*.proofs-*.json` files that `sync_st
 
 ## Absolute Prohibitions
 
-- **NEVER weaken, loosen, remove, or rewrite a test to make it pass. FIX THE CODE.** (This protects Proof Integrity. The mirror-image mistake is narrowing a *proof description* to match a weak test, which lowers Proof Design instead — equally forbidden, and worse on an anchor rule, where the contract belongs to someone else.) This is the single most important rule in Purlin. When a test fails, the test is telling you the code is broken — the test is the spec's voice. If you change the test to match broken behavior, you have destroyed the proof and hidden the bug. The ONLY acceptable response to a failing test is to fix the production code until the test passes AS WRITTEN. If you genuinely believe the test itself is wrong (not the code), you MUST: (1) stop, (2) explain to the user exactly why you believe the test is wrong and the code is right, (3) get explicit approval before touching the test. **No exceptions. No shortcuts. No "adjusting the test to avoid the bug." Fix the code.**
+- **NEVER weaken, loosen, remove, or rewrite a test to make it pass. FIX THE CODE.** Narrowing a
+  *proof description* to match a weak test is the same mistake from the other side, and worse on
+  an anchor rule, whose contract belongs to someone else. If you believe the test is wrong rather
+  than the code: (1) stop, (2) say why the test is wrong and the code is right, (3) get explicit
+  approval before touching the test. No exceptions.
 - **NEVER run test commands directly** (`pytest`, `jest`, `bash test.sh`). Always use `purlin:test` — it detects the framework, emits proof files, and calls `sync_status`. Running tests directly skips proof emission and leaves the dashboard stale.
 - **NEVER write or edit spec files directly.** Always use `purlin:spec` — it validates format, shows delta reports of what's changing, and enforces tier review and platform-tag review (whether a proof needs `@on(<platform-id>)` beside its tier, and whether one that carries it really does). Hand-written specs skip all of that and often have format errors that break `sync_status`.
 - **NEVER write code and tests outside the build loop.** Use `purlin:build` — it injects spec rules into context, delegates to `purlin:test`, and iterates on failures with root cause analysis. Writing code directly skips the spec-driven constraint that prevents drift.
@@ -132,8 +132,9 @@ When the user's intent is clear, act directly:
   spec provable?" → run `purlin:audit --design`. It needs no tests, so this works on a spec
   with nothing built
 - "why is integrity stuck?" / "get integrity to N%" → answer the arithmetic before doing any
-  work. With `N` behavioural proofs and `H` HOLLOW, the ceiling is `(N − H) / N` and a target
-  `T` needs `H ≤ (1 − T) × N`. No amount of spec editing moves HOLLOW
+  work, from `references/audit_criteria.md` ("Reaching a target Integrity score"), which gives
+  the ceiling, the reachability condition for a target `T` and how many proofs must be rewritten.
+  No amount of spec editing moves HOLLOW
 - "verify" / "ship" → run `purlin:verify` (includes independent audit automatically)
 
 Let the state decide. If a spec exists but code doesn't, the user may be deliberately working

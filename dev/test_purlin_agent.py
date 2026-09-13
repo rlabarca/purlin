@@ -237,9 +237,30 @@ class TestThreePathways:
             "design-intent phrasings must route to purlin:audit --design"
         assert re.search(r'(?i)are my proofs', content), \
             "missing a design-intent trigger phrase"
-        # The ceiling arithmetic, so a target request is answered before work starts.
-        assert re.search(r'\(1\s*[−-]\s*T\)', content), \
-            "must carry the reachability condition for an integrity target"
+        # The ceiling arithmetic, so a target request is answered before work
+        # starts. The agent routes to it; it does not carry a copy: this file
+        # is read on every turn.
+        assert 'references/audit_criteria.md' in content, \
+            "the integrity-target route must name the file holding the arithmetic"
+        assert re.search(r'(?i)reaching a target integrity score', content), \
+            "and must name the section, not just the file"
+        assert not re.search(r'\(1\s*[−-]\s*T\)', content), (
+            "the agent carries its own copy of the reachability formula; "
+            "references/audit_criteria.md is its one home")
+
+        criteria = os.path.join(os.path.dirname(AGENT_PATH), '..',
+                                'references', 'audit_criteria.md')
+        with open(criteria) as f:
+            section = f.read()
+        section = section[section.index('### Reaching a target Integrity score'):]
+        section = section[:section.index('\n## ')]
+        assert re.search(r'ceiling\s*=', section), \
+            "the reference must state the ceiling"
+        assert re.search(r'(?i)reachable\s+\*\*iff\*\*.*\(1\s*[−-]\s*T\)',
+                         section), \
+            "the reference must state the reachability condition"
+        assert re.search(r'(?i)must be rewritten|rewritten\s*=', section), \
+            "the reference must say how many proofs have to be rewritten"
 
     @pytest.mark.proof("purlin_agent", "PROOF-12", "RULE-12")
     def test_agent_links_the_two_shared_sections(self):
