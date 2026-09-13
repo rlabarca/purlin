@@ -118,47 +118,80 @@ class TestPurlinAgent:
                 f"Missing routing source for: {keyword} (must appear before → arrow)"
 
     @pytest.mark.proof("purlin_agent", "PROOF-7", "RULE-7")
-    def test_skills_table_twelve_entries(self):
+    def test_every_skills_row_names_a_skill_that_exists(self):
+        """RULE-7: the table and skills/ are the same set, both ways.
+
+        The old proof counted 12 rows, which passed on a thirteenth row
+        (`purlin:init --update`) the row regex could not see, and would pass
+        just as well on a row naming a skill that had been deleted.
+        """
         content = _read()
         assert '## Skills' in content
         skills_match = re.search(r'## Skills.*?\n(.*?)(?=^## |\Z)', content,
                                  re.MULTILINE | re.DOTALL)
         assert skills_match
         section = skills_match.group(1)
-        # Extract skill names from table rows
-        rows = re.findall(r'^\|.*`(purlin:[\w-]+)`.*\|', section, re.MULTILINE)
-        assert len(rows) == 12, f"Expected 12 skill rows, found {len(rows)}: {rows}"
-        expected_skills = {
-            'purlin:spec', 'purlin:spec-from-code', 'purlin:build',
-            'purlin:test', 'purlin:verify', 'purlin:audit',
-            'purlin:status', 'purlin:find', 'purlin:drift',
-            'purlin:init', 'purlin:anchor',
-            'purlin:rename',
-        }
-        assert set(rows) == expected_skills, \
-            f"Skill mismatch: missing={expected_skills - set(rows)}, extra={set(rows) - expected_skills}"
-        # Verify each row has a non-empty purpose column (at least 2 pipe-delimited cells)
-        full_rows = re.findall(r'^\|.*`purlin:[\w-]+`.*\|(.+)\|', section, re.MULTILINE)
-        for i, purpose in enumerate(full_rows):
-            assert purpose.strip(), f"Row {i+1} has empty purpose column"
+
+        rows = re.findall(r'^\|\s*`purlin:([\w-]+)`\s*\|(.*)\|\s*$',
+                          section, re.MULTILINE)
+        listed = {name for name, _ in rows}
+        assert len(listed) >= 10, (
+            f"the skills table did not parse: {listed}")
+
+        skills_dir = os.path.join(os.path.dirname(AGENT_PATH), '..', 'skills')
+        shipped = {d for d in os.listdir(skills_dir)
+                   if os.path.isfile(os.path.join(skills_dir, d, 'SKILL.md'))}
+
+        assert listed == shipped, (
+            f"the table and skills/ disagree: rows with no skill file "
+            f"{sorted(listed - shipped)}, skills with no row "
+            f"{sorted(shipped - listed)}")
+
+        for name, purpose in rows:
+            assert purpose.strip(), f"row for purlin:{name} has no purpose"
+
+        # Every table row is one the comparison above could see. A row whose
+        # first cell carries a flag (`purlin:init --update`) is invisible to
+        # it, which is how a thirteenth row once hid inside a count of 12.
+        unseen = [l for l in section.splitlines()
+                  if l.startswith('|') and 'purlin:' in l
+                  and not re.match(r'^\|\s*`purlin:[\w-]+`\s*\|', l)]
+        assert not unseen, (
+            f"these rows name a skill the set comparison cannot read: "
+            f"{unseen}; a flag belongs in the row of its own skill")
 
     @pytest.mark.proof("purlin_agent", "PROOF-8", "RULE-8")
-    def test_references_table_eleven_entries(self):
+    def test_every_references_row_leads_somewhere(self):
+        """RULE-8: a row count says nothing about whether the row resolves."""
         content = _read()
         assert '## References' in content
         refs_match = re.search(r'## References\n(.*?)(?=^## |\Z)', content,
                                re.MULTILINE | re.DOTALL)
         assert refs_match
         section = refs_match.group(1)
-        # Count data rows (exclude header and separator)
+
         rows = [l for l in section.strip().splitlines()
-                if l.startswith('|') and '---' not in l and 'Document' not in l]
-        assert len(rows) == 11, f"Expected 11 reference rows, found {len(rows)}"
-        # Verify each row has a meaningful topic column (>5 chars)
+                if l.startswith('|') and '---' not in l
+                and 'Document' not in l]
+        assert rows, "the references table did not parse"
+
+        root = os.path.join(os.path.dirname(AGENT_PATH), '..')
+        paths = []
         for row in rows:
             cells = [c.strip() for c in row.split('|') if c.strip()]
-            assert len(cells) >= 2, f"Row missing topic column: {row}"
-            assert len(cells[1]) > 5, f"Topic too short in row: {row}"
+            assert len(cells) >= 2, f"row missing topic column: {row}"
+            assert len(cells[1]) > 5, f"topic too short in row: {row}"
+            m = re.search(r'`([^`]+\.md)`', cells[0])
+            if not m or '/' not in m.group(1):
+                continue
+            paths.append(m.group(1))
+            assert os.path.isfile(os.path.join(root, m.group(1))), (
+                f"the references table sends the agent to {m.group(1)}, "
+                f"which does not exist")
+
+        assert len(paths) >= 8, (
+            f"only {paths} resolved as repository paths; the scan is not "
+            f"seeing the table it claims to check")
 
 
 class TestThreePathways:

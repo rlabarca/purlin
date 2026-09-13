@@ -162,8 +162,7 @@ Do NOT silently update specs — always ask first. The engineer may have intenti
 | `purlin:test` | Run tests, emit proof files |
 | `purlin:status` | Show rule coverage via sync_status |
 | `purlin:drift` | Detect spec drift, summarize changes since last verification |
-| `purlin:init` | Initialize project, scaffold proof plugin |
-| `purlin:init --update` | Migrate an initialized project to the installed plugin |
+| `purlin:init` | Initialize a project and scaffold its proof plugin; `--update` migrates an initialized one to the installed plugin |
 | `purlin:anchor` | Create and manage anchor specs with optional external references |
 | `purlin:find` | Search specs by name |
 | `purlin:rename` | Rename a feature across specs, proofs, markers, and references |
