@@ -25,6 +25,17 @@ from static_checks import (
 )
 import purlin_server
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# The two parsers that own the shipped-framework set and the marker table, read
+# here rather than reimplemented: skill_rename RULE-5 is an equality between
+# what those two files say, and a second parser could disagree with both.
+from test_plugin_contract import framework_table  # noqa: E402
+from test_purlin_references import (  # noqa: E402
+    KNOWN_FEATURE_NAMES,
+    feature_name_tokens,
+    marker_subsections,
+)
+
 PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
 SKILLS_DIR = os.path.join(PROJECT_ROOT, 'skills')
 REFS_DIR = os.path.join(PROJECT_ROOT, 'references')
@@ -1324,6 +1335,71 @@ class TestSkillRename:
             "the skill must address cached_at when repointing cache entries"
         assert re.search(r'(?i)(do not|never|forbid).{0,40}re-?stamp', content), \
             "the skill must forbid re-stamping cached_at during a rename"
+
+    @pytest.mark.proof("skill_rename", "PROOF-5", "RULE-5")
+    def test_rename_covers_every_shipped_frameworks_marker(self):
+        """RULE-5: three frameworks of eight were renameable, silently.
+
+        The skill carried the pytest, Jest and shell markers in a table of its
+        own, printed twice, and a rename left Vitest, xUnit, C, PHP and SQL
+        markers pointing at a name no spec carried any more. The coverage now
+        lives beside the marker sections in proofs_format.md and is held here
+        against the emitters that write those markers.
+        """
+        fmt = _read_ref(os.path.join('formats', 'proofs_format.md'))
+        tokens = feature_name_tokens(fmt)
+        contract = framework_table()
+
+        assert set(tokens) == set(contract), (
+            f"the feature-name token table covers {sorted(tokens)} and the "
+            f"proof-plugin contract ships {sorted(contract)}; a framework in "
+            "one and not the other is a plugin whose markers a rename skips")
+
+        documented = set(marker_subsections(fmt))
+        assert {section for section, _ in tokens.values()} == documented, (
+            "every token row names a marker subsection and every marker "
+            f"subsection has a row; the sections are {sorted(documented)}")
+
+        for framework, (_section, literals) in sorted(tokens.items()):
+            plugins = [t for t in re.findall(r'`([^`\n]+)`', contract[framework][1])
+                       if t.startswith('scripts/proof/')]
+            assert plugins, (
+                f"{framework}: the contract names no plugin file, so its token "
+                "cannot be checked against the code that emits the marker")
+            sources = {}
+            for rel in plugins:
+                with open(os.path.join(PROJECT_ROOT, rel), encoding='utf-8') as f:
+                    sources[rel] = f.read()
+            for literal in literals:
+                written = [literal.replace('<feature>', name)
+                           for name in KNOWN_FEATURE_NAMES]
+                assert any(w in src for w in written
+                           for src in sources.values()), (
+                    f"{framework}: none of {plugins} carries {literal!r} with a "
+                    "feature name in it, so the token table names a marker the "
+                    "framework's own plugin neither writes nor reads")
+
+        # The skill cites the table instead of copying it: a copy is what went
+        # stale at three frameworks while the plugins grew to eight.
+        skill = _read('rename')
+        for framework, (_section, literals) in sorted(tokens.items()):
+            for literal in literals:
+                pattern = re.escape(literal).replace(
+                    re.escape('<feature>'), r'[\w.-]+')
+                assert not re.search(pattern, skill), (
+                    f"rename SKILL.md restates the {framework} marker literal "
+                    f"{literal!r}; the marker syntax has one home and the skill "
+                    "points at it")
+        assert 'proofs_format.md#feature-name-token' in skill, (
+            "rename SKILL.md must cite "
+            "references/formats/proofs_format.md#feature-name-token: with the "
+            "tables gone and no pointer, the skill says nothing about markers")
+        assert re.search(r'(?i)every (shipped )?framework', skill), (
+            "the skill must say the cited section covers every shipped "
+            "framework")
+        assert re.search(r'(?i)rewrite all of them', skill), (
+            "the skill must say the rename rewrites all of them, not the "
+            "languages the project happens to have used")
 
 
 # ── skill_spec ────────────────────────────────────────────────────────

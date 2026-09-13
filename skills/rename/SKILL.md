@@ -20,10 +20,11 @@ purlin:rename <old-name> <new-name>    Rename a feature
 1. **Spec file**: `specs/**/<old-name>.md` → `specs/**/<new-name>.md`
 2. **Proof files**: `<old-name>.proofs-*.json` → `<new-name>.proofs-*.json` (same directory)
 3. **Receipt files**: `<old-name>.receipt.json` → `<new-name>.receipt.json` (if exists)
-4. **Proof markers in test code**: grep all test files for proof markers referencing the old name and replace:
-   - Python: `@pytest.mark.proof("old-name",` → `@pytest.mark.proof("new-name",`
-   - Jest: `[proof:old-name:` → `[proof:new-name:`
-   - Shell: `purlin_proof "old-name"` → `purlin_proof "new-name"`
+4. **Proof markers in test code**: grep all test files for proof markers referencing the old
+   name and replace it with the new one in every marker form listed in
+   `references/formats/proofs_format.md#feature-name-token`. That table covers every framework
+   Purlin ships and gives the exact literal the feature name sits in; the rename must rewrite
+   all of them, because a marker left behind points a live test at a name no spec carries.
 5. **Feature name inside spec file**: `# Feature: old_name` → `# Feature: new_name`
 6. **`> Requires:` references in other specs**: grep all `specs/**/*.md` for `> Requires:` lines containing the old name, replace with new name
 7. **Proof file entries**: inside the renamed proof JSON, update the `"feature"` field in each entry from old name to new name
@@ -88,10 +89,10 @@ git mv specs/auth/login.proofs-unit.json specs/auth/authentication.proofs-unit.j
 git mv specs/auth/login.receipt.json specs/auth/authentication.receipt.json  # if exists
 ```
 
-**b. Update proof markers in test files** — search and replace marker strings only:
-- Python: `@pytest.mark.proof("old-name",` → `@pytest.mark.proof("new-name",`
-- Jest: `[proof:old-name:` → `[proof:new-name:`
-- Shell: `purlin_proof "old-name"` → `purlin_proof "new-name"`
+**b. Update proof markers in test files** — search and replace marker strings only, one pass per
+row of `references/formats/proofs_format.md#feature-name-token`: the table covers every shipped
+framework and the rename must rewrite all of them, not only the languages this project happens
+to have used so far.
 
 **c. Update feature name inside the spec file:**
 - `# Feature: old_name` → `# Feature: new_name`

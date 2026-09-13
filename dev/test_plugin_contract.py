@@ -190,6 +190,15 @@ def _framework_table(section):
     return parsed
 
 
+def framework_table():
+    """The contract's section B per-framework table, as {framework: cells}.
+
+    One parser for the shipped set: a proof about which frameworks exist reads
+    the same table the checker proof grades, so the two cannot disagree.
+    """
+    return _framework_table(_section_starting(_sections(_read(CONTRACT)), 'B.'))
+
+
 def _extensions(cell):
     """The backticked `.ext` tokens of a Test extensions cell, in order."""
     return [t for t in re.findall(r'`([^`\n]+)`', cell) if t.startswith('.')]
@@ -295,8 +304,7 @@ class TestEveryFrameworkHasACheckerAndAnExtractor:
 
     @pytest.mark.proof("purlin_references", "PROOF-33", "RULE-33")
     def test_every_registered_extension_is_graded_and_extractable(self):
-        wiring = _section_starting(_sections(_read(CONTRACT)), 'B.')
-        table = _framework_table(wiring)
+        table = framework_table()
 
         assert set(table) == set(SHIPPED_FRAMEWORKS), (
             f"the per-framework table lists {sorted(table)}, not "

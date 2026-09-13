@@ -38,7 +38,7 @@ Each file has its own `> Format-Version: N` line — check the file directly for
 3. Is this reusable across 2+ skills? → Put it in `references/`, reference from each skill
 
 **Authoritative reference files:**
-- `references/formats/proofs_format.md` — proof marker syntax (pytest, Jest, Shell)
+- `references/formats/proofs_format.md`: proof marker syntax for every shipped framework
 - `references/formats/receipt_format.md`: receipt shape, what the vhash binds
 - `references/audit_criteria.md` — test quality rules, HOLLOW/WEAK/STRONG criteria, scoring
 - `references/commit_conventions.md` — all commit message prefixes and formats
