@@ -1,0 +1,22 @@
+<!-- @dsCard group="Components" viewport="700x330" name="Data" subtitle="Stat tiles, scores, coverage bars, spec table" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{padding:18px 20px;background:var(--canvas)}.row{display:flex;flex-wrap:wrap;align-items:center;gap:14px}.col{display:flex;flex-direction:column;gap:12px}</style></head><body><div id="root"></div>
+<script type="text/babel">const {StatTile,ScorePanel,CoverageBar,MetricValue,DataTable,TableHead,TableRow,GroupHeader,DisclosureRow,StatusPill}=window.PurlinDesignSystem_6896a8;
+const cols=[{label:'Spec',width:'1.6fr'},{label:'Coverage',width:'1.4fr'},{label:'Status',width:'1fr'},{label:'Design',width:'.7fr'},{label:'Integrity',width:'.8fr'}];
+ReactDOM.createRoot(document.getElementById('root')).render(<div className="col">
+<div className="row" style={{gap:10,alignItems:'stretch'}}>
+<StatTile value={42} label="Specs" note="+ 5 anchors" style={{flex:1}}/>
+<StatTile value={37} label="Verified" tone="pass" note="39 on host" style={{flex:1}}/>
+<StatTile value={1} label="Failing" tone="fail" style={{flex:1}}/>
+<ScorePanel value="43%" label="Proof integrity" detail="884 of 1195" tone="fail" style={{flex:1.2,padding:'18px 12px'}}/>
+</div>
+<DataTable>
+<GroupHeader title="SKILLS" count={12} covered={158} total={158} summary={[{label:'9 verified'},{label:'3 passing'}]}/>
+<TableHead columns={cols}/>
+<TableRow columns={cols} cells={[<DisclosureRow label="skill_audit"/>,<CoverageBar covered={19} total={19}/>,<StatusPill status="passing"/>,<MetricValue value="86%"/>,<MetricValue value="89%"/>]}/>
+<TableRow columns={cols} cells={[<DisclosureRow label="skill_drift"/>,<CoverageBar covered={5} total={5}/>,<StatusPill status="verified"/>,<MetricValue value="100%"/>,<MetricValue value="excluded"/>]}/>
+</DataTable></div>);</script></body></html>

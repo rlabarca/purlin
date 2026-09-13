@@ -1,0 +1,94 @@
+# Feature: static_checks
+
+> Scope: scripts/audit/static_checks.py
+> Description: Deterministic pre-filter that catches structural test problems without any LLM. Uses Python's `ast` module for Python tests, a brace-balancing tokenizer for JS/TS tests, regex for Shell tests, and language-agnostic proof-file checks (proof ID collisions, orphan rules) that operate on JSON regardless of source language. Runs before the LLM audit pass so that structural issues like `assert True` are always caught regardless of which LLM performs the semantic evaluation.
+
+## Rules
+
+- RULE-1: Detects assert True / tautological assertions in Python test functions
+- RULE-2: Detects test functions with no assertion statements
+- RULE-3: Detects bare except:pass around code under test
+- RULE-4: Detects logic mirroring (expected value from same function as SUT)
+- RULE-5: Detects mock target matching the function being tested (requires --spec-path)
+- RULE-6: Returns JSON with proof_id, rule_id, test_name, status, reason for each proof
+- RULE-7: Always exits 0 for completed analysis; defects are reported via JSON output status=fail, not exit codes. Non-zero exits (2) are reserved for real errors (bad args, missing files)
+- RULE-8: check_spec_coverage returns rule_count and proof_count for the spec
+- RULE-10: compute_proof_hash returns a deterministic 16-char hex hash from (rule text, proof description, test code)
+- RULE-11: read_audit_cache returns an empty dict when no cache file exists and parses valid JSON when it does
+- RULE-12: write_audit_cache writes atomically via tmp + os.replace
+- RULE-13: Shell if/else proof pairs (same proof_id and rule_id with one pass and one fail branch) are recognized as a single conditional proof where the if-condition is the assertion, not flagged as hardcoded pass
+- RULE-14: Python assert_true results include a literal field (true for assert True/assertTrue(True), false for heuristic patterns like assert x is not None)
+- RULE-15: Proof ID collisions within a feature are detected — same PROOF-N targeting different RULE-N values in a proof JSON file
+- RULE-16: Proof entries referencing non-existent rules in the spec are flagged as orphans
+- RULE-17: Each audit cache entry contains all required fields: assessment, criterion, why, fix, feature, proof_id, rule_id, priority, cached_at
+- RULE-18: clear_audit_cache atomically replaces the cache file with an empty dict {}
+- RULE-19: write_audit_cache stamps every entry with the real current UTC time, overwriting any caller-provided cached_at
+- RULE-21: load_criteria returns built-in criteria always, appends cached additional criteria from `.purlin/cache/additional_criteria.md` if present, appends extra path if provided; no other function in static_checks.py assembles criteria text
+- RULE-22: prune_audit_cache removes all cache entries whose hash key is not in the provided live_keys set, preserving entries whose key IS in live_keys with all fields intact
+- RULE-23: prune_audit_cache with an empty live_keys set on a non-empty cache produces an empty cache (full sweep), and with all keys live produces an identical cache (no false pruning)
+- RULE-24: write_audit_cache merges new entries into the existing cache on disk — entries from prior writes for different features are preserved, not overwritten. Entries for the same (feature, proof_id) are deduplicated by keeping the latest cached_at
+- RULE-25: write_audit_cache protects the entire read→merge→write cycle with an exclusive OS file lock on `audit_cache.json.lock` (`fcntl.flock` on POSIX, `msvcrt.locking` on Windows) so that concurrent subagent writers serialize correctly and no entries are lost
+- RULE-26: `--write-cache` CLI flag reads a JSON dict of cache entries from stdin and merges them into the existing audit cache via write_audit_cache, printing a JSON status response with `status: "merged"` and entry count
+- RULE-27: check_js detects tautological assertions (`expect(true).toBe(true)`) and JS/TS test bodies with no `expect()` calls, returning the same JSON shape (proof_id, rule_id, test_name, status, reason) as check_python
+- RULE-28: check_js parses JS/TS test files with a brace-balancing tokenizer that (a) matches test titles containing apostrophes regardless of quote style, and (b) captures full test bodies containing nested braces — options objects, destructured parameters, type assertions — without truncating at the first inner `}`
+- RULE-29: static_checks.py imports and runs on Windows as well as POSIX — no Unix-only module is imported unconditionally at module load. `fcntl` is imported under `try/except ImportError` and a module-level flag (`_HAS_FCNTL`) selects between `fcntl.flock` and an `msvcrt.locking` fallback, so write_audit_cache acquires and releases its exclusive lock through that flag and the Windows lock path is exercisable without `fcntl`. The native lock path is verified for real on a `windows-latest` GitHub Actions runner (where `_HAS_FCNTL` is genuinely False and `msvcrt` is real), not only by host simulation
+- RULE-30: static_checks.py performs all text I/O as UTF-8 regardless of the OS locale: every text-mode `open()` specifies `encoding='utf-8'`, and stdout/stderr are reconfigured to UTF-8 at startup, so the tool's own UTF-8 specs/proofs/criteria/config/cache files both parse (read) and print (stdout) correctly even when the platform codec is cp1252/ASCII (e.g. on Windows). Without this, `--load-criteria` raises `UnicodeDecodeError` reading `audit_criteria.md` and `UnicodeEncodeError` printing its glyphs. This is verified for real under the native Windows console codec on a `windows-latest` GitHub Actions runner, not only by host locale simulation
+- RULE-32: resolve_test_file_from_name locates a test's source file from its fully-qualified test_name (e.g. `Ns.Sub.AuthLogicTests.Evaluate_NullRow`) when the proof's test_file is empty — deriving the declaring type (the segment before the final `.method`) and searching the project's source files (skipping bin/obj/node_modules/.git and other build/vendored dirs) for its `class`/`struct`/`record`/`interface` declaration. Returns the repo-relative POSIX path of the best match (preferring a file whose stem equals the type name) or `''` if none. Exposed via the `--resolve-source <test_name> [--project-root P] [--ext .cs]` CLI flag (printing JSON `{test_name, test_file}`), so purlin:audit can reach C# Pass-1/Pass-2 even when the xUnit logger emits an empty test_file (TestCase.CodeFilePath is null under `dotnet test` without source info)
+- RULE-31: For `.cs` test files, Pass 1 parses `[Trait("PurlinProof", "feature:PROOF-N:RULE-N:tier")]` traits, associates each with its `[Fact]`/`[Theory]` method body, and applies assert-true and no-assertion detection — returning the same JSON shape (proof_id, rule_id, test_name, status, reason) as check_python/check_js. xUnit `Assert.*`, NUnit `Assert.That`, MSTest `Assert.*`, FluentAssertions `.Should()`, and Playwright fluent assertions — `Expect(...)`/`Assertions.Expect(...)` chained to a `To*Async()` matcher (`ToBeVisibleAsync`, `ToHaveTextAsync`, `ToContainTextAsync`, …) — all count as assertions. A bare `Expect(x)` with no matcher chain is not an assertion (still flagged no_assertions)
+
+## Proof
+
+- PROOF-1 (RULE-1): Run static_checks on a file with assert True; verify status=fail check=assert_true
+- PROOF-2 (RULE-2): Run static_checks on a file with no assertions; verify status=fail check=no_assertions
+- PROOF-3 (RULE-3): Run static_checks on a file with except Exception: pass; verify status=fail check=bare_except
+- PROOF-4 (RULE-4): Run static_checks on a file with logic mirroring; verify status=fail check=logic_mirroring
+- PROOF-5 (RULE-5): Run static_checks with --spec-path on a file mocking the rule's function; verify status=fail check=mock_target_match
+- PROOF-6 (RULE-6): Run static_checks on any file; verify JSON output has proofs array with required fields
+- PROOF-7 (RULE-7): Run static_checks on a clean file and verify exit 0; run on a flawed file and verify exit 0 with status=fail in JSON output
+- PROOF-8 (RULE-8): Create spec with rules and proofs; call check_spec_coverage; verify rule_count and proof_count are correct
+- PROOF-10 (RULE-10): Call compute_proof_hash with same inputs twice and verify identical 16-char hex output; call with different inputs and verify different hash
+- PROOF-11 (RULE-11): Call read_audit_cache on a nonexistent path and verify empty dict; write valid JSON to the cache path and verify it parses correctly
+- PROOF-12 (RULE-12): Call write_audit_cache, then read the file back and verify contents match the written dict
+- PROOF-13 (RULE-13): Create shell test with if/else purlin_proof pair; run static_checks; verify status=pass (not flagged). Also verify a bare hardcoded pass without if/else is still caught
+- PROOF-14 (RULE-14): Run static_checks on file with assert True; verify literal=true. Run on file with assert x is not None; verify literal=false
+- PROOF-15 (RULE-15): Create proof JSON with two entries sharing PROOF-1 but targeting RULE-1 and RULE-2; call check_proof_file; verify result contains check='proof_id_collision' with both rules listed. Test with proof JSON from multiple language contexts (Python pytest, JavaScript Jest, Shell, C, PHP, SQL, TypeScript) to verify language-agnostic detection
+- PROOF-16 (RULE-16): Create proof JSON with entry targeting RULE-99 on a spec with only RULE-1 through RULE-3; call check_proof_file with spec_path; verify result contains check='proof_rule_orphan'. Test with proof JSON from multiple language contexts to verify language-agnostic detection
+- PROOF-17 (RULE-1): e2e: Create test with assert True and a valid test; verify assert_true detected on first, pass on second @e2e
+- PROOF-18 (RULE-2): e2e: Create test with no assertions; verify no_assertions detected @e2e
+- PROOF-19 (RULE-4): e2e: Create test with logic mirroring (expected from same function as SUT); verify logic_mirroring detected @e2e
+- PROOF-20 (RULE-7): e2e: Create structurally valid but semantically weak test; verify passes structural checks @e2e
+- PROOF-21 (RULE-7): e2e: Create 3 strong tests; verify all pass structural checks with exit 0 @e2e
+- PROOF-22 (RULE-6): e2e: Parse JSON output; verify proofs array has proof_id, rule_id, test_name, status, reason fields @e2e
+- PROOF-23 (RULE-7): e2e: Run on clean and flawed files; verify exit 0 for both; verify flawed has status=fail in JSON @e2e
+- PROOF-24 (RULE-5): e2e: Create test mocking bcrypt on rule about bcrypt; verify mock_target_match detected @e2e
+- PROOF-25 (RULE-3): e2e: Create test with bare except:pass; verify bare_except detected @e2e
+- PROOF-26 (RULE-8): e2e: Create specs with rules and proofs; call check_spec_coverage; verify rule_count and proof_count @e2e
+- PROOF-27 (RULE-13): e2e: Create shell test with if/else purlin_proof pair; verify pass; verify bare hardcoded pass still caught @e2e
+- PROOF-28 (RULE-12): e2e: Call write_audit_cache with 3 entries; verify audit_cache.json created with 3 keys @e2e
+- PROOF-29 (RULE-17): e2e: Write cache; verify every entry has all required fields and cached_at is valid ISO 8601 @e2e
+- PROOF-30 (RULE-24): e2e: Write cache with 3 entries for same (feature, proof_id) at different timestamps; call _read_audit_cache_by_feature; verify dedup to 1 entry keeping the latest cached_at @e2e
+- PROOF-31 (RULE-24): e2e: Write cache with 2 entries for same (feature, proof_id) — HOLLOW older, STRONG newer — plus a distinct entry; verify only the latest (STRONG) per (feature, proof_id) is kept and the unique entry survives @e2e
+- PROOF-32 (RULE-18): e2e: Write cache with entries; call clear_audit_cache; read back; verify empty dict @e2e
+- PROOF-33 (RULE-19): e2e: Write cache with stale cached_at (midnight UTC); read back; verify cached_at is within 5 seconds of real current time @e2e
+- PROOF-35 (RULE-21): Call load_criteria with no config; verify only built-in content. Save additional file to cache; call again; verify built-in + separator + additional. Pass extra_path; verify all three present
+- PROOF-36 (RULE-22): Write cache with 3 entries (keys "aaa", "bbb", "ccc"); call prune_audit_cache with live_keys={"aaa","ccc"}; read back; verify "bbb" removed, "aaa" and "ccc" preserved with all original fields intact
+- PROOF-37 (RULE-23): Write cache with 3 entries; call prune_audit_cache with live_keys=set(); read back; verify empty dict. Write cache with 3 entries; call prune_audit_cache with all 3 keys as live; read back; verify all 3 entries preserved with identical content
+- PROOF-38 (RULE-22): e2e: Write 5 cache entries via write_audit_cache; write 3 live keys to a temp file; call --prune-cache --live-keys-file; verify JSON output shows pruned=2, kept=3; read cache back and confirm exactly 3 entries remain @e2e
+- PROOF-39 (RULE-24): Write 3 entries for feature_a via write_audit_cache; then write 2 entries for feature_b via a second call; read cache back; verify all 5 entries are present. Then write 1 updated entry for feature_a (same proof_id, newer assessment); read back; verify feature_b entries are untouched and feature_a has the updated entry
+- PROOF-40 (RULE-25): Run two threads calling write_audit_cache concurrently with entries for different features; verify all entries from both threads survive in the final cache. Verify the lock file is created adjacent to the cache file during the write
+- PROOF-41 (RULE-26): Call `--write-cache` via CLI with JSON on stdin; verify entries are merged and status response is correct. Seed cache first, then call `--write-cache` with entries for a different feature; verify both old and new entries survive
+- PROOF-42 (RULE-27): e2e: Run the real static_checks.py CLI on a `.ts` file containing a `[proof:...]` test with `expect(true).toBe(true)`; verify status=fail check=assert_true. Run on one whose body has no `expect()`; verify status=fail check=no_assertions. Run on a clean test; verify status=pass @e2e
+- PROOF-43 (RULE-28): e2e: Run the real static_checks.py CLI on the issue #2 repro — `it("execSync options trigger early-truncation [proof:demo:PROOF-1:RULE-1]", () => { execSync("ls", { cwd: ".", encoding: "utf8" }); expect(out).toMatch(/./); })` and `it("cd's into a sibling [proof:demo:PROOF-2:RULE-2]", () => { expect(1).toBe(1); })`; verify BOTH PROOF-1 and PROOF-2 appear in the output (apostrophe title matched) and PROOF-1 is NOT flagged no_assertions (options-object body fully captured, expect() seen) @e2e
+- PROOF-44 (RULE-29): Parse static_checks.py with the `ast` module; verify there is no unconditional top-level `import fcntl` (the import sits inside a `try/except ImportError`) and that a module-level `_HAS_FCNTL` assignment exists in both the try and except branches
+- PROOF-45 (RULE-30): Parse static_checks.py with the `ast` module; collect every call to `open(...)` opened in text mode (no `'b'` in the mode argument) and verify each passes an `encoding='utf-8'` keyword
+- PROOF-46 (RULE-31): Run check_csharp on a `.cs` file whose `[Trait("PurlinProof", ...)]`-marked test body is `Assert.True(true);`; verify status=fail check=assert_true
+- PROOF-47 (RULE-31): Run check_csharp on a `.cs` file whose marked test body contains no assertion call; verify status=fail check=no_assertions
+- PROOF-48 (RULE-31): Run check_csharp on marked `.cs` tests whose bodies use xUnit `Assert.Equal`, NUnit `Assert.That`, MSTest `Assert.IsTrue`, and FluentAssertions `.Should()` respectively; verify each is status=pass (the assertion is recognized, not flagged no_assertions)
+- PROOF-49 (RULE-31): Run the static_checks main dispatch (by file extension) on a `.cs` test file; verify it routes to check_csharp and returns a non-empty proofs array rather than the empty-`[]` fallback for unknown extensions
+- PROOF-50 (RULE-29): With `fcntl` forced unavailable (`_HAS_FCNTL=False`) and a recording fake `msvcrt` injected into `sys.modules`, call write_audit_cache; verify the cache round-trips intact AND the fake `msvcrt.locking` was invoked with `LK_LOCK` then `LK_UNLCK` @integration
+- PROOF-51 (RULE-29): e2e: Invoke the real static_checks.py CLI as a subprocess on the host (`--write-cache` via stdin, then `--read-cache`, then Pass-1 on a hollow `.cs` fixture); verify valid JSON is emitted on stdout at each step and `.purlin/cache/audit_cache.json` is written to disk @e2e
+- PROOF-52 (RULE-30): e2e: Invoke the real static_checks.py CLI `--load-criteria` as a subprocess with `env PYTHONUTF8=0`, `LC_ALL=C`, and `LANG=C` (simulating the Windows cp1252/ASCII default), reading the tool's own `references/audit_criteria.md` which contains non-ASCII glyphs; verify it exits 0 (no `UnicodeDecodeError` on read, no `UnicodeEncodeError` on stdout) and the printed criteria text contains a non-ASCII character @e2e
+- PROOF-55 (RULE-31): Run check_csharp on a `.cs` test whose only assertion is `await Assertions.Expect(page.Locator(...)).ToBeVisibleAsync();`; verify status=pass (recognized as an assertion, NOT flagged no_assertions). Also run on a body containing a bare `Expect(x)` with no `To*Async()` matcher and no Assert/Should/Verify; verify status=fail check=no_assertions
+- PROOF-53 (RULE-29): On a real `windows-latest` runner, assert `_HAS_FCNTL` is False (POSIX `fcntl` genuinely absent, real `msvcrt` in use), then call write_audit_cache with no fake/monkeypatch into a temp dir; read the cache back and verify the entries round-trip intact and the `audit_cache.json.lock` file was created adjacent to the cache — exercising the native `msvcrt.locking` path on real Windows @windows
+- PROOF-54 (RULE-30): On a real `windows-latest` runner under the native console codec (no `PYTHONUTF8`/`LC_ALL`/`LANG` overrides), invoke the real static_checks.py CLI `--load-criteria` as a subprocess over the tool's own non-ASCII `references/audit_criteria.md`; verify it exits 0 (no `UnicodeDecodeError` on read, no `UnicodeEncodeError` on stdout) and the printed criteria text contains a non-ASCII character @windows
+- PROOF-56 (RULE-32): Create a temp project containing `tests/AuthLogicTests.cs` declaring `public class AuthLogicTests`; call resolve_test_file_from_name with `Demo.Tests.AuthLogicTests.Evaluate_NullRow` and the project root; verify it returns the relative POSIX path `tests/AuthLogicTests.cs`. Verify a `bin/`-buried copy is skipped (the authored file wins). Call with a test_name whose class is absent; verify `''`. Drive the real `--resolve-source` CLI as a subprocess and verify it prints JSON with the resolved `test_file`

@@ -1,0 +1,7 @@
+html{color-scheme:var(--color-scheme,dark)}
+body{margin:0;background:var(--canvas);color:var(--text-primary);font-family:var(--font-sans);font-size:var(--ui-base);line-height:var(--leading-normal);-webkit-font-smoothing:antialiased;text-wrap:pretty}
+a{color:var(--link);text-decoration:none;border-bottom:1px solid var(--border-default);transition:color var(--duration-fast) var(--ease-standard),border-color var(--duration-fast) var(--ease-standard)}
+a:hover{color:var(--link-hover);border-bottom-color:currentColor}
+:focus-visible{outline:none;box-shadow:var(--elev-focus)}
+code,kbd,pre,samp{font-family:var(--font-mono)}
+::selection{background:var(--accent);color:var(--accent-contrast)}

@@ -1,0 +1,14 @@
+<!-- @dsCard group="Components" viewport="700x230" name="Core" subtitle="Buttons, status pills, mono tags, panels, rules" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{padding:18px 20px;background:var(--canvas)}.row{display:flex;flex-wrap:wrap;align-items:center;gap:14px}.col{display:flex;flex-direction:column;gap:12px}</style></head><body><div id="root"></div>
+<script type="text/babel">const {Button,StatusPill,Tag,Panel,Divider}=window.PurlinDesignSystem_6896a8;
+ReactDOM.createRoot(document.getElementById('root')).render(<div className="col">
+<div className="row"><Button>Remote: 7 awaiting</Button><Button variant="solid" tone="pass">Approve</Button><Button variant="ghost">Dismiss</Button><Button disabled>Disabled</Button></div>
+<div className="row"><StatusPill status="passing"/><StatusPill status="verified"/><StatusPill status="failing"/><StatusPill status="stale"/><StatusPill status="excluded"/></div>
+<div className="row"><Tag>claude-cli …</Tag><Tag tone="pass">gemini-cli …</Tag><Tag tone="muted">7c41d0a</Tag></div>
+<div className="row" style={{alignItems:'stretch'}}><Panel style={{flex:1,fontSize:13,color:'var(--text-secondary)'}}>default</Panel><Panel tone="veil" style={{flex:1,fontSize:13,color:'var(--text-secondary)'}}>veil</Panel><Panel tone="accent" style={{flex:1,fontSize:13,color:'var(--text-accent)'}}>accent</Panel></div>
+<Divider/></div>);</script></body></html>

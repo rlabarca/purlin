@@ -1,0 +1,29 @@
+/* Deck geometry: 1920x1080 canvas, 200px left/right margin, title baseline at 230px.
+   Spacing is a 4px base with the deck's own measured offsets preserved verbatim. */
+:root{
+  --space-0:0;
+  --space-1:4px;
+  --space-2:8px;
+  --space-3:12px;
+  --space-4:16px;
+  --space-5:20px;
+  --space-6:24px;
+  --space-8:32px;
+  --space-10:40px;
+  --space-12:48px;
+  --space-16:64px;
+  --space-20:80px;
+  --space-24:96px;
+
+  --slide-w:1920px;
+  --slide-h:1080px;
+  --slide-margin-x:200px;   /* 1905000 EMU */
+  --slide-title-y:230px;    /* 2190719 EMU */
+  --slide-content-w:1672px; /* 15925777 EMU */
+  --slide-rule-w:1520px;    /* 14477979 EMU */
+  --slide-row-h:105px;      /* numbered-list row pitch */
+
+  --app-bar-h:92px;
+  --app-gutter:12px;
+  --row-h:76px;
+}
