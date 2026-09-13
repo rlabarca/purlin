@@ -40,6 +40,8 @@ from prose_lint import (  # noqa: E402
     _tracked,
     _yaml_blocks,
     banned_strings,
+    one_scope,
+    scope_owners,
     paths_exist,
     repo_files,
     single_home,
@@ -1375,3 +1377,54 @@ class TestVersionLiteralsAndDraftMarkers:
             "these specs still carry the draft marker "
             "`purlin:spec-from-code` leaves on an unreviewed draft, so they "
             "read as unreviewed:\n" + "\n".join(offenders))
+
+
+class TestEveryProseFileHasOneHome:
+    """RULE-24 - a file no spec names is a file no rule answers for."""
+
+    @pytest.mark.proof("purlin_prose", "PROOF-37", "RULE-24")
+    def test_every_shipped_prose_file_is_in_exactly_one_scope(self, tmp_path):
+        owners = scope_owners()
+        assert len(owners) >= 40, (
+            f"resolved {len(owners)} prose files; the lint would pass by "
+            f"reading nothing")
+        named = sorted({s for specs in owners.values() for s in specs})
+        assert len(named) >= 7, named
+        assert one_scope() == [], (
+            "every shipped prose file must be named in exactly one "
+            "`> Scope:`")
+
+        excluded = 'specs/instructions/purlin_version.md'
+        assert excluded not in named, (
+            "purlin_version names files it does not own, so it must not be "
+            "read as an owner")
+        assert 'skills/init/SKILL.md' in _read(excluded), (
+            "the exclusion is load-bearing only while purlin_version really "
+            "does name a file another spec owns")
+
+        specs = _scope_files(('specs/instructions/*.md', 'specs/tools/*.md'),
+                             _tracked('specs'))
+        for rel in specs:
+            _plant(tmp_path, rel, _read(rel))
+
+        target = 'references/rule_examples.md'
+        refs = 'specs/instructions/purlin_references.md'
+        original = _read(refs)
+        _plant(tmp_path, refs,
+               original.replace(', ' + target, '', 1))
+        offenders = one_scope(root=str(tmp_path))
+        assert len(offenders) == 1, f"expected the orphan; got {offenders}"
+        assert offenders[0].path == target
+        assert offenders[0].lint == 'one_scope'
+        assert 'no spec' in offenders[0].message, offenders[0].message
+
+        _plant(tmp_path, refs, original)
+        prose = 'specs/instructions/purlin_prose.md'
+        body = _read(prose)
+        line = [l for l in body.splitlines() if l.startswith('> Scope:')][0]
+        _plant(tmp_path, prose, body.replace(line, line + ', ' + target, 1))
+        offenders = one_scope(root=str(tmp_path))
+        assert len(offenders) == 1, f"expected the double home; got {offenders}"
+        assert offenders[0].path == target
+        assert '2 specs' in offenders[0].message, offenders[0].message
+        assert refs in offenders[0].message and prose in offenders[0].message

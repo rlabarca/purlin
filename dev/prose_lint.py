@@ -7,10 +7,10 @@
 
 and exits 1 when there is at least one. `--json` prints the same offenders as
 a JSON array. `specs/instructions/purlin_prose.md` RULE-12 through RULE-15 own
-the first four lints and name the file set each one covers today; widening a
-set is an edit to the row in this module and to the rule that states it, never
-a new rule and never a new module. The fifth, `banned_paths`, is owned from
-outside: `specs/instructions/purlin_skills.md` RULE-19 states it over the
+RULE-12 through RULE-15 and RULE-24 own five of the lints and name the file
+set each one covers today; widening a set is an edit to the row in this module
+and to the rule that states it, never a new rule and never a new module. The
+sixth, `banned_paths`, is owned from outside: `specs/instructions/purlin_skills.md` RULE-19 states it over the
 skills and the agents and `specs/instructions/purlin_references.md` RULE-35
 over the references, because the claim it makes is about those surfaces and
 not about this module.
@@ -1042,10 +1042,85 @@ def banned_paths(root=PROJECT_ROOT, files=None, rows=BANNED_PATH_ROWS,
 
 
 # ---------------------------------------------------------------------------
+# Lint 6: one_scope (RULE-24)
+# ---------------------------------------------------------------------------
+
+#: The trees whose markdown ships to a consumer and therefore has to have a
+#: home. `README.md` and `CLAUDE.md` are named one by one because they are the
+#: only two prose files at the repository root.
+SCOPED_TREES = ('docs/', 'references/', 'skills/', 'agents/', 'tools/')
+SCOPED_ROOT_FILES = ('README.md', 'CLAUDE.md')
+
+#: The specs that own prose. `purlin_version.md` is deliberately not one of
+#: them: it names `skills/init/SKILL.md` and `references/drift_criteria.md`
+#: because they carry a version literal, which is a second claim over a file
+#: another spec is the home for, not a claim of ownership.
+SCOPE_OWNER_DIRS = ('specs/instructions/', 'specs/tools/')
+SCOPE_OWNER_EXCLUDED = ('specs/instructions/purlin_version.md',)
+
+
+def _scope_entries(rel, root=PROJECT_ROOT):
+    """The comma-separated entries of a spec's `> Scope:` line."""
+    for line in _read(rel, root).splitlines():
+        if line.startswith('> Scope:'):
+            return [e.strip() for e in line[len('> Scope:'):].split(',')
+                    if e.strip()]
+    return []
+
+
+def _scope_covers(entry, rel):
+    return (rel == entry or _in_scope(rel, (entry,))
+            or (entry.endswith('/') and rel.startswith(entry)))
+
+
+def scope_owners(root=PROJECT_ROOT, files=None):
+    """{prose file: [owning spec, ...]} over the scoped trees."""
+    files = repo_files() if files is None else files
+    prose = sorted(rel for rel in _tracked(*SCOPED_TREES) + list(
+        SCOPED_ROOT_FILES) if rel.endswith('.md'))
+    owners = {rel: [] for rel in prose}
+    specs = sorted(rel for rel in _tracked(*SCOPE_OWNER_DIRS)
+                   if rel.endswith('.md') and rel not in SCOPE_OWNER_EXCLUDED)
+    for spec in specs:
+        entries = _scope_entries(spec, root)
+        for rel in prose:
+            if any(_scope_covers(entry, rel) for entry in entries):
+                owners[rel].append(spec)
+    return owners
+
+
+def one_scope(root=PROJECT_ROOT, files=None, strict=True):
+    """RULE-24: every shipped prose file has exactly one owning spec."""
+    owners = scope_owners(root, files)
+    offenders = []
+    if strict and len(owners) < 30:
+        offenders.append(Offender(
+            'dev/prose_lint.py', 0, 'one_scope',
+            f"resolved {len(owners)} prose files; the lint would pass by "
+            f"reading nothing"))
+        return offenders
+    for rel, specs in sorted(owners.items()):
+        if not specs:
+            offenders.append(Offender(
+                rel, 0, 'one_scope',
+                "no spec under specs/instructions/ or specs/tools/ names this "
+                "file in its `> Scope:`, so nothing reports it as drifted and "
+                "no rule is answerable for it"))
+        elif len(specs) > 1:
+            offenders.append(Offender(
+                rel, 0, 'one_scope',
+                f"{len(specs)} specs name this file in their `> Scope:` "
+                f"({', '.join(specs)}); two homes is two answers the first "
+                f"time one of them is edited"))
+    return offenders
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
-LINTS = (banned_strings, paths_exist, structure, single_home, banned_paths)
+LINTS = (banned_strings, paths_exist, structure, single_home, banned_paths,
+         one_scope)
 
 
 def run_all(root=PROJECT_ROOT, files=None):

@@ -1,7 +1,7 @@
 # Feature: purlin_references
 
 > Requires: schema_spec_format, schema_proof_format
-> Scope: references/spec_quality_guide.md, references/hard_gates.md, references/commit_conventions.md, references/purlin_commands.md, references/drift_criteria.md, references/audit_criteria.md, references/supported_frameworks.md, references/remote_verification.md, references/formats/spec_format.md, references/formats/proofs_format.md, references/formats/anchor_format.md, references/formats/receipt_format.md, references/proof_plugin_contract.md, references/legacy_features_migration.md
+> Scope: references/spec_quality_guide.md, references/hard_gates.md, references/commit_conventions.md, references/purlin_commands.md, references/drift_criteria.md, references/audit_criteria.md, references/supported_frameworks.md, references/remote_verification.md, references/formats/spec_format.md, references/formats/proofs_format.md, references/formats/anchor_format.md, references/formats/receipt_format.md, references/proof_plugin_contract.md, references/legacy_features_migration.md, references/figma_extraction_criteria.md, references/rule_examples.md
 > Stack: markdown (reference documentation)
 > Description: Fourteen reference documents that define Purlin's formats, conventions, and quality standards. These are the authoritative source that skills and agents reference, ensuring structural consistency across the framework.
 
