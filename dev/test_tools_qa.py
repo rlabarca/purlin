@@ -1,10 +1,14 @@
-"""Tests for qa_report — the packaged skills under tools/.
+"""Tests for the packaged skills under tools/: qa_report and
+pm_anchor_userstories.
 
 `tools/QA/purlin-qa-report.md` is a skill a QA reader runs against someone
 else's repository. Two things go wrong there that nothing else in this project
 catches: an instruction that leaks a credential, and a report that claims more
-than the digest recorded. These proofs read the shipped markdown, and RULE-6
-reads the zip beside it, because the zip is what a user installs.
+than the digest recorded. `tools/PM/purlin-anchor-userstories.md` is a skill a
+product manager runs to write an anchor spec, and what goes wrong there is that
+the spec lands somewhere the Purlin plugin never reads. These proofs read the
+shipped markdown, and one proof per tool reads the zip beside it, because the
+zip is what a user installs.
 """
 
 import os
@@ -16,17 +20,61 @@ import pytest
 PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
 TOOLS = os.path.join(PROJECT_ROOT, 'tools')
 QA_MD = os.path.join(TOOLS, 'QA', 'purlin-qa-report.md')
-
-# The two markdown/archive pairs under tools/. RULE-6 covers both.
-PAIRS = [
-    ('QA', 'purlin-qa-report'),
-    ('PM', 'purlin-anchor-userstories'),
-]
+PM_MD = os.path.join(TOOLS, 'PM', 'purlin-anchor-userstories.md')
+ANCHOR_FORMAT = os.path.join(PROJECT_ROOT, 'references', 'formats',
+                             'anchor_format.md')
+COMMIT_CONVENTIONS = os.path.join(PROJECT_ROOT, 'references',
+                                  'commit_conventions.md')
 
 
 def _read(path):
     with open(path) as f:
         return f.read()
+
+
+def _assert_skill_zip_matches_markdown(folder, name):
+    """qa_report PROOF-6 and pm_anchor_userstories PROOF-5 share this.
+
+    Each tool's `.skill` is a zip holding one `<name>/SKILL.md`; the bytes must
+    equal the sibling `.md`, which is the file the rules above grep.
+    """
+    md_path = os.path.join(TOOLS, folder, f'{name}.md')
+    skill_path = os.path.join(TOOLS, folder, f'{name}.skill')
+    assert os.path.isfile(md_path), md_path
+    assert os.path.isfile(skill_path), skill_path
+
+    with open(md_path, 'rb') as f:
+        md_bytes = f.read()
+    with zipfile.ZipFile(skill_path) as zf:
+        names = zf.namelist()
+        assert names == [f'{name}/SKILL.md'], (
+            f"{skill_path} holds {names}, expected exactly "
+            f"['{name}/SKILL.md']")
+        packed = zf.read(names[0])
+
+    assert packed == md_bytes, (
+        f"{skill_path} ships {len(packed)} bytes while {md_path} has "
+        f"{len(md_bytes)}; run `bash dev/pack_tools.sh`")
+
+
+def _offending_lines(text, needle, lower=False):
+    """Every (line number, line) carrying `needle`, so a failure names it."""
+    hay = text.lower() if lower else text
+    return [(i, line) for i, line in enumerate(hay.splitlines(), 1)
+            if needle in line]
+
+
+def _template_shape(text, section_heading):
+    """The headings and the `> Field:` names of the fenced markdown template
+    under `section_heading`, in the order they are written."""
+    start = text.index(section_heading)
+    fence = text.index('```markdown', start) + len('```markdown')
+    end = text.index('```', fence)
+    block = text[fence:end]
+    headings = [line.strip() for line in block.splitlines()
+                if line.startswith('#')]
+    fields = re.findall(r'^> ([A-Za-z][\w-]*):', block, re.MULTILINE)
+    return headings, fields
 
 
 class TestNoCredentialInAUrl:
@@ -161,30 +209,8 @@ class TestSkillArchivesMatchTheMarkdown:
     """RULE-6: the `.md` is reviewed and the `.skill` is installed."""
 
     @pytest.mark.proof("qa_report", "PROOF-6", "RULE-6")
-    def test_each_skill_zip_holds_one_skill_md_equal_to_its_sibling(self):
-        checked = 0
-        for folder, name in PAIRS:
-            md_path = os.path.join(TOOLS, folder, f'{name}.md')
-            skill_path = os.path.join(TOOLS, folder, f'{name}.skill')
-            assert os.path.isfile(md_path), md_path
-            assert os.path.isfile(skill_path), skill_path
-
-            with open(md_path, 'rb') as f:
-                md_bytes = f.read()
-            with zipfile.ZipFile(skill_path) as zf:
-                names = zf.namelist()
-                assert names == [f'{name}/SKILL.md'], (
-                    f"{skill_path} holds {names}, expected exactly "
-                    f"['{name}/SKILL.md']")
-                packed = zf.read(names[0])
-
-            assert packed == md_bytes, (
-                f"{skill_path} ships {len(packed)} bytes while {md_path} has "
-                f"{len(md_bytes)}; run `bash dev/pack_tools.sh`")
-            checked += 1
-
-        assert checked == len(PAIRS) and checked > 0, (
-            f"only {checked} archives checked")
+    def test_the_qa_skill_zip_holds_one_skill_md_equal_to_its_sibling(self):
+        _assert_skill_zip_matches_markdown('QA', 'purlin-qa-report')
 
 
 @pytest.mark.proof("qa_report", "PROOF-7", "RULE-7", tier="unit")
@@ -229,3 +255,88 @@ def test_the_skill_resolves_a_referenced_rule_before_walking_rules():
     assert 'no `ref`' in bullet and 'is already complete' in bullet, (
         "the entry must say an old digest, whose rules are all inline, is read "
         "as it is: " + bullet)
+
+
+class TestThePmSkillWritesWherePurlinReads:
+    """pm_anchor_userstories: the output of a product manager's session has to
+    be a file the plugin parses, named the way every other spec is named."""
+
+    @pytest.mark.proof("pm_anchor_userstories", "PROOF-1", "RULE-1",
+                       tier="unit")
+    def test_the_output_path_is_specs_anchors_and_never_a_dot_anchor_file(self):
+        content = _read(PM_MD)
+
+        stray = _offending_lines(content, '.anchor.md')
+        assert stray == [], (
+            "the retired `.anchor.md` artifact name is back at "
+            + "; ".join(f"line {n}: {line.strip()}" for n, line in stray))
+
+        assert 'specs/_anchors/<name>.md' in content, (
+            "the skill never names the one path sync_status scans")
+        assert 'cat > specs/_anchors/' in content, (
+            "the write step must create the file under specs/_anchors/")
+        assert 'git add specs/_anchors/' in content, (
+            "the commit step must stage the file under specs/_anchors/")
+        assert 'snake_case' in content, (
+            "the skill must say the anchor name is a snake_case token, since "
+            "it is both the file name and the `# Anchor:` name")
+
+    @pytest.mark.proof("pm_anchor_userstories", "PROOF-2", "RULE-2",
+                       tier="unit")
+    def test_the_banned_terms_are_gone_and_the_required_ones_are_present(self):
+        content = _read(PM_MD)
+
+        for banned in ('toolkit', 'anchor file', '.anchor.md'):
+            hits = _offending_lines(content, banned, lower=True)
+            assert hits == [], (
+                f"the retired term {banned!r} appears at "
+                + "; ".join(f"line {n}: {line.strip()}" for n, line in hits))
+
+        for required in ('anchor spec', 'the Purlin plugin'):
+            assert required in content, (
+                f"the skill never uses the canonical term {required!r}")
+
+    @pytest.mark.proof("pm_anchor_userstories", "PROOF-3", "RULE-3",
+                       tier="unit")
+    def test_the_template_carries_the_anchor_formats_sections_and_fields(self):
+        fmt_headings, fmt_fields = _template_shape(
+            _read(ANCHOR_FORMAT), '### Template')
+        skill_headings, skill_fields = _template_shape(
+            _read(PM_MD), '## Anchor Spec Template')
+
+        assert fmt_headings, "anchor_format.md's template block has no headings"
+        assert fmt_fields, "anchor_format.md's template block has no `>` fields"
+
+        assert skill_headings == fmt_headings, (
+            f"the skill's template has headings {skill_headings} while "
+            f"anchor_format.md has {fmt_headings}; the two copies have drifted")
+        assert skill_fields == fmt_fields, (
+            f"the skill's template has metadata fields {skill_fields} while "
+            f"anchor_format.md has {fmt_fields}; the two copies have drifted")
+
+    @pytest.mark.proof("pm_anchor_userstories", "PROOF-4", "RULE-4",
+                       tier="unit")
+    def test_the_commit_prefix_is_the_one_commit_conventions_defines(self):
+        content = _read(PM_MD)
+
+        assert 'anchor(<name>): create' in content, (
+            "the skill must name the `anchor(<name>): create` prefix")
+        assert 'git commit -m "anchor(<name>): create"' in content, (
+            "the commit fence must carry the prefix, not merely the prose "
+            "around it")
+
+        chore = _offending_lines(content, 'chore:')
+        assert len(chore) == 1 and 'Never' in chore[0][1], (
+            "`chore:` may appear only in the sentence forbidding it, got "
+            + "; ".join(f"line {n}: {line.strip()}" for n, line in chore))
+
+        rows = [line for line in _read(COMMIT_CONVENTIONS).splitlines()
+                if line.startswith('|') and 'anchor(<name>): create' in line]
+        assert len(rows) == 1, (
+            f"references/commit_conventions.md must carry exactly one table "
+            f"row for `anchor(<name>): create`, got {len(rows)}")
+
+    @pytest.mark.proof("pm_anchor_userstories", "PROOF-5", "RULE-5",
+                       tier="unit")
+    def test_the_pm_skill_zip_holds_one_skill_md_equal_to_its_sibling(self):
+        _assert_skill_zip_matches_markdown('PM', 'purlin-anchor-userstories')

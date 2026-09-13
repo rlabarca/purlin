@@ -10,6 +10,7 @@
 | `test(<name>):` | Writing or updating tests |
 | `verify:` | Issuing verification receipts |
 | `anchor(<name>):` | Syncing an anchor from upstream |
+| `anchor(<name>): create` | Creating an anchor spec in `specs/_anchors/` |
 | `chore(update):` | `purlin:init --update` migrating a project to the installed plugin |
 | `chore:` | Project setup, config changes, cleanup |
 | `docs:` | Documentation updates |
@@ -23,6 +24,7 @@ test(auth_login): 3/3 rules proved
 fix(auth_login): handle expired tokens in callback
 verify: [Complete:all] features=5/5 anchors=2/2 vhash=a1b2c3d4
 anchor(design_tokens): sync from upstream (abc1234)
+anchor(playlist_launch): create
 chore: initialize purlin project
 chore(update): migrate to 0.10.0 (legacy-tier-windows, legacy-proof-file, legacy-marker)
 ```

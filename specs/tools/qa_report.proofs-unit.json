@@ -51,7 +51,7 @@
       "id": "PROOF-6",
       "rule": "RULE-6",
       "test_file": "dev/test_tools_qa.py",
-      "test_name": "test_each_skill_zip_holds_one_skill_md_equal_to_its_sibling",
+      "test_name": "test_the_qa_skill_zip_holds_one_skill_md_equal_to_its_sibling",
       "status": "pass",
       "tier": "unit"
     },
