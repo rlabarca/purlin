@@ -861,3 +861,49 @@ class TestInterpreterPrerequisite:
             assert name in resolver, (
                 f"{RESOLVER} does not carry the candidate {name!r} the "
                 f"prerequisites promise")
+
+
+# ---------------------------------------------------------------------------
+# RULE-18: the marketplace scope is three steps for a teammate, not one
+# ---------------------------------------------------------------------------
+
+SCOPE_TOKEN = '`--scope project`'
+SCOPE_PAGES = ('README.md', 'docs/installation-guide.md')
+SCOPE_STEPS = ('/plugin install purlin@purlin', '/reload-plugins',
+               'purlin:init --force')
+
+
+def _paragraphs_carrying(text, token):
+    """Blank-line delimited paragraphs of `text` that contain `token`."""
+    return [para for para in re.split(r'\n\s*\n', text) if token in para]
+
+
+class TestMarketplaceScopeIsThreeSteps:
+    """RULE-18: the flag stores an entry; the teammate still installs."""
+
+    @pytest.mark.proof("purlin_prose", "PROOF-26", "RULE-18", tier="unit")
+    def test_both_pages_name_all_three_teammate_steps(self):
+        for rel in SCOPE_PAGES:
+            text = _read(rel)
+            assert text.strip(), (
+                f"{rel} read back empty, so this proof would pass by "
+                f"grepping nothing")
+
+            paras = _paragraphs_carrying(text, SCOPE_TOKEN)
+            assert len(paras) == 1, (
+                f"{rel} carries {len(paras)} paragraphs naming "
+                f"{SCOPE_TOKEN}; RULE-18 is about the one that explains the "
+                f"flag, so exactly one must carry it")
+            para = paras[0]
+
+            for step in SCOPE_STEPS:
+                assert step in para, (
+                    f"the {SCOPE_TOKEN} paragraph of {rel} does not name "
+                    f"{step!r}, one of the three steps a teammate still "
+                    f"performs after cloning:\n{para}")
+
+            for claim in ('automatically', 'automatic'):
+                assert claim not in para, (
+                    f"the {SCOPE_TOKEN} paragraph of {rel} still says "
+                    f"{claim!r}; the flag stores a marketplace entry and "
+                    f"installs nothing:\n{para}")

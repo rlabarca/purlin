@@ -31,7 +31,7 @@ git init                # required: Purlin needs git
 claude plugin marketplace add https://github.com/rlabarca/purlin.git --scope project
 ```
 
-The `--scope project` flag stores the marketplace in the project so teammates get it automatically when they clone. Omit it for user-level install.
+The `--scope project` flag stores the marketplace entry in the project's `.claude/settings.json`, so a teammate who clones the repo already has the source Purlin resolves from. It installs nothing on its own. Each teammate still runs the same three steps in their own checkout: `/plugin install purlin@purlin`, then `/reload-plugins`, then `purlin:init --force`, which writes their own git hooks and their own gitignored copy of the dashboard. Omit the flag for a user-level install.
 
 Already added `purlin` using the SSH URL (`git@github.com:...`)? Run `claude plugin marketplace remove purlin` first, then the command above. The name `purlin` stays bound to whichever URL it was added with.
 

@@ -45,7 +45,7 @@ Add the Purlin marketplace from your terminal (this is a CLI command, not inside
 claude plugin marketplace add https://github.com/rlabarca/purlin.git --scope project
 ```
 
-The `--scope project` flag stores the marketplace config in the project directory (`.claude/settings.json`) so every team member who clones the repo gets Purlin automatically. Omit it for a user-level install that only applies to you.
+The `--scope project` flag stores the marketplace config in the project directory (`.claude/settings.json`) so every team member who clones the repo resolves the plugin from the same source. It does not install the plugin for them. Each team member still runs the three steps below in their own checkout: `/plugin install purlin@purlin`, then `/reload-plugins`, then `purlin:init --force`, which writes their own git hooks and their own gitignored copy of the dashboard. Omit it for a user-level install that only applies to you.
 
 Already added `purlin` using the SSH URL (`git@github.com:...`)? Run `claude plugin marketplace remove purlin` first, then the command above. The name `purlin` stays bound to whichever URL it was added with.
 

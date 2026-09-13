@@ -42,6 +42,15 @@
       "id": "PROOF-17",
       "rule": "RULE-12",
       "test_file": "dev/test_purlin_prose.py",
+      "test_name": "test_a_restored_three_section_name_is_named_by_file_and_line",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_prose",
+      "id": "PROOF-17",
+      "rule": "RULE-12",
+      "test_file": "dev/test_purlin_prose.py",
       "test_name": "test_an_exemption_whose_text_is_gone_is_reported_as_stale",
       "status": "pass",
       "tier": "unit"
@@ -52,6 +61,15 @@
       "rule": "RULE-12",
       "test_file": "dev/test_purlin_prose.py",
       "test_name": "test_an_injected_em_dash_is_named_by_file_and_line",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_prose",
+      "id": "PROOF-17",
+      "rule": "RULE-12",
+      "test_file": "dev/test_purlin_prose.py",
+      "test_name": "test_the_retired_heading_is_caught_and_the_vhash_heading_is_not",
       "status": "pass",
       "tier": "unit"
     },
@@ -115,6 +133,15 @@
       "rule": "RULE-15",
       "test_file": "dev/test_purlin_prose.py",
       "test_name": "test_a_proof_common_rule_pasted_into_the_contract_is_named",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_prose",
+      "id": "PROOF-26",
+      "rule": "RULE-18",
+      "test_file": "dev/test_purlin_prose.py",
+      "test_name": "test_both_pages_name_all_three_teammate_steps",
       "status": "pass",
       "tier": "unit"
     },
