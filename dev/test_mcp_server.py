@@ -103,9 +103,9 @@ class TestMCPProtocol:
         # caller has to fill in. Without this an argument could be dropped from
         # a schema and every name assertion above would still pass.
         expected_properties = {
-            "sync_status": [],
-            "purlin_config": ["action", "key", "value"],
-            "drift": ["since"],
+            "sync_status": ["project_root"],
+            "purlin_config": ["action", "key", "project_root", "value"],
+            "drift": ["project_root", "since"],
         }
         by_name = {t["name"]: t for t in tools}
         for name, props in expected_properties.items():
@@ -117,6 +117,10 @@ class TestMCPProtocol:
             assert sorted(schema["properties"]) == props, (
                 f"{name} inputSchema properties {sorted(schema['properties'])} "
                 f"!= {props}")
+            # Every one of them is optional; a tool that demands an argument
+            # a caller never sent is a tool the caller cannot call.
+            assert schema.get("required", []) == [], (
+                f"{name} requires {schema.get('required')}, expected nothing")
 
     @pytest.mark.proof("mcp_transport", "PROOF-3", "RULE-3")
     def test_notification_no_response(self):
@@ -4188,6 +4192,11 @@ class TestNoRoleArgument:
     def setup_method(self):
         self.project_root = tempfile.mkdtemp()
         os.makedirs(os.path.join(self.project_root, '.purlin'))
+        # A real workspace, so the calls below reach the tools rather than the
+        # no-workspace notice a rootless directory earns (sync_status RULE-72).
+        with open(os.path.join(
+                self.project_root, '.purlin', 'config.json'), 'w') as f:
+            json.dump({"version": "0.10.0"}, f)
 
     def teardown_method(self):
         shutil.rmtree(self.project_root, ignore_errors=True)
@@ -4211,7 +4220,8 @@ class TestNoRoleArgument:
     def test_sync_status_declares_no_role(self):
         by_name = self._tools()
         schema = by_name["sync_status"]["inputSchema"]
-        assert schema["properties"] == {}, schema["properties"]
+        assert sorted(schema["properties"]) == ["project_root"], (
+            schema["properties"])
         for name, tool in by_name.items():
             assert "role" not in tool["inputSchema"].get("properties", {}), (
                 f"{name} still declares a role property")
@@ -4227,7 +4237,8 @@ class TestNoRoleArgument:
     def test_drift_declares_no_role(self):
         by_name = self._tools()
         schema = by_name["drift"]["inputSchema"]
-        assert sorted(schema["properties"]) == ["since"], schema["properties"]
+        assert sorted(schema["properties"]) == ["project_root", "since"], (
+            schema["properties"])
         for name, tool in by_name.items():
             assert "role" not in tool["inputSchema"].get("properties", {}), (
                 f"{name} still declares a role property")
@@ -4747,3 +4758,109 @@ class TestReadOncePerRun:
         monkeypatch.setenv('PURLIN_PLATFORM', 'windows-2022')
         assert purlin_server._detect_host_platform()['id'] == 'windows-2022'
         assert purlin_server._detect_host_hardware.cache_info().misses == 1
+
+
+class TestProjectRootArgument:
+    """sync_status RULE-72: every tool takes an optional project_root, and a
+    root with no `.purlin/config.json` says so instead of reporting nothing."""
+
+    def setup_method(self):
+        self.mono = tempfile.mkdtemp()
+        # The workspace lives one directory down, the way a monorepo that
+        # initialized Purlin in one package has it. The monorepo root itself
+        # holds no `.purlin/` at all.
+        self.app = os.path.join(self.mono, 'app')
+        spec_dir = os.path.join(self.app, 'specs', 'auth')
+        os.makedirs(spec_dir)
+        os.makedirs(os.path.join(self.app, '.purlin'))
+        with open(os.path.join(self.app, '.purlin', 'config.json'), 'w') as f:
+            json.dump({"version": "0.10.0"}, f)
+        with open(os.path.join(spec_dir, 'login.md'), 'w') as f:
+            f.write('# Feature: login\n\n'
+                    '## Rules\n- RULE-1: Return 200\n\n'
+                    '## Proof\n- PROOF-1 (RULE-1): POST valid creds\n')
+        with open(os.path.join(spec_dir, 'login.proofs-unit.json'), 'w') as f:
+            json.dump({"tier": "unit", "proofs": [
+                {"feature": "login", "id": "PROOF-1", "rule": "RULE-1",
+                 "test_file": "tests/test.py", "test_name": "test_valid",
+                 "status": "pass", "tier": "unit"}]}, f)
+        self._old_env = os.environ.get('PURLIN_PROJECT_ROOT')
+        os.environ.pop('PURLIN_PROJECT_ROOT', None)
+
+    def teardown_method(self):
+        shutil.rmtree(self.mono, ignore_errors=True)
+        if self._old_env is None:
+            os.environ.pop('PURLIN_PROJECT_ROOT', None)
+        else:
+            os.environ['PURLIN_PROJECT_ROOT'] = self._old_env
+
+    def _tools(self):
+        resp = purlin_server.handle_request(
+            {"jsonrpc": "2.0", "method": "tools/list", "id": 1}, self.mono)
+        return {t["name"]: t for t in resp["result"]["tools"]}
+
+    def _call(self, tool_name, arguments):
+        """One tools/call whose default root is the monorepo root."""
+        resp = purlin_server.handle_request(
+            {"jsonrpc": "2.0", "method": "tools/call", "id": 2,
+             "params": {"name": tool_name, "arguments": arguments}},
+            self.mono)
+        return resp["result"]["content"][0]["text"]
+
+    @pytest.mark.proof("sync_status", "PROOF-121", "RULE-72", tier="integration")
+    def test_project_root_argument_and_loud_no_workspace_line(self):
+        # Declared, typed, and optional on all three.
+        by_name = self._tools()
+        for name in ('sync_status', 'purlin_config', 'drift'):
+            schema = by_name[name]["inputSchema"]
+            prop = schema["properties"].get("project_root")
+            assert prop is not None, f"{name} declares no project_root"
+            assert prop["type"] == "string", prop
+            assert "project_root" not in schema.get("required", []), schema
+
+        # The argument, not the startup root, chooses the project.
+        text = self._call("sync_status", {"project_root": self.app})
+        assert 'login' in text and '1/1 rules proved' in text, text
+        drift_text = self._call("drift", {"project_root": self.app})
+        assert isinstance(json.loads(drift_text), dict), drift_text
+        config_text = self._call(
+            "purlin_config", {"action": "read", "project_root": self.app})
+        assert json.loads(config_text) == {"version": "0.10.0"}, config_text
+
+        # No argument: the monorepo root has no workspace, and every tool says
+        # exactly that rather than answering as if the project were empty.
+        for name, arguments in (('sync_status', {}), ('drift', {}),
+                                ('purlin_config', {"action": "read"})):
+            text = self._call(name, arguments)
+            lines = text.split('\n')
+            assert len(lines) == 2, f"{name} returned {len(lines)} lines: {text}"
+            assert lines[0] == (
+                '⚠ No Purlin workspace at %s: .purlin/config.json is not '
+                'there. That root came from climbing from the working '
+                'directory to a .purlin/ marker.' % self.mono
+            ) or lines[0] == (
+                '⚠ No Purlin workspace at %s: .purlin/config.json is not '
+                'there. That root came from the working directory, with no '
+                '.purlin/ marker in it or above it.' % self.mono
+            ), lines[0]
+            assert lines[1].startswith('→ Fix:'), lines[1]
+            for cue in ('project_root', 'PURLIN_PROJECT_ROOT', 'purlin:init'):
+                assert cue in lines[1], (cue, lines[1])
+            assert '0 features' not in text, text
+            assert 'No specs found' not in text, text
+
+        # The environment variable is named when it is what resolved the root.
+        os.environ['PURLIN_PROJECT_ROOT'] = self.mono
+        text = self._call("sync_status", {})
+        assert text.split('\n')[0] == (
+            '⚠ No Purlin workspace at %s: .purlin/config.json is not '
+            'there. That root came from the PURLIN_PROJECT_ROOT environment '
+            'variable.' % self.mono), text
+        os.environ.pop('PURLIN_PROJECT_ROOT', None)
+
+        # And the argument is named when the caller supplied the bad root.
+        missing = os.path.join(self.mono, 'nowhere')
+        text = self._call("sync_status", {"project_root": missing})
+        assert text.split('\n')[0] == (
+            '⚠ No Purlin workspace at %s: .purlin/config.json is not '
+            'there. That root came from the project_root argument.' % missing), text

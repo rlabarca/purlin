@@ -24,27 +24,44 @@ import os
 import sys
 
 
-def find_project_root(start_dir=None):
-    """Detect project root using PURLIN_PROJECT_ROOT or cwd climbing.
+# How `resolve_project_root` found the root it returned, in the order it
+# tries them. The third is a guess, not a find: no `.purlin/` marker was
+# seen anywhere, so the caller is told which of the three answered rather
+# than being handed a directory with no account of where it came from.
+PROJECT_ROOT_SOURCES = {
+    'env': 'the PURLIN_PROJECT_ROOT environment variable',
+    'climb': 'climbing from the working directory to a .purlin/ marker',
+    'cwd': 'the working directory, with no .purlin/ marker in it or above it',
+}
 
-    In the plugin model, PURLIN_PROJECT_ROOT is the primary mechanism.
-    Climbing fallback walks up from start_dir looking for .purlin/ marker.
-    Falls back to cwd if no marker found.
+
+def resolve_project_root(start_dir=None):
+    """Detect the project root and name how it was found.
+
+    Returns `(root, source)` where source is a key of PROJECT_ROOT_SOURCES.
+    Precedence is fixed: `PURLIN_PROJECT_ROOT` when it names a directory
+    that exists, then a climb from start_dir (or cwd) to the nearest
+    `.purlin/` marker, then cwd as a last resort.
     """
     env_root = os.environ.get('PURLIN_PROJECT_ROOT', '')
     if env_root and os.path.isdir(env_root):
-        return env_root
+        return env_root, 'env'
 
     current = os.path.abspath(start_dir or os.getcwd())
     while True:
         if os.path.isdir(os.path.join(current, '.purlin')):
-            return current
+            return current, 'climb'
         parent = os.path.dirname(current)
         if parent == current:
             break
         current = parent
 
-    return os.path.abspath(os.getcwd())
+    return os.path.abspath(os.getcwd()), 'cwd'
+
+
+def find_project_root(start_dir=None):
+    """The project root alone, for callers that do not report how it was found."""
+    return resolve_project_root(start_dir)[0]
 
 
 def _read_json(path):

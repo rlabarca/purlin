@@ -48,6 +48,15 @@
     },
     {
       "feature": "config_engine",
+      "id": "PROOF-15",
+      "rule": "RULE-13",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_resolve_project_root_names_how_it_resolved",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "config_engine",
       "id": "PROOF-2",
       "rule": "RULE-2",
       "test_file": "dev/test_config_engine.py",

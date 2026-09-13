@@ -17,7 +17,9 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'mcp'))
 import config_engine
-from config_engine import find_project_root, resolve_config, update_config
+from config_engine import (PROJECT_ROOT_SOURCES, find_project_root,
+                           resolve_config, resolve_project_root,
+                           update_config)
 
 
 class TestFindProjectRoot:
@@ -69,6 +71,53 @@ class TestFindProjectRoot:
         os.makedirs(bare)
         result = find_project_root(start_dir=bare)
         assert result == os.path.abspath(os.getcwd())
+
+    @pytest.mark.proof("config_engine", "PROOF-15", "RULE-13")
+    def test_resolve_project_root_names_how_it_resolved(self):
+        project = os.path.join(self.tmpdir, 'project')
+        deep = os.path.join(project, 'src')
+        os.makedirs(os.path.join(project, '.purlin'))
+        os.makedirs(deep)
+
+        # 1. The climb, with nothing in the environment to beat it.
+        assert resolve_project_root(start_dir=deep) == (project, 'climb')
+
+        # 2. The environment wins over the marker the climb would have found.
+        elsewhere = os.path.join(self.tmpdir, 'elsewhere')
+        os.makedirs(elsewhere)
+        os.environ['PURLIN_PROJECT_ROOT'] = elsewhere
+        assert resolve_project_root(start_dir=deep) == (elsewhere, 'env')
+
+        # 3. A root that does not exist does not win; the climb answers again.
+        gone = os.path.join(self.tmpdir, 'gone')
+        assert not os.path.isdir(gone)
+        os.environ['PURLIN_PROJECT_ROOT'] = gone
+        assert resolve_project_root(start_dir=deep) == (project, 'climb')
+
+        # 4. No marker anywhere above: cwd, and said to be cwd.
+        os.environ.pop('PURLIN_PROJECT_ROOT', None)
+        bare = os.path.join(self.tmpdir, 'bare')
+        os.makedirs(bare)
+        root, source = resolve_project_root(start_dir=bare)
+        assert source == 'cwd', source
+        assert root == os.path.abspath(os.getcwd())
+
+        # The fallback is named, not silent, and so is every other case.
+        assert sorted(PROJECT_ROOT_SOURCES) == ['climb', 'cwd', 'env']
+        assert all(isinstance(v, str) and v.strip()
+                   for v in PROJECT_ROOT_SOURCES.values()), PROJECT_ROOT_SOURCES
+        cwd_text = PROJECT_ROOT_SOURCES['cwd']
+        assert 'working directory' in cwd_text and 'marker' in cwd_text, cwd_text
+
+        # The two entry points cannot answer differently.
+        for start, env in ((deep, None), (deep, elsewhere), (deep, gone),
+                           (bare, None)):
+            if env is None:
+                os.environ.pop('PURLIN_PROJECT_ROOT', None)
+            else:
+                os.environ['PURLIN_PROJECT_ROOT'] = env
+            assert (find_project_root(start_dir=start)
+                    == resolve_project_root(start_dir=start)[0])
 
 
 class TestResolveConfig:

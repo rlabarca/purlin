@@ -28,7 +28,9 @@ import sys
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPT_DIR)
 
-from config_engine import find_project_root, resolve_config, update_config
+from config_engine import (PROJECT_ROOT_SOURCES, find_project_root,
+                           resolve_config, resolve_project_root,
+                           update_config)
 
 # ---------------------------------------------------------------------------
 # sync_status — the core coverage tool
@@ -5860,13 +5862,54 @@ SERVER_INFO = {
     "version": PURLIN_VERSION,
 }
 
+# Every tool takes the same optional root, so every tool declares it the same
+# way. A session opened above or beside the workspace (a monorepo root, a
+# worktree) can name the workspace per call instead of restarting the server,
+# which resolves its default root once at startup.
+_PROJECT_ROOT_PROPERTY = {
+    "type": "string",
+    "description": (
+        "Directory of the Purlin workspace (the one holding .purlin/). "
+        "Defaults to the root the server resolved at startup."
+    ),
+}
+
+
+def _no_workspace_text(root, source_text):
+    """What a tool says instead of a report when the root holds no workspace.
+
+    Reporting zero features for a root that was never a workspace reads as a
+    project with nothing in it. Naming the root and how it was chosen turns
+    that into the one fact the caller needs: they are pointed somewhere else.
+    """
+    return (
+        '\u26a0 No Purlin workspace at {root}: .purlin/config.json is not there. '
+        'That root came from {source}.\n'
+        '\u2192 Fix: pass project_root to this tool, or set PURLIN_PROJECT_ROOT '
+        'to the workspace directory (in .claude/settings.json "env" for the '
+        'project), or run purlin:init there.'
+    ).format(root=root, source=source_text)
+
+
+def _resolve_call_root(default_root, arguments):
+    """The root for one tool call, with how it was chosen, in words."""
+    arg_root = arguments.get('project_root')
+    if arg_root:
+        return (os.path.abspath(os.path.expanduser(arg_root)),
+                'the project_root argument')
+    source = resolve_project_root()[1]
+    return default_root, PROJECT_ROOT_SOURCES.get(source, source)
+
+
 TOOLS = [
     {
         "name": "sync_status",
         "description": "Show rule coverage per feature. Greps specs for RULE-N, reads *.proofs-*.json, diffs them. Returns coverage report with actionable → directives.",
         "inputSchema": {
             "type": "object",
-            "properties": {},
+            "properties": {
+                "project_root": _PROJECT_ROOT_PROPERTY,
+            },
             "required": []
         }
     },
@@ -5887,7 +5930,8 @@ TOOLS = [
                 },
                 "value": {
                     "description": "Value to set (for write action)."
-                }
+                },
+                "project_root": _PROJECT_ROOT_PROPERTY,
             },
             "required": []
         }
@@ -5901,7 +5945,8 @@ TOOLS = [
                 "since": {
                     "type": "string",
                     "description": "Override anchor: integer for last N commits, or YYYY-MM-DD date."
-                }
+                },
+                "project_root": _PROJECT_ROOT_PROPERTY,
             },
             "required": []
         }
@@ -5940,9 +5985,27 @@ def handle_request(request, project_root):
         tool_name = params.get('name', '')
         arguments = params.get('arguments', {})
 
+        if tool_name in ('sync_status', 'purlin_config', 'drift'):
+            call_root, root_source = _resolve_call_root(project_root, arguments)
+            # One check for all three: a root with no config.json is not a
+            # workspace, and every one of the three would otherwise answer as
+            # if it were an empty one.
+            if not os.path.isfile(
+                    os.path.join(call_root, '.purlin', 'config.json')):
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [{
+                            "type": "text",
+                            "text": _no_workspace_text(call_root, root_source),
+                        }]
+                    }
+                }
+
         if tool_name == 'sync_status':
             try:
-                result_text = sync_status(project_root)
+                result_text = sync_status(call_root)
             except Exception as e:
                 result_text = f"Error running sync_status: {e}"
             return {
@@ -5955,7 +6018,7 @@ def handle_request(request, project_root):
 
         if tool_name == 'purlin_config':
             try:
-                result_text = handle_purlin_config(project_root, arguments)
+                result_text = handle_purlin_config(call_root, arguments)
             except Exception as e:
                 result_text = f"Error: {e}"
             return {
@@ -5968,7 +6031,7 @@ def handle_request(request, project_root):
 
         if tool_name == 'drift':
             try:
-                result_text = drift(project_root, since=arguments.get('since'))
+                result_text = drift(call_root, since=arguments.get('since'))
             except Exception as e:
                 result_text = f"Error running drift: {e}"
             return {
@@ -6001,10 +6064,14 @@ _SERVER_MTIME = os.path.getmtime(os.path.abspath(__file__))
 def main():
     """Run the MCP server on stdio."""
     global _SERVER_MTIME
-    project_root = find_project_root()
+    project_root, root_source = resolve_project_root()
 
-    # Log startup to stderr (stdout is reserved for JSON-RPC)
-    print(f"Purlin MCP server v{PURLIN_VERSION} started (root: {project_root})", file=sys.stderr)
+    # Log startup to stderr (stdout is reserved for JSON-RPC). The root is
+    # resolved once here and named, so a session that started in the wrong
+    # place says so before the first tool call rather than after it.
+    print(f"Purlin MCP server v{PURLIN_VERSION} started (root: {project_root}, "
+          f"from {PROJECT_ROOT_SOURCES.get(root_source, root_source)})",
+          file=sys.stderr)
 
     mod = sys.modules[__name__]
     src_path = os.path.abspath(__file__)
