@@ -719,7 +719,7 @@ def _make_shell_project(copy_name):
 
 class TestShellCopyUnderEitherName:
 
-    @pytest.mark.proof("skill_init", "PROOF-84", "RULE-53", tier="integration")
+    @pytest.mark.proof("skill_init", "PROOF-86", "RULE-53", tier="integration")
     @pytest.mark.parametrize('copy_name',
                              ['purlin-proof.sh', 'shell_purlin.sh'])
     def test_the_shell_harness_is_seen_under_both_names(self, copy_name):
@@ -758,7 +758,7 @@ class TestShellCopyUnderEitherName:
 
 
 # ---------------------------------------------------------------------------
-# skill_init RULE-79 and RULE-80: the hook install and the dashboard copy
+# skill_init RULE-80 and RULE-81: the hook install and the dashboard copy
 # ---------------------------------------------------------------------------
 
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'init'))
@@ -818,11 +818,11 @@ def _install_defect(root, defect):
 
 class TestHooksStale:
 
-    @pytest.mark.proof("skill_init", "PROOF-85", "RULE-79", tier="integration")
+    @pytest.mark.proof("skill_init", "PROOF-87", "RULE-80", tier="integration")
     @pytest.mark.parametrize('defect', ['dangling', 'plugin-symlink',
                                         'body-copy', 'guardless-delegator'])
     def test_a_broken_purlin_hook_is_pending_and_repaired(self, defect):
-        """RULE-79: every shape the plugin stopped writing is seen and rewritten."""
+        """RULE-80: every shape the plugin stopped writing is seen and rewritten."""
         root = _make_plain_project()
         try:
             slot = _install_defect(root, defect)
@@ -850,9 +850,9 @@ class TestHooksStale:
         finally:
             shutil.rmtree(root, ignore_errors=True)
 
-    @pytest.mark.proof("skill_init", "PROOF-85", "RULE-79", tier="integration")
+    @pytest.mark.proof("skill_init", "PROOF-87", "RULE-80", tier="integration")
     def test_a_free_slot_and_a_foreign_hook_are_not_stale(self):
-        """RULE-79: RULE-78 owns both, so an update never touches either."""
+        """RULE-80: RULE-78 owns both, so an update never touches either."""
         free = _make_plain_project()
         foreign = _make_plain_project()
         try:
@@ -890,10 +890,10 @@ class TestHooksStale:
 
 class TestDashboardStale:
 
-    @pytest.mark.proof("skill_init", "PROOF-86", "RULE-80", tier="integration")
+    @pytest.mark.proof("skill_init", "PROOF-88", "RULE-81", tier="integration")
     @pytest.mark.parametrize('shape', ['dangling-symlink', 'old-copy'])
     def test_the_root_dashboard_becomes_the_installed_one(self, shape):
-        """RULE-80: a link into a version-pinned cache and an old copy both go."""
+        """RULE-81: a link into a version-pinned cache and an old copy both go."""
         root = _make_plain_project()
         dest = os.path.join(root, 'purlin-report.html')
         try:
@@ -935,9 +935,9 @@ class TestDashboardStale:
         finally:
             shutil.rmtree(root, ignore_errors=True)
 
-    @pytest.mark.proof("skill_init", "PROOF-86", "RULE-80", tier="integration")
+    @pytest.mark.proof("skill_init", "PROOF-88", "RULE-81", tier="integration")
     def test_a_project_without_a_dashboard_is_not_given_one(self):
-        """RULE-80: the dashboard is an answer init asks for, not a backfill."""
+        """RULE-81: the dashboard is an answer init asks for, not a backfill."""
         root = _make_plain_project()
         try:
             code, out, err = _run(root, '--check')
@@ -954,7 +954,7 @@ class TestDashboardStale:
 
 
 # ---------------------------------------------------------------------------
-# skill_init RULE-81: a digest written at an older schema is rebuilt
+# skill_init RULE-82: a digest written at an older schema is rebuilt
 # ---------------------------------------------------------------------------
 
 def _make_digest_project():
@@ -990,10 +990,10 @@ def _rewrite_schema(root, value):
 
 class TestDigestSchemaOld:
 
-    @pytest.mark.proof("skill_init", "PROOF-88", "RULE-81", tier="integration")
+    @pytest.mark.proof("skill_init", "PROOF-90", "RULE-82", tier="integration")
     @pytest.mark.parametrize('stamp', [None, 'one-less'])
     def test_an_older_digest_is_rebuilt_at_the_current_schema(self, stamp):
-        """RULE-81: an absent field is schema 1, and both cases are rebuilt."""
+        """RULE-82: an absent field is schema 1, and both cases are rebuilt."""
         root = _make_digest_project()
         current = ps._REPORT_SCHEMA_VERSION
         try:
@@ -1025,9 +1025,9 @@ class TestDigestSchemaOld:
         finally:
             shutil.rmtree(root, ignore_errors=True)
 
-    @pytest.mark.proof("skill_init", "PROOF-88", "RULE-81", tier="integration")
+    @pytest.mark.proof("skill_init", "PROOF-90", "RULE-82", tier="integration")
     def test_a_newer_digest_and_no_digest_are_both_left_alone(self):
-        """RULE-81: the update never throws away a payload it cannot rebuild."""
+        """RULE-82: the update never throws away a payload it cannot rebuild."""
         root = _make_digest_project()
         try:
             _rewrite_schema(root, ps._REPORT_SCHEMA_VERSION + 1)
@@ -1058,7 +1058,7 @@ class TestDigestSchemaOld:
 
 
 # ---------------------------------------------------------------------------
-# skill_init RULE-82: a locally modified copy is kept before it is overwritten
+# skill_init RULE-83: a locally modified copy is kept before it is overwritten
 # ---------------------------------------------------------------------------
 
 PYTEST_SOURCE = os.path.join(ROOT, 'scripts', 'proof', 'pytest_purlin.py')
@@ -1077,9 +1077,9 @@ def _drift_pytest_copy(root, line):
 
 class TestLocalCopyIsBackedUp:
 
-    @pytest.mark.proof("skill_init", "PROOF-89", "RULE-82", tier="integration")
+    @pytest.mark.proof("skill_init", "PROOF-91", "RULE-83", tier="integration")
     def test_the_previous_bytes_survive_at_a_named_path(self):
-        """RULE-82: a local change and an old plugin look alike, so both are kept."""
+        """RULE-83: a local change and an old plugin look alike, so both are kept."""
         root = _make_plain_project()
         try:
             local = '\n# this project measures something of its own\n'
@@ -1197,7 +1197,7 @@ class TestVersionGapIsOneDirectional:
 
 class TestTheGuideNamesEveryMigration:
 
-    @pytest.mark.proof("skill_init", "PROOF-91", "RULE-49", tier="integration")
+    @pytest.mark.proof("skill_init", "PROOF-93", "RULE-49", tier="integration")
     def test_the_installation_guide_table_equals_the_id_list(self):
         """RULE-49: an id a user consents to is one they can look up."""
         guide = _read(ROOT, 'docs/installation-guide.md')

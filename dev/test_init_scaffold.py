@@ -1371,7 +1371,7 @@ class TestContinuousIntegration:
 class TestDelegatorGuard:
     """RULE-78: the hook git runs never fails because the shim is not there."""
 
-    @pytest.mark.proof("skill_init", "PROOF-87", "RULE-78", tier="integration")
+    @pytest.mark.proof("skill_init", "PROOF-89", "RULE-78", tier="integration")
     def test_a_checkout_without_the_shims_still_commits(self):
         sys.path.insert(0, os.path.join(ROOT, 'scripts', 'init'))
         import scaffold
