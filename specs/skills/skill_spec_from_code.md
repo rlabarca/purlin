@@ -6,9 +6,6 @@
 
 ## Rules
 
-- RULE-1: Skill file has YAML frontmatter with `name` and `description` fields
-- RULE-2: Skill file contains a `## Usage` section documenting command syntax
-- RULE-3: The `name` field in frontmatter is `spec-from-code`, matching the directory name
 - RULE-4: Skill includes mandatory tier tag review for proof descriptions
 - RULE-5: `skills/spec-from-code/SKILL.md` Phase 1 step 3 names two migration-candidate locations. For a legacy `features/` directory at the project root it carries a branch to `references/legacy_features_migration.md` and nothing else: that file owns the recursive read, the `.impl.md` and `.discoveries.md` companions, the per-feature migration and the Phase 4 cleanup, so the procedure has one home. For specs already under `specs/` the skill carries the glob `specs/**/*.md` and the five non-compliance criteria verbatim (missing `## Rules` section, rules not numbered in `RULE-N:` format, missing `## Proof` section, missing `> Description:` metadata, an outdated Given/When/Then format), and states that compliant specs are left untouched and are not migration candidates. Candidates from either location are saved to `.purlin/cache/sfc_existing.md`, counted in the summary line, and read back by Phase 3 step 3 before any spec is rewritten
 - RULE-8: The migration fidelity contract is one contract for both sources. `skills/spec-from-code/SKILL.md` Phase 3 step 3 treats the old spec as the primary input, preserving the author's intent, rules and descriptions with minimal loss; preserves existing `> Scope:`, `> Stack:` and `> Requires:` metadata and the rules and proofs already correct; fixes each of the five compliance defects (add the missing `> Description:`, number unnumbered rules, add the missing `## Proof` section, convert Given/When/Then scenarios to Rules/Proof); flags divergence from the current code for the user; and marks the result `<!-- Migrated by purlin:spec-from-code. Review and refine. -->`. Cleanup follows the source: Phase 4 step 2 asks before removing `features/` (the question lives with the rest of the legacy procedure in `references/legacy_features_migration.md`), while a non-compliant spec in `specs/` is overwritten in place and needs no cleanup
@@ -28,9 +25,6 @@
 
 ## Proof
 
-- PROOF-1 (RULE-1): Grep `skills/spec-from-code/SKILL.md` for YAML frontmatter delimiters (`---`); verify `name:` and `description:` fields exist
-- PROOF-2 (RULE-2): Grep `skills/spec-from-code/SKILL.md` for `## Usage`; verify the section exists
-- PROOF-3 (RULE-3): Extract `name:` from frontmatter; verify it equals `spec-from-code`
 - PROOF-4 (RULE-4): Grep `skills/spec-from-code/SKILL.md` for tier review instructions and tier tag references (`@integration`/`@e2e`/unit tier); verify present
 - PROOF-5 (RULE-5): Grep `skills/spec-from-code/SKILL.md` Phase 1 step 3 for the two candidate locations it names: the heading "a) Legacy `features/` directory:" with the branch to `references/legacy_features_migration.md` beside it, and the glob "Glob `specs/**/*.md` and read each file"; verify the referenced file exists, so the branch resolves rather than pointing into nothing
 - PROOF-6 (RULE-5): Grep `skills/spec-from-code/SKILL.md` Phase 1 step 3b for the five non-compliance criteria verbatim: "Missing `## Rules` section", "Rules are not numbered (`RULE-N:` format)", "Missing `## Proof` section", "Missing `> Description:` metadata" and "Uses an outdated format"

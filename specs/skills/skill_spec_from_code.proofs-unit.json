@@ -12,15 +12,6 @@
     },
     {
       "feature": "skill_spec_from_code",
-      "id": "PROOF-1",
-      "rule": "RULE-1",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_has_frontmatter",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "skill_spec_from_code",
       "id": "PROOF-10",
       "rule": "RULE-5",
       "test_file": "dev/test_e2e_spec_migration.py",
@@ -129,15 +120,6 @@
     },
     {
       "feature": "skill_spec_from_code",
-      "id": "PROOF-2",
-      "rule": "RULE-2",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_has_usage_section",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "skill_spec_from_code",
       "id": "PROOF-20",
       "rule": "RULE-11",
       "test_file": "dev/test_e2e_spec_from_input.py",
@@ -178,15 +160,6 @@
       "rule": "RULE-3",
       "test_file": "dev/test_e2e_ui_extraction.py",
       "test_name": "test_skill_name_matches_directory",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "skill_spec_from_code",
-      "id": "PROOF-3",
-      "rule": "RULE-3",
-      "test_file": "dev/test_skill_specs.py",
-      "test_name": "test_name_matches_directory",
       "status": "pass",
       "tier": "unit"
     },

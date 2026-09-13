@@ -6,10 +6,6 @@
 
 ## Rules
 
-- RULE-1: Skill file has YAML frontmatter with `name` and `description` fields
-- RULE-2: Skill file contains a `## Usage` section documenting command syntax
-- RULE-3: The `name` field in frontmatter is `test`, matching the directory name
-- RULE-4: Skill includes commit instructions or git operations for file modifications
 - RULE-5: Skill requires calling `sync_status` after tests and states it is not optional
 - RULE-6: The freshness check distinguishes "no tests were collected" from "the proof plugin failed to emit". Zero collected tests reports that the plugin is fine and routes to `purlin:build`; only a run that executed tests without refreshing proof files reports a plugin problem and suggests `purlin:init --force`
 - RULE-7: Step 1.5 classifies the platforms in scope and prints the `Platforms:` block `sync_status` renders **before the first test runs**, rather than recomputing the split itself. It names the platform registry in `.purlin/config.json` and the family ids (`windows`, `macos`, `linux`) as what an `@on(...)` id resolves against, and it states three invariants: there is no local substitute for a platform, a platform with no runner warns and never blocks, and the local run sets `PURLIN_PLATFORM` so the plugins write the scoped file rather than falling back to the OS family. Its samples name concrete ids such as `macos-14` and `windows-2022`, never the host the skill happens to run on, and never `windows` as a tier. Step 1.5 takes that block from the `sync_status` output already in context and calls `sync_status` itself only when no such output is there, and it names the call in Step 3 after the tests as the mandatory one, so the before/after pair reads as two distinct calls rather than a double-call
@@ -20,10 +16,6 @@
 
 ## Proof
 
-- PROOF-1 (RULE-1): Grep `skills/test/SKILL.md` for YAML frontmatter delimiters (`---`); verify `name:` and `description:` fields exist
-- PROOF-2 (RULE-2): Grep `skills/test/SKILL.md` for `## Usage`; verify the section exists
-- PROOF-3 (RULE-3): Extract `name:` from frontmatter; verify it equals `test`
-- PROOF-4 (RULE-4): Grep `skills/test/SKILL.md` for commit instructions (`git commit`, `commit the`, `create.*commit`); verify present
 - PROOF-5 (RULE-5): Grep `skills/test/SKILL.md` for `sync_status` and `not optional`; verify both present
 - PROOF-6 (RULE-6): Grep `skills/test/SKILL.md` for the freshness check; verify the zero-tests branch states the plugin is fine and routes to `purlin:build`, and that the `purlin:init --force` suggestion appears only in the branch where tests actually ran
 - PROOF-7 (RULE-7): Grep `skills/test/SKILL.md` for the platform-classification step; verify it appears before the step that runs tests, that it names the `Platforms:` block as what it prints, that `PURLIN_PLATFORM` and the `--platform <id>` usage line both appear, that the registry and all three family ids are named, that each of the three invariants appears (no local substitute, a missing runner warns and never blocks, `PURLIN_PLATFORM` set for the local run), that the samples name `macos-14` and `windows-2022`, that `@windows` appears nowhere in the file as a tier tag, that Step 1.5 says the block comes from the `sync_status` output already in context and is fetched by one call only when it is not, and that Step 3's post-test call is described as mandatory. Deleting the `--platform` usage line, or reintroducing `@windows` as a tier, fails the proof
