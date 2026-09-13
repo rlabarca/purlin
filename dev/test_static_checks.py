@@ -13,6 +13,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -3648,3 +3649,427 @@ class TestPruneRefusesAnEmptyLiveKeySet:
             assert result.returncode == 0, result.stderr
             output = json.loads(result.stdout)
             assert (output['pruned'], output['kept']) == (1, 2), output
+
+
+# ===========================================================================
+# Cheat matrix (lifted from dev/test_cheat_matrix.py in phase 0)
+# ===========================================================================
+#
+# Five cheat patterns across the languages Purlin keeps: SQL, TypeScript and
+# Python. Every test compiles or interprets real code in the target language,
+# runs it through the proof plugin, and verifies the proof JSON. Each test
+# documents whether the cheat is caught by Pass 1 (deterministic) or requires
+# Pass 2 (LLM).
+#
+# Cheat patterns:
+#   1. Tautological - assertion always true regardless of code behavior
+#   2. Fixture-only - asserts test setup data, never calls code under test
+#   3. Happy-path-only - rule says "rejects X" but test only sends valid input
+#   4. Name/value drift - test name claims one thing, assertion checks the opposite
+#   5. No real assertion - lots of setup but no actual check on the result
+
+PROOF_SCRIPTS = os.path.join(os.path.dirname(__file__), '..', 'scripts', 'proof')
+
+
+# ---------------------------------------------------------------------------
+# Language runners - each takes source code, compiles/runs it, returns proof JSON
+# ---------------------------------------------------------------------------
+
+def _run_sql(tmp_path, sql_source, feature, setup_sql=None):
+    """Run SQL source against sqlite3 via sql_purlin.sh, return proof JSON dict."""
+    db = tmp_path / 'test.db'
+    if setup_sql:
+        subprocess.run(['sqlite3', str(db)], input=setup_sql,
+                       capture_output=True, text=True, check=True)
+    sql_file = tmp_path / 'test.sql'
+    sql_file.write_text(sql_source)
+    r = subprocess.run(
+        ['bash', os.path.join(PROOF_SCRIPTS, 'sql_purlin.sh'), str(sql_file), str(db)],
+        capture_output=True, text=True, cwd=str(tmp_path))
+    assert r.returncode == 0, f"sql_purlin failed:\n{r.stderr}\n{r.stdout}"
+    return json.loads(r.stdout)
+
+
+def _run_typescript(tmp_path, ts_source, feature):
+    """Compile TypeScript with tsc, run with node, return proof JSON dict."""
+    ts_file = tmp_path / 'test.ts'
+    ts_file.write_text(ts_source)
+    tsconfig = tmp_path / 'tsconfig.json'
+    tsconfig.write_text(json.dumps({
+        "compilerOptions": {"target": "ES2020", "module": "commonjs",
+                            "strict": True, "outDir": str(tmp_path / "dist")},
+        "include": ["*.ts"],
+    }))
+    r = subprocess.run(['tsc', '--project', str(tsconfig)],
+                       capture_output=True, text=True, cwd=str(tmp_path))
+    assert r.returncode == 0, f"tsc failed:\n{r.stderr}"
+    r = subprocess.run(['node', str(tmp_path / 'dist' / 'test.js')],
+                       capture_output=True, text=True)
+    assert r.returncode == 0, f"node failed:\n{r.stderr}"
+    return json.loads(r.stdout)
+
+
+def _run_python(tmp_path, py_source, feature):
+    """Run a Python test with pytest and the proof plugin, return the proof JSON."""
+    spec_dir = tmp_path / 'specs' / 'test'
+    spec_dir.mkdir(parents=True)
+    (spec_dir / f'{feature}.md').write_text(
+        f'# Feature: {feature}\n\n## Rules\n- RULE-1: test\n\n'
+        f'## Proof\n- PROOF-1 (RULE-1): test\n')
+    test_file = tmp_path / 'test_it.py'
+    test_file.write_text(py_source)
+    conftest = tmp_path / 'conftest.py'
+    with open(os.path.join(PROOF_SCRIPTS, 'pytest_purlin.py'), encoding='utf-8') as f:
+        conftest.write_text(f.read())
+    subprocess.run(
+        [sys.executable, '-m', 'pytest', str(test_file), '-v', '--tb=short'],
+        capture_output=True, text=True, cwd=str(tmp_path))
+    proof_path = spec_dir / f'{feature}.proofs-unit.json'
+    if proof_path.exists():
+        with open(str(proof_path), encoding='utf-8') as f:
+            return json.load(f)
+    # No proof file written: return the empty shape the caller can still read.
+    return {"tier": "unit", "proofs": []}
+
+
+# ---------------------------------------------------------------------------
+# Cheat matrix helpers
+# ---------------------------------------------------------------------------
+
+def _setup_spec(tmp_path, feature, rule_desc):
+    """Create a spec dir so proof plugins can resolve it."""
+    spec_dir = tmp_path / 'specs' / 'test'
+    spec_dir.mkdir(parents=True, exist_ok=True)
+    (spec_dir / f'{feature}.md').write_text(
+        f'# Feature: {feature}\n\n## Rules\n- RULE-1: {rule_desc}\n\n'
+        f'## Proof\n- PROOF-1 (RULE-1): test\n')
+
+
+def _assert_proof_passes(data, msg=""):
+    """Assert proof JSON has exactly 1 proof with status=pass."""
+    proofs = data.get('proofs', [])
+    assert len(proofs) >= 1, f"No proofs emitted. {msg}"
+    assert proofs[0]['status'] == 'pass', f"Expected pass, got {proofs[0]['status']}. {msg}"
+
+
+def _assert_pass1_catches(results, check, msg=""):
+    """Assert Pass 1 flags the cheat the runtime plugin happily recorded as pass.
+
+    The runtime assertion beside each of these says the cheat survives the test
+    run; this one says the deterministic checker catches it anyway, which is what
+    makes the row a Pass 1 catch rather than an LLM job.
+    """
+    assert len(results) == 1, f"Pass 1 produced {len(results)} proofs. {msg}"
+    assert results[0]['status'] == 'fail', f"Pass 1 passed it: {results[0]}. {msg}"
+    assert results[0]['check'] == check, f"Pass 1 said {results[0]}. {msg}"
+
+
+# ===========================================================================
+# CHEAT 1: Tautological - assertion always true
+# ===========================================================================
+
+class TestTautological:
+    """Assertion is always true regardless of what the code does."""
+
+    @pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
+    @pytest.mark.proof("proof_plugins_sql", "PROOF-1", "RULE-1")
+    def test_sql_tautological(self, tmp_path):
+        _setup_spec(tmp_path, 'feat', 'Validates input')
+        data = _run_sql(tmp_path, '''\
+-- @purlin feat PROOF-1 RULE-1 unit
+-- Test: validates input
+SELECT CASE WHEN 1 = 1 THEN 'PASS' ELSE 'FAIL' END;
+''', 'feat', setup_sql='CREATE TABLE t (id INTEGER);')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
+        _assert_proof_passes(data, "SQL tautological cheat still passes at runtime")
+        _assert_pass1_catches(
+            check_sql(str(tmp_path / 'test.sql'), 'feat'), 'assert_true',
+            "CASE WHEN 1 = 1 THEN 'PASS' compares two constants")
+
+    @pytest.mark.skipif(not shutil.which('tsc'), reason='tsc not available')
+    @pytest.mark.proof("proof_plugins_vitest", "PROOF-1", "RULE-1")
+    def test_typescript_tautological(self, tmp_path):
+        _setup_spec(tmp_path, 'feat', 'Validates input')
+        data = _run_typescript(tmp_path, '''\
+function validate(x: number): boolean { return x > 0; }
+const r = validate(-1);
+// CHEAT: ignores r, asserts literal true
+const proofs = [{
+    feature: "feat", id: "PROOF-1", rule: "RULE-1",
+    test_file: "test.ts", test_name: "test_validates_input",
+    status: (true === true ? "pass" : "fail") as "pass" | "fail",
+    tier: "unit",
+}];
+console.log(JSON.stringify({ proofs }, null, 2));
+''', 'feat')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
+        _assert_proof_passes(data, "TS tautological cheat passes, so it needs the LLM pass")
+
+    @pytest.mark.proof("static_checks", "PROOF-1", "RULE-1")
+    def test_python_tautological(self, tmp_path):
+        """Python `assert result or True`, caught by the Pass 1 static checks."""
+        test_file = tmp_path / 'test_cheat.py'
+        test_file.write_text('''\
+import pytest
+def validate(x): return x > 0
+@pytest.mark.proof("feat", "PROOF-1", "RULE-1")
+def test_validates_input():
+    r = validate(-1)
+    assert r or True
+''')
+        results = check_python(str(test_file), 'feat')
+        assert results[0]['status'] == 'fail', "Python `or True` caught by Pass 1"
+        assert results[0]['check'] == 'assert_true'
+
+
+# ===========================================================================
+# CHEAT 2: Fixture-only - asserts test data, never calls code under test
+# ===========================================================================
+
+class TestFixtureOnly:
+    """Test asserts properties of its own constants, never invokes the real code."""
+
+    @pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
+    @pytest.mark.proof("proof_plugins_sql", "PROOF-1", "RULE-1")
+    def test_sql_fixture_only(self, tmp_path):
+        _setup_spec(tmp_path, 'feat', 'Unique constraint enforced')
+        data = _run_sql(tmp_path, '''\
+-- @purlin feat PROOF-1 RULE-1 unit
+-- Test: unique constraint enforced
+SELECT CASE WHEN 'alice' = 'alice' THEN 'PASS' ELSE 'FAIL' END;
+''', 'feat', setup_sql='CREATE TABLE users (email TEXT UNIQUE);')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
+        _assert_proof_passes(data, "SQL fixture-only cheat still passes at runtime")
+        _assert_pass1_catches(
+            check_sql(str(tmp_path / 'test.sql'), 'feat'), 'assert_true',
+            "the predicate compares one fixture literal with itself")
+
+    @pytest.mark.skipif(not shutil.which('tsc'), reason='tsc not available')
+    @pytest.mark.proof("proof_plugins_vitest", "PROOF-1", "RULE-1")
+    def test_typescript_fixture_only(self, tmp_path):
+        _setup_spec(tmp_path, 'feat', 'Returns sorted list')
+        data = _run_typescript(tmp_path, '''\
+function sortItems(items: string[]): string[] { return [...items].sort(); }
+// CHEAT: never calls sortItems, just checks fixture
+const expected = ["a", "b", "c"];
+const passed = expected.length === 3 && expected[0] === "a";
+const proofs = [{
+    feature: "feat", id: "PROOF-1", rule: "RULE-1",
+    test_file: "test.ts", test_name: "test_returns_sorted",
+    status: (passed ? "pass" : "fail") as "pass" | "fail", tier: "unit",
+}];
+console.log(JSON.stringify({ proofs }, null, 2));
+''', 'feat')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
+        _assert_proof_passes(data, "TS fixture-only cheat passes, so it needs the LLM pass")
+
+    @pytest.mark.proof("static_checks", "PROOF-6", "RULE-6")
+    def test_python_fixture_only(self, tmp_path):
+        """Python fixture-only: Pass 1 passes it because assertions exist."""
+        test_file = tmp_path / 'test_cheat.py'
+        test_file.write_text('''\
+import pytest
+EXPECTED = ["a", "b", "c"]
+@pytest.mark.proof("feat", "PROOF-1", "RULE-1")
+def test_returns_sorted():
+    # CHEAT: never calls the real sort function
+    assert len(EXPECTED) == 3
+    assert EXPECTED[0] == "a"
+''')
+        results = check_python(str(test_file), 'feat')
+        assert results[0]['status'] == 'pass', "Pass 1 passes it: the fixture cheat needs the LLM pass"
+
+
+# ===========================================================================
+# CHEAT 3: Happy-path-only - rule says "rejects X" but test sends valid input
+# ===========================================================================
+
+class TestHappyPathOnly:
+    """Rule describes rejection behavior, but test only validates the happy path."""
+
+    @pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
+    @pytest.mark.proof("proof_plugins_sql", "PROOF-2", "RULE-2")
+    def test_sql_happy_path_only(self, tmp_path):
+        _setup_spec(tmp_path, 'feat', 'Rejects duplicate emails')
+        data = _run_sql(tmp_path, '''\
+-- @purlin feat PROOF-1 RULE-1 unit
+-- Test: rejects duplicate emails
+INSERT INTO users (email) VALUES ('unique@test.com');
+SELECT CASE WHEN (SELECT count(*) FROM users) = 1 THEN 'PASS' ELSE 'FAIL' END;
+''', 'feat', setup_sql='CREATE TABLE users (email TEXT UNIQUE);')
+        # CHEAT: only inserts one unique row, never tests the duplicate rejection
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
+        _assert_proof_passes(data, "SQL happy-path cheat passes, so it needs the LLM pass")
+
+    @pytest.mark.skipif(not shutil.which('tsc'), reason='tsc not available')
+    @pytest.mark.proof("proof_plugins_vitest", "PROOF-1", "RULE-1")
+    def test_typescript_happy_path_only(self, tmp_path):
+        _setup_spec(tmp_path, 'feat', 'Rejects passwords under 8 characters')
+        data = _run_typescript(tmp_path, '''\
+function validatePassword(pw: string): boolean { return pw.length >= 8; }
+// CHEAT: rule says "rejects under 8 chars" but test sends a valid password
+const result = validatePassword("longpassword123");
+const proofs = [{
+    feature: "feat", id: "PROOF-1", rule: "RULE-1",
+    test_file: "test.ts", test_name: "test_rejects_short_password",
+    status: (result === true ? "pass" : "fail") as "pass" | "fail", tier: "unit",
+}];
+console.log(JSON.stringify({ proofs }, null, 2));
+''', 'feat')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
+        _assert_proof_passes(data, "TS happy-path cheat passes, so it needs the LLM pass")
+
+    @pytest.mark.proof("static_checks", "PROOF-6", "RULE-6")
+    def test_python_happy_path_only(self, tmp_path):
+        """Python happy-path: Pass 1 passes it, the LLM pass catches the missing case."""
+        test_file = tmp_path / 'test_cheat.py'
+        test_file.write_text('''\
+import pytest
+def reject_negative(x):
+    if x < 0: raise ValueError("negative")
+    return x
+@pytest.mark.proof("feat", "PROOF-1", "RULE-1")
+def test_rejects_negative():
+    # CHEAT: only tests the happy path
+    assert reject_negative(5) == 5
+''')
+        results = check_python(str(test_file), 'feat')
+        assert results[0]['status'] == 'pass', "Pass 1 passes it: the happy-path cheat needs the LLM pass"
+
+
+# ===========================================================================
+# CHEAT 4: Name/value drift - name claims X, assertion checks opposite
+# ===========================================================================
+
+class TestNameValueDrift:
+    """Test function name describes one behavior, but assertion validates the opposite."""
+
+    @pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
+    @pytest.mark.proof("proof_plugins_sql", "PROOF-1", "RULE-1")
+    def test_sql_name_drift(self, tmp_path):
+        _setup_spec(tmp_path, 'feat', 'Blocks unauthorized access')
+        # CHEAT: test name says "blocks" but it verifies INSERT succeeds
+        data = _run_sql(tmp_path, '''\
+-- @purlin feat PROOF-1 RULE-1 unit
+-- Test: blocks unauthorized access
+INSERT INTO access_log (user_id, action) VALUES (999, 'admin_delete');
+SELECT CASE WHEN (SELECT count(*) FROM access_log WHERE user_id = 999) = 1
+       THEN 'PASS' ELSE 'FAIL' END;
+''', 'feat',
+            setup_sql='CREATE TABLE access_log (user_id INTEGER, action TEXT);')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
+        _assert_proof_passes(data, "SQL name-drift cheat passes, so it needs the LLM pass")
+
+    @pytest.mark.skipif(not shutil.which('tsc'), reason='tsc not available')
+    @pytest.mark.proof("proof_plugins_vitest", "PROOF-1", "RULE-1")
+    def test_typescript_name_drift(self, tmp_path):
+        _setup_spec(tmp_path, 'feat', 'Rejects expired sessions')
+        data = _run_typescript(tmp_path, '''\
+// Bug: accepts everything
+function isSessionValid(token: string): boolean { return true; }
+const result = isSessionValid("expired-token-xyz");
+// Name says "rejects expired" but asserts result is true, which means accepted
+const proofs = [{
+    feature: "feat", id: "PROOF-1", rule: "RULE-1",
+    test_file: "test.ts", test_name: "test_rejects_expired_session",
+    status: (result === true ? "pass" : "fail") as "pass" | "fail", tier: "unit",
+}];
+console.log(JSON.stringify({ proofs }, null, 2));
+''', 'feat')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
+        _assert_proof_passes(data, "TS name-drift cheat passes, so it needs the LLM pass")
+
+    @pytest.mark.proof("static_checks", "PROOF-6", "RULE-6")
+    def test_python_name_drift(self, tmp_path):
+        """Python name-drift: Pass 1 passes it, the LLM pass catches it."""
+        test_file = tmp_path / 'test_cheat.py'
+        test_file.write_text('''\
+import pytest
+def validate_token(t): return True  # Bug: accepts everything
+@pytest.mark.proof("feat", "PROOF-1", "RULE-1")
+def test_rejects_invalid_token():
+    # Name says "rejects" but asserts True, which means accepted
+    assert validate_token("INVALID") is True
+''')
+        results = check_python(str(test_file), 'feat')
+        assert results[0]['status'] == 'pass', "Pass 1 passes it: the name-drift cheat needs the LLM pass"
+
+
+# ===========================================================================
+# CHEAT 5: No real assertion - lots of setup, zero actual verification
+# ===========================================================================
+
+class TestNoRealAssertion:
+    """Test runs code but never checks the output. Setup looks thorough."""
+
+    @pytest.mark.skipif(not shutil.which('sqlite3'), reason='sqlite3 not available')
+    @pytest.mark.proof("proof_plugins_sql", "PROOF-2", "RULE-2")
+    def test_sql_no_assertion(self, tmp_path):
+        _setup_spec(tmp_path, 'feat', 'Cascade delete removes children')
+        # CHEAT: does the delete but never checks if children were removed
+        data = _run_sql(tmp_path, '''\
+-- @purlin feat PROOF-1 RULE-1 unit
+-- Test: cascade delete removes children
+DELETE FROM parents WHERE id = 1;
+SELECT 'PASS';
+''', 'feat',
+            setup_sql='CREATE TABLE parents (id INTEGER PRIMARY KEY);\n'
+                      'CREATE TABLE children (id INTEGER, parent_id INTEGER);\n'
+                      'INSERT INTO parents VALUES (1);\n'
+                      'INSERT INTO children VALUES (1, 1);')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
+        _assert_proof_passes(data, "SQL no-assertion cheat still passes at runtime")
+        _assert_pass1_catches(
+            check_sql(str(tmp_path / 'test.sql'), 'feat'), 'assert_true',
+            "SELECT 'PASS' after the DELETE observes nothing")
+
+    @pytest.mark.skipif(not shutil.which('tsc'), reason='tsc not available')
+    @pytest.mark.proof("proof_plugins_vitest", "PROOF-1", "RULE-1")
+    def test_typescript_no_assertion(self, tmp_path):
+        _setup_spec(tmp_path, 'feat', 'Reverses payload before sending')
+        data = _run_typescript(tmp_path, '''\
+function reversePayload(data: string): string {
+    return data.split("").reverse().join("");
+}
+// CHEAT: calls reversePayload but never checks the output
+const reversed = reversePayload("secret data");
+// reversed is never compared to anything
+const proofs = [{
+    feature: "feat", id: "PROOF-1", rule: "RULE-1",
+    test_file: "test.ts", test_name: "test_reverses_payload",
+    status: "pass" as "pass" | "fail", tier: "unit",
+}];
+console.log(JSON.stringify({ proofs }, null, 2));
+''', 'feat')
+        assert data['proofs'][0]['id'] == 'PROOF-1', "proof ID must match spec annotation"
+        assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
+        _assert_proof_passes(data, "TS no-assertion cheat passes, so it needs the LLM pass")
+
+    @pytest.mark.proof("static_checks", "PROOF-2", "RULE-2")
+    def test_python_no_assertion(self, tmp_path):
+        """Python no-assertion, caught by Pass 1 with the no_assertions check."""
+        test_file = tmp_path / 'test_cheat.py'
+        test_file.write_text('''\
+import pytest
+import json
+def encrypt(data): return data[::-1]
+@pytest.mark.proof("feat", "PROOF-1", "RULE-1")
+def test_encrypts_payload():
+    payload = {"secret": "value"}
+    encrypted = encrypt(json.dumps(payload))
+    decoded = json.loads(encrypted[::-1])
+    token = decoded.get("secret")
+    # CHEAT: lots of setup, zero assertions
+''')
+        results = check_python(str(test_file), 'feat')
+        assert results[0]['status'] == 'fail', "Python no-assertion caught by Pass 1"
+        assert results[0]['check'] == 'no_assertions'
