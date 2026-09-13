@@ -584,7 +584,45 @@ paths are listed in the DONE note for phase 1, not fixed; `git status` clean.
 
 #### DONE
 
-_pending_
+Wave 1, 2026-09-13. Orchestrator commits: `6b6853ef` (Part A and this plan), `7ea3cdcc`
+(the two upgrade fixtures, 32 and 35 files, and `design/` with 97 files; PNG renders left
+out because `.gitignore` ignores `*.png`), `ac7d9710` and `636a5740` (lane briefs and the
+shared rules file `dev/plans/lanes/_rules.md`). The local `.git/hooks/pre-commit` delegator
+was moved aside as `pre-commit.off-0.10` for the run: its only job was staging the
+dashboard blob, which this phase untracks; phase 9's `purlin:init --update` deletes the shim.
+
+| Lane | Commits | Landed | What | Tokens |
+|---|---|---|---|---|
+| 0A | `e3558bd4`, `7bd82381` | ff-merge | 169 files deleted (58,872 lines): 40 delete-list paths plus 129 spec proof and verification JSON files; the SQL, TypeScript and Python cheat-matrix rows lifted into `dev/test_static_checks.py` (3650 to 4075 lines; there was no C# row, C and PHP dropped) | 179,115 |
+| 0B | `de4d9dc9`, `ec94adb7` | ff-merge | 42 paths under `dev/` deleted; `dev/plans/README.md` 12 to 3 lines; `.purlin/report-data.js` untracked and ignored in `.gitignore` and `templates/gitignore.purlin`; `.purlin/cache/` and `.purlin/runtime/` removed on disk | 83,421 |
+| 0C | `4ad5acce` | ff-merge | the three dashboard tests deleted (8,383 lines); `dev/run_tests.sh` 326 to 199 lines; `dev/conftest.py` unchanged | 133,092 |
+
+Tokens, wave 1: 395,628. Tracked files 500 to 328; spec `.md` files 47 to 37 (the delete
+list names 10, so 37 is right and the plan's "36" was an arithmetic slip).
+
+Decisions taken: every lane ran on Opus 5 because the Agent tool offers no Opus 4.8; the
+`#### DONE` heading level keeps the phase headings' outline (the instruction said `## DONE`).
+Lanes need `/Users/richlabarca/LocalCode/purlin/.venv/bin` on PATH (worktrees carry no venv);
+the rules file now says so.
+
+Sweep failures caused by removed code paths, for phase 1 (from lane 0A's comparison of
+`pytest dev/ --continue-on-collection-errors` before and after: 23 failed and 8 errors on
+the base, 103 failed and the same 8 errors after; the 8 errors are xUnit without dotnet@8):
+`dev/test_init_update.py` and `dev/test_verify_gate.py` fail collection on
+`import issue_receipts`; `test_multilang_proof_plugins.py` 31 (C and PHP);
+`test_pre_push_hook.py` 27 (`pre_push_gate.py`); `test_static_checks.py` 6 (criteria
+file); `test_proof_stress.py` 6 (C, PHP); `test_mcp_server.py` 4 (criteria, receipt
+format, remote verification reference, pre-commit hook); `test_init_scaffold.py` 3
+(`migrate.py`); `test_proof_plugins_missing.py` 2 (C); `test_plugin_contract.py` 1 (the
+contract names 8 deleted paths); `test_init_e2e.sh` 4 (the data file is now ignored,
+which two old proofs forbade). The full `bash dev/run_tests.sh` result is appended below.
+
+`bash dev/run_tests.sh` at `7bd82381`: suites Proof Plugins (Shell), E2E Build Changeset,
+E2E Write-Scoped Overwrite, E2E Required Rules, E2E Anchor Authority passed; E2E Init
+failed (the two old proofs about the ignored data file); E2E External Refs failed (its
+paths are rewritten in phase 3); the pytest pool stopped at collection on
+`dev/test_init_update.py` and `dev/test_verify_gate.py` (`import issue_receipts`), so its
+per-test tally is the one lane 0A measured above. Exit 1, as expected for phase 0.
 
 ### Phase 1: core package (Opus 5, 2 lanes)
 
