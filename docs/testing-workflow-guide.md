@@ -323,8 +323,8 @@ proof has executed anywhere and both otherwise, and says which it chose.
 
 **Proof Design** (`--design`) asks *is the claim provable?* It reads the rule and its proof
 description, needs no test code, and grades each description PROVABLE, LOOSE, UNPROVABLE or
-STRUCTURAL. Score = PROVABLE / (PROVABLE + LOOSE + UNPROVABLE); STRUCTURAL is excluded, just as
-EXCLUDED is excluded from Integrity. That is the assessed score; what the dashboard and
+STRUCTURAL. It is scored as `references/audit_criteria.md` § Scoring defines, with STRUCTURAL
+excluded from the denominator just as EXCLUDED is excluded from Integrity. That is the assessed score; what the dashboard and
 `purlin:status` headline is that score weighted by measurement coverage (see below).
 
 **Proof Integrity** (`--integrity`) asks *is the claim proven?* It reads test code. Three passes:

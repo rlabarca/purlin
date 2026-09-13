@@ -660,6 +660,8 @@ HOME_SCOPE = ('docs/**.md', 'references/**.md', 'skills/**.md',
               'agents/**.md', 'README.md')
 
 TAXONOMY_HOME = 'references/remote_verification.md'
+VHASH_HOME = 'references/formats/receipt_format.md'
+SCORING_HOME = 'references/audit_criteria.md'
 
 PROOF_COMMON_HOME = 'specs/_anchors/proof_common.md'
 
@@ -720,6 +722,18 @@ HOMES = (
      'a paragraph naming all three categories either is the definition or '
      'points at it; a doc that names the three words without the link leaves '
      'a reader with three words and nowhere to resolve them'),
+    ('vhash segment list', 'text',
+     re.compile(r'\["(?:R|P|M)",'),
+     VHASH_HOME, HOME_SCOPE, 3, None,
+     'the receipt format owns the hash recipe; a second copy of it is a '
+     'second recipe from the day one of the two is edited, and a receipt '
+     'issued under either one cannot be checked against the other'),
+    ('design formula', 'line',
+     re.compile(r'PROVABLE / \(PROVABLE \+ LOOSE \+ UNPROVABLE\)'),
+     SCORING_HOME, HOME_SCOPE, 1, None,
+     'the scoring reference owns both gauge formulas; a formula restated '
+     'beside the text that uses it is what lets a denominator gain a grade '
+     'in one file and not in the other'),
 )
 
 

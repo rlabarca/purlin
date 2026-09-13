@@ -27,6 +27,7 @@ from prose_lint import (  # noqa: E402
     _dash_hits,
     _norm_heading,
     _prose_files,
+    _hits,
     _read,
     _scope_files,
     _sectioned_paragraphs,
@@ -685,6 +686,64 @@ class TestSingleHomeLint:
 
         assert single_home(rows=(row,), strict=True) == [], (
             f"the committed tree must carry the table only in {home}")
+
+    @pytest.mark.proof("purlin_prose", "PROOF-24", "RULE-15")
+    def test_the_vhash_recipe_pasted_into_a_second_file_is_named(
+            self, tmp_path):
+        row = _row(HOMES, 'vhash segment list')
+        pattern, home = row[2], row[3]
+        receipt = _read(home)
+        segments = [line for line in receipt.splitlines()
+                    if pattern.search(line)]
+        assert len(segments) == 3, (
+            f"{home} carries {len(segments)} segment lines, not the three the "
+            f"row requires")
+        _plant(tmp_path, home, receipt)
+
+        rel = 'references/hard_gates.md'
+        gates = _read(rel)
+        injected = gates.rstrip('\n') + '\n\n' + '\n'.join(segments) + '\n'
+        _plant(tmp_path, rel, injected)
+
+        offenders = single_home(root=str(tmp_path), files=[home, rel],
+                                rows=(row,), strict=True)
+        assert len(offenders) == 3, (
+            f"every pasted segment must be reported; got {offenders}")
+        assert [o.path for o in offenders] == [rel] * 3
+        for offender in offenders:
+            assert offender.lint == 'single_home'
+            assert home in offender.message, offender.message
+
+        assert single_home(rows=(row,), strict=True) == [], (
+            f"the committed tree must carry the recipe only in {home}")
+
+    @pytest.mark.proof("purlin_prose", "PROOF-25", "RULE-15")
+    def test_the_design_formula_restated_in_a_guide_is_named(self, tmp_path):
+        row = _row(HOMES, 'design formula')
+        pattern, home = row[2], row[3]
+        criteria = _read(home)
+        assert len(_hits(criteria, pattern)) == 1, (
+            f"{home} must state the design formula exactly once")
+        _plant(tmp_path, home, criteria)
+
+        rel = 'docs/testing-workflow-guide.md'
+        guide = _read(rel)
+        formula = 'PROVABLE / (PROVABLE + LOOSE + UNPROVABLE)'
+        injected = guide.rstrip('\n') + '\n\nDesign score = ' + formula + '\n'
+        _plant(tmp_path, rel, injected)
+        expected = len(injected.rstrip('\n').splitlines())
+
+        offenders = single_home(root=str(tmp_path), files=[home, rel],
+                                rows=(row,), strict=True)
+        assert len(offenders) == 1, (
+            f"the restated formula must be reported once; got {offenders}")
+        assert offenders[0].path == rel and offenders[0].line == expected, (
+            f"expected {rel}:{expected}, got {offenders[0]}")
+        assert offenders[0].lint == 'single_home'
+        assert home in offenders[0].message, offenders[0].message
+
+        assert single_home(rows=(row,), strict=True) == [], (
+            f"the committed tree must carry the formula only in {home}")
 
 
     @pytest.mark.proof("purlin_prose", "PROOF-24", "RULE-15")

@@ -49,6 +49,67 @@ def _feature_block(report, name):
     raise AssertionError(f"no block for feature {name!r} in:\n{report}")
 
 
+def _vhash_recipe_from_format_file():
+    """(version tag, {head: [field names]}) as receipt_format.md states them.
+
+    The one home of the recipe (sync_status RULE-6). Parsed rather than
+    grepped, so a field added to the format file and not to the code is a
+    failure with the field's name in it.
+    """
+    import re as _re
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    path = os.path.join(root, 'references', 'formats', 'receipt_format.md')
+    with open(path, encoding='utf-8') as f:
+        body = f.read()
+    assert '### What the vhash binds' in body, \
+        f"{path} carries no `What the vhash binds` section"
+    section = body.split('### What the vhash binds', 1)[1].split('\n## ', 1)[0]
+    version = _re.search(r'\["([a-z0-9/\-]+)"\]', section).group(1)
+    segments = {}
+    for head, fields in _re.findall(r'\["([RPM])",\s*([^\]]*)\]', section):
+        segments[head] = [f.strip().replace(' or ""', '')
+                          for f in fields.split(', ')]
+    return version, segments
+
+
+def _vhash_recipe_from_implementation():
+    """(version tag, {head: [field names]}) as `_compute_vhash` produces them."""
+    import ast as _ast
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    path = os.path.join(root, 'scripts', 'mcp', 'purlin_server.py')
+    with open(path, encoding='utf-8') as f:
+        tree = _ast.parse(f.read())
+    func = [n for n in _ast.walk(tree)
+            if isinstance(n, _ast.FunctionDef) and n.name == '_compute_vhash']
+    assert len(func) == 1, "purlin_server defines _compute_vhash once"
+
+    def _field(node):
+        if isinstance(node, _ast.BoolOp):
+            return _field(node.values[0])
+        if isinstance(node, _ast.Call):
+            if isinstance(node.func, _ast.Attribute) and \
+                    node.func.attr == 'get':
+                return node.args[0].value
+            if isinstance(node.func, _ast.Name):
+                return node.func.id
+        if isinstance(node, _ast.Name):
+            return node.id
+        return _ast.dump(node)
+
+    version, segments = None, {}
+    for node in _ast.walk(func[0]):
+        target = getattr(node, 'target', None) or getattr(node, 'targets', [None])[0]
+        if not isinstance(target, _ast.Name) or target.id != 'segments':
+            continue
+        if not isinstance(node.value, _ast.List) or not node.value.elts:
+            continue
+        elts = node.value.elts
+        if isinstance(node, _ast.Assign):
+            version = elts[0].value
+            continue
+        segments[elts[0].value] = [_field(e) for e in elts[1:]]
+    return version, segments
+
 class TestMCPProtocol:
     """mcp_transport RULE-1 through RULE-7: JSON-RPC transport."""
 
@@ -1733,29 +1794,6 @@ class TestIntegrityFormula:
 
 
 
-    @pytest.mark.proof("sync_status", "PROOF-75", "RULE-43")
-    def test_design_formula_consistent_across_the_same_three_files(self):
-        """RULE-43: the Design formula is pinned where RULE-33 pins Integrity's.
-
-        RULE-33 kept the integrity formula identical across three files. Design
-        had no equivalent, so its formula could drift between the criteria
-        reference, the audit skill and this spec without anything noticing.
-        """
-        formula = 'PROVABLE / (PROVABLE + LOOSE + UNPROVABLE)'
-        root = os.path.join(os.path.dirname(__file__), '..')
-        for rel in ('references/audit_criteria.md',
-                    'skills/audit/SKILL.md',
-                    'specs/mcp/sync_status.md'):
-            with open(os.path.join(root, rel), encoding='utf-8') as f:
-                body = f.read()
-            assert formula in body, \
-                f"{rel} does not carry the design formula {formula!r}"
-            # STRUCTURAL is excluded from the denominator, never counted in it.
-            for line in body.splitlines():
-                if formula in line:
-                    denom = line.split(formula, 1)[0] + formula
-                    assert 'STRUCTURAL +' not in denom, \
-                        f"{rel} includes STRUCTURAL in the design denominator: {line}"
 class TestPurlinConfig:
     """purlin_config RULE-1: config read/write."""
 
@@ -2609,6 +2647,31 @@ class TestServerOutput:
         assert purlin_server._compute_vhash(rules, forged_a) != \
             purlin_server._compute_vhash(rules, forged_b), \
             "a ':' inside a field must not be able to forge a field boundary"
+
+        # The recipe has one home. Read it from both ends: what
+        # receipt_format.md names, and what _compute_vhash produces.
+        doc_version, doc_segments = _vhash_recipe_from_format_file()
+        impl_version, impl_segments = _vhash_recipe_from_implementation()
+        assert doc_version == impl_version == 'purlin-vhash/2', (
+            f"version tag: format file says {doc_version!r}, "
+            f"_compute_vhash emits {impl_version!r}")
+        assert list(doc_segments) == list(impl_segments) == ['R', 'P', 'M'], (
+            f"segment heads: format file {list(doc_segments)}, "
+            f"implementation {list(impl_segments)}")
+        doc_rule = doc_segments['R']
+        assert doc_rule[0] == 'key' and doc_rule[1].startswith('sha256('), \
+            f"the format file's R segment is {doc_rule}"
+        assert 'text.split()' in doc_rule[1], \
+            "the format file must say the rule text is whitespace-normalised"
+        assert impl_segments['R'] == ['key', '_rule_text_hash'], (
+            f"_compute_vhash's R segment is {impl_segments['R']}, not the "
+            f"rule key and the hash of its normalised text")
+        for head in ('P', 'M'):
+            assert doc_segments[head] == impl_segments[head], (
+                f"the {head} segment disagrees: "
+                f"references/formats/receipt_format.md names "
+                f"{doc_segments[head]}, _compute_vhash produces "
+                f"{impl_segments[head]}")
 
 
 class TestCoverageReportUsability:
