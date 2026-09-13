@@ -422,6 +422,21 @@ loadData(function(initial) {
 
   var app = document.getElementById('app');
 
+  /* A rule a feature inherits carries its body once for the whole payload
+     under `shared_rules`, keyed by the entry's own id, and the feature holds
+     `{id, label, ref}` in its place (`report_data` RULE-8). Every read of a
+     rule goes through here: the shared body first and the entry's own keys
+     over it, so `label` wins. An entry with no `ref`, or a payload with no
+     `shared_rules` at all, is already complete and is handed back untouched,
+     which is how this page renders a digest written before the map existed
+     (purlin_report RULE-52). */
+  function resolveRule(r) {
+    if (r && r.ref && D.shared_rules && D.shared_rules[r.id]) {
+      return Object.assign({}, D.shared_rules[r.id], r);
+    }
+    return r;
+  }
+
   if (!D) {
     app.innerHTML = '<div class="no-data"><h2>No dashboard data</h2><p>Run <code>purlin:status</code> to generate data, then refresh this page.</p><p style="margin-top:8px">Make sure <code>"report": true</code> is set in <code>.purlin/config.json</code></p></div>';
     return;
@@ -890,7 +905,7 @@ loadData(function(initial) {
      of what it carries has no renderer here; the page says so once and still
      renders everything it does recognise, because half a dashboard beats a
      blank one. A payload with no `schema_version` is schema 1. */
-  var SUPPORTED_SCHEMA = 2;
+  var SUPPORTED_SCHEMA = 3;
   function schemaBanner() {
     var v = (D && typeof D.schema_version === 'number') ? D.schema_version : 1;
     if (v <= SUPPORTED_SCHEMA) return '';
@@ -922,12 +937,12 @@ loadData(function(initial) {
     }
     if (f.status === 'FAILING') {
       var failCount = 0;
-      for (var i = 0; i < f.rules.length; i++) { if (f.rules[i].status === 'FAIL') failCount++; }
+      for (var i = 0; i < f.rules.length; i++) { if (resolveRule(f.rules[i]).status === 'FAIL') failCount++; }
       return mig + '<div class="ab ab-failing"><span class="ab-icon">&#10007;</span><span class="ab-text">' + failCount + ' test' + (failCount !== 1 ? 's' : '') + ' failing &mdash; fix code or tests to reach PASSING</span></div>';
     }
     if (f.status === 'PARTIAL') {
       var noProof = 0;
-      for (var i = 0; i < f.rules.length; i++) { if (f.rules[i].status === 'NONE') noProof++; }
+      for (var i = 0; i < f.rules.length; i++) { if (resolveRule(f.rules[i]).status === 'NONE') noProof++; }
       return mig + '<div class="ab ab-partial"><span class="ab-icon">&#9888;</span><span class="ab-text">' + noProof + ' rule' + (noProof !== 1 ? 's' : '') + ' need proofs &mdash; write tests to reach PASSING</span></div>';
     }
     if (f.status === 'UNTESTED') {
@@ -1672,7 +1687,7 @@ loadData(function(initial) {
     h += '<table class="rt"><thead><tr><th style="min-width:140px">Rule</th><th>Description</th><th style="width:80px">Anchor</th><th style="width:80px">Status</th><th style="width:40%">Proof</th></tr></thead><tbody>';
 
     for (var ri = 0; ri < f.rules.length; ri++) {
-      var r = f.rules[ri];
+      var r = resolveRule(f.rules[ri]);
       /* Support both old (r.proof) and new (r.proofs) data contract */
       var proofs = r.proofs || (r.proof ? [r.proof] : []);
 

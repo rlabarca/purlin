@@ -4508,6 +4508,141 @@ class TestSchemaVersionBanner:
             "a payload with no schema_version is version 1, not a newer one")
 
 
+class TestSharedRuleResolution:
+    """purlin_report RULE-52 - a referenced rule renders as its shared body."""
+
+    SHARED = {
+        "money/RULE-1": {
+            "id": "money/RULE-1",
+            "description": "Every amount is an integer count of minor units",
+            "source": "money",
+            "is_deferred": False,
+            "is_assumed": False,
+            "status": "PASS",
+            "proofs": [{
+                "id": "PROOF-1",
+                "description": "Assert the parser refuses a float amount",
+                "test_file": "tests/test_money.py",
+                "test_name": "test_rejects_float",
+                "tier": "unit",
+                "platform": None,
+                "status": "pass",
+                "audit": "",
+            }],
+        },
+        "money/RULE-2": {
+            "id": "money/RULE-2",
+            "description": "A currency travels with every amount",
+            "source": "money",
+            "is_deferred": False,
+            "is_assumed": False,
+            "status": "PASS",
+            "proofs": [{
+                "id": "PROOF-2",
+                "description": "Assert an amount with no currency raises",
+                "test_file": "tests/test_money.py",
+                "test_name": "test_needs_currency",
+                "tier": "unit",
+                "platform": None,
+                "status": "pass",
+                "audit": "",
+            }],
+        },
+    }
+
+    OWN = {
+        "id": "RULE-1",
+        "description": "Returns 200 on valid credentials",
+        "label": "own",
+        "source": None,
+        "is_deferred": False,
+        "is_assumed": False,
+        "status": "PASS",
+        "proofs": [{
+            "id": "PROOF-1",
+            "description": "POST valid creds returns 200 and a session token",
+            "test_file": "tests/test_login.py",
+            "test_name": "test_valid",
+            "tier": "unit",
+            "platform": None,
+            "status": "pass",
+            "audit": "",
+        }],
+    }
+
+    def _data(self, shared=True):
+        """The same three rules, once referenced and once written inline."""
+        data = make_data()
+        feature = next(f for f in data["features"] if f["name"] == "auth_login")
+        ids = ["money/RULE-1", "money/RULE-2"]
+        if shared:
+            data["schema_version"] = 3
+            data["shared_rules"] = json.loads(json.dumps(self.SHARED))
+            feature["rules"] = [json.loads(json.dumps(self.OWN))] + [
+                {"id": i, "label": "required", "ref": True} for i in ids]
+        else:
+            data.pop("shared_rules", None)
+            data.pop("schema_version", None)
+            feature["rules"] = [json.loads(json.dumps(self.OWN))] + [
+                dict(json.loads(json.dumps(self.SHARED[i])), label="required")
+                for i in ids]
+        feature["proved"] = 3
+        feature["total"] = 3
+        return data
+
+    def _expand(self, page):
+        page.evaluate(
+            "() => localStorage.setItem('purlin-expanded',"
+            " JSON.stringify({auth_login: true}))")
+        page.reload()
+        page.wait_for_load_state("networkidle")
+        page.wait_for_timeout(300)
+
+    def _rows(self, page):
+        return page.evaluate("""() => {
+            const out = [];
+            for (const tr of document.querySelectorAll('.rt tbody tr')) {
+                out.push(Array.from(tr.children).map(
+                    td => td.textContent.trim()));
+            }
+            return out;
+        }""")
+
+    @pytest.mark.proof("purlin_report", "PROOF-59", "RULE-52", tier="e2e")
+    def test_a_referenced_rule_renders_as_its_shared_body(self, page, dashboard):
+        load_dashboard(page, dashboard, data=self._data(shared=True))
+        self._expand(page)
+        rows = self._rows(page)
+
+        assert len(rows) == 3, (
+            f"`rules` is one complete walk, so the table draws a row per "
+            f"entry: {rows}")
+        assert [r[0] for r in rows] == [
+            "RULE-1", "money/RULE-1", "money/RULE-2"], rows
+        for row, key in zip(rows[1:], ["money/RULE-1", "money/RULE-2"]):
+            body = self.SHARED[key]
+            assert row[1] == body["description"], (
+                f"an inherited row shows the anchor's description, got "
+                f"{row[1]!r}")
+            assert row[2] == "required", (
+                f"the anchor cell carries the label the feature kept, got "
+                f"{row[2]!r}")
+            assert row[3] == "PASS", row
+            assert body["proofs"][0]["test_name"] in row[4], row
+            assert all(cell for cell in row), (
+                f"a reference rendered without resolving it leaves empty "
+                f"cells: {row}")
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR,
+                                          "proof59_shared_rules.png"))
+
+        # The same three rules written inline, with no `shared_rules` at all:
+        # a digest from before the map renders exactly the same table.
+        load_dashboard(page, dashboard, data=self._data(shared=False))
+        self._expand(page)
+        assert self._rows(page) == rows, (
+            "a payload with every rule inline must render the identical table")
+
+
 def write_stamp(tmp_dir, data):
     """Write report-stamp.js beside the digest, the way a digest write does."""
     purlin_dir = os.path.join(tmp_dir, ".purlin")
