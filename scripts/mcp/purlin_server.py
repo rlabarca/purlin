@@ -5726,20 +5726,24 @@ def _compute_drift(project_root, since=None, network=True):
     for entry in file_entries:
         if entry['category'] == 'CHANGED_BEHAVIOR' and entry.get('spec'):
             changed_behavior_specs.add(entry['spec'])
-    for spec_name in changed_behavior_specs:
+    # Sorted, so two calls over one unchanged tree return the same bytes: the
+    # set above iterates in whatever order the interpreter's string hashes fall
+    # in, which is a fresh order in every process.
+    for spec_name in sorted(changed_behavior_specs):
         info = features.get(spec_name)
         if not info:
             continue
         rules = info.get('rules', {})
         if not rules:
             continue
-        ps = proof_status.get(spec_name, {})
-        proof_by_rule = {}
-        if not info['is_anchor']:
-            rule_entries, _ = _build_coverage_rules(
-                spec_name, info, features, global_anchors)
-            proof_by_rule = _build_proof_lookup(
-                spec_name, rule_entries, all_proofs)
+        # The one verdict, the one this feature's proof_status entry was built
+        # from (sync_status RULE-54). Rebuilding the rule set here is what made
+        # total_rules count own rules while proved_rules counted own plus
+        # inherited: proof_plugins_sql read "2 rules, 41 proved".
+        verdict = _feature_verdict(spec_name, info, features, all_proofs,
+                                   global_anchors, project_root, registry)
+        active_entries = verdict['active_entries']
+        proof_by_rule = verdict['proof_by_rule']
         changed_scope_files = [
             e['path'] for e in file_entries
             if e.get('spec') == spec_name
@@ -5759,8 +5763,8 @@ def _compute_drift(project_root, since=None, network=True):
         rule_details[spec_name] = {
             'rules': per_rule,
             'changed_files': changed_scope_files,
-            'total_rules': len(rules),
-            'proved_rules': ps.get('proved', 0),
+            'total_rules': len(active_entries),
+            'proved_rules': verdict['proved'],
         }
 
     return {

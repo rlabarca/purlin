@@ -492,3 +492,171 @@ class TestDriftCompactPayload:
 
         indented = json.dumps(data, indent=2)
         assert len(text) < len(indented), (len(text), len(indented))
+
+
+# Rule-level detail for specs with changed behavior files (RULE-16).
+
+_LEDGER_LONG_RULE = (
+    "A posting is refused when its debits and credits do not balance to the "
+    "cent, when the account it names is closed, or when the value date falls "
+    "outside the open period; the rejection names the first of the failing "
+    "checks and the ledger is left exactly as it was before the call, with no "
+    "partial entry written and no identifier consumed, so a retry after the "
+    "caller fixes the input lands the same entry once and only once in the "
+    "journal file for that day. The refusal text is the same on every retry, "
+    "the journal keeps the bytes it held, and nothing downstream is replayed "
+    "or reconciled by hand later on"
+)
+
+
+def _write(path, text):
+    """Write `text` to `path`, creating the parent directory."""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, 'w') as fh:
+        fh.write(text)
+
+
+def _proof_file(path, feature, rule_ids):
+    """Write a unit proof file marking each of `rule_ids` as passing."""
+    _write(path, json.dumps({'tier': 'unit', 'proofs': [
+        {'feature': feature, 'id': 'PROOF-%s' % rid.split('-')[1],
+         'rule': rid, 'test_file': 'tests/test_%s.py' % feature,
+         'test_name': 'test_%s' % rid.lower().replace('-', '_'),
+         'status': 'pass', 'tier': 'unit'}
+        for rid in rule_ids]}))
+
+
+class TestDriftRuleDetails:
+    """drift RULE-16: one verdict behind the counts, and one stable order."""
+
+    def _repo(self, root):
+        os.makedirs(os.path.join(root, '.purlin'))
+
+        # An anchor of 3 rules, all proved, required by `ledger`.
+        _write(os.path.join(root, 'specs', '_anchors', 'money_anchor.md'),
+               '# Anchor: money_anchor\n\n'
+               '> Type: schema\n'
+               '> Description: Money handling every ledger feature inherits\n\n'
+               '## Rules\n\n'
+               '- RULE-1: Amounts are integer cents, never floats\n'
+               '- RULE-2: Every amount carries an ISO 4217 currency code\n'
+               '- RULE-3: Rounding is half up, applied once, at the boundary\n\n'
+               '## Proof\n\n'
+               '- PROOF-1 (RULE-1): Post 0.1 plus 0.2 and verify 30 cents\n'
+               '- PROOF-2 (RULE-2): Post without a code and verify the refusal\n'
+               '- PROOF-3 (RULE-3): Split 10 cents three ways and verify 4/3/3\n')
+        _proof_file(os.path.join(root, 'specs', '_anchors',
+                                 'money_anchor.proofs-unit.json'),
+                    'money_anchor', ['RULE-1', 'RULE-2', 'RULE-3'])
+
+        # `ledger`: 4 own rules, 3 of them proved, requiring the anchor.
+        _write(os.path.join(root, 'specs', 'ledger', 'ledger.md'),
+               '# Feature: ledger\n\n'
+               '> Requires: money_anchor\n'
+               '> Description: Double entry journal\n'
+               '> Scope: src/ledger/posting.py\n\n'
+               '## Rules\n\n'
+               '- RULE-1: Every posting writes one debit and one credit row\n'
+               '- RULE-2: A posting identifier is never reused\n'
+               '- RULE-3: The journal file is appended, never rewritten\n'
+               '- RULE-4: %s\n\n'
+               '## Proof\n\n'
+               '- PROOF-1 (RULE-1): Post once and verify two rows\n'
+               '- PROOF-2 (RULE-2): Post twice and verify two identifiers\n'
+               '- PROOF-3 (RULE-3): Post twice and verify the first bytes hold\n'
+               '- PROOF-4 (RULE-4): Post an unbalanced entry and verify refusal\n'
+               % _LEDGER_LONG_RULE)
+        _proof_file(os.path.join(root, 'specs', 'ledger',
+                                 'ledger.proofs-unit.json'),
+                    'ledger', ['RULE-1', 'RULE-2', 'RULE-3'])
+
+        # Two more features with changed scope files, so the order of
+        # `rule_details` is something a run can get wrong.
+        for name, src in (('money_gateway', 'gateway.py'),
+                          ('posting_api', 'api.py')):
+            _write(os.path.join(root, 'specs', 'ledger', '%s.md' % name),
+                   '# Feature: %s\n\n'
+                   '> Description: %s\n'
+                   '> Scope: src/ledger/%s\n\n'
+                   '## Rules\n\n'
+                   '- RULE-1: Returns the settled balance\n\n'
+                   '## Proof\n\n'
+                   '- PROOF-1 (RULE-1): Call it and verify the balance\n'
+                   % (name, name, src))
+            _proof_file(os.path.join(root, 'specs', 'ledger',
+                                     '%s.proofs-unit.json' % name),
+                        name, ['RULE-1'])
+
+        for src in ('posting.py', 'gateway.py', 'api.py'):
+            _write(os.path.join(root, 'src', 'ledger', src), 'def run():\n    return 0\n')
+
+        _git(['init', '-q'], root)
+        _git(['config', 'user.email', 'test@test.com'], root)
+        _git(['config', 'user.name', 'Test'], root)
+        _git(['add', '-A'], root)
+        _git(['commit', '-q', '-m', 'verify: initial'], root)
+
+        # Change every scope file, so all three features carry changed behavior.
+        for src in ('posting.py', 'gateway.py', 'api.py'):
+            _write(os.path.join(root, 'src', 'ledger', src),
+                   'def run():\n    return 0\n\n\ndef batch():\n    return 1\n')
+        _git(['add', '-A'], root)
+        _git(['commit', '-q', '-m', 'feat: batch posting'], root)
+
+    def _rule_details_under_seed(self, root, seed):
+        """Return the rule_details JSON text from a fresh process, hash seed set."""
+        env = dict(os.environ)
+        env['PYTHONHASHSEED'] = seed
+        code = (
+            'import json, sys\n'
+            'sys.path.insert(0, %r)\n'
+            'import purlin_server\n'
+            "data = json.loads(purlin_server.drift(%r))\n"
+            "sys.stdout.write(json.dumps(data['rule_details'], sort_keys=False))\n"
+            % (os.path.dirname(os.path.abspath(purlin_server.__file__)), root)
+        )
+        r = subprocess.run([sys.executable, '-c', code], cwd=root, env=env,
+                           capture_output=True, text=True)
+        assert r.returncode == 0, r.stderr
+        return r.stdout
+
+    @pytest.mark.proof("drift", "PROOF-19", "RULE-16", tier="integration")
+    def test_rule_details_counts_one_rule_set_in_one_order(self, tmp_path):
+        root = str(tmp_path / 'proj')
+        os.makedirs(root)
+        self._repo(root)
+
+        data = json.loads(purlin_server.drift(root))
+        details = data['rule_details']
+
+        assert 'ledger' in details, sorted(details)
+        ledger = details['ledger']
+
+        # Both counts come from the one verdict, so they count the same rules:
+        # 4 own plus the anchor's 3, of which 3 own and all 3 anchor rules pass.
+        assert ledger['total_rules'] == 7, (
+            "total_rules counted %s, not the 4 own plus 3 inherited rules the "
+            "verdict counts" % ledger['total_rules'])
+        assert ledger['proved_rules'] == 6, (
+            "proved_rules read %s, not 6" % ledger['proved_rules'])
+
+        # Own rules, in RULE number order, each with its proof status.
+        assert [r['rule_id'] for r in ledger['rules']] == [
+            'RULE-1', 'RULE-2', 'RULE-3', 'RULE-4'], ledger['rules']
+        status = {r['rule_id']: r['proof_status'] for r in ledger['rules']}
+        assert status == {'RULE-1': 'pass', 'RULE-2': 'pass',
+                          'RULE-3': 'pass', 'RULE-4': 'unproved'}, status
+        assert 'src/ledger/posting.py' in ledger['changed_files'], ledger
+
+        # Specs in name order.
+        assert list(details) == ['ledger', 'money_gateway', 'posting_api'], \
+            list(details)
+
+        # Two processes whose string hashes fall in different orders return the
+        # same bytes. An unsorted walk of the changed-behavior set passes within
+        # one process and fails here.
+        first = self._rule_details_under_seed(root, '0')
+        second = self._rule_details_under_seed(root, '1')
+        assert first == second, (
+            "rule_details is not byte identical across two runs:\n%s\n%s"
+            % (first[:400], second[:400]))

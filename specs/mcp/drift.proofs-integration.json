@@ -5,8 +5,8 @@
       "feature": "drift",
       "id": "PROOF-19",
       "rule": "RULE-16",
-      "test_file": "dev/test_mcp_server.py",
-      "test_name": "test_rule_details_for_changed_behavior",
+      "test_file": "dev/test_drift.py",
+      "test_name": "test_rule_details_counts_one_rule_set_in_one_order",
       "status": "pass",
       "tier": "integration"
     },
