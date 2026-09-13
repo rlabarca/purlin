@@ -272,3 +272,27 @@ def test_fixture_is_a_complete_tracked_consumer_project():
     assert summary['features'] == 1
     assert summary['proofs'] == {'declared': 1, 'proved': 0, 'failed': 0,
                                  'awaiting': 1}
+
+
+@pytest.mark.proof("consumer_ci", "PROOF-4", "RULE-4")
+def test_the_documented_clone_ref_exists_as_a_tag():
+    """RULE-4: `v` + VERSION is a tag in this repository.
+
+    RED on purpose. Every consumer-facing clone recipe pins
+    `--branch v<VERSION>`, and until the owner pushes `main` and tags the
+    release there is no such ref to clone: the reader's first paste fails
+    with `Remote branch not found`. A red proof is where that belongs.
+    `dev/plans/four-axis-review.md` carries what clears it.
+    """
+    with open(os.path.join(ROOT, 'VERSION'), encoding='utf-8') as f:
+        version = f.read().strip()
+    ref = 'v' + version
+    listed = subprocess.run(['git', 'tag', '--list', ref],
+                            cwd=ROOT, capture_output=True, text=True)
+    assert listed.returncode == 0, listed.stderr
+    existing = subprocess.run(['git', 'tag'], cwd=ROOT,
+                              capture_output=True, text=True).stdout.split()
+    assert listed.stdout.strip(), (
+        'the documented clone recipe pins --branch {}, and this repository '
+        'has no such tag; the tags it has are {}'.format(
+            ref, ', '.join(existing[-3:]) or '(none)'))
