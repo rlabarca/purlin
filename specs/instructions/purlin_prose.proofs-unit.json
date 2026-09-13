@@ -93,6 +93,15 @@
     },
     {
       "feature": "purlin_prose",
+      "id": "PROOF-22",
+      "rule": "RULE-16",
+      "test_file": "dev/test_purlin_prose.py",
+      "test_name": "test_both_pages_name_purlin_project_root",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_prose",
       "id": "PROOF-3",
       "rule": "RULE-2",
       "test_file": "dev/test_purlin_prose.py",

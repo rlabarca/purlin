@@ -193,3 +193,7 @@ optional fields a skill or a script reads (`audit_llm`, `audit_llm_name`, `audit
 `audit_criteria_pinned`, `platforms`, `quality_gate`). A field written into new projects, or
 read by a skill, but absent here has no recorded owner, which is how `digest` went unlisted
 through four releases.
+
+## Project Root Ownership
+
+No config field names the project root, because the root is what the reader of the config had to find first. `PURLIN_PROJECT_ROOT` owns that question: `scripts/mcp/config_engine.py` reads it before anything else, and a directory it names that exists wins over the `.purlin/` marker a climb from the working directory would otherwise find. With the variable unset the climb answers, and with no marker anywhere above the working directory the working directory itself is returned, which is a guess rather than a find and is reported as one. Set the variable in the project's `.claude/settings.json` under `env` when the workspace is not at the repository root, the monorepo case `docs/installation-guide.md` covers; the three MCP tools also take a `project_root` argument that overrides it for one call. A root with no `.purlin/config.json` is never reported as a project with no features: every tool says which directory it looked at and which of the three mechanisms chose it.

@@ -220,6 +220,39 @@ Purlin is designed for projects with up to ~100 feature specs. If your project g
 
 If `purlin:status` becomes noticeably slow, the project has likely outgrown a single spec directory.
 
+## A workspace in a subdirectory
+
+`purlin:init` creates the workspace where you run it. In a monorepo that is usually one package, so `.purlin/` and `specs/` sit under `packages/api/` rather than at the repository root. The Purlin MCP server resolves one project root when the session starts, in this order:
+
+1. `PURLIN_PROJECT_ROOT`, when it is set and names a directory that exists.
+2. A climb from the working directory to the nearest `.purlin/` marker.
+3. The working directory, when no marker is found in it or above it.
+
+A session opened at the monorepo root never climbs downward, so step 2 finds nothing and step 3 hands back the root. Rather than report a project with no features, every tool answers with two lines:
+
+```
+No Purlin workspace at /Users/you/repo: .purlin/config.json is not there. That root came from the working directory, with no .purlin/ marker in it or above it.
+Fix: pass project_root to this tool, or set PURLIN_PROJECT_ROOT to the workspace directory (in .claude/settings.json "env" for the project), or run purlin:init there.
+```
+
+There are two ways to point it at the workspace.
+
+**Set it for the project.** Add the variable to `.claude/settings.json` at the monorepo root, so every session started anywhere in that repository resolves the same root:
+
+```json
+{
+  "env": {
+    "PURLIN_PROJECT_ROOT": "/Users/you/repo/packages/api"
+  }
+}
+```
+
+The value is read as a literal path, so give it an absolute one. Commit the file and everyone on the team gets the same root.
+
+**Or name it per call.** Each of the three tools takes an optional `project_root` argument that overrides the resolved root for that one call. Use it to look at a second workspace without restarting the session, which is the only way to change the startup root otherwise.
+
+Splitting one repository into several workspaces (the Scaling advice above) means one of these per workspace.
+
 ## Updating Purlin
 
 From the terminal:

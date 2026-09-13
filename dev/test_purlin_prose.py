@@ -625,3 +625,49 @@ class TestTheLintsReadTheTreeTheyClaimTo:
             [sys.executable, os.path.join('dev', 'prose_lint.py'), '--json'],
             cwd=PROJECT_ROOT, capture_output=True, text=True)
         assert json.loads(run.stdout) == [], run.stdout
+
+
+ROOT_GUIDE_SECTION = 'A workspace in a subdirectory'
+ROOT_REFERENCE_SECTION = 'Project Root Ownership'
+
+
+class TestProjectRootIsDocumented:
+    """RULE-16 - the variable that resolves the project root is written down."""
+
+    @pytest.mark.proof("purlin_prose", "PROOF-22", "RULE-16")
+    def test_both_pages_name_purlin_project_root(self):
+        body, _ = _heading_section(
+            _read('docs/installation-guide.md'), ROOT_GUIDE_SECTION)
+        assert body is not None, (
+            f"docs/installation-guide.md has no section headed "
+            f"'{ROOT_GUIDE_SECTION}'; the monorepo case has nowhere to live")
+
+        # The order is the whole point: a reader who does not know the
+        # environment variable beats the climb cannot explain what they see.
+        for number, literal in (('1.', 'PURLIN_PROJECT_ROOT'),
+                                ('2.', '.purlin/'),
+                                ('3.', 'working directory')):
+            item = [ln for ln in body.splitlines()
+                    if ln.strip().startswith(number)]
+            assert item, (
+                f"the '{ROOT_GUIDE_SECTION}' section states no step {number}")
+            assert literal in item[0], (
+                f"step {number} of '{ROOT_GUIDE_SECTION}' does not name "
+                f"{literal!r}: {item[0]!r}")
+
+        for literal in ('.claude/settings.json', '"env"', 'project_root'):
+            assert literal in body, (
+                f"the '{ROOT_GUIDE_SECTION}' section no longer names "
+                f"{literal!r}, one of the two ways to point the server at a "
+                f"workspace that is not at the repository root")
+
+        body, _ = _heading_section(
+            _read('references/drift_criteria.md'), ROOT_REFERENCE_SECTION)
+        assert body is not None, (
+            f"references/drift_criteria.md has no section headed "
+            f"'{ROOT_REFERENCE_SECTION}'")
+        for literal in ('PURLIN_PROJECT_ROOT', 'config_engine.py',
+                        'project_root'):
+            assert literal in body, (
+                f"the '{ROOT_REFERENCE_SECTION}' section of "
+                f"references/drift_criteria.md does not name {literal!r}")
