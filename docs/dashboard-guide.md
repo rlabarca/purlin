@@ -5,7 +5,7 @@
 Open `purlin-report.html` in a browser to see live coverage across your project. It is a static HTML file. No server is needed.
 
 ```
-purlin:init --report    toggle the dashboard on or off
+purlin:init --set report on|off    toggle the dashboard
 purlin:status           update the dashboard data (prints a clickable link)
 ```
 
@@ -30,7 +30,7 @@ It is a copy and not a symlink because the only path a plugin install can be lin
 To toggle the dashboard on or off:
 
 ```
-purlin:init --report
+purlin:init --set report on|off
 ```
 
 Turning **on** writes the copy and enables data file generation. Turning **off** disables data file generation but does not remove an existing dashboard.
@@ -209,4 +209,4 @@ The digest itself (`.purlin/report-data.js`) is never listed: it is rewritten by
 ## What's Committed, What's Not
 
 - **`purlin-report.html` is gitignored.** It is a copy of the installed plugin's dashboard, so each developer runs `purlin:init` to get their own and `purlin:init --update` to refresh it.
-- **`.purlin/report-data.js` is committed.** It is the project digest: coverage and drift data that travels with the repo, so QA, PM and compliance readers can open the dashboard without running Purlin tools. The pre-commit hook `purlin:init` installs regenerates it on every commit. Set the mode with `purlin:init --digest`: `auto`, `warn` or `off`. Only the hooks compute the drift block; a `purlin:status` call carries forward the block already in the file rather than blanking it. A status call rewrites the digest only when the payload actually changed, and touches its mtime otherwise, so repeated status calls on an unchanged tree leave the committed file exactly as it was. The file is written one line per top-level key and one line per feature, so `git diff` names the feature a commit moved instead of reporting that a megabyte changed.
+- **`.purlin/report-data.js` is committed.** It is the project digest: coverage and drift data that travels with the repo, so QA, PM and compliance readers can open the dashboard without running Purlin tools. The pre-commit hook `purlin:init` installs regenerates it on every commit. Set the mode with `purlin:init --set digest`: `auto`, `warn` or `off`. Only the hooks compute the drift block; a `purlin:status` call carries forward the block already in the file rather than blanking it. A status call rewrites the digest only when the payload actually changed, and touches its mtime otherwise, so repeated status calls on an unchanged tree leave the committed file exactly as it was. The file is written one line per top-level key and one line per feature, so `git diff` names the feature a commit moved instead of reporting that a megabyte changed.

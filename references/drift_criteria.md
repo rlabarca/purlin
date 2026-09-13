@@ -178,17 +178,17 @@ The proof count from `proof_status` reflects the state BEFORE the current change
 |-------|-----------|---------|---------|
 | `version` | `purlin:init` | — | from `VERSION` |
 | `test_framework` | `purlin:init` (Step 3) | `purlin:test` (Step 1) | `"auto"` |
-| `pre_push` | `purlin:init --pre-push` | pre-push hook (`scripts/hooks/pre_push_gate.py` reads it and decides) | `"warn"` (also `"strict"` and `"off"`) |
+| `pre_push` | `purlin:init --set pre_push` | pre-push hook (`scripts/hooks/pre_push_gate.py` reads it and decides) | `"warn"` (also `"strict"` and `"off"`) |
 | `remote_verification` | `purlin:init` | `sync_status`, the dashboard header, `scripts/ci/verify_gate.py` | `"off"` |
 | `audit_criteria` | `purlin:init --sync-audit-criteria` | `load_criteria()` (additional criteria, appended to built-in) | not set (built-in only) |
 | `audit_criteria_pinned` | `purlin:init --sync-audit-criteria` | `load_criteria()` (SHA pinning) | not set |
 | `audit_llm` | `purlin:init --audit-llm` | `purlin:audit` (External LLM Mode) | not set (uses Claude) |
 | `audit_llm_name` | `purlin:init --audit-llm` | `purlin:audit` (report header) | not set |
-| `mutation_checks` | `purlin:init` (Step 7d), `purlin:init --mutation-checks`, or `purlin:init --update` (asked, never backfilled) | `purlin:build` (Step: writing tests), `purlin:audit` (Pass 2 cap) | `false` |
-| `report` | `purlin:init --report` | `sync_status` (report-data.js side effect) | `true` |
-| `digest` | `purlin:init --digest` | pre-commit hook (digest regeneration) | `"auto"` |
+| `mutation_checks` | `purlin:init` (Step 7d), `purlin:init --set mutation_checks`, or `purlin:init --update` (asked, never backfilled) | `purlin:build` (Step: writing tests), `purlin:audit` (Pass 2 cap) | `false` |
+| `report` | `purlin:init --set report` | `sync_status` (report-data.js side effect) | `true` |
+| `digest` | `purlin:init --set digest` | pre-commit hook (digest regeneration) | `"auto"` |
 | `platforms` | `purlin:test` setup offer (with consent), or hand edit | `sync_status`, `purlin:test`, `scripts/ci/verify_gate.py` | not set (family ids `windows`, `macos`, `linux` only) |
-| `quality_gate` | `purlin:init --quality-gate` | `scripts/ci/verify_gate.py`, `sync_status` | not set (the gate reads an absent key as `"off"`) |
+| `quality_gate` | `purlin:init --set quality_gate` | `scripts/ci/verify_gate.py`, `sync_status` | not set (the gate reads an absent key as `"off"`) |
 
 `purlin:init` is the only skill that writes config unprompted; `purlin:test` writes `platforms` only after the user accepts its runner setup offer. All other skills read their relevant fields. When a field is missing or set to `"auto"`, the reading skill applies its own fallback logic (e.g., `test` auto-detects the framework).
 

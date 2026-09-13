@@ -187,7 +187,7 @@ never writes one. `purlin:init --update --check` reports what is pending and wri
 which is what a CI preflight runs, so a runner never proves anything with stale plugin copies.
 
 The git hooks are the third. The pre-push hook (`specs/hooks/pre_push_hook.md`) has three modes
-set with `purlin:init --pre-push`: `warn` blocks a FAILING proof, `strict` blocks anything not
+set with `purlin:init --set pre_push`: `warn` blocks a FAILING proof, `strict` blocks anything not
 VERIFIED, and `off` prints one line saying it is off and reads nothing. Its fail path is explicit:
 when it cannot resolve the plugin root it has no evidence to read, so `warn` prints a WARNING and
 allows the push while `strict` exits 1, rather than reporting a pass it did not earn. Any mode
@@ -209,7 +209,7 @@ code before the commit. It is the authoring twin of Proof Integrity: a proof tha
 against broken code proves nothing, and neither a static check nor an LLM grade can see it,
 because both read the test and the rule rather than running one against the other.
 
-It is opt-in, from `mutation_checks` in `.purlin/config.json`, and `purlin:init --mutation-checks on`
+It is opt-in, from `mutation_checks` in `.purlin/config.json`, and `purlin:init --set mutation_checks on`
 turns it on. When it is on, every new or amended proof is mutation-checked before the commit that
 carries it and the mutation is recorded in the commit body, so a reviewer can re-run it. The three
 steps and the rule that a surviving mutation is a finding rather than a formality are in

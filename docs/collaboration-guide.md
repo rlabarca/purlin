@@ -10,7 +10,7 @@ Two ways to collaborate:
 ```
 purlin:anchor create <name> --source <url>    link to an external spec
 purlin:anchor sync <name>                     pull the latest from the source
-purlin:init --pre-push                        set warn mode for branch collaboration
+purlin:init --set pre_push warn               set warn mode for collaboration
 ```
 
 ---
@@ -78,7 +78,7 @@ The pre-push hook runs before every push and has three modes. In **strict** mode
 **For branch collaboration, use warn mode:**
 
 ```
-purlin:init --pre-push
+purlin:init --set pre_push warn
 ```
 
 Select **warn**: the hook blocks only on FAILING proofs. Partial coverage (rules without tests yet) and complete-but-unreceipted coverage are reported without blocking. This lets you push incomplete work for someone else to continue.

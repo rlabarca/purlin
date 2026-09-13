@@ -54,6 +54,27 @@ AUDIT_FIELDS = ('audit_criteria', 'audit_criteria_pinned',
                 'audit_llm', 'audit_llm_name')
 CONFIG_WRITE_STEPS = ('Step 7b', 'Step 7c')
 
+# The five-row `--set` mapping table of Step 2: the key, the values it accepts,
+# the one scaffolder flag it maps to and the value placeholder. Parsing it is
+# what makes this proof read the skill rather than a second copy of it.
+SET_MAPPING = re.compile(
+    r'^\|\s*`([a-z_]+)`\s*\|([^|]*)\|\s*`scaffold\.py\s+--force\s+'
+    r'(--[a-z-]+)\s+(<[a-z]+>)`\s*\|\s*$', re.M)
+
+# Per key: the value this proof answers with, and what that lands in the config.
+SET_ANSWERS = {
+    'pre_push': ('strict', 'strict'),
+    'report': ('off', False),
+    'digest': ('warn', 'warn'),
+    'mutation_checks': ('on', True),
+    'quality_gate': ('deterministic', 'deterministic'),
+}
+
+# `--force` paired with one of the five setting flags: the invocation Step 2
+# owns. Anywhere else in the skill it is a restatement.
+FORCE_INVOCATION = re.compile(
+    r'--force\s+--(?:pre-push|report|digest|mutation-checks|quality-gate)\b')
+
 
 def _unwrap(text):
     """Join hard-wrapped prose so one sentence is one line.
@@ -991,10 +1012,40 @@ class TestSingleStepReanswer:
 
     @pytest.mark.proof("skill_init", "PROOF-77", "RULE-74", tier="integration")
     def test_one_flag_rewrites_one_field_and_nothing_else(self, repo):
-        """RULE-74: `purlin:init --pre-push` changes the pre-push mode. If the
-        script it runs also re-detects the frameworks or re-copies a plugin,
-        the step that changed one setting cannot be told from one that changed
-        two."""
+        """RULE-74: `purlin:init --set pre_push strict` changes the pre-push
+        mode. The skill's own table says which scaffolder flag that is, and
+        this proof drives the real script through that table: if the script it
+        runs also re-detects the frameworks or re-copies a plugin, the step
+        that changed one setting cannot be told from one that changed two."""
+        skill = _read(SKILL)
+        step2 = skill[skill.index('## Step 2'):skill.index('## Step 3')]
+        mapping = SET_MAPPING.findall(step2)
+        assert [row[0] for row in mapping] == list(SET_ANSWERS), (
+            "Step 2 must carry one row per `--set` key: "
+            + repr([row[0] for row in mapping]))
+
+        usage = skill[skill.index('## Usage'):skill.index('## Step 1')]
+        assert 'purlin:init --set <key> <value>' in usage, usage
+        for retired in ('purlin:init --pre-push', 'purlin:init --report',
+                        'purlin:init --digest',
+                        'purlin:init --mutation-checks',
+                        'purlin:init --quality-gate'):
+            assert retired not in usage, (
+                "`## Usage` still documents " + repr(retired) + " as a "
+                "command of its own; `--set` is the one spelling")
+
+        # The procedure is stated once. A step that restates its own
+        # `--force --<flag>` invocation is a second copy to keep in step.
+        start, end = skill.index('## Step 2'), skill.index('## Step 3')
+        offset, strays = 0, []
+        for line in skill.split('\n'):
+            if FORCE_INVOCATION.search(line) and not start <= offset < end:
+                strays.append(line.strip())
+            offset += len(line) + 1
+        assert not strays, (
+            "these lines restate the single-step invocation outside Step 2, "
+            "which owns it: " + '; '.join(strays))
+
         code, out, err = _run(
             repo, '--test-framework', 'pytest', '--pre-push', 'warn',
             '--digest', 'auto', '--report', 'on', '--mutation-checks', 'off',
@@ -1006,14 +1057,16 @@ class TestSingleStepReanswer:
         assert before_config['test_framework'] == 'pytest'
         assert 'pytest_purlin.py' in _plugins(repo)
 
-        cases = (
-            (('--pre-push', 'strict'), 'pre_push', 'strict'),
-            (('--report', 'off'), 'report', False),
-            (('--digest', 'warn'), 'digest', 'warn'),
-            (('--mutation-checks', 'on'), 'mutation_checks', True),
-            (('--quality-gate', 'deterministic'), 'quality_gate',
-             'deterministic'),
-        )
+        cases = []
+        for key, values, flag, placeholder in mapping:
+            answer, written = SET_ANSWERS[key]
+            listed = re.findall(r'`([a-z_]+)`', values)
+            assert answer in listed, (
+                "`--set " + key + " " + answer + "` is not one of the values "
+                "the row lists: " + repr(listed))
+            assert placeholder == '<value>', (key, placeholder)
+            cases.append(((flag, answer), key, written))
+
         for flags, key, value in cases:
             named = ' '.join(flags)
             code, out, err = _run(repo, '--force', *flags)

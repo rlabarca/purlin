@@ -15,12 +15,8 @@ purlin:init --force                     Re-run full setup
 purlin:init --add-plugin <source>       Add a proof plugin
 purlin:init --sync-audit-criteria       Sync external audit criteria
 purlin:init --audit-llm                 Change audit LLM (default/external)
-purlin:init --pre-push                  Change pre-push mode (warn/strict/off)
-purlin:init --report                    Toggle HTML dashboard report (on/off)
-purlin:init --digest                    Change digest mode (auto/warn/off)
-purlin:init --mutation-checks on|off    Change the mutation-check setting
-purlin:init --quality-gate off|deterministic
-                                        Set the deterministic quality gate
+purlin:init --set <key> <value>         Change one setting: pre_push, report,
+                                        digest, mutation_checks, quality_gate
 purlin:init --ci [github]               Write the CI workflow that runs the gate
 purlin:init --update                    Bring the project up to the installed plugin
 purlin:init --update --check            Report what is pending; write nothing
@@ -31,7 +27,7 @@ purlin:init --update --mutation-checks on|off
 
 Each `--flag` runs ONLY that step, not the full init.
 
-**Who does what.** This skill asks the questions; `scripts/init/scaffold.py` writes the files, exactly as `scripts/update/migrate.py` performs `--update`. The script handles the full init, the `--force` re-run (Steps 1, 2, 4, 5, 5b, 7 and 7a) and the single-step re-answers: it takes `--pre-push`, `--digest`, `--report`, `--mutation-checks` and `--quality-gate` as answers, and `purlin:init --pre-push`, `--report`, `--digest`, `--mutation-checks` and `--quality-gate` each ask their own question and then run it with `--force` and that one flag (see **Single-step re-answers** in Step 2). `--ci` is a seventh answer the script takes, asked the same way and written the same way (see **Subcommand: --ci**). `--add-plugin`, `--sync-audit-criteria` and `--audit-llm` stay agent-driven; `--update` is `scripts/update/migrate.py` (Step 5d), whose MCP migration is Step 5c.
+**Who does what.** This skill asks the questions; `scripts/init/scaffold.py` writes the files, exactly as `scripts/update/migrate.py` performs `--update`. The script handles the full init, the `--force` re-run (Steps 1, 2, 4, 5, 5b, 7 and 7a) and the single-step re-answers: it takes one long flag per setting as an answer, and `purlin:init --set <key> <value>` asks that one setting's own question and then runs the script with `--force` and the single flag the key maps to (the mapping is the table under **Single-step re-answers** in Step 2). `--ci` is a seventh answer the script takes, asked the same way and written the same way (see **Subcommand: --ci**). `--add-plugin`, `--sync-audit-criteria` and `--audit-llm` stay agent-driven; `--update` is `scripts/update/migrate.py` (Step 5d), whose MCP migration is Step 5c.
 
 ## Step 1 — Pre-flight
 
@@ -73,10 +69,23 @@ was asked: it reads `templates/config.json`, writes the answers over it, stamps
 a receipt or a commit. `--dry-run` prints the same plan and writes nothing,
 which is what to run when the user wants to see the plan before agreeing to it.
 
-**Single-step re-answers.** `purlin:init --pre-push`, `--report`, `--digest`,
-`--mutation-checks` and `--quality-gate` change one setting on a project that is
-already initialized. Each asks only its own question, then runs the same
-scaffolder with `--force` and that one flag:
+**Single-step re-answers.** `purlin:init --set <key> <value>` changes one
+setting on a project that is already initialized. Ask only that setting's own
+question, then run the scaffolder with `--force` and the one flag the key maps
+to. These five keys and no others:
+
+| `--set` key | Values | What this skill runs |
+|---|---|---|
+| `pre_push` | `warn`, `strict`, `off` | `scaffold.py --force --pre-push <value>` |
+| `report` | `on`, `off` | `scaffold.py --force --report <value>` |
+| `digest` | `auto`, `warn`, `off` | `scaffold.py --force --digest <value>` |
+| `mutation_checks` | `on`, `off` | `scaffold.py --force --mutation-checks <value>` |
+| `quality_gate` | `off`, `deterministic` | `scaffold.py --force --quality-gate <value>` |
+
+The five keys were once five `purlin:init` flags of their own. Those spellings
+still run and each prints one line naming the `--set` key that replaced it;
+all five are removed in 0.12.0. The scaffolder keeps its long flags either way:
+the script's interface is not this skill's.
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" \
@@ -87,20 +96,20 @@ One flag, one field: the run rewrites that key of `.purlin/config.json` and
 leaves every other key and every other file in the project byte-identical.
 `--test-framework` left off is the value the project already recorded, not
 `auto`, so a lone re-answer never re-detects the frameworks or re-copies a
-plugin. Do NOT hand-edit `.purlin/config.json` for one of these: the scaffolder
-owns that file, and a config edited by hand is how a key gets dropped, reordered
-or written in the wrong type. The four audit fields that Steps 7b and 7c fill in
+plugin. This paragraph is the only place the procedure is stated: the step that
+asks each question points here rather than repeating the invocation, because
+five copies of one procedure are five things to keep in step. Do NOT hand-edit
+`.purlin/config.json` for one of these: the scaffolder owns that file, and a
+config edited by hand is how a key gets dropped, reordered or written in the
+wrong type. The four audit fields that Steps 7b and 7c fill in
 (`audit_criteria`, `audit_criteria_pinned`, `audit_llm` and `audit_llm_name`)
 are the one exception, because the scaffolder takes no flag for any of them and
 the answers only exist after those two steps have asked their questions. Every
 other key belongs to the scaffolder, and no other step writes that file.
 
-**Setting the quality gate on an existing project.** `purlin:init --quality-gate
-<off|deterministic>` is one of those single-step re-answers: ask which mode the
-project wants, then run the scaffolder with `--force --quality-gate <mode>` and
-nothing else. That run writes `quality_gate` and changes no other key and no
-other file. The mode is a declaration and `purlin:init --ci` is what makes it do
-anything: the workflow that subcommand writes is the job that reads
+**Setting the quality gate on an existing project.** `purlin:init --set
+quality_gate <off|deterministic>` is one of the re-answers above. The mode is a
+declaration and `purlin:init --ci` is what makes it do anything: the workflow that subcommand writes is the job that reads
 `quality_gate` on every push, and a project with no CI job has set a field
 nothing runs. Offer `--ci` when the user sets the gate to `deterministic`. Do not
 ask about the quality gate during a full init and do not pass
@@ -202,7 +211,7 @@ If **on** (default): pass `--report on`. The scaffolder writes `"report": true` 
 
 If **off**: pass `--report off`. No dashboard is created, and an existing one is never deleted.
 
-When called via `purlin:init --report`, ONLY this step runs. Read the current config, show the current setting, and ask to toggle:
+When called via `purlin:init --set report <on|off>`, ONLY this step runs. Read the current config, show the current setting, and ask to toggle:
 
 ```
 Dashboard report is currently: on
@@ -210,7 +219,7 @@ Dashboard report is currently: on
   [off] Disable
 ```
 
-After changing, run the scaffolder with `--force --report on|off` and nothing else (Step 2, **Single-step re-answers**): it writes `"report"`, links `purlin-report.html` when the answer is on and the file is absent, and never deletes an existing dashboard when the answer is off (the user may want to keep it).
+After changing, run the re-answer of Step 2, **Single-step re-answers**. It links `purlin-report.html` when the answer is on and the file is absent, and never deletes an existing dashboard when the answer is off (the user may want to keep it).
 
 ## Step 5c — MCP Server (plugin-bundled) + Legacy Migration
 
@@ -365,7 +374,7 @@ Pre-push hook mode:
 
 Pass the answer to the scaffolder as `--pre-push <mode>`. Any other value makes the hook block every push until it is corrected: a typo must not disable enforcement invisibly, which is why the flag takes `warn`, `strict` and `off` and nothing else.
 
-When called via `purlin:init --pre-push`, ONLY the mode selection above runs: ask, then run the scaffolder with `--force --pre-push <mode>` and nothing else (Step 2, **Single-step re-answers**), which rewrites `pre_push` alone. No hook is installed by that run beyond the one it keeps; the hook install below happens during the full init flow, inside the same scaffolder.
+When called via `purlin:init --set pre_push <mode>`, ONLY the mode selection above runs, followed by the re-answer of Step 2, **Single-step re-answers**. No hook is installed by that run beyond the one it keeps; the hook install below happens during the full init flow, inside the same scaffolder.
 
 The scaffolder installs the hook in two parts. The body is the generated shim
 `.purlin/hooks/pre-push`, tracked in git because it names no machine and no
@@ -410,7 +419,7 @@ Run purlin:audit separately when you want fresh audit scores.
 
 Pass the answer to the scaffolder as `--digest <mode>`, which takes `auto`, `warn` and `off`.
 
-When called via `purlin:init --digest`, ask the mode above and then run the scaffolder with `--force --digest <mode>` and nothing else (Step 2, **Single-step re-answers**): that one run rewrites `digest` and installs the pre-commit hook below when the project has none. Also remove `.purlin/report-data.js` from `.gitignore` if present. This makes `--digest` a complete setup command for existing projects — the user runs one command and gets the full digest feature.
+When called via `purlin:init --set digest <mode>`, ask the mode above and then run the re-answer of Step 2, **Single-step re-answers**: that one run also installs the pre-commit hook below when the project has none. Also remove `.purlin/report-data.js` from `.gitignore` if present, so one command leaves an existing project with the whole digest feature rather than half of it.
 
 The scaffolder installs `.purlin/hooks/pre-commit` and its delegator by the
 same rule as the pre-push hook, with the same five outcomes, and never writes
@@ -511,9 +520,8 @@ Mutation checks:
 
 Pass the answer to the scaffolder as `--mutation-checks on|off`, which writes `"mutation_checks": true` or `"mutation_checks": false`.
 
-When called via `purlin:init --mutation-checks on|off`, ONLY this step runs: read the current
-value, show it, and run the scaffolder with `--force --mutation-checks on|off` and nothing
-else, exactly as `--pre-push` does for its mode (Step 2, **Single-step re-answers**).
+When called via `purlin:init --set mutation_checks on|off`, ONLY this step runs: read the
+current value, show it, and run the re-answer of Step 2, **Single-step re-answers**.
 
 `purlin:init --update` asks this same question when `mutation_checks` is absent from the config,
 and passes the answer to the migration script as `--mutation-checks on|off`. It is the one config
@@ -578,7 +586,7 @@ plugin runs on itself, in the form a project that clones the tooling needs.
 4. **Tell the user what is left to do.** The job is a check, not a gate, until
    branch protection marks it required; `references/hard_gates.md` states which
    layer that is. A project that also wants the quality gauges to decide sets
-   `quality_gate` with `purlin:init --quality-gate deterministic`.
+   `quality_gate` with `purlin:init --set quality_gate deterministic`.
 
 ---
 

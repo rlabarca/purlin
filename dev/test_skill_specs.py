@@ -2314,7 +2314,10 @@ class TestUpdateSkillText:
     def test_mutation_checks_question_is_documented(self):
         content = _read('init')
         usage = content[content.index('## Usage'):content.index('## Step 1')]
-        assert 'purlin:init --mutation-checks on|off' in usage, usage
+        assert 'purlin:init --set <key> <value>' in usage, usage
+        assert 'mutation_checks' in usage, (
+            "`--set` names the keys it takes, and this is one of them: "
+            + usage)
         step = content[content.index('## Step 7d'):content.index('## Step 8')]
         flat = ' '.join(step.split())
         assert 'references/spec_quality_guide.md' in step, step
