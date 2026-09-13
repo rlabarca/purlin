@@ -39,7 +39,6 @@ from config_engine import (PROJECT_ROOT_SOURCES, find_project_root,
 _RULE_RE = re.compile(r'^-\s+(RULE-\d+):\s*(.+)', re.MULTILINE)
 _DEFERRED_TAG_RE = re.compile(r'\(deferred\)\s*$', re.IGNORECASE)
 _ASSUMED_TAG_RE = re.compile(r'\(assumed\s*—\s*.+?\)\s*$', re.IGNORECASE)
-_CONFIRMED_TAG_RE = re.compile(r'\(confirmed\)\s*$', re.IGNORECASE)
 _REQUIRES_RE = re.compile(r'^>\s*Requires:\s*(.+)', re.MULTILINE)
 _SCOPE_RE = re.compile(r'^>\s*Scope:\s*(.+)', re.MULTILINE)
 _MANUAL_STAMPED_RE = re.compile(
