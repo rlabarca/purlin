@@ -27,6 +27,13 @@ HOOK_SCRIPT = os.path.join(PROJECT_ROOT, "scripts", "hooks", "pre-commit.sh")
 sys.path.insert(0, os.path.join(PROJECT_ROOT, "scripts", "init"))
 import scaffold  # noqa: E402
 
+# The `python3`-in-command-position detector has one home, beside the sweep
+# rule that owns it (`pre_push_hook` RULE-17).
+if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from test_pre_push_hook import (  # noqa: E402
+    RESOLVER_NAMES, interpreter_invocations, synthetic_bin)
+
 SPEC_TEXT = """# Feature: sample_feature
 
 > Description: A single feature so the digest generator has something to scan.
@@ -516,3 +523,57 @@ class TestRule6StderrReachesTheDeveloper:
         assert hook_source.count("2>/dev/null") == 0, (
             "scripts/hooks/pre-commit.sh redirects stderr to /dev/null, so a "
             "diagnostic the developer needs is thrown away")
+
+
+# ---------------------------------------------------------------------------
+# RULE-7: the interpreter comes from scripts/purlin_python.sh
+# ---------------------------------------------------------------------------
+
+class TestInterpreterResolution:
+    """RULE-7: `$PURLIN_PY` everywhere, and never-block when there is none."""
+
+    @pytest.mark.proof("pre_commit_hook", "PROOF-9", "RULE-7",
+                       tier="integration")
+    def test_python_only_host_still_refreshes_the_digest(self, tmp_path):
+        tmpdir = str(tmp_path)
+        _make_project(tmpdir, digest="auto")
+        bindir = synthetic_bin(tmpdir, interpreter="python")
+
+        code, out, err = _run_hook(
+            tmpdir, env=_env(PURLIN_PLUGIN_ROOT=PROJECT_ROOT, PATH=bindir,
+                             PURLIN_PYTHON=None))
+
+        assert code == 0, f"Expected exit 0, got {code}\n{out}\n{err}"
+        assert "digest updated and staged" in out, (
+            f"a host whose only Python is `python` refreshed nothing:\n{out}\n{err}")
+        assert _staged(tmpdir) == [".purlin/report-data.js"], _staged(tmpdir)
+
+    @pytest.mark.proof("pre_commit_hook", "PROOF-9", "RULE-7",
+                       tier="integration")
+    def test_no_interpreter_reports_and_lets_the_commit_through(self, tmp_path):
+        tmpdir = str(tmp_path)
+        _make_project(tmpdir, digest="auto")
+        bindir = synthetic_bin(tmpdir)
+
+        code, out, err = _run_hook(
+            tmpdir, env=_env(PURLIN_PLUGIN_ROOT=PROJECT_ROOT, PATH=bindir,
+                             PURLIN_PYTHON=None))
+
+        assert code == 0, f"the hook blocked a commit: {code}\n{out}\n{err}"
+        assert "no Python 3 interpreter" in out, (
+            f"the hook skipped the digest silently:\n{out!r}")
+        report = [line for line in err.splitlines() if line.strip()]
+        assert len(report) == 1, f"expected one line of report, got {err!r}"
+        for name in RESOLVER_NAMES:
+            assert name in report[0], (
+                f"the report does not name {name}: {report[0]!r}")
+        assert _staged(tmpdir) == [], _staged(tmpdir)
+
+    @pytest.mark.proof("pre_commit_hook", "PROOF-9", "RULE-7",
+                       tier="integration")
+    def test_hook_script_names_no_interpreter(self):
+        with open(HOOK_SCRIPT) as fh:
+            source = fh.read()
+        assert interpreter_invocations(source) == [], (
+            "scripts/hooks/pre-commit.sh still starts an interpreter by name: "
+            f"{interpreter_invocations(source)}")

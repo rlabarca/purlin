@@ -37,13 +37,25 @@ fi
 PLUGIN_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 SERVER="$PLUGIN_ROOT/scripts/mcp/purlin_server.py"
 
+# --- The interpreter ---
+# One resolver, shared with the MCP launcher and the pre-push hook, so a host
+# whose Python answers to `python` or `py` is one answer to fix rather than
+# four. It leaves the command in $PURLIN_PY and has already named on stderr
+# every name it tried when it finds none.
+. "$PLUGIN_ROOT/scripts/purlin_python.sh"
+if [[ -z "${PURLIN_PY:-}" ]]; then
+  echo "purlin: no Python 3 interpreter, so the project digest was not refreshed."
+  echo "        Committing anyway, with .purlin/report-data.js left as it was."
+  exit 0
+fi
+
 # --- Read the mode ---
 # $CONFIG is an argument, never text spliced into the program: a path
 # containing a quote would otherwise rewrite the script that reads it.
 CONFIG="$ROOT/.purlin/config.json"
 MODE="auto"
 if [[ -f "$CONFIG" ]]; then
-  MODE="$(python3 -c '
+  MODE="$("$PURLIN_PY" -c '
 import json, sys
 try:
     with open(sys.argv[1]) as handle:
@@ -77,7 +89,7 @@ if [[ "$MODE" == "auto" ]]; then
   # for the same reason as above. Only stdout is captured: whatever
   # generate_digest raises goes straight to the developer's terminal.
   GENERATE_RC=0
-  RESULT="$(python3 -c '
+  RESULT="$("$PURLIN_PY" -c '
 import sys
 sys.path.insert(0, sys.argv[1])
 from purlin_server import generate_digest
@@ -110,7 +122,7 @@ elif [[ "$MODE" == "warn" ]]; then
     echo "purlin: WARNING: the project digest was not found at .purlin/report-data.js."
     echo "        Run purlin:status to generate it."
   else
-    STALE="$(python3 -c '
+    STALE="$("$PURLIN_PY" -c '
 import json, datetime, sys
 try:
     with open(sys.argv[1]) as handle:

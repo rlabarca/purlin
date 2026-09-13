@@ -81,6 +81,33 @@
       "test_name": "test_generator_traceback_reaches_the_caller",
       "status": "pass",
       "tier": "integration"
+    },
+    {
+      "feature": "pre_commit_hook",
+      "id": "PROOF-9",
+      "rule": "RULE-7",
+      "test_file": "dev/test_pre_commit_hook.py",
+      "test_name": "test_hook_script_names_no_interpreter",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_commit_hook",
+      "id": "PROOF-9",
+      "rule": "RULE-7",
+      "test_file": "dev/test_pre_commit_hook.py",
+      "test_name": "test_no_interpreter_reports_and_lets_the_commit_through",
+      "status": "pass",
+      "tier": "integration"
+    },
+    {
+      "feature": "pre_commit_hook",
+      "id": "PROOF-9",
+      "rule": "RULE-7",
+      "test_file": "dev/test_pre_commit_hook.py",
+      "test_name": "test_python_only_host_still_refreshes_the_digest",
+      "status": "pass",
+      "tier": "integration"
     }
   ]
 }

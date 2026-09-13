@@ -30,11 +30,32 @@ fi
 PLUGIN_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 GATE="$PLUGIN_ROOT/scripts/hooks/pre_push_gate.py"
 
+# --- The interpreter ---
+# One resolver, shared with the MCP launcher and the pre-commit hook, so a
+# host whose Python answers to `python` or `py` is one answer to fix rather
+# than four. It leaves the command in $PURLIN_PY and has already named on
+# stderr every name it tried when it finds none.
+. "$PLUGIN_ROOT/scripts/purlin_python.sh"
+if [[ -z "${PURLIN_PY:-}" ]]; then
+  echo "purlin: no Python 3 interpreter, so the proof coverage check did not run."
+  # warn and off would have let this push through anyway; strict would not,
+  # and a check that could not run is not a pass. The gate owns config
+  # reading and the gate needs the interpreter that is missing, so the one
+  # mode that blocks is read here from the text, and nothing else is.
+  if [[ -f "$ROOT/.purlin/config.json" ]] \
+     && grep -q '"pre_push"[[:space:]]*:[[:space:]]*"strict"' "$ROOT/.purlin/config.json"; then
+    echo "purlin: pre-push mode is \"strict\", which cannot be enforced without an"
+    echo "        interpreter. Blocking the push rather than passing it unchecked."
+    exit 1
+  fi
+  exit 0
+fi
+
 # --- Read the mode ---
 # The gate owns config reading; this script asks it rather than parsing the
 # config a second way.
 CONFIG_RC=0
-CONFIG_OUT="$(python3 "$GATE" config --project-root "$ROOT")" || CONFIG_RC=$?
+CONFIG_OUT="$("$PURLIN_PY" "$GATE" config --project-root "$ROOT")" || CONFIG_RC=$?
 if [[ $CONFIG_RC -ne 0 ]]; then
   echo "purlin: the pre-push gate could not read this project's configuration"
   echo "        (exit $CONFIG_RC, reason above). Blocking the push."
@@ -71,7 +92,7 @@ for FRAMEWORK in "${FRAMEWORK_LIST[@]}"; do
       # The tier a proof marker names is also a pytest marker on the test
       # (proof_plugins_pytest RULE-5), so this expression actually deselects
       # something: without it the "unit-tier" arm ran every tier there is.
-      (cd "$ROOT" && python3 -m pytest -m "not integration and not e2e" -q) || RUNNER_RC=$?
+      (cd "$ROOT" && "$PURLIN_PY" -m pytest -m "not integration and not e2e" -q) || RUNNER_RC=$?
       # pytest exits 5 when it collected nothing. No tests is not a failure
       # here; the gate is about to report the coverage that fact produces.
       if [[ $RUNNER_RC -eq 5 ]]; then
@@ -119,7 +140,7 @@ done
 
 # --- The verdict ---
 GATE_RC=0
-python3 "$GATE" check --project-root "$ROOT" --mode "$MODE" || GATE_RC=$?
+"$PURLIN_PY" "$GATE" check --project-root "$ROOT" --mode "$MODE" || GATE_RC=$?
 if [[ $GATE_RC -ne 0 ]]; then
   # Exit 2 means the gate could not read the evidence and has already said so.
   exit 1

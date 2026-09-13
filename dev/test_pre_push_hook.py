@@ -179,7 +179,7 @@ def _run_hook(tmpdir: str, script: str = HOOK_SCRIPT,
 def _run_gate(tmpdir: str, *args: str) -> tuple:
     """Run the gate directly, return (exit_code, stdout, stderr)."""
     result = subprocess.run(
-        ["python3", GATE_SCRIPT] + list(args), cwd=tmpdir,
+        [sys.executable, GATE_SCRIPT] + list(args), cwd=tmpdir,
         capture_output=True, text=True, env=_clean_env(),
     )
     return result.returncode, result.stdout, result.stderr
@@ -1318,3 +1318,177 @@ class TestRule16WholeNameMatching:
         assert "/purlin:test auth_system" in output, f"{output}"
         assert "/purlin:test system\n" in output, (
             f"'system' was dropped by a substring match:\n{output}")
+
+
+# ---------------------------------------------------------------------------
+# RULE-17: the interpreter comes from scripts/purlin_python.sh
+# ---------------------------------------------------------------------------
+
+# `python3` in command position: at the start of a command, after a separator,
+# or behind a leading VAR=value assignment. A mention as an argument (the
+# `command -v python3` probe the shim uses to look for one) is not a launch.
+_PYTHON3_COMMAND_POSITION = re.compile(
+    r"(?:^|[;&|(]|\$\()\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*python3\b")
+
+# The five places a consumer's Purlin can start a Python process, and the two
+# that may never carry the token at all because JSON has no command position
+# to read them in.
+SWEEP_SHELL_SOURCES = ("scripts/hooks/pre-push.sh", "scripts/hooks/pre-commit.sh")
+SWEEP_JSON_SOURCES = ("hooks/hooks.json", ".claude-plugin/plugin.json")
+
+RESOLVER_NAMES = ("PURLIN_PYTHON", "python3", "python", "py -3")
+
+# The tools the hook and the harness reach for by name. A synthetic PATH that
+# left these out would prove nothing about the interpreter: the hook would die
+# before it ever asked for one.
+_HOOK_TOOLS = ("bash", "sh", "git", "dirname", "basename", "sed", "grep",
+               "find", "env", "uname", "cat", "rm", "mkdir")
+
+
+def interpreter_invocations(text: str) -> list:
+    """Every (line number, line) of `text` that starts a `python3` process.
+
+    Whole-line comments are dropped: a comment names the interpreter without
+    running it, and the rules here are about what executes.
+    """
+    hits = []
+    for number, line in enumerate(text.splitlines(), 1):
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            continue
+        if _PYTHON3_COMMAND_POSITION.search(line):
+            hits.append((number, stripped))
+    return hits
+
+
+def synthetic_bin(tmpdir: str, interpreter: str | None = None) -> str:
+    """A directory holding the hook's tools and at most one Python name.
+
+    Every tool is a symlink to the real one; the Python name, when asked for,
+    is a shell wrapper around this interpreter. `py` swallows a leading `-3`
+    the way the Windows launcher does. PATH set to this directory alone is
+    what makes the resolver's order the only thing that can find a Python.
+    """
+    bindir = os.path.join(tmpdir, "synthetic-bin")
+    os.makedirs(bindir, exist_ok=True)
+    for tool in _HOOK_TOOLS:
+        real = shutil.which(tool)
+        if real:
+            link = os.path.join(bindir, tool)
+            if not os.path.exists(link):
+                os.symlink(real, link)
+    if interpreter:
+        swallow = ('if [ "$1" = "-3" ]; then shift; fi\n'
+                   if interpreter == "py" else "")
+        path = os.path.join(bindir, interpreter)
+        with open(path, "w") as fh:
+            fh.write('#!/bin/sh\n' + swallow
+                     + 'exec "' + sys.executable + '" "$@"\n')
+        os.chmod(path, 0o755)
+    return bindir
+
+
+def _run_hook_split(tmpdir: str, env: dict) -> tuple:
+    """Run the hook, keeping stdout and stderr apart.
+
+    The resolver's report is one line on stderr, and a combined capture cannot
+    show that it was one line.
+    """
+    result = subprocess.run(
+        ["bash", HOOK_SCRIPT], cwd=tmpdir, capture_output=True, text=True,
+        env=env)
+    return result.returncode, result.stdout, result.stderr
+
+
+class TestInterpreterResolution:
+    """RULE-17: `$PURLIN_PY` everywhere, and the mode-correct exit with none."""
+
+    def _project(self, tmpdir: str, mode: str = "warn") -> None:
+        _create_test_project(tmpdir, num_rules=2,
+                             config_extra={"test_framework": "pytest",
+                                           "pre_push": mode})
+        _write_proof_file(tmpdir, "test_feature",
+                          [("PROOF-1", "RULE-1", "pass"),
+                           ("PROOF-2", "RULE-2", "pass")])
+        _commit(tmpdir, "proofs")
+
+    def _env(self, tmpdir: str, bindir: str) -> dict:
+        env = _clean_env()
+        env["PURLIN_PLUGIN_ROOT"] = PROJECT_ROOT
+        env["PATH"] = bindir
+        env.pop("PURLIN_PYTHON", None)
+        return env
+
+    @pytest.mark.proof("pre_push_hook", "PROOF-33", "RULE-17",
+                       tier="integration")
+    def test_python_only_host_runs_the_check(self, tmp_path):
+        tmpdir = str(tmp_path)
+        self._project(tmpdir)
+        bindir = synthetic_bin(tmpdir, interpreter="python")
+
+        code, out, err = _run_hook_split(tmpdir, self._env(tmpdir, bindir))
+
+        assert code == 0, f"Expected exit 0, got {code}\n{out}\n{err}"
+        assert "PASSING" in out, (
+            f"a host whose only Python is `python` checked nothing:\n{out}\n{err}")
+
+    @pytest.mark.proof("pre_push_hook", "PROOF-33", "RULE-17",
+                       tier="integration")
+    def test_no_interpreter_reports_and_passes_in_warn(self, tmp_path):
+        tmpdir = str(tmp_path)
+        self._project(tmpdir, mode="warn")
+        bindir = synthetic_bin(tmpdir)
+
+        code, out, err = _run_hook_split(tmpdir, self._env(tmpdir, bindir))
+
+        assert code == 0, f"warn blocked a push: {code}\n{out}\n{err}"
+        assert "no Python 3 interpreter" in out, (
+            f"the hook skipped the check silently:\n{out!r}")
+        report = [line for line in err.splitlines() if line.strip()]
+        assert len(report) == 1, f"expected one line of report, got {err!r}"
+        for name in RESOLVER_NAMES:
+            assert name in report[0], (
+                f"the report does not name {name}: {report[0]!r}")
+
+    @pytest.mark.proof("pre_push_hook", "PROOF-33", "RULE-17",
+                       tier="integration")
+    def test_no_interpreter_blocks_in_strict(self, tmp_path):
+        tmpdir = str(tmp_path)
+        self._project(tmpdir, mode="strict")
+        bindir = synthetic_bin(tmpdir)
+
+        code, out, err = _run_hook_split(tmpdir, self._env(tmpdir, bindir))
+
+        assert code == 1, (
+            "strict passed a push it could not check: "
+            f"{code}\n{out}\n{err}")
+        assert "strict" in out, out
+        assert "no Python 3 interpreter" in out, out
+
+    @pytest.mark.proof("pre_push_hook", "PROOF-33", "RULE-17",
+                       tier="integration")
+    def test_no_entry_point_names_an_interpreter(self):
+        sources = {}
+        for rel in SWEEP_SHELL_SOURCES:
+            with open(os.path.join(PROJECT_ROOT, rel)) as fh:
+                sources[rel] = fh.read()
+        for name in ("pre-push", "pre-commit"):
+            sources["scaffold._shim(%r)" % name] = scaffold._shim(
+                name, "scripts/hooks/%s.sh" % name)
+
+        for rel, text in sources.items():
+            assert interpreter_invocations(text) == [], (
+                f"{rel} still starts an interpreter by name: "
+                f"{interpreter_invocations(text)}")
+            # The detector has to be able to see one, or the sweep above is
+            # a scan that passes by matching nothing.
+            mutated = "python3 -c 'import sys'\n" + text
+            assert interpreter_invocations(mutated), (
+                f"the detector cannot see a python3 launch in {rel}")
+
+        for rel in SWEEP_JSON_SOURCES:
+            with open(os.path.join(PROJECT_ROOT, rel)) as fh:
+                raw = fh.read()
+            assert "python3" not in raw, (
+                f"{rel} still names an interpreter: "
+                + next(line for line in raw.splitlines() if "python3" in line))

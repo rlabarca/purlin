@@ -263,11 +263,20 @@ PURLIN_PROJECT="$(git rev-parse --show-toplevel)"
 PURLIN_ROOT=""
 PURLIN_SEARCHED=""
 
+# The same order as scripts/purlin_python.sh, which this cannot source yet:
+# the resolver ships inside the plugin this function is being called to help
+# find. Once PURLIN_ROOT is known the real resolver is sourced below, and it
+# is the one the hook script itself uses.
 purlin_interpreter() {
-  if command -v python3 >/dev/null 2>&1; then
+  if [ -n "${PURLIN_PYTHON:-}" ] && "$PURLIN_PYTHON" -c 'import sys' >/dev/null 2>&1; then
+    echo "$PURLIN_PYTHON"
+  elif command -v python3 >/dev/null 2>&1; then
     echo python3
-  elif command -v python >/dev/null 2>&1; then
+  elif command -v python >/dev/null 2>&1 \
+       && python -c 'import sys; sys.exit(sys.version_info[0] != 3)' >/dev/null 2>&1; then
     echo python
+  elif command -v py >/dev/null 2>&1; then
+    py -3 -c 'import sys; sys.stdout.write(sys.executable)' 2>/dev/null
   fi
 }
 
