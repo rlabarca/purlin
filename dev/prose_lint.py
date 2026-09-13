@@ -393,6 +393,9 @@ PATH_ALLOWLIST = (
     'specs/schema/schema_spec_format.md',
     'specs/integration/',
     '.purlin/config.local.json',
+    # The workflow purlin:init --ci writes into a consumer project; this
+    # repository carries its own verify-gate.yml under a different name.
+    '.github/workflows/purlin-verify-gate.yml',
 )
 
 _BACKTICK = re.compile(r'`([^`\n]+)`')
