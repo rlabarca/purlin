@@ -48,7 +48,7 @@ def _docs_markdown():
 class TestVhashHonesty:
     """RULE-2 - the compliance page states exactly what the hash reaches."""
 
-    @pytest.mark.proof("purlin_prose", "PROOF-3", "RULE-2")
+    @pytest.mark.proof("purlin_prose","PROOF-3","RULE-2")
     def test_regulated_page_states_what_the_vhash_binds_and_does_not(self):
         text = _read('docs/regulated-environments.md')
         assert 'What the vhash binds' in text
@@ -67,7 +67,7 @@ class TestVhashHonesty:
             assert phrase in does_not, (
                 f"the does-not-bind section never names {phrase!r}")
 
-    @pytest.mark.proof("purlin_prose", "PROOF-4", "RULE-2")
+    @pytest.mark.proof("purlin_prose","PROOF-4","RULE-2")
     def test_no_test_lock_file_and_audit_config_described_as_enforced(self):
         text = _read('docs/regulated-environments.md')
         assert '.test-lock' not in text, (
@@ -79,7 +79,7 @@ class TestVhashHonesty:
         assert 'The pin is enforced rather than recorded' in text
         assert 'There is no fall back to the built-in criteria' in text
 
-    @pytest.mark.proof("purlin_prose", "PROOF-5", "RULE-2")
+    @pytest.mark.proof("purlin_prose","PROOF-5","RULE-2")
     def test_pass_d_is_split_into_its_deterministic_and_llm_halves(self):
         sentence = 'Pass D1 is deterministic; Pass D2 is an LLM pass'
         for rel in ('docs/regulated-environments.md',
@@ -96,7 +96,7 @@ class TestVhashHonesty:
 class TestIndexIsTheEntryPoint:
     """RULE-3 - an index that omits a subsystem hides it."""
 
-    @pytest.mark.proof("purlin_prose", "PROOF-6", "RULE-3")
+    @pytest.mark.proof("purlin_prose","PROOF-6","RULE-3")
     def test_index_names_platforms_the_layers_both_gauges_and_update(self):
         text = _read('docs/index.md')
         rows = [l for l in text.splitlines() if l.startswith('|')]
@@ -121,7 +121,7 @@ class TestIndexIsTheEntryPoint:
 class TestCIExamplesAreRunnable:
     """RULE-5 - an example that fails on first paste is worse than none."""
 
-    @pytest.mark.proof("purlin_prose", "PROOF-8", "RULE-5")
+    @pytest.mark.proof("purlin_prose","PROOF-8","RULE-5")
     def test_no_yaml_example_invokes_a_skill_or_a_deploy_event(self):
         blocks = 0
         offenders = []
@@ -138,7 +138,7 @@ class TestCIExamplesAreRunnable:
             f"only {blocks} yaml blocks found under docs/; the scan is not "
             f"reading the examples it claims to check")
 
-    @pytest.mark.proof("purlin_prose", "PROOF-9", "RULE-5")
+    @pytest.mark.proof("purlin_prose","PROOF-9","RULE-5")
     def test_gate_examples_run_real_tests_first_and_fetch_full_history(self):
         runners = ('pytest', 'npx jest', 'npm', 'dotnet', 'go ', 'bash ')
         checked = []
@@ -193,7 +193,7 @@ class TestCIExamplesAreRunnable:
 class TestDiagramsAndImages:
     """RULE-6 and RULE-7 - every rendered artifact has a source."""
 
-    @pytest.mark.proof("purlin_prose", "PROOF-10", "RULE-6")
+    @pytest.mark.proof("purlin_prose","PROOF-10","RULE-6")
     def test_every_lifecycle_svg_has_a_tracked_mermaid_source(self):
         svgs = sorted(f for f in _tracked('assets')
                       if f.startswith('assets/lifecycle-')
@@ -225,7 +225,7 @@ class TestDiagramsAndImages:
         assert lines.index('!assets/src/*.mmd') > lines.index('*.mmd'), (
             "the negation must follow the pattern it negates")
 
-    @pytest.mark.proof("purlin_prose", "PROOF-11", "RULE-7")
+    @pytest.mark.proof("purlin_prose","PROOF-11","RULE-7")
     def test_the_three_dashboard_screenshots_exist_and_are_referenced(self):
         names = ('dashboard-summary.png', 'dashboard-categories.png',
                  'dashboard-platforms.png')
@@ -304,7 +304,7 @@ PYTHON_LITERALS = (
 class TestRegulatedDeploymentIsPinned:
     """RULE-8 - the pin and the interpreter a validated install is held to."""
 
-    @pytest.mark.proof("purlin_prose", "PROOF-13", "RULE-8")
+    @pytest.mark.proof("purlin_prose","PROOF-13","RULE-8")
     def test_regulated_page_pins_the_plugin_by_tag_and_names_python_311(self):
         body, parent = _heading_section(
             _read('docs/regulated-environments.md'), PIN_SECTION)
@@ -391,7 +391,7 @@ def _sections_without_a_mechanism(text):
 class TestRegulatedPageNamesItsMechanisms:
     """RULE-9 - a compliance reader cites the mechanism, not the claim."""
 
-    @pytest.mark.proof("purlin_prose", "PROOF-14", "RULE-9")
+    @pytest.mark.proof("purlin_prose","PROOF-14","RULE-9")
     def test_every_section_of_the_regulated_page_names_a_mechanism(self):
         text = _read(REGULATED)
         sections = _level_two_sections(text)
@@ -445,7 +445,7 @@ def _plant(root, rel, text):
 class TestBannedStringsLint:
     """RULE-12 - one table of the strings this repository forbids."""
 
-    @pytest.mark.proof("purlin_prose", "PROOF-17", "RULE-12")
+    @pytest.mark.proof("purlin_prose","PROOF-17","RULE-12")
     def test_an_injected_em_dash_is_named_by_file_and_line(self, tmp_path):
         rel = 'docs/index.md'
         name, unit, pattern, scope, _min_files, allowlist, note = _row(
@@ -478,7 +478,7 @@ class TestBannedStringsLint:
         assert _dash_hits(injected, rel)[0].startswith(
             f"{rel}:{expected_line}: ")
 
-    @pytest.mark.proof("purlin_prose", "PROOF-17", "RULE-12")
+    @pytest.mark.proof("purlin_prose","PROOF-17","RULE-12")
     def test_an_exemption_whose_text_is_gone_is_reported_as_stale(
             self, tmp_path):
         rel = 'references/audit_criteria.md'
@@ -507,7 +507,7 @@ class TestBannedStringsLint:
             "the committed file still carries the occurrence, so the "
             "exemption is live")
 
-    @pytest.mark.proof("purlin_prose", "PROOF-17", "RULE-12")
+    @pytest.mark.proof("purlin_prose","PROOF-17","RULE-12")
     def test_a_restored_three_section_name_is_named_by_file_and_line(
             self, tmp_path):
         rel = 'docs/index.md'
@@ -537,7 +537,7 @@ class TestBannedStringsLint:
             f"the committed {rel} must pass the same row, so the failure "
             f"above is the injection and not the file")
 
-    @pytest.mark.proof("purlin_prose", "PROOF-17", "RULE-12")
+    @pytest.mark.proof("purlin_prose","PROOF-17","RULE-12")
     def test_the_retired_heading_is_caught_and_the_vhash_heading_is_not(
             self, tmp_path):
         """The heading arm is anchored, so one real heading must survive it."""
@@ -572,7 +572,7 @@ class TestBannedStringsLint:
 class TestPathsExistLint:
     """RULE-13 - a path in backticks reads as a link."""
 
-    @pytest.mark.proof("purlin_prose", "PROOF-18", "RULE-13")
+    @pytest.mark.proof("purlin_prose","PROOF-18","RULE-13")
     def test_a_dangling_path_and_an_undeclared_flag_are_both_named(
             self, tmp_path):
         rel = 'docs/index.md'
@@ -611,7 +611,7 @@ class TestPathsExistLint:
 class TestStructureLint:
     """RULE-14 - a skill the loader cannot resolve is a skill nobody runs."""
 
-    @pytest.mark.proof("purlin_prose", "PROOF-19", "RULE-14")
+    @pytest.mark.proof("purlin_prose","PROOF-19","RULE-14")
     def test_a_missing_usage_block_and_a_mismatched_name_are_named(
             self, tmp_path):
         rel = 'skills/find/SKILL.md'
@@ -656,7 +656,7 @@ class TestStructureLint:
 class TestSingleHomeLint:
     """RULE-15 - a subject with two homes drifts at the first edit."""
 
-    @pytest.mark.proof("purlin_prose", "PROOF-20", "RULE-15")
+    @pytest.mark.proof("purlin_prose","PROOF-20","RULE-15")
     def test_the_enforcement_table_pasted_into_a_guide_is_named_by_line(
             self, tmp_path):
         row = _row(HOMES, 'enforcement-layer table')
@@ -746,7 +746,7 @@ class TestSingleHomeLint:
             f"the committed tree must carry the formula only in {home}")
 
 
-    @pytest.mark.proof("purlin_prose", "PROOF-24", "RULE-15")
+    @pytest.mark.proof("purlin_prose","PROOF-24","RULE-15")
     def test_a_proof_common_rule_pasted_into_the_contract_is_named(
             self, tmp_path):
         row = _row(HOMES, 'proof_common rule text')
@@ -797,7 +797,7 @@ class TestSingleHomeLint:
 class TestTheLintsReadTheTreeTheyClaimTo:
     """RULE-12 - a sweep that scans nothing passes on an empty repository."""
 
-    @pytest.mark.proof("purlin_prose", "PROOF-21", "RULE-12")
+    @pytest.mark.proof("purlin_prose","PROOF-21","RULE-12")
     def test_scoped_file_counts_and_a_clean_run_on_the_real_tree(self):
         files = repo_files()
         floors = {'em-dash': 12, 'promise': 40, 'windows-tier': 40,
@@ -837,7 +837,7 @@ ROOT_REFERENCE_SECTION = 'Project Root Ownership'
 class TestProjectRootIsDocumented:
     """RULE-16 - the variable that resolves the project root is written down."""
 
-    @pytest.mark.proof("purlin_prose", "PROOF-22", "RULE-16")
+    @pytest.mark.proof("purlin_prose","PROOF-22","RULE-16")
     def test_both_pages_name_purlin_project_root(self):
         body, _ = _heading_section(
             _read('docs/installation-guide.md'), ROOT_GUIDE_SECTION)
@@ -897,7 +897,7 @@ def _prerequisites_section(text):
 class TestInterpreterPrerequisite:
     """RULE-17: the names, the override, and the shell they are found from."""
 
-    @pytest.mark.proof("purlin_prose", "PROOF-23", "RULE-17", tier="unit")
+    @pytest.mark.proof("purlin_prose","PROOF-23","RULE-17", tier="unit")
     def test_prerequisites_name_every_interpreter_and_the_override(self):
         section = _prerequisites_section(_read(INSTALL_GUIDE))
 
@@ -1208,6 +1208,8 @@ class TestSkillCallsStayOutOfBashBlocks:
             f"deleted rather than moved into the prose beside the block")
 
 # RULE-20 and RULE-21: a version literal and a draft marker that outlived it.
+
+# RULE-22 and RULE-23: a version literal and a draft marker that outlived it.
 # ---------------------------------------------------------------------------
 
 VERSION_TOKEN = re.compile(r'(Criteria|Format)-Version:\s*(\S+)')
@@ -1218,9 +1220,9 @@ PLACEHOLDER = 'Generated by purlin:spec-from-code'
 
 
 class TestVersionLiteralsAndDraftMarkers:
-    """RULE-20, RULE-21 - a number and a marker that must not be copied."""
+    """RULE-22, RULE-23 - a number and a marker that must not be copied."""
 
-    @pytest.mark.proof("purlin_prose", "PROOF-28", "RULE-20")
+    @pytest.mark.proof("purlin_prose","PROOF-33","RULE-22")
     def test_no_skill_or_agent_pins_a_version_number(self):
         found = []
         offenders = []
@@ -1244,7 +1246,7 @@ class TestVersionLiteralsAndDraftMarkers:
             "so it is a second copy of a number that is bumped elsewhere:\n"
             + "\n".join(offenders))
 
-    @pytest.mark.proof("purlin_prose", "PROOF-29", "RULE-21")
+    @pytest.mark.proof("purlin_prose","PROOF-34","RULE-23")
     def test_no_spec_still_carries_the_generator_draft_marker(self):
         specs = [rel for rel in _tracked('specs') if rel.endswith('.md')]
         assert len(specs) >= 40, (
