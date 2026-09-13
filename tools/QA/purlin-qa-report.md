@@ -102,11 +102,12 @@ The digest is a JavaScript variable assignment: `const PURLIN_DATA = {...};`. St
 
 | Field | What it means |
 |-------|---------------|
-| `schema_version` | The shape of the payload, an integer. A digest with no `schema_version` is version 1. This skill reads version 2. When the digest carries a higher number it was written by a newer Purlin than this skill: say so in the report and treat the fields it describes as a shape this skill does not know, rather than describing its numbers as current |
+| `schema_version` | The shape of the payload, an integer. A digest with no `schema_version` is version 1. This skill reads version 3. When the digest carries a higher number it was written by a newer Purlin than this skill: say so in the report and treat the fields it describes as a shape this skill does not know, rather than describing its numbers as current |
 | `timestamp` | When this digest was generated (ISO 8601) |
 | `git_sha` | The commit this data was generated against |
 | `summary` | Feature counts: total, verified, passing, partial, failing, untested |
 | `features[]` | Array of every feature and anchor with rules, proofs, status, audit data |
+| `shared_rules` | The body of every rule a feature inherits from an anchor or from a `> Requires:`, written once for the whole digest and keyed by the id the feature's entry carries. A `rules[]` entry marked `ref` is resolved against this map before anything is read from it. A digest with no `shared_rules` carries every rule inline and needs no resolving |
 | `audit_summary` | Overall proof quality. Report `weighted` and `assessed` separately, never one as the other: `assessed` is the score over the proofs that were actually graded, `weighted` counts every ungraded proof against the score. A project with three graded proofs out of ninety can show `assessed` 100 and `weighted` 3, and only the pair says which. Report `audit_summary.coverage` as `measured` of `total` beside them, so the reader sees how much of the project the score rests on, plus the strong/weak/hollow counts |
 | `audit_summary.auditors` | Who or what produced the assessments, when present. Absent on digests written before auditor identity was recorded, so read it defensively and say "not recorded" rather than inventing one |
 | `drift` | What changed since last verification: commits, files, spec changes |
@@ -131,7 +132,7 @@ differs from the commit.
 
 Each feature has:
 - `status`: VERIFIED (all rules proved on every declared platform and a receipt matches), PASSING (every rule proved, and either no current receipt or a declared platform that has not run), PARTIAL (some rules proved, none failing), FAILING (a proof failed), UNTESTED (no proofs). A receipt is a record that tests ran, not an approval by a person. Never describe a feature, a release or a project as approved, cleared or compliant on the strength of one
-- `rules[]`: Each rule has `id`, `description`, `status` (PASS/FAIL/NONE), and `proofs[]`
+- `rules[]`: one entry per rule the feature carries, own and inherited alike, so its length is the feature's rule count. Resolve every entry before reading it: an entry carrying `ref` holds only `id`, `label` and `ref`, and its body is the `shared_rules` entry under the same id with the entry's own keys laid over it. An entry with no `ref`, or a digest with no `shared_rules` at all, is already complete and is read as it is. A resolved rule has `id`, `description`, `status` (PASS/FAIL/NONE) and `proofs[]`. A reference read without resolving it is a rule with no description and no status, which a report would print as a rule nobody covered
 - `audit`: Per-feature integrity score and proof-level assessments (STRONG/WEAK/HOLLOW)
 - `type`: "feature" or "anchor" (cross-cutting constraint like security policy)
 - `platforms`: one record per platform the feature's proofs declare, each with `declared`, `proved`, `failed`, `awaiting`, a `status` of FAILING, AWAITING, PASSING or VERIFIED, `receipted`, and the commit and runner that proved it

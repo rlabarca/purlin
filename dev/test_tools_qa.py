@@ -199,7 +199,33 @@ def test_the_field_table_documents_the_digest_schema_version():
     row = rows[0]
     assert 'version 1' in row, (
         "the row must say a digest without the key is version 1: " + row)
-    assert 'version 2' in row, (
+    assert 'version 3' in row, (
         "the row must name the version the skill reads: " + row)
     assert 'newer' in row, (
         "the row must tell the report to say so when the digest is newer: " + row)
+
+
+@pytest.mark.proof("qa_report", "PROOF-8", "RULE-8", tier="unit")
+def test_the_skill_resolves_a_referenced_rule_before_walking_rules():
+    """qa_report RULE-8 - a reference read without resolving it is a rule with
+    no description and no status, which a report prints as uncovered."""
+    text = _read(QA_MD)
+    rows = [line for line in text.splitlines()
+            if line.startswith('|') and '`shared_rules`' in line]
+    assert len(rows) == 1, (
+        f"expected exactly one digest field-table row for shared_rules, "
+        f"got {len(rows)}")
+    assert '`ref`' in rows[0], (
+        "the row must name the mark on the entry it resolves: " + rows[0])
+
+    bullets = [line for line in text.splitlines()
+               if line.startswith('- `rules[]`')]
+    assert len(bullets) == 1, (
+        f"expected exactly one `rules[]` entry, got {len(bullets)}")
+    bullet = bullets[0]
+    for token in ('`ref`', '`shared_rules`', 'Resolve'):
+        assert token in bullet, (
+            f"the `rules[]` entry must carry {token}: " + bullet)
+    assert 'no `ref`' in bullet and 'is already complete' in bullet, (
+        "the entry must say an old digest, whose rules are all inline, is read "
+        "as it is: " + bullet)

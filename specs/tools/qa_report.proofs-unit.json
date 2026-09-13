@@ -63,6 +63,15 @@
       "test_name": "test_the_field_table_documents_the_digest_schema_version",
       "status": "pass",
       "tier": "unit"
+    },
+    {
+      "feature": "qa_report",
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "test_file": "dev/test_tools_qa.py",
+      "test_name": "test_the_skill_resolves_a_referenced_rule_before_walking_rules",
+      "status": "pass",
+      "tier": "unit"
     }
   ]
 }
