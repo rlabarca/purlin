@@ -51,16 +51,7 @@
       "id": "PROOF-16",
       "rule": "RULE-16",
       "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_status_column_centered_at_multiple_widths",
-      "status": "pass",
-      "tier": "unit"
-    },
-    {
-      "feature": "purlin_report",
-      "id": "PROOF-17",
-      "rule": "RULE-17",
-      "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_responsive_layout",
+      "test_name": "test_status_column_reads_the_same_at_every_width",
       "status": "pass",
       "tier": "unit"
     },
@@ -132,7 +123,7 @@
       "id": "PROOF-24",
       "rule": "RULE-24",
       "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_no_proof_rules_have_amber_border",
+      "test_name": "test_uncovered_rules_are_visually_distinct",
       "status": "pass",
       "tier": "unit"
     },
@@ -141,7 +132,7 @@
       "id": "PROOF-25",
       "rule": "RULE-25",
       "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_fail_rules_have_red_border",
+      "test_name": "test_failing_rules_are_distinct_from_proved_and_uncovered",
       "status": "pass",
       "tier": "unit"
     },
@@ -267,7 +258,7 @@
       "id": "PROOF-8",
       "rule": "RULE-8",
       "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_staleness_warning_amber",
+      "test_name": "test_staleness_warning_state_is_visually_distinct",
       "status": "pass",
       "tier": "unit"
     },
@@ -276,7 +267,7 @@
       "id": "PROOF-9",
       "rule": "RULE-9",
       "test_file": "dev/test_purlin_report.py",
-      "test_name": "test_staleness_stale_red",
+      "test_name": "test_staleness_stale_state_is_distinct_from_fresh_and_warning",
       "status": "pass",
       "tier": "unit"
     }

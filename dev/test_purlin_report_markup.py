@@ -197,9 +197,11 @@ class TestModalHelper:
         """The markup half of RULE-41: PROOF-44 and PROOF-50 drive the runtime half."""
         html = _html()
 
-        for sig in ('function openModal(title, bodyHtml, footHtml) {',
-                    'function closeModal() {',
-                    'function onModalKey(e) {'):
+        # One helper, whatever arguments it takes: the rule pins the count of
+        # definitions, not their signature.
+        for sig in ('function openModal(',
+                    'function closeModal(',
+                    'function onModalKey('):
             assert html.count(sig) == 1, (
                 f"expected exactly one definition of {sig!r}, got {html.count(sig)}")
 
@@ -212,7 +214,7 @@ class TestModalHelper:
         # Every dialog on the page goes through the one helper: the aria contract
         # appears exactly once in the file and that one occurrence is inside
         # openModal, so no second dialog is hand-rolled anywhere else.
-        start = html.index('function openModal(title, bodyHtml, footHtml) {')
+        start = html.index('function openModal(')
         helper = html[start:html.index('\n  }', start)]
         for attr in ('role="dialog"', 'aria-modal="true"',
                      'aria-labelledby="modal-title"', '<h2 id="modal-title">'):

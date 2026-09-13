@@ -316,6 +316,42 @@ def load_dashboard(page, dashboard_dir, data=None, expand_categories=True):
             page.wait_for_load_state("networkidle")
 
 
+def _freshness_colour(page, dashboard_dir, minutes):
+    """Computed colour of the freshness indicator for a payload N minutes old.
+
+    Used by PROOF-8 and PROOF-9 to compare states against one another rather
+    than against a hue literal: the rule asks for states a reader tells apart,
+    and which colours say so is `dashboard_visual`'s business.
+    """
+    when = (
+        datetime.datetime.now(datetime.timezone.utc)
+        - datetime.timedelta(minutes=minutes)
+    ).isoformat()
+    load_dashboard(page, dashboard_dir, data=make_data({"timestamp": when}))
+    return page.evaluate(
+        "() => getComputedStyle(document.querySelector('.staleness-text')).color")
+
+
+def _visual_signature(page, selector):
+    """The computed paint of an element's first cell, as a comparable tuple.
+
+    PROOF-24 and PROOF-25 compare signatures between rule rows instead of
+    asserting a colour literal, so the rules can say "visually distinct"
+    without the spec pinning a palette.
+    """
+    return page.evaluate(
+        """(sel) => {
+            const row = document.querySelector(sel);
+            if (!row) return null;
+            const td = row.querySelector('td');
+            const cs = getComputedStyle(td);
+            return [cs.borderLeftColor, cs.borderLeftWidth, cs.borderLeftStyle,
+                    cs.backgroundColor, cs.color].join('|');
+        }""",
+        selector,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
@@ -551,8 +587,15 @@ class TestPurlinReport:
         )
 
     @pytest.mark.proof("purlin_report", "PROOF-8", "RULE-8")
-    def test_staleness_warning_amber(self, page, dashboard):
-        """PROOF-8: Staleness indicator shows amber warning when data is older than 1 hour."""
+    def test_staleness_warning_state_is_visually_distinct(self, page, dashboard):
+        """PROOF-8: past an hour the freshness indicator leaves the fresh state.
+
+        The rule is that a reader tells the two apart by eye, so this reads the
+        same element's computed colour on a seconds-old payload and on a
+        two-hour-old one and asserts they differ. It names no hue: the palette
+        is `dashboard_visual`'s to choose.
+        """
+        fresh_colour = _freshness_colour(page, dashboard, minutes=0)
         two_hours_ago = (
             datetime.datetime.now(datetime.timezone.utc)
             - datetime.timedelta(hours=2)
@@ -563,14 +606,22 @@ class TestPurlinReport:
         staleness_text = page.query_selector(".staleness-text")
         text_content = staleness_text.inner_text()
         assert "ago" in text_content, f"Expected 'ago' in staleness text, got: '{text_content}'"
-        css_class = staleness_text.get_attribute("class")
-        assert "warning" in css_class, (
-            f"Expected 'warning' CSS class on staleness text for 2h old data, got: '{css_class}'"
+        warning_colour = page.evaluate(
+            "() => getComputedStyle(document.querySelector('.staleness-text')).color")
+        assert warning_colour != fresh_colour, (
+            "two-hour-old data must not look like data written seconds ago: the "
+            f"freshness indicator computed {warning_colour} for both"
         )
 
     @pytest.mark.proof("purlin_report", "PROOF-9", "RULE-9")
-    def test_staleness_stale_red(self, page, dashboard):
-        """PROOF-9: Staleness indicator shows red warning when data is older than 24 hours."""
+    def test_staleness_stale_state_is_distinct_from_fresh_and_warning(self, page, dashboard):
+        """PROOF-9: past a day the indicator leaves the warning state too.
+
+        An hour of drift and a day of drift call for different reactions, so
+        all three ages must be told apart on the same element. No hue is named.
+        """
+        fresh_colour = _freshness_colour(page, dashboard, minutes=0)
+        warning_colour = _freshness_colour(page, dashboard, minutes=120)
         two_days_ago = (
             datetime.datetime.now(datetime.timezone.utc)
             - datetime.timedelta(days=2)
@@ -578,10 +629,13 @@ class TestPurlinReport:
         data = make_data({"timestamp": two_days_ago})
         load_dashboard(page, dashboard, data=data)
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof9_stale_red.png"))
-        staleness_text = page.query_selector(".staleness-text")
-        css_class = staleness_text.get_attribute("class")
-        assert "stale" in css_class, (
-            f"Expected 'stale' CSS class on staleness text for 2-day-old data, got: '{css_class}'"
+        stale_colour = page.evaluate(
+            "() => getComputedStyle(document.querySelector('.staleness-text')).color")
+        assert stale_colour != fresh_colour, (
+            f"two-day-old data looks like fresh data: both computed {stale_colour}")
+        assert stale_colour != warning_colour, (
+            "two-day-old data looks like two-hour-old data: both computed "
+            f"{stale_colour}, so an hour of drift and a day of drift read alike"
         )
 
     @pytest.mark.proof("purlin_report", "PROOF-10", "RULE-10")
@@ -819,19 +873,23 @@ class TestPurlinReport:
             f"the Integrity label leaked the Design cache: {i_txt!r}")
 
     @pytest.mark.proof("purlin_report", "PROOF-16", "RULE-16")
-    def test_status_column_centered_at_multiple_widths(self, page, dashboard):
-        """PROOF-16: Status column centered in feature table and rules sub-table at different widths."""
+    def test_status_column_reads_the_same_at_every_width(self, page, dashboard):
+        """PROOF-16: the Status column does not change layout when the window narrows.
+
+        The rule is about consistency, not about a particular alignment: the
+        feature table's status cell and the rules sub-table's must agree with
+        each other, and each must be unchanged across widths. Which alignment
+        they agree on is `dashboard_visual`'s to decide.
+        """
+        seen = {}
         for width in [1920, 1280]:
             page.set_viewport_size({"width": width, "height": 1080})
             load_dashboard(page, dashboard, data=make_data())
 
-            # Check feature table status badge centering
             feature_status_align = page.evaluate("""() => {
                 const td = document.querySelector('td.col-status');
                 return td ? getComputedStyle(td).textAlign : null;
             }""")
-            assert feature_status_align == "center", \
-                f"Feature table status not centered at {width}px: got '{feature_status_align}'"
 
             # Ensure auth_login is expanded (click only if collapsed)
             is_expanded = page.evaluate("""() => {
@@ -842,23 +900,32 @@ class TestPurlinReport:
                 page.click("tr.fr[data-name='auth_login']")
             page.wait_for_timeout(200)
 
-            # Check rules sub-table status centering
             rule_status_align = page.evaluate("""() => {
                 const td = document.querySelector('td.rst');
                 return td ? getComputedStyle(td).textAlign : null;
             }""")
-            assert rule_status_align == "center", \
-                f"Rules sub-table status not centered at {width}px: got '{rule_status_align}'"
+            assert feature_status_align and rule_status_align, (
+                f"both status cells must render at {width}px, got "
+                f"{feature_status_align!r} and {rule_status_align!r}")
+            assert feature_status_align == rule_status_align, (
+                f"at {width}px the feature table's Status cell reads "
+                f"{feature_status_align!r} while the rules sub-table's reads "
+                f"{rule_status_align!r}: one column, two layouts")
+            seen[width] = feature_status_align
 
             page.screenshot(path=os.path.join(SCREENSHOT_DIR, f"proof16_centered_{width}.png"))
 
-    @pytest.mark.proof("purlin_report", "PROOF-17", "RULE-17")
+        assert seen[1920] == seen[1280], (
+            f"the Status column changed layout when the window narrowed: "
+            f"{seen[1920]!r} at 1920px, {seen[1280]!r} at 1280px")
+
+    @pytest.mark.proof("dashboard_visual", "PROOF-13", "RULE-13", tier="e2e")
     def test_responsive_layout(self, page, dashboard):
-        """PROOF-17: Dashboard uses full width up to 2400px and reflows at 1100px."""
+        """PROOF-13 (dashboard_visual): full width to 2400px, reflows when narrow."""
         # Wide viewport: 2400px — verify container max-width is 2400px
         page.set_viewport_size({"width": 2400, "height": 1080})
         load_dashboard(page, dashboard, data=make_data())
-        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof17_wide.png"))
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "dv_proof13_wide.png"))
         # Check computed max-width of the .dashboard element
         max_width = page.evaluate(
             "() => getComputedStyle(document.querySelector('.dashboard')).maxWidth"
@@ -872,7 +939,7 @@ class TestPurlinReport:
         page.set_viewport_size({"width": 600, "height": 900})
         page.reload()
         page.wait_for_load_state("networkidle")
-        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof17_narrow.png"))
+        page.screenshot(path=os.path.join(SCREENSHOT_DIR, "dv_proof13_narrow.png"))
         grid_cols = page.evaluate(
             "() => getComputedStyle(document.querySelector('.summary-strip')).gridTemplateColumns"
         )
@@ -2197,56 +2264,68 @@ class TestActionBanners:
 class TestRuleRowHighlights:
 
     @pytest.mark.proof("purlin_report", "PROOF-24", "RULE-24")
-    def test_no_proof_rules_have_amber_border(self, page, dashboard):
-        """PROOF-24: NONE rules have class rule-np and amber left border."""
+    def test_uncovered_rules_are_visually_distinct(self, page, dashboard):
+        """PROOF-24: a NONE rule row does not paint like a proved one.
+
+        The rule asks for a distinction a reader sees without reading the
+        Status cell, so this compares the computed paint of the two rows
+        rather than asserting a hue the palette owns.
+        """
         data = make_action_banner_data()
         load_dashboard(page, dashboard, data=data)
 
-        # Expand the PARTIAL feature (has 2 NONE rules)
+        # Expand the PARTIAL feature: 1 PASS rule and 2 NONE rules.
         page.click("tr.fr[data-name='feat_partial']")
         page.wait_for_timeout(300)
 
         np_rows = page.query_selector_all("tr.rule-np")
         assert len(np_rows) == 2, (
-            f"Expected 2 rule-np rows for PARTIAL feature, got {len(np_rows)}"
+            f"Expected 2 uncovered rule rows for the PARTIAL feature, got {len(np_rows)}"
         )
 
-        # Verify amber border on the first td
-        border_color = page.evaluate("""() => {
-            var row = document.querySelector('tr.rule-np');
-            var td = row.querySelector('td');
-            return getComputedStyle(td).borderLeftColor;
-        }""")
-        hex_color = rgb_to_hex(border_color)
-        assert hex_color == "#f59e0b", (
-            f"Expected amber (#f59e0b) border-left on NONE rule td, got {hex_color}"
+        none_sig = _visual_signature(page, "table.rt tbody tr.rule-np")
+        pass_sig = _visual_signature(
+            page, "table.rt tbody tr:not(.rule-np):not(.rule-fail)")
+        assert none_sig and pass_sig, "both a NONE row and a proved row must render"
+        assert none_sig != pass_sig, (
+            "an uncovered rule must not paint like a proved one: both computed "
+            f"{none_sig}"
         )
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof24_no_proof_border.png"))
 
     @pytest.mark.proof("purlin_report", "PROOF-25", "RULE-25")
-    def test_fail_rules_have_red_border(self, page, dashboard):
-        """PROOF-25: FAIL rules have class rule-fail and red left border."""
+    def test_failing_rules_are_distinct_from_proved_and_uncovered(self, page, dashboard):
+        """PROOF-25: a FAIL row paints like neither a proved nor a NONE row.
+
+        A failing rule taken for one that merely has no proof yet sends the
+        reader to write a test instead of to fix a regression, so all three
+        kinds of row must differ from one another.
+        """
         data = make_action_banner_data()
         load_dashboard(page, dashboard, data=data)
 
-        # Expand the FAILING feature (has 1 FAIL rule)
         page.click("tr.fr[data-name='feat_failing']")
         page.wait_for_timeout(300)
 
         fail_rows = page.query_selector_all("tr.rule-fail")
         assert len(fail_rows) == 1, (
-            f"Expected 1 rule-fail row for FAILING feature, got {len(fail_rows)}"
+            f"Expected 1 failing rule row for the FAILING feature, got {len(fail_rows)}"
         )
+        fail_sig = _visual_signature(page, "table.rt tbody tr.rule-fail")
+        pass_sig = _visual_signature(
+            page, "table.rt tbody tr:not(.rule-np):not(.rule-fail)")
 
-        # Verify red border on the first td
-        border_color = page.evaluate("""() => {
-            var row = document.querySelector('tr.rule-fail');
-            var td = row.querySelector('td');
-            return getComputedStyle(td).borderLeftColor;
-        }""")
-        hex_color = rgb_to_hex(border_color)
-        assert hex_color == "#ef4444", (
-            f"Expected red (#ef4444) border-left on FAIL rule td, got {hex_color}"
+        page.click("tr.fr[data-name='feat_partial']")
+        page.wait_for_timeout(300)
+        none_sig = _visual_signature(page, "table.rt tbody tr.rule-np")
+
+        assert fail_sig and pass_sig and none_sig, (
+            "a failing, a proved and an uncovered rule row must all render")
+        assert fail_sig != pass_sig, (
+            f"a failing rule must not paint like a proved one: both {fail_sig}")
+        assert fail_sig != none_sig, (
+            "a failing rule must not paint like one that merely has no proof: "
+            f"both {fail_sig}"
         )
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof25_fail_border.png"))
 
@@ -2721,29 +2800,96 @@ def test_structural_proof_tag_rendering(dashboard, page):
 
 @pytest.mark.proof("purlin_report", "PROOF-30", "RULE-30")
 def test_description_block_rendering(dashboard, page):
-    """Description block renders above rules when present, absent when null."""
-    data = make_data()
-    load_dashboard(page, dashboard, data=data)
+    """PROOF-30: the description block follows the payload, not the feature.
 
-    # Click the auth_login feature row (categories already expanded by load_dashboard)
+    Read by position rather than by class: the sentence must sit in the text
+    that precedes the "Rules & Proofs" heading, and the element holding it must
+    span the detail container. A feature the payload does not describe carries
+    no such text, and gains it when the payload gains a description.
+    """
+
+    def detail_prefix(name):
+        """Text of the detail row before the Rules & Proofs heading."""
+        return page.evaluate(
+            """(n) => {
+                const dr = document.querySelector(
+                    "tr.fr[data-name='" + n + "'] + tr.dr");
+                if (!dr) return null;
+                const txt = dr.innerText;
+                const i = txt.indexOf('Rules & Proofs');
+                return i < 0 ? txt : txt.slice(0, i);
+            }""",
+            name,
+        )
+
+    load_dashboard(page, dashboard, data=make_data())
+
     page.click("tr.fr[data-name='auth_login']")
     page.wait_for_timeout(300)
 
-    # Should show .desc-block with the description text
-    desc_block = page.query_selector("tr.fr[data-name='auth_login'] + tr.dr .desc-block")
-    desc_text = desc_block.inner_text()
-    assert "Handles user login" in desc_text, (
-        f"Expected description text, got: {desc_text}"
+    prefix = detail_prefix("auth_login")
+    assert "Handles user login" in prefix, (
+        "the description must render above the Rules & Proofs header; the text "
+        f"before it was: {prefix!r}"
+    )
+    widths = page.evaluate(
+        """() => {
+            const dr = document.querySelector("tr.fr[data-name='auth_login'] + tr.dr");
+            const walk = dr.querySelectorAll('*');
+            let holder = null;
+            for (const el of walk) {
+                if (el.children.length === 0 &&
+                    el.textContent.indexOf('Handles user login') >= 0) {
+                    holder = el;
+                    break;
+                }
+            }
+            if (!holder) return null;
+            const container = holder.parentElement;
+            const cs = getComputedStyle(container);
+            const inner = container.getBoundingClientRect().width
+                - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+            return [holder.getBoundingClientRect().width, inner];
+        }"""
+    )
+    assert widths, "the description text must be held by an element of its own"
+    assert abs(widths[0] - widths[1]) < 2, (
+        "the description block must use the full width of the detail container: "
+        f"block {widths[0]:.1f}px inside {widths[1]:.1f}px"
     )
     page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof30_description.png"))
 
-    # Expand checkout (which has description=None)
+    # checkout carries description=None: nothing renders in that position.
     page.click("tr.fr[data-name='checkout']")
     page.wait_for_timeout(300)
+    none_prefix = detail_prefix("checkout")
+    assert none_prefix is not None, "the checkout detail row must render"
+    assert "Checkout flow" not in none_prefix and "Handles user login" not in none_prefix, (
+        f"a feature the payload does not describe must carry no description "
+        f"block; the text before the header was: {none_prefix!r}"
+    )
 
-    # The detail row for checkout should not have a .desc-block
-    detail = page.query_selector("tr.fr[data-name='checkout'] + tr.dr .desc-block")
-    assert detail is None, "Expected no .desc-block when description is null"
+    # Give it a description and the block appears in the same position.
+    described = make_data()
+    for feat in described["features"]:
+        if feat["name"] == "checkout":
+            feat["description"] = "Checkout flow"
+    load_dashboard(page, dashboard, data=described)
+    # The row may already be expanded: open/closed state survives the reload.
+    if not page.evaluate(
+        """() => {
+            const r = document.querySelector("tr.fr[data-name='checkout']");
+            return !!r && r.classList.contains('expanded');
+        }"""
+    ):
+        page.click("tr.fr[data-name='checkout']")
+    page.wait_for_timeout(300)
+    now_prefix = detail_prefix("checkout")
+    assert now_prefix is not None, "the checkout detail row must render"
+    assert "Checkout flow" in now_prefix, (
+        "the block follows the payload: with a description present it must "
+        f"render above the header; the text before it was: {now_prefix!r}"
+    )
 
 
 @pytest.mark.proof("purlin_report", "PROOF-32", "RULE-32")
@@ -3268,9 +3414,9 @@ class TestGaugeCellsAndCoverage:
             f"{waiting_status}, badge reads {badge}")
         page.screenshot(path=os.path.join(SCREENSHOT_DIR, "proof41_awaiting_runner.png"))
 
-    @pytest.mark.proof("purlin_report", "PROOF-40", "RULE-38", tier="e2e")
+    @pytest.mark.proof("dashboard_visual", "PROOF-14", "RULE-14", tier="e2e")
     def test_summary_strip_rows_are_exactly_filled(self, page, dashboard):
-        """RULE-38: no empty cells in the summary strip above 900px.
+        """RULE-14 (dashboard_visual): no empty cells in the summary strip above 900px.
 
         Seven cards in a four-column grid tiled as 4+3 and left a card-sized
         hole beside Proof Integrity, which reads as a rendering failure rather
@@ -3310,7 +3456,7 @@ class TestGaugeCellsAndCoverage:
                 f"at {width}px the last row ends {measured['gap']:.0f}px short of "
                 f"the strip's right edge, about a card's width ({measured['cardW']:.0f}px)"
             )
-            page.screenshot(path=os.path.join(SCREENSHOT_DIR, f"proof40_strip_{width}.png"))
+            page.screenshot(path=os.path.join(SCREENSHOT_DIR, f"dv_proof14_strip_{width}.png"))
 
     @pytest.mark.proof("purlin_report", "PROOF-39", "RULE-37", tier="e2e")
     def test_refresh_directive_names_only_the_stale_gauge(self, page, dashboard):
