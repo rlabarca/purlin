@@ -183,6 +183,15 @@
     },
     {
       "feature": "purlin_prose",
+      "id": "PROOF-30",
+      "rule": "RULE-5",
+      "test_file": "dev/test_purlin_prose.py",
+      "test_name": "test_no_bash_block_carries_a_skill_call",
+      "status": "pass",
+      "tier": "unit"
+    },
+    {
+      "feature": "purlin_prose",
       "id": "PROOF-4",
       "rule": "RULE-2",
       "test_file": "dev/test_purlin_prose.py",

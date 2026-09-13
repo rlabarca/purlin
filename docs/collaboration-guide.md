@@ -49,14 +49,9 @@ You can add local rules to an externally referenced anchor. You cannot change th
 
 ### CI staleness check
 
-In CI, verify external references are current before deploying:
-
-```bash
-# Exit non-zero if any anchor is behind its external source
-purlin:anchor sync --check-only
-```
-
-Or script it directly:
+Check that every external reference is current before deploying. In a Claude Code session,
+`purlin:anchor sync --check-only` reports any anchor that is behind its external source and exits
+non-zero. A CI runner cannot invoke a skill, so in a workflow step script the check directly:
 
 ```bash
 PINNED=$(grep '> Pinned:' specs/_anchors/api_contract.md | awk '{print $3}')

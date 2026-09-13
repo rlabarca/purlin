@@ -1106,3 +1106,43 @@ class TestArchitectureTreesAgree:
             "README carries no fenced tree naming both `scripts/` and "
             "`tools/`; the plugin content was deleted rather than moved into "
             "a tree of its own")
+
+
+# ---------------------------------------------------------------------------
+# RULE-5: a skill call is not a shell command either
+# ---------------------------------------------------------------------------
+
+COLLAB_GUIDE = 'docs/collaboration-guide.md'
+ANCHOR_CHECK = 'purlin:anchor sync --check-only'
+
+
+class TestSkillCallsStayOutOfBashBlocks:
+    """RULE-5: no fenced bash block under docs/ runs a `purlin:` line."""
+
+    @pytest.mark.proof("purlin_prose", "PROOF-30", "RULE-5", tier="unit")
+    def test_no_bash_block_carries_a_skill_call(self):
+        blocks = 0
+        offenders = []
+        for rel in _docs_markdown():
+            text = _read(rel)
+            lines = text.splitlines()
+            for block in _BASH_BLOCK.findall(text):
+                blocks += 1
+                for line in block.splitlines():
+                    token = line.strip().split(' ')[0]
+                    if not token.startswith('purlin:'):
+                        continue
+                    offenders.append(
+                        f"{rel}:{lines.index(line) + 1}: {line.strip()}")
+
+        assert blocks >= 6, (
+            f"only {blocks} fenced bash blocks were extracted from docs/; "
+            f"the sweep would pass by reading none")
+        assert not offenders, (
+            "a fenced bash block runs a Claude Code skill; a reader who "
+            "pastes it into a script or a CI step gets `command not "
+            "found`:\n" + "\n".join(offenders))
+
+        assert ANCHOR_CHECK in _read(COLLAB_GUIDE), (
+            f"{COLLAB_GUIDE} no longer names {ANCHOR_CHECK!r}; the call was "
+            f"deleted rather than moved into the prose beside the block")
