@@ -402,7 +402,7 @@ Drift, verify, ship. Everything below is detail for when you want more control.
 
 ---
 
-**QA verifies that the code really meets the spec.** That is three questions, not one: do the tests pass, do the right tests exist, and did the spec ask for the right evidence in the first place? The last two are the two gauges. Proof Integrity asks whether the tests deliver; Proof Design asks whether the claims were checkable at all. Purlin shows which rules lack proofs, which manual proofs are stale, which features are ready for a receipt (PASSING) and which need more tests (PARTIAL). QA stamps the manual proofs for what automation cannot check, such as visual quality, UX flow and brand voice, and runs `purlin:verify`, the last gate before code ships.
+**QA verifies that the code really meets the spec.** That is three questions, not one: do the tests pass, do the right tests exist, and did the spec ask for the right evidence in the first place? The last two are the two gauges. Proof Integrity asks whether the tests deliver; Proof Design asks whether the claims were checkable at all. Purlin shows which rules lack proofs, which manual proofs are stale, which features are ready for a receipt (PASSING) and which need more tests (PARTIAL). QA stamps the manual proofs for what automation cannot check, such as visual quality, UX flow and brand voice, and runs `purlin:verify`, which is Layer 0: the first of four enforcement layers (`references/hard_gates.md`), not the last thing that stands between the code and production.
 
 ![QA Workflow](../assets/lifecycle-qa-workflow.svg)
 

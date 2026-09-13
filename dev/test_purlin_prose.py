@@ -802,7 +802,7 @@ class TestTheLintsReadTheTreeTheyClaimTo:
         files = repo_files()
         floors = {'em-dash': 12, 'promise': 40, 'windows-tier': 40,
                   'approval': 1, 'retired-format': 25, 'anchor-home': 35,
-                  'slash-prefix': 80}
+                  'slash-prefix': 80, 'last-gate': 10}
         for name, floor in floors.items():
             scope = _row(BANNED, name)[3]
             count = len(_scope_files(scope, files))

@@ -269,6 +269,13 @@ SLASH_PREFIX_ALLOWLIST = (('specs/instructions/purlin_prose.md', 'Rules'),)
 SCRIPT_STRING_FILES = ('scripts/hooks/pre_push_gate.py',
                        'scripts/hooks/pre-push.sh')
 
+#: The `last-gate` row's file set and its three phrasings. `purlin:verify` is
+#: Layer 0 of the four in `references/hard_gates.md`, and the CI gate job is
+#: Layer 3, so any of these words in a guide tells a reader the opposite of
+#: what the reference says.
+LAST_GATE_SCOPE = ('docs/**',)
+LAST_GATE_RE = re.compile(r'last gate|final gate|the last check')
+
 REGULATED = 'docs/regulated-environments.md'
 
 #: The `retired-format` row's file set. Narrower than `PROSE_SCOPE` on purpose:
@@ -316,6 +323,11 @@ BANNED = (
      'a spec and an anchor carry two sections, `## Rules` and `## Proof`, so '
      'the name is the 2-section format; `## What it does` is retired and what '
      'a feature does belongs on the `> Description:` continuation lines'),
+    ('last-gate', 'line', LAST_GATE_RE, LAST_GATE_SCOPE, 10, (),
+     '`purlin:verify` is Layer 0, the first of the four enforcement layers '
+     'of `references/hard_gates.md`, and the CI gate job is Layer 3; a guide '
+     'that calls any of them the last gate tells the reader the opposite of '
+     'what the reference says'),
     ('slash-prefix', 'line', SLASH_PREFIX_RE, SLASH_PREFIX_SCOPE, 80,
      SLASH_PREFIX_ALLOWLIST,
      'a skill is invoked as `purlin:<name>`; the leading slash is a Claude '
