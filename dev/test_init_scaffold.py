@@ -27,6 +27,14 @@ SKILL = os.path.join(ROOT, 'skills', 'init', 'SKILL.md')
 TEMPLATE_CONFIG = os.path.join(ROOT, 'templates', 'config.json')
 TEMPLATE_GITIGNORE = os.path.join(ROOT, 'templates', 'gitignore.purlin')
 MIGRATE = os.path.join(ROOT, 'scripts', 'update', 'migrate.py')
+REPO_VERIFY_GATE = os.path.join(ROOT, '.github', 'workflows', 'verify-gate.yml')
+CI_REL = '.github/workflows/purlin-verify-gate.yml'
+
+# The consumer adaptation of `consumer_ci` RULE-1, rendered by the proof that
+# owns it. Importing it rather than restating it is what keeps `--ci` and the
+# committed fixture on one definition of what a consumer workflow is.
+sys.path.insert(0, DEV)
+import test_consumer_ci  # noqa: E402
 
 GIT_REQUIRED = "Purlin requires git. Run 'git init' first."
 
@@ -1235,3 +1243,121 @@ class TestDetectionPrecision:
             _detected(mono)
         assert _detected(mono) == _detected(mono), \
             "the same tree detected two different framework sets"
+
+
+# ---------------------------------------------------------------------------
+# RULE-79: the CI workflow
+# ---------------------------------------------------------------------------
+
+class TestContinuousIntegration:
+    """`--ci github` renders the consumer form of this repo's own gate job."""
+
+    @staticmethod
+    def _filters(text):
+        """Every entry of every trigger `paths:` block, in order."""
+        entries = []
+        for block in re.findall(r"    paths:\n((?:      - '[^\n]*'\n)+)", text):
+            entries.extend(line.strip()[2:].strip("'")
+                           for line in block.rstrip('\n').split('\n'))
+        return entries
+
+    @classmethod
+    def _without_the_two_extras(cls, rendered, repo_filters):
+        """`rendered` with the pin and the consumer filters taken back out.
+
+        What is left must be the four-operation consumer adaptation exactly,
+        so the only ways this file can differ from the one `consumer_ci`
+        RULE-1 describes are the two that rule names.
+        """
+        text = re.sub(r'\n    env:\n(?:      [^\n]*\n)+(?=    steps:)',
+                      '\n', rendered)
+        return re.sub(r"(    paths:\n)(?:      - '[^\n]*'\n)+",
+                      lambda m: m.group(1) + repo_filters, text)
+
+    @staticmethod
+    def _one_ref(text):
+        """The clone ref, whatever it is, as one token.
+
+        The pin itself is asserted on its own below. Here the two texts are
+        compared for everything else, and the fixture renderer's own
+        temporary branch pin is not what this proof is about.
+        """
+        return re.sub(r'--branch \S+', '--branch <ref>', text)
+
+    @pytest.mark.proof("skill_init", "PROOF-84", "RULE-79", tier="integration")
+    def test_ci_writes_one_consumer_workflow_and_never_over_a_file(self, repo):
+        """RULE-79: one workflow, the consumer adaptation plus the two extras,
+        consumer path filters, the pin, and never over an existing file."""
+        version = _read(os.path.join(ROOT, 'VERSION')).strip()
+        source = _read(REPO_VERIFY_GATE)
+        repo_filters = re.search(r"    paths:\n((?:      - '[^\n]*'\n)+)",
+                                 source).group(1)
+
+        # Nothing without consent: the scaffolder writes no workflow at all
+        # unless the flag the skill only passes after asking is on the line.
+        code, out, err = _run(repo, '--test-framework', 'pytest')
+        assert code == 0, (code, out, err)
+        assert not os.path.exists(os.path.join(repo, '.github')), (
+            'a run without --ci wrote a workflow anyway:\n' + out)
+        assert CI_REL not in out
+
+        code, out, err = _run(repo, '--force', '--ci', 'github')
+        assert code == 0, (code, out, err)
+        assert f'wrote {CI_REL}' in out.split('\n'), out
+        rendered = _read(os.path.join(repo, CI_REL))
+
+        # Exactly one workflow, and it is that one.
+        written = sorted(os.listdir(os.path.join(repo, '.github', 'workflows')))
+        assert written == ['purlin-verify-gate.yml'], written
+
+        # The four operations of `consumer_ci` RULE-1 and no others, as the
+        # proof of that rule renders them.
+        difference = test_consumer_ci._first_difference(
+            self._one_ref(test_consumer_ci.render_verify_gate_workflow()),
+            self._one_ref(self._without_the_two_extras(rendered, repo_filters)),
+            CI_REL)
+        assert difference is None, difference
+
+        # Extra 1: the path filters a consumer project can actually change.
+        # The plugin's own name two files no consumer checkout holds, so the
+        # rewrite is not a no-op and this assertion is not vacuous.
+        assert [f for f in self._filters(source) if f.startswith('scripts/')], (
+            "this repository's own verify-gate no longer filters on a "
+            "scripts/ path, so the rewrite proves nothing")
+        filters = self._filters(rendered)
+        assert filters == ['specs/**', '.purlin/config.json',
+                           '.github/workflows/**'] * 2, filters
+        offenders = [f for f in filters if f.startswith('scripts/')]
+        assert not offenders, (
+            'the consumer workflow filters on plugin-only paths that exist in '
+            'no consumer checkout: ' + repr(offenders))
+
+        # Extra 2: the pin, stamped from the installed VERSION and read by
+        # the clone, so one line moves the job to another release.
+        assert f'      PURLIN_REF: v{version}\n' in rendered, rendered
+        assert '--branch "$PURLIN_REF"' in rendered
+        assert 'v<VERSION>' not in rendered, (
+            'the rendered workflow still carries the template placeholder')
+
+        # Never over a file that is already there, whatever it holds.
+        theirs = 'name: ours\non: [push]\n'
+        _write(repo, CI_REL, theirs)
+        code, out, err = _run(repo, '--force', '--ci', 'github')
+        assert code == 0, (code, out, err)
+        assert f'kept {CI_REL}' in out.split('\n'), out
+        assert _read(os.path.join(repo, CI_REL)) == theirs, (
+            'an existing workflow was overwritten')
+
+    @pytest.mark.proof("skill_init", "PROOF-85", "RULE-79", tier="unit")
+    def test_the_skill_asks_before_the_scaffolder_writes(self):
+        """RULE-79: the skill asks with AskUserQuestion and says what lands."""
+        skill = _read(SKILL)
+        start = skill.index('## Subcommand: --ci')
+        section = skill[start:skill.index('\n## ', start + 1)]
+        assert 'AskUserQuestion' in section, (
+            'the --ci section runs the scaffolder without asking first')
+        for named in ('.github/workflows/purlin-verify-gate.yml',
+                      'PURLIN_REF', '--ci github'):
+            assert named in section, (
+                f'the --ci section never names {named}, so the user consents '
+                f'to something the summary does not state')

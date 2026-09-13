@@ -22,6 +22,7 @@ purlin:init --digest                    Change digest mode (auto/warn/off)
 purlin:init --mutation-checks on|off    Change the mutation-check setting
 purlin:init --quality-gate off|deterministic
                                         Set the deterministic quality gate
+purlin:init --ci [github]               Write the CI workflow that runs the gate
 purlin:init --update                    Bring the project up to the installed plugin
 purlin:init --update --check            Report what is pending; write nothing
 purlin:init --update --platform-id <id> What a legacy @windows tag becomes (default: windows)
@@ -32,7 +33,7 @@ purlin:init --mcp                       Run only the MCP step of --update
 
 Each `--flag` runs ONLY that step, not the full init.
 
-**Who does what.** This skill asks the questions; `scripts/init/scaffold.py` writes the files, exactly as `scripts/update/migrate.py` performs `--update`. The script handles the full init, the `--force` re-run (Steps 1, 2, 4, 5, 5b, 7 and 7a) and the single-step re-answers: it takes `--pre-push`, `--digest`, `--report`, `--mutation-checks` and `--quality-gate` as answers, and `purlin:init --pre-push`, `--report`, `--digest`, `--mutation-checks` and `--quality-gate` each ask their own question and then run it with `--force` and that one flag (see **Single-step re-answers** in Step 2). `--add-plugin`, `--list-plugins`, `--sync-audit-criteria` and `--audit-llm` stay agent-driven; `--update` is `scripts/update/migrate.py` (Step 5d) and `--mcp` is its MCP step (Step 5c).
+**Who does what.** This skill asks the questions; `scripts/init/scaffold.py` writes the files, exactly as `scripts/update/migrate.py` performs `--update`. The script handles the full init, the `--force` re-run (Steps 1, 2, 4, 5, 5b, 7 and 7a) and the single-step re-answers: it takes `--pre-push`, `--digest`, `--report`, `--mutation-checks` and `--quality-gate` as answers, and `purlin:init --pre-push`, `--report`, `--digest`, `--mutation-checks` and `--quality-gate` each ask their own question and then run it with `--force` and that one flag (see **Single-step re-answers** in Step 2). `--ci` is a seventh answer the script takes, asked the same way and written the same way (see **Subcommand: --ci**). `--add-plugin`, `--list-plugins`, `--sync-audit-criteria` and `--audit-llm` stay agent-driven; `--update` is `scripts/update/migrate.py` (Step 5d) and `--mcp` is its MCP step (Step 5c).
 
 ## Step 1 — Pre-flight
 
@@ -100,7 +101,11 @@ other key belongs to the scaffolder, and no other step writes that file.
 <off|deterministic>` is one of those single-step re-answers: ask which mode the
 project wants, then run the scaffolder with `--force --quality-gate <mode>` and
 nothing else. That run writes `quality_gate` and changes no other key and no
-other file. Do not ask about the quality gate during a full init and do not pass
+other file. The mode is a declaration and `purlin:init --ci` is what makes it do
+anything: the workflow that subcommand writes is the job that reads
+`quality_gate` on every push, and a project with no CI job has set a field
+nothing runs. Offer `--ci` when the user sets the gate to `deterministic`. Do not
+ask about the quality gate during a full init and do not pass
 `--quality-gate` on the Step 2 invocation unless the user asked for it:
 `quality_gate` is not a template field, so a project that never answered it
 carries no such key, and `purlin:init --update` neither backfills it nor asks
@@ -533,6 +538,53 @@ Commit per `references/commit_conventions.md`:
 ```
 git commit -m "chore: initialize purlin project"
 ```
+
+---
+
+## Subcommand: --ci
+
+```
+purlin:init --ci [github]
+```
+
+Writes `.github/workflows/purlin-verify-gate.yml`: the verification gate this
+plugin runs on itself, in the form a project that clones the tooling needs.
+`github` is the only provider for now and is the default when none is given.
+
+### Steps
+
+1. **Ask first, with `AskUserQuestion`.** A workflow file spends the project's
+   CI minutes and is read as policy by everyone on the team, so it is never
+   written without consent. Ask one question, `Write the Purlin CI workflow?`,
+   with the two options `Write it` and `Not now`, and summarize what lands in
+   exactly these two lines:
+
+   ```
+   .github/workflows/purlin-verify-gate.yml: on a push or PR touching specs/**,
+     .purlin/config.json or .github/workflows/**, clones Purlin at PURLIN_REF
+     and runs scripts/ci/verify_gate.py --check.
+   PURLIN_REF is pinned to the installed version; change that one line to move
+     the job to another release. An existing file at that path is never touched.
+   ```
+
+2. **On `Not now`, stop.** Say nothing was written.
+
+3. **On `Write it`, run the scaffolder:**
+
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" \
+     --project-root . --force --ci github
+   ```
+
+   Print the plan line the run emitted. `wrote` means the workflow is there;
+   `kept` means the project already had a file at that path and the run left
+   its bytes alone, which is what to report rather than offering to overwrite
+   it.
+
+4. **Tell the user what is left to do.** The job is a check, not a gate, until
+   branch protection marks it required; `references/hard_gates.md` states which
+   layer that is. A project that also wants the quality gauges to decide sets
+   `quality_gate` with `purlin:init --quality-gate deterministic`.
 
 ---
 

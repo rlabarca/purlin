@@ -5,7 +5,7 @@
         [--test-framework auto|<id>[,<id>...]] [--pre-push warn|strict|off]
         [--mutation-checks on|off] [--remote-verification required|optional|off]
         [--report on|off] [--digest auto|warn|off]
-        [--quality-gate off|deterministic]
+        [--quality-gate off|deterministic] [--ci github]
         [--force] [--plugin-root DIR] [--dry-run]
 
 `purlin:init` is the user-facing command; this script is the part of it that
@@ -35,6 +35,9 @@ WHAT IT WRITES
     <hooks>/pre-push        a three-line delegator to the shim, into the
     <hooks>/pre-commit      repository's hooks directory and only when the
                             slot is free
+    .github/workflows/      the verification-gate workflow in its consumer
+      purlin-verify-gate.yml  form, written only when `--ci` asks for it and
+                            never over a file that is already there
 
     It never writes a proof entry, never writes a receipt and never commits.
     Those are claims about a run that happened, and scaffolding a project is
@@ -628,6 +631,175 @@ def _report(plan, root, plugin_root, report, dry_run):
     plan.append(f'copied {source_rel} -> {rel}')
 
 
+# The consumer CI workflow, written only by `--ci`. This plugin's own
+# `.github/workflows/verify-gate.yml` is the template, and the runner-workflow
+# template in `references/remote_verification.md` holds the two steps a
+# checkout that has no Purlin `scripts/` needs.
+_CI_PROVIDERS = ('github',)
+_CI_REL = '.github/workflows/purlin-verify-gate.yml'
+_CI_SOURCE = os.path.join('.github', 'workflows', 'verify-gate.yml')
+_CI_REFERENCE = os.path.join('references', 'remote_verification.md')
+
+# What a consumer checkout can actually change. The plugin's own filters name
+# `scripts/ci/verify_gate.py` and `scripts/mcp/purlin_server.py`, two paths
+# that exist in no consumer project, so a workflow that kept them would skip
+# the runs its own tooling change should have triggered.
+_CI_PATHS = ("'specs/**'", "'.purlin/config.json'", "'.github/workflows/**'")
+
+
+def _once(text, old, new, what):
+    """`text.replace(old, new, 1)`, refusing a template that lacks the anchor."""
+    if old not in text:
+        raise ValueError(f'the plugin workflow carries no {what}')
+    return text.replace(old, new, 1)
+
+
+def _lift(text, first_line_prefix, stop_line_prefix):
+    """The slice of `text` from one line to just before another, both by prefix."""
+    lines = text.splitlines(keepends=True)
+    starts = [i for i, line in enumerate(lines)
+              if line.startswith(first_line_prefix)]
+    stops = [i for i, line in enumerate(lines)
+             if line.startswith(stop_line_prefix)]
+    if not starts:
+        raise ValueError(f'the reference template has no line starting '
+                         f'{first_line_prefix.strip()!r}')
+    start = starts[0]
+    stop = next((i for i in stops if i > start), None)
+    if stop is None:
+        raise ValueError(f'the reference template has no line starting '
+                         f'{stop_line_prefix.strip()!r} after '
+                         f'{first_line_prefix.strip()!r}')
+    return ''.join(lines[start:stop]).rstrip('\n') + '\n'
+
+
+def _workflow_template(plugin_root):
+    """The runner-workflow template: the yaml fence under `### Workflow template`."""
+    text = _slurp(plugin_root, _CI_REFERENCE)
+    heading = text.find('### Workflow template')
+    if heading < 0:
+        raise ValueError('the reference has no "### Workflow template" section')
+    start = text.index('```yaml\n', heading) + len('```yaml\n')
+    end = text.index('\n```', start) + 1
+    return text[start:end]
+
+
+def _consumer_paths(text):
+    """Every `paths:` filter rewritten to the three a consumer project has."""
+    lines = text.split('\n')
+    out = []
+    rewritten = 0
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        out.append(line)
+        index += 1
+        if line != '    paths:':
+            continue
+        while index < len(lines) and lines[index].startswith("      - '"):
+            index += 1
+        out.extend('      - ' + entry for entry in _CI_PATHS)
+        rewritten += 1
+    if not rewritten:
+        raise ValueError('no `paths:` filter to rewrite')
+    return '\n'.join(out)
+
+
+def _render_ci(plugin_root, version):
+    """This plugin's verify-gate workflow in its consumer form.
+
+    Six operations on `.github/workflows/verify-gate.yml` and no others. The
+    first four are the consumer adaptation `consumer_ci` RULE-1 states, and
+    the two steps they insert are lifted verbatim from the runner-workflow
+    template in `references/remote_verification.md`, so the workflow a project
+    gets and the one that reference documents cannot drift apart:
+
+      1. `Locate Purlin tooling` after the checkout. It publishes
+         `PURLIN_PLUGIN_ROOT` through `$GITHUB_ENV` and is a step rather than
+         a job `env:` entry, because `jobs.<id>.env` is evaluated before a
+         runner exists and reading `runner.temp` there is refused at startup.
+      2. `Install Purlin tooling` after `setup-python`: a consumer checkout
+         holds specs, proofs, receipts and `.purlin/`, and no Purlin
+         `scripts/`.
+      3. The gate is reached through `$PURLIN_PLUGIN_ROOT`, on bash.
+      4. The repo-only `Run the verify_gate proofs` step is dropped:
+         `dev/test_verify_gate.py` is not in a consumer checkout.
+
+    The last two are what a consumer project needs beyond that adaptation:
+
+      5. The trigger `paths:` filters become `_CI_PATHS`.
+      6. The job gains `env: PURLIN_REF`, stamped with the installed version,
+         and the clone reads it. The pin is a literal and not a runner
+         expression, so it is legal in a job `env:` block, and it moves the
+         whole workflow to another release in one line.
+    """
+    text = _slurp(plugin_root, _CI_SOURCE)
+    template = _workflow_template(plugin_root)
+
+    locate = _lift(template, '      - name: Locate Purlin tooling',
+                   '      - uses: actions/setup-python@v5')
+    text = _once(text, '      - uses: actions/setup-python@v5\n',
+                 locate + '\n      - uses: actions/setup-python@v5\n',
+                 'setup-python step to insert the tooling location before')
+
+    install = _lift(template, '      - name: Install Purlin tooling',
+                    '      - name: Preflight')
+    text = _once(text, '      # Prints the declared mode',
+                 install + '\n      # Prints the declared mode',
+                 'gate step to insert the tooling install before')
+
+    text = _once(
+        text,
+        '        run: python3 scripts/ci/verify_gate.py --check --project-root .\n',
+        '        shell: bash\n'
+        '        run: python3 "$PURLIN_PLUGIN_ROOT/scripts/ci/verify_gate.py"'
+        ' --check --project-root .\n',
+        'gate invocation to reach through $PURLIN_PLUGIN_ROOT')
+
+    dev_step = '\n      - name: Run the verify_gate proofs'
+    if dev_step not in text:
+        raise ValueError('the plugin workflow carries no repo-only proofs step')
+    text = text[:text.index(dev_step)] + '\n'
+
+    text = _consumer_paths(text)
+
+    text = _once(
+        text, '    runs-on: ubuntu-latest\n',
+        '    runs-on: ubuntu-latest\n'
+        '    env:\n'
+        '      # The Purlin release this job clones, stamped from the plugin\n'
+        '      # that wrote this file. One line moves every run of this\n'
+        '      # workflow to another release.\n'
+        f'      PURLIN_REF: v{version}\n',
+        'job to carry the tooling pin')
+    text = _once(text, '--branch v<VERSION>', '--branch "$PURLIN_REF"',
+                 'tooling clone to read the pin')
+    return text
+
+
+def _ci(plan, root, plugin_root, provider, version, dry_run):
+    """Step 7e: the verification-gate workflow, on request and never over a file.
+
+    `purlin:init` asks before this runs (`skill_init` RULE-79). A workflow is
+    the file a team most often has already written and most needs left alone,
+    so an existing one at this path is `kept` whatever it contains.
+    """
+    if provider is None:
+        return
+    dest = os.path.join(root, _CI_REL)
+    if os.path.lexists(dest):
+        plan.append(f'kept {_CI_REL}')
+        return
+    try:
+        body = _render_ci(plugin_root, version)
+    except (IOError, OSError, ValueError) as error:
+        plan.append(f'skipped {_CI_REL} ({error})')
+        return
+    if not dry_run:
+        _write(dest, body)
+    plan.append(f'wrote {_CI_REL}')
+
+
 def _generated(plan, path, rel, body, dry_run, mode=None):
     """A file whose bytes this script owns, written only when they differ.
 
@@ -795,6 +967,10 @@ def main(argv=None):
                         help='the project-policy quality gate scripts/ci/'
                              'verify_gate.py reads (default: unanswered, and '
                              'an unanswered field is not written)')
+    parser.add_argument('--ci', choices=_CI_PROVIDERS, default=None,
+                        help='write .github/workflows/purlin-verify-gate.yml '
+                             'for this provider (default: write no workflow; '
+                             'purlin:init --ci asks first)')
     parser.add_argument('--force', action='store_true',
                         help='re-initialize a project that already has '
                              '.purlin/config.json')
@@ -892,6 +1068,7 @@ def main(argv=None):
     _plugin_root_file(plan, root, plugin_root, args.dry_run)
     _hooks(plan, root, plugin_root, hooks_dir, hooks_setting,
            config.get('digest'), args.dry_run)
+    _ci(plan, root, plugin_root, args.ci, config.get('version'), args.dry_run)
 
     for line in plan:
         print(line)
