@@ -122,6 +122,7 @@ def _run_shell_proof(tmp_path, feature, proofs, tier=None, name="run_proof.sh"):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.proof("run_script", "PROOF-25", "RULE-23")
+@pytest.mark.proof("proof_common", "PROOF-1", "RULE-1")
 def test_proof_file_naming(tmp_path):
     """One file per feature and tier, under the runtime directory."""
     root = _project(tmp_path)
@@ -135,6 +136,7 @@ def test_proof_file_naming(tmp_path):
 
 
 @pytest.mark.proof("run_script", "PROOF-29", "RULE-26")
+@pytest.mark.proof("proof_common", "PROOF-9", "RULE-9")
 def test_no_markers_no_proof_files(tmp_path):
     """A run that collected no marker writes nothing at all."""
     root = _project(tmp_path)
@@ -146,6 +148,7 @@ def test_no_markers_no_proof_files(tmp_path):
 
 
 @pytest.mark.proof("run_script", "PROOF-32", "RULE-27")
+@pytest.mark.proof("proof_common", "PROOF-6", "RULE-6")
 def test_removed_test_entry_purged_on_rerun(tmp_path):
     """A marker taken out of a file that runs again is reaped on that run."""
     root = _project(tmp_path)

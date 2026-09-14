@@ -240,6 +240,7 @@ class TestTheRuntimeProofFile:
                         reason='node with a TypeScript loader not available')
     @pytest.mark.proof("run_script", "PROOF-23", "RULE-23", tier="integration")
     @pytest.mark.proof("run_script", "PROOF-42", "RULE-34", tier="integration")
+    @pytest.mark.proof("proof_common", "PROOF-5", "RULE-5")
     def test_vitest(self, tmp_path):
         root = _purlin_project(tmp_path)
         (root / 'feat.test.ts').write_text('// marked\n', encoding='utf-8')
@@ -390,6 +391,7 @@ class TestOrdinalOrderAfterTheMerge:
     """`PROOF-1` < `PROOF-10` < `PROOF-2`, and the sort runs after the merge."""
 
     @pytest.mark.proof("run_script", "PROOF-33", "RULE-28", tier="integration")
+    @pytest.mark.proof("proof_common", "PROOF-7", "RULE-7")
     def test_pytest(self, tmp_path):
         root = _purlin_project(tmp_path)
         (root / 'tests').mkdir()
@@ -433,6 +435,7 @@ class TestProjectRootFoundByWalking:
     """A run started below the root writes into the project's own tree."""
 
     @pytest.mark.proof("run_script", "PROOF-26", "RULE-24", tier="integration")
+    @pytest.mark.proof("proof_common", "PROOF-2", "RULE-2")
     def test_pytest_from_a_subdirectory(self, tmp_path):
         root = _purlin_project(tmp_path)
         (root / 'service' / 'tests').mkdir(parents=True)
@@ -455,6 +458,7 @@ class TestProjectRootFoundByWalking:
         assert data['proofs'][0]['test_file'] == 'service/tests/test_feat.py'
 
     @pytest.mark.proof("run_script", "PROOF-26", "RULE-24", tier="integration")
+    @pytest.mark.proof("proof_common", "PROOF-2", "RULE-2")
     def test_shell_from_a_subdirectory(self, tmp_path):
         root = _purlin_project(tmp_path)
         (root / 'service').mkdir()
@@ -476,6 +480,7 @@ class TestTestFileIsProjectRelative:
     """Whatever shape the framework handed over, one value is recorded."""
 
     @pytest.mark.proof("run_script", "PROOF-27", "RULE-25", tier="integration")
+    @pytest.mark.proof("proof_common", "PROOF-3", "RULE-3")
     def test_shell_records_the_same_path_either_way(self, tmp_path):
         root = _purlin_project(tmp_path)
         (root / 'tests').mkdir()
@@ -512,6 +517,7 @@ class TestSkippedTestKeepsItsEntry:
     """A skipped test writes nothing and the entry it had survives the run."""
 
     @pytest.mark.proof("run_script", "PROOF-34", "RULE-29", tier="integration")
+    @pytest.mark.proof("proof_common", "PROOF-6", "RULE-6")
     def test_pytest(self, tmp_path):
         root = _purlin_project(tmp_path)
         (root / 'tests').mkdir()
@@ -533,6 +539,7 @@ class TestSkippedTestKeepsItsEntry:
 
     @pytest.mark.skipif(not shutil.which('node'), reason='node not available')
     @pytest.mark.proof("run_script", "PROOF-34", "RULE-29", tier="integration")
+    @pytest.mark.proof("proof_common", "PROOF-5", "RULE-5")
     def test_jest(self, tmp_path):
         root = _purlin_project(tmp_path)
         (root / 'tests').mkdir()
@@ -578,6 +585,7 @@ class TestSkipExemptionListMatchesTheSources:
 
     @pytest.mark.parametrize('framework', SKIP_CAPABLE)
     @pytest.mark.proof("run_script", "PROOF-35", "RULE-29")
+    @pytest.mark.proof("proof_common", "PROOF-12", "RULE-12")
     def test_a_skip_capable_plugin_tracks_skipped_tests(self, framework):
         source = open(os.path.join(PROOF_SCRIPTS, PLUGINS[framework]),
                       encoding='utf-8').read()
@@ -590,6 +598,7 @@ class TestSkipExemptionListMatchesTheSources:
 
     @pytest.mark.parametrize('framework', SKIP_EXEMPT)
     @pytest.mark.proof("run_script", "PROOF-35", "RULE-29")
+    @pytest.mark.proof("proof_common", "PROOF-12", "RULE-12")
     def test_a_skip_exempt_plugin_says_it_has_no_skip_signal(self, framework):
         source = open(os.path.join(PROOF_SCRIPTS, PLUGINS[framework]),
                       encoding='utf-8').read()
@@ -603,6 +612,7 @@ class TestSkipExemptionListMatchesTheSources:
 class TestSeenMarkersAndNoEntryFails:
 
     @pytest.mark.proof("run_script", "PROOF-36", "RULE-30", tier="integration")
+    @pytest.mark.proof("proof_common", "PROOF-10", "RULE-10")
     def test_pytest_exits_non_zero_and_names_the_feature(self, tmp_path):
         root = _purlin_project(tmp_path)
         (root / 'tests').mkdir()
@@ -650,6 +660,7 @@ class TestRetiredKeywordRefused:
     """Every plugin refuses the keyword it used to read, and names `@env`."""
 
     @pytest.mark.proof("run_script", "PROOF-37", "RULE-31", tier="integration")
+    @pytest.mark.proof("proof_common", "PROOF-11", "RULE-11")
     def test_pytest_platforms_kwarg(self, tmp_path):
         root = _purlin_project(tmp_path)
         (root / 'tests').mkdir()
@@ -715,6 +726,7 @@ class TestAtomicWrites:
 
     @pytest.mark.parametrize('framework', sorted(PLUGINS))
     @pytest.mark.proof("run_script", "PROOF-38", "RULE-32", tier="integration")
+    @pytest.mark.proof("proof_common", "PROOF-8", "RULE-8")
     def test_the_temp_name_carries_the_process_id(self, framework):
         source = open(os.path.join(PROOF_SCRIPTS, PLUGINS[framework]),
                       encoding='utf-8').read()
@@ -738,6 +750,7 @@ class TestNoThirdPartyImport:
     """A plugin that needs a package installed does not run where it is copied."""
 
     @pytest.mark.proof("run_script", "PROOF-39", "RULE-33", tier="integration")
+    @pytest.mark.proof("proof_common", "PROOF-13", "RULE-13")
     def test_the_node_plugins_require_only_builtins(self):
         for framework in ('jest', 'vitest'):
             source = open(os.path.join(PROOF_SCRIPTS, PLUGINS[framework]),
@@ -885,6 +898,7 @@ class TestXUnitProofPlugin:
 
     @pytest.mark.proof("run_script", "PROOF-24", "RULE-23", tier="integration")
     @pytest.mark.proof("run_script", "PROOF-34", "RULE-29", tier="integration")
+    @pytest.mark.proof("proof_common", "PROOF-5", "RULE-5")
     def test_status_mapping_and_the_skipped_test(self, run):
         assert run['by_id']['PROOF-1']['status'] == 'pass'
         assert run['by_id']['PROOF-2']['status'] == 'fail'

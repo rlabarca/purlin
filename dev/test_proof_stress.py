@@ -112,6 +112,7 @@ class TestMultiFeatureMerge:
     """Several features coexist; a write for one never touches another."""
 
     @pytest.mark.proof("run_script", "PROOF-32", "RULE-27")
+    @pytest.mark.proof("proof_common", "PROOF-6", "RULE-6")
     def test_three_features_keep_their_own_files(self, tmp_path):
         root = _project(tmp_path)
         for index, feature in enumerate(('alpha', 'beta', 'gamma'), start=1):
@@ -155,6 +156,7 @@ class TestMultiTierAggregation:
     """One feature across three tiers is three files and one reading."""
 
     @pytest.mark.proof("run_script", "PROOF-44", "RULE-35")
+    @pytest.mark.proof("proof_common", "PROOF-14", "RULE-14")
     def test_three_tiers_read_back_as_one_feature(self, tmp_path):
         root = _project(tmp_path)
         for index, tier in enumerate(('unit', 'integration', 'e2e'), start=1):
@@ -182,6 +184,7 @@ class TestMultiLanguageSameFeature:
     """Two plugins writing one feature at one tier merge rather than collide."""
 
     @pytest.mark.proof("run_script", "PROOF-32", "RULE-27")
+    @pytest.mark.proof("proof_common", "PROOF-1", "RULE-1")
     def test_pytest_and_shell_both_land(self, tmp_path):
         root = _project(tmp_path)
         _shell_run(root, 'tests/alpha.test.sh', 'alpha',
@@ -216,6 +219,7 @@ class TestCollisionWithAnEarlierRun:
     """A stale file from an earlier run is reaped, not trusted."""
 
     @pytest.mark.proof("run_script", "PROOF-32", "RULE-27")
+    @pytest.mark.proof("proof_common", "PROOF-6", "RULE-6")
     def test_an_entry_whose_test_file_is_gone_is_reaped(self, tmp_path):
         root = _project(tmp_path)
         _seed(root, 'alpha', 'unit', [
