@@ -505,7 +505,8 @@ def write_workflow(plan, root, host, purlin_ref, upstream_check):
     rel = name if host == 'azure' else '.github/workflows/%s' % name
     plan.write(rel, workflow_module.render_workflow(
         host, env_tags, purlin_ref, upstream_check=upstream_check), own=True)
-    plan.note('  the matrix is %s, from the @env tags in specs/.'
+    plan.note('  the matrix is %s: ubuntu-latest always, then the @env tags '
+              'in specs/.'
               % ', '.join(workflow_module.runners_for(env_tags)))
 
 
