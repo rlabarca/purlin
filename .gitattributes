@@ -1,0 +1,16 @@
+# Line endings are LF in the index and LF in every working tree, whatever a
+# machine's core.autocrlf says. Windows is the reason: a checkout there would
+# otherwise hold CRLF, and three things in this repository read bytes rather
+# than lines. The packed skills under tools/ are compared byte for byte with
+# their source markdown; the shell suites and the git hooks are run by bash,
+# which refuses a script whose lines end in CR; and the digest a spec change
+# is measured by is a hash of the file.
+* text=auto eol=lf
+
+# Binary, so neither the index nor a checkout ever rewrites a byte.
+*.png binary
+*.zip binary
+*.pdf binary
+*.ico binary
+*.woff binary
+*.woff2 binary
