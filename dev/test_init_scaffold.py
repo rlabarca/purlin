@@ -879,7 +879,11 @@ class TestTheMarketplacePath:
                     continue
                 for name in names:
                     path = os.path.join(base, name)
-                    if os.path.relpath(path, made.root) == '.purlin/plugin-root':
+                    # The one file that is meant to name the install.
+                    # The walk spells its path the local way, so the
+                    # comparison spells it the same way.
+                    if os.path.relpath(path, made.root) == os.path.join(
+                            '.purlin', 'plugin-root'):
                         continue
                     try:
                         text = read(path)

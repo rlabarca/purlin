@@ -148,6 +148,15 @@ def _read(*parts):
         return ''
 
 
+def _read_bytes(*parts):
+    """The file as it is on disk, with nothing translated on the way in."""
+    try:
+        with open(os.path.join(*parts), 'rb') as handle:
+            return handle.read()
+    except (IOError, OSError):
+        return b''
+
+
 def _git(root, *args):
     """`(ok, stripped stdout)` for one git command run in `root`."""
     try:
@@ -300,17 +309,31 @@ class Plan(object):
                 os.makedirs(path, exist_ok=True)
             self.note('wrote %s/' % rel)
 
-    def write(self, rel, text, own=False, perm=None, source=None):
-        """One file. `own` means Purlin owns the bytes and refreshes a stale one."""
+    def write(self, rel, text, own=False, perm=None, source=None,
+              exact=False):
+        """One file. `own` means Purlin owns the bytes and refreshes a stale one.
+
+        `exact` hands over bytes rather than text and writes them as they
+        came. Text mode on Windows turns every line ending into two bytes on
+        the way out, so a plugin copied through it stops being the file it was
+        copied from, and a project could no longer be shown to hold the
+        plugin this release ships.
+        """
         path = os.path.join(self.root, rel)
-        if os.path.lexists(path) and (not own or _read(path) == text):
-            return self.note('kept %s' % rel)
+        if os.path.lexists(path):
+            current = _read_bytes(path) if exact else _read(path)
+            if not own or current == text:
+                return self.note('kept %s' % rel)
         if not self.allowed(rel, 'write %s' % rel):
             return
         if not self.dry_run:
             os.makedirs(os.path.dirname(path) or '.', exist_ok=True)
-            with open(path, 'w', encoding='utf-8') as handle:
-                handle.write(text)
+            if exact:
+                with open(path, 'wb') as handle:
+                    handle.write(text)
+            else:
+                with open(path, 'w', encoding='utf-8') as handle:
+                    handle.write(text)
             if perm is not None:
                 os.chmod(path, perm)
         self.note('copied %s -> %s' % (source, rel) if source
@@ -321,8 +344,9 @@ class Plan(object):
         if not os.path.isfile(source):
             return self.skip(rel, 'the plugin carries no %s'
                              % os.path.basename(source))
-        self.write(rel, _read(source), source=os.path.relpath(
-            source, PLUGIN_ROOT).replace(os.sep, '/'))
+        self.write(rel, _read_bytes(source), exact=True,
+                   source=os.path.relpath(
+                       source, PLUGIN_ROOT).replace(os.sep, '/'))
 
     def append(self, rel, block, marker):
         """A block into a file the project also owns, once and never twice."""
