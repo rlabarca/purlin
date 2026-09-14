@@ -27,6 +27,11 @@ import pytest
 PROOF_SCRIPTS = os.path.normpath(
     os.path.join(os.path.dirname(__file__), '..', 'scripts', 'proof'))
 PROOF_REL = os.path.join('.purlin', 'runtime', 'proofs')
+# A path a test writes into a shell script is spelled with forward slashes:
+# bash reads a backslash as an escape, so a Windows path sourced as it comes
+# off os.path.join loses every separator. Git bash reads C:/... unchanged.
+SHELL_HARNESS = os.path.join(PROOF_SCRIPTS, 'shell_purlin.sh').replace(
+    os.sep, '/')
 
 PLUGINS = {
     'pytest': 'pytest_purlin.py',
@@ -174,7 +179,7 @@ def _run_vitest_reporter(root, body):
 
 def _run_shell(root, script_rel, calls, tier=None):
     """Source the real shell harness from a script and call it."""
-    lines = ['source %s' % os.path.join(PROOF_SCRIPTS, 'shell_purlin.sh')]
+    lines = ['source %s' % SHELL_HARNESS]
     if tier:
         lines.append('export PURLIN_PROOF_TIER=%s' % tier)
     for feature, proof_id, rule, status, name in calls:
@@ -452,7 +457,7 @@ class TestProjectRootFoundByWalking:
             'source %s\n'
             'purlin_proof "feat" "PROOF-1" "RULE-1" pass "sub case"\n'
             'purlin_proof_finish\n'
-            % os.path.join(PROOF_SCRIPTS, 'shell_purlin.sh'),
+            % SHELL_HARNESS,
             encoding='utf-8')
         subprocess.run(['bash', 'feat.test.sh'], cwd=str(root / 'service'),
                        capture_output=True, text=True)
@@ -473,7 +478,7 @@ class TestTestFileIsProjectRelative:
             'source %s\n'
             'purlin_proof "feat" "PROOF-1" "RULE-1" pass "case"\n'
             'purlin_proof_finish\n'
-            % os.path.join(PROOF_SCRIPTS, 'shell_purlin.sh'),
+            % SHELL_HARNESS,
             encoding='utf-8')
         subprocess.run(['bash', 'tests/feat.test.sh'], cwd=str(root),
                        capture_output=True, text=True)
@@ -669,7 +674,7 @@ class TestRetiredKeywordRefused:
             'export PURLIN_PROOF_PLATFORMS=windows-2022\n'
             'purlin_proof "feat" "PROOF-1" "RULE-1" pass "case"\n'
             'purlin_proof_finish\n'
-            % os.path.join(PROOF_SCRIPTS, 'shell_purlin.sh'),
+            % SHELL_HARNESS,
             encoding='utf-8')
         result = subprocess.run(['bash', 'tests/feat.test.sh'], cwd=str(root),
                                 capture_output=True, text=True)

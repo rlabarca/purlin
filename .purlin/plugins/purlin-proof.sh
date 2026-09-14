@@ -33,6 +33,14 @@ set -euo pipefail
 
 _PURLIN_PROOFS=""
 
+# The working directory as the python3 below can resolve it. Git bash on
+# Windows reports a POSIX path (/c/work) that a native python3 reads as a
+# directory named c on the current drive; `pwd -W` prints the same directory
+# as C:/work. Every other shell refuses -W, and there the plain path is right.
+_purlin_pwd() {
+  pwd -W 2>/dev/null || pwd
+}
+
 purlin_proof() {
   local feature="$1" proof_id="$2" rule_id="$3" status="$4" test_name="${5:-}"
   local tier="${PURLIN_PROOF_TIER:-unit}"
@@ -49,8 +57,11 @@ purlin_proof() {
   # the raw BASH_SOURCE differs between those two, the absolute path does not.
   # Under the (feature, tier, test_file) merge key a difference here would not
   # collapse, it would accumulate as two entries for one proof.
-  if [[ "$test_file" != "unknown" && "$test_file" != /* ]]; then
-    test_file="$PWD/$test_file"
+  # A drive letter is as absolute as a leading slash: a script reached as
+  # `bash C:/work/x.sh` must not have the working directory put in front of it.
+  if [[ "$test_file" != "unknown" && "$test_file" != /* \
+        && ! "$test_file" =~ ^[A-Za-z]:[/\\] ]]; then
+    test_file="$(_purlin_pwd)/$test_file"
   fi
 
   _PURLIN_PROOFS="${_PURLIN_PROOFS}${feature}|${proof_id}|${rule_id}|${status}|${test_name}|${test_file}|${tier}

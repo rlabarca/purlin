@@ -23,6 +23,11 @@ import pytest
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 PROOF_SCRIPTS = os.path.join(PROJECT_ROOT, 'scripts', 'proof')
+# A path a test writes into a shell script is spelled with forward slashes:
+# bash reads a backslash as an escape, so a Windows path sourced as it comes
+# off os.path.join loses every separator. Git bash reads C:/... unchanged.
+SHELL_HARNESS = os.path.join(PROOF_SCRIPTS, 'shell_purlin.sh').replace(
+    os.sep, '/')
 PROOF_REL = os.path.join('.purlin', 'runtime', 'proofs')
 
 sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'mcp'))
@@ -72,7 +77,7 @@ def _entry(feature, proof_id, rule_id, status='pass', tier='unit',
 
 
 def _shell_run(root, script_rel, feature, calls, tier=None):
-    lines = ['source %s' % os.path.join(PROOF_SCRIPTS, 'shell_purlin.sh')]
+    lines = ['source %s' % SHELL_HARNESS]
     if tier:
         lines.append('export PURLIN_PROOF_TIER=%s' % tier)
     for proof_id, rule_id, status, name in calls:

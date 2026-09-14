@@ -25,7 +25,11 @@ import pytest
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 PROOF_SCRIPTS = os.path.join(PROJECT_ROOT, "scripts", "proof")
 JEST_REPORTER = os.path.join(PROOF_SCRIPTS, "jest_purlin.js")
-SHELL_HARNESS = os.path.join(PROOF_SCRIPTS, "shell_purlin.sh")
+# A path a test writes into a shell script is spelled with forward slashes:
+# bash reads a backslash as an escape, so a Windows path sourced as it comes
+# off os.path.join loses every separator. Git bash reads C:/... unchanged.
+SHELL_HARNESS = os.path.join(PROOF_SCRIPTS, "shell_purlin.sh").replace(
+    os.sep, "/")
 SQL_HARNESS = os.path.join(PROOF_SCRIPTS, "sql_purlin.sh")
 PROOF_REL = os.path.join(".purlin", "runtime", "proofs")
 
