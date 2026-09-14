@@ -1,666 +1,206 @@
 ---
 name: init
-description: Initialize a project for Purlin
+description: Set a project up for Purlin, and change the gate later
 ---
 
-Set up a project for spec-driven development. Creates `.purlin/`, `specs/`, detects the test framework, and scaffolds the proof plugin.
+# purlin:init
 
-**Pending migrations:** see `references/purlin_commands.md#pending-migrations`. `purlin:init --update` (Step 5d) is what clears them.
+Set a project up for spec-driven development, and change the one setting later when the team
+or the obligations change.
 
-**Paths in this skill:** every `references/`, `templates/`, `hooks/`, `scripts/` and `agents/` path below is relative to the plugin root; see `${CLAUDE_PLUGIN_ROOT}/references/purlin_commands.md#path-resolution`.
+**Paths.** Every `references/`, `templates/`, `hooks/` and `scripts/` path below is inside the
+plugin and is reached through `${CLAUDE_PLUGIN_ROOT}`. A project carries none of them. When
+`python3` is not on PATH, run `sh "${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh" <script>
+[args]`, which resolves the interpreter and execs it.
 
-## Usage
+## The one question
 
-```
-purlin:init                             Full setup (all steps)
-purlin:init --force                     Re-run full setup
-purlin:init --add-plugin <source>       Add a proof plugin
-purlin:init --sync-audit-criteria       Sync external audit criteria
-purlin:init --audit-llm                 Change audit LLM (default/external)
-purlin:init --set <key> <value>         Change one setting: pre_push, report,
-                                        digest, mutation_checks, quality_gate
-purlin:init --ci [github]               Write the CI workflow that runs the gate
-purlin:init --update                    Bring the project up to the installed plugin
-purlin:init --update --check            Report what is pending; write nothing
-purlin:init --update --platform-id <id> What a legacy @windows tag becomes (default: windows)
-purlin:init --update --mutation-checks on|off
-                                        Answer the mutation-check question during the update
-```
+Ask the person one question and nothing else: **what must be true before CI lets a change
+merge?** There are three answers. That answer is the **gate**.
 
-Each `--flag` runs ONLY that step, not the full init.
+| Gate | Who it fits | What CI requires before merge | Approvals |
+|------|-------------|-------------------------------|-----------|
+| `tested` | one developer | every rule has a passing tagged test | none |
+| `recorded` | a team of PM, designers, engineers and QA | every rule has a CI-written record at this commit, with the test strength at or above `min_strength` | advisory: anyone, by `purlin:approve` or pull request review |
+| `approved` | the same team under GxP or a similar obligation | everything `recorded` requires, plus a current approval on every high and medium rule, in a signed commit by someone on the approver list | required: the approver list decides who |
 
-**Who does what.** This skill asks the questions; `scripts/init/scaffold.py` writes the files, exactly as `scripts/update/migrate.py` performs `--update`. The script handles the full init, the `--force` re-run (Steps 1, 2, 4, 5, 5b, 7 and 7a) and the single-step re-answers: it takes one long flag per setting as an answer, and `purlin:init --set <key> <value>` asks that one setting's own question and then runs the script with `--force` and the single flag the key maps to (the mapping is the table under **Single-step re-answers** in Step 2). `--ci` is a seventh answer the script takes, asked the same way and written the same way (see **Subcommand: --ci**). `--add-plugin`, `--sync-audit-criteria` and `--audit-llm` stay agent-driven; `--update` is `scripts/update/migrate.py` (Step 5d), whose MCP migration is Step 5c.
+The answer sets three defaults, each of which you can change afterwards: `ai_review_at` is
+never, high, medium; `min_strength` is 50, 70, 80; risk and origin tags are optional,
+optional, required.
 
-## Step 1: Pre-flight
+## The two honest exceptions
 
-- **Git check (mandatory):** Run `git rev-parse --git-dir`. If it fails, the project is not a git repository. Print: `"Purlin requires git. Run 'git init' first."` Stop. Do NOT proceed without git: proofs, receipts, manual stamps, drift detection, and the pre-push hook all depend on git.
-- If `.purlin/config.json` exists and `--force` is not set: "Project already initialized. Use `--force` to re-initialize." Stop.
-- If it exists and `--force` is set: proceed. The scaffolder keeps every key the existing `config.json` carries that this run does not re-answer (`platforms`, `audit_criteria`, `audit_llm` among them), and keeps every plugin copy, wiring file, hook and dashboard already on disk.
+Init asks nothing else. It reads the language and the test framework from the tree, the git
+host from the remote URL, and it edits config files the way a `conftest.py` or a jest config
+is already edited. Two questions remain because no answer can be read from anywhere:
 
-The scaffolder re-checks all three: it prints the same git line and exits 2 without git, and exits 1 naming `--force` on an already-initialized project. Asking first is what keeps the user from watching a command fail; the script refusing is what keeps a half-initialized project from existing.
+1. An empty repository has nothing to detect, so init asks which language the project will be.
+2. `approved` needs names, so init asks for the approver emails.
 
-## Step 2: Scaffold the Project
-
-Ask the questions in Steps 3, 5b, 7, 7a and 7d first, then run the scaffolder
-once with the answers. It writes every file init creates and prints one line
-per path:
+## Run it
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" \
-  --project-root . \
-  --test-framework <auto|id|id,id> \
-  --pre-push <warn|strict|off> \
-  --digest <auto|warn|off> \
-  --report <on|off> \
-  --mutation-checks <on|off> \
-  [--remote-verification <required|optional|off>] \
-  [--quality-gate <off|deterministic>] [--force] [--dry-run]
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" --project-root . --gate <level>
 ```
 
-```
-.purlin/
-  config.json         # from templates/config.json, version from VERSION
-  plugins/            # the selected frameworks' proof plugins
-specs/
-  _anchors/           # anchor specs go here
-```
-
-Every value above is an answer the user gave. The script decides nothing that
-was asked: it reads `templates/config.json`, writes the answers over it, stamps
-`version` from `${CLAUDE_PLUGIN_ROOT}/VERSION`, and never writes a proof entry,
-a receipt or a commit. `--dry-run` prints the same plan and writes nothing,
-which is what to run when the user wants to see the plan before agreeing to it.
-
-**Single-step re-answers.** `purlin:init --set <key> <value>` changes one
-setting on a project that is already initialized. Ask only that setting's own
-question, then run the scaffolder with `--force` and the one flag the key maps
-to. These five keys and no others:
-
-| `--set` key | Values | What this skill runs |
-|---|---|---|
-| `pre_push` | `warn`, `strict`, `off` | `scaffold.py --force --pre-push <value>` |
-| `report` | `on`, `off` | `scaffold.py --force --report <value>` |
-| `digest` | `auto`, `warn`, `off` | `scaffold.py --force --digest <value>` |
-| `mutation_checks` | `on`, `off` | `scaffold.py --force --mutation-checks <value>` |
-| `quality_gate` | `off`, `deterministic` | `scaffold.py --force --quality-gate <value>` |
-
-The five keys were once five `purlin:init` flags of their own. Those spellings
-still run and each prints one line naming the `--set` key that replaced it;
-all five are removed in 0.12.0. The scaffolder keeps its long flags either way:
-the script's interface is not this skill's.
-
-```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" \
-  --project-root . --force --pre-push <warn|strict|off>
-```
-
-One flag, one field: the run rewrites that key of `.purlin/config.json` and
-leaves every other key and every other file in the project byte-identical.
-`--test-framework` left off is the value the project already recorded, not
-`auto`, so a lone re-answer never re-detects the frameworks or re-copies a
-plugin. This paragraph is the only place the procedure is stated: the step that
-asks each question points here rather than repeating the invocation, because
-five copies of one procedure are five things to keep in step. Do NOT hand-edit
-`.purlin/config.json` for one of these: the scaffolder owns that file, and a
-config edited by hand is how a key gets dropped, reordered or written in the
-wrong type. The four audit fields that Steps 7b and 7c fill in
-(`audit_criteria`, `audit_criteria_pinned`, `audit_llm` and `audit_llm_name`)
-are the one exception, because the scaffolder takes no flag for any of them and
-the answers only exist after those two steps have asked their questions. Every
-other key belongs to the scaffolder, and no other step writes that file.
-
-**Setting the quality gate on an existing project.** `purlin:init --set
-quality_gate <off|deterministic>` is one of the re-answers above. The mode is a
-declaration and `purlin:init --ci` is what makes it do anything: the workflow that subcommand writes is the job that reads
-`quality_gate` on every push, and a project with no CI gate job has set a field
-nothing runs. Offer `--ci` when the user sets the gate to `deterministic`. Do not
-ask about the quality gate during a full init and do not pass
-`--quality-gate` on the Step 2 invocation unless the user asked for it:
-`quality_gate` is not a template field, so a project that never answered it
-carries no such key, and `purlin:init --update` neither backfills it nor asks
-about it.
-
-Every config field's default, the command that writes it and the readers that consult it are
-listed once, in `references/drift_criteria.md` § Config Field Ownership: read that table rather
-than a second copy here. It covers the template fields and the optional `platforms` and
-`quality_gate` fields a full init never writes.
-
-## Step 3: Detect Test Framework
-
-**Print `DETECTING CODEBASE` before scanning.** Framework detection scans multiple files across the project and can take noticeable time, so the user must see that work is happening; the sample below opens with that line.
-
-Read `references/supported_frameworks.md` for the complete framework list, detection heuristics, and plugin file mappings. That file is the single source of truth: do NOT hardcode framework names here. The complete list spans BOTH the **Built-in Plugins** table and the **Additional Plugins (manual setup)** table: present every framework from both. Check project files for ALL matching frameworks using the detection columns in that reference.
-
-**Always present the framework selection list to the user**, even when auto-detection succeeds. Build the list dynamically from `references/supported_frameworks.md` so every shipped plugin (built-in and manual-setup) is offered. Pre-select detected frameworks with `[x]`, show undetected as `[ ]`. Always include `other` as the last option for custom plugins. This lets the user confirm, add, or remove frameworks before scaffolding.
-
-When one or more frameworks are detected:
-
-```
-DETECTING CODEBASE
-Scanning project files for test frameworks...
-
-Test frameworks (detected frameworks are pre-selected):
-  [x] <detected framework>   : <detection reason>
-  [ ] <other framework>
-  ...
-  [ ] other
-
-Confirm selection, or change? [enter to confirm]
-```
-
-When no framework is detected, do NOT silently default to shell. Show the list with nothing pre-selected:
-
-```
-DETECTING CODEBASE
-Scanning project files for test frameworks...
-
-No test framework detected.
-
-Test frameworks (select one or more):
-  [ ] <framework>
-  ...
-  [ ] other
-
-Which framework(s)? You can select multiple, e.g.: pytest, jest
-```
-
-If the user selects "other", suggest `purlin:init --add-plugin` to install a custom proof plugin.
-
-Pass the selection to the scaffolder as `--test-framework`: one id, a comma-separated list (`pytest,jest`), or `auto` to record `auto` and let the scaffolder install the plugin for every framework its detection matches. When nothing is detected and the user selects nothing, `auto` installs no plugin and says so: shell is scaffolded because it was chosen, never as a silent fallback.
-
-## Step 4: Proof Plugins and Test Wiring
-
-The scaffolder installs the plugin file `references/supported_frameworks.md`
-registers for each selected framework into `.purlin/plugins/`, byte-identical
-to the installed plugin's `scripts/proof/` copy, and installs all of them when
-several were selected.
-
-For a framework listed under **Additional Plugins (manual setup)** (e.g. xUnit), `purlin:init` does not auto-wire it: after the plugin file is copied, print the framework's setup steps from its section in `references/formats/proofs_format.md` and direct the user to complete the wiring manually.
-
-For the three frameworks it does wire, the scaffolder writes the file below
-**only when the project has no file of that name**, and reports `kept` when it
-has one: a project's own test configuration is never rewritten by init.
-
-| Framework | File | What it contains |
-|-----------|------|------------------|
-| pytest | `conftest.py` | `.purlin/plugins` appended to `sys.path`, then `pytest_plugins = ["pytest_purlin"]`. `.purlin` is not an importable package name, so a dotted `.purlin.plugins.pytest_purlin` raises before any test runs |
-| jest | `jest.config.js` | `reporters: ['default', '.purlin/plugins/jest_purlin.js']` |
-| vitest | `vitest.config.ts` | `reporters: ['default', '.purlin/plugins/vitest_purlin.ts']` (Vitest loads `.ts` reporters natively via Vite: no Jest config) |
-
-When the project already has one of those files, tell the user which line to
-add; the scaffolder's plan says which files it kept.
-
-## Step 5: .gitignore
-
-The scaffolder appends `templates/gitignore.purlin` to the project's
-`.gitignore`, entry by entry, skipping any entry the file already carries so a
-re-init never duplicates one. That template is the single source for the
-block: read it rather than restating its entries here.
-
-**Note:** `.purlin/report-data.js` is NOT gitignored: it is the project digest and should be committed. If upgrading from a prior version, remove any existing `.purlin/report-data.js` entry from `.gitignore`.
-
-## Step 5b: Dashboard Report
-
-The HTML dashboard is enabled by default. Ask the user:
-
-```
-HTML dashboard report:
-  [on]  Generate purlin-report.html: open in browser for live coverage (default)
-  [off] Disable dashboard report generation
-```
-
-If **on** (default): pass `--report on`. The scaffolder writes `"report": true` and copies the installed plugin's `scripts/report/purlin-report.html` to `purlin-report.html` at the project root. It is a copy on every host and a symlink on none: the only path a plugin install can be linked at is version-pinned, so the link would break on the first plugin update. `purlin:init --update` refreshes the copy. Print: `Dashboard: purlin-report.html (open in browser after running purlin:status)`
-
-If **off**: pass `--report off`. No dashboard is created, and an existing one is never deleted.
-
-When called via `purlin:init --set report <on|off>`, ONLY this step runs. Read the current config, show the current setting, and ask to toggle:
-
-```
-Dashboard report is currently: on
-  [on]  Keep enabled
-  [off] Disable
-```
-
-After changing, run the re-answer of Step 2, **Single-step re-answers**. It links `purlin-report.html` when the answer is on and the file is absent, and never deletes an existing dashboard when the answer is off (the user may want to keep it).
-
-## Step 5c: MCP Server (plugin-bundled) + Legacy Migration
-
-The Purlin MCP server (`sync_status`, `purlin_config`, and `drift` tools) is bundled with the plugin: `.claude-plugin/plugin.json` declares it under `mcpServers` with `${CLAUDE_PLUGIN_ROOT}`, which Claude Code resolves to the installed plugin path on every launch. It registers automatically wherever the plugin is enabled and tracks plugin updates. Do NOT create a `purlin` entry in the project's `.mcp.json`: a project-scope entry takes precedence over the plugin-provided server and pins a versioned cache path that silently goes stale on the next plugin update.
-
-**Legacy migration (pre-0.9.4 projects):** If `.mcp.json` exists at the project root, read it as JSON. If it has a `purlin` key under `mcpServers`:
-
-1. Remove the `purlin` key. Preserve ALL other server entries unchanged.
-2. If `mcpServers` is now empty and the file contains nothing else, delete `.mcp.json`. Otherwise write the file back without the `purlin` entry.
-3. Print: `Removed legacy purlin entry from .mcp.json: the MCP server is now provided by the plugin. Run /reload-plugins (or restart the session) to pick it up.`
-
-If `.mcp.json` has no `purlin` entry (or doesn't exist), print: `MCP server: bundled with plugin (sync_status, purlin_config, drift).`
-
-## Step 5d: Update
-
-`purlin:init --update` brings an already-initialized project up to the installed plugin. It is
-the one command for "the plugin moved, this project has not": there is no separate update skill,
-and the legacy `.mcp.json` migration (Step 5c) is one of its steps.
-
-Detection is content-based, never version-based. A project may have been initialized by any
-version, edited by hand, or half-migrated already, so what is on disk is the only honest input
-and the `version` field is not consulted to decide what to do.
-
-**1. Check.** Run the detector, which writes nothing:
-
-```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/update/migrate.py" --check --project-root .
-```
-
-It prints JSON: `{"project_root": ..., "pending": [{"id", "count", "summary", "files"}, ...]}`,
-and every entry names the files it counted. This is the same list `sync_status` prints as its
-pending-migrations advisory, from the same detector. If `pending` is empty, print
-`Project is up to date with Purlin <VERSION>.` and stop.
-
-When called as `purlin:init --update --check`, stop here: report and change nothing.
-
-**2. Show the delta before asking.** Present it in the shape `skills/spec/SKILL.md` Step 7c uses,
-per file, so the user reads what will change before consenting:
-
-```
-Pending migrations: 8 (Purlin 0.10.0)
-
-RENAMING:
-  specs/audit/static_checks.proofs-windows.json
-    -> specs/audit/static_checks.proofs-unit@windows-2022.json   (git mv; platform stamped)
-
-UPDATING:
-  specs/audit/static_checks.md          2 proof tags @windows -> @unit @on(windows-2022)
-  dev/test_windows_native.py            2 markers, windows tier -> tier unit, on(windows-2022)
-  .purlin/plugins/pytest_purlin.py      replaced with the installed plugin's copy
-                                        (previous bytes kept at
-                                         pytest_purlin.py.local-3f9a1c04.bak)
-  .purlin/config.json                   remote_verification="off", version=0.10.0
-  .purlin/hooks/pre-commit              rewritten from the installed plugin
-  .git/hooks/pre-commit                 a dangling symlink, replaced by the delegator
-  purlin-report.html                    refreshed from the installed dashboard
-  .purlin/report-data.js                rebuilt at the current digest schema
-
-KEEPING (unchanged):
-  specs/audit/static_checks.receipt.json   a receipt is a claim that tests ran
-  .purlin/config.json  quality_gate        optional, not a template field: never
-                                           backfilled and never asked
-  every other proof file, spec and test
-
-ASKING:
-  mutation_checks                       not backfilled; see Step 7d
-
-DIRECTIVES (nothing is written for these):
-  receipt-v1   -> Run: purlin:verify
-  legacy-mcp   -> Run: purlin:init --update (then /reload-plugins)
-```
-
-Name the provenance loss explicitly for every renamed platform proof file: the commit that
-carried the old name still exists, but the report reads provenance per current filename, so the
-file reports `runner not recorded` until the runner next commits it under the new name. The
-rename does not delete evidence; it moves the record, and `git mv` keeps its history.
-
-**3. Ask.** Use `AskUserQuestion` to get consent before any write. Nothing is written before the
-answer: no rewrite, no rename, no copy, no config edit.
-
-**4. Apply.** Run the migrations the user approved:
-
-```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/update/migrate.py" --apply <id> [<id> ...] \
-  --project-root . --platform-id <id> [--mutation-checks on|off]
-```
-
-`--platform-id` is what a legacy `@windows` tag, proof file and marker become; it defaults to
-`windows` (the OS family id), and a project with a registered platform passes that id instead.
-The script never writes a proof entry and never writes a receipt: `receipt-v1` and `legacy-mcp`
-print directives only. When `mutation_checks` is absent from the config, ask the Step 7d question
-and pass the answer as `--mutation-checks on|off`; the update never writes that field silently.
-
-`--update` writes no workflow file and registers no platform. Both belong to `purlin:test`'s
-consent path, which is the one place a runner is discovered and offered.
-
-**5. Re-run the tests whose markers changed.** A marker rewrite changes which file a plugin
-writes, and only a plugin may write a proof file. For every feature whose markers were rewritten,
-run `purlin:test <feature>` so the plugin emits the scoped file itself.
-
-**6. Print the receipt directive.** `-> Run: purlin:verify`. The update never issues a receipt,
-and `purlin:verify` declines to issue while any `legacy-*` migration is pending, so this is the
-step that closes the loop.
-
-**7. Re-sync the pinned audit criteria.** If `.purlin/config.json` has `audit_criteria` set, run
-the `--sync-audit-criteria` step (below) now, before committing. The cached criteria at
-`.purlin/cache/additional_criteria.md` and the sha in `audit_criteria_pinned` are what
-`purlin:audit` grades against, and a project that pinned external criteria and then updated is one
-whose criteria have usually moved too. With `audit_criteria` unset, say so in one line and move on.
-
-**8. Commit.** `chore(update): migrate to <VERSION> (<ids>)`, with the applied ids in the
-parentheses (see `references/commit_conventions.md`).
-
-**9. Idempotent.** Run `--check` again. It reports nothing pending apart from the two directives
-the script does not apply, and a second `--update` changes nothing.
-
-## Step 6: Confirmation
-
-Print the scaffolder's plan verbatim: it is one line per path, each beginning
-`wrote`, `kept`, `copied`, `linked` or `skipped`, so it says what was created
-and what was left alone without the tree being inspected a second time. Then:
-
-```
-Project initialized for Purlin.
-
-Test framework: <detected>
-Proof plugin: .purlin/plugins/<name>
-Dashboard: on (open purlin-report.html in browser)
-Digest: auto (regenerated on every commit)
-
-Next steps:
-  purlin:spec <topic>   : create your first spec
-  purlin:status         : see rule coverage
-```
-
-## Step 7: Install Git Pre-push Hook
-
-Install the Purlin pre-push hook so `git push` checks proof coverage before code reaches the remote.
-
-The hook has three modes, set in `.purlin/config.json` under `"pre_push"`:
-- **`"warn"`** (default): blocks on FAILING proofs, reports PARTIAL, UNTESTED and unreceipted coverage without blocking
-- **`"strict"`**: blocks on anything not VERIFIED (requires verification receipt)
-- **`"off"`**: the hook prints one line naming the mode and exits; no tests run and no coverage is checked
-
-Ask the user which mode they want:
-```
-Pre-push hook mode:
-  [warn]   Block on FAILING, allow PASSING and PARTIAL (default)
-  [strict] Block on anything not VERIFIED (requires verification receipt)
-  [off]    Run nothing and check nothing
-```
-
-Pass the answer to the scaffolder as `--pre-push <mode>`. Any other value makes the hook block every push until it is corrected: a typo must not disable enforcement invisibly, which is why the flag takes `warn`, `strict` and `off` and nothing else.
-
-When called via `purlin:init --set pre_push <mode>`, ONLY the mode selection above runs, followed by the re-answer of Step 2, **Single-step re-answers**. No hook is installed by that run beyond the one it keeps; the hook install below happens during the full init flow, inside the same scaffolder.
-
-The scaffolder installs the hook in two parts. The body is the generated shim
-`.purlin/hooks/pre-push`, tracked in git because it names no machine and no
-plugin version: it resolves the installed plugin at run time and runs that
-plugin's `scripts/hooks/pre-push.sh`, so a plugin update changes the hook and
-nothing in the project is rewritten. The file git runs is a three-line
-delegator to that shim, written into the hooks directory git reads
-(`core.hooksPath` when the repository sets one, the common hooks directory
-otherwise, so a linked worktree gets a hook that runs).
-
-Every path ends in one of five outcomes, each a plan line: the shim is `wrote`
-or `kept`; the delegator is `wrote` into a free slot, `kept` when Purlin's
-delegator is already there, and `skipped` when the slot holds anything else.
-A hook that is already there is someone's and init never writes over it: the
-plan line prints the one line to add to it instead. When husky, lefthook or the
-pre-commit framework owns the repository's hooks, the plan names the manager
-and the file to paste that line into. Read the plan lines back to the user when
-one of them says `skipped`. Print: `Installed git pre-push hook (proof coverage
-check).`
-
-## Step 7a: Pre-commit Hook (Project Digest)
-
-Install the Purlin pre-commit hook so `git commit` automatically regenerates the project digest (coverage + drift data in `.purlin/report-data.js`). The digest is committed to the repo so non-engineer stakeholders (QA, PM, compliance) can access project status without running Purlin tools.
-
-The digest has three modes, set in `.purlin/config.json` under `"digest"`:
-- **`"auto"`** (default): regenerate digest before every commit, auto-stage the file
-- **`"warn"`**: warn if the digest is stale, don't regenerate or block
-- **`"off"`**: disable the pre-commit hook entirely
-
-Ask the user which mode they want:
-
-```
-Project digest (auto-generates coverage + drift data for stakeholders):
-  [auto] Regenerate on every commit: always up-to-date (default)
-  [warn] Warn if digest is stale, don't auto-regenerate
-  [off]  Disable digest hook
-
-NOTE: Digest generation runs coverage scan and drift only.
-It NEVER triggers an audit: cached audit data is included.
-Run purlin:audit separately when you want fresh audit scores.
-```
-
-Pass the answer to the scaffolder as `--digest <mode>`, which takes `auto`, `warn` and `off`.
-
-When called via `purlin:init --set digest <mode>`, ask the mode above and then run the re-answer of Step 2, **Single-step re-answers**: that one run also installs the pre-commit hook below when the project has none. Also remove `.purlin/report-data.js` from `.gitignore` if present, so one command leaves an existing project with the whole digest feature rather than half of it.
-
-The scaffolder installs `.purlin/hooks/pre-commit` and its delegator by the
-same rule as the pre-push hook, with the same five outcomes, and never writes
-over a hook that is already there. At `"digest": "off"` it writes neither the
-shim nor the delegator and says so: the mode that disables the digest should
-not leave a hook behind to read it. Print: `Installed git pre-commit hook
-(project digest).`
-
-## Step 7b: Audit Criteria
-
-Ask the user which audit criteria to use:
-
-```
-Audit criteria:
-  [default] Use Purlin's built-in audit criteria only
-  [additional] Add team-specific criteria from a git-hosted file
-               (appended to built-in: does not replace defaults)
-```
-
-If **default**: no config change needed: `purlin:audit` loads built-in criteria via `load_criteria()`.
-
-If **additional**: ask for the git URL and file path (e.g., `git@github.com:acme/quality-standards.git#audit_criteria.md`). Set `audit_criteria` and `audit_criteria_pinned` in `.purlin/config.json`:
+Pass `--dry-run` to print every file init would write or edit and write none of them. Read the
+printed list back to the person before running it for real on a project that already has code.
+
+| Flag | What it does |
+|------|--------------|
+| `--gate <level>` | Sets the gate, at setup or later. Raising adds what is missing and asks before each write. Lowering changes the setting and deletes nothing |
+| `--update` | Brings a project set up by an older Purlin to the installed one. See below |
+| `--ci` | Writes the CI workflow under `tested`, where it is otherwise skipped |
+| `--ci --upstream-check` | Adds a scheduled job that opens a pull request or an issue when an anchor pin falls behind |
+| `--add <language>` | Adds a second language: its test framework, its proof plugin, its breaks engine |
+| `--dry-run` | Prints the plan and writes nothing |
+
+Raising the gate is additive. `--gate recorded` on a project set up as `tested` writes the CI
+workflow, creates `designs/` if it is missing, and prints the branch rules; it asks before
+each write and touches nothing else. `--gate approved` on top of that asks for the approver
+emails and lists the rules with no risk or origin tag. Lowering the gate rewrites the setting
+in `.purlin/config.json` and deletes nothing: the workflow, the records and the approvals all
+stay where they are, and CI simply stops requiring them.
+
+`--add <language>` is for a repository with, say, a Python service and a TypeScript client:
+init detects the second framework, installs its proof plugin beside the first, adds its breaks
+engine, and records both in `.purlin/config.json`. One `purlin:verify` then runs both.
+
+## What init writes
+
+It writes `.purlin/config.json` with the gate, the language, the git host, the test framework
+and the derived defaults; `specs/` for the two-section specs; and `.purlin/records/` with a
+README saying that `purlin:verify` writes the files in it and that nobody edits them by hand.
+It installs the proof plugin for the detected framework and the breaks engine for the
+language, writing `[tool.mutmut]` into `pyproject.toml` when that file exists and `[mutmut]`
+into `setup.cfg` otherwise. It adds a `.gitignore` block for `.purlin/runtime/`, which is
+where test runs put their proof files, and copies the dashboard page so it opens from disk. It
+offers a `pre-push` hook that runs `purlin:test --quick`, and installs the Claude Code hook
+that refreshes the local dashboard data. It creates `designs/` with a README when the gate is
+`recorded` or `approved`. Under those two gates it also writes the CI workflow. It ends by
+printing every file it wrote or edited, one per line.
+
+The config it writes looks like this, and every key after `gate` has a default the gate
+implies:
 
 ```json
 {
-  "audit_criteria": "git@github.com:acme/quality-standards.git#audit_criteria.md",
-  "audit_criteria_pinned": "<current remote HEAD sha>"
+  "version": "0.10.0",
+  "gate": "recorded",
+  "language": "python",
+  "test_framework": "pytest",
+  "git_host": "github",
+  "min_strength": 70,
+  "ai_review_at": "high",
+  "mutation_engine": "mutmut",
+  "approvers": []
 }
 ```
 
-Clone the repo to a temp directory, read the file at HEAD, **save to `.purlin/cache/additional_criteria.md`**, record the commit SHA as `audit_criteria_pinned`, then clean up. The `load_criteria()` function in `static_checks.py` reads this cached file and appends it to the built-in criteria.
+Read and change it with the `purlin_config` tool rather than editing the file, so a key that
+the installed Purlin no longer reads is reported instead of silently kept.
 
-**The cached file's first line must be `<!-- purlin-criteria-sha: <sha> -->`, naming the commit
-the file was read at**, followed by the file's own content. `load_criteria()` compares that sha
-to `audit_criteria_pinned` and refuses to grade anything when the two disagree; without the
-header line the cache is a file with no provenance and an audit cannot say what standard it
-applied.
+## Who commits the record
 
-## Step 7c: Audit LLM Configuration
+The gate decides which record counts, and the label comes from git rather than from the file.
+A record whose last commit was made through the git host's API by the CI identity is labelled
+`ci`; one a person committed is `developer`; one that is not committed at all is `local`.
+Under `tested`, a `ci` or a `developer` record counts, so the developer's own
+`purlin:verify` is enough. Under `recorded` and `approved`, only `ci` counts, so the developer
+stops committing records the moment the gate is raised and CI writes them instead.
 
-Ask the user which LLM should perform proof audits:
+## What each gate brings
 
-```
-Audit LLM:
-  [default] Claude audits (same model: fastest, independent context)
-  [external] Use a different LLM for cross-model auditing (experimental)
-```
+Under every gate, init creates the records folder and its retention rule, documents the
+approval path, and leaves risk, origin and criterion tags optional. `purlin:verify` creates
+the records folder again if it is ever missing, so a project that skipped it is not stuck.
 
-If **default**: no config change. The auditor runs in an independent context.
+Under `recorded` and `approved`, init also writes `designs/` and the CI workflow
+(`purlin.yml`), because the gate cannot be met without a CI run that writes records. When
+`specs/` carries `@env(windows)`, `@env(macos)` or `@env(linux)` proofs, the workflow gets a
+matrix with one job per operating system named, each running the same verify and writing its
+own record. When no proof carries a tag, there is one job.
 
-If **external**: ask for the CLI command:
+Under `approved`, init asks for the approver emails, writes them to `approvers` in
+`.purlin/config.json`, prints the commit-signing setup, and lists every rule that still has no
+risk or origin tag so `purlin:spec <name>` can tag them in one pass. Without an approver list,
+the gate cannot be met: `sync_status` prints `→ approver list missing: run purlin:init --gate
+approved` and the CI gate exits 1.
 
-```
-Enter the command to call your external LLM.
-Use {prompt} where the audit prompt should go.
+Anchor pins, the upstream-check job and the dashboard artifact are added on demand, never by
+default. When a piece is missing later, the tool that needs it says so: `purlin:drift` reports
+a pin behind, `purlin:status` says the gate cannot be met without a workflow, `purlin:verify`
+says the breaks engine is unavailable and runs the AI review one level lower, and the review
+list shows the rules waiting on an approval.
 
-Examples:
-  gemini -m pro -p "{prompt}"
-  openai chat -m gpt-4o "{prompt}"
-  ollama run llama3 "{prompt}"
+## The branch rules
 
-Command:
-```
+Init prints these; the git host enforces them. Purlin never changes a repository's settings.
 
-After the user enters the command:
+**GitHub**, three rulesets so each bypass stays narrow:
 
-1. **Test it:** shell out with a simple test prompt: replace `{prompt}` with `"Respond with exactly: PURLIN_AUDIT_OK"` and run the command.
-2. **Check the response** contains `PURLIN_AUDIT_OK`.
-3. **If it works:** save to `.purlin/config.json`:
-   ```json
-   {
-     "audit_llm": "gemini -m pro -p \"{prompt}\"",
-     "audit_llm_name": "Gemini Pro"
-   }
-   ```
-   Print: `Audit LLM configured: Gemini Pro ✓`
-4. **If it fails:** print the error and ask the user to try again or skip.
+1. Require a pull request and require status checks, with the Actions app as the only bypass
+   actor.
+2. Restrict file paths on `.purlin/records/**` and `specs/**/*.approvals/*.ci.json`, with the
+   Actions app as the only bypass actor, so a person cannot push a record or a CI approval.
+3. Block force pushes and restrict deletions, with no bypass actor at all.
 
-This step is also callable independently via `purlin:init --audit-llm`.
+Under `tested`, print only the third.
 
-## Step 7d: Mutation Checks
+**Azure DevOps**: give the build service alone Contribute on those same paths through branch
+security, and turn off force push and delete.
 
-A mutation check is the practice of breaking the behaviour a proof covers, watching that proof
-fail, and restoring the code before committing. It is the only check that catches a proof which
-passes against broken code, and it is off by default because it costs real time and tokens.
+## Commit signing under `approved`
 
-Print the value statement **before** the question, quoting it from
-`references/spec_quality_guide.md` § Mutation check ("What it is worth"). That section is the one
-source for this text; do not restate it here in different words.
+An approval counts when the commit that added it is signed, when its author email is on the
+approver list as of that commit, and when that author is not the author of the commit that
+last touched the test. Print this once per approver:
 
-Then ask:
-
-```
-Mutation checks:
-  [off] Write proofs and move on (default)
-  [on]  Every new or amended proof is mutation-checked before the commit that carries it
+```bash
+git config gpg.format ssh
+git config user.signingkey ~/.ssh/id_ed25519.pub
+git config commit.gpgsign true
 ```
 
-Pass the answer to the scaffolder as `--mutation-checks on|off`, which writes `"mutation_checks": true` or `"mutation_checks": false`.
+Then tell them to upload the same public key to the git host as a signing key, so the host
+shows the commit as Verified. No git-host reviewer setting and no owners file is needed, now
+or later.
 
-When called via `purlin:init --set mutation_checks on|off`, ONLY this step runs: read the
-current value, show it, and run the re-answer of Step 2, **Single-step re-answers**.
+The approver list lives in `.purlin/config.json` and changes by pull request like any other
+file, so git history records who could approve and when. Add and remove people at any time; an
+approval is judged against the list as it stood in the commit that added it.
 
-`purlin:init --update` asks this same question when `mutation_checks` is absent from the config,
-and passes the answer to the migration script as `--mutation-checks on|off`. It is the one config
-field the update never backfills from the template: a setting that doubles the cost of writing a
-proof is a decision the project makes, not a default it inherits.
+## What CI runs
 
-What reads the field: `purlin:build` requires the check before the commit when it is true and
-prints one line saying the check is off when it is false; `purlin:audit` may ask an author to
-name the mutation they ran and caps a proof whose author cannot name one at WEAK
-(`references/audit_criteria.md` § Pass 2).
+A project has no copy of Purlin in it. The workflow init writes therefore clones Purlin at a
+pinned tag and runs `purlin:verify --ci` from that checkout, so the runner runs the same
+verify a developer runs locally, at a version that changes only when someone edits the
+workflow. The job writes its record through the git host's API, auto-approves the low-risk
+rules, writes the review briefs, posts the rollup as a pull request comment, and publishes the
+dashboard page and its data as the `purlin-dashboard` build artifact linked from that comment.
 
-## Step 8: Commit
+On a pull request from a fork the API token cannot write, so verify runs, the comment posts,
+no commit is made, and the job says so in the comment.
 
-Commit per `references/commit_conventions.md`:
+## Bringing an older project forward
 
-```
-git commit -m "chore: initialize purlin project"
-```
-
----
-
-## Subcommand: --ci
-
-```
-purlin:init --ci [github]
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" --update --project-root .
 ```
 
-Writes `.github/workflows/purlin-verify-gate.yml`: the CI gate job this
-plugin runs on itself, in the form a project that clones the tooling needs.
-`github` is the only provider for now and is the default when none is given.
+`--update` detects the older layout and offers each change separately. It untracks and deletes
+the proof files and the verification files that used to be committed, untracks the committed
+dashboard data, rewrites the hooks, retires the config keys that no longer exist, asks the
+gate question once, and rewrites an operating-system tag to `@env(...)` only where the
+intended system is unambiguous. Every write asks first and every file it replaces is backed up
+next to the original. While the update is pending, `sync_status` opens with
+`→ Run: purlin:init --update`.
 
-### Steps
+## When you are done
 
-1. **Ask first, with `AskUserQuestion`.** A workflow file spends the project's
-   CI minutes and is read as policy by everyone on the team, so it is never
-   written without consent. Ask one question, `Write the Purlin CI workflow?`,
-   with the two options `Write it` and `Not now`, and summarize what lands in
-   exactly these two lines:
+Say what was written, then name the next step from the state, not from a script:
 
-   ```
-   .github/workflows/purlin-verify-gate.yml: on a push or PR touching specs/**,
-     .purlin/config.json or .github/workflows/**, clones Purlin at PURLIN_REF
-     and runs scripts/ci/verify_gate.py --check.
-   PURLIN_REF is pinned to the installed version; change that one line to move
-     the job to another release. An existing file at that path is never touched.
-   ```
-
-2. **On `Not now`, stop.** Say nothing was written.
-
-3. **On `Write it`, run the scaffolder:**
-
-   ```bash
-   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" \
-     --project-root . --force --ci github
-   ```
-
-   Print the plan line the run emitted. `wrote` means the workflow is there;
-   `kept` means the project already had a file at that path and the run left
-   its bytes alone, which is what to report rather than offering to overwrite
-   it.
-
-4. **Tell the user what is left to do.** The job is a check, not a gate, until
-   branch protection marks it required; `references/hard_gates.md` states which
-   layer that is. A project that also wants the quality gauges to decide sets
-   `quality_gate` with `purlin:init --set quality_gate deterministic`.
-
----
-
-## Subcommand: --add-plugin
-
-```
-purlin:init --add-plugin <source>
-```
-
-Source can be:
-- A local file path: `./my_proof_plugin.py` or `/path/to/plugin.sh`
-- A git URL: `git@github.com:someone/purlin-go-proof.git` or `https://...`
-
-### Steps
-
-1. **Verify `.purlin/plugins/` exists.** If not, tell the user to run `purlin:init` first and stop.
-
-2. **If source is a local file path:**
-   - Verify the file exists
-   - Copy it to `.purlin/plugins/`
-   - Print: `Added proof plugin: .purlin/plugins/<filename>`
-
-3. **If source is a git URL:**
-   - Clone to a temp directory: `git clone <url> /tmp/purlin-plugin-install`
-   - Look for proof plugin files (`*.py`, `*.js`, `*.sh`, `*.java` in the repo root or a `plugin/` directory)
-   - If one file found: copy to `.purlin/plugins/`
-   - If multiple found: list them and ask the user which to install
-   - Clean up the temp directory: `rm -rf /tmp/purlin-plugin-install`
-   - Print: `Added proof plugin: .purlin/plugins/<filename>`
-
-4. **Validate the plugin** after copying. The pattern every language's plugin file must
-   contain is listed once, in `references/proof_plugin_contract.md` § C, under **What a
-   plugin file must contain**: look up the row for the copied file's extension and check it.
-
-   If validation fails, warn but still install:
-   ```
-   ⚠ This file doesn't look like a standard proof plugin.
-   It should read test markers and write .proofs-*.json files.
-   See references/formats/proofs_format.md for the schema.
-   ```
-
-5. **Print next steps:**
-   ```
-   Plugin installed. To use it:
-   1. Add proof markers to your tests using the plugin's marker syntax
-   2. Run your tests: the plugin emits .proofs-*.json files
-   3. purlin:status shows coverage
-   ```
-
----
-
-## Subcommand: --sync-audit-criteria
-
-```
-purlin:init --sync-audit-criteria
-```
-
-Syncs the additional team criteria file to the latest version.
-
-### Steps
-
-1. Read `.purlin/config.json`. If `audit_criteria` is not set: `"No external audit criteria configured. Using built-in defaults."` Stop.
-
-2. Parse the git URL and file path from `audit_criteria` (format: `git@host:org/repo.git#path/to/file.md`).
-
-3. Clone the repo to a temp directory: `git clone <url> /tmp/purlin-audit-criteria-sync`
-
-4. Get the current remote HEAD SHA: `git rev-parse HEAD`
-
-5. Compare to `audit_criteria_pinned` in config:
-   - If same: `"Audit criteria up to date."` Clean up and stop.
-   - If different: read the file at HEAD, **save to `.purlin/cache/additional_criteria.md` with `<!-- purlin-criteria-sha: <new SHA> -->` as its first line** followed by the file's content, update `audit_criteria_pinned` in config to the new SHA, print `"Audit criteria updated: <old SHA> → <new SHA>"`
-   - If same: still rewrite the cached file with its header line when the header is missing or names a different sha, because `load_criteria()` reads the header and not the config alone, and a cache without one makes every audit exit 2
-
-6. Clean up: `rm -rf /tmp/purlin-audit-criteria-sync`
+- No specs yet: `→ Next: purlin:spec "<one sentence about what the software must do>"`.
+- Specs but no tests: `→ Next: purlin:build <name>`.
+- Code but no specs: `→ Next: purlin:spec-from-code`.
+- Gate raised to `approved` with untagged rules: name them and point at `purlin:spec <name>`.
