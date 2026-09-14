@@ -26,6 +26,9 @@ EXCLUDED = (
     "dev/fixtures/upgrade-",    # old project layouts, kept wrong on purpose
     "dev/plans/",               # the plan names what it retires
     "dev/test_vocabulary.py",   # this file lists the terms
+    "RELEASE_NOTES.md",         # historical entries record what shipped, under
+                                # the names it shipped under; the 0.10.0 section
+                                # is held to this vocabulary by review
     "specs/",                   # frozen until phase 9
     ".purlin/",                 # frozen until phase 9
 )
@@ -42,7 +45,7 @@ PENDING_REWRITE = (
     # phase 5: the interpreter resolver, which names what sys.platform reads
     "scripts/purlin_python.sh",
     # phase 8: the docs
-    "docs/", "README.md", "CLAUDE.md", "RELEASE_NOTES.md", "assets/purlin-logo.svg",
+    "docs/",
 )
 
 SKIP = EXCLUDED + PENDING_REWRITE
