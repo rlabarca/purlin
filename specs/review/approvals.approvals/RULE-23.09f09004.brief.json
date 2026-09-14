@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "approvals",
+  "generated_at": "2026-09-14T16:40:24Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "c6e1ef657111a2c3d63d094674bc26386fd3eaf3d508b13173bd2b0074ef6d0c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-29",
+      "text": "Run the command to approve `RULE-1` on a branch called `side`; verify the approval is not an ancestor of `main`, then fast-forward `main` onto `side` and verify it is",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-29 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/approvals/20260914T164015Z-c6d2880-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-23",
+  "rule_hash": "f0f499492c938a906ba82a68f77fbfa679b51e88e19454e71037718b5bfe0385",
+  "rule_text": "An approval committed on a side branch is not on the protected branch until that branch merges",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "34c86bc6ca75dbac81ffc018f071528ac805a72bc393d3842d3639843205e146",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_an_approval_on_a_side_branch_is_not_on_the_protected_branch(\n            self, proved):\n        signing_key(proved.root)\n        git(proved.root, 'checkout', '-q', '-b', 'side')\n        approve_module.main(['login', 'RULE-1', '--project-root', proved.root])\n        loaded = purlin_approvals.load_approvals(\n            proved.root, purlin_specs.scan_specs(proved.root))\n        path = loaded[('login', 'RULE-1')][0]['path']\n        assert not purlin_approvals.is_ancestor(proved.root, path, 'main')\n        git(proved.root, 'checkout', '-q', 'main')\n        git(proved.root, 'merge', '-q', '--ff-only', 'side')\n        assert purlin_approvals.is_ancestor(proved.root, path, 'main')",
+      "file": "dev/test_approvals.py",
+      "findings": [],
+      "name": "test_an_approval_on_a_side_branch_is_not_on_the_protected_branch",
+      "proof": "PROOF-29",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "09f090042d905b7fb76312262f17f6f1832d4315a56c0aa52799499fd55197d9",
+  "verdict": "add a case"
+}

@@ -1,0 +1,48 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_spec",
+  "generated_at": "2026-09-14T16:40:52Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "cf3bcfb4210f3af3d091f72bd6b5fe8572b8ad840470102e7f33a4e6cf8f66ed",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-2",
+      "text": "Read `skills/spec/SKILL.md`; verify it carries `origin/main`, `ids.next_ids` and `${CLAUDE_PLUGIN_ROOT}/scripts/mcp`, and that the sentence naming `origin/main` also names the working tree as what ids are not allocated against. Removing the `ids.next_ids` fence fails naming `ids.next_ids`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/skill_spec/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-2",
+  "rule_hash": "340ba2ec3a55a91d8d09f7d567827722358b40bb58ab7a116583b5c970489ca5",
+  "rule_text": "The skill allocates rule and proof ids against `origin/main` with the `ids.next_ids` helper under `${CLAUDE_PLUGIN_ROOT}/scripts/mcp`, never against the working tree",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "9a83f57dde33895400615925b2daa14c42d496caee4c778911c5ede5a6d91ca4",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_allocates_ids_against_the_default_branch(self):\n        assert carries(skill_path('spec'), [\n            'ids.next_ids', '${CLAUDE_PLUGIN_ROOT}/scripts/mcp',\n            'allocated against `origin/main`, not against the working tree']) == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_it_allocates_ids_against_the_default_branch",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "d16c4f54ff0612c74bf7d5d34cbe4e322b3bcb19390b690dff3dfd72b9be90c1",
+  "verdict": "ready"
+}

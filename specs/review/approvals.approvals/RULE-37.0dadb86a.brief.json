@@ -1,0 +1,62 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "approvals",
+  "generated_at": "2026-09-14T16:40:25Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "e9a3fd578f56c79b172654aae804ede3994b7f6c46b770ffd6a969bc638b8b35",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-56",
+      "text": "Read the gate's own source; verify it builds the payload and that none of the box-drawing glyphs a rendered table uses appears in it",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-57",
+      "text": "Build the payload, hand it to the gate and run it; verify it exits 0 and prints `PASS`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/approvals/20260914T164015Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-37",
+  "rule_hash": "e77215d8ca8bfc5e3e985891d856c75a4afc20966121d11068af6cbf50b637d3",
+  "rule_text": "The gate reads the structured payload and never a rendered table, and a caller may hand it a payload it already built",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "86801eb7f624cb76abff2e86fec026ce0e8f0e9f8860d61cafde6d97452db9d6",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_reads_the_payload_and_not_a_rendered_table(self):\n        with open(GATE_PY, encoding='utf-8') as handle:\n            source = handle.read()\n        assert 'build_payload' in source\n        for glyph in ('\u2500', '\u2502', '\u250c'):\n            assert glyph not in source, (\n                'a gate that parsed a rendered table would move with the '\n                'dashboard')",
+      "file": "dev/test_verify_gate.py",
+      "findings": [],
+      "name": "test_it_reads_the_payload_and_not_a_rendered_table",
+      "proof": "PROOF-56",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_caller_may_hand_over_the_payload_it_already_built(self):\n        made = project_at('tested', by_ci=False)\n        try:\n            payload = made.payload()\n            out = io.StringIO()\n            assert verify_gate.check(made.root, payload=payload, out=out) == 0\n            assert 'PASS' in out.getvalue()\n        finally:\n            made.close()",
+      "file": "dev/test_verify_gate.py",
+      "findings": [],
+      "name": "test_a_caller_may_hand_over_the_payload_it_already_built",
+      "proof": "PROOF-57",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "0dadb86a9496425ba5b1bc67f78f4dd0abff1777df9ee74a169934105e066541",
+  "verdict": "ready"
+}

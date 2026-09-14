@@ -1,0 +1,53 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-14T16:40:56Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "126d098d1a28d3138698d07827e8a523578078732df94cbf245b542bc986b60f",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-20",
+      "text": "Write the data file, set its modification time to zero, then write the same payload again asking for a write only if it changed; verify the bytes on disk are unchanged and the modification time is no longer zero",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-20 logic_mirroring"
+  ],
+  "record": ".purlin/records/states/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-20",
+  "rule_hash": "612b3aea0a66d31a952b907084515e856a9a3de3701477042afcfac7b68be300",
+  "rule_text": "A rebuild whose payload differs from the file on disk only by the stamp on it touches that file instead of rewriting it, so a background refresh never churns the bytes",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "d121b9b7f083e2d63413e1e8cb36c32da001098fcc695dc4f1c197f721b935cc",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_an_unchanged_payload_is_touched_rather_than_rewritten(self,\n                                                                  project):\n        purlin_payload.write_report_data(project.root, project.payload())\n        path = purlin_payload.report_data_path(project.root)\n        before = open(path, 'rb').read()\n        os.utime(path, (0, 0))\n        purlin_payload.write_report_data(project.root, project.payload(),\n                                         only_if_changed=True)\n        assert open(path, 'rb').read() == before\n        assert os.stat(path).st_mtime > 0",
+      "file": "dev/test_mcp_server.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_an_unchanged_payload_is_touched_rather_than_rewritten",
+      "proof": "PROOF-20",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "f70b29c401a136655d4693ff20afcf013570fde6bb57d4298d78568d5c1ebfa2",
+  "verdict": "needs a human"
+}

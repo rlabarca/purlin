@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "proof_common",
+  "generated_at": "2026-09-14T16:40:33Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "b13e5ba7b2c6f9dd27157a2dc518dcc89dce6cf0a6f93b8abcd7720e269e6071",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-13",
+      "text": "Extract every import of each plugin source and verify each names that language's standard library or the plugin's own test framework and nothing else; run the node reporters in a project whose `node_modules/` exists and is empty and verify each loads and writes its one entry, in `dev/test_multilang_proof_plugins.py`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/proof_common/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-13",
+  "rule_hash": "de1f6e1e089a3a649c0fd1c34c97ebd7f8253c2d5b45cf8443eed42042bb8471",
+  "rule_text": "A plugin is one file importing only its own language's standard library plus the test framework it is a plugin of, and it branches on no operating system, so a project that installed its test framework runs the plugin as shipped",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "51aee39720d4584ec9e56c63cc55dc9880e66c05be66dcb30d126970add93fdc",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_node_plugins_require_only_builtins(self):\n        for framework in ('jest', 'vitest'):\n            source = open(os.path.join(PROOF_SCRIPTS, PLUGINS[framework]),\n                          encoding='utf-8').read()\n            for line in source.splitlines():\n                stripped = line.strip()\n                if stripped.startswith('import ') or 'require(' in stripped:\n                    for module in ('\"fs\"', '\"path\"', \"'fs'\", \"'path'\"):\n                        if module in stripped:\n                            break\n                    else:\n                        assert stripped.startswith('//'), stripped",
+      "file": "dev/test_multilang_proof_plugins.py",
+      "findings": [],
+      "name": "test_the_node_plugins_require_only_builtins",
+      "proof": "PROOF-13",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a42f7e51702d507358e214c5498eabb9634b016ad3c1de6d410c9b4739c7fe72",
+  "verdict": "ready"
+}

@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-14T16:41:04Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "17511081889b82d46873663623de8c01716b8cb448939b25736c35c380fbf16e",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-38",
+      "text": "Parse the module's own source and read every call to open; verify each call that opens text passes the encoding `utf-8` and that the offending line numbers are zero",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/static_checks/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-36",
+  "rule_hash": "049cb100ca92102bc591189b98e2ee790b7b44833026af2d3b3d677cdf7abf89",
+  "rule_text": "Every text file the module opens is opened as UTF-8, whatever the console codec is",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "e309a9d19925400a2f2bd2e9aee22cd9f21459ab52d8259a8bc4ec4f6bb76cb4",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_all_text_open_calls_specify_utf8(self):\n        \"\"\"Every text open() in static_checks.py passes encoding='utf-8'.\"\"\"\n        tree = ast.parse(self._source())\n        offenders = []\n        for node in ast.walk(tree):\n            if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)\n                    and node.func.id == 'open'):\n                continue\n            # Any string argument other than the encoding says how to open it.\n            flags = [a.value for a in node.args[1:] if isinstance(a, ast.Constant)]\n            flags += [kw.value.value for kw in node.keywords\n                      if kw.arg != 'encoding' and isinstance(kw.value, ast.Constant)]\n            if any(isinstance(f, str) and 'b' in f for f in flags):\n                continue  # bytes, which take no encoding\n            enc = next((kw.value.value for kw in node.keywords\n                        if kw.arg == 'encoding'\n                        and isinstance(kw.value, ast.Constant)), None)\n            if enc != 'utf-8':\n                offenders.append(getattr(node, 'lineno', '?'))\n        assert not offenders, \\\n            f\"a text open() without encoding='utf-8' at lines: {offenders}\"",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_all_text_open_calls_specify_utf8",
+      "proof": "PROOF-38",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "65d606c0e9ef491753ff5bec9ab9e26c9bc6a071567d283d7f33646a79409980",
+  "verdict": "ready"
+}

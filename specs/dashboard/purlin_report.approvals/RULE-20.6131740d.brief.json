@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-14T16:40:35Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "3a66f7032737f9c75350f89acf054d2efe1abcafd5ab3705eb653ebe8bb80a2a",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-20",
+      "text": "Open the board with the team fixture rewritten to schema 3; verify exactly 1 notice is on screen, that it names `purlin:status`, and that no tile and no table are rendered",
+      "tier": "e2e"
+    }
+  ],
+  "reasons": [
+    "PROOF-20 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/purlin_report/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-20",
+  "rule_hash": "4fa408506d730d2f83d74ea6cd9b31804b07bf9c8b84bc6aa68a768cd9b09714",
+  "rule_text": "A payload written for another schema version shows one notice naming the command that rewrites it, and no tiles, no table and no tabs, rather than rendering fields it cannot read",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "6e35c958cb4789de2003275af1f3056a022aadb409c7408c0e54ef5ea0a48dc5",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_an_older_payload_shows_one_notice_and_nothing_else(browser,\n                                                            tmp_path):\n    payload = payload_named('team')\n    payload['schema_version'] = 3\n    page = open_board(browser, tmp_path, payload)\n    notices = page.query_selector_all('.notice')\n    assert len(notices) == 1\n    assert 'purlin:status' in notices[0].inner_text()\n    assert page.query_selector_all('.tile') == []\n    assert page.query_selector_all('.tbl') == []\n    assert page.query_selector_all('.tabs') == []\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_an_older_payload_shows_one_notice_and_nothing_else",
+      "proof": "PROOF-20",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "6131740d600eccdcb491495b9dbc9f2d9a982abd3651c609ededf316b76bbc49",
+  "verdict": "add a case"
+}

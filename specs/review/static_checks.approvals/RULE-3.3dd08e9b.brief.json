@@ -1,0 +1,63 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-14T16:40:58Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "a54c48ce2337f740053eb2c5c52d2d6d12cfc8817c87373d21502552408ff9bd",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-4",
+      "text": "Run the Python checker over a marked test that calls the code and only prints the result; verify its status is `fail` and its check is `no_assertion`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-69",
+      "text": "Run the Python checker over a marked test that builds a payload, encrypts it and decodes it without asserting; verify its status is `fail`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/static_checks/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-3",
+  "rule_hash": "89c86f42561e9e84abc0b70a51e91e5ffb4b042ef1b7bde8f3d10a282b670d6f",
+  "rule_text": "A marked Python test with no assertion statement at all is reported `no_assertion`",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "ffa204dbdbf4192f9b105c7e4fd8b73dc639a82bb4429b5ddc1847bb8671cdd6",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_detects_no_assertions(self):\n        path = _write_tmp('''\nimport pytest\n@pytest.mark.proof(\"testfeat\", \"PROOF-1\", \"RULE-1\")\ndef test_bad():\n    result = do_something()\n    print(result)\n''')\n        try:\n            results = check_python(path, \"testfeat\")\n            assert len(results) == 1\n            assert results[0]['status'] == 'fail'\n            assert results[0]['check'] == 'no_assertion'\n        finally:\n            os.unlink(path)",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_detects_no_assertions",
+      "proof": "PROOF-4",
+      "reasons": []
+    },
+    {
+      "body": "def test_python_no_assertion(self, tmp_path):\n        \"\"\"Python no-assertion, caught by Pass 1 with the no_assertions check.\"\"\"\n        test_file = tmp_path / 'test_cheat.py'\n        test_file.write_text('''\\\nimport pytest\nimport json\ndef encrypt(data): return data[::-1]\n@pytest.mark.proof(\"feat\", \"PROOF-1\", \"RULE-1\")\ndef test_encrypts_payload():\n    payload = {\"secret\": \"value\"}\n    encrypted = encrypt(json.dumps(payload))\n    decoded = json.loads(encrypted[::-1])\n    token = decoded.get(\"secret\")\n    # CHEAT: lots of setup, zero assertions\n''')\n        results = check_python(str(test_file), 'feat')\n        assert results[0]['status'] == 'fail', \"Python no-assertion caught by Pass 1\"\n        assert results[0]['check'] == 'no_assertion'",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_python_no_assertion",
+      "proof": "PROOF-69",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "3dd08e9b780df7f8022faecd1f24cbb408f0f8632bfd3c5cb252378195c2bae2",
+  "verdict": "ready"
+}

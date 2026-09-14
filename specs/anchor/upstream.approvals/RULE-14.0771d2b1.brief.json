@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "upstream",
+  "generated_at": "2026-09-14T16:41:08Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "cecd09642cf8f57b399e1ed6c4913c847bdcb2054789105b803cb6b2d673b07d",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-14",
+      "text": "Pin two anchors from one repository, add a third from a text file, then run `sync` with no name; verify the rows name exactly the two repository-sourced anchors and not the free-text one",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-14 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/upstream/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-14",
+  "rule_hash": "23fc3dc73969462339b60fc5e65eb5f7db2df5148669a8ca9b13649d627eecf1",
+  "rule_text": "`sync` with no name covers every anchor whose source is a repository and no others, so a free-text anchor is never fetched",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "cbf970e38682f01dcfe05952550478e54e47f59285287af1cb9014b363fea1cc",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_sync_all_covers_every_git_sourced_anchor_and_no_others(workspace):\n    _add(workspace)\n    upstream.add(workspace.root, workspace.anchor_repo,\n                 path='specs/no_secrets.md')\n    free = os.path.join(workspace.root, 'policy.txt')\n    _write(free, 'Every refund is approved by a second person.\\n')\n    upstream.add(workspace.root, free, name='refunds')\n\n    result = upstream.sync(workspace.root)\n    assert sorted(row['anchor'] for row in result['anchors']) == [\n        'no_eval', 'no_secrets']",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_sync_all_covers_every_git_sourced_anchor_and_no_others",
+      "proof": "PROOF-14",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "0771d2b1cb41acfcaaf44e557c2ca3a6f2ad2bd5942e0271d429b2c5541e3157",
+  "verdict": "add a case"
+}

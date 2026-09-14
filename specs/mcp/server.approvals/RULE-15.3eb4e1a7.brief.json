@@ -1,0 +1,55 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "server",
+  "generated_at": "2026-09-14T16:40:50Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "cd7c4c2b0c941fd08075dd18ed7a52b7dd1c42d9e95365baf85397a538329239",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-15",
+      "text": "Read the hook's source and verify it reads no key named `spec_dir` from the config; then write that key into a project's config naming another directory, run the hook, and verify the digest still reports the 1 proof under `specs/`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-15 logic_mirroring"
+  ],
+  "record": ".purlin/records/server/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-15",
+  "rule_hash": "146d7b4c7e1771810650dc7a7d8676cc40e0de05e245790a827809821786261d",
+  "rule_text": "The spec directory the hook walks is the literal `specs`, read from no config key, so a stray directory setting in a project's config cannot redirect the check",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "c0bab4fc318f26ba969bc42916f53891c482ca6a6744a7484a5915bf2a8a545f",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_regenerates_only_when_an_input_is_newer(self, tmp_path):\n        project = _project(str(tmp_path))\n        _assert_silent_zero(_run(project), 'first')\n        digest = _digest_path(project)\n        first_bytes = open(digest, 'rb').read()\n        stamp = os.stat(digest).st_mtime\n\n        _assert_silent_zero(_run(project), 'nothing changed')\n        assert open(digest, 'rb').read() == first_bytes\n        assert os.stat(digest).st_mtime == stamp, 'a quiet run must not touch the digest'\n\n        os.makedirs(os.path.join(project, '.purlin', 'runtime'), exist_ok=True)\n        with open(os.path.join(project, '.purlin', 'runtime', 'test_run.json'), 'w') as f:\n            f.write('{}')\n        _assert_silent_zero(_run(project), 'runtime file newer')\n        assert open(digest, 'rb').read() == first_bytes\n        assert os.stat(digest).st_mtime == stamp, '.purlin/runtime/ is not an input'\n\n        assert _proved(_read_digest(project)) == 1\n        _write_proofs(project, [_entry('PROOF-1', 'RULE-1'), _entry('PROOF-2', 'RULE-2')])\n        _assert_silent_zero(_run(project), 'proof file newer')\n        assert _proved(_read_digest(project)) == 2, \\\n            'a newer proof file must regenerate the digest'\n\n        stamp = os.stat(digest).st_mtime\n        time.sleep(0.01)\n        os.utime(os.path.join(project, '.purlin', 'config.json'), None)\n        _assert_silent_zero(_run(project), 'config newer')\n        assert os.stat(digest).st_mtime > stamp, 'a newer config must trigger a run'\n\n        # The spec directory is the literal `specs`, not a config field: the\n        # retired `spec_dir` (`skill_init` RULE-76) must not come back as a\n        # reader here, so a config naming another directory changes nothing.\n        with io.open(HOOK, encoding='utf-8') as f:\n            source = f.read()\n        assert not re.search(r\"config(?:\\.get\\(|\\[)\\s*['\\\"]spec_dir\", source), \\\n            \"the hook reads spec_dir out of the config again\"\n        config_path = os.path.join(project, '.purlin', 'config.json')\n        with io.open(config_path, encoding='utf-8') as f:\n            config = json.load(f)\n        config['spec_dir'] = 'elsewhere'\n        with open(config_path, 'w') as f:\n            json.dump(config, f)\n        stamp = os.stat(digest).st_mtime\n        time.sleep(0.01)\n        _write_proofs(project, [_entry('PROOF-1', 'RULE-1')])\n        _assert_silent_zero(_run(project), 'spec_dir in the config is ignored')\n        assert _proved(_read_digest(project)) == 1, \\\n            \"a stray spec_dir in the config redirected the dirty check\"\n        assert os.stat(digest).st_mtime > stamp",
+      "file": "dev/test_refresh_digest_hook.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_regenerates_only_when_an_input_is_newer",
+      "proof": "PROOF-15",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "3eb4e1a7fad4801e35e55a4dcadb0ebe080812fccdddc520fb8fdcc5f18fdb08",
+  "verdict": "needs a human"
+}

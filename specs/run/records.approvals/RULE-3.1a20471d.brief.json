@@ -1,0 +1,63 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-14T16:40:37Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "5522ccdad6196a492ada374e8a69f516cb4d21e87344300261e04f6749dcfaef",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-3",
+      "text": "Call `tag_validated()` with two record paths; verify `git cat-file tag validated/<name>` prints an annotated tag whose message lists both paths one per line, that a later prune keeps the older record those paths name, and that `validated_paths()` returns an empty set outside a git repository",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/records/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-3",
+  "rule_hash": "b5aa0b675fa0bd633a5d8bb91faa90626077f6822a3a26541baceb0e5c46c0c6",
+  "rule_text": "`purlin:verify --tag <name>` writes the annotated tag `validated/<name>` listing one record path per line in its message, and retention never deletes a path any `validated/*` message names",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "32d3dd05228267f56dfcb7f9c88360d0b24ec06bd689d4dac853a0158c571a40",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_validated_tag_keeps_the_records_its_message_names(project):\n    oldest = put_record(project, 'greeting',\n                        '20260101T120000Z-4f1c2ab-ci.json')\n    for day in range(11, 16):\n        put_record(project, 'greeting',\n                   '202609%dT120000Z-4f1c2ab-ci.json' % day)\n    git(project, 'add', '-A')\n    git(project, 'commit', '--quiet', '-m', 'records')\n    records_module.tag_validated(project, '1.0', [oldest])\n\n    assert records_module.validated_paths(project) == {oldest}\n    records_module.prune(project, 'greeting')\n    kept = names(project, 'greeting')\n    assert os.path.basename(oldest) in kept\n    assert len(kept) == 4, 'the newest three plus the one the tag names'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_validated_tag_keeps_the_records_its_message_names",
+      "proof": "PROOF-3",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_validated_tag_keeps_the_records_its_message_names(project):\n    oldest = put_record(project, 'greeting',\n                        '20260101T120000Z-4f1c2ab-ci.json')\n    for day in range(11, 16):\n        put_record(project, 'greeting',\n                   '202609%dT120000Z-4f1c2ab-ci.json' % day)\n    git(project, 'add', '-A')\n    git(project, 'commit', '--quiet', '-m', 'records')\n    records_module.tag_validated(project, '1.0', [oldest])\n\n    assert records_module.validated_paths(project) == {oldest}\n    records_module.prune(project, 'greeting')\n    kept = names(project, 'greeting')\n    assert os.path.basename(oldest) in kept\n    assert len(kept) == 4, 'the newest three plus the one the tag names'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_validated_tag_is_annotated_and_lists_every_path",
+      "proof": "PROOF-3",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_validated_tag_keeps_the_records_its_message_names(project):\n    oldest = put_record(project, 'greeting',\n                        '20260101T120000Z-4f1c2ab-ci.json')\n    for day in range(11, 16):\n        put_record(project, 'greeting',\n                   '202609%dT120000Z-4f1c2ab-ci.json' % day)\n    git(project, 'add', '-A')\n    git(project, 'commit', '--quiet', '-m', 'records')\n    records_module.tag_validated(project, '1.0', [oldest])\n\n    assert records_module.validated_paths(project) == {oldest}\n    records_module.prune(project, 'greeting')\n    kept = names(project, 'greeting')\n    assert os.path.basename(oldest) in kept\n    assert len(kept) == 4, 'the newest three plus the one the tag names'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_validated_paths_is_empty_outside_a_repository",
+      "proof": "PROOF-3",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "1a20471d58e65a03d4bf3ba32e5f86de1183848057e09e7a6125c0496896c989",
+  "verdict": "ready"
+}

@@ -1,0 +1,56 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "upstream",
+  "generated_at": "2026-09-14T16:41:07Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "0fb057d00745836edbc423ffe07fce1db83a6881653bd31d438c656ceda31725",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-6",
+      "text": "Run `add` with the source `--upload-pack=/bin/echo` and again with the source `ext::sh -c touch`; verify the first is refused with a message containing `begins with \"-\"`, the second with a message naming the `ext:: transport`, and that no anchor file was written either time",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/upstream/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-6",
+  "rule_hash": "321d9662fc4a82a4b00404256aa3349b6d4fab2cf0b673050614dbbcd4b4ce8a",
+  "rule_text": "A source that begins with `-`, or that names the `ext::` transport, is refused before any process starts and nothing is written",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "f4334ab8577c228d023ff16bd552683dfd2dad80960bb97db8bea97317e09a91",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_add_refuses_a_source_that_begins_with_a_dash(workspace):\n    result = upstream.add(workspace.root, '--upload-pack=/bin/echo',\n                          path='a.md', name='hostile')\n    assert result['status'] == 'error'\n    assert 'begins with \"-\"' in result['error']\n    assert not os.path.isfile(upstream.anchor_path(workspace.root, 'hostile'))",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_add_refuses_a_source_that_begins_with_a_dash",
+      "proof": "PROOF-6",
+      "reasons": []
+    },
+    {
+      "body": "def test_add_refuses_a_source_that_begins_with_a_dash(workspace):\n    result = upstream.add(workspace.root, '--upload-pack=/bin/echo',\n                          path='a.md', name='hostile')\n    assert result['status'] == 'error'\n    assert 'begins with \"-\"' in result['error']\n    assert not os.path.isfile(upstream.anchor_path(workspace.root, 'hostile'))",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_add_refuses_an_ext_transport",
+      "proof": "PROOF-6",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "dd88200d1e21e4371140852535f23340a451706697c0e464e97224d01e6b76a3",
+  "verdict": "ready"
+}

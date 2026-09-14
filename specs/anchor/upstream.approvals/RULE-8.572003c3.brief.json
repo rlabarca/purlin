@@ -1,0 +1,56 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "upstream",
+  "generated_at": "2026-09-14T16:41:08Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "e8268977f0ce522f8560ad2a29250dc72c760b38ddffb5a8df193f81cdc28f93",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-8",
+      "text": "Pin an anchor, publish a new version of it, read the copy's bytes, then run `sync --check`; verify the row reads `behind`, that its `pinned` is the first sha and its `remote_sha` the new one, that `behind` counts 1, and that the copy's bytes are unchanged",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-8 logic_mirroring"
+  ],
+  "record": ".purlin/records/upstream/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-8",
+  "rule_hash": "d6394c9e57d1fa52c3d892a8bfc434a576d9884e50d37e3bc0695146cb63df84",
+  "rule_text": "`sync --check` writes no file: it reports each anchor as current or behind and carries both the pinned sha and the source's head sha",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "67d3d8a7736d5dd42147afc97dc128f13e9eff64b4021de12d867961d4d4920b",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_check_when_behind_reports_and_changes_nothing(workspace):\n    _add(workspace)\n    before = _copy_text(workspace)\n    new_sha = _advance(workspace)\n\n    result = upstream.sync(workspace.root, check=True)\n    row = result['anchors'][0]\n    assert row['status'] == 'behind'\n    assert row['pinned'] == workspace.first_sha\n    assert row['remote_sha'] == new_sha\n    assert result['behind'] == 1\n    assert upstream._exit_code(result) == 1\n    assert _copy_text(workspace) == before",
+      "file": "dev/test_upstream.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_check_when_behind_reports_and_changes_nothing",
+      "proof": "PROOF-8",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "572003c39a30a1b72fbeffc649c57950db1b9e2b12078d72270de5d31cd23524",
+  "verdict": "needs a human"
+}

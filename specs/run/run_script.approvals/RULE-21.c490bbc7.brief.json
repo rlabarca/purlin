@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-14T16:40:42Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "009f893e3a2612e2bb31747b2f14ef62d47a1b6ddf8c99fdbd1113ea01ae4922",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-21",
+      "text": "Call `host_os()`; verify the answer is one of `windows`, `macos` and `linux`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-21 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/run_script/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-21",
+  "rule_hash": "31cac87d7e521c58d0da2a4ee58be13e8cb4d64d6d1ac325d85aa9f7d344fd55",
+  "rule_text": "The operating system this run is on is reported as `windows`, `macos` or `linux` and never as anything else",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "2f86ced45da9784c33de70756c6a682026d0ae0cc16ee332c03abebb5a9a0632",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_answer_is_one_of_the_three_env_names(self):\n        purlin_run = _load_run_script()\n        assert purlin_run.host_os() in ('windows', 'macos', 'linux')",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_the_answer_is_one_of_the_three_env_names",
+      "proof": "PROOF-21",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "c490bbc7c9205b70787dba366cb567f50d5807577de81f9b44fe4101ffd1f741",
+  "verdict": "add a case"
+}

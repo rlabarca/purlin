@@ -1,0 +1,71 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-14T16:40:38Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "be43f40ab2818ae899001f3823422ecb1e66a9f755798a4183bb6d5ed9b3fb6b",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-8",
+      "text": "With the Azure DevOps build variables set, call `commit_records(identity=\"ci\")`; verify the POST body names `refs/heads/<branch>`, carries the ref's current `oldObjectId` and one `add` change holding the record's text. Refuse the first push with HTTP 409; verify it reads the ref again and retries. With `GITHUB_HEAD_REF=pr-branch` set, verify the branch used is `pr-branch`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/records/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-8",
+  "rule_hash": "8fdfea580ff2d638c1e552fc767df6910301f3d84f92b5271eb22114898395a1",
+  "rule_text": "On Azure DevOps the record is pushed through the Pushes API against the ref's current object id, retried when that id is stale, and the branch is the pull request's head branch when the run has one",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "758968fc7a1e547ae1afd286e687ca566324bc8a12197fb1fc871930fb374144",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_azure_push_sends_the_ref_and_the_content(project, azure_env,\n                                                      monkeypatch):\n    host = FakeHost(azure=True)\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    sha = records_module.commit_records(project, [path], 'ci',\n                                        'purlin: record')\n\n    assert sha == 'c' * 40\n    body = host.body_for('/pushes?', method='POST')\n    assert body['refUpdates'] == [{'name': 'refs/heads/main',\n                                   'oldObjectId': '1' * 40}]\n    change = body['commits'][0]['changes'][0]\n    assert change['changeType'] == 'add'\n    assert change['item']['path'] == '/' + path\n    assert change['newContent']['contentType'] == 'rawtext'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_azure_push_retries_when_the_object_id_is_stale",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_azure_push_sends_the_ref_and_the_content(project, azure_env,\n                                                      monkeypatch):\n    host = FakeHost(azure=True)\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    sha = records_module.commit_records(project, [path], 'ci',\n                                        'purlin: record')\n\n    assert sha == 'c' * 40\n    body = host.body_for('/pushes?', method='POST')\n    assert body['refUpdates'] == [{'name': 'refs/heads/main',\n                                   'oldObjectId': '1' * 40}]\n    change = body['commits'][0]['changes'][0]\n    assert change['changeType'] == 'add'\n    assert change['item']['path'] == '/' + path\n    assert change['newContent']['contentType'] == 'rawtext'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_azure_push_sends_the_ref_and_the_content",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_azure_push_sends_the_ref_and_the_content(project, azure_env,\n                                                      monkeypatch):\n    host = FakeHost(azure=True)\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    sha = records_module.commit_records(project, [path], 'ci',\n                                        'purlin: record')\n\n    assert sha == 'c' * 40\n    body = host.body_for('/pushes?', method='POST')\n    assert body['refUpdates'] == [{'name': 'refs/heads/main',\n                                   'oldObjectId': '1' * 40}]\n    change = body['commits'][0]['changes'][0]\n    assert change['changeType'] == 'add'\n    assert change['item']['path'] == '/' + path\n    assert change['newContent']['contentType'] == 'rawtext'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_branch_is_the_pull_requests_head_when_there_is_one",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_azure_push_sends_the_ref_and_the_content(project, azure_env,\n                                                      monkeypatch):\n    host = FakeHost(azure=True)\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    sha = records_module.commit_records(project, [path], 'ci',\n                                        'purlin: record')\n\n    assert sha == 'c' * 40\n    body = host.body_for('/pushes?', method='POST')\n    assert body['refUpdates'] == [{'name': 'refs/heads/main',\n                                   'oldObjectId': '1' * 40}]\n    change = body['commits'][0]['changes'][0]\n    assert change['changeType'] == 'add'\n    assert change['item']['path'] == '/' + path\n    assert change['newContent']['contentType'] == 'rawtext'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_host_is_read_from_the_build_variables",
+      "proof": "PROOF-8",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "fcf7667f5fcc20cacb977c7955760557e6c7d4874390293854eb3450f6970de9",
+  "verdict": "ready"
+}

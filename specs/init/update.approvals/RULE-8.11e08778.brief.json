@@ -1,0 +1,96 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-14T16:41:05Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "4d6a947b3e399d80ae1f335fb62e377e0fb238af669e3ebd9c13879a0a9d39e5",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-8",
+      "text": "Verify each fixture starts with files matching `*.proofs-*.json` and the verification file name; run the update with `--yes` and verify no such file is left on disk and none is tracked. Verify `.purlin/report-data.js` is tracked before and not after, is still on disk, and that `.gitignore` then names it and `.purlin/report-stamp.js`. Commit the cache directory the way a project would, verify `untracked-files` becomes pending, apply, and verify nothing under `.purlin/cache/` is tracked while the directory is still on disk",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/update/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-8",
+  "rule_hash": "f360aa4924b4b6d4baf9b34f8cab40d99aa56c21b47d9a2f6200ca93e39c586b",
+  "rule_text": "No proof file and no verification file is left beside a spec, on disk or tracked; the dashboard data and the cache are untracked, left on disk, and named in `.gitignore`",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "56790e828dc17c4d64bb7ee3be592bafbe85e902cbdb1a7e3ba50e3b0142e115",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_no_proof_or_verification_file_remains_on_disk(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    assert _walk(root, LEFTOVER), 'the fixture should start with some'\n    _apply(root)\n    assert _walk(root, LEFTOVER) == []",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_a_committed_cache_is_untracked_and_left_on_disk",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_proof_or_verification_file_remains_on_disk(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    assert _walk(root, LEFTOVER), 'the fixture should start with some'\n    _apply(root)\n    assert _walk(root, LEFTOVER) == []",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_no_proof_or_verification_file_remains_on_disk[upgrade-0.10-dev]",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_proof_or_verification_file_remains_on_disk(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    assert _walk(root, LEFTOVER), 'the fixture should start with some'\n    _apply(root)\n    assert _walk(root, LEFTOVER) == []",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_no_proof_or_verification_file_remains_on_disk[upgrade-0.9.5]",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_proof_or_verification_file_remains_on_disk(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    assert _walk(root, LEFTOVER), 'the fixture should start with some'\n    _apply(root)\n    assert _walk(root, LEFTOVER) == []",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_no_proof_or_verification_file_remains_tracked[upgrade-0.10-dev]",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_proof_or_verification_file_remains_on_disk(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    assert _walk(root, LEFTOVER), 'the fixture should start with some'\n    _apply(root)\n    assert _walk(root, LEFTOVER) == []",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_no_proof_or_verification_file_remains_tracked[upgrade-0.9.5]",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_proof_or_verification_file_remains_on_disk(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    assert _walk(root, LEFTOVER), 'the fixture should start with some'\n    _apply(root)\n    assert _walk(root, LEFTOVER) == []",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_dashboard_data_is_untracked_and_ignored[upgrade-0.10-dev]",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_proof_or_verification_file_remains_on_disk(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    assert _walk(root, LEFTOVER), 'the fixture should start with some'\n    _apply(root)\n    assert _walk(root, LEFTOVER) == []",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_dashboard_data_is_untracked_and_ignored[upgrade-0.9.5]",
+      "proof": "PROOF-8",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "11e0877837a03acf1f95438d3acf735816026077ee610d47d7b3b0eb868e25a3",
+  "verdict": "ready"
+}

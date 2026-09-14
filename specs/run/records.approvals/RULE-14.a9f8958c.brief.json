@@ -1,0 +1,75 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-14T16:40:39Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "50d8bd8d7fd97feb8f4e2ebb2d546cf7cbfc62b465c605a4cd0dcb617619f361",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-14",
+      "text": "Run `scan()` against a repository with one feature and one passing record; verify the text opens `Purlin: <project>, gate tested`, counts `1 features, 1 rules.`, lists the states with counts, and names the newest record with its path, the label `developer` and its timestamp. Run it against a repository with no record; verify the line `No record has been committed yet.`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-14 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/records/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-14",
+  "rule_hash": "c82ebddf6fa6f7e9aec231b0f33719377fa092f6540938d45afa4931fdf59831",
+  "rule_text": "The rollup names the project, the gate and every one of the seven states that has a count, then the newest record with its path, label and timestamp, or says no record has been committed yet",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "7f9bb2b33e454db5864f5c00b5e45822380310c3a7553902ed19d6b3920edb1d",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_rollup_names_the_project_the_gate_and_the_states(remote):\n    bare, _source = remote\n    text = scan_module.scan(bare, 'main')\n\n    assert 'gate recorded' in text\n    assert '1 features, 2 rules.' in text\n    assert 'Proof ready' in text, 'no state was counted'\n    assert 'No record has been committed yet.' in text",
+      "file": "dev/test_scan.py",
+      "findings": [],
+      "name": "test_every_state_the_package_names_can_be_printed",
+      "proof": "PROOF-14",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_rollup_names_the_project_the_gate_and_the_states(remote):\n    bare, _source = remote\n    text = scan_module.scan(bare, 'main')\n\n    assert 'gate recorded' in text\n    assert '1 features, 2 rules.' in text\n    assert 'Proof ready' in text, 'no state was counted'\n    assert 'No record has been committed yet.' in text",
+      "file": "dev/test_scan.py",
+      "findings": [],
+      "name": "test_the_newest_record_is_the_one_with_the_latest_timestamp",
+      "proof": "PROOF-14",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_rollup_names_the_project_the_gate_and_the_states(remote):\n    bare, _source = remote\n    text = scan_module.scan(bare, 'main')\n\n    assert 'gate recorded' in text\n    assert '1 features, 2 rules.' in text\n    assert 'Proof ready' in text, 'no state was counted'\n    assert 'No record has been committed yet.' in text",
+      "file": "dev/test_scan.py",
+      "findings": [],
+      "name": "test_the_rollup_names_the_newest_record_and_its_label",
+      "proof": "PROOF-14",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_rollup_names_the_project_the_gate_and_the_states(remote):\n    bare, _source = remote\n    text = scan_module.scan(bare, 'main')\n\n    assert 'gate recorded' in text\n    assert '1 features, 2 rules.' in text\n    assert 'Proof ready' in text, 'no state was counted'\n    assert 'No record has been committed yet.' in text",
+      "file": "dev/test_scan.py",
+      "findings": [],
+      "name": "test_the_rollup_names_the_project_the_gate_and_the_states",
+      "proof": "PROOF-14",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a9f8958ce260c39f85e24e4727ba85ee0b8ef8a9b7e0c4c2d446dde526d41fad",
+  "verdict": "add a case"
+}

@@ -1,0 +1,55 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "drift",
+  "generated_at": "2026-09-14T16:40:29Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "7eae5fb75bc72f2481b423d581d42cbafaeb91708791551f986e3674cfed0219",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-18",
+      "text": "Give the feature `ledger` 4 own rules, one of them 600 characters long and unproved, and a required anchor holding 3 rules, with passing proofs for the other 3 own rules and all 3 anchor rules; commit a change to every scope file and run drift. Verify `rule_details` for `ledger` reads 7 total rules with `RULE-4` the only unproved one and the spec path `specs/ledger/ledger.md`, that its rules list holds exactly 4 entries in rule-number order, that the 600-character description comes back as 204 characters ending in an ellipsis with its opening clause intact, and that two further runs in fresh processes return byte-identical details",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-18 logic_mirroring"
+  ],
+  "record": ".purlin/records/drift/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-16",
+  "rule_hash": "4366981b4574513cf6e33872ed73c6f6ad20a2ab707b810c81fee58172419af2",
+  "rule_text": "`rule_details` carries, per spec with a changed scope file, the spec path, the changed files, the total and unproved rule ids and the rules in rule-number order, each description cut to 200 characters on a word boundary and suffixed with an ellipsis when cut",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "5de0f16c821d83529274b8ad8d36e309c655dfbc539addc7adf36cabbc56386e",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_rule_details_counts_one_rule_set_in_one_order(self, tmp_path):\n        root = str(tmp_path / 'proj')\n        os.makedirs(root)\n        self._repo(root)\n\n        data = json.loads(purlin_drift.drift(root))\n        details = data['rule_details']\n\n        assert 'ledger' in details, sorted(details)\n        ledger = details['ledger']\n\n        # Both counts come from the one verdict, so they count the same rules:\n        # 4 own plus the anchor's 3, of which 3 own and all 3 anchor rules pass.\n        assert ledger['total_rules'] == 7, (\n            \"total_rules counted %s, not the 4 own plus 3 inherited rules the \"\n            \"one payload counts\" % ledger['total_rules'])\n\n        # One id per rule worth naming, and nothing for the other six.\n        assert ledger['unproved'] == ['RULE-4'], ledger['unproved']\n        assert ledger['lowest_state'] == 'Drafted', ledger['lowest_state']\n        assert ledger['spec_path'] == 'specs/ledger/ledger.md', ledger['spec_path']\n\n        # Own rules, in RULE number order, id and description and nothing else.\n        assert [r['rule_id'] for r in ledger['rules']] == [\n            'RULE-1', 'RULE-2', 'RULE-3', 'RULE-4'], ledger['rules']\n        assert len(ledger['rules']) == 4, ledger['rules']\n        for rule in ledger['rules']:\n            assert set(rule) == {'rule_id', 'description', 'state', 'risk',\n                                 'origin'}, sorted(rule)\n\n        # The long description is cut on a word boundary and says it was cut;\n        # the short ones come back whole.\n        assert len(_LEDGER_LONG_RULE) == 600, len(_LEDGER_LONG_RULE)\n        capped = ledger['rules'][3]['description']\n        assert len(capped) == 204, (len(capped), capped)\n        assert capped.endswith(' ...'), capped\n        assert capped.startswith('A posting is refused when its debits'), capped\n        assert capped[:-4] == _LEDGER_LONG_RULE[:200], capped\n        assert ledger['rules'][0]['description'] == (\n            'Every posting writes one debit and one credit row')\n        assert ledger['rules'][1]['description'] == (\n            'A posting identifier is never reused')\n        assert ledger['rules'][2]['description'] == (\n            'The journal file is appended, never rewritten')\n\n        assert 'src/ledger/posting.py' in ledger['changed_files'], ledger\n\n        # Specs in name order.\n        assert list(details) == ['ledger', 'money_gateway', 'posting_api'], \\\n            list(details)\n\n        # Two processes whose string hashes fall in different orders return the\n        # same bytes. An unsorted walk of the changed-behavior set passes within\n        # one process and fails here.\n        first = self._rule_details_under_seed(root, '0')\n        second = self._rule_details_under_seed(root, '1')\n        assert first == second, (\n            \"rule_details is not byte identical across two runs:\\n%s\\n%s\"\n            % (first[:400], second[:400]))",
+      "file": "dev/test_drift.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_rule_details_counts_one_rule_set_in_one_order",
+      "proof": "PROOF-18",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "f41fbbfd4d8fbfaa3c97fa0d4d192766ec66f5f4ea1db089b7db218464a54834",
+  "verdict": "needs a human"
+}

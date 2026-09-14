@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "approvals",
+  "generated_at": "2026-09-14T16:40:24Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "e5ba2c1ceb20ccb10a0c0ab029889911c4cb92301fe031e7866b3f2fe91e6897",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-17",
+      "text": "Set the minimum to 70 and record 30, then run the auto-approval and verify nothing is written; record 95 and run it again and verify exactly 1 file is written",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-17 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/approvals/20260914T164015Z-c6d2880-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-13",
+  "rule_hash": "0e3eeba09d09a1dc849da950b94325bcbd6f4efbce8290a8090f0648922f7f67",
+  "rule_text": "CI writes nothing while the test strength is below the minimum, and auto-approves once a record at or above it exists",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "37fa03bc14fe93ba73170bb4b38bb638f28a731b90a7f064211b5ebcdf045068",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_below_the_minimum_strength_nothing_is_written(self):\n        made = Project(config={'min_strength': 70})\n        try:\n            made.proofs()\n            made.record(strength=30)\n            assert approve_module.auto_approve(made.root) == []\n            made.record(strength=95, stamp='20260913T130000Z')\n            assert len(approve_module.auto_approve(made.root)) == 1\n        finally:\n            made.close()",
+      "file": "dev/test_approvals.py",
+      "findings": [],
+      "name": "test_below_the_minimum_strength_nothing_is_written",
+      "proof": "PROOF-17",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "4af4a304dd5688cb297dece00a5fbdf9c75e0bb846f95d8e4af2233001e52ba3",
+  "verdict": "add a case"
+}

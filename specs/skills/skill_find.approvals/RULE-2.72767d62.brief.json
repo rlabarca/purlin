@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_find",
+  "generated_at": "2026-09-14T16:40:51Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "8fb94fb760df4e68e2d959d507ba3459623aa1d098b16c0cfe013034b6532880",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-2",
+      "text": "Read `skills/find/SKILL.md`; verify it names `sync_status`, and that the sentence about the risk and origin columns names both `risk` and `origin` and the `tested` gate under which they are optional. Deleting that sentence fails naming it",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/skill_find/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-2",
+  "rule_hash": "3bc20e8b7a2f25b9de4d19caa63fe9188994c195e6128b41fbaf296f011401aa",
+  "rule_text": "The skill reads the state from `sync_status` rather than counting rules itself, and it shows the risk and the origin columns only when the spec carries them",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "9c7aaa9ea09d91415b1c1df9231c86ecd39f6bb1cd76d073c913d520d4fe3206",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_reads_the_state_and_hides_empty_columns(self):\n        assert carries(skill_path('find'), [\n            'sync_status',\n            'Show the risk and the origin only when the spec carries them',\n            'under the `tested` gate both are optional']) == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_it_reads_the_state_and_hides_empty_columns",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "72767d62235ef3b6fa7b35fb6d8af43d4feb4867e94aba7ab5cd8e04524fff63",
+  "verdict": "ready"
+}

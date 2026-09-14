@@ -1,0 +1,67 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-14T16:40:34Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "d5e1125b317eb4ec462e3cbe41cbfb19214e5abf4cc922b455dda5399393696d",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-7",
+      "text": "Open the board over `file://` with the solo, team and regulated fixture beside it in turn; verify the heading states that payload's rule count and spec count, that the top bar reads `gate: ` with that payload's gate and a `Data:` age, that 7 state tiles are on screen, and that the spec names listed are exactly the payload's",
+      "tier": "e2e"
+    }
+  ],
+  "reasons": [
+    "PROOF-7 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/purlin_report/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-7",
+  "rule_hash": "313755ebee6d62cae18b4fa0825f65e73eb81fccba45b5673892bfcc274806e3",
+  "rule_text": "The board heading states the rule count and the spec count the payload rolled up, the top bar states the gate and how old the data is, and every spec in the payload has a row",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "40286593a84469ffcda277566421b5ff2f625c6705190928cb6dd4c4e52de545",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_board_renders_for_each_process(browser, tmp_path, process):\n    payload = payload_named(process)\n    page = open_board(browser, tmp_path, payload)\n    heading = page.inner_text('h1')\n    assert str(payload['project_rollup']['rules']) in heading\n    assert str(payload['project_rollup']['features']) in heading\n    assert len(page.query_selector_all('.tile')) == 7\n    assert 'gate: ' + payload['gate']['gate'] in page.inner_text('.topbar')\n    assert 'Data:' in page.inner_text('.topbar')\n    assert set(feature_names(page)) == set(\n        f['name'] for f in payload['features'])\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_the_board_renders_for_each_process[regulated]",
+      "proof": "PROOF-7",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_board_renders_for_each_process(browser, tmp_path, process):\n    payload = payload_named(process)\n    page = open_board(browser, tmp_path, payload)\n    heading = page.inner_text('h1')\n    assert str(payload['project_rollup']['rules']) in heading\n    assert str(payload['project_rollup']['features']) in heading\n    assert len(page.query_selector_all('.tile')) == 7\n    assert 'gate: ' + payload['gate']['gate'] in page.inner_text('.topbar')\n    assert 'Data:' in page.inner_text('.topbar')\n    assert set(feature_names(page)) == set(\n        f['name'] for f in payload['features'])\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_the_board_renders_for_each_process[solo]",
+      "proof": "PROOF-7",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_board_renders_for_each_process(browser, tmp_path, process):\n    payload = payload_named(process)\n    page = open_board(browser, tmp_path, payload)\n    heading = page.inner_text('h1')\n    assert str(payload['project_rollup']['rules']) in heading\n    assert str(payload['project_rollup']['features']) in heading\n    assert len(page.query_selector_all('.tile')) == 7\n    assert 'gate: ' + payload['gate']['gate'] in page.inner_text('.topbar')\n    assert 'Data:' in page.inner_text('.topbar')\n    assert set(feature_names(page)) == set(\n        f['name'] for f in payload['features'])\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_the_board_renders_for_each_process[team]",
+      "proof": "PROOF-7",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "0f1538148af3d7666a4bd25b451ffb162f578be1e6412cf17fc6b609b1f75722",
+  "verdict": "add a case"
+}

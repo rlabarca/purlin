@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_build",
+  "generated_at": "2026-09-14T16:40:51Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "8eab1681b2b29532cf9c75013edd640f6a0f53d514bc3e73fef957b4bffc1d76",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-2",
+      "text": "Read `skills/build/SKILL.md`; verify it names `sync_status` in the section that chooses what to build, carries the fenced command `purlin:test <name>`, and carries the sentence `Never run the test framework directly.` Deleting that sentence fails naming it",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/skill_build/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-2",
+  "rule_hash": "4444151d83bb396fe33e996f889bfd533f74e6ea997e92c7dabef631e480e3e3",
+  "rule_text": "The skill chooses what to build from `sync_status` and runs the tests through `purlin:test`, never through the test framework directly",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "9892f13b34f710d2d20ed8a48cd13ad0a72873b7ee6ffc71b110b671b15ae5c7",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_reads_the_state_and_runs_the_tests_through_the_test_skill(self):\n        assert build_command_problems() == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_it_reads_the_state_and_runs_the_tests_through_the_test_skill",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "8de32ece1582c628684a4cff4af52feeb571f1a419507307f3bc35b471c86770",
+  "verdict": "ready"
+}

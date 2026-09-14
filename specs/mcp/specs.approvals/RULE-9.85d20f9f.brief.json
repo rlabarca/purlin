@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "specs",
+  "generated_at": "2026-09-14T16:40:54Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "197bb79066c4643404ac32304cd84a85766dc213305beb1df835dca395a14d70",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-10",
+      "text": "Parse `https://github.com/acme/p.git specs/no_eval.md` and verify it returns that URL with the path `specs/no_eval.md` and no globs; parse `designs/checkout/*.png, designs/checkout/*.pdf` and verify it returns those two globs and no source; parse `--upload-pack=/bin/echo` and verify the whole string comes back as the source, so a value that has to be refused is refused whole",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/specs/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-9",
+  "rule_hash": "498524fc0d31b3e0c820c3aa8cf34a05a09570306912e0b45c69e5329a7ad4fb",
+  "rule_text": "A `> Source:` value is read three ways: a git URL followed by a path in that repository gives the two separately, a comma-separated or glob-bearing value gives the file globs, and anything else comes back whole as the source rather than split on its first word",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "08f3bf4e9a13f2c6a794908c9b0669795219bcface9e80dc9718b565dff55e0d",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_source_is_a_git_url_plus_a_path_or_local_globs(self):\n        assert purlin_specs.parse_source(\n            'https://github.com/acme/p.git specs/no_eval.md') == (\n                'https://github.com/acme/p.git', 'specs/no_eval.md', [])\n        assert purlin_specs.parse_source(\n            'designs/checkout/*.png, designs/checkout/*.pdf') == (\n                None, None, ['designs/checkout/*.png', 'designs/checkout/*.pdf'])\n        # Neither shape: the whole line is the source, so a value that has to\n        # be refused is refused whole.\n        assert purlin_specs.parse_source('--upload-pack=/bin/echo')[0] == (\n            '--upload-pack=/bin/echo')",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_a_source_is_a_git_url_plus_a_path_or_local_globs",
+      "proof": "PROOF-10",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "85d20f9fd3928861c1579df7a7be2d2af51c396e9a41e4f37231b8819138d7c2",
+  "verdict": "ready"
+}

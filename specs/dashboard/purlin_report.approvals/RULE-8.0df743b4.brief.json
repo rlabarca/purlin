@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-14T16:40:34Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "6cefe70c74077dcd97dbb4b84bdf34edc99b41b4e51dedcb1a2d86da9cf13a0d",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-8",
+      "text": "Open the board with the regulated fixture; verify the tile labels read `Drafted`, `Proof ready`, `Tested`, `Recorded`, `Reviewed`, `Approved`, `Stale` in that order, that the labels are set in capitals, and that the Approved and Stale tiles show the counts the payload's state totals hold",
+      "tier": "e2e"
+    }
+  ],
+  "reasons": [
+    "PROOF-8 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/purlin_report/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-8",
+  "rule_hash": "d816d2593342f9fe5b4a92a9ba729499d12c084fd1687c87db36f5de9a518582",
+  "rule_text": "The strip above the table carries one tile per state in the order Drafted, Proof ready, Tested, Recorded, Reviewed, Approved, Stale, each showing that state's count from the payload, each label set in capitals",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "9a5972a89c8020f5e8d17061cfec9b84055893ab1066f916a67af984325b046d",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_seven_states_each_have_a_tile(browser, tmp_path):\n    page = open_board(browser, tmp_path, payload_named('regulated'))\n    labels = texts(page, '.tile-l')\n    assert labels == ['Drafted', 'Proof ready', 'Tested', 'Recorded',\n                      'Reviewed', 'Approved', 'Stale']\n    assert page.eval_on_selector(\n        '.tile-l', 'el => getComputedStyle(el).textTransform') == 'uppercase'\n    counts = payload_named('regulated')['states']\n    values = texts(page, '.tile-v')\n    assert values[6] == str(counts['Stale'])\n    assert values[5] == str(counts['Approved'])\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_the_seven_states_each_have_a_tile",
+      "proof": "PROOF-8",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "0df743b438ebdca4310e2dfcc941cc53c4e7e26bbcfc2821a5ba4616853a8afa",
+  "verdict": "add a case"
+}

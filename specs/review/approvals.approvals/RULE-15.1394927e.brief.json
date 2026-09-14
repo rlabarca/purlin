@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "approvals",
+  "generated_at": "2026-09-14T16:40:24Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "46f9b2d398a2c39fb82991bd1712ff304adb14d2274decc7094ac1901b06bb9d",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-19",
+      "text": "Retag `PROOF-1` as `@manual`, record the project and run the auto-approval; verify nothing is written",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-19 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/approvals/20260914T164015Z-c6d2880-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-15",
+  "rule_hash": "773ff9257d724ab4070695a1ee41ead829f803c6c8eab7280d738175aff96458",
+  "rule_text": "CI never auto-approves a rule proved by a `@manual` proof, because that evidence is a person's note",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "5270ea63faaae8b316416533a85512f554a3c66bea09ed886122a619e9443d09",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_manual_proof_is_never_auto_approved(self):\n        made = Project(spec=SPEC.replace(\n            'verify 200 and a token @integration',\n            'verify 200 and a token @manual'))\n        try:\n            made.proofs()\n            made.record()\n            assert approve_module.auto_approve(made.root) == [], (\n                'the evidence for a manual proof is a person\\'s note')\n        finally:\n            made.close()",
+      "file": "dev/test_approvals.py",
+      "findings": [],
+      "name": "test_a_manual_proof_is_never_auto_approved",
+      "proof": "PROOF-19",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "1394927e0b234d7d30b43f4ddd712345fbb7b01abbfbb627e6e325b85b3c0f30",
+  "verdict": "add a case"
+}

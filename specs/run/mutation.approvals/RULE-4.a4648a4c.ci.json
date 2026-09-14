@@ -1,0 +1,17 @@
+{
+  "approver": "ci",
+  "brief": null,
+  "design_hash": null,
+  "feature": "mutation",
+  "gate": "approved",
+  "proof_hash": "7bbde361c1774a8ddda398e9a3669420f22427d80b371bf2c8773264259db187",
+  "record": ".purlin/records/mutation/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-4",
+  "rule_hash": "94513c889c978b11bd14f1a49281b79e9b14a993cbeafc81ee918afe9004aca4",
+  "schema": "purlin-approval/1",
+  "test_hash": "fd6112f248c14ae2706b60fe8312e8bcc628120613008ecebd4b883bf7fb0ebe",
+  "test_hash_kind": "file",
+  "timestamp": "2026-09-14T16:40:18Z",
+  "triple": "a4648a4cef1f0c9d"
+}

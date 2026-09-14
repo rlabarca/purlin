@@ -1,0 +1,48 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "config_engine",
+  "generated_at": "2026-09-14T16:40:27Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "f63e8bf284d50c85be987536008215fd67c984b0949bb7bdc1c82d7bd236c582",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-13",
+      "text": "Write `config.json` whose `runners` object holds the two entries `win-2022` and `mac-14`, and `config.local.json` whose `runners` object holds only `ubuntu-24`; resolve the config and verify `runners` is exactly the one `ubuntu-24` entry with neither base entry present, so a deep merge that kept either one fails",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/config_engine/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-11",
+  "rule_hash": "5f28b354a53c4460daf05bf4fca1dd06b4b7bd3b44b641c27dc5ba9d68a17eb9",
+  "rule_text": "The overlay is per top-level key. A nested object in `config.local.json` replaces the base object of the same name rather than merging into it, because a write sets a whole top-level value and a second merge rule would make what the user wrote and what the server read differ",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "fc8d3bea99a51b6100500c5726ba5d60f79a1e67595176578b73cbd15f546464",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_nested_object_in_local_replaces_base_object_whole(self):\n        \"\"\"The overlay is per top-level key. update_config writes whole\n        values, so a deep merge on read would make what the user wrote and\n        what the server read differ.\"\"\"\n        self._write_shared({\"runners\": {\n            \"win-2022\": {\"os\": \"windows\", \"version\": \">=10.0.20348\"},\n            \"mac-14\": {\"os\": \"macos\", \"version\": \"14\"},\n        }})\n        self._write_local({\"runners\": {\"ubuntu-24\": {\"os\": \"linux\", \"distro\": \"ubuntu\"}}})\n        result = resolve_config(self.project_root)\n        assert result[\"runners\"] == {\"ubuntu-24\": {\"os\": \"linux\", \"distro\": \"ubuntu\"}}, (\n            \"a nested object in local must replace the base object whole, \"\n            f\"not merge into it: {result['runners']}\")\n        assert \"win-2022\" not in result[\"runners\"]\n        assert \"mac-14\" not in result[\"runners\"]",
+      "file": "dev/test_config_engine.py",
+      "findings": [],
+      "name": "test_nested_object_in_local_replaces_base_object_whole",
+      "proof": "PROOF-13",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "f1a389e9d3f85ad16c020f1e0e89c4b07adee8f0d2b06f9a4fe15fdc944a8acc",
+  "verdict": "ready"
+}

@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_anchor",
+  "generated_at": "2026-09-14T16:40:50Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "6d8f68b62c5ba69331730f8eb6df40f9f5a85e63f292e9e890b8c44524c1a18c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-2",
+      "text": "Read `skills/anchor/SKILL.md`; verify the literal `\"${CLAUDE_PLUGIN_ROOT}/scripts/anchor/upstream.py\"` appears at least three times, that `add`, `sync` and `propose` each share a line with it, and that the file carries `--check` and names `purlin:drift`. Removing the propose fence fails, reporting two occurrences where three were expected",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/skill_anchor/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-2",
+  "rule_hash": "39caab52262908a993436e1d58c14a5d5717221b1ae61fc5322745387a24c1a1",
+  "rule_text": "The skill runs `scripts/anchor/upstream.py` inside `${CLAUDE_PLUGIN_ROOT}` for `add`, `sync` and `propose`, and names `sync --check` as the read-only form `purlin:drift` runs as well",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "d0c82caa8f7798016fd28ec09f7c6752870f1ed8c88810d25da8d00749a6526d",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_runs_the_upstream_script_for_three_subcommands(self):\n        assert anchor_command_problems() == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_it_runs_the_upstream_script_for_three_subcommands",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "5f2919957b17cbc4a016e92949603e83e708987c96c0ce5c6a2bfe98618fed93",
+  "verdict": "ready"
+}

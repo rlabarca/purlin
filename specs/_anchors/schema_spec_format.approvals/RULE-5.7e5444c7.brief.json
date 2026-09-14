@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "schema_spec_format",
+  "generated_at": "2026-09-14T16:40:48Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "9dd48c178852eacf0e4210865bd926ae466bf005f4bd28990cc9a7f6882c5759",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-5",
+      "text": "Write an anchor `base` holding `RULE-1` and a feature spec carrying `> Requires: base`, build the payload for the feature, and verify the rules labelled `required` are exactly `[(\"base\", \"RULE-1\")]`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-5 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/schema_spec_format/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-5",
+  "rule_hash": "4f469d5b3d7939c55306051bb473fdb503bde73516003bf569c524cd42465c77",
+  "rule_text": "`> Requires:` is a comma-separated list of spec names whose rules are counted with this spec's own and carry the label `required`",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "50889374c17f50568a4b0b3ee1eac0b718e1d395f73e8f7dc392d7c12527a09c",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_requires_includes_referenced_rules(self):\n        # Create an anchor spec\n        anchor_dir = os.path.join(self.project_root, 'specs', '_anchors')\n        os.makedirs(anchor_dir)\n        with open(os.path.join(anchor_dir, 'base.md'), 'w') as f:\n            f.write(\n                '# Anchor: base\\n\\n'\n                '## What it does\\nBase rules.\\n\\n'\n                '## Rules\\n- RULE-1: Base rule\\n\\n'\n                '## Proof\\n- PROOF-1 (RULE-1): Test\\n'\n            )\n        self._write_spec('test_feat', (\n            '# Feature: test_feat\\n\\n'\n            '> Requires: base\\n\\n'\n            '## What it does\\nTesting.\\n\\n'\n            '## Rules\\n- RULE-1: Own rule\\n\\n'\n            '## Proof\\n- PROOF-1 (RULE-1): Test\\n'\n        ))\n        data = purlin_payload.build_payload(self.project_root)\n        feature = next(f for f in data['features'] if f['name'] == 'test_feat')\n        required = [r for r in feature['rules'] if r['label'] == 'required']\n        assert [(r['feature'], r['id']) for r in required] == [('base', 'RULE-1')], (\n            f\"the required spec's rules are not counted with the feature's own: \"\n            f\"{[(r['feature'], r['id'], r['label']) for r in feature['rules']]}\")",
+      "file": "dev/test_schema_spec_format.py",
+      "findings": [],
+      "name": "test_requires_includes_referenced_rules",
+      "proof": "PROOF-5",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "7e5444c703b1079572ea9efa4e8cc49af266a5f299e299325a56a2a01bbb359f",
+  "verdict": "add a case"
+}

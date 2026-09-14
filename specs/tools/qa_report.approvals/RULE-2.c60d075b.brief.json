@@ -1,0 +1,48 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "qa_report",
+  "generated_at": "2026-09-14T16:40:36Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "398d6811cf03938d230222e2876eab1c046b6ca68cefd2e77a9b24bfe79d2a7a",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-2",
+      "text": "Read `tools/QA/purlin-qa-report.md` and search it with two patterns, the placeholder form `://<[A-Z_]+>:<[A-Z_]+>@` and the general form `://[^/\\s]+:[^/\\s]+@`; verify both find zero matches. Then verify the file carries `gh auth login` and the words `credential helper`, so the proof cannot pass on a file that dropped the private-repository path instead of fixing it. Putting `https://<USERNAME>:<TOKEN>@host/repo.git` back fails on the first pattern, naming the line",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/qa_report/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-2",
+  "rule_hash": "df218e97a044a57926b91674de9e7b06b1fd460d41090076805ec96a5ef935b9",
+  "rule_text": "No instruction in the skill puts a credential in a URL, in any form, placeholder or literal, and a private repository is reached with `gh auth login` or a configured credential helper instead",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "fcc170f5c7df771c7863149764ac373c9ea01eac0bdf8bd572a1d589c8a3bcc4",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_no_credential_is_written_into_a_url(self):\n        assert credential_problems() == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_no_credential_is_written_into_a_url",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "c60d075b147195fdfc416d586b107db6cf7cb2f7e026d70b13429220ebd9a08f",
+  "verdict": "ready"
+}

@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "server",
+  "generated_at": "2026-09-14T16:40:49Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "344179d99aa918b6fc7b4db7d8f883ae1887e5d247486753ee581f1cd05133e3",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-2",
+      "text": "Send `tools/list`; verify the sorted tool names are exactly `drift`, `purlin_config` and `sync_status`, and that every one of the three declares `project_root` among its input properties",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-2 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/server/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-2",
+  "rule_hash": "e7c2351a5fde2946b2696ed60b15bb6b1807ade82f747b2a8366201acfdfc84d",
+  "rule_text": "`tools/list` returns exactly three tools, `sync_status`, `purlin_config` and `drift`, and every one of them declares the optional `project_root`",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "04bf8de70362c8660ac1e166d34598a31e5d88e63cdeed6ec1347328ee135a5d",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_tools_list_names_the_three_tools(self, project):\n        responses, _stderr = _rpc(project.root, {\n            'jsonrpc': '2.0', 'id': 1, 'method': 'tools/list'})\n        names = [t['name'] for t in responses[0]['result']['tools']]\n        assert sorted(names) == ['drift', 'purlin_config', 'sync_status']\n        for tool in responses[0]['result']['tools']:\n            assert 'project_root' in tool['inputSchema']['properties']",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_tools_list_names_the_three_tools",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "9e452867f9b41cf005048b7391f4b1cdf55c84ebee74d7de26bf1b7f6ff83522",
+  "verdict": "add a case"
+}

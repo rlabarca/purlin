@@ -1,0 +1,53 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_version",
+  "generated_at": "2026-09-14T16:40:35Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "2fabe8ace45cc6c34d6b7f5b7e2364e02b7ac72fa12a3e84c4ae44958e61802d",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "implementation_coupling",
+        "happy_path_only"
+      ],
+      "id": "PROOF-2",
+      "text": "Import the `purlin` package and read `scripts/mcp/purlin/__init__.py` as text; verify the package defines a callable version reader, that the source assigns `PURLIN_VERSION = _read_version()` rather than a literal, that `scripts/mcp/purlin/server.py` gives `SERVER_INFO` its `\"version\"` from `PURLIN_VERSION`, and that the imported `PURLIN_VERSION` equals the stripped content of the `VERSION` file",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-2 implementation_coupling: Names a private symbol, a selector or a path instead of an observable outcome, so a refactor breaks the proof without changing behaviour.",
+    "PROOF-2 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/purlin_version/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-2",
+  "rule_hash": "a952f42cdc6cc36aaabf559289201e34c7955cdb52969d82e530e039cb277936",
+  "rule_text": "The `purlin` package reads the version out of the `VERSION` file at import time and assigns it to `PURLIN_VERSION`, and the server reports that value rather than a literal of its own",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "704da61e1da4c1f6dbd42b7dd3905bc6ee48bc5e6eb23fb12a1d71e98cedcc99",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_package_reads_the_version_from_the_file(self):\n        \"\"\"The package must define _read_version() and assign its result to\n        PURLIN_VERSION; SERVER_INFO must use PURLIN_VERSION.\"\"\"\n        # Verify _read_version is defined and callable\n        assert hasattr(purlin_package, '_read_version'), \\\n            \"_read_version() not found in the purlin package\"\n        assert callable(purlin_package._read_version), \\\n            \"_read_version is not callable\"\n\n        # Verify PURLIN_VERSION is set from the function\n        with open(PACKAGE_INIT, encoding='utf-8') as f:\n            init_source = f.read()\n        assert 'PURLIN_VERSION = _read_version()' in init_source, \\\n            \"PURLIN_VERSION must be assigned via _read_version(), not a literal\"\n\n        # Verify SERVER_INFO uses PURLIN_VERSION\n        with open(SERVER_PY, encoding='utf-8') as f:\n            source = f.read()\n        assert 'SERVER_INFO' in source, \"SERVER_INFO not found in server.py\"\n        server_info_match = re.search(\n            r'SERVER_INFO\\s*=\\s*\\{[^}]*\"version\"\\s*:\\s*PURLIN_VERSION',\n            source,\n            re.DOTALL,\n        )\n        assert server_info_match, \\\n            'SERVER_INFO must use PURLIN_VERSION for the \"version\" field, not a literal'\n\n        # Verify the runtime value matches the VERSION file\n        with open(VERSION_FILE) as f:\n            expected = f.read().strip()\n        assert purlin_package.PURLIN_VERSION == expected, \\\n            (f\"PURLIN_VERSION is '{purlin_package.PURLIN_VERSION}' at runtime \"\n             f\"but VERSION file contains '{expected}'\")",
+      "file": "dev/test_purlin_version.py",
+      "findings": [],
+      "name": "test_the_package_reads_the_version_from_the_file",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "d3faa5c156f53303477db1ee2dec5002fd0f7d404b62613c7b1b1168955efa10",
+  "verdict": "add a case"
+}

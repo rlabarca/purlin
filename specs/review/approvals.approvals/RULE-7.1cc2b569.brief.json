@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "approvals",
+  "generated_at": "2026-09-14T16:40:23Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "9133acfd1424246f17fffb73255c3060f8a5aeca160e06547431318514cb32f5",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-11",
+      "text": "Write an approval and verify the rule reads `Approved`; then edit the rule text and verify it reads `Stale`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-11 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/approvals/20260914T164015Z-c6d2880-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-7",
+  "rule_hash": "a8a6b2291b648fd0e4682a5c956c7517f06b0a8d5261bff97459cfeb7620acaf",
+  "rule_text": "A rule whose only approval has gone stale is reported Stale, never Approved",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "3328d9bca994713be37a2f4f744b38d2ae2b9c4a2ee8af50862f624f0df7e1d2",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_stale_approval_puts_the_rule_in_stale(self, proved):\n        self._approve(proved)\n        assert proved.rule('RULE-1')['state'] == 'Approved'\n        proved.spec(SPEC.replace('return 200 with a session token',\n                                 'return 200 with two session tokens'))\n        assert proved.rule('RULE-1')['state'] == 'Stale'",
+      "file": "dev/test_approvals.py",
+      "findings": [],
+      "name": "test_a_stale_approval_puts_the_rule_in_stale",
+      "proof": "PROOF-11",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "1cc2b569ff53b4b530092e3e1b5f6f281a57d6939bcdb1779e5664ea5d457955",
+  "verdict": "add a case"
+}

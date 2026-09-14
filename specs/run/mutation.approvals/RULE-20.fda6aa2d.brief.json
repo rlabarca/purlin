@@ -1,0 +1,80 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "mutation",
+  "generated_at": "2026-09-14T16:40:32Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "6a65caa2b3481b7d5520fc3172d1ad4331296741494765865c7db32eacc4d969",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-20",
+      "text": "Call `run_breaks()` with the engine `none` and with a real engine standing in; verify both answers carry `engine`, `available`, `reason`, `features` and `log`. Call it with the engine `nosuchengine`; verify no engine module was imported and the reason names it. Have an engine report one rule of two; verify the other is filled in with `attribution: \"unavailable\"`, and have it report no feature at all; verify every feature the caller named is still listed",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/mutation/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-20",
+  "rule_hash": "c718d422bf3d1c83bd58bee7c728e271cde7613955aaa569ef780ba1ce8d3423",
+  "rule_text": "Every engine answers the same shape, so a caller reads one: an engine name outside the four is not run, a rule the engine never reported is filled in with `attribution: \"unavailable\"`, and a feature the engine never reached is still listed",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "075c3ba5c115c0121e4536641687595ff49124a0e156f2e0fe17038dc352e70e",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_run_breaks_answers_one_shape_for_no_engine():\n    scope = {'deploy': ['deploy.sh']}\n    tests = {('deploy', 'RULE-1'): []}\n    answer = mutation.run_breaks('/project', 'none', scope, tests, None)\n    assert_answer_shape(answer, scope, tests)\n    assert answer['engine'] == 'none'",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_a_feature_an_engine_never_reached_is_still_listed",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": "def test_run_breaks_answers_one_shape_for_no_engine():\n    scope = {'deploy': ['deploy.sh']}\n    tests = {('deploy', 'RULE-1'): []}\n    answer = mutation.run_breaks('/project', 'none', scope, tests, None)\n    assert_answer_shape(answer, scope, tests)\n    assert answer['engine'] == 'none'",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_a_rule_an_engine_forgot_is_filled_in",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": "def test_run_breaks_answers_one_shape_for_no_engine():\n    scope = {'deploy': ['deploy.sh']}\n    tests = {('deploy', 'RULE-1'): []}\n    answer = mutation.run_breaks('/project', 'none', scope, tests, None)\n    assert_answer_shape(answer, scope, tests)\n    assert answer['engine'] == 'none'",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_an_engine_nobody_ships_is_not_run",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": "def test_run_breaks_answers_one_shape_for_no_engine():\n    scope = {'deploy': ['deploy.sh']}\n    tests = {('deploy', 'RULE-1'): []}\n    answer = mutation.run_breaks('/project', 'none', scope, tests, None)\n    assert_answer_shape(answer, scope, tests)\n    assert answer['engine'] == 'none'",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_run_breaks_answers_one_shape_for_a_real_engine",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": "def test_run_breaks_answers_one_shape_for_no_engine():\n    scope = {'deploy': ['deploy.sh']}\n    tests = {('deploy', 'RULE-1'): []}\n    answer = mutation.run_breaks('/project', 'none', scope, tests, None)\n    assert_answer_shape(answer, scope, tests)\n    assert answer['engine'] == 'none'",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_run_breaks_answers_one_shape_for_no_engine",
+      "proof": "PROOF-20",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "fda6aa2dd57a80d5496f19a693c0ce6f1e0f2aa88912a53ccce89de546785e9d",
+  "verdict": "ready"
+}

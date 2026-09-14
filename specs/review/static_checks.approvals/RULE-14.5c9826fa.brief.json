@@ -1,0 +1,48 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-14T16:41:00Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "0acc077e8f5513170f5bcfd2e093e437518a0d2c45d509db46892a0036545a62",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-46",
+      "text": "Run the SQL checker over a block whose only statement is an INSERT and which carries no `-- Test:` line; verify its status is `fail`, its check is `no_assertion` and its test name is `PROOF-3`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/static_checks/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-14",
+  "rule_hash": "d0513584ecf7211e76c0dc9f624812cf4fd0b461d6608ae4f2226dca815dfa0c",
+  "rule_text": "A SQL block that runs no SELECT observes nothing and is reported `no_assertion`, and a block with no `-- Test:` line is named by its proof id",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "29e68db26a0af1ddd38e0aa1c163aef16b051e7d3fdfb1762cc3f53ff5eca2ba",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_detects_block_with_no_select(self):\n        \"\"\"A block that never SELECTs observes nothing, and the proof id stands in\n        for a missing `-- Test:` name exactly as the shipped plugin does.\"\"\"\n        path = _write_tmp(\"-- @purlin sqlfeat PROOF-3 RULE-3 unit\\n\"\n                          \"INSERT INTO users (email) VALUES ('a@b.c');\\n\", suffix='.sql')\n        try:\n            results = check_sql(path, \"sqlfeat\")\n            assert len(results) == 1, results\n            assert results[0]['status'] == 'fail', results[0]\n            assert results[0]['check'] == 'no_assertion', results[0]\n            assert results[0]['test_name'] == 'PROOF-3', results[0]\n        finally:\n            os.unlink(path)",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_detects_block_with_no_select",
+      "proof": "PROOF-46",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "5c9826faa67d2ec094354c3507c61f11f0b8181508cdf9d8aee29ebb1b9c65ab",
+  "verdict": "ready"
+}

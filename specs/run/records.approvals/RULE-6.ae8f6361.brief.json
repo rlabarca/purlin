@@ -1,0 +1,63 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-14T16:40:38Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "bcc4584d8527375cc9cdd5833a571f8d2a299896f0962b11be64e9d653950d7a",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-6",
+      "text": "Make the fake host refuse the first PATCH with HTTP 422; verify the run reads the ref again and succeeds. Refuse all 3 attempts; verify `HTTPError` is raised. Refuse once with HTTP 404; verify it is raised on the first attempt with no second GET of the ref",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/records/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-6",
+  "rule_hash": "5347dd3ea195783d78c5bf39ffc88b9bbd642aada66c793d33abc62d7a1105d9",
+  "rule_text": "A ref update refused because the branch moved is retried 3 times and then raised; a refusal that is not a moved branch is raised at once without a retry",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "cae43554d0aaf5e40767dbfef4a9ffb2244a872df91fc9749ecd48abdc5f263e",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_ref_update_is_retried_when_the_branch_moved(project, github_env,\n                                                         monkeypatch):\n    host = FakeHost(fail_patch=1)\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    sha = records_module.commit_records(project, [path], 'ci',\n                                        'purlin: record')\n\n    assert sha == 'c' * 40\n    assert host.patched == 2, 'the refused update was not retried'\n    heads = [url for url in host.urls('GET') if '/git/ref/heads/' in url]\n    assert len(heads) == 2, 'the retry did not re-read the branch head'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_refusal_that_is_not_a_moved_branch_is_raised_at_once",
+      "proof": "PROOF-6",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_ref_update_is_retried_when_the_branch_moved(project, github_env,\n                                                         monkeypatch):\n    host = FakeHost(fail_patch=1)\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    sha = records_module.commit_records(project, [path], 'ci',\n                                        'purlin: record')\n\n    assert sha == 'c' * 40\n    assert host.patched == 2, 'the refused update was not retried'\n    heads = [url for url in host.urls('GET') if '/git/ref/heads/' in url]\n    assert len(heads) == 2, 'the retry did not re-read the branch head'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_ref_update_is_retried_when_the_branch_moved",
+      "proof": "PROOF-6",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_ref_update_is_retried_when_the_branch_moved(project, github_env,\n                                                         monkeypatch):\n    host = FakeHost(fail_patch=1)\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    sha = records_module.commit_records(project, [path], 'ci',\n                                        'purlin: record')\n\n    assert sha == 'c' * 40\n    assert host.patched == 2, 'the refused update was not retried'\n    heads = [url for url in host.urls('GET') if '/git/ref/heads/' in url]\n    assert len(heads) == 2, 'the retry did not re-read the branch head'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_retry_gives_up_and_raises",
+      "proof": "PROOF-6",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "ae8f63618fa8238f6f1d43cb14d2aec64ceb92cf512756f7b8c2ee7bf278b232",
+  "verdict": "ready"
+}

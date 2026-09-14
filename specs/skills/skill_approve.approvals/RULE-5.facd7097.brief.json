@@ -1,0 +1,48 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_approve",
+  "generated_at": "2026-09-14T16:40:51Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "3f542c6f606bc98694278831199a5df56488146e5a0ffb27aae11b012d44647e",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-5",
+      "text": "Read `skills/approve/SKILL.md` with its line wrapping collapsed; verify it carries the sentence `An approval also does not count when you are the author of the commit that last touched the test.` and the clause `it reaches the default branch by pull request`. Dropping the negation, so that the sentence reads `An approval counts when you are the author of the commit that last touched the test`, fails naming the sentence it did not find",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/skill_approve/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-5",
+  "rule_hash": "f2f157b32e2d690393b52c11196e927505e7d030e057b2d184c5217768972912",
+  "rule_text": "The skill states that an approval does not count when its author is the author of the commit that last touched the test, and that under the `approved` gate the approval commit is signed and reaches the default branch by pull request",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "2a2203c27fc78194103d9d3b79e8e9bbdb53f140f1777db118198e3180b06d21",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_author_of_the_test_cannot_approve_it(self):\n        assert carries(skill_path('approve'), [\n            'An approval also does not count when you are the author of the '\n            'commit that last touched the test.',\n            'it reaches the default branch by pull request']) == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_the_author_of_the_test_cannot_approve_it",
+      "proof": "PROOF-5",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "facd70971274103146373dc3c582fe720655b5b18afaea3678d238cc8758c3b9",
+  "verdict": "ready"
+}

@@ -1,0 +1,69 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "approvals",
+  "generated_at": "2026-09-14T16:40:24Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "d6214947166de65f0017b08a4c331855c28aa73bcb99ae67492bb814623bb061",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-30",
+      "text": "Run the gate over a project at gate `tested` whose record a person committed; verify it exits 0 and prints `gate = tested` and `PASS. Every rule meets tested.`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-31",
+      "text": "Run the gate at gate `tested` with a minimum of 80 over a record measuring 10; verify it exits 0 and prints no line about the minimum test strength",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-30 happy_path_only: No proof of this rule names a rejection, an error or a boundary.",
+    "PROOF-31 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/approvals/20260914T164015Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-24",
+  "rule_hash": "d9ac66da00571ed5c945327d783327f77e248a7ce2ea1c08d8098d336271cca0",
+  "rule_text": "At gate `tested` a record a person committed counts and the test strength is never read",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "ab4ff9f8593508531b0d62646c5156c3aa40b234be38b3e08d4bd39f49afcbf0",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_developer_record_is_enough(self):\n        made = project_at('tested', by_ci=False)\n        try:\n            code, output = run(made)\n            assert code == 0, output\n            assert 'verify-gate: gate = tested' in output\n            assert 'PASS. Every rule meets tested.' in output\n        finally:\n            made.close()",
+      "file": "dev/test_verify_gate.py",
+      "findings": [],
+      "name": "test_a_developer_record_is_enough",
+      "proof": "PROOF-30",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_test_strength_is_not_read_at_tested(self):\n        made = project_at('tested', strength=10, by_ci=False,\n                          config={'min_strength': 80})\n        try:\n            code, output = run(made)\n            assert code == 0, output\n            assert 'Below the minimum test strength' not in output\n        finally:\n            made.close()",
+      "file": "dev/test_verify_gate.py",
+      "findings": [],
+      "name": "test_the_test_strength_is_not_read_at_tested",
+      "proof": "PROOF-31",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "42ced8dddad60252065e385e06ae99e7e6559e62cfa72b46791da7a43a74d13a",
+  "verdict": "add a case"
+}

@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "upstream",
+  "generated_at": "2026-09-14T16:41:08Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "6d42618166eca1f258daa6bb4792d1a31b8190753b519a143dd1ad545426bae9",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-17",
+      "text": "Pin an anchor, add a local rule, then publish a version upstream that adds RULE-3; run `propose no_eval` and verify the patch carries `+- RULE-9: No pickle imports [risk: low]` and no occurrence of `RULE-3`, which the source already holds",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-17 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/upstream/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-17",
+  "rule_hash": "9c619797e38ce8f3a284dc17d0c04371eaf01ab470ac02ab08c4cc91c0c96c1a",
+  "rule_text": "The patch is taken against the pin rather than the source's head, so a rule the source added after the pin is never proposed back to it",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "05e4b980baaf23a9d4c65b7b60f8d9475613ef3c8b858d72bbfdea8e84f5baf2",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_propose_reads_the_source_at_the_pin_not_at_its_head(workspace):\n    _add(workspace)\n    _add_local_rule(workspace)\n    _advance(workspace)\n    with open(os.path.join(workspace.root, upstream.propose(\n            workspace.root, 'no_eval')['patch']), 'r', encoding='utf-8') as h:\n        patch = h.read()\n    # RULE-3 arrived after the pin, so proposing against the pin must not ask\n    # the anchor repo to add a rule it already has.\n    assert 'RULE-3' not in patch\n    assert '+- RULE-9: No pickle imports [risk: low]' in patch",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_propose_reads_the_source_at_the_pin_not_at_its_head",
+      "proof": "PROOF-17",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "3b9efc4e03c3ff3da3f6bc3652b64fbd0df1dae48bd064f0c474feb5cdbda5aa",
+  "verdict": "add a case"
+}

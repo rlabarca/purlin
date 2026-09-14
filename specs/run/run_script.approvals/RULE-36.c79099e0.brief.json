@@ -1,0 +1,71 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-14T16:40:42Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "9215d9fd95c27b236baf9bac536333960fa2db7dfe7e2bf0a8eb6e3f034f9b86",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-45",
+      "text": "Read `references/formats/proofs_format.md`; verify its first line is a `Format-Version` of at least 8, that its Location section names `.purlin/runtime/proofs/<feature>.<tier>.json` and the word `gitignored`, that its Fields section names all seven fields and the phrase `Seven fields, and no eighth`, that the retired fields are listed with `test_run.json` and `@env(windows)`, that there is no `Run marker` section, and that each of the six shipped frameworks has a row while `phpunit` has none",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/run_script/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-36",
+  "rule_hash": "d7c6a368ad357cfb6931f68cd9eeea351026ed321f336365923781cd504426ab",
+  "rule_text": "`references/formats/proofs_format.md` is the wire format: it names the runtime location, the seven fields, one marker section per shipped framework and the retired fields, and carries no run-marker section",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "af8f183b8dbaa99d432901462a676e889d11ce049f3688e19874cfffcb31e87d",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_format_names_the_runtime_location_and_the_seven_fields(self):\n        text = _read(PROOFS_FORMAT)\n        first_line = text.split('\\n', 1)[0]\n        assert first_line.startswith('> Format-Version: '), (\n            'proofs_format.md must open with a > Format-Version: line, got %r'\n            % first_line)\n        version = int(first_line.split(':', 1)[1].strip())\n        assert version >= 8, (\n            'moving the proof file to the runtime directory and dropping the '\n            'operating-system fields is structural, so proofs_format.md is at '\n            'least Format-Version 8, not %d' % version)\n\n        sections = _sections(text)\n        assert 'Location' in sections\n        assert '.purlin/runtime/proofs/<feature>.<tier>.json' \\\n            in sections['Location']\n        assert 'gitignored' in sections['Location']\n\n        fields = sections['Fields']\n        absent = [f for f in PROOF_FIELDS if '`proofs[].%s`' % f not in fields]\n        assert not absent, (\n            'the fields table does not name %s. A field a plugin author '\n            'cannot read here is one every plugin spells differently' % absent)\n        assert 'Seven fields, and no eighth' in fields",
+      "file": "dev/test_plugin_contract.py",
+      "findings": [],
+      "name": "test_every_shipped_framework_has_a_marker_section",
+      "proof": "PROOF-45",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_format_names_the_runtime_location_and_the_seven_fields(self):\n        text = _read(PROOFS_FORMAT)\n        first_line = text.split('\\n', 1)[0]\n        assert first_line.startswith('> Format-Version: '), (\n            'proofs_format.md must open with a > Format-Version: line, got %r'\n            % first_line)\n        version = int(first_line.split(':', 1)[1].strip())\n        assert version >= 8, (\n            'moving the proof file to the runtime directory and dropping the '\n            'operating-system fields is structural, so proofs_format.md is at '\n            'least Format-Version 8, not %d' % version)\n\n        sections = _sections(text)\n        assert 'Location' in sections\n        assert '.purlin/runtime/proofs/<feature>.<tier>.json' \\\n            in sections['Location']\n        assert 'gitignored' in sections['Location']\n\n        fields = sections['Fields']\n        absent = [f for f in PROOF_FIELDS if '`proofs[].%s`' % f not in fields]\n        assert not absent, (\n            'the fields table does not name %s. A field a plugin author '\n            'cannot read here is one every plugin spells differently' % absent)\n        assert 'Seven fields, and no eighth' in fields",
+      "file": "dev/test_plugin_contract.py",
+      "findings": [],
+      "name": "test_the_format_carries_no_run_marker_section",
+      "proof": "PROOF-45",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_format_names_the_runtime_location_and_the_seven_fields(self):\n        text = _read(PROOFS_FORMAT)\n        first_line = text.split('\\n', 1)[0]\n        assert first_line.startswith('> Format-Version: '), (\n            'proofs_format.md must open with a > Format-Version: line, got %r'\n            % first_line)\n        version = int(first_line.split(':', 1)[1].strip())\n        assert version >= 8, (\n            'moving the proof file to the runtime directory and dropping the '\n            'operating-system fields is structural, so proofs_format.md is at '\n            'least Format-Version 8, not %d' % version)\n\n        sections = _sections(text)\n        assert 'Location' in sections\n        assert '.purlin/runtime/proofs/<feature>.<tier>.json' \\\n            in sections['Location']\n        assert 'gitignored' in sections['Location']\n\n        fields = sections['Fields']\n        absent = [f for f in PROOF_FIELDS if '`proofs[].%s`' % f not in fields]\n        assert not absent, (\n            'the fields table does not name %s. A field a plugin author '\n            'cannot read here is one every plugin spells differently' % absent)\n        assert 'Seven fields, and no eighth' in fields",
+      "file": "dev/test_plugin_contract.py",
+      "findings": [],
+      "name": "test_the_format_names_the_runtime_location_and_the_seven_fields",
+      "proof": "PROOF-45",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_format_names_the_runtime_location_and_the_seven_fields(self):\n        text = _read(PROOFS_FORMAT)\n        first_line = text.split('\\n', 1)[0]\n        assert first_line.startswith('> Format-Version: '), (\n            'proofs_format.md must open with a > Format-Version: line, got %r'\n            % first_line)\n        version = int(first_line.split(':', 1)[1].strip())\n        assert version >= 8, (\n            'moving the proof file to the runtime directory and dropping the '\n            'operating-system fields is structural, so proofs_format.md is at '\n            'least Format-Version 8, not %d' % version)\n\n        sections = _sections(text)\n        assert 'Location' in sections\n        assert '.purlin/runtime/proofs/<feature>.<tier>.json' \\\n            in sections['Location']\n        assert 'gitignored' in sections['Location']\n\n        fields = sections['Fields']\n        absent = [f for f in PROOF_FIELDS if '`proofs[].%s`' % f not in fields]\n        assert not absent, (\n            'the fields table does not name %s. A field a plugin author '\n            'cannot read here is one every plugin spells differently' % absent)\n        assert 'Seven fields, and no eighth' in fields",
+      "file": "dev/test_plugin_contract.py",
+      "findings": [],
+      "name": "test_the_retired_fields_are_listed_as_retired",
+      "proof": "PROOF-45",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "c79099e0d158f5ecdf02b03ae5f992b0895b8f9e4a911fea3224158ac6b73a03",
+  "verdict": "ready"
+}

@@ -1,0 +1,64 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "proof_common",
+  "generated_at": "2026-09-14T16:40:32Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "85e8c7d2d902d5a23737f1209296d9c93f7591925ad5bcb45aff590d88da3679",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-5",
+      "text": "Run a fixture holding one passing marked test and one failing one and verify the two entries read `pass` and `fail`; run a fixture whose marked test is skipped and verify no entry for it is written, in `dev/test_multilang_proof_plugins.py`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/proof_common/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-5",
+  "rule_hash": "bcf39c0a756cf9cfc1f0d51723265238e700bcccb104f0c116ddc5100e87f874",
+  "rule_text": "`status` records execution and never availability: `pass` means the test ran and passed, `fail` means it ran and its assertion failed, and a test the run skipped emits no entry at all, so nothing downstream has to tell a broken build from a missing tool",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "b6cb57e346214ed155cbf820e411cfdffa55d11752096a5291895d85b3b4cc78",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_vitest(self, tmp_path):\n        root = _purlin_project(tmp_path)\n        (root / 'feat.test.ts').write_text('// marked\\n', encoding='utf-8')\n        result = _run_vitest_reporter(root, '''\nconst files = [{\n  type: \"suite\",\n  filepath: process.cwd() + \"/feat.test.ts\",\n  tasks: [\n    { type: \"test\", name: \"works [proof:feat:PROOF-1:RULE-1:unit]\",\n      result: { state: \"pass\" } },\n    { type: \"test\", name: \"breaks [proof:feat:PROOF-2:RULE-2:unit]\",\n      result: { state: \"fail\" } },\n  ],\n}];\nnew Reporter().onFinished(files);\n''')\n        assert result.returncode == 0, result.stderr\n        data = _read_proofs(root, 'feat')\n        by_id = {e['id']: e for e in data['proofs']}\n        assert set(by_id['PROOF-1']) == set(REQUIRED_FIELDS)\n        assert by_id['PROOF-1']['status'] == 'pass'\n        assert by_id['PROOF-2']['status'] == 'fail'\n        assert by_id['PROOF-1']['test_file'] == 'feat.test.ts'",
+      "file": "dev/test_multilang_proof_plugins.py",
+      "findings": [],
+      "name": "test_jest",
+      "proof": "PROOF-5",
+      "reasons": []
+    },
+    {
+      "body": "def test_vitest(self, tmp_path):\n        root = _purlin_project(tmp_path)\n        (root / 'feat.test.ts').write_text('// marked\\n', encoding='utf-8')\n        result = _run_vitest_reporter(root, '''\nconst files = [{\n  type: \"suite\",\n  filepath: process.cwd() + \"/feat.test.ts\",\n  tasks: [\n    { type: \"test\", name: \"works [proof:feat:PROOF-1:RULE-1:unit]\",\n      result: { state: \"pass\" } },\n    { type: \"test\", name: \"breaks [proof:feat:PROOF-2:RULE-2:unit]\",\n      result: { state: \"fail\" } },\n  ],\n}];\nnew Reporter().onFinished(files);\n''')\n        assert result.returncode == 0, result.stderr\n        data = _read_proofs(root, 'feat')\n        by_id = {e['id']: e for e in data['proofs']}\n        assert set(by_id['PROOF-1']) == set(REQUIRED_FIELDS)\n        assert by_id['PROOF-1']['status'] == 'pass'\n        assert by_id['PROOF-2']['status'] == 'fail'\n        assert by_id['PROOF-1']['test_file'] == 'feat.test.ts'",
+      "file": "dev/test_multilang_proof_plugins.py",
+      "findings": [],
+      "name": "test_status_mapping_and_the_skipped_test",
+      "proof": "PROOF-5",
+      "reasons": []
+    },
+    {
+      "body": "def test_vitest(self, tmp_path):\n        root = _purlin_project(tmp_path)\n        (root / 'feat.test.ts').write_text('// marked\\n', encoding='utf-8')\n        result = _run_vitest_reporter(root, '''\nconst files = [{\n  type: \"suite\",\n  filepath: process.cwd() + \"/feat.test.ts\",\n  tasks: [\n    { type: \"test\", name: \"works [proof:feat:PROOF-1:RULE-1:unit]\",\n      result: { state: \"pass\" } },\n    { type: \"test\", name: \"breaks [proof:feat:PROOF-2:RULE-2:unit]\",\n      result: { state: \"fail\" } },\n  ],\n}];\nnew Reporter().onFinished(files);\n''')\n        assert result.returncode == 0, result.stderr\n        data = _read_proofs(root, 'feat')\n        by_id = {e['id']: e for e in data['proofs']}\n        assert set(by_id['PROOF-1']) == set(REQUIRED_FIELDS)\n        assert by_id['PROOF-1']['status'] == 'pass'\n        assert by_id['PROOF-2']['status'] == 'fail'\n        assert by_id['PROOF-1']['test_file'] == 'feat.test.ts'",
+      "file": "dev/test_multilang_proof_plugins.py",
+      "findings": [],
+      "name": "test_vitest",
+      "proof": "PROOF-5",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "d6ff730fd5dea7d1d76fe32cebc944af2eeb5ab83795d3ab4c44654f0eaea0ef",
+  "verdict": "ready"
+}

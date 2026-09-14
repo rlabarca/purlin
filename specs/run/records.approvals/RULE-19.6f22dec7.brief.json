@@ -1,0 +1,63 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-14T16:40:39Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "6b7cc6e0b5b849701efee4ce5b3b4d3f818d2142a99b48ffb0ffb620aa13e807",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-19",
+      "text": "Call `runners_for([\"windows\", \"linux\"])`; verify `[\"ubuntu-latest\", \"windows-latest\"]` in that fixed order. Call it with `[\"windows\"]`; verify `[\"ubuntu-latest\", \"windows-latest\"]`, so the Linux job survives a tag that never names it. Call it with `[\"linux\"]`; verify `[\"ubuntu-latest\"]` once, not twice. Call it with an empty list and with `[\"plan9\"]`; verify `[\"ubuntu-latest\"]` both times, so an unknown name is ignored rather than guessed at. Call `render_workflow(\"github\", [\"windows\"], \"v<VERSION>\")`; verify it holds `os: [ubuntu-latest, windows-latest]`. Read the fixture's workflow; verify it holds `os: [ubuntu-latest]` and no `windows-latest`, and that `env_tags_in_specs()` over the fixture returns `[\"linux\"]`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/records/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-19",
+  "rule_hash": "5aef894b46e9c4fbf0007a7a172d73b32ffff2b789c1bf5e7b141158f964d502",
+  "rule_text": "The matrix always covers Linux first, then one job per other operating system the project's `@env` tags name, so a project that tags nothing and a project that tags only Windows both keep a Linux job",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "08fa472e0b55dcaeba30313f10131159c35e8c25f0d74cedc5caf4300bcf886f",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_matrix_is_the_one_operating_system_the_spec_names():\n    jobs = '\\n'.join(parse_blocks(read(WORKFLOW_REL))['jobs'])\n    assert 'os: [ubuntu-latest]' in jobs\n    assert 'windows-latest' not in jobs\n    assert workflow_module.env_tags_in_specs(FIXTURE) == ['linux']",
+      "file": "dev/test_consumer_ci.py",
+      "findings": [],
+      "name": "test_the_matrix_always_carries_linux_first",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_matrix_is_the_one_operating_system_the_spec_names():\n    jobs = '\\n'.join(parse_blocks(read(WORKFLOW_REL))['jobs'])\n    assert 'os: [ubuntu-latest]' in jobs\n    assert 'windows-latest' not in jobs\n    assert workflow_module.env_tags_in_specs(FIXTURE) == ['linux']",
+      "file": "dev/test_consumer_ci.py",
+      "findings": [],
+      "name": "test_the_matrix_is_one_job_per_named_operating_system",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_matrix_is_the_one_operating_system_the_spec_names():\n    jobs = '\\n'.join(parse_blocks(read(WORKFLOW_REL))['jobs'])\n    assert 'os: [ubuntu-latest]' in jobs\n    assert 'windows-latest' not in jobs\n    assert workflow_module.env_tags_in_specs(FIXTURE) == ['linux']",
+      "file": "dev/test_consumer_ci.py",
+      "findings": [],
+      "name": "test_the_matrix_is_the_one_operating_system_the_spec_names",
+      "proof": "PROOF-19",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "6f22dec7c46b5eff97a0bb22758ecaecf38f33255381a54c09070834d9279734",
+  "verdict": "ready"
+}

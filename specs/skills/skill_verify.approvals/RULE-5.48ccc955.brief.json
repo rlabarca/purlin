@@ -1,0 +1,48 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_verify",
+  "generated_at": "2026-09-14T16:40:53Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "9e16559a7b2e79f7644cdf7a41109b5c58a4efd76f71497fa80ae0edaaaadaf0",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-5",
+      "text": "Read the record-label table in `skills/verify/SKILL.md`; verify it carries one row each for `ci`, `developer` and `local`, that the `ci` row names all three gates, that the `developer` row names `tested` and neither `recorded` nor `approved`, and that the `local` row reads `nothing`. Changing the `developer` row to name `recorded` fails, naming the gate it found there",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/skill_verify/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-5",
+  "rule_hash": "2aa42ca7a3a96486cd7a863a2ee2555899b98fe5c61afcba58cffc846034ef72",
+  "rule_text": "The skill states which record counts under which gate: a `ci` record counts under `tested`, `recorded` and `approved`, a `developer` record under `tested` alone, and an uncommitted `local` record under none",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "bf1d24abdd416ce982c7a35e5b130936c93a1e8cff41259ec0692015a9b675e5",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_says_which_record_counts_under_which_gate(self):\n        assert record_label_problems() == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_it_says_which_record_counts_under_which_gate",
+      "proof": "PROOF-5",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "48ccc955274254246c621433f7ecb29648caf6a7bea4933dcaaa03003096f070",
+  "verdict": "ready"
+}

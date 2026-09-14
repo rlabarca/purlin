@@ -1,0 +1,60 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-14T16:40:43Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "9a534b659b778805a8e777621ab1abcb84f39bb601dd7a0e03277b4b1329d668",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-61",
+      "text": "Run `--all --record --ci` with the auto-approval writer and the brief writer standing in for the real ones, each returning one path under `specs/<category>/<feature>.approvals/`; verify both ran before the commit call was made, that the commit call carries the identity `ci` with the record path first and both returned paths after it, and that the run prints `Auto-approved 1 low-risk rule; 1 brief written.`. Run `--all --record --commit` with the same stand-ins; verify neither writer ran and the commit call carries the record path alone",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-61 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/run_script/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-42",
+  "rule_hash": "82f3749d2110afd3b8d28173830791eaaa60a03cf783e549e98cdf9645c6a3e3",
+  "rule_text": "`--ci` writes the auto-approvals and the review list's briefs before the commit and hands their paths to it, so the one commit that carries the record carries the `.ci.json` and `.brief.json` files beside the spec too; `--commit` writes neither and its commit carries the records alone",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "7853c89e690c55ef721c85777d6b68eb24a502b475416fcd1ae8ac255bd4e280",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_ci_hands_the_approvals_and_the_briefs_to_the_commit(\n            self, tmp_path, record_run, monkeypatch, capsys):\n        \"\"\"An approval that exists only on a runner is evidence nobody reads.\n\n        So the files the CI run writes go into the same commit as the record\n        they rest on, which means they have to be written before it.\n        \"\"\"\n        approval = 'specs/core/feat.approvals/RULE-1.1a2b3c4d.ci.json'\n        brief = 'specs/core/feat.approvals/RULE-2.5e6f7a8b.brief.json'\n        order = []\n        _fake_review(monkeypatch, order, [approval], [brief])\n\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat')\n        _code, calls = record_run(root, '--all', '--ci')\n        output = capsys.readouterr().out\n\n        paths, identity, _message = calls['commit'][0]\n        assert identity == 'ci'\n        assert paths == [os.path.join('.purlin', 'records', 'feat', 'r.json'),\n                         approval, brief]\n        assert order == ['auto_approve', 'write_briefs', 'commit'], (\n            'the commit was made before the files it must carry')\n        assert 'Auto-approved 1 low-risk rule; 1 brief written.' in output",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_ci_hands_the_approvals_and_the_briefs_to_the_commit",
+      "proof": "PROOF-61",
+      "reasons": []
+    },
+    {
+      "body": "def test_ci_hands_the_approvals_and_the_briefs_to_the_commit(\n            self, tmp_path, record_run, monkeypatch, capsys):\n        \"\"\"An approval that exists only on a runner is evidence nobody reads.\n\n        So the files the CI run writes go into the same commit as the record\n        they rest on, which means they have to be written before it.\n        \"\"\"\n        approval = 'specs/core/feat.approvals/RULE-1.1a2b3c4d.ci.json'\n        brief = 'specs/core/feat.approvals/RULE-2.5e6f7a8b.brief.json'\n        order = []\n        _fake_review(monkeypatch, order, [approval], [brief])\n\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat')\n        _code, calls = record_run(root, '--all', '--ci')\n        output = capsys.readouterr().out\n\n        paths, identity, _message = calls['commit'][0]\n        assert identity == 'ci'\n        assert paths == [os.path.join('.purlin', 'records', 'feat', 'r.json'),\n                         approval, brief]\n        assert order == ['auto_approve', 'write_briefs', 'commit'], (\n            'the commit was made before the files it must carry')\n        assert 'Auto-approved 1 low-risk rule; 1 brief written.' in output",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_the_developer_commit_carries_the_records_alone",
+      "proof": "PROOF-61",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "dc5b2785e83c55f43ca3a3a717c22a3dbb744bf1d47ea07489308aadd5eb5544",
+  "verdict": "add a case"
+}

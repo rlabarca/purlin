@@ -1,0 +1,77 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "brief",
+  "generated_at": "2026-09-14T16:40:26Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "8527ac9cd022f3d071e018e73f61ace8802b07f3640731b1a7fe13b365ac5414",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-20",
+      "text": "Build the brief for a rule that needs a model review without passing `--ai`; verify the recorded review reads `not available` and the rendering still carries a `Model review` heading",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-21",
+      "text": "With no `claude` on the path, build the brief with `--ai`; verify the recorded review reads `not available`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-22",
+      "text": "Build the brief for a low-risk rule with `--ai` and a probe that raises if the path is searched; verify no model is reached and the recorded review is `none`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/brief/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-16",
+  "rule_hash": "dc7d9e23b9ecc549ca093c75265650bc19af7e949f2e1162f067bcdb0a3f827d",
+  "rule_text": "The model review runs only when the caller passes `--ai` and the rule needs one; without it, and with no model on the path, the brief records `not available`",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "24360a4d70b6905fb139014789b94618d46f7735139addd44cb8711a1b0af547",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_without_ai_the_brief_says_not_available(self, reviewed):\n        built = build(reviewed, 'RULE-2')\n        assert built['ai_review'] == 'not available'\n        assert 'Model review' in brief_module.render_brief(built)",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_without_ai_the_brief_says_not_available",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": "def test_with_no_claude_on_the_path_it_says_not_available(\n            self, reviewed, monkeypatch):\n        monkeypatch.setattr(brief_module.shutil, 'which', lambda name: None)\n        assert build(reviewed, 'RULE-2', ai=True)['ai_review'] == (\n            'not available')",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_with_no_claude_on_the_path_it_says_not_available",
+      "proof": "PROOF-21",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_low_risk_rule_never_calls_a_model(self, proved, monkeypatch):\n        def fail(*args, **kwargs):\n            raise AssertionError('a low-risk rule must not call a model')\n\n        monkeypatch.setattr(brief_module.shutil, 'which', fail)\n        assert build(proved, 'RULE-1', ai=True)['ai_review'] is None",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_a_low_risk_rule_never_calls_a_model",
+      "proof": "PROOF-22",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "e7eb98b1a1e59b73859da0a292119c80bd33b447a89cdb4085641e4e97e998b5",
+  "verdict": "ready"
+}

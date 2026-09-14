@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-14T16:40:59Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "fc872c1cb3fec56b3d963877e348cae0c8bdb6a28d94ad61989fd79030e893d8",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-36",
+      "text": "Run the command with `--json` over a TypeScript file whose first test passes an options object to a call and whose second title carries an apostrophe; verify both proofs come back with status `pass`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-36 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/static_checks/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-10",
+  "rule_hash": "3003315e8758743964e9994a29a257fbc7bc7018874ad9f13e0d4e50ab2132fc",
+  "rule_text": "The JavaScript reader bounds a test body by balancing braces, so a nested options object does not truncate it and an apostrophe inside a title does not drop the test",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "986ffdf2e78936ef3a81df85153b6f89c1fbc17cad7ee1280b229d55f85fadd6",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_check_js_tokenizer_handles_braces_and_apostrophes(self):\n        \"\"\"Issue #2 repro: nested-brace bodies are not truncated and apostrophe\n        titles are not dropped.\"\"\"\n        proofs = self._run('''\nimport { describe, it, expect } from \"vitest\";\nimport { execSync } from \"node:child_process\";\n\ndescribe(\"repro\", () => {\n  it(\"execSync options trigger early-truncation [proof:demo:PROOF-1:RULE-1]\", () => {\n    const out = execSync(\"ls\", { cwd: \".\", encoding: \"utf8\" });\n    expect(out).toMatch(/./);\n  });\n\n  it(\"cd's into a sibling [proof:demo:PROOF-2:RULE-2]\", () => {\n    expect(1).toBe(1);\n  });\n});\n''', \"demo\")\n\n        # Bug #2: apostrophe in a double-quoted title must not drop the test.\n        assert \"PROOF-1\" in proofs, \"the options-object test vanished from the output\"\n        assert \"PROOF-2\" in proofs, \"the apostrophe-title test vanished from the output\"\n        # Bug #1: the options-object body must be captured fully, so the expect()\n        # after it is seen and the test is NOT falsely flagged no_assertions.\n        assert proofs[\"PROOF-1\"][\"status\"] == \"pass\", proofs[\"PROOF-1\"]\n        assert proofs[\"PROOF-1\"].get(\"check\") != \"no_assertion\"\n        assert proofs[\"PROOF-2\"][\"status\"] == \"pass\"",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_check_js_tokenizer_handles_braces_and_apostrophes",
+      "proof": "PROOF-36",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "7c65612658f3511f38e177fdf0244aafe7abacfa80dc86957966a356d6607828",
+  "verdict": "add a case"
+}

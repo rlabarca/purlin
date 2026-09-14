@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-14T16:40:35Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "908de3e0d29d8fb65c104a905633cca31404e0744299c1c16cb1bf3e31b200ec",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-22",
+      "text": "Open the regulated fixture, whose payload reports an uncommitted working tree; verify 2 notices are on the board, then open the review list and verify zero notices are on screen",
+      "tier": "e2e"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/purlin_report/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-22",
+  "rule_hash": "23c4715f3b8d5ae754670c935735879f59cba4efbdbe082d0fe9d794870669d2",
+  "rule_text": "The notice that the working tree has uncommitted changes belongs to the board and appears on no other screen",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "02bd235429544a4290b85f236f0539b6496f62c52b2d9fd952d619c0e264b3a7",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_working_tree_notice_only_shows_on_the_board(browser, tmp_path):\n    page = open_board(browser, tmp_path, payload_named('regulated'))\n    assert len(page.query_selector_all('.notice')) == 2\n    page.click('[data-screen=\"review\"]')\n    assert page.query_selector_all('.notice') == []\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_the_working_tree_notice_only_shows_on_the_board",
+      "proof": "PROOF-22",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "b27f8acaa77bfd1a32185bc4464993bee3fa655038e965d75de84ee11fef4d00",
+  "verdict": "ready"
+}

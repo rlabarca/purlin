@@ -1,0 +1,48 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_agent",
+  "generated_at": "2026-09-14T16:40:34Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "a23e7ea7d934de4c470f890ee092cd3161e1d6e0da21673576a053d8121aa138",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-3",
+      "text": "Read the `## Five NEVERs` section of `agents/purlin.md`; verify it holds exactly five items numbered `1.` to `5.`, and that between them they name `origin`, `proof file`, `record`, `approval`, `approve a rule whose test you wrote`, `verify`, `recorded`, `approved` and `retired term`, one assertion per token so the failure names the missing one. Deleting the fifth item fails on the count, reporting four",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/purlin_agent/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-3",
+  "rule_hash": "2fade6f34409c1aa50ce20abc9d084ad63d49455dc3250c07f0632c7898a8651",
+  "rule_text": "The agent carries five numbered NEVERs, and they are: a rule owned by another origin is never edited silently, a proof file, a record or an approval is never written by hand, a rule whose test you wrote is never approved, a push never skips verify under `recorded` or `approved`, and a retired term is never used",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "9c2720ed2f6e5d114129c76812d1f7fc98010076e15d578df452271405a600bb",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_there_are_five_nevers(self):\n        assert never_problems() == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_there_are_five_nevers",
+      "proof": "PROOF-3",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "5bdbee39c7b156f3b74308aeb14f1d773eaee9bbba6c63b72113350b03561e1f",
+  "verdict": "ready"
+}

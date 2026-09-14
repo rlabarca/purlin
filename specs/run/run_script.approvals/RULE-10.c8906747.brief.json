@@ -1,0 +1,80 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-14T16:40:41Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "e606f58eb9273d903e3b4b84aaa67a1c3552bc5af293c191c06ba5b00e3b39cf",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-10",
+      "text": "Tag PROOF-2 `@env` with an operating system that is not this one and run `--all --quick`; verify the output holds `Proofs another operating system owns:` and `feat PROOF-2: needs <os>`, that `produced no proof entry` is absent even when the test for it is skipped, and that the run exits 0. Tag PROOF-1 with this operating system; verify `needs` is absent and the proof file is written",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-10 tautology",
+    "PROOF-10 tautology",
+    "PROOF-10 tautology"
+  ],
+  "record": ".purlin/records/run_script/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-10",
+  "rule_hash": "29956f97f17e5ec90d4a521d706dd5037aeed61aea08a565e83bfcde09e5790f",
+  "rule_text": "A proof the spec tags `@env` for another operating system is listed as needing that system, is not run here, and is never reported missing; a proof tagged for this one runs like any other",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "51a6e73327820ad91b7e2e6c13e5d1fb6ee52fd0934c06b97cc57206f3b2414b",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_foreign_env_proof_is_listed_as_needing_its_os(self, tmp_path):\n        other = self._other_os()\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat', proofs=(('PROOF-1', 'RULE-1', ''),\n                                    ('PROOF-2', 'RULE-1', ' @env(%s)' % other)))\n        code, output = _run(root, '--all', '--quick')\n        assert 'Proofs another operating system owns:' in output\n        assert 'feat PROOF-2: needs %s' % other in output\n        assert code == 0, output",
+      "file": "dev/test_run_script.py",
+      "findings": [
+        "tautology"
+      ],
+      "name": "test_a_foreign_env_proof_is_listed_as_needing_its_os",
+      "proof": "PROOF-10",
+      "reasons": [
+        "tautological assertion (assert True or equivalent)"
+      ]
+    },
+    {
+      "body": "def test_a_foreign_env_proof_is_listed_as_needing_its_os(self, tmp_path):\n        other = self._other_os()\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat', proofs=(('PROOF-1', 'RULE-1', ''),\n                                    ('PROOF-2', 'RULE-1', ' @env(%s)' % other)))\n        code, output = _run(root, '--all', '--quick')\n        assert 'Proofs another operating system owns:' in output\n        assert 'feat PROOF-2: needs %s' % other in output\n        assert code == 0, output",
+      "file": "dev/test_run_script.py",
+      "findings": [
+        "tautology"
+      ],
+      "name": "test_a_foreign_env_proof_is_not_reported_missing",
+      "proof": "PROOF-10",
+      "reasons": [
+        "tautological assertion (assert True or equivalent)"
+      ]
+    },
+    {
+      "body": "def test_a_foreign_env_proof_is_listed_as_needing_its_os(self, tmp_path):\n        other = self._other_os()\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat', proofs=(('PROOF-1', 'RULE-1', ''),\n                                    ('PROOF-2', 'RULE-1', ' @env(%s)' % other)))\n        code, output = _run(root, '--all', '--quick')\n        assert 'Proofs another operating system owns:' in output\n        assert 'feat PROOF-2: needs %s' % other in output\n        assert code == 0, output",
+      "file": "dev/test_run_script.py",
+      "findings": [
+        "tautology"
+      ],
+      "name": "test_an_env_proof_for_this_os_is_run_normally",
+      "proof": "PROOF-10",
+      "reasons": [
+        "tautological assertion (assert True or equivalent)"
+      ]
+    }
+  ],
+  "triple_hash": "c890674776d90e57675e8dd72c02adc3c877b87766dc80b4b78f7c9b81afcd5b",
+  "verdict": "needs a human"
+}

@@ -1,0 +1,86 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-14T16:41:07Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "d298fa7363d36a6876d4ebc546c13b606501e5881d250d48e552920feae996d6",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "implementation_coupling",
+        "happy_path_only"
+      ],
+      "id": "PROOF-19",
+      "text": "Verify `_update_pending` is true for the v0.9.5 fixture and false once the update has run; verify `sync_status` on the 0.10 fixture contains `Run: purlin:init --update`, that it still does after the run once `.purlin/records/README.md` is deleted, and that it does not once nothing is pending",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-19 implementation_coupling: Names a private symbol, a selector or a path instead of an observable outcome, so a refactor breaks the proof without changing behaviour.",
+    "PROOF-19 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/update/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-19",
+  "rule_hash": "3d5cf1d8d1f02784d72001d9f056d672e0c6cb930f293d5a9552bd16c51a7666",
+  "rule_text": "`sync_status` prints the directive to run the update while anything is pending, including when the config alone is already clean, and stops printing it once nothing is",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "5c315bb363847ef28bba5c1d799440ac0823fcb41b4f52360e09a70615d27f59",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_pending_is_true_for_a_project_that_has_not_updated(tmp_path):\n    root = _project(tmp_path, V095)\n    assert status_module._update_pending(root) is True",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_pending_is_false_once_the_update_has_run",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": "def test_pending_is_true_for_a_project_that_has_not_updated(tmp_path):\n    root = _project(tmp_path, V095)\n    assert status_module._update_pending(root) is True",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_pending_is_true_for_a_project_that_has_not_updated",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": "def test_pending_is_true_for_a_project_that_has_not_updated(tmp_path):\n    root = _project(tmp_path, V095)\n    assert status_module._update_pending(root) is True",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_status_says_it_even_when_the_config_is_already_clean",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": "def test_pending_is_true_for_a_project_that_has_not_updated(tmp_path):\n    root = _project(tmp_path, V095)\n    assert status_module._update_pending(root) is True",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_status_says_run_the_update_while_something_is_pending",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": "def test_pending_is_true_for_a_project_that_has_not_updated(tmp_path):\n    root = _project(tmp_path, V095)\n    assert status_module._update_pending(root) is True",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_status_stops_saying_it_once_nothing_is_pending",
+      "proof": "PROOF-19",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "640d28ad7a4f21cb868da5437d093e24f7f89d3eb18f10c9f510bc0e5b5bb36b",
+  "verdict": "add a case"
+}

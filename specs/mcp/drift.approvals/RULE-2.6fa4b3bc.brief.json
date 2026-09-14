@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "drift",
+  "generated_at": "2026-09-14T16:40:27Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "6f8acd5c98c58ebd2667cff5d673817a07d5cb6babeb08b6b26b0e8764359c58",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-3",
+      "text": "Build three repositories. In the first, commit a file under `.purlin/records/`; call the anchor resolver with no argument and verify the ref is that commit's sha and the description opens `last record`. In the second, commit no record, tag `v1.0.0` and commit once more; verify the ref is `v1.0.0`. In the third, commit `.purlin/config.json` first and 2 commits after it; verify the ref is that first commit with the description `since purlin:init (2 commits)`, then add 30 more commits and verify no ref comes back and the answer is the recommendation `spec-from-code`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-3 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/drift/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-2",
+  "rule_hash": "b16e7e1026bde685cf01d4dd577eab60cbdb6754c7b7129df4a173196721007c",
+  "rule_text": "With no argument the anchor is the last commit touching `.purlin/records/`, then the most recent tag, then the commit that added `.purlin/config.json`; a project with no verification history and 30 commits or more gets a `spec-from-code` recommendation instead of a diff of everything",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "cf442f8154ee636432bad260df8f7fb1a39bff84b8bbdee89d9e180510b53f41",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_anchor_walks_the_record_then_the_tag_then_the_setup_commit(\n            self, tmp_path):\n        with_record = _new_repo(str(tmp_path / 'with_record'))\n        _write(os.path.join(with_record, '.purlin', 'records', 'thing',\n                            '20260913T120000Z-abc1234-ci.json'), '{}')\n        _commit(with_record, 'purlin: record for abc1234')\n        record_sha = _git(['rev-parse', 'HEAD'], with_record).stdout.strip()\n        ref, description = purlin_drift.resolve_since(with_record)\n        assert ref == record_sha, (ref, record_sha)\n        assert description.startswith('last record'), description\n\n        with_tag = _new_repo(str(tmp_path / 'with_tag'))\n        _git(['tag', 'v1.0.0'], with_tag)\n        _write(os.path.join(with_tag, 'a.txt'), 'a\\n')\n        _commit(with_tag, 'chore: after the tag')\n        ref, description = purlin_drift.resolve_since(with_tag)\n        assert ref == 'v1.0.0', (ref, description)\n        assert description.startswith('v1.0.0 ('), description\n\n        fresh = _new_repo(str(tmp_path / 'fresh'))\n        init_sha = _git(['rev-parse', 'HEAD'], fresh).stdout.strip()\n        for index in range(2):\n            _write(os.path.join(fresh, 'f%d.txt' % index), str(index))\n            _commit(fresh, 'chore: commit %d' % index)\n        ref, description = purlin_drift.resolve_since(fresh)\n        assert ref == init_sha, (ref, init_sha)\n        assert description == 'since purlin:init (2 commits)', description\n\n        for index in range(2, 32):\n            _write(os.path.join(fresh, 'f%d.txt' % index), str(index))\n            _commit(fresh, 'chore: commit %d' % index)\n        ref, payload = purlin_drift.resolve_since(fresh)\n        assert ref is None, ref\n        assert json.loads(payload)['recommendation'] == 'spec-from-code', payload",
+      "file": "dev/test_drift.py",
+      "findings": [],
+      "name": "test_the_anchor_walks_the_record_then_the_tag_then_the_setup_commit",
+      "proof": "PROOF-3",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "6fa4b3bc9f246872f3dfd588b9daf20d5a1713df1fca2f1215c715ab56d6fc8f",
+  "verdict": "add a case"
+}

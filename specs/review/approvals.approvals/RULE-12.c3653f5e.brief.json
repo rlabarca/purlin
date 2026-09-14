@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "approvals",
+  "generated_at": "2026-09-14T16:40:24Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "fae42bd0991b161af6942b9646f9807a6850b18ccda49054ffb94f575145429d",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-16",
+      "text": "Run the auto-approval over the same project; verify no path written names `RULE-2`, the high-risk rule",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-16 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/approvals/20260914T164015Z-c6d2880-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-12",
+  "rule_hash": "1ec8f1a9d7a1d52c6f57a1fdcd5d4c17dcebef4fa7e1547f3ffc5ed2993a5962",
+  "rule_text": "CI never auto-approves a rule tagged `[risk: high]` or `[risk: medium]`",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "240e8edd8bcf093a2134eabbfbac60e5462787d720a82cf80ec37c746e331aa7",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_high_risk_is_never_auto_approved(self, proved):\n        written = approve_module.auto_approve(proved.root)\n        assert [path for path in written if 'RULE-2' in path] == [], (\n            'RULE-2 is high risk and needs a person')",
+      "file": "dev/test_approvals.py",
+      "findings": [],
+      "name": "test_high_risk_is_never_auto_approved",
+      "proof": "PROOF-16",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "c3653f5ef3d0cecc8c01ddfbe14bfada60b72c45d50c5f719928dceee3dc0498",
+  "verdict": "add a case"
+}

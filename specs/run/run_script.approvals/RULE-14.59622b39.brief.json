@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-14T16:40:41Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "6737057c4a0beb8ba0829fa9bff60798886a1d10495f90d6835fe47fb36354c0",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-14",
+      "text": "Write `.purlin/runtime/attachments/feat/PROOF-1.png` and run `--all --record`; verify RULE-1 carries one attachment whose `proof` is `PROOF-1`, whose `sha256` is 64 characters and whose `artifact` ends `feat/PROOF-1.png`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-14 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/run_script/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-14",
+  "rule_hash": "b62abfbc5b05100d2927d968c0a3a81a996598ff25f18c5440943627f0ffe67a",
+  "rule_text": "A capture a test wrote under `.purlin/runtime/attachments/<feature>/<PROOF-N>.<ext>` is hashed into the record beside the rule its proof belongs to",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "409371affc9b316971964ee2401511a1af9a7a35835991e3f82adb82cb0cb896",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_attachments_are_hashed_into_the_record(\n            self, tmp_path, record_run, capsys):\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat')\n        capture = root / '.purlin' / 'runtime' / 'attachments' / 'feat'\n        capture.mkdir(parents=True)\n        (capture / 'PROOF-1.png').write_bytes(b'not really a png')\n        _code, calls = record_run(root, '--all')\n        capsys.readouterr()\n        rule = calls['write'][0][0]['features']['feat']['rules']['RULE-1']\n        assert len(rule['attachments']) == 1\n        attachment = rule['attachments'][0]\n        assert attachment['proof'] == 'PROOF-1'\n        assert len(attachment['sha256']) == 64\n        assert attachment['artifact'].endswith('feat/PROOF-1.png')",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_attachments_are_hashed_into_the_record",
+      "proof": "PROOF-14",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "59622b39b35ce8a43cdc7725a7b925f74b2825246d045bead28bc63167d4bfe8",
+  "verdict": "add a case"
+}

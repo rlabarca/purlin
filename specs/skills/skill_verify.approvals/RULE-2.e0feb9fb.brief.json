@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_verify",
+  "generated_at": "2026-09-14T16:40:53Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "51fb480c2533cf91e6a74c3630f3ff357d6983a471e6602f656e9b911bc74fee",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-2",
+      "text": "Read `skills/verify/SKILL.md`; verify it carries the literal `\"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py\"` with `--record` and `--commit` on the same line, and one further sentence naming `--ci` and saying it is never passed by hand. Removing that sentence fails naming it",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/skill_verify/20260914T164016Z-c6d2880-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-2",
+  "rule_hash": "7dad8d5904cfea26c1ad7c8b20ad7c874c57cebc16751ef3bb4cfadc0d02da0c",
+  "rule_text": "The skill runs `scripts/run/purlin_run.py` inside `${CLAUDE_PLUGIN_ROOT}` with `--record` and `--commit`, and states that `--ci` is CI's flag and is never passed by hand",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "6b094d37629f8ea9805d8ab6336a48aa775e0fbc980d297b86a687222e5e0504",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_runs_the_run_script_and_leaves_ci_to_ci(self):\n        rel = skill_path('verify')\n        assert (same_line(rel, [\n            '\"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py\"',\n            '--record', '--commit'])\n            + carries(rel, ['You never pass `--ci` by hand.'])) == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_it_runs_the_run_script_and_leaves_ci_to_ci",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "e0feb9fb1649ef6dcc7679319faad9dc48f6f4b1746a50a349301a53372b4e2c",
+  "verdict": "ready"
+}
