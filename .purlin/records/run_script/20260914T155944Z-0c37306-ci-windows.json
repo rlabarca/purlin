@@ -1,0 +1,1441 @@
+{
+  "commit": "0c3730641fe36c7f99f00cee68c3020c2e36450d",
+  "dirty": true,
+  "environment": {
+    "engines": [
+      "none"
+    ],
+    "host": "GitHub Actions 1000000085",
+    "id": "windows",
+    "job": "verify",
+    "kind": "ci",
+    "os": "windows"
+  },
+  "feature": "run_script",
+  "features": {
+    "run_script": {
+      "rules": {
+        "RULE-1": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-1"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_bad_invocation_exits_two[args0]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_bad_invocation_exits_two[args1]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_bad_invocation_exits_two[args2]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_bad_invocation_exits_two[args3]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_bad_invocation_exits_two[args4]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_bad_invocation_exits_two[args5]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_bad_invocation_exits_two[args6]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_bad_invocation_exits_two[args7]",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-10": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-10"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_a_foreign_env_proof_is_listed_as_needing_its_os",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_a_foreign_env_proof_is_not_reported_missing",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_an_env_proof_for_this_os_is_run_normally",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-11": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-11"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_a_project_with_no_specs_says_so",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_the_table_and_one_next_step_are_printed",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-12": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-12"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_the_record_carries_every_field_the_design_lists",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-13": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-13"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_a_rule_carries_its_proofs_tests_result_and_strength",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_a_rule_with_no_evidence_is_listed_as_missing",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-14": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-14"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_attachments_are_hashed_into_the_record",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-15": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-15"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_the_log_is_written_and_hashed",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-16": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-16"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_the_breaks_are_asked_for_the_scope_and_the_tests",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-17": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-17"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_ci_passes_the_ci_identity_and_the_ci_runner_slug",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_commit_passes_the_developer_identity",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_tag_names_the_record_it_vouches_for",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_without_commit_nothing_is_committed",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-18": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-18"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_missing_break_engines_are_reported_and_the_run_continues",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-19": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-19"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_node_modules_is_not_scanned",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_one_marker_is_found[jest-a.test.js-it(\"does [proof:feat:PROOF-1:RULE-1:unit]\", () => {});]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_one_marker_is_found[pytest-test_a.py-@pytest.mark.proof(\"feat\", \"PROOF-1\", \"RULE-1\")]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_one_marker_is_found[shell-a.test.sh-purlin_proof \"feat\" \"PROOF-1\" \"RULE-1\" pass \"x\"]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_one_marker_is_found[sql-test_a.sql--- @purlin feat PROOF-1 RULE-1 unit]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_one_marker_is_found[vitest-a.test.ts-it(\"does [proof:feat:PROOF-1:RULE-1]\", () => {});]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_one_marker_is_found[xunit-A.cs-[Trait(\"PurlinProof\", \"feat:PROOF-1:RULE-1:unit\")]]",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-2": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-2"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_a_missing_project_root_exits_two",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_an_unknown_feature_exits_two",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-20": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-20"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_a_rule_falls_back_to_tested_when_the_scope_changed",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_verify_then_sync_status_shows_the_rule_recorded",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-21": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-21"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_the_answer_is_one_of_the_three_env_names",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-22": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-22"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_no_retired_word_and_no_emoji",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-3": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-3"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_pytest_arm_writes_the_runtime_proof_file",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_the_proof_file_is_not_written_under_specs",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-36": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-45"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_plugin_contract.py",
+              "name": "test_every_shipped_framework_has_a_marker_section",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_plugin_contract.py",
+              "name": "test_the_format_carries_no_run_marker_section",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_plugin_contract.py",
+              "name": "test_the_format_names_the_runtime_location_and_the_seven_fields",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_plugin_contract.py",
+              "name": "test_the_retired_fields_are_listed_as_retired",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-37": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-46"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_multilang_proof_plugins.py",
+              "name": "test_the_dropped_languages_have_no_plugin",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_plugin_contract.py",
+              "name": "test_every_row_carries_a_runner_setup_cell",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_plugin_contract.py",
+              "name": "test_shell_is_the_one_language_with_no_extractor",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_plugin_contract.py",
+              "name": "test_the_reference_lists_the_six_shipped_frameworks",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-38": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-47",
+            "PROOF-56"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_proof_plugins_missing.py",
+              "name": "test_shell_entries_cleared_after_finish",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_proof_plugins_missing.py",
+              "name": "test_shell_finish_with_nothing_buffered_writes_nothing",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_proof_plugins_missing.py",
+              "name": "test_shell_proof_not_written_before_finish",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-39": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-57"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_a_cp1252_console_gets_the_glyphs_and_no_traceback",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-4": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-4"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_shell_arm_runs_the_root_test_scripts",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-40": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-58",
+            "PROOF-59"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_a_failing_arm_prints_its_tail_before_the_missing_evidence",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_an_arm_that_passed_prints_no_tail",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_ci_publishes_each_arms_whole_output",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-41": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-60"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_an_empty_project_root_exits_2_and_runs_nothing",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-5": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-5"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_a_failing_test_exits_one_and_records_the_failure",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-6": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-6"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_the_run_starts_from_an_empty_proof_directory",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-7": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-7"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_an_arm_that_wrote_nothing_is_named",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_an_arm_with_no_markers_is_not_a_failure",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-8": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-8"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_a_marker_with_no_entry_is_named",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_the_list_is_bounded_and_counted",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-9": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-9"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_run_script.py",
+              "name": "test_a_marker_for_an_unselected_feature_is_not_named",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        }
+      },
+      "scope_score": {
+        "killed": 0,
+        "score": null,
+        "survived": 0
+      },
+      "spec": "specs/run/run_script.md"
+    }
+  },
+  "gate": "approved",
+  "log": {
+    "path": ".purlin/runtime/run.log",
+    "sha256": "894bf4d25e4219fd98d4b62e3e4a05f596b2e32135e2cf9fe924837649bc8ea7"
+  },
+  "missing": [],
+  "os": "windows",
+  "plugins": [
+    "pytest",
+    "shell"
+  ],
+  "proofs": [
+    {
+      "env": null,
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_bad_invocation_exits_two[args0]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_bad_invocation_exits_two[args1]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_bad_invocation_exits_two[args2]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_bad_invocation_exits_two[args3]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_bad_invocation_exits_two[args4]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_bad_invocation_exits_two[args5]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_bad_invocation_exits_two[args6]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_bad_invocation_exits_two[args7]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_a_missing_project_root_exits_two",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_an_unknown_feature_exits_two",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_pytest_arm_writes_the_runtime_proof_file",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_the_proof_file_is_not_written_under_specs",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_shell_arm_runs_the_root_test_scripts",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_a_failing_test_exits_one_and_records_the_failure",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_the_run_starts_from_an_empty_proof_directory",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_an_arm_that_wrote_nothing_is_named",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_an_arm_with_no_markers_is_not_a_failure",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_a_marker_with_no_entry_is_named",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_the_list_is_bounded_and_counted",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_a_marker_for_an_unselected_feature_is_not_named",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_a_foreign_env_proof_is_listed_as_needing_its_os",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_a_foreign_env_proof_is_not_reported_missing",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_an_env_proof_for_this_os_is_run_normally",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_a_project_with_no_specs_says_so",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_the_table_and_one_next_step_are_printed",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_the_record_carries_every_field_the_design_lists",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_a_rule_carries_its_proofs_tests_result_and_strength",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_a_rule_with_no_evidence_is_listed_as_missing",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_attachments_are_hashed_into_the_record",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_the_log_is_written_and_hashed",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_the_breaks_are_asked_for_the_scope_and_the_tests",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-17",
+      "rule": "RULE-17",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_ci_passes_the_ci_identity_and_the_ci_runner_slug",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-17",
+      "rule": "RULE-17",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_commit_passes_the_developer_identity",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-17",
+      "rule": "RULE-17",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_tag_names_the_record_it_vouches_for",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-17",
+      "rule": "RULE-17",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_without_commit_nothing_is_committed",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-18",
+      "rule": "RULE-18",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_missing_break_engines_are_reported_and_the_run_continues",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_node_modules_is_not_scanned",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_one_marker_is_found[jest-a.test.js-it(\"does [proof:feat:PROOF-1:RULE-1:unit]\", () => {});]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_one_marker_is_found[pytest-test_a.py-@pytest.mark.proof(\"feat\", \"PROOF-1\", \"RULE-1\")]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_one_marker_is_found[shell-a.test.sh-purlin_proof \"feat\" \"PROOF-1\" \"RULE-1\" pass \"x\"]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_one_marker_is_found[sql-test_a.sql--- @purlin feat PROOF-1 RULE-1 unit]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_one_marker_is_found[vitest-a.test.ts-it(\"does [proof:feat:PROOF-1:RULE-1]\", () => {});]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_one_marker_is_found[xunit-A.cs-[Trait(\"PurlinProof\", \"feat:PROOF-1:RULE-1:unit\")]]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-20",
+      "rule": "RULE-20",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_a_rule_falls_back_to_tested_when_the_scope_changed",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-20",
+      "rule": "RULE-20",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_verify_then_sync_status_shows_the_rule_recorded",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-21",
+      "rule": "RULE-21",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_the_answer_is_one_of_the_three_env_names",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-22",
+      "rule": "RULE-22",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_no_retired_word_and_no_emoji",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-45",
+      "rule": "RULE-36",
+      "status": "pass",
+      "test_file": "dev/test_plugin_contract.py",
+      "test_name": "test_every_shipped_framework_has_a_marker_section",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-45",
+      "rule": "RULE-36",
+      "status": "pass",
+      "test_file": "dev/test_plugin_contract.py",
+      "test_name": "test_the_format_carries_no_run_marker_section",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-45",
+      "rule": "RULE-36",
+      "status": "pass",
+      "test_file": "dev/test_plugin_contract.py",
+      "test_name": "test_the_format_names_the_runtime_location_and_the_seven_fields",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-45",
+      "rule": "RULE-36",
+      "status": "pass",
+      "test_file": "dev/test_plugin_contract.py",
+      "test_name": "test_the_retired_fields_are_listed_as_retired",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-46",
+      "rule": "RULE-37",
+      "status": "pass",
+      "test_file": "dev/test_multilang_proof_plugins.py",
+      "test_name": "test_the_dropped_languages_have_no_plugin",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-46",
+      "rule": "RULE-37",
+      "status": "pass",
+      "test_file": "dev/test_plugin_contract.py",
+      "test_name": "test_every_row_carries_a_runner_setup_cell",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-46",
+      "rule": "RULE-37",
+      "status": "pass",
+      "test_file": "dev/test_plugin_contract.py",
+      "test_name": "test_shell_is_the_one_language_with_no_extractor",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-46",
+      "rule": "RULE-37",
+      "status": "pass",
+      "test_file": "dev/test_plugin_contract.py",
+      "test_name": "test_the_reference_lists_the_six_shipped_frameworks",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-47",
+      "rule": "RULE-38",
+      "status": "pass",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_shell_entries_cleared_after_finish",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-47",
+      "rule": "RULE-38",
+      "status": "pass",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_shell_finish_with_nothing_buffered_writes_nothing",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-47",
+      "rule": "RULE-38",
+      "status": "pass",
+      "test_file": "dev/test_proof_plugins_missing.py",
+      "test_name": "test_shell_proof_not_written_before_finish",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-57",
+      "rule": "RULE-39",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_a_cp1252_console_gets_the_glyphs_and_no_traceback",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-58",
+      "rule": "RULE-40",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_a_failing_arm_prints_its_tail_before_the_missing_evidence",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-58",
+      "rule": "RULE-40",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_an_arm_that_passed_prints_no_tail",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-59",
+      "rule": "RULE-40",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_ci_publishes_each_arms_whole_output",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-60",
+      "rule": "RULE-41",
+      "status": "pass",
+      "test_file": "dev/test_run_script.py",
+      "test_name": "test_an_empty_project_root_exits_2_and_runs_nothing",
+      "tier": "unit"
+    }
+  ],
+  "runner": "ci",
+  "schema": "purlin-record/1",
+  "schema_version": 1,
+  "scope_tree": "bf16732b8925e86c429f6d10b7f910917c33d1c4af262a6ac6fd15a6dffac334",
+  "test_strength": null,
+  "timestamp": "2026-09-14T15:59:44Z"
+}
