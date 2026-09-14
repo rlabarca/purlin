@@ -99,8 +99,15 @@ def _write(path, text):
 
 
 def _bare(path):
-    subprocess.run(['git', 'init', '--bare', '-q', path], check=True,
-                   capture_output=True)
+    """A bare repository whose HEAD names the branch `_publish` pushes.
+
+    The default branch a machine's git config asks for is not this fixture's
+    business: without `-c init.defaultBranch=main` a runner configured for
+    `master` leaves HEAD pointing at a branch nothing ever creates, and every
+    clone of the repository then checks out nothing at all.
+    """
+    subprocess.run(['git', '-c', 'init.defaultBranch=main', 'init', '--bare',
+                    '-q', path], check=True, capture_output=True)
     return path
 
 

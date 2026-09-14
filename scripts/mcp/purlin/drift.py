@@ -137,10 +137,17 @@ def check_pin(project_root, source_url, pinned, cache=None):
     return {'status': 'behind', 'remote_sha': remote_sha}
 
 
+# An absolute path on Windows: a drive letter, or a UNC share. Neither begins
+# with a slash, so the POSIX test below sees them as free text and an anchor
+# sourced from a local clone is never checked on that operating system.
+_ABSOLUTE_WINDOWS_PATH = re.compile(r'^(?:[A-Za-z]:[\\/]|\\\\[^\\/])')
+
+
 def _looks_like_git(url):
     return (url.startswith('git@') or url.endswith('.git')
             or 'github.com' in url or 'gitlab.com' in url
-            or url.startswith('/') or url.startswith('.'))
+            or url.startswith('/') or url.startswith('.')
+            or bool(_ABSOLUTE_WINDOWS_PATH.match(url)))
 
 
 def _ls_remote(project_root, url):

@@ -4,6 +4,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -23,6 +24,21 @@ def _git(args, cwd, check=True):
         text=True,
         check=check,
     )
+
+
+def _rmtree(path):
+    """Remove a tree that holds a git repository, on every operating system.
+
+    Git marks loose objects and packs read-only. A read-only file inside a
+    writable directory still unlinks on POSIX; on Windows it does not, and the
+    removal raises PermissionError. Clearing the bit and retrying once is the
+    whole difference.
+    """
+    def _retry(func, failed, _exc_info):
+        os.chmod(failed, stat.S_IWRITE)
+        func(failed)
+
+    shutil.rmtree(path, onerror=_retry)
 
 
 def _create_bare_repo(bare_path, initial_file='spec.md', initial_content='# initial'):
@@ -46,7 +62,7 @@ def _create_bare_repo(bare_path, initial_file='spec.md', initial_content='# init
         subprocess.run(['git', 'push', '-q', 'origin', 'master'],
                        cwd=work_dir, capture_output=True, check=True)
     sha = _git(['rev-parse', 'HEAD'], work_dir).stdout.strip()
-    shutil.rmtree(work_dir)
+    _rmtree(work_dir)
     return sha
 
 
@@ -67,7 +83,7 @@ def _advance_bare_repo(bare_path, file_path='spec.md', new_content='# updated'):
         subprocess.run(['git', 'push', '-q', 'origin', 'master'],
                        cwd=work_dir, capture_output=True, check=True)
     sha = _git(['rev-parse', 'HEAD'], work_dir).stdout.strip()
-    shutil.rmtree(work_dir)
+    _rmtree(work_dir)
     return sha
 
 

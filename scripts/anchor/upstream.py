@@ -43,6 +43,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 
@@ -78,10 +79,30 @@ _CLONE_TIMEOUT = 120
 # git
 # ---------------------------------------------------------------------------
 
+def _rmtree(path):
+    """Remove a fetched checkout on every operating system.
+
+    Git marks loose objects and packs read-only. A read-only file inside a
+    writable directory still unlinks on POSIX; on Windows it does not, and the
+    directory survives the removal, so the next clone into it fails on a
+    destination that already exists. Clearing the bit and retrying once is the
+    whole difference. A path that is not there at all is not an error.
+    """
+    def _retry(func, failed, _exc_info):
+        try:
+            os.chmod(failed, stat.S_IWRITE)
+            func(failed)
+        except OSError:
+            pass
+
+    shutil.rmtree(path, onerror=_retry)
+
+
 def _git(args, cwd=None, timeout=30):
     """`(returncode, stdout, stderr)` for one git command."""
     try:
-        result = subprocess.run(['git'] + args, capture_output=True, text=True,
+        result = subprocess.run(['git'] + args, capture_output=True,
+                                encoding='utf-8', errors='replace',
                                 cwd=cwd or '.', timeout=timeout)
     except subprocess.TimeoutExpired:
         return 1, '', 'timed out'
@@ -121,7 +142,7 @@ def fetch_source(project_root, url, sha=None):
         return None, None, 'source rejected: %s' % reason
     target = os.path.join(project_root, RUNTIME_DIR,
                           _checkout_name(url) + '.src')
-    shutil.rmtree(target, ignore_errors=True)
+    _rmtree(target)
     os.makedirs(os.path.dirname(target), exist_ok=True)
     args = ['clone', '--quiet']
     if sha is None:
