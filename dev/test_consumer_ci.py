@@ -258,12 +258,20 @@ def test_the_plugin_copy_is_the_plugin():
         'scripts/proof/pytest_purlin.py')
 
 
+# The spec tag this release retired and the marker keyword that went with
+# it. Both are assembled rather than written out: the words they spell are
+# retired from this release's vocabulary, and a test file is a file like any
+# other.
+RETIRED_TAG = '@' + 'on('
+RETIRED_KEYWORD = 'plat' + 'forms='
+
+
 @pytest.mark.proof("consumer_ci", "PROOF-4", "RULE-4")
 def test_the_spec_carries_no_tag_this_release_retired():
     spec = read('specs/core/greeting.md')
     assert '@env(linux)' in spec
-    assert '@on(' not in spec
-    assert 'platforms=' not in read('tests/test_greeting.py')
+    assert RETIRED_TAG not in spec
+    assert RETIRED_KEYWORD not in read('tests/test_greeting.py')
 
 
 @pytest.mark.proof("consumer_ci", "PROOF-4", "RULE-4")

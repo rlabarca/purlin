@@ -80,7 +80,7 @@ if [[ ! -f "$WORK/$WORKFLOW_REL" ]]; then
   exit 1
 fi
 STEPS="$(grep -E '^      - (name|uses): ' "$WORK/$WORKFLOW_REL" \
-         | sed 's/^      - \(name\|uses\): //')"
+         | sed -E 's/^ *- (name|uses): //')"
 printf '%s\n' "$STEPS" | sed 's/^/  step: /'
 pass "$(printf '%s\n' "$STEPS" | wc -l | tr -d ' ') steps"
 

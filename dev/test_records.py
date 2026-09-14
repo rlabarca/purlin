@@ -17,6 +17,9 @@ What each group proves:
               field, retried when the branch moved under the run
 *labels*      `ci` for a signed commit by the git host's build identity,
               `developer` for a person's, `local` for a file not committed
+*publishing*  what a CI run puts where anyone else can read it: the pull
+              request comment and the dashboard artifact
+*remote*      `--remote` hands the run to the git host and brings it back
 """
 
 import json
@@ -35,7 +38,9 @@ ROOT = os.path.dirname(DEV)
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'run'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 
+import ci as ci_module  # noqa: E402
 import records as records_module  # noqa: E402
+import remote as remote_module  # noqa: E402
 from purlin import records as reader  # noqa: E402
 
 ACTIONS_BOT = 'github-actions[bot]'
@@ -695,6 +700,132 @@ def test_a_matrix_keeps_one_latest_record_per_operating_system(project):
         records_module.write_record(project, record(), 'ci', name)
     loaded = records_module.load_records(project)['greeting']
     assert sorted(k for k in loaded) == ['linux', 'windows']
+
+
+# ---------------------------------------------------------------------------
+# What a CI run publishes
+# ---------------------------------------------------------------------------
+
+@pytest.mark.proof("records", "PROOF-10", "RULE-10")
+def test_the_comment_goes_to_the_pull_request_this_run_belongs_to(
+        project, github_env, monkeypatch, tmp_path):
+    event = tmp_path / 'event.json'
+    with open(str(event), 'w', encoding='utf-8') as handle:
+        json.dump({'pull_request': {'number': 12,
+                                    'head': {'repo': {'fork': False}}}}, handle)
+    monkeypatch.setenv('GITHUB_EVENT_PATH', str(event))
+    sent = []
+
+    def urlopen(request, timeout=None):
+        sent.append((request.full_url,
+                     json.loads(request.data.decode('utf-8'))))
+        return Response({})
+
+    monkeypatch.setattr(urllib.request, 'urlopen', urlopen)
+
+    assert ci_module.post_pr_comment(project, 'Purlin: 2 rules Recorded.')
+    url, body = sent[0]
+    assert url.endswith('/repos/acme/widgets/issues/12/comments')
+    assert body == {'body': 'Purlin: 2 rules Recorded.'}
+
+
+@pytest.mark.proof("records", "PROOF-10", "RULE-10")
+def test_a_run_that_is_not_a_pull_request_posts_nothing(project, github_env,
+                                                        capsys):
+    assert ci_module.post_pr_comment(project, 'anything') is False
+    assert 'not a pull request' in capsys.readouterr().out
+
+
+@pytest.mark.proof("records", "PROOF-10", "RULE-10")
+def test_a_local_run_posts_nothing_and_is_not_an_error(project, monkeypatch,
+                                                       capsys):
+    monkeypatch.delenv('GITHUB_REPOSITORY', raising=False)
+    monkeypatch.delenv('SYSTEM_TEAMFOUNDATIONCOLLECTIONURI', raising=False)
+    assert ci_module.post_pr_comment(project, 'anything') is False
+    assert 'Not running on a git host' in capsys.readouterr().out
+
+
+@pytest.mark.proof("records", "PROOF-10", "RULE-10")
+def test_a_refused_comment_is_reported_rather_than_raised(project, github_env,
+                                                          monkeypatch,
+                                                          tmp_path, capsys):
+    event = tmp_path / 'event.json'
+    with open(str(event), 'w', encoding='utf-8') as handle:
+        json.dump({'pull_request': {'number': 3, 'head': {'repo': {}}}}, handle)
+    monkeypatch.setenv('GITHUB_EVENT_PATH', str(event))
+
+    def refuse(request, timeout=None):
+        raise urllib.error.HTTPError(request.full_url, 403, 'Forbidden', {},
+                                     None)
+
+    monkeypatch.setattr(urllib.request, 'urlopen', refuse)
+    assert ci_module.post_pr_comment(project, 'anything') is False
+    assert 'The comment was not posted' in capsys.readouterr().out
+
+
+@pytest.mark.proof("records", "PROOF-11", "RULE-11")
+def test_the_artifact_carries_the_page_and_the_data(project, tmp_path):
+    data = os.path.join(project, ci_module.DATA_FILE)
+    os.makedirs(os.path.dirname(data))
+    with open(data, 'w', encoding='utf-8') as handle:
+        handle.write('const PURLIN_DATA = {};\n')
+    out = str(tmp_path / 'artifact')
+
+    assert ci_module.publish_dashboard(project, out) == out
+    assert os.path.isfile(os.path.join(out, 'purlin-report.html'))
+    with open(os.path.join(out, '.purlin', 'report-data.js'),
+              encoding='utf-8') as handle:
+        assert handle.read() == 'const PURLIN_DATA = {};\n'
+
+
+@pytest.mark.proof("records", "PROOF-11", "RULE-11")
+def test_the_artifact_says_when_there_is_no_data_to_carry(project, tmp_path,
+                                                          capsys):
+    out = str(tmp_path / 'artifact')
+    ci_module.publish_dashboard(project, out)
+    assert 'No dashboard data' in capsys.readouterr().out
+    assert os.path.isdir(out)
+
+
+# ---------------------------------------------------------------------------
+# Handing the run to the git host
+# ---------------------------------------------------------------------------
+
+@pytest.mark.proof("records", "PROOF-12", "RULE-12")
+def test_the_git_host_is_read_from_the_remote(project):
+    git(project, 'remote', 'add', 'origin',
+        'https://dev.azure.com/acme/widgets/_git/widgets')
+    assert remote_module._host(project, None) == 'azure'
+    git(project, 'remote', 'set-url', 'origin',
+        'https://github.com/acme/widgets.git')
+    assert remote_module._host(project, None) == 'github'
+
+
+@pytest.mark.proof("records", "PROOF-12", "RULE-12")
+def test_the_azure_branch_prints_the_pipeline_and_returns(project, capsys):
+    url = 'https://dev.azure.com/acme/widgets/_git/widgets'
+    git(project, 'remote', 'add', 'origin', url)
+
+    assert remote_module._azure(project, 'main') == 0
+    printed = capsys.readouterr().out
+    assert 'Azure DevOps runs the pipeline for main' in printed
+    assert url in printed
+    assert 'git pull --ff-only' in printed
+
+
+@pytest.mark.proof("records", "PROOF-12", "RULE-12")
+def test_a_detached_head_has_nothing_to_push(project, capsys):
+    head = git(project, 'rev-parse', 'HEAD').stdout.strip()
+    git(project, 'checkout', '--quiet', head)
+    assert remote_module.run_remote(project) == 1
+    assert 'not on a branch' in capsys.readouterr().out
+
+
+@pytest.mark.proof("records", "PROOF-12", "RULE-12")
+def test_the_follow_up_for_azure_is_marked_in_the_source():
+    with open(os.path.join(ROOT, 'scripts', 'run', 'remote.py'),
+              encoding='utf-8') as handle:
+        assert 'TODO(ado-remote)' in handle.read()
 
 
 def teardown_module(module):
