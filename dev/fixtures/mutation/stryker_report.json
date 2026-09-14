@@ -1,0 +1,301 @@
+{
+  "files": {
+    "src/calc.js": {
+      "language": "javascript",
+      "mutants": [
+        {
+          "coveredBy": [
+            "0"
+          ],
+          "id": "0",
+          "killedBy": [
+            "0"
+          ],
+          "location": {
+            "end": {
+              "column": 37,
+              "line": 1
+            },
+            "start": {
+              "column": 20,
+              "line": 1
+            }
+          },
+          "mutatorName": "BlockStatement",
+          "replacement": "{}",
+          "static": false,
+          "status": "Killed"
+        },
+        {
+          "coveredBy": [
+            "0"
+          ],
+          "id": "1",
+          "killedBy": [
+            "0"
+          ],
+          "location": {
+            "end": {
+              "column": 34,
+              "line": 1
+            },
+            "start": {
+              "column": 29,
+              "line": 1
+            }
+          },
+          "mutatorName": "ArithmeticOperator",
+          "replacement": "a - b",
+          "static": false,
+          "status": "Killed"
+        },
+        {
+          "coveredBy": [
+            "1"
+          ],
+          "id": "2",
+          "killedBy": [
+            "1"
+          ],
+          "location": {
+            "end": {
+              "column": 91,
+              "line": 2
+            },
+            "start": {
+              "column": 31,
+              "line": 2
+            }
+          },
+          "mutatorName": "BlockStatement",
+          "replacement": "{}",
+          "static": false,
+          "status": "Killed"
+        },
+        {
+          "coveredBy": [
+            "1"
+          ],
+          "id": "3",
+          "killedBy": [
+            "1"
+          ],
+          "location": {
+            "end": {
+              "column": 47,
+              "line": 2
+            },
+            "start": {
+              "column": 37,
+              "line": 2
+            }
+          },
+          "mutatorName": "ConditionalExpression",
+          "replacement": "true",
+          "static": false,
+          "status": "Killed"
+        },
+        {
+          "coveredBy": [
+            "1"
+          ],
+          "id": "4",
+          "killedBy": [],
+          "location": {
+            "end": {
+              "column": 47,
+              "line": 2
+            },
+            "start": {
+              "column": 37,
+              "line": 2
+            }
+          },
+          "mutatorName": "ConditionalExpression",
+          "replacement": "false",
+          "static": false,
+          "status": "Survived"
+        },
+        {
+          "coveredBy": [
+            "1"
+          ],
+          "id": "5",
+          "killedBy": [],
+          "location": {
+            "end": {
+              "column": 47,
+              "line": 2
+            },
+            "start": {
+              "column": 37,
+              "line": 2
+            }
+          },
+          "mutatorName": "EqualityOperator",
+          "replacement": "value >= 10",
+          "static": false,
+          "status": "Survived"
+        },
+        {
+          "coveredBy": [
+            "1"
+          ],
+          "id": "6",
+          "killedBy": [
+            "1"
+          ],
+          "location": {
+            "end": {
+              "column": 47,
+              "line": 2
+            },
+            "start": {
+              "column": 37,
+              "line": 2
+            }
+          },
+          "mutatorName": "EqualityOperator",
+          "replacement": "value <= 10",
+          "static": false,
+          "status": "Killed"
+        },
+        {
+          "coveredBy": [],
+          "id": "7",
+          "killedBy": [],
+          "location": {
+            "end": {
+              "column": 75,
+              "line": 2
+            },
+            "start": {
+              "column": 49,
+              "line": 2
+            }
+          },
+          "mutatorName": "BlockStatement",
+          "replacement": "{}",
+          "static": false,
+          "status": "NoCoverage"
+        },
+        {
+          "coveredBy": [],
+          "id": "8",
+          "killedBy": [],
+          "location": {
+            "end": {
+              "column": 72,
+              "line": 2
+            },
+            "start": {
+              "column": 58,
+              "line": 2
+            }
+          },
+          "mutatorName": "ArithmeticOperator",
+          "replacement": "value / factor",
+          "static": false,
+          "status": "NoCoverage"
+        },
+        {
+          "coveredBy": [],
+          "id": "9",
+          "killedBy": [
+            "0",
+            "1"
+          ],
+          "location": {
+            "end": {
+              "column": 32,
+              "line": 3
+            },
+            "start": {
+              "column": 18,
+              "line": 3
+            }
+          },
+          "mutatorName": "ObjectLiteral",
+          "replacement": "{}",
+          "static": true,
+          "status": "Killed"
+        },
+        {
+          "coveredBy": [
+            "1"
+          ],
+          "id": "10",
+          "killedBy": [],
+          "location": {
+            "end": {
+              "column": 61,
+              "line": 2
+            },
+            "start": {
+              "column": 41,
+              "line": 2
+            }
+          },
+          "mutatorName": "ConditionalExpression",
+          "replacement": "while (true)",
+          "static": false,
+          "status": "Timeout"
+        },
+        {
+          "coveredBy": [
+            "0"
+          ],
+          "id": "11",
+          "killedBy": [],
+          "location": {
+            "end": {
+              "column": 61,
+              "line": 2
+            },
+            "start": {
+              "column": 41,
+              "line": 2
+            }
+          },
+          "mutatorName": "StringLiteral",
+          "replacement": "\"\"",
+          "static": false,
+          "status": "CompileError"
+        }
+      ],
+      "source": ""
+    }
+  },
+  "schemaVersion": "1.0",
+  "testFiles": {
+    "test/calc.test.js": {
+      "tests": [
+        {
+          "id": "0",
+          "location": {
+            "start": {
+              "column": 2,
+              "line": 2
+            }
+          },
+          "name": "adds two numbers [proof:calc:PROOF-1:RULE-1]"
+        },
+        {
+          "id": "1",
+          "location": {
+            "start": {
+              "column": 2,
+              "line": 3
+            }
+          },
+          "name": "leaves small values alone [proof:calc:PROOF-2:RULE-2]"
+        }
+      ]
+    }
+  },
+  "thresholds": {
+    "break": null,
+    "high": 80,
+    "low": 60
+  }
+}

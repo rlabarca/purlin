@@ -1,0 +1,9 @@
+    login.session.x_lock_account__mutmut_1: killed
+    login.session.x_lock_account__mutmut_2: killed
+    login.session.x_lock_account__mutmut_3: survived
+    login.session.x_unlock__mutmut_1: timeout
+    login.session.x_unlock__mutmut_2: no tests
+    login.session.Session.x_reset__mutmut_1: killed
+    reports.render.x_render__mutmut_1: survived
+    reports.render.x_render__mutmut_2: skipped
+    unrelated.tool.x_main__mutmut_1: survived

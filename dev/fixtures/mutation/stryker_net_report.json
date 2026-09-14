@@ -1,0 +1,109 @@
+{
+  "schemaVersion": "1.0",
+  "thresholds": {
+    "high": 80,
+    "low": 60
+  },
+  "files": {
+    "src/Login/Session.cs": {
+      "language": "cs",
+      "source": "",
+      "mutants": [
+        {
+          "id": "1",
+          "mutatorName": "Equality mutation",
+          "replacement": "attempts >= 5",
+          "location": {
+            "start": {"line": 12, "column": 13},
+            "end": {"line": 12, "column": 26}
+          },
+          "status": "Killed",
+          "static": false,
+          "coveredBy": ["T1"],
+          "killedBy": []
+        },
+        {
+          "id": "2",
+          "mutatorName": "Boolean mutation",
+          "replacement": "false",
+          "location": {
+            "start": {"line": 14, "column": 20},
+            "end": {"line": 14, "column": 24}
+          },
+          "status": "Killed",
+          "static": false,
+          "coveredBy": ["T1", "T2"],
+          "killedBy": []
+        },
+        {
+          "id": "3",
+          "mutatorName": "Arithmetic mutation",
+          "replacement": "attempts - 1",
+          "location": {
+            "start": {"line": 16, "column": 13},
+            "end": {"line": 16, "column": 25}
+          },
+          "status": "Survived",
+          "static": false,
+          "coveredBy": ["T2"],
+          "killedBy": []
+        },
+        {
+          "id": "4",
+          "mutatorName": "String mutation",
+          "replacement": "\"\"",
+          "location": {
+            "start": {"line": 20, "column": 20},
+            "end": {"line": 20, "column": 32}
+          },
+          "status": "NoCoverage",
+          "static": false,
+          "coveredBy": [],
+          "killedBy": []
+        },
+        {
+          "id": "5",
+          "mutatorName": "Linq mutation",
+          "replacement": "Last()",
+          "location": {
+            "start": {"line": 24, "column": 20},
+            "end": {"line": 24, "column": 27}
+          },
+          "status": "Timeout",
+          "static": false,
+          "coveredBy": ["T2"],
+          "killedBy": []
+        },
+        {
+          "id": "6",
+          "mutatorName": "Block removal",
+          "replacement": "{}",
+          "location": {
+            "start": {"line": 28, "column": 9},
+            "end": {"line": 30, "column": 10}
+          },
+          "status": "CompileError",
+          "static": false,
+          "coveredBy": [],
+          "killedBy": []
+        }
+      ]
+    }
+  },
+  "testFiles": {
+    "tests/Login/SessionTests.cs": {
+      "tests": [
+        {
+          "id": "T1",
+          "name": "LoginTests.LocksAfterFiveFailures [proof:login:PROOF-1:RULE-1]",
+          "location": {"start": {"line": 9, "column": 9}}
+        },
+        {
+          "id": "T2",
+          "name": "LoginTests.UnlocksAfterFifteenMinutes [proof:login:PROOF-2:RULE-2]",
+          "location": {"start": {"line": 21, "column": 9}}
+        }
+      ]
+    }
+  }
+}
