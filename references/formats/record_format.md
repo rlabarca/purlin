@@ -36,6 +36,14 @@ never collide and a matrix job never overwrites another job's observations.
   "gate": "recorded",
   "test_strength": 71,
   "scope_tree": "9f2c7a1e5b8d4c6f0a3e9b2d7c4f1a8e6b0d3c5f",
+  "environment": {
+    "os": "linux",
+    "id": "linux-x86_64",
+    "kind": "ci",
+    "job": "verify",
+    "host": "github-runner-3",
+    "engines": ["mutmut"]
+  },
   "proofs": [
     {
       "id": "PROOF-1",
@@ -64,7 +72,23 @@ REQUIRED: `schema_version`, `feature`, `commit`, `timestamp`, `runner`,
 | `gate` | string | `tested`, `recorded` or `approved`, the gate in force at the run |
 | `test_strength` | integer or null | of the deliberate breaks made to the code, the percentage the tests caught; null when no engine measured it |
 | `scope_tree` | string | the git tree hash of the spec's `> Scope:` files, which is what tells a code change from a rule change |
+| `environment` | object | where the run happened, described below |
 | `proofs` | array | one entry per proof the run observed |
+
+The `environment` object, and every field in it, is OPTIONAL:
+
+| Field | Type | What it holds |
+|---|---|---|
+| `os` | string | `windows`, `macos` or `linux`, matching the file name's `<os>` |
+| `id` | string | a short name for the machine's shape, such as `darwin-arm64` |
+| `kind` | string | `ci`, `developer` or `local`, what the run called itself |
+| `job` | string or null | the CI job the run was part of, or null off CI |
+| `host` | string or null | the runner or machine name |
+| `engines` | array | the break engines the run used, empty when none measured |
+
+`kind` is what the run called itself and is never the label. The label comes
+from the commit, as the next section says: a record claiming `kind` `ci` that a
+person committed is a `developer` record.
 
 Each `proofs` entry:
 

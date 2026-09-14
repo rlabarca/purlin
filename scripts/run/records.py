@@ -99,15 +99,17 @@ def write_record(project_root, record, runner, os_name=None):
 
     `record` is the `purlin-record/1` dict the run assembled. The file name
     carries the timestamp, the commit observed, the runner and the operating
-    system when the run was one job of a matrix; the record's own `runner`,
-    `timestamp` and `os` fields are set to match, so the file and its name
-    never disagree.
+    system when the run was one job of a matrix; the record's own `timestamp`
+    and `os` fields are set to match, so the file and its name never disagree.
+    The run already names the runner as the slug, so this fills it in only when
+    a caller handed over a record without one.
     """
     record = dict(record or {})
     feature = record.get('feature') or 'unknown'
     now = _utc_now()
     name = record_filename(record.get('commit'), runner, os_name, when=now)
-    record['runner'] = 'ci' if runner == 'ci' else reader.runner_slug(runner)
+    record.setdefault(
+        'runner', 'ci' if runner == 'ci' else reader.runner_slug(runner))
     record['os'] = os_name
     record['timestamp'] = now.strftime('%Y-%m-%dT%H:%M:%SZ')
 

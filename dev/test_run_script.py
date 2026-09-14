@@ -447,12 +447,13 @@ class TestRecordBuildsThePurlinRecord:
         assert set(record) >= {'commit', 'dirty', 'runner', 'timestamp',
                                'environment', 'plugins', 'missing', 'features',
                                'scope_tree', 'log'}
-        assert set(record['runner']) == {'id', 'kind', 'job', 'host'}
-        assert set(record['environment']) == {'os', 'id', 'engines'}
+        assert isinstance(record['runner'], str)
+        assert set(record['environment']) == {'os', 'id', 'kind', 'job',
+                                              'host', 'engines'}
         assert record['environment']['os'] in ('windows', 'macos', 'linux')
         assert os_name == record['environment']['os']
-        assert runner == record['runner']['id']
-        assert record['runner']['kind'] == 'local'
+        assert runner == record['runner']
+        assert record['environment']['kind'] == 'local'
         assert 'pytest' in record['plugins']
 
     def test_a_rule_carries_its_proofs_tests_result_and_strength(
@@ -537,7 +538,7 @@ class TestRecordCommitsAndTags:
         assert identity == 'developer'
         assert message.startswith('purlin: record for ')
         assert len(paths) == 1
-        assert calls['write'][0][0]['runner']['kind'] == 'developer'
+        assert calls['write'][0][0]['environment']['kind'] == 'developer'
 
     def test_ci_passes_the_ci_identity_and_the_ci_runner_slug(
             self, tmp_path, record_run, capsys):
@@ -546,10 +547,11 @@ class TestRecordCommitsAndTags:
         _code, calls = record_run(root, '--all', '--ci')
         output = capsys.readouterr().out
         assert calls['commit'][0][1] == 'ci'
-        assert calls['write'][0][0]['runner'] == dict(
-            calls['write'][0][0]['runner'], id='ci', kind='ci')
-        # Phase 3 owns auto-approval; until it lands the run says so and goes on.
-        assert 'auto-approval: not available (phase 3)' in output
+        assert calls['write'][0][0]['runner'] == 'ci'
+        assert calls['write'][0][0]['environment']['kind'] == 'ci'
+        # A CI run auto-approves what it may and writes the review list's
+        # briefs, and says how many of each in one line.
+        assert 'Auto-approved 0 low-risk rules; 0 briefs written.' in output
 
     def test_tag_names_the_record_it_vouches_for(
             self, tmp_path, record_run, capsys):

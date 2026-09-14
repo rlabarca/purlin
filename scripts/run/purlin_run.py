@@ -45,15 +45,16 @@ import sys
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _MCP_DIR = os.path.join(os.path.dirname(_HERE), 'mcp')
-for _path in (_MCP_DIR, _HERE):
+_REVIEW_DIR = os.path.join(os.path.dirname(_HERE), 'review')
+for _path in (_MCP_DIR, _REVIEW_DIR, _HERE):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
 from config_engine import resolve_config                      # noqa: E402
 from purlin import (frameworks as frameworks_module,          # noqa: E402
-                    gate as gate_module, proofs as proofs_module,
-                    records as records_module, specs as specs_module,
-                    status as status_module)
+                    gate as gate_module, payload as payload_module,
+                    proofs as proofs_module, records as records_module,
+                    specs as specs_module, status as status_module)
 
 ARROW = '→'
 RECORD_SCHEMA = 'purlin-record/1'
@@ -351,8 +352,13 @@ def clear_proofs(project_root):
 # ---------------------------------------------------------------------------
 
 def runner_identity(project_root, args):
-    """`(runner_dict, slug)` naming who this run was, without claiming who
-    wrote what: the label on a record comes from the commit, never the file."""
+    """`(slug, environment)` naming who this run was.
+
+    The slug is the record's `runner`, matching the file name, and the rest
+    goes under `environment`: what kind of run it was, which job it was, and
+    which machine. None of it claims who wrote the record, because the label on
+    a record comes from the commit and never from the file.
+    """
     kind = 'ci' if args.ci else ('developer' if args.commit else 'local')
     if args.ci:
         slug = 'ci'
@@ -361,7 +367,7 @@ def runner_identity(project_root, args):
     job = (os.environ.get('GITHUB_JOB')
            or os.environ.get('BUILD_DEFINITIONNAME') or None)
     host = os.environ.get('RUNNER_NAME') or _hostname()
-    return {'id': slug, 'kind': kind, 'job': job, 'host': host}, slug
+    return slug, {'kind': kind, 'job': job, 'host': host}
 
 
 def _hostname():
@@ -436,7 +442,7 @@ def attachments_for(project_root, feature, proof_ids):
 def build_record(project_root, args, features, selected, index, plugins,
                  breaks, log_digest):
     """The `purlin-record/1` dict, exactly as the design lists it."""
-    runner, _slug = runner_identity(project_root, args)
+    runner, environment = runner_identity(project_root, args)
     record = {
         'schema': RECORD_SCHEMA,
         # One record per feature: the record writer files it under
@@ -445,11 +451,17 @@ def build_record(project_root, args, features, selected, index, plugins,
         'feature': selected[0] if len(selected) == 1 else '',
         'commit': head_commit(project_root),
         'dirty': working_tree_dirty(project_root),
+        # The slug, the same string the file name carries. What kind of run it
+        # was, which job and which machine go under `environment`, so nothing
+        # here has to be rewritten by the writer to agree with the name.
         'runner': runner,
         'timestamp': _now_iso(),
         'environment': {
             'os': host_os(),
             'id': environment_id(),
+            'kind': environment['kind'],
+            'job': environment['job'],
+            'host': environment['host'],
             'engines': [breaks.get('engine')] if breaks.get('engine') else [],
         },
         'plugins': list(plugins),
@@ -682,7 +694,7 @@ def _record(project_root, args, features, selected, index, plugins, log):
         record = build_record(project_root, args, features, [name], index,
                               plugins, breaks, log_digest)
         head = record['commit']
-        path = write_record(project_root, record, record['runner']['id'],
+        path = write_record(project_root, record, record['runner'],
                             os_name=record['environment']['os'])
         paths.append(path)
         print('Record written: %s' % path)
@@ -724,10 +736,16 @@ def _ci_extras(project_root):
         from approve import auto_approve
         from brief import write_briefs
     except ImportError:
-        print('auto-approval: not available (phase 3)')
+        print('purlin: the review helpers are not available; nothing was '
+              'auto-approved and no brief was written.')
     else:
-        auto_approve(project_root)
-        write_briefs(project_root)
+        payload = payload_module.build_payload(project_root,
+                                               generated_by='verify')
+        approved = auto_approve(project_root, payload)
+        briefs = write_briefs(project_root, payload)
+        print('Auto-approved %d low-risk rule%s; %d brief%s written.'
+              % (len(approved), '' if len(approved) == 1 else 's',
+                 len(briefs), '' if len(briefs) == 1 else 's'))
     try:
         from ci import post_pr_comment, publish_dashboard
     except ImportError:
