@@ -86,7 +86,7 @@ function featureRow(feature, columns) {
   cells.push(pill(rollup.lowest_state || 'Drafted'));
   if (hasRecords()) {
     cells.push(strength(feature.test_strength));
-    cells.push(recordCell(feature.latest_record));
+    cells.push(recordCell(feature));
     cells.push(rollup.re_verify_pending
       ? '<span class="mono" style="color:var(--state-warn)">'
         + rollup.re_verify_pending + ' pending</span>'

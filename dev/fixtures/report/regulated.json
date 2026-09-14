@@ -229,8 +229,8 @@
       "latest_record": {
         "commit": "a1b2c3d",
         "label": "ci",
-        "os": null,
-        "path": ".purlin/records/invoice/20260912T091402Z-a1b2c3d-ci.json",
+        "os": "linux",
+        "path": ".purlin/records/invoice/20260912T091402Z-a1b2c3d-ci-linux.json",
         "test_strength": 64,
         "timestamp": "2026-09-12T09:14:02Z"
       },
@@ -251,8 +251,8 @@
         "latest_record": {
           "commit": "a1b2c3d",
           "label": "ci",
-          "os": null,
-          "path": ".purlin/records/invoice/20260912T091402Z-a1b2c3d-ci.json",
+          "os": "linux",
+          "path": ".purlin/records/invoice/20260912T091402Z-a1b2c3d-ci-linux.json",
           "test_strength": 64,
           "timestamp": "2026-09-12T09:14:02Z"
         },
@@ -474,12 +474,44 @@
     "stale": 1
   },
   "records": {
+    "checkout_design": {
+      "": {
+        "commit": "a1b2c3d",
+        "label": "ci",
+        "os": null,
+        "path": ".purlin/records/checkout_design/20260912T091402Z-a1b2c3d-ci.json",
+        "result": "pass",
+        "test_strength": 90,
+        "timestamp": "2026-09-12T09:14:02Z"
+      }
+    },
+    "invoice": {
+      "linux": {
+        "commit": "a1b2c3d",
+        "label": "ci",
+        "os": "linux",
+        "path": ".purlin/records/invoice/20260912T091402Z-a1b2c3d-ci-linux.json",
+        "result": "pass",
+        "test_strength": 64,
+        "timestamp": "2026-09-12T09:14:02Z"
+      },
+      "macos": {
+        "commit": "a1b2c3d",
+        "label": "ci",
+        "os": "macos",
+        "path": ".purlin/records/invoice/20260912T091402Z-a1b2c3d-ci-macos.json",
+        "result": "pass",
+        "test_strength": 64,
+        "timestamp": "2026-09-12T09:13:55Z"
+      }
+    },
     "login": {
       "": {
         "commit": "a1b2c3d",
         "label": "ci",
         "os": null,
         "path": ".purlin/records/login/20260912T091402Z-a1b2c3d-ci.json",
+        "result": "pass",
         "test_strength": 86,
         "timestamp": "2026-09-12T09:14:02Z"
       }

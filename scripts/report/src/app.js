@@ -87,14 +87,49 @@ function strength(value) {
     + Math.round(value) + '%</span>';
 }
 
-function recordCell(record) {
-  if (!record) { return '<span class="mono muted">none</span>'; }
+/* Every record a spec has, one per operating system, newest of each. The
+   payload keys them by operating system and gives `""` to a record written
+   without one. */
+function recordsFor(feature) {
+  var byOs = (DATA.records || {})[feature.name] || {};
+  return Object.keys(byOs).sort().map(function (key) { return byOs[key]; });
+}
+
+/* What one record found, in the result's tone. A record's existence is not
+   its result: showing the newest alone read the same whether the run passed
+   or failed every proof in it, so each operating system says its own. The
+   label is named only where it is not `ci`, CI being the expected writer. */
+function recordMark(record) {
+  var words = [];
   var label = record.label || 'local';
-  var hue = label === 'ci' ? 'pass' : label === 'developer' ? 'neutral'
-    : 'warn';
-  var text = label + (record.os ? ' ' + record.os : '');
-  return '<span class="mono" style="color:var(--state-' + hue + ')">'
-    + esc(text) + '</span>';
+  if (label !== 'ci') { words.push(label); }
+  if (record.os) { words.push(record.os); }
+  words.push(record.result === 'fail' ? 'failed' : 'passed');
+  return '<span class="mono" style="color:var(--state-'
+    + (record.result === 'fail' ? 'fail' : 'pass') + ')" title="'
+    + esc((record.timestamp || '') + ' · ' + (record.path || '')) + '">'
+    + esc(words.join(' ')) + '</span>';
+}
+
+function recordJoin(marks) {
+  return marks.join('<span class="muted"> · </span>');
+}
+
+function recordCell(feature) {
+  var records = recordsFor(feature);
+  if (!records.length) { return '<span class="mono muted">—</span>'; }
+  return recordJoin(records.map(recordMark));
+}
+
+/* The same entries on the rule screen, each beside a link to the file it
+   names, so a record stays addressable on the git host. */
+function recordLine(feature) {
+  var records = recordsFor(feature);
+  if (!records.length) { return '<span class="mono muted">none</span>'; }
+  return recordJoin(records.map(function (record) {
+    return recordMark(record) + ' '
+      + hostLink(record.path, record.timestamp || record.path);
+  }));
 }
 
 /* A link to the file on the git host, when the payload names a remote this

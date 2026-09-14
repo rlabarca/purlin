@@ -415,12 +415,35 @@
     "stale": 0
   },
   "records": {
+    "checkout_design": {
+      "": {
+        "commit": "a1b2c3d",
+        "label": "developer",
+        "os": null,
+        "path": ".purlin/records/checkout_design/20260912T091402Z-a1b2c3d-developer.json",
+        "result": "pass",
+        "test_strength": 90,
+        "timestamp": "2026-09-12T09:14:02Z"
+      }
+    },
+    "invoice": {
+      "": {
+        "commit": "a1b2c3d",
+        "label": "ci",
+        "os": null,
+        "path": ".purlin/records/invoice/20260912T091402Z-a1b2c3d-ci.json",
+        "result": "pass",
+        "test_strength": 48,
+        "timestamp": "2026-09-12T09:14:02Z"
+      }
+    },
     "login": {
       "": {
         "commit": "a1b2c3d",
         "label": "ci",
         "os": null,
         "path": ".purlin/records/login/20260912T091402Z-a1b2c3d-ci.json",
+        "result": "pass",
         "test_strength": 71,
         "timestamp": "2026-09-12T09:14:02Z"
       }

@@ -46,8 +46,11 @@ exist.
 ![The Board at the recorded gate, with the risk grid and the strength, latest record and re-verify columns](images/dashboard-team.png)
 
 At `recorded` the same board has more in it, because more exists to show: a risk-by-state grid,
-and the strength, latest record and re-verify columns. The latest record column prints the
-record's label, `ci` or `developer`, which is the thing that decides whether it counts.
+and the strength, latest record and re-verify columns. The latest record column prints one entry
+per operating system that recorded, reading `passed` or `failed` in that result's colour, so a
+Linux job that failed and a Windows job that passed do not read the same. A record a person
+committed names its label, `developer` or `local`, beside the result; a record CI wrote names
+none, CI being the writer the gate expects. The timestamp and the file path are on the tooltip.
 
 ![The Board at the approved gate, with the approvals column, a stale rule, and two warnings above the ledger](images/dashboard-regulated.png)
 

@@ -172,10 +172,7 @@ function renderRule() {
   }
   if (feature.test_strength != null || record) {
     rows.push(['Test strength', strength(feature.test_strength)]);
-    rows.push(['Latest record', record
-      ? recordCell(record) + ' '
-        + hostLink(record.path, record.timestamp || record.path)
-      : '<span class="mono muted">none</span>']);
+    rows.push(['Latest record', recordLine(feature)]);
   }
   var approvals = approvalsFor(feature, rule);
   if (approvals.length) {

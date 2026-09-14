@@ -439,7 +439,7 @@ function featureRow(feature, columns) {
   cells.push(pill(rollup.lowest_state || 'Drafted'));
   if (hasRecords()) {
     cells.push(strength(feature.test_strength));
-    cells.push(recordCell(feature.latest_record));
+    cells.push(recordCell(feature));
     cells.push(rollup.re_verify_pending
       ? '<span class="mono" style="color:var(--state-warn)">'
         + rollup.re_verify_pending + ' pending</span>'
@@ -654,10 +654,7 @@ function renderRule() {
   }
   if (feature.test_strength != null || record) {
     rows.push(['Test strength', strength(feature.test_strength)]);
-    rows.push(['Latest record', record
-      ? recordCell(record) + ' '
-        + hostLink(record.path, record.timestamp || record.path)
-      : '<span class="mono muted">none</span>']);
+    rows.push(['Latest record', recordLine(feature)]);
   }
   var approvals = approvalsFor(feature, rule);
   if (approvals.length) {
@@ -815,14 +812,36 @@ function strength(value) {
   return '<span class="mono" style="color:var(--state-' + hue + ')">'
     + Math.round(value) + '%</span>';
 }
-function recordCell(record) {
-  if (!record) { return '<span class="mono muted">none</span>'; }
+function recordsFor(feature) {
+  var byOs = (DATA.records || {})[feature.name] || {};
+  return Object.keys(byOs).sort().map(function (key) { return byOs[key]; });
+}
+function recordMark(record) {
+  var words = [];
   var label = record.label || 'local';
-  var hue = label === 'ci' ? 'pass' : label === 'developer' ? 'neutral'
-    : 'warn';
-  var text = label + (record.os ? ' ' + record.os : '');
-  return '<span class="mono" style="color:var(--state-' + hue + ')">'
-    + esc(text) + '</span>';
+  if (label !== 'ci') { words.push(label); }
+  if (record.os) { words.push(record.os); }
+  words.push(record.result === 'fail' ? 'failed' : 'passed');
+  return '<span class="mono" style="color:var(--state-'
+    + (record.result === 'fail' ? 'fail' : 'pass') + ')" title="'
+    + esc((record.timestamp || '') + ' · ' + (record.path || '')) + '">'
+    + esc(words.join(' ')) + '</span>';
+}
+function recordJoin(marks) {
+  return marks.join('<span class="muted"> · </span>');
+}
+function recordCell(feature) {
+  var records = recordsFor(feature);
+  if (!records.length) { return '<span class="mono muted">—</span>'; }
+  return recordJoin(records.map(recordMark));
+}
+function recordLine(feature) {
+  var records = recordsFor(feature);
+  if (!records.length) { return '<span class="mono muted">none</span>'; }
+  return recordJoin(records.map(function (record) {
+    return recordMark(record) + ' '
+      + hostLink(record.path, record.timestamp || record.path);
+  }));
 }
 function hostLink(path, text) {
   var base = webRemote();

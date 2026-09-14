@@ -134,6 +134,34 @@ def review_cells(page):
         '.map(c => c.textContent.trim()))')
 
 
+# The latest record cell of every spec row, found by the heading rather than
+# by a fixed position, so the columns a payload does not carry cannot shift
+# the read onto another cell.
+RECORD_CELLS = """els => {
+  const head = Array.from(document.querySelectorAll('.th > div'))
+    .map(d => d.textContent.trim().toLowerCase());
+  const at = head.indexOf('latest record');
+  return els.map(e => {
+    const cell = e.children[at];
+    return {
+      name: e.querySelector('.name .n').textContent.trim(),
+      text: cell.textContent.trim(),
+      marks: Array.from(cell.querySelectorAll('span[title]')).map(s => ({
+        words: s.textContent.trim(),
+        title: s.getAttribute('title'),
+        colour: getComputedStyle(s).color
+      }))
+    };
+  });
+}"""
+
+
+def record_cells(page):
+    """The latest record cell of each spec row, keyed by the spec name."""
+    return {row['name']: row
+            for row in page.eval_on_selector_all('.tr', RECORD_CELLS)}
+
+
 # ---------------------------------------------------------------------------
 # The built file
 # ---------------------------------------------------------------------------
@@ -230,6 +258,57 @@ def test_columns_appear_only_where_their_artifacts_do(browser, tmp_path):
     reg = open_board(browser, tmp_path / 'reg', payload_named('regulated'))
     assert 'APPROVALS' in reg.inner_text('.th')
     reg.close()
+
+
+@pytest.mark.proof("purlin_report", "PROOF-32", "RULE-31", tier="e2e")
+def test_the_record_column_says_what_each_operating_system_found(browser,
+                                                                 tmp_path):
+    """A record's existence is not its result, and two jobs disagree.
+
+    The newest record alone read `ci linux` whether that run passed every
+    proof or failed every one of them, and said nothing about the Windows job
+    that passed beside it.
+    """
+    payload = payload_named('regulated')
+    payload['records']['login'] = {
+        'linux': {
+            'commit': 'a1b2c3d', 'label': 'ci', 'os': 'linux',
+            'path': '.purlin/records/login/'
+                    '20260912T091402Z-a1b2c3d-ci-linux.json',
+            'result': 'fail', 'test_strength': 86,
+            'timestamp': '2026-09-12T09:14:02Z'},
+        'windows': {
+            'commit': 'a1b2c3d', 'label': 'ci', 'os': 'windows',
+            'path': '.purlin/records/login/'
+                    '20260912T090100Z-a1b2c3d-ci-windows.json',
+            'result': 'pass', 'test_strength': 86,
+            'timestamp': '2026-09-12T09:01:00Z'},
+    }
+    del payload['records']['checkout_design']
+    page = open_board(browser, tmp_path / 'reg', payload)
+    cells = record_cells(page)
+    assert cells['login']['text'] == u'linux failed · windows passed'
+    assert cells['invoice']['text'] == u'linux passed · macos passed'
+    assert cells['checkout_design']['text'] == u'—'
+
+    failed, passed = cells['login']['marks']
+    assert failed['colour'] == page.evaluate(RESOLVE_TOKEN, '--state-fail')
+    assert passed['colour'] == page.evaluate(RESOLVE_TOKEN, '--state-pass')
+    assert failed['title'] == (
+        '2026-09-12T09:14:02Z · .purlin/records/login/'
+        '20260912T091402Z-a1b2c3d-ci-linux.json')
+
+    page.click('[data-act="feature"][data-feature="login"]')
+    page.click('.rule[data-rule="RULE-1"]')
+    body = page.inner_text('.wrap')
+    assert 'linux failed' in body and 'windows passed' in body
+    page.close()
+
+    team = open_board(browser, tmp_path / 'team', payload_named('team'))
+    cells = record_cells(team)
+    assert cells['login']['text'] == 'passed'
+    assert cells['checkout_design']['text'] == 'developer passed'
+    team.close()
 
 
 @pytest.mark.parametrize('process', PROCESSES)
