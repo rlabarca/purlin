@@ -148,7 +148,9 @@ def publish_dashboard(project_root, out_dir=None, logs=None):
     """Copy the dashboard page, its data and the arm logs into `out_dir`.
 
     Returns that path. The workflow uploads the directory as the
-    `purlin-dashboard` artifact. The page is one HTML file that opens from
+    `purlin-dashboard-<runner>` artifact, one name per matrix job: two jobs
+    uploading one name leave only the job that finished last, and the other
+    job's page and logs are gone. The page is one HTML file that opens from
     disk. With no `out_dir` the directory is the one `publish_dir` names,
     which is the one the upload step reads.
 

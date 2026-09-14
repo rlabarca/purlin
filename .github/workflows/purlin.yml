@@ -6,7 +6,9 @@
 # ubuntu-latest alone. An untagged proof is satisfied by any operating system,
 # so the Linux job proves those and writes the record that counts. Each job
 # runs the same verify a developer runs and writes its own record, so two jobs
-# never write the same file name.
+# never write the same file name. The artifact each job uploads carries the
+# runner in its name for the same reason: one name for two jobs keeps only what
+# the job that finished last uploaded.
 #
 # A pull request from a fork gets a run and a comment and no commit: GitHub
 # gives a forked pull request a read-only token, and the job says so.
@@ -96,6 +98,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: purlin-dashboard
+          name: purlin-dashboard-${{ matrix.os }}
           path: ${{ runner.temp }}/purlin-dashboard
           if-no-files-found: ignore

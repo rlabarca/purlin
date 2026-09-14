@@ -172,7 +172,7 @@ def test_the_workflow_names_the_record_step_and_the_artifact():
     assert 'Locate Purlin' in names
     assert 'Run verify and write the record' in names
     assert 'actions/upload-artifact@v4' in names
-    assert 'name: purlin-dashboard' in jobs
+    assert 'name: purlin-dashboard-${{ matrix.os }}' in jobs
     assert 'scripts/run/purlin_run.py" --all --record --ci' in jobs
 
 

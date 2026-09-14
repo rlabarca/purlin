@@ -21,9 +21,10 @@ tab and what it is showing is more than 60 seconds old, keeping the screen and t
 so an approval you have just made appears without you reloading anything. A commit you make by
 hand outside Claude Code shows up after the next `purlin:status`.
 
-**From CI.** A CI verify copies the page and its data into the `purlin-dashboard` build
-artifact. Anyone with repository access downloads it from the run and opens the page. Nothing
-is provisioned, nothing is hosted, and no site has to be published.
+**From CI.** A CI verify copies the page and its data into a build artifact named
+`purlin-dashboard-<runner>`, one per job in the matrix, so a run on two operating systems
+leaves two pages rather than one. Anyone with repository access downloads one from the run and
+opens the page. Nothing is provisioned, nothing is hosted, and no site has to be published.
 
 ## The chrome
 
