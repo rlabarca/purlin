@@ -350,12 +350,20 @@ class TestTheApprovedGate:
     def test_an_approval_only_on_a_side_branch_is_not_on_the_branch(self):
         made = approved_project()
         try:
+            # A side branch is only a side branch next to a protected one, and
+            # what says which that is is `origin/HEAD`. Without it the reader
+            # has nothing but the branch it is standing on, and every branch
+            # is the branch.
+            git(made.root, 'update-ref', 'refs/remotes/origin/main',
+                git(made.root, 'rev-parse', 'HEAD').stdout.strip())
+            git(made.root, 'symbolic-ref', 'refs/remotes/origin/HEAD',
+                'refs/remotes/origin/main')
             git(made.root, 'checkout', '-q', '-b', 'side')
             approve_module.main(['login', 'RULE-2', '--project-root',
                                  made.root])
             code, output = run(made)
             assert code == 1
-            assert 'is not on main yet' in output, output
+            assert 'is not on origin/main yet' in output, output
         finally:
             made.close()
 

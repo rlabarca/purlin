@@ -19,7 +19,6 @@ What the tests hold:
 
 import json
 import os
-import shutil
 import subprocess
 import sys
 
@@ -28,8 +27,13 @@ import pytest
 DEV = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(DEV)
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'anchor'))
+sys.path.insert(0, DEV)
 
 import upstream  # noqa: E402
+# Removing a tree that holds a repository is written once, in the other
+# suite that has to do it: on Windows the read-only bit git puts on a loose
+# object stops a plain removal.
+from test_drift import _rmtree  # noqa: E402
 
 UPSTREAM_PY = os.path.join(ROOT, 'scripts', 'anchor', 'upstream.py')
 
@@ -353,7 +357,7 @@ def test_check_names_an_anchor_that_does_not_exist(workspace):
 @pytest.mark.proof("upstream", "PROOF-9", "RULE-9", tier="integration")
 def test_check_reports_an_unreachable_source(workspace, tmp_path):
     _add(workspace)
-    shutil.rmtree(workspace.anchor_repo)
+    _rmtree(workspace.anchor_repo)
     result = upstream.sync(workspace.root, check=True)
     assert result['anchors'][0]['status'] == 'error'
     assert upstream._exit_code(result) == 2

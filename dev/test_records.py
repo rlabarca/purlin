@@ -935,7 +935,10 @@ def test_the_artifact_goes_to_the_github_runner_temp_directory(project,
     _no_runner_temp(monkeypatch)
     monkeypatch.setenv('RUNNER_TEMP', os.path.join(project, 'runner-temp'))
 
-    expected = os.path.join(project, 'runner-temp', 'purlin-dashboard')
+    # The workflow spells this path with a forward slash and the run has to
+    # write where the upload step reads, so the separator is the one the
+    # workflow can write rather than the local one.
+    expected = '%s/purlin-dashboard' % os.path.join(project, 'runner-temp')
     assert ci_module.publish_dir(project) == expected
     assert ci_module.publish_dashboard(project) == expected, (
         'the upload step names $RUNNER_TEMP/purlin-dashboard, so a run that '
@@ -950,7 +953,7 @@ def test_the_artifact_goes_to_the_azure_agent_temp_directory(project,
     monkeypatch.setenv('AGENT_TEMPDIRECTORY',
                        os.path.join(project, 'agent-temp'))
 
-    expected = os.path.join(project, 'agent-temp', 'purlin-dashboard')
+    expected = '%s/purlin-dashboard' % os.path.join(project, 'agent-temp')
     assert ci_module.publish_dir(project) == expected
     assert ci_module.publish_dashboard(project) == expected
     assert os.path.isdir(expected)
