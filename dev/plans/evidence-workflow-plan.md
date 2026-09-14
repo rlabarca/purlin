@@ -747,6 +747,8 @@ repos).
 | 3B | `a8b0d718` | `references/review_criteria.md` (127); `spec_quality_guide.md` 739 to 259 | 118,652 |
 | 3C | `2e2eade5` | `scripts/anchor/upstream.py` (608: `add`, `sync [--all|--check|--json]`, `propose`); `dev/test_upstream.py` 30 tests on local bare repos; the two anchor e2e scripts and `setup-external-refs.sh` rewritten, no proof markers (their old ids describe retired behaviour) | 224,973 |
 
+| 3A | `9f1365a9` (wave 4) | `scripts/review/approve.py` (435), `brief.py` (567), `scripts/ci/verify_gate.py` 428 to 341, `references/formats/approval_format.md` (130, Format-Version 1); `dev/test_approvals.py` (571), `dev/test_brief.py` (425), `dev/test_verify_gate.py` 1,189 to 471; 95 passed. Repairs on the way: the run script now reaches `scripts/review/` under `--ci`, the record's `runner` is the slug with `kind`, `job`, `host` under `environment`, the payload carries `test_strength` and the brief so Reviewed and auto-approval work. T of the triple is the test file's blob hash (the package imports nothing outside the standard library, so it cannot call `_extract_test_code`); `test_hash_kind` is `file`, `manual` or `none` | 291,212 |
+
 Note from 3C: `specs/_anchors/security_no_dangerous_patterns.md` pins a sha the local bare
 repo no longer heads at (pre-existing); the setup script prints the sha to pin; phase 9 fixes the spec.
 
@@ -841,7 +843,18 @@ project, criterion ids, risk, `origin: pm`, PR-based approval, uploaded design i
 
 #### DONE
 
-_pending_
+Wave 4, 2026-09-13. Landed by fast-forward at `98829eb1`: `tools/PM/purlin-anchor-userstories.md`
+362 to 152 (repository connector only, no checkout; `origin: pm`, criterion ids, uploaded
+designs committed into `designs/`, the owner-comment rule), `tools/QA/purlin-qa-report.md` 370
+to 123 (sparse clone of `scripts/` to reach `scan.py`; the review list by risk; states plainly
+that it cannot sign, so its approvals count only once the approver signs), both `.skill`
+files repacked. Tokens: 103,838.
+
+Fix lane F2 (wave 4, `25551c3d`): three `subprocess.run` call sites take `[*argv]` /
+`[*command]` so the frozen security anchor passes; nine unswept suites wired into
+`dev/run_tests.sh` (six pytest files, three per-plugin shell suites). Sweep after F2: nine
+suites green, E2E Init and the pool's two collection errors known-red; pool 607 passed, 43
+failed, all known-red. Tokens: 106,883. Wave 4 tokens: 501,933. Running total: 3,441,369.
 
 ### Phase 8: docs (Opus 4.8, 4 lanes; Fable writes the outline)
 
