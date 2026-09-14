@@ -39,10 +39,8 @@ PENDING_REWRITE = (
     "dev/test_schema_proof_format.py",
     # phase 4: the rule-writing examples, which follow the spec guide
     "references/rule_examples.md",
-    # phase 5: init, update, the hooks, the template
-    "scripts/init/", "scripts/hooks/", "scripts/purlin_python.sh", "templates/config.json",
-    "dev/test_init_scaffold.py", "dev/test_init_e2e.sh",
-    "dev/test_pre_push_hook.py",
+    # phase 5: the interpreter resolver, which names what sys.platform reads
+    "scripts/purlin_python.sh",
     # phase 8: the docs
     "docs/", "README.md", "CLAUDE.md", "RELEASE_NOTES.md", "assets/purlin-logo.svg",
 )
