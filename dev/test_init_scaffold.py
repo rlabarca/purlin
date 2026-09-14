@@ -697,16 +697,29 @@ class TestTheFlags:
             timeout=300)
         assert done.returncode == 2
 
-    def test_update_says_where_the_upgrade_lives(self, project):
+    def test_update_hands_the_project_to_the_upgrade(self, project):
+        """`--update` reaches update.py, which is what owns the upgrade."""
+        project.run('--gate', 'tested')
         done = subprocess.run(
             [sys.executable, SCAFFOLD, '--project-root', project.root,
-             '--update'], capture_output=True, text=True, timeout=300,
+             '--update', '--yes'], capture_output=True, text=True, timeout=300,
             stdin=subprocess.DEVNULL)
         if os.path.isfile(os.path.join(ROOT, 'scripts', 'init', 'update.py')):
-            assert done.returncode in (0, 1)
+            assert done.returncode == 0, done.stdout + done.stderr
+            assert 'does not carry' not in done.stdout
         else:
             assert done.returncode == 1
             assert 'scripts/init/update.py' in done.stdout
+
+    def test_update_with_dry_run_asks_the_upgrade_what_is_pending(self,
+                                                                  project):
+        project.run('--gate', 'tested')
+        done = subprocess.run(
+            [sys.executable, SCAFFOLD, '--project-root', project.root,
+             '--update', '--dry-run'], capture_output=True, text=True,
+            timeout=300, stdin=subprocess.DEVNULL)
+        assert done.returncode in (0, 1, 3), done.stdout + done.stderr
+        assert 'does not carry' not in done.stdout
 
 
 # ---------------------------------------------------------------------------

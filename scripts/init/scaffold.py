@@ -16,15 +16,14 @@ with nothing to detect is asked which framework its tests use, and `approved`
 is asked who may approve.
 
 It then writes, in this order and naming every one in the summary: the config,
-the plugin copies and `.purlin/plugin-root`, the test runner's wiring, the
-engine's config block, the `.gitignore` entries, `designs/` and
-`.purlin/records/` with their READMEs, the dashboard, the pre-push hook, and
-under `recorded` and `approved` the workflow CI runs. It ends with the branch
-rules the git host has to enforce and the next step computed from the state.
+the plugin copies and `.purlin/plugin-root`, the runner's wiring, the engine's
+config block, the `.gitignore` entries, `designs/` and `.purlin/records/` with
+their READMEs, the dashboard, the pre-push hook, and under `recorded` and
+`approved` the workflow CI runs. It ends with the branch rules the git host
+has to enforce, and the next step computed from the state.
 
 Both ways of loading Purlin work, and neither is written into a project: this
-checkout under `claude --plugin-dir`, and the marketplace copy under
-`~/.claude/plugins/cache/purlin/purlin/<version>/`.
+checkout under `--plugin-dir`, and the marketplace copy under the plugin cache.
 
 Exit codes: 0 the project is set up, 1 nothing could be done, 2 the invocation
 was wrong or the directory is not a git repository.
@@ -60,8 +59,7 @@ NOT_A_REPOSITORY = 'This is not a git repository. Run git init, then init.'
 GATE_QUESTION = 'What must be true before CI lets a change merge?'
 GATE_CHOICES = (
     'tested    every rule has a passing tagged test',
-    'recorded  every rule has a record CI wrote at this commit, at or above '
-    'the minimum test strength',
+    'recorded  every rule has a record CI wrote, at the minimum test strength',
     'approved  recorded, plus a current approval on every high and medium rule',
 )
 LANGUAGE_QUESTION = ('There is nothing here to detect a test framework from. '
@@ -536,7 +534,7 @@ def parse_args(argv):
     return parser.parse_args(argv)
 
 
-def delegate_update(argv):
+def delegate_update(args):
     """`--update` belongs to scripts/init/update.py, which owns the upgrade."""
     if not os.path.isfile(os.path.join(_HERE, 'update.py')):
         print('The upgrade path lives in scripts/init/update.py, which this '
@@ -545,7 +543,11 @@ def delegate_update(argv):
     if _HERE not in sys.path:
         sys.path.insert(0, _HERE)
     import update                                              # noqa: PLC0415
-    return update.main([arg for arg in argv if arg != '--update'])
+    # `--dry-run` is what the upgrade calls `--check`: say what is pending and
+    # write nothing. No other flag of this script means anything to it.
+    return update.main(['--project-root', args.project_root]
+                       + (['--yes'] if args.yes else [])
+                       + (['--check'] if args.dry_run else []))
 
 
 def resolve_frameworks(root, console, existing, add):
@@ -608,10 +610,9 @@ def print_approved(root, approvers):
 
 
 def main(argv=None):
-    argv = list(sys.argv[1:] if argv is None else argv)
-    args = parse_args(argv)
+    args = parse_args(list(sys.argv[1:] if argv is None else argv))
     if args.update:
-        return delegate_update(argv)
+        return delegate_update(args)
 
     root = os.path.abspath(args.project_root)
     plugin_root = os.path.abspath(args.plugin_root or PLUGIN_ROOT)
