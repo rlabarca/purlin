@@ -121,7 +121,6 @@ def _run_shell_proof(tmp_path, feature, proofs, tier=None, name="run_proof.sh"):
 # The shared contract
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("run_script", "PROOF-25", "RULE-23")
 @pytest.mark.proof("proof_common", "PROOF-1", "RULE-1")
 def test_proof_file_naming(tmp_path):
     """One file per feature and tier, under the runtime directory."""
@@ -135,7 +134,6 @@ def test_proof_file_naming(tmp_path):
                                   "other.unit.json"]
 
 
-@pytest.mark.proof("run_script", "PROOF-29", "RULE-26")
 @pytest.mark.proof("proof_common", "PROOF-9", "RULE-9")
 def test_no_markers_no_proof_files(tmp_path):
     """A run that collected no marker writes nothing at all."""
@@ -147,7 +145,6 @@ def test_no_markers_no_proof_files(tmp_path):
     assert _proof_files(root) == []
 
 
-@pytest.mark.proof("run_script", "PROOF-32", "RULE-27")
 @pytest.mark.proof("proof_common", "PROOF-6", "RULE-6")
 def test_removed_test_entry_purged_on_rerun(tmp_path):
     """A marker taken out of a file that runs again is reaped on that run."""
@@ -175,7 +172,6 @@ def test_removed_test_entry_purged_on_rerun(tmp_path):
     assert {e["id"] for e in _proofs(root, "feat")["proofs"]} == {"PROOF-1"}
 
 
-@pytest.mark.proof("run_script", "PROOF-32", "RULE-27")
 def test_removed_test_entry_purged_in_shell_plugin(tmp_path):
     root = _project(tmp_path)
     _run_shell_proof(root, "feat", [("PROOF-1", "RULE-1", "pass", "a"),
@@ -185,7 +181,6 @@ def test_removed_test_entry_purged_in_shell_plugin(tmp_path):
     assert [e["id"] for e in _proofs(root, "feat")["proofs"]] == ["PROOF-1"]
 
 
-@pytest.mark.proof("run_script", "PROOF-25", "RULE-23")
 def test_a_feature_with_no_spec_still_records(tmp_path):
     """The runtime location needs no spec: nothing is scanned to find it."""
     root = _project(tmp_path)
@@ -197,7 +192,6 @@ def test_a_feature_with_no_spec_still_records(tmp_path):
 # pytest
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("run_script", "PROOF-44", "RULE-35")
 def test_pytest_marker_signature_defaults_to_unit_tier(tmp_path):
     root = _project(tmp_path)
     _run_pytest_with_plugin(root, """
@@ -211,7 +205,6 @@ def test_pytest_marker_signature_defaults_to_unit_tier(tmp_path):
     assert _proofs(root, "feat", "unit")["proofs"][0]["tier"] == "unit"
 
 
-@pytest.mark.proof("run_script", "PROOF-44", "RULE-35")
 def test_pytest_marker_explicit_tier(tmp_path):
     root = _project(tmp_path)
     _run_pytest_with_plugin(root, """
@@ -224,7 +217,6 @@ def test_pytest_marker_explicit_tier(tmp_path):
     assert _proofs(root, "feat", "e2e") is not None
 
 
-@pytest.mark.proof("run_script", "PROOF-41", "RULE-34")
 def test_pytest_marker_with_too_few_arguments_is_ignored(tmp_path):
     """A marker missing feature, id or rule names no proof, so it writes none."""
     root = _project(tmp_path)
@@ -239,7 +231,6 @@ def test_pytest_marker_with_too_few_arguments_is_ignored(tmp_path):
         assert _proof_files(root) == []
 
 
-@pytest.mark.proof("run_script", "PROOF-28", "RULE-25")
 def test_pytest_test_file_is_relative(tmp_path):
     root = _project(tmp_path)
     _run_pytest_with_plugin(root, """
@@ -254,7 +245,6 @@ def test_pytest_test_file_is_relative(tmp_path):
     assert not os.path.isabs(recorded)
 
 
-@pytest.mark.proof("run_script", "PROOF-44", "RULE-35")
 def test_pytest_registers_the_proof_marker_and_the_tier_markers(tmp_path):
     """`-m` selects on the tier, which means the tier is a real marker."""
     root = _project(tmp_path)
@@ -295,7 +285,6 @@ def test_pytest_registers_the_proof_marker_and_the_tier_markers(tmp_path):
 @pytest.mark.skipif(not shutil.which("node"), reason="node not available")
 class TestJest:
 
-    @pytest.mark.proof("run_script", "PROOF-41", "RULE-34")
     def test_marker_parsed_from_title(self, tmp_path):
         root = _project(tmp_path)
         (root / "a.test.js").write_text("// marked\n", encoding="utf-8")
@@ -306,7 +295,6 @@ class TestJest:
         assert (entry["feature"], entry["id"], entry["rule"], entry["tier"]) \
             == ("feat", "PROOF-1", "RULE-1", "integration")
 
-    @pytest.mark.proof("run_script", "PROOF-44", "RULE-35")
     def test_tier_defaults_to_unit(self, tmp_path):
         root = _project(tmp_path)
         (root / "a.test.js").write_text("// marked\n", encoding="utf-8")
@@ -314,7 +302,6 @@ class TestJest:
                           "status": "passed"}])
         assert _proofs(root, "feat", "unit") is not None
 
-    @pytest.mark.proof("run_script", "PROOF-41", "RULE-34")
     def test_a_title_with_no_marker_is_ignored(self, tmp_path):
         root = _project(tmp_path)
         (root / "a.test.js").write_text("// marked\n", encoding="utf-8")
@@ -324,7 +311,6 @@ class TestJest:
         entries = _proofs(root, "feat")["proofs"]
         assert len(entries) == 1
 
-    @pytest.mark.proof("run_script", "PROOF-25", "RULE-23")
     def test_status_mapping(self, tmp_path):
         root = _project(tmp_path)
         (root / "a.test.js").write_text("// marked\n", encoding="utf-8")
@@ -335,7 +321,6 @@ class TestJest:
         by_id = {e["id"]: e["status"] for e in _proofs(root, "feat")["proofs"]}
         assert by_id == {"PROOF-1": "pass", "PROOF-2": "fail"}
 
-    @pytest.mark.proof("run_script", "PROOF-28", "RULE-25")
     def test_the_test_file_is_relative_to_the_project_root(self, tmp_path):
         root = _project(tmp_path)
         (root / "src").mkdir()
@@ -356,7 +341,6 @@ class TestJest:
 # shell
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("run_script", "PROOF-44", "RULE-35")
 def test_shell_proof_uses_purlin_proof_tier_env(tmp_path):
     root = _project(tmp_path)
     _run_shell_proof(root, "feat", [("PROOF-1", "RULE-1", "pass", "a")],
@@ -365,14 +349,12 @@ def test_shell_proof_uses_purlin_proof_tier_env(tmp_path):
     assert _proofs(root, "feat", "unit") is None
 
 
-@pytest.mark.proof("run_script", "PROOF-44", "RULE-35")
 def test_shell_proof_defaults_tier_to_unit(tmp_path):
     root = _project(tmp_path)
     _run_shell_proof(root, "feat", [("PROOF-1", "RULE-1", "pass", "a")])
     assert _proofs(root, "feat", "unit") is not None
 
 
-@pytest.mark.proof("run_script", "PROOF-28", "RULE-25")
 def test_shell_test_file_reflects_the_calling_script(tmp_path):
     """`BASH_SOURCE[1]` is the caller, not the harness."""
     root = _project(tmp_path)
@@ -435,7 +417,6 @@ def test_shell_finish_with_nothing_buffered_writes_nothing(tmp_path):
                     reason="sqlite3 not available")
 class TestSql:
 
-    @pytest.mark.proof("run_script", "PROOF-25", "RULE-23")
     def test_a_failing_block_records_fail(self, tmp_path):
         root = _project(tmp_path)
         self._run(root, "-- @purlin feat PROOF-1 RULE-1 unit\n"
@@ -443,7 +424,6 @@ class TestSql:
                         "SELECT 'FAIL';\n")
         assert _proofs(root, "feat")["proofs"][0]["status"] == "fail"
 
-    @pytest.mark.proof("run_script", "PROOF-29", "RULE-26")
     def test_a_file_with_no_marker_writes_nothing(self, tmp_path):
         root = _project(tmp_path)
         result = self._run(root, "SELECT 1;\n")

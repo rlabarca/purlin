@@ -1,19 +1,17 @@
 #!/usr/bin/env bash
 # End to end: the write-scoped overwrite, keyed by (feature, tier, test_file).
 #
-# A real temp project with two specs and two shell suites. Three proofs, three
-# rules, all @e2e: a write for one feature never touches another, two test
-# files covering one feature coexist in any order, and a re-run replaces only
-# what it ran. The status table Purlin renders is read back at the end, so the
-# merge is proved through the reader the rest of the framework uses.
+# A real temp project with two specs and two shell suites: a write for one
+# feature never touches another, two test files covering one feature coexist in
+# any order, and a re-run replaces only what it ran. The status table Purlin
+# renders is read back at the end, so the merge is proved through the reader the
+# rest of the framework uses.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 HARNESS="$PROJECT_ROOT/scripts/proof/shell_purlin.sh"
 MCP_DIR="$PROJECT_ROOT/scripts/mcp"
-
-source "$HARNESS"
 
 PASS=0
 FAIL=0
@@ -25,10 +23,8 @@ cleanup_all() { for d in $ALL_TMPDIRS; do rm -rf "$d" 2>/dev/null; done; }
 trap cleanup_all EXIT
 
 record() {
-  local proof_id="$1" rule_id="$2" name="$3" status="$4"
+  local name="$1" status="$2"
   echo "  $([[ "$status" == "pass" ]] && echo PASS || echo FAIL): $name"
-  PURLIN_PROOF_TIER=e2e purlin_proof "run_script" "$proof_id" "$rule_id" \
-    "$status" "$name"
   [[ "$status" == "pass" ]] && PASS=$((PASS + 1)) || FAIL=$((FAIL + 1))
 }
 
@@ -117,9 +113,9 @@ phase_one() {
   [[ "$(read_ids "$dir" signup)" == "PROOF-1@tests/signup.test.sh,PROOF-2@tests/signup.test.sh" ]] || return 1
 }
 if phase_one; then
-  record "PROOF-50" "RULE-27" "a write for one feature leaves the other alone" pass
+  record "a write for one feature leaves the other alone" pass
 else
-  record "PROOF-50" "RULE-27" "a write for one feature leaves the other alone" fail
+  record "a write for one feature leaves the other alone" fail
 fi
 
 # --- PROOF-2: two files covering one feature coexist, in any order ---------
@@ -136,9 +132,9 @@ phase_two() {
   [[ "$forward" == "PROOF-1@tests/login_a.test.sh,PROOF-2@tests/login_b.test.sh" ]] || return 1
 }
 if phase_two; then
-  record "PROOF-50" "RULE-27" "two test files for one feature coexist in any order" pass
+  record "two test files for one feature coexist in any order" pass
 else
-  record "PROOF-50" "RULE-27" "two test files for one feature coexist in any order" fail
+  record "two test files for one feature coexist in any order" fail
 fi
 
 # --- PROOF-3: a re-run replaces only what it ran, and the table reads it ---
@@ -167,13 +163,12 @@ assert statuses[('login', 'PROOF-2')] == 'pass', statuses
 " || return 1
 }
 if phase_three; then
-  record "PROOF-50" "RULE-27" "a re-run replaces only the file it ran" pass
+  record "a re-run replaces only the file it ran" pass
 else
-  record "PROOF-50" "RULE-27" "a re-run replaces only the file it ran" fail
+  record "a re-run replaces only the file it ran" fail
 fi
 
 cd "$PROJECT_ROOT"
-purlin_proof_finish
 
 echo ""
 echo "e2e feature-scoped overwrite: $PASS/$((PASS+FAIL)) passed"

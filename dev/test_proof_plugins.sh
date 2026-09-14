@@ -29,31 +29,20 @@ NODE_READY=0
 command -v node >/dev/null 2>&1 && NODE_READY=1 || \
   echo "  note: node is not installed, so the jest arm did not run."
 
-# One case proves a rule of the run script and the matching rule of the anchor
-# every plugin keeps, so a case may name a second proof and the result is
-# recorded against both. ALSO_* is that second pair, set by run().
+# Each case proves a rule of the anchor every proof plugin keeps, so the result
+# is recorded against that anchor's proof.
 record() {
   local feature="$1" proof_id="$2" rule_id="$3" name="$4" status="$5"
   echo "  $([[ "$status" == "pass" ]] && echo PASS || echo FAIL): $name"
   PURLIN_PROOF_TIER=e2e purlin_proof "$feature" "$proof_id" "$rule_id" \
     "$status" "$name"
-  if [[ -n "${ALSO_FEATURE:-}" ]]; then
-    PURLIN_PROOF_TIER=e2e purlin_proof "$ALSO_FEATURE" "$ALSO_PROOF" \
-      "$ALSO_RULE" "$status" "$name"
-  fi
   [[ "$status" == "pass" ]] && PASS=$((PASS + 1)) || FAIL=$((FAIL + 1))
 }
 
-# run <feature> <PROOF-N> <RULE-N> [--also <feature> <PROOF-N> <RULE-N>]
-#     <name> <command...>
+# run <feature> <PROOF-N> <RULE-N> <name> <command...>
 run() {
   local feature="$1" proof_id="$2" rule_id="$3"
   shift 3
-  ALSO_FEATURE="" ALSO_PROOF="" ALSO_RULE=""
-  if [[ "${1:-}" == "--also" ]]; then
-    ALSO_FEATURE="$2" ALSO_PROOF="$3" ALSO_RULE="$4"
-    shift 4
-  fi
   local name="$1"
   shift 1
   if "$@" >/dev/null 2>&1; then
@@ -96,7 +85,7 @@ PY
   [[ -z "$(find "$d/specs" -name '*.json')" ]]
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "run_script" "PROOF-48" "RULE-23" --also "proof_common" "PROOF-1" "RULE-1" "the proof file is written to the runtime directory" test_runtime_location
+run "proof_common" "PROOF-1" "RULE-1" "the proof file is written to the runtime directory" test_runtime_location
 
 test_file_name_carries_feature_and_tier() {
   local d; d="$(make_project)"
@@ -110,7 +99,7 @@ EOF
   [[ -f "$d/.purlin/runtime/proofs/feat.integration.json" ]]
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "run_script" "PROOF-48" "RULE-23" --also "proof_common" "PROOF-14" "RULE-14" "the file name carries the feature and the tier" test_file_name_carries_feature_and_tier
+run "proof_common" "PROOF-14" "RULE-14" "the file name carries the feature and the tier" test_file_name_carries_feature_and_tier
 
 # --- The seven fields -------------------------------------------------------
 test_seven_fields() {
@@ -130,7 +119,7 @@ assert entry['test_file'] == 'tests/t.sh', entry
 "
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "run_script" "PROOF-48" "RULE-23" --also "proof_common" "PROOF-4" "RULE-4" "every entry carries the seven fields and no eighth" test_seven_fields
+run "proof_common" "PROOF-4" "RULE-4" "every entry carries the seven fields and no eighth" test_seven_fields
 
 # --- No marker, no file -----------------------------------------------------
 test_no_markers_no_file() {
@@ -144,7 +133,7 @@ PY
     [[ -z "$(ls -A "$d/.purlin/runtime/proofs")" ]]
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "run_script" "PROOF-49" "RULE-26" --also "proof_common" "PROOF-9" "RULE-9" "a run that collected no marker writes nothing" test_no_markers_no_file
+run "proof_common" "PROOF-9" "RULE-9" "a run that collected no marker writes nothing" test_no_markers_no_file
 
 # --- The write-scoped merge -------------------------------------------------
 test_merge_keeps_other_features_and_files() {
@@ -181,8 +170,8 @@ assert ('feat', 'PROOF-1', 'tests/t.sh') in keys, keys
 "
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "run_script" "PROOF-50" "RULE-27" --also "proof_common" "PROOF-6" "RULE-6" "the merge keeps other features and other test files" test_merge_keeps_other_features_and_files
-run "run_script" "PROOF-50" "RULE-27" --also "proof_common" "PROOF-6" "RULE-6" "an entry whose test file is gone is reaped" test_merge_keeps_other_features_and_files
+run "proof_common" "PROOF-6" "RULE-6" "the merge keeps other features and other test files" test_merge_keeps_other_features_and_files
+run "proof_common" "PROOF-6" "RULE-6" "an entry whose test file is gone is reaped" test_merge_keeps_other_features_and_files
 
 # --- Ordinal order after the merge -----------------------------------------
 test_ordinal_order() {
@@ -221,7 +210,7 @@ assert ids == want, (want, ids)
 "
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "run_script" "PROOF-51" "RULE-28" --also "proof_common" "PROOF-7" "RULE-7" "entries are written in ordinal order whatever the call order" test_ordinal_order
+run "proof_common" "PROOF-7" "RULE-7" "entries are written in ordinal order whatever the call order" test_ordinal_order
 
 # --- Markers seen, nothing written -----------------------------------------
 test_seen_markers_and_no_entry_fails() {
@@ -240,7 +229,7 @@ PY
   grep -q "no proof entry was written for feat" <<<"$out"
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "run_script" "PROOF-52" "RULE-30" --also "proof_common" "PROOF-10" "RULE-10" "markers seen and nothing written fails the run" test_seen_markers_and_no_entry_fails
+run "proof_common" "PROOF-10" "RULE-10" "markers seen and nothing written fails the run" test_seen_markers_and_no_entry_fails
 
 # --- The jest reporter ------------------------------------------------------
 test_jest_writes_the_runtime_file() {
@@ -259,7 +248,7 @@ EOF
   [[ -f "$d/.purlin/runtime/proofs/feat.unit.json" ]]
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "run_script" "PROOF-48" "RULE-23" --also "proof_common" "PROOF-1" "RULE-1" "the jest reporter writes the runtime proof file" test_jest_writes_the_runtime_file
+run "proof_common" "PROOF-1" "RULE-1" "the jest reporter writes the runtime proof file" test_jest_writes_the_runtime_file
 
 # --- The retired keyword ----------------------------------------------------
 test_retired_keyword_refused() {
@@ -275,7 +264,7 @@ EOF
   grep -q "@env(windows)" <<<"$out"
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "run_script" "PROOF-53" "RULE-31" --also "proof_common" "PROOF-11" "RULE-11" "a retired marker keyword is refused and names @env" test_retired_keyword_refused
+run "proof_common" "PROOF-11" "RULE-11" "a retired marker keyword is refused and names @env" test_retired_keyword_refused
 
 cd "$PROJECT_ROOT"
 purlin_proof_finish

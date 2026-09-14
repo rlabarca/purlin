@@ -19,8 +19,6 @@ PROOF_DIR="$PROJECT_ROOT/scripts/proof"
 PASS=0
 FAIL=0
 
-source "$PROOF_DIR/shell_purlin.sh"
-
 if ! python3 -c 'import pytest' >/dev/null 2>&1; then
   echo "pytest is not installed, so this suite did not run."
   exit 0
@@ -181,9 +179,6 @@ assert by['PROOF-1']['test_name'] == 'test_one', by
 run_test "a skipped test writes nothing and keeps the entry it had" test_skipped_keeps_its_entry
 
 cd "$PROJECT_ROOT"
-PURLIN_PROOF_TIER=e2e purlin_proof "run_script" "PROOF-54" "RULE-34" \
-  "$([[ $FAIL -eq 0 ]] && echo pass || echo fail)" "pytest plugin shell suite"
-purlin_proof_finish
 
 echo ""
 echo "pytest proof plugin: $PASS/$((PASS+FAIL)) passed"

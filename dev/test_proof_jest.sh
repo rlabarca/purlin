@@ -19,8 +19,6 @@ REPORTER="$PROJECT_ROOT/scripts/proof/jest_purlin.js"
 PASS=0
 FAIL=0
 
-source "$PROJECT_ROOT/scripts/proof/shell_purlin.sh"
-
 if ! command -v node >/dev/null 2>&1; then
   echo "node is not installed, so this suite did not run."
   exit 0
@@ -150,9 +148,6 @@ test_retired_keyword_refused() {
 run_test "the retired :on(...) keyword is refused and names @env" test_retired_keyword_refused
 
 cd "$PROJECT_ROOT"
-PURLIN_PROOF_TIER=e2e purlin_proof "run_script" "PROOF-55" "RULE-29" \
-  "$([[ $FAIL -eq 0 ]] && echo pass || echo fail)" "jest reporter suite"
-purlin_proof_finish
 
 echo ""
 echo "jest proof reporter: $PASS/$((PASS+FAIL)) passed"
