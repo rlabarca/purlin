@@ -41,13 +41,19 @@ PENDING_REWRITE = (
     "references/rule_examples.md",
     # phase 5: init, update, the hooks, the template
     "scripts/init/", "scripts/hooks/", "scripts/purlin_python.sh", "templates/config.json",
-    "dev/test_init_update.py", "dev/test_init_scaffold.py", "dev/test_init_e2e.sh",
+    "dev/test_init_scaffold.py", "dev/test_init_e2e.sh",
     "dev/test_pre_push_hook.py",
     # phase 8: the docs
     "docs/", "README.md", "CLAUDE.md", "RELEASE_NOTES.md", "assets/purlin-logo.svg",
 )
 
 SKIP = EXCLUDED + PENDING_REWRITE
+
+# The update has to name what it detects. Its migration table is the one place
+# those spellings are written, and every line of it ends with this comment, so
+# this proof steps over exactly those lines in exactly that file.
+TABLE_FILE = "scripts/init/update.py"
+TABLE_LINE = "# retired"
 
 
 def _tracked():
@@ -68,6 +74,8 @@ def test_no_retired_terms():
         if rel.endswith(".md"):
             checks = checks + list(MD_ONLY)
         for lineno, line in enumerate(text.splitlines(), 1):
+            if rel == TABLE_FILE and line.rstrip().endswith(TABLE_LINE):
+                continue
             probe = line.replace("sys.platform", "")  # the one allowed literal
             for check in checks:
                 hit = check in probe if isinstance(check, str) else check.search(probe)
