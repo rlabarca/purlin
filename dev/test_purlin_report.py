@@ -233,7 +233,6 @@ def test_both_themes_render_through_the_tokens(browser, tmp_path, process):
     dark_ink = page.evaluate('getComputedStyle(document.body).color')
     dark_logo = page.get_attribute('#brand-mark', 'src')
     assert page.get_attribute('html', 'data-theme') == 'dark'
-    assert page.get_attribute('html', 'data-surface') == 'product'
 
     page.click('[data-act="theme"]')
     assert page.get_attribute('html', 'data-theme') == 'light'
@@ -245,6 +244,30 @@ def test_both_themes_render_through_the_tokens(browser, tmp_path, process):
 
     page.click('[data-act="theme"]')
     assert page.get_attribute('html', 'data-theme') == 'dark'
+    page.close()
+
+
+# The value a CSS colour token resolves to, read back as the browser writes
+# every computed colour, so a token and a painted surface compare as strings.
+RESOLVE_TOKEN = """(name) => {
+  const probe = document.createElement('span');
+  probe.style.color = getComputedStyle(document.documentElement)
+    .getPropertyValue(name).trim();
+  document.body.appendChild(probe);
+  const value = getComputedStyle(probe).color;
+  probe.remove();
+  return value;
+}"""
+
+
+@pytest.mark.proof("purlin_report", "PROOF-30", "RULE-12", tier="e2e")
+def test_the_board_sits_on_the_brand_navy(browser, tmp_path, page_text):
+    """No surface override, so the ground is the brand's own navy."""
+    assert 'data-surface' not in page_text
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    assert page.get_attribute('html', 'data-surface') is None
+    ground = page.evaluate('getComputedStyle(document.body).backgroundColor')
+    assert ground == page.evaluate(RESOLVE_TOKEN, '--purlin-navy-800')
     page.close()
 
 
