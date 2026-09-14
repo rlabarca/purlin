@@ -648,7 +648,34 @@ green; `sync_status` prints the seven-state table on this repo's frozen specs.
 
 #### DONE
 
-_pending_
+Wave 2, 2026-09-13. Both lanes landed by fast-forward; head `395183ad`.
+
+| Lane | Commits | What | Tokens |
+|---|---|---|---|
+| 1A | `1cba0b0e`..`d1006609` (4) | `scripts/mcp/purlin/` 14 modules, 3,504 lines (`specs` 488, `checks` 129, `proofs` 125, `ids` 205, `frameworks` 152, `gate` 155, `records` 291, `approvals` 206, `states` 318, `drift` 504, `status` 222, `payload` 399, `server` 272); `purlin_server.py` deleted (6,550); `dev/test_mcp_server.py` 5,066 to 1,165; kept tests repointed; `spec_format.md` Format-Version 11, `anchor_format.md` 7; plugin entry point and `refresh_digest.py` repointed; acceptance 164 passed, 1 skipped; `sync_status` prints the seven-state table for the 37 frozen specs (552 rules) | 383,649 |
+| 1B | `a9197232`, `395183ad` | `scripts/audit/static_checks.py` (3,443) moved to `scripts/review/static_checks.py` (1,192) so no import line carries a retired word; `dev/test_static_checks.py` 4,075 to 2,370, 74 passed, 5 skipped | 407,315 |
+
+Tokens, wave 2: 790,964. Running total: 1,186,592.
+
+Decisions recorded by the lanes: Recorded compares the record's `scope_tree` to the
+working tree rather than the literal HEAD (CI's record commit sits on top of the commit it
+observed); four proof-text findings block Proof ready, two are advisory; `checks.py` splits
+`proof_findings` and `rule_findings`; the payload's dirty flag ignores `.purlin/`;
+`record_format.md` and `approval_format.md` are left to lanes 2C and 3A; findings renamed
+`no_assertion`, `mock_of_target`, `assert_true_literal`; the static-checks CLI prints text by
+default and JSON with `--json`.
+
+Sweep at `395183ad`: shell suites E2E Build Changeset and E2E Required Rules pass; Proof
+Plugins (Shell), E2E Write-Scoped Overwrite (2A), E2E Init (5A), E2E External Refs and E2E
+Anchor Authority (3C) fail. The pytest pool stops at collection on five known-red files
+(`test_verify_gate.py` 3A, `test_proof_stress.py` 2A, `test_init_update.py` 5B,
+`test_init_scaffold.py` 5A, `test_consumer_ci.py` 2C); the other 13 pool files run with
+collection errors tolerated: 360 passed, 69 failed, 5 skipped, every failure in a file a
+later lane rewrites: `test_pre_push_hook.py` 32 (5A), `test_multilang_proof_plugins.py` 31
+(2A), `test_proof_plugins_missing.py` 3 (2A), `test_plugin_contract.py` 2 (2A's references),
+`test_purlin_version.py` 1 (the release-notes counts line, phase 8). No fix lane: nothing is
+red outside the known-red list, and a fix lane would be doing later lanes' work.
+BLOCKED: none.
 
 ### Phase 2: run script, plugins, engines, records (Opus 5, 3 lanes)
 
