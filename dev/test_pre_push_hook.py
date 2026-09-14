@@ -36,7 +36,20 @@ HOOK_SCRIPT = os.path.join(ROOT, 'scripts', 'hooks', 'pre-push.sh')
 
 
 def posix_shell():
-    """The plainest POSIX shell this host has, dash first."""
+    """The plainest POSIX shell this host has, dash first.
+
+    On Windows `sh` on PATH is not a shell any more than `bash` is (the run
+    script explains the WSL launcher), so the answer is the `sh.exe` that Git
+    for Windows ships beside the bash the run script already finds.
+    """
+    if os.name == 'nt':
+        sys.path.insert(0, os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            'scripts', 'run'))
+        from purlin_run import bash_command  # noqa: E402
+        bash = bash_command()
+        sh = os.path.join(os.path.dirname(bash), 'sh.exe')
+        return sh if os.path.isfile(sh) else bash
     return shutil.which('dash') or 'sh'
 
 
