@@ -8,9 +8,11 @@ nothing anyway. Governed by specs/hooks/refresh_digest_hook.md.
 
 WHAT IT DOES
     1. Finds the project from the working directory (`git rev-parse`).
-    2. Leaves at once unless `.purlin/config.json` has `report` true and a
-       `digest` mode other than `off`, and unless no commit is in flight
-       (`index.lock`: the pre-commit hook owns that regeneration).
+    2. Leaves at once unless the project has a `.purlin/config.json` that
+       does not set `digest` to `off`, and unless no commit is in flight
+       (`index.lock`: the pre-commit hook owns that regeneration). The
+       dashboard is always on: nothing configures it, so nothing turns it off
+       but that one opt-out.
     3. Compares the digest's mtime to every input that feeds it: the specs,
        the proof files under `.purlin/runtime/proofs/`, the records under
        `.purlin/records/`, and the config. Nothing newer, nothing to do. This
@@ -175,7 +177,7 @@ def main():
     if not root:
         return
     config = _config(root)
-    if not config or not config.get('report') or config.get('digest') == 'off':
+    if not config or config.get('digest') == 'off':
         return
     if os.path.exists(os.path.join(git_dir, 'index.lock')):
         return

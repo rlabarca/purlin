@@ -47,10 +47,12 @@ def _git(cwd, *args):
                           text=True, check=True)
 
 
-def _project(tmp, report=True, digest='auto', git=True, anchor=False):
+def _project(tmp, digest='auto', git=True, anchor=False, config=None):
     os.makedirs(os.path.join(tmp, '.purlin'), exist_ok=True)
+    if config is None:
+        config = {'digest': digest}
     with open(os.path.join(tmp, '.purlin', 'config.json'), 'w') as f:
-        json.dump({'report': report, 'digest': digest}, f)
+        json.dump(config, f)
     os.makedirs(os.path.join(tmp, 'specs', 'app'), exist_ok=True)
     with open(os.path.join(tmp, 'specs', 'app', 'login.md'), 'w') as f:
         f.write(SPEC)
@@ -145,8 +147,8 @@ class TestSilentAndNonBlocking:
         _assert_silent_zero(_run(bare), 'not a git repository')
         assert not os.path.exists(os.path.join(bare, '.purlin'))
 
-        off = _project(str(tmp_path / 'off'), report=False)
-        _assert_silent_zero(_run(off), 'report false')
+        off = _project(str(tmp_path / 'off'), digest='off')
+        _assert_silent_zero(_run(off), 'digest off')
         assert not os.path.exists(_digest_path(off))
 
         locked = _project(str(tmp_path / 'locked'))
@@ -291,10 +293,6 @@ class TestSkipConditions:
         _assert_silent_zero(_run(no_config), 'no config')
         assert not os.path.exists(_digest_path(no_config))
 
-        report_off = _project(str(tmp_path / 'report-off'), report=False)
-        _assert_silent_zero(_run(report_off), 'report false')
-        assert not os.path.exists(_digest_path(report_off))
-
         digest_off = _project(str(tmp_path / 'digest-off'), digest='off')
         _assert_silent_zero(_run(digest_off), 'digest off')
         assert not os.path.exists(_digest_path(digest_off))
@@ -314,6 +312,29 @@ class TestSkipConditions:
         os.remove(index_lock)
         _assert_silent_zero(_run(committing), 'index.lock gone')
         assert os.path.isfile(_digest_path(committing))
+
+    @pytest.mark.proof("refresh_digest_hook", "PROOF-5", "RULE-5", tier="integration")
+    def test_a_config_in_the_template_shape_refreshes(self, tmp_path):
+        """The skip conditions are the only skip conditions.
+
+        `templates/config.json` is what `purlin:init` stamps into a new
+        project. It carries none of the keys above, so a hook that needed one
+        of them to be present would leave every freshly initialized project
+        with an empty dashboard and nothing saying why.
+        """
+        with open(os.path.join(PROJECT_ROOT, 'templates', 'config.json'),
+                  encoding='utf-8') as f:
+            stamped = json.load(f)
+        assert 'digest' not in stamped and 'report' not in stamped, (
+            'the template gained a key this test assumes is absent: %s'
+            % sorted(stamped))
+
+        project = _project(str(tmp_path / 'stamped'), config=stamped)
+        _assert_silent_zero(_run(project), 'template config')
+        assert os.path.isfile(_digest_path(project)), (
+            'a project initialized from templates/config.json never refreshes '
+            'its dashboard data')
+        assert _proved(_read_digest(project)) == 1
 
 
 class TestGenerationContract:
