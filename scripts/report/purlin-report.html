@@ -1,1826 +1,912 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="dark" data-surface="product">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Purlin Dashboard</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Purlin board</title>
+<style id="purlin-tokens">
+:root{
+  --purlin-navy-900:#092936;
+  --purlin-navy-800:#0C3444;
+  --purlin-cream-100:#E4DDD4;
+  --purlin-blush-200:#E6BEB0;
+  --purlin-copper-500:#C0793F;
+  --purlin-slate-300:#93AEB8;
+  --slate-950:#0F172A;
+  --slate-900:#172034;
+  --slate-800:#1E293C;
+  --slate-750:#263350;
+  --slate-700:#334155;
+  --slate-500:#64738B;
+  --slate-400:#94A2B8;
+  --slate-200:#E2E8F0;
+  --white:#FFFFFF;
+  --green-500:#22C55D;
+  --green-600:#269655;
+  --green-300:#3AC968;
+  --green-100:#C6EDCF;
+  --amber-500:#F59E0C;
+  --red-500:#EF4444;
+  --teal-400:#2DD4BF;
+  --green-700:#15803D;
+  --amber-700:#B45309;
+  --red-700:#B91C1C;
+  --teal-700:#0F766E;
+  --copper-700:#8F5626;
+  --purlin-paper-050:#F7F4EF;
+  --purlin-paper-100:#EFEAE2;
+  --purlin-paper-200:#E4DDD4;
+  --purlin-paper-300:#D3C9BC;
+  --purlin-ink-700:#1B4A5C;
+  --purlin-ink-500:#4D676F;
+}
+:root{
+  --color-scheme:dark;
+  --canvas:var(--purlin-navy-800);
+  --canvas-deep:var(--purlin-navy-900);
+  --surface-1:rgba(228,221,212,.06);
+  --surface-2:rgba(228,221,212,.10);
+  --surface-sunken:var(--purlin-navy-900);
+  --surface-veil:rgba(228,221,212,.30);
+  --text-primary:var(--purlin-cream-100);
+  --text-secondary:var(--purlin-blush-200);
+  --text-muted:var(--purlin-slate-300);
+  --text-accent:var(--purlin-copper-500);
+  --text-inverse:var(--purlin-navy-900);
+  --border-hairline:rgba(228,221,212,.18);
+  --border-default:rgba(228,221,212,.30);
+  --border-strong:rgba(228,221,212,.45);
+  --border-accent:var(--purlin-copper-500);
+  --accent:var(--purlin-copper-500);
+  --accent-contrast:var(--purlin-navy-900);
+  --state-pass:var(--green-500);
+  --state-pass-soft:rgba(34,197,93,.14);
+  --state-warn:var(--amber-500);
+  --state-warn-soft:rgba(245,158,12,.14);
+  --state-fail:var(--red-500);
+  --state-fail-soft:rgba(239,68,68,.14);
+  --state-neutral:var(--teal-400);
+  --state-neutral-soft:rgba(45,212,191,.14);
+  --state-idle:var(--slate-400);
+  --focus-ring:var(--purlin-blush-200);
+  --link:var(--purlin-blush-200);
+  --link-hover:var(--purlin-copper-500);
+}
+[data-surface="product"]{
+  --canvas:var(--slate-800);
+  --canvas-deep:var(--slate-950);
+  --surface-1:var(--slate-800);
+  --surface-2:var(--slate-750);
+  --surface-sunken:var(--slate-900);
+  --text-primary:var(--slate-200);
+  --text-secondary:var(--slate-400);
+  --text-muted:var(--slate-500);
+  --border-hairline:var(--slate-700);
+  --border-default:var(--slate-700);
+  --border-strong:var(--slate-500);
+  --link:var(--teal-400);
+  --link-hover:var(--slate-200);
+}
+[data-theme="light"]{
+  --color-scheme:light;
+  --canvas:var(--purlin-paper-050);
+  --canvas-deep:var(--purlin-paper-100);
+  --surface-1:var(--white);
+  --surface-2:var(--purlin-paper-100);
+  --surface-sunken:var(--purlin-paper-200);
+  --surface-veil:rgba(12,52,68,.05);
+  --text-primary:var(--purlin-navy-800);
+  --text-secondary:var(--purlin-ink-700);
+  --text-muted:var(--purlin-ink-500);
+  --text-accent:var(--copper-700);
+  --text-inverse:var(--purlin-paper-050);
+  --border-hairline:rgba(12,52,68,.12);
+  --border-default:rgba(12,52,68,.20);
+  --border-strong:rgba(12,52,68,.38);
+  --border-accent:var(--copper-700);
+  --accent:var(--copper-700);
+  --accent-contrast:var(--purlin-paper-050);
+  --state-pass:var(--green-700);
+  --state-pass-soft:rgba(21,128,61,.12);
+  --state-warn:var(--amber-700);
+  --state-warn-soft:rgba(180,83,9,.12);
+  --state-fail:var(--red-700);
+  --state-fail-soft:rgba(185,28,28,.12);
+  --state-neutral:var(--teal-700);
+  --state-neutral-soft:rgba(15,118,110,.12);
+  --state-idle:var(--purlin-ink-500);
+  --focus-ring:var(--copper-700);
+  --link:var(--copper-700);
+  --link-hover:var(--purlin-navy-800);
+}
+[data-theme="light"][data-surface="product"]{
+  --canvas:var(--purlin-paper-100);
+  --canvas-deep:var(--purlin-paper-200);
+  --surface-1:var(--white);
+  --surface-2:var(--purlin-paper-050);
+  --surface-sunken:var(--purlin-paper-200);
+  --text-primary:var(--purlin-navy-800);
+  --text-secondary:var(--purlin-ink-700);
+  --text-muted:var(--purlin-ink-500);
+  --border-hairline:var(--purlin-paper-300);
+  --border-default:var(--purlin-paper-300);
+  --border-strong:var(--purlin-ink-500);
+}
+:root{
+  --font-sans:Arial,"Helvetica Neue",Helvetica,sans-serif;
+  --font-mono:"Courier New",Courier,monospace;
+  --type-hero:180px;
+  --type-display:98px;
+  --type-title:48px;
+  --type-subtitle:33px;
+  --type-lead:30px;
+  --type-body-lg:22.5px;
+  --type-body:20.25px;
+  --type-body-sm:18px;
+  --type-caption:15.75px;
+  --type-micro:15px;
+  --ui-metric-xl:44px;
+  --ui-metric:32px;
+  --ui-lg:18px;
+  --ui-base:15px;
+  --ui-sm:13px;
+  --ui-xs:11px;
+  --leading-tight:.8;
+  --leading-snug:1.12;
+  --leading-normal:1.35;
+  --leading-relaxed:1.5;
+  --tracking-hero:-.006em;
+  --tracking-normal:0;
+  --tracking-wide:.055em;
+  --tracking-label:.12em;
+  --weight-regular:400;
+  --weight-bold:700;
+}
+:root{
+  --space-0:0;
+  --space-1:4px;
+  --space-2:8px;
+  --space-3:12px;
+  --space-4:16px;
+  --space-5:20px;
+  --space-6:24px;
+  --space-8:32px;
+  --space-10:40px;
+  --space-12:48px;
+  --space-16:64px;
+  --space-20:80px;
+  --space-24:96px;
+  --slide-w:1920px;
+  --slide-h:1080px;
+  --slide-margin-x:200px;
+  --slide-title-y:230px;
+  --slide-content-w:1672px;
+  --slide-rule-w:1520px;
+  --slide-row-h:105px;
+  --app-bar-h:92px;
+  --app-gutter:12px;
+  --row-h:76px;
+}
+:root{
+  --radius-none:0;
+  --radius-sm:4px;
+  --radius-md:6px;
+  --radius-pill:999px;
+  --border-width-hairline:1px;
+  --border-width-default:1.5px;
+  --border-width-strong:2px;
+}
+:root{
+  --shadow-none:none;
+  --elev-flat:0 0 0 0 transparent;
+  --elev-raised:inset 0 0 0 1px var(--border-hairline);
+  --elev-focus:0 0 0 2px var(--canvas),0 0 0 4px var(--focus-ring);
+  --overlay-scrim:rgba(9,41,54,.72);
+  --backdrop-blur:8px;
+}
+:root{
+  --duration-instant:80ms;
+  --duration-fast:140ms;
+  --duration-base:220ms;
+  --duration-slow:420ms;
+  --ease-standard:cubic-bezier(.2,0,0,1);
+  --ease-out:cubic-bezier(0,0,0,1);
+  --ease-in:cubic-bezier(.4,0,1,1);
+  --hover-tint:rgba(228,221,212,.06);
+  --press-tint:rgba(9,41,54,.25);
+  --press-scale:.985;
+}
+@media (prefers-reduced-motion:reduce){
+  :root{--duration-instant:0ms;--duration-fast:0ms;--duration-base:0ms;--duration-slow:0ms}
+}
+html{color-scheme:var(--color-scheme,dark)}
+body{margin:0;background:var(--canvas);color:var(--text-primary);font-family:var(--font-sans);font-size:var(--ui-base);line-height:var(--leading-normal);-webkit-font-smoothing:antialiased;text-wrap:pretty}
+a{color:var(--link);text-decoration:none;border-bottom:1px solid var(--border-default);transition:color var(--duration-fast) var(--ease-standard),border-color var(--duration-fast) var(--ease-standard)}
+a:hover{color:var(--link-hover);border-bottom-color:currentColor}
+:focus-visible{outline:none;box-shadow:var(--elev-focus)}
+code,kbd,pre,samp{font-family:var(--font-mono)}
+::selection{background:var(--accent);color:var(--accent-contrast)}
+</style>
 <style>
-/* ===== FONTS ===== */
-:root {
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-mono: "SF Mono", "Fira Code", "Cascadia Code", "JetBrains Mono", Consolas, monospace;
-  /* Status colors — shared across themes */
-  --green: #22c55e;
-  --green-dim: rgba(34, 197, 94, 0.15);
-  --amber: #f59e0b;
-  --amber-dim: rgba(245, 158, 11, 0.15);
-  --red: #ef4444;
-  --red-dim: rgba(239, 68, 68, 0.15);
-  --blue: #3b82f6;
-  --blue-dim: rgba(59, 130, 246, 0.15);
-  --teal: #2dd4bf;
-  --gray-badge: #64748b;
-  /* Anchor type pill colors */
-  --tp-anchor-color: #8b95a5;
-  --tp-anchor-bg: rgba(139,149,165,.2);
-  --tp-global-color: #a8b5c7;
-  --tp-global-bg: rgba(168,181,199,.2);
-}
-
-/* ===== DARK THEME ===== */
-[data-theme="dark"] {
-  --bg-primary: #0f172a;
-  --bg-card: #1e293b;
-  --bg-card-alt: #172033;
-  --bg-hover: #263350;
-  --bg-expanded: #162032;
-  --text-primary: #e2e8f0;
-  --text-secondary: #94a3b8;
-  --text-dim: #64748b;
-  --border: #334155;
-  --border-light: #1e293b;
-  --logo-fill: #e2e8f0;
-  --logo-guide: #94a3b8;
-  --bg-overlay: rgba(2, 6, 23, 0.72);
-  --shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
-}
-
-/* ===== LIGHT THEME ===== */
-[data-theme="light"] {
-  --bg-primary: #f1f5f9;
-  --bg-card: #ffffff;
-  --bg-card-alt: #f8fafc;
-  --bg-hover: #e2e8f0;
-  --bg-expanded: #f8fafc;
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --text-dim: #94a3b8;
-  --border: #e2e8f0;
-  --border-light: #f1f5f9;
-  --logo-fill: #1e293b;
-  --logo-guide: #94a3b8;
-  --bg-overlay: rgba(15, 23, 42, 0.45);
-  --shadow: 0 20px 50px rgba(15, 23, 42, 0.22);
-}
-
-/* ===== BASE ===== */
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font-sans);background:var(--bg-primary);color:var(--text-primary);font-size:14px;line-height:1.5;min-height:100vh;transition:background .2s,color .2s}
-.dashboard{max-width:2400px;margin:0 auto;padding:0 clamp(16px, 2vw, 40px)}
-
-/* ===== HEADER ===== */
-.header{display:flex;align-items:center;justify-content:space-between;height:56px;border-bottom:1px solid var(--border);margin-bottom:20px}
-.header-left{display:flex;align-items:center;gap:14px}
-.header-logo svg{height:50px;width:auto;display:block}
-.header-project{font-size:24px;font-weight:700}
-.header-right{display:flex;align-items:center;gap:20px}
-
-/* Staleness — informational only (data updates when sync_status runs, not on page refresh) */
-.staleness{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary)}
-.staleness-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.staleness-dot.fresh{background:var(--green)}.staleness-dot.warning{background:var(--amber)}.staleness-dot.stale{background:var(--red)}
-.staleness-text.warning{color:var(--amber)}.staleness-text.stale{color:var(--red)}
-
-
-/* Theme toggle */
-.theme-toggle{width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text-secondary);transition:background .2s,color .2s}
-.theme-toggle:hover{background:var(--bg-hover);color:var(--text-primary)}
-.theme-toggle svg{width:18px;height:18px}
-[data-theme="dark"] .icon-sun{display:none}[data-theme="dark"] .icon-moon{display:block}
-[data-theme="light"] .icon-sun{display:block}[data-theme="light"] .icon-moon{display:none}
-
-/* ===== NO DATA STATE ===== */
-.no-data{text-align:center;padding:80px 20px;color:var(--text-secondary)}
-.no-data h2{font-size:18px;margin-bottom:8px;color:var(--text-primary)}
-.no-data p{font-size:14px}
-.no-data code{font-family:var(--font-mono);background:var(--bg-card);padding:2px 8px;border-radius:4px;font-size:13px}
-
-/* ===== SUMMARY STRIP ===== */
-.summary-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:20px}
-.summary-card{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:12px 10px;text-align:center;transition:background .2s,border-color .2s;min-width:0}
-.summary-card-number{font-size:28px;font-weight:700;line-height:1.1;margin-bottom:2px}
-.summary-card-label{font-size:10px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.summary-card-sub{font-size:10px;color:var(--text-dim);margin-top:2px}
-.summary-card-sub.cov-label{font-size:11px;font-weight:600;letter-spacing:.01em}
-.sc-total .summary-card-number{color:var(--text-primary)}
-.sc-verified .summary-card-number{color:var(--green)}
-.sc-passing .summary-card-number{color:var(--green);opacity:.7}
-.sc-partial .summary-card-number{color:var(--amber)}
-.sc-failing .summary-card-number{color:var(--red)}
-.sc-integrity .summary-card-number{color:var(--green)}
-.sc-integrity.int-mid .summary-card-number{color:var(--amber)}
-.sc-integrity.int-lo .summary-card-number{color:var(--red)}
-.sc-integrity.int-na .summary-card-number{color:var(--text-dim)}
-.audit-time{font-size:12px;color:var(--text-dim);margin-left:4px}
-.audit-time.stale{color:var(--amber)}
-
-/* Declared remote-verification mode. A chip, not a gauge: it reports what the
-   project declared, and the declaration is not a measurement. Teal for
-   required (the project committed to the bar), dim for optional. */
-.rv-mode{font-size:12px;margin-left:4px;padding:2px 8px;border-radius:10px;border:1px solid var(--border);color:var(--text-dim);white-space:nowrap}
-.rv-mode.required{color:var(--teal);border-color:var(--teal)}
-.rv-mode.rv-ok{color:var(--green);border-color:var(--green)}.rv-mode.rv-wait{color:var(--amber);border-color:var(--amber)}.rv-mode.rv-fail{color:var(--red);border-color:var(--red)}
-
-/* ===== TABLE ===== */
-.table-container{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;overflow-x:auto;margin-bottom:20px}
-table{width:100%;border-collapse:collapse}
-th{text-align:left;padding:10px 16px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;white-space:nowrap}
-th:hover{color:var(--text-secondary)}
-th .sa{display:inline-block;margin-left:3px;opacity:.3;font-size:9px}
-th .sa.active{opacity:1;color:var(--teal)}
-td{padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border-light);vertical-align:middle}
-.fr{cursor:pointer;transition:background .12s}
-.fr:hover{background:var(--bg-hover)}
-.fr:nth-child(even of .fr){background:var(--bg-card-alt)}
-.fr:nth-child(even of .fr):hover{background:var(--bg-hover)}
-.fr.expanded{background:var(--bg-hover)}
-
-/* Feature name + type indicators */
-.fn{display:flex;align-items:center;font-weight:500}
-.chv{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;color:var(--text-dim);font-size:9px;transition:transform .15s;margin-right:4px;flex-shrink:0;transform-origin:center center}
-.fr.expanded .chv{transform:rotate(90deg)}
-.fnt{margin-right:8px}
-.tp{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:1px 7px;border-radius:3px;white-space:nowrap;flex-shrink:0}
-.tp-anchor{background:var(--tp-anchor-bg);color:var(--tp-anchor-color)}
-.tp-global{background:var(--tp-global-bg);color:var(--tp-global-color)}
-.ext-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;margin-left:4px;color:var(--teal);flex-shrink:0;opacity:.7}
-.ext-icon svg{width:12px;height:12px}
-.ext-icon:hover{opacity:1}
-.ext-ref-block{margin-bottom:12px}
-.ext-ref-table{width:auto;border-collapse:collapse}
-.ext-ref-table td{padding:2px 12px 2px 0;font-size:13px;color:var(--text-secondary)}
-.ext-ref-label{font-weight:600;color:var(--text-primary);white-space:nowrap;width:60px}
-.ext-ref-warn{color:var(--amber)}
-.ext-ref-table code{font-family:var(--font-mono);font-size:12px;background:var(--bg-card);padding:1px 4px;border-radius:3px}
-.ext-ref-table a{color:var(--teal);text-decoration:none}
-.ext-ref-table a:hover{text-decoration:underline}
-.ext-stale{display:inline-block;padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-left:6px;color:var(--amber);border:1.5px solid var(--amber);background:transparent;vertical-align:middle;cursor:default}
-
-/* Uncommitted work section */
-.uw-section{margin:0 0 12px}
-.uw-header{display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;transition:background .2s}
-.uw-header:hover{background:var(--bg-hover)}
-.uw-chv{font-size:10px;color:var(--text-dim);transition:transform .2s}
-.uw-header.expanded .uw-chv{transform:rotate(90deg)}
-.uw-count{font-size:13px;color:var(--amber);font-weight:600}
-.uw-label{font-size:12px;color:var(--text-secondary)}
-.uw-files{display:none;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border);border-top:none;border-radius:0 0 6px 6px;font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);columns:2 400px;column-gap:24px}
-.uw-files .uw-f{display:block;padding:2px 0;break-inside:avoid}
-.uw-header.expanded + .uw-files{display:block}
-
-/* Section labels */
-.section-label{font-size:13px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 6px;padding:0 4px;display:flex;align-items:center;gap:8px}
-.section-count{font-size:12px;font-weight:400;color:var(--text-tertiary)}
-
-/* Coverage */
-.cov{display:flex;align-items:center;gap:10px;white-space:nowrap}
-.cov-t{font-family:var(--font-mono);font-size:12px;width:62px;flex-shrink:0;text-align:right}
-.cov-bar{width:56px;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
-.cov-fill{height:100%;border-radius:3px}
-.cov-verified{background:var(--green)}.cov-partial{background:var(--amber)}.cov-fail{background:var(--red)}.cov-none{background:var(--gray-badge)}
-
-/* Status badges */
-.col-status{text-align:center}
-.sb{display:inline-block;padding:2px 10px;border-radius:12px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
-.sb-verified{background:var(--green);color:#fff}
-.sb-passing{background:transparent;color:var(--green);border:1.5px solid var(--green)}
-.sb-partial{background:transparent;color:var(--amber);border:1.5px solid var(--amber)}
-.sb-fail,.sb-failing{background:var(--red);color:#fff}
-.sb-untested{background:var(--gray-badge);color:var(--amber);border:1.5px solid var(--gray-badge)}
-.sb-none{background:var(--gray-badge);color:#fff;opacity:.45}
-
-/* Integrity */
-.int{font-family:var(--font-mono);font-size:12px;white-space:nowrap}
-.int-hi{color:var(--green)}.int-mid{color:var(--amber)}.int-lo{color:var(--red)}.int-na{color:var(--text-dim)}
-.int-excluded{color:var(--teal)}.int-pending{color:var(--amber)}
-
-/* Verified */
-.ver{font-size:12px;color:var(--text-secondary)}
-.ver-stale{color:var(--amber)}
-.vhash{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-left:6px}
-
-/* ===== CATEGORY SECTIONS ===== */
-.cat-header{cursor:pointer;transition:background .12s;border-bottom:1px solid var(--border);border-top:2px solid var(--border)}
-.cat-header:hover{background:var(--bg-hover)}
-.cat-header td{padding:14px 16px;font-size:14px;font-weight:700;letter-spacing:.01em}
-.cat-name{display:flex;align-items:center;gap:8px}
-.cat-chv{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;color:var(--text-secondary);font-size:10px;transition:transform .15s;flex-shrink:0;transform-origin:center center}
-.cat-header.expanded .cat-chv{transform:rotate(90deg)}
-.cat-label{text-transform:uppercase;color:var(--text-primary);font-size:12px;letter-spacing:.08em}
-.cat-count{font-size:11px;font-weight:400;color:var(--text-dim);margin-left:2px}
-.cat-summary{display:flex;align-items:center;gap:12px;font-size:11px;color:var(--text-secondary)}
-.cat-stat{display:flex;align-items:center;gap:3px;white-space:nowrap}
-.cat-dot{width:6px;height:6px;border-radius:50%;display:inline-block}
-.cat-dot-v{background:var(--green)}.cat-dot-pa{background:var(--green);opacity:.6}.cat-dot-pt{background:var(--amber)}.cat-dot-f{background:var(--red)}.cat-dot-u{background:var(--amber);opacity:.5}
-.cat-cov{font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);width:62px;flex-shrink:0;text-align:right}
-.cat-cov-bar{width:48px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;display:inline-block;vertical-align:middle;margin-left:4px}
-.cat-cov-fill{height:100%;border-radius:2px;display:block}
-.cat-cov-fill.cov-verified{background:var(--green)}.cat-cov-fill.cov-partial{background:var(--amber)}.cat-cov-fill.cov-fail{background:var(--red)}
-.cat-info{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-/* Per-category column headers */
-.cat-colhead{border-left:3px solid var(--border)}
-.cat-colhead th{background:var(--bg-card-alt)}
-.cat-colhead th:first-child{padding-left:40px}
-/* Feature rows nested under a category */
-.cat-child td:first-child{padding-left:40px}
-.cat-child{border-left:3px solid var(--border)}
-
-/* ===== EXPANDED DETAIL ===== */
-.dr>td{padding:0!important;border-bottom:1px solid var(--border)!important}
-.dc{background:var(--bg-expanded);padding:14px 24px 18px;border-top:1px solid var(--border);overflow:hidden}
-.dst{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);margin-bottom:6px;margin-top:14px}
-.awr{font-size:11px;color:var(--text-secondary);line-height:1.7}
-.host-badge{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--teal);border:1px solid var(--teal);border-radius:3px;padding:0 4px;margin-left:6px}
-.env-badge{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--blue);border:1px solid var(--blue);border-radius:3px;padding:0 4px;margin-left:6px}
-.awr-host{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--teal);border:1px solid var(--teal);border-radius:3px;padding:0 4px;margin-left:6px}
-.pchips{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;justify-content:center}
-.pchip{font-family:var(--font-mono);font-size:9px;font-weight:600;letter-spacing:.03em;border-radius:3px;padding:0 4px;border:1px solid var(--border);display:inline-block;box-sizing:border-box;min-width:52px;max-width:96px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
-.pchip-ok{color:var(--green);border-color:var(--green);background:var(--green-dim)}
-.pchip-wait{color:var(--amber);border-color:var(--amber);background:var(--amber-dim)}
-.pchip-fail{color:var(--red);border-color:var(--red);background:var(--red-dim)}
-.summary-card.sc-click{cursor:pointer}
-.summary-card.sc-click:hover{background:var(--bg-hover)}
-.summary-card.sc-click:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
-.modal-overlay{position:fixed;inset:0;background:var(--bg-overlay);display:flex;align-items:center;justify-content:center;padding:24px;z-index:100}
-.modal{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);max-width:840px;width:100%;max-height:80vh;display:flex;flex-direction:column}
-.modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
-.modal-head h2{font-size:14px;font-weight:600;color:var(--text-primary);margin:0}
-.modal-close{background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);cursor:pointer;font-size:16px;line-height:1;padding:4px 9px}
-.modal-close:hover{color:var(--text-primary);background:var(--bg-hover)}
-.modal-body{padding:14px 18px;overflow:auto}
-.modal-table{width:100%;border-collapse:collapse;font-size:12px}
-.modal-table th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);padding:6px 8px;border-bottom:1px solid var(--border)}
-.modal-table td{padding:6px 8px;border-bottom:1px solid var(--border-light);color:var(--text-primary)}
-.modal-foot{padding:12px 18px;border-top:1px solid var(--border);font-size:11px;color:var(--text-secondary);line-height:1.6}
-.modal-note{margin:10px 0 0;font-size:11px;color:var(--amber)}
-.awr-tier{font-family:var(--font-mono);color:var(--amber);font-weight:600}
-.dst:first-child{margin-top:0}
-
-/* Description block */
-.desc-block{font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:14px;padding:10px 14px;background:var(--bg-card);border-radius:6px;border:1px solid var(--border);white-space:pre-line}
-
-/* Rules sub-table */
-.rt{width:100%;min-width:0;border-collapse:collapse;margin-bottom:4px;table-layout:fixed}
-.rt th{padding:5px 8px;font-size:9px;cursor:default}
-.rt td{padding:5px 8px;font-size:12px;border-bottom:1px solid var(--border-light);vertical-align:top;overflow-wrap:break-word;word-break:break-word}
-.rt td.rid{font-family:var(--font-mono);font-size:11px;font-weight:600;white-space:nowrap;padding-right:24px}
-.rdesc{color:var(--text-primary)}
-.rlbl{font-size:10px;color:var(--text-dim);text-transform:uppercase}
-.rlbl-scoped{color:var(--tp-anchor-color)}.rlbl-global{color:var(--tp-global-color)}
-.rt td.rst{font-size:11px;font-weight:600;text-align:center;white-space:nowrap;padding:5px 6px}
-.rst-pass{color:var(--green)}.rst-fail{color:var(--red)}.rst-np{color:var(--text-dim)}.rst-chk{color:var(--green)}.rst-chk-fail{color:var(--red)}.rst-def{color:var(--text-dim);font-style:italic}
-.rprf{font-size:12px;color:var(--text-primary);overflow-wrap:break-word;word-break:break-word}
-.rprf-loc{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-top:2px;overflow-wrap:break-word;word-break:break-all}
-.rprf-sep{height:8px;border-top:1px solid var(--border-light);margin-top:8px;padding-top:0}
-.rprf-planned{opacity:.55}
-.rprf-planned-tag{display:inline-block;font-size:10px;font-style:italic;color:var(--text-dim);border:1px solid var(--border-light);border-radius:3px;padding:0 4px;margin-right:4px}
-.atag{display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-right:6px;vertical-align:middle}
-.atag-s{background:var(--green-dim);color:var(--green)}
-.atag-w{background:var(--amber-dim);color:var(--amber)}
-.atag-h{background:var(--red-dim);color:var(--red)}
-.atag-st{background:var(--green);color:#fff}
-
-/* Action banners */
-.ab{padding:10px 14px;border-left:4px solid;border-radius:0 6px 6px 0;font-size:13px;font-weight:500;margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.ab-icon{font-size:15px;flex-shrink:0;line-height:1}
-.ab-text{flex:1}
-.ab-cmd{font-family:var(--font-mono);font-size:11px;background:rgba(255,255,255,.08);padding:1px 6px;border-radius:3px}
-.ab-partial{border-left-color:var(--amber);background:var(--amber-dim);color:var(--amber)}
-.ab-failing{border-left-color:var(--red);background:var(--red-dim);color:var(--red)}
-.ab-passing{border-left-color:var(--green);background:var(--green-dim);color:var(--green)}
-.ab-untested{border-left-color:var(--gray-badge);background:rgba(100,116,139,.08);color:var(--text-dim)}
-.ab-migrations{border-left-color:var(--amber);background:var(--amber-dim);color:var(--amber)}
-.ab-schema{border-left-color:var(--amber);background:var(--amber-dim);color:var(--amber)}
-
-/* Rule row highlights */
-.rule-np td{border-left:3px solid var(--amber)}
-.rule-fail td{border-left:3px solid var(--red)}
-.rule-np td.rst{font-weight:700}
-.rule-fail td.rst{font-weight:700}
-
-/* Audit summary */
-.asummary{display:flex;align-items:center;gap:16px;margin-bottom:8px;padding:7px 12px;background:var(--bg-card);border-radius:6px;border:1px solid var(--border)}
-.ascore{font-size:18px;font-weight:700;font-family:var(--font-mono)}
-.ascore-hi{color:var(--green)}.ascore-mid{color:var(--amber)}.ascore-lo{color:var(--red)}
-.abd{display:flex;gap:12px;font-size:11px;color:var(--text-secondary)}
-.abd span{display:flex;align-items:center;gap:4px}
-.adot{width:6px;height:6px;border-radius:50%;display:inline-block}
-.adot-s{background:var(--green)}.adot-w{background:var(--amber)}.adot-h{background:var(--red)}
-
-/* Findings */
-.fgt{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-top:10px;margin-bottom:5px}
-.fgt-crit{color:var(--red)}.fgt-high{color:var(--amber)}.fgt-med{color:var(--blue)}.fgt-low{color:var(--text-dim)}
-.fi{padding:7px 12px;border-left:3px solid;margin-bottom:5px;border-radius:0 4px 4px 0;font-size:12px}
-.fi-crit{border-left-color:var(--red);background:var(--red-dim)}
-.fi-high{border-left-color:var(--amber);background:var(--amber-dim)}
-.fi-med{border-left-color:var(--blue);background:var(--blue-dim)}
-.fi-low{border-left-color:var(--gray-badge);background:rgba(100,116,139,.08)}
-.fid{font-family:var(--font-mono);font-size:11px;font-weight:600;margin-right:6px}
-.ffix{color:var(--text-secondary);margin-top:3px;font-size:11px}
-.ffix::before{content:"Fix: ";font-weight:600;color:var(--text-dim)}
-
-/* ===== FOOTER ===== */
-.footer{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-top:1px solid var(--border);font-size:12px;color:var(--text-dim)}
-.footer a{color:var(--teal);text-decoration:none}
-.footer a:hover{text-decoration:underline}
-
-/* ===== RESPONSIVE ===== */
-table{min-width:830px}
-@media (max-width:1500px) {
-  /* Two exactly-filled rows: the five status cards, then the two gauge cards.
-     repeat(4,1fr) tiled seven cards as 4+3 and left a card-sized hole beside
-     Proof Integrity, which read as a rendering failure rather than a layout.
-     10 columns divides as 5x2 and 2x5, so neither row has a gap, and the gauge
-     cards get the width their coverage sub-label wants. */
-  .summary-strip{grid-template-columns:repeat(10,1fr)}
-  .summary-strip>.summary-card{grid-column:span 2}
-  .summary-strip>.sc-integrity{grid-column:span 5}
-}
-@media (max-width:900px) {
-  th,td{padding:8px 10px;font-size:12px}
-  .cat-child td:first-child{padding-left:30px}
-  .cat-colhead th:first-child{padding-left:30px}
-  .cov-bar{width:40px}
-  .cat-cov-bar{width:36px}
-}
-@media (max-width:700px) {
-  /* Below 900px a trailing gap is ordinary responsive wrapping. Reset the spans
-     from the block above, which still matches at this width. */
-  .summary-strip{grid-template-columns:repeat(3,1fr)}
-  .summary-strip>.summary-card,
-  .summary-strip>.sc-integrity{grid-column:auto}
-  .header{flex-wrap:wrap;height:auto;padding:12px 0;gap:8px}
-  .header-right{flex-wrap:wrap;gap:10px}
-}
-@media (max-width:480px) {
-  .summary-strip{grid-template-columns:repeat(2,1fr)}
-  .dashboard{padding:0 8px}
-}
+*,*::before,*::after{box-sizing:border-box}
+button{font-family:inherit}
+.topbar{display:flex;align-items:center;gap:var(--space-6);height:var(--app-bar-h);padding:0 var(--space-8);background:var(--canvas-deep);border-bottom:1px solid var(--border-hairline)}
+.brand{display:inline-flex;align-items:center;gap:var(--space-3)}
+.brand img{display:block;height:32px;width:auto}
+.brand span{font-size:22px;line-height:1;letter-spacing:var(--tracking-hero);color:var(--text-primary)}
+.fresh{display:inline-flex;align-items:center;gap:var(--space-3);font-size:var(--ui-base)}
+.dot{width:9px;height:9px;border-radius:var(--radius-pill);background:currentColor;flex:none}
+.spacer{flex:1}
+.tabs{display:flex;gap:var(--space-8);padding:0 var(--space-8);background:var(--canvas-deep);border-bottom:1px solid var(--border-hairline)}
+.tabs button{background:none;border:0;border-bottom:2px solid transparent;color:var(--text-secondary);font-size:var(--ui-base);padding:var(--space-4) 0;cursor:pointer}
+.tabs button[aria-current="page"]{color:var(--text-primary);border-bottom-color:var(--accent)}
+.wrap{max-width:1360px;margin:0 auto;padding:var(--space-8)}
+section{margin-bottom:var(--space-10)}
+.eyebrow{font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-accent);margin:0 0 var(--space-4)}
+h1{font-size:var(--ui-metric);font-weight:var(--weight-bold);margin:0 0 var(--space-3);line-height:1.1}
+h2{font-size:var(--ui-lg);font-weight:var(--weight-bold);margin:0 0 var(--space-4)}
+.mono{font-family:var(--font-mono)}
+.muted{color:var(--text-muted)}
+.sec{color:var(--text-secondary)}
+.tag{display:inline-flex;align-items:center;font-family:var(--font-mono);font-size:var(--ui-sm);padding:3px 10px;border-radius:var(--radius-sm);border:1px solid var(--accent);color:var(--accent);white-space:nowrap}
+.tag.plain{border-color:var(--text-muted);color:var(--text-muted)}
+.btn{display:inline-flex;align-items:center;gap:var(--space-2);font-size:var(--ui-sm);letter-spacing:.01em;padding:6px 16px;border-radius:var(--radius-pill);border:1.5px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;transition:background var(--duration-fast) var(--ease-standard)}
+.btn:hover{background:var(--hover-tint)}
+.panel{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);padding:var(--space-6)}
+.notice{display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4) var(--space-6);background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);margin-bottom:var(--space-5);font-size:var(--ui-base);color:var(--text-primary)}
+.pill{display:inline-flex;align-items:center;justify-content:center;font-size:var(--ui-xs);font-weight:var(--weight-bold);letter-spacing:.08em;padding:4px 12px;border-radius:var(--radius-pill);border:1.5px solid currentColor;white-space:nowrap}
+.pill.solid{background:currentColor}
+.pill b{font-weight:var(--weight-bold)}
+.pill.solid b{color:var(--canvas-deep)}
+.cov{display:inline-flex;align-items:center;gap:var(--space-4)}
+.cov b{font-family:var(--font-mono);font-size:var(--ui-sm);font-weight:var(--weight-regular);color:var(--text-primary)}
+.cov i{width:96px;height:5px;background:var(--border-hairline);border-radius:var(--radius-pill);overflow:hidden;display:inline-block}
+.cov i>span{display:block;height:100%;background:currentColor;transition:width var(--duration-slow) var(--ease-out)}
+.thumb{display:block;width:60px;height:38px;object-fit:cover;border:1px solid var(--border-hairline);border-radius:var(--radius-sm)}
+pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-height:1.55;color:var(--text-primary);padding:var(--space-5);background:var(--surface-sunken);border:1px solid var(--border-default);border-radius:var(--radius-sm);overflow-x:auto;white-space:pre-wrap}
+.tiles{display:grid;grid-template-columns:repeat(7,1fr);gap:var(--space-4)}
+.tile{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-md);text-align:center;padding:var(--space-6) var(--space-3)}
+.tile-v{font-size:var(--ui-metric);font-weight:var(--weight-bold);line-height:1}
+.tile-l{margin-top:var(--space-3);font-size:var(--ui-xs);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}
+table.grid{border-collapse:collapse;width:100%}
+.grid th,.grid td{padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-hairline);text-align:right;font-size:var(--ui-base)}
+.grid th:first-child,.grid td:first-child{text-align:left}
+.grid th{font-size:var(--ui-xs);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-muted);font-weight:var(--weight-regular)}
+.grid td.n{font-family:var(--font-mono);color:var(--text-primary)}
+.grid td.n.zero{color:var(--text-muted)}
+.filters{display:flex;flex-wrap:wrap;gap:var(--space-3);margin-bottom:var(--space-5)}
+.chip{font-size:var(--ui-sm);padding:5px 14px;border-radius:var(--radius-pill);border:1.5px solid var(--border-default);background:transparent;color:var(--text-secondary);cursor:pointer;transition:background var(--duration-fast) var(--ease-standard),color var(--duration-fast) var(--ease-standard)}
+.chip:hover{background:var(--hover-tint)}
+.chip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.tbl{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);overflow:hidden}
+.th,.tr{display:grid;grid-template-columns:var(--cols);gap:var(--space-4);align-items:center;padding:var(--space-4) var(--space-6);border-bottom:1px solid var(--border-hairline)}
+.th{font-size:var(--ui-xs);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-muted)}
+.tr{cursor:pointer;transition:background var(--duration-fast) var(--ease-standard)}
+.tr:hover{background:var(--hover-tint)}
+.tbl>:last-child{border-bottom:0}
+.group{display:flex;align-items:center;gap:var(--space-5);padding:var(--space-4) var(--space-6);background:var(--surface-2);border-bottom:1px solid var(--border-hairline);cursor:pointer}
+.group .gt{font-weight:var(--weight-bold);font-size:var(--ui-base);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-primary)}
+.caret{color:var(--text-muted);font-size:10px;flex:none}
+.name{display:inline-flex;align-items:center;gap:var(--space-4);min-width:0}
+.name .n{font-size:var(--ui-base);color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rule{display:grid;grid-template-columns:96px 1fr auto auto;gap:var(--space-4);align-items:start;padding:var(--space-3) var(--space-6) var(--space-3) var(--space-12);border-bottom:1px solid var(--border-hairline);background:var(--surface-sunken);cursor:pointer;font-size:var(--ui-sm)}
+.rule:hover{background:var(--hover-tint)}
+.rule .rid{font-family:var(--font-mono);color:var(--text-muted)}
+.rule .rt{color:var(--text-primary)}
+.right{text-align:right}
+.empty{padding:var(--space-12);text-align:center;color:var(--text-secondary);font-size:var(--ui-lg)}
+.kv{display:grid;grid-template-columns:170px 1fr;gap:var(--space-3) var(--space-6);margin:0;font-size:var(--ui-base)}
+.kv dt{font-size:var(--ui-xs);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-muted);padding-top:2px}
+.kv dd{margin:0;color:var(--text-primary);min-width:0;overflow-wrap:anywhere}
+.stack>*+*{margin-top:var(--space-5)}
+.finding{font-size:var(--ui-sm);color:var(--state-warn)}
+.rev{display:grid;grid-template-columns:1.1fr 0.6fr 0.5fr 2fr;gap:var(--space-4);align-items:center;padding:var(--space-4) var(--space-6);border-bottom:1px solid var(--border-hairline);cursor:pointer}
+.rev:hover{background:var(--hover-tint)}
+.rev>.tag{justify-self:start}
 </style>
 </head>
 <body>
-<div class="dashboard" id="app"></div>
+<div id="app"></div>
+<script>
+var PURLIN_LOGO = {dark: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='165 130 670 330' width='670' height='330'%3E%3Cg stroke='%23C0793F' stroke-width='2' fill='none'%3E%3Cline x1='500' y1='130' x2='500' y2='460' stroke-dasharray='8,8'/%3E%3Cline x1='500' y1='145' x2='170' y2='409'/%3E%3Cline x1='500' y1='145' x2='830' y2='409'/%3E%3Cline x1='400' y1='210' x2='400' y2='255'/%3E%3Cline x1='600' y1='210' x2='600' y2='255'/%3E%3C/g%3E%3Cpolyline points='400,280 500,390 600,280' fill='none' stroke='%23E4DDD4' stroke-width='14'/%3E%3Cpath d='M 500 160 L 190 408 L 190 440 L 810 440 L 810 408 Z M 500 200 L 262.5 390 L 737.5 390 Z' fill-rule='evenodd' fill='%23E4DDD4'/%3E%3C/svg%3E",
+  light: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='165 130 670 330' width='670' height='330'%3E%3Cg stroke='%238F5626' stroke-width='2' fill='none'%3E%3Cline x1='500' y1='130' x2='500' y2='460' stroke-dasharray='8,8'/%3E%3Cline x1='500' y1='145' x2='170' y2='409'/%3E%3Cline x1='500' y1='145' x2='830' y2='409'/%3E%3Cline x1='400' y1='210' x2='400' y2='255'/%3E%3Cline x1='600' y1='210' x2='600' y2='255'/%3E%3C/g%3E%3Cpolyline points='400,280 500,390 600,280' fill='none' stroke='%230C3444' stroke-width='14'/%3E%3Cpath d='M 500 160 L 190 408 L 190 440 L 810 440 L 810 408 Z M 500 200 L 262.5 390 L 737.5 390 Z' fill-rule='evenodd' fill='%230C3444'/%3E%3C/svg%3E"};
+</script>
 <script>
 'use strict';
-
-/* ===== DATA LOADING (RULE-1, RULE-48) =====
-   The data file declares `const PURLIN_DATA`, and a const cannot be declared
-   twice in one window, so every load, the first one included, happens in a
-   throwaway iframe that posts the value back. `srcdoc` inherits this page's
-   base URL and origin, so `.purlin/report-data.js` resolves exactly as it did
-   from a script tag here, on file:// as well. The query string defeats the
-   browser's file:// cache. The frame stays in the document until the next
-   load of the same slot replaces it, so what was loaded is inspectable.
-   `.purlin/report-stamp.js` is read through the same mechanism and its own
-   slot (RULE-48): fetch is blocked on file://, so an iframe is the only way
-   to read either file. */
-var loadFrames = {data: null, stamp: null};
-function loadScriptValue(slot, src, globalName, callback) {
-  var done = false;
+function currentTheme() {
+  return document.documentElement.getAttribute('data-theme') === 'light'
+    ? 'light' : 'dark';
+}
+function restoreTheme() {
+  var saved = null;
+  try { saved = localStorage.getItem('purlin-theme'); } catch (e) {}
+  document.documentElement.setAttribute(
+    'data-theme', saved === 'light' ? 'light' : 'dark');
+}
+function toggleTheme() {
+  var next = currentTheme() === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', next);
+  try { localStorage.setItem('purlin-theme', next); } catch (e) {}
+}
+function logoSrc() {
+  return currentTheme() === 'light' ? PURLIN_LOGO.light : PURLIN_LOGO.dark;
+}
+function themeButton() {
+  return '<button class="btn" data-act="theme">'
+    + (currentTheme() === 'light' ? 'Dark theme' : 'Light theme')
+    + '</button>';
+}
+var FILTERS = [
+  {id: 'high-open', label: 'High risk not approved',
+   test: function (rule) {
+     return rule.risk === 'high' && rule.state !== 'Approved';
+   }},
+  {id: 'stale', label: 'Stale',
+   test: function (rule) { return rule.state === 'Stale'; }},
+  {id: 'no-negative', label: 'No negative case',
+   test: function (rule) {
+     return findingsOf(rule).indexOf('happy_path_only') >= 0;
+   }},
+  {id: 'low-strength', label: 'Low test strength',
+   test: function (rule, feature) {
+     return feature.test_strength != null
+       && feature.test_strength < minStrength();
+   }},
+  {id: 'open', label: 'Open items',
+   test: function (rule) {
+     var flags = rule.flags || {};
+     return rule.state === 'Drafted' || rule.state === 'Stale'
+       || !!flags.needs_ai_review || !!flags.re_verify_pending;
+   }}
+];
+function findingsOf(rule) {
+  var found = [];
+  (rule.proofs || []).forEach(function (proof) {
+    (proof.findings || []).forEach(function (name) {
+      if (found.indexOf(name) < 0) { found.push(name); }
+    });
+  });
+  return found;
+}
+function minStrength() {
+  return (DATA.gate && DATA.gate.min_strength) || 0;
+}
+function activeFilters() {
+  return FILTERS.filter(function (f) { return VIEW.filters[f.id]; });
+}
+function visibleRules(feature) {
+  var active = activeFilters();
+  if (!active.length) { return feature.rules || []; }
+  return (feature.rules || []).filter(function (rule) {
+    return active.every(function (f) { return f.test(rule, feature); });
+  });
+}
+function filtersMarkup() {
+  return '<div class="filters">' + FILTERS.map(function (f) {
+    return '<button class="chip" data-act="filter" data-filter="' + f.id
+      + '" aria-pressed="' + (VIEW.filters[f.id] ? 'true' : 'false') + '">'
+      + esc(f.label) + '</button>';
+  }).join('') + '</div>';
+}
+function ownRules(feature) {
+  return (feature.rules || []).filter(function (rule) {
+    return rule.label === 'own';
+  });
+}
+function statStrip() {
+  var counts = DATA.states || {};
+  return '<div class="tiles">' + STATES.map(function (state) {
+    return '<div class="tile"><div class="tile-v" style="color:var(--state-'
+      + tone(state) + ')">' + (counts[state] || 0) + '</div>'
+      + '<div class="tile-l">' + esc(state) + '</div></div>';
+  }).join('') + '</div>';
+}
+function riskGrid() {
+  var table = {};
+  RISKS.forEach(function (risk) { table[risk] = {}; });
+  eachRule(function (rule, feature) {
+    if (rule.label !== 'own') { return; }
+    var risk = rule.risk || 'low';
+    if (!table[risk]) { table[risk] = {}; }
+    table[risk][rule.state] = (table[risk][rule.state] || 0) + 1;
+  });
+  var rows = RISKS.filter(function (risk) {
+    return Object.keys(table[risk]).length > 0;
+  });
+  var head = '<tr><th>Risk</th>' + STATES.map(function (state) {
+    return '<th>' + esc(state) + '</th>';
+  }).join('') + '<th>Rules</th></tr>';
+  var body = rows.map(function (risk) {
+    var total = 0;
+    var cells = STATES.map(function (state) {
+      var n = table[risk][state] || 0;
+      total += n;
+      return '<td class="n' + (n ? '' : ' zero') + '">' + n + '</td>';
+    }).join('');
+    return '<tr><td>' + tag(risk, risk === 'low') + '</td>' + cells
+      + '<td class="n">' + total + '</td></tr>';
+  }).join('');
+  return '<section><p class="eyebrow">Risk by state</p>'
+    + '<div class="panel"><table class="grid">' + head + body
+    + '</table></div></section>';
+}
+function boardColumns() {
+  var columns = [{label: 'Spec', width: '2.4fr'}];
+  if (hasRisks()) { columns.push({label: 'Risk', width: '0.7fr'}); }
+  columns.push({label: 'Coverage', width: '1.4fr'});
+  columns.push({label: 'State', width: '1.1fr'});
+  if (hasRecords()) {
+    columns.push({label: 'Strength', width: '0.8fr'});
+    columns.push({label: 'Latest record', width: '1fr'});
+    columns.push({label: 'Re-verify', width: '0.9fr'});
+  }
+  if (hasApprovals()) {
+    columns.push({label: 'Approvals', width: '0.9fr'});
+  }
+  return columns;
+}
+function highestRisk(feature) {
+  var found = 'low';
+  ownRules(feature).forEach(function (rule) {
+    var risk = rule.risk || 'low';
+    if (RISKS.indexOf(risk) < RISKS.indexOf(found)) { found = risk; }
+  });
+  return found;
+}
+function featureRow(feature, columns) {
+  var rollup = feature.rollup || {};
+  var open = !!VIEW.features[feature.name];
+  var cells = ['<span class="name"><span class="caret">'
+    + (open ? '▼' : '▶') + '</span>' + designThumb(feature)
+    + '<span class="n">' + esc(feature.name) + '</span></span>'];
+  if (hasRisks()) { cells.push(tag(highestRisk(feature), true)); }
+  cells.push(coverage(rollup.proved || 0, rollup.rules || 0));
+  cells.push(pill(rollup.lowest_state || 'Drafted'));
+  if (hasRecords()) {
+    cells.push(strength(feature.test_strength));
+    cells.push(recordCell(feature.latest_record));
+    cells.push(rollup.re_verify_pending
+      ? '<span class="mono" style="color:var(--state-warn)">'
+        + rollup.re_verify_pending + ' pending</span>'
+      : '<span class="mono muted">—</span>');
+  }
+  if (hasApprovals()) {
+    cells.push('<span class="mono">' + (feature.approvals || []).length
+      + '</span>');
+  }
+  var row = '<div class="tr" data-act="feature" data-feature="'
+    + esc(feature.name) + '">' + cells.map(function (cell) {
+      return '<div>' + cell + '</div>';
+    }).join('') + '</div>';
+  if (!open) { return row; }
+  return row + visibleRules(feature).map(function (rule) {
+    return '<div class="rule" data-act="rule" data-feature="'
+      + esc(feature.name) + '" data-rule="' + esc(rule.id) + '">'
+      + '<span class="rid">' + esc(rule.id) + '</span>'
+      + '<span class="rt">' + esc(rule.text) + '</span>'
+      + tag(rule.origin + ' · ' + rule.risk, true) + pill(rule.state)
+      + '</div>';
+  }).join('');
+}
+function groupBand(name, features, columns) {
+  var open = VIEW.groups[name] !== false;
+  var proved = 0;
+  var total = 0;
+  features.forEach(function (feature) {
+    proved += (feature.rollup || {}).proved || 0;
+    total += (feature.rollup || {}).rules || 0;
+  });
+  return '<div class="group" data-act="group" data-group="' + esc(name) + '">'
+    + '<span class="caret">' + (open ? '▼' : '▶') + '</span>'
+    + '<span class="gt">' + esc(name) + '</span>'
+    + '<span class="muted">(' + features.length + ')</span>'
+    + coverage(proved, total) + '</div>'
+    + (open ? features.map(function (feature) {
+      return featureRow(feature, columns);
+    }).join('') : '');
+}
+function renderBoard() {
+  var columns = boardColumns();
+  var shown = (DATA.features || []).filter(function (feature) {
+    return visibleRules(feature).length > 0;
+  });
+  var order = [];
+  var groups = {};
+  shown.forEach(function (feature) {
+    var name = feature.category || 'specs';
+    if (!groups[name]) { groups[name] = []; order.push(name); }
+    groups[name].push(feature);
+  });
+  var rollup = DATA.project_rollup || {};
+  var head = '<section><p class="eyebrow">' + esc(DATA.project || 'project')
+    + '</p><h1>' + (rollup.rules || 0) + ' rules across '
+    + (rollup.features || 0) + ' specs</h1>'
+    + '<p class="sec">The lowest state any rule reached is '
+    + esc(rollup.lowest_state || 'Drafted') + '. ' + (rollup.stale || 0)
+    + ' stale, ' + (rollup.needs_review || 0) + ' on the review list.</p>'
+    + '</section><section>' + statStrip() + '</section>';
+  var table = order.length
+    ? '<div class="tbl" style="--cols:' + columns.map(function (c) {
+        return c.width;
+      }).join(' ') + '"><div class="th">' + columns.map(function (c) {
+        return '<div>' + esc(c.label) + '</div>';
+      }).join('') + '</div>' + order.map(function (name) {
+        return groupBand(name, groups[name], columns);
+      }).join('') + '</div>'
+    : '<div class="panel empty">No rule matches every filter you set.</div>';
+  return head + (hasRisks() ? riskGrid() : '')
+    + '<section><p class="eyebrow">Specs</p>' + filtersMarkup() + table
+    + '</section>';
+}
+var FINDING_LABELS = {
+  'no_expected_value': 'no expected value',
+  'vague_verb': 'vague verb',
+  'missing_trigger': 'missing trigger',
+  'tier_mismatch': 'tier mismatch',
+  'implementation_coupling': 'names a symbol, not an outcome',
+  'happy_path_only': 'no negative case'
+};
+function findingLabel(name) { return FINDING_LABELS[name] || name; }
+function ruleInView() {
+  var feature = featureNamed(VIEW.feature);
+  if (!feature) { return null; }
+  var found = null;
+  (feature.rules || []).forEach(function (rule) {
+    if (rule.id === VIEW.rule) { found = rule; }
+  });
+  return found ? {feature: feature, rule: found} : null;
+}
+function reviewReason(featureName, ruleId) {
+  var reason = null;
+  (DATA.review_list || []).forEach(function (entry) {
+    if (entry.feature === featureName && entry.rule === ruleId) {
+      reason = entry.reason;
+    }
+  });
+  return reason;
+}
+function proofPanel(proof) {
+  var tests = (proof.tests || []).map(function (test) {
+    return esc(test.file) + ' :: ' + esc(test.name);
+  }).join('\n') || 'no tagged test yet';
+  var findings = (proof.findings || []).map(function (name) {
+    return '<span class="finding">' + esc(findingLabel(name)) + '</span>';
+  }).join(', ');
+  return '<div class="panel"><dl class="kv">'
+    + '<dt>' + esc(proof.id) + '</dt><dd>' + esc(proof.text) + '</dd>'
+    + '<dt>Tier</dt><dd>' + tag(proof.tier + (proof.env ? ' · ' + proof.env : ''), true)
+    + '</dd>'
+    + '<dt>Tests</dt><dd><pre class="code">' + tests + '</pre></dd>'
+    + (findings ? '<dt>Free checks</dt><dd>' + findings + '</dd>' : '')
+    + '</dl></div>';
+}
+function renderRule() {
+  var found = ruleInView();
+  if (!found) {
+    return '<div class="empty">That rule is not in this data. Go back to the '
+      + 'board and pick one.</div>';
+  }
+  var feature = found.feature;
+  var rule = found.rule;
+  var record = feature.latest_record;
+  var reason = reviewReason(feature.name, rule.id);
+  var findings = findingsOf(rule).map(findingLabel);
+  var rows = [
+    ['State', pill(rule.state)],
+    ['Risk', tag(rule.risk, rule.risk === 'low')],
+    ['Origin', tag(rule.origin, true)],
+    ['Spec', hostLink(feature.spec_path, feature.spec_path)]
+  ];
+  if (rule.criterion) {
+    rows.splice(3, 0, ['Criterion', tag(rule.criterion, true)]);
+  }
+  if (feature.test_strength != null || record) {
+    rows.push(['Test strength', strength(feature.test_strength)]);
+    rows.push(['Latest record', record
+      ? recordCell(record) + ' '
+        + hostLink(record.path, record.timestamp || record.path)
+      : '<span class="mono muted">none</span>']);
+  }
+  var approvals = (feature.approvals || []).filter(function (path) {
+    return path.split('/').pop().indexOf(rule.id + '.') === 0;
+  });
+  if (approvals.length) {
+    rows.push(['Approvals', approvals.map(function (path) {
+      return hostLink(path, path.split('/').pop());
+    }).join('<br>')]);
+  }
+  if ((rule.missing_env || []).length) {
+    rows.push(['Waiting on', '<span class="mono" '
+      + 'style="color:var(--state-warn)">'
+      + esc(rule.missing_env.join(', ')) + ': no record yet</span>']);
+  }
+  if ((rule.flags || {}).re_verify_pending) {
+    rows.push(['Re-verify', '<span class="mono" '
+      + 'style="color:var(--state-warn)">pending</span>']);
+  }
+  var summary = reason
+    ? 'On the review list because ' + reason + '.'
+    : 'Not on the review list.';
+  if (findings.length) {
+    summary += ' The free checks name ' + findings.join(', ') + '.';
+  }
+  return '<button class="btn" data-act="nav" data-screen="board">'
+    + '← Board</button>'
+    + '<section style="margin-top:var(--space-6)">'
+    + '<p class="eyebrow">' + esc(feature.name) + '</p>'
+    + '<h1>' + esc(rule.id) + '</h1>'
+    + '<p class="sec">' + esc(rule.text) + '</p></section>'
+    + '<section class="stack"><div class="panel"><dl class="kv">'
+    + rows.map(function (row) {
+      return '<dt>' + esc(row[0]) + '</dt><dd>' + row[1] + '</dd>';
+    }).join('') + '</dl></div>'
+    + '<div class="panel"><h2>Review</h2><p class="sec">' + esc(summary)
+    + '</p></div></section>'
+    + '<section><p class="eyebrow">Proofs</p><div class="stack">'
+    + ((rule.proofs || []).length
+      ? rule.proofs.map(proofPanel).join('')
+      : '<div class="panel sec">This rule has no proof yet.</div>')
+    + '</div></section>';
+}
+function renderReview() {
+  var entries = DATA.review_list || [];
+  if (!entries.length) {
+    return '<section><p class="eyebrow">Review list</p>'
+      + '<div class="panel empty">Nothing needs a look. CI adds a rule here '
+      + 'when its risk asks for one, when an approval goes stale, or when the '
+      + 'test strength falls below the minimum.</div></section>';
+  }
+  var head = '<section><p class="eyebrow">Review list</p><h1>'
+    + entries.length + ' rules need a look</h1>'
+    + '<p class="sec">Ordered by risk. Open a rule to read its proof, then '
+    + 'approve it, add a case, or skip it.</p></section>';
+  var body = RISKS.map(function (risk) {
+    var group = entries.filter(function (entry) {
+      return (entry.risk || 'low') === risk;
+    });
+    if (!group.length) { return ''; }
+    return '<div class="group"><span class="gt">' + esc(risk)
+      + ' risk</span><span class="muted">(' + group.length + ')</span></div>'
+      + group.map(function (entry) {
+        return '<div class="rev" data-act="rule" data-feature="'
+          + esc(entry.feature) + '" data-rule="' + esc(entry.rule) + '">'
+          + '<span>' + esc(entry.feature) + '</span>'
+          + '<span class="mono">' + esc(entry.rule) + '</span>'
+          + tag(risk, risk === 'low')
+          + '<span class="sec">' + esc(entry.reason) + '</span></div>';
+      }).join('');
+  }).join('');
+  return head + '<section><div class="tbl">' + body + '</div></section>';
+}
+var DATA = null;
+var VIEW = {screen: 'board', feature: null, rule: null,
+            features: {}, groups: {}, filters: {}};
+var SCHEMA = 4;
+var STATES = ['Drafted', 'Proof ready', 'Tested', 'Recorded', 'Reviewed',
+              'Approved', 'Stale'];
+var TONES = {'Drafted': 'idle', 'Proof ready': 'warn', 'Tested': 'warn',
+             'Recorded': 'neutral', 'Reviewed': 'neutral',
+             'Approved': 'pass', 'Stale': 'fail'};
+var RISKS = ['high', 'medium', 'low'];
+function loadData(callback) {
   var frame = document.createElement('iframe');
+  var done = false;
   frame.setAttribute('hidden', '');
   frame.setAttribute('aria-hidden', 'true');
-  frame.setAttribute('data-purlin-slot', slot);
   frame.style.display = 'none';
   function finish(value) {
-    if (done) return;
+    if (done) { return; }
     done = true;
     window.removeEventListener('message', onMessage);
-    var prev = loadFrames[slot];
-    if (prev && prev !== frame && prev.parentNode) {
-      prev.parentNode.removeChild(prev);
-    }
-    loadFrames[slot] = frame;
-    /* The page's own view of what it rendered, as a window property rather
-       than a declaration, so it can be replaced on every reload (RULE-1). */
-    if (value && slot === 'data') window.PURLIN_DATA = value;
     callback(value);
   }
-  function onMessage(ev) {
-    if (ev.source !== frame.contentWindow) return;
-    if (!ev.data || typeof ev.data !== 'object' || !('purlin' in ev.data)) return;
-    finish(ev.data.purlin);
+  function onMessage(event) {
+    if (event.source !== frame.contentWindow) { return; }
+    if (!event.data || typeof event.data !== 'object') { return; }
+    if (!('purlin' in event.data)) { return; }
+    finish(event.data.purlin);
   }
   window.addEventListener('message', onMessage);
-  frame.srcdoc = '<script src="' + src + '?t=' + Date.now() + '"><\/script>'
-    + '<script>parent.postMessage({purlin: (typeof ' + globalName
-    + ' === "undefined") ? null : ' + globalName + '}, "*");<\/script>';
+  frame.srcdoc = '<script src=".purlin/report-data.js?t=' + Date.now()
+    + '"><\/script><script>parent.postMessage({purlin: '
+    + '(typeof PURLIN_DATA === "undefined") ? null : PURLIN_DATA}, "*");<\/script>';
   document.body.appendChild(frame);
-  setTimeout(function() { finish(null); }, 3000);
+  setTimeout(function () { finish(null); }, 3000);
 }
-function loadData(callback) {
-  loadScriptValue('data', '.purlin/report-data.js', 'PURLIN_DATA', callback);
+function esc(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
+    return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;',
+            "'": '&#39;'}[c];
+  });
 }
-function loadStamp(callback) {
-  loadScriptValue('stamp', '.purlin/report-stamp.js', 'PURLIN_STAMP', callback);
+function tone(state) { return TONES[state] || 'idle'; }
+function pill(state) {
+  var solid = state === 'Approved' ? ' solid' : '';
+  return '<span class="pill' + solid + '" style="color:var(--state-'
+    + tone(state) + ')"><b>' + esc(String(state).toUpperCase())
+    + '</b></span>';
 }
-
-loadData(function(initial) {
-
-  /* ===== DATA ===== */
-  var D = initial;
-
-  var app = document.getElementById('app');
-
-  /* A rule a feature inherits carries its body once for the whole payload
-     under `shared_rules`, keyed by the entry's own id, and the feature holds
-     `{id, label, ref}` in its place (`report_data` RULE-8). Every read of a
-     rule goes through here: the shared body first and the entry's own keys
-     over it, so `label` wins. An entry with no `ref`, or a payload with no
-     `shared_rules` at all, is already complete and is handed back untouched,
-     which is how this page renders a digest written before the map existed
-     (purlin_report RULE-52). */
-  function resolveRule(r) {
-    if (r && r.ref && D.shared_rules && D.shared_rules[r.id]) {
-      return Object.assign({}, D.shared_rules[r.id], r);
+function tag(text, plain) {
+  return '<span class="tag' + (plain ? ' plain' : '') + '">' + esc(text)
+    + '</span>';
+}
+function coverage(covered, total) {
+  var pct = total ? Math.round((covered / total) * 100) : 0;
+  var hue = pct === 100 ? 'pass' : pct >= 60 ? 'warn' : 'fail';
+  return '<span class="cov" style="color:var(--state-' + hue + ')"><b>'
+    + covered + '/' + total + '</b><i><span style="width:' + pct
+    + '%"></span></i></span>';
+}
+function strength(value) {
+  if (value == null) { return '<span class="mono muted">n/a</span>'; }
+  var hue = value >= 80 ? 'pass' : value >= 50 ? 'warn' : 'fail';
+  return '<span class="mono" style="color:var(--state-' + hue + ')">'
+    + Math.round(value) + '%</span>';
+}
+function recordCell(record) {
+  if (!record) { return '<span class="mono muted">none</span>'; }
+  var label = record.label || 'local';
+  var hue = label === 'ci' ? 'pass' : label === 'developer' ? 'neutral'
+    : 'warn';
+  var text = label + (record.os ? ' ' + record.os : '');
+  return '<span class="mono" style="color:var(--state-' + hue + ')">'
+    + esc(text) + '</span>';
+}
+function hostLink(path, text) {
+  var base = webRemote();
+  var label = esc(text || path);
+  if (!base || !path) { return '<span class="mono">' + label + '</span>'; }
+  return '<a class="mono" href="' + esc(base + '/blob/'
+    + (DATA.commit || 'HEAD') + '/' + path) + '">' + label + '</a>';
+}
+function webRemote() {
+  var remote = DATA && DATA.remote_url;
+  if (!remote) { return null; }
+  remote = String(remote).replace(/\.git$/, '')
+    .replace(/^git@([^:]+):/, 'https://$1/');
+  return remote.indexOf('github.com') >= 0 ? remote : null;
+}
+function designThumb(feature) {
+  var files = (feature.source_globs || []).concat(
+    feature.source_path ? [feature.source_path] : []);
+  for (var i = 0; i < files.length; i++) {
+    var file = String(files[i]);
+    if (/[*?\[]/.test(file)) { continue; }
+    if (/\.(png|jpg|jpeg|svg|webp)$/i.test(file)) {
+      return '<img class="thumb" src="' + esc(file) + '" alt="'
+        + esc(feature.name + ' design') + '" onerror="this.remove()">';
     }
-    return r;
   }
-
-  if (!D) {
-    app.innerHTML = '<div class="no-data"><h2>No dashboard data</h2><p>Run <code>purlin:status</code> to generate data, then refresh this page.</p><p style="margin-top:8px">Make sure <code>"report": true</code> is set in <code>.purlin/config.json</code></p></div>';
+  return '';
+}
+function ageText(iso) {
+  var then = Date.parse(iso || '');
+  if (!then) { return {text: 'age unknown', stale: true}; }
+  var seconds = Math.max(0, (Date.now() - then) / 1000);
+  if (seconds < 90) { return {text: 'less than a minute old', stale: false}; }
+  if (seconds < 5400) {
+    return {text: Math.round(seconds / 60) + ' minutes old', stale: false};
+  }
+  if (seconds < 172800) {
+    return {text: Math.round(seconds / 3600) + ' hours old', stale: true};
+  }
+  return {text: Math.round(seconds / 86400) + ' days old', stale: true};
+}
+function eachRule(visit) {
+  (DATA.features || []).forEach(function (feature) {
+    (feature.rules || []).forEach(function (rule) { visit(rule, feature); });
+  });
+}
+function hasRisks() {
+  var tagged = false;
+  eachRule(function (rule) {
+    if ((rule.risk || 'low') !== 'low') { tagged = true; }
+  });
+  return tagged;
+}
+function hasRecords() {
+  return (DATA.features || []).some(function (f) { return !!f.latest_record; });
+}
+function hasApprovals() {
+  return (DATA.features || []).some(function (f) {
+    return (f.approvals || []).length > 0;
+  });
+}
+function featureNamed(name) {
+  var found = null;
+  (DATA.features || []).forEach(function (feature) {
+    if (feature.name === name) { found = feature; }
+  });
+  return found;
+}
+function topBar() {
+  var age = ageText(DATA && DATA.generated_at);
+  var hue = age.stale ? 'warn' : 'pass';
+  var line = 'Data: ' + age.text
+    + (age.stale ? ' — run purlin:status to refresh' : '');
+  var gate = DATA && DATA.gate ? DATA.gate.gate : null;
+  return '<header class="topbar"><span class="brand"><img id="brand-mark" src="'
+    + logoSrc() + '" alt="Purlin"><span>purlin</span></span>'
+    + '<span class="fresh" style="color:var(--state-' + hue + ')">'
+    + '<span class="dot"></span>' + esc(line) + '</span>'
+    + '<span class="spacer"></span>'
+    + (gate ? tag('gate: ' + gate) : '')
+    + (DATA && DATA.commit ? tag(String(DATA.commit).slice(0, 7), true) : '')
+    + themeButton() + '</header>';
+}
+function tabs() {
+  var open = VIEW.screen;
+  var items = [['board', 'Board']];
+  if (VIEW.rule) { items.push(['rule', VIEW.feature + ' ' + VIEW.rule]); }
+  items.push(['review', 'Review list (' + (DATA.review_list || []).length + ')']);
+  return '<nav class="tabs">' + items.map(function (item) {
+    return '<button data-act="nav" data-screen="' + item[0] + '"'
+      + (open === item[0] ? ' aria-current="page"' : '') + '>'
+      + esc(item[1]) + '</button>';
+  }).join('') + '</nav>';
+}
+function notices() {
+  var lines = [];
+  if (DATA.dirty) {
+    lines.push('The working tree has uncommitted changes, so what is on this '
+      + 'board is not what a commit would carry.');
+  }
+  (DATA.warnings || []).forEach(function (warning) { lines.push(warning); });
+  return lines.map(function (line) {
+    return '<div class="notice"><span class="dot" '
+      + 'style="color:var(--state-warn)"></span>' + esc(line) + '</div>';
+  }).join('');
+}
+function render() {
+  var app = document.getElementById('app');
+  if (!DATA) {
+    app.innerHTML = '<div class="wrap"><div class="empty">No board data yet. '
+      + 'Run purlin:status to write .purlin/report-data.js, then reload this '
+      + 'page.</div></div>';
     return;
   }
-
-  /* ===== THEME ===== */
-  var savedTheme = localStorage.getItem('purlin-theme');
-  if (savedTheme === 'light' || savedTheme === 'dark') {
-    document.documentElement.setAttribute('data-theme', savedTheme);
+  if (DATA.schema_version !== SCHEMA) {
+    app.innerHTML = topBar() + '<div class="wrap"><div class="notice">'
+      + esc('This data was written for schema ' + DATA.schema_version
+        + ' and this page reads schema ' + SCHEMA
+        + '. Run purlin:status to write it again.') + '</div></div>';
+    return;
   }
-
-  function toggleTheme() {
-    var cur = document.documentElement.getAttribute('data-theme');
-    var next = cur === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('purlin-theme', next);
+  var body = VIEW.screen === 'rule' ? renderRule()
+    : VIEW.screen === 'review' ? renderReview()
+    : notices() + renderBoard();
+  app.innerHTML = topBar() + tabs() + '<div class="wrap">' + body + '</div>';
+}
+function onClick(event) {
+  var node = event.target;
+  while (node && node !== document && !node.getAttribute('data-act')) {
+    node = node.parentNode;
   }
-
-  /* ===== HELPERS ===== */
-  function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
-
-  /* ===== MODAL =====
-     One helper for every modal on this page. It mounts on document.body and
-     not on #app, because render() rewrites #app wholesale: a dialog mounted
-     inside it would be destroyed mid-interaction by any sort, expand or theme
-     toggle. Escape, the backdrop and the close button all close it, Tab is
-     trapped inside it, and focus returns to whatever opened it. */
-  var modalEl = null;
-  var modalOpener = null;
-
-  function modalFocusables() {
-    if (!modalEl) return [];
-    return Array.prototype.slice.call(modalEl.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
-      .filter(function (el) { return el.offsetParent !== null; });
+  if (!node || node === document) { return; }
+  var act = node.getAttribute('data-act');
+  if (act === 'theme') { toggleTheme(); }
+  else if (act === 'nav') { VIEW.screen = node.getAttribute('data-screen'); }
+  else if (act === 'filter') {
+    var id = node.getAttribute('data-filter');
+    VIEW.filters[id] = !VIEW.filters[id];
+  } else if (act === 'group') {
+    var group = node.getAttribute('data-group');
+    VIEW.groups[group] = VIEW.groups[group] === false;
+  } else if (act === 'feature') {
+    var name = node.getAttribute('data-feature');
+    VIEW.features[name] = !VIEW.features[name];
+  } else if (act === 'rule') {
+    VIEW.feature = node.getAttribute('data-feature');
+    VIEW.rule = node.getAttribute('data-rule');
+    VIEW.screen = 'rule';
   }
-
-  function onModalKey(e) {
-    if (!modalEl) return;
-    if (e.key === 'Escape') { closeModal(); return; }
-    if (e.key !== 'Tab') return;
-    var items = modalFocusables();
-    if (!items.length) { e.preventDefault(); return; }
-    var first = items[0];
-    var last = items[items.length - 1];
-    if (e.shiftKey && document.activeElement === first) {
-      e.preventDefault(); last.focus();
-    } else if (!e.shiftKey && document.activeElement === last) {
-      e.preventDefault(); first.focus();
-    } else if (modalEl.contains(document.activeElement) === false) {
-      e.preventDefault(); first.focus();
-    }
-  }
-
-  function closeModal() {
-    if (!modalEl) return;
-    document.removeEventListener('keydown', onModalKey, true);
-    if (modalEl.parentNode) modalEl.parentNode.removeChild(modalEl);
-    modalEl = null;
-    if (modalOpener && typeof modalOpener.focus === 'function') modalOpener.focus();
-    modalOpener = null;
-  }
-
-  function openModal(title, bodyHtml, footHtml) {
-    /* A second open replaces the first rather than stacking two dialogs. */
-    var opener = document.activeElement;
-    closeModal();
-    modalOpener = opener;
-    var overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
-    overlay.id = 'modal-overlay';
-    overlay.innerHTML =
-      '<div class="modal" id="modal" role="dialog" aria-modal="true" '
-      + 'aria-labelledby="modal-title">'
-      + '<div class="modal-head"><h2 id="modal-title">' + esc(title) + '</h2>'
-      + '<button class="modal-close" id="modal-close" aria-label="Close">&times;</button></div>'
-      + '<div class="modal-body">' + bodyHtml + '</div>'
-      + (footHtml ? '<div class="modal-foot">' + footHtml + '</div>' : '')
-      + '</div>';
-    overlay.addEventListener('click', function (e) {
-      if (e.target === overlay) closeModal();
-    });
-    document.body.appendChild(overlay);
-    modalEl = overlay;
-    document.getElementById('modal-close').addEventListener('click', closeModal);
-    document.addEventListener('keydown', onModalKey, true);
-    document.getElementById('modal-close').focus();
-  }
-
-  /* ===== PLATFORMS ===== */
-  function platformTesting() { return !!(D && D.platform_testing); }
-
-  function platformRows() {
-    var p = (D && D.platforms) || {};
-    var summary = p.summary || {};
-    var hostId = p.host_id || '';
-    /* The host first, then by id: what ran here needs no runner. The host's
-       row is the one report_data RULE-41 adds for the results that name no
-       platform, and it sorts first by the same comparison as a declared row
-       that happens to be this machine. */
-    return Object.keys(summary).sort(function (a, b) {
-      if ((a === hostId) !== (b === hostId)) return a === hostId ? -1 : 1;
-      return a < b ? -1 : a > b ? 1 : 0;
-    }).map(function (id) {
-      var row = summary[id] || {};
-      row.id = id;
-      row.isHost = (id === hostId);
-      return row;
-    });
-  }
-
-  /* The Platform cell of both modals. `unregistered` is a real host_id, not a
-     failed lookup, but a reader seeing it in a Platform column has no way to
-     know that, so the host row says what it is instead (RULE-46). */
-  function platformLabel(r) {
-    return (r.host && r.id === 'unregistered') ? 'this host' : r.id;
-  }
-
-  /* The first column of every platform table. The header names both kinds
-     (RULE-47), because a column headed `Platform` over a row reading
-     `figma-mcp` asserts the wrong taxonomy; the cell carries the `env` badge
-     and the hand-run tooltip so the row says who has to act. */
-  function platformHeadCell() {
-    return '<th>Platform / environment</th>';
-  }
-
-  function platformNameCell(id, label, host) {
-    var t = isEnvironment(id) ? ' title="' + esc(envNote(id)) + '"' : '';
-    return '<td' + t + '>' + esc(label)
-      + (host ? '<span class="host-badge">host</span>' : '')
-      + envBadge(id) + '</td>';
-  }
-
-  /* A `kind: environment` registry id: a tool, an account or a model rather
-     than a host (report_data RULE-42 puts the word in the payload so nothing
-     here infers it from a missing `os`). */
-  function isEnvironment(id) {
-    var reg = ((D.platforms || {}).registry || {})[id] || {};
-    return reg.platform_kind === 'environment';
-  }
-
-  /* What a hand run of an environment id costs the reader, said wherever the
-     id appears (RULE-47). */
-  function envNote(id) {
-    return 'environment: satisfied only by a hand run with PURLIN_PLATFORM='
-      + id + ' on a host that has it';
-  }
-
-  function envBadge(id) {
-    return isEnvironment(id) ? '<span class="env-badge">env</span>' : '';
-  }
-
-  function platformAbbrev(id) {
-    /* An environment is named by its id and never abbreviated: `mac` for
-       `figma-mcp` would claim the chip is about this machine's OS. */
-    if (isEnvironment(id)) return id;
-    var reg = ((D.platforms || {}).registry || {})[id] || {};
-    var os = reg.os || '';
-    var family = os === 'windows' ? 'win' : os === 'macos' ? 'mac' : os === 'linux' ? 'linux' : '';
-    if (!family) return id;
-    /* The bare family id reads as its abbreviation; an id named after its
-       family keeps its suffix (`windows-2022` to `win-2022`), so two windows
-       ids never collapse into one chip word; any other id is itself, with the
-       OS in the tooltip. Long labels are ellipsised by the chip's CSS and the
-       full id is always in the tooltip (RULE-4). */
-    if (id === os) return family;
-    if (id.indexOf(os + '-') === 0) return family + id.slice(os.length);
-    return id;
-  }
-
-  /* Colour by meaning, from the RULE-3 status colours: green proved, amber
-     awaiting, red failing. The chip never alters the row's status badge. */
-  function pchipClass(status) {
-    if (status === 'FAILING') return 'pchip pchip-fail';
-    if (status === 'AWAITING') return 'pchip pchip-wait';
-    return 'pchip pchip-ok';
-  }
-
-  function pchipMark(status) {
-    if (status === 'FAILING') return '\u2717';
-    if (status === 'AWAITING') return '\u23f3';
-    return '\u2713';
-  }
-
-  function platformChips(f) {
-    var recs = f.platforms || {};
-    var ids = Object.keys(recs);
-    if (!ids.length) return '';
-    var hostId = (D.platforms || {}).host_id || '';
-    ids.sort(function (a, b) {
-      if ((a === hostId) !== (b === hostId)) return a === hostId ? -1 : 1;
-      return a < b ? -1 : a > b ? 1 : 0;
-    });
-    var out = '<div class="pchips">';
-    for (var i = 0; i < ids.length; i++) {
-      var rec = recs[ids[i]] || {};
-      var title = ids[i] + ': ' + rec.status + ', ' + (rec.proved || 0) + '/'
-        + (rec.declared || 0) + ' proved';
-      if (rec.awaiting && rec.awaiting.length) title += ', awaiting ' + rec.awaiting.join(', ');
-      if (rec.failed && rec.failed.length) title += ', failing ' + rec.failed.join(', ');
-      if (isEnvironment(ids[i])) title += '; ' + envNote(ids[i]);
-      out += '<span class="' + pchipClass(rec.status) + '" title="' + esc(title) + '">'
-          + esc(platformAbbrev(ids[i])) + envBadge(ids[i]) + ' '
-          + pchipMark(rec.status) + '</span>';
-    }
-    return out + '</div>';
-  }
-
-  function declaredRows() {
-    /* Rows some proof declares. The host row is excluded wherever a figure
-       means "a runner is holding this back" or "a platform is failing": the
-       machine the report was written on holds nothing back, and its failures
-       are already the project's own Failing count (RULE-46). */
-    return platformRows().filter(function (r) { return !r.host; });
-  }
-
-  function heldPlatform() {
-    /* The platform binding Verified: the declared row with the fewest verified. */
-    var rows = declaredRows();
-    var worst = null;
-    for (var i = 0; i < rows.length; i++) {
-      if (worst === null || (rows[i].verified || 0) < (worst.verified || 0)) worst = rows[i];
-    }
-    return worst;
-  }
-
-  function platformCountsModal() {
-    var rows = platformRows();
-    var h = '<table class="modal-table"><thead><tr>' + platformHeadCell()
-      + '<th>Features</th>'
-      + '<th>Verified</th><th>Passing</th><th>Awaiting</th><th>Failing</th>'
-      + '<th>Last proved</th></tr></thead><tbody>';
-    for (var i = 0; i < rows.length; i++) {
-      var r = rows[i];
-      h += '<tr>' + platformNameCell(r.id, platformLabel(r), r.isHost)
-        + '<td>' + (r.features || 0) + '</td><td>' + (r.verified || 0) + '</td>'
-        + '<td>' + (r.passing || 0) + '</td><td>' + (r.awaiting || 0) + '</td>'
-        + '<td>' + (r.failing || 0) + '</td>'
-        + '<td>' + (r.last_proved ? esc(relTime(r.last_proved)) : '\u2014') + '</td></tr>';
-    }
-    return h + '</tbody></table>';
-  }
-
-  function platformIntegrityModal() {
-    var rows = platformRows();
-    var h = '<table class="modal-table"><thead><tr>' + platformHeadCell()
-      + '<th>Executed</th>'
-      + '<th>Measured</th><th>Integrity</th><th>Assessed</th><th>S / W / H</th>'
-      + '</tr></thead><tbody>';
-    for (var i = 0; i < rows.length; i++) {
-      var r = rows[i];
-      var g = r.integrity || {};
-      var cov = g.coverage || {};
-      h += '<tr>' + platformNameCell(r.id, platformLabel(r), r.isHost)
-        + '<td>' + (cov.total || 0) + '</td><td>' + (cov.measured || 0) + '</td>'
-        + '<td>' + (g.weighted == null ? '\u2014' : g.weighted + '%') + '</td>'
-        + '<td>' + (g.assessed == null ? '\u2014' : g.assessed + '%') + '</td>'
-        + '<td>' + (g.strong || 0) + ' / ' + (g.weak || 0) + ' / ' + (g.hollow || 0)
-        + '</td></tr>';
-    }
-    h += '</tbody></table>';
-    var inv = (D.audit_summary && D.audit_summary.invalidated) || 0;
-    if (inv) {
-      h += '<p class="modal-note">' + inv + ' grade' + (inv === 1 ? '' : 's')
-        + ' invalidated, re-run purlin:audit</p>';
-    }
-    return h;
-  }
-
-  function platformFailingModal() {
-    var byPlatform = {};
-    var feats = (D.features || []);
-    for (var i = 0; i < feats.length; i++) {
-      var recs = feats[i].platforms || {};
-      for (var id in recs) {
-        if (!Object.prototype.hasOwnProperty.call(recs, id)) continue;
-        if (recs[id].status !== 'FAILING') continue;
-        var e = byPlatform[id] || (byPlatform[id] = {features: [], proofs: []});
-        e.features.push(feats[i].name);
-        e.proofs = e.proofs.concat(recs[id].failed || []);
-      }
-    }
-    var ids = Object.keys(byPlatform).sort();
-    var h = '<table class="modal-table"><thead><tr>' + platformHeadCell()
-      + '<th>Failing features</th><th>Proofs</th></tr></thead><tbody>';
-    for (var j = 0; j < ids.length; j++) {
-      h += '<tr>' + platformNameCell(ids[j], ids[j], false) + '<td>'
-        + esc(byPlatform[ids[j]].features.join(', ')) + '</td><td>'
-        + esc(byPlatform[ids[j]].proofs.join(', ')) + '</td></tr>';
-    }
-    return h + '</tbody></table>';
-  }
-
-  var MODAL_COUNT_FOOT = 'Verified counts a feature only when every declared '
-    + 'platform is proved and receipted. Awaiting proofs leave the coverage '
-    + 'fraction and never fail a feature.';
-  var MODAL_INTEGRITY_FOOT = 'A grade describes the test, not the platform, so '
-    + 'this split reports measurement coverage per platform rather than a claim '
-    + 'that a proof is stronger on one machine. The host row covers the results '
-    + 'that name no platform: they ran here. Proof Design is not split: a '
-    + 'description is graded from its text and has no platform.';
-  var MODAL_FAILING_FOOT = 'A failing proof on a declared platform fails the '
-    + 'feature everywhere, because the rule it covers reads FAIL in every '
-    + 'surface.';
-
-  function openPlatformModal(kind) {
-    if (kind === 'integrity') {
-      openModal('Proof Integrity by platform', platformIntegrityModal(),
-                MODAL_INTEGRITY_FOOT);
-    } else if (kind === 'failing') {
-      openModal('Failing by platform', platformFailingModal(), MODAL_FAILING_FOOT);
-    } else {
-      openModal(kind === 'passing' ? 'Passing by platform' : 'Verified by platform',
-                platformCountsModal(), MODAL_COUNT_FOOT);
-    }
-  }
-
-  function cardAttrs(kind) {
-    /* Only when the project actually declares a platform. With none, the
-       cards are inert exactly as they were before this existed. */
-    if (!platformTesting()) return '';
-    return ' role="button" tabindex="0" aria-haspopup="dialog" data-modal="'
-      + kind + '"';
-  }
-
-  function relTime(iso) {
-    if (!iso) return null;
-    var diff = (Date.now() - new Date(iso).getTime()) / 1000;
-    if (diff < 60) return 'just now';
-    if (diff < 3600) return Math.floor(diff / 60) + ' min ago';
-    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
-    return Math.floor(diff / 86400) + 'd ago';
-  }
-
-  /* Who wrote the data, in the words a developer uses (RULE-49). Silent for
-     a payload from before `generated_by` existed. */
-  function sourceLabel(by) {
-    if (by === 'sync_status') return 'purlin:status';
-    if (by === 'pre-commit') return 'pre-commit';
-    if (by === 'hook') return 'auto';
-    return '';
-  }
-
-  function staleness(iso, by) {
-    var src = sourceLabel(by);
-    var suffix = src ? ' (' + src + ')' : '';
-    if (!iso) return { cls: 'stale', text: 'Data: none', warn: ' \u2014 run purlin:status' };
-    var diff = (Date.now() - new Date(iso).getTime()) / 1000;
-    var text = 'Data: ' + relTime(iso) + suffix;
-    if (diff < 3600) return { cls: 'fresh', text: text, warn: '' };
-    if (diff < 86400) return { cls: 'warning', text: text, warn: ' \u2014 run purlin:status to refresh' };
-    return { cls: 'stale', text: text, warn: ' \u2014 run purlin:status to refresh' };
-  }
-
-  function covClass(status) {
-    if (status === 'VERIFIED') return 'cov-verified';
-    if (status === 'PASSING') return 'cov-verified';
-    if (status === 'PARTIAL') return 'cov-partial';
-    if (status === 'FAILING') return 'cov-fail';
-    if (status === 'UNTESTED') return 'cov-partial';
-    return 'cov-none';
-  }
-
-  function badgeClass(status) {
-    if (status === 'VERIFIED') return 'sb sb-verified';
-    if (status === 'PASSING') return 'sb sb-passing';
-    if (status === 'PARTIAL') return 'sb sb-partial';
-    if (status === 'FAILING') return 'sb sb-failing';
-    if (status === 'UNTESTED') return 'sb sb-untested';
-    return 'sb sb-none';
-  }
-
-  function badgeText(status) {
-    if (status === 'VERIFIED') return 'Verified';
-    if (status === 'PASSING') return 'Passing';
-    if (status === 'PARTIAL') return 'Partial';
-    if (status === 'FAILING') return 'Failing';
-    if (status === 'UNTESTED') return 'Untested';
-    return 'Untested';
-  }
-
-  /* Renders one gauge cell. A percentage when measured; otherwise an explicit
-     token naming why there is no number, with the reason in a tooltip. Never
-     an em dash — that is indistinguishable from "nobody looked". */
-  function gaugeCell(pct, gauge, label, which) {
-    var state = (gauge && gauge.state) ? gauge.state : 'unmeasured';
-    var cov = (gauge && gauge.coverage) ? gauge.coverage : null;
-    var covText = (cov && cov.total != null)
-      ? ' (' + cov.measured + ' of ' + cov.total + ' assessed)' : '';
-    if (pct != null) {
-      return '<td class="' + intClass(pct) + '" title="' + label + ': ' + pct + '%' + covText + '">' + pct + '%</td>';
-    }
-    if (state === 'excluded') {
-      /* The unscorable word comes from this gauge's own vocabulary: STRUCTURAL
-         describes a description, EXCLUDED describes a test, and the two never
-         mix (RULE-35). Neither is a defect. */
-      var word = which === 'design' ? 'structural' : 'excluded';
-      var why = which === 'design'
-        ? 'every description is a structural presence check, the correct proof for a structural rule'
-        : 'every proof is excluded from scoring, so nothing is gradeable';
-      return '<td class="int int-excluded" title="' + label + ': ' + why + covText + '">' + word + '</td>';
-    }
-    return '<td class="int int-pending" title="' + label + ': not measured yet' + covText + ' — run purlin:audit">not audited</td>';
-  }
-
-  function intClass(v) {
-    if (v == null) return 'int int-na';
-    if (v >= 80) return 'int int-hi';
-    if (v >= 50) return 'int int-mid';
-    return 'int int-lo';
-  }
-
-  function ruleStatusCls(s) {
-    if (s === 'PASS') return 'rst rst-pass';
-    if (s === 'FAIL') return 'rst rst-fail';
-    if (s === 'DEFERRED') return 'rst rst-def';
-    return 'rst rst-np';
-  }
-
-  function labelCls(l) {
-    if (l === 'global') return 'rlbl rlbl-global';
-    if (l === 'required') return 'rlbl rlbl-scoped';
-    return 'rlbl';
-  }
-
-  function priorityOrder(p) {
-    return {CRITICAL:0, HIGH:1, MEDIUM:2, LOW:3}[p] || 4;
-  }
-
-  function findingCls(p) {
-    if (p === 'CRITICAL') return 'fi fi-crit';
-    if (p === 'HIGH') return 'fi fi-high';
-    if (p === 'MEDIUM') return 'fi fi-med';
-    return 'fi fi-low';
-  }
-
-  function findingGroupCls(p) {
-    if (p === 'CRITICAL') return 'fgt fgt-crit';
-    if (p === 'HIGH') return 'fgt fgt-high';
-    if (p === 'MEDIUM') return 'fgt fgt-med';
-    return 'fgt fgt-low';
-  }
-
-  var _structRE = /grep|verify\s.*(?:exist|present|section|field|appear|contain)|file\s+exists|contains?\s+(?:section|field)/i;
-  var _behavRE = /returns?|rejects?|blocks?|logs?|sends?|creates?|deletes?|updates?|computes?|detects?|emits?|produces?|triggers?|fails?|raises?|validates?|enforces?|prevents?/i;
-  function isStructuralDesc(desc) {
-    if (!desc) return false;
-    if (_behavRE.test(desc)) return false;
-    return _structRE.test(desc);
-  }
-
-  function auditTag(a, desc) {
-    if (a) {
-      var u = a.toUpperCase();
-      if (u === 'STRONG') return '<span class="atag atag-s">Strong</span>';
-      if (u === 'WEAK') return '<span class="atag atag-w">Weak</span>';
-      if (u === 'HOLLOW') return '<span class="atag atag-h">Hollow</span>';
-      if (u === 'MANUAL') return '<span class="atag atag-s">Manual</span>';
-    }
-    if (isStructuralDesc(desc)) return '<span class="atag atag-st">Structural</span>';
-    return '';
-  }
-
-  /* The payload shape this page understands (purlin_report RULE-51). A digest
-     whose `schema_version` is greater was written by a newer Purlin, so some
-     of what it carries has no renderer here; the page says so once and still
-     renders everything it does recognise, because half a dashboard beats a
-     blank one. A payload with no `schema_version` is schema 1. */
-  var SUPPORTED_SCHEMA = 3;
-  function schemaBanner() {
-    var v = (D && typeof D.schema_version === 'number') ? D.schema_version : 1;
-    if (v <= SUPPORTED_SCHEMA) return '';
-    return '<div class="ab ab-schema"><span class="ab-icon">&#9888;</span><span class="ab-text">'
-      + 'This digest was written by a newer Purlin. Run <span class="ab-cmd">purlin:init --update</span> to refresh the dashboard.'
-      + '</span></div>';
-  }
-
-  /* The pending-migrations banner (purlin_report RULE-23). It is project
-     state, not feature state, so it is shown above every feature's own banner
-     and in every status including VERIFIED: a VERIFIED feature whose project
-     has not been updated is verified against a legacy alias. Same directive
-     sync_status prints, so the two cannot send the reader different places. */
-  function migrationBanner() {
-    var m = (typeof D !== 'undefined' && D && D.migrations) ? D.migrations : [];
-    if (!m.length) return '';
-    var ids = [];
-    for (var i = 0; i < m.length; i++) ids.push(m[i].id);
-    return '<div class="ab ab-migrations"><span class="ab-icon">&#9888;</span><span class="ab-text">'
-      + m.length + ' pending migration' + (m.length !== 1 ? 's' : '')
-      + ' (' + esc(ids.join(', ')) + ') &mdash; run <span class="ab-cmd">purlin:init --update</span></span></div>';
-  }
-
-  function actionBanner(f) {
-    var mig = migrationBanner();
-    if (f.status === 'VERIFIED') return mig;
-    if (f.status === 'PASSING') {
-      return mig + '<div class="ab ab-passing"><span class="ab-icon">&#10003;</span><span class="ab-text">All rules proved &mdash; run <span class="ab-cmd">purlin:verify</span> to issue a verification receipt</span></div>';
-    }
-    if (f.status === 'FAILING') {
-      var failCount = 0;
-      for (var i = 0; i < f.rules.length; i++) { if (resolveRule(f.rules[i]).status === 'FAIL') failCount++; }
-      return mig + '<div class="ab ab-failing"><span class="ab-icon">&#10007;</span><span class="ab-text">' + failCount + ' test' + (failCount !== 1 ? 's' : '') + ' failing &mdash; fix code or tests to reach PASSING</span></div>';
-    }
-    if (f.status === 'PARTIAL') {
-      var noProof = 0;
-      for (var i = 0; i < f.rules.length; i++) { if (resolveRule(f.rules[i]).status === 'NONE') noProof++; }
-      return mig + '<div class="ab ab-partial"><span class="ab-icon">&#9888;</span><span class="ab-text">' + noProof + ' rule' + (noProof !== 1 ? 's' : '') + ' need proofs &mdash; write tests to reach PASSING</span></div>';
-    }
-    if (f.status === 'UNTESTED') {
-      return mig + '<div class="ab ab-untested"><span class="ab-icon">&#9744;</span><span class="ab-text">No proofs yet &mdash; write tests to begin coverage</span></div>';
-    }
-    return mig;
-  }
-
-  var hasGlobalAudit = false;
-
-  function proofCell(p) {
-    var planned = (p.status === 'planned');
-    var awaiting = (p.status === 'awaiting');
-    var h = (planned || awaiting) ? '<div class="rprf-planned">' : '';
-    if (hasGlobalAudit && !planned && !awaiting) h += auditTag(p.audit, p.description);
-    if (p.id) h += '<span class="fid">' + esc(p.id) + '</span> ';
-    if (planned) h += '<span class="rprf-planned-tag">not run</span> ';
-    /* "nobody wrote it" and "written and waiting on a runner" are different
-       states, so they get different tags; an executed entry says where it ran
-       so a two-platform proof's two rows can be told apart. */
-    if (awaiting) {
-      h += '<span class="pchip pchip-wait">awaiting ' + esc(p.platform || '?') + '</span> ';
-    } else if (p.platform) {
-      h += '<span class="pchip pchip-ok">@' + esc(p.platform) + '</span> ';
-    }
-    /* A proof the recorded run skipped on this host reads off evidence an
-       earlier commit produced, not off this run (report_data RULE-45). Amber,
-       like awaiting: something is missing here, and it is not a failure. */
-    if (p.inherited) {
-      h += '<span class="pchip pchip-wait" title="'
-        + esc(p.inherited_reason || 'no reason recorded')
-        + '">inherited</span> ';
-    }
-    if (p.description) {
-      h += '<span>' + esc(p.description) + '</span>';
-    }
-    var loc = '';
-    if (p.test_file) loc += p.test_file;
-    if (p.test_name) loc += '::' + p.test_name;
-    if (loc) h += '<div class="rprf-loc">' + esc(loc) + '</div>';
-    if (planned || awaiting) h += '</div>';
-    return h;
-  }
-
-  var extIconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
-
-  /* ===== SORTING ===== */
-  var sortCol = 'status';
-  var sortAsc = true;
-
-  function statusOrder(s) { return {FAILING:0, PARTIAL:1, PASSING:2, VERIFIED:3, UNTESTED:4}[s] || 5; }
-
-  function sortFeatures(features) {
-    var arr = features.slice();
-    arr.sort(function(a, b) {
-      var va, vb;
-      switch (sortCol) {
-        case 'name': va = a.name.toLowerCase(); vb = b.name.toLowerCase(); break;
-        case 'coverage': va = a.total ? a.proved / a.total : -1; vb = b.total ? b.proved / b.total : -1; break;
-        case 'status': va = statusOrder(a.status); vb = statusOrder(b.status); break;
-        case 'integrity':
-          va = (a.audit && a.audit.integrity != null) ? a.audit.integrity : -1;
-          vb = (b.audit && b.audit.integrity != null) ? b.audit.integrity : -1;
-          break;
-        case 'design':
-          va = (a.design && a.design.design != null) ? a.design.design : -1;
-          vb = (b.design && b.design.design != null) ? b.design.design : -1;
-          break;
-        case 'verified':
-          va = (a.receipt && a.receipt.timestamp) ? new Date(a.receipt.timestamp).getTime() : 0;
-          vb = (b.receipt && b.receipt.timestamp) ? new Date(b.receipt.timestamp).getTime() : 0;
-          break;
-        default: va = statusOrder(a.status); vb = statusOrder(b.status);
-      }
-      if (va < vb) return sortAsc ? -1 : 1;
-      if (va > vb) return sortAsc ? 1 : -1;
-      return a.name.localeCompare(b.name);
-    });
-    return arr;
-  }
-
-  /* ===== RENDER ===== */
-  /* Persist expanded rows and category state across reloads */
-  var expandedSet = {};
-  try { expandedSet = JSON.parse(localStorage.getItem('purlin-expanded') || '{}'); } catch(e) {}
-  var categorySet = {};
-  try { categorySet = JSON.parse(localStorage.getItem('purlin-categories') || '{}'); } catch(e) {}
-
-  function groupByCategory(features) {
-    var cats = {};
-    var order = [];
-    for (var i = 0; i < features.length; i++) {
-      var cat = features[i].category || 'other';
-      if (!cats[cat]) { cats[cat] = []; order.push(cat); }
-      cats[cat].push(features[i]);
-    }
-    return { cats: cats, order: order };
-  }
-
-  function catSummary(features) {
-    var s = { total: features.length, verified: 0, passing: 0, partial: 0, failing: 0, untested: 0, proved: 0, rules: 0 };
-    for (var i = 0; i < features.length; i++) {
-      var f = features[i];
-      s.proved += f.proved;
-      s.rules += f.total;
-      if (f.status === 'VERIFIED') s.verified++;
-      else if (f.status === 'PASSING') s.passing++;
-      else if (f.status === 'PARTIAL') s.partial++;
-      else if (f.status === 'FAILING') s.failing++;
-      else s.untested++;
-    }
-    return s;
-  }
-
-  function catDisplayName(cat) {
-    if (cat === '_anchors') return 'anchors';
-    return cat;
-  }
-
-  /* One gauge card. `cov` drives both the denominator sub-label and the amber
-     override, so a score can never be read without knowing what it covers. */
-  /* The cache timestamp behind one gauge, and whether that gauge is asking to
-     be re-run. Unmeasured counts the same as stale here: both are gauges whose
-     number cannot be trusted until a command is run (RULE-37). */
-  function gaugeStamp(summary, which) {
-    return summary && (which === 'design' ? summary.last_design_audit
-                                          : summary.last_audit);
-  }
-
-  function gaugeNeedsRefresh(summary, which) {
-    return !summary || !gaugeStamp(summary, which) || !!summary.stale;
-  }
-
-  /* The narrowest command that refreshes what is actually stale. Design grading
-     is deterministic and needs no tests; Integrity grading needs test code and
-     costs LLM calls, so sending someone to a full audit to refresh Design alone
-     spends budget for nothing (RULE-37). */
-  function refreshCommand(audit, design) {
-    var dStale = gaugeNeedsRefresh(design, 'design');
-    var aStale = gaugeNeedsRefresh(audit, 'integrity');
-    if (dStale && aStale) return 'purlin:audit';
-    if (dStale) return 'purlin:audit --design';
-    return 'purlin:audit --integrity';
-  }
-
-  /* The label says which gauge and how old, and nothing else. The old text
-     spelled the command out inline ('/design not measured \u2014 run
-     purlin:audit --design'), which read as the name of a skill that does not
-     exist and made the label longer than the header it sat in. */
-  function freshnessText(summary, which) {
-    var name = which === 'design' ? 'Design' : 'Integrity';
-    var ts = gaugeStamp(summary, which);
-    if (!summary || !ts) return name + ': not measured';
-    var txt = name + ': ' + (relTime(ts) || 'unknown');
-    if (summary.stale) txt += ' (stale)';
-    return txt;
-  }
-
-  /* The refresh directive, moved out of the label text into its tooltip. A
-     fresh gauge gets no tooltip at all, so a tooltip being there is itself the
-     signal that something needs running (RULE-37). */
-  function freshnessTitle(summary, which, audit, design) {
-    if (!gaugeNeedsRefresh(summary, which)) return '';
-    return 'Run ' + refreshCommand(audit, design);
-  }
-
-  /* The declared remote-verification mode. Read from the payload, never
-     recomputed: two surfaces computing one figure is how they come to
-     disagree (purlin_report RULE-40).
-
-     The tooltip carries the declaration/enforcement split because the chip
-     alone invites the reading that the config field is the gate. It is not:
-     config.json is a file in the tree the agent can edit, and enforcement is
-     branch protection marking the verify-gate job a required check. */
-  function remoteVerificationChip(mode, status) {
-    if (!mode || mode === 'off') return '';
-    var st = status || {};
-    var proofs = st.proofs || {};
-    var state = st.state || 'none';
-    /* The words are the data's, not the config's (RULE-40): what a developer
-       waiting on runners wants to know is whether anything is still out. */
-    var text, cls;
-    if (state === 'failing') {
-      text = 'Remote: ' + (proofs.failed || 0) + ' failing';
-      cls = ' rv-fail';
-    } else if (state === 'awaiting') {
-      text = 'Remote: ' + (proofs.awaiting || 0) + ' awaiting';
-      cls = ' rv-wait';
-    } else if (state === 'proved') {
-      text = 'Remote: proved';
-      cls = ' rv-ok';
-    } else {
-      text = 'Remote: none declared';
-      cls = '';
-    }
-    if (mode === 'required') text += ' \u00b7 required';
-    var detail = '';
-    if (state !== 'none') {
-      detail = (proofs.proved || 0) + ' of ' + (proofs.declared || 0)
-             + ' platform proofs proved';
-      if (proofs.awaiting) detail += ', ' + proofs.awaiting + ' awaiting a runner';
-      if (proofs.failed) detail += ', ' + proofs.failed + ' failing';
-      if (st.platforms && st.platforms.length) detail += ' (' + st.platforms.join(', ') + ')';
-      detail += '. ';
-    }
-    var title = detail + 'Mode ' + mode + ', declared in .purlin/config.json. The field '
-              + 'declares the mode; enforcement is branch protection marking the '
-              + 'verify-gate job a required check.';
-    return '<span class="rv-mode' + (mode === 'required' ? ' required' : '') + cls
-         + '" data-rv-mode="' + esc(mode) + '" data-rv-state="' + esc(state)
-         + '" title="' + esc(title) + '">' + esc(text) + '</span>';
-  }
-
-  function gaugeFreshness(summary, which, audit, design) {
-    var cls = gaugeNeedsRefresh(summary, which) ? 'audit-time stale' : 'audit-time';
-    var title = freshnessTitle(summary, which, audit, design);
-    return '<span class="' + cls + '" data-gauge="' + which + '"'
-         + (title ? ' title="' + esc(title) + '"' : '') + '>'
-         + esc(freshnessText(summary, which)) + '</span>';
-  }
-
-  /* Mirrors the server's _gauge_headline: report the coverage-weighted figure,
-     falling back to the assessed score for data written before it existed. */
-  function gaugeHeadline(summary, which) {
-    if (!summary) return null;
-    if (summary.weighted != null) return summary.weighted;
-    return which === 'design' ? summary.design : summary.integrity;
-  }
-
-  function gaugeCard(summary, label, pct, counts, attrs) {
-    var cov = summary && summary.coverage ? summary.coverage : null;
-    var covPct = (cov && cov.total) ? Math.round((cov.measured / cov.total) * 100) : null;
-
-    /* The sub-label answers a different question from the number above it:
-       "over how much?". So it carries its own colour, banded on measurement
-       coverage rather than on the score. It runs through intClass, so both
-       gauges and both rows of a card share one set of bands with nothing to
-       drift from (dashboard_visual RULE-10). A dim 10px denominator under a
-       large coloured percentage was read as decoration; this is the number
-       that says whether the percentage above it means anything. */
-    var sub = counts;
-    var subCls = '';
-    var subTitle = counts;
-    if (covPct != null) {
-      sub = cov.measured + ' of ' + cov.total + ' measured';
-      subCls = ' cov-label ' + intClass(covPct);
-      subTitle = counts + ' · ' + covPct + '% measurement coverage';
-      if (summary && summary.assessed != null) {
-        subTitle += ' · ' + summary.assessed + '% of those assessed';
-      }
-    }
-
-    /* A grade whose inputs moved since it was made is not evidence, and the
-       server has already moved it out of `measured`. Saying so here is what
-       turns a quietly shrinking number into an instruction (RULE-45). */
-    var inv = summary && summary.invalidated ? summary.invalidated : 0;
-    if (inv) {
-      subTitle += ' · ' + inv + ' grade' + (inv === 1 ? '' : 's')
-        + ' invalidated, re-run purlin:audit';
-    }
-
-    /* Who graded. Silent for the default auditor, because a label every project
-       carries is one nobody reads; named the moment it is somebody else, because
-       a gauge produced by an unfamiliar tool is a different claim. */
-    var auditors = (summary && summary.auditors) || {};
-    var named = [];
-    for (var an in auditors) {
-      if (!Object.prototype.hasOwnProperty.call(auditors, an)) continue;
-      if (an !== 'claude') named.push(an);
-    }
-    if (named.length) {
-      sub += ' · by ' + esc(named.join(', '));
-      var all = [];
-      for (var bn in auditors) {
-        if (!Object.prototype.hasOwnProperty.call(auditors, bn)) continue;
-        all.push(esc(bn) + ' (' + auditors[bn] + ')');
-      }
-      subTitle += ' · graded by ' + all.join(', ');
-    }
-
-    /* The band follows the number, because the number is already honest: pct is
-       coverage-weighted server-side, so a high score over a thin slice arrives
-       here as a low percentage rather than as a high one needing an override.
-       Forcing amber on incomplete coverage now does the opposite of its purpose,
-       promoting a genuinely red gauge to amber. */
-    var cls;
-    if (pct == null) {
-      cls = ' int-na';
-    } else {
-      cls = pct >= 80 ? '' : pct >= 50 ? ' int-mid' : ' int-lo';
-    }
-    var num = pct == null ? '&mdash;' : pct + '%';
-
-    return '<div class="summary-card sc-integrity' + cls + (attrs ? ' sc-click' : '')
-         + '"' + (attrs || '') + '><div class="summary-card-number">' + num + '</div>'
-         + '<div class="summary-card-label">' + label + '</div>'
-         + '<div class="summary-card-sub' + subCls + '" title="' + subTitle + '">' + sub + '</div></div>';
-  }
-
-  function render() {
-    /* render() rewrites #app. The modal lives on document.body precisely so a
-       re-render cannot orphan it, and it is closed here so a sort or a theme
-       toggle never leaves a dialog open over rebuilt content. */
-    closeModal();
-    var st = staleness(D.timestamp, D.generated_by);
-    var S = D.summary;
-    var A = D.audit_summary;
-    var G = D.design_summary;
-    hasGlobalAudit = !!(A && A.integrity != null);
-    var features = sortFeatures(D.features);
-
-    var h = '';
-
-    /* Project-wide, so it is rendered once above everything rather than per
-       feature the way the migrations banner is (RULE-51). */
-    h += schemaBanner();
-
-    /* Header */
-    h += '<header class="header"><div class="header-left">';
-    h += '<div class="header-logo"><svg viewBox="140 100 720 520" xmlns="http://www.w3.org/2000/svg" height="50">';
-    h += '<g stroke-width="2" fill="none" style="stroke:var(--logo-guide)"><line x1="500" y1="120" x2="500" y2="480" stroke-dasharray="8,8"/><line x1="500" y1="145" x2="170" y2="409"/><line x1="500" y1="145" x2="830" y2="409"/><line x1="400" y1="210" x2="400" y2="255"/><line x1="600" y1="210" x2="600" y2="255"/></g>';
-    h += '<polyline points="400,280 500,390 600,280" fill="none" stroke-width="14" stroke-linejoin="miter" style="stroke:var(--logo-fill)"/>';
-    h += '<path d="M500 160L190 408 190 440 810 440 810 408ZM500 200L262.5 390 737.5 390Z" fill-rule="evenodd" style="fill:var(--logo-fill)"/>';
-    h += '<text x="500" y="550" text-anchor="middle" style="font-family:Montserrat,var(--font-sans);font-weight:200;font-size:76px;letter-spacing:.12em;fill:var(--logo-fill)">PURLIN</text>';
-    h += '</svg></div>';
-    h += '<span class="header-project">' + esc(D.project) + '</span>';
-    h += '</div><div class="header-right">';
-    h += '<div class="staleness" title="Re-read from .purlin/report-data.js whenever this tab regains focus or becomes visible; nothing runs while you are away"><span class="staleness-dot ' + st.cls + '"></span><span class="staleness-text' + (st.warn ? ' ' + st.cls : '') + '">' + esc(st.text + st.warn) + '</span>';
-    h += '</div>';
-    /* One freshness label per gauge. A single combined "audit" label reported
-       the Integrity cache's age as though it were the project's, so a repo
-       graded for Design an hour ago read as 78 days stale (RULE-15). */
-    h += gaugeFreshness(G, 'design', A, G);
-    h += gaugeFreshness(A, 'integrity', A, G);
-    h += remoteVerificationChip(D.remote_verification, D.remote_status);
-    h += '<button class="theme-toggle" id="theme-btn" title="Toggle dark/light mode">';
-    h += '<svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
-    h += '<svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
-    h += '</button>';
-    h += '</div></header>';
-
-    /* Summary strip */
-    h += '<div class="summary-strip">';
-    h += '<div class="summary-card sc-total"><div class="summary-card-number">' + S.total_features + '</div><div class="summary-card-label">Specs</div>';
-    if (D.anchors_summary.total) h += '<div class="summary-card-sub">+ ' + D.anchors_summary.total + ' anchors</div>';
-    h += '</div>';
-    /* The headline numbers are always the all-platform figures. The
-       sub-label names the platform holding them back, because a Verified count
-       that fell because a runner has not run yet reads as a regression without
-       it (report_data RULE-4). */
-    var held = S.held_by_platform || 0;
-    var bind = held > 0 ? heldPlatform() : null;
-    var vsub = '';
-    if (platformTesting()) {
-      vsub = held > 0 && bind
-        ? '<div class="summary-card-sub">' + (S.verified_here || 0) + ' on host, '
-          + (bind.verified || 0) + ' on ' + esc(bind.id) + '</div>'
-        : '<div class="summary-card-sub">every declared platform</div>';
-    }
-    h += '<div class="summary-card sc-verified' + (platformTesting() ? ' sc-click' : '') + '"'
-      + cardAttrs('verified') + '><div class="summary-card-number">' + S.verified
-      + '</div><div class="summary-card-label">Verified</div>' + vsub + '</div>';
-    var psub = (platformTesting() && held > 0)
-      ? '<div class="summary-card-sub">' + held + ' awaiting a platform</div>' : '';
-    h += '<div class="summary-card sc-passing' + (platformTesting() ? ' sc-click' : '') + '"'
-      + cardAttrs('passing') + '><div class="summary-card-number">' + (S.passing || 0)
-      + '</div><div class="summary-card-label">Passing</div>' + psub + '</div>';
-    var incompleteCount = (S.partial || 0) + (S.untested || 0);
-    h += '<div class="summary-card sc-partial"><div class="summary-card-number">' + incompleteCount + '</div><div class="summary-card-label">Incomplete</div>';
-    if (S.partial && S.untested) h += '<div class="summary-card-sub">' + S.partial + ' partial, ' + S.untested + ' untested</div>';
-    else if (S.untested) h += '<div class="summary-card-sub">' + S.untested + ' untested</div>';
-    else if (S.partial) h += '<div class="summary-card-sub">' + S.partial + ' partial</div>';
-    h += '</div>';
-    /* Failing opens the modal only when a platform actually fails: a card
-       that opens an empty table is worse than one that does not open. */
-    var platformFails = declaredRows().some(function (r) { return (r.failing || 0) > 0; });
-    h += '<div class="summary-card sc-failing' + (platformFails ? ' sc-click' : '') + '"'
-      + (platformFails ? cardAttrs('failing') : '') + '><div class="summary-card-number">'
-      + S.failing + '</div><div class="summary-card-label">Failing</div></div>';
-    /* Both gauge cards. They reuse the same colour bands and CSS classes, so
-       the dashboard_visual anchor (RULE-10) covers both.
-
-       The headline is coverage-weighted, not the assessed score: 100% computed
-       from 15 cached assessments over 643 executed proofs is not a green
-       project, and it read 100% while 39 of 40 feature rows read `not audited`.
-       Weighted, it reads 2%. The sub-label keeps the denominator and the tooltip
-       keeps the assessed score, so a low gauge can still be told apart from a
-       thin one (RULE-36). */
-    h += gaugeCard(G, 'Proof Design', G ? gaugeHeadline(G, 'design') : null,
-      G ? (G.provable + 'P ' + G.loose + 'L ' + G.unprovable + 'U') : 'run purlin:audit');
-    h += gaugeCard(A, 'Proof Integrity', A ? gaugeHeadline(A, 'integrity') : null,
-      A ? (A.strong + 'S ' + A.weak + 'W ' + A.hollow + 'H')
-        : (S.untested === S.total_features ? 'no tests yet' : 'run purlin:audit'),
-      cardAttrs('integrity'));
-    h += '</div>';
-
-    /* Uncommitted work section */
-    var uw = D.uncommitted || [];
-    if (uw.length > 0) {
-      h += '<div class="uw-section"><div class="uw-header" id="uw-toggle">';
-      h += '<span class="uw-chv">&#9654;</span>';
-      h += '<span class="uw-count">' + uw.length + '</span>';
-      h += '<span class="uw-label">uncommitted file' + (uw.length !== 1 ? 's' : '') + '</span>';
-      h += '</div>';
-      h += '<div class="uw-files" id="uw-files">';
-      for (var ui = 0; ui < uw.length; ui++) {
-        h += '<span class="uw-f">' + esc(uw[ui]) + '</span>';
-      }
-      h += '</div></div>';
-    }
-
-    /* Shared table columns */
-    var cols = [
-      {key:'name', label:'Spec', w:''},
-      {key:'coverage', label:'Coverage', w:'140px'},
-      {key:'status', label:'Status', w:'100px'},
-      {key:'design', label:'Design', w:'130px'},
-      {key:'integrity', label:'Integrity', w:'130px'},
-      {key:'verified', label:'Verified', w:'180px'}
-    ];
-
-    function renderTableHead(nameLabel) {
-      var th = '<thead><tr>';
-      for (var ci = 0; ci < cols.length; ci++) {
-        var c = cols[ci];
-        var lbl = (ci === 0 && nameLabel) ? nameLabel : c.label;
-        var arrow = (sortCol === c.key) ? (sortAsc ? '\u25B2' : '\u25BC') : '\u25BC';
-        var acls = (sortCol === c.key) ? ' active' : '';
-        th += '<th' + (c.w ? ' style="width:' + c.w + '"' : '') + ' data-col="' + c.key + '">' + lbl + ' <span class="sa' + acls + '">' + arrow + '</span></th>';
-      }
-      th += '</tr></thead>';
-      return th;
-    }
-
-    function renderColHeaders(nameLabel) {
-      var th = '<tr class="cat-colhead">';
-      for (var ci = 0; ci < cols.length; ci++) {
-        var c = cols[ci];
-        var lbl = (ci === 0 && nameLabel) ? nameLabel : c.label;
-        var arrow = (sortCol === c.key) ? (sortAsc ? '\u25B2' : '\u25BC') : '\u25BC';
-        var acls = (sortCol === c.key) ? ' active' : '';
-        th += '<th' + (c.w ? ' style="width:' + c.w + '"' : '') + ' data-col="' + c.key + '">' + lbl + ' <span class="sa' + acls + '">' + arrow + '</span></th>';
-      }
-      th += '</tr>';
-      return th;
-    }
-
-    /* Split features into specs and anchors */
-    var specFeatures = features.filter(function(f) { return f.type !== 'anchor'; });
-    var anchorFeatures = features.filter(function(f) { return f.type === 'anchor'; });
-
-    function renderCategoryBlock(grouped) {
-      var bh = '';
-      for (var gi = 0; gi < grouped.order.length; gi++) {
-        var cat = grouped.order[gi];
-        var catFeatures = grouped.cats[cat];
-        var cs = catSummary(catFeatures);
-        var catOpen = categorySet[cat] !== false; /* expanded by default; false = user-collapsed */
-        var catPct = cs.rules ? Math.round(cs.proved / cs.rules * 100) : 0;
-        var catCovCls = cs.failing > 0 ? 'cov-fail' : (cs.partial > 0 || cs.untested > 0 || cs.proved < cs.rules) ? 'cov-partial' : 'cov-verified';
-
-        /* Category header row */
-        bh += '<tr class="cat-header' + (catOpen ? ' expanded' : '') + '" data-cat="' + esc(cat) + '">';
-        bh += '<td><div class="cat-name"><span class="cat-chv">&#9654;</span>';
-        bh += '<span class="cat-label">' + esc(catDisplayName(cat)) + '</span>';
-        bh += '<span class="cat-count">(' + cs.total + ')</span>';
-        bh += '</div></td>';
-        bh += '<td><div class="cov"><span class="cat-cov">' + cs.proved + '/' + cs.rules + '</span>';
-        bh += '<div class="cat-cov-bar"><div class="cat-cov-fill ' + catCovCls + '" style="width:' + catPct + '%"></div></div></div></td>';
-        bh += '<td colspan="4"><div class="cat-summary">';
-        if (cs.verified) bh += '<span class="cat-stat"><span class="cat-dot cat-dot-v"></span>' + cs.verified + ' verified</span>';
-        if (cs.passing) bh += '<span class="cat-stat"><span class="cat-dot cat-dot-pa"></span>' + cs.passing + ' passing</span>';
-        if (cs.partial) bh += '<span class="cat-stat"><span class="cat-dot cat-dot-pt"></span>' + cs.partial + ' partial</span>';
-        if (cs.failing) bh += '<span class="cat-stat"><span class="cat-dot cat-dot-f"></span>' + cs.failing + ' failing</span>';
-        if (cs.untested) bh += '<span class="cat-stat"><span class="cat-dot cat-dot-u"></span>' + cs.untested + ' untested</span>';
-        bh += '</div></td>';
-        bh += '</tr>';
-
-        /* Feature rows (only if category is open) */
-        if (catOpen) {
-          bh += renderColHeaders();
-          for (var i = 0; i < catFeatures.length; i++) {
-            var f = catFeatures[i];
-            var isExpanded = expandedSet[f.name];
-            var pct = f.total ? Math.round(f.proved / f.total * 100) : 0;
-            var intVal = (f.audit && f.audit.integrity != null) ? f.audit.integrity : null;
-            var dsnVal = (f.design && f.design.design != null) ? f.design.design : null;
-
-            /* Evidence older than code (RULE-44). The row says so in its
-               title and wears an amber chip; nothing about the status badge
-               moves, because the receipt is still true about the commit it
-               names. */
-            var evTitle = f.evidence_stale
-              ? ' title="' + esc('Evidence older than code: the scope changed since the tests behind this receipt ran. Run purlin:test ' + f.name) + '"'
-              : '';
-            bh += '<tr class="fr cat-child' + (isExpanded ? ' expanded' : '') + '" data-name="' + esc(f.name) + '"' + evTitle + '>';
-
-            /* Name + type */
-            bh += '<td><div class="fn"><span class="chv">&#9654;</span><span class="fnt">' + esc(f.name) + '</span>';
-            if (f.type === 'anchor') {
-              if (f.is_global) {
-                bh += '<span class="tp tp-global">global</span>';
-              } else {
-                bh += '<span class="tp tp-anchor">anchor</span>';
-              }
-            }
-            if (f.source_url) {
-              var extTitle = 'Source: ' + f.source_url;
-              if (f.source_path) extTitle += '\nPath: ' + f.source_path;
-              if (f.pinned) extTitle += '\nPinned: ' + (f.pinned.length > 10 ? f.pinned.substring(0, 7) : f.pinned);
-              bh += '<span class="ext-icon" title="' + esc(extTitle) + '">' + extIconSvg + '</span>';
-              if (f.ext_status === 'stale' || f.ext_status === 'unpinned') {
-                bh += '<span class="ext-stale" title="Run purlin:anchor sync to update">STALE</span>';
-              }
-            }
-            bh += '</div></td>';
-
-            /* Coverage */
-            bh += '<td><div class="cov"><span class="cov-t">' + f.proved + '/' + f.total + '</span>';
-            bh += '<div class="cov-bar"><div class="cov-fill ' + covClass(f.status) + '" style="width:' + pct + '%"></div></div></div></td>';
-
-            /* Status */
-            /* The badge never changes; a held PASSING badge only gains a
-               title naming what it waits on. The chip strip is a second line
-               under it, with no click handler of its own so the row click
-               keeps working (RULE-43). */
-            var heldOn = [];
-            var frecs = f.platforms || {};
-            for (var pk in frecs) {
-              if (Object.prototype.hasOwnProperty.call(frecs, pk)
-                  && frecs[pk].status === 'AWAITING') heldOn.push(pk);
-            }
-            var badgeTitle = (f.status === 'PASSING' && heldOn.length)
-              ? ' title="' + esc('Awaiting ' + heldOn.join(', ')) + '"' : '';
-            var evChip = f.evidence_stale
-              ? '<div class="pchips"><span class="pchip pchip-wait ev-stale" title="'
-                + esc('The scope changed since the tests behind this receipt ran. Run purlin:test ' + f.name)
-                + '">stale evidence</span></div>'
-              : '';
-            bh += '<td class="col-status"><span class="' + badgeClass(f.status) + '"'
-              + badgeTitle + '>' + badgeText(f.status) + '</span>'
-              + evChip + platformChips(f) + '</td>';
-
-            /* Design and Integrity. gaugeCell never emits an em dash: a blank
-               cell under a populated summary card is what RULE-35 forbids. */
-            bh += gaugeCell(dsnVal, f.design, 'Proof Design', 'design');
-            bh += gaugeCell(intVal, f.audit, 'Proof Integrity', 'integrity');
-
-            /* Verified */
-            if (f.receipt && f.receipt.timestamp) {
-              var vt = relTime(f.receipt.timestamp);
-              var vcls = f.receipt.stale ? 'ver ver-stale' : 'ver';
-              bh += '<td class="' + vcls + '">' + esc(vt) + '</td>';
-            } else {
-              bh += '<td class="ver">&mdash;</td>';
-            }
-            bh += '</tr>';
-
-            /* Detail row */
-            if (isExpanded) {
-              bh += renderDetail(f);
-            }
-          }
-        }
-      }
-      return bh;
-    }
-
-    function renderSectionTable(sectionFeatures) {
-      var sh = '<div class="table-container"><table>';
-      sh += '<colgroup>';
-      for (var cgi = 0; cgi < cols.length; cgi++) {
-        sh += '<col' + (cols[cgi].w ? ' style="width:' + cols[cgi].w + '"' : '') + '>';
-      }
-      sh += '</colgroup>';
-      sh += '<tbody>';
-      sh += renderCategoryBlock(groupByCategory(sectionFeatures));
-      sh += '</tbody></table></div>';
-      return sh;
-    }
-
-    /* Specs section — non-anchor features only */
-    h += '<div class="section-label">Specs</div>';
-    h += renderSectionTable(specFeatures);
-
-    /* Anchors section — anchor features only, separate from specs */
-    if (anchorFeatures.length > 0) {
-      h += '<div class="section-label">Anchors</div>';
-      h += renderSectionTable(anchorFeatures);
-    }
-
-    /* Footer */
-    h += '<footer class="footer"><span>Generated by Purlin' + (D.version ? ' v' + esc(D.version) : '') + '</span>';
-    if (D.docs_url) {
-      h += '<a href="' + esc(D.docs_url) + '" target="_blank" rel="noopener">Documentation</a>';
-    }
-    h += '</footer>';
-
-    app.innerHTML = h;
-
-    /* Attach event listeners */
-    document.getElementById('theme-btn').addEventListener('click', function() { toggleTheme(); render(); });
-
-    var uwToggle = document.getElementById('uw-toggle');
-    if (uwToggle) {
-      uwToggle.addEventListener('click', function() {
-        this.classList.toggle('expanded');
-      });
-    }
-
-    var ths = app.querySelectorAll('th[data-col]');
-    for (var ti = 0; ti < ths.length; ti++) {
-      ths[ti].addEventListener('click', function(e) {
-        var col = this.getAttribute('data-col');
-        if (sortCol === col) { sortAsc = !sortAsc; } else { sortCol = col; sortAsc = true; }
-        render();
-      });
-    }
-
-    var cats = app.querySelectorAll('.cat-header');
-    for (var ci2 = 0; ci2 < cats.length; ci2++) {
-      cats[ci2].addEventListener('click', function() {
-        var cat = this.getAttribute('data-cat');
-        categorySet[cat] = (categorySet[cat] === false); /* collapse stores false, expand stores true */
-        try { localStorage.setItem('purlin-categories', JSON.stringify(categorySet)); } catch(e) {}
-        render();
-      });
-    }
-
-    var modalCards = app.querySelectorAll('.summary-card[data-modal]');
-    for (var mi = 0; mi < modalCards.length; mi++) {
-      modalCards[mi].addEventListener('click', function () {
-        openPlatformModal(this.getAttribute('data-modal'));
-      });
-      modalCards[mi].addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
-          e.preventDefault();
-          openPlatformModal(this.getAttribute('data-modal'));
-        }
-      });
-    }
-
-    var frs = app.querySelectorAll('.fr');
-    for (var fi = 0; fi < frs.length; fi++) {
-      frs[fi].addEventListener('click', function() {
-        var name = this.getAttribute('data-name');
-        expandedSet[name] = !expandedSet[name];
-        try { localStorage.setItem('purlin-expanded', JSON.stringify(expandedSet)); } catch(e) {}
-        render();
-      });
-    }
-  }
-
-  function renderDetail(f) {
-    var h = '<tr class="dr cat-child"><td colspan="6"><div class="dc">';
-
-    /* Action banner */
-    h += actionBanner(f);
-
-    /* External reference info block */
-    if (f.source_url) {
-      h += '<div class="ext-ref-block"><div class="dst">External Reference</div>';
-      h += '<table class="ext-ref-table"><tbody>';
-      h += '<tr><td class="ext-ref-label">Source</td><td><a href="' + esc(f.source_url) + '" target="_blank" rel="noopener">' + esc(f.source_url) + '</a></td></tr>';
-      if (f.source_path) {
-        h += '<tr><td class="ext-ref-label">Path</td><td><code>' + esc(f.source_path) + '</code></td></tr>';
-      }
-      if (f.pinned) {
-        /* A git pin is a commit SHA: hex only, so it shows as its 7-char
-           prefix. A Figma pin is an ISO 8601 timestamp whose "-", "T" and ":"
-           never match the hex shape, so it shows whole. Anything else renders
-           verbatim. report_data carries no source-kind field, so the pin's own
-           shape is the discriminator (RULE-26). */
-        var isGitSha = /^[0-9a-fA-F]{7,40}$/.test(f.pinned);
-        var pd = (isGitSha && f.pinned.length > 10) ? f.pinned.substring(0, 7) : f.pinned;
-        h += '<tr><td class="ext-ref-label">Pinned</td><td><code>' + esc(pd) + '</code></td></tr>';
-      } else {
-        h += '<tr><td class="ext-ref-label">Pinned</td><td class="ext-ref-warn">Unpinned</td></tr>';
-      }
-      h += '</tbody></table></div>';
-    }
-
-    /* Description */
-    if (f.description) {
-      h += '<div class="desc-block">' + esc(f.description) + '</div>';
-    }
-
-    /* Runner-gated proofs still waiting for their runner. The coverage fraction
-       on this row already excludes the rules they are the only proof for, so
-       without this line the row reads a clean N/N and never says a platform the
-       project claims to support is unproven (sync_status RULE-47). Warn, never
-       block: it carries no status change and no red. */
-    var aw = f.awaiting_runner || [];
-    var precs = f.platforms || {};
-    var pids = Object.keys(precs);
-    if (pids.length) {
-      /* One block, one line per declared platform, host first. The legacy
-         tier-grouped block below still serves a payload written before
-         platform records existed. */
-      var hostId = (D.platforms || {}).host_id || '';
-      pids.sort(function (a, b) {
-        if ((a === hostId) !== (b === hostId)) return a === hostId ? -1 : 1;
-        return a < b ? -1 : a > b ? 1 : 0;
-      });
-      h += '<div class="dst">Platforms</div>';
-      h += '<div class="awr">';
-      for (var pi = 0; pi < pids.length; pi++) {
-        var rec = precs[pids[pi]] || {};
-        var line = '<div><span class="awr-tier">' + esc(pids[pi]) + '</span>';
-        if (pids[pi] === hostId) line += '<span class="awr-host">host</span>';
-        line += ' ' + (rec.proved || 0) + '/' + (rec.declared || 0) + ' proved';
-        if (rec.failed && rec.failed.length) {
-          line += ', ' + rec.failed.length + ' failing (' + esc(rec.failed.join(', ')) + ')';
-        }
-        if (rec.awaiting && rec.awaiting.length) {
-          line += ', awaiting ' + esc(rec.awaiting.join(', '));
-        }
-        if (rec.provenance && rec.provenance.when) {
-          line += ' \u00b7 ' + esc(relTime(rec.provenance.when)) + ' ('
-            + esc(rec.provenance.runner || 'runner not recorded') + ')';
-        }
-        h += line + '</div>';
-      }
-      h += '</div>';
-    } else if (aw.length) {
-      var awTiers = {};
-      for (var ai = 0; ai < aw.length; ai++) {
-        (awTiers[aw[ai].tier] = awTiers[aw[ai].tier] || []).push(aw[ai].id);
-      }
-      h += '<div class="dst">Awaiting Runner</div>';
-      h += '<div class="awr">';
-      Object.keys(awTiers).sort().forEach(function (tier) {
-        h += '<div><span class="awr-tier">@' + esc(tier) + '</span> '
-           + esc(awTiers[tier].join(', '))
-           + ' declared, no result on this host</div>';
-      });
-      h += '</div>';
-    }
-
-    /* Rules table */
-    h += '<div class="dst">Rules &amp; Proofs</div>';
-    h += '<table class="rt"><thead><tr><th style="min-width:140px">Rule</th><th>Description</th><th style="width:80px">Anchor</th><th style="width:80px">Status</th><th style="width:40%">Proof</th></tr></thead><tbody>';
-
-    for (var ri = 0; ri < f.rules.length; ri++) {
-      var r = resolveRule(f.rules[ri]);
-      /* Support both old (r.proof) and new (r.proofs) data contract */
-      var proofs = r.proofs || (r.proof ? [r.proof] : []);
-
-      var rowCls = r.status === 'NONE' ? 'rule-np' : r.status === 'FAIL' ? 'rule-fail' : '';
-      h += '<tr' + (rowCls ? ' class="' + rowCls + '"' : '') + '>';
-      h += '<td class="rid">' + esc(r.id) + '</td>';
-      h += '<td class="rdesc">' + esc(r.description) + '</td>';
-      h += '<td class="' + labelCls(r.label) + '">' + (r.label === 'own' ? '' : esc(r.label)) + '</td>';
-      h += '<td class="' + ruleStatusCls(r.status) + '">' + esc(r.status) + '</td>';
-
-      if (proofs.length > 0) {
-        var proofHtml = proofs.map(function(p) { return proofCell(p); }).join('<div class="rprf-sep"></div>');
-        h += '<td class="rprf">' + proofHtml + '</td>';
-      } else {
-        h += '<td class="rprf">&mdash;</td>';
-      }
-      h += '</tr>';
-    }
-    h += '</tbody></table>';
-
-    /* Audit findings */
-    if (f.audit && f.audit.findings && f.audit.findings.length) {
-      h += '<div class="dst">Audit Findings</div>';
-      var a = f.audit;
-      var scoreCls = a.integrity >= 80 ? 'ascore ascore-hi' : a.integrity >= 50 ? 'ascore ascore-mid' : 'ascore ascore-lo';
-      h += '<div class="asummary"><span class="' + scoreCls + '">' + a.integrity + '%</span>';
-      h += '<div class="abd">';
-      h += '<span><span class="adot adot-s"></span> ' + a.strong + ' strong</span>';
-      h += '<span><span class="adot adot-w"></span> ' + a.weak + ' weak</span>';
-      h += '<span><span class="adot adot-h"></span> ' + a.hollow + ' hollow</span>';
-      h += '</div></div>';
-
-      /* Group by priority */
-      var grouped = {};
-      for (var fi2 = 0; fi2 < a.findings.length; fi2++) {
-        var fd = a.findings[fi2];
-        var p = fd.priority || 'LOW';
-        if (!grouped[p]) grouped[p] = [];
-        grouped[p].push(fd);
-      }
-      var prios = ['CRITICAL','HIGH','MEDIUM','LOW'];
-      for (var pi = 0; pi < prios.length; pi++) {
-        var pr = prios[pi];
-        if (!grouped[pr]) continue;
-        h += '<div class="' + findingGroupCls(pr) + '">' + pr + '</div>';
-        for (var gi = 0; gi < grouped[pr].length; gi++) {
-          var fd2 = grouped[pr][gi];
-          h += '<div class="' + findingCls(pr) + '">';
-          h += '<span class="fid">' + esc(fd2.proof_id) + '</span>';
-          if (fd2.level) h += auditTag(fd2.level);
-          h += '<span>' + esc(fd2.criterion) + '</span>';
-          if (fd2.fix) h += '<div class="ffix">' + esc(fd2.fix) + '</div>';
-          h += '</div>';
-        }
-      }
-    } else if (f.audit && f.audit.integrity != null) {
-      h += '<div class="dst">Audit</div>';
-      var a2 = f.audit;
-      var scoreCls2 = a2.integrity >= 80 ? 'ascore ascore-hi' : a2.integrity >= 50 ? 'ascore ascore-mid' : 'ascore ascore-lo';
-      h += '<div class="asummary"><span class="' + scoreCls2 + '">' + a2.integrity + '%</span>';
-      h += '<div class="abd">';
-      h += '<span><span class="adot adot-s"></span> ' + a2.strong + ' strong</span>';
-      h += '<span><span class="adot adot-w"></span> ' + a2.weak + ' weak</span>';
-      h += '<span><span class="adot adot-h"></span> ' + a2.hollow + ' hollow</span>';
-      h += '</div></div>';
-    }
-
-    h += '</div></td></tr>';
-    return h;
-  }
-
   render();
-
-  /* Live age labels: the "X ago" text ticks every 30s. Started once, here,
-     rather than inside render(): a timer created per render accumulated one
-     more copy on every sort, theme toggle and reload. It relabels only; it
-     never re-reads the data file. */
-  setInterval(function() {
-    var dot = app.querySelector('.staleness-dot');
-    var txt = app.querySelector('.staleness-text');
-    if (dot && txt && D.timestamp) {
-      var st = staleness(D.timestamp, D.generated_by);
-      dot.className = 'staleness-dot ' + st.cls;
-      txt.className = 'staleness-text' + (st.warn ? ' ' + st.cls : '');
-      txt.textContent = st.text + st.warn;
-    }
-    /* Re-render both gauge labels from their own timestamps, so the 30s tick
-       cannot drift from what render() produced. */
-    app.querySelectorAll('.audit-time').forEach(function(el) {
-      var which = el.getAttribute('data-gauge');
-      var sum = which === 'design' ? D.design_summary : D.audit_summary;
-      el.textContent = freshnessText(sum, which);
-      /* The tooltip ticks with the text: a label that went stale between
-         renders must gain its directive, not keep a stale absence. */
-      var tip = freshnessTitle(sum, which, D.audit_summary, D.design_summary);
-      if (tip) el.setAttribute('title', tip); else el.removeAttribute('title');
-    });
-  }, 30000);
-
-  /* ===== LIVE RELOAD (RULE-48) =====
-     No timer and no polling: the digest is re-read when this tab regains
-     focus or becomes visible, which is when someone is looking. What focus
-     reads first is `.purlin/report-stamp.js`, a three-field file written
-     beside the digest and after it, so a stamp that is readable always has
-     its digest already on disk. The digest itself is read only when the
-     stamp's timestamp differs from the rendered one: a focus on an unchanged
-     project used to download and evaluate the whole multi-megabyte digest
-     and throw it away. No stamp to be had, from an older project or a write
-     that has not landed, falls back to the full load, so the page is never
-     worse off than it was. The page re-renders only when the payload's
-     timestamp moved. Sort, theme, expansion and category state live outside
-     render(), so they survive. An open modal is left alone; the next focus
-     retries. */
-  var refreshing = false;
-  function refreshIfChanged() {
-    if (refreshing || document.visibilityState !== 'visible') return;
-    refreshing = true;
-    loadStamp(function(stamp) {
-      if (stamp && stamp.timestamp && stamp.timestamp === D.timestamp) {
-        refreshing = false;
-        return;
-      }
-      loadData(function(fresh) {
-        refreshing = false;
-        if (!fresh || !fresh.timestamp || fresh.timestamp === D.timestamp) return;
-        if (modalEl) return;
-        D = fresh;
-        render();
-      });
-    });
-  }
-  window.addEventListener('focus', refreshIfChanged);
-  document.addEventListener('visibilitychange', refreshIfChanged);
+}
+restoreTheme();
+document.getElementById('app').addEventListener('click', onClick);
+loadData(function (payload) {
+  DATA = payload;
+  render();
 });
 </script>
 </body>
