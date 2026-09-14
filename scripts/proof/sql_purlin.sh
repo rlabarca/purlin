@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # Purlin proof harness for SQL tests.
 #
-# Runs SQL test files against sqlite3, parses proof markers from comments,
-# and emits write-scoped proof JSON files.
+# Runs SQL test files against the project's SQL engine, parses proof markers
+# from comments, and writes what it observed to
+# .purlin/runtime/proofs/<feature>.<tier>.json. Proof files are runtime: they
+# are gitignored, so two runs on two branches never conflict and nothing about
+# a run is committed.
 #
 # Marker syntax in SQL files:
 #   -- @purlin feature_name PROOF-1 RULE-1 unit
@@ -10,37 +13,34 @@
 #   SELECT CASE WHEN (SELECT count(*) FROM users WHERE email='test@x.com') = 1
 #          THEN 'PASS' ELSE 'FAIL' END;
 #
-#   -- @purlin feature_name PROOF-2 RULE-2 unit on(windows-2022)
-#   -- @purlin feature_name PROOF-3 RULE-3 on(windows, macos)      (tier omitted: unit)
+#   -- @purlin feature_name PROOF-2 RULE-2        (tier omitted: unit)
 #
-# Each test block ends at the next @purlin marker or EOF.
-# The block must produce a result starting with 'PASS' or 'FAIL'.
+# Each test block ends at the next @purlin marker or EOF. The block must
+# produce a result starting with 'PASS' or 'FAIL'.
 #
-# A marker that declares on(...) writes its entry to
-# <feature>.proofs-<tier>@<host>.json, where <host> is PURLIN_PLATFORM when set
-# and otherwise the detected OS family (windows, macos, linux); every entry in
-# that file carries an eighth field, "platform", equal to <host>. A marker with
-# no on(...) writes the agnostic <feature>.proofs-<tier>.json with the seven
-# standard fields, whatever PURLIN_PLATFORM says. The harness never evaluates
-# version constraints.
+# The engine is the project's sql_engine setting, read from
+# .purlin/config.json and defaulting to sqlite3. PURLIN_SQL_ENGINE overrides
+# it for one run.
 #
-# The project root is found by walking up from the working directory to the
-# nearest ancestor holding specs/ or .purlin/ (proof_common RULE-22); the spec
-# scan, the specs/ fallback, the orphan-reaping existence check, the run marker
-# and the recorded test_file (RULE-23) are all rooted there, so running this
-# harness from a subdirectory writes into the project's own specs/ tree.
+# The operating system a proof must be proved on is a property of the spec,
+# not of the test: write @env(windows), @env(macos) or @env(linux) on the
+# proof line. The retired on(...) marker keyword is refused rather than
+# ignored, so a file carrying one fails with a line saying what to write
+# instead.
 #
-# The run also writes or merges the project's run marker
-# .purlin/runtime/test_run.json (proof_common RULE-19), so a receipt issued in
-# a consumer project can record which run its evidence came from.
+# The project root is the nearest ancestor of the working directory holding
+# specs/ or .purlin/, and the recorded test_file is relative to it with /
+# separators on every operating system.
+#
+# The run exits non-zero when it saw markers and wrote no entry at all, so
+# evidence that went missing fails the run rather than leaving a stale proof
+# file behind.
 #
 # Usage:
 #   bash scripts/proof/sql_purlin.sh <test_file.sql> [database_file]
 #
 # If database_file is omitted, uses :memory:
 set -euo pipefail
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [[ $# -lt 1 ]]; then
     echo "Usage: $0 <test_file.sql> [database_file]" >&2
@@ -59,32 +59,21 @@ fi
 # environment rather than being spliced into the Python source, so a path
 # holding a quote or a backslash is neither a syntax error nor an escape.
 PURLIN_SQL_TEST_FILE="$TEST_FILE" PURLIN_SQL_DB_FILE="$DB_FILE" python3 -c "
-import datetime, glob, json, os, platform, re, subprocess, sys, time
+import json, os, re, subprocess, sys
 
 test_file = os.environ['PURLIN_SQL_TEST_FILE']
 db_file = os.environ['PURLIN_SQL_DB_FILE']
 
-_FAMILIES = {'Windows': 'windows', 'Darwin': 'macos', 'Linux': 'linux'}
 
-
-def _host_platform():
-    # PURLIN_PLATFORM when set, else the OS family. The only host lookup here.
-    env = os.environ.get('PURLIN_PLATFORM', '').strip()
-    if env:
-        return env
-    system = platform.system()
-    return _FAMILIES.get(system, system.lower())
-
-
-# The project root (proof_common RULE-22, RULE-23). Everything the harness
-# addresses project-relative is rooted here and not at the working directory, so
-# a run started from a subdirectory writes into the project's own specs/ tree
-# instead of making a second one beside itself.
+# The project root. Everything the harness addresses project-relative is
+# rooted here and not at the working directory, so a run started from a
+# subdirectory writes into the project's own tree instead of making a second
+# one beside itself.
 
 
 def _find_root(start):
     '''Nearest ancestor of the directory start, start itself included, holding
-    a specs/ or a .purlin/ directory (RULE-22); None when none does.'''
+    a specs/ or a .purlin/ directory; None when none does.'''
     d = os.path.realpath(start)
     while True:
         if os.path.isdir(os.path.join(d, 'specs')) or os.path.isdir(os.path.join(d, '.purlin')):
@@ -96,18 +85,17 @@ def _find_root(start):
 
 
 def _project_root(start=None):
-    '''The RULE-22 project root of start (the working directory by default).'''
+    '''The project root of start (the working directory by default).'''
     start = os.path.realpath(start or os.getcwd())
     return _find_root(start) or start
 
 
 def _relativize(base_root, raw_path):
-    '''raw_path recorded relative to base_root with / separators (RULE-23,
-    RULE-15).
+    '''raw_path recorded relative to base_root with / separators.
 
     The argv path is resolved against the working directory first, so an
-    absolute invocation and a relative one naming the same file record the same
-    value: under the RULE-4 merge key a difference does not collapse, it
+    absolute invocation and a relative one naming the same file record the
+    same value: under the merge key a difference does not collapse, it
     accumulates as a second entry for one proof. A file outside base_root is
     made relative to the nearest project root above the file itself, and left
     absolute when there is none, rather than rewritten with ../ segments.
@@ -127,22 +115,45 @@ def _relativize(base_root, raw_path):
     return abs_path.replace(os.sep, '/').replace(chr(92), '/')
 
 
+def _sql_engine(root):
+    '''The command that runs a SQL script: PURLIN_SQL_ENGINE, else the
+    project's sql_engine setting, else sqlite3.'''
+    env = os.environ.get('PURLIN_SQL_ENGINE', '').strip()
+    if env:
+        return env
+    try:
+        with open(os.path.join(root, '.purlin', 'config.json'),
+                  encoding='utf-8') as f:
+            value = json.load(f).get('sql_engine')
+    except (ValueError, OSError):
+        value = None
+    return (str(value).strip() if value else '') or 'sqlite3'
+
+
 root = _project_root()
-# Recorded relative to the project root, with '/' separators on every OS
-# (RULE-23, RULE-15); the path as given is still used to read the file.
+# Recorded relative to the project root, with '/' separators on every OS; the
+# path as given is still used to read the file.
 recorded_file = _relativize(root, test_file)
+engine = _sql_engine(root)
 
-
-with open(test_file) as f:
+with open(test_file, encoding='utf-8') as f:
     content = f.read()
 
-# Find all proof markers
+# Find all proof markers. A trailing on(...) is the retired keyword naming
+# an operating system; it is captured so the run can refuse it by name.
 marker_re = re.compile(r'^-- @purlin\s+(\w+)\s+(PROOF-\d+)\s+(RULE-\d+)(?:[ \t]+(?!on\()(\w+))?(?:[ \t]+on\(([^)]*)\))?', re.MULTILINE)
 markers = list(marker_re.finditer(content))
 
 if not markers:
     print(json.dumps({'proofs': []}, indent=2))
     sys.exit(0)
+
+retired = ['%s %s' % (m.group(1), m.group(2)) for m in markers if m.group(5)]
+if retired:
+    print('purlin: the on(...) marker keyword is not read any more; write '
+          '@env(windows), @env(macos) or @env(linux) on the proof line in the '
+          'spec instead: %s' % ', '.join(retired), file=sys.stderr)
+    sys.exit(1)
 
 # Extract test blocks between markers
 blocks = []
@@ -159,13 +170,11 @@ for i, m in enumerate(markers):
     sql_lines = [l for l in sql_block.split('\n') if not l.strip().startswith('--')]
     sql_exec = '\n'.join(sql_lines).strip()
 
-    declared = [p.strip() for p in (m.group(5) or '').split(',') if p.strip()]
     blocks.append({
         'feature': m.group(1),
         'id': m.group(2),
         'rule': m.group(3),
         'tier': m.group(4) or 'unit',
-        'platform': _host_platform() if declared else None,
         'test_name': test_name,
         'sql': sql_exec,
     })
@@ -175,17 +184,16 @@ proofs_by_key = {}
 for block in blocks:
     try:
         result = subprocess.run(
-            ['sqlite3', db_file],
+            [engine, db_file],
             input=block['sql'],
             capture_output=True, text=True, timeout=10
         )
         output = result.stdout.strip()
         passed = output.upper().startswith('PASS')
-    except Exception as e:
+    except Exception:
         passed = False
 
-    key = (block['feature'], block['tier'], block['platform'])
-    entry = {
+    proofs_by_key.setdefault((block['feature'], block['tier']), []).append({
         'feature': block['feature'],
         'id': block['id'],
         'rule': block['rule'],
@@ -193,107 +201,32 @@ for block in blocks:
         'test_name': block['test_name'],
         'status': 'pass' if passed else 'fail',
         'tier': block['tier'],
-    }
-    if block['platform'] is not None:
-        entry['platform'] = block['platform']
-    proofs_by_key.setdefault(key, []).append(entry)
-
-# ── The run marker (proof_common RULE-19) ───────────────────────────────────
-# Written or merged at the same moment the proof files are written, so a
-# consumer receipt can record which run its evidence came from.
-
-_RUN_MARKER_REL = os.path.join('.purlin', 'runtime', 'test_run.json')
-
-
-def _run_marker_commit(root):
-    '''HEAD in root, or None when root is not inside a git work tree.'''
-    try:
-        out = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=root,
-                             capture_output=True, text=True)
-    except OSError:
-        return None
-    return out.stdout.strip() or None
-
-
-def _write_run_marker(root, sweep, test_files, passed, failed, skipped):
-    '''Write or merge <root>/.purlin/runtime/test_run.json (RULE-19).
-
-    Nothing is written when <root>/.purlin is absent: that is not a Purlin
-    project. An existing marker whose commit equals this run's commit is
-    merged into: test_files unioned, the three counts summed, this run
-    appended to runs, ok and-ed, and every other top-level field carried
-    through untouched. A marker naming another commit is replaced. The file is
-    written to a temp file in the same directory and renamed over the target,
-    so a concurrent reader sees one whole marker or the other; a read that
-    lands on unparsable JSON is retried before this run starts a fresh marker.
-    '''
-    if not os.path.isdir(os.path.join(root, '.purlin')):
-        return None
-    path = os.path.join(root, _RUN_MARKER_REL)
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    commit = _run_marker_commit(root)
-    at = datetime.datetime.now(datetime.timezone.utc).isoformat()
-    files = sorted({str(f).replace(os.sep, '/').replace(chr(92), '/')
-                    for f in test_files if f})
-    marker = {}
-    for _attempt in range(3):
-        try:
-            with open(path) as f:
-                existing = json.load(f)
-            if isinstance(existing, dict) and existing.get('commit') == commit:
-                marker = existing
-            break
-        except FileNotFoundError:
-            break
-        except (ValueError, OSError):
-            # A concurrent writer is mid-replace: read again before giving up.
-            time.sleep(0.05)
-    runs = list(marker.get('runs') or [])
-    runs.append({'plugin': sweep, 'at': at, 'test_files': files,
-                 'passed': passed, 'failed': failed, 'skipped': skipped})
-    marker.update({
-        'at': at,
-        'commit': commit,
-        'sweep': sweep,
-        'test_files': sorted(set(marker.get('test_files') or []) | set(files)),
-        'passed': int(marker.get('passed') or 0) + passed,
-        'failed': int(marker.get('failed') or 0) + failed,
-        'skipped': int(marker.get('skipped') or 0) + skipped,
-        'ok': bool(marker.get('ok', True)) and failed == 0,
-        'runs': runs,
     })
-    tmp = '%s.%d.tmp' % (path, os.getpid())
-    with open(tmp, 'w') as f:
-        json.dump(marker, f, indent=2)
-        f.write('\n')
-    os.replace(tmp, path)
-    return marker
 
+if not proofs_by_key:
+    print('purlin: markers were seen and no proof entry was written for %s; '
+          'the proof files on disk describe an earlier run.'
+          % ', '.join(sorted({b['feature'] for b in blocks})), file=sys.stderr)
+    sys.exit(1)
 
-# Build spec dir mapping, rooted at the RULE-22 project root so the scan finds
-# the project's specs from a subdirectory too.
-spec_dirs = {}
-for spec in glob.glob(os.path.join(glob.escape(root), 'specs', '**', '*.md'), recursive=True):
-    stem = os.path.splitext(os.path.basename(spec))[0]
-    spec_dirs[stem] = os.path.dirname(spec)
+directory = os.path.join(root, '.purlin', 'runtime', 'proofs')
+os.makedirs(directory, exist_ok=True)
 
-# Write proof files (write-scoped overwrite)
-for (feature, tier, plat), new_entries in proofs_by_key.items():
-    suffix = f'{tier}@{plat}' if plat is not None else tier
-    spec_dir = spec_dirs.get(feature)
-    if spec_dir is None:
-        print(f'WARNING: No spec found for feature \"{feature}\" — writing proofs to specs/{feature}.proofs-{suffix}.json. Create a spec with: purlin:spec {feature}', file=sys.stderr)
-        spec_dir = os.path.join(root, 'specs')
-    path = os.path.join(spec_dir, f'{feature}.proofs-{suffix}.json')
+for (feature, tier), new_entries in proofs_by_key.items():
+    path = os.path.join(directory, '%s.%s.json' % (feature, tier))
     existing = []
     if os.path.exists(path):
-        with open(path) as f:
-            existing = json.load(f).get('proofs', [])
-    # Write-scoped overwrite keyed by (feature, tier, platform, test_file), per
-    # proof_common RULE-4 (the file carries tier and platform, so within it the
-    # key is (feature, test_file)), plus orphan reaping of vanished test files
-    # (RULE-11). Each recorded path is resolved from the RULE-22 project root,
-    # the same root RULE-23 relativized it against.
+        try:
+            with open(path, encoding='utf-8') as f:
+                existing = json.load(f).get('proofs', [])
+        except (ValueError, OSError):
+            existing = []
+    # Write-scoped overwrite keyed by (feature, tier, test_file); the file
+    # carries the tier, so within it the key is (feature, test_file). Entries
+    # whose test file no longer exists are reaped. Each recorded path is
+    # resolved from the project root, the same root it was relativized
+    # against. A SQL block that is never reached emits no marker, so the
+    # harness has no skip signal.
     run_files = {e['test_file'] for e in new_entries}
     kept = [
         e for e in existing
@@ -303,34 +236,19 @@ for (feature, tier, plat), new_entries in proofs_by_key.items():
             and os.path.exists(os.path.join(root, e.get('test_file') or '')))
     ]
     payload = {'tier': tier}
-    if plat is not None:
-        payload['platform'] = plat
-    # RULE-21: sorted by (id, test_file, test_name), ordinal, after the merge,
-    # so the collection order never reaches the file.
+    # Sorted by (id, test_file, test_name), ordinal, after the merge, so the
+    # collection order never reaches the file.
     payload['proofs'] = sorted(
         kept + new_entries,
         key=lambda e: (e.get('id') or '', e.get('test_file') or '',
                        e.get('test_name') or ''))
-    # RULE-24: the temp name carries this process id, so two plugins writing
-    # the same file concurrently never share a temp path.
+    # Atomic write: the temp name carries this process id, so two plugins
+    # writing the same file concurrently never share a temp path.
     tmp_path = '%s.%d.tmp' % (path, os.getpid())
-    with open(tmp_path, 'w') as f:
+    with open(tmp_path, 'w', encoding='utf-8') as f:
         json.dump(payload, f, indent=2)
         f.write('\n')
     os.replace(tmp_path, path)
-
-# RULE-19: the run marker, written at the same moment as the proof files.
-# A SQL block that is never reached emits no marker, so the harness has no
-# skip signal and skipped is 0.
-all_entries = [e for group in proofs_by_key.values() for e in group]
-_write_run_marker(
-    root,
-    'sql_purlin',
-    [e['test_file'] for e in all_entries],
-    sum(1 for e in all_entries if e['status'] == 'pass'),
-    sum(1 for e in all_entries if e['status'] != 'pass'),
-    0,
-)
 
 # Emit to stdout
 all_proofs = []
