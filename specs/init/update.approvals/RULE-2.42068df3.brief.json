@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "update",
-  "generated_at": "2026-09-14T17:22:53Z",
+  "generated_at": "2026-09-14T17:34:55Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,7 +27,7 @@
   "reasons": [
     "PROOF-2 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/update/20260914T172159Z-2ca875e-ci-linux.json",
+  "record": ".purlin/records/update/20260914T173330Z-2ca875e-ci-windows.json",
   "risk": "high",
   "rule": "RULE-2",
   "rule_hash": "e01f97f0755898fb0781f245b83dfe14d48918f1badff1af6dd9e964baef6f0d",

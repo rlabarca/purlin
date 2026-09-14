@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "mutation",
-  "generated_at": "2026-09-14T17:22:11Z",
+  "generated_at": "2026-09-14T17:34:02Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,7 +27,7 @@
   "reasons": [
     "PROOF-15 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/mutation/20260914T172159Z-2ca875e-ci-linux.json",
+  "record": ".purlin/records/mutation/20260914T173326Z-2ca875e-ci-windows.json",
   "risk": "high",
   "rule": "RULE-15",
   "rule_hash": "33f9f7aa38af5fac5defea04bbed40f5ef521396b5058edad440ab4ced973055",
