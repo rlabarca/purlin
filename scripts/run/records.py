@@ -28,6 +28,7 @@ Anything an annotated `validated/<name>` tag names in its message is kept for
 ever, so a state someone validated stays readable however many runs follow.
 """
 
+import base64
 import json
 import os
 import re
@@ -62,6 +63,14 @@ _RECORD_PATH_RE = re.compile(r'\.purlin/records/[^\s"\']+\.json')
 # How many times a ref update is retried when someone else moved the branch
 # between reading its head and writing the new commit.
 REF_RETRIES = 3
+
+# A git host limits how many requests that create content one token may make
+# in a short span, and answers 403 or 429 with a header saying how long to
+# wait. That is a pause, not a refusal: the request is sent again after the
+# wait, up to PAUSE_RETRIES times, and no single wait is longer than
+# PAUSE_CAP_SECONDS however long the host asks for.
+PAUSE_RETRIES = 3
+PAUSE_CAP_SECONDS = 120
 
 
 # ---------------------------------------------------------------------------
@@ -290,13 +299,43 @@ def _read_file(project_root, rel_path):
         return handle.read()
 
 
-def _commit_github(project_root, paths, message):
-    """Blob, tree, commit, ref update, retried when the branch moved.
+def _tree_entry(project_root, token, base, rel):
+    """One tree entry for a file: its text inline, or a blob when it is not text.
 
-    One blob per path handed over, wherever in the tree it sits, plus a
-    deletion entry for every record retention removed. No `author` and no
-    `committer` field is sent. GitHub then attributes the commit to the
-    Actions token, signs it with its own key, and reports
+    The trees endpoint creates the blob itself for an entry that carries
+    `content`, so a file whose bytes are valid UTF-8 costs no request of its
+    own. A file that is not valid UTF-8 cannot travel inline and gets one
+    blob request; nothing a verify run writes is such a file, because a
+    record, an approval and a brief are all JSON.
+    """
+    with open(os.path.join(project_root, rel), 'rb') as handle:
+        raw = handle.read()
+    entry = {'path': rel, 'type': 'blob'}
+    entry[_PERM_KEY] = _FILE_PERM
+    try:
+        entry['content'] = raw.decode('utf-8')
+    except UnicodeDecodeError:
+        blob = _api(token, 'POST', base + '/blobs',
+                    {'content': base64.b64encode(raw).decode('ascii'),
+                     'encoding': 'base64'})
+        entry['sha'] = blob['sha']
+    return entry
+
+
+def _commit_github(project_root, paths, message):
+    """Tree, commit, ref update, retried when the branch moved.
+
+    One tree request carries every path handed over, wherever in the tree it
+    sits, plus a deletion entry for every record retention removed. A run
+    that writes a record, its auto-approvals and several hundred briefs
+    therefore asks the git host once rather than once per file, which is what
+    its limit on content-creating requests counts. GitHub's own limit on a
+    tree request is on the size of the request body, not on the number of
+    entries, and the few hundred small JSON files one run writes are far
+    inside it, so the entries are never split into successive trees.
+
+    No `author` and no `committer` field is sent. GitHub then attributes the
+    commit to the Actions token, signs it with its own key, and reports
     `github-actions[bot]` as the committer, which is exactly what makes the
     record count under `recorded`.
     """
@@ -313,18 +352,11 @@ def _commit_github(project_root, paths, message):
 
     base = '%s/repos/%s/git' % (_GITHUB_API, repo)
     branch = current_branch(project_root)
-    blobs = []
-    for rel in paths:
-        blob = _api(token, 'POST', base + '/blobs',
-                    {'content': _read_file(project_root, rel),
-                     'encoding': 'utf-8'})
-        entry = {'path': rel, 'type': 'blob', 'sha': blob['sha']}
-        entry[_PERM_KEY] = _FILE_PERM
-        blobs.append(entry)
+    entries = [_tree_entry(project_root, token, base, rel) for rel in paths]
     for rel in deleted_records(project_root):
         entry = {'path': rel, 'type': 'blob', 'sha': None}
         entry[_PERM_KEY] = _FILE_PERM
-        blobs.append(entry)
+        entries.append(entry)
 
     last_error = None
     for attempt in range(REF_RETRIES):
@@ -333,7 +365,7 @@ def _commit_github(project_root, paths, message):
         parent_commit = _api(token, 'GET', base + '/commits/%s' % parent)
         tree = _api(token, 'POST', base + '/trees',
                     {'base_tree': parent_commit['tree']['sha'],
-                     'tree': blobs})
+                     'tree': entries})
         commit = _api(token, 'POST', base + '/commits',
                       {'message': message, 'tree': tree['sha'],
                        'parents': [parent]})
@@ -408,8 +440,72 @@ def _commit_azure(project_root, paths, message):
     raise last_error
 
 
+def _header(headers, name):
+    """One header's value, read whatever shape the answer's headers are in."""
+    if headers is None:
+        return None
+    getter = getattr(headers, 'get', None)
+    if getter is not None:
+        value = getter(name)
+        if value is not None:
+            return value
+    items = getattr(headers, 'items', None)
+    if items is None:
+        return None
+    for key, value in items():
+        if str(key).lower() == name.lower():
+            return value
+    return None
+
+
+def _pause_seconds(error):
+    """How long the git host asked the caller to wait, or None if it did not.
+
+    `Retry-After` is a count of seconds and `x-ratelimit-reset` is the epoch
+    second the limit lifts at; either one says this refusal is a pause. An
+    answer carrying neither is a real refusal and the caller must not retry.
+    """
+    headers = getattr(error, 'headers', None)
+    retry_after = _header(headers, 'Retry-After')
+    if retry_after is not None:
+        try:
+            return max(0.0, float(str(retry_after).strip()))
+        except ValueError:
+            return None
+    reset = _header(headers, 'x-ratelimit-reset')
+    if reset is not None:
+        try:
+            return max(0.0, float(str(reset).strip()) - time.time())
+        except ValueError:
+            return None
+    return None
+
+
 def _api(token, method, url, body=None, host='github'):
-    """One REST call, returning the parsed JSON body."""
+    """One REST call, returning the parsed JSON body.
+
+    A 403 or 429 whose headers say how long to wait is the git host's limit
+    on content-creating requests, not a permission problem: the call waits
+    that long, capped at PAUSE_CAP_SECONDS, prints the one line saying so,
+    and is sent again, up to PAUSE_RETRIES times. A 403 carrying no such
+    header is a real refusal and is raised on the first answer.
+    """
+    for attempt in range(PAUSE_RETRIES + 1):
+        try:
+            return _send(token, method, url, body, host)
+        except urllib.error.HTTPError as error:
+            if error.code not in (403, 429) or attempt == PAUSE_RETRIES:
+                raise
+            wait = _pause_seconds(error)
+            if wait is None:
+                raise
+            wait = min(wait, PAUSE_CAP_SECONDS)
+            print('The git host asked for a pause of %d s.' % int(round(wait)))
+            time.sleep(wait)
+
+
+def _send(token, method, url, body=None, host='github'):
+    """The request itself, with no reading of what a refusal asked for."""
     headers = {'Accept': 'application/json',
                'Content-Type': 'application/json',
                'Authorization': 'Bearer %s' % token,
