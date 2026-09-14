@@ -10,21 +10,24 @@ and the slug is the approver's email local part, lowercased, with every
 non-alphanumeric character replaced by `-`. A CI auto-approval takes `ci` in
 place of a slug.
 
-The file:
+The file, field by field in `references/formats/approval_format.md`:
 
     {
+      "schema": "purlin-approval/1",
       "feature": "login",
       "rule": "RULE-3",
-      "risk": "high",
-      "approver": "jane@acme.com",
-      "approved_at": "2026-09-13T12:00:00Z",
+      "triple": "<the first 16 characters of the triple hash>",
       "rule_hash": "<sha256 of the rule text>",
       "proof_hash": "<sha256 of the proof text>",
       "test_hash": "<sha256 of the test bodies>",
+      "test_hash_kind": "body",
       "design_hash": null,
-      "brief_hash": "<sha256 of the brief the approver read>",
-      "record": ".purlin/records/login/20260913T120000Z-abc1234-ci.json",
-      "triple_hash": "<sha256 of the three above>"
+      "risk": "high",
+      "approver": "jane@acme.com",
+      "timestamp": "2026-09-13T12:00:00Z",
+      "gate": "approved",
+      "brief": "specs/auth/login.approvals/RULE-3.1a2b3c4d.brief.json",
+      "record": ".purlin/records/login/20260913T120000Z-abc1234-ci.json"
     }
 
 An approval is **current** when the three hashes it binds still equal the
@@ -50,6 +53,13 @@ if _MCP_DIR not in sys.path:
 
 _APPROVAL_NAME_RE = re.compile(r'^(RULE-\d+)\.([0-9a-f]{8})\.([a-z0-9-]+)\.json$')
 
+# The review brief sits in the same directory under the same first two parts,
+# so the name alone would read it as an approval by someone called `brief`.
+_BRIEF_SLUG = 'brief'
+
+# What the T of the triple was taken from, in the order one wins over another.
+TEST_HASH_KINDS = ('file', 'manual', 'none')
+
 
 def approver_slug(email):
     """The slug an approval file takes for an email address."""
@@ -64,6 +74,38 @@ def triple_hash(rule_hash, proof_hash, test_hash):
     digest.update(('%s\n%s\n%s' % (rule_hash or '', proof_hash or '',
                                    test_hash or '')).encode('utf-8'))
     return digest.hexdigest()
+
+
+def test_hash_kind(proofs):
+    """What the T of the triple was taken from, for the approval to record.
+
+    `file` is a test file git tracks, which is what a hash over the tests
+    reads. `manual` is a proof with no test at all: the evidence is the
+    approver's note. `none` is a rule with nothing behind it yet.
+    """
+    kinds = set()
+    for proof in proofs or ():
+        if proof.get('tier') == 'manual':
+            kinds.add('manual')
+            continue
+        if proof.get('tests'):
+            kinds.add('file')
+    for kind in TEST_HASH_KINDS:
+        if kind in kinds:
+            return kind
+    return 'none'
+
+
+def design_hash(owner_info, origin):
+    """The D of the triple: the design a `origin: design` rule rests on.
+
+    A design is a versioned file, so what binds the approval is the spec's
+    `> Pinned:` hash of the exported files. A rule from any other origin binds
+    no design and this is None.
+    """
+    if origin != 'design':
+        return None
+    return (owner_info or {}).get('pinned') or None
 
 
 def approvals_dir(project_root, info):
@@ -88,7 +130,7 @@ def load_approvals(project_root, features):
             continue
         for basename in sorted(os.listdir(directory)):
             m = _APPROVAL_NAME_RE.match(basename)
-            if not m:
+            if not m or m.group(3) == _BRIEF_SLUG:
                 continue
             path = os.path.join(directory, basename)
             try:

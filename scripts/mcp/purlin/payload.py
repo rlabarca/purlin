@@ -234,6 +234,9 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
     proof_hash = specs_module.proof_text_hash(
         '\n'.join('%s %s' % (p['id'], p['text']) for p in proof_dicts))
     test_hash = _test_hash(project_root, proof_dicts, blob_cache)
+    test_hash_kind = approvals_module.test_hash_kind(proof_dicts)
+    design_hash = approvals_module.design_hash(
+        owner_info, meta.get('origin', specs_module.DEFAULT_ORIGIN))
     scope_key = owner
     if scope_key not in scope_cache:
         scope_cache[scope_key] = specs_module.scope_tree(
@@ -249,9 +252,10 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
         'rule_hash': rule_hash,
         'proof_hash': proof_hash,
         'test_hash': test_hash,
-        'design_hash': None,
+        'design_hash': design_hash,
         'risk': meta.get('risk', specs_module.DEFAULT_RISK),
-        'brief': None,
+        'brief': _read_brief(project_root, owner_info, rule_id,
+                             rule_hash, proof_hash, test_hash),
         'test_strength': None,
         'mutation_engine_available': cfg.mutation_engine not in (None, 'none'),
     }, cfg)
@@ -267,6 +271,8 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
         'rule_hash': rule_hash,
         'proof_hash': proof_hash,
         'test_hash': test_hash,
+        'test_hash_kind': test_hash_kind,
+        'design_hash': design_hash,
         'state': result['state'],
         'flags': result['flags'],
         'missing_env': result['missing_env'],
@@ -279,9 +285,10 @@ def _test_hash(project_root, proof_dicts, blob_cache):
     """The T of the triple: the blob ids of the test files, with their names.
 
     Reading the file's blob id rather than one function's body is coarse on
-    purpose: a test file is the unit git tracks, and a hash over it stales an
-    approval whenever the test that backs a rule changes, which is the
-    behaviour the approval is meant to have.
+    purpose: a test file is the unit version control tracks, and a hash over it
+    stales an approval whenever the test that backs a rule changes, which is
+    the behaviour the approval is meant to have. `approvals.test_hash_kind`
+    names what was read beside the hash, so an approval says so on its face.
     """
     parts = []
     for proof in proof_dicts:
@@ -293,6 +300,27 @@ def _test_hash(project_root, proof_dicts, blob_cache):
     digest = hashlib.sha256()
     digest.update('\n'.join(sorted(parts)).encode('utf-8'))
     return digest.hexdigest()
+
+
+def _read_brief(project_root, owner_info, rule_id, rule_hash, proof_hash,
+                test_hash):
+    """The review brief written for a rule's current text, or None.
+
+    A brief sits beside the approval it informs and is named for the triple it
+    was built from, so a brief for text that has since changed is simply not
+    found: that is what keeps Reviewed honest.
+    """
+    directory = approvals_module.approvals_dir(project_root, owner_info)
+    if not directory:
+        return None
+    triple = approvals_module.triple_hash(rule_hash, proof_hash, test_hash)
+    path = os.path.join(directory, '%s.%s.brief.json' % (rule_id, triple[:8]))
+    try:
+        with open(path, 'r', encoding='utf-8') as handle:
+            brief = json.load(handle)
+    except (json.JSONDecodeError, IOError, OSError, UnicodeDecodeError):
+        return None
+    return brief if isinstance(brief, dict) else None
 
 
 def _latest(by_os):
