@@ -439,6 +439,10 @@ def build_record(project_root, args, features, selected, index, plugins,
     runner, _slug = runner_identity(project_root, args)
     record = {
         'schema': RECORD_SCHEMA,
+        # One record per feature: the record writer files it under
+        # `.purlin/records/<feature>/` and prunes that folder, and the
+        # retention rule counts per feature per operating system.
+        'feature': selected[0] if len(selected) == 1 else '',
         'commit': head_commit(project_root),
         'dirty': working_tree_dirty(project_root),
         'runner': runner,
@@ -660,30 +664,39 @@ def _write_log(project_root, log):
 
 
 def _record(project_root, args, features, selected, index, plugins, log):
-    """The `--record` arm: breaks, the record, the commit, the CI extras."""
+    """The `--record` arm: breaks, the records, the commit, the CI extras.
+
+    One record per feature, because that is what the record writer files and
+    prunes: `.purlin/records/<feature>/` keeps the newest three per operating
+    system, which it cannot do for a file covering several features at once.
+    """
     breaks = _run_breaks(project_root, args, features, selected, index)
     log_digest = _write_log(project_root, log)
-    record = build_record(project_root, args, features, selected, index,
-                          plugins, breaks, log_digest)
 
     from records import write_record, commit_records, tag_validated
 
-    runner = record['runner']['id']
-    path = write_record(project_root, record, runner,
-                        os_name=record['environment']['os'])
     print('')
-    print('Record written: %s' % path)
+    paths = []
+    head = ''
+    for name in selected:
+        record = build_record(project_root, args, features, [name], index,
+                              plugins, breaks, log_digest)
+        head = record['commit']
+        path = write_record(project_root, record, record['runner']['id'],
+                            os_name=record['environment']['os'])
+        paths.append(path)
+        print('Record written: %s' % path)
 
     if args.commit or args.ci:
         identity = 'ci' if args.ci else 'developer'
-        commit_records(project_root, [path], identity,
-                       'purlin: record for %s' % record['commit'][:7])
+        commit_records(project_root, paths, identity,
+                       'purlin: record for %s' % head[:7])
         print('Record committed as %s.' % identity)
     if args.tag:
-        tag_validated(project_root, args.tag, [path])
+        tag_validated(project_root, args.tag, paths)
         print('Validation tag written: validated/%s' % args.tag)
     if args.ci:
-        _ci_extras(project_root, record)
+        _ci_extras(project_root)
     return 0
 
 
@@ -705,7 +718,7 @@ def _run_breaks(project_root, args, features, selected, index):
                       tests_by_rule(features, selected, index), args.tier)
 
 
-def _ci_extras(project_root, record):
+def _ci_extras(project_root):
     """Auto-approvals, briefs, the pull request comment, the dashboard."""
     try:
         from approve import auto_approve
@@ -713,8 +726,8 @@ def _ci_extras(project_root, record):
     except ImportError:
         print('auto-approval: not available (phase 3)')
     else:
-        auto_approve(project_root, record)
-        write_briefs(project_root, record)
+        auto_approve(project_root)
+        write_briefs(project_root)
     try:
         from ci import post_pr_comment, publish_dashboard
     except ImportError:

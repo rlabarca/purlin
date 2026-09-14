@@ -585,12 +585,15 @@ class TestRecordWithoutTheEngines:
             write_record=write_record,
             commit_records=lambda *a, **k: 'developer',
             tag_validated=lambda *a, **k: None))
+        purlin_run = _load_run_script()
+        # The break engines are taken off the path, which is the state a
+        # checkout is in before they are installed: `--record` must still
+        # write its record and say what it could not measure.
+        run_dir = os.path.join(REPO, 'scripts', 'run')
         monkeypatch.delitem(sys.modules, 'mutation', raising=False)
         monkeypatch.setattr(
-            sys, 'path', [p for p in sys.path if 'scripts/run' not in p]
-            + [os.path.join(REPO, 'scripts', 'run'),
-               os.path.join(REPO, 'scripts', 'mcp')])
-        purlin_run = _load_run_script()
+            sys, 'path',
+            [p for p in sys.path if os.path.abspath(p or '.') != run_dir])
         code = purlin_run.main(['--project-root', str(root), '--all',
                                 '--record'])
         output = capsys.readouterr().out
