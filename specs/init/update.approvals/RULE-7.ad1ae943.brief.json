@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "update",
-  "generated_at": "2026-09-14T17:53:53Z",
+  "generated_at": "2026-09-14T18:05:20Z",
   "layers": [
     "proof text",
     "test body",
@@ -34,7 +34,7 @@
     "PROOF-7 logic_mirroring",
     "PROOF-7 logic_mirroring"
   ],
-  "record": ".purlin/records/update/20260914T175322Z-93d7729-ci-linux.json",
+  "record": ".purlin/records/update/20260914T180401Z-93d7729-ci-windows.json",
   "risk": "high",
   "rule": "RULE-7",
   "rule_hash": "fa429f1f7300f872443baf03bf6a174ee226e7aa7f529b3c87fee9e182380da9",
