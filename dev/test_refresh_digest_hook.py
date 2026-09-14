@@ -1,5 +1,5 @@
 """Tests for scripts/hooks/refresh_digest.py and its registration in
-hooks/hooks.json (specs/hooks/refresh_digest_hook.md)."""
+hooks/hooks.json (specs/mcp/server.md, RULE-13 to RULE-21)."""
 
 import importlib.util
 import io
@@ -136,7 +136,7 @@ def _age(path, seconds=120):
 
 class TestSilentAndNonBlocking:
 
-    @pytest.mark.proof("refresh_digest_hook", "PROOF-1", "RULE-1", tier="integration")
+    @pytest.mark.proof("server", "PROOF-13", "RULE-13", tier="integration")
     def test_every_path_exits_zero_and_prints_nothing(self, tmp_path):
         project = _project(str(tmp_path / 'p'))
         _assert_silent_zero(_run(project), 'fresh project')
@@ -169,7 +169,8 @@ class TestSilentAndNonBlocking:
 
 class TestDirtyCheck:
 
-    @pytest.mark.proof("refresh_digest_hook", "PROOF-2", "RULE-2", tier="integration")
+    @pytest.mark.proof("server", "PROOF-14", "RULE-14", tier="integration")
+    @pytest.mark.proof("server", "PROOF-15", "RULE-15", tier="integration")
     def test_regenerates_only_when_an_input_is_newer(self, tmp_path):
         project = _project(str(tmp_path))
         _assert_silent_zero(_run(project), 'first')
@@ -224,7 +225,7 @@ class TestDirtyCheck:
 
 class TestSingleFlight:
 
-    @pytest.mark.proof("refresh_digest_hook", "PROOF-3", "RULE-3", tier="integration")
+    @pytest.mark.proof("server", "PROOF-16", "RULE-16", tier="integration")
     def test_a_held_lock_means_leave(self, tmp_path):
         project = _project(str(tmp_path))
         os.makedirs(os.path.join(project, '.purlin', 'runtime'), exist_ok=True)
@@ -244,7 +245,7 @@ class TestSingleFlight:
 
 class TestRecheckAfterWriting:
 
-    @pytest.mark.proof("refresh_digest_hook", "PROOF-4", "RULE-4", tier="integration")
+    @pytest.mark.proof("server", "PROOF-17", "RULE-17", tier="integration")
     def test_a_write_during_generation_is_picked_up(self, tmp_path, monkeypatch):
         project = _project(str(tmp_path))
         module = _load_hook_module()
@@ -286,7 +287,7 @@ class TestRecheckAfterWriting:
 
 class TestSkipConditions:
 
-    @pytest.mark.proof("refresh_digest_hook", "PROOF-5", "RULE-5", tier="integration")
+    @pytest.mark.proof("server", "PROOF-18", "RULE-18", tier="integration")
     def test_each_skip_condition_writes_nothing(self, tmp_path):
         no_config = _project(str(tmp_path / 'no-config'))
         os.remove(os.path.join(no_config, '.purlin', 'config.json'))
@@ -313,7 +314,7 @@ class TestSkipConditions:
         _assert_silent_zero(_run(committing), 'index.lock gone')
         assert os.path.isfile(_digest_path(committing))
 
-    @pytest.mark.proof("refresh_digest_hook", "PROOF-5", "RULE-5", tier="integration")
+    @pytest.mark.proof("server", "PROOF-19", "RULE-19", tier="integration")
     def test_a_config_in_the_template_shape_refreshes(self, tmp_path):
         """The skip conditions are the only skip conditions.
 
@@ -339,7 +340,7 @@ class TestSkipConditions:
 
 class TestGenerationContract:
 
-    @pytest.mark.proof("refresh_digest_hook", "PROOF-6", "RULE-6", tier="integration")
+    @pytest.mark.proof("server", "PROOF-20", "RULE-20", tier="integration")
     def test_no_network_named_producer_and_touch_instead_of_rewrite(self, tmp_path, monkeypatch):
         project = _project(str(tmp_path), anchor=True)
         module = _load_hook_module()
@@ -381,7 +382,7 @@ class TestGenerationContract:
 
 class TestRegistration:
 
-    @pytest.mark.proof("refresh_digest_hook", "PROOF-7", "RULE-7", tier="unit")
+    @pytest.mark.proof("server", "PROOF-21", "RULE-21")
     def test_hooks_json_registers_exactly_this_script_async_on_three_events(self):
         path = os.path.join(PROJECT_ROOT, 'hooks', 'hooks.json')
         with open(path, encoding='utf-8') as f:

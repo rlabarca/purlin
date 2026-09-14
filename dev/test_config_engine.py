@@ -179,20 +179,20 @@ class TestResolveConfig:
         """When framework adds a new key to config.json, it's visible even
         when config.local.json already exists with unrelated overrides.
         This is the scenario that broke with copy-on-first-access."""
-        self._write_shared({"report": True, "version": "0.9.0"})
+        self._write_shared({"digest": "auto", "version": "0.9.0"})
         self._write_local({"pre_push": "strict"})
         result = resolve_config(self.project_root)
-        assert result["report"] is True, "new framework key must be visible"
+        assert result["digest"] == "auto", "new framework key must be visible"
         assert result["version"] == "0.9.0", "shared key preserved"
         assert result["pre_push"] == "strict", "local override preserved"
 
     @pytest.mark.proof("config_engine", "PROOF-12", "RULE-8")
     def test_local_override_wins_in_merge(self):
         """User overrides a framework default. config.json untouched."""
-        self._write_shared({"report": True, "version": "0.9.0"})
+        self._write_shared({"digest": "auto", "version": "0.9.0"})
         shared_before = json.loads(open(os.path.join(self.purlin_dir, 'config.json')).read())
 
-        update_config(self.project_root, "report", False)
+        update_config(self.project_root, "digest", "off")
 
         # config.json must not change
         shared_after = json.loads(open(os.path.join(self.purlin_dir, 'config.json')).read())
@@ -201,11 +201,11 @@ class TestResolveConfig:
         # local should have the override
         with open(os.path.join(self.purlin_dir, 'config.local.json')) as f:
             local = json.load(f)
-        assert local["report"] is False
+        assert local["digest"] == "off"
 
         # Merged result should have local's value
         result = resolve_config(self.project_root)
-        assert result["report"] is False, "local override must win"
+        assert result["digest"] == "off", "local override must win"
         assert result["version"] == "0.9.0", "unrelated shared key preserved"
 
     @pytest.mark.proof("config_engine", "PROOF-4", "RULE-4")
@@ -221,17 +221,17 @@ class TestResolveConfig:
         """The overlay is per top-level key. update_config writes whole
         values, so a deep merge on read would make what the user wrote and
         what the server read differ."""
-        self._write_shared({"platforms": {
+        self._write_shared({"runners": {
             "win-2022": {"os": "windows", "version": ">=10.0.20348"},
             "mac-14": {"os": "macos", "version": "14"},
         }})
-        self._write_local({"platforms": {"ubuntu-24": {"os": "linux", "distro": "ubuntu"}}})
+        self._write_local({"runners": {"ubuntu-24": {"os": "linux", "distro": "ubuntu"}}})
         result = resolve_config(self.project_root)
-        assert result["platforms"] == {"ubuntu-24": {"os": "linux", "distro": "ubuntu"}}, (
+        assert result["runners"] == {"ubuntu-24": {"os": "linux", "distro": "ubuntu"}}, (
             "a nested object in local must replace the base object whole, "
-            f"not merge into it: {result['platforms']}")
-        assert "win-2022" not in result["platforms"]
-        assert "mac-14" not in result["platforms"]
+            f"not merge into it: {result['runners']}")
+        assert "win-2022" not in result["runners"]
+        assert "mac-14" not in result["runners"]
 
     @pytest.mark.proof("config_engine", "PROOF-4", "RULE-4")
     def test_empty_local_returns_shared(self):

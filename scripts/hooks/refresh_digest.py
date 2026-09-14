@@ -4,7 +4,7 @@
 Registered in hooks/hooks.json as an async PostToolUse, SubagentStop and Stop
 hook, so it runs in the background after a tool call or a turn and costs the
 model nothing: an async hook's output is discarded, and this script prints
-nothing anyway. Governed by specs/hooks/refresh_digest_hook.md.
+nothing anyway.
 
 WHAT IT DOES
     1. Finds the project from the working directory (`git rev-parse`).

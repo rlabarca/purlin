@@ -1,4 +1,4 @@
-"""Tests for drift RULE-12, RULE-13, and RULE-14 — external anchor staleness."""
+"""Tests for the drift report (specs/mcp/drift.md)."""
 
 import json
 import os
@@ -97,7 +97,7 @@ def _init_project(project_root, bare_path, anchor_name, pinned_sha):
 
 
 class TestDriftExternalAndLocalModification:
-    """drift RULE-13 and RULE-14: external anchor staleness with local modification."""
+    """drift RULE-9 and RULE-13: a pin behind its source, named by the anchor."""
 
     def setup_method(self):
         self.project_root = tempfile.mkdtemp()
@@ -112,7 +112,7 @@ class TestDriftExternalAndLocalModification:
         shutil.rmtree(work1, ignore_errors=True)
         shutil.rmtree(work2, ignore_errors=True)
 
-    @pytest.mark.proof("drift", "PROOF-14", "RULE-13", tier="e2e")
+    @pytest.mark.proof("drift", "PROOF-10", "RULE-9", tier="integration")
     def test_external_advance_plus_local_modification_surfaces_both(self):
         """Advance external source AND modify local anchor: drift returns both stale entry
         in external_anchor_drift AND a spec_changes entry with the new rule."""
@@ -170,7 +170,7 @@ class TestDriftExternalAndLocalModification:
             f"Expected RULE-2 in new_rules, got: {policy_changes[0]}"
         )
 
-    @pytest.mark.proof("drift", "PROOF-16", "RULE-14", tier="e2e")
+    @pytest.mark.proof("drift", "PROOF-15", "RULE-13", tier="integration")
     def test_anchor_name_in_drift_matches_spec_name_not_repo_path(self):
         """The anchor field in external_anchor_drift uses the spec's anchor name
         (from '# Anchor: <name>'), not the external repo URL or file path."""
@@ -218,7 +218,7 @@ class TestDriftExternalAndLocalModification:
 
 
 class TestDriftExternalAnchorStaleness:
-    """drift RULE-12: mixed anchor staleness — external source advances, drift detects it."""
+    """drift RULE-10: the source advances past the pin, and the row says so."""
 
     def setup_method(self):
         self.project_root = tempfile.mkdtemp()
@@ -233,7 +233,7 @@ class TestDriftExternalAnchorStaleness:
         shutil.rmtree(work1, ignore_errors=True)
         shutil.rmtree(work2, ignore_errors=True)
 
-    @pytest.mark.proof("drift", "PROOF-12", "RULE-12", tier="e2e")
+    @pytest.mark.proof("drift", "PROOF-12", "RULE-10", tier="integration")
     def test_mixed_anchor_stale_when_external_source_advances(self):
         """Mixed anchor (both > Source:/> Pinned: tracking and local rules): when the
         external source advances, drift returns an external_anchor_drift entry with
@@ -291,7 +291,7 @@ class TestDriftExternalAnchorStaleness:
             f"got: {data.get('pins', [])}"
         )
 
-    @pytest.mark.proof("drift", "PROOF-17", "RULE-12", tier="e2e")
+    @pytest.mark.proof("drift", "PROOF-11", "RULE-10", tier="integration")
     def test_stale_entry_includes_remote_sha(self):
         """When the external source advances past the pinned SHA, drift returns an
         external_anchor_drift entry with status=stale AND the remote_sha field populated
@@ -338,7 +338,7 @@ class TestDriftExternalAnchorStaleness:
 
 
 class TestDriftSinceValidation:
-    """drift RULE-17: the `since` argument is validated before any subprocess."""
+    """drift RULE-1: the `since` argument is validated before any subprocess."""
 
     def _repo(self, root):
         os.makedirs(os.path.join(root, '.purlin'))
@@ -356,7 +356,7 @@ class TestDriftSinceValidation:
             _git(['add', '-A'], root)
             _git(['commit', '-q', '-m', f'chore: commit {i}'], root)
 
-    @pytest.mark.proof("drift", "PROOF-20", "RULE-17", tier="integration")
+    @pytest.mark.proof("drift", "PROOF-1", "RULE-1", tier="integration")
     def test_hostile_since_is_refused_before_any_subprocess(self, tmp_path):
         root = str(tmp_path / 'proj')
         os.makedirs(root)
@@ -391,7 +391,7 @@ class TestDriftSinceValidation:
 
 
 class TestDriftBatchedDiffStat:
-    """drift RULE-18: one numstat over the range, not one subprocess per file."""
+    """drift RULE-6: one numstat over the range, not one subprocess per file."""
 
     FILE_COUNT = 12
 
@@ -415,7 +415,7 @@ class TestDriftBatchedDiffStat:
         _git(['add', '-A'], root)
         _git(['commit', '-q', '-m', 'feat: twelve modules'], root)
 
-    @pytest.mark.proof("drift", "PROOF-21", "RULE-18", tier="integration")
+    @pytest.mark.proof("drift", "PROOF-7", "RULE-6", tier="integration")
     def test_one_numstat_call_covers_every_changed_file(self, tmp_path):
         root = str(tmp_path / 'proj')
         os.makedirs(root)
@@ -454,7 +454,7 @@ class TestDriftBatchedDiffStat:
 
 
 class TestDriftCompactPayload:
-    """drift RULE-19: the payload serializes compact, since no human reads it."""
+    """drift RULE-17: the payload serializes compact, since no person reads it."""
 
     def _repo(self, root):
         os.makedirs(os.path.join(root, '.purlin'))
@@ -474,7 +474,7 @@ class TestDriftCompactPayload:
         _git(['add', '-A'], root)
         _git(['commit', '-q', '-m', 'feat: thing'], root)
 
-    @pytest.mark.proof("drift", "PROOF-22", "RULE-19", tier="integration")
+    @pytest.mark.proof("drift", "PROOF-19", "RULE-17", tier="integration")
     def test_payload_carries_no_pretty_printing_whitespace(self, tmp_path):
         root = str(tmp_path / 'proj')
         os.makedirs(root)
@@ -618,7 +618,7 @@ class TestDriftRuleDetails:
         assert r.returncode == 0, r.stderr
         return r.stdout
 
-    @pytest.mark.proof("drift", "PROOF-19", "RULE-16", tier="integration")
+    @pytest.mark.proof("drift", "PROOF-18", "RULE-16", tier="integration")
     def test_rule_details_counts_one_rule_set_in_one_order(self, tmp_path):
         root = str(tmp_path / 'proj')
         os.makedirs(root)
@@ -678,3 +678,203 @@ class TestDriftRuleDetails:
         assert first == second, (
             "rule_details is not byte identical across two runs:\n%s\n%s"
             % (first[:400], second[:400]))
+
+
+# The anchor a report measures from, how a changed file is classified, what
+# the report carries, and what a pin says when it is not behind (RULE-2 to
+# RULE-5, RULE-7, RULE-8 and RULE-10).
+
+def _commit(root, message):
+    _git(['add', '-A'], root)
+    _git(['commit', '-q', '-m', message], root)
+
+
+def _new_repo(root):
+    """A git repository holding `.purlin/config.json` as its first commit."""
+    os.makedirs(root, exist_ok=True)
+    _write(os.path.join(root, '.purlin', 'config.json'), '{}')
+    _git(['init', '-q'], root)
+    _git(['config', 'user.email', 'test@test.com'], root)
+    _git(['config', 'user.name', 'Test'], root)
+    _commit(root, 'chore: purlin init')
+    return root
+
+
+class TestDriftSinceAnchor:
+    """drift RULE-2: the last record, then the last tag, then the setup commit."""
+
+    @pytest.mark.proof("drift", "PROOF-3", "RULE-2", tier="integration")
+    def test_the_anchor_walks_the_record_then_the_tag_then_the_setup_commit(
+            self, tmp_path):
+        with_record = _new_repo(str(tmp_path / 'with_record'))
+        _write(os.path.join(with_record, '.purlin', 'records', 'thing',
+                            '20260913T120000Z-abc1234-ci.json'), '{}')
+        _commit(with_record, 'purlin: record for abc1234')
+        record_sha = _git(['rev-parse', 'HEAD'], with_record).stdout.strip()
+        ref, description = purlin_drift.resolve_since(with_record)
+        assert ref == record_sha, (ref, record_sha)
+        assert description.startswith('last record'), description
+
+        with_tag = _new_repo(str(tmp_path / 'with_tag'))
+        _git(['tag', 'v1.0.0'], with_tag)
+        _write(os.path.join(with_tag, 'a.txt'), 'a\n')
+        _commit(with_tag, 'chore: after the tag')
+        ref, description = purlin_drift.resolve_since(with_tag)
+        assert ref == 'v1.0.0', (ref, description)
+        assert description.startswith('v1.0.0 ('), description
+
+        fresh = _new_repo(str(tmp_path / 'fresh'))
+        init_sha = _git(['rev-parse', 'HEAD'], fresh).stdout.strip()
+        for index in range(2):
+            _write(os.path.join(fresh, 'f%d.txt' % index), str(index))
+            _commit(fresh, 'chore: commit %d' % index)
+        ref, description = purlin_drift.resolve_since(fresh)
+        assert ref == init_sha, (ref, init_sha)
+        assert description == 'since purlin:init (2 commits)', description
+
+        for index in range(2, 32):
+            _write(os.path.join(fresh, 'f%d.txt' % index), str(index))
+            _commit(fresh, 'chore: commit %d' % index)
+        ref, payload = purlin_drift.resolve_since(fresh)
+        assert ref is None, ref
+        assert json.loads(payload)['recommendation'] == 'spec-from-code', payload
+
+
+class TestDriftClassification:
+    """drift RULE-3, RULE-4 and RULE-5: what category a changed file lands in."""
+
+    def _repo(self, root):
+        _new_repo(root)
+        _write(os.path.join(root, 'specs', 'mcp', 'thing.md'),
+               '# Feature: thing\n\n> Scope: src/thing.py\n\n'
+               '## Rules\n\n- RULE-1: Does the thing\n\n'
+               '## Proof\n\n- PROOF-1 (RULE-1): Call it and verify 1\n')
+        for path, text in (('src/thing.py', 'def thing():\n    return 1\n'),
+                           ('src/other.py', 'def other():\n    return 2\n'),
+                           ('tests/test_thing.py', 'def test_thing():\n    pass\n'),
+                           ('designs/thing/mock.svg', '<svg></svg>\n'),
+                           ('README.md', '# thing\n')):
+            _write(os.path.join(root, *path.split('/')), text)
+        _commit(root, 'chore: the project under test')
+        return root
+
+    @pytest.mark.proof("drift", "PROOF-4", "RULE-3", tier="integration")
+    def test_every_changed_file_lands_in_one_category(self, tmp_path):
+        root = self._repo(str(tmp_path / 'proj'))
+        _write(os.path.join(root, 'specs', 'mcp', 'thing.md'),
+               '# Feature: thing\n\n> Scope: src/thing.py\n\n'
+               '## Rules\n\n- RULE-1: Does the thing\n'
+               '- RULE-2: Does it twice\n\n'
+               '## Proof\n\n- PROOF-1 (RULE-1): Call it and verify 1\n'
+               '- PROOF-2 (RULE-2): Call it twice and verify 2\n')
+        for path, text in (('src/thing.py', 'def thing():\n    return 2\n'),
+                           ('src/other.py', 'def other():\n    return 3\n'),
+                           ('tests/test_thing.py',
+                            'def test_thing():\n    assert 1\n'),
+                           ('designs/thing/mock.svg', '<svg><rect/></svg>\n'),
+                           ('README.md', '# thing, revised\n')):
+            _write(os.path.join(root, *path.split('/')), text)
+        _commit(root, 'feat: move everything')
+
+        data = json.loads(purlin_drift.drift(root, since='1'))
+        found = {entry['path']: entry['category'] for entry in data['files']}
+        assert found == {
+            'specs/mcp/thing.md': 'CHANGED_SPECS',
+            'tests/test_thing.py': 'TESTS_CHANGED',
+            'src/thing.py': 'CHANGED_BEHAVIOR',
+            'designs/thing/mock.svg': 'CHANGED_DESIGNS',
+            'README.md': 'NO_IMPACT',
+            'src/other.py': 'NEW_BEHAVIOR',
+        }, found
+
+    @pytest.mark.proof("drift", "PROOF-5", "RULE-4", tier="integration")
+    def test_a_behaviour_directory_is_never_no_impact(self, tmp_path):
+        root = self._repo(str(tmp_path / 'proj'))
+        for path in ('skills/build/SKILL.md', 'agents/reviewer.md',
+                     '.claude/agents/helper.md'):
+            _write(os.path.join(root, *path.split('/')), '# behaviour\n')
+        _commit(root, 'feat: three behaviour files')
+
+        data = json.loads(purlin_drift.drift(root, since='1'))
+        found = {entry['path']: entry['category'] for entry in data['files']}
+        assert found == {
+            'skills/build/SKILL.md': 'NEW_BEHAVIOR',
+            'agents/reviewer.md': 'NEW_BEHAVIOR',
+            '.claude/agents/helper.md': 'NEW_BEHAVIOR',
+        }, found
+
+    @pytest.mark.proof("drift", "PROOF-6", "RULE-5", tier="integration")
+    def test_a_directory_scope_matches_the_files_under_it(self, tmp_path):
+        root = _new_repo(str(tmp_path / 'proj'))
+        _write(os.path.join(root, 'specs', 'api', 'api.md'),
+               '# Feature: api\n\n> Scope: src/api/\n\n'
+               '## Rules\n\n- RULE-1: Every response carries a type\n\n'
+               '## Proof\n\n- PROOF-1 (RULE-1): Call it and verify 1 header\n')
+        _write(os.path.join(root, 'src', 'api', 'login.js'),
+               'function login() { return 200; }\n')
+        _commit(root, 'chore: the api')
+        _write(os.path.join(root, 'src', 'api', 'login.js'),
+               'function login() { return 401; }\n')
+        _commit(root, 'fix: login')
+
+        data = json.loads(purlin_drift.drift(root, since='1'))
+        entry = next(e for e in data['files'] if e['path'] == 'src/api/login.js')
+        assert entry['category'] == 'CHANGED_BEHAVIOR', entry
+        assert entry['spec'] == 'api', entry
+
+
+class TestDriftReportShape:
+    """drift RULE-7 and RULE-8: what the report carries, and what is gone."""
+
+    @pytest.mark.proof("drift", "PROOF-8", "RULE-7", tier="integration")
+    @pytest.mark.proof("drift", "PROOF-9", "RULE-8", tier="integration")
+    def test_the_report_names_its_keys_and_the_scope_paths_that_are_gone(
+            self, tmp_path):
+        root = _new_repo(str(tmp_path / 'proj'))
+        _write(os.path.join(root, 'specs', 'mcp', 'thing.md'),
+               '# Feature: thing\n\n> Scope: src/thing.py, src/gone.py\n\n'
+               '## Rules\n\n- RULE-1: Does the thing\n\n'
+               '## Proof\n\n- PROOF-1 (RULE-1): Call it and verify 1\n')
+        _write(os.path.join(root, 'src', 'thing.py'),
+               'def thing():\n    return 1\n')
+        _commit(root, 'chore: the project under test')
+        _write(os.path.join(root, 'src', 'thing.py'),
+               'def thing():\n    return 2\n')
+        _commit(root, 'fix: thing')
+
+        data = json.loads(purlin_drift.drift(root, since='1'))
+        assert sorted(data) == sorted([
+            'since', 'commits', 'files', 'spec_changes', 'broken_scopes',
+            'pins', 'rule_details', 'states', 'review_list',
+            'roles']), sorted(data)
+        assert data['broken_scopes'] == [
+            {'spec': 'thing', 'missing_paths': ['src/gone.py']}], \
+            data['broken_scopes']
+
+
+class TestDriftPinStatus:
+    """drift RULE-10: unpinned, unreadable, and a pin that is still current."""
+
+    @pytest.mark.proof("drift", "PROOF-20", "RULE-10", tier="integration")
+    def test_a_pin_is_unpinned_an_error_or_not_reported_at_all(self, tmp_path):
+        root = _new_repo(str(tmp_path / 'proj'))
+
+        unpinned = purlin_drift.check_pin(
+            root, 'https://github.com/acme/p.git', None)
+        assert unpinned == {'status': 'unpinned', 'remote_sha': None}, unpinned
+
+        unreadable = purlin_drift.check_pin(
+            root, os.path.join(str(tmp_path), 'nope.git'), 'abc1234')
+        assert unreadable['status'] == 'error', unreadable
+        assert unreadable['error'], unreadable
+
+        bare = os.path.join(str(tmp_path), 'anchor.git')
+        sha = _create_bare_repo(bare, 'policy.md', '# policy v1')
+        current = purlin_drift.check_pin(root, bare, sha)
+        assert current == {'status': 'current', 'remote_sha': sha}, current
+
+        features = {'policy': {'is_anchor': True, 'source': bare,
+                               'pinned': sha}}
+        assert purlin_drift.pin_report(root, features) == [], (
+            'an anchor still at its pin must not be reported')
+        shutil.rmtree(bare + '_work', ignore_errors=True)
