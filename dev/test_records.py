@@ -13,8 +13,9 @@ What each group proves:
               annotated `validated/<name>` tag names is kept for ever
 *developer*   a plain commit under the developer's identity, pushed when a
               remote and an upstream exist and explained when not
-*ci*          blob, tree, commit, ref update, with no author and no committer
-              field, retried when the branch moved under the run
+*ci*          one tree request carrying every file's text, then commit, then
+              ref update, with no author and no committer field, retried
+              when the branch moved and paused when the git host asks
 *labels*      `ci` for a commit the git host made, which on GitHub is the
               committer `noreply@github.com` with the author
               `github-actions[bot]` and a signature that does not
@@ -25,11 +26,13 @@ What each group proves:
 *remote*      `--remote` hands the run to the git host and brings it back
 """
 
+import base64
 import json
 import os
 import shutil
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
 from datetime import datetime
@@ -135,14 +138,22 @@ class FakeHost(object):
 
     `fail_patch` is how many ref updates are refused with 422 before one is
     accepted, which is what a branch moving under the run looks like.
+    `refuse_trees` is how many tree requests are refused with `refuse_status`
+    carrying `refuse_headers`, which is what the git host's limit on
+    content-creating requests looks like.
     """
 
-    def __init__(self, fail_patch=0, head='1' * 40, azure=False):
+    def __init__(self, fail_patch=0, head='1' * 40, azure=False,
+                 refuse_trees=0, refuse_headers=None, refuse_status=403):
         self.calls = []
         self.fail_patch = fail_patch
         self.head = head
         self.azure = azure
         self.patched = 0
+        self.refuse_trees = refuse_trees
+        self.refuse_headers = refuse_headers or {}
+        self.refuse_status = refuse_status
+        self.trees = 0
 
     def __call__(self, request, timeout=None):
         method = request.get_method()
@@ -161,6 +172,11 @@ class FakeHost(object):
         if '/git/commits/' in url and method == 'GET':
             return Response({'tree': {'sha': 't' * 40}})
         if url.endswith('/trees'):
+            self.trees += 1
+            if self.trees <= self.refuse_trees:
+                raise urllib.error.HTTPError(
+                    url, self.refuse_status, 'Refused',
+                    self.refuse_headers, None)
             return Response({'sha': 'n' * 40})
         if url.endswith('/commits') and method == 'POST':
             return Response({'sha': 'c' * 40})
@@ -435,8 +451,14 @@ def test_nothing_to_commit_is_said_and_not_an_error(project, capsys):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.proof("records", "PROOF-5", "RULE-5")
-def test_the_ci_commit_walks_blob_tree_commit_ref(project, github_env,
-                                                  monkeypatch):
+def test_the_ci_commit_is_one_tree_then_commit_then_ref(project, github_env,
+                                                        monkeypatch):
+    """The file's text travels in the tree request, so it costs no request.
+
+    A run that writes a record, its auto-approvals and several hundred briefs
+    would otherwise make one content-creating request per file, which is what
+    the git host's limit on those counts.
+    """
     host = FakeHost()
     monkeypatch.setattr(urllib.request, 'urlopen', host)
     path = records_module.write_record(project, record(), 'ci', 'linux')
@@ -446,8 +468,9 @@ def test_the_ci_commit_walks_blob_tree_commit_ref(project, github_env,
 
     assert sha == 'c' * 40
     order = [url.rsplit('/git/', 1)[-1].split('?')[0] for url in host.urls()]
-    assert order == ['blobs', 'ref/heads/main', 'commits/' + '1' * 40,
+    assert order == ['ref/heads/main', 'commits/' + '1' * 40,
                      'trees', 'commits', 'refs/heads/main']
+    assert [url for url in host.urls() if url.endswith('/blobs')] == []
 
 
 @pytest.mark.proof("records", "PROOF-5", "RULE-5")
@@ -483,11 +506,9 @@ def test_the_tree_entry_carries_the_file_and_its_permission(project,
     entry = tree['tree'][0]
     assert entry['path'] == path
     assert entry['type'] == 'blob'
-    assert entry['sha'] == 'b' * 40
+    assert 'sha' not in entry, 'a text file asked for a blob of its own'
     assert entry[records_module._PERM_KEY] == records_module._FILE_PERM
-    blob = host.body_for('/git/blobs', method='POST')
-    assert blob['encoding'] == 'utf-8'
-    assert json.loads(blob['content'])['feature'] == 'greeting'
+    assert json.loads(entry['content'])['feature'] == 'greeting'
 
 
 @pytest.mark.proof("records", "PROOF-5", "RULE-5")
@@ -521,10 +542,143 @@ def test_the_ci_commit_carries_a_path_outside_the_records_directory(
     beside_the_spec = [name for name in paths
                        if not name.startswith('.purlin/records/')]
     assert beside_the_spec == [approval, brief]
+    assert json.loads(tree['tree'][1]['content'])['approver'] == 'ci'
+    assert json.loads(tree['tree'][2]['content'])['verdict'] == 'ready'
+    assert [url for url in host.urls() if url.endswith('/blobs')] == [], \
+        'three files that are all text asked for three blobs'
+
+
+@pytest.mark.proof("records", "PROOF-5", "RULE-5")
+def test_a_file_that_is_not_text_gets_a_blob_of_its_own(project, github_env,
+                                                        monkeypatch):
+    """Bytes that are not UTF-8 cannot travel inline, so they go as a blob.
+
+    Nothing a verify run writes is such a file, but the tree request would
+    be refused rather than carry one, so the branch has to exist.
+    """
+    host = FakeHost()
+    monkeypatch.setattr(urllib.request, 'urlopen', host)
+    path = records_module.write_record(project, record(), 'ci')
+    capture = '.purlin/runtime/attachments/greeting/PROOF-1.png'
+    os.makedirs(os.path.join(project, '.purlin', 'runtime', 'attachments',
+                             'greeting'))
+    with open(os.path.join(project, *capture.split('/')), 'wb') as handle:
+        handle.write(b'\x89PNG\r\n\x1a\n\xff\xfe')
+
+    records_module.commit_records(project, [path, capture], 'ci',
+                                  'purlin: record for 4f1c2ab')
+
     blobs = [body for _verb, url, body in host.calls if url.endswith('/blobs')]
-    assert len(blobs) == 3, 'a path handed over got no blob'
-    assert json.loads(blobs[1]['content'])['approver'] == 'ci'
-    assert json.loads(blobs[2]['content'])['verdict'] == 'ready'
+    assert len(blobs) == 1, 'only the file that is not text needs a blob'
+    assert blobs[0]['encoding'] == 'base64'
+    assert base64.b64decode(blobs[0]['content']) == b'\x89PNG\r\n\x1a\n\xff\xfe'
+    tree = host.body_for('/git/trees', method='POST')
+    assert 'content' in tree['tree'][0] and 'sha' not in tree['tree'][0]
+    assert tree['tree'][1]['sha'] == 'b' * 40
+    assert 'content' not in tree['tree'][1]
+
+
+# ---------------------------------------------------------------------------
+# The pause the git host asks for
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def slept(monkeypatch):
+    """Every wait the run takes, recorded rather than waited out."""
+    waits = []
+    monkeypatch.setattr(records_module.time, 'sleep', waits.append)
+    return waits
+
+
+@pytest.mark.proof("records", "PROOF-22", "RULE-22")
+def test_a_refusal_that_asks_for_a_pause_is_waited_out_and_retried(
+        project, github_env, monkeypatch, slept, capsys):
+    host = FakeHost(refuse_trees=1, refuse_headers={'Retry-After': '1'})
+    monkeypatch.setattr(urllib.request, 'urlopen', host)
+    path = records_module.write_record(project, record(), 'ci')
+
+    sha = records_module.commit_records(project, [path], 'ci',
+                                        'purlin: record')
+
+    assert sha == 'c' * 40
+    assert host.trees == 2, 'the refused tree request was not sent again'
+    assert slept == [1.0]
+    assert 'git host asked for a pause of 1 s' in capsys.readouterr().out
+
+
+@pytest.mark.proof("records", "PROOF-22", "RULE-22")
+def test_the_reset_time_is_read_when_there_is_no_retry_after(
+        project, github_env, monkeypatch, slept):
+    reset = str(int(time.time()) + 30)
+    host = FakeHost(refuse_trees=1,
+                    refuse_headers={'x-ratelimit-reset': reset})
+    monkeypatch.setattr(urllib.request, 'urlopen', host)
+    path = records_module.write_record(project, record(), 'ci')
+
+    records_module.commit_records(project, [path], 'ci', 'purlin: record')
+
+    assert len(slept) == 1
+    assert 25 <= slept[0] <= 30, slept
+
+
+@pytest.mark.proof("records", "PROOF-22", "RULE-22")
+def test_a_pause_longer_than_the_cap_is_shortened_to_it(
+        project, github_env, monkeypatch, slept):
+    host = FakeHost(refuse_trees=1, refuse_headers={'Retry-After': '900'})
+    monkeypatch.setattr(urllib.request, 'urlopen', host)
+    path = records_module.write_record(project, record(), 'ci')
+
+    records_module.commit_records(project, [path], 'ci', 'purlin: record')
+
+    assert slept == [float(records_module.PAUSE_CAP_SECONDS)]
+    assert records_module.PAUSE_CAP_SECONDS == 120
+
+
+@pytest.mark.proof("records", "PROOF-22", "RULE-22")
+def test_a_fourth_refusal_is_raised_with_its_status(project, github_env,
+                                                    monkeypatch, slept):
+    host = FakeHost(refuse_trees=99, refuse_headers={'Retry-After': '1'})
+    monkeypatch.setattr(urllib.request, 'urlopen', host)
+    path = records_module.write_record(project, record(), 'ci')
+
+    with pytest.raises(urllib.error.HTTPError) as raised:
+        records_module.commit_records(project, [path], 'ci', 'purlin: record')
+
+    assert raised.value.code == 403
+    assert '403' in str(raised.value)
+    assert host.trees == records_module.PAUSE_RETRIES + 1
+    assert len(slept) == records_module.PAUSE_RETRIES
+
+
+@pytest.mark.proof("records", "PROOF-22", "RULE-22")
+def test_a_refusal_that_asks_for_no_pause_is_raised_at_once(
+        project, github_env, monkeypatch, slept):
+    """A 403 with no header saying how long to wait is a real refusal."""
+    host = FakeHost(refuse_trees=99)
+    monkeypatch.setattr(urllib.request, 'urlopen', host)
+    path = records_module.write_record(project, record(), 'ci')
+
+    with pytest.raises(urllib.error.HTTPError) as raised:
+        records_module.commit_records(project, [path], 'ci', 'purlin: record')
+
+    assert raised.value.code == 403
+    assert host.trees == 1, 'a refusal that asked for no pause was retried'
+    assert slept == []
+
+
+@pytest.mark.proof("records", "PROOF-22", "RULE-22")
+def test_a_429_asking_for_a_pause_is_waited_out_too(project, github_env,
+                                                    monkeypatch, slept):
+    host = FakeHost(refuse_trees=1, refuse_status=429,
+                    refuse_headers={'Retry-After': '2'})
+    monkeypatch.setattr(urllib.request, 'urlopen', host)
+    path = records_module.write_record(project, record(), 'ci')
+
+    sha = records_module.commit_records(project, [path], 'ci',
+                                        'purlin: record')
+
+    assert sha == 'c' * 40
+    assert slept == [2.0]
 
 
 @pytest.mark.proof("records", "PROOF-6", "RULE-6")
