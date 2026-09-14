@@ -89,6 +89,7 @@ def project_at(gate, strength=90, by_ci=True, config=None):
 
 class TestTheTestedGate:
 
+    @pytest.mark.proof("approvals", "PROOF-30", "RULE-24", tier="integration")
     def test_a_developer_record_is_enough(self):
         made = project_at('tested', by_ci=False)
         try:
@@ -99,6 +100,7 @@ class TestTheTestedGate:
         finally:
             made.close()
 
+    @pytest.mark.proof("approvals", "PROOF-32", "RULE-25", tier="integration")
     def test_a_rule_with_no_record_fails_and_is_named(self):
         made = Project(gate='tested')
         try:
@@ -111,6 +113,7 @@ class TestTheTestedGate:
         finally:
             made.close()
 
+    @pytest.mark.proof("approvals", "PROOF-33", "RULE-25", tier="integration")
     def test_a_failing_proof_fails_the_gate(self):
         made = Project(gate='tested')
         try:
@@ -122,6 +125,7 @@ class TestTheTestedGate:
         finally:
             made.close()
 
+    @pytest.mark.proof("approvals", "PROOF-31", "RULE-24", tier="integration")
     def test_the_test_strength_is_not_read_at_tested(self):
         made = project_at('tested', strength=10, by_ci=False,
                           config={'min_strength': 80})
@@ -139,6 +143,7 @@ class TestTheTestedGate:
 
 class TestTheRecordedGate:
 
+    @pytest.mark.proof("approvals", "PROOF-34", "RULE-26", tier="integration")
     def test_a_record_ci_committed_passes(self):
         made = project_at('recorded')
         try:
@@ -148,6 +153,7 @@ class TestTheRecordedGate:
         finally:
             made.close()
 
+    @pytest.mark.proof("approvals", "PROOF-35", "RULE-26", tier="integration")
     def test_a_developer_record_does_not_count(self):
         made = project_at('recorded', by_ci=False)
         try:
@@ -158,6 +164,7 @@ class TestTheRecordedGate:
         finally:
             made.close()
 
+    @pytest.mark.proof("approvals", "PROOF-36", "RULE-27", tier="integration")
     def test_below_the_minimum_test_strength_fails(self):
         made = project_at('recorded', strength=40, config={'min_strength': 70})
         try:
@@ -168,6 +175,7 @@ class TestTheRecordedGate:
         finally:
             made.close()
 
+    @pytest.mark.proof("approvals", "PROOF-37", "RULE-27", tier="integration")
     def test_no_engine_leaves_the_strength_alone(self):
         made = project_at('recorded', strength=None,
                           config={'min_strength': 70})
@@ -178,6 +186,7 @@ class TestTheRecordedGate:
         finally:
             made.close()
 
+    @pytest.mark.proof("approvals", "PROOF-38", "RULE-28", tier="integration")
     def test_the_report_names_twenty_rules_and_counts_the_rest(self):
         rules = ''.join('- RULE-%d: Something is true about %d [risk: low]\n'
                         % (n, n) for n in range(1, 31))
@@ -206,6 +215,7 @@ def approved_project(approver='jane@acme.com', strength=90):
 
 class TestTheApprovedGate:
 
+    @pytest.mark.proof("approvals", "PROOF-39", "RULE-29", tier="integration")
     def test_a_signed_current_approval_by_an_approver_passes(self):
         made = approved_project()
         try:
@@ -217,6 +227,7 @@ class TestTheApprovedGate:
         finally:
             made.close()
 
+    @pytest.mark.proof("approvals", "PROOF-40", "RULE-29", tier="integration")
     def test_low_risk_needs_no_human_approval(self):
         made = approved_project()
         try:
@@ -229,6 +240,7 @@ class TestTheApprovedGate:
         finally:
             made.close()
 
+    @pytest.mark.proof("approvals", "PROOF-41", "RULE-30", tier="integration")
     def test_a_high_risk_rule_with_no_approval_fails(self):
         made = approved_project()
         try:
@@ -239,6 +251,7 @@ class TestTheApprovedGate:
         finally:
             made.close()
 
+    @pytest.mark.proof("approvals", "PROOF-42", "RULE-30", tier="integration")
     def test_a_ci_auto_approval_does_not_count_for_high_risk(self):
         made = approved_project()
         try:
@@ -253,6 +266,7 @@ class TestTheApprovedGate:
         finally:
             made.close()
 
+    @pytest.mark.proof("approvals", "PROOF-43", "RULE-30", tier="integration")
     def test_an_unsigned_approval_is_rejected(self):
         made = approved_project()
         try:
@@ -269,6 +283,7 @@ class TestTheApprovedGate:
         finally:
             made.close()
 
+    @pytest.mark.proof("approvals", "PROOF-44", "RULE-30", tier="integration")
     def test_the_author_of_the_test_may_not_approve_it(self):
         made = approved_project(approver='dev@example.com')
         try:
@@ -280,6 +295,7 @@ class TestTheApprovedGate:
         finally:
             made.close()
 
+    @pytest.mark.proof("approvals", "PROOF-45", "RULE-31", tier="integration")
     def test_a_stale_approval_fails_and_says_so(self):
         made = approved_project()
         try:
@@ -293,6 +309,7 @@ class TestTheApprovedGate:
         finally:
             made.close()
 
+    @pytest.mark.proof("approvals", "PROOF-46", "RULE-31", tier="integration")
     def test_an_approval_only_on_a_side_branch_is_not_on_the_branch(self):
         made = approved_project()
         try:
@@ -305,6 +322,7 @@ class TestTheApprovedGate:
         finally:
             made.close()
 
+    @pytest.mark.proof("approvals", "PROOF-47", "RULE-32", tier="integration")
     def test_no_approver_list_names_the_command_and_fails(self):
         made = project_at('approved')
         try:
@@ -323,6 +341,7 @@ class TestTheApprovedGate:
 
 class TestExitCodes:
 
+    @pytest.mark.proof("approvals", "PROOF-48", "RULE-33", tier="integration")
     def test_zero_one_and_two(self, tmp_path):
         passing = project_at('tested', by_ci=False)
         failing = Project(gate='tested')
@@ -336,17 +355,20 @@ class TestExitCodes:
         assert verify_gate.check(str(tmp_path), out=out) == 2
         assert 'failing closed' in out.getvalue()
 
+    @pytest.mark.proof("approvals", "PROOF-49", "RULE-33", tier="integration")
     def test_a_directory_that_is_not_a_project_never_passes(self, tmp_path):
         out = io.StringIO()
         code = verify_gate.check(str(tmp_path / 'nothing here'), out=out)
         assert code == 2
         assert 'cannot read a Purlin project' in out.getvalue()
 
+    @pytest.mark.proof("approvals", "PROOF-50", "RULE-34")
     def test_check_is_required_and_a_missing_directory_is_two(self):
         assert verify_gate.main([]) == 2
         assert verify_gate.main(['--check', '--project-root',
                                  '/no/such/directory']) == 2
 
+    @pytest.mark.proof("approvals", "PROOF-51", "RULE-38", tier="integration")
     def test_the_script_runs_as_a_command(self):
         made = project_at('tested', by_ci=False)
         try:
@@ -365,6 +387,7 @@ class TestExitCodes:
 
 class TestTheJsonVerdict:
 
+    @pytest.mark.proof("approvals", "PROOF-52", "RULE-35", tier="integration")
     def test_it_carries_the_verdict_and_every_rule_that_fell_short(self):
         made = Project(gate='tested')
         try:
@@ -379,6 +402,7 @@ class TestTheJsonVerdict:
         finally:
             made.close()
 
+    @pytest.mark.proof("approvals", "PROOF-53", "RULE-35", tier="integration")
     def test_a_passing_project_says_pass(self):
         made = project_at('tested', by_ci=False)
         try:
@@ -390,6 +414,7 @@ class TestTheJsonVerdict:
         finally:
             made.close()
 
+    @pytest.mark.proof("approvals", "PROOF-54", "RULE-32", tier="integration")
     def test_a_missing_approver_list_says_so_in_the_json(self):
         made = project_at('approved')
         try:
@@ -407,6 +432,7 @@ class TestTheJsonVerdict:
 
 class TestTheGateNeverWrites:
 
+    @pytest.mark.proof("approvals", "PROOF-55", "RULE-36", tier="integration")
     def test_no_file_is_created_or_changed_at_any_level(self):
         for gate in ('tested', 'recorded', 'approved'):
             made = project_at(gate, config={'approvers': ['jane@acme.com']})
@@ -438,6 +464,7 @@ def _tree(root):
 
 class TestWhatTheGateReads:
 
+    @pytest.mark.proof("approvals", "PROOF-56", "RULE-37")
     def test_it_reads_the_payload_and_not_a_rendered_table(self):
         with open(GATE_PY, encoding='utf-8') as handle:
             source = handle.read()
@@ -447,6 +474,7 @@ class TestWhatTheGateReads:
                 'a gate that parsed a rendered table would move with the '
                 'dashboard')
 
+    @pytest.mark.proof("approvals", "PROOF-57", "RULE-37", tier="integration")
     def test_a_caller_may_hand_over_the_payload_it_already_built(self):
         made = project_at('tested', by_ci=False)
         try:
@@ -457,6 +485,7 @@ class TestWhatTheGateReads:
         finally:
             made.close()
 
+    @pytest.mark.proof("approvals", "PROOF-58", "RULE-38", tier="integration")
     def test_every_line_it_prints_carries_the_prefix_or_is_a_finding(self):
         made = Project(gate='tested')
         try:

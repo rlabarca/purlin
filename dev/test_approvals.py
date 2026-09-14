@@ -234,6 +234,7 @@ def signing_key(root, email='jane@acme.com'):
 
 class TestTheTriple:
 
+    @pytest.mark.proof("approvals", "PROOF-1", "RULE-1", tier="integration")
     def test_the_three_hashes_come_back_with_their_kind(self, proved):
         parts = approve_module.rule_proof_test_hashes(
             proved.root, 'login', 'RULE-1')
@@ -243,10 +244,12 @@ class TestTheTriple:
         assert kind == 'file'
         assert design is None
 
+    @pytest.mark.proof("approvals", "PROOF-2", "RULE-2", tier="integration")
     def test_a_rule_that_is_not_there_has_no_hashes(self, proved):
         assert approve_module.rule_proof_test_hashes(
             proved.root, 'login', 'RULE-99') == (None, None, None, None, None)
 
+    @pytest.mark.proof("approvals", "PROOF-3", "RULE-3", tier="integration")
     def test_reflowing_a_rule_and_re_tagging_it_keep_the_triple(self, proved):
         before = approve_module.triple_for(proved.rule('RULE-1'))
         proved.spec(SPEC.replace(
@@ -258,6 +261,7 @@ class TestTheTriple:
         assert after == before, (
             'reflowing a rule or re-tagging it must not stale its approval')
 
+    @pytest.mark.proof("approvals", "PROOF-4", "RULE-4", tier="integration")
     def test_editing_the_rule_the_proof_or_the_test_moves_the_triple(
             self, proved):
         before = approve_module.triple_for(proved.rule('RULE-1'))
@@ -277,6 +281,7 @@ class TestTheTriple:
         test_changed = approve_module.triple_for(proved.rule('RULE-1'))
         assert test_changed != before
 
+    @pytest.mark.proof("approvals", "PROOF-5", "RULE-5", tier="integration")
     def test_a_manual_proof_says_so_instead_of_naming_a_file(self):
         made = Project(spec=SPEC.replace(
             'verify 401 and the body "denied"',
@@ -311,27 +316,32 @@ class TestStale:
                     a, entry['rule_hash'], entry['proof_hash'],
                     entry['test_hash'], entry['risk'], entry['design_hash'])]
 
+    @pytest.mark.proof("approvals", "PROOF-6", "RULE-6", tier="integration")
     def test_a_fresh_approval_is_current(self, proved):
         self._approve(proved)
         assert len(self._current(proved)) == 1
 
+    @pytest.mark.proof("approvals", "PROOF-7", "RULE-6", tier="integration")
     def test_the_rule_text_changing_stales_it(self, proved):
         self._approve(proved)
         proved.spec(SPEC.replace('return 200 with a session token',
                                  'return 200 with a signed session token'))
         assert self._current(proved) == []
 
+    @pytest.mark.proof("approvals", "PROOF-8", "RULE-6", tier="integration")
     def test_the_proof_text_changing_stales_it(self, proved):
         self._approve(proved)
         proved.spec(SPEC.replace('verify 200 and a token',
                                  'verify 200, a token and a cookie'))
         assert self._current(proved) == []
 
+    @pytest.mark.proof("approvals", "PROOF-9", "RULE-6", tier="integration")
     def test_the_test_changing_stales_it(self, proved):
         self._approve(proved)
         proved.edit_test(TEST_FILE.replace('== 200', '== 200 or True'))
         assert self._current(proved) == []
 
+    @pytest.mark.proof("approvals", "PROOF-10", "RULE-6", tier="integration")
     def test_the_risk_changing_stales_it(self, proved):
         self._approve(proved)
         proved.spec(SPEC.replace(
@@ -342,6 +352,7 @@ class TestStale:
         assert self._current(proved) == [], (
             'raising a rule from low to high changes what approving it meant')
 
+    @pytest.mark.proof("approvals", "PROOF-11", "RULE-7", tier="integration")
     def test_a_stale_approval_puts_the_rule_in_stale(self, proved):
         self._approve(proved)
         assert proved.rule('RULE-1')['state'] == 'Approved'
@@ -356,6 +367,7 @@ class TestStale:
 
 class TestTheFile:
 
+    @pytest.mark.proof("approvals", "PROOF-12", "RULE-8", tier="integration")
     def test_the_name_carries_the_rule_the_triple_and_the_slug(self, proved):
         entry = proved.rule('RULE-1')
         triple = approve_module.triple_for(entry)
@@ -365,6 +377,7 @@ class TestTheFile:
         assert proved.approvals() == [
             'RULE-1.%s.rich-labarca-purlin.json' % triple[:8]]
 
+    @pytest.mark.proof("approvals", "PROOF-13", "RULE-9", tier="integration")
     def test_the_fields_are_the_ones_the_format_names(self, proved):
         entry = proved.rule('RULE-1')
         record = proved.record()
@@ -386,6 +399,7 @@ class TestTheFile:
         assert data['record'] == record
         assert data['timestamp'].endswith('Z')
 
+    @pytest.mark.proof("approvals", "PROOF-14", "RULE-10", tier="integration")
     def test_the_reader_finds_it_and_never_reads_a_brief_as_one(self, proved):
         entry = proved.rule('RULE-1')
         approve_module.write_approval(
@@ -407,6 +421,7 @@ class TestTheFile:
 
 class TestAutoApproval:
 
+    @pytest.mark.proof("approvals", "PROOF-15", "RULE-11", tier="integration")
     def test_low_risk_with_a_passing_record_and_enough_strength(self, proved):
         written = approve_module.auto_approve(proved.root)
         assert len(written) == 1, written
@@ -417,11 +432,13 @@ class TestAutoApproval:
         assert data['approver'] == 'ci' and data['risk'] == 'low'
         assert data['record'].startswith('.purlin/records/login/')
 
+    @pytest.mark.proof("approvals", "PROOF-16", "RULE-12", tier="integration")
     def test_high_risk_is_never_auto_approved(self, proved):
         written = approve_module.auto_approve(proved.root)
         assert [path for path in written if 'RULE-2' in path] == [], (
             'RULE-2 is high risk and needs a person')
 
+    @pytest.mark.proof("approvals", "PROOF-17", "RULE-13", tier="integration")
     def test_below_the_minimum_strength_nothing_is_written(self):
         made = Project(config={'min_strength': 70})
         try:
@@ -433,6 +450,7 @@ class TestAutoApproval:
         finally:
             made.close()
 
+    @pytest.mark.proof("approvals", "PROOF-18", "RULE-14", tier="integration")
     def test_a_failing_record_is_not_auto_approved(self):
         made = Project()
         try:
@@ -442,6 +460,7 @@ class TestAutoApproval:
         finally:
             made.close()
 
+    @pytest.mark.proof("approvals", "PROOF-19", "RULE-15", tier="integration")
     def test_a_manual_proof_is_never_auto_approved(self):
         made = Project(spec=SPEC.replace(
             'verify 200 and a token @integration',
@@ -454,6 +473,7 @@ class TestAutoApproval:
         finally:
             made.close()
 
+    @pytest.mark.proof("approvals", "PROOF-20", "RULE-16", tier="integration")
     def test_a_rule_already_approved_is_left_alone(self, proved):
         entry = proved.rule('RULE-1')
         approve_module.write_approval(
@@ -468,6 +488,7 @@ class TestAutoApproval:
 
 class TestTheSignedCommit:
 
+    @pytest.mark.proof("approvals", "PROOF-21", "RULE-17", tier="integration")
     def test_without_signing_the_setup_is_printed_and_nothing_is_written(
             self, proved, capsys):
         code = approve_module.main(['login', '--project-root', proved.root])
@@ -478,6 +499,7 @@ class TestTheSignedCommit:
         assert 'git config commit.gpgsign true' in output
         assert proved.approvals() == []
 
+    @pytest.mark.proof("approvals", "PROOF-23", "RULE-18", tier="integration")
     def test_one_signed_commit_carries_the_batch(self, proved, capsys):
         signing_key(proved.root)
         code = approve_module.main(['login', '--project-root', proved.root])
@@ -489,6 +511,7 @@ class TestTheSignedCommit:
         assert signature == 'G', log
         assert subject == 'approve(login): RULE-2 RULE-1', subject
 
+    @pytest.mark.proof("approvals", "PROOF-25", "RULE-20", tier="integration")
     def test_the_counted_approval_needs_the_signature_and_the_list(
             self, proved):
         signing_key(proved.root)
@@ -503,6 +526,7 @@ class TestTheSignedCommit:
             proved.root, approval, ['someone@else.com'])
         assert not counted and 'approver list' in reason
 
+    @pytest.mark.proof("approvals", "PROOF-24", "RULE-19")
     def test_a_batch_across_features_names_each_one(self):
         assert approve_module.commit_message(
             [('login', 'RULE-1'), ('login', 'RULE-2')]) == (
@@ -511,6 +535,7 @@ class TestTheSignedCommit:
             [('login', 'RULE-1'), ('billing', 'RULE-3')]) == (
             'approve(batch): login RULE-1, billing RULE-3')
 
+    @pytest.mark.proof("approvals", "PROOF-26", "RULE-21", tier="integration")
     def test_the_approver_list_bounds_who_may_run_it(self, proved, capsys):
         proved.config(approvers=['someone@else.com'])
         code = approve_module.main(['login', '--project-root', proved.root])
@@ -518,6 +543,7 @@ class TestTheSignedCommit:
         assert code == 1
         assert 'not on the approver list' in output
 
+    @pytest.mark.proof("approvals", "PROOF-27", "RULE-21", tier="integration")
     def test_the_approved_gate_with_no_list_names_the_command(self, capsys):
         made = Project(gate='approved')
         try:
@@ -538,6 +564,7 @@ class TestTheSignedCommit:
 
 class TestTheAncestorCheck:
 
+    @pytest.mark.proof("approvals", "PROOF-29", "RULE-23", tier="integration")
     def test_an_approval_on_a_side_branch_is_not_on_the_protected_branch(
             self, proved):
         signing_key(proved.root)
@@ -558,11 +585,13 @@ class TestTheAncestorCheck:
 
 class TestTheCommandLine:
 
+    @pytest.mark.proof("approvals", "PROOF-28", "RULE-22")
     def test_help_exits_zero_and_a_bad_option_exits_two(self):
         assert approve_module.main(['--help']) == 0
         assert approve_module.main(['login', '--nope']) == 2
         assert approve_module.main([]) == 2
 
+    @pytest.mark.proof("approvals", "PROOF-22", "RULE-17", tier="integration")
     def test_the_script_runs_as_a_command(self, proved):
         result = subprocess.run(
             [sys.executable, APPROVE_PY, 'login', '--project-root',
