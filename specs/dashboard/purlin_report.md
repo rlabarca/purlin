@@ -39,7 +39,7 @@
 
 ## Proof
 
-- PROOF-1 (RULE-1): Run the build twice over unchanged sources and verify the two pages are the same string, byte for byte @unit
+- PROOF-1 (RULE-1): Run the build twice over unchanged sources and verify the two pages are the same string, byte for byte, so 0 bytes differ between the two runs @unit
 - PROOF-2 (RULE-2): Run the build; verify the written page has at most 1000 lines and that the copy at the project root is the same text as the one under `scripts/report/` @unit
 - PROOF-3 (RULE-3): Run the build, cut the page at the inlined token block, and verify the block declares `--canvas` and that the text outside it contains zero hex colour literals @unit
 - PROOF-4 (RULE-4): Run the build and verify the page outside the token block contains no `box-shadow`, that the whole page contains no `gradient`, and that no character of it falls in the emoji ranges @unit

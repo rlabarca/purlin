@@ -90,7 +90,7 @@
 - PROOF-34 (RULE-9): Run the command with `--json` over a TypeScript file carrying a tautological test, an empty body and a real assertion; verify the three results read `tautology`, `no_assertion` and `pass` @integration
 - PROOF-35 (RULE-16): Read those same three results; verify each carries a proof id, a rule id, a test name, a status and a reason, that the first names `RULE-1`, and that the third's test name opens `real assertion` @integration
 - PROOF-36 (RULE-10): Run the command with `--json` over a TypeScript file whose first test passes an options object to a call and whose second title carries an apostrophe; verify both proofs come back with status `pass` @integration
-- PROOF-37 (RULE-35): Parse the module's own source; verify fcntl is imported inside a try, that the flag is assigned in the try and in an except catching an import error, and that the module exposes the flag
+- PROOF-37 (RULE-35): Parse the module's own source; verify fcntl is imported inside a try, that `_HAS_FCNTL` is assigned in the try and in an except catching an import error, and that the module exposes that flag
 - PROOF-38 (RULE-36): Parse the module's own source and read every call to open; verify each call that opens text passes the encoding `utf-8` and that the offending line numbers are zero
 - PROOF-39 (RULE-11): Run the C# checker over a marked method whose body is `Assert.True(true);`; verify its status is `fail` and its check is `tautology` @integration
 - PROOF-40 (RULE-11): Run the C# checker over a marked method that computes a value and asserts nothing; verify its status is `fail` and its check is `no_assertion` @integration
@@ -106,7 +106,7 @@
 - PROOF-50 (RULE-23): Build a project holding 12 specs and one test file per checked language, then sweep it; verify the sweep counts 12 features, 17 backings, and returns the expected status and check for every one of its 14 proofs @integration
 - PROOF-51 (RULE-24): Run the sweep over that same project; verify the record naming a file nobody wrote is `missing_file`, the file carrying no marker for its proof is `marker_not_found`, the `.rb` backing is `no_checker`, and that none of them appears among the failing rows @integration
 - PROOF-52 (RULE-25): Run the sweep over that same project; verify the proof with a clean and an always-true backing takes the failing file, the proof with a clean and an unreadable backing takes the unreadable one, and the proof with a failing and an unreadable backing takes the failing one @integration
-- PROOF-53 (RULE-26): Hash every file of that project, run the sweep, and hash them again; verify the two mappings are equal @integration
+- PROOF-53 (RULE-26): Hash every file of that project, run the sweep, and hash them again; verify the two mappings are equal, so 0 files changed @integration
 - PROOF-54 (RULE-27): Run `--sweep --json` over this repository; verify it exits 0, that it swept one feature per spec file on disk, that zero backings are unmeasurable for want of a checker, and that the checkout and the runtime directory are byte-identical afterwards @integration
 - PROOF-55 (RULE-32): Parse the command's own source; verify every `--flag` it compares against the argument list appears in the usage text, that the usage advertises no other flag, and that the docstring cites the exit convention
 - PROOF-56 (RULE-33): Run the command with no argument at all; verify it exits 2 and prints every usage line on the error stream @integration
