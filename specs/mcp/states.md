@@ -37,6 +37,7 @@
 - RULE-24: The report carries no emoji: the only characters above U+2000 it prints are the arrow, the two triangles and the horizontal rule the design system allows [risk: medium] [origin: eng]
 - RULE-25: A config carrying a key this release no longer reads prints the line `Run: purlin:init --update` above the next step [risk: medium] [origin: eng]
 - RULE-26: A review list entry carries `reasons`, one short code or text for each thing that put the rule on the list, ordered stale, risk, test strength, operating system, re-verify, free checks, and keeps `reason` beside it as those joined with `; ` [risk: medium] [origin: eng]
+- RULE-27: Every record in the payload's `records` map carries the result of the run it names, `fail` where any proof it observed failed and `pass` otherwise, beside the label read from git [risk: medium] [origin: eng]
 
 ## Proof
 
@@ -68,3 +69,4 @@
 - PROOF-26 (RULE-25): Set a config key this release no longer reads and run the status report; verify the output carries the line `Run: purlin:init --update` @integration
 - PROOF-27 (RULE-11): Write and commit a record whose test strength was never measured and verify the low-risk RULE-2 is auto-approvable; then write the proof text `Check that the login handles it properly` and verify the finding `vague_verb` fires and the rule is no longer auto-approvable @integration
 - PROOF-28 (RULE-26): Build the payload at gate `recorded`, whose minimum strength is 70, over a record measuring 40; verify the high-risk RULE-1's entry carries `reasons` exactly `["risk high", "strength 40% under 70%", "happy_path_only"]` with `reason` exactly `risk high; strength 40% under 70%; happy_path_only`, and that the low-risk RULE-2's entry carries `reasons` exactly `["strength 40% under 70%"]`, so the two rows say different things @integration
+- PROOF-29 (RULE-27): Commit one record from `linux` in which `PROOF-2` has status `fail` and one from `windows` in which both proofs pass; build the payload and verify the `linux` record reads `result` `fail` and the `windows` record reads `result` `pass`, each beside the label `developer` git gives it @integration

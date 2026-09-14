@@ -992,6 +992,20 @@ class TestPayload:
         finally:
             made.close()
 
+    @pytest.mark.proof("states", "PROOF-29", "RULE-27", tier="integration")
+    def test_a_record_carries_the_result_of_the_run_it_names(self, project):
+        """Two operating systems, one run each: one failed, one passed."""
+        project.record([{'id': 'PROOF-1', 'status': 'pass'},
+                        {'id': 'PROOF-2', 'status': 'fail'}], os_name='linux')
+        project.record([{'id': 'PROOF-1', 'status': 'pass'},
+                        {'id': 'PROOF-2', 'status': 'pass'}],
+                       os_name='windows')
+        records = project.payload()['records']['login']
+        assert records['linux']['result'] == 'fail'
+        assert records['windows']['result'] == 'pass'
+        assert records['linux']['label'] == 'developer'
+        assert records['windows']['label'] == 'developer'
+
     @pytest.mark.proof("states", "PROOF-19", "RULE-19", tier="integration")
     def test_the_data_file_is_a_const_assignment_and_round_trips(self, project):
         data = project.payload()

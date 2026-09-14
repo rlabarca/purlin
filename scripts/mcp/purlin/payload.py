@@ -32,7 +32,7 @@ table would be coupled to a layout; this is the shape they all read instead.
       "review_list": [{"feature": ..., "rule": ..., "risk": ...,
                        "reasons": ["stale", "risk medium"],
                        "reason": "stale; risk medium"}],
-      "records": {"login": {"": {...}}},
+      "records": {"login": {"": {..., "label": "ci", "result": "pass"}}},
       "warnings": ["..."]
     }
 
@@ -129,7 +129,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
         'project_rollup': project_rollup,
         'features': feature_entries,
         'review_list': review_list,
-        'records': {feature: {(os_name or ''): record
+        'records': {feature: {(os_name or ''): _with_result(record)
                               for os_name, record in by_os.items()}
                     for feature, by_os in all_records.items()},
         'warnings': warnings,
@@ -362,6 +362,22 @@ def _read_brief(project_root, owner_info, rule_id, rule_hash, proof_hash,
     except (json.JSONDecodeError, IOError, OSError, UnicodeDecodeError):
         return None
     return brief if isinstance(brief, dict) else None
+
+
+def _with_result(record):
+    """One record plus `result`: `fail` where a proof it observed failed.
+
+    A record's existence is not its result. The map is keyed by operating
+    system, and a reader holding two records with nothing but their labels to
+    tell them apart cannot see that the Linux job failed every proof while
+    the Windows job passed them. `fail` where any observation reads `fail`,
+    `pass` otherwise, which is how the run script reads a rule's own
+    observations. The label is already on the record, read from git.
+    """
+    entry = dict(record)
+    statuses = records_module.proof_statuses(record).values()
+    entry['result'] = 'fail' if 'fail' in statuses else 'pass'
+    return entry
 
 
 def _latest(by_os):
