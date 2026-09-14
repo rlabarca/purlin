@@ -1,0 +1,38 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "proof_common",
+  "generated_at": "2026-09-14T16:52:09Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "f726a0d104804a9dea7f9e4e4e114942adca30622b321a8633b60d030236fe4c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-4",
+      "text": "Read back the file each plugin wrote and verify every entry's key set is exactly the seven required fields, an eighth key failing and naming the plugin, in `dev/test_multilang_proof_plugins.py`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/proof_common/20260914T165124Z-c6d2880-ci-windows.json",
+  "risk": "medium",
+  "rule": "RULE-4",
+  "rule_hash": "1eda2a4685620d7dece9a2e9235159c2446cad18946a3979d3b469dd9bbe82fa",
+  "rule_text": "A written entry carries the seven fields `feature`, `id`, `rule`, `test_file`, `test_name`, `status` and `tier`, and no eighth",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "test_hash_kind": "none",
+  "test_strength": null,
+  "tests": [],
+  "triple_hash": "10f994a168135cc56f9c332d3b886a89667b5faff739869221e5ae70077ee25e",
+  "verdict": "ready"
+}

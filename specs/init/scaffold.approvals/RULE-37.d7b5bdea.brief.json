@@ -1,0 +1,43 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-14T16:52:32Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "aeb478692792ac1e5b20656b266c68f4161edd4082a78494423a79883eedf685",
+  "proofs": [
+    {
+      "env": "linux",
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-37",
+      "text": "Run init at `tested` on a python fixture and verify the config, the pytest plugin copy and `conftest.py` exist with no workflow; on a typescript fixture verify the vitest plugin copy and `vitest.config.ts`; on an xunit fixture verify the logger copy and the two wiring lines in the summary. Then run a marketplace copy's own script against a fresh project and verify `.purlin/config.json` exists, `.purlin/plugin-root` holds the install path, and no other file in the project names it",
+      "tier": "e2e"
+    }
+  ],
+  "reasons": [
+    "PROOF-37 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/scaffold/20260914T165126Z-c6d2880-ci-windows.json",
+  "risk": "high",
+  "rule": "RULE-37",
+  "rule_hash": "52ce899379cebd7ba9837b9dd18de14fe5962e0427e8467aa1115a6251668032",
+  "rule_text": "Each language init supports is wired the same way in a real project, and an install from the marketplace leaves `.purlin/plugin-root` as the only file naming the install",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "test_hash_kind": "none",
+  "test_strength": null,
+  "tests": [],
+  "triple_hash": "d7b5bdea271379bc77018bc930e6ff2cd6dd2e8fb6d306402029de6e9dc2307d",
+  "verdict": "add a case"
+}

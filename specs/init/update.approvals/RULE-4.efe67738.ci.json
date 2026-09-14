@@ -5,13 +5,13 @@
   "feature": "update",
   "gate": "approved",
   "proof_hash": "811ca7d65769b6e9bd32b47174d0b3cbc1dc1fb6e5712e82765d0364791e5158",
-  "record": ".purlin/records/update/20260914T164016Z-c6d2880-ci-linux.json",
+  "record": ".purlin/records/update/20260914T165128Z-c6d2880-ci-windows.json",
   "risk": "low",
   "rule": "RULE-4",
   "rule_hash": "5f73da986afd7521c6b0c03c89686be525df6d2438a2884c9ef40bc784b9957e",
   "schema": "purlin-approval/1",
   "test_hash": "e77bc53e12bc2c82b10cb3b0b9e0ee9c6993831baf8cfeb32b3fc0e636129441",
   "test_hash_kind": "file",
-  "timestamp": "2026-09-14T16:40:22Z",
+  "timestamp": "2026-09-14T16:51:54Z",
   "triple": "efe6773860291866"
 }

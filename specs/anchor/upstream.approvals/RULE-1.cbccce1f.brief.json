@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "upstream",
-  "generated_at": "2026-09-14T16:41:07Z",
+  "generated_at": "2026-09-14T16:53:03Z",
   "layers": [
     "proof text",
     "test body",
@@ -29,7 +29,7 @@
     "PROOF-1 implementation_coupling: Names a private symbol, a selector or a path instead of an observable outcome, so a refactor breaks the proof without changing behaviour.",
     "PROOF-1 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/upstream/20260914T164016Z-c6d2880-ci-linux.json",
+  "record": ".purlin/records/upstream/20260914T165128Z-c6d2880-ci-windows.json",
   "risk": "high",
   "rule": "RULE-1",
   "rule_hash": "3422ee27a18075363e94d6373133ccb5d5bcd85a1bf68c708a1d76597fa1a431",
