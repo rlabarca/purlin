@@ -652,7 +652,7 @@ Wave 2, 2026-09-13. Both lanes landed by fast-forward; head `395183ad`.
 
 | Lane | Commits | What | Tokens |
 |---|---|---|---|
-| 1A | `1cba0b0e`..`d1006609` (4) | `scripts/mcp/purlin/` 14 modules, 3,504 lines (`specs` 488, `checks` 129, `proofs` 125, `ids` 205, `frameworks` 152, `gate` 155, `records` 291, `approvals` 206, `states` 318, `drift` 504, `status` 222, `payload` 399, `server` 272); `purlin_server.py` deleted (6,550); `dev/test_mcp_server.py` 5,066 to 1,165; kept tests repointed; `spec_format.md` Format-Version 11, `anchor_format.md` 7; plugin entry point and `refresh_digest.py` repointed; acceptance 164 passed, 1 skipped; `sync_status` prints the seven-state table for the 37 frozen specs (552 rules) | 383,649 |
+| 1A | `a79ec199`, `d1006609` | `scripts/mcp/purlin/` 14 modules, 3,504 lines (`specs` 488, `checks` 129, `proofs` 125, `ids` 205, `frameworks` 152, `gate` 155, `records` 291, `approvals` 206, `states` 318, `drift` 504, `status` 222, `payload` 399, `server` 272); `purlin_server.py` deleted (6,550); `dev/test_mcp_server.py` 5,066 to 1,165; kept tests repointed; `spec_format.md` Format-Version 11, `anchor_format.md` 7; plugin entry point and `refresh_digest.py` repointed; acceptance 164 passed, 1 skipped; `sync_status` prints the seven-state table for the 37 frozen specs (552 rules) | 383,649 |
 | 1B | `a9197232`, `395183ad` | `scripts/audit/static_checks.py` (3,443) moved to `scripts/review/static_checks.py` (1,192) so no import line carries a retired word; `dev/test_static_checks.py` 4,075 to 2,370, 74 passed, 5 skipped | 407,315 |
 
 Tokens, wave 2: 790,964. Running total: 1,186,592.
