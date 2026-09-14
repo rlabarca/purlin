@@ -19,9 +19,9 @@
 #  13. approve.py, signed by a throwaway key that exists only in the temp repo
 #  14. verify_gate.py --check         exits 0
 #
-# Nothing here reaches a git host. The CI identity is a GIT_COMMITTER_NAME on a
-# local commit, which is what `record_label` reads, and the signing key is
-# generated into the temp repository and deleted with it.
+# Nothing here reaches a git host. The CI identity is a GIT_COMMITTER_NAME and
+# a signature on a local commit, which is what `record_label` reads, and both
+# signing keys are generated into the temp repository and deleted with it.
 #
 # Fixtures: python (always), typescript (when npm can install vitest, from its
 # cache or a registry), xunit (when dotnet resolves; init wiring only, because
@@ -141,10 +141,23 @@ commit_all() {  # dir message
 
 commit_as_ci() {  # dir
   # What CI's commit looks like to `record_label`: the build identity as the
-  # committer. Nothing here talks to a git host; the label is read from git.
-  git -C "$1" add -A
+  # committer, and a signature, because CI writes through the git host's API
+  # and the git host signs what it writes. An unsigned commit claiming that
+  # identity is a person's and the reader says so, so a fixture that left the
+  # signature out would be refused on any machine that can check one. Nothing
+  # here talks to a git host; the key is generated into the temp repository
+  # and the label is read from git.
+  local dir="$1" key="$1/.git/ci-signing-key"
+  if [ ! -f "$key.pub" ]; then
+    ssh-keygen -q -t ed25519 -N '' -C "$CI_EMAIL" -f "$key"
+    printf '%s %s\n' "$CI_EMAIL" "$(cut -d' ' -f1,2 "$key.pub")" \
+      > "$dir/.git/ci-allowed-signers"
+    git -C "$dir" config gpg.ssh.allowedSignersFile "$dir/.git/ci-allowed-signers"
+  fi
+  git -C "$dir" add -A
   GIT_COMMITTER_NAME="$CI_NAME" GIT_COMMITTER_EMAIL="$CI_EMAIL" \
-    git -C "$1" commit -q -m "purlin: record for $(git -C "$1" rev-parse --short=7 HEAD)"
+    git -C "$dir" -c gpg.format=ssh -c "user.signingkey=$key.pub" \
+      commit -q -S -m "purlin: record for $(git -C "$dir" rev-parse --short=7 HEAD)"
 }
 
 signing_key() {  # dir email

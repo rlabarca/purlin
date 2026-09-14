@@ -52,15 +52,52 @@ CI_EMAIL = '41898282+github-actions[bot]@users.noreply.github.com'
 # Helpers
 # ---------------------------------------------------------------------------
 
+def ci_signing_key(root):
+    """A throwaway ssh key this project trusts, for the CI commit to sign with.
+
+    The key and the allowed-signers file live inside the project's own `.git`
+    and nowhere else. `None` when the machine has no `ssh-keygen`, and then
+    the commit is made unsigned.
+    """
+    key = os.path.join(root, '.git', 'ci-signing-key')
+    if not os.path.exists(key + '.pub'):
+        made = subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '',
+                               '-C', CI_EMAIL, '-f', key],
+                              capture_output=True, text=True)
+        if made.returncode != 0:
+            return None
+    with open(key + '.pub', encoding='utf-8') as handle:
+        public = handle.read().strip()
+    allowed = os.path.join(root, '.git', 'ci-allowed-signers')
+    with open(allowed, 'w', encoding='utf-8') as handle:
+        handle.write('%s %s\n' % (CI_EMAIL, ' '.join(public.split()[:2])))
+    git(root, 'config', 'gpg.ssh.allowedSignersFile', allowed)
+    return key + '.pub'
+
+
 def commit_as_ci(root, message='purlin: record for abc1234'):
-    """Commit everything staged under the build identity, as CI does."""
+    """Commit everything staged under the build identity, as CI does.
+
+    CI writes through the git host's API, which signs the commit: the reader
+    reads an unsigned commit claiming that identity as a person's, so a
+    fixture that leaves the signature out is not what CI writes and the gate
+    would refuse it on any machine that can check signatures. The signature
+    here is a throwaway ssh key the project itself trusts.
+    """
     environment = dict(os.environ,
                        GIT_COMMITTER_NAME=CI_COMMITTER,
                        GIT_COMMITTER_EMAIL=CI_EMAIL)
+    key = ci_signing_key(root)
     subprocess.run(['git', 'add', '-A'], cwd=root, capture_output=True,
                    text=True)
-    subprocess.run(['git', 'commit', '-q', '-m', message], cwd=root,
-                   env=environment, capture_output=True, text=True)
+    command = ['git']
+    if key:
+        command += ['-c', 'gpg.format=ssh', '-c', 'user.signingkey=' + key]
+    command += ['commit', '-q', '-m', message]
+    if key:
+        command.append('-S')
+    subprocess.run(command, cwd=root, env=environment, capture_output=True,
+                   text=True)
 
 
 def run(project, as_json=False):

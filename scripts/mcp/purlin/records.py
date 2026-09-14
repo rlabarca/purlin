@@ -99,32 +99,64 @@ def record_name_parts(basename):
     return m.group(1), m.group(2), m.group(3), m.group(4)
 
 
-def signature_confirms(signature):
+def signature_confirms(signature, signed=False):
     """True when `%G?` does not contradict a commit the git host claims.
 
     `G` and `U` are a checked signature and confirm it. `B` is a signature
     that does not match the commit, which is the one answer that says the
-    commit was changed after it was made. `N` is no signature at all, which
-    is what git reports when it cannot run gpg, so it is read as a machine
-    that cannot check rather than as an unsigned commit only when gpg is
-    absent. Every other answer (`E`, `X`, `Y`, `R`) is a signature this
-    machine holds no current key for, which is the ordinary case for the git
-    host's own key and says nothing against the commit.
+    commit was changed after it was made. Every other answer (`E`, `X`, `Y`,
+    `R`) is a signature this machine holds no current key for, which is the
+    ordinary case for the git host's own key and says nothing against the
+    commit.
+
+    `N` is the one answer that means two things. git prints it both for a
+    commit that carries no signature at all and for a commit whose signature
+    it could not even try to check, which is what an ssh signature read by a
+    checkout with no allowed-signers file is. `signed` says which: with a
+    signature on the commit, `N` is a machine that cannot check and the
+    commit stands; with none, it is an unsigned commit, and then the only
+    reason to let it stand is a machine with no gpg, where every commit reads
+    as unsigned.
     """
     if signature == 'B':
         return False
     if signature == 'N':
-        return shutil.which('gpg') is None
+        return signed or shutil.which('gpg') is None
     return True
+
+
+def carries_a_signature(project_root, commit):
+    """True when the commit object holds a signature header.
+
+    `git cat-file commit` prints the commit's headers before a blank line and
+    its message after, and a signed commit carries a `gpgsig` header among
+    them whether or not this machine can check it. That is the one reading
+    that tells `%G?` `N` for "no signature" apart from `N` for "no way to
+    check this one".
+    """
+    try:
+        result = subprocess.run(
+            ['git', 'cat-file', 'commit', commit],
+            capture_output=True, text=True, cwd=project_root, timeout=10)
+    except (subprocess.SubprocessError, OSError):
+        return False
+    if result.returncode != 0:
+        return False
+    for line in result.stdout.split('\n'):
+        if not line.strip():
+            return False
+        if line.startswith('gpgsig'):
+            return True
+    return False
 
 
 def record_label(project_root, rel_path):
     """`ci`, `developer` or `local` for one record, read from git.
 
-    `git log -1 --format='%G? %cn %ce %an'` over the record's path names the
-    signature status, the committer name and email and the author name of the
-    last commit that touched it. No commit means the file is not committed,
-    which is `local`.
+    `git log -1 --format='%G? %cn %ce %an %H'` over the record's path names
+    the signature status, the committer name and email, the author name and
+    the commit of the last commit that touched it. No commit means the file
+    is not committed, which is `local`.
 
     The identity decides and the signature confirms. A commit GitHub made
     through its API carries `GitHub <noreply@github.com>` as the committer
@@ -134,22 +166,29 @@ def record_label(project_root, rel_path):
     """
     try:
         result = subprocess.run(
-            ['git', 'log', '-1', '--format=%G?\t%cn\t%ce\t%an',
+            ['git', 'log', '-1', '--format=%G?\t%cn\t%ce\t%an\t%H',
              '--', rel_path],
             capture_output=True, text=True, cwd=project_root, timeout=10)
     except (subprocess.SubprocessError, OSError):
         return 'local'
     if result.returncode != 0 or not result.stdout.strip():
         return 'local'
-    parts = result.stdout.strip().split('\t')
-    parts += [''] * (4 - len(parts))
-    signature, committer, committer_email, author = parts[:4]
+    # `%G?` prints nothing at all when git neither found nor could look for a
+    # signature, so the first field is empty and stripping the whole line
+    # would move every field one place to the left.
+    parts = result.stdout.split('\n', 1)[0].split('\t')
+    parts += [''] * (5 - len(parts))
+    signature, committer, committer_email, author, commit = parts[:5]
     if committer in _AZURE_COMMITTERS:
         return 'ci'
     made_by_github = (committer in _GITHUB_COMMITTERS
                       or (committer_email == _GITHUB_COMMITTER_EMAIL
                           and author == _GITHUB_ACTIONS_AUTHOR))
-    if made_by_github and signature_confirms(signature):
+    if not made_by_github:
+        return 'developer'
+    signed = (signature == 'N'
+              and carries_a_signature(project_root, commit))
+    if signature_confirms(signature, signed):
         return 'ci'
     return 'developer'
 

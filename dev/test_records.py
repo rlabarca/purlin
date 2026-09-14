@@ -690,6 +690,44 @@ def test_a_signed_actions_commit_is_ci(project, tmp_path):
     assert records_module.record_label(project, path) == 'ci'
 
 
+@pytest.mark.proof("records", "PROOF-9", "RULE-9")
+def test_a_signature_this_checkout_cannot_check_is_still_ci(project, tmp_path,
+                                                            monkeypatch):
+    """`N` on a commit that carries a signature is a reader that cannot check.
+
+    git prints `N` both for a commit with no signature and for one whose
+    signature it could not even try to check, which an ssh signature is in
+    any checkout with no allowed-signers file: a project CI writes records to
+    has no reason to hold one. Reading that `N` as an unsigned commit throws
+    away every record CI wrote on every machine that has gpg, so the commit
+    object is asked whether a signature is there at all.
+    """
+    monkeypatch.setattr(reader.shutil, 'which',
+                        lambda name: '/usr/bin/gpg' if name == 'gpg' else None)
+    key = str(tmp_path / 'signing')
+    made = subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '',
+                           '-C', ACTIONS_BOT, '-f', key],
+                          capture_output=True, text=True)
+    if made.returncode != 0:
+        pytest.skip('ssh-keygen is not available: %s' % made.stderr.strip())
+
+    path = records_module.write_record(project, record(), 'ci')
+    git(project, 'add', '-A')
+    signed = subprocess.run(
+        ['git', '-c', 'gpg.format=ssh',
+         '-c', 'user.signingkey=' + key + '.pub',
+         '-c', 'user.name=' + ACTIONS_BOT, '-c', 'user.email=bot@example.com',
+         'commit', '--quiet', '-S', '-m', 'purlin: record for 4f1c2ab'],
+        cwd=project, capture_output=True, text=True)
+    if signed.returncode != 0:
+        pytest.skip('this git cannot sign with ssh: %s' % signed.stderr.strip())
+
+    # No allowed-signers file is configured here, which is the ordinary state
+    # of a checkout, so this is what any reader of this commit sees.
+    assert git(project, 'log', '-1', '--format=%G?').stdout.strip() in ('N', '')
+    assert records_module.record_label(project, path) == 'ci'
+
+
 def _web_flow_commit(project, key=None, allowed=None):
     """Commit the way GitHub's API does: its web identity, the Actions author.
 
