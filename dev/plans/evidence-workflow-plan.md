@@ -965,6 +965,38 @@ from it. Findings from the real-model checks: the spec skill's "three rules out"
 reads as a target count and the model writes five or six; the `[criterion:]` tag is never
 set from a bare sentence (correct).
 
+**The orchestrator's phase 9 steps, 2026-09-14.** `purlin:init --update` on this repository
+(`d193f8d0` hooks and config, `092a1872` records; `jest,vitest` dropped from the framework
+list, three retired keys dropped), then `--gate approved` with the user as the one approver
+(`f1d4e906`: `purlin.yml` with a Linux and a Windows job, the mutmut block in `setup.cfg`,
+`designs/`, the pre-push shim); repo-local SSH signing configured and verified (`%G?` = `G`);
+the counts line set from two green sweeps (986 passed); the developer record committed
+signed (`2c148ab6`, 37 features, 488 Tested); the branch pushed. The user, mid-run, changed
+the light theme twice (`94318985`, `4e13ca4c`), the tag text (`84f2665d`), and asked for the
+Rule screen, the review rows, the board colours and the Latest record column to change
+(lanes F12, F13, F15, F16 below).
+
+| Lane | Head | What | Tokens |
+|---|---|---|---|
+| F9 | `3b0cabaf` | the matrix always carries `ubuntu-latest`; the upgrade and init drop a recorded framework the tree does not wire; ten proofs reworded to pass the free checks | 184,934 |
+| F10 | `c2356a3e` | UTF-8 stdio at every entry point (Windows crashed printing the table); every arm and engine runs with closed stdin, `GIT_TERMINAL_PROMPT=0` and a 3600 s cap; `timeout-minutes: 90`; `requirements.txt` and the playwright install step; the record label accepts GitHub's web-flow committer with `github-actions[bot]` as author (A4's claim about the committer was wrong); the two root shell wrappers skip on Git Bash and their three proofs carry `@env(linux)` | 281,479 |
+| F11 | `e5601f44` | all 141 Windows failures fixed at their causes: cp1252 decoding in tests, a fixture bare repo with a dangling default branch, CRLF (`.gitattributes`), bare `open()` calls, backslashes fed to bash, read-only git objects under `rmtree`, a coarse clock, a POSIX-only lock probe, two spellings of the artifact path | 313,687 |
+| F12 | `ddc5dcc5` | the Rule tab sits right of Review list with a back link that closes it; the Review panel in plain sentences; a "To approve" panel with the exact command; the page reloads on return when its data is newer than a minute and the age text ticks each minute | 185,928 |
+| F13 | `801ea466` | the board off the slate "product" surface onto the brand navy, matching the design kit's own board | 169,016 |
+| F14 | `bb4ee7e8` | the Linux hang named: `mktemp -d -t <prefix>` is BSD-only, GNU returns nothing, so `dev/test_init_e2e.sh` ran against the checkout itself and a `purlin_run.py --project-root ""` cleared the real proofs; the suite now stops on an empty temp path and an empty `--project-root` exits 2; a failing arm prints its last 60 lines and `--ci` keeps every arm's log in the artifact; the xUnit fixture skips when the host cannot run net8.0; the Windows shell skip reads `OS=Windows_NT` | 264,554 |
+| F15 | `d27c3b13` | a review row carries the rule text, its state and only a reason its group does not already say; the payload's `reasons` list | 188,807 |
+| F16 | `e04e2751` | the Latest record column names each operating system's record with its result | 193,132 |
+
+Tokens, F9 to F16: 1,781,537. Running total: 9,573,873.
+
+CI rounds on `evidence-workflow`: run 1 (`34808346536`) Windows committed 37 records but crashed
+printing, Ubuntu cancelled at six hours; run 2 (`34840363131`, with F10) both jobs ended
+inside the cap, Ubuntu's shell arm timed out at 3600 s, Windows 7 rules short; run 3
+(`34842281168`, with F11) Windows every rule Tested or Reviewed yet both arms exit 1, Ubuntu
+as run 2; run 4 (`34851835724`, with F14) pending. CI's API commits label `ci` and trigger no
+further run. `verify_gate.py --check` on this repository still exits 1 under `approved`
+until the user's approvals exist.
+
 ## C3. Preloaded decisions (the orchestrator never asks; a lane that meets an unlisted choice picks the simplest option and records it in its DONE note)
 
 | Question a lane might raise | Answer |
