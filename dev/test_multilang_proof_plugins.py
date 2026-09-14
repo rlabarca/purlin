@@ -797,6 +797,35 @@ _TEST_CS = (
 )
 
 
+# What `dotnet test` prints when the host, not the logger, is the reason the
+# fixture's project did not run: the runtime the project targets is absent, the
+# SDK cannot target it, or nothing on this host could fetch the packages.
+_DOTNET_HOST_PROBLEMS = (
+    'app-launch-failed',
+    'You must install or update .NET',
+    'NETSDK1045',
+    'NU1101',
+    'NU1301',
+    'Unable to load the service index',
+)
+
+
+def _dotnet_host_reason(output):
+    """Why this host could not run the xunit fixture's project, or None.
+
+    `dotnet` resolving is not the same as `dotnet` being able to build and run
+    a project targeting the framework the fixture names: a machine carrying
+    only a newer runtime, or with no way to reach a package source, fails for a
+    reason that is about the host. That is a skip, not a failure. Reported as a
+    failure it ends the whole pytest arm 1 while every marked test passed,
+    which is a run that says evidence is missing and never says why.
+    """
+    for marker in _DOTNET_HOST_PROBLEMS:
+        if marker in output:
+            return marker
+    return None
+
+
 @pytest.mark.skipif(not shutil.which('dotnet'), reason='dotnet SDK not available')
 class TestXUnitProofPlugin:
 
@@ -840,9 +869,14 @@ class TestXUnitProofPlugin:
                               text=True, env=env)
         data = json.loads((proofs / 'feat.unit.json').read_text(
             encoding='utf-8'))
-        assert any(p['feature'] == 'feat' for p in data['proofs']), (
-            'logger did not record proofs:\nSTDOUT:%s\nSTDERR:%s'
-            % (proc.stdout, proc.stderr))
+        if not any(p['feature'] == 'feat' for p in data['proofs']):
+            reason = _dotnet_host_reason(proc.stdout + proc.stderr)
+            if reason:
+                pytest.skip('dotnet cannot build and run a net8.0 project on '
+                            'this host: %s' % reason)
+            raise AssertionError(
+                'logger did not record proofs:\nSTDOUT:%s\nSTDERR:%s'
+                % (proc.stdout, proc.stderr))
         return {'root': root, 'proc': proc, 'cmd': command, 'data': data,
                 'by_id': {p['id']: p for p in data['proofs']
                           if p['feature'] == 'feat'}}
