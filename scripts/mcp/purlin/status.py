@@ -71,12 +71,12 @@ def _update_pending(project_root):
     release pays nothing for the question, and a checkout without the init
     scripts still prints a table.
     """
+    import importlib
     init_dir = os.path.join(os.path.dirname(_MCP_DIR), 'init')
     if init_dir not in sys.path:
         sys.path.insert(0, init_dir)
     try:
-        import update
-        return bool(update.pending(project_root))
+        return bool(importlib.import_module('update').pending(project_root))
     except Exception:                       # noqa: BLE001 - never block status
         return False
 
