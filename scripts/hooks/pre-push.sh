@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 # Purlin pre-push hook: run the tagged tests once before a push, and say what
 # they did.
 #
@@ -8,15 +8,22 @@
 #
 # It blocks a push only when both of these are true: `pre_push` in
 # `.purlin/config.json` is `on`, and a test failed. Every other outcome exits
-# 0, including a missing interpreter, a project with no specs and a failing
-# test in a project that left `pre_push` at its default. What a change must
-# clear before it merges is the gate, and the gate is the git host's to
-# enforce; this hook is a local convenience in front of it.
+# 0, including a missing interpreter, a project with no specs, a run script
+# that never got as far as a test, and a failing test in a project that left
+# `pre_push` at its default. What a change must clear before it merges is the
+# gate, and the gate is the git host's to enforce; this hook is a local
+# convenience in front of it.
 #
 # `.purlin/hooks/pre-push` is the shim that finds the installed plugin and
 # execs this file out of it, so by the time this runs the plugin root is this
 # script's own grandparent directory and nothing here searches for it.
-set -uo pipefail
+#
+# POSIX sh only, like the shim, and for the same reason: whatever `sh` the
+# host has runs this file. On most Linux distributions that is dash, which
+# has no `pipefail` and exits 2 on `set -o pipefail` before it reads a line
+# of the script. A hook that exits 2 on the shell it was handed has blocked
+# the push it promised never to block.
+set -u
 
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
 [ -n "$ROOT" ] || exit 0
@@ -56,6 +63,15 @@ RUN_RC=0
 
 if [ "$RUN_RC" -eq 0 ]; then
   echo "purlin: the tagged tests passed, so this push goes ahead."
+  exit 0
+fi
+
+# 1 is the run script's one code for a test result: a test failed, or the
+# evidence a test owes is missing. Every other code is the run script saying
+# it never got as far as a test, 2 being a command line it could not read. No
+# test failed, so there is nothing here for the setting to block.
+if [ "$RUN_RC" -ne 1 ]; then
+  echo "purlin: the tagged tests did not run, so this push is not blocked. The run script exited $RUN_RC."
   exit 0
 fi
 
