@@ -13,9 +13,10 @@
 # shared marker is a plugin's and carries only that plugin's share;
 # dev/test_purlin_version.py reads it to check the RELEASE_NOTES counts line.
 #
-# `--fast` holds out the shell suites, nearly all of the wall clock, and
-# writes neither file: both are read as the claim that every suite ran, and a
-# partial run has no right to make it.
+# `--fast` holds out the shell suites and the browser suite
+# (dev/test_purlin_report.py), nearly all of the wall clock, and writes neither
+# file: both are read as the claim that every suite ran, and a partial run has
+# no right to make it.
 set -euo pipefail
 
 FAST=0
@@ -166,6 +167,11 @@ trap write_marker EXIT
 # Held out by `--fast`: these invocations are most of the sweep's wall clock.
 if [[ $FAST -eq 0 ]]; then
 run_suite "Proof Plugins (Shell)" bash "$SCRIPT_DIR/test_proof_plugins.sh"
+# test_proof_plugins.sh covers the behaviour the three plugins share; these
+# three cover one plugin each, and it does not invoke them.
+run_suite "Proof Plugin (pytest)" bash "$SCRIPT_DIR/test_proof_pytest.sh"
+run_suite "Proof Plugin (jest)" bash "$SCRIPT_DIR/test_proof_jest.sh"
+run_suite "Proof Plugin (shell)" bash "$SCRIPT_DIR/test_proof_shell.sh"
 run_suite "E2E Build Changeset" bash "$SCRIPT_DIR/test_e2e_build_changeset.sh"
 run_suite "E2E Init" bash "$SCRIPT_DIR/test_init_e2e.sh"
 run_suite "E2E Write-Scoped Overwrite" bash "$SCRIPT_DIR/test_e2e_feature_scoped_overwrite.sh"
@@ -191,8 +197,17 @@ PYTEST_FILES=(
   "$SCRIPT_DIR/test_init_scaffold.py" "$SCRIPT_DIR/test_verify_gate.py" \
   "$SCRIPT_DIR/test_consumer_ci.py" "$SCRIPT_DIR/test_drift.py" \
   "$SCRIPT_DIR/test_refresh_digest_hook.py" "$SCRIPT_DIR/test_pre_push_hook.py" \
-  "$SCRIPT_DIR/test_vocabulary.py"
+  "$SCRIPT_DIR/test_vocabulary.py" "$SCRIPT_DIR/test_mutation_adapters.py" \
+  "$SCRIPT_DIR/test_records.py" "$SCRIPT_DIR/test_run_script.py" \
+  "$SCRIPT_DIR/test_scan.py" "$SCRIPT_DIR/test_upstream.py"
 )
+# test_purlin_report.py drives a headless browser and adds roughly 80s. It is
+# in the default run; only --fast holds it out, and then no marker is written.
+if [[ $FAST -eq 0 ]]; then
+  PYTEST_FILES+=("$SCRIPT_DIR/test_purlin_report.py")
+else
+  echo "--fast: skipping the browser suite (dev/test_purlin_report.py)"
+fi
 run_suite "All Pytest Tests" run_pytest "${PYTEST_FILES[@]}" -v
 
 printf '\n━━━━━━━━━━━━━━━━━━━━━━━━━\nSuites: %d passed, %d failed\n━━━━━━━━━━━━━━━━━━━━━━━━━\n' "$PASS" "$FAIL"
