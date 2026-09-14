@@ -198,9 +198,10 @@ validation tag names, for ever.
 ## CI
 
 CI is the git host's hosted runner executing the same `purlin:verify` you run. `purlin:init`
-writes the workflow as `.github/workflows/purlin.yml` on GitHub, or the equivalent pipeline on
-Azure DevOps, whenever the gate is `recorded` or `approved`. Under `tested` no workflow is
-written; `purlin:init --ci` adds one anyway.
+writes the workflow as `.github/workflows/purlin.yml` on GitHub, or
+`purlin.azure-pipelines.yml` at the project root on Azure DevOps, whenever the gate is
+`recorded` or `approved`. Under `tested` no workflow is written; `purlin:init --ci` adds one
+anyway.
 
 The job runs `purlin_run.py --all --record --ci`. You never pass `--ci` by hand.
 
