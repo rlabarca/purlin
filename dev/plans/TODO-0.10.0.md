@@ -1,4 +1,4 @@
-# Purlin 0.10.0: outstanding after the unattended run (2026-09-14)
+# Purlin 0.10.0: outstanding after the unattended run (2026-09-14, closed at `2ca875e5`)
 
 Everything below is open. The refactor's lanes have all landed on `evidence-workflow`; this
 is what the run could not finish, found and left, or left to a person.
@@ -55,6 +55,12 @@ is what the run could not finish, found and left, or left to a person.
     identity, the bot is the author); the matrix wording (Linux always present); the
     `report` config key, which no longer exists. The DONE sections record the corrections;
     the design file itself was left verbatim.
+
+18. **16 approvals on `purlin_report` went stale** when the dashboard's own files changed after
+    run 9; the next CI run re-issues the low-risk ones, the rest wait for you like the others.
+19. **The dashboard changed after the last green run** (brand navy, the record boxes, the risk
+    tints, the one-line ledger, the shorter bar); run 10 onwards covers them. Look at the
+    board once more with your own data before release.
 
 ## Housekeeping
 
