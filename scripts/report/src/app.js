@@ -239,8 +239,10 @@ function topBar() {
     + '<span class="dot"></span><span class="age">' + esc(line.text)
     + '</span></button>'
     + '<span class="spacer"></span>'
-    + (gate ? tag('gate: ' + gate) : '')
-    + (DATA && DATA.commit ? tag(String(DATA.commit).slice(0, 7), true) : '')
+    + (gate ? tag('gate: ' + gate, true) : '')
+    + (DATA && DATA.commit
+       ? '<span class="tag plain" title="The commit this data was generated at">at '
+         + esc(String(DATA.commit).slice(0, 7)) + '</span>' : '')
     + themeButton() + '</header>';
 }
 

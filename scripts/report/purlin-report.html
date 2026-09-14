@@ -224,6 +224,7 @@ h2{font-size:var(--ui-lg);font-weight:var(--weight-bold);margin:0 0 var(--space-
 .tag.plain{border-color:var(--text-muted);color:var(--text-muted)}
 .btn{display:inline-flex;align-items:center;gap:var(--space-2);font-size:var(--ui-sm);letter-spacing:.01em;padding:6px 16px;border-radius:var(--radius-pill);border:1.5px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;transition:background var(--duration-fast) var(--ease-standard)}
 .btn:hover{background:var(--hover-tint)}
+.btn.glyph{padding:4px 12px;font-size:var(--ui-base);line-height:1}
 .panel{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);padding:var(--space-6)}
 .notice{display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4) var(--space-6);background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);margin-bottom:var(--space-5);font-size:var(--ui-base);color:var(--text-primary)}
 .pill{display:inline-flex;align-items:center;justify-content:center;font-size:var(--ui-xs);font-weight:var(--weight-bold);letter-spacing:.08em;padding:4px 12px;border-radius:var(--radius-pill);border:1.5px solid currentColor;white-space:nowrap}
@@ -307,9 +308,9 @@ function logoSrc() {
   return currentTheme() === 'light' ? PURLIN_LOGO.light : PURLIN_LOGO.dark;
 }
 function themeButton() {
-  return '<button class="btn" data-act="theme">'
-    + (currentTheme() === 'light' ? 'Dark theme' : 'Light theme')
-    + '</button>';
+  var next = currentTheme() === 'light' ? 'Dark theme' : 'Light theme';
+  return '<button class="btn glyph" data-act="theme" title="' + next
+    + '" aria-label="' + next + '">\u25d0</button>';
 }
 var FILTERS = [
   {id: 'high-open', label: 'High risk not approved',
@@ -926,8 +927,10 @@ function topBar() {
     + '<span class="dot"></span><span class="age">' + esc(line.text)
     + '</span></button>'
     + '<span class="spacer"></span>'
-    + (gate ? tag('gate: ' + gate) : '')
-    + (DATA && DATA.commit ? tag(String(DATA.commit).slice(0, 7), true) : '')
+    + (gate ? tag('gate: ' + gate, true) : '')
+    + (DATA && DATA.commit
+       ? '<span class="tag plain" title="The commit this data was generated at">at '
+         + esc(String(DATA.commit).slice(0, 7)) + '</span>' : '')
     + themeButton() + '</header>';
 }
 function tabs() {

@@ -26,7 +26,7 @@ function logoSrc() {
 }
 
 function themeButton() {
-  return '<button class="btn" data-act="theme">'
-    + (currentTheme() === 'light' ? 'Dark theme' : 'Light theme')
-    + '</button>';
+  var next = currentTheme() === 'light' ? 'Dark theme' : 'Light theme';
+  return '<button class="btn glyph" data-act="theme" title="' + next
+    + '" aria-label="' + next + '">\u25d0</button>';
 }
