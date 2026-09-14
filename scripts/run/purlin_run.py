@@ -241,8 +241,8 @@ def _run(command, project_root, log):
     """Run one command in the project root, echoing it and its output."""
     log.append('$ %s' % ' '.join(command))
     try:
-        result = subprocess.run(command, cwd=project_root, capture_output=True,
-                                text=True)
+        result = subprocess.run([*command], cwd=project_root,
+                                capture_output=True, text=True)
     except (OSError, subprocess.SubprocessError) as error:
         log.append(str(error))
         return 127

@@ -107,7 +107,7 @@ def _have(binary):
 
 def _run(project_root, argv):
     try:
-        return subprocess.run(argv, cwd=project_root).returncode
+        return subprocess.run([*argv], cwd=project_root).returncode
     except (subprocess.SubprocessError, OSError) as error:
         print('%s failed: %s' % (argv[0], error))
         return 1
@@ -115,8 +115,8 @@ def _run(project_root, argv):
 
 def _capture(project_root, argv):
     try:
-        result = subprocess.run(argv, cwd=project_root, capture_output=True,
-                                text=True, timeout=30)
+        result = subprocess.run([*argv], cwd=project_root,
+                                capture_output=True, text=True, timeout=30)
     except (subprocess.SubprocessError, OSError):
         return ''
     return result.stdout if result.returncode == 0 else ''
