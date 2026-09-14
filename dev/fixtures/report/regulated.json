@@ -93,6 +93,7 @@
           "rule_hash": "rrule1log",
           "state": "Approved",
           "test_hash": "trule1log",
+          "test_strength": 86,
           "text": "A person signs in with an email address and a password."
         },
         {
@@ -128,6 +129,7 @@
           "rule_hash": "rrule2log",
           "state": "Stale",
           "test_hash": "trule2log",
+          "test_strength": 86,
           "text": "Five failed attempts lock the account for fifteen minutes."
         },
         {
@@ -165,6 +167,7 @@
           "rule_hash": "rrule3log",
           "state": "Recorded",
           "test_hash": "trule3log",
+          "test_strength": 86,
           "text": "A locked account sends one notification email."
         },
         {
@@ -204,6 +207,7 @@
           "rule_hash": "rrule4log",
           "state": "Tested",
           "test_hash": "trule4log",
+          "test_strength": 86,
           "text": "The session cookie is refused over an unencrypted connection."
         }
       ],
@@ -295,6 +299,7 @@
           "rule_hash": "rrule1inv",
           "state": "Approved",
           "test_hash": "trule1inv",
+          "test_strength": 64,
           "text": "An invoice totals its lines to the cent."
         },
         {
@@ -332,6 +337,7 @@
           "rule_hash": "rrule2inv",
           "state": "Recorded",
           "test_hash": "trule2inv",
+          "test_strength": 64,
           "text": "An invoice with no lines totals zero."
         }
       ],
@@ -419,6 +425,7 @@
           "rule_hash": "rrule1che",
           "state": "Reviewed",
           "test_hash": "trule1che",
+          "test_strength": 90,
           "text": "The cart page shows the order total above the pay button."
         }
       ],
@@ -483,28 +490,43 @@
     {
       "feature": "login",
       "owner": "login",
-      "reason": "risk high needs a look",
+      "reason": "risk high",
+      "reasons": [
+        "risk high"
+      ],
       "risk": "high",
       "rule": "RULE-1"
     },
     {
       "feature": "login",
       "owner": "login",
-      "reason": "risk high needs a look",
+      "reason": "risk high; windows: no record yet",
+      "reasons": [
+        "risk high",
+        "windows: no record yet"
+      ],
       "risk": "high",
       "rule": "RULE-4"
     },
     {
       "feature": "login",
       "owner": "login",
-      "reason": "the approval is stale",
+      "reason": "stale; risk medium",
+      "reasons": [
+        "stale",
+        "risk medium"
+      ],
       "risk": "medium",
       "rule": "RULE-2"
     },
     {
       "feature": "invoice",
       "owner": "invoice",
-      "reason": "the test strength is below 80",
+      "reason": "strength 64% under 80%; happy_path_only",
+      "reasons": [
+        "strength 64% under 80%",
+        "happy_path_only"
+      ],
       "risk": "low",
       "rule": "RULE-2"
     }

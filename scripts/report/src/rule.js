@@ -36,26 +36,26 @@ function ruleInView() {
   return found ? {feature: feature, rule: found} : null;
 }
 
-function reviewReason(featureName, ruleId) {
-  var reason = null;
+function reviewReasons(featureName, ruleId) {
+  var reasons = [];
   (DATA.review_list || []).forEach(function (entry) {
     if (entry.feature === featureName && entry.rule === ruleId) {
-      reason = entry.reason;
+      reasons = entry.reasons || (entry.reason ? [entry.reason] : []);
     }
   });
-  return reason;
+  return reasons;
 }
 
 /* Why a person has to look, in words rather than in the payload's shorthand.
    A reason this page does not recognise is still read out, so a new one added
    upstream reaches the reader unchanged. */
 function reviewReasonSentence(reason) {
-  var risk = /^risk (high|medium|low) needs a look$/.exec(reason || '');
+  var risk = /^risk (high|medium|low)$/.exec(reason || '');
   if (risk) {
     return 'Its risk is ' + risk[1]
       + ', so a person looks before it can be approved.';
   }
-  if (reason === 'the approval is stale') {
+  if (reason === 'stale') {
     return 'Its approval is stale, so a person looks at it again before it '
       + 'counts.';
   }
@@ -65,13 +65,16 @@ function reviewReasonSentence(reason) {
 /* Why it is listed, then one sentence per finding naming the proofs that
    carry it. A finding the checks raise against the rule as a whole lands on
    every proof, so grouping by finding states it once. */
-function reviewPanel(rule, reason) {
+function reviewPanel(rule, reasons) {
   var lines = [];
   var order = [];
   var ids = {};
-  if (reason) {
+  (reasons || []).forEach(function (reason) {
+    /* A free check is named below against the proofs that carry it, so the
+       reason list does not say it a second time without them. */
+    if (FINDING_TEXT[reason]) { return; }
     lines.push('<p class="sec">' + esc(reviewReasonSentence(reason)) + '</p>');
-  }
+  });
   (rule.proofs || []).forEach(function (proof) {
     (proof.findings || []).forEach(function (name) {
       if (!ids[name]) { ids[name] = []; order.push(name); }
@@ -157,7 +160,7 @@ function renderRule() {
   var feature = found.feature;
   var rule = found.rule;
   var record = feature.latest_record;
-  var reason = reviewReason(feature.name, rule.id);
+  var reasons = reviewReasons(feature.name, rule.id);
   var rows = [
     ['State', pill(rule.state)],
     ['Risk', tag(rule.risk, rule.risk === 'low')],
@@ -198,7 +201,7 @@ function renderRule() {
     + rows.map(function (row) {
       return '<dt>' + esc(row[0]) + '</dt><dd>' + row[1] + '</dd>';
     }).join('') + '</dl></div>'
-    + reviewPanel(rule, reason)
+    + reviewPanel(rule, reasons)
     + approvePanel(feature, rule) + '</section>'
     + '<section><p class="eyebrow">Proofs</p><div class="stack">'
     + ((rule.proofs || []).length

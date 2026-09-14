@@ -69,6 +69,7 @@
           "rule_hash": "rrule1log",
           "state": "Tested",
           "test_hash": "trule1log",
+          "test_strength": null,
           "text": "A person signs in with an email address and a password."
         },
         {
@@ -101,6 +102,7 @@
           "rule_hash": "rrule2log",
           "state": "Proof ready",
           "test_hash": "trule2log",
+          "test_strength": null,
           "text": "Five failed attempts lock the account for fifteen minutes."
         },
         {
@@ -122,6 +124,7 @@
           "rule_hash": "rrule3log",
           "state": "Drafted",
           "test_hash": "trule3log",
+          "test_strength": null,
           "text": "A locked account sends one notification email."
         }
       ],
@@ -195,6 +198,7 @@
           "rule_hash": "rrule1inv",
           "state": "Tested",
           "test_hash": "trule1inv",
+          "test_strength": null,
           "text": "An invoice totals its lines to the cent."
         },
         {
@@ -230,6 +234,7 @@
           "rule_hash": "rrule2inv",
           "state": "Tested",
           "test_hash": "trule2inv",
+          "test_strength": null,
           "text": "An invoice with no lines totals zero."
         }
       ],

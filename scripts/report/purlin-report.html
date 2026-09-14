@@ -275,9 +275,9 @@ table.grid{border-collapse:collapse;width:100%}
 .cmd{font-family:var(--font-mono);font-size:var(--ui-base);color:var(--text-secondary);white-space:nowrap}
 .panel p{margin:0 0 var(--space-3)}
 .panel p:last-child{margin-bottom:0}
-.rev{display:grid;grid-template-columns:1.1fr 0.6fr 0.5fr 2fr;gap:var(--space-4);align-items:center;padding:var(--space-4) var(--space-6);border-bottom:1px solid var(--border-hairline);cursor:pointer}
+.rev{display:grid;grid-template-columns:0.8fr 0.5fr 2.2fr 0.7fr 1.6fr;gap:var(--space-4);align-items:center;padding:var(--space-4) var(--space-6);border-bottom:1px solid var(--border-hairline);cursor:pointer}
 .rev:hover{background:var(--hover-tint)}
-.rev>.tag{justify-self:start}
+.rev>.pill{justify-self:start}
 </style>
 </head>
 <body>
@@ -540,34 +540,35 @@ function ruleInView() {
   });
   return found ? {feature: feature, rule: found} : null;
 }
-function reviewReason(featureName, ruleId) {
-  var reason = null;
+function reviewReasons(featureName, ruleId) {
+  var reasons = [];
   (DATA.review_list || []).forEach(function (entry) {
     if (entry.feature === featureName && entry.rule === ruleId) {
-      reason = entry.reason;
+      reasons = entry.reasons || (entry.reason ? [entry.reason] : []);
     }
   });
-  return reason;
+  return reasons;
 }
 function reviewReasonSentence(reason) {
-  var risk = /^risk (high|medium|low) needs a look$/.exec(reason || '');
+  var risk = /^risk (high|medium|low)$/.exec(reason || '');
   if (risk) {
     return 'Its risk is ' + risk[1]
       + ', so a person looks before it can be approved.';
   }
-  if (reason === 'the approval is stale') {
+  if (reason === 'stale') {
     return 'Its approval is stale, so a person looks at it again before it '
       + 'counts.';
   }
   return 'It is on the review list because ' + reason + '.';
 }
-function reviewPanel(rule, reason) {
+function reviewPanel(rule, reasons) {
   var lines = [];
   var order = [];
   var ids = {};
-  if (reason) {
+  (reasons || []).forEach(function (reason) {
+    if (FINDING_TEXT[reason]) { return; }
     lines.push('<p class="sec">' + esc(reviewReasonSentence(reason)) + '</p>');
-  }
+  });
   (rule.proofs || []).forEach(function (proof) {
     (proof.findings || []).forEach(function (name) {
       if (!ids[name]) { ids[name] = []; order.push(name); }
@@ -641,7 +642,7 @@ function renderRule() {
   var feature = found.feature;
   var rule = found.rule;
   var record = feature.latest_record;
-  var reason = reviewReason(feature.name, rule.id);
+  var reasons = reviewReasons(feature.name, rule.id);
   var rows = [
     ['State', pill(rule.state)],
     ['Risk', tag(rule.risk, rule.risk === 'low')],
@@ -682,7 +683,7 @@ function renderRule() {
     + rows.map(function (row) {
       return '<dt>' + esc(row[0]) + '</dt><dd>' + row[1] + '</dd>';
     }).join('') + '</dl></div>'
-    + reviewPanel(rule, reason)
+    + reviewPanel(rule, reasons)
     + approvePanel(feature, rule) + '</section>'
     + '<section><p class="eyebrow">Proofs</p><div class="stack">'
     + ((rule.proofs || []).length
@@ -690,13 +691,48 @@ function renderRule() {
       : '<div class="panel sec">This rule has no proof yet.</div>')
     + '</div></section>';
 }
+var RULE_TEXT_MAX = 90;
+function shortText(text) {
+  var value = String(text == null ? '' : text);
+  if (value.length <= RULE_TEXT_MAX) { return value; }
+  return value.slice(0, RULE_TEXT_MAX).replace(/\s+\S*$/, '') + '…';
+}
+function reviewRule(entry) {
+  var feature = featureNamed(entry.feature);
+  var found = null;
+  if (feature) {
+    (feature.rules || []).forEach(function (rule) {
+      if (rule.id === entry.rule) { found = rule; }
+    });
+  }
+  return found;
+}
+function reviewRowReasons(entry) {
+  var reasons = [];
+  (entry.reasons || []).forEach(function (reason) {
+    if (/^risk (high|medium|low)$/.test(reason)) { return; }
+    reasons.push(findingText(reason));
+  });
+  return reasons;
+}
+function reviewRow(entry) {
+  var rule = reviewRule(entry);
+  return '<div class="rev" data-act="rule" data-feature="'
+    + esc(entry.feature) + '" data-rule="' + esc(entry.rule) + '">'
+    + '<span>' + esc(entry.feature) + '</span>'
+    + '<span class="mono">' + esc(entry.rule) + '</span>'
+    + '<span>' + esc(rule ? shortText(rule.text) : '') + '</span>'
+    + (rule ? pill(rule.state) : '<span></span>')
+    + '<span class="sec">' + esc(reviewRowReasons(entry).join('; '))
+    + '</span></div>';
+}
 function renderReview() {
   var entries = DATA.review_list || [];
   if (!entries.length) {
     return '<section><p class="eyebrow">Review list</p>'
-      + '<div class="panel empty">Nothing needs a look. CI adds a rule here '
-      + 'when its risk asks for one, when an approval goes stale, or when the '
-      + 'test strength falls below the minimum.</div></section>';
+      + '<div class="panel empty">Nothing is waiting for a look. CI adds a '
+      + 'rule here when its risk asks for one, when an approval goes stale, '
+      + 'or when the test strength falls below the minimum.</div></section>';
   }
   var head = '<section><p class="eyebrow">Review list</p><h1>'
     + entries.length + ' rules need a look</h1>'
@@ -709,14 +745,7 @@ function renderReview() {
     if (!group.length) { return ''; }
     return '<div class="group"><span class="gt">' + esc(risk)
       + ' risk</span><span class="muted">(' + group.length + ')</span></div>'
-      + group.map(function (entry) {
-        return '<div class="rev" data-act="rule" data-feature="'
-          + esc(entry.feature) + '" data-rule="' + esc(entry.rule) + '">'
-          + '<span>' + esc(entry.feature) + '</span>'
-          + '<span class="mono">' + esc(entry.rule) + '</span>'
-          + tag(risk, risk === 'low')
-          + '<span class="sec">' + esc(entry.reason) + '</span></div>';
-      }).join('');
+      + group.map(reviewRow).join('');
   }).join('');
   return head + '<section><div class="tbl">' + body + '</div></section>';
 }

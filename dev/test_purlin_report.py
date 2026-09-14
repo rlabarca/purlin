@@ -126,6 +126,14 @@ def rule_ids(page):
     return texts(page, '.rule .rid')
 
 
+def review_cells(page):
+    """Each review row as its five cells: feature, id, text, state, reason."""
+    return page.eval_on_selector_all(
+        '.rev',
+        'els => els.map(e => Array.from(e.children)'
+        '.map(c => c.textContent.trim()))')
+
+
 # ---------------------------------------------------------------------------
 # The built file
 # ---------------------------------------------------------------------------
@@ -361,7 +369,7 @@ def test_the_rule_screen_shows_proof_test_and_evidence(browser, tmp_path):
     assert '86%' in body
     assert 'Its risk is high, so a person looks before it can be approved.' \
         in body
-    assert 'risk high needs a look' not in body
+    assert 'risk high' not in body
     page.click('[data-act="close"]')
     page.click('.rule[data-rule="RULE-3"]')
     review = page.inner_text('.wrap')
@@ -412,11 +420,40 @@ def test_the_review_list_is_ordered_by_risk(browser, tmp_path):
     assert '4 rules need a look' in page.inner_text('h1')
     assert texts(page, '.group .gt') == ['high risk', 'medium risk',
                                          'low risk']
+    assert texts(page, '.group .muted') == ['(2)', '(1)', '(1)']
     rows = texts(page, '.rev')
     assert len(rows) == 4
-    assert 'the approval is stale' in rows[2]
+    first = review_cells(page)[0]
+    assert first[0] == 'login'
+    assert first[1] == 'RULE-1'
+    assert first[2] == 'A person signs in with an email address and a password.'
+    assert first[3] == 'APPROVED'
     page.click('.rev')
     assert 'RULE-1' in page.inner_text('h1')
+    page.close()
+
+
+@pytest.mark.proof("purlin_report", "PROOF-31", "RULE-30", tier="e2e")
+def test_a_row_whose_only_reason_is_its_risk_states_none(browser, tmp_path):
+    """The group header already said `high risk`; the row adds nothing."""
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    page.click('[data-screen="review"]')
+    assert review_cells(page)[0][4] == ''
+    assert page.query_selector_all('.rev .tag') == []
+    page.close()
+
+
+@pytest.mark.proof("purlin_report", "PROOF-31", "RULE-30", tier="e2e")
+def test_a_row_states_every_reason_the_group_does_not(browser, tmp_path):
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    page.click('[data-screen="review"]')
+    cells = review_cells(page)
+    reasons = {(row[0], row[1]): row[4] for row in cells}
+    assert reasons[('login', 'RULE-4')] == 'windows: no record yet'
+    assert reasons[('login', 'RULE-2')] == 'stale'
+    assert reasons[('invoice', 'RULE-2')] == (
+        'strength 64% under 80%; No proof of this rule names a rejection, '
+        'an error or a boundary.')
     page.close()
 
 
@@ -424,7 +461,7 @@ def test_the_review_list_is_ordered_by_risk(browser, tmp_path):
 def test_an_empty_review_list_says_what_puts_a_rule_on_it(browser, tmp_path):
     page = open_board(browser, tmp_path, payload_named('solo'))
     page.click('[data-screen="review"]')
-    assert 'Nothing needs a look' in page.inner_text('.empty')
+    assert 'Nothing is waiting for a look' in page.inner_text('.empty')
     page.close()
 
 

@@ -99,12 +99,15 @@ board the same link reads `← Board`.
 
 The review list is what CI put in front of a person.
 
-![The review list: four rules grouped high, medium and low, each with its spec, rule id, risk tag and the reason it is listed](images/dashboard-review-list.png)
+![The review list: four rules grouped high, medium and low, each with its spec, rule id, rule text, state and the reason it is listed](images/dashboard-review-list.png)
 
-Rules are grouped by risk, highest first, with the reason beside each one: `risk high needs a
-look`, `the approval is stale`, `the test strength is below 80`. QA works this list, never the
-whole rule table. When nothing needs a look the tab reads `Review list (0)` and the screen says
-so.
+Rules are grouped by risk, highest first. A row carries the spec, the rule id, the rule's
+text cut to one line and its state, so you read what you are about to open before you open
+it. A reason sits beside that only where it says more than the group already does: `stale`,
+`strength 64% under 80%`, `windows: no record yet`, `re-verify pending`, or the sentence a
+free check writes. A rule whose only reason is its risk carries none, because the group
+header said it. QA works this list, never the whole rule table. When nothing is waiting the
+tab reads `Review list (0)` and the screen says so.
 
 `purlin:review` walks the same list one brief at a time in a checkout. The page is the read-only
 view of it, for someone who has no checkout.
