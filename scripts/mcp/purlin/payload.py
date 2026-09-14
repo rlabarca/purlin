@@ -153,7 +153,7 @@ def _feature_entry(project_root, name, info, features, runtime_proofs,
         result = _rule_entry(
             project_root, name, owner, owner_info, rule_id, label,
             runtime_proofs, counting, all_approvals, cfg, head,
-            blob_cache, scope_cache)
+            blob_cache, scope_cache, test_strength)
         rule_entries.append(result)
         summary = {'state': result['state'], 'flags': result['flags'],
                    'risk': result['risk'],
@@ -201,7 +201,7 @@ def _feature_entry(project_root, name, info, features, runtime_proofs,
 
 def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
                 runtime_proofs, counting, all_approvals, cfg, head,
-                blob_cache, scope_cache):
+                blob_cache, scope_cache, test_strength=None):
     text = owner_info['rules'].get(rule_id, '')
     meta = owner_info.get('rule_meta', {}).get(rule_id, {})
     proof_ids = owner_info.get('proofs_by_rule', {}).get(rule_id, [])
@@ -256,7 +256,10 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
         'risk': meta.get('risk', specs_module.DEFAULT_RISK),
         'brief': _read_brief(project_root, owner_info, rule_id,
                              rule_hash, proof_hash, test_hash),
-        'test_strength': None,
+        # The feature's strength stands for every rule in it: a break engine
+        # measures a scope, not one rule, and auto-approval compares what was
+        # measured rather than assuming nothing was.
+        'test_strength': test_strength,
         'mutation_engine_available': cfg.mutation_engine not in (None, 'none'),
     }, cfg)
 
@@ -275,6 +278,7 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
         'design_hash': design_hash,
         'state': result['state'],
         'flags': result['flags'],
+        'test_strength': test_strength,
         'missing_env': result['missing_env'],
         'reasons': result['reasons'],
         'proofs': proof_dicts,

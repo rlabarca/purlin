@@ -25,6 +25,7 @@ Exit codes: 0 a brief was built, 1 the rule is not in the project, 2 the
 command line was wrong.
 """
 
+import glob
 import json
 import os
 import shutil
@@ -199,9 +200,19 @@ def _design_layer(project_root, payload, feature, entry):
     if entry.get('origin') != 'design':
         return None
     owner = _feature_entry(payload, entry.get('feature') or feature)
-    mocks = list(owner.get('source_globs') or ())
+    patterns = list(owner.get('source_globs') or ())
     if owner.get('source_path'):
-        mocks.append(owner['source_path'])
+        patterns.append(owner['source_path'])
+    elif owner.get('source') and not owner.get('source_globs'):
+        patterns.append(owner['source'])
+    mocks = []
+    for pattern in patterns:
+        matched = sorted(glob.glob(os.path.join(project_root, pattern)))
+        if matched:
+            mocks.extend(os.path.relpath(path, project_root).replace(os.sep, '/')
+                         for path in matched)
+        else:
+            mocks.append(pattern)
     shots = []
     for proof in entry.get('proofs') or ():
         rel = os.path.join(ATTACHMENTS, feature, '%s.png' % proof.get('id'))
