@@ -133,11 +133,13 @@ def failing():
 
 class TestTheContract:
 
+    @pytest.mark.proof("scaffold", "PROOF-27", "RULE-27")
     def test_a_passing_suite_says_so_and_lets_the_push_through(self, passing):
         done = passing.push()
         assert done.returncode == 0, done.stdout + done.stderr
         assert 'the tagged tests passed' in done.stdout
 
+    @pytest.mark.proof("scaffold", "PROOF-27", "RULE-27")
     def test_a_failure_with_the_setting_off_is_reported_and_not_blocked(
             self, failing):
         done = failing.push()
@@ -145,6 +147,7 @@ class TestTheContract:
         assert 'a tagged test failed' in done.stdout
         assert 'not blocked' in done.stdout
 
+    @pytest.mark.proof("scaffold", "PROOF-27", "RULE-27")
     def test_a_failure_with_the_setting_on_blocks(self, failing):
         failing.setting('on')
         done = failing.push()
@@ -152,22 +155,26 @@ class TestTheContract:
         assert 'this push is blocked' in done.stdout
         assert 'purlin:test' in done.stdout
 
+    @pytest.mark.proof("scaffold", "PROOF-27", "RULE-27")
     def test_a_pass_with_the_setting_on_still_goes_through(self, passing):
         passing.setting('on')
         done = passing.push()
         assert done.returncode == 0, done.stdout + done.stderr
         assert 'the tagged tests passed' in done.stdout
 
+    @pytest.mark.proof("scaffold", "PROOF-27", "RULE-27")
     def test_an_unreadable_setting_never_blocks(self, failing):
         write(failing.path('.purlin/config.json'), 'not json at all')
         done = failing.push()
         assert done.returncode == 0, done.stdout + done.stderr
         assert 'not blocked' in done.stdout
 
+    @pytest.mark.proof("scaffold", "PROOF-27", "RULE-27")
     def test_the_setting_true_counts_as_on(self, failing):
         failing.setting(True)
         assert failing.push().returncode == 1
 
+    @pytest.mark.proof("scaffold", "PROOF-27", "RULE-27")
     def test_one_line_either_way(self, passing):
         lines = [line for line in passing.push().stdout.splitlines()
                  if line.startswith('purlin:')]
@@ -176,6 +183,7 @@ class TestTheContract:
 
 class TestWhenThereIsNothingToRun:
 
+    @pytest.mark.proof("scaffold", "PROOF-28", "RULE-28")
     def test_a_project_with_no_specs_exits_zero(self):
         made = Project(specs=False)
         try:
@@ -185,6 +193,7 @@ class TestWhenThereIsNothingToRun:
         finally:
             made.close()
 
+    @pytest.mark.proof("scaffold", "PROOF-28", "RULE-28")
     def test_a_project_that_is_not_a_purlin_project_exits_zero(self, passing):
         shutil.rmtree(passing.path('.purlin'), ignore_errors=True)
         done = subprocess.run(['sh', HOOK_SCRIPT], cwd=passing.root,
@@ -193,6 +202,7 @@ class TestWhenThereIsNothingToRun:
         assert done.returncode == 0
         assert done.stdout == ''
 
+    @pytest.mark.proof("scaffold", "PROOF-28", "RULE-28")
     def test_outside_a_repository_it_exits_zero(self):
         directory = tempfile.mkdtemp(prefix='purlin-norepo-')
         try:
@@ -210,12 +220,14 @@ class TestWhenThereIsNothingToRun:
 
 class TestTheShim:
 
+    @pytest.mark.proof("scaffold", "PROOF-29", "RULE-29")
     def test_the_pinned_plugin_root_is_enough(self, passing):
         done = passing.push(plugin_root=None)
         assert done.returncode == 0, done.stdout + done.stderr
         assert 'the tagged tests passed' in done.stdout
         assert read(passing.path('.purlin/plugin-root')).strip() == ROOT
 
+    @pytest.mark.proof("scaffold", "PROOF-29", "RULE-29")
     def test_claude_plugin_root_is_enough(self, passing):
         os.remove(passing.path('.purlin/plugin-root'))
         done = passing.push(plugin_root=None,
@@ -223,6 +235,7 @@ class TestTheShim:
         assert done.returncode == 0, done.stdout + done.stderr
         assert 'the tagged tests passed' in done.stdout
 
+    @pytest.mark.proof("scaffold", "PROOF-29", "RULE-29")
     def test_a_marketplace_copy_under_home_is_found(self, passing):
         installed = os.path.join(passing.home, '.claude', 'plugins', 'cache',
                                  'purlin', 'purlin', '0.10.0')
@@ -235,6 +248,7 @@ class TestTheShim:
         assert done.returncode == 0, done.stdout + done.stderr
         assert 'the tagged tests passed' in done.stdout
 
+    @pytest.mark.proof("scaffold", "PROOF-29", "RULE-29")
     def test_no_plugin_anywhere_warns_and_never_blocks(self, passing):
         os.remove(passing.path('.purlin/plugin-root'))
         done = passing.push(plugin_root=None)
@@ -242,23 +256,27 @@ class TestTheShim:
         assert 'the plugin was not found' in done.stdout
         assert 'PURLIN_PLUGIN_ROOT' in done.stdout
 
+    @pytest.mark.proof("scaffold", "PROOF-29", "RULE-29")
     def test_an_environment_root_wins_over_the_pinned_one(self, passing):
         write(passing.path('.purlin/plugin-root'), '/no/such/plugin\n')
         done = passing.push()
         assert done.returncode == 0, done.stdout + done.stderr
         assert 'the tagged tests passed' in done.stdout
 
+    @pytest.mark.proof("scaffold", "PROOF-25", "RULE-25")
     def test_the_shim_names_no_machine_and_no_release(self, passing):
         shim = read(passing.path('.purlin/hooks/pre-push'))
         assert ROOT not in shim
         assert passing.root not in shim
         assert read(os.path.join(ROOT, 'VERSION')).strip() not in shim
 
+    @pytest.mark.proof("scaffold", "PROOF-24", "RULE-24")
     def test_the_delegator_git_runs_reaches_the_shim(self, passing):
         delegator = read(passing.path('.git/hooks/pre-push'))
         assert '.purlin/hooks/pre-push' in delegator
         assert os.access(passing.path('.git/hooks/pre-push'), os.X_OK)
 
+    @pytest.mark.proof("scaffold", "PROOF-24", "RULE-24")
     def test_the_delegator_survives_a_checkout_without_the_shim(self, passing):
         os.remove(passing.path('.purlin/hooks/pre-push'))
         done = subprocess.run(['sh', passing.path('.git/hooks/pre-push')],
@@ -275,6 +293,7 @@ class TestTheShim:
 
 class TestTheFilesThemselves:
 
+    @pytest.mark.proof("scaffold", "PROOF-27", "RULE-27")
     def test_the_script_runs_the_quick_pass_and_nothing_else(self):
         text = read(HOOK_SCRIPT)
         assert '--all --quick' in text
@@ -282,6 +301,7 @@ class TestTheFilesThemselves:
         assert 'pytest' not in text
         assert 'npx' not in text
 
+    @pytest.mark.proof("scaffold", "PROOF-35", "RULE-35")
     def test_the_script_carries_no_retired_word(self):
         text = read(HOOK_SCRIPT).lower()
         # Spelled in halves so this file does not carry the words either.
@@ -289,6 +309,7 @@ class TestTheFilesThemselves:
                      'str' + 'ict', 'fo' + 'rge'):
             assert word not in text
 
+    @pytest.mark.proof("scaffold", "PROOF-24", "RULE-24")
     def test_no_pre_commit_script_ships(self):
         assert not os.path.exists(
             os.path.join(ROOT, 'scripts', 'hooks', 'pre-commit.sh'))

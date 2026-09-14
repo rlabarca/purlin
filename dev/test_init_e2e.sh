@@ -44,6 +44,15 @@ FAIL=0
 SKIP=0
 TMPDIRS=""
 
+# The two rules this suite proves, counted apart from the run's own total:
+# GATE_FAIL is what RULE-36 reads, WIRE_FAIL what RULE-37 reads.
+GATE_FAIL=0
+WIRE_FAIL=0
+MARK=0
+mark() { MARK=$FAIL; }
+gate_since_mark() { GATE_FAIL=$((GATE_FAIL + FAIL - MARK)); }
+wire_since_mark() { WIRE_FAIL=$((WIRE_FAIL + FAIL - MARK)); }
+
 cleanup() { for d in $TMPDIRS; do rm -rf "$d" 2>/dev/null; done; }
 trap cleanup EXIT
 
@@ -257,12 +266,14 @@ walk_python() {
   printf 'def greet(name):\n    return "Hello, %%s!" %% name\n' > "$dir/greeting.py"
 
   init_at "$dir" tested
+  mark
   expect_file "python: the config is written" "$dir/.purlin/config.json"
   expect_file "python: the plugin is copied" \
     "$dir/.purlin/plugins/pytest_purlin.py"
   expect_file "python: the runner is wired" "$dir/conftest.py"
   expect_absent "python: no workflow under tested" \
     "$dir/.github/workflows/purlin.yml"
+  wire_since_mark
 
   spec_file "$dir" greeting greeting.py
   mkdir -p "$dir/tests"
@@ -277,7 +288,9 @@ def test_greet():
     assert greet("Ada") == "Hello, Ada!"
 EOF
   commit_all "$dir" "the first spec and its test"
+  mark
   gate_walk "$dir" python
+  gate_since_mark
 }
 
 # --- typescript -----------------------------------------------------------
@@ -306,9 +319,11 @@ walk_typescript() {
   fi
 
   init_at "$dir" tested
+  mark
   expect_file "typescript: the plugin is copied" \
     "$dir/.purlin/plugins/vitest_purlin.ts"
   expect_file "typescript: the runner is wired" "$dir/vitest.config.ts"
+  wire_since_mark
 
   spec_file "$dir" greeting greeting.ts
   mkdir -p "$dir/tests"
@@ -323,7 +338,9 @@ test('[proof:greeting:PROOF-1:RULE-1:unit] greets by name', () => {
 EOF
   printf 'node_modules/\n' >> "$dir/.gitignore"
   commit_all "$dir" "the first spec and its test"
+  mark
   gate_walk "$dir" typescript
+  gate_since_mark
 }
 
 # --- xunit ----------------------------------------------------------------
@@ -347,12 +364,14 @@ walk_xunit() {
 </Project>
 EOF
   init_at "$dir" tested
+  mark
   expect_file "xunit: the logger is copied" \
     "$dir/.purlin/plugins/xunit_purlin.cs"
   expect_in "xunit: the summary says how to wire the logger" \
     'TestLogger.dll' "$dir/.purlin-init.log"
   expect_in "xunit: the summary names the runner flag" \
     'dotnet test --logger purlin' "$dir/.purlin-init.log"
+  wire_since_mark
   note "xunit: the gate walk needs the logger assembly built by hand"
 }
 
@@ -372,6 +391,7 @@ walk_marketplace() {
   new_repo "$dir"
   printf '[tool.pytest.ini_options]\n' > "$dir/pyproject.toml"
   printf 'def greet(name):\n    return "Hello, %%s!" %% name\n' > "$dir/greeting.py"
+  mark
   CLAUDE_PLUGIN_ROOT="$installed" python3 "$installed/scripts/init/scaffold.py" \
     --project-root "$dir" --gate tested --yes > "$dir/.purlin-init.log" 2>&1
   expect_file "marketplace: the config is written" "$dir/.purlin/config.json"
@@ -383,6 +403,7 @@ walk_marketplace() {
   else
     pass "marketplace: only .purlin/plugin-root names the install"
   fi
+  wire_since_mark
 }
 
 # --- run ------------------------------------------------------------------
@@ -392,6 +413,19 @@ walk_python
 walk_typescript
 walk_xunit
 walk_marketplace
+
+# The two proofs this suite writes. The harness is sourced here, at the end,
+# so its own shell settings never reach the walk above.
+# shellcheck source=../scripts/proof/shell_purlin.sh
+. "$ROOT/scripts/proof/shell_purlin.sh"
+export PURLIN_PROOF_TIER=e2e
+if [ "$GATE_FAIL" -eq 0 ]; then GATE_STATUS=pass; else GATE_STATUS=fail; fi
+if [ "$WIRE_FAIL" -eq 0 ]; then WIRE_STATUS=pass; else WIRE_STATUS=fail; fi
+purlin_proof "scaffold" "PROOF-36" "RULE-36" "$GATE_STATUS" \
+  "the three gates walked on every fixture init set up"
+purlin_proof "scaffold" "PROOF-37" "RULE-37" "$WIRE_STATUS" \
+  "each language wired, and the marketplace install"
+purlin_proof_finish
 
 echo ""
 echo "passed $PASS, failed $FAIL, skipped $SKIP"
