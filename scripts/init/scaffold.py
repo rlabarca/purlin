@@ -55,6 +55,8 @@ EXIT_BAD_INVOCATION = 2
 
 ARROW = '→'
 NOT_A_REPOSITORY = 'This is not a git repository. Run git init, then init.'
+DROPPED_FRAMEWORK = ('dropped %s from test_framework: nothing in the tree '
+                     'runs it')
 
 GATE_QUESTION = 'What must be true before CI lets a change merge?'
 GATE_CHOICES = (
@@ -551,10 +553,16 @@ def delegate_update(args):
 
 
 def resolve_frameworks(root, console, existing, add):
-    """`(the frameworks to wire, the answer to record)` for this project.
+    """`(the frameworks to wire, the answer to record, the names dropped)`.
 
     Detection answers on a project with code, and nothing is asked. A tree
     with nothing to detect is asked once, which is the second exception.
+
+    A recorded name the tree cannot run is dropped rather than carried: an
+    older release recorded every plugin it shipped, and wiring a runner with
+    nothing to run makes every run print that runner exiting non-zero. A
+    recorded name the tree does carry stays even when detection would not have
+    picked it.
     """
     recorded = (existing or {}).get('test_framework')
     recorded = recorded if isinstance(recorded, str) else ''
@@ -562,21 +570,24 @@ def resolve_frameworks(root, console, existing, add):
         named = (frameworks_module.detect_frameworks(root)
                  if recorded in ('', 'auto')
                  else frameworks_module.resolve_frameworks(root, recorded)[0])
+        named, dropped = frameworks_module.prune_unwired(root, named)
         named += [part.strip() for part in add.split(',') if part.strip()]
         named = list(dict.fromkeys(named))
-        return named, ','.join(named)
+        return named, ','.join(named), dropped
     if recorded and recorded != 'auto':
-        return frameworks_module.resolve_frameworks(root, recorded)[0], recorded
+        named = frameworks_module.resolve_frameworks(root, recorded)[0]
+        named, dropped = frameworks_module.prune_unwired(root, named)
+        return named, ','.join(named), dropped
     detected = frameworks_module.detect_frameworks(root)
     if detected != ['shell']:
-        return detected, 'auto'
+        return detected, 'auto', []
     answer = console.ask(LANGUAGE_QUESTION, 'shell',
                          ['  '.join(frameworks_module.KNOWN_FRAMEWORKS)])
     if answer not in frameworks_module.KNOWN_FRAMEWORKS:
         print('purlin: "%s" is not a framework this release ships a plugin '
               'for; reading it as shell.' % answer)
         answer = 'shell'
-    return [answer], answer
+    return [answer], answer, []
 
 
 def _existing_config(root):
@@ -651,11 +662,14 @@ def main(argv=None):
                      for part in console.ask(APPROVER_QUESTION, '').split(',')
                      if part.strip()]
 
-    selected, framework = resolve_frameworks(root, console, existing, args.add)
+    selected, framework, dropped = resolve_frameworks(
+        root, console, existing, args.add)
     host = {'ado': 'azure'}.get(args.ci, args.ci) or git_host(root)
 
     if hooks is None:
         plan.note(NOT_A_REPOSITORY)
+    for name in dropped:
+        plan.note(DROPPED_FRAMEWORK % name)
     plan.note('Gate %s. Frameworks %s. Git host %s.'
               % (gate, ', '.join(selected), host or 'not read from a remote'))
     for name in ('.purlin', '.purlin/plugins', 'specs', 'specs/_anchors'):

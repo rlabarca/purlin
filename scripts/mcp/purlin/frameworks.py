@@ -122,6 +122,64 @@ def detect_frameworks(project_root):
     return found
 
 
+# What a tree must carry for a framework to be runnable at all, checked when a
+# recorded `test_framework` names something detection did not find. Detection
+# is the stricter question (jest is detected only when `package.json` declares
+# it); this is the looser one, so a project that wires a runner in a way
+# detection does not recognise keeps it.
+_WIRING = {
+    'pytest': lambda root: (os.path.isfile(os.path.join(root, 'conftest.py'))
+                            or os.path.isfile(os.path.join(root, 'pytest.ini'))
+                            or os.path.isfile(os.path.join(root,
+                                                           'pyproject.toml'))),
+    'jest': lambda root: os.path.isfile(os.path.join(root, 'package.json')),
+    'vitest': lambda root: os.path.isfile(os.path.join(root, 'package.json')),
+    'xunit': lambda root: _any_file(root, '.csproj'),
+    'sql': lambda root: _any_file(root, '.sql'),
+}
+
+
+def _any_file(root, suffix):
+    for _dirpath, filenames in _walk(root):
+        for name in filenames:
+            if name.endswith(suffix):
+                return True
+    return False
+
+
+def carries_wiring(project_root, name):
+    """True when `project_root` carries anything a `name` runner could run.
+
+    Shell and any name this release does not ship a plugin for answer True:
+    shell needs no wiring, and an unknown name is somebody else's decision.
+    """
+    test = _WIRING.get(name)
+    if test is None:
+        return True
+    try:
+        return bool(test(project_root))
+    except OSError:
+        return True
+
+
+def prune_unwired(project_root, names):
+    """`(kept, dropped)` from a recorded `test_framework` list.
+
+    A name detection does not find and the tree carries no wiring for is
+    dropped: running it prints a runner that exited non-zero on every run and
+    proves nothing. A name the tree does carry stays even when detection would
+    not have picked it, so a project that wires a runner its own way keeps it.
+    """
+    detected = detect_frameworks(project_root)
+    kept, dropped = [], []
+    for name in names:
+        if name in detected or carries_wiring(project_root, name):
+            kept.append(name)
+        else:
+            dropped.append(name)
+    return kept, dropped
+
+
 def resolve_frameworks(project_root, raw):
     """`(frameworks, unknown)` from a `test_framework` config value.
 

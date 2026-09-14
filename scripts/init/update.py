@@ -60,6 +60,8 @@ WORKFLOW_DIR = '.github/workflows'
 OS_NAMES = ('linux', 'macos', 'windows')
 GATES = ('tested', 'recorded', 'approved')  # the gate question's three answers
 ARROW = '→'
+DROPPED_FRAMEWORK = ('dropped %s from test_framework: nothing in the tree '
+                     'runs it')
 _COMMIT = 'chore(update): migrate to %s (%s)'
 
 # A renamed plugin copy keeps the name the project gave it: its tests name it.
@@ -149,6 +151,9 @@ def _plugin_module(subdir, name):
 
 def _gate():
     return _plugin_module('mcp', 'purlin.gate').gate
+
+def _frameworks():
+    return _plugin_module('mcp', 'purlin.frameworks').frameworks
 
 def _flow():
     return _plugin_module('run', 'workflow')
@@ -256,6 +261,25 @@ def _ask_gate(previous, assume_yes):
         return default
     return answer if answer in GATES else default
 
+def _prune_frameworks(root, recorded):
+    """`(the value to record, the names dropped)` for one project tree.
+
+    An older release recorded every plugin it shipped, so a Python-only tree
+    can carry `pytest,jest,shell,vitest` and print a jest runner exiting
+    non-zero on every run. A recorded name that detection does not find and
+    the tree carries no wiring for is dropped; a name the tree does carry
+    stays even when detection would not have picked it. `auto` is left alone:
+    it names nothing to drop.
+    """
+    frameworks = _frameworks()
+    raw = str(recorded or '')
+    if not raw.strip() or 'auto' in [part.strip() for part in raw.split(',')]:
+        return raw or 'auto', []
+    named, unknown = frameworks.resolve_frameworks(root, raw)
+    kept, dropped = frameworks.prune_unwired(root, named)
+    value = ','.join(kept + unknown)
+    return value or 'auto', dropped
+
 def _apply_config(root, files, args, out):
     gate = _gate()
     old = _config(root)
@@ -263,14 +287,17 @@ def _apply_config(root, files, args, out):
     out.kept(_back_up_copy(path, '.purlin/config.json'))
     chosen = _ask_gate(old.get('pre_push'), args.yes)
     resolved = gate.resolve_gate(dict(old, gate=chosen))
+    framework, unwired = _prune_frameworks(root, resolved.test_framework)
     config = {
         'version': _version(), 'gate': chosen,
         'ai_review_at': resolved.ai_review_at, 'ci': old.get('ci') or _host(root),
         'min_strength': resolved.min_strength, 'sql_engine': resolved.sql_engine,
         'mutation_engine': resolved.mutation_engine,
-        'test_framework': resolved.test_framework, 'digest': old.get('digest', 'auto'),
+        'test_framework': framework, 'digest': old.get('digest', 'auto'),
         'pre_push': resolved.pre_push,
     }
+    for name in unwired:
+        out.say(DROPPED_FRAMEWORK % name)
     if chosen == 'approved':
         config['approvers'] = resolved.approvers
     dropped = sorted(key for key in gate.RETIRED_KEYS if key in old)

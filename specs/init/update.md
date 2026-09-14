@@ -33,6 +33,7 @@
 - RULE-18: One commit carries the whole run, its subject naming the release and every migration id applied; a run that applies nothing writes no commit; nothing is left uncommitted afterwards but the backup copies [risk: high] [origin: eng]
 - RULE-19: `sync_status` prints the directive to run the update while anything is pending, including when the config alone is already clean, and stops printing it once nothing is [risk: high] [origin: eng]
 - RULE-20: What the run prints carries no emoji, and its last line names the next step: the update again while something is left, otherwise `purlin:status` [risk: low] [origin: eng]
+- RULE-21: A recorded `test_framework` name that detection does not find and the tree carries no wiring for is dropped and the drop is printed, while a name the tree does carry is kept [risk: medium] [origin: eng]
 
 ## Proof
 
@@ -56,3 +57,4 @@
 - PROOF-18 (RULE-18): Apply everything on each fixture and verify `git log --format=%s` holds exactly two lines, the newer one starting `chore(update): migrate to <VERSION> (` and naming every id applied; verify every remaining line of `git status --porcelain` is an untracked `.bak` file. Decline everything on the v0.9.5 fixture and verify `HEAD` is where it was @unit
 - PROOF-19 (RULE-19): Verify `_update_pending` is true for the v0.9.5 fixture and false once the update has run; verify `sync_status` on the 0.10 fixture contains `Run: purlin:init --update`, that it still does after the run once `.purlin/records/README.md` is deleted, and that it does not once nothing is pending @unit
 - PROOF-20 (RULE-20): Apply the v0.9.5 fixture and verify every character printed is below U+2190 or is the arrow or the horizontal rule, and that the last line is `→ Next: run purlin:status to see where every rule stands.`; decline the records question and verify the last line is `→ Next: run purlin:init --update again for records.` @unit
+- PROOF-21 (RULE-21): Write a `conftest.py` into the 0.10 development fixture, whose recorded `test_framework` reads `pytest,jest,shell,vitest` and which carries no `package.json`; apply everything and verify the written value is `pytest,shell` and that the output holds `dropped jest from test_framework: nothing in the tree runs it` and the same line for `vitest`. Write a `package.json` beside the `conftest.py`, apply again on a fresh copy and verify the value is still `pytest,jest,shell,vitest` and that no `dropped ... from test_framework` line was printed @unit

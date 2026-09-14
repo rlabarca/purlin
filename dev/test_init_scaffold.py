@@ -704,6 +704,35 @@ class TestTheFlags:
         project.run('--add', 'vitest')
         assert project.config()['test_framework'] == 'pytest,vitest'
 
+    @pytest.mark.proof("scaffold", "PROOF-38", "RULE-38")
+    def test_a_gate_change_drops_a_framework_the_tree_cannot_run(self, project):
+        """An older release recorded every plugin it shipped, runnable or not."""
+        project.run('--gate', 'tested')
+        recorded = project.config()
+        recorded['test_framework'] = 'pytest,jest,shell,vitest'
+        write(project.path('.purlin/config.json'),
+              json.dumps(recorded, indent=2))
+        output = project.run('--gate', 'recorded')
+        assert project.config()['test_framework'] == 'pytest,shell'
+        for name in ('jest', 'vitest'):
+            assert ('dropped %s from test_framework: nothing in the tree '
+                    'runs it' % name) in output
+        assert not project.has('jest.config.js')
+        assert not project.has('vitest.config.ts')
+
+    @pytest.mark.proof("scaffold", "PROOF-38", "RULE-38")
+    def test_a_framework_the_tree_carries_survives_a_gate_change(self, project):
+        """Wiring the tree carries outranks detection, the stricter test."""
+        write(project.path('package.json'), '{"name": "app"}\n')
+        project.run('--gate', 'tested')
+        recorded = project.config()
+        recorded['test_framework'] = 'pytest,jest,shell'
+        write(project.path('.purlin/config.json'),
+              json.dumps(recorded, indent=2))
+        output = project.run('--gate', 'recorded')
+        assert project.config()['test_framework'] == 'pytest,jest,shell'
+        assert 'dropped' not in output
+
     @pytest.mark.proof("scaffold", "PROOF-30", "RULE-30")
     def test_dry_run_writes_nothing_and_prints_the_plan(self):
         made = Project('pytest')

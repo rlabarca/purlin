@@ -416,6 +416,36 @@ def test_no_key_nothing_reads_is_written_back(tmp_path, layout):
     assert "'report'" not in source, 'the update writes a key nothing reads'
 
 
+@pytest.mark.proof("update", "PROOF-21", "RULE-21")
+def test_a_framework_the_tree_cannot_run_is_dropped(tmp_path, capsys):
+    """An older release recorded every plugin it shipped, runnable or not."""
+    root = _project(tmp_path, V010)
+    _write(root, 'conftest.py', '')
+    before = json.loads(_read(root, '.purlin/config.json'))
+    assert before['test_framework'] == 'pytest,jest,shell,vitest'
+    _apply(root)
+    printed = capsys.readouterr().out
+    assert json.loads(_read(root, '.purlin/config.json'))['test_framework'] == (
+        'pytest,shell')
+    assert 'dropped jest from test_framework: nothing in the tree runs it' in (
+        printed)
+    assert 'dropped vitest from test_framework: nothing in the tree runs it' in (
+        printed)
+
+
+@pytest.mark.proof("update", "PROOF-21", "RULE-21")
+def test_a_framework_the_tree_carries_is_kept(tmp_path, capsys):
+    """Wiring the tree carries outranks detection, which is the stricter test."""
+    root = _project(tmp_path, V010)
+    _write(root, 'conftest.py', '')
+    _write(root, 'package.json', '{"name": "app"}\n')
+    _apply(root)
+    printed = capsys.readouterr().out
+    assert json.loads(_read(root, '.purlin/config.json'))['test_framework'] == (
+        'pytest,jest,shell,vitest')
+    assert 'from test_framework' not in printed
+
+
 # --- operating-system tags ---------------------------------------------------
 
 @pytest.mark.proof("update", "PROOF-13", "RULE-13")
