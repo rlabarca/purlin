@@ -987,13 +987,15 @@ Rule screen, the review rows, the board colours and the Latest record column to 
 | F15 | `d27c3b13` | a review row carries the rule text, its state and only a reason its group does not already say; the payload's `reasons` list | 188,807 |
 | F16 | `e04e2751` | the Latest record column names each operating system's record with its result | 193,132 |
 
-Tokens, F9 to F16: 1,781,537. Running total: 9,573,873.
+| F17 | `53473a4d` | the real cause of the 14 gate failures on both runners: `%G?` reads `N` both for no signature and for a signature the machine cannot check, and the label demoted GitHub's commits wherever gpg exists (every hosted runner); the reader now asks the commit object whether a signature is present; `default_branch` reads the branch HEAD names before guessing `main`; one artifact per job (`purlin-dashboard-<os>`); on Windows `bash` on PATH is the WSL launcher, so the run script finds Git Bash from git's own install and the dev suites use it; a plugin copy is a byte copy; four POSIX-only fixtures fixed; 999 passed locally | 310,694 |
+
+Tokens, F9 to F17: 2,092,231. Running total: 9,884,567.
 
 CI rounds on `evidence-workflow`: run 1 (`34808346536`) Windows committed 37 records but crashed
 printing, Ubuntu cancelled at six hours; run 2 (`34840363131`, with F10) both jobs ended
 inside the cap, Ubuntu's shell arm timed out at 3600 s, Windows 7 rules short; run 3
 (`34842281168`, with F11) Windows every rule Tested or Reviewed yet both arms exit 1, Ubuntu
-as run 2; run 4 (`34851835724`, with F14) pending. CI's API commits label `ci` and trigger no
+as run 2; run 4 (`34851835724`, with F14) Ubuntu in four minutes with one marker missing, CI auto-approved 69 low-risk rules and reviewed 425, both jobs exit 1 on 14 gate tests (Windows 56); run 5 (`34859129349`, with F17) pending. CI's API commits label `ci` and trigger no
 further run. `verify_gate.py --check` on this repository still exits 1 under `approved`
 until the user's approvals exist.
 
