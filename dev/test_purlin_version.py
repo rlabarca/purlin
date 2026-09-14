@@ -220,7 +220,7 @@ class TestBumpVersionScriptPropagatesAndDetectsDrift:
         with open(os.path.join(root, rel), encoding='utf-8') as f:
             return json.load(f)['version']
 
-    @pytest.mark.proof("purlin_version", "PROOF-7", "RULE-7")
+    @pytest.mark.proof("purlin_version", "PROOF-7", "RULE-7", tier="integration")
     def test_bump_propagates_everywhere_and_check_reports_drift(self, tmp_path):
         """bump_version.sh <semver> writes VERSION and every derived location;
         --check exits 1 naming the drifted file, and 0 on a matching tree."""
@@ -272,7 +272,7 @@ class TestBumpVersionScriptPropagatesAndDetectsDrift:
         assert 'templates/config.json' in bad.stdout
         assert '.claude-plugin/plugin.json' in bad.stdout
 
-    @pytest.mark.proof("purlin_version", "PROOF-7", "RULE-7")
+    @pytest.mark.proof("purlin_version", "PROOF-7", "RULE-7", tier="integration")
     def test_bump_rejects_non_semver_and_tolerates_absent_optional_file(self, tmp_path):
         """A non-semver argument is refused before anything is written, and an
         absent .purlin/config.json is skipped rather than failing the run."""
@@ -419,7 +419,7 @@ class TestReleaseNotesCounts:
     shared marker a proof plugin rewrites mid-sweep and not against the memory
     of whoever wrote the notes."""
 
-    @pytest.mark.proof("purlin_version", "PROOF-9", "RULE-9")
+    @pytest.mark.proof("purlin_version", "PROOF-9", "RULE-9", tier="integration")
     def test_sweep_exit_trap_writes_its_own_sweep_record(self, tmp_path):
         """Leg (a): drive the sweep's real writer and verify it writes
         last_sweep.json, unmerged, beside the shared test_run.json."""
@@ -497,7 +497,7 @@ class TestReleaseNotesCounts:
         assert 'runs' in shared, \
             "test_run.json is the merged marker and must carry a `runs` list"
 
-    @pytest.mark.proof("purlin_version", "PROOF-9", "RULE-9")
+    @pytest.mark.proof("purlin_version", "PROOF-9", "RULE-9", tier="integration")
     def test_unreleased_counts_match_the_sweep_record(self, tmp_path):
         """Legs (b), (c) and (d): the notes parse, the comparison helper, and
         the real record."""
