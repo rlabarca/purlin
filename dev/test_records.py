@@ -787,6 +787,49 @@ def test_the_artifact_says_when_there_is_no_data_to_carry(project, tmp_path,
     assert os.path.isdir(out)
 
 
+def _no_runner_temp(monkeypatch):
+    monkeypatch.delenv('RUNNER_TEMP', raising=False)
+    monkeypatch.delenv('AGENT_TEMPDIRECTORY', raising=False)
+
+
+@pytest.mark.proof("records", "PROOF-11", "RULE-11")
+def test_the_artifact_goes_to_the_github_runner_temp_directory(project,
+                                                               monkeypatch):
+    _no_runner_temp(monkeypatch)
+    monkeypatch.setenv('RUNNER_TEMP', os.path.join(project, 'runner-temp'))
+
+    expected = os.path.join(project, 'runner-temp', 'purlin-dashboard')
+    assert ci_module.publish_dir(project) == expected
+    assert ci_module.publish_dashboard(project) == expected, (
+        'the upload step names $RUNNER_TEMP/purlin-dashboard, so a run that '
+        'publishes anywhere else attaches an empty artifact')
+    assert os.path.isdir(expected)
+
+
+@pytest.mark.proof("records", "PROOF-11", "RULE-11")
+def test_the_artifact_goes_to_the_azure_agent_temp_directory(project,
+                                                             monkeypatch):
+    _no_runner_temp(monkeypatch)
+    monkeypatch.setenv('AGENT_TEMPDIRECTORY',
+                       os.path.join(project, 'agent-temp'))
+
+    expected = os.path.join(project, 'agent-temp', 'purlin-dashboard')
+    assert ci_module.publish_dir(project) == expected
+    assert ci_module.publish_dashboard(project) == expected
+    assert os.path.isdir(expected)
+
+
+@pytest.mark.proof("records", "PROOF-11", "RULE-11")
+def test_the_artifact_goes_under_the_project_when_no_runner_names_a_directory(
+        project, monkeypatch):
+    _no_runner_temp(monkeypatch)
+
+    expected = os.path.join(project, '.purlin', 'runtime', 'report')
+    assert ci_module.publish_dir(project) == expected
+    assert ci_module.publish_dashboard(project) == expected
+    assert os.path.isdir(expected)
+
+
 # ---------------------------------------------------------------------------
 # Handing the run to the git host
 # ---------------------------------------------------------------------------

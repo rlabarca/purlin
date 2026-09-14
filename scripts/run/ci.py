@@ -3,9 +3,9 @@
 A CI run's verify writes the record; these two functions are how anyone else
 sees it. The comment carries the same seven-state rollup `purlin:status`
 prints, so a reviewer reads one thing whether they are on the pull request or
-in a checkout. The dashboard is copied into a directory the workflow's upload
-step names, so anyone with repository access opens it from the run and nothing
-has to be provisioned.
+in a checkout. The dashboard is copied into the runner's own temporary
+directory, which is the one the workflow's upload step reads, so anyone with
+repository access opens it from the run and nothing has to be provisioned.
 
 Both return False, or an empty path, with a printed reason when the run is not
 on a git host: a developer running verify locally is not an error.
@@ -121,13 +121,33 @@ def _host():
     return ''
 
 
-def publish_dashboard(project_root, out_dir):
+def publish_dir(project_root):
+    """The directory the dashboard is published to, which the run uploads.
+
+    The upload step names a temporary directory the runner owns, so the
+    directory has to be the one that runner's variable gives:
+    `$RUNNER_TEMP/purlin-dashboard` on GitHub, `$AGENT_TEMPDIRECTORY/
+    purlin-dashboard` on Azure DevOps. Off a runner neither variable is set
+    and the dashboard goes to `.purlin/runtime/report` in the project, where
+    nothing uploads it and it is read from disk.
+    """
+    for variable in ('RUNNER_TEMP', 'AGENT_TEMPDIRECTORY'):
+        temp = os.environ.get(variable)
+        if temp:
+            return os.path.join(temp, ARTIFACT_NAME)
+    return os.path.join(project_root, '.purlin', 'runtime', 'report')
+
+
+def publish_dashboard(project_root, out_dir=None):
     """Copy the dashboard page and its data into `out_dir`, return that path.
 
     The workflow uploads the directory as the `purlin-dashboard` artifact.
     The page is one HTML file that opens from disk, so the artifact is the
-    page, its data and nothing else.
+    page, its data and nothing else. With no `out_dir` the directory is the
+    one `publish_dir` names, which is the one the upload step reads.
     """
+    if out_dir is None:
+        out_dir = publish_dir(project_root)
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir)
 

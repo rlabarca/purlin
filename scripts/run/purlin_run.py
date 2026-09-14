@@ -788,8 +788,7 @@ def _ci_extras(project_root):
               'posted and no dashboard was published.')
         return
     post_pr_comment(project_root, status_module.sync_status(project_root))
-    publish_dashboard(project_root,
-                      os.path.join(project_root, '.purlin', 'runtime', 'report'))
+    print('Dashboard published to %s.' % publish_dashboard(project_root))
 
 
 def _remote(project_root, args):

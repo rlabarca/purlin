@@ -28,6 +28,7 @@ ROOT = os.path.dirname(DEV)
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'run'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 
+import ci as ci_module  # noqa: E402
 import workflow as workflow_module  # noqa: E402
 from purlin import payload as payload_module  # noqa: E402
 
@@ -173,6 +174,24 @@ def test_the_workflow_names_the_record_step_and_the_artifact():
     assert 'actions/upload-artifact@v4' in names
     assert 'name: purlin-dashboard' in jobs
     assert 'scripts/run/purlin_run.py" --all --record --ci' in jobs
+
+
+@pytest.mark.proof("consumer_ci", "PROOF-2", "RULE-2")
+def test_the_upload_path_is_the_directory_the_run_publishes_to(monkeypatch):
+    """One directory, named twice. Two spellings attach an empty artifact.
+
+    `RUNNER_TEMP` is set to the workflow's own expression, so the path
+    `ci.publish_dir` builds is the text the upload step has to carry.
+    """
+    monkeypatch.delenv('AGENT_TEMPDIRECTORY', raising=False)
+    monkeypatch.setenv('RUNNER_TEMP', '${{ runner.temp }}')
+    published = ci_module.publish_dir(FIXTURE)
+
+    jobs = '\n'.join(parse_blocks(read(WORKFLOW_REL))['jobs'])
+    assert 'path: %s' % published in jobs, (
+        'the run publishes to %s and the upload step reads somewhere else, so '
+        'the purlin-dashboard artifact on the pull request is empty'
+        % published)
 
 
 @pytest.mark.proof("consumer_ci", "PROOF-2", "RULE-2")
