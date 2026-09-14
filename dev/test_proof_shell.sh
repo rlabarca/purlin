@@ -151,7 +151,7 @@ run_test "the retired PURLIN_PROOF_PLATFORMS variable is refused" test_retired_v
 
 source "$HARNESS"
 cd "$PROJECT_ROOT"
-purlin_proof "proof_plugins_shell" "PROOF-5" "RULE-5" \
+PURLIN_PROOF_TIER=e2e purlin_proof "run_script" "PROOF-56" "RULE-38" \
   "$([[ $FAIL -eq 0 ]] && echo pass || echo fail)" "shell harness suite"
 purlin_proof_finish
 

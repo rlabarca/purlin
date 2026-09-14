@@ -27,7 +27,7 @@ trap cleanup_all EXIT
 record() {
   local proof_id="$1" rule_id="$2" name="$3" status="$4"
   echo "  $([[ "$status" == "pass" ]] && echo PASS || echo FAIL): $name"
-  PURLIN_PROOF_TIER=e2e purlin_proof "proof_common" "$proof_id" "$rule_id" \
+  PURLIN_PROOF_TIER=e2e purlin_proof "run_script" "$proof_id" "$rule_id" \
     "$status" "$name"
   [[ "$status" == "pass" ]] && PASS=$((PASS + 1)) || FAIL=$((FAIL + 1))
 }
@@ -117,9 +117,9 @@ phase_one() {
   [[ "$(read_ids "$dir" signup)" == "PROOF-1@tests/signup.test.sh,PROOF-2@tests/signup.test.sh" ]] || return 1
 }
 if phase_one; then
-  record "PROOF-8" "RULE-4" "a write for one feature leaves the other alone" pass
+  record "PROOF-50" "RULE-27" "a write for one feature leaves the other alone" pass
 else
-  record "PROOF-8" "RULE-4" "a write for one feature leaves the other alone" fail
+  record "PROOF-50" "RULE-27" "a write for one feature leaves the other alone" fail
 fi
 
 # --- PROOF-2: two files covering one feature coexist, in any order ---------
@@ -136,9 +136,9 @@ phase_two() {
   [[ "$forward" == "PROOF-1@tests/login_a.test.sh,PROOF-2@tests/login_b.test.sh" ]] || return 1
 }
 if phase_two; then
-  record "PROOF-9" "RULE-4" "two test files for one feature coexist in any order" pass
+  record "PROOF-50" "RULE-27" "two test files for one feature coexist in any order" pass
 else
-  record "PROOF-9" "RULE-4" "two test files for one feature coexist in any order" fail
+  record "PROOF-50" "RULE-27" "two test files for one feature coexist in any order" fail
 fi
 
 # --- PROOF-3: a re-run replaces only what it ran, and the table reads it ---
@@ -167,9 +167,9 @@ assert statuses[('login', 'PROOF-2')] == 'pass', statuses
 " || return 1
 }
 if phase_three; then
-  record "PROOF-10" "RULE-4" "a re-run replaces only the file it ran" pass
+  record "PROOF-50" "RULE-27" "a re-run replaces only the file it ran" pass
 else
-  record "PROOF-10" "RULE-4" "a re-run replaces only the file it ran" fail
+  record "PROOF-50" "RULE-27" "a re-run replaces only the file it ran" fail
 fi
 
 cd "$PROJECT_ROOT"

@@ -226,6 +226,7 @@ class TestTheChecklistNamesEveryWiringSite:
 class TestProofsFormatDocumentsTheRuntimeFile:
 
     @pytest.mark.proof("purlin_references", "PROOF-32", "RULE-32")
+    @pytest.mark.proof("run_script", "PROOF-45", "RULE-36")
     def test_the_format_names_the_runtime_location_and_the_seven_fields(self):
         text = _read(PROOFS_FORMAT)
         first_line = text.split('\n', 1)[0]
@@ -251,6 +252,7 @@ class TestProofsFormatDocumentsTheRuntimeFile:
             'cannot read here is one every plugin spells differently' % absent)
         assert 'Seven fields, and no eighth' in fields
 
+    @pytest.mark.proof("run_script", "PROOF-45", "RULE-36")
     def test_the_retired_fields_are_listed_as_retired(self):
         fields = _sections(_read(PROOFS_FORMAT))['Fields']
         assert 'Retired field' in fields
@@ -259,9 +261,11 @@ class TestProofsFormatDocumentsTheRuntimeFile:
             'finds no mention concludes their plugin should still write one')
         assert '@env(windows)' in fields
 
+    @pytest.mark.proof("run_script", "PROOF-45", "RULE-36")
     def test_the_format_carries_no_run_marker_section(self):
         assert 'Run marker' not in _sections(_read(PROOFS_FORMAT))
 
+    @pytest.mark.proof("run_script", "PROOF-45", "RULE-36")
     def test_every_shipped_framework_has_a_marker_section(self):
         text = _read(PROOFS_FORMAT)
         for framework in SHIPPED_FRAMEWORKS:
@@ -274,6 +278,7 @@ class TestProofsFormatDocumentsTheRuntimeFile:
 
 class TestTheFrameworkReferenceMatchesTheDetectors:
 
+    @pytest.mark.proof("run_script", "PROOF-46", "RULE-37")
     def test_the_reference_lists_the_six_shipped_frameworks(self):
         sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'mcp'))
         from purlin import frameworks
@@ -288,6 +293,7 @@ class TestTheFrameworkReferenceMatchesTheDetectors:
         for gone in ('phpunit_purlin', 'c_purlin'):
             assert gone not in text, gone
 
+    @pytest.mark.proof("run_script", "PROOF-46", "RULE-37")
     def test_every_row_carries_a_runner_setup_cell(self):
         table = _sections(_read(FRAMEWORKS_REF))['Built-in Plugins']
         rows = [line for line in table.split('\n')
@@ -355,6 +361,7 @@ class TestEveryFrameworkHasAFreeCheckReader:
                     '%s %s: the flagged result names no check, so nothing '
                     'says why it failed' % (framework, ext))
 
+    @pytest.mark.proof("run_script", "PROOF-46", "RULE-37")
     def test_shell_is_the_one_language_with_no_extractor(self):
         assert '.sh' not in static_checks._TEST_CODE_EXTENSIONS
         assert set(static_checks._TEST_CODE_EXTENSIONS) \

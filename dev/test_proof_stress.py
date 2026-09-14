@@ -111,7 +111,7 @@ def _read(root):
 class TestMultiFeatureMerge:
     """Several features coexist; a write for one never touches another."""
 
-    @pytest.mark.proof("proof_common", "PROOF-4", "RULE-4")
+    @pytest.mark.proof("run_script", "PROOF-32", "RULE-27")
     def test_three_features_keep_their_own_files(self, tmp_path):
         root = _project(tmp_path)
         for index, feature in enumerate(('alpha', 'beta', 'gamma'), start=1):
@@ -122,6 +122,7 @@ class TestMultiFeatureMerge:
         for feature in loaded:
             assert len(loaded[feature]) == 1
 
+    @pytest.mark.proof("run_script", "PROOF-32", "RULE-27")
     def test_a_write_for_one_feature_keeps_another_in_the_same_file(
             self, tmp_path):
         """Two features can share a file when an earlier run put them there."""
@@ -137,6 +138,7 @@ class TestMultiFeatureMerge:
                                .read_text(encoding='utf-8'))['proofs']}
         assert features == {'alpha', 'beta'}
 
+    @pytest.mark.proof("run_script", "PROOF-32", "RULE-27")
     def test_two_test_files_for_one_feature_both_survive(self, tmp_path):
         root = _project(tmp_path)
         _shell_run(root, 'tests/one.test.sh', 'alpha',
@@ -152,7 +154,7 @@ class TestMultiFeatureMerge:
 class TestMultiTierAggregation:
     """One feature across three tiers is three files and one reading."""
 
-    @pytest.mark.proof("proof_common", "PROOF-5", "RULE-5")
+    @pytest.mark.proof("run_script", "PROOF-44", "RULE-35")
     def test_three_tiers_read_back_as_one_feature(self, tmp_path):
         root = _project(tmp_path)
         for index, tier in enumerate(('unit', 'integration', 'e2e'), start=1):
@@ -163,6 +165,7 @@ class TestMultiTierAggregation:
         assert {e['tier'] for e in entries} == {'unit', 'integration', 'e2e'}
         assert len(entries) == 3
 
+    @pytest.mark.proof("run_script", "PROOF-44", "RULE-35")
     def test_a_failing_tier_wins_over_a_passing_one(self, tmp_path):
         """One proof, two tiers, one failing: the proof is not proved."""
         root = _project(tmp_path)
@@ -178,7 +181,7 @@ class TestMultiTierAggregation:
 class TestMultiLanguageSameFeature:
     """Two plugins writing one feature at one tier merge rather than collide."""
 
-    @pytest.mark.proof("proof_common", "PROOF-6", "RULE-6")
+    @pytest.mark.proof("run_script", "PROOF-32", "RULE-27")
     def test_pytest_and_shell_both_land(self, tmp_path):
         root = _project(tmp_path)
         _shell_run(root, 'tests/alpha.test.sh', 'alpha',
@@ -194,6 +197,7 @@ class TestMultiLanguageSameFeature:
 
     @pytest.mark.skipif(shutil.which('sqlite3') is None,
                         reason='sqlite3 not available')
+    @pytest.mark.proof("run_script", "PROOF-32", "RULE-27")
     def test_sql_joins_the_same_file(self, tmp_path):
         root = _project(tmp_path)
         _shell_run(root, 'tests/alpha.test.sh', 'alpha',
@@ -211,7 +215,7 @@ class TestMultiLanguageSameFeature:
 class TestCollisionWithAnEarlierRun:
     """A stale file from an earlier run is reaped, not trusted."""
 
-    @pytest.mark.proof("proof_common", "PROOF-11", "RULE-11")
+    @pytest.mark.proof("run_script", "PROOF-32", "RULE-27")
     def test_an_entry_whose_test_file_is_gone_is_reaped(self, tmp_path):
         root = _project(tmp_path)
         _seed(root, 'alpha', 'unit', [
@@ -221,6 +225,7 @@ class TestCollisionWithAnEarlierRun:
                    [('PROOF-1', 'RULE-1', 'pass', 'fresh')])
         assert {e['id'] for e in _read(root)['alpha']} == {'PROOF-1'}
 
+    @pytest.mark.proof("run_script", "PROOF-32", "RULE-27")
     def test_an_entry_with_an_empty_test_file_is_reaped(self, tmp_path):
         root = _project(tmp_path)
         _seed(root, 'alpha', 'unit', [
@@ -229,6 +234,7 @@ class TestCollisionWithAnEarlierRun:
                    [('PROOF-1', 'RULE-1', 'pass', 'fresh')])
         assert {e['id'] for e in _read(root)['alpha']} == {'PROOF-1'}
 
+    @pytest.mark.proof("run_script", "PROOF-32", "RULE-27")
     def test_an_unreadable_file_does_not_stop_the_run(self, tmp_path):
         root = _project(tmp_path)
         directory = root / PROOF_REL

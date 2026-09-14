@@ -150,7 +150,7 @@ test_retired_keyword_refused() {
 run_test "the retired :on(...) keyword is refused and names @env" test_retired_keyword_refused
 
 cd "$PROJECT_ROOT"
-purlin_proof "proof_plugins_jest" "PROOF-5" "RULE-5" \
+PURLIN_PROOF_TIER=e2e purlin_proof "run_script" "PROOF-55" "RULE-29" \
   "$([[ $FAIL -eq 0 ]] && echo pass || echo fail)" "jest reporter suite"
 purlin_proof_finish
 

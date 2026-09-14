@@ -142,12 +142,14 @@ class TestTheCommandLine:
         ('--all', '--quick', '--nonsense'),
         ('--all', '--quick', '--feature'),    # a flag with no value
     ])
+    @pytest.mark.proof("run_script", "PROOF-1", "RULE-1")
     def test_bad_invocation_exits_two(self, tmp_path, args):
         root = _project(tmp_path)
         code, output = _run(root, *args)
         assert code == 2, output
         assert 'Usage: purlin_run.py' in output
 
+    @pytest.mark.proof("run_script", "PROOF-2", "RULE-2")
     def test_an_unknown_feature_exits_two(self, tmp_path):
         root = _project(tmp_path)
         _spec(root, 'feat')
@@ -155,6 +157,7 @@ class TestTheCommandLine:
         assert code == 2
         assert 'no spec named nosuch' in output
 
+    @pytest.mark.proof("run_script", "PROOF-2", "RULE-2")
     def test_a_missing_project_root_exits_two(self, tmp_path):
         code, output = _run(tmp_path / 'nowhere', '--all', '--quick')
         assert code == 2
@@ -168,6 +171,7 @@ class TestTheCommandLine:
 class TestQuickRunsEachFramework:
     """`--quick` runs the arms and leaves the runtime proof files behind."""
 
+    @pytest.mark.proof("run_script", "PROOF-3", "RULE-3")
     def test_pytest_arm_writes_the_runtime_proof_file(self, tmp_path):
         root = _pytest_project(tmp_path)
         _spec(root, 'feat')
@@ -183,6 +187,7 @@ class TestQuickRunsEachFramework:
                               'test_name', 'status', 'tier'}
         assert code == 0, output
 
+    @pytest.mark.proof("run_script", "PROOF-3", "RULE-3")
     def test_the_proof_file_is_not_written_under_specs(self, tmp_path):
         root = _pytest_project(tmp_path)
         _spec(root, 'feat')
@@ -191,6 +196,7 @@ class TestQuickRunsEachFramework:
                  if not name.endswith('.md')]
         assert stray == []
 
+    @pytest.mark.proof("run_script", "PROOF-4", "RULE-4")
     def test_shell_arm_runs_the_root_test_scripts(self, tmp_path):
         root = _project(tmp_path, frameworks='shell')
         _spec(root, 'feat')
@@ -207,6 +213,7 @@ class TestQuickRunsEachFramework:
 
     @pytest.mark.skipif(shutil.which('sqlite3') is None,
                         reason='sqlite3 is not installed')
+    @pytest.mark.proof("run_script", "PROOF-4", "RULE-4")
     def test_sql_arm_runs_the_tests_directory(self, tmp_path):
         root = _project(tmp_path, frameworks='sql')
         _spec(root, 'feat')
@@ -221,6 +228,7 @@ class TestQuickRunsEachFramework:
         assert data['proofs'][0]['status'] == 'pass'
         assert code == 0, output
 
+    @pytest.mark.proof("run_script", "PROOF-5", "RULE-5")
     def test_a_failing_test_exits_one_and_records_the_failure(self, tmp_path):
         root = _pytest_project(tmp_path, body=(
             'import pytest\n\n'
@@ -233,6 +241,7 @@ class TestQuickRunsEachFramework:
         assert 'the pytest runner exited' in output
         assert _proofs(root, 'feat')['proofs'][0]['status'] == 'fail'
 
+    @pytest.mark.proof("run_script", "PROOF-6", "RULE-6")
     def test_the_run_starts_from_an_empty_proof_directory(self, tmp_path):
         """A file from an earlier run never survives into this run's reading."""
         root = _pytest_project(tmp_path)
@@ -255,6 +264,7 @@ class TestQuickRunsEachFramework:
 class TestLoudFailureA:
     """An arm ran and its plugin appended nothing."""
 
+    @pytest.mark.proof("run_script", "PROOF-7", "RULE-7")
     def test_an_arm_that_wrote_nothing_is_named(self, tmp_path):
         # The markers are in the tree and the plugin is not loaded: pytest
         # passes, and nothing at all is written. This is the failure the test
@@ -272,6 +282,7 @@ class TestLoudFailureA:
         assert 'the pytest arm ran and its plugin wrote no proof entry' in output
         assert '1 marked test(s)' in output
 
+    @pytest.mark.proof("run_script", "PROOF-7", "RULE-7")
     def test_an_arm_with_no_markers_is_not_a_failure(self, tmp_path):
         root = _project(tmp_path, frameworks='shell')
         _spec(root, 'feat')
@@ -286,6 +297,7 @@ class TestLoudFailureA:
 class TestLoudFailureB:
     """A marker sits in a test source and this run produced no entry for it."""
 
+    @pytest.mark.proof("run_script", "PROOF-8", "RULE-8")
     def test_a_marker_with_no_entry_is_named(self, tmp_path):
         root = _pytest_project(tmp_path, body=(
             'import pytest\n\n'
@@ -304,6 +316,7 @@ class TestLoudFailureB:
         assert 'feat PROOF-2' in output
         assert 'feat PROOF-1' not in output
 
+    @pytest.mark.proof("run_script", "PROOF-8", "RULE-8")
     def test_the_list_is_bounded_and_counted(self, tmp_path):
         body = ['import pytest\n']
         for index in range(1, 9):
@@ -320,6 +333,7 @@ class TestLoudFailureB:
         assert '8 marker(s) produced no proof entry' in output
         assert 'and 3 more' in output
 
+    @pytest.mark.proof("run_script", "PROOF-9", "RULE-9")
     def test_a_marker_for_an_unselected_feature_is_not_named(self, tmp_path):
         root = _pytest_project(tmp_path)
         _spec(root, 'feat')
@@ -345,6 +359,7 @@ class TestEnvScopedProofs:
     def _other_os(self):
         return 'windows' if not sys.platform.startswith('win') else 'linux'
 
+    @pytest.mark.proof("run_script", "PROOF-10", "RULE-10")
     def test_a_foreign_env_proof_is_listed_as_needing_its_os(self, tmp_path):
         other = self._other_os()
         root = _pytest_project(tmp_path)
@@ -355,6 +370,7 @@ class TestEnvScopedProofs:
         assert 'feat PROOF-2: needs %s' % other in output
         assert code == 0, output
 
+    @pytest.mark.proof("run_script", "PROOF-10", "RULE-10")
     def test_a_foreign_env_proof_is_not_reported_missing(self, tmp_path):
         other = self._other_os()
         root = _pytest_project(tmp_path, body=(
@@ -372,6 +388,7 @@ class TestEnvScopedProofs:
         assert 'produced no proof entry' not in output
         assert code == 0, output
 
+    @pytest.mark.proof("run_script", "PROOF-10", "RULE-10")
     def test_an_env_proof_for_this_os_is_run_normally(self, tmp_path):
         purlin_run = _load_run_script()
         here = purlin_run.host_os()
@@ -389,6 +406,7 @@ class TestEnvScopedProofs:
 
 class TestEveryRunEndsWithTheNextStep:
 
+    @pytest.mark.proof("run_script", "PROOF-11", "RULE-11")
     def test_the_table_and_one_next_step_are_printed(self, tmp_path):
         root = _pytest_project(tmp_path)
         _spec(root, 'feat')
@@ -398,6 +416,7 @@ class TestEveryRunEndsWithTheNextStep:
         lines = [line for line in output.strip().splitlines() if line.strip()]
         assert lines[-1].startswith('→ ')
 
+    @pytest.mark.proof("run_script", "PROOF-11", "RULE-11")
     def test_a_project_with_no_specs_says_so(self, tmp_path):
         root = _project(tmp_path)
         code, output = _run(root, '--all', '--quick')
@@ -474,6 +493,7 @@ def record_run(monkeypatch, tmp_path):
 
 class TestRecordBuildsThePurlinRecord:
 
+    @pytest.mark.proof("run_script", "PROOF-12", "RULE-12")
     def test_the_record_carries_every_field_the_design_lists(
             self, tmp_path, record_run, capsys):
         root = _pytest_project(tmp_path)
@@ -495,6 +515,7 @@ class TestRecordBuildsThePurlinRecord:
         assert record['environment']['kind'] == 'local'
         assert 'pytest' in record['plugins']
 
+    @pytest.mark.proof("run_script", "PROOF-13", "RULE-13")
     def test_a_rule_carries_its_proofs_tests_result_and_strength(
             self, tmp_path, record_run, capsys):
         root = _pytest_project(tmp_path)
@@ -517,6 +538,7 @@ class TestRecordBuildsThePurlinRecord:
         assert len(record['scope_tree']) == 64
         assert record['missing'] == []
 
+    @pytest.mark.proof("run_script", "PROOF-13", "RULE-13")
     def test_a_rule_with_no_evidence_is_listed_as_missing(
             self, tmp_path, record_run, capsys):
         root = _pytest_project(tmp_path)
@@ -528,6 +550,7 @@ class TestRecordBuildsThePurlinRecord:
         assert record['missing'] == ['feat RULE-2']
         assert record['features']['feat']['rules']['RULE-2']['result'] == 'missing'
 
+    @pytest.mark.proof("run_script", "PROOF-14", "RULE-14")
     def test_attachments_are_hashed_into_the_record(
             self, tmp_path, record_run, capsys):
         root = _pytest_project(tmp_path)
@@ -544,6 +567,7 @@ class TestRecordBuildsThePurlinRecord:
         assert len(attachment['sha256']) == 64
         assert attachment['artifact'].endswith('feat/PROOF-1.png')
 
+    @pytest.mark.proof("run_script", "PROOF-15", "RULE-15")
     def test_the_log_is_written_and_hashed(self, tmp_path, record_run, capsys):
         root = _pytest_project(tmp_path)
         _spec(root, 'feat')
@@ -554,6 +578,7 @@ class TestRecordBuildsThePurlinRecord:
         assert len(log['sha256']) == 64
         assert (root / '.purlin' / 'runtime' / 'run.log').exists()
 
+    @pytest.mark.proof("run_script", "PROOF-16", "RULE-16")
     def test_the_breaks_are_asked_for_the_scope_and_the_tests(
             self, tmp_path, record_run, capsys):
         root = _pytest_project(tmp_path)
@@ -569,6 +594,7 @@ class TestRecordBuildsThePurlinRecord:
 
 class TestRecordCommitsAndTags:
 
+    @pytest.mark.proof("run_script", "PROOF-17", "RULE-17")
     def test_commit_passes_the_developer_identity(
             self, tmp_path, record_run, capsys):
         root = _pytest_project(tmp_path)
@@ -581,6 +607,7 @@ class TestRecordCommitsAndTags:
         assert len(paths) == 1
         assert calls['write'][0][0]['environment']['kind'] == 'developer'
 
+    @pytest.mark.proof("run_script", "PROOF-17", "RULE-17")
     def test_ci_passes_the_ci_identity_and_the_ci_runner_slug(
             self, tmp_path, record_run, capsys):
         root = _pytest_project(tmp_path)
@@ -594,6 +621,7 @@ class TestRecordCommitsAndTags:
         # briefs, and says how many of each in one line.
         assert 'Auto-approved 0 low-risk rules; 0 briefs written.' in output
 
+    @pytest.mark.proof("run_script", "PROOF-17", "RULE-17")
     def test_tag_names_the_record_it_vouches_for(
             self, tmp_path, record_run, capsys):
         root = _pytest_project(tmp_path)
@@ -604,6 +632,7 @@ class TestRecordCommitsAndTags:
         assert name == '1.0'
         assert paths == ['.purlin/records/feat/r.json'.replace('/', os.sep)]
 
+    @pytest.mark.proof("run_script", "PROOF-17", "RULE-17")
     def test_without_commit_nothing_is_committed(
             self, tmp_path, record_run, capsys):
         root = _pytest_project(tmp_path)
@@ -616,6 +645,7 @@ class TestRecordCommitsAndTags:
 class TestRecordWithoutTheEngines:
     """`--quick` and `--record` both work before lanes 2B and 2C land."""
 
+    @pytest.mark.proof("run_script", "PROOF-18", "RULE-18")
     def test_missing_break_engines_are_reported_and_the_run_continues(
             self, tmp_path, monkeypatch, capsys):
         root = _pytest_project(tmp_path)
@@ -663,12 +693,14 @@ class TestTheMarkerScanReadsEveryFrameworkSMarker:
          'purlin_proof "feat" "PROOF-1" "RULE-1" pass "x"'),
         ('sql', 'test_a.sql', '-- @purlin feat PROOF-1 RULE-1 unit'),
     ])
+    @pytest.mark.proof("run_script", "PROOF-19", "RULE-19")
     def test_one_marker_is_found(self, tmp_path, framework, name, source):
         purlin_run = _load_run_script()
         (tmp_path / name).write_text(source + '\n', encoding='utf-8')
         assert purlin_run.scan_markers(str(tmp_path), framework) == {
             ('feat', 'PROOF-1')}
 
+    @pytest.mark.proof("run_script", "PROOF-19", "RULE-19")
     def test_node_modules_is_not_scanned(self, tmp_path):
         purlin_run = _load_run_script()
         vendored = tmp_path / 'node_modules' / 'other'
@@ -689,6 +721,7 @@ class TestACommittedRecordReachesRecorded:
     that hash the way the reader reads it.
     """
 
+    @pytest.mark.proof("run_script", "PROOF-20", "RULE-20")
     def test_verify_then_sync_status_shows_the_rule_recorded(self, tmp_path):
         root = _pytest_project(tmp_path)
         (root / 'src').mkdir()
@@ -715,6 +748,7 @@ class TestACommittedRecordReachesRecorded:
         assert record['commit'] != _head(root)
         assert _rule_state(root, 'feat', 'RULE-1') == 'Recorded'
 
+    @pytest.mark.proof("run_script", "PROOF-20", "RULE-20")
     def test_a_rule_falls_back_to_tested_when_the_scope_changed(self, tmp_path):
         root = _pytest_project(tmp_path)
         (root / 'src').mkdir()
@@ -733,6 +767,7 @@ class TestACommittedRecordReachesRecorded:
 
 class TestHostOs:
 
+    @pytest.mark.proof("run_script", "PROOF-21", "RULE-21")
     def test_the_answer_is_one_of_the_three_env_names(self):
         purlin_run = _load_run_script()
         assert purlin_run.host_os() in ('windows', 'macos', 'linux')
@@ -746,6 +781,7 @@ class TestTheRunScriptCarriesNoRetiredVocabulary:
                '@' + 'on(', 'records ' + 'branch', 'CODE' + 'OWNERS',
                'fo' + 'rge', 'aud' + 'it')
 
+    @pytest.mark.proof("run_script", "PROOF-22", "RULE-22")
     def test_no_retired_word_and_no_emoji(self):
         source = open(RUN_SCRIPT, encoding='utf-8').read()
         for word in self.RETIRED:
