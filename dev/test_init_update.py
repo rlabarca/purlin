@@ -156,6 +156,7 @@ def _ids(root):
 
 # --- what a project still needs ---------------------------------------------
 
+@pytest.mark.proof("update", "PROOF-3", "RULE-3")
 def test_check_on_the_v095_layout_names_every_migration(tmp_path, capsys):
     root = _project(tmp_path, V095)
     assert update.main(['--check', '--project-root', root]) == 1
@@ -165,6 +166,7 @@ def test_check_on_the_v095_layout_names_every_migration(tmp_path, capsys):
     assert 'Run: purlin:init --update' in printed
 
 
+@pytest.mark.proof("update", "PROOF-2", "RULE-2")
 def test_the_v095_layout_needs_the_migrations_that_layout_left(tmp_path):
     root = _project(tmp_path, V095)
     found = _ids(root)
@@ -173,6 +175,7 @@ def test_the_v095_layout_needs_the_migrations_that_layout_left(tmp_path):
         assert expected in found, found
 
 
+@pytest.mark.proof("update", "PROOF-2", "RULE-2")
 def test_the_010_layout_needs_its_hooks_migrated_too(tmp_path):
     root = _project(tmp_path, V010)
     found = _ids(root)
@@ -182,6 +185,7 @@ def test_the_010_layout_needs_its_hooks_migrated_too(tmp_path):
         assert expected in found, found
 
 
+@pytest.mark.proof("update", "PROOF-3", "RULE-3")
 def test_check_exits_1_while_anything_is_pending(tmp_path):
     root = _project(tmp_path, V095)
     done = subprocess.run([sys.executable, UPDATE, '--check',
@@ -191,6 +195,7 @@ def test_check_exits_1_while_anything_is_pending(tmp_path):
     assert 'untracked-files' in done.stdout
 
 
+@pytest.mark.proof("update", "PROOF-3", "RULE-3")
 def test_check_writes_nothing(tmp_path):
     root = _project(tmp_path, V010)
     before = _git(root, 'status', '--porcelain').stdout
@@ -198,6 +203,7 @@ def test_check_writes_nothing(tmp_path):
     assert _git(root, 'status', '--porcelain').stdout == before
 
 
+@pytest.mark.proof("update", "PROOF-1", "RULE-1")
 def test_json_lists_the_same_migrations(tmp_path, capsys):
     root = _project(tmp_path, V095)
     update.main(['--check', '--json', '--project-root', root])
@@ -209,6 +215,7 @@ def test_json_lists_the_same_migrations(tmp_path, capsys):
         assert item['files']
 
 
+@pytest.mark.proof("update", "PROOF-4", "RULE-4")
 def test_a_root_without_purlin_exits_2(tmp_path, capsys):
     empty = str(tmp_path / 'empty')
     os.makedirs(empty)
@@ -216,6 +223,7 @@ def test_a_root_without_purlin_exits_2(tmp_path, capsys):
     assert 'nothing to update' in capsys.readouterr().err
 
 
+@pytest.mark.proof("update", "PROOF-1", "RULE-1")
 def test_pending_is_empty_for_a_root_without_purlin(tmp_path):
     empty = str(tmp_path / 'bare')
     os.makedirs(empty)
@@ -225,6 +233,7 @@ def test_pending_is_empty_for_a_root_without_purlin(tmp_path):
 # --- applying ----------------------------------------------------------------
 
 @pytest.mark.parametrize('layout', LAYOUTS)
+@pytest.mark.proof("update", "PROOF-5", "RULE-5")
 def test_yes_applies_every_migration(tmp_path, capsys, layout):
     root = _project(tmp_path, layout)
     assert _apply(root) == 0
@@ -235,6 +244,7 @@ def test_yes_applies_every_migration(tmp_path, capsys, layout):
 
 
 @pytest.mark.parametrize('layout', LAYOUTS)
+@pytest.mark.proof("update", "PROOF-5", "RULE-5")
 def test_running_yes_twice_changes_nothing_the_second_time(tmp_path, capsys,
                                                            layout):
     root = _project(tmp_path, layout)
@@ -247,6 +257,7 @@ def test_running_yes_twice_changes_nothing_the_second_time(tmp_path, capsys,
     assert _git(root, 'status', '--porcelain').stdout == tree
 
 
+@pytest.mark.proof("update", "PROOF-6", "RULE-6")
 def test_a_declined_migration_is_left_pending(tmp_path, capsys, monkeypatch):
     root = _project(tmp_path, V095)
     before = _ids(root)
@@ -257,6 +268,7 @@ def test_a_declined_migration_is_left_pending(tmp_path, capsys, monkeypatch):
     assert _ids(root) == before
 
 
+@pytest.mark.proof("update", "PROOF-6", "RULE-6")
 def test_one_declined_migration_does_not_stop_the_others(tmp_path, capsys,
                                                          monkeypatch):
     root = _project(tmp_path, V095)
@@ -269,6 +281,7 @@ def test_one_declined_migration_does_not_stop_the_others(tmp_path, capsys,
 # --- the files beside the specs ----------------------------------------------
 
 @pytest.mark.parametrize('layout', LAYOUTS)
+@pytest.mark.proof("update", "PROOF-8", "RULE-8")
 def test_no_proof_or_verification_file_remains_on_disk(tmp_path, layout):
     root = _project(tmp_path, layout)
     assert _walk(root, LEFTOVER), 'the fixture should start with some'
@@ -277,6 +290,7 @@ def test_no_proof_or_verification_file_remains_on_disk(tmp_path, layout):
 
 
 @pytest.mark.parametrize('layout', LAYOUTS)
+@pytest.mark.proof("update", "PROOF-8", "RULE-8")
 def test_no_proof_or_verification_file_remains_tracked(tmp_path, layout):
     root = _project(tmp_path, layout)
     _apply(root)
@@ -287,6 +301,7 @@ def test_no_proof_or_verification_file_remains_tracked(tmp_path, layout):
 
 
 @pytest.mark.parametrize('layout', LAYOUTS)
+@pytest.mark.proof("update", "PROOF-8", "RULE-8")
 def test_the_dashboard_data_is_untracked_and_ignored(tmp_path, layout):
     root = _project(tmp_path, layout)
     assert '.purlin/report-data.js' in _tracked(root)
@@ -298,6 +313,7 @@ def test_the_dashboard_data_is_untracked_and_ignored(tmp_path, layout):
     assert '.purlin/report-stamp.js' in ignored
 
 
+@pytest.mark.proof("update", "PROOF-8", "RULE-8")
 def test_a_committed_cache_is_untracked_and_left_on_disk(tmp_path):
     """The v0.9.5 fixture ignores its cache, so commit one the way a project would."""
     root = _project(tmp_path, V095)
@@ -313,6 +329,7 @@ def test_a_committed_cache_is_untracked_and_left_on_disk(tmp_path):
 # --- the config --------------------------------------------------------------
 
 @pytest.mark.parametrize('layout', LAYOUTS)
+@pytest.mark.proof("update", "PROOF-10", "RULE-10")
 def test_the_config_is_the_gate_shape(tmp_path, layout):
     root = _project(tmp_path, layout)
     _apply(root)
@@ -328,6 +345,7 @@ def test_the_config_is_the_gate_shape(tmp_path, layout):
 
 
 @pytest.mark.parametrize('layout', LAYOUTS)
+@pytest.mark.proof("update", "PROOF-10", "RULE-10")
 def test_retired_keys_are_gone(tmp_path, layout):
     root = _project(tmp_path, layout)
     before = json.loads(_read(root, '.purlin/config.json'))
@@ -338,12 +356,14 @@ def test_retired_keys_are_gone(tmp_path, layout):
     assert [key for key in retired if key in after] == []
 
 
+@pytest.mark.proof("update", "PROOF-12", "RULE-12")
 def test_the_gate_defaults_to_tested(tmp_path):
     root = _project(tmp_path, V095)
     _apply(root)
     assert json.loads(_read(root, '.purlin/config.json'))['gate'] == 'tested'
 
 
+@pytest.mark.proof("update", "PROOF-12", "RULE-12")
 def test_the_gate_defaults_to_recorded_when_the_hook_was_strict(tmp_path):
     root = _project(tmp_path, V095)
     config = json.loads(_read(root, '.purlin/config.json'))
@@ -356,6 +376,7 @@ def test_the_gate_defaults_to_recorded_when_the_hook_was_strict(tmp_path):
     assert written['ai_review_at'] == 'high'
 
 
+@pytest.mark.proof("update", "PROOF-12", "RULE-12")
 def test_the_gate_question_takes_the_answer_you_type(tmp_path, capsys,
                                                      monkeypatch):
     root = _project(tmp_path, V095)
@@ -368,6 +389,7 @@ def test_the_gate_question_takes_the_answer_you_type(tmp_path, capsys,
     assert written['approvers'] == []
 
 
+@pytest.mark.proof("update", "PROOF-12", "RULE-12")
 def test_an_answer_that_is_not_a_gate_leaves_the_default(tmp_path, capsys,
                                                          monkeypatch):
     root = _project(tmp_path, V095)
@@ -377,8 +399,26 @@ def test_an_answer_that_is_not_a_gate_leaves_the_default(tmp_path, capsys,
     assert json.loads(_read(root, '.purlin/config.json'))['gate'] == 'tested'
 
 
+@pytest.mark.proof("update", "PROOF-11", "RULE-11")
+@pytest.mark.parametrize('layout', LAYOUTS)
+def test_no_key_nothing_reads_is_written_back(tmp_path, layout):
+    """The dashboard switch an older release carried is not carried forward.
+
+    It is not a retired key, so `resolve_gate` never warns about it and
+    nothing would report it; the only thing that keeps it out of the file the
+    update leaves is that the update does not write it.
+    """
+    root = _project(tmp_path, layout)
+    _apply(root)
+    written = json.loads(_read(root, '.purlin/config.json'))
+    assert 'report' not in written, written
+    source = _read(ROOT, 'scripts/init/update.py')
+    assert "'report'" not in source, 'the update writes a key nothing reads'
+
+
 # --- operating-system tags ---------------------------------------------------
 
+@pytest.mark.proof("update", "PROOF-13", "RULE-13")
 def test_a_confirmed_scope_becomes_env(tmp_path):
     root = _project(tmp_path, V010)
     rel = _spec_holding(root, 'msvcrt.locking')
@@ -390,6 +430,7 @@ def test_a_confirmed_scope_becomes_env(tmp_path):
 
 
 @pytest.mark.parametrize('layout', LAYOUTS)
+@pytest.mark.proof("update", "PROOF-13", "RULE-13")
 def test_no_spec_carries_the_retired_scope_afterwards(tmp_path, layout):
     root = _project(tmp_path, layout)
     _apply(root)
@@ -399,6 +440,7 @@ def test_no_spec_carries_the_retired_scope_afterwards(tmp_path, layout):
             assert '%sfigma-mcp)' % SCOPE not in _read(root, rel)
 
 
+@pytest.mark.proof("update", "PROOF-13", "RULE-13")
 def test_a_declined_scope_drops_the_tag(tmp_path, capsys, monkeypatch):
     root = _project(tmp_path, V010)
     rel = _spec_holding(root, 'msvcrt.locking')
@@ -411,6 +453,7 @@ def test_a_declined_scope_drops_the_tag(tmp_path, capsys, monkeypatch):
     assert 'rather than guess an operating system' in printed
 
 
+@pytest.mark.proof("update", "PROOF-13", "RULE-13")
 def test_the_retired_tier_tag_becomes_unit_and_env(tmp_path):
     root = _project(tmp_path, V095)
     rel = _spec_holding(root, 'msvcrt.locking')
@@ -424,6 +467,7 @@ def test_the_retired_tier_tag_becomes_unit_and_env(tmp_path):
     assert '@windows\n' not in text
 
 
+@pytest.mark.proof("update", "PROOF-13", "RULE-13")
 def test_a_scope_naming_no_operating_system_is_dropped(tmp_path, capsys):
     root = _project(tmp_path, V010)
     rel = _spec_holding(root, 'TEZI0T6lObCJrC9mkmZT8v')
@@ -434,6 +478,7 @@ def test_a_scope_naming_no_operating_system_is_dropped(tmp_path, capsys):
     assert 'it names no operating system' in printed
 
 
+@pytest.mark.proof("update", "PROOF-13", "RULE-13")
 def test_prose_that_is_not_a_tag_is_left_alone(tmp_path):
     root = _project(tmp_path, V010)
     rel = _spec_holding(root, 'awaiting_runner')
@@ -472,6 +517,7 @@ def _with_design(tmp_path, layout):
     return root
 
 
+@pytest.mark.proof("update", "PROOF-14", "RULE-14")
 def test_a_design_source_becomes_a_designs_path(tmp_path):
     root = _with_design(tmp_path, V095)
     assert 'design-sources' in _ids(root)
@@ -481,6 +527,7 @@ def test_a_design_source_becomes_a_designs_path(tmp_path):
     assert 'figma://' not in text
 
 
+@pytest.mark.proof("update", "PROOF-14", "RULE-14")
 def test_the_visual_fields_are_dropped(tmp_path):
     root = _with_design(tmp_path, V010)
     _apply(root)
@@ -492,6 +539,7 @@ def test_the_visual_fields_are_dropped(tmp_path):
     assert 'RULE-1: The checkout page' in text
 
 
+@pytest.mark.proof("update", "PROOF-14", "RULE-14")
 def test_the_design_migration_is_not_pending_afterwards(tmp_path):
     root = _with_design(tmp_path, V010)
     _apply(root)
@@ -500,6 +548,7 @@ def test_the_design_migration_is_not_pending_afterwards(tmp_path):
 
 # --- hooks -------------------------------------------------------------------
 
+@pytest.mark.proof("update", "PROOF-9", "RULE-9")
 def test_the_pre_commit_shim_goes(tmp_path):
     root = _project(tmp_path, V010)
     assert os.path.isfile(os.path.join(root, '.purlin', 'hooks', 'pre-commit'))
@@ -509,6 +558,7 @@ def test_the_pre_commit_shim_goes(tmp_path):
     assert '.purlin/hooks/pre-commit' not in _tracked(root)
 
 
+@pytest.mark.proof("update", "PROOF-9", "RULE-9")
 def test_the_delegator_git_runs_goes_too(tmp_path):
     root = _project(tmp_path, V010)
     delegator = os.path.join(root, '.git', 'hooks', 'pre-commit')
@@ -522,6 +572,7 @@ def test_the_delegator_git_runs_goes_too(tmp_path):
     assert not os.path.exists(delegator)
 
 
+@pytest.mark.proof("update", "PROOF-9", "RULE-9")
 def test_a_foreign_delegator_is_left_alone(tmp_path):
     root = _project(tmp_path, V010)
     delegator = os.path.join(root, '.git', 'hooks', 'pre-commit')
@@ -531,6 +582,7 @@ def test_a_foreign_delegator_is_left_alone(tmp_path):
     assert os.path.isfile(delegator)
 
 
+@pytest.mark.proof("update", "PROOF-9", "RULE-9")
 def test_the_pre_push_shim_is_repointed(tmp_path):
     root = _project(tmp_path, V010)
     shim = '.purlin/hooks/pre-push'
@@ -548,6 +600,7 @@ def test_the_pre_push_shim_is_repointed(tmp_path):
     assert 'purlin_interpreter()' in after   # the rest of the shim is untouched
 
 
+@pytest.mark.proof("update", "PROOF-9", "RULE-9")
 def test_a_shim_already_pointing_here_is_left_alone(tmp_path):
     root = _project(tmp_path, V010)
     before = _read(root, '.purlin/hooks/pre-push')
@@ -555,6 +608,7 @@ def test_a_shim_already_pointing_here_is_left_alone(tmp_path):
     assert _read(root, '.purlin/hooks/pre-push') == before
 
 
+@pytest.mark.proof("update", "PROOF-2", "RULE-2")
 def test_a_project_with_no_hooks_needs_no_hook_migration(tmp_path):
     root = _project(tmp_path, V095)
     assert 'hooks' not in _ids(root)
@@ -563,6 +617,7 @@ def test_a_project_with_no_hooks_needs_no_hook_migration(tmp_path):
 # --- workflows ---------------------------------------------------------------
 
 @pytest.mark.parametrize('layout', LAYOUTS)
+@pytest.mark.proof("update", "PROOF-15", "RULE-15")
 def test_the_retired_workflows_are_removed(tmp_path, layout):
     root = _project(tmp_path, layout)
     before = _walk(root, ('*.yml',))
@@ -573,6 +628,7 @@ def test_the_retired_workflows_are_removed(tmp_path, layout):
     assert after == ['.github/workflows/purlin.yml']
 
 
+@pytest.mark.proof("update", "PROOF-15", "RULE-15")
 def test_purlin_yml_carries_the_matrix_the_tags_name(tmp_path):
     root = _project(tmp_path, V095)
     _apply(root)
@@ -581,6 +637,7 @@ def test_purlin_yml_carries_the_matrix_the_tags_name(tmp_path):
     assert 'v%s' % VERSION in text
 
 
+@pytest.mark.proof("update", "PROOF-15", "RULE-15")
 def test_declining_the_workflow_leaves_it_unwritten(tmp_path, capsys,
                                                     monkeypatch):
     root = _project(tmp_path, V095)
@@ -596,6 +653,7 @@ def test_declining_the_workflow_leaves_it_unwritten(tmp_path, capsys,
 # --- plugin copies -----------------------------------------------------------
 
 @pytest.mark.parametrize('layout', LAYOUTS)
+@pytest.mark.proof("update", "PROOF-16", "RULE-16")
 def test_every_copy_matches_the_plugin_afterwards(tmp_path, layout):
     root = _project(tmp_path, layout)
     assert 'plugin-copies' in _ids(root)
@@ -603,6 +661,7 @@ def test_every_copy_matches_the_plugin_afterwards(tmp_path, layout):
     assert 'plugin-copies' not in _ids(root)
 
 
+@pytest.mark.proof("update", "PROOF-16", "RULE-16")
 def test_the_renamed_shell_plugin_keeps_its_name(tmp_path):
     root = _project(tmp_path, V095)
     _apply(root)
@@ -613,6 +672,7 @@ def test_the_renamed_shell_plugin_keeps_its_name(tmp_path):
         assert one.read() == two.read()
 
 
+@pytest.mark.proof("update", "PROOF-16", "RULE-16")
 def test_a_copy_the_plugin_does_not_ship_is_left_alone(tmp_path):
     root = _project(tmp_path, V095)
     _write(root, '.purlin/plugins/house_purlin.rb', '# our own reporter\n')
@@ -624,6 +684,7 @@ def test_a_copy_the_plugin_does_not_ship_is_left_alone(tmp_path):
 # --- records -----------------------------------------------------------------
 
 @pytest.mark.parametrize('layout', LAYOUTS)
+@pytest.mark.proof("update", "PROOF-17", "RULE-17")
 def test_the_records_folder_and_its_readme_are_created(tmp_path, layout):
     root = _project(tmp_path, layout)
     _apply(root)
@@ -635,6 +696,7 @@ def test_the_records_folder_and_its_readme_are_created(tmp_path, layout):
 # --- backups -----------------------------------------------------------------
 
 @pytest.mark.parametrize('layout', LAYOUTS)
+@pytest.mark.proof("update", "PROOF-7", "RULE-7")
 def test_every_rewritten_file_leaves_its_previous_bytes(tmp_path, layout):
     root = _project(tmp_path, layout)
     _apply(root)
@@ -646,6 +708,7 @@ def test_every_rewritten_file_leaves_its_previous_bytes(tmp_path, layout):
     assert any(rel.startswith('specs/') for rel in backups)
 
 
+@pytest.mark.proof("update", "PROOF-7", "RULE-7")
 def test_a_backup_holds_what_the_file_said_before(tmp_path):
     root = _project(tmp_path, V095)
     before = _read(root, '.purlin/config.json')
@@ -656,6 +719,7 @@ def test_a_backup_holds_what_the_file_said_before(tmp_path):
     assert _read(root, backups[0]) == before
 
 
+@pytest.mark.proof("update", "PROOF-7", "RULE-7")
 def test_a_backup_is_not_written_twice(tmp_path):
     root = _project(tmp_path, V095)
     _apply(root)
@@ -667,6 +731,7 @@ def test_a_backup_is_not_written_twice(tmp_path):
 # --- the commit --------------------------------------------------------------
 
 @pytest.mark.parametrize('layout', LAYOUTS)
+@pytest.mark.proof("update", "PROOF-18", "RULE-18")
 def test_one_commit_carries_every_migration_id(tmp_path, layout):
     root = _project(tmp_path, layout)
     applied = _ids(root)
@@ -680,6 +745,7 @@ def test_one_commit_carries_every_migration_id(tmp_path, layout):
 
 
 @pytest.mark.parametrize('layout', LAYOUTS)
+@pytest.mark.proof("update", "PROOF-18", "RULE-18")
 def test_nothing_is_left_uncommitted_but_the_backups(tmp_path, layout):
     root = _project(tmp_path, layout)
     _apply(root)
@@ -690,6 +756,7 @@ def test_nothing_is_left_uncommitted_but_the_backups(tmp_path, layout):
         assert line.endswith('.bak'), line
 
 
+@pytest.mark.proof("update", "PROOF-18", "RULE-18")
 def test_a_run_that_applies_nothing_writes_no_commit(tmp_path, capsys,
                                                      monkeypatch):
     root = _project(tmp_path, V095)
@@ -702,22 +769,26 @@ def test_a_run_that_applies_nothing_writes_no_commit(tmp_path, capsys,
 
 # --- the line sync_status prints ---------------------------------------------
 
+@pytest.mark.proof("update", "PROOF-19", "RULE-19")
 def test_pending_is_true_for_a_project_that_has_not_updated(tmp_path):
     root = _project(tmp_path, V095)
     assert status_module._update_pending(root) is True
 
 
+@pytest.mark.proof("update", "PROOF-19", "RULE-19")
 def test_pending_is_false_once_the_update_has_run(tmp_path):
     root = _project(tmp_path, V095)
     _apply(root)
     assert status_module._update_pending(root) is False
 
 
+@pytest.mark.proof("update", "PROOF-19", "RULE-19")
 def test_status_says_run_the_update_while_something_is_pending(tmp_path):
     root = _project(tmp_path, V010)
     assert 'Run: purlin:init --update' in status_module.sync_status(root)
 
 
+@pytest.mark.proof("update", "PROOF-19", "RULE-19")
 def test_status_says_it_even_when_the_config_is_already_clean(tmp_path):
     """The line must come from the pending list, not only from a config warning."""
     root = _project(tmp_path, V010)
@@ -727,6 +798,7 @@ def test_status_says_it_even_when_the_config_is_already_clean(tmp_path):
     assert 'Run: purlin:init --update' in status_module.sync_status(root)
 
 
+@pytest.mark.proof("update", "PROOF-19", "RULE-19")
 def test_status_stops_saying_it_once_nothing_is_pending(tmp_path):
     root = _project(tmp_path, V010)
     _apply(root)
@@ -735,6 +807,7 @@ def test_status_stops_saying_it_once_nothing_is_pending(tmp_path):
 
 # --- the copy the update prints ----------------------------------------------
 
+@pytest.mark.proof("update", "PROOF-20", "RULE-20")
 def test_what_the_update_prints_carries_no_emoji(tmp_path, capsys):
     root = _project(tmp_path, V095)
     _apply(root)
@@ -743,6 +816,7 @@ def test_what_the_update_prints_carries_no_emoji(tmp_path, capsys):
         assert ord(char) < 0x2190 or char in '→─', repr(char)
 
 
+@pytest.mark.proof("update", "PROOF-20", "RULE-20")
 def test_the_run_ends_by_naming_the_next_step(tmp_path, capsys):
     root = _project(tmp_path, V095)
     _apply(root)
@@ -750,6 +824,7 @@ def test_the_run_ends_by_naming_the_next_step(tmp_path, capsys):
     assert printed[-1].startswith('→ Next: run purlin:status')
 
 
+@pytest.mark.proof("update", "PROOF-20", "RULE-20")
 def test_a_run_that_leaves_work_names_it(tmp_path, capsys, monkeypatch):
     root = _project(tmp_path, V095)
     _answers(monkeypatch, [('Apply records', 'n')])
