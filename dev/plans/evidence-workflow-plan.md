@@ -1002,8 +1002,9 @@ commit and travel in it): both jobs died on `HTTP Error 403` from `POST /git/blo
 several hundred blob requests, GitHub's secondary rate limit. F20 (`c6d28806`, 131,424
 tokens): the commit is one tree request with inline content, and a 403 or 429 carrying
 `Retry-After` or `x-ratelimit-reset` is waited out (up to three times, 120 s cap). F19:
-159,253 tokens. Run 9 (`34869803860`, with F20): the closing run; its result is in the
-final message. Lane tokens in total: 10,298,659 across 61 lanes (41 planned, 20 fix), plus
+159,253 tokens. Run 9 (`34869803860`, with F20): **both jobs green**; the one-tree commit lands 77 CI
+auto-approvals and 441 briefs on the branch; a checkout reads Reviewed 439, Approved 77,
+Recorded 2, Tested 1 (the Windows-only proof); the gate waits for the user's 428 approvals. Lane tokens in total: 10,298,659 across 61 lanes (41 planned, 20 fix), plus
 the orchestrator's own context. Outstanding work: `dev/plans/TODO-0.10.0.md`. CI's API commits label `ci` and trigger no
 further run. `verify_gate.py --check` on this repository still exits 1 under `approved`
 until the user's approvals exist.

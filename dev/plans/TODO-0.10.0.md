@@ -5,8 +5,8 @@ is what the run could not finish, found and left, or left to a person.
 
 ## For the user, in order
 
-1. **Approve.** 440 rules sit on the review list (211 high, 229 medium); CI auto-approves the
-   77 low-risk ones. `purlin:review` walks them; `purlin:approve <feature> RULE-N` makes each
+1. **Approve.** 428 rules are recorded and not approved (high and medium); CI has auto-approved
+   the 77 low-risk ones and its approvals are on the branch. `purlin:review` walks them; `purlin:approve <feature> RULE-N` makes each
    signed commit (repo-local SSH signing is configured; the public key still has to be
    uploaded to GitHub for the host to show Verified). `verify_gate.py --check` exits 1 until
    every high and medium rule has a current approval on the branch.
