@@ -111,7 +111,7 @@ def remote(tmp_path):
 # The fetch
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("scan", "PROOF-1", "RULE-1")
+@pytest.mark.proof("records", "PROOF-13", "RULE-13")
 def test_the_fetch_brings_the_specs_and_the_records_and_no_code(remote,
                                                                 tmp_path):
     bare, source = remote
@@ -130,7 +130,7 @@ def test_the_fetch_brings_the_specs_and_the_records_and_no_code(remote,
         'the fetch brought code, which is what sparse checkout exists to avoid')
 
 
-@pytest.mark.proof("scan", "PROOF-1", "RULE-1")
+@pytest.mark.proof("records", "PROOF-13", "RULE-13")
 def test_a_ref_that_does_not_exist_is_refused_by_name(remote, tmp_path):
     bare, _source = remote
     into = str(tmp_path / 'scanned')
@@ -144,7 +144,7 @@ def test_a_ref_that_does_not_exist_is_refused_by_name(remote, tmp_path):
 # The rollup
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("scan", "PROOF-2", "RULE-2")
+@pytest.mark.proof("records", "PROOF-14", "RULE-14")
 def test_the_rollup_names_the_project_the_gate_and_the_states(remote):
     bare, _source = remote
     text = scan_module.scan(bare, 'main')
@@ -155,7 +155,7 @@ def test_the_rollup_names_the_project_the_gate_and_the_states(remote):
     assert 'No record has been committed yet.' in text
 
 
-@pytest.mark.proof("scan", "PROOF-2", "RULE-2")
+@pytest.mark.proof("records", "PROOF-14", "RULE-14")
 def test_the_rollup_names_the_newest_record_and_its_label(remote):
     bare, source = remote
     head = git(source, 'rev-parse', 'HEAD').stdout.strip()
@@ -169,7 +169,7 @@ def test_the_rollup_names_the_newest_record_and_its_label(remote):
     assert '0 commits behind the latest record.' in text
 
 
-@pytest.mark.proof("scan", "PROOF-2", "RULE-2")
+@pytest.mark.proof("records", "PROOF-14", "RULE-14")
 def test_every_state_the_package_names_can_be_printed():
     from purlin import states
     payload = {'project': 'x', 'gate': {'gate': 'tested'},
@@ -188,7 +188,7 @@ def test_every_state_the_package_names_can_be_printed():
 # The distance from the newest record
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("scan", "PROOF-3", "RULE-3")
+@pytest.mark.proof("records", "PROOF-15", "RULE-15")
 def test_the_rollup_counts_the_commits_since_the_record(remote):
     bare, source = remote
     head = git(source, 'rev-parse', 'HEAD').stdout.strip()
@@ -206,7 +206,7 @@ def test_the_rollup_counts_the_commits_since_the_record(remote):
         'the commit carrying the record is not one the code moved by')
 
 
-@pytest.mark.proof("scan", "PROOF-3", "RULE-3")
+@pytest.mark.proof("records", "PROOF-15", "RULE-15")
 def test_a_commit_the_fetch_did_not_reach_is_said_to_be_unknown(remote,
                                                                 tmp_path):
     bare, _source = remote
@@ -216,7 +216,7 @@ def test_a_commit_the_fetch_did_not_reach_is_said_to_be_unknown(remote,
     assert scan_module.commits_behind(into, 'f' * 40) is None
 
 
-@pytest.mark.proof("scan", "PROOF-3", "RULE-3")
+@pytest.mark.proof("records", "PROOF-14", "RULE-14")
 def test_the_newest_record_is_the_one_with_the_latest_timestamp():
     older = {'timestamp': '2026-09-13T12:00:00Z', 'path': 'a'}
     newer = {'timestamp': '2026-09-14T12:00:00Z', 'path': 'b'}
@@ -230,7 +230,7 @@ def test_the_newest_record_is_the_one_with_the_latest_timestamp():
 # Choosing a ref, and the command line
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("scan", "PROOF-4", "RULE-4")
+@pytest.mark.proof("records", "PROOF-16", "RULE-16")
 def test_a_tag_is_read_rather_than_the_default_branch(remote):
     bare, source = remote
     git(source, 'tag', '-a', 'v1.0', '-m', 'the first release')
@@ -245,20 +245,20 @@ def test_a_tag_is_read_rather_than_the_default_branch(remote):
     assert '3 rules.' in scan_module.scan(bare, 'main')
 
 
-@pytest.mark.proof("scan", "PROOF-4", "RULE-4")
+@pytest.mark.proof("records", "PROOF-16", "RULE-16")
 def test_the_command_prints_the_rollup(remote, capsys):
     bare, _source = remote
     assert scan_module.main(['--repo', bare, '--ref', 'main']) == 0
     assert 'gate recorded' in capsys.readouterr().out
 
 
-@pytest.mark.proof("scan", "PROOF-4", "RULE-4")
+@pytest.mark.proof("records", "PROOF-16", "RULE-16")
 def test_the_command_requires_a_repository():
     with pytest.raises(SystemExit):
         scan_module.main([])
 
 
-@pytest.mark.proof("scan", "PROOF-4", "RULE-4")
+@pytest.mark.proof("records", "PROOF-16", "RULE-16")
 def test_the_scan_leaves_nothing_behind(remote, tmp_path, monkeypatch):
     bare, _source = remote
     holder = str(tmp_path / 'scratch')

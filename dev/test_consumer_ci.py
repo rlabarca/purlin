@@ -124,7 +124,7 @@ def step_names(lines):
 # The workflow
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("consumer_ci", "PROOF-1", "RULE-1")
+@pytest.mark.proof("records", "PROOF-17", "RULE-17")
 def test_the_fixture_workflow_is_what_the_template_renders():
     rendered = workflow_module.render_workflow('github', ['linux'], PURLIN_REF)
     committed = read(WORKFLOW_REL)
@@ -143,7 +143,7 @@ def test_the_fixture_workflow_is_what_the_template_renders():
         raise AssertionError('the two texts differ only in trailing bytes')
 
 
-@pytest.mark.proof("consumer_ci", "PROOF-1", "RULE-1")
+@pytest.mark.proof("records", "PROOF-17", "RULE-17")
 def test_the_template_still_carries_the_placeholders():
     """A substitution that has become a no-op proves nothing."""
     template = read(os.path.join('templates', 'purlin.yml'), root=ROOT)
@@ -151,7 +151,7 @@ def test_the_template_still_carries_the_placeholders():
     assert '<<PURLIN_REF>>' in template
 
 
-@pytest.mark.proof("consumer_ci", "PROOF-2", "RULE-2")
+@pytest.mark.proof("records", "PROOF-18", "RULE-18")
 def test_the_workflow_is_shaped_like_a_workflow():
     blocks = parse_blocks(read(WORKFLOW_REL))
     assert sorted(blocks) == ['jobs', 'name', 'on', 'permissions']
@@ -164,7 +164,7 @@ def test_the_workflow_is_shaped_like_a_workflow():
             '%s was left unfilled' % placeholder)
 
 
-@pytest.mark.proof("consumer_ci", "PROOF-2", "RULE-2")
+@pytest.mark.proof("records", "PROOF-18", "RULE-18")
 def test_the_workflow_names_the_record_step_and_the_artifact():
     jobs = '\n'.join(parse_blocks(read(WORKFLOW_REL))['jobs'])
     names = step_names(jobs.splitlines())
@@ -176,7 +176,7 @@ def test_the_workflow_names_the_record_step_and_the_artifact():
     assert 'scripts/run/purlin_run.py" --all --record --ci' in jobs
 
 
-@pytest.mark.proof("consumer_ci", "PROOF-2", "RULE-2")
+@pytest.mark.proof("records", "PROOF-18", "RULE-18")
 def test_the_upload_path_is_the_directory_the_run_publishes_to(monkeypatch):
     """One directory, named twice. Two spellings attach an empty artifact.
 
@@ -194,7 +194,7 @@ def test_the_upload_path_is_the_directory_the_run_publishes_to(monkeypatch):
         % published)
 
 
-@pytest.mark.proof("consumer_ci", "PROOF-2", "RULE-2")
+@pytest.mark.proof("records", "PROOF-19", "RULE-19")
 def test_the_matrix_is_the_one_operating_system_the_spec_names():
     jobs = '\n'.join(parse_blocks(read(WORKFLOW_REL))['jobs'])
     assert 'os: [ubuntu-latest]' in jobs
@@ -202,7 +202,16 @@ def test_the_matrix_is_the_one_operating_system_the_spec_names():
     assert workflow_module.env_tags_in_specs(FIXTURE) == ['linux']
 
 
-@pytest.mark.proof("consumer_ci", "PROOF-2", "RULE-2")
+@pytest.mark.proof("records", "PROOF-19", "RULE-19")
+def test_the_matrix_is_one_job_per_named_operating_system():
+    """The order is fixed, and a name outside the three is ignored."""
+    assert workflow_module.runners_for(['windows', 'linux']) == [
+        'ubuntu-latest', 'windows-latest']
+    assert workflow_module.runners_for([]) == ['ubuntu-latest']
+    assert workflow_module.runners_for(['plan9']) == ['ubuntu-latest']
+
+
+@pytest.mark.proof("records", "PROOF-18", "RULE-18")
 def test_the_workflow_clones_the_release_the_project_pins():
     jobs = '\n'.join(parse_blocks(read(WORKFLOW_REL))['jobs'])
     assert 'ref="%s"' % PURLIN_REF in jobs, (
@@ -211,14 +220,14 @@ def test_the_workflow_clones_the_release_the_project_pins():
     assert 'vars.PURLIN_REF' in jobs, 'the pin must be movable without an edit'
 
 
-@pytest.mark.proof("consumer_ci", "PROOF-2", "RULE-2")
+@pytest.mark.proof("records", "PROOF-18", "RULE-18")
 def test_a_forked_pull_request_is_told_it_writes_no_commit():
     jobs = '\n'.join(parse_blocks(read(WORKFLOW_REL))['jobs'])
     assert 'github.event.pull_request.head.repo.fork' in jobs
     assert 'no record was committed' in jobs
 
 
-@pytest.mark.proof("consumer_ci", "PROOF-2", "RULE-2")
+@pytest.mark.proof("records", "PROOF-18", "RULE-18")
 def test_the_scheduled_pin_check_is_off_unless_it_is_asked_for():
     assert 'schedule:' not in read(WORKFLOW_REL)
     with_check = workflow_module.render_workflow(
@@ -233,7 +242,7 @@ def test_the_scheduled_pin_check_is_off_unless_it_is_asked_for():
 # The project
 # ---------------------------------------------------------------------------
 
-@pytest.mark.proof("consumer_ci", "PROOF-3", "RULE-3")
+@pytest.mark.proof("records", "PROOF-20", "RULE-20")
 def test_the_fixture_is_complete_and_every_file_is_tracked():
     on_disk = set()
     for folder, dirnames, filenames in os.walk(FIXTURE):
@@ -252,7 +261,7 @@ def test_the_fixture_is_complete_and_every_file_is_tracked():
             'would not carry it' % (FIXTURE_REL, rel))
 
 
-@pytest.mark.proof("consumer_ci", "PROOF-3", "RULE-3")
+@pytest.mark.proof("records", "PROOF-20", "RULE-20")
 def test_the_config_is_the_shape_this_release_reads():
     config = json.loads(read('.purlin/config.json'))
     assert config['gate'] == 'recorded'
@@ -264,7 +273,7 @@ def test_the_config_is_the_shape_this_release_reads():
         'the config still carries %s' % sorted(retired & set(config)))
 
 
-@pytest.mark.proof("consumer_ci", "PROOF-3", "RULE-3")
+@pytest.mark.proof("records", "PROOF-20", "RULE-20")
 def test_the_plugin_copy_is_the_plugin():
     with open(os.path.join(FIXTURE, '.purlin/plugins/pytest_purlin.py'),
               'rb') as handle:
@@ -285,7 +294,7 @@ RETIRED_TAG = '@' + 'on('
 RETIRED_KEYWORD = 'plat' + 'forms='
 
 
-@pytest.mark.proof("consumer_ci", "PROOF-4", "RULE-4")
+@pytest.mark.proof("records", "PROOF-20", "RULE-20")
 def test_the_spec_carries_no_tag_this_release_retired():
     spec = read('specs/core/greeting.md')
     assert '@env(linux)' in spec
@@ -293,7 +302,7 @@ def test_the_spec_carries_no_tag_this_release_retired():
     assert RETIRED_KEYWORD not in read('tests/test_greeting.py')
 
 
-@pytest.mark.proof("consumer_ci", "PROOF-4", "RULE-4")
+@pytest.mark.proof("records", "PROOF-20", "RULE-20")
 def test_purlin_reads_the_fixture_as_one_feature_with_a_linux_proof():
     data = payload_module.build_payload(FIXTURE, generated_by='test')
     assert data['warnings'] == []
@@ -309,7 +318,7 @@ def test_purlin_reads_the_fixture_as_one_feature_with_a_linux_proof():
     assert data['records'] == {}, 'no run has happened in the fixture'
 
 
-@pytest.mark.proof("consumer_ci", "PROOF-4", "RULE-4")
+@pytest.mark.proof("records", "PROOF-20", "RULE-20")
 def test_the_fixtures_tests_pass_against_its_own_module():
     sys.path.insert(0, FIXTURE)
     try:
@@ -321,7 +330,7 @@ def test_the_fixtures_tests_pass_against_its_own_module():
     assert isinstance(greeting.os_tag(), str)
 
 
-@pytest.mark.proof("consumer_ci", "PROOF-4", "RULE-4")
+@pytest.mark.proof("records", "PROOF-20", "RULE-20")
 def test_the_dry_run_walks_the_committed_workflow():
     script = read(os.path.join('dev', 'consumer_ci_dryrun.sh'), root=ROOT)
     assert WORKFLOW_REL in script
