@@ -908,6 +908,14 @@ dashboard into `.purlin/runtime/report` while `templates/purlin.yml` uploads
 `$RUNNER_TEMP/purlin-dashboard` (the artifact would be empty); three references still cite
 deleted docs.
 
+Fix lane F8 (`b76d69c1`, 141,145 tokens): `ci.publish_dir` follows `RUNNER_TEMP` or
+`AGENT_TEMPDIRECTORY` so the artifact upload finds the page; the three references repointed;
+the refresh hook no longer needs a `report` key (init writes none); the release-notes
+counts line set from the sweep record. Sweep after F8: 11 suites passed, 0 failed; pool 878
+passed, 6 skipped; sweep record 888 passed. The orchestrator also moved the light product
+surface to the lightest paper at the user's request (`94318985`). Wave 6 tokens with F8:
+932,570. Running total: 5,048,495.
+
 ### Phase 9: re-spec, sweep, release (Fable orchestrates; Opus 5 lanes per spec group)
 
 Purlin dogfoods at `gate: recorded`. Specs for the new surface (~12 specs, ~150 rules):
