@@ -812,7 +812,21 @@ the two upgrade fixtures and each gate transition both ways.
 
 #### DONE
 
-_pending_
+Wave 5, 2026-09-13. Both lanes landed by fast-forward; head `df5fbcc5`.
+
+| Lane | Head | What | Tokens |
+|---|---|---|---|
+| 5A | `df5fbcc5` | `scripts/init/scaffold.py` 1,127 to 699 (the one question, `--gate`, `--ci`, `--ci --upstream-check`, `--add`, `--update` hand-off, `--dry-run`, `--yes`; consent per write on an existing project); `scripts/hooks/pre-push.sh` 149 to 70; `templates/config.json` in the B2 shape; `dev/test_init_scaffold.py` 1,471 to 864 (91 cases), `dev/test_init_e2e.sh` 1,234 to 425, `dev/test_pre_push_hook.py` 1,494 to 299; 113 passed, e2e 32 passed 3 skipped; `dev/test_brief.py` and `dev/test_approvals.py` added to the sweep | 391,792 |
+| 5B | `72cb779c` | `scripts/init/update.py` (547; eight migrations: `os-tags`, `design-sources`, `untracked-files`, `hooks`, `config`, `workflows`, `plugin-copies`, `records`; `--check --json --yes`); `dev/test_init_update.py` 1,224 to 759 (72 cases on both fixtures); `sync_status` prints `→ Run: purlin:init --update` while `pending()` is non-empty | 282,764 |
+
+Wave 5 tokens: 674,556. Running total: 4,115,925.
+
+BLOCKED (found by 5A's walk, fix lane F5 opened in wave 6): the record's `scope_tree` is
+written as `{feature: hash}` by `purlin_run.build_record` but read as one string by the
+package, the format doc and `states._record_verdict`, so nothing reaches Recorded; 5A's e2e
+skips its `recorded` and `approved` assertions until F5 lands. Last failure output:
+`record scope_tree = {"greeting": "6f4ba7fc..."}`, `specs.scope_tree(root, ["greeting.py"])
+= "6f4ba7fc..."`, rule state `Tested`, gate `Not recorded (1): greeting RULE-1`.
 
 ### Phase 6: dashboard on the design system (Opus 5, 1 lane)
 
