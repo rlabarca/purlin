@@ -814,7 +814,8 @@ class TestTheConsoleCodecNeverEndsTheRun:
         result = subprocess.run(
             [sys.executable, RUN_SCRIPT, '--project-root', str(root),
              '--all', '--quick'],
-            capture_output=True, text=True, cwd=str(root), env=environment)
+            capture_output=True, encoding='utf-8', cwd=str(root),
+            env=environment)
         output = result.stdout + result.stderr
         assert 'Traceback' not in output, output
         assert 'UnicodeEncodeError' not in output, output
