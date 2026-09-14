@@ -29,7 +29,9 @@ table would be coupled to a layout; this is the shape they all read instead.
                         "text": "...", "findings": [], "tests": [...]}]}
          ]}
       ],
-      "review_list": [{"feature": ..., "rule": ..., "risk": ..., "reason": ...}],
+      "review_list": [{"feature": ..., "rule": ..., "risk": ...,
+                       "reasons": ["stale", "risk medium"],
+                       "reason": "stale; risk medium"}],
       "records": {"login": {"": {...}}},
       "warnings": ["..."]
     }
@@ -162,11 +164,12 @@ def _feature_entry(project_root, name, info, features, runtime_proofs,
         if label == 'own' and own_results is not None:
             own_results[(owner, rule_id)] = summary
         if result['flags'].get('needs_ai_review') or result['state'] == states.STALE:
+            reasons = _review_reasons(result, cfg)
             review_list.append({
                 'feature': name, 'owner': owner, 'rule': rule_id,
                 'risk': result['risk'],
-                'reason': ('the approval is stale' if result['state'] == states.STALE
-                           else 'risk %s needs a look' % result['risk']),
+                'reasons': reasons,
+                'reason': '; '.join(reasons),
             })
 
     rollup = states.feature_rollup(
@@ -197,6 +200,40 @@ def _feature_entry(project_root, name, info, features, runtime_proofs,
         'rules': rule_entries,
     }
     return entry, rollup
+
+
+def _review_reasons(rule, cfg):
+    """Why one rule is on the review list, one short code or text each.
+
+    A row on the board groups rules by risk, so the risk is the one reason a
+    reader already has before opening the row; it is still named here, first
+    among equals, because a caller reading the list without the grouping has
+    no other way to learn it. Everything after it says something the group
+    header cannot: an approval that went stale, a strength under the minimum,
+    an operating system with no record, code that moved under an approval, and
+    each free check the proofs raised, by its own name.
+    """
+    reasons = []
+    if rule['state'] == states.STALE:
+        reasons.append('stale')
+    if gate_module.risk_at_or_above(
+            rule['risk'],
+            states.review_threshold(
+                cfg, cfg.mutation_engine not in (None, 'none'))):
+        reasons.append('risk %s' % rule['risk'])
+    strength = rule.get('test_strength')
+    if strength is not None and strength < cfg.min_strength:
+        reasons.append('strength %d%% under %d%%'
+                       % (round(strength), cfg.min_strength))
+    for reason in rule.get('reasons') or ():
+        reasons.append(reason)
+    if (rule.get('flags') or {}).get('re_verify_pending'):
+        reasons.append('re-verify pending')
+    for proof in rule.get('proofs') or ():
+        for finding in proof.get('findings') or ():
+            if finding not in reasons:
+                reasons.append(finding)
+    return reasons
 
 
 def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,

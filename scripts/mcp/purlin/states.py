@@ -208,14 +208,28 @@ def _auto_approvable(inp, cfg, passes, proofs):
     return strength >= (cfg.min_strength if cfg else 0)
 
 
+def review_threshold(cfg, mutation_engine_available=True):
+    """The risk at or above which a rule's own risk puts it on the list.
+
+    With no break engine the threshold drops one level, so more rules get a
+    look rather than fewer. The payload asks the same question when it names
+    why a rule is listed, so the answer is computed here once.
+    """
+    if cfg is None:
+        return None
+    threshold = cfg.ai_review_at
+    if not mutation_engine_available:
+        threshold = gate_module.one_level_lower(threshold)
+    return threshold
+
+
 def _needs_ai_review(inp, cfg, approvals, current_approvals):
     """Whether a rule goes on the review list for a model to read first."""
     if cfg is None:
         return False
     risk = inp.get('risk') or 'low'
-    threshold = cfg.ai_review_at
-    if not inp.get('mutation_engine_available', True):
-        threshold = gate_module.one_level_lower(threshold)
+    threshold = review_threshold(
+        cfg, inp.get('mutation_engine_available', True))
     if gate_module.risk_at_or_above(risk, threshold):
         return True
     if approvals and not current_approvals:

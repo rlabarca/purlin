@@ -975,6 +975,23 @@ class TestPayload:
         finally:
             made.close()
 
+    @pytest.mark.proof("states", "PROOF-28", "RULE-26", tier="integration")
+    def test_a_review_entry_lists_its_reasons_and_joins_them(self):
+        """Two rules on one list, each saying why it is there and no more."""
+        made = Project(gate='recorded')
+        try:
+            made.record([{'id': 'PROOF-1', 'status': 'pass'},
+                         {'id': 'PROOF-2', 'status': 'pass'}], strength=40)
+            entries = {e['rule']: e for e in made.payload()['review_list']}
+            assert entries['RULE-1']['reasons'] == [
+                'risk high', 'strength 40% under 70%', 'happy_path_only']
+            assert entries['RULE-1']['reason'] == (
+                'risk high; strength 40% under 70%; happy_path_only')
+            assert entries['RULE-2']['reasons'] == [
+                'strength 40% under 70%']
+        finally:
+            made.close()
+
     @pytest.mark.proof("states", "PROOF-19", "RULE-19", tier="integration")
     def test_the_data_file_is_a_const_assignment_and_round_trips(self, project):
         data = project.payload()
