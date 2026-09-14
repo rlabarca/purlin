@@ -40,6 +40,8 @@
 - RULE-37: The release ships a plugin for six frameworks, each with a runner-setup line in `references/supported_frameworks.md`, and shell is the one of them whose tests the free checks grade without extracting a test body [risk: low] [origin: eng]
 - RULE-38: The shell harness buffers what `purlin_proof` records and writes it when `purlin_proof_finish` runs, which clears the buffer, so a second finish with nothing buffered writes nothing [risk: medium] [origin: eng]
 - RULE-39: The run script reconfigures stdout and stderr to UTF-8 before it prints anything, so a console whose codec is cp1252 prints the state table's glyphs instead of ending the run with an encoding error [risk: medium] [origin: eng]
+- RULE-40: An arm that exits non-zero or is killed has the last 60 lines of its own output printed to stdout under `--- <arm> output (last 60 lines) ---` before the missing-evidence lines, and under `--ci` every arm's whole output is published as `logs/<arm>.log` in the dashboard directory [risk: medium] [origin: eng]
+- RULE-41: `--project-root` with an empty value exits 2 naming the flag, rather than resolving to the working directory and running there [risk: medium] [origin: eng]
 
 ## Proof
 
@@ -70,3 +72,6 @@
 - PROOF-47 (RULE-38): Call `purlin_proof` twice without calling `purlin_proof_finish`; verify no proof file exists yet, then call `purlin_proof_finish` and verify the file holds both entries. Verify the buffer is empty afterwards and that a second `purlin_proof_finish` writes nothing and exits 0 @unit
 - PROOF-56 (RULE-38): Run `bash dev/test_proof_shell.sh` from the project root; it sources the harness in temporary projects and reads back what `purlin_proof_finish` wrote; verify every case prints `PASS`, including `purlin_proof_finish with nothing buffered writes nothing`, and the suite exits 0 @e2e @env(linux)
 - PROOF-57 (RULE-39): Run `purlin_run.py --all --quick` on a project holding one spec and one tagged test with `PYTHONIOENCODING=cp1252` in the environment; verify the output carries no traceback and no `UnicodeEncodeError`, and that the arrow the next-step line prints is in it @unit
+- PROOF-58 (RULE-40): Run `--all --quick` over a marked pytest test asserting `1 == 2`; verify the output holds `--- pytest output (last 60 lines) ---`, that pytest's own `1 failed` line is under it, and that the heading comes before `Evidence is missing`. Run `--all --quick` over a passing test; verify no such heading is printed @unit
+- PROOF-59 (RULE-40): Run `--all --record --ci` with no runner temporary directory in the environment, over a project whose pytest test fails; verify `.purlin/runtime/report/logs/pytest.log` exists and holds the arm's own output including the command line the arm ran @unit
+- PROOF-60 (RULE-41): Run `--all --quick --project-root ""` from a directory holding a project; verify exit 2, that the message names `--project-root`, and that no proof file was written under that directory @unit
