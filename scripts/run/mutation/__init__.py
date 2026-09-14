@@ -36,9 +36,17 @@ runs. The install check happens in `run_breaks`, which answers
 """
 
 import importlib
+import os
 import subprocess
 
 ENGINES = ('stryker', 'stryker_net', 'mutmut', 'none')
+
+# How long one engine invocation may take before it is killed. The run
+# script sets it from `--arm-timeout`; an engine that is still going after
+# it is stopped, its output kept, and `TIMED_OUT` returned so the caller
+# reports missing evidence rather than waiting for a job limit.
+ARM_TIMEOUT = 3600
+TIMED_OUT = 124
 
 ATTRIBUTIONS = ('per_test', 'per_scope', 'unavailable')
 
@@ -92,22 +100,39 @@ def score_percent(killed, survived):
     return (killed * 200 + total) // (total * 2)
 
 
-def execute(command, cwd, report_path=None):
+def execute(command, cwd, report_path=None, timeout=None):
     """Run `command` in `cwd` and return `(exit code, output)`.
 
     Output is the two streams together, because an engine writes its progress
     to one and its complaints to the other and the log wants both in order.
     `report_path` is where the engine's reporter writes; the real run never
     reads it, and it is an argument so a test can stand in for the binary.
+
+    The child never reads this process's stdin and never asks git for a
+    password: an engine that stops for an answer nobody is there to give
+    holds the whole run until the job limit. `timeout` defaults to
+    `ARM_TIMEOUT`; past it the child is killed, what it printed is kept, and
+    the code is `TIMED_OUT`.
     """
+    cap = ARM_TIMEOUT if timeout is None else timeout
+    environment = dict(os.environ)
+    environment['GIT_TERMINAL_PROMPT'] = '0'
     try:
         process = subprocess.Popen(command, cwd=cwd or '.',
+                                   stdin=subprocess.DEVNULL,
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT,
+                                   env=environment,
                                    universal_newlines=True)
     except (IOError, OSError) as error:
         return 127, str(error)
-    output = process.communicate()[0]
+    try:
+        output = process.communicate(timeout=cap)[0]
+    except subprocess.TimeoutExpired:
+        process.kill()
+        output = process.communicate()[0] or ''
+        return TIMED_OUT, output + ('\nthe engine timed out after %d s'
+                                    % cap)
     return process.returncode, output or ''
 
 
@@ -183,6 +208,9 @@ def run_breaks(project_root, engine, scope_by_feature, tests_by_rule, tier=None)
 
     An engine name outside `ENGINES`, or a binary that is not installed,
     answers `engine: none` with the reason in words rather than raising.
+
+    Every invocation the engine makes is capped at `ARM_TIMEOUT` seconds,
+    which the caller sets on this module before calling.
     """
     scope_by_feature = dict(scope_by_feature or {})
     tests_by_rule = dict(tests_by_rule or {})

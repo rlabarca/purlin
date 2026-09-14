@@ -25,6 +25,7 @@ if _MCP_DIR not in sys.path:
 from config_engine import (PROJECT_ROOT_SOURCES, resolve_config,
                            resolve_project_root, update_config)
 from purlin import PURLIN_VERSION
+from purlin import console as console_module
 from purlin import drift as drift_module
 from purlin import payload as payload_module
 from purlin import status as status_module
@@ -244,6 +245,7 @@ def handle_request(request, project_root):
 
 def main():
     """Run the server on stdio until stdin closes."""
+    console_module.force_utf8_stdio()
     project_root, root_source = resolve_project_root()
     print('Purlin MCP server v%s started (root: %s, from %s)'
           % (PURLIN_VERSION, project_root,

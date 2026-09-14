@@ -45,7 +45,8 @@ for _path in (os.path.join(PLUGIN_ROOT, 'scripts', 'mcp'),
 
 import workflow as workflow_module                            # noqa: E402
 from mutation import mutmut                                   # noqa: E402
-from purlin import (frameworks as frameworks_module,          # noqa: E402
+from purlin import (console as console_module,                # noqa: E402
+                    frameworks as frameworks_module,
                     gate as gate_module, specs as specs_module,
                     status as status_module)
 
@@ -622,6 +623,7 @@ def print_approved(root, approvers):
 
 
 def main(argv=None):
+    console_module.force_utf8_stdio()
     args = parse_args(list(sys.argv[1:] if argv is None else argv))
     if args.update:
         return delegate_update(args)

@@ -34,6 +34,11 @@ EXIT_OK, EXIT_PENDING, EXIT_BAD_INVOCATION = 0, 1, 2
 
 PLUGIN_ROOT = os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))))
+_MCP_DIR = os.path.join(PLUGIN_ROOT, 'scripts', 'mcp')
+if _MCP_DIR not in sys.path:
+    sys.path.insert(0, _MCP_DIR)
+
+from purlin import console as console_module                  # noqa: E402
 # --- the migration table: the one place a retired spelling is written -------
 # Each line ends with a `# retired` comment, which is what the vocabulary
 # proof reads to step over exactly these lines and no others.
@@ -522,6 +527,7 @@ def _commit(root, applied, paths):
     return None
 
 def main(argv=None):
+    console_module.force_utf8_stdio()
     parser = argparse.ArgumentParser(
         prog='update.py', description=__doc__.splitlines()[0])
     for flag, note in (('--check', 'print what is pending and write nothing'),

@@ -41,6 +41,7 @@ for _path in (_MCP_DIR, _HERE):
 
 import static_checks                                          # noqa: E402
 from purlin import (approvals as approvals_module, checks,     # noqa: E402
+                    console as console_module,
                     gate as gate_module, payload as payload_module,
                     specs as specs_module)
 
@@ -525,6 +526,7 @@ def _parse(argv):
 
 
 def main(argv=None):
+    console_module.force_utf8_stdio()
     args = _parse(sys.argv[1:] if argv is None else argv)
     if args.help:
         print(__doc__.strip())

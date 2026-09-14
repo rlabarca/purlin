@@ -28,6 +28,13 @@ import os
 import re
 import sys
 
+_MCP_DIR = os.path.join(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))), 'mcp')
+if _MCP_DIR not in sys.path:
+    sys.path.insert(0, _MCP_DIR)
+
+from purlin.console import force_utf8_stdio                    # noqa: E402
+
 try:
     import fcntl  # POSIX only — absent on Windows
     _HAS_FCNTL = True
@@ -1126,21 +1133,13 @@ _USAGE = (
     "--help",
 )
 
-def _force_utf8_stdio():
-    """Reconfigure stdout and stderr to UTF-8, whatever the console codec is."""
-    for stream in (sys.stdout, sys.stderr):
-        try:
-            stream.reconfigure(encoding='utf-8')
-        except (AttributeError, ValueError):
-            pass  # not a reconfigurable text stream
-
 def _argument_after(flag, fallback=None):
     """The argument following `flag` on the command line, or `fallback`."""
     idx = sys.argv.index(flag) + 1 if flag in sys.argv else 0
     return sys.argv[idx] if 0 < idx < len(sys.argv) else fallback
 
 def main():
-    _force_utf8_stdio()
+    force_utf8_stdio()
     usage = (f"Usage: {os.path.basename(sys.argv[0])} "
              + f"\n       {os.path.basename(sys.argv[0])} ".join(_USAGE))
     as_json = '--json' in sys.argv

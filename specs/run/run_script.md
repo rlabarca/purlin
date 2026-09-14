@@ -39,6 +39,7 @@
 - RULE-36: `references/formats/proofs_format.md` is the wire format: it names the runtime location, the seven fields, one marker section per shipped framework and the retired fields, and carries no run-marker section [risk: medium] [origin: eng]
 - RULE-37: The release ships a plugin for six frameworks, each with a runner-setup line in `references/supported_frameworks.md`, and shell is the one of them whose tests the free checks grade without extracting a test body [risk: low] [origin: eng]
 - RULE-38: The shell harness buffers what `purlin_proof` records and writes it when `purlin_proof_finish` runs, which clears the buffer, so a second finish with nothing buffered writes nothing [risk: medium] [origin: eng]
+- RULE-39: The run script reconfigures stdout and stderr to UTF-8 before it prints anything, so a console whose codec is cp1252 prints the state table's glyphs instead of ending the run with an encoding error [risk: medium] [origin: eng]
 
 ## Proof
 
@@ -68,3 +69,4 @@
 - PROOF-46 (RULE-37): Read the Built-in Plugins table in `references/supported_frameworks.md`; verify it holds exactly 6 rows and that the last cell of each is not empty. Read the free checks' extension list; verify `.sh` is absent from the test-body extensions and that the rest are exactly the registered ones. List `scripts/proof/`; verify no plugin file exists for a language this release dropped @unit
 - PROOF-47 (RULE-38): Call `purlin_proof` twice without calling `purlin_proof_finish`; verify no proof file exists yet, then call `purlin_proof_finish` and verify the file holds both entries. Verify the buffer is empty afterwards and that a second `purlin_proof_finish` writes nothing and exits 0 @unit
 - PROOF-56 (RULE-38): Run `bash dev/test_proof_shell.sh` from the project root; it sources the harness in temporary projects and reads back what `purlin_proof_finish` wrote; verify every case prints `PASS`, including `purlin_proof_finish with nothing buffered writes nothing`, and the suite exits 0 @e2e
+- PROOF-57 (RULE-39): Run `purlin_run.py --all --quick` on a project holding one spec and one tagged test with `PYTHONIOENCODING=cp1252` in the environment; verify the output carries no traceback and no `UnicodeEncodeError`, and that the arrow the next-step line prints is in it @unit

@@ -41,6 +41,8 @@ _MCP_DIR = os.path.join(os.path.dirname(_CI_DIR), 'mcp')
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
+from purlin import console as console_module                  # noqa: E402
+
 EXIT_OK = 0
 EXIT_GATE_FAILED = 1
 EXIT_BAD_INVOCATION = 2
@@ -308,6 +310,7 @@ def _dump(out, result, code):
 
 
 def main(argv=None):
+    console_module.force_utf8_stdio()
     parser = argparse.ArgumentParser(
         prog='verify_gate.py',
         description='The gate CI runs before a change may merge.')

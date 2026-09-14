@@ -33,7 +33,8 @@ for _path in (_MCP_DIR, _HERE):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
-from purlin import (approvals as approvals_module, gate as gate_module,   # noqa: E402
+from purlin import (approvals as approvals_module,             # noqa: E402
+                    console as console_module, gate as gate_module,
                     payload as payload_module, specs as specs_module)
 
 SCHEMA = 'purlin-approval/1'
@@ -381,6 +382,7 @@ def approvable(payload, feature=None, rules=None):
 
 
 def main(argv=None):
+    console_module.force_utf8_stdio()
     args = _parse(sys.argv[1:] if argv is None else argv)
     if args.help:
         print(__doc__.strip())

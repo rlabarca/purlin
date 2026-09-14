@@ -26,6 +26,8 @@ _MCP_DIR = os.path.join(PLUGIN_ROOT, 'scripts', 'mcp')
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
+from purlin import console as console_module                  # noqa: E402
+
 # Only these two trees are fetched. A repository's code is not read here.
 SPARSE = ('specs', '.purlin')
 RECORDS_DIR = '.purlin/records'
@@ -160,6 +162,7 @@ def _git(cwd, args, check=True):
 
 
 def main(argv=None):
+    console_module.force_utf8_stdio()
     parser = argparse.ArgumentParser(
         description='Print a repository\'s seven-state rollup without '
                     'cloning it whole.')

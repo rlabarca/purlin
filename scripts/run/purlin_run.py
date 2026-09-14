@@ -2,7 +2,8 @@
 
     purlin_run.py (--feature NAME ... | --all)
                   (--quick | --record [--commit] [--ci] [--tag NAME] | --remote)
-                  [--tier unit|all] [--project-root DIR]
+                  [--tier unit|all] [--arm-timeout SECONDS]
+                  [--project-root DIR]
 
 `--quick` is what `purlin:test` runs: the plugins run the tagged tests into
 `.purlin/runtime/proofs/` and the state table is printed. Seconds, tests only.
@@ -18,6 +19,13 @@ wait for the workflow, pull the records CI committed, print the table.
 
 A proof the spec tags `@env` for another operating system is not run here: it
 is listed as `needs <os>` and the rule waits for a record from that runner.
+
+No arm and no engine ever reads this process's stdin, and none may ask git
+for a password: a runner is nobody's terminal, and a command that stops for
+an answer holds the whole run until the job limit cancels it. Every arm also
+gets `--arm-timeout` seconds, 3600 by default; past it the arm is killed,
+what it printed is kept, the run reports the timeout as missing evidence and
+carries on to write the record.
 
 Exit codes: 0 everything asked for happened, 1 a test failed or evidence is
 missing, 2 the command line was wrong.
@@ -51,7 +59,8 @@ for _path in (_MCP_DIR, _REVIEW_DIR, _HERE):
         sys.path.insert(0, _path)
 
 from config_engine import resolve_config                      # noqa: E402
-from purlin import (frameworks as frameworks_module,          # noqa: E402
+from purlin import (console as console_module,                # noqa: E402
+                    frameworks as frameworks_module,
                     gate as gate_module, payload as payload_module,
                     proofs as proofs_module, records as records_module,
                     specs as specs_module, status as status_module)
@@ -66,9 +75,18 @@ LOG_PATH = os.path.join('.purlin', 'runtime', 'run.log')
 USAGE = (
     'Usage: purlin_run.py (--feature NAME ... | --all) '
     '(--quick | --record [--commit] [--ci] [--tag NAME] | --remote) '
-    '[--tier unit|all] [--project-root DIR]')
+    '[--tier unit|all] [--arm-timeout SECONDS] [--project-root DIR]')
 
 TIERS = ('unit', 'all')
+
+# How long one arm may take before it is killed. An hour is longer than any
+# shipped suite and far shorter than a hosted runner's six-hour job limit, so
+# a stuck arm ends as a named piece of missing evidence in a record rather
+# than as a cancelled job with an empty log.
+ARM_TIMEOUT_DEFAULT = 3600
+
+# What `_run` returns when it killed the command.
+TIMED_OUT = 124
 
 # The three operating systems `@env` names, and how `sys.platform` spells them.
 _OS_NAMES = (('win', 'windows'), ('darwin', 'macos'), ('linux', 'linux'))
@@ -89,6 +107,7 @@ class Args(object):
         self.ci = False
         self.tag = None
         self.tier = 'all'
+        self.arm_timeout = ARM_TIMEOUT_DEFAULT
         self.project_root = '.'
         self.error = None
 
@@ -125,6 +144,13 @@ def parse_args(argv):
                 args.error = '--tier is unit or all'
                 return args
             args.tier = argv[index]
+        elif token == '--arm-timeout':
+            index += 1
+            value = argv[index] if index < len(argv) else ''
+            if not value.isdigit() or int(value) < 1:
+                args.error = '--arm-timeout needs a whole number of seconds'
+                return args
+            args.arm_timeout = int(value)
         elif token == '--project-root':
             index += 1
             if index >= len(argv):
@@ -240,12 +266,41 @@ def plugin_path(project_root, basename):
     return os.path.join(os.path.dirname(_HERE), 'proof', basename)
 
 
-def _run(command, project_root, log):
-    """Run one command in the project root, echoing it and its output."""
+def arm_environment(extra=None):
+    """The environment every arm and every engine is given.
+
+    `GIT_TERMINAL_PROMPT=0` makes git fail instead of asking for a password.
+    A hosted runner is nobody's terminal, so the question would never be
+    answered and the run would sit there until the job limit cancelled it.
+    """
+    environment = dict(os.environ)
+    environment['GIT_TERMINAL_PROMPT'] = '0'
+    environment.update(extra or {})
+    return environment
+
+
+def _run(command, project_root, log, timeout, environment=None):
+    """Run one command in the project root, echoing it and its output.
+
+    The command gets no stdin: a runner is nobody's terminal, and a prompt
+    nobody answers is a run that never ends. It gets `timeout` seconds; past
+    them it is killed, whatever it printed is kept, and `TIMED_OUT` comes
+    back so the caller names the timeout as missing evidence.
+    """
     log.append('$ %s' % ' '.join(command))
     try:
         result = subprocess.run([*command], cwd=project_root,
-                                capture_output=True, text=True)
+                                stdin=subprocess.DEVNULL,
+                                capture_output=True, text=True,
+                                timeout=timeout,
+                                env=environment or arm_environment())
+    except subprocess.TimeoutExpired as expired:
+        for stream in (expired.stdout, expired.stderr):
+            if stream:
+                log.append(stream.decode('utf-8', 'replace')
+                           if isinstance(stream, bytes) else stream)
+        log.append('timed out after %d s' % timeout)
+        return TIMED_OUT
     except (OSError, subprocess.SubprocessError) as error:
         log.append(str(error))
         return 127
@@ -255,15 +310,22 @@ def _run(command, project_root, log):
     return result.returncode
 
 
-def run_framework(project_root, framework, tier, config, log):
-    """Run one framework's tagged tests. The exit code its runner gave."""
+def run_framework(project_root, framework, tier, config, log,
+                  timeout=ARM_TIMEOUT_DEFAULT):
+    """Run one framework's tagged tests. The exit code its runner gave.
+
+    `TIMED_OUT` comes back when the arm ran past `timeout` seconds and was
+    killed. Every command runs without stdin and without a git password
+    prompt, because both are ways for a run on a hosted runner to stop for an
+    answer that never arrives.
+    """
     if framework == 'pytest':
         command = [sys.executable, '-m', 'pytest', '-q', '-p', 'no:cacheprovider']
         if tier == 'unit':
             # The tier a proof marker names is also a pytest marker on the
             # test, so this expression actually deselects something.
             command.extend(['-m', 'not integration and not e2e'])
-        code = _run(command, project_root, log)
+        code = _run(command, project_root, log, timeout)
         # pytest exits 5 when it collected nothing. No tests is not a failure
         # here; the two loud failures below are what report that.
         return 0 if code == 5 else code
@@ -271,18 +333,19 @@ def run_framework(project_root, framework, tier, config, log):
         command = ['npx', 'jest', '--passWithNoTests']
         if tier == 'unit':
             command.append('--testPathPattern=unit')
-        return _run(command, project_root, log)
+        return _run(command, project_root, log, timeout)
     if framework == 'vitest':
         return _run(['npx', 'vitest', 'run', '--passWithNoTests'],
-                    project_root, log)
+                    project_root, log, timeout)
     if framework == 'xunit':
-        return _run(['dotnet', 'test', '--logger', 'purlin'], project_root, log)
+        return _run(['dotnet', 'test', '--logger', 'purlin'], project_root,
+                    log, timeout)
     if framework == 'shell':
         code = 0
         for name in sorted(os.listdir(project_root)):
             if not name.endswith('.test.sh'):
                 continue
-            code = _run(['bash', name], project_root, log)
+            code = _run(['bash', name], project_root, log, timeout)
             if code != 0:
                 break
         return code
@@ -291,24 +354,14 @@ def run_framework(project_root, framework, tier, config, log):
         harness = plugin_path(project_root, 'sql_purlin.sh')
         tests_dir = os.path.join(project_root, 'tests')
         code = 0
-        environment = dict(os.environ, PURLIN_SQL_ENGINE=engine)
+        environment = arm_environment({'PURLIN_SQL_ENGINE': engine})
         for name in sorted(os.listdir(tests_dir)
                            if os.path.isdir(tests_dir) else []):
             if not name.endswith('.sql'):
                 continue
-            log.append('$ bash %s tests/%s' % (harness, name))
-            try:
-                result = subprocess.run(
-                    ['bash', harness, os.path.join('tests', name)],
-                    cwd=project_root, capture_output=True, text=True,
-                    env=environment)
-            except (OSError, subprocess.SubprocessError) as error:
-                log.append(str(error))
-                return 127
-            if result.stderr:
-                log.append(result.stderr.rstrip('\n'))
-            if result.returncode != 0:
-                code = result.returncode
+            code = _run(['bash', harness, os.path.join('tests', name)],
+                        project_root, log, timeout, environment)
+            if code != 0:
                 break
         return code
     log.append('purlin: no runner arm for "%s"; its tests were not run.'
@@ -586,6 +639,9 @@ def tests_by_rule(features, selected, index):
 # ---------------------------------------------------------------------------
 
 def main(argv=None):
+    # UTF-8 so the table's glyphs survive a cp1252 console, line buffering
+    # so a hosted runner's log shows where a long run got to.
+    console_module.force_utf8_stdio(line_buffering=True)
     args = parse_args(list(sys.argv[1:] if argv is None else argv))
     if args.error:
         print('purlin: %s.' % args.error, file=sys.stderr)
@@ -639,10 +695,17 @@ def main(argv=None):
         markers = scan_markers(project_root, framework)
         markers = {pair for pair in markers if pair[0] in selected}
         before = set(proof_index(project_root))
-        code = run_framework(project_root, framework, args.tier, config, log)
+        # One line per arm before it starts, so a job log says where a run
+        # is while it is still running.
+        print('Running the %s arm.' % framework)
+        code = run_framework(project_root, framework, args.tier, config,
+                             log, args.arm_timeout)
         after = set(proof_index(project_root))
         ran.append(framework)
-        if code != 0:
+        if code == TIMED_OUT:
+            failures.append('the %s runner timed out after %d s'
+                            % (framework, args.arm_timeout))
+        elif code != 0:
             failures.append('the %s runner exited %d' % (framework, code))
         wanted = {pair for pair in markers if pair not in foreign_ids}
         if wanted and after == before:
@@ -750,6 +813,7 @@ def _record(project_root, args, features, selected, index, plugins, log,
 def _run_breaks(project_root, args, features, selected, index):
     """The breaks, through the engine the project resolved to."""
     try:
+        import mutation as mutation_module
         from mutation import select_engine, run_breaks
     except ImportError:
         print('purlin: the break engines are not available; test strength is '
@@ -760,6 +824,10 @@ def _run_breaks(project_root, args, features, selected, index):
     resolved, _unknown = frameworks_module.resolve_frameworks(
         project_root, cfg.test_framework)
     engine = select_engine(config, resolved)
+    # The engine reaches its own subprocesses, so the cap is set on the
+    # module rather than passed down through every adapter.
+    mutation_module.ARM_TIMEOUT = args.arm_timeout
+    print('Measuring the breaks with the %s engine.' % engine)
     return run_breaks(project_root, engine,
                       scope_by_feature(features, selected),
                       tests_by_rule(features, selected, index), args.tier)

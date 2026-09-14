@@ -790,3 +790,27 @@ class TestTheRunScriptCarriesNoRetiredVocabulary:
         marker = 'sys.' + 'plat' + 'form'
         assert source.count(marker[4:]) == source.count(marker)
         assert all(ord(character) < 0x1F000 for character in source)
+
+
+class TestTheConsoleCodecNeverEndsTheRun:
+    """A Windows console hands Python cp1252, which encodes none of the glyphs.
+
+    The first status table then ends the run with `UnicodeEncodeError: 'charmap'
+    codec can't encode characters`, which is how the first CI run of this
+    workflow lost its Windows job. The run script reconfigures both streams to
+    UTF-8 before it prints anything.
+    """
+
+    @pytest.mark.proof("run_script", "PROOF-57", "RULE-39")
+    def test_a_cp1252_console_gets_the_glyphs_and_no_traceback(self, tmp_path):
+        root = _pytest_project(tmp_path)
+        _spec(root, 'feat')
+        environment = dict(os.environ, PYTHONIOENCODING='cp1252')
+        result = subprocess.run(
+            [sys.executable, RUN_SCRIPT, '--project-root', str(root),
+             '--all', '--quick'],
+            capture_output=True, text=True, cwd=str(root), env=environment)
+        output = result.stdout + result.stderr
+        assert 'Traceback' not in output, output
+        assert 'UnicodeEncodeError' not in output, output
+        assert '\u2192' in output, output
