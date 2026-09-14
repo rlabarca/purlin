@@ -699,7 +699,28 @@ init → test → verify → committed record.
 
 #### DONE
 
-_pending_
+Wave 3, 2026-09-13. All three lanes landed by fast-forward.
+
+| Lane | Head | What | Tokens |
+|---|---|---|---|
+| 2A | `332a94d7` | `scripts/run/purlin_run.py` (753); the six plugins rewritten to `.purlin/runtime/proofs/` (pytest 448 to 295, jest 436 to 251, vitest 504 to 361, xunit 742 to 472, shell 294 to 186, sql 340 to 258), copies refreshed; `proofs_format.md` Format-Version 8, `supported_frameworks.md`, `proof_plugin_contract.md` (no `dev/` or `specs/` citation); `dev/test_run_script.py` (661) and nine test files rewritten; acceptance 229 passed, 5 skipped | 414,260 |
+| 2B | `32d30078` | `scripts/run/mutation/` (`__init__` 223, `stryker` 245, `stryker_net` 125, `mutmut` 233, `none` 20); `dev/test_mutation_adapters.py` 68 tests against recorded reports; Stryker and mutmut also driven end to end against real binaries in a scratch directory; Stryker.NET recorded only | 178,558 |
+| 2C | `e8ff50bb` | `scripts/run/records.py` (425), `ci.py` (151), `remote.py` (122, `TODO(ado-remote)`), `workflow.py` (119), `scripts/report/scan.py` (177), `templates/purlin.yml` (143) and `purlin.azure-pipelines.yml` (75), `references/formats/record_format.md` (114, Format-Version 1); consumer fixture rewritten with a rendered `purlin.yml`; `dev/test_records.py` (833), `dev/test_scan.py` (268), `dev/test_consumer_ci.py` rewritten; 71 passed | 227,016 |
+
+Decisions of note: one record per feature (the writer files under `.purlin/records/<feature>/`);
+the record's `runner` is the slug string on disk while the run script still builds B3's dict
+(lane 3A repairs it); templates carry `<<MATRIX>>` and `<<PURLIN_REF>>` placeholders and the
+workflow clones Purlin at `v<version>` into `$RUNNER_TEMP` for a consumer, using the checkout
+itself for this repository; the GitHub tree entry's permission key is assembled from two
+strings because the word is retired.
+
+Sweep at `332a94d7`: shell suites all green except E2E Init (phase 5). Pool with collection
+errors tolerated over every `dev/test_*.py`: 606 passed, 44 failed, 5 skipped, 2 errors.
+Known-red: `test_pre_push_hook.py` 32 and `test_init_scaffold.py` 10 (5A), `test_verify_gate.py`
+(3A) and `test_init_update.py` (5B) collection errors, `test_purlin_version.py` 1 (phase 8).
+New and real: `test_security.py::test_subprocess_uses_list_args` on `scripts/run/remote.py:107`;
+and six new pytest files plus three shell suites were never added to `dev/run_tests.sh`.
+Fix lane F2 (`dev/plans/lanes/F2.md`) takes both, running beside wave 4.
 
 ### Phase 3: brief, approvals, upstream (Opus 5 for 3A and 3C; Opus 4.8 for 3B)
 
@@ -719,7 +740,15 @@ repos).
 
 #### DONE
 
-_pending_
+3B and 3C landed in wave 3; 3A runs in wave 4 (its DONE line is appended when it lands).
+
+| Lane | Head | What | Tokens |
+|---|---|---|---|
+| 3B | `a8b0d718` | `references/review_criteria.md` (127); `spec_quality_guide.md` 739 to 259 | 118,652 |
+| 3C | `2e2eade5` | `scripts/anchor/upstream.py` (608: `add`, `sync [--all|--check|--json]`, `propose`); `dev/test_upstream.py` 30 tests on local bare repos; the two anchor e2e scripts and `setup-external-refs.sh` rewritten, no proof markers (their old ids describe retired behaviour) | 224,973 |
+
+Note from 3C: `specs/_anchors/security_no_dangerous_patterns.md` pins a sha the local bare
+repo no longer heads at (pre-existing); the setup script prints the sha to pin; phase 9 fixes the spec.
 
 ### Phase 4: skills and agent (Opus 4.8, 2 lanes; Fable reviews)
 
@@ -735,7 +764,16 @@ PM, designer, engineer, QA including plain-language routes to every subcommand),
 
 #### DONE
 
-_pending_
+Wave 3, 2026-09-13. Both lanes landed by fast-forward.
+
+| Lane | Head | What | Tokens |
+|---|---|---|---|
+| 4A | `72724d8b` | `agents/purlin.md` 201 to 94; `init` 666 to 206, `spec` 417 to 182, `spec-from-code` 450 to 107, `anchor` 124 to 135, `build` 232 to 107; `dev/test_e2e_build_changeset.sh` 388 to 180, 15 checks, no model call | 139,289 |
+| 4B | `432e36cf` | `test` 75, `verify` 86, `review` 122 (new), `approve` 78 (new), `status` 64, `drift` 126, `find` 70, `rename` 70; `purlin_commands.md` 122, `commit_conventions.md` 108, `drift_criteria.md` 141, `hard_gates.md` 111, `glossary.md` 94 with the retired-terms table; `dev/test_vocabulary.py` (87) with a `PENDING_REWRITE` tuple later lanes prune | 183,674 |
+
+Orchestrator review: every skill names scripts through `${CLAUDE_PLUGIN_ROOT}` so the
+marketplace copy and `--plugin-dir` read the same; the build-changeset check and the
+vocabulary check pass together after both landed.
 
 ### Phase 5: init and upgrade (Opus 5, 2 lanes)
 
@@ -786,7 +824,15 @@ artifact. Acceptance: `dev/test_purlin_report.py` under 600 lines, including the
 
 #### DONE
 
-_pending_
+Wave 3, 2026-09-13. Landed by fast-forward at `61aabefb`. `scripts/report/src/` in eight
+parts (`page.html`, `styles.css`, `theme.js`, `filters.js`, `board.js`, `rule.js`, `review.js`,
+`app.js`), `dev/build_report.py` (153) inlining the tokens and the logo, the built
+`scripts/report/purlin-report.html` 1,827 to 913 lines, `dev/test_purlin_report.py` (395, 30
+tests: reproducible build, no raw hex outside the token block, both themes rendered for
+the three fixture processes, columns appear as artifacts exist, each filter, the old-schema
+notice), fixtures under `dev/fixtures/report/`, five screenshots under `docs/images/`. The
+orchestrator viewed the team board: product surface, copper eyebrows, seven state tiles,
+risk grid, filters, state pills. Tokens: 266,422.
 
 ### Phase 7: stakeholder tools (Opus 4.8, 1 lane)
 
