@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
-# Tests for scripts/proof/jest_purlin.js — Jest proof reporter.
+# Tests for scripts/proof/jest_purlin.js, the Jest proof reporter.
 #
-# Uses Node.js to exercise the reporter class directly (no Jest dependency).
+# Node drives the reporter class directly: jest is not needed, and the two
+# hooks the reporter exposes are its whole contract.
 #
-# Tests:
-#   PROOF-1 (RULE-1): Test title with proof marker produces proof entry
-#   PROOF-2 (RULE-2): Proof entry contains all required fields
-#   PROOF-3 (RULE-3): Proof file is written next to matching spec file
-#   PROOF-4 (RULE-4): Unknown feature falls back to specs/ directory
-#   PROOF-5 (RULE-5): Running twice replaces old entries
+#   a title marker produces a proof entry
+#   the entry carries the seven fields
+#   the file is .purlin/runtime/proofs/<feature>.<tier>.json
+#   a title with no marker is ignored
+#   a second run replaces this file's entries
+#   a skipped test writes nothing and keeps the entry it had
+#   the retired :on(...) keyword is refused and names @env
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -17,8 +19,12 @@ REPORTER="$PROJECT_ROOT/scripts/proof/jest_purlin.js"
 PASS=0
 FAIL=0
 
-# Load proof harness
 source "$PROJECT_ROOT/scripts/proof/shell_purlin.sh"
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "node is not installed, so this suite did not run."
+  exit 0
+fi
 
 run_test() {
   local name="$1"
@@ -26,209 +32,128 @@ run_test() {
   if "$@"; then
     echo "  PASS: $name"
     PASS=$((PASS + 1))
-    return 0
   else
     echo "  FAIL: $name"
     FAIL=$((FAIL + 1))
-    return 1
   fi
 }
 
-echo "=== proof-jest tests ==="
+make_project() {
+  local d
+  d="$(mktemp -d)"
+  mkdir -p "$d/specs/a" "$d/.purlin" "$d/tests"
+  printf '# feat\n\n## Rules\n- RULE-1: a\n- RULE-2: b\n' > "$d/specs/a/feat.md"
+  printf '// marked\n' > "$d/tests/a.test.js"
+  echo "$d"
+}
 
-# --- PROOF-1: Proof marker in title produces proof entry ---
-test_proof_marker_parsing() {
-  local tmpdir
-  tmpdir=$(mktemp -d)
-  mkdir -p "$tmpdir/specs/auth"
-  echo -e "# Feature: my_feat\n\n## Rules\n- RULE-1: Must work" > "$tmpdir/specs/auth/my_feat.md"
-
-  node -e "
-const fs = require('fs');
-
-const Reporter = require('$REPORTER');
-const r = new Reporter({ rootDir: '$tmpdir' }, {});
-
-r.onTestResult(null, {
-  testFilePath: '$tmpdir/tests/test_auth.js',
-  testResults: [{
-    title: 'does auth [proof:my_feat:PROOF-1:RULE-1]',
-    status: 'passed'
-  }]
-});
-
-process.chdir('$tmpdir');
+# drive <dir> <results-json>
+drive() {
+  local d="$1" results="$2"
+  cat > "$d/harness.cjs" <<EOF
+const path = require("path");
+const Reporter = require("$REPORTER");
+const r = new Reporter({rootDir: "$d"});
+r.onTestResult({}, {testFilePath: path.join("$d", "tests/a.test.js"),
+  testResults: $results});
 r.onRunComplete();
-
-const proof = JSON.parse(fs.readFileSync('$tmpdir/specs/auth/my_feat.proofs-unit.json', 'utf8'));
-if (proof.proofs[0].feature !== 'my_feat') process.exit(1);
-" 2>/dev/null
-
-  local rc=$?
-  rm -rf "$tmpdir"
-  return $rc
+EOF
+  (cd "$d" && node harness.cjs)
 }
-run_test "proof marker parsing" test_proof_marker_parsing
-purlin_proof "proof-jest" "PROOF-1" "RULE-1" "$([ $? -eq 0 ] && echo pass || echo fail)" "proof marker parsing"
 
-# --- PROOF-2: All required fields present ---
-test_all_fields_present() {
-  local tmpdir
-  tmpdir=$(mktemp -d)
-  mkdir -p "$tmpdir/specs/auth"
-  echo -e "# Feature: my_feat\n\n## Rules\n- RULE-1: Must work" > "$tmpdir/specs/auth/my_feat.md"
+echo "=== jest proof reporter tests ==="
 
-  node -e "
-const fs = require('fs');
-
-const Reporter = require('$REPORTER');
-const r = new Reporter({ rootDir: '$tmpdir' }, {});
-
-r.onTestResult(null, {
-  testFilePath: '$tmpdir/tests/test_auth.js',
-  testResults: [{
-    title: 'does auth [proof:my_feat:PROOF-1:RULE-1]',
-    status: 'passed'
-  }]
-});
-
-process.chdir('$tmpdir');
-r.onRunComplete();
-
-const entry = JSON.parse(fs.readFileSync('$tmpdir/specs/auth/my_feat.proofs-unit.json', 'utf8')).proofs[0];
-const required = ['feature', 'id', 'rule', 'test_file', 'test_name', 'status', 'tier'];
-for (const f of required) {
-  if (!(f in entry)) { console.error('missing field:', f); process.exit(1); }
+test_marker_produces_an_entry() {
+  local d; d="$(make_project)"
+  drive "$d" '[{"title": "does it [proof:feat:PROOF-1:RULE-1:unit]", "status": "passed"},
+               {"title": "breaks [proof:feat:PROOF-2:RULE-2:unit]", "status": "failed"}]' \
+    >/dev/null 2>&1
+  python3 -c "
+import json
+data = json.load(open('$d/.purlin/runtime/proofs/feat.unit.json', encoding='utf-8'))
+by = {e['id']: e for e in data['proofs']}
+assert by['PROOF-1']['status'] == 'pass', by
+assert by['PROOF-2']['status'] == 'fail', by
+assert set(by['PROOF-1']) == {'feature', 'id', 'rule', 'test_file', 'test_name', 'status', 'tier'}, by
+assert by['PROOF-1']['test_file'] == 'tests/a.test.js', by
+" >/dev/null 2>&1
+  local rc=$?; rm -rf "$d"; return $rc
 }
-if (entry.status !== 'pass') { console.error('expected pass, got:', entry.status); process.exit(1); }
-" 2>/dev/null
+run_test "a title marker produces an entry with the seven fields" test_marker_produces_an_entry
 
-  local rc=$?
-  rm -rf "$tmpdir"
-  return $rc
+test_tier_names_the_file() {
+  local d; d="$(make_project)"
+  drive "$d" '[{"title": "does it [proof:feat:PROOF-1:RULE-1:e2e]", "status": "passed"}]' \
+    >/dev/null 2>&1
+  [[ -f "$d/.purlin/runtime/proofs/feat.e2e.json" ]]
+  local rc=$?; rm -rf "$d"; return $rc
 }
-run_test "all required fields present" test_all_fields_present
-purlin_proof "proof-jest" "PROOF-2" "RULE-2" "$([ $? -eq 0 ] && echo pass || echo fail)" "all required fields present"
+run_test "the marker's tier names the file" test_tier_names_the_file
 
-# --- PROOF-3: Proof file written next to matching spec ---
-test_proof_next_to_spec() {
-  local tmpdir
-  tmpdir=$(mktemp -d)
-  mkdir -p "$tmpdir/specs/billing"
-  echo -e "# Feature: invoice\n\n## Rules\n- RULE-1: Must total" > "$tmpdir/specs/billing/invoice.md"
-
-  node -e "
-const fs = require('fs');
-
-const Reporter = require('$REPORTER');
-const r = new Reporter({ rootDir: '$tmpdir' }, {});
-
-r.onTestResult(null, {
-  testFilePath: '$tmpdir/tests/test_billing.js',
-  testResults: [{
-    title: 'totals [proof:invoice:PROOF-1:RULE-1]',
-    status: 'passed'
-  }]
-});
-
-process.chdir('$tmpdir');
-r.onRunComplete();
-
-if (!fs.existsSync('$tmpdir/specs/billing/invoice.proofs-unit.json')) process.exit(1);
-" 2>/dev/null
-
-  local rc=$?
-  rm -rf "$tmpdir"
-  return $rc
+test_unmarked_title_ignored() {
+  local d; d="$(make_project)"
+  drive "$d" '[{"title": "no marker here", "status": "passed"}]' >/dev/null 2>&1
+  [[ ! -d "$d/.purlin/runtime/proofs" ]] || [[ -z "$(ls -A "$d/.purlin/runtime/proofs")" ]]
+  local rc=$?; rm -rf "$d"; return $rc
 }
-run_test "proof file next to spec" test_proof_next_to_spec
-purlin_proof "proof-jest" "PROOF-3" "RULE-3" "$([ $? -eq 0 ] && echo pass || echo fail)" "proof file next to spec"
+run_test "a title with no marker is ignored" test_unmarked_title_ignored
 
-# --- PROOF-4: Unknown feature falls back to specs/ ---
-test_unknown_feature_fallback() {
-  local tmpdir
-  tmpdir=$(mktemp -d)
-  mkdir -p "$tmpdir/specs"
-
-  node -e "
-const fs = require('fs');
-
-const Reporter = require('$REPORTER');
-const r = new Reporter({ rootDir: '$tmpdir' }, {});
-
-r.onTestResult(null, {
-  testFilePath: '$tmpdir/tests/test.js',
-  testResults: [{
-    title: 'test [proof:unknown_feat:PROOF-1:RULE-1]',
-    status: 'passed'
-  }]
-});
-
-process.chdir('$tmpdir');
-r.onRunComplete();
-
-if (!fs.existsSync('$tmpdir/specs/unknown_feat.proofs-unit.json')) process.exit(1);
-" 2>/dev/null
-
-  local rc=$?
-  rm -rf "$tmpdir"
-  return $rc
+test_rerun_replaces() {
+  local d; d="$(make_project)"
+  drive "$d" '[{"title": "a [proof:feat:PROOF-1:RULE-1]", "status": "passed"},
+               {"title": "b [proof:feat:PROOF-2:RULE-2]", "status": "passed"}]' \
+    >/dev/null 2>&1
+  drive "$d" '[{"title": "a [proof:feat:PROOF-1:RULE-1]", "status": "passed"}]' \
+    >/dev/null 2>&1
+  python3 -c "
+import json
+ids = [e['id'] for e in json.load(open('$d/.purlin/runtime/proofs/feat.unit.json', encoding='utf-8'))['proofs']]
+assert ids == ['PROOF-1'], ids
+" >/dev/null 2>&1
+  local rc=$?; rm -rf "$d"; return $rc
 }
-run_test "unknown feature falls back to specs/" test_unknown_feature_fallback
-purlin_proof "proof-jest" "PROOF-4" "RULE-4" "$([ $? -eq 0 ] && echo pass || echo fail)" "unknown feature falls back to specs/"
+run_test "a second run replaces this file's entries" test_rerun_replaces
 
-# --- PROOF-5: Running twice replaces old entries ---
-test_replace_on_rerun() {
-  local tmpdir
-  tmpdir=$(mktemp -d)
-  mkdir -p "$tmpdir/specs/auth"
-  echo -e "# Feature: my_feat\n\n## Rules\n- RULE-1: Must work" > "$tmpdir/specs/auth/my_feat.md"
-
-  node -e "
-const fs = require('fs');
-
-const Reporter = require('$REPORTER');
-
-// First run: fail
-const r1 = new Reporter({ rootDir: '$tmpdir' }, {});
-r1.onTestResult(null, {
-  testFilePath: '$tmpdir/tests/test.js',
-  testResults: [{
-    title: 'test [proof:my_feat:PROOF-1:RULE-1]',
-    status: 'failed'
-  }]
-});
-process.chdir('$tmpdir');
-r1.onRunComplete();
-
-// Second run: pass
-const r2 = new Reporter({ rootDir: '$tmpdir' }, {});
-r2.onTestResult(null, {
-  testFilePath: '$tmpdir/tests/test.js',
-  testResults: [{
-    title: 'test [proof:my_feat:PROOF-1:RULE-1]',
-    status: 'passed'
-  }]
-});
-r2.onRunComplete();
-
-const data = JSON.parse(fs.readFileSync('$tmpdir/specs/auth/my_feat.proofs-unit.json', 'utf8'));
-if (data.proofs.length !== 1) { console.error('expected 1, got:', data.proofs.length); process.exit(1); }
-if (data.proofs[0].status !== 'pass') { console.error('expected pass, got:', data.proofs[0].status); process.exit(1); }
-" 2>/dev/null
-
-  local rc=$?
-  rm -rf "$tmpdir"
-  return $rc
+test_skipped_keeps_its_entry() {
+  local d; d="$(make_project)"
+  mkdir -p "$d/.purlin/runtime/proofs"
+  python3 -c "
+import json
+entries = [{'feature': 'feat', 'id': 'PROOF-2', 'rule': 'RULE-2',
+            'test_file': 'tests/a.test.js', 'test_name': 'kept name',
+            'status': 'pass', 'tier': 'unit'}]
+json.dump({'tier': 'unit', 'proofs': entries},
+          open('$d/.purlin/runtime/proofs/feat.unit.json', 'w', encoding='utf-8'), indent=2)
+"
+  drive "$d" '[{"title": "a [proof:feat:PROOF-1:RULE-1]", "status": "passed"},
+               {"title": "b [proof:feat:PROOF-2:RULE-2]", "status": "skipped"}]' \
+    >/dev/null 2>&1
+  python3 -c "
+import json
+by = {e['id']: e for e in json.load(open('$d/.purlin/runtime/proofs/feat.unit.json', encoding='utf-8'))['proofs']}
+assert by['PROOF-2']['test_name'] == 'kept name', by
+assert by['PROOF-1']['status'] == 'pass', by
+" >/dev/null 2>&1
+  local rc=$?; rm -rf "$d"; return $rc
 }
-run_test "replace on rerun" test_replace_on_rerun
-purlin_proof "proof-jest" "PROOF-5" "RULE-5" "$([ $? -eq 0 ] && echo pass || echo fail)" "replace on rerun"
+run_test "a skipped test writes nothing and keeps the entry it had" test_skipped_keeps_its_entry
 
-# --- Emit proofs ---
+test_retired_keyword_refused() {
+  local d; d="$(make_project)"
+  local out
+  out="$(drive "$d" '[{"title": "a [proof:feat:PROOF-1:RULE-1:unit:on(windows)]", "status": "passed"}]' 2>&1)" \
+    && { rm -rf "$d"; return 1; }
+  grep -q "@env(windows)" <<<"$out" && \
+    { [[ ! -d "$d/.purlin/runtime/proofs" ]] || [[ -z "$(ls -A "$d/.purlin/runtime/proofs")" ]]; }
+  local rc=$?; rm -rf "$d"; return $rc
+}
+run_test "the retired :on(...) keyword is refused and names @env" test_retired_keyword_refused
+
 cd "$PROJECT_ROOT"
+purlin_proof "proof_plugins_jest" "PROOF-5" "RULE-5" \
+  "$([[ $FAIL -eq 0 ]] && echo pass || echo fail)" "jest reporter suite"
 purlin_proof_finish
 
-# --- Summary ---
 echo ""
-echo "Results: $PASS passed, $FAIL failed"
+echo "jest proof reporter: $PASS/$((PASS+FAIL)) passed"
 [[ $FAIL -eq 0 ]]

@@ -142,17 +142,18 @@ recognised when it will not.
 ## C. How to prove a plugin
 
 Proving a new plugin is adding an arm, not writing a suite. Every behaviour in section A already
-has a test parametrised over the shipped plugins:
+has a test parametrised over the shipped plugins, in this repository's own behavioural suite for
+the proof plugins:
 
 | Behaviour | Where its arm goes |
 |-----------|--------------------|
-| The proof file's location, name and seven fields (A.4, A.5) | the field classes in `dev/test_multilang_proof_plugins.py`, one arm per plugin |
-| Write nothing without a marker (A.6) | `dev/test_proof_plugins_missing.py` |
-| The merge filter and orphan reaping (A.7) | `TestWriteScopedMergeKey` in `dev/test_multilang_proof_plugins.py` |
+| The proof file's location, name and seven fields (A.4, A.5) | `TestTheRuntimeProofFile`, one arm per plugin |
+| Write nothing without a marker (A.6) | `test_no_markers_no_proof_files` |
+| The merge filter and orphan reaping (A.7) | `TestWriteScopedMergeKey` |
 | Ordering (A.7) | the ordinal-order class, seeded with a kept sibling entry so the sort is proved to run after the merge |
 | The project root and relative paths (A.2, A.3) | `TestProjectRootFoundByWalking` and `TestTestFileIsProjectRelative` |
 | A skipped test keeps its entry (A.9) | `TestSkippedTestKeepsItsEntry` |
-| Markers seen and nothing written (A.10) | `TestSeenMarkersAndNoEntryFails`, plus `dev/test_run_script.py` for the run script's own two checks |
+| Markers seen and nothing written (A.10) | `TestSeenMarkersAndNoEntryFails`, plus the run script's own two loud-failure checks |
 | A retired keyword refused (A.11) | `TestRetiredKeywordRefused` |
 | Atomic writes and no third-party import (A.8, A.12) | the temp-file and import classes, which read the plugin source and then run it |
 
