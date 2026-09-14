@@ -10,7 +10,7 @@ Every commit Purlin makes, or asks you to make, uses one of these. There is no o
 | `feat(<name>):` | Implementing a feature, with the changeset in the body | `purlin:build` |
 | `fix(<name>):` | Fixing a bug | `purlin:build` |
 | `test(<name>):` | Writing or changing tests without changing behaviour | `purlin:build` |
-| `purlin: record for <commit7>` | The record of one verify run | `purlin:verify`, or CI |
+| `purlin: record for <commit7>` | The record of one verify run, and on CI the approvals and briefs that run wrote | `purlin:verify`, or CI |
 | `approve(<name>): RULE-N ...` | Approvals, signed | `purlin:approve` |
 | `anchor(<name>): create` | A new local anchor | `purlin:anchor create` |
 | `anchor(<name>): sync (<sha>)` | Advancing a pin to that commit | `purlin:anchor sync` |
@@ -48,8 +48,9 @@ own records; under `recorded` and `approved` only the commit CI made through the
 counts, and yours is a preflight.
 
 A record commit carries the record file and, on a CI run, the approvals CI wrote for low-risk
-rules. It carries nothing else: never fold a record into a `feat(...)` commit, because the
-record must be able to say which commit the tests ran against.
+rules and the briefs it wrote for the review list. It carries nothing else: never fold a record
+into a `feat(...)` commit, because the record must be able to say which commit the tests ran
+against.
 
 ## The approval commit
 

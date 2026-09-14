@@ -128,3 +128,8 @@ A CI auto-approval is exempt from the signature, the approver list and the
 author check, because no person made it. What bounds it is the rule above:
 `high` and `medium` are never auto-approved, and a `@manual` proof is never
 auto-approved at any risk, because its evidence is a person's note.
+
+The run writes these files before it commits, and they travel in the same
+commit as the record they rest on, `purlin: record for <commit7>`. The briefs
+written for the review list travel with them, including the briefs for rules
+nothing auto-approved, because the review list is read out of the branch.

@@ -175,9 +175,10 @@ approval is judged against the list as it stood in the commit that added it.
 A project has no copy of Purlin in it. The workflow init writes therefore clones Purlin at a
 pinned tag and runs `purlin:verify --ci` from that checkout, so the runner runs the same
 verify a developer runs locally, at a version that changes only when someone edits the
-workflow. The job writes its record through the git host's API, auto-approves the low-risk
-rules, writes the review briefs, posts the rollup as a pull request comment, and publishes the
-dashboard page and its data as the `purlin-dashboard` build artifact linked from that comment.
+workflow. The job auto-approves the low-risk rules and writes the review briefs, commits them
+together with its record through the git host's API in one commit, posts the rollup as a pull
+request comment, and publishes the dashboard page and its data as the `purlin-dashboard` build
+artifact linked from that comment.
 
 On a pull request from a fork the API token cannot write, so verify runs, the comment posts,
 no commit is made, and the job says so in the comment.

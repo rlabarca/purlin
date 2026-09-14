@@ -230,10 +230,16 @@ than inventing a state for it.
 
 ### The commit CI makes
 
-CI creates one commit, `purlin: record for <commit7>`, holding the record and any CI
-auto-approvals. It goes through the git host's REST API as blob, then tree, then commit with no
-author or committer field, then a ref update, retrying on a non-fast-forward. That is what makes
-the commit signed and labelled ci.
+CI creates one commit, `purlin: record for <commit7>`, holding the record, any CI
+auto-approvals and the review list's briefs. It goes through the git host's REST API as blob,
+then tree, then commit with no author or committer field, then a ref update, retrying on a
+non-fast-forward. That is what makes the commit signed and labelled ci.
+
+The auto-approvals and the briefs are written before that commit, because the commit is what
+carries them. An approval or a brief that stayed on the runner is evidence nobody can read: it
+is the branch a reviewer works from, and the states Recorded, Reviewed and Approved are read
+out of a checkout. The developer's `purlin:verify` writes neither, so its commit holds the
+records alone.
 
 A squash merge changes the sha, so the record that counts on the default branch is the one CI
 writes after the merge. The pull request branch's own records fall to the retention rule.
