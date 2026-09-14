@@ -490,6 +490,43 @@ def test_the_tree_entry_carries_the_file_and_its_permission(project,
     assert json.loads(blob['content'])['feature'] == 'greeting'
 
 
+@pytest.mark.proof("records", "PROOF-5", "RULE-5")
+def test_the_ci_commit_carries_a_path_outside_the_records_directory(
+        project, github_env, monkeypatch):
+    """A CI run's approvals and briefs ride in the same commit as the record.
+
+    An approval that stayed on the runner is evidence nobody can read, so the
+    tree the commit names holds every path the run handed over and not only
+    the ones under `.purlin/records/`.
+    """
+    host = FakeHost()
+    monkeypatch.setattr(urllib.request, 'urlopen', host)
+    path = records_module.write_record(project, record(), 'ci')
+    approval = 'specs/core/greeting.approvals/RULE-1.1a2b3c4d.ci.json'
+    brief = 'specs/core/greeting.approvals/RULE-2.5e6f7a8b.brief.json'
+    directory = os.path.join(project, 'specs', 'core', 'greeting.approvals')
+    os.makedirs(directory)
+    for rel, text in ((approval, '{"rule": "RULE-1", "approver": "ci"}\n'),
+                      (brief, '{"rule": "RULE-2", "verdict": "ready"}\n')):
+        with open(os.path.join(project, *rel.split('/')), 'w',
+                  encoding='utf-8') as handle:
+            handle.write(text)
+
+    records_module.commit_records(project, [path, approval, brief], 'ci',
+                                  'purlin: record for 4f1c2ab')
+
+    tree = host.body_for('/git/trees', method='POST')
+    paths = [entry['path'] for entry in tree['tree']]
+    assert paths == [path, approval, brief]
+    beside_the_spec = [name for name in paths
+                       if not name.startswith('.purlin/records/')]
+    assert beside_the_spec == [approval, brief]
+    blobs = [body for _verb, url, body in host.calls if url.endswith('/blobs')]
+    assert len(blobs) == 3, 'a path handed over got no blob'
+    assert json.loads(blobs[1]['content'])['approver'] == 'ci'
+    assert json.loads(blobs[2]['content'])['verdict'] == 'ready'
+
+
 @pytest.mark.proof("records", "PROOF-6", "RULE-6")
 def test_the_ref_update_is_retried_when_the_branch_moved(project, github_env,
                                                          monkeypatch):

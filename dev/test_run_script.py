@@ -451,6 +451,37 @@ class _FakeModule(object):
         self.__dict__.update(attributes)
 
 
+def _fake_review(monkeypatch, order, approvals, briefs):
+    """Stand in for the review helpers and note when each one ran.
+
+    `order` collects `auto_approve`, `write_briefs` and `commit` as they
+    happen, which is how a test reads whether the files the commit must carry
+    were written before it.
+    """
+
+    def auto_approve(project_root, payload=None, record_path=None):
+        order.append('auto_approve')
+        return list(approvals)
+
+    def write_briefs(project_root, payload=None, rules=None, ai=False):
+        order.append('write_briefs')
+        return list(briefs)
+
+    monkeypatch.setitem(sys.modules, 'approve',
+                        _FakeModule(auto_approve=auto_approve))
+    monkeypatch.setitem(sys.modules, 'brief',
+                        _FakeModule(write_briefs=write_briefs))
+
+    records = sys.modules['records']
+    committed = records.commit_records
+
+    def commit_records(*args, **kwargs):
+        order.append('commit')
+        return committed(*args, **kwargs)
+
+    monkeypatch.setattr(records, 'commit_records', commit_records)
+
+
 @pytest.fixture
 def record_run(monkeypatch, tmp_path):
     """Run `--record` with the 2B and 2C modules faked, and report the calls."""
@@ -636,6 +667,50 @@ class TestRecordCommitsAndTags:
         name, paths = calls['tag'][0]
         assert name == '1.0'
         assert paths == ['.purlin/records/feat/r.json'.replace('/', os.sep)]
+
+    @pytest.mark.proof("run_script", "PROOF-61", "RULE-42")
+    def test_ci_hands_the_approvals_and_the_briefs_to_the_commit(
+            self, tmp_path, record_run, monkeypatch, capsys):
+        """An approval that exists only on a runner is evidence nobody reads.
+
+        So the files the CI run writes go into the same commit as the record
+        they rest on, which means they have to be written before it.
+        """
+        approval = 'specs/core/feat.approvals/RULE-1.1a2b3c4d.ci.json'
+        brief = 'specs/core/feat.approvals/RULE-2.5e6f7a8b.brief.json'
+        order = []
+        _fake_review(monkeypatch, order, [approval], [brief])
+
+        root = _pytest_project(tmp_path)
+        _spec(root, 'feat')
+        _code, calls = record_run(root, '--all', '--ci')
+        output = capsys.readouterr().out
+
+        paths, identity, _message = calls['commit'][0]
+        assert identity == 'ci'
+        assert paths == [os.path.join('.purlin', 'records', 'feat', 'r.json'),
+                         approval, brief]
+        assert order == ['auto_approve', 'write_briefs', 'commit'], (
+            'the commit was made before the files it must carry')
+        assert 'Auto-approved 1 low-risk rule; 1 brief written.' in output
+
+    @pytest.mark.proof("run_script", "PROOF-61", "RULE-42")
+    def test_the_developer_commit_carries_the_records_alone(
+            self, tmp_path, record_run, monkeypatch, capsys):
+        order = []
+        _fake_review(monkeypatch, order,
+                     ['specs/core/feat.approvals/RULE-1.1a2b3c4d.ci.json'],
+                     ['specs/core/feat.approvals/RULE-2.5e6f7a8b.brief.json'])
+
+        root = _pytest_project(tmp_path)
+        _spec(root, 'feat')
+        _code, calls = record_run(root, '--all', '--commit')
+        capsys.readouterr()
+
+        paths, identity, _message = calls['commit'][0]
+        assert identity == 'developer'
+        assert paths == [os.path.join('.purlin', 'records', 'feat', 'r.json')]
+        assert order == ['commit']
 
     @pytest.mark.proof("run_script", "PROOF-17", "RULE-17")
     def test_without_commit_nothing_is_committed(
