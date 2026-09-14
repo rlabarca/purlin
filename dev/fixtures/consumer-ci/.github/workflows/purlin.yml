@@ -1,8 +1,10 @@
 # Purlin runs verify here, on every push and every pull request.
 #
 # purlin:init writes this file and purlin:init --update refreshes it. The
-# matrix is the operating systems the `@env` tags in specs/ name: one job per
-# operating system, and ubuntu-latest alone when no proof names one. Each job
+# matrix always carries ubuntu-latest first, then one job per operating system
+# the `@env` tags in specs/ name; a project that tags nothing runs on
+# ubuntu-latest alone. An untagged proof is satisfied by any operating system,
+# so the Linux job proves those and writes the record that counts. Each job
 # runs the same verify a developer runs and writes its own record, so two jobs
 # never write the same file name.
 #

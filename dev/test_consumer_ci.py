@@ -204,11 +204,23 @@ def test_the_matrix_is_the_one_operating_system_the_spec_names():
 
 @pytest.mark.proof("records", "PROOF-19", "RULE-19")
 def test_the_matrix_is_one_job_per_named_operating_system():
-    """The order is fixed, and a name outside the three is ignored."""
+    """Linux always leads, the order is fixed, and an unknown name is ignored."""
     assert workflow_module.runners_for(['windows', 'linux']) == [
         'ubuntu-latest', 'windows-latest']
     assert workflow_module.runners_for([]) == ['ubuntu-latest']
     assert workflow_module.runners_for(['plan9']) == ['ubuntu-latest']
+
+
+@pytest.mark.proof("records", "PROOF-19", "RULE-19")
+def test_the_matrix_always_carries_linux_first():
+    """Every untagged proof is proved somewhere, so the Linux job always runs."""
+    assert workflow_module.runners_for(['windows']) == [
+        'ubuntu-latest', 'windows-latest']
+    assert workflow_module.runners_for(['linux']) == ['ubuntu-latest']
+    assert workflow_module.runners_for(['macos', 'windows']) == [
+        'ubuntu-latest', 'macos-latest', 'windows-latest']
+    rendered = workflow_module.render_workflow('github', ['windows'], PURLIN_REF)
+    assert 'os: [ubuntu-latest, windows-latest]' in rendered
 
 
 @pytest.mark.proof("records", "PROOF-18", "RULE-18")

@@ -1,8 +1,9 @@
 # Purlin runs verify here, on every push and every pull request.
 #
 # purlin:init writes this file for a project whose git host is Azure DevOps.
-# The matrix is the operating systems the `@env` tags in specs/ name: one job
-# per operating system, and ubuntu-latest alone when no proof names one.
+# The matrix always carries ubuntu-latest first, then one job per operating
+# system the `@env` tags in specs/ name; a project that tags nothing runs on
+# ubuntu-latest alone.
 #
 # The build service writes the record, so give it Contribute on
 # `.purlin/records/**` through branch security and give it nothing else.

@@ -4,10 +4,12 @@ One template per git host lives under `templates/`, and this fills in the two
 things a project decides: which operating systems the matrix covers, and which
 Purlin release the runner clones when the project is not this repository.
 
-The matrix comes from the `@env` tags in `specs/`. A proof tagged
-`@env(windows)` needs a Windows job to prove it; a project that tags nothing
-runs on Linux alone. Nothing else about the workflow varies, so two projects
-with the same tags get the same file.
+The matrix always carries Linux, then the operating systems the `@env` tags in
+`specs/` name. A proof tagged `@env(windows)` adds a Windows job to prove it;
+an untagged proof is satisfied by any operating system, so the Linux job proves
+those and writes the record that counts. A project that tags nothing runs on
+Linux alone. Nothing else about the workflow varies, so two projects with the
+same tags get the same file.
 
 The scheduled job that reports an anchor pin behind its source is optional:
 the template carries it between `# BEGIN upstream-check` and
@@ -47,13 +49,22 @@ def workflow_filename(host):
 def runners_for(env_tags):
     """The runner images for a set of `@env` tags, in a fixed order.
 
+    Linux always comes first, tagged or not: an untagged proof is satisfied by
+    any operating system, and the job that proves every untagged proof and
+    writes the record that counts has to exist. The tagged operating systems
+    follow in `ORDER`, deduplicated, so `['windows']` gives
+    `ubuntu-latest, windows-latest` and `['linux']` gives `ubuntu-latest` once.
+
     An unknown tag is ignored rather than guessed at: the vocabulary is
     windows, macos and linux and nothing else, and a project that names
     something else still gets a workflow that runs.
     """
     named = {str(tag).strip().lower() for tag in (env_tags or ()) if tag}
-    images = [RUNNERS[name] for name in ORDER if name in named]
-    return images or [DEFAULT_RUNNER]
+    images = [DEFAULT_RUNNER]
+    for name in ORDER:
+        if name in named and RUNNERS[name] not in images:
+            images.append(RUNNERS[name])
+    return images
 
 
 def env_tags_in_specs(project_root):

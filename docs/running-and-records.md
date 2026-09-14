@@ -216,9 +216,11 @@ not on the runner at all; the job clones Purlin at the tag the project pins. Set
 
 ### The matrix comes from `@env`
 
-`purlin:init` reads the `@env` tags in `specs/` and writes one job per operating system named
-there, and `ubuntu-latest` alone when no proof names one. Each job runs the same verify and
-writes its own record, so the file names never collide. A rule whose proofs name two operating
+`purlin:init` writes `ubuntu-latest` first, then one job per operating system the `@env` tags
+in `specs/` name; a project that tags nothing runs on `ubuntu-latest` alone. The Linux job is
+always there because an untagged proof is satisfied by any operating system, and something has
+to prove those and write the record that counts. Each job runs the same verify and writes its
+own record, so the file names never collide. A rule whose proofs name two operating
 systems needs a passing record from both; the status line says `windows: no record yet` rather
 than inventing a state for it.
 
