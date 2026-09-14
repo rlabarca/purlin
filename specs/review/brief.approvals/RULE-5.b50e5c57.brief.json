@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "brief",
-  "generated_at": "2026-09-14T16:51:59Z",
+  "generated_at": "2026-09-14T16:59:52Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-6 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/brief/20260914T165124Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/brief/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-5",
   "rule_hash": "1c438635942357171211719baa1178d876eb29e2dc26a3fccc962c3806b88c7e",
   "rule_text": "Every free check on the proof text reaches the brief under the name `references/review_criteria.md` gives it",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "4925c3041c0c6f7c67a19f221c8f09e0d53048a3b8d518f10c533bbb06fa6692",
   "test_hash_kind": "file",
   "test_strength": null,

@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "purlin_version",
-  "generated_at": "2026-09-14T16:52:14Z",
+  "generated_at": "2026-09-14T17:00:05Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-5 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/purlin_version/20260914T165125Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/purlin_version/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-5",
   "rule_hash": "5191125edb3dbf65539ffbd6bdccbbf7d21c18dd684f9f481e93945a134c94ee",
   "rule_text": "The `version` field of `.claude-plugin/plugin.json`, which is what the plugin loader reports and what a consumer installs against, equals the `VERSION` file",
   "schema": "purlin-brief/1",
-  "state": "Tested",
+  "state": "Reviewed",
   "test_hash": "9a0fde1b12a7f1fa61af4e4342beae6816e37287469dfa04fd609a13d0d5bbd5",
   "test_hash_kind": "file",
   "test_strength": null,

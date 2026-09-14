@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "schema_spec_format",
-  "generated_at": "2026-09-14T16:52:33Z",
+  "generated_at": "2026-09-14T17:00:21Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-6 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/schema_spec_format/20260914T165126Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/schema_spec_format/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-6",
   "rule_hash": "24bcf661652864867f2138c0a9ef99cfa45352e1b240ec34186b00b9f62f3303",
   "rule_text": "`> Scope:` is a comma-separated list of file paths, parsed into a list in the order written, because a record hashes exactly those files to tell a code change from a rule change",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "521e0848a8058faffb1df5f4fe6a605d627232d19f6ed35512ccd61852fe55f3",
   "test_hash_kind": "file",
   "test_strength": null,

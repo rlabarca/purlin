@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "specs",
-  "generated_at": "2026-09-14T16:52:41Z",
+  "generated_at": "2026-09-14T17:00:28Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-4 logic_mirroring"
   ],
-  "record": ".purlin/records/specs/20260914T165128Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/specs/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-3",
   "rule_hash": "dd43542a41a23f7c46b12e4a347a3532d8a814e71f3fcd7e92a0d5986f247a0b",
   "rule_text": "The rule and proof text hashes normalise runs of whitespace to one space, so reflowing or retagging a line returns the hash it already had",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "f663eb925bc64d68d5dc99836f26f3b320a46efd5e611e824f497fcbd907a324",
   "test_hash_kind": "file",
   "test_strength": null,

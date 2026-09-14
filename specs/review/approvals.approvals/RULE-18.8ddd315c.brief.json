@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "approvals",
-  "generated_at": "2026-09-14T16:51:57Z",
+  "generated_at": "2026-09-14T16:59:50Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-23 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/approvals/20260914T165124Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/approvals/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-18",
   "rule_hash": "5b303801bf72a207a39dde40e3923f7727c5209e7568fba9881fa1a4623bbc23",
   "rule_text": "One invocation is one signed commit, whatever number of rules it carries, and its subject names the feature and every rule approved",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "096c40b3239d2d22e605ff60cbe041ea872a30b92af070810c2dd4fee0044a58",
   "test_hash_kind": "file",
   "test_strength": null,

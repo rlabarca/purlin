@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "config_engine",
-  "generated_at": "2026-09-14T16:52:01Z",
+  "generated_at": "2026-09-14T16:59:53Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-1 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/config_engine/20260914T165124Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/config_engine/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-1",
   "rule_hash": "5aa942ccbb4dfc8b53c1897d957baf356d05e6b186125c93dfe55fd9daae39e4",
   "rule_text": "The project root is the `PURLIN_PROJECT_ROOT` environment variable when it names a directory that exists",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "22a3c60b4bd42dc544d12a6998bbf285e067ab106dec768eecef593d1b4fccb9",
   "test_hash_kind": "file",
   "test_strength": null,

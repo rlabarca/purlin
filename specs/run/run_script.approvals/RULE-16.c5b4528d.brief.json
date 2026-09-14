@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "run_script",
-  "generated_at": "2026-09-14T16:52:23Z",
+  "generated_at": "2026-09-14T17:00:12Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-16 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/run_script/20260914T165126Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/run_script/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-16",
   "rule_hash": "14a7f94286d1ff5e5f5b4912bbd52fca5a731d70e944ccd35ffb383c40af41f7",
   "rule_text": "The breaks are asked for each feature's scope files, the tests of each rule and the tier the run covered",
   "schema": "purlin-brief/1",
-  "state": "Tested",
+  "state": "Reviewed",
   "test_hash": "ed052efea514e89805ecc159353123c6ee9e07ce4c5f0762b4ed1ed19f01506c",
   "test_hash_kind": "file",
   "test_strength": null,

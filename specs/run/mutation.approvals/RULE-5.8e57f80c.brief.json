@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "mutation",
-  "generated_at": "2026-09-14T16:52:05Z",
+  "generated_at": "2026-09-14T16:59:57Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-5 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/mutation/20260914T165124Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/mutation/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-5",
   "rule_hash": "13c3957a48c12c8e0f6d9e52cd981d81c1665dec4667ad44c10a41e7a1b12511",
   "rule_text": "Stryker runs once per feature against that feature's scope files alone, under a generated config naming `coverageAnalysis: \"perTest\"`, `disableBail: true`, the `json` reporter and the report path",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "133f06f8125a140e495313e73e4e74e8d00275a6f1a35434ced62fef0b3e215d",
   "test_hash_kind": "file",
   "test_strength": null,

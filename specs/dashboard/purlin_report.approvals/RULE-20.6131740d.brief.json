@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "purlin_report",
-  "generated_at": "2026-09-14T16:52:14Z",
+  "generated_at": "2026-09-14T17:00:04Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-20 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/purlin_report/20260914T165125Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/purlin_report/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-20",
   "rule_hash": "4fa408506d730d2f83d74ea6cd9b31804b07bf9c8b84bc6aa68a768cd9b09714",
   "rule_text": "A payload written for another schema version shows one notice naming the command that rewrites it, and no tiles, no table and no tabs, rather than rendering fields it cannot read",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "6e35c958cb4789de2003275af1f3056a022aadb409c7408c0e54ef5ea0a48dc5",
   "test_hash_kind": "file",
   "test_strength": null,

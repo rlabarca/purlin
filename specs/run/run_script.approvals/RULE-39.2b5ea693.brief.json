@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "run_script",
-  "generated_at": "2026-09-14T16:52:24Z",
+  "generated_at": "2026-09-14T17:00:14Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-57 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/run_script/20260914T165126Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/run_script/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-39",
   "rule_hash": "efff851e867a87fc909c8bc53e7207990f5febbcc4047fa7e72a52a1a755c34c",
   "rule_text": "The run script reconfigures stdout and stderr to UTF-8 before it prints anything, so a console whose codec is cp1252 prints the state table's glyphs instead of ending the run with an encoding error",
   "schema": "purlin-brief/1",
-  "state": "Tested",
+  "state": "Reviewed",
   "test_hash": "0bf053457ce6bac6b40b0a764ac890b67d38b0c38bf11fdd9c62b2d1dc00fdb0",
   "test_hash_kind": "file",
   "test_strength": null,

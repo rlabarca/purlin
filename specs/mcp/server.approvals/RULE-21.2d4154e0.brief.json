@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "server",
-  "generated_at": "2026-09-14T16:52:36Z",
+  "generated_at": "2026-09-14T17:00:24Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-21 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/server/20260914T165126Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/server/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-21",
   "rule_hash": "c4e48c6fd8bed5a44e9383c98f67ea7eb05b7355b1cd744278c768976d3c04a4",
   "rule_text": "`hooks/hooks.json` registers this one script under exactly the events `PostToolUse` with the matcher `Bash|Write|Edit|MultiEdit`, `SubagentStop` and `Stop`, every entry a command with an integer timeout that runs without waiting, each command reaching the script through the interpreter resolver so that no interpreter is named; no entry exists under any event through which a hook could gate or steer a turn",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "653ddea8234b70b5cade933bc6632783372d0de3993baf70fc8f824935b4e367",
   "test_hash_kind": "file",
   "test_strength": null,

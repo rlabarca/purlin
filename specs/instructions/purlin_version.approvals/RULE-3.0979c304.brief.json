@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "purlin_version",
-  "generated_at": "2026-09-14T16:52:14Z",
+  "generated_at": "2026-09-14T17:00:05Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-3 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/purlin_version/20260914T165125Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/purlin_version/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-3",
   "rule_hash": "d2ef93cf0485df442354a711f5448ee0be4419bb22ca0de5f81d033adab25e5e",
   "rule_text": "The `version` field of `templates/config.json`, which `purlin:init` stamps into a new project, equals the `VERSION` file",
   "schema": "purlin-brief/1",
-  "state": "Tested",
+  "state": "Reviewed",
   "test_hash": "f76f4e7a1f3dd4daddd59e3d7b8f202f883475d380a56c29427b1e125786e4a4",
   "test_hash_kind": "file",
   "test_strength": null,

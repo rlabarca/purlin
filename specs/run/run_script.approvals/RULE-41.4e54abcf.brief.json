@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "run_script",
-  "generated_at": "2026-09-14T16:52:24Z",
+  "generated_at": "2026-09-14T17:00:14Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-60 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/run_script/20260914T165126Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/run_script/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-41",
   "rule_hash": "b11fd0ec3b851ee808b105d1418854288320f2cfbcdb8cefc98282e294b16b48",
   "rule_text": "`--project-root` with an empty value exits 2 naming the flag, rather than resolving to the working directory and running there",
   "schema": "purlin-brief/1",
-  "state": "Tested",
+  "state": "Reviewed",
   "test_hash": "15064161e269c3c246c7bfd82996c621b644898ac981edff4a42e2860fdddf79",
   "test_hash_kind": "file",
   "test_strength": null,

@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "run_script",
-  "generated_at": "2026-09-14T16:52:21Z",
+  "generated_at": "2026-09-14T17:00:11Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-1 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/run_script/20260914T165126Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/run_script/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-1",
   "rule_hash": "075765dfdb106ffb21d5a96c8f482e30b87d73902acf79c53cfe7b35f0293891",
   "rule_text": "The command line names exactly one of `--quick`, `--record` and `--remote`, and either `--all` or at least one `--feature`; `--commit`, `--ci` and `--tag` belong to `--record`; `--tier` is `unit` or `all`. Any other shape exits 2 and prints the usage line",
   "schema": "purlin-brief/1",
-  "state": "Tested",
+  "state": "Reviewed",
   "test_hash": "fe6e96f5ca8ad1ec02c2a3a88ee83c51c2b8c230df6015a91443abcd93c8902e",
   "test_hash_kind": "file",
   "test_strength": null,

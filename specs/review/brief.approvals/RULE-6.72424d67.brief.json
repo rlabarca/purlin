@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "brief",
-  "generated_at": "2026-09-14T16:51:59Z",
+  "generated_at": "2026-09-14T16:59:52Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-7 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/brief/20260914T165124Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/brief/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-6",
   "rule_hash": "89c035889bead3480da06bdf80fac1a5c1e495d7a99392ad44cfd28779439386",
   "rule_text": "Every free check on the marked test body reaches the brief under its own name, each with the reason a reader acts on",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "9bef18e75bfc4aa2d8f6e3e0e1ec2c6ea8624f85c52d01ab31850b06005df43a",
   "test_hash_kind": "file",
   "test_strength": null,

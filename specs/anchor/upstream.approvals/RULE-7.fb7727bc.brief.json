@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "upstream",
-  "generated_at": "2026-09-14T16:53:04Z",
+  "generated_at": "2026-09-14T17:00:47Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-7 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/upstream/20260914T165128Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/upstream/20260914T165947Z-ff82c7d-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-7",
   "rule_hash": "88a21ac0decd0e2ad8168acaccc3557862ff8e6822b0ff18554e962dd62e79aa",
   "rule_text": "A source that is a readable text file rather than a repository is copied in whole as a drafted anchor carrying a note and no rules, pinned by the hash of its text, so rewording the source moves the pin",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "af583ecf2e1d372dc0211ce8d0cd219f6e611a73da0fc5b3eafcca15e4d9cddb",
   "test_hash_kind": "file",
   "test_strength": null,

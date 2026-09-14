@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "proofs",
-  "generated_at": "2026-09-14T16:52:11Z",
+  "generated_at": "2026-09-14T17:00:02Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-1 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/proofs/20260914T165125Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/proofs/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-1",
   "rule_hash": "2f00b89bd87b3934c7200cac0fd8187bae15f7ae2213f04e4b7353910ab95090",
   "rule_text": "The proof files a test run writes live under `.purlin/runtime/proofs/`, one per feature per tier, named `<feature>.<tier>.json`",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "24ff86de56e243c7b5904aecb873179240be42bcc3f58f75578a0aa70a7cc051",
   "test_hash_kind": "file",
   "test_strength": null,

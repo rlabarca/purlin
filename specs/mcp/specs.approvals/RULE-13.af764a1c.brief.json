@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "specs",
-  "generated_at": "2026-09-14T16:52:42Z",
+  "generated_at": "2026-09-14T17:00:29Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-14 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/specs/20260914T165128Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/specs/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-13",
   "rule_hash": "ae761a971d1d14301fdb83b9841df0b160ddc829315904769745e4f57ccb5015",
   "rule_text": "A feature must prove its own rules, the rules of every spec it requires and of everything those require in turn, and the rules of every anchor carrying `> Global: true`, labelled `own`, `required` and `global`; an anchor proves its own rules and nothing else",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "706639fae596e98faa650bab5745f545556a5b3f07597796d163de4b9132fc3a",
   "test_hash_kind": "file",
   "test_strength": null,

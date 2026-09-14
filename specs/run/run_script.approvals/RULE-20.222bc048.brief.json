@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "run_script",
-  "generated_at": "2026-09-14T16:52:24Z",
+  "generated_at": "2026-09-14T17:00:13Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-20 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/run_script/20260914T165126Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/run_script/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-20",
   "rule_hash": "36b1e0fd07104a767b49243a24297bbab221d3a6ff4e83ab400d2fd233ff7581",
   "rule_text": "A record carries the git tree hash of its feature's scoped files, so a rule stays Recorded while only other files change and falls back to Tested when a scoped file changes",
   "schema": "purlin-brief/1",
-  "state": "Tested",
+  "state": "Reviewed",
   "test_hash": "68b57502ad65cb37df392f2ee26728a2bbc8d5d83f04b4d7ab33b18a57bafb24",
   "test_hash_kind": "file",
   "test_strength": null,

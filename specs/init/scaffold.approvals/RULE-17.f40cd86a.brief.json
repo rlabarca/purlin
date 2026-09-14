@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "scaffold",
-  "generated_at": "2026-09-14T16:52:29Z",
+  "generated_at": "2026-09-14T17:00:18Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-17 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/scaffold/20260914T165126Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/scaffold/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-17",
   "rule_hash": "565eea138babcfc37979826eb53cb948cbc2be035976f54e40e74d0e6a489fe9",
   "rule_text": "The branch rules the git host has to enforce are printed: under `tested` the force-push and deletion rule alone, and above it the restrictions on `.purlin/records/**` and the CI approval files as well",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "bb3b6f03e908e30f5676c1ea12e818ccde06271d8adde5974af002dbdfd0b35b",
   "test_hash_kind": "file",
   "test_strength": null,

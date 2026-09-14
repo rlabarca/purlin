@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "server",
-  "generated_at": "2026-09-14T16:52:35Z",
+  "generated_at": "2026-09-14T17:00:24Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-16 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/server/20260914T165126Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/server/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-16",
   "rule_hash": "30d759db81bf662cf261b281bb6777266f3001326214e57b9054fb17650cbe1b",
   "rule_text": "One generation at a time: the hook takes a lock that does not wait, and a second instance finding it held leaves without generating, because the holder re-reads the inputs after writing",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "34c227db8aade502fe68074da03fdc2ea2a8a22615afc6662f62e070626eb35e",
   "test_hash_kind": "file",
   "test_strength": null,

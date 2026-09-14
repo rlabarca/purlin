@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "purlin_report",
-  "generated_at": "2026-09-14T16:52:13Z",
+  "generated_at": "2026-09-14T17:00:04Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-14 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/purlin_report/20260914T165125Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/purlin_report/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-14",
   "rule_hash": "b985be8799e64ac506a04c38c3201e1f1ee151286437575998e1cacee8f90904",
   "rule_text": "Filters compose: a rule shows only where every set filter accepts it, a combination nothing matches says so in place of the table, and unsetting them restores every row",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "14cc632ced93cc97d7c44b5d9f62b2dfb7837af4ae221849f75ec6b7be0a620e",
   "test_hash_kind": "file",
   "test_strength": null,

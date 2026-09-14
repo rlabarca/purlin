@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "server",
-  "generated_at": "2026-09-14T16:52:36Z",
+  "generated_at": "2026-09-14T17:00:24Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-17 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/server/20260914T165126Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/server/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-17",
   "rule_hash": "4aa7079993d26bdb54321e0b03181f633b4d8354d04c96baff51cc10473d86f4",
   "rule_text": "After writing, the hook re-reads the inputs against the moment it started generating and builds again when something landed meanwhile, at most three times in one run",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "a2da4af3143014d1af8e2067bf3cc97b81da7d87ddb3be6e19755719f66f1f96",
   "test_hash_kind": "file",
   "test_strength": null,

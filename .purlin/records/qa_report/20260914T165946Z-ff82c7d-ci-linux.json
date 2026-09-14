@@ -1,0 +1,232 @@
+{
+  "commit": "ff82c7d8fc6931654a0099a68c4391e5a58fc24b",
+  "dirty": true,
+  "environment": {
+    "engines": [
+      "none"
+    ],
+    "host": "GitHub Actions 1000000090",
+    "id": "linux-x86_64",
+    "job": "verify",
+    "kind": "ci",
+    "os": "linux"
+  },
+  "feature": "qa_report",
+  "features": {
+    "qa_report": {
+      "rules": {
+        "RULE-1": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-1"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_skills.py",
+              "name": "test_the_frontmatter_names_the_tool",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-2": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-2"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_skills.py",
+              "name": "test_no_credential_is_written_into_a_url",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-3": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-3"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_skills.py",
+              "name": "test_it_scans_the_project_and_reads_the_rollup",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-4": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-4"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_skills.py",
+              "name": "test_every_entry_ends_with_one_of_four_verdicts",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-5": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-5"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_skills.py",
+              "name": "test_it_states_its_limits",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-6": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-6"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_skills.py",
+              "name": "test_the_archive_holds_the_markdown",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        }
+      },
+      "scope_score": {
+        "killed": 0,
+        "score": null,
+        "survived": 0
+      },
+      "spec": "specs/tools/qa_report.md"
+    }
+  },
+  "gate": "approved",
+  "log": {
+    "path": ".purlin/runtime/run.log",
+    "sha256": "8bb4c755c3df5a65b33468a6cd76e414ee7bb321fc92299f827fa99a67871c0a"
+  },
+  "missing": [],
+  "os": "linux",
+  "plugins": [
+    "pytest",
+    "shell"
+  ],
+  "proofs": [
+    {
+      "env": null,
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "test_file": "dev/test_skills.py",
+      "test_name": "test_the_frontmatter_names_the_tool",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass",
+      "test_file": "dev/test_skills.py",
+      "test_name": "test_no_credential_is_written_into_a_url",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass",
+      "test_file": "dev/test_skills.py",
+      "test_name": "test_it_scans_the_project_and_reads_the_rollup",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass",
+      "test_file": "dev/test_skills.py",
+      "test_name": "test_every_entry_ends_with_one_of_four_verdicts",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass",
+      "test_file": "dev/test_skills.py",
+      "test_name": "test_it_states_its_limits",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "status": "pass",
+      "test_file": "dev/test_skills.py",
+      "test_name": "test_the_archive_holds_the_markdown",
+      "tier": "unit"
+    }
+  ],
+  "runner": "ci",
+  "schema": "purlin-record/1",
+  "schema_version": 1,
+  "scope_tree": "4318701e12d6b9c4e4d07da0081dc67d17902765689760d21d16cc2feeaa6c5a",
+  "test_strength": null,
+  "timestamp": "2026-09-14T16:59:46Z"
+}

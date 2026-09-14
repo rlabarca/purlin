@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "static_checks",
-  "generated_at": "2026-09-14T16:52:50Z",
+  "generated_at": "2026-09-14T17:00:36Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-36 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/static_checks/20260914T165128Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/static_checks/20260914T165947Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-10",
   "rule_hash": "3003315e8758743964e9994a29a257fbc7bc7018874ad9f13e0d4e50ab2132fc",
   "rule_text": "The JavaScript reader bounds a test body by balancing braces, so a nested options object does not truncate it and an apostrophe inside a title does not drop the test",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "986ffdf2e78936ef3a81df85153b6f89c1fbc17cad7ee1280b229d55f85fadd6",
   "test_hash_kind": "file",
   "test_strength": null,

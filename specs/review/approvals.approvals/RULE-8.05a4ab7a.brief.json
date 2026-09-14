@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "approvals",
-  "generated_at": "2026-09-14T16:51:56Z",
+  "generated_at": "2026-09-14T16:59:49Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-12 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/approvals/20260914T165124Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/approvals/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-8",
   "rule_hash": "1b806fa351614c983678c7d516ba310c62e1d8f7d91c461738765c8ec2ba421a",
   "rule_text": "An approval file is named for the rule, the first eight characters of the triple and the approver's slug, the email local part lowercased with every character that is not a letter or a digit replaced by a hyphen",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "10e1955ea0025bdb5987b90a3decd52324496fc3e1daa92adecb5744fae89a22",
   "test_hash_kind": "file",
   "test_strength": null,

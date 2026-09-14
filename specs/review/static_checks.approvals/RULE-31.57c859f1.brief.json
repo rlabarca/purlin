@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "static_checks",
-  "generated_at": "2026-09-14T16:52:58Z",
+  "generated_at": "2026-09-14T17:00:42Z",
   "layers": [
     "proof text",
     "test body",
@@ -24,13 +24,13 @@
   "reasons": [
     "PROOF-60 tautology"
   ],
-  "record": ".purlin/records/static_checks/20260914T165128Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/static_checks/20260914T165947Z-ff82c7d-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-31",
   "rule_hash": "d2efe972a2cafcdd20f5ece906dbf49abb0062723173c388f93e2ed498a92bb5",
   "rule_text": "The test-source extractor returns a body for every extension the table names but shell, which has no body to return",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "76cf6eb9e8b140fb0975182c510ad30fed5feaaad4de7e3ec6885ae62e0f5160",
   "test_hash_kind": "file",
   "test_strength": null,

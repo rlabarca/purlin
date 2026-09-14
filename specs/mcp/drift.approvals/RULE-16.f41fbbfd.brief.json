@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "drift",
-  "generated_at": "2026-09-14T16:52:04Z",
+  "generated_at": "2026-09-14T16:59:56Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-18 logic_mirroring"
   ],
-  "record": ".purlin/records/drift/20260914T165124Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/drift/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-16",
   "rule_hash": "4366981b4574513cf6e33872ed73c6f6ad20a2ab707b810c81fee58172419af2",
   "rule_text": "`rule_details` carries, per spec with a changed scope file, the spec path, the changed files, the total and unproved rule ids and the rules in rule-number order, each description cut to 200 characters on a word boundary and suffixed with an ellipsis when cut",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "5de0f16c821d83529274b8ad8d36e309c655dfbc539addc7adf36cabbc56386e",
   "test_hash_kind": "file",
   "test_strength": null,

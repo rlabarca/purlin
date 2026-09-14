@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "approvals",
-  "generated_at": "2026-09-14T16:51:56Z",
+  "generated_at": "2026-09-14T16:59:49Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-17 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/approvals/20260914T165124Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/approvals/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-13",
   "rule_hash": "0e3eeba09d09a1dc849da950b94325bcbd6f4efbce8290a8090f0648922f7f67",
   "rule_text": "CI writes nothing while the test strength is below the minimum, and auto-approves once a record at or above it exists",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "37fa03bc14fe93ba73170bb4b38bb638f28a731b90a7f064211b5ebcdf045068",
   "test_hash_kind": "file",
   "test_strength": null,

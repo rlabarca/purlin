@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "scaffold",
-  "generated_at": "2026-09-14T16:52:28Z",
+  "generated_at": "2026-09-14T17:00:18Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-15 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/scaffold/20260914T165126Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/scaffold/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-15",
   "rule_hash": "be48e9c2e2b4a0510a3a6ef27ebf03428cdb92b33468ba23df8e5c907d67fb26",
   "rule_text": "The workflow carries one job per operating system the `@env` tags in `specs/` name, one linux job when they name none, and the Purlin release pinned as `v<version>`",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "8b00548751f36965626e2e8fc37ef762754e833bb24596fa2bee8d3169caed2d",
   "test_hash_kind": "file",
   "test_strength": null,

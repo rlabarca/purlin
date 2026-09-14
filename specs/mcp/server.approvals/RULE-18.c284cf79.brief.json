@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "server",
-  "generated_at": "2026-09-14T16:52:36Z",
+  "generated_at": "2026-09-14T17:00:24Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-18 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/server/20260914T165126Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/server/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-18",
   "rule_hash": "aa8393b17f3a0ad6fde8713962d3ff571826acbe3d086349a5a4995612868f8c",
   "rule_text": "The hook leaves without generating when `.purlin/config.json` is missing or unreadable, when its `digest` reads `off`, when `PURLIN_SKIP_DIGEST` is `1`, or when the repository holds an index lock, because a commit is in flight and the pre-commit hook owns that regeneration",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "bf3f2c1370cd7243b670515e794087c35daf54ffb860ccf04158359704aa00cd",
   "test_hash_kind": "file",
   "test_strength": null,

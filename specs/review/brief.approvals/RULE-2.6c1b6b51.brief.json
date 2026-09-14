@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "brief",
-  "generated_at": "2026-09-14T16:51:59Z",
+  "generated_at": "2026-09-14T16:59:52Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-3 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/brief/20260914T165124Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/brief/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-2",
   "rule_hash": "cb5a08a2d644198ff4d6508e85ab783aa2c16cebd512b1135592abc8ca492aba",
   "rule_text": "A medium-risk rule's brief adds the test strength layer and stops there",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "0c0e41a2a119059316bf461fbda497a5bbcb76af94f7992d01d9a45bba105260",
   "test_hash_kind": "file",
   "test_strength": null,

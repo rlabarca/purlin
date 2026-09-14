@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-14T16:52:45Z",
+  "generated_at": "2026-09-14T17:00:31Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-14 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/states/20260914T165128Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/states/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-14",
   "rule_hash": "f3f1f703ff9d6b43b425859f8a465cb0c51e7068aeea7a90c710443b0bdcc996",
   "rule_text": "A feature's rollup carries how many rules it has, the count in each state that is not zero, the lowest state any rule reached, and the stale, re-verify and review counts",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "69570d6e707a3dd190a01ce7c093a753153234c87ebb7100ad30940c4f93863d",
   "test_hash_kind": "file",
   "test_strength": null,

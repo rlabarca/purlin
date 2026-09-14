@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "mutation",
-  "generated_at": "2026-09-14T16:52:06Z",
+  "generated_at": "2026-09-14T16:59:58Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-11 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/mutation/20260914T165124Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/mutation/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-11",
   "rule_hash": "38ad7e0f3596349ac98f0180653dac8cd77d7ca904596e2108d4744be42afb4e",
   "rule_text": "Attribution is `per_test` when any break names the test that caught it and `per_scope` when none does, and every rule then carries the feature's scope number",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "c23232237859e66698c1d3923b0b583e664a6e513b6f557c9983ce5e51d104d0",
   "test_hash_kind": "file",
   "test_strength": null,

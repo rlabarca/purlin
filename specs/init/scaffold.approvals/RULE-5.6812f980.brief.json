@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "scaffold",
-  "generated_at": "2026-09-14T16:52:25Z",
+  "generated_at": "2026-09-14T17:00:15Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-5 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/scaffold/20260914T165126Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/scaffold/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-5",
   "rule_hash": "29653c6356072188cb89701b61ec52f70a440229af7be747916cb3b1f54fcd46",
   "rule_text": "The config init writes carries exactly `ai_review_at`, `ci`, `gate`, `min_strength`, `mutation_engine`, `sql_engine`, `test_framework` and `version`, and no key this release stopped reading; `templates/config.json` carries the same eight keys",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "91d9a3b7ed83dcaed20cc9acff2d967ded27b7c530ff3ba8317818b09dc94a2a",
   "test_hash_kind": "file",
   "test_strength": null,

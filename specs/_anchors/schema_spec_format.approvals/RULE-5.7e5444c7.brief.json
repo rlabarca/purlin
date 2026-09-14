@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "schema_spec_format",
-  "generated_at": "2026-09-14T16:52:33Z",
+  "generated_at": "2026-09-14T17:00:21Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-5 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/schema_spec_format/20260914T165126Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/schema_spec_format/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-5",
   "rule_hash": "4f469d5b3d7939c55306051bb473fdb503bde73516003bf569c524cd42465c77",
   "rule_text": "`> Requires:` is a comma-separated list of spec names whose rules are counted with this spec's own and carry the label `required`",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "50889374c17f50568a4b0b3ee1eac0b718e1d395f73e8f7dc392d7c12527a09c",
   "test_hash_kind": "file",
   "test_strength": null,

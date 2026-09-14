@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "records",
-  "generated_at": "2026-09-14T16:52:19Z",
+  "generated_at": "2026-09-14T17:00:09Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-14 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/records/20260914T165126Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/records/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-14",
   "rule_hash": "c82ebddf6fa6f7e9aec231b0f33719377fa092f6540938d45afa4931fdf59831",
   "rule_text": "The rollup names the project, the gate and every one of the seven states that has a count, then the newest record with its path, label and timestamp, or says no record has been committed yet",
   "schema": "purlin-brief/1",
-  "state": "Tested",
+  "state": "Reviewed",
   "test_hash": "7f9bb2b33e454db5864f5c00b5e45822380310c3a7553902ed19d6b3920edb1d",
   "test_hash_kind": "file",
   "test_strength": null,

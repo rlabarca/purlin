@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "server",
-  "generated_at": "2026-09-14T16:52:36Z",
+  "generated_at": "2026-09-14T17:00:24Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-22 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/server/20260914T165126Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/server/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-22",
   "rule_hash": "837f1c327ceeba3e337c492ab41e4728539229fd7cb2e5e55dfaac34a956b1dd",
   "rule_text": "The plugin manifest starts the server through `sh` and the interpreter resolver, and the last argument it passes names `scripts/mcp/purlin/server.py`",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "d665224d3ac2d402e062ae55a755c1535d439109b9b3863acb3e6032fe92effc",
   "test_hash_kind": "file",
   "test_strength": null,

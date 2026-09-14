@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "specs",
-  "generated_at": "2026-09-14T16:52:42Z",
+  "generated_at": "2026-09-14T17:00:29Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-8 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/specs/20260914T165128Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/specs/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-7",
   "rule_hash": "9220147eb5697b4a29c0911dc7366b6dd57241737c7cb4664a0ec4845e70bcbb",
   "rule_text": "Tags this release does not read (the retired operating-system tag `@env` replaced, a bare `@windows` used as a tier, a stamped `@manual(...)` carrying an email, a date and a sha) and the retired fields `> Visual-Reference:` and `> Visual-Hash:` are ignored rather than refused, and every spec carrying one lists it under `unknown_tags`",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "5d597d24ed877fdfbd3913db2e95a173c801b1a28460b2241aad9bd1772c33fd",
   "test_hash_kind": "file",
   "test_strength": null,

@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "pm_anchor_userstories",
-  "generated_at": "2026-09-14T16:52:08Z",
+  "generated_at": "2026-09-14T17:00:00Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-2 implementation_coupling: Names a private symbol, a selector or a path instead of an observable outcome, so a refactor breaks the proof without changing behaviour."
   ],
-  "record": ".purlin/records/pm_anchor_userstories/20260914T165124Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/pm_anchor_userstories/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-2",
   "rule_hash": "ef7381eb42ee7a5b83426fdc7a7f3dfd1cd9141b8197a9a617e0e6f046fce6b2",
   "rule_text": "Every change the skill makes reaches the repository as a pull request and never as a commit to the default branch, and the only paths it writes are `specs/<category>/<name>.md`, `specs/_anchors/<name>.md` and `designs/<feature>/`",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "7a318f36a14ac6d134106b3513f3ef8df9bc2ca3c79122d45c57b4544f6c09c4",
   "test_hash_kind": "file",
   "test_strength": null,

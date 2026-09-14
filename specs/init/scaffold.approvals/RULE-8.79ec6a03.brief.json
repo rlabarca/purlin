@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "scaffold",
-  "generated_at": "2026-09-14T16:52:27Z",
+  "generated_at": "2026-09-14T17:00:16Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-8 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/scaffold/20260914T165126Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/scaffold/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-8",
   "rule_hash": "7d1561bd57bae3761abe1fd22e8c815c708780f9a58680961081f29abe8d272f",
   "rule_text": "The test runner's own configuration is written for pytest, jest and vitest, naming that framework's plugin, and a configuration the project wrote itself is kept rather than replaced",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "b3c3a1419483be3be2d07c3834c7a626c8281f3de97faa462b904a45ce9ed35c",
   "test_hash_kind": "file",
   "test_strength": null,

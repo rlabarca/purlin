@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "server",
-  "generated_at": "2026-09-14T16:52:35Z",
+  "generated_at": "2026-09-14T17:00:23Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-12 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/server/20260914T165126Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/server/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-12",
   "rule_hash": "5e45609b7269a092aed17ed6c9965614d29a3f33855dedd8f01fd961dc3ad78c",
   "rule_text": "A root holding no config writes no data file and returns nothing",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "7b41e50479343f1423b05663e65bf4fb45dc3be6a9d2d6600a331f1f8ae5a436",
   "test_hash_kind": "file",
   "test_strength": null,

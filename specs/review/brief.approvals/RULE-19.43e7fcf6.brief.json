@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "brief",
-  "generated_at": "2026-09-14T16:52:00Z",
+  "generated_at": "2026-09-14T16:59:53Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-27 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/brief/20260914T165124Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/brief/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-19",
   "rule_hash": "9d4d2ce0c77a6d517e53e450e1001a9912980d82bc601dc3ea65f280c8977462",
   "rule_text": "The brief is written beside the approval it informs as `<RULE-N>.<hash8>.brief.json` carrying schema `purlin-brief/1`, with a text rendering of the same name beside it",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "3df7b49bb30363868d2034dd92a8902d99f0effe21a1a5419ae86a7484460381",
   "test_hash_kind": "file",
   "test_strength": null,

@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "specs",
-  "generated_at": "2026-09-14T16:52:41Z",
+  "generated_at": "2026-09-14T17:00:28Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-3 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/specs/20260914T165128Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/specs/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-2",
   "rule_hash": "af98e4e730aa71c6c2c6cccc382a961afad40c9c4102ed78dc67943fe26fa3d6",
   "rule_text": "A rule naming no tag takes `risk` `low` and `origin` `eng`, and carries no `criterion` key at all",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "83d76af8d45d2049ffebff0033cbf9071b6e1c4dcff5d89fb4269cebc5df7b90",
   "test_hash_kind": "file",
   "test_strength": null,

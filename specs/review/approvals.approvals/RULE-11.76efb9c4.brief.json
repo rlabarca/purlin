@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "approvals",
-  "generated_at": "2026-09-14T16:51:56Z",
+  "generated_at": "2026-09-14T16:59:49Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-15 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/approvals/20260914T165124Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/approvals/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-11",
   "rule_hash": "b6ade9ca81be22068a739928a63d8fbde8c290059b027559309c37271b83a01f",
   "rule_text": "CI auto-approves a low-risk rule whose record passes and whose test strength is at or above the minimum, writing a file whose approver is `ci` and which names the record it rests on",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "51fb0cdca68ee34c59daf52beac707e6c326b917d26c3bbd2b5791c9966479fe",
   "test_hash_kind": "file",
   "test_strength": null,

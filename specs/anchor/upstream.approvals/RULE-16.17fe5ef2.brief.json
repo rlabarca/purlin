@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "upstream",
-  "generated_at": "2026-09-14T16:53:04Z",
+  "generated_at": "2026-09-14T17:00:48Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-16 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/upstream/20260914T165128Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/upstream/20260914T165947Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-16",
   "rule_hash": "a96f626fe2d0bba69877bc8eadc9eae6340add2f49cda91271eb6967a003ac9a",
   "rule_text": "`propose <name>` writes the difference between the local copy and the source to `.purlin/runtime/anchors/<name>.patch` as a patch against the source's own path, and the project's tracking fields never reach it",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "b4be9334eb09145186b3d264501b5a64f87f1cc9bc57ef2c8513d6e50382b3b2",
   "test_hash_kind": "file",
   "test_strength": null,

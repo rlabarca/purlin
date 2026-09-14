@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "server",
-  "generated_at": "2026-09-14T16:52:36Z",
+  "generated_at": "2026-09-14T17:00:24Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-19 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/server/20260914T165126Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/server/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-19",
   "rule_hash": "0d1bae9d9cab78f11ed6167189e7a2e5a0735eb1d41b5507d978442508bff33b",
   "rule_text": "Those are the only conditions that stop a refresh: the config `purlin:init` stamps into a new project names neither `digest` nor `report`, and a project holding exactly that config refreshes",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "67770303b5940dae5a5a567129a0fda8c1bc11451fa3f92bb532bc2d94fbcb11",
   "test_hash_kind": "file",
   "test_strength": null,

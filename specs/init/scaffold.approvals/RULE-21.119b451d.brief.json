@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "scaffold",
-  "generated_at": "2026-09-14T16:52:30Z",
+  "generated_at": "2026-09-14T17:00:19Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-21 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/scaffold/20260914T165126Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/scaffold/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-21",
   "rule_hash": "463c5dab43378af6902bb793d0bcd56e34709ef3d40139647f55c3e0cc810c9a",
   "rule_text": "`.purlin/plugin-root` holds the directory the run came out of, and is the only file in the project that names that directory",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "c01dd620fb764f33482c2b200de273d4fb68199201a5ae9922e25bbde541ce6f",
   "test_hash_kind": "file",
   "test_strength": null,

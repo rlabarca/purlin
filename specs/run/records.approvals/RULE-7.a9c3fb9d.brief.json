@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "records",
-  "generated_at": "2026-09-14T16:52:17Z",
+  "generated_at": "2026-09-14T17:00:08Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-7 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/records/20260914T165126Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/records/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-7",
   "rule_hash": "ffb25f17c284d3bd534b5b59c2c321c5f6a294e90b2e41e02cdddaaf2379809c",
   "rule_text": "A pull request from a fork writes no commit, and so does a run with no repository name or no token; each prints the reason and the run carries on",
   "schema": "purlin-brief/1",
-  "state": "Tested",
+  "state": "Reviewed",
   "test_hash": "11c800ee6ec37b9f7ef88db660a52160608c5a46a24397d42e2f110c4dd0ec11",
   "test_hash_kind": "file",
   "test_strength": null,

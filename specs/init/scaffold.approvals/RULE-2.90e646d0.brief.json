@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "scaffold",
-  "generated_at": "2026-09-14T16:52:25Z",
+  "generated_at": "2026-09-14T17:00:15Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-2 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/scaffold/20260914T165126Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/scaffold/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-2",
   "rule_hash": "e057bd2a90ad48ba92bbc3e3ff64519f83da2a4279a7ec5e086b7b783bfa94c8",
   "rule_text": "Each gate answer derives its own settings, and the three pairs are `tested` 50 and never, `recorded` 70 and high, `approved` 80 and medium",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "1f80a5cddac418dbb5ab48256f58808ff1fa3bfd52c6ce0b91142c720b2ed537",
   "test_hash_kind": "file",
   "test_strength": null,

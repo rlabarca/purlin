@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "approvals",
-  "generated_at": "2026-09-14T16:51:55Z",
+  "generated_at": "2026-09-14T16:59:48Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-3 logic_mirroring"
   ],
-  "record": ".purlin/records/approvals/20260914T165124Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/approvals/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-3",
   "rule_hash": "68fa48634a481ef9a8aa8203fde3b525acd5fd006b4509be79f23257f610ceeb",
   "rule_text": "Reflowing a rule's whitespace or changing its tags leaves the triple where it was, so re-tagging never stales an approval",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "959b7c5173d33af70286dd1c86cc7e89e5c5f8540b4de66d9fa7671b2a5703aa",
   "test_hash_kind": "file",
   "test_strength": null,

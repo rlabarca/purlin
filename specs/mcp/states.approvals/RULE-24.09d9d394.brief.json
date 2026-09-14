@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-14T16:52:46Z",
+  "generated_at": "2026-09-14T17:00:32Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-25 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/states/20260914T165128Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/states/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-24",
   "rule_hash": "b59a7d1193bc183e12aee136c1deeeefb9d7b265bac45cec89c35a827fb6715c",
   "rule_text": "The report carries no emoji: the only characters above U+2000 it prints are the arrow, the two triangles and the horizontal rule the design system allows",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "652a3123aa2126b61f6d52c1fa64ecd240b536975cf39dfe6c4bce8b524131ef",
   "test_hash_kind": "file",
   "test_strength": null,

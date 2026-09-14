@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "records",
-  "generated_at": "2026-09-14T16:52:17Z",
+  "generated_at": "2026-09-14T17:00:07Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-5 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/records/20260914T165126Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/records/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "high",
   "rule": "RULE-5",
   "rule_hash": "753bd6c8db8b6c82697b40cf7828bfd0e64ca2030c788af85a09b19f347e86fd",
   "rule_text": "A CI commit on GitHub is made through the git host's REST API as one tree request, then commit, then ref update, where the single tree carries the text of every path the run handed over including the approvals and the briefs that sit beside a spec, only a path whose bytes are not UTF-8 costs a blob request of its own, and no `author` and no `committer` field is sent, so the git host signs the commit with its own key",
   "schema": "purlin-brief/1",
-  "state": "Tested",
+  "state": "Reviewed",
   "test_hash": "771992699504d61546cf730d2719cb7d19c365741acf131766837a445697fbc1",
   "test_hash_kind": "file",
   "test_strength": null,

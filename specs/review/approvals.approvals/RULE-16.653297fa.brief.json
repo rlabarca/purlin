@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "approvals",
-  "generated_at": "2026-09-14T16:51:57Z",
+  "generated_at": "2026-09-14T16:59:50Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-20 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/approvals/20260914T165124Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/approvals/20260914T165946Z-ff82c7d-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-16",
   "rule_hash": "ed2898d35d115006211b5c5d4f92c2be4dbe95de261678b3d35709db766b891c",
   "rule_text": "CI leaves a rule that already carries a current approval alone rather than writing a second one",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "ea87ac88cdf91ab120f01440311ab5457897fc4bfa670144404341a75bc5910f",
   "test_hash_kind": "file",
   "test_strength": null,
