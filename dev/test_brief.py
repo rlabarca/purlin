@@ -70,13 +70,16 @@ def build(project, rule='RULE-1', ai=False):
 
 class TestTheLayers:
 
+    @pytest.mark.proof("brief", "PROOF-1", "RULE-1", tier="integration")
     def test_low_risk_stops_after_the_free_checks(self, proved):
         assert build(proved, 'RULE-1')['layers'] == ['proof text', 'test body']
 
+    @pytest.mark.proof("brief", "PROOF-4", "RULE-3", tier="integration")
     def test_high_risk_runs_every_layer(self, proved):
         assert build(proved, 'RULE-2')['layers'] == [
             'proof text', 'test body', 'test strength', 'model review']
 
+    @pytest.mark.proof("brief", "PROOF-3", "RULE-2", tier="integration")
     def test_medium_risk_stops_after_the_test_strength(self):
         made = Project(spec=SPEC.replace('[risk: high]', '[risk: medium]'))
         try:
@@ -87,6 +90,7 @@ class TestTheLayers:
         finally:
             made.close()
 
+    @pytest.mark.proof("brief", "PROOF-5", "RULE-4", tier="integration")
     def test_a_rule_that_is_not_there_has_no_brief(self, proved):
         assert build(proved, 'RULE-99') is None
 
@@ -97,6 +101,7 @@ class TestTheLayers:
 
 class TestTheFindings:
 
+    @pytest.mark.proof("brief", "PROOF-6", "RULE-5", tier="integration")
     def test_the_proof_text_findings_reach_the_brief(self):
         made = Project(spec=SPEC.replace(
             'POST /login with the password "secret"; verify 200 and a token '
@@ -110,6 +115,7 @@ class TestTheFindings:
         finally:
             made.close()
 
+    @pytest.mark.proof("brief", "PROOF-7", "RULE-6", tier="integration")
     def test_the_test_body_findings_reach_the_brief(self, proved):
         proved.edit_test(TEST_FILE.replace(
             'assert login("ada", "secret") == 200', 'login("ada", "secret")'))
@@ -117,12 +123,14 @@ class TestTheFindings:
         assert test['findings'] == ['no_assertion'], test
         assert test['reasons'], 'a finding names what a reader should look at'
 
+    @pytest.mark.proof("brief", "PROOF-8", "RULE-7", tier="integration")
     def test_the_test_body_is_shown_beside_the_rule(self, proved):
         test = build(proved, 'RULE-1')['tests'][0]
         assert test['file'] == 'tests/test_login.py'
         assert test['name'] == 'test_valid_credentials_return_200'
         assert 'assert login("ada", "secret") == 200' in test['body']
 
+    @pytest.mark.proof("brief", "PROOF-9", "RULE-8", tier="integration")
     def test_a_manual_proof_has_a_note_where_a_test_would_be(self):
         made = Project(spec=SPEC.replace(
             'verify 200 and a token @integration',
@@ -141,14 +149,17 @@ class TestTheFindings:
 
 class TestTheTestStrength:
 
+    @pytest.mark.proof("brief", "PROOF-10", "RULE-9", tier="integration")
     def test_it_comes_off_the_latest_record(self, proved):
         assert build(proved, 'RULE-2')['test_strength'] == 90
         assert build(proved, 'RULE-2')['min_strength'] == 50
 
+    @pytest.mark.proof("brief", "PROOF-2", "RULE-1", tier="integration")
     def test_a_low_risk_rule_never_asks_for_it(self, proved):
         assert build(proved, 'RULE-1')['test_strength'] is None, (
             'the strength layer does not run at low risk')
 
+    @pytest.mark.proof("brief", "PROOF-11", "RULE-9", tier="integration")
     def test_no_engine_reads_as_n_a(self):
         made = Project()
         try:
@@ -166,9 +177,11 @@ class TestTheTestStrength:
 
 class TestTheVerdict:
 
+    @pytest.mark.proof("brief", "PROOF-17", "RULE-13", tier="integration")
     def test_a_clean_rule_is_ready(self, proved):
         assert build(proved, 'RULE-2')['verdict'] == 'ready'
 
+    @pytest.mark.proof("brief", "PROOF-12", "RULE-10", tier="integration")
     def test_a_blocking_proof_finding_is_rewrite_the_proof(self):
         made = Project(spec=SPEC.replace(
             'POST /login with the password "secret"; verify 200 and a token '
@@ -183,6 +196,7 @@ class TestTheVerdict:
         finally:
             made.close()
 
+    @pytest.mark.proof("brief", "PROOF-13", "RULE-11", tier="integration")
     def test_a_test_body_finding_needs_a_human(self, proved):
         proved.edit_test(TEST_FILE.replace(
             'assert login("ada", "secret") == 200', 'assert True'))
@@ -191,6 +205,7 @@ class TestTheVerdict:
         assert any('assert_true_literal' in reason or 'tautology' in reason
                    for reason in built['reasons']), built['reasons']
 
+    @pytest.mark.proof("brief", "PROOF-14", "RULE-11", tier="integration")
     def test_a_manual_proof_needs_a_human(self):
         made = Project(spec=SPEC.replace(
             'verify 200 and a token @integration',
@@ -201,11 +216,13 @@ class TestTheVerdict:
         finally:
             made.close()
 
+    @pytest.mark.proof("brief", "PROOF-15", "RULE-12", tier="integration")
     def test_only_a_happy_path_is_add_a_case(self, proved):
         built = build(proved, 'RULE-1')
         assert 'happy_path_only' in built['proofs'][0]['findings']
         assert built['verdict'] == 'add a case'
 
+    @pytest.mark.proof("brief", "PROOF-16", "RULE-12", tier="integration")
     def test_strength_below_the_minimum_is_add_a_case(self):
         made = Project(config={'min_strength': 70})
         try:
@@ -217,6 +234,7 @@ class TestTheVerdict:
         finally:
             made.close()
 
+    @pytest.mark.proof("brief", "PROOF-18", "RULE-14", tier="integration")
     def test_the_four_words_are_the_only_four(self, proved):
         assert brief_module.VERDICTS == (
             'ready', 'add a case', 'rewrite the proof', 'needs a human')
@@ -229,6 +247,7 @@ class TestTheVerdict:
 
 class TestTheModelReview:
 
+    @pytest.mark.proof("brief", "PROOF-19", "RULE-15", tier="integration")
     def test_the_prompt_is_the_criteria_file_verbatim(self, reviewed):
         built = build(reviewed, 'RULE-2')
         prompt = brief_module.model_prompt(reviewed.root, built)
@@ -240,17 +259,20 @@ class TestTheModelReview:
         assert 'test_a_bad_password_is_denied' in prompt
         assert 'Test strength: 90 percent (minimum 70)' in prompt
 
+    @pytest.mark.proof("brief", "PROOF-20", "RULE-16", tier="integration")
     def test_without_ai_the_brief_says_not_available(self, reviewed):
         built = build(reviewed, 'RULE-2')
         assert built['ai_review'] == 'not available'
         assert 'Model review' in brief_module.render_brief(built)
 
+    @pytest.mark.proof("brief", "PROOF-21", "RULE-16", tier="integration")
     def test_with_no_claude_on_the_path_it_says_not_available(
             self, reviewed, monkeypatch):
         monkeypatch.setattr(brief_module.shutil, 'which', lambda name: None)
         assert build(reviewed, 'RULE-2', ai=True)['ai_review'] == (
             'not available')
 
+    @pytest.mark.proof("brief", "PROOF-23", "RULE-17", tier="integration")
     def test_the_model_answer_decides_the_verdict(self, reviewed, monkeypatch):
         calls = []
         real_run = brief_module.subprocess.run
@@ -273,6 +295,7 @@ class TestTheModelReview:
         assert built['ai_review'].startswith('add a case')
         assert built['verdict'] == 'add a case'
 
+    @pytest.mark.proof("brief", "PROOF-22", "RULE-16", tier="integration")
     def test_a_low_risk_rule_never_calls_a_model(self, proved, monkeypatch):
         def fail(*args, **kwargs):
             raise AssertionError('a low-risk rule must not call a model')
@@ -280,6 +303,7 @@ class TestTheModelReview:
         monkeypatch.setattr(brief_module.shutil, 'which', fail)
         assert build(proved, 'RULE-1', ai=True)['ai_review'] is None
 
+    @pytest.mark.proof("brief", "PROOF-24", "RULE-17")
     def test_an_answer_that_names_no_verdict_decides_nothing(self):
         assert brief_module.model_verdict('It looks fine to me.') is None
         assert brief_module.model_verdict('not available') is None
@@ -307,6 +331,7 @@ DESIGN_SPEC = (
 
 class TestDesignRules:
 
+    @pytest.mark.proof("brief", "PROOF-25", "RULE-18", tier="integration")
     def test_the_mock_and_the_screenshot_stand_beside_each_other(self):
         made = Project(spec=DESIGN_SPEC)
         try:
@@ -323,6 +348,7 @@ class TestDesignRules:
         finally:
             made.close()
 
+    @pytest.mark.proof("brief", "PROOF-26", "RULE-18", tier="integration")
     def test_a_design_rule_with_no_screenshot_needs_a_human(self):
         made = Project(spec=DESIGN_SPEC)
         try:
@@ -341,6 +367,7 @@ class TestDesignRules:
 
 class TestWriting:
 
+    @pytest.mark.proof("brief", "PROOF-27", "RULE-19", tier="integration")
     def test_the_brief_lands_beside_the_approval_named_for_the_triple(
             self, proved):
         built = build(proved, 'RULE-1')
@@ -352,6 +379,7 @@ class TestWriting:
         with open(os.path.join(proved.root, path), encoding='utf-8') as handle:
             assert json.load(handle)['schema'] == 'purlin-brief/1'
 
+    @pytest.mark.proof("brief", "PROOF-28", "RULE-20", tier="integration")
     def test_a_brief_for_the_current_text_makes_the_rule_reviewed(self, proved):
         brief_module.write_brief(proved.root, build(proved, 'RULE-1'))
         assert proved.rule('RULE-1')['state'] == 'Reviewed'
@@ -360,17 +388,20 @@ class TestWriting:
         assert proved.rule('RULE-1')['state'] != 'Reviewed', (
             'a brief for text that has since changed is not a brief for it')
 
+    @pytest.mark.proof("brief", "PROOF-29", "RULE-21", tier="integration")
     def test_write_briefs_covers_the_review_list(self, reviewed):
         written = brief_module.write_briefs(reviewed.root)
         assert written, 'the review list holds the high-risk rule'
         assert all(path.endswith('.brief.json') for path in written)
         assert any('RULE-2' in path for path in written)
 
+    @pytest.mark.proof("brief", "PROOF-30", "RULE-21", tier="integration")
     def test_write_briefs_takes_a_narrower_list(self, proved):
         written = brief_module.write_briefs(
             proved.root, rules=[('login', 'RULE-1')])
         assert len(written) == 1 and 'RULE-1' in written[0]
 
+    @pytest.mark.proof("brief", "PROOF-31", "RULE-22", tier="integration")
     def test_the_rendering_names_the_rule_the_proof_and_the_verdict(
             self, proved):
         rendered = brief_module.render_brief(build(proved, 'RULE-2'))
@@ -387,11 +418,13 @@ class TestWriting:
 
 class TestTheCommandLine:
 
+    @pytest.mark.proof("brief", "PROOF-32", "RULE-23", tier="integration")
     def test_help_exits_zero_and_a_bad_option_exits_two(self):
         assert brief_module.main(['--help']) == 0
         assert brief_module.main(['--nope']) == 2
         assert brief_module.main([]) == 2
 
+    @pytest.mark.proof("brief", "PROOF-34", "RULE-24", tier="integration")
     def test_one_rule_prints_its_brief_and_writes_it(self, proved, capsys):
         code = brief_module.main(['--feature', 'login', '--rule', 'RULE-1',
                                   '--project-root', proved.root])
@@ -402,6 +435,7 @@ class TestTheCommandLine:
         assert os.path.isdir(os.path.join(proved.root, 'specs', 'auth',
                                           'login.approvals'))
 
+    @pytest.mark.proof("brief", "PROOF-35", "RULE-24", tier="integration")
     def test_a_feature_with_no_rule_named_covers_every_rule(self, proved,
                                                             capsys):
         code = brief_module.main(['--feature', 'login',
@@ -410,12 +444,14 @@ class TestTheCommandLine:
         assert code == 0
         assert 'login RULE-1' in output and 'login RULE-2' in output
 
+    @pytest.mark.proof("brief", "PROOF-33", "RULE-23", tier="integration")
     def test_an_unknown_feature_exits_one(self, proved, capsys):
         code = brief_module.main(['--feature', 'nothing',
                                   '--project-root', proved.root])
         capsys.readouterr()
         assert code == 1
 
+    @pytest.mark.proof("brief", "PROOF-36", "RULE-23", tier="integration")
     def test_the_script_runs_as_a_command(self, proved):
         result = subprocess.run(
             [sys.executable, BRIEF_PY, '--feature', 'login', '--rule',
