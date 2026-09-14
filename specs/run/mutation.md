@@ -1,0 +1,58 @@
+# Feature: mutation
+
+> Description: Test strength is the share of the deliberate breaks made to the code that the
+>   tests caught, as an integer percent. Four engines make those breaks, one per language
+>   family: Stryker for jest and vitest, Stryker.NET for xunit, mutmut for pytest, and the
+>   empty engine for everything else. Selection reads the config and the detected frameworks
+>   alone, so a caller can print the plan before anything runs; the install check happens
+>   when the engine runs, and an engine that is not installed answers with the reason in
+>   words rather than raising. Every engine answers in one shape, so a record carries the
+>   same fields whichever one measured it.
+> Scope: scripts/run/mutation/__init__.py, scripts/run/mutation/stryker.py, scripts/run/mutation/stryker_net.py, scripts/run/mutation/mutmut.py, scripts/run/mutation/none.py
+> Stack: python/stdlib (importlib, subprocess, json, tempfile), Stryker, Stryker.NET, mutmut
+
+## Rules
+
+- RULE-1: With `mutation_engine` set to `auto`, jest and vitest select `stryker`, xunit selects `stryker_net`, pytest selects `mutmut`, and shell and sql select `none`; the first detected framework that has an engine decides, and a project with no framework selects `none` [risk: medium] [origin: eng]
+- RULE-2: A `mutation_engine` naming an engine wins over the detected frameworks, a name outside the four shipped engines reads as `none` rather than being guessed at, and a missing key reads as `auto` [risk: medium] [origin: eng]
+- RULE-3: Test strength is `killed / (killed + survived)` as an integer percent rounded half up, and is None when no break ran at all [risk: high] [origin: eng]
+- RULE-4: The rules of a feature are reported in rule-number order, so `RULE-2` comes before `RULE-10` [risk: low] [origin: eng]
+- RULE-5: Stryker runs once per feature against that feature's scope files alone, under a generated config naming `coverageAnalysis: "perTest"`, `disableBail: true`, the `json` reporter and the report path [risk: high] [origin: eng]
+- RULE-6: The Stryker test runner is `vitest` when the project's `package.json` declares vitest as a dependency, and `jest` otherwise [risk: medium] [origin: eng]
+- RULE-7: The project's own `node_modules/.bin/stryker` is preferred over one on the PATH, and neither present leaves no engine with a line naming the package to install [risk: medium] [origin: eng]
+- RULE-8: A break whose status is `killed` or `timeout` counts caught, one whose status is `survived` or `nocoverage` counts missed, and a break that never reached a test counts for neither [risk: high] [origin: eng]
+- RULE-9: A rule's number is what its own tests caught: a break only another rule's test caught counts missed for this one, and a rule whose tests the report never lists measures nothing [risk: high] [origin: eng]
+- RULE-10: A test in the report is matched to a rule's test by the proof marker in its name when both names carry one, and never across two files of the same name [risk: high] [origin: eng]
+- RULE-11: Attribution is `per_test` when any break names the test that caught it and `per_scope` when none does, and every rule then carries the feature's scope number [risk: medium] [origin: eng]
+- RULE-12: A run that wrote no report, or whose report cannot be read, measures nothing for that feature and says so in the log rather than raising [risk: medium] [origin: eng]
+- RULE-13: Stryker.NET is run as `dotnet stryker` with one `--mutate` per scope file, `--coverage-analysis perTest`, `--disable-bail`, `--reporter json` and `--output`, and its report is found by walking that output directory for `mutation-report.json` [risk: medium] [origin: eng]
+- RULE-14: Without `dotnet` on the PATH there is no engine for C#, and with `dotnet` but no Stryker.NET installed the reason names the `dotnet tool install` command; the install check is `dotnet stryker --version` answering 0 [risk: medium] [origin: eng]
+- RULE-15: mutmut needs a config block naming the source paths and the test selection, written to `pyproject.toml` as `[tool.mutmut]` when that file exists and to `setup.cfg` as `[mutmut]` with one value a line otherwise; without the block no breaks are made and the reason names the block and the file [risk: high] [origin: eng]
+- RULE-16: The output of `mutmut results --all true` is read one line per break, and a line whose status is not one mutmut writes is not counted as a break [risk: medium] [origin: eng]
+- RULE-17: A mutmut break is attributed to the scope entry whose last path segments match the most of the break's module name, a break no scope entry covers is left out, and every rule of a feature carries that feature's scope number with `attribution: "per_scope"` [risk: high] [origin: eng]
+- RULE-18: Without mutmut installed there is no engine and the reason names `pip install mutmut` [risk: medium] [origin: eng]
+- RULE-19: The empty engine measures nothing: every rule carries a score of None and `attribution: "unavailable"`, and the reason is a sentence saying why [risk: medium] [origin: eng]
+- RULE-20: Every engine answers the same shape, so a caller reads one: an engine name outside the four is not run, a rule the engine never reported is filled in with `attribution: "unavailable"`, and a feature the engine never reached is still listed [risk: high] [origin: eng]
+
+## Proof
+
+- PROOF-1 (RULE-1): Call `select_engine({}, [framework])` for each of jest, vitest, xunit, pytest, shell and sql; verify `stryker`, `stryker`, `stryker_net`, `mutmut`, `none`, `none`. Call it with `["pytest", "jest"]`; verify `mutmut`, the first with an engine. Call it with `["shell", "jest"]`; verify `stryker`, so a framework with no engine is skipped rather than deciding. Call it with `[]`; verify `none` @unit
+- PROOF-2 (RULE-2): Call `select_engine({"mutation_engine": "stryker"}, ["pytest"])`; verify `stryker`. Call it with `"nosuchengine"`; verify `none`. Call it with no key at all and `["pytest"]`; verify `mutmut`, the answer `auto` gives @unit
+- PROOF-3 (RULE-3): Call `score_percent()` with (0, 0), (1, 1), (2, 1), (3, 0) and (0, 4); verify None, 50, 67, 100 and 0 @unit
+- PROOF-4 (RULE-4): Call `rules_by_feature()` with the keys `("f", "RULE-10")`, `("f", "RULE-2")` and `("f", "RULE-1")`; verify the list is `["RULE-1", "RULE-2", "RULE-10"]` @unit
+- PROOF-5 (RULE-5): Call `build_config(["src/login.js"], "jest", "/tmp/r.json")`; verify `mutate` is exactly `["src/login.js"]`, `coverageAnalysis` is `perTest`, `disableBail` is true, `reporters` is `["json"]` and `jsonReporter.fileName` is the report path. Run the engine with the binary standing in; verify the config file it wrote holds those values and that the report it read is the one the config named @unit
+- PROOF-6 (RULE-6): Call `test_runner()` on a project whose `package.json` lists vitest under `devDependencies`; verify `vitest`. Call it on a project with no `package.json` and on one listing jest; verify `jest` both times @unit
+- PROOF-7 (RULE-7): Put an executable at `node_modules/.bin/stryker` and put another `stryker` on the PATH; verify `binary()` returns the project's one. Remove both; verify `binary()` is None and that a run answers engine `none` with a reason naming `@stryker-mutator/core` @unit
+- PROOF-8 (RULE-8): Parse a report holding one `Killed`, one `Timeout`, one `Survived`, one `NoCoverage` and one `CompileError` break; verify the scope score counts 2 caught and 2 missed and that the compile error changed neither count @unit
+- PROOF-9 (RULE-9): Parse a report where test `t1` carries RULE-1's marker and `t2` carries RULE-2's; verify RULE-1's entry counts only the breaks `t1` killed or covered, that a break only `t2` killed counts missed for RULE-1, and that a rule whose test the report never lists has a score of None @unit
+- PROOF-10 (RULE-10): Parse a report holding the test names `login [proof:auth:PROOF-1:RULE-1]` and `login extra [proof:auth:PROOF-2:RULE-2]`; verify each rule claims only its own marker's breaks. Parse a report where the same test name appears in `test/other.js`; verify the rule's entry ignores it @unit
+- PROOF-11 (RULE-11): Parse a report where no break carries `killedBy`; verify every rule carries the feature's scope number with `attribution: "per_scope"`. Parse one where a break names its killer; verify `attribution: "per_test"` @unit
+- PROOF-12 (RULE-12): Point `read_report()` at a path holding invalid JSON and at a path that does not exist; verify None both times. Run the engine with a binary that writes no report; verify the feature's score is None and the log line says the engine wrote no report @unit
+- PROOF-13 (RULE-13): Call `build_command(["dotnet", "stryker"], ["src/A.cs", "src/B.cs"], "/tmp/out")`; verify it carries `--mutate src/A.cs`, `--mutate src/B.cs`, `--coverage-analysis perTest`, `--disable-bail`, `--reporter json` and `--output /tmp/out`. Put `mutation-report.json` two directories below the output directory; verify `find_report()` returns it, and returns None when the directory holds no report @unit
+- PROOF-14 (RULE-14): Take `dotnet` off the PATH; verify `available()` is False with a reason naming dotnet, and that a run answers engine `none`. Put a `dotnet` on the PATH that exits non-zero for `--version`; verify the reason names `dotnet tool install -g dotnet-stryker`. Make it exit 0; verify `available()` is True @unit
+- PROOF-15 (RULE-15): Call `mutmut_config_block(["src"], ["tests"], "toml")`; verify it opens `[tool.mutmut]` and holds `source_paths = ["src"]`. Call it with `"cfg"`; verify it opens `[mutmut]` and lists each value on its own indented line. Call `config_target()` on a project with `pyproject.toml` and on one without; verify `pyproject.toml` then `setup.cfg`. Run the engine on a project with mutmut installed and no block; verify no breaks were made and the reason names the block and the file @unit
+- PROOF-16 (RULE-16): Call `parse_results()` on the recorded output of a real mutmut run; verify every entry's status is one of `killed`, `timeout`, `survived`, `no tests`, `skipped`, `suspicious` and `not checked`. Call it on output holding progress lines and an error line; verify the returned list is empty @unit
+- PROOF-17 (RULE-17): Call `source_file("login.session.x__mutmut_1", ["src", "src/login/session.py"])`; verify the deeper entry wins. Group breaks over two scope files; verify each file carries its own caught and missed counts and that a break in a module no entry covers is left out. Run the engine over a feature with two scope files; verify every rule of that feature carries the feature's total with `attribution: "per_scope"` @unit
+- PROOF-18 (RULE-18): Take `mutmut` off the PATH and run the engine; verify the answer's engine is `none`, that it is not available, and that the reason names `pip install mutmut` @unit
+- PROOF-19 (RULE-19): Call the empty engine with one feature and two rules; verify the engine is `none`, `available` is False, the reason is a sentence, and every rule carries `score: None` with `attribution: "unavailable"` @unit
+- PROOF-20 (RULE-20): Call `run_breaks()` with the engine `none` and with a real engine standing in; verify both answers carry `engine`, `available`, `reason`, `features` and `log`. Call it with the engine `nosuchengine`; verify no engine module was imported and the reason names it. Have an engine report one rule of two; verify the other is filled in with `attribution: "unavailable"`, and have it report no feature at all; verify every feature the caller named is still listed @unit
