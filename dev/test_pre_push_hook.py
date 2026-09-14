@@ -1,1494 +1,299 @@
-"""Tests for pre_push_hook, RULE-1 through RULE-16.
+"""Behavioural proofs for the pre-push hook: the shim and the script.
 
-Each test creates an isolated temp git project, manipulates proof files, then
-runs scripts/hooks/pre-push.sh (or the gate it delegates the verdict to)
-directly. Tests are tagged @integration because they spawn subprocesses and
-write to temp directories.
+The hook is two files. `.purlin/hooks/pre-push` is the shim `purlin:init`
+writes into the project and git runs; it finds the installed plugin and hands
+the push to that plugin's `scripts/hooks/pre-push.sh`, which runs the tagged
+tests and decides whether to block.
 
-Proof markers use tier="integration" to match the @integration tier declared in
-the spec's Proof section.
+Every case drives the real files against a temp project that `scripts/init/
+scaffold.py` set up, so what these cases prove is what a developer's push
+meets.
+
+The contract in one line: the hook blocks only when `pre_push` is `on` and a
+test failed. Every other outcome exits 0 and prints one line saying why.
 """
 
 import json
 import os
-import re
 import shutil
-import stat
 import subprocess
 import sys
 import tempfile
-import time
 
 import pytest
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-HOOK_SCRIPT = os.path.join(PROJECT_ROOT, "scripts", "hooks", "pre-push.sh")
-GATE_SCRIPT = os.path.join(PROJECT_ROOT, "scripts", "hooks", "pre_push_gate.py")
-SERVER_PY = os.path.join(PROJECT_ROOT, "scripts", "mcp", "purlin_server.py")
-SERVER_DIR = os.path.join(PROJECT_ROOT, "scripts", "mcp")
+DEV = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(DEV)
+SCAFFOLD = os.path.join(ROOT, 'scripts', 'init', 'scaffold.py')
+HOOK_SCRIPT = os.path.join(ROOT, 'scripts', 'hooks', 'pre-push.sh')
 
-if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+SPEC = """# Feature: greeting
 
-# The shim purlin:init generates is what finds the plugin now, so the proofs
-# for the resolution order drive the real generated file rather than a
-# hand-written stand-in (`skill_init` RULE-77).
-sys.path.insert(0, os.path.join(PROJECT_ROOT, "scripts", "init"))
-import scaffold  # noqa: E402
+> Scope: greeting.py
+> Description: One rule, so the hook has a tagged test to run.
 
-# Box drawing and block elements. The verdict is read from the structured
-# payload, so no glyph of the rendered table may appear in either hook file.
-BOX_DRAWING_RE = re.compile(r"[─-╿]")
+## Rules
 
+- RULE-1: `greet(name)` returns `Hello, <name>!`
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
+## Proof
 
-def _write_json(path: str, data: object) -> None:
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w") as fh:
-        json.dump(data, fh, indent=2)
+- PROOF-1 (RULE-1): Call `greet("Ada")` and verify it returns `Hello, Ada!` @unit
+"""
+
+SOURCE = 'def greet(name):\n    return "Hello, %s!" % name\n'
+
+TEST = """import pytest
+
+from greeting import greet
 
 
-def _copy_plugin(tmpdir: str, with_gate: bool = True) -> None:
-    """Copy the pieces of the framework a temp project needs to be checkable.
-
-    A project carrying scripts/mcp/purlin_server.py and
-    scripts/hooks/pre_push_gate.py is what the hook calls a dev checkout: the
-    last plugin-root candidate it tries, and the one an installed copy of the
-    hook in .git/hooks has to fall back to.
-    """
-    os.makedirs(os.path.join(tmpdir, "scripts", "mcp"), exist_ok=True)
-    for fname in ("purlin_server.py", "config_engine.py", "__init__.py"):
-        src = os.path.join(PROJECT_ROOT, "scripts", "mcp", fname)
-        if os.path.exists(src):
-            shutil.copy2(src, os.path.join(tmpdir, "scripts", "mcp", fname))
-    if with_gate:
-        os.makedirs(os.path.join(tmpdir, "scripts", "hooks"), exist_ok=True)
-        shutil.copy2(GATE_SCRIPT,
-                     os.path.join(tmpdir, "scripts", "hooks",
-                                  "pre_push_gate.py"))
+@pytest.mark.proof("greeting", "PROOF-1", "RULE-1")
+def test_greet():
+    assert greet("Ada") == "%s"
+"""
 
 
-def _git(tmpdir: str, *args: str) -> None:
-    subprocess.run(["git"] + list(args), cwd=tmpdir, check=True,
-                   capture_output=True)
+def write(path, text):
+    os.makedirs(os.path.dirname(path) or '.', exist_ok=True)
+    with open(path, 'w', encoding='utf-8') as handle:
+        handle.write(text)
 
 
-def _commit(tmpdir: str, message: str) -> None:
-    _git(tmpdir, "add", "-A")
-    _git(tmpdir, "commit", "-q", "-m", message, "--allow-empty")
+def read(path):
+    with open(path, encoding='utf-8') as handle:
+        return handle.read()
 
 
-def _spec_text(feature: str, num_rules: int, tags: dict | None = None) -> str:
-    tags = tags or {}
-    lines = [
-        f"# Feature: {feature}",
-        "",
-        "## What it does",
-        "",
-        "A test feature for pre-push hook testing.",
-        "",
-        "## Rules",
-        "",
-    ]
-    for i in range(1, num_rules + 1):
-        lines.append(f"- RULE-{i}: Test rule {i} must hold")
-    lines += ["", "## Proof", ""]
-    for i in range(1, num_rules + 1):
-        tag = tags.get(f"PROOF-{i}", "")
-        suffix = f" {tag}" if tag else ""
-        lines.append(
-            f"- PROOF-{i} (RULE-{i}): Run the {feature} code path {i} and "
-            f"verify it returns 1{suffix}")
-    return "\n".join(lines) + "\n"
+class Project(object):
+    """A temp project init has set up, with one tagged test that can be broken."""
+
+    def __init__(self, passing=True, specs=True):
+        self.root = os.path.realpath(tempfile.mkdtemp(prefix='purlin-hook-'))
+        self.home = os.path.realpath(tempfile.mkdtemp(prefix='purlin-home-'))
+        subprocess.run(['git', 'init', '-q', '.'], cwd=self.root, timeout=120)
+        write(self.path('pyproject.toml'), '[tool.pytest.ini_options]\n')
+        write(self.path('greeting.py'), SOURCE)
+        done = subprocess.run(
+            [sys.executable, SCAFFOLD, '--project-root', self.root,
+             '--gate', 'tested', '--yes'], capture_output=True, text=True,
+            timeout=300, stdin=subprocess.DEVNULL)
+        assert done.returncode == 0, done.stdout + done.stderr
+        if specs:
+            write(self.path('specs/core/greeting.md'), SPEC)
+            write(self.path('tests/test_greeting.py'),
+                  TEST % ('Hello, Ada!' if passing else 'Goodbye'))
+
+    def path(self, rel):
+        return os.path.join(self.root, rel)
+
+    def setting(self, value):
+        config = json.loads(read(self.path('.purlin/config.json')))
+        config['pre_push'] = value
+        write(self.path('.purlin/config.json'),
+              json.dumps(config, indent=2) + '\n')
+
+    def push(self, **kwargs):
+        """Run the shim the way git runs it, and answer with what it said."""
+        env = dict(os.environ)
+        env['HOME'] = self.home
+        env.pop('CLAUDE_PLUGIN_ROOT', None)
+        env['PURLIN_PLUGIN_ROOT'] = kwargs.get('plugin_root', ROOT)
+        if env['PURLIN_PLUGIN_ROOT'] is None:
+            env.pop('PURLIN_PLUGIN_ROOT')
+        for name, value in (kwargs.get('env') or {}).items():
+            env[name] = value
+        return subprocess.run(
+            ['sh', self.path('.purlin/hooks/pre-push')], cwd=self.root,
+            capture_output=True, text=True, timeout=600, env=env,
+            stdin=subprocess.DEVNULL)
+
+    def close(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+        shutil.rmtree(self.home, ignore_errors=True)
 
 
-def _create_test_project(tmpdir: str, num_rules: int = 3,
-                         with_gate: bool = True,
-                         feature: str = "test_feature",
-                         spec_subdir: str = "specs/hooks",
-                         config_extra: dict | None = None,
-                         proof_tags: dict | None = None) -> None:
-    """Initialise a minimal Purlin project with a single feature spec."""
-    os.makedirs(os.path.join(tmpdir, ".purlin"), exist_ok=True)
-    os.makedirs(os.path.join(tmpdir, *spec_subdir.split("/")), exist_ok=True)
-
-    config = {
-        "version": "0.9.0",
-        "test_framework": "auto",
-        "pre_push": "warn",
-    }
-    config.update(config_extra or {})
-    _write_json(os.path.join(tmpdir, ".purlin", "config.json"), config)
-
-    _copy_plugin(tmpdir, with_gate=with_gate)
-
-    spec_path = os.path.join(tmpdir, *spec_subdir.split("/"),
-                             f"{feature}.md")
-    with open(spec_path, "w") as fh:
-        fh.write(_spec_text(feature, num_rules, proof_tags))
-
-    subprocess.run(["git", "init", "-q"], cwd=tmpdir, check=True,
-                   capture_output=True)
-    _commit(tmpdir, "init")
+@pytest.fixture
+def passing():
+    made = Project(passing=True)
+    yield made
+    made.close()
 
 
-def _write_proof_file(tmpdir: str, feature: str,
-                      entries: list, spec_subdir: str = "specs/hooks") -> None:
-    """Write a proofs-unit.json file.
-
-    entries: list of (proof_id, rule_id, status) tuples, e.g.
-        [("PROOF-1", "RULE-1", "pass"), ("PROOF-2", "RULE-2", "fail")]
-    """
-    proofs = []
-    for proof_id, rule_id, status in entries:
-        proofs.append({
-            "feature": feature,
-            "id": proof_id,
-            "rule": rule_id,
-            "test_file": "dev/test_example.sh",
-            "test_name": f"test {proof_id}",
-            "status": status,
-            "tier": "unit",
-        })
-    out_path = os.path.join(tmpdir, *spec_subdir.split("/"),
-                            f"{feature}.proofs-unit.json")
-    _write_json(out_path, {"tier": "unit", "proofs": proofs})
-
-
-def _clean_env() -> dict:
-    """os.environ without the plugin-root hints, so a test controls them."""
-    env = dict(os.environ)
-    env.pop("PURLIN_PLUGIN_ROOT", None)
-    env.pop("CLAUDE_PLUGIN_ROOT", None)
-    return env
-
-
-def _run_hook(tmpdir: str, script: str = HOOK_SCRIPT,
-              env: dict | None = None) -> tuple:
-    """Run the hook inside tmpdir, return (exit_code, combined_output)."""
-    result = subprocess.run(
-        ["bash", script], cwd=tmpdir, capture_output=True, text=True,
-        env=env if env is not None else _clean_env(),
-    )
-    return result.returncode, result.stdout + result.stderr
-
-
-def _run_gate(tmpdir: str, *args: str) -> tuple:
-    """Run the gate directly, return (exit_code, stdout, stderr)."""
-    result = subprocess.run(
-        [sys.executable, GATE_SCRIPT] + list(args), cwd=tmpdir,
-        capture_output=True, text=True, env=_clean_env(),
-    )
-    return result.returncode, result.stdout, result.stderr
-
-
-def _set_config_field(tmpdir: str, key: str, value) -> None:
-    cfg_path = os.path.join(tmpdir, ".purlin", "config.json")
-    with open(cfg_path) as fh:
-        cfg = json.load(fh)
-    cfg[key] = value
-    _write_json(cfg_path, cfg)
-
-
-def _issue_receipts(tmpdir: str) -> None:
-    """Receipt a temp project through the real issuer.
-
-    Through the issuer, never by hand: a hand-written receipt shape is free to
-    drift from the one purlin:verify writes, and then the test proves the hook
-    agrees with a fiction.
-    """
-    import issue_receipts
-
-    issue_receipts.write_run_marker(tmpdir)
-    issue_receipts.main(tmpdir, quiet=True)
+@pytest.fixture
+def failing():
+    made = Project(passing=False)
+    yield made
+    made.close()
 
 
 # ---------------------------------------------------------------------------
-# RULE-1: FAILING blocks the push
+# The contract
 # ---------------------------------------------------------------------------
 
-class TestRule1FailingBlocks:
+class TestTheContract:
 
-    @pytest.mark.proof("pre_push_hook", "PROOF-1", "RULE-1", tier="integration")
-    def test_fail_proof_blocks_with_exit_1(self, tmp_path):
-        """One FAIL entry in a proof file blocks the push: exit 1 and
-        PUSH BLOCKED in the output."""
-        tmpdir = str(tmp_path)
-        _create_test_project(tmpdir, num_rules=3)
-        _write_proof_file(tmpdir, "test_feature", [
-            ("PROOF-1", "RULE-1", "pass"),
-            ("PROOF-2", "RULE-2", "fail"),
-            ("PROOF-3", "RULE-3", "pass"),
-        ])
-        _commit(tmpdir, "failing proof")
+    def test_a_passing_suite_says_so_and_lets_the_push_through(self, passing):
+        done = passing.push()
+        assert done.returncode == 0, done.stdout + done.stderr
+        assert 'the tagged tests passed' in done.stdout
 
-        exit_code, output = _run_hook(tmpdir)
+    def test_a_failure_with_the_setting_off_is_reported_and_not_blocked(
+            self, failing):
+        done = failing.push()
+        assert done.returncode == 0, done.stdout + done.stderr
+        assert 'a tagged test failed' in done.stdout
+        assert 'not blocked' in done.stdout
 
-        assert exit_code == 1, (
-            f"Expected exit 1 on a FAIL proof, got {exit_code}\n{output}")
-        assert "PUSH BLOCKED" in output, (
-            f"Expected 'PUSH BLOCKED' in output:\n{output}")
+    def test_a_failure_with_the_setting_on_blocks(self, failing):
+        failing.setting('on')
+        done = failing.push()
+        assert done.returncode == 1
+        assert 'this push is blocked' in done.stdout
+        assert 'purlin:test' in done.stdout
 
-    @pytest.mark.proof("pre_push_hook", "PROOF-8", "RULE-1", tier="integration")
-    def test_lifecycle_fail_then_partial_then_complete(self, tmp_path):
-        """Full lifecycle in one project: a FAIL blocks with exit 1; fixing it
-        to pass while one rule stays unproved allows the push with a partial
-        coverage line; proving the last rule allows it with the feature listed
-        PASSING (3/3 rules proved) and no PUSH BLOCKED anywhere."""
-        tmpdir = str(tmp_path)
-        _create_test_project(tmpdir, num_rules=3)
+    def test_a_pass_with_the_setting_on_still_goes_through(self, passing):
+        passing.setting('on')
+        done = passing.push()
+        assert done.returncode == 0, done.stdout + done.stderr
+        assert 'the tagged tests passed' in done.stdout
 
-        # Phase 1: one FAIL, one PASS, one unproved.
-        _write_proof_file(tmpdir, "test_feature", [
-            ("PROOF-1", "RULE-1", "pass"),
-            ("PROOF-2", "RULE-2", "fail"),
-        ])
-        _commit(tmpdir, "one failing proof")
-        ec1, out1 = _run_hook(tmpdir)
-        assert ec1 == 1, f"Phase 1 expected exit 1, got {ec1}\n{out1}"
-        assert "PUSH BLOCKED" in out1, f"Phase 1 output:\n{out1}"
+    def test_an_unreadable_setting_never_blocks(self, failing):
+        write(failing.path('.purlin/config.json'), 'not json at all')
+        done = failing.push()
+        assert done.returncode == 0, done.stdout + done.stderr
+        assert 'not blocked' in done.stdout
 
-        # Phase 2: FAIL fixed, RULE-3 still unproved.
-        _write_proof_file(tmpdir, "test_feature", [
-            ("PROOF-1", "RULE-1", "pass"),
-            ("PROOF-2", "RULE-2", "pass"),
-        ])
-        _commit(tmpdir, "fix the failing proof")
-        ec2, out2 = _run_hook(tmpdir)
-        assert ec2 == 0, f"Phase 2 expected exit 0, got {ec2}\n{out2}"
-        assert "PUSH BLOCKED" not in out2, f"Phase 2 output:\n{out2}"
-        assert "partial coverage" in out2.lower(), f"Phase 2 output:\n{out2}"
-        assert "PARTIAL (2/3 rules proved)" in out2, f"Phase 2 output:\n{out2}"
+    def test_the_setting_true_counts_as_on(self, failing):
+        failing.setting(True)
+        assert failing.push().returncode == 1
 
-        # Phase 3: every rule proved.
-        _write_proof_file(tmpdir, "test_feature", [
-            ("PROOF-1", "RULE-1", "pass"),
-            ("PROOF-2", "RULE-2", "pass"),
-            ("PROOF-3", "RULE-3", "pass"),
-        ])
-        _commit(tmpdir, "prove the last rule")
-        ec3, out3 = _run_hook(tmpdir)
-        assert ec3 == 0, f"Phase 3 expected exit 0, got {ec3}\n{out3}"
-        assert "PUSH BLOCKED" not in out3, f"Phase 3 output:\n{out3}"
-        assert "PASSING (3/3 rules proved)" in out3, f"Phase 3 output:\n{out3}"
+    def test_one_line_either_way(self, passing):
+        lines = [line for line in passing.push().stdout.splitlines()
+                 if line.startswith('purlin:')]
+        assert len(lines) == 1
 
 
-# ---------------------------------------------------------------------------
-# RULE-2: partial coverage allows push with warning
-# ---------------------------------------------------------------------------
+class TestWhenThereIsNothingToRun:
 
-class TestRule2PartialAllows:
+    def test_a_project_with_no_specs_exits_zero(self):
+        made = Project(specs=False)
+        try:
+            done = made.push()
+            assert done.returncode == 0, done.stdout + done.stderr
+            assert 'purlin:' not in done.stdout
+        finally:
+            made.close()
 
-    @pytest.mark.proof("pre_push_hook", "PROOF-2", "RULE-2", tier="integration")
-    def test_partial_coverage_exits_0_with_warning(self, tmp_path):
-        """Proof file covers 2 of 3 rules (no FAIL): the hook must exit 0 with
-        a 'partial coverage' warning in stdout."""
-        tmpdir = str(tmp_path)
-        _create_test_project(tmpdir, num_rules=3)
-        _write_proof_file(tmpdir, "test_feature", [
-            ("PROOF-1", "RULE-1", "pass"),
-            ("PROOF-2", "RULE-2", "pass"),
-        ])
+    def test_a_project_that_is_not_a_purlin_project_exits_zero(self, passing):
+        shutil.rmtree(passing.path('.purlin'), ignore_errors=True)
+        done = subprocess.run(['sh', HOOK_SCRIPT], cwd=passing.root,
+                              capture_output=True, text=True, timeout=300,
+                              stdin=subprocess.DEVNULL)
+        assert done.returncode == 0
+        assert done.stdout == ''
 
-        exit_code, output = _run_hook(tmpdir)
-
-        assert exit_code == 0, (
-            f"Expected exit 0 (partial coverage allowed in warn mode), "
-            f"got {exit_code}\n{output}")
-        assert "partial coverage" in output.lower(), (
-            f"Expected 'partial coverage' in output, got:\n{output}")
-        assert "PUSH BLOCKED" not in output, (
-            f"Unexpected PUSH BLOCKED in output:\n{output}")
+    def test_outside_a_repository_it_exits_zero(self):
+        directory = tempfile.mkdtemp(prefix='purlin-norepo-')
+        try:
+            done = subprocess.run(['sh', HOOK_SCRIPT], cwd=directory,
+                                  capture_output=True, text=True, timeout=300,
+                                  stdin=subprocess.DEVNULL)
+            assert done.returncode == 0
+        finally:
+            shutil.rmtree(directory, ignore_errors=True)
 
 
 # ---------------------------------------------------------------------------
-# RULE-3: no specs means a silent exit 0
+# The shim
 # ---------------------------------------------------------------------------
 
-class TestRule3NoSpecsSilent:
+class TestTheShim:
 
-    @pytest.mark.proof("pre_push_hook", "PROOF-3", "RULE-3", tier="integration")
-    def test_no_specs_dir_and_empty_specs_dir_both_exit_0_silently(self, tmp_path):
-        """Both branches of RULE-3. With no specs/ directory at all the hook
-        exits 0 with empty stdout; with specs/ present but holding zero .md
-        files (only specs/hooks/NOTES.txt) it does the same, so the walk stops
-        before any runner or gate is invoked."""
-        tmpdir = str(tmp_path)
-        os.makedirs(os.path.join(tmpdir, ".purlin"))
-        _write_json(os.path.join(tmpdir, ".purlin", "config.json"),
-                    {"version": "0.9.0", "test_framework": "auto"})
-        subprocess.run(["git", "init", "-q"], cwd=tmpdir, check=True,
-                       capture_output=True)
-        _commit(tmpdir, "init")
+    def test_the_pinned_plugin_root_is_enough(self, passing):
+        done = passing.push(plugin_root=None)
+        assert done.returncode == 0, done.stdout + done.stderr
+        assert 'the tagged tests passed' in done.stdout
+        assert read(passing.path('.purlin/plugin-root')).strip() == ROOT
 
-        exit_code, output = _run_hook(tmpdir)
+    def test_claude_plugin_root_is_enough(self, passing):
+        os.remove(passing.path('.purlin/plugin-root'))
+        done = passing.push(plugin_root=None,
+                            env={'CLAUDE_PLUGIN_ROOT': ROOT})
+        assert done.returncode == 0, done.stdout + done.stderr
+        assert 'the tagged tests passed' in done.stdout
 
-        assert exit_code == 0, f"Expected exit 0 (no specs), got {exit_code}\n{output}"
-        assert output.strip() == "", (
-            f"Expected empty output when no specs exist, got:\n{output!r}")
+    def test_a_marketplace_copy_under_home_is_found(self, passing):
+        installed = os.path.join(passing.home, '.claude', 'plugins', 'cache',
+                                 'purlin', 'purlin', '0.10.0')
+        os.makedirs(os.path.dirname(installed), exist_ok=True)
+        shutil.copytree(ROOT, installed,
+                        ignore=shutil.ignore_patterns('.git', 'design',
+                                                      'docs', '__pycache__'))
+        os.remove(passing.path('.purlin/plugin-root'))
+        done = passing.push(plugin_root=None)
+        assert done.returncode == 0, done.stdout + done.stderr
+        assert 'the tagged tests passed' in done.stdout
 
-        # Branch two: the directory exists and holds no .md file.
-        os.makedirs(os.path.join(tmpdir, "specs", "hooks"))
-        with open(os.path.join(tmpdir, "specs", "hooks", "NOTES.txt"), "w") as fh:
-            fh.write("not a spec\n")
-        assert os.path.isdir(os.path.join(tmpdir, "specs"))
-        _commit(tmpdir, "an empty specs directory")
+    def test_no_plugin_anywhere_warns_and_never_blocks(self, passing):
+        os.remove(passing.path('.purlin/plugin-root'))
+        done = passing.push(plugin_root=None)
+        assert done.returncode == 0, done.stdout + done.stderr
+        assert 'the plugin was not found' in done.stdout
+        assert 'PURLIN_PLUGIN_ROOT' in done.stdout
 
-        exit_empty, out_empty = _run_hook(tmpdir)
+    def test_an_environment_root_wins_over_the_pinned_one(self, passing):
+        write(passing.path('.purlin/plugin-root'), '/no/such/plugin\n')
+        done = passing.push()
+        assert done.returncode == 0, done.stdout + done.stderr
+        assert 'the tagged tests passed' in done.stdout
 
-        assert exit_empty == 0, (
-            f"Expected exit 0 (specs/ holds no .md file), got {exit_empty}"
-            f"\n{out_empty}")
-        assert out_empty.strip() == "", (
-            f"Expected empty output when specs/ holds no .md file, got:"
-            f"\n{out_empty!r}")
+    def test_the_shim_names_no_machine_and_no_release(self, passing):
+        shim = read(passing.path('.purlin/hooks/pre-push'))
+        assert ROOT not in shim
+        assert passing.root not in shim
+        assert read(os.path.join(ROOT, 'VERSION')).strip() not in shim
 
+    def test_the_delegator_git_runs_reaches_the_shim(self, passing):
+        delegator = read(passing.path('.git/hooks/pre-push'))
+        assert '.purlin/hooks/pre-push' in delegator
+        assert os.access(passing.path('.git/hooks/pre-push'), os.X_OK)
 
-# ---------------------------------------------------------------------------
-# RULE-4: all rules proved means exit 0
-# ---------------------------------------------------------------------------
-
-class TestRule4AllPassingAllows:
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-4", "RULE-4", tier="integration")
-    def test_all_pass_exits_0(self, tmp_path):
-        """All 3 rules proved with pass status: the hook exits 0 and never
-        prints PUSH BLOCKED."""
-        tmpdir = str(tmp_path)
-        _create_test_project(tmpdir, num_rules=3)
-        _write_proof_file(tmpdir, "test_feature", [
-            ("PROOF-1", "RULE-1", "pass"),
-            ("PROOF-2", "RULE-2", "pass"),
-            ("PROOF-3", "RULE-3", "pass"),
-        ])
-
-        exit_code, output = _run_hook(tmpdir)
-
-        assert exit_code == 0, (
-            f"Expected exit 0 (all passing), got {exit_code}\n{output}")
-        assert "PUSH BLOCKED" not in output, (
-            f"Unexpected PUSH BLOCKED in output:\n{output}")
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-12", "RULE-4", tier="integration")
-    def test_fail_keyword_in_rule_description_does_not_block(self, tmp_path):
-        """A rule description containing the word FAIL must not cause a
-        false-positive block when all proofs actually pass. This guards against
-        naive string matching on rule text rather than status fields."""
-        tmpdir = str(tmp_path)
-        _create_test_project(tmpdir, num_rules=0)
-
-        spec_content = "\n".join([
-            "# Feature: test_feature",
-            "",
-            "## Rules",
-            "",
-            "- RULE-1: FAIL status badge is solid red pill with white text",
-            "- RULE-2: PASSING badge is green pill",
-            "",
-            "## Proof",
-            "",
-            "- PROOF-1 (RULE-1): Render the badge for a failed rule and verify "
-            "the pill background is #d13438",
-            "- PROOF-2 (RULE-2): Render the badge for a passing rule and verify "
-            "the pill background is #107c10",
-            "",
-        ])
-        with open(os.path.join(tmpdir, "specs", "hooks", "test_feature.md"),
-                  "w") as fh:
-            fh.write(spec_content)
-
-        _write_proof_file(tmpdir, "test_feature", [
-            ("PROOF-1", "RULE-1", "pass"),
-            ("PROOF-2", "RULE-2", "pass"),
-        ])
-        _commit(tmpdir, "spec-with-FAIL-in-desc")
-
-        exit_code, output = _run_hook(tmpdir)
-
-        assert exit_code == 0, (
-            f"Rule description containing 'FAIL' caused a false-positive block "
-            f"(exit {exit_code}):\n{output}")
-        assert "PUSH BLOCKED" not in output, (
-            f"False-positive PUSH BLOCKED:\n{output}")
-
-
-def _gate_module():
-    """scripts/hooks/pre_push_gate.py imported by path, the way a hook loads
-    it: there is no installable package to import it from."""
-    import importlib.util
-
-    spec = importlib.util.spec_from_file_location(
-        "pre_push_gate_under_test", GATE_SCRIPT)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-def _registry_framework_ids():
-    """Every framework id references/supported_frameworks.md registers.
-
-    Both plugin tables carry a `Display name` column and no other table does,
-    so a table is a plugin table when its header names that column. The id is
-    the first word of the cell, which is what the config value and the tuple
-    spell (`pytest (Python)` is `pytest`).
-    """
-    path = os.path.join(PROJECT_ROOT, "references", "supported_frameworks.md")
-    with open(path, encoding="utf-8") as fh:
-        lines = fh.read().splitlines()
-
-    ids, name_col = set(), None
-    for line in lines:
-        stripped = line.strip()
-        if not stripped.startswith("|"):
-            name_col = None
-            continue
-        cells = [c.strip() for c in stripped.strip("|").split("|")]
-        if "Display name" in cells:
-            name_col = cells.index("Display name")
-            continue
-        if name_col is None or set(stripped) <= set("|-: "):
-            continue
-        if name_col < len(cells):
-            display = cells[name_col].strip("*` ")
-            if display:
-                ids.add(display.split()[0])
-    assert ids, f"no Display name table rows found in {path}"
-    return ids
+    def test_the_delegator_survives_a_checkout_without_the_shim(self, passing):
+        os.remove(passing.path('.purlin/hooks/pre-push'))
+        done = subprocess.run(['sh', passing.path('.git/hooks/pre-push')],
+                              cwd=passing.root, capture_output=True,
+                              text=True, timeout=300,
+                              stdin=subprocess.DEVNULL)
+        assert done.returncode == 0
+        assert 'no hook shim' in done.stdout
 
 
 # ---------------------------------------------------------------------------
-# RULE-5: framework list and auto-detection
+# What the two files say
 # ---------------------------------------------------------------------------
 
-class TestRule5FrameworkDetection:
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-5", "RULE-5", tier="integration")
-    def test_framework_from_config_and_auto(self, tmp_path):
-        """`pre_push_gate.py config` prints frameworks=pytest for
-        {"test_framework": "pytest"}, frameworks=jest for "jest", and
-        frameworks=pytest for "auto" once conftest.py exists."""
-        tmpdir = str(tmp_path)
-        _create_test_project(tmpdir, num_rules=1)
-
-        _set_config_field(tmpdir, "test_framework", "pytest")
-        rc, out, _err = _run_gate(tmpdir, "config", "--project-root", tmpdir)
-        assert rc == 0, out
-        assert "frameworks=pytest" in out, out
-
-        _set_config_field(tmpdir, "test_framework", "jest")
-        rc, out, _err = _run_gate(tmpdir, "config", "--project-root", tmpdir)
-        assert rc == 0, out
-        assert "frameworks=jest" in out, out
-
-        _set_config_field(tmpdir, "test_framework", "auto")
-        open(os.path.join(tmpdir, "conftest.py"), "w").close()
-        rc, out, _err = _run_gate(tmpdir, "config", "--project-root", tmpdir)
-        assert rc == 0, out
-        assert "frameworks=pytest" in out, out
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-25", "RULE-5", tier="integration")
-    def test_comma_list_deduped_unknown_reported_on_stderr(self, tmp_path):
-        """test_framework "pytest, bogus ,pytest,shell" resolves to
-        frameworks=pytest,shell on stdout: split on commas, trimmed, deduped,
-        order kept. "bogus" is named on stderr and appears nowhere in the
-        frameworks line, so no runner arm is selected for it."""
-        tmpdir = str(tmp_path)
-        _create_test_project(tmpdir, num_rules=1)
-        _set_config_field(tmpdir, "test_framework", "pytest, bogus ,pytest,shell")
-
-        rc, out, err = _run_gate(tmpdir, "config", "--project-root", tmpdir)
-        assert rc == 0, f"{out}\n{err}"
-        assert "frameworks=pytest,shell" in out, out
-        assert "bogus" in err, f"Expected 'bogus' named on stderr, got:\n{err}"
-        assert "bogus" not in out, out
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-31", "RULE-5", tier="integration")
-    def test_known_frameworks_equals_the_registry_id_set(self, tmp_path):
-        """KNOWN_FRAMEWORKS is the id set of the framework registry, taken over
-        both plugin tables of references/supported_frameworks.md, and a
-        registered id reaches the shell half instead of being dropped."""
-        registry_ids = _registry_framework_ids()
-        known = set(_gate_module().KNOWN_FRAMEWORKS)
-        expected = {"pytest", "vitest", "jest", "c", "php", "sql", "shell", "xunit"}
-
-        assert known == registry_ids, (
-            "KNOWN_FRAMEWORKS in scripts/hooks/pre_push_gate.py must equal the "
-            "id set of references/supported_frameworks.md; tuple has "
-            f"{sorted(known)}, registry has {sorted(registry_ids)}")
-        assert known == expected, sorted(known)
-        assert registry_ids == expected, sorted(registry_ids)
-
-        tmpdir = str(tmp_path)
-        _create_test_project(tmpdir, num_rules=1)
-        _set_config_field(tmpdir, "test_framework", "xunit")
-
-        rc, out, err = _run_gate(tmpdir, "config", "--project-root", tmpdir)
-        assert rc == 0, f"{out}\n{err}"
-        assert "frameworks=xunit" in out, out
-        assert "xunit" not in err, (
-            "a registered framework must not be reported as unknown, got:\n"
-            f"{err}")
-
-
-# ---------------------------------------------------------------------------
-# RULE-15: what the gate writes to stderr reaches the developer
-# ---------------------------------------------------------------------------
-
-class TestRule15StderrReachesTheUser:
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-24", "RULE-15", tier="integration")
-    def test_gate_stderr_is_not_swallowed_by_the_hook(self, tmp_path):
-        """The hook captures only the gate's stdout, so the gate's warning
-        about the unknown framework "bogus" reaches the caller: assert exit 0
-        and 'bogus' in the hook's combined output, and assert the script
-        contains zero occurrences of 2>/dev/null."""
-        tmpdir = str(tmp_path)
-        _create_test_project(tmpdir, num_rules=1)
-        _set_config_field(tmpdir, "test_framework", "bogus,shell")
-        _write_proof_file(tmpdir, "test_feature",
-                          [("PROOF-1", "RULE-1", "pass")])
-        _commit(tmpdir, "unknown framework named in config")
-
-        exit_code, output = _run_hook(tmpdir)
-
-        assert exit_code == 0, f"{exit_code}\n{output}"
-        assert "bogus" in output, (
-            f"The gate's stderr did not reach the caller:\n{output}")
-
-        with open(HOOK_SCRIPT, encoding="utf-8") as fh:
-            script = fh.read()
-        assert "2>/dev/null" not in script, (
-            "pre-push.sh redirects stderr to /dev/null, which hides the "
-            "reason a push was allowed or blocked")
-
-
-# ---------------------------------------------------------------------------
-# RULE-6: only unit-tier tests run, and a crashed runner blocks
-# ---------------------------------------------------------------------------
-
-class TestRule6UnitTierOnly:
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-6", "RULE-6", tier="integration")
-    def test_unit_test_runs_integration_skipped(self, tmp_path):
-        """The hook invokes pytest with -m 'not integration and not e2e'. A plain test
-        function must run (sentinel created); a function marked @integration
-        must be skipped (no sentinel)."""
-        tmpdir = str(tmp_path)
-        _create_test_project(tmpdir, num_rules=1)
-        _write_proof_file(tmpdir, "test_feature",
-                          [("PROOF-1", "RULE-1", "pass")])
-
-        # auto plus conftest.py resolves to pytest.
-        _set_config_field(tmpdir, "test_framework", "auto")
-        open(os.path.join(tmpdir, "conftest.py"), "w").close()
-
-        sentinel_unit = os.path.join(tmpdir, ".sentinel_unit")
-        sentinel_int = os.path.join(tmpdir, ".sentinel_integration")
-
-        with open(os.path.join(tmpdir, "test_unit_tier.py"), "w") as fh:
-            fh.write(f'def test_unit_runs():\n'
-                     f'    open("{sentinel_unit}", "w").close()\n')
-        with open(os.path.join(tmpdir, "test_integration_tier.py"), "w") as fh:
-            fh.write(f'import pytest\n\n'
-                     f'@pytest.mark.integration\n'
-                     f'def test_integration_skipped():\n'
-                     f'    open("{sentinel_int}", "w").close()\n')
-
-        for p in (sentinel_unit, sentinel_int):
-            if os.path.exists(p):
-                os.remove(p)
-
-        _run_hook(tmpdir)
-
-        assert os.path.exists(sentinel_unit), (
-            "Unit test did not run: the hook should invoke pytest -m 'not integration and not e2e'")
-        assert not os.path.exists(sentinel_int), (
-            "Integration-marked test ran: the hook should have excluded it")
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-21", "RULE-6", tier="integration")
-    def test_crashed_runner_blocks_even_with_all_pass_proofs(self, tmp_path):
-        """A conftest.py that raises at import makes pytest exit non-zero. With
-        an all-pass proof file already on disk the status alone would exit 0,
-        so the block has to come from the runner: assert exit 1 and output
-        naming pytest and its exit code."""
-        tmpdir = str(tmp_path)
-        _create_test_project(tmpdir, num_rules=1)
-        # Stale evidence: the proof file says everything passed.
-        _write_proof_file(tmpdir, "test_feature",
-                          [("PROOF-1", "RULE-1", "pass")])
-        _set_config_field(tmpdir, "test_framework", "pytest")
-        with open(os.path.join(tmpdir, "conftest.py"), "w") as fh:
-            fh.write('raise RuntimeError("conftest import blew up")\n')
-        _commit(tmpdir, "broken conftest")
-
-        exit_code, output = _run_hook(tmpdir)
-
-        assert exit_code == 1, (
-            f"A crashed runner must block the push, got exit {exit_code}\n{output}")
-        assert "pytest" in output, (
-            f"The block must name the runner that crashed:\n{output}")
-        assert "PUSH BLOCKED" in output, f"{output}"
-
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-32", "RULE-6", tier="integration")
-    def test_e2e_tier_is_deselected_by_the_unit_arm(self, tmp_path):
-        """The unit arm must actually skip the slow tiers, measured on a clock.
-
-        The project's conftest.py is the real pytest proof plugin, so a proof
-        marker's tier becomes a pytest marker (proof_plugins_pytest RULE-5).
-        One unit-tier proof passes instantly, one e2e-tier proof sleeps 2
-        seconds. If the arm's `-m` expression selects what it claims to, the
-        whole hook returns in under 2 seconds; re-tagging the sleeper as
-        unit-tier puts the same 2 seconds back, which is what tells the two
-        runs apart rather than a timing guess.
-        """
-        tmpdir = str(tmp_path)
-        _create_test_project(tmpdir, num_rules=2)
-        _write_proof_file(tmpdir, "test_feature",
-                          [("PROOF-1", "RULE-1", "pass"),
-                           ("PROOF-2", "RULE-2", "pass")])
-        _set_config_field(tmpdir, "test_framework", "pytest")
-        # The real plugin, wired the way a project wires it.
-        shutil.copy2(os.path.join(PROJECT_ROOT, "scripts", "proof",
-                                  "pytest_purlin.py"),
-                     os.path.join(tmpdir, "conftest.py"))
-
-        test_path = os.path.join(tmpdir, "test_tiers.py")
-
-        def _write(slow_tier: str) -> None:
-            with open(test_path, "w") as fh:
-                fh.write(
-                    "import time\n"
-                    "import pytest\n\n"
-                    '@pytest.mark.proof("test_feature", "PROOF-1", "RULE-1")\n'
-                    "def test_fast():\n"
-                    "    assert True\n\n"
-                    '@pytest.mark.proof("test_feature", "PROOF-2", "RULE-2",'
-                    f' tier="{slow_tier}")\n'
-                    "def test_slow():\n"
-                    "    time.sleep(2)\n"
-                    "    assert True\n")
-
-        _write("e2e")
-        _commit(tmpdir, "tiered tests")
-        start = time.monotonic()
-        exit_code, output = _run_hook(tmpdir)
-        fast_elapsed = time.monotonic() - start
-
-        assert exit_code == 0, f"hook blocked the push:\n{output}"
-        assert "running unit-tier tests (pytest)" in output, output
-        assert fast_elapsed < 2.0, (
-            f"the unit arm took {fast_elapsed:.2f}s, so the 2 second e2e-tier "
-            f"test ran; -m did not deselect it:\n{output}")
-
-        # The same 2 seconds, now tagged unit, are back in the run: the clock
-        # difference is the tier expression and nothing else.
-        _write("unit")
-        _commit(tmpdir, "slow test re-tagged unit")
-        start = time.monotonic()
-        exit_code, output = _run_hook(tmpdir)
-        slow_elapsed = time.monotonic() - start
-
-        assert exit_code == 0, f"hook blocked the push:\n{output}"
-        assert slow_elapsed > 2.0, (
-            f"the unit-tagged sleeper took only {slow_elapsed:.2f}s, so the "
-            f"first run's speed proved nothing:\n{output}")
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-28", "RULE-6", tier="integration")
-    def test_pytest_exit_5_is_success_but_a_real_failure_is_not(self, tmp_path):
-        """pytest exits 5 when it collected nothing. RULE-6 exempts exactly
-        that code: a project with conftest.py and no test file at all must
-        exit 0 with no PUSH BLOCKED, while the same project with one failing
-        test (pytest exit 1) must block naming the runner and its exit code."""
-        tmpdir = str(tmp_path)
-        _create_test_project(tmpdir, num_rules=1)
-        _write_proof_file(tmpdir, "test_feature",
-                          [("PROOF-1", "RULE-1", "pass")])
-        _set_config_field(tmpdir, "test_framework", "pytest")
-        open(os.path.join(tmpdir, "conftest.py"), "w").close()
-        _commit(tmpdir, "a project with no tests to collect")
-
-        exit_code, output = _run_hook(tmpdir)
-
-        assert "running unit-tier tests (pytest)" in output, (
-            f"the pytest arm did not run, so exit 5 was never reached:\n{output}")
-        assert exit_code == 0, (
-            f"pytest collected nothing (exit 5), which RULE-6 counts as "
-            f"success; got exit {exit_code}\n{output}")
-        assert "PUSH BLOCKED" not in output, output
-
-        # The exemption is for 5 and nothing else: one failing test is exit 1.
-        with open(os.path.join(tmpdir, "test_collected.py"), "w") as fh:
-            fh.write('def test_fails():\n    assert False\n')
-        _commit(tmpdir, "one failing test")
-
-        exit_fail, out_fail = _run_hook(tmpdir)
-
-        assert exit_fail == 1, (
-            f"a pytest exit of 1 must block the push, got {exit_fail}\n{out_fail}")
-        assert "PUSH BLOCKED: the pytest runner exited 1" in out_fail, out_fail
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-29", "RULE-6", tier="integration")
-    def test_jest_vitest_and_shell_arms_each_run_with_their_flags(self, tmp_path):
-        """The three non-pytest arms. With `npx` replaced by a recorder on
-        PATH, `"test_framework": "jest,vitest,shell"` must produce exactly the
-        argument lines `jest --testPathPattern=unit --passWithNoTests` and
-        `vitest run --passWithNoTests`, in that order, and the shell arm must
-        run the project's *.test.sh file."""
-        tmpdir = str(tmp_path)
-        _create_test_project(tmpdir, num_rules=1)
-        _write_proof_file(tmpdir, "test_feature",
-                          [("PROOF-1", "RULE-1", "pass")])
-        _set_config_field(tmpdir, "test_framework", "jest,vitest,shell")
-
-        # A recorder on PATH in place of npx: the arms' flags are what the
-        # hook passes, so the recording is the observation.
-        record = os.path.join(tmpdir, "npx-calls.txt")
-        fakebin = os.path.join(tmpdir, "fakebin")
-        os.makedirs(fakebin)
-        npx = os.path.join(fakebin, "npx")
-        with open(npx, "w") as fh:
-            fh.write('#!/usr/bin/env bash\n'
-                     f'printf "%s\\n" "$*" >> "{record}"\n'
-                     'exit 0\n')
-        os.chmod(npx, 0o755)
-
-        sentinel_shell = os.path.join(tmpdir, ".sentinel_shell")
-        with open(os.path.join(tmpdir, "unit.test.sh"), "w") as fh:
-            fh.write(f'#!/usr/bin/env bash\ntouch "{sentinel_shell}"\n')
-
-        _commit(tmpdir, "three runner arms")
-
-        env = _clean_env()
-        env["PATH"] = fakebin + os.pathsep + env["PATH"]
-        exit_code, output = _run_hook(tmpdir, env=env)
-
-        assert exit_code == 0, f"{exit_code}\n{output}"
-        assert os.path.exists(record), (
-            f"npx was never invoked, so no jest or vitest arm ran:\n{output}")
-        with open(record) as fh:
-            lines = [line.strip() for line in fh if line.strip()]
-        assert lines == ["jest --testPathPattern=unit --passWithNoTests",
-                         "vitest run --passWithNoTests"], (
-            f"the jest and vitest arms did not run with RULE-6's flags: {lines}")
-        assert os.path.exists(sentinel_shell), (
-            f"the shell arm did not run unit.test.sh:\n{output}")
-
-        # No `|| true` on a non-pytest arm either: make npx exit 3 and the
-        # push must be blocked naming the runner and the code.
-        with open(npx, "w") as fh:
-            fh.write('#!/usr/bin/env bash\nexit 3\n')
-        os.chmod(npx, 0o755)
-
-        exit_broken, out_broken = _run_hook(tmpdir, env=env)
-
-        assert exit_broken == 1, (
-            f"a jest exit of 3 must block the push, got {exit_broken}"
-            f"\n{out_broken}")
-        assert "PUSH BLOCKED: the jest runner exited 3" in out_broken, out_broken
-
-
-# ---------------------------------------------------------------------------
-# RULE-7: output shows what passed, what is partial, what is blocked
-# ---------------------------------------------------------------------------
-
-class TestRule7OutputFormat:
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-7", "RULE-7", tier="integration")
-    def test_output_shows_blocked_and_recovery_on_fail(self, tmp_path):
-        """When a proof has FAIL status the output must contain PUSH BLOCKED,
-        the failing feature's name, and RECOVERY STEPS."""
-        tmpdir = str(tmp_path)
-        _create_test_project(tmpdir, num_rules=3)
-        _write_proof_file(tmpdir, "test_feature", [
-            ("PROOF-1", "RULE-1", "pass"),
-            ("PROOF-2", "RULE-2", "fail"),
-        ])
-
-        exit_code, output = _run_hook(tmpdir)
-
-        assert exit_code == 1, f"Expected exit 1 on FAIL proof, got {exit_code}\n{output}"
-        assert "PUSH BLOCKED" in output, f"{output}"
-        assert "test_feature" in output, f"{output}"
-        assert "RECOVERY STEPS" in output, f"{output}"
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-13", "RULE-7", tier="integration")
-    def test_recovery_message_lists_feature_specific_commands(self, tmp_path):
-        """The recovery message must include purlin:test <feature_name>,
-        purlin:status and purlin:build so the developer knows exactly which
-        commands to run."""
-        tmpdir = str(tmp_path)
-        _create_test_project(tmpdir, num_rules=2)
-        _write_proof_file(tmpdir, "test_feature", [
-            ("PROOF-1", "RULE-1", "fail"),
-            ("PROOF-2", "RULE-2", "pass"),
-        ])
-        _commit(tmpdir, "failing-proof")
-
-        _, output = _run_hook(tmpdir)
-
-        assert "purlin:test test_feature" in output, f"{output}"
-        assert "purlin:status" in output, f"{output}"
-        assert "purlin:build" in output, f"{output}"
-
-
-# ---------------------------------------------------------------------------
-# RULE-8: strict mode blocks everything that is not VERIFIED
-# ---------------------------------------------------------------------------
-
-class TestRule8StrictMode:
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-9", "RULE-8", tier="integration")
-    def test_strict_mode_blocks_partial_coverage(self, tmp_path):
-        """Strict mode: partial coverage (2 of 3 rules proved, no FAIL) blocks
-        the push with exit 1 and 'strict mode' in the output."""
-        tmpdir = str(tmp_path)
-        _create_test_project(tmpdir, num_rules=3)
-        _set_config_field(tmpdir, "pre_push", "strict")
-        _write_proof_file(tmpdir, "test_feature", [
-            ("PROOF-1", "RULE-1", "pass"),
-            ("PROOF-2", "RULE-2", "pass"),
-        ])
-
-        exit_code, output = _run_hook(tmpdir)
-
-        assert exit_code == 1, (
-            f"Expected exit 1 in strict mode with partial coverage, "
-            f"got {exit_code}\n{output}")
-        assert "strict mode" in output.lower(), f"{output}"
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-10", "RULE-8", tier="integration")
-    def test_strict_mode_blocks_passing_until_receipted(self, tmp_path):
-        """Strict mode's boundary is the receipt, not the coverage. With both
-        rules proved and no receipt the feature is PASSING: assert exit 1 and
-        'strict mode'. Commit, issue receipts through dev/issue_receipts.py,
-        and the same project exits 0."""
-        tmpdir = str(tmp_path)
-        _create_test_project(tmpdir, num_rules=2)
-        _set_config_field(tmpdir, "pre_push", "strict")
-        _write_proof_file(tmpdir, "test_feature", [
-            ("PROOF-1", "RULE-1", "pass"),
-            ("PROOF-2", "RULE-2", "pass"),
-        ])
-        _commit(tmpdir, "all rules proved, no receipt")
-
-        exit_passing, out_passing = _run_hook(tmpdir)
-        assert exit_passing == 1, (
-            f"Strict mode must block a PASSING feature with no receipt, "
-            f"got exit {exit_passing}\n{out_passing}")
-        assert "strict mode" in out_passing.lower(), f"{out_passing}"
-        assert "PASSING (2/2 rules proved)" in out_passing, f"{out_passing}"
-
-        _issue_receipts(tmpdir)
-        exit_verified, out_verified = _run_hook(tmpdir)
-        assert exit_verified == 0, (
-            f"Strict mode must allow a VERIFIED feature, got exit "
-            f"{exit_verified}\n{out_verified}")
-        assert "PUSH BLOCKED" not in out_verified, f"{out_verified}"
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-14", "RULE-8", tier="integration")
-    def test_strict_mode_recovery_includes_verify_command(self, tmp_path):
-        """When strict mode blocks a push the recovery steps must include
-        RECOVERY STEPS, purlin:verify and purlin:test so the developer knows
-        how to reach VERIFIED."""
-        tmpdir = str(tmp_path)
-        _create_test_project(tmpdir, num_rules=3)
-        _set_config_field(tmpdir, "pre_push", "strict")
-        _write_proof_file(tmpdir, "test_feature", [
-            ("PROOF-1", "RULE-1", "pass"),
-            ("PROOF-2", "RULE-2", "pass"),
-        ])
-        _commit(tmpdir, "partial-strict")
-
-        exit_code, output = _run_hook(tmpdir)
-
-        assert exit_code == 1, f"Expected exit 1 in strict mode, got {exit_code}\n{output}"
-        assert "RECOVERY STEPS" in output, f"{output}"
-        assert "purlin:verify" in output, f"{output}"
-        assert "purlin:test" in output, f"{output}"
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-27", "RULE-8", tier="integration")
-    def test_awaiting_runner_is_one_advisory_line_and_never_blocks(self, tmp_path):
-        """A proof tagged @on(win11) with no result on win11 prints one
-        advisory line naming win11 and never changes the verdict: exit 0 in
-        warn mode, and exit 0 in strict mode once the feature is receipted,
-        with the advisory line still printed."""
-        tmpdir = str(tmp_path)
-        _create_test_project(
-            tmpdir, num_rules=2,
-            config_extra={"platforms": {"win11": {"os": "windows",
-                                                  "version": "11"}}},
-            proof_tags={"PROOF-2": "@on(win11)"})
-        _write_proof_file(tmpdir, "test_feature",
-                          [("PROOF-1", "RULE-1", "pass")])
-        _commit(tmpdir, "one proof awaiting a runner")
-
-        exit_warn, out_warn = _run_hook(tmpdir)
-        assert exit_warn == 0, (
-            f"awaiting_runner must never block, got exit {exit_warn}\n{out_warn}")
-        advisory = [ln for ln in out_warn.splitlines()
-                    if "win11" in ln and "advisory only" in ln]
-        assert len(advisory) == 1, (
-            f"Expected exactly 1 advisory line naming win11, got "
-            f"{len(advisory)}:\n{out_warn}")
-
-        _issue_receipts(tmpdir)
-        _set_config_field(tmpdir, "pre_push", "strict")
-        exit_strict, out_strict = _run_hook(tmpdir)
-        assert exit_strict == 0, (
-            f"awaiting_runner must never block in strict mode either, got "
-            f"exit {exit_strict}\n{out_strict}")
-        assert "advisory only" in out_strict, f"{out_strict}"
-        # The feature is held at PASSING by the awaiting platform, and the
-        # gate says so rather than silently exempting it.
-        assert "awaiting a declared platform" in out_strict, (
-            f"the reason a PASSING feature was not blocked must be printed:\n"
-            f"{out_strict}")
-
-        # Control: with nothing awaiting, a feature without a current receipt
-        # is blocked as before, so the exemption is provably the platform's.
-        _create_test_project(tmpdir2 := str(tmp_path / 'control'), num_rules=2)
-        _write_proof_file(tmpdir2, "test_feature",
-                          [("PROOF-1", "RULE-1", "pass"),
-                           ("PROOF-2", "RULE-2", "pass")])
-        _commit(tmpdir2, "both proved, no receipt")
-        _set_config_field(tmpdir2, "pre_push", "strict")
-        exit_control, out_control = _run_hook(tmpdir2)
-        assert exit_control == 1, (
-            f"strict must still block a PASSING feature with no receipt and "
-            f"nothing awaiting, got {exit_control}\n{out_control}")
-
-
-# ---------------------------------------------------------------------------
-# RULE-9: after purlin:init the installed hook exists and is executable
-# ---------------------------------------------------------------------------
-
-class TestRule9HookInstalled:
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-11", "RULE-9", tier="integration")
-    def test_installed_hook_exists_is_executable_and_blocks(self, tmp_path):
-        """Runs what purlin:init installs, end to end: the delegator git runs,
-        the shim it points at, and this checkout's pre-push.sh at the far end.
-        Every file must be executable and the chain must actually intercept a
-        push carrying a FAIL proof (exit 1 and PUSH BLOCKED)."""
-        tmpdir = str(tmp_path)
-        _create_test_project(tmpdir, num_rules=3)
-
-        shim = os.path.join(tmpdir, ".purlin", "hooks", "pre-push")
-        os.makedirs(os.path.dirname(shim), exist_ok=True)
-        with open(shim, "w") as fh:
-            fh.write(scaffold._shim("pre-push", "scripts/hooks/pre-push.sh"))
-        os.chmod(shim, 0o755)
-
-        git_hooks_dir = os.path.join(tmpdir, ".git", "hooks")
-        os.makedirs(git_hooks_dir, exist_ok=True)
-        installed_hook = os.path.join(git_hooks_dir, "pre-push")
-        with open(installed_hook, "w") as fh:
-            fh.write(scaffold._DELEGATOR.replace("@NAME@", "pre-push"))
-        os.chmod(installed_hook, os.stat(installed_hook).st_mode
-                 | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-
-        for path in (installed_hook, shim):
-            assert os.path.isfile(path), f"{path} does not exist after install"
-            assert os.access(path, os.X_OK), f"{path} is not executable"
-        assert ".purlin/hooks/pre-push" in open(installed_hook).read(), (
-            "the installed hook does not reach the shim")
-
-        _write_proof_file(tmpdir, "test_feature", [
-            ("PROOF-1", "RULE-1", "pass"),
-            ("PROOF-2", "RULE-2", "fail"),
-            ("PROOF-3", "RULE-3", "pass"),
-        ])
-        _commit(tmpdir, "failing-proofs")
-
-        home = os.path.join(tmpdir, "home")
-        os.makedirs(home, exist_ok=True)
-        env = _clean_env()
-        env["HOME"] = home
-        env["PURLIN_PLUGIN_ROOT"] = PROJECT_ROOT
-        exit_code, output = _run_hook(tmpdir, script=installed_hook, env=env)
-
-        assert exit_code == 1, (
-            f"Expected the installed hook to exit 1 on a FAIL proof, got "
-            f"{exit_code}\n{output}")
-        assert "PUSH BLOCKED" in output, f"{output}"
-
-
-# ---------------------------------------------------------------------------
-# RULE-10: the verdict comes from the payload, never the rendered table
-# ---------------------------------------------------------------------------
-
-class TestRule10PayloadNotTable:
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-18", "RULE-10", tier="integration")
-    def test_table_shaped_rule_text_does_not_change_the_verdict(self, tmp_path):
-        """A rule whose description is itself a rendered table row reading
-        FAILING, with every proof passing, exits 0 with no PUSH BLOCKED: the
-        verdict came from the payload. Both hook files also contain zero
-        characters in the box drawing range U+2500 to U+257F, so there is no
-        table left to parse."""
-        tmpdir = str(tmp_path)
-        _create_test_project(tmpdir, num_rules=0)
-
-        row = "│ test_feature │ 0/3 │ FAILING │"
-        spec_content = "\n".join([
-            "# Feature: test_feature",
-            "",
-            "## Rules",
-            "",
-            f"- RULE-1: The summary row renders as `{row}`",
-            "",
-            "## Proof",
-            "",
-            "- PROOF-1 (RULE-1): Render the summary table for a 0/3 feature "
-            f"and verify the row equals `{row}`",
-            "",
-        ])
-        with open(os.path.join(tmpdir, "specs", "hooks", "test_feature.md"),
-                  "w") as fh:
-            fh.write(spec_content)
-        _write_proof_file(tmpdir, "test_feature",
-                          [("PROOF-1", "RULE-1", "pass")])
-        _commit(tmpdir, "table-shaped rule text")
-
-        exit_code, output = _run_hook(tmpdir)
-
-        assert exit_code == 0, (
-            f"Table-shaped rule text changed the verdict (exit {exit_code}):\n"
-            f"{output}")
-        assert "PUSH BLOCKED" not in output, f"{output}"
-
-        for path in (HOOK_SCRIPT, GATE_SCRIPT):
-            with open(path, encoding="utf-8") as fh:
-                found = BOX_DRAWING_RE.findall(fh.read())
-            assert found == [], (
-                f"{os.path.basename(path)} still carries box drawing glyphs: "
-                f"{sorted(set(found))}")
-
-
-# ---------------------------------------------------------------------------
-# RULE-11: off
-# ---------------------------------------------------------------------------
-
-class TestRule11OffMode:
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-19", "RULE-11", tier="integration")
-    def test_off_prints_one_line_and_exits_0(self, tmp_path):
-        """With "pre_push": "off" and a FAIL proof on disk the hook exits 0 and
-        prints exactly 1 line, and that line contains "off" so a developer can
-        tell a disabled hook from a hook that found nothing."""
-        tmpdir = str(tmp_path)
-        _create_test_project(tmpdir, num_rules=2)
-        _set_config_field(tmpdir, "pre_push", "off")
-        _write_proof_file(tmpdir, "test_feature", [
-            ("PROOF-1", "RULE-1", "fail"),
-            ("PROOF-2", "RULE-2", "pass"),
-        ])
-        _commit(tmpdir, "off with a failing proof")
-
-        exit_code, output = _run_hook(tmpdir)
-
-        assert exit_code == 0, f"Expected exit 0 when off, got {exit_code}\n{output}"
-        lines = [ln for ln in output.splitlines() if ln.strip()]
-        assert len(lines) == 1, f"Expected exactly 1 line, got {lines}"
-        assert '"off"' in lines[0], f"The line must name the mode: {lines[0]!r}"
-
-
-# ---------------------------------------------------------------------------
-# RULE-12: an unknown mode fails closed
-# ---------------------------------------------------------------------------
-
-class TestRule12UnknownModeFailsClosed:
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-20", "RULE-12", tier="integration")
-    def test_unknown_mode_blocks_and_names_the_valid_modes(self, tmp_path):
-        """With "pre_push": "blocky" and every proof passing the hook exits 1
-        rather than assuming warn, and the message names 'blocky' along with
-        warn, strict and off."""
-        tmpdir = str(tmp_path)
-        _create_test_project(tmpdir, num_rules=1)
-        _set_config_field(tmpdir, "pre_push", "blocky")
-        _write_proof_file(tmpdir, "test_feature",
-                          [("PROOF-1", "RULE-1", "pass")])
-        _commit(tmpdir, "unknown mode")
-
-        exit_code, output = _run_hook(tmpdir)
-
-        assert exit_code == 1, (
-            f"An unknown mode must fail closed, got exit {exit_code}\n{output}")
-        assert "blocky" in output, f"The message must name the value:\n{output}"
-        for mode in ("warn", "strict", "off"):
-            assert mode in output, f"The message must name {mode}:\n{output}"
-
-
-# ---------------------------------------------------------------------------
-# RULE-13: specs are discovered at any depth
-# ---------------------------------------------------------------------------
-
-class TestRule13NestedSpecs:
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-22", "RULE-13", tier="integration")
-    def test_spec_four_levels_deep_is_discovered(self, tmp_path):
-        """The project's only spec lives at specs/a/b/c/deep_feature.md and
-        carries a FAIL proof. The hook must exit 1 with PUSH BLOCKED; a depth
-        limited search finds no .md at all and exits 0 silently."""
-        tmpdir = str(tmp_path)
-        _create_test_project(tmpdir, num_rules=2, feature="deep_feature",
-                             spec_subdir="specs/a/b/c")
-        _write_proof_file(tmpdir, "deep_feature", [
-            ("PROOF-1", "RULE-1", "pass"),
-            ("PROOF-2", "RULE-2", "fail"),
-        ], spec_subdir="specs/a/b/c")
-        _commit(tmpdir, "deep spec with a failing proof")
-
-        exit_code, output = _run_hook(tmpdir)
-
-        assert exit_code == 1, (
-            f"A spec 4 levels deep was not checked (exit {exit_code}):\n{output}")
-        assert "PUSH BLOCKED" in output, f"{output}"
-        assert "deep_feature" in output, f"{output}"
-
-
-# ---------------------------------------------------------------------------
-# RULE-14: no plugin means warn reports and strict refuses
-# ---------------------------------------------------------------------------
-
-class TestRule14PluginResolution:
-
-    @staticmethod
-    def _install_shim(tmpdir: str) -> tuple:
-        """The real generated shim in the project, plus an empty HOME.
-
-        The fake HOME matters: the shim's fourth candidate is Claude Code's
-        install registry under the real one, and a test that left it alone
-        would resolve whichever plugin this machine happens to have installed.
-        """
-        path = os.path.join(tmpdir, ".purlin", "hooks", "pre-push")
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w") as fh:
-            fh.write(scaffold._shim("pre-push", "scripts/hooks/pre-push.sh"))
-        os.chmod(path, 0o755)
-        empty = os.path.join(tmpdir, "empty")
-        home = os.path.join(tmpdir, "home")
-        os.makedirs(empty, exist_ok=True)
-        os.makedirs(home, exist_ok=True)
-        return path, empty, home
-
-    def _project_without_plugin(self, tmpdir: str) -> tuple:
-        _create_test_project(tmpdir, num_rules=2, with_gate=False)
-        _write_proof_file(tmpdir, "test_feature", [
-            ("PROOF-1", "RULE-1", "fail"),
-            ("PROOF-2", "RULE-2", "pass"),
-        ])
-        _commit(tmpdir, "failing proof, no plugin")
-        return self._install_shim(tmpdir)
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-23", "RULE-14", tier="integration")
-    def test_missing_plugin_warns_in_warn_and_refuses_in_strict(self, tmp_path):
-        """With no candidate carrying scripts/hooks/pre-push.sh, warn mode
-        exits 0 printing WARNING and every path it searched, while strict mode
-        exits 1 printing the same paths. A FAIL proof is on disk in both runs,
-        so warn's exit 0 is the unchecked push it says it is."""
-        tmpdir = str(tmp_path)
-        shim, empty, home = self._project_without_plugin(tmpdir)
-        env = _clean_env()
-        env["PURLIN_PLUGIN_ROOT"] = empty
-        env["HOME"] = home
-
-        exit_warn, out_warn = _run_hook(tmpdir, script=shim, env=env)
-        assert exit_warn == 0, (
-            f"warn must fail open, got exit {exit_warn}\n{out_warn}")
-        assert "WARNING" in out_warn, f"{out_warn}"
-        assert "scripts/hooks/pre-push.sh" in out_warn, f"{out_warn}"
-        for path in (empty, os.path.realpath(tmpdir)):
-            assert path in out_warn, (
-                f"The searched paths must be named:\n{out_warn}")
-
-        _set_config_field(tmpdir, "pre_push", "strict")
-        exit_strict, out_strict = _run_hook(tmpdir, script=shim, env=env)
-        assert exit_strict == 1, (
-            f"strict must fail closed, got exit {exit_strict}\n{out_strict}")
-        assert os.path.realpath(tmpdir) in out_strict, (
-            f"The searched paths must be named:\n{out_strict}")
-
-    @staticmethod
-    def _marker_plugin(base: str, marker: str) -> str:
-        """A plugin root whose pre-push script announces itself before running.
-
-        The wrapper execs this checkout's real pre-push.sh, so the verdict,
-        the exit code and every message are the real ones; only the marker
-        line says which plugin root the shim chose.
-        """
-        hooks = os.path.join(base, "scripts", "hooks")
-        os.makedirs(hooks, exist_ok=True)
-        script = os.path.join(hooks, "pre-push.sh")
-        with open(script, "w") as fh:
-            fh.write("#!/bin/sh\n"
-                     f'echo "PLUGIN MARKER: {marker}"\n'
-                     f'exec {HOOK_SCRIPT!r} "$@"\n')
-        os.chmod(script, 0o755)
-        return base
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-30", "RULE-14", tier="integration")
-    def test_first_candidate_carrying_the_hook_script_wins(self, tmp_path):
-        """The resolution order, with more than one candidate carrying a hook
-        script. Each plugin root's pre-push.sh prints `PLUGIN MARKER: <id>`
-        and then execs the real one, so the marker in the output names the
-        root the shim chose. PURLIN_PLUGIN_ROOT beats .purlin/plugin-root,
-        which beats CLAUDE_PLUGIN_ROOT, and position and not identity
-        decides."""
-        tmpdir = str(tmp_path)
-        _create_test_project(tmpdir, num_rules=1, with_gate=False)
-        _write_proof_file(tmpdir, "test_feature",
-                          [("PROOF-1", "RULE-1", "pass")])
-        _set_config_field(tmpdir, "test_framework", "shell")
-        _commit(tmpdir, "project with no plugin of its own")
-        shim, _empty, home = self._install_shim(tmpdir)
-
-        plugin_a = self._marker_plugin(os.path.join(tmpdir, "plugin_a"), "A")
-        plugin_b = self._marker_plugin(os.path.join(tmpdir, "plugin_b"), "B")
-        plugin_p = self._marker_plugin(os.path.join(tmpdir, "plugin_p"), "P")
-
-        env = _clean_env()
-        env["HOME"] = home
-        env["PURLIN_PLUGIN_ROOT"] = plugin_a
-        env["CLAUDE_PLUGIN_ROOT"] = plugin_b
-        exit_code, output = _run_hook(tmpdir, script=shim, env=env)
-        assert exit_code == 0, f"{exit_code}\n{output}"
-        assert "PLUGIN MARKER: A" in output, (
-            f"PURLIN_PLUGIN_ROOT must be tried before CLAUDE_PLUGIN_ROOT:"
-            f"\n{output}")
-        assert "PLUGIN MARKER: B" not in output, (
-            f"the later candidate ran as well, so the first did not win:"
-            f"\n{output}")
-
-        # Swap them: the winner follows the position, not the directory.
-        env["PURLIN_PLUGIN_ROOT"] = plugin_b
-        env["CLAUDE_PLUGIN_ROOT"] = plugin_a
-        exit_swap, out_swap = _run_hook(tmpdir, script=shim, env=env)
-        assert exit_swap == 0, f"{exit_swap}\n{out_swap}"
-        assert "PLUGIN MARKER: B" in out_swap, out_swap
-        assert "PLUGIN MARKER: A" not in out_swap, out_swap
-
-        # .purlin/plugin-root sits between the two variables: with the first
-        # one pointing at a directory carrying no hook script it wins, and
-        # CLAUDE_PLUGIN_ROOT does not.
-        pinned = os.path.join(tmpdir, ".purlin", "plugin-root")
-        with open(pinned, "w") as fh:
-            fh.write(plugin_p + "\n")
-        env["PURLIN_PLUGIN_ROOT"] = os.path.join(tmpdir, "empty")
-        env["CLAUDE_PLUGIN_ROOT"] = plugin_a
-        exit_pin, out_pin = _run_hook(tmpdir, script=shim, env=env)
-        assert exit_pin == 0, f"{exit_pin}\n{out_pin}"
-        assert "PLUGIN MARKER: P" in out_pin, (
-            f".purlin/plugin-root must be tried before CLAUDE_PLUGIN_ROOT and "
-            f"after an unresolvable PURLIN_PLUGIN_ROOT:\n{out_pin}")
-        assert "PLUGIN MARKER: A" not in out_pin, out_pin
-
-
-# ---------------------------------------------------------------------------
-# RULE-16: features are matched by whole name
-# ---------------------------------------------------------------------------
-
-class TestRule16WholeNameMatching:
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-26", "RULE-16", tier="integration")
-    def test_feature_whose_name_contains_another_still_listed(self, tmp_path):
-        """Two failing features named auth_system and system: the recovery
-        steps must list both purlin:test auth_system and purlin:test system.
-        Matching by substring drops the second, because its whole name occurs
-        inside the first."""
-        tmpdir = str(tmp_path)
-        _create_test_project(tmpdir, num_rules=1, feature="auth_system")
-        with open(os.path.join(tmpdir, "specs", "hooks", "system.md"),
-                  "w") as fh:
-            fh.write(_spec_text("system", 1))
-        _write_proof_file(tmpdir, "auth_system",
-                          [("PROOF-1", "RULE-1", "fail")])
-        _write_proof_file(tmpdir, "system",
-                          [("PROOF-1", "RULE-1", "fail")])
-        _commit(tmpdir, "two failing features, one name inside the other")
-
-        exit_code, output = _run_hook(tmpdir)
-
-        assert exit_code == 1, f"{exit_code}\n{output}"
-        assert "purlin:test auth_system" in output, f"{output}"
-        assert "purlin:test system\n" in output, (
-            f"'system' was dropped by a substring match:\n{output}")
-
-
-# ---------------------------------------------------------------------------
-# RULE-17: the interpreter comes from scripts/purlin_python.sh
-# ---------------------------------------------------------------------------
-
-# `python3` in command position: at the start of a command, after a separator,
-# or behind a leading VAR=value assignment. A mention as an argument (the
-# `command -v python3` probe the shim uses to look for one) is not a launch.
-_PYTHON3_COMMAND_POSITION = re.compile(
-    r"(?:^|[;&|(]|\$\()\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*python3\b")
-
-# The five places a consumer's Purlin can start a Python process, and the two
-# that may never carry the token at all because JSON has no command position
-# to read them in.
-SWEEP_SHELL_SOURCES = ("scripts/hooks/pre-push.sh", "scripts/hooks/pre-commit.sh")
-SWEEP_JSON_SOURCES = ("hooks/hooks.json", ".claude-plugin/plugin.json")
-
-RESOLVER_NAMES = ("PURLIN_PYTHON", "python3", "python", "py -3")
-
-# The tools the hook and the harness reach for by name. A synthetic PATH that
-# left these out would prove nothing about the interpreter: the hook would die
-# before it ever asked for one.
-_HOOK_TOOLS = ("bash", "sh", "git", "dirname", "basename", "sed", "grep",
-               "find", "env", "uname", "cat", "rm", "mkdir")
-
-
-def interpreter_invocations(text: str) -> list:
-    """Every (line number, line) of `text` that starts a `python3` process.
-
-    Whole-line comments are dropped: a comment names the interpreter without
-    running it, and the rules here are about what executes.
-    """
-    hits = []
-    for number, line in enumerate(text.splitlines(), 1):
-        stripped = line.strip()
-        if stripped.startswith("#"):
-            continue
-        if _PYTHON3_COMMAND_POSITION.search(line):
-            hits.append((number, stripped))
-    return hits
-
-
-def synthetic_bin(tmpdir: str, interpreter: str | None = None) -> str:
-    """A directory holding the hook's tools and at most one Python name.
-
-    Every tool is a symlink to the real one; the Python name, when asked for,
-    is a shell wrapper around this interpreter. `py` swallows a leading `-3`
-    the way the Windows launcher does. PATH set to this directory alone is
-    what makes the resolver's order the only thing that can find a Python.
-    """
-    bindir = os.path.join(tmpdir, "synthetic-bin")
-    os.makedirs(bindir, exist_ok=True)
-    for tool in _HOOK_TOOLS:
-        real = shutil.which(tool)
-        if real:
-            link = os.path.join(bindir, tool)
-            if not os.path.exists(link):
-                os.symlink(real, link)
-    if interpreter:
-        swallow = ('if [ "$1" = "-3" ]; then shift; fi\n'
-                   if interpreter == "py" else "")
-        path = os.path.join(bindir, interpreter)
-        with open(path, "w") as fh:
-            fh.write('#!/bin/sh\n' + swallow
-                     + 'exec "' + sys.executable + '" "$@"\n')
-        os.chmod(path, 0o755)
-    return bindir
-
-
-def _run_hook_split(tmpdir: str, env: dict) -> tuple:
-    """Run the hook, keeping stdout and stderr apart.
-
-    The resolver's report is one line on stderr, and a combined capture cannot
-    show that it was one line.
-    """
-    result = subprocess.run(
-        ["bash", HOOK_SCRIPT], cwd=tmpdir, capture_output=True, text=True,
-        env=env)
-    return result.returncode, result.stdout, result.stderr
-
-
-class TestInterpreterResolution:
-    """RULE-17: `$PURLIN_PY` everywhere, and the mode-correct exit with none."""
-
-    def _project(self, tmpdir: str, mode: str = "warn") -> None:
-        _create_test_project(tmpdir, num_rules=2,
-                             config_extra={"test_framework": "pytest",
-                                           "pre_push": mode})
-        _write_proof_file(tmpdir, "test_feature",
-                          [("PROOF-1", "RULE-1", "pass"),
-                           ("PROOF-2", "RULE-2", "pass")])
-        _commit(tmpdir, "proofs")
-
-    def _env(self, tmpdir: str, bindir: str) -> dict:
-        env = _clean_env()
-        env["PURLIN_PLUGIN_ROOT"] = PROJECT_ROOT
-        env["PATH"] = bindir
-        env.pop("PURLIN_PYTHON", None)
-        return env
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-33", "RULE-17",
-                       tier="integration")
-    def test_python_only_host_runs_the_check(self, tmp_path):
-        tmpdir = str(tmp_path)
-        self._project(tmpdir)
-        bindir = synthetic_bin(tmpdir, interpreter="python")
-
-        code, out, err = _run_hook_split(tmpdir, self._env(tmpdir, bindir))
-
-        assert code == 0, f"Expected exit 0, got {code}\n{out}\n{err}"
-        assert "PASSING" in out, (
-            f"a host whose only Python is `python` checked nothing:\n{out}\n{err}")
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-33", "RULE-17",
-                       tier="integration")
-    def test_no_interpreter_reports_and_passes_in_warn(self, tmp_path):
-        tmpdir = str(tmp_path)
-        self._project(tmpdir, mode="warn")
-        bindir = synthetic_bin(tmpdir)
-
-        code, out, err = _run_hook_split(tmpdir, self._env(tmpdir, bindir))
-
-        assert code == 0, f"warn blocked a push: {code}\n{out}\n{err}"
-        assert "no Python 3 interpreter" in out, (
-            f"the hook skipped the check silently:\n{out!r}")
-        report = [line for line in err.splitlines() if line.strip()]
-        assert len(report) == 1, f"expected one line of report, got {err!r}"
-        for name in RESOLVER_NAMES:
-            assert name in report[0], (
-                f"the report does not name {name}: {report[0]!r}")
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-33", "RULE-17",
-                       tier="integration")
-    def test_no_interpreter_blocks_in_strict(self, tmp_path):
-        tmpdir = str(tmp_path)
-        self._project(tmpdir, mode="strict")
-        bindir = synthetic_bin(tmpdir)
-
-        code, out, err = _run_hook_split(tmpdir, self._env(tmpdir, bindir))
-
-        assert code == 1, (
-            "strict passed a push it could not check: "
-            f"{code}\n{out}\n{err}")
-        assert "strict" in out, out
-        assert "no Python 3 interpreter" in out, out
-
-    @pytest.mark.proof("pre_push_hook", "PROOF-33", "RULE-17",
-                       tier="integration")
-    def test_no_entry_point_names_an_interpreter(self):
-        sources = {}
-        for rel in SWEEP_SHELL_SOURCES:
-            with open(os.path.join(PROJECT_ROOT, rel)) as fh:
-                sources[rel] = fh.read()
-        for name in ("pre-push", "pre-commit"):
-            sources["scaffold._shim(%r)" % name] = scaffold._shim(
-                name, "scripts/hooks/%s.sh" % name)
-
-        for rel, text in sources.items():
-            assert interpreter_invocations(text) == [], (
-                f"{rel} still starts an interpreter by name: "
-                f"{interpreter_invocations(text)}")
-            # The detector has to be able to see one, or the sweep above is
-            # a scan that passes by matching nothing.
-            mutated = "python3 -c 'import sys'\n" + text
-            assert interpreter_invocations(mutated), (
-                f"the detector cannot see a python3 launch in {rel}")
-
-        for rel in SWEEP_JSON_SOURCES:
-            with open(os.path.join(PROJECT_ROOT, rel)) as fh:
-                raw = fh.read()
-            assert "python3" not in raw, (
-                f"{rel} still names an interpreter: "
-                + next(line for line in raw.splitlines() if "python3" in line))
+class TestTheFilesThemselves:
+
+    def test_the_script_runs_the_quick_pass_and_nothing_else(self):
+        text = read(HOOK_SCRIPT)
+        assert '--all --quick' in text
+        assert 'purlin_run.py' in text
+        assert 'pytest' not in text
+        assert 'npx' not in text
+
+    def test_the_script_carries_no_retired_word(self):
+        text = read(HOOK_SCRIPT).lower()
+        # Spelled in halves so this file does not carry the words either.
+        for word in ('rece' + 'ipt', 'au' + 'dit', 'ga' + 'uge',
+                     'str' + 'ict', 'fo' + 'rge'):
+            assert word not in text
+
+    def test_no_pre_commit_script_ships(self):
+        assert not os.path.exists(
+            os.path.join(ROOT, 'scripts', 'hooks', 'pre-commit.sh'))
+        assert not os.path.exists(
+            os.path.join(ROOT, 'scripts', 'hooks', 'pre_push_gate.py'))
+
+    def test_every_open_in_the_script_reads_utf_8(self):
+        assert "encoding='utf-8'" in read(HOOK_SCRIPT)
