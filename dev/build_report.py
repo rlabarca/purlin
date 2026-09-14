@@ -14,7 +14,12 @@ Four substitutions, in this order:
                       `<style id="purlin-tokens">` block. Every colour on the
                       page resolves here, which is why the block is named: the
                       page's own acceptance check reads it to prove no raw
-                      colour was written anywhere else.
+                      colour was written anywhere else. The rule blocks the
+                      design system scopes to `[data-surface=...]` are left
+                      out: the board sets no surface attribute, so those
+                      declarations could never apply, and carrying a second
+                      ground the page never shows invites the next reader to
+                      reach for it.
 `/*PURLIN:STYLES*/`   `src/styles.css`.
 `/*PURLIN:LOGO*/`     the mark from `design/assets/logo-datauri.js` in both
                       colourways. The light one is the dark one with the two
@@ -99,9 +104,29 @@ def strip_js(text):
     return '\n'.join(kept)
 
 
+def drop_surface_rules(text):
+    """The same CSS with every `[data-surface=...]` rule block removed.
+
+    The design system ships one set of grounds per surface and scopes the
+    second set to that attribute. The board carries no such attribute, so
+    those declarations are dead weight in a file a person scrolls.
+    """
+    kept = []
+    depth = 0
+    for line in text.splitlines():
+        if depth:
+            depth += line.count('{') - line.count('}')
+            continue
+        if 'data-surface' in line and line.rstrip().endswith('{'):
+            depth = 1
+            continue
+        kept.append(line)
+    return '\n'.join(kept)
+
+
 def token_block():
-    return '\n'.join(strip_css(read(os.path.join(TOKENS, name)))
-                     for name in TOKEN_FILES)
+    return '\n'.join(drop_surface_rules(strip_css(read(
+        os.path.join(TOKENS, name)))) for name in TOKEN_FILES)
 
 
 def logo_block():
