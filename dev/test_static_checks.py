@@ -22,7 +22,9 @@ from unittest import mock
 import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'review'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'run'))
 import static_checks
+from purlin_run import bash_command, bash_path
 from static_checks import (
     analyze_test_file,
     check_csharp,
@@ -2038,7 +2040,9 @@ def _run_sql(tmp_path, sql_source, feature, setup_sql=None):
     sql_file = tmp_path / 'test.sql'
     sql_file.write_text(sql_source)
     r = subprocess.run(
-        ['bash', os.path.join(PROOF_SCRIPTS, 'sql_purlin.sh'), str(sql_file), str(db)],
+        [bash_command(),
+         bash_path(os.path.join(PROOF_SCRIPTS, 'sql_purlin.sh')),
+         bash_path(sql_file), bash_path(db)],
         capture_output=True, text=True, cwd=str(tmp_path))
     assert r.returncode == 0, f"sql_purlin failed:\n{r.stderr}\n{r.stdout}"
     return json.loads(r.stdout)

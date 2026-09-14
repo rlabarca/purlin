@@ -32,6 +32,16 @@ PROOF_REL = os.path.join('.purlin', 'runtime', 'proofs')
 # off os.path.join loses every separator. Git bash reads C:/... unchanged.
 SHELL_HARNESS = os.path.join(PROOF_SCRIPTS, 'shell_purlin.sh').replace(
     os.sep, '/')
+sys.path.insert(0, os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    'scripts', 'run'))
+from purlin_run import bash_command, bash_path  # noqa: E402
+
+# The bash a shell test runs under. `bash` on PATH is the Windows
+# Subsystem for Linux launcher on a Windows runner, which never reads the
+# script, so the run script finds Git Bash and this asks it the same
+# question rather than asking it again.
+BASH = bash_command()
 
 PLUGINS = {
     'pytest': 'pytest_purlin.py',
@@ -189,7 +199,7 @@ def _run_shell(root, script_rel, calls, tier=None):
     path = root / script_rel
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
-    return subprocess.run(['bash', script_rel], cwd=str(root),
+    return subprocess.run([BASH, script_rel], cwd=str(root),
                           capture_output=True, text=True)
 
 
@@ -198,7 +208,8 @@ def _run_sql(root, sql_rel, body):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(body, encoding='utf-8')
     return subprocess.run(
-        ['bash', os.path.join(PROOF_SCRIPTS, 'sql_purlin.sh'), sql_rel],
+        [BASH, bash_path(os.path.join(PROOF_SCRIPTS, 'sql_purlin.sh')),
+         sql_rel],
         cwd=str(root), capture_output=True, text=True)
 
 
@@ -459,7 +470,7 @@ class TestProjectRootFoundByWalking:
             'purlin_proof_finish\n'
             % SHELL_HARNESS,
             encoding='utf-8')
-        subprocess.run(['bash', 'feat.test.sh'], cwd=str(root / 'service'),
+        subprocess.run([BASH, 'feat.test.sh'], cwd=str(root / 'service'),
                        capture_output=True, text=True)
         data = _read_proofs(root, 'feat')
         assert data is not None
@@ -480,10 +491,10 @@ class TestTestFileIsProjectRelative:
             'purlin_proof_finish\n'
             % SHELL_HARNESS,
             encoding='utf-8')
-        subprocess.run(['bash', 'tests/feat.test.sh'], cwd=str(root),
+        subprocess.run([BASH, 'tests/feat.test.sh'], cwd=str(root),
                        capture_output=True, text=True)
         relative = _read_proofs(root, 'feat')['proofs'][0]['test_file']
-        subprocess.run(['bash', str(script)], cwd=str(root),
+        subprocess.run([BASH, bash_path(script)], cwd=str(root),
                        capture_output=True, text=True)
         entries = _read_proofs(root, 'feat')['proofs']
         assert len(entries) == 1, entries
@@ -676,7 +687,7 @@ class TestRetiredKeywordRefused:
             'purlin_proof_finish\n'
             % SHELL_HARNESS,
             encoding='utf-8')
-        result = subprocess.run(['bash', 'tests/feat.test.sh'], cwd=str(root),
+        result = subprocess.run([BASH, 'tests/feat.test.sh'], cwd=str(root),
                                 capture_output=True, text=True)
         assert result.returncode != 0
         assert '@env(windows)' in result.stderr

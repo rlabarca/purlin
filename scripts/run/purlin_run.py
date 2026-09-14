@@ -48,6 +48,7 @@ writer.
 import hashlib
 import os
 import re
+import shutil
 import subprocess
 import sys
 
@@ -294,6 +295,52 @@ def arm_environment(extra=None):
     return environment
 
 
+def bash_command():
+    """The bash that runs a shell test, found rather than taken from PATH.
+
+    Everywhere but Windows the answer is `bash` on PATH. On Windows PATH
+    normally finds `C:\\Windows\\System32\\bash.exe` first, and that is not a
+    shell at all: it is the launcher for the Windows Subsystem for Linux,
+    which on a machine with no distribution installed prints "Windows
+    Subsystem for Linux has no installed distributions" and exits 1 before it
+    has read the script. Every hosted Windows runner is such a machine.
+
+    Git for Windows ships a real bash beside its own git, so the answer there
+    is found from git: `<install>/bin/bash.exe`, next to `<install>/cmd/git.exe`
+    or `<install>/bin/git.exe`. The usual install directories are tried after
+    that, and `bash` is the last resort, because a machine that has a working
+    bash on PATH and no Git for Windows is better served by trying it than by
+    refusing to run.
+    """
+    if os.name != 'nt':
+        return 'bash'
+    candidates = []
+    git = shutil.which('git')
+    if git:
+        install = os.path.dirname(os.path.dirname(git))
+        candidates.append(os.path.join(install, 'bin', 'bash.exe'))
+    for variable in ('ProgramFiles', 'ProgramW6432', 'ProgramFiles(x86)',
+                     'LOCALAPPDATA'):
+        base = os.environ.get(variable)
+        if base:
+            candidates.append(os.path.join(base, 'Git', 'bin', 'bash.exe'))
+    for candidate in candidates:
+        if os.path.isfile(candidate):
+            return candidate
+    return 'bash'
+
+
+def bash_path(path):
+    """A path spelled the way bash reads it, on every operating system.
+
+    Git Bash reads `C:/work/x.sh` as the file it names; the backslash spelling
+    of the same path is what `os.path.join` builds on Windows, and a backslash
+    is an escape to a shell. Nothing changes anywhere else, because there the
+    separator already is the one bash wants.
+    """
+    return str(path).replace(os.sep, '/')
+
+
 def _run(command, project_root, log, timeout, environment=None):
     """Run one command in the project root, echoing it and its output.
 
@@ -380,7 +427,7 @@ def run_framework(project_root, framework, tier, config, log,
         for name in sorted(os.listdir(project_root)):
             if not name.endswith('.test.sh'):
                 continue
-            code = _run(['bash', name], project_root, log, timeout)
+            code = _run([bash_command(), name], project_root, log, timeout)
             if code != 0:
                 break
         return code
@@ -394,7 +441,8 @@ def run_framework(project_root, framework, tier, config, log,
                            if os.path.isdir(tests_dir) else []):
             if not name.endswith('.sql'):
                 continue
-            code = _run(['bash', harness, os.path.join('tests', name)],
+            code = _run([bash_command(), bash_path(harness),
+                         os.path.join('tests', name)],
                         project_root, log, timeout, environment)
             if code != 0:
                 break

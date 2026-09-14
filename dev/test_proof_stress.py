@@ -32,9 +32,17 @@ PROOF_REL = os.path.join('.purlin', 'runtime', 'proofs')
 
 sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'mcp'))
 sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'review'))
+sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'run'))
 
 from purlin import proofs as proofs_module  # noqa: E402
 from static_checks import check_python, check_proof_file  # noqa: E402
+from purlin_run import bash_command, bash_path  # noqa: E402
+
+# The bash a shell test runs under. `bash` on PATH is the Windows
+# Subsystem for Linux launcher on a Windows runner, which never reads the
+# script, so the run script finds Git Bash and this asks it the same
+# question rather than asking it again.
+BASH = bash_command()
 
 
 # ---------------------------------------------------------------------------
@@ -87,7 +95,7 @@ def _shell_run(root, script_rel, feature, calls, tier=None):
     path = root / script_rel
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
-    return subprocess.run(['bash', script_rel], cwd=str(root),
+    return subprocess.run([BASH, script_rel], cwd=str(root),
                           capture_output=True, text=True)
 
 
@@ -207,7 +215,9 @@ class TestMultiLanguageSameFeature:
             "-- @purlin alpha PROOF-2 RULE-2 unit\n"
             "-- Test: sql case\n"
             "SELECT 'PASS';\n", encoding='utf-8')
-        subprocess.run(['bash', os.path.join(PROOF_SCRIPTS, 'sql_purlin.sh'),
+        subprocess.run([BASH,
+                        bash_path(os.path.join(PROOF_SCRIPTS,
+                                               'sql_purlin.sh')),
                         'tests/test_alpha.sql'],
                        cwd=str(root), capture_output=True, text=True)
         assert {e['id'] for e in _read(root)['alpha']} == {'PROOF-1', 'PROOF-2'}
@@ -317,7 +327,9 @@ class TestTheCheatsOnlyAPersonCatches:
             'INSERT INTO orders (user_id) VALUES (1);\n'
             "SELECT CASE WHEN (SELECT count(*) FROM orders) = 1\n"
             "       THEN 'PASS' ELSE 'FAIL' END;\n", encoding='utf-8')
-        subprocess.run(['bash', os.path.join(PROOF_SCRIPTS, 'sql_purlin.sh'),
+        subprocess.run([BASH,
+                        bash_path(os.path.join(PROOF_SCRIPTS,
+                                               'sql_purlin.sh')),
                         'tests/test_cheat.sql', 'test.db'],
                        capture_output=True, text=True, cwd=str(root))
         entries = _read(root)['data_integrity']

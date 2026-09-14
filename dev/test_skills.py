@@ -14,12 +14,22 @@ goes through `same_line()` instead.
 
 import re
 import subprocess
+import sys
 import zipfile
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
+
+sys.path.insert(0, str(ROOT / 'scripts' / 'run'))
+from purlin_run import bash_command  # noqa: E402
+
+# The bash a shell test runs under. `bash` on PATH is the Windows
+# Subsystem for Linux launcher on a Windows runner, which never reads the
+# script, so the run script finds Git Bash and this asks it the same
+# question rather than asking it again.
+BASH = bash_command()
 
 # The thirteen skills, each with the ceiling its spec sets.
 CEILINGS = {
@@ -415,7 +425,7 @@ class TestSkillBuild:
     @pytest.mark.proof("skill_build", "PROOF-5", "RULE-5", tier="integration")
     def test_the_commit_body_contract_holds(self):
         result = subprocess.run(
-            ['bash', 'dev/test_e2e_build_changeset.sh'], cwd=str(ROOT),
+            [BASH, 'dev/test_e2e_build_changeset.sh'], cwd=str(ROOT),
             capture_output=True, text=True)
         assert (result.returncode, '  ok:' in result.stdout) == (0, True), \
             result.stdout + result.stderr

@@ -26,8 +26,16 @@ PROJECT_CONFIG = os.path.join(PROJECT_ROOT, '.purlin', 'config.json')
 BUMP_SCRIPT = os.path.join(PROJECT_ROOT, 'dev', 'bump_version.sh')
 
 sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'mcp'))
+sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'run'))
 import purlin as purlin_package
 from purlin import server as purlin_srv
+from purlin_run import bash_command, bash_path
+
+# The bash a shell test runs under. `bash` on PATH is the Windows
+# Subsystem for Linux launcher on a Windows runner, which never reads the
+# script, so the run script finds Git Bash and this asks it the same
+# question rather than asking it again.
+BASH = bash_command()
 
 
 class TestVersionFileSemver:
@@ -230,7 +238,7 @@ class TestBumpVersionScriptPropagatesAndDetectsDrift:
 
         # ── Propagation ────────────────────────────────────────────────
         bump = subprocess.run(
-            ['bash', script, '9.8.7'],
+            [BASH, bash_path(script), '9.8.7'],
             capture_output=True, text=True,
         )
         assert bump.returncode == 0, \
@@ -244,7 +252,7 @@ class TestBumpVersionScriptPropagatesAndDetectsDrift:
 
         # ── --check passes on the propagated tree ─────────────────────
         ok = subprocess.run(
-            ['bash', script, '--check'], capture_output=True, text=True,
+            [BASH, bash_path(script), '--check'], capture_output=True, text=True,
         )
         assert ok.returncode == 0, \
             f"--check failed on a matching tree:\n{ok.stdout}\n{ok.stderr}"
@@ -259,7 +267,7 @@ class TestBumpVersionScriptPropagatesAndDetectsDrift:
             f.write('\n')
 
         bad = subprocess.run(
-            ['bash', script, '--check'], capture_output=True, text=True,
+            [BASH, bash_path(script), '--check'], capture_output=True, text=True,
         )
         assert bad.returncode == 1, \
             f"--check exited {bad.returncode} on a drifted tree, expected 1"
@@ -281,7 +289,7 @@ class TestBumpVersionScriptPropagatesAndDetectsDrift:
         script = self._fake_project(root, '1.2.3')
 
         bad = subprocess.run(
-            ['bash', script, 'not-a-version'], capture_output=True, text=True,
+            [BASH, bash_path(script), 'not-a-version'], capture_output=True, text=True,
         )
         assert bad.returncode == 2, f"expected exit 2, got {bad.returncode}"
         with open(os.path.join(root, 'VERSION'), encoding='utf-8') as f:
@@ -291,14 +299,14 @@ class TestBumpVersionScriptPropagatesAndDetectsDrift:
         # A consumer checkout of the framework has no .purlin/config.json.
         os.remove(os.path.join(root, '.purlin', 'config.json'))
         run = subprocess.run(
-            ['bash', script, '2.0.0'], capture_output=True, text=True,
+            [BASH, bash_path(script), '2.0.0'], capture_output=True, text=True,
         )
         assert run.returncode == 0, \
             f"bump failed with the optional file absent:\n{run.stdout}\n{run.stderr}"
         assert self._read(root, os.path.join('templates', 'config.json')) == '2.0.0'
 
         check = subprocess.run(
-            ['bash', script, '--check'], capture_output=True, text=True,
+            [BASH, bash_path(script), '--check'], capture_output=True, text=True,
         )
         assert check.returncode == 0, \
             f"--check failed with the optional file absent:\n{check.stdout}"
@@ -452,7 +460,7 @@ class TestReleaseNotesCounts:
             'SWEEP_COMPLETE=1',
         ])
         run = subprocess.run(
-            ['bash', '-c', preamble + '\n' + _write_marker_function_text()
+            [BASH, '-c', preamble + '\n' + _write_marker_function_text()
              + '\nwrite_marker\n'],
             cwd=str(root), capture_output=True, text=True,
         )

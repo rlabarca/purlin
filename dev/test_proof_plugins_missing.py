@@ -31,7 +31,20 @@ JEST_REPORTER = os.path.join(PROOF_SCRIPTS, "jest_purlin.js")
 SHELL_HARNESS = os.path.join(PROOF_SCRIPTS, "shell_purlin.sh").replace(
     os.sep, "/")
 SQL_HARNESS = os.path.join(PROOF_SCRIPTS, "sql_purlin.sh")
+# pytest splits an ini `pythonpath` value the way a shell splits a command
+# line, which eats a backslash, so the directory is handed over with forward
+# slashes. Python reads C:/... exactly as it reads the backslash spelling.
+PROOF_SCRIPTS_INI = PROOF_SCRIPTS.replace(os.sep, "/")
 PROOF_REL = os.path.join(".purlin", "runtime", "proofs")
+
+sys.path.insert(0, os.path.join(PROJECT_ROOT, "scripts", "run"))
+from purlin_run import bash_command, bash_path  # noqa: E402
+
+# The bash a shell test runs under. `bash` on PATH is the Windows
+# Subsystem for Linux launcher on a Windows runner, which never reads the
+# script, so the run script finds Git Bash and this asks it the same
+# question rather than asking it again.
+BASH = bash_command()
 
 
 # ---------------------------------------------------------------------------
@@ -71,7 +84,7 @@ def _run_pytest_with_plugin(tmp_path, test_code, allow_failure=False):
     result = subprocess.run(
         [sys.executable, "-m", "pytest", str(test_file),
          "-p", "pytest_purlin",
-         "--override-ini=pythonpath=%s" % PROOF_SCRIPTS,
+         "--override-ini=pythonpath=%s" % PROOF_SCRIPTS_INI,
          "-q", "--no-header", "-p", "no:cacheprovider"],
         capture_output=True, text=True, cwd=str(tmp_path))
     if not allow_failure and result.returncode not in (0, 1):
@@ -117,7 +130,8 @@ def _run_shell_proof(tmp_path, feature, proofs, tier=None, name="run_proof.sh"):
             calls)
     path = tmp_path / name
     path.write_text(script, encoding="utf-8")
-    return subprocess.run(["bash", str(path)], capture_output=True, text=True,
+    return subprocess.run([BASH, bash_path(path)], capture_output=True,
+                          text=True,
                           cwd=str(tmp_path))
 
 
@@ -255,7 +269,7 @@ def test_pytest_registers_the_proof_marker_and_the_tier_markers(tmp_path):
     result = subprocess.run(
         [sys.executable, "-m", "pytest", "--markers",
          "-p", "pytest_purlin",
-         "--override-ini=pythonpath=%s" % PROOF_SCRIPTS,
+         "--override-ini=pythonpath=%s" % PROOF_SCRIPTS_INI,
          "-p", "no:cacheprovider"],
         capture_output=True, text=True, cwd=str(root))
     for marker in ("proof(feature, proof_id, rule_id", "@pytest.mark.unit",
@@ -276,7 +290,7 @@ def test_pytest_registers_the_proof_marker_and_the_tier_markers(tmp_path):
     deselected = subprocess.run(
         [sys.executable, "-m", "pytest", str(root / "test_s.py"),
          "-p", "pytest_purlin",
-         "--override-ini=pythonpath=%s" % PROOF_SCRIPTS,
+         "--override-ini=pythonpath=%s" % PROOF_SCRIPTS_INI,
          "-m", "not e2e", "-q", "--no-header", "-p", "no:cacheprovider"],
         capture_output=True, text=True, cwd=str(root))
     assert "1 deselected" in deselected.stdout
@@ -378,7 +392,7 @@ def test_shell_proof_not_written_before_finish(tmp_path):
         purlin_proof "feat" "PROOF-1" "RULE-1" pass "a"
     """) % SHELL_HARNESS
     (root / "buffered.sh").write_text(script, encoding="utf-8")
-    subprocess.run(["bash", str(root / "buffered.sh")], cwd=str(root),
+    subprocess.run([BASH, bash_path(root / "buffered.sh")], cwd=str(root),
                    capture_output=True, text=True)
     assert _proof_files(root) == []
 
@@ -397,7 +411,7 @@ def test_shell_entries_cleared_after_finish(tmp_path):
         purlin_proof_finish
     """) % SHELL_HARNESS
     (root / "twice.sh").write_text(script, encoding="utf-8")
-    subprocess.run(["bash", str(root / "twice.sh")], cwd=str(root),
+    subprocess.run([BASH, bash_path(root / "twice.sh")], cwd=str(root),
                    capture_output=True, text=True)
     # The second finish carried only PROOF-2, which replaced the first write
     # for the same (feature, tier, test_file): the buffer was cleared, so
@@ -448,5 +462,5 @@ class TestSql:
         (root / "tests").mkdir(exist_ok=True)
         (root / "tests" / "test_x.sql").write_text(body, encoding="utf-8")
         return subprocess.run(
-            ["bash", SQL_HARNESS, "tests/test_x.sql"],
+            [BASH, bash_path(SQL_HARNESS), "tests/test_x.sql"],
             capture_output=True, text=True, cwd=str(root))
