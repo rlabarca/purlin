@@ -51,8 +51,6 @@ PENDING_REWRITE = (
     "dev/test_pre_push_hook.py",
     # phase 6: the dashboard and its screenshots
     "scripts/report/", "dev/capture_doc_screenshots.py",
-    # phase 7: the PM and QA tools
-    "tools/",
     # phase 8: the docs
     "docs/", "README.md", "CLAUDE.md", "RELEASE_NOTES.md", "assets/purlin-logo.svg",
 )
