@@ -828,6 +828,10 @@ skips its `recorded` and `approved` assertions until F5 lands. Last failure outp
 `record scope_tree = {"greeting": "6f4ba7fc..."}`, `specs.scope_tree(root, ["greeting.py"])
 = "6f4ba7fc..."`, rule state `Tested`, gate `Not recorded (1): greeting RULE-1`.
 
+Sweep at `6daa25ed` (end of phase 5): all ten shell suites pass, E2E Init included; pool
+871 passed, 5 skipped, 1 failed: `test_purlin_version.py::TestReleaseNotesCounts` (the
+release-notes counts line, rewritten by lane 8A). No other red.
+
 ### Phase 6: dashboard on the design system (Opus 5, 1 lane)
 
 `scripts/report/src/` and `dev/build_report.py` produce `scripts/report/purlin-report.html` (target 900) per B8, plain HTML and CSS on `design/tokens/`, both themes, the three screens: gate and staleness in the top bar; seven-state strip; risk-by-state grid; feature table (spec, risk,
