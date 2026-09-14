@@ -88,6 +88,13 @@ ARM_TIMEOUT_DEFAULT = 3600
 # What `_run` returns when it killed the command.
 TIMED_OUT = 124
 
+# How many lines of a failing arm's own output the run prints. Everything an
+# arm prints is captured into the run log, which a job log never shows, so an
+# arm that exits non-zero or is killed would otherwise leave a reader with a
+# failure and no reason. Sixty lines carry the summary and the first failing
+# assertion of every framework this release runs.
+ARM_TAIL_LINES = 60
+
 # The three operating systems `@env` names, and how `sys.platform` spells them.
 _OS_NAMES = (('win', 'windows'), ('darwin', 'macos'), ('linux', 'linux'))
 
@@ -155,6 +162,14 @@ def parse_args(argv):
             index += 1
             if index >= len(argv):
                 args.error = '--project-root needs a directory'
+                return args
+            if not argv[index].strip():
+                # An empty value would become the working directory, because
+                # that is what `os.path.abspath('')` answers, so a caller whose
+                # variable did not get set would run against whatever tree the
+                # run was started in. Naming the flag is the only safe answer.
+                args.error = '--project-root needs a directory, not an empty '\
+                             'value'
                 return args
             args.project_root = argv[index]
         else:
@@ -308,6 +323,26 @@ def _run(command, project_root, log, timeout, environment=None):
         if stream:
             log.append(stream.rstrip('\n'))
     return result.returncode
+
+
+def print_arm_output(framework, text):
+    """Print the tail of one arm's captured output, as soon as it failed.
+
+    The arms write into the run log, which is a file on the runner and never
+    reaches a job log, so an arm that exits non-zero or is killed reads there
+    as a bare exit code. This puts the last `ARM_TAIL_LINES` lines of that
+    arm's own output on stdout, flushed, before the missing-evidence lines,
+    so the reason is in the job log every time.
+    """
+    lines = text.splitlines()
+    print('--- %s output (last %d lines) ---' % (framework, ARM_TAIL_LINES))
+    if lines:
+        for line in lines[-ARM_TAIL_LINES:]:
+            print(line)
+    else:
+        print('The %s arm printed nothing.' % framework)
+    print('--- end of %s output ---' % framework)
+    sys.stdout.flush()
 
 
 def run_framework(project_root, framework, tier, config, log,
@@ -688,6 +723,7 @@ def main(argv=None):
     foreign_ids = {(feature, proof_id) for feature, proof_id, _env in foreign}
 
     log = []
+    arm_logs = {}
     clear_proofs(project_root)
     failures = []
     ran = []
@@ -698,15 +734,19 @@ def main(argv=None):
         # One line per arm before it starts, so a job log says where a run
         # is while it is still running.
         print('Running the %s arm.' % framework)
+        mark = len(log)
         code = run_framework(project_root, framework, args.tier, config,
                              log, args.arm_timeout)
+        arm_logs[framework] = '\n'.join(log[mark:])
         after = set(proof_index(project_root))
         ran.append(framework)
         if code == TIMED_OUT:
             failures.append('the %s runner timed out after %d s'
                             % (framework, args.arm_timeout))
+            print_arm_output(framework, arm_logs[framework])
         elif code != 0:
             failures.append('the %s runner exited %d' % (framework, code))
+            print_arm_output(framework, arm_logs[framework])
         wanted = {pair for pair in markers if pair not in foreign_ids}
         if wanted and after == before:
             # Loud failure A: the arm ran and its plugin appended nothing.
@@ -750,7 +790,7 @@ def main(argv=None):
 
     if args.action == 'record':
         record_code = _record(project_root, args, features, selected, index,
-                              ran, log, cfg.gate)
+                              ran, log, cfg.gate, arm_logs)
         exit_code = exit_code or record_code
 
     print('')
@@ -773,7 +813,7 @@ def _write_log(project_root, log):
 
 
 def _record(project_root, args, features, selected, index, plugins, log,
-            gate='tested'):
+            gate='tested', arm_logs=None):
     """The `--record` arm: breaks, the records, the commit, the CI extras.
 
     One record per feature, because that is what the record writer files and
@@ -806,7 +846,7 @@ def _record(project_root, args, features, selected, index, plugins, log,
         tag_validated(project_root, args.tag, paths)
         print('Validation tag written: validated/%s' % args.tag)
     if args.ci:
-        _ci_extras(project_root)
+        _ci_extras(project_root, arm_logs)
     return 0
 
 
@@ -833,7 +873,7 @@ def _run_breaks(project_root, args, features, selected, index):
                       tests_by_rule(features, selected, index), args.tier)
 
 
-def _ci_extras(project_root):
+def _ci_extras(project_root, arm_logs=None):
     """Auto-approvals, briefs, the pull request comment, the dashboard."""
     try:
         from approve import auto_approve
@@ -856,7 +896,8 @@ def _ci_extras(project_root):
               'posted and no dashboard was published.')
         return
     post_pr_comment(project_root, status_module.sync_status(project_root))
-    print('Dashboard published to %s.' % publish_dashboard(project_root))
+    print('Dashboard published to %s.'
+          % publish_dashboard(project_root, logs=arm_logs))
 
 
 def _remote(project_root, args):

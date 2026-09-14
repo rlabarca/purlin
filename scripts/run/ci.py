@@ -144,18 +144,31 @@ def publish_dir(project_root):
     return os.path.join(project_root, '.purlin', 'runtime', 'report')
 
 
-def publish_dashboard(project_root, out_dir=None):
-    """Copy the dashboard page and its data into `out_dir`, return that path.
+def publish_dashboard(project_root, out_dir=None, logs=None):
+    """Copy the dashboard page, its data and the arm logs into `out_dir`.
 
-    The workflow uploads the directory as the `purlin-dashboard` artifact.
-    The page is one HTML file that opens from disk, so the artifact is the
-    page, its data and nothing else. With no `out_dir` the directory is the
-    one `publish_dir` names, which is the one the upload step reads.
+    Returns that path. The workflow uploads the directory as the
+    `purlin-dashboard` artifact. The page is one HTML file that opens from
+    disk. With no `out_dir` the directory is the one `publish_dir` names,
+    which is the one the upload step reads.
+
+    `logs` maps an arm's framework name to everything that arm printed. Each
+    lands at `logs/<arm>.log`, so a job that reports missing evidence is read
+    back in full from the artifact rather than from the runner's own disk,
+    which the run throws away.
     """
     if out_dir is None:
         out_dir = publish_dir(project_root)
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir)
+
+    for arm, text in sorted((logs or {}).items()):
+        target = os.path.join(out_dir, 'logs')
+        if not os.path.isdir(target):
+            os.makedirs(target)
+        with open(os.path.join(target, '%s.log' % arm), 'w',
+                  encoding='utf-8') as handle:
+            handle.write(text if text.endswith('\n') else text + '\n')
 
     page = os.path.join(PLUGIN_ROOT, DASHBOARD_PAGE)
     if not os.path.isfile(page):

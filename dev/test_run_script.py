@@ -820,3 +820,79 @@ class TestTheConsoleCodecNeverEndsTheRun:
         assert 'Traceback' not in output, output
         assert 'UnicodeEncodeError' not in output, output
         assert '\u2192' in output, output
+
+
+class TestAFailingArmStatesItsReason:
+    """Everything an arm prints is captured, and a job log never shows it.
+
+    The Linux job of the first CI runs reported an arm that exited 1 and an arm
+    that was killed at the cap, and said nothing about either: the output had
+    gone to `.purlin/runtime/run.log` on a runner that is thrown away. The tail
+    goes to stdout as soon as the arm fails, and a CI run publishes each arm's
+    whole output beside the dashboard.
+    """
+
+    @pytest.mark.proof("run_script", "PROOF-58", "RULE-40")
+    def test_a_failing_arm_prints_its_tail_before_the_missing_evidence(
+            self, tmp_path):
+        root = _pytest_project(tmp_path, body=(
+            'import pytest\n\n'
+            '@pytest.mark.proof("feat", "PROOF-1", "RULE-1")\n'
+            'def test_bad():\n'
+            '    assert 1 == 2\n'))
+        _spec(root, 'feat')
+        code, output = _run(root, '--all', '--quick')
+        assert code == 1, output
+        heading = '--- pytest output (last 60 lines) ---'
+        assert heading in output, output
+        assert '1 failed' in output, output
+        assert output.index(heading) < output.index('Evidence is missing'), \
+            output
+
+    @pytest.mark.proof("run_script", "PROOF-58", "RULE-40")
+    def test_an_arm_that_passed_prints_no_tail(self, tmp_path):
+        root = _pytest_project(tmp_path)
+        _spec(root, 'feat')
+        code, output = _run(root, '--all', '--quick')
+        assert code == 0, output
+        assert 'output (last 60 lines)' not in output, output
+
+    @pytest.mark.proof("run_script", "PROOF-59", "RULE-40")
+    def test_ci_publishes_each_arms_whole_output(
+            self, tmp_path, record_run, monkeypatch, capsys):
+        # Off a runner the dashboard goes into the project, which is where the
+        # test reads it back. On a runner both variables are set, and the
+        # published directory would be the runner's own.
+        for variable in ('RUNNER_TEMP', 'AGENT_TEMPDIRECTORY'):
+            monkeypatch.delenv(variable, raising=False)
+        root = _pytest_project(tmp_path, body=(
+            'import pytest\n\n'
+            '@pytest.mark.proof("feat", "PROOF-1", "RULE-1")\n'
+            'def test_bad():\n'
+            '    assert 1 == 2\n'))
+        _spec(root, 'feat')
+        record_run(root, '--all', '--ci')
+        capsys.readouterr()
+        published = root / '.purlin' / 'runtime' / 'report' / 'logs'
+        text = (published / 'pytest.log').read_text(encoding='utf-8')
+        assert '-m pytest' in text, text
+        assert '1 failed' in text, text
+
+
+class TestAnEmptyProjectRootIsRefused:
+    """`os.path.abspath('')` is the working directory, so an empty value would
+    silently run against whatever tree the run was started in. A shell whose
+    `mktemp` left a variable empty is how that happens."""
+
+    @pytest.mark.proof("run_script", "PROOF-60", "RULE-41")
+    def test_an_empty_project_root_exits_2_and_runs_nothing(self, tmp_path):
+        root = _pytest_project(tmp_path)
+        _spec(root, 'feat')
+        result = subprocess.run(
+            [sys.executable, RUN_SCRIPT, '--all', '--quick',
+             '--project-root', ''],
+            capture_output=True, encoding='utf-8', cwd=str(root))
+        output = result.stdout + result.stderr
+        assert result.returncode == 2, output
+        assert '--project-root' in output, output
+        assert not (root / PROOF_REL).exists(), output
