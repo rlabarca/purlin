@@ -1008,6 +1008,40 @@ def test_the_follow_up_for_azure_is_marked_in_the_source():
         assert 'TODO(ado-remote)' in handle.read()
 
 
+# ---------------------------------------------------------------------------
+# The default branch
+# ---------------------------------------------------------------------------
+
+@pytest.mark.proof("records", "PROOF-21", "RULE-21")
+def test_the_default_branch_is_what_origin_points_at(project):
+    git(project, 'update-ref', 'refs/remotes/origin/trunk',
+        git(project, 'rev-parse', 'HEAD').stdout.strip())
+    git(project, 'symbolic-ref', 'refs/remotes/origin/HEAD',
+        'refs/remotes/origin/trunk')
+    assert reader.default_branch(project) == 'trunk'
+
+
+@pytest.mark.proof("records", "PROOF-21", "RULE-21")
+def test_with_no_remote_the_default_branch_is_the_one_head_names(tmp_path):
+    """A `master` repository is not told its approval is off the branch.
+
+    A git configured for `master` makes one, and that repository has no
+    `origin/HEAD` to read: answering `main` there sends the gate looking for a
+    branch that does not exist and every approval reads as not on it.
+    """
+    root = str(tmp_path / 'no-remote')
+    os.makedirs(root)
+    git(root, '-c', 'init.defaultBranch=master', 'init', '--quiet')
+    assert reader.default_branch(root) == 'master'
+
+
+@pytest.mark.proof("records", "PROOF-21", "RULE-21")
+def test_a_detached_head_falls_back_to_main(project):
+    git(project, 'checkout', '--quiet',
+        git(project, 'rev-parse', 'HEAD').stdout.strip())
+    assert reader.default_branch(project) == 'main'
+
+
 def teardown_module(module):
     """Leave nothing behind: every repository lived under pytest's tmp_path."""
     shutil.rmtree(os.path.join(DEV, '__pycache__'), ignore_errors=True)

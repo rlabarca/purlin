@@ -78,7 +78,7 @@ ANCHOR_V2='# Anchor: no_eval
 create_anchor_repo() {
   local bare="$1" file="$2" body="$3"
   local work="${bare}_work"
-  git init --bare -q "$bare"
+  git -c init.defaultBranch=main init --bare -q "$bare"
   git clone -q "$bare" "$work" 2>/dev/null
   mkdir -p "$(dirname "$work/$file")"
   printf '%s' "$body" > "$work/$file"

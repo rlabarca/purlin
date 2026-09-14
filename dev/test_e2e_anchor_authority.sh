@@ -94,7 +94,7 @@ LOCAL_ANCHOR='# Anchor: local_security
 create_anchor_repo() {
   local bare="$1" file="$2" body="$3"
   local work="${bare}_work"
-  git init --bare -q "$bare"
+  git -c init.defaultBranch=main init --bare -q "$bare"
   git clone -q "$bare" "$work" 2>/dev/null
   mkdir -p "$(dirname "$work/$file")"
   printf '%s' "$body" > "$work/$file"
@@ -129,7 +129,7 @@ init_project() {
   printf '.purlin/runtime/\n' > "$tmpdir/.gitignore"
   (
     cd "$tmpdir"
-    git init -q
+    git -c init.defaultBranch=main init -q
     git config user.email "dev@purlin.local"
     git config user.name "Purlin Dev"
     git add -A

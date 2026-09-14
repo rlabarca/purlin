@@ -90,7 +90,7 @@ echo 'function login() { return 200; }' > "$TMPDIR_E2E/src/auth/login.js"
 
 (
   cd "$TMPDIR_E2E"
-  git init -q
+  git -c init.defaultBranch=main init -q
   git config user.email 'dev@example.com'
   git config user.name 'Dev'
   git add -A

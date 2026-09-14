@@ -193,7 +193,7 @@ def _git(args, cwd=None, check=True):
 
 def _make_bare_repo(bare_path, work_path):
     """Create a bare repo with one commit. Returns its HEAD SHA."""
-    _git(['init', '--bare', '-q', bare_path])
+    _git(['-c', 'init.defaultBranch=main', 'init', '--bare', '-q', bare_path])
     _git(['clone', '-q', bare_path, work_path])
     with open(os.path.join(work_path, 'policy.md'), 'w',
               encoding='utf-8') as f:
@@ -248,7 +248,7 @@ class TestGitArgvHardening:
         _write_anchor(str(anchors), 'fd_policy', FD_SOURCE,
                       '1234567890abcdef1234567890abcdef12345678')
 
-        _git(['init', '-q'], cwd=str(project))
+        _git(['-c', 'init.defaultBranch=main', 'init', '-q'], cwd=str(project))
         _git(['config', 'user.email', 'test@test.com'], cwd=str(project))
         _git(['config', 'user.name', 'Test'], cwd=str(project))
         _git(['add', '-A'], cwd=str(project))

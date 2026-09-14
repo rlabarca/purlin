@@ -330,16 +330,35 @@ def head_sha(project_root):
 
 
 def default_branch(project_root):
-    """The default branch name: what origin points at, else `main`."""
+    """The default branch name: what origin points at, else the branch HEAD is
+    on, else `main`.
+
+    A repository with a remote answers this outright. One with no remote, or
+    one whose `origin/HEAD` was never set, has only its own branch to go on,
+    and `main` is a guess that is wrong for every repository made by a git
+    still configured for `master`: the gate would then tell a developer their
+    approval is not on the branch when it is the only branch there is.
+    """
     try:
+        # The whole ref comes back here, and the branch is its last part.
         result = subprocess.run(
             ['git', 'symbolic-ref', 'refs/remotes/origin/HEAD'],
+            capture_output=True, text=True, cwd=project_root, timeout=10)
+        if result.returncode == 0:
+            named = result.stdout.strip().rsplit('/', 1)[-1]
+            if named:
+                return named
+        # The branch itself comes back here, and a branch name may hold a
+        # slash of its own, so nothing is cut off it. A detached head has no
+        # branch to name and the command fails, which leaves `main`.
+        result = subprocess.run(
+            ['git', 'symbolic-ref', '--short', 'HEAD'],
             capture_output=True, text=True, cwd=project_root, timeout=10)
     except (subprocess.SubprocessError, OSError):
         return 'main'
     if result.returncode != 0:
         return 'main'
-    return result.stdout.strip().rsplit('/', 1)[-1] or 'main'
+    return result.stdout.strip() or 'main'
 
 
 def at_head(record, head):

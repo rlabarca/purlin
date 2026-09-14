@@ -45,7 +45,7 @@ fi
 echo "=== Creating the dog-food anchor repo ==="
 
 mkdir -p "$EXT_DIR"
-git init --bare -q "$BARE_REPO"
+git -c init.defaultBranch=main init --bare -q "$BARE_REPO"
 
 WORK="${BARE_REPO}_work"
 git clone -q "$BARE_REPO" "$WORK" 2>/dev/null

@@ -426,7 +426,7 @@ class TestReleaseNotesCounts:
         root = tmp_path / 'proj'
         (root / '.purlin' / 'runtime').mkdir(parents=True)
         git = ['git', '-c', 'user.email=t@example.com', '-c', 'user.name=t']
-        subprocess.run(['git', 'init', '-q'], cwd=str(root), check=True)
+        subprocess.run(['git', '-c', 'init.defaultBranch=main', 'init', '-q'], cwd=str(root), check=True)
         subprocess.run(git + ['commit', '-q', '--allow-empty', '-m', 'seed'],
                        cwd=str(root), check=True, capture_output=True)
         head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=str(root),

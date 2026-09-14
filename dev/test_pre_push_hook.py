@@ -71,7 +71,7 @@ class Project(object):
     def __init__(self, passing=True, specs=True):
         self.root = os.path.realpath(tempfile.mkdtemp(prefix='purlin-hook-'))
         self.home = os.path.realpath(tempfile.mkdtemp(prefix='purlin-home-'))
-        subprocess.run(['git', 'init', '-q', '.'], cwd=self.root, timeout=120)
+        subprocess.run(['git', '-c', 'init.defaultBranch=main', 'init', '-q', '.'], cwd=self.root, timeout=120)
         write(self.path('pyproject.toml'), '[tool.pytest.ini_options]\n')
         write(self.path('greeting.py'), SOURCE)
         done = subprocess.run(

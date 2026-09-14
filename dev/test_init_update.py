@@ -76,7 +76,7 @@ def _project(tmp_path, layout):
     shutil.copytree(os.path.join(DEV, 'fixtures', layout), root)
     os.rename(os.path.join(root, '_gitignore'),
               os.path.join(root, '.gitignore'))
-    _git(root, 'init', '-q')
+    _git(root, '-c', 'init.defaultBranch=main', 'init', '-q')
     _git(root, 'config', 'user.name', 'Test Person')
     _git(root, 'config', 'user.email', 'test@example.com')
     _git(root, 'add', '-A')

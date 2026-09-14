@@ -105,7 +105,7 @@ def _init_project(project_root, bare_path, anchor_name, pinned_sha):
             '- PROOF-1 (RULE-1): Verify constraint one\n'
         )
 
-    _git(['init', '-q'], project_root)
+    _git(['-c', 'init.defaultBranch=main', 'init', '-q'], project_root)
     _git(['config', 'user.email', 'test@test.com'], project_root)
     _git(['config', 'user.name', 'Test'], project_root)
     _git(['add', '-A'], project_root)
@@ -278,7 +278,7 @@ class TestDriftExternalAnchorStaleness:
                 '- PROOF-1 (RULE-1): Verify local constraint one\n'
                 '- PROOF-2 (RULE-2): Verify local constraint two\n'
             )
-        _git(['init', '-q'], self.project_root)
+        _git(['-c', 'init.defaultBranch=main', 'init', '-q'], self.project_root)
         _git(['config', 'user.email', 'test@test.com'], self.project_root)
         _git(['config', 'user.name', 'Test'], self.project_root)
         _git(['add', '-A'], self.project_root)
@@ -363,7 +363,7 @@ class TestDriftSinceValidation:
             f.write('# Feature: thing\n\n> Scope: src/thing.py\n\n'
                     '## Rules\n\n- RULE-1: Does the thing\n\n'
                     '## Proof\n\n- PROOF-1 (RULE-1): Call it and verify 1\n')
-        _git(['init', '-q'], root)
+        _git(['-c', 'init.defaultBranch=main', 'init', '-q'], root)
         _git(['config', 'user.email', 'test@test.com'], root)
         _git(['config', 'user.name', 'Test'], root)
         for i in range(3):
@@ -418,7 +418,7 @@ class TestDriftBatchedDiffStat:
             f.write('# Feature: thing\n\n> Scope: src/thing.py\n\n'
                     '## Rules\n\n- RULE-1: Does the thing\n\n'
                     '## Proof\n\n- PROOF-1 (RULE-1): Call it and verify 1\n')
-        _git(['init', '-q'], root)
+        _git(['-c', 'init.defaultBranch=main', 'init', '-q'], root)
         _git(['config', 'user.email', 'test@test.com'], root)
         _git(['config', 'user.name', 'Test'], root)
         _git(['add', '-A'], root)
@@ -479,7 +479,7 @@ class TestDriftCompactPayload:
             f.write('# Feature: thing\n\n> Scope: src/thing.py\n\n'
                     '## Rules\n\n- RULE-1: Does the thing\n\n'
                     '## Proof\n\n- PROOF-1 (RULE-1): Call it and verify 1\n')
-        _git(['init', '-q'], root)
+        _git(['-c', 'init.defaultBranch=main', 'init', '-q'], root)
         _git(['config', 'user.email', 'test@test.com'], root)
         _git(['config', 'user.name', 'Test'], root)
         _git(['add', '-A'], root)
@@ -603,7 +603,7 @@ class TestDriftRuleDetails:
         for src in ('posting.py', 'gateway.py', 'api.py'):
             _write(os.path.join(root, 'src', 'ledger', src), 'def run():\n    return 0\n')
 
-        _git(['init', '-q'], root)
+        _git(['-c', 'init.defaultBranch=main', 'init', '-q'], root)
         _git(['config', 'user.email', 'test@test.com'], root)
         _git(['config', 'user.name', 'Test'], root)
         _git(['add', '-A'], root)
@@ -709,7 +709,7 @@ def _new_repo(root):
     """A git repository holding `.purlin/config.json` as its first commit."""
     os.makedirs(root, exist_ok=True)
     _write(os.path.join(root, '.purlin', 'config.json'), '{}')
-    _git(['init', '-q'], root)
+    _git(['-c', 'init.defaultBranch=main', 'init', '-q'], root)
     _git(['config', 'user.email', 'test@test.com'], root)
     _git(['config', 'user.name', 'Test'], root)
     _commit(root, 'chore: purlin init')

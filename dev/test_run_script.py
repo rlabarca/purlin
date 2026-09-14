@@ -98,7 +98,7 @@ def _git(root, *args):
 
 def _git_repo(root):
     """A checkout with one commit, no signing, and a fixed identity."""
-    _git(root, 'init', '-q', '.')
+    _git(root, '-c', 'init.defaultBranch=main', 'init', '-q', '.')
     _git(root, 'symbolic-ref', 'HEAD', 'refs/heads/main')
     _git(root, 'config', 'user.email', 'dev@example.com')
     _git(root, 'config', 'user.name', 'Dev')

@@ -92,7 +92,7 @@ MSG
 
 REPO="$TMPDIR_RUN/repo"
 mkdir -p "$REPO/src"
-git -C "$REPO" init -q
+git -C "$REPO" -c init.defaultBranch=main init -q
 git -C "$REPO" config user.email "check@purlin.test"
 git -C "$REPO" config user.name "Purlin Check"
 echo "def authenticate(): return 200" > "$REPO/src/login.py"

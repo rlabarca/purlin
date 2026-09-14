@@ -64,7 +64,7 @@ def _project(tmp, digest='auto', git=True, anchor=False, config=None):
     if git:
         with open(os.path.join(tmp, '.gitignore'), 'w') as f:
             f.write('.purlin/runtime/\n')
-        _git(tmp, 'init', '-q')
+        _git(tmp, '-c', 'init.defaultBranch=main', 'init', '-q')
         _git(tmp, 'config', 'user.email', 't@example.com')
         _git(tmp, 'config', 'user.name', 'T')
         _git(tmp, 'add', '.')
