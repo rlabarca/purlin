@@ -45,7 +45,6 @@ PENDING_REWRITE = (
     # phase 5: the interpreter resolver, which names what sys.platform reads
     "scripts/purlin_python.sh",
     # phase 8: the docs
-    "docs/",
 )
 
 SKIP = EXCLUDED + PENDING_REWRITE
