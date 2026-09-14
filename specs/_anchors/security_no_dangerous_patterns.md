@@ -6,8 +6,10 @@
 > Pinned: 379a046172a68c86d14935bfd2ffdf463af52fae
 > Type: security
 > Description: The dangerous patterns no executable file under `scripts/` may carry, in
->   the form each of the six shipped languages spells them, plus the argv hardening that
->   keeps a repository-supplied string out of git's option position. The tree is clean
+>   the form each of the six file types the scope names spells them, plus the argv
+>   hardening that keeps a repository-supplied string out of git's option position. PHP
+>   ships no plugin in this release and the guard stays anyway, because a language the
+>   check drops is a language the next file in it enters unwatched. The tree is clean
 >   today; this anchor is what keeps it clean. A feature that requires this anchor
 >   inherits every rule.
 > Scope: scripts/**/*.py, scripts/**/*.sh, scripts/**/*.js, scripts/**/*.ts, scripts/**/*.php, scripts/**/*.cs
