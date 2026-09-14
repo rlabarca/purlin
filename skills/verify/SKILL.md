@@ -1,285 +1,86 @@
 ---
 name: verify
-description: Run all tests, issue verification receipts
+description: Run the tests and the breaks, then write the record
 ---
 
-Run the FULL test suite across all tiers, then issue verification receipts for every feature with complete rule coverage.
+Run every tagged test, break the code on purpose to measure how much the tests catch, and
+write one record of what happened. The record is the evidence a gate reads.
 
-**Pending migrations:** when `sync_status` opens with a pending-migrations advisory, stop and follow `references/purlin_commands.md#pending-migrations` before doing this skill's work.
+**Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
+is relative to the plugin root; see `references/purlin_commands.md#path-resolution`.
 
-**Paths in this skill:** every `references/`, `templates/`, `hooks/`, `scripts/` and `agents/` path below is relative to the plugin root; see `${CLAUDE_PLUGIN_ROOT}/references/purlin_commands.md#path-resolution`.
+**Pending migrations:** when `sync_status` opens with a pending-migrations advisory, stop and
+follow `references/purlin_commands.md#pending-migrations` before doing this skill's work.
 
 ## Usage
 
 ```
-purlin:verify                           Run all tests, issue receipts for all covered features
-purlin:verify --recheck                   Clean-room re-execution, compare vhash to committed receipt
-purlin:verify --manual <feature> <PROOF-N>  Stamp a manual proof in the spec
+purlin:verify                   Run the tests and the breaks, write the record
+purlin:verify <feature> [...]   One feature, or several
+purlin:verify --remote          Push the branch, wait for CI, pull the records it wrote
+purlin:verify --tag <name>      Pin this state as a validated release
 ```
 
-## Default Mode: Full Verification
+Plain language reaches the same place: "verify this", "how strong are the tests", "pin 1.0".
 
-### Pre-check: uncommitted changes
+## Step 1: run
 
-Before running verification, call sync_status. If it reports uncommitted spec/proof changes, warn the user:
-
-"There are uncommitted spec/proof changes. Verification receipts reference committed state: uncommitted changes won't be included in the vhash. Commit first?"
-
-If the user says yes, commit the changes. If no, proceed but note the receipts may not reflect current state.
-
-### Pre-check: pending migrations
-
-While any `legacy-*` migration is pending (`references/purlin_commands.md#pending-migrations`),
-this skill issues NO receipt for any feature: the legacy `@windows` alias makes coverage a
-guess, so a receipt would be a claim about a reading. Print the advisory, print
-`→ Run: purlin:init --update`, and stop before Step 3. This is a refusal to claim, not a gate:
-nothing is blocked, and it is recorded in `references/hard_gates.md`'s What Is NOT a Gate list. Every other pending migration
-is reported and does not stop verification, and `receipt-v1` is the one a run of this skill
-clears.
-
-### Step 1: Run All Tests
-
-Run the full test suite across all tiers by calling `purlin:test --all`. This handles framework detection, test execution, proof file emission, and the post-test sync_status call.
-
-### Step 2: Collect Results
-
-Read the coverage output from `purlin:test --all` (which includes sync_status results). For each feature:
-
-- **PASSING** (ALL rules have passing proofs, no receipt yet): eligible for receipt.
-- **PARTIAL** (some rules proved, none failing): report which rules lack proofs. No receipt: all rules must be proved to reach PASSING.
-- **FAILING** (any proof has status FAIL): report failures. No receipt.
-- **UNTESTED** (no proof has executed for the feature at all): no receipt, and this is not a
-  failure. Distinguish the two reasons, because the next step differs: when the files named in
-  the spec's `> Scope:` do not exist, nothing has been built yet, so report
-  `→ Run: purlin:build <feature>`. When they do exist, the gap is tests, so
-  report `→ Run: purlin:test <feature>`. A project working spec-first will have every
-  feature UNTESTED by design; say so plainly rather than reporting it as a shortfall, and
-  point at `purlin:audit --design` for the gauge that is measurable in that state.
-
-### External reference check (non-blocking)
-
-Before issuing receipts, check if any required anchor has `> Source:` with a stale or missing `> Pinned:`. If so, warn:
-
-```
-⚠ Anchor <name> may be stale: external reference has not been synced recently.
-  Verification proceeds, but consider running: purlin:anchor sync <name>
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --all --record --commit
 ```
 
-This is informational: it does not block receipt issuance.
+`--record` runs the tests, then the breaks, then writes
+`.purlin/records/<feature>/<timestamp>-<commit7>-<runner>.json`. `--commit` commits it under
+your own git identity, which is what the `tested` gate expects. Drop `--commit` to leave the
+record uncommitted and read it yourself. Exit codes: `0` ok, `1` a test failed or the evidence
+is missing, `2` the invocation was wrong.
 
-### Step 3: Issue Receipts
+CI runs the same script with `--ci`. You never pass `--ci` by hand.
 
-For each feature with PASSING status:
+## Step 2: read what came back
 
-1. Compute the `vhash`. What it binds, and how the segments are joined, is stated
-   once in `references/formats/receipt_format.md` ("What the vhash binds"); never
-   restate the formula here.
-2. Get `commit = git rev-parse HEAD`.
-3. Write the receipt to `specs/<category>/<feature>.receipt.json` in the shape
-   `references/formats/receipt_format.md` defines (version 2: `vhash_version`,
-   `rule_hashes`, full proof identity, an `evidence` block and the optional
-   `manual` and `awaiting_runner` lists). That file is the contract; this skill
-   does not repeat it.
+The script prints, per feature: each rule's state, the test strength as an integer percent
+(`n/a` when no break engine is installed), and the record path it wrote.
 
-#### The run the receipt rests on
+Test strength is the share of the deliberate breaks the tests caught. `min_strength` in
+`.purlin/config.json` is the floor the gate holds you to: 50 under `tested`, 70 under
+`recorded`, 80 under `approved`, each overridable.
 
-Do not issue a receipt without a recorded test run. The issuer refuses unless the
-run marker exists, records a sweep that passed, and names the commit that is HEAD now,
-because a receipt over proof files nobody re-ran is a claim about a file rather than
-about a test. The override exists (`--no-run-check`) and it is not silent: it warns,
-and the receipt records `evidence.test_run: null`. A proof file that the recorded run
-did not execute and no runner committed is evidence with no witness; the issuer names
-the file and the count and issues nothing for that feature.
+## Step 3: the record's label, and what counts
 
-The marker is `.purlin/runtime/test_run.json`, and every project has one. The
-proof plugins write it themselves, each one writing or merging it as it writes its
-proof files, and the project's own sweep script, where it has one, merges its summary
-over those plugin runs. Its shape is stated once, in `references/formats/proofs_format.md`
-("Run marker"), and this skill does not restate it. The receipt carries the marker's
-`runs` list, one entry per plugin run that contributed, so the reader can see which
-runs the evidence rests on, and its `skipped_proofs` list, one `{feature, id,
-test_file, test_name, reason}` entry per marked test the run skipped, so the receipt
-says which of its proof entries were held from an earlier commit because a
-prerequisite was missing here rather than re-proved by this run
-(`references/formats/proofs_format.md`, "Run marker", `skipped_proofs`).
+The last commit that touched a record decides its label, not anything inside the file:
 
-#### Manual stamps in the count
+| Label | How it got there | Counts under |
+|-------|------------------|--------------|
+| ci | Written through the git host's API by the CI identity | `tested`, `recorded`, `approved` |
+| developer | A person committed it | `tested` only |
+| local | Not committed yet | nothing |
 
-A rule carrying a current `@manual(email, date, sha)` stamp counts as proved, so a
-feature can reach PASSING on a mix of tests and stamps and the issuer receipts it. A
-stamp is current only while nothing in the spec's `> Scope:` has been committed since
-its sha, and a spec with no `> Scope:` has no stamps that count at all. The stamps
-that counted go into the receipt's `manual` array and into the vhash, so re-stamping
-the same rule stales the receipt. The stamp's syntax is in
-`references/formats/proofs_format.md` ("Manual Stamp Format"). A stamp is coverage,
-not a signature: it records that a named person said they checked something on a
-named day.
+So under `recorded` and `approved` your local run is a preflight: it tells you the push will
+pass, and CI writes the record that counts. Under `tested` your own commit is the record.
+`references/hard_gates.md` defines the three gates once; do not restate them elsewhere.
 
-#### Platform-partial receipts
+## Step 4: `--remote` and `--tag`
 
-A feature declaring a proof `@on(windows-2022)` that has no result there still earns a
-receipt: an absent runner is not a failure, and blocking on one would make a receipt
-unobtainable on every machine but the runner. The receipt records the gap in
-`awaiting_runner` instead, as the triple that names which proof, at which tier, on
-which platform:
+`--remote` pushes the current branch and waits for the workflow. On GitHub it watches the run
+with `gh run watch`, pulls the records CI committed, and prints the table. On Azure DevOps it
+prints the pipeline URL and returns. Use it when a proof is tagged `@env` for an operating
+system this host is not.
 
-```json
-"awaiting_runner": [{"id": "PROOF-53", "tier": "unit", "platform": "windows-2022"}]
-```
+`--tag <name>` writes an annotated tag `validated/<name>` whose message lists the records it
+vouches for. Verify keeps the newest three records per feature per operating system and prunes
+the rest; a record a validation tag names is kept for ever.
 
-so it never claims more than was verified. The key is omitted when nothing is awaiting
-(`references/formats/receipt_format.md`, Fields), so an ordinary receipt is unchanged.
-A receipt carrying it is a verified-here claim, not a verified-everywhere one, and
-re-running verify after CI commits the results clears the list.
+A forked pull request never gets a record commit. Verify still runs and the comment still
+posts; the job says in one line that no record was written.
 
-### Step 4: Report
+## Step 5: name the next step
 
-```
-Verification complete: N/T features verified.
-
-Receipts issued (N features):
-  auth_login: vhash=a1b2c3d4 (3 rules, 3 proofs)
-  user_profile: vhash=e5f6a7b8 (2 rules, 2 proofs)
-
-No receipt (M features):
-  webhook_delivery: 2/3 rules proved (RULE-3: NO PROOF)
-  notification_system: RULE-1 FAIL
-```
-
-Where `N` is the number of features that received receipts and `T` is the total number of features (receipted + partial + failing). This fraction makes it obvious when the job is not complete.
-
-### Step 4b: Directive Block for Remaining Work
-
-If ANY features are partial or failing (i.e., `N < T`), print a directive block **after** the receipts table:
-
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚠ M features still need tests before full verification:
-
-  webhook_delivery (2/3 rules proved)
-  → Run: test webhook_delivery
-
-  notification_system (0/4 rules proved)
-  → Run: test notification_system
-
-Work through these, then run purlin:verify again.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
-
-This block MUST:
-1. List every partial/failing feature with its coverage count (`proved/total rules proved`)
-2. Include a `→ Run:` directive for each one telling the agent which feature to test
-3. End with `Work through these, then run purlin:verify again.`
-
-The directive block ensures the agent does not stop after the first batch of receipts: it reads the remaining work and continues.
-
-### Step 4c: Handling Failing Proofs
-
-**NEVER modify code or test files during `purlin:verify`.** Verify writes no code and no test files. If you find yourself about to edit a file during verify, STOP: you are in the wrong skill. Exit verify and switch to `purlin:build`.
-
-When tests fail during verify:
-
-1. Do NOT fix code or tests. Do NOT iterate. Report the failures with diagnosis and stop.
-2. For each failing proof, diagnose using the framework in `references/spec_quality_guide.md` ("When Tests Fail"): is this a code bug, test bug, or spec drift? Output:
-   - The rule it proves
-   - What the test expected vs what it got
-   - The diagnosis
-   - Directive: `→ Run: test <feature>` to fix in the build loop
-
-3. After reporting all failures, display the action block:
-
-   ```
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   ⚠ VERIFICATION INCOMPLETE: N proofs failing across M features.
-
-   Fix these in the build loop, then run purlin:verify again:
-     → Run: test <feature_1>
-     → Run: test <feature_2>
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   ```
-
-### Step 4e: Independent Audit (automatic)
-
-After issuing receipts, ALWAYS spawn an independent audit. The auditor runs in a separate
-context for unbiased evaluation. No exceptions, regardless of the number of proofs.
-
-**This is the authoritative, project-wide audit.** `purlin:build` also runs one, but that is
-feature-scoped and advisory: fast feedback on the feature just built. This one measures the
-whole project and is the number to report.
-
-Spawn a `purlin:purlin-auditor` with prompt:
-  "Audit all features that just received receipts: <feature list>.
-   Load criteria via: python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --load-criteria --project-root <project_root>
-   Audit cache is at .purlin/cache/audit_cache.json: use cached results where proof hashes match.
-   For each proof, read the spec description and the test code.
-   Assess as STRONG/WEAK/HOLLOW.
-   Report any HOLLOW or WEAK findings: remediation happens via purlin:build, not by
-   spawning a fixer agent. Loop until no HOLLOW proofs remain or 3 rounds per proof.
-   Report the final integrity score."
-
-If HOLLOW or WEAK proofs are found:
-
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚠ AUDIT FOUND QUALITY ISSUES
-
-  PROOF-3 (login): HOLLOW ✗: mocks bcrypt, proves nothing
-  PROOF-2 (checkout): WEAK ~: missing body assertion
-
-Fix in the build loop, then re-verify:
-  → Run: test login (fix PROOF-3: use real bcrypt)
-  → Run: test checkout (fix PROOF-2: add body assertion)
-  → Run: purlin:verify
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
-
-The loop: verify → audit → if issues → build fixes → verify again. Verify does NOT fix tests. Build fixes. Audit judges.
-
-### Step 5: Commit
-
-Commit per `references/commit_conventions.md` using the `verify:` prefix: `verify: [Complete:all] features=N/T anchors=A/B vhash=<combined-hash>`. `N/T` is the verified/total count of features and `A/B` the verified/total count of anchors; the two are counted separately and never summed, because a run that receipted every anchor and half the features is not the same result as the reverse. Take both counts from the issuer's summary line rather than recounting them. The combined hash covers all individual vhashes: `sha256(sorted vhashes joined by comma)[:8]`.
-
----
-
-## --recheck Mode
-
-Clean-room re-execution that compares results against committed receipts.
-
-1. Run the full test suite via `purlin:test --all` (same as default mode).
-2. Compute vhash for each feature.
-3. Compare against existing `*.receipt.json` files.
-4. Report each feature as MATCH (receipt valid), MISMATCH (receipt stale, rules or
-   proofs changed) or MISSING (no receipt on file):
-
-```
-RECHECK RESULTS: 2/3 MATCH
-  auth_login: MATCH (vhash=a1b2c3d4)
-  user_profile: MATCH (vhash=e5f6a7b8)
-  webhook_delivery: MISMATCH (receipt stale)
-```
-
-For CI integration: exit code 0 when every receipt matches, exit code 1 on any mismatch
-or missing receipt.
-
----
-
-## --manual Mode
-
-Stamp a manual proof in the spec's `## Proof` section.
-
-```
-purlin:verify --manual auth_login PROOF-3
-```
-
-1. Find the spec: `specs/**/auth_login.md`.
-2. Read `git config user.email` and `git rev-parse HEAD`.
-3. Find `PROOF-3` in the `## Proof` section.
-4. Append `@manual(<email>, <YYYY-MM-DD>, <commit_sha>)` to the proof line:
-
-```markdown
-- PROOF-3 (RULE-3): User can log in via SSO @manual(dev@example.com, 2026-03-31, a1b2c3d)
-```
-
-5. Commit: `git commit -m "verify(<feature>): manual stamp PROOF-3"`
-
-Manual stamps become stale when files in `> Scope:` are modified after the stamp's commit SHA. `sync_status` detects this and issues a `→ Re-verify` directive, and the rule leaves the coverage count until the stamp is refreshed.
+| What the run shows | The line to print |
+|--------------------|-------------------|
+| A test failed | `→ Run: purlin:build <feature>` |
+| Test strength below `min_strength` | `→ Run: purlin:build <feature>` (add the case the break escaped) |
+| A rule needs another operating system | `→ Run: purlin:verify --remote` |
+| Every rule Recorded, gate `tested` | `→ Push.` |
+| Every rule Recorded, gate `recorded` or `approved` | `→ Run: purlin:review` |
+| A rule is Stale | `→ Run: purlin:review <feature>` |
