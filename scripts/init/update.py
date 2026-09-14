@@ -35,8 +35,8 @@ EXIT_OK, EXIT_PENDING, EXIT_BAD_INVOCATION = 0, 1, 2
 PLUGIN_ROOT = os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))))
 # --- the migration table: the one place a retired spelling is written -------
-# Each line ends with the comment `dev/test_vocabulary.py` reads, so the
-# vocabulary proof skips exactly these lines and no others.
+# Each line ends with a `# retired` comment, which is what the vocabulary
+# proof reads to step over exactly these lines and no others.
 
 PROOF_FILE_GLOB = '*.proofs-*.json'                        # retired
 RUN_FILE_GLOB = '*.recei[p]t.json'                         # retired
