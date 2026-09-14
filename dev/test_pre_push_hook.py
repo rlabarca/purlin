@@ -11,6 +11,13 @@ meets.
 
 The contract in one line: the hook blocks only when `pre_push` is `on` and a
 test failed. Every other outcome exits 0 and prints one line saying why.
+
+Every case here drives the files through `posix_shell()` rather than `sh`,
+because `sh` is not one shell. On macOS it is bash answering to another name
+and it takes bash's extensions; on most Linux distributions it is dash, which
+rejects them and exits 2 before reading a line of the script. A case run
+through bash alone proves nothing about the host where the hook is handed
+dash.
 """
 
 import json
@@ -26,6 +33,19 @@ DEV = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(DEV)
 SCAFFOLD = os.path.join(ROOT, 'scripts', 'init', 'scaffold.py')
 HOOK_SCRIPT = os.path.join(ROOT, 'scripts', 'hooks', 'pre-push.sh')
+
+
+def posix_shell():
+    """The plainest POSIX shell this host has, dash first."""
+    return shutil.which('dash') or 'sh'
+
+
+SH = posix_shell()
+
+# Outside a repository means outside every repository: a temp directory can
+# sit under one, and then `git rev-parse` answers instead of failing and the
+# case proves something else. This stops the search at the temp root.
+OUTSIDE = {'GIT_CEILING_DIRECTORIES': tempfile.gettempdir()}
 
 SPEC = """# Feature: greeting
 
@@ -104,7 +124,7 @@ class Project(object):
         for name, value in (kwargs.get('env') or {}).items():
             env[name] = value
         return subprocess.run(
-            ['sh', self.path('.purlin/hooks/pre-push')], cwd=self.root,
+            [SH, self.path('.purlin/hooks/pre-push')], cwd=self.root,
             capture_output=True, text=True, timeout=600, env=env,
             stdin=subprocess.DEVNULL)
 
@@ -175,6 +195,30 @@ class TestTheContract:
         assert failing.push().returncode == 1
 
     @pytest.mark.proof("scaffold", "PROOF-27", "RULE-27")
+    def test_a_run_that_reached_no_test_never_blocks(self, passing):
+        """Exit 2 is the run script saying it could not read its command line.
+
+        No test ran, so none failed, and the setting has nothing to act on.
+        The hook is pointed at a plugin whose run script is that one answer.
+        """
+        passing.setting('on')
+        stub = os.path.realpath(tempfile.mkdtemp(prefix='purlin-stub-'))
+        try:
+            for rel in ('scripts/hooks/pre-push.sh', 'scripts/purlin_python.sh'):
+                write(os.path.join(stub, rel), read(os.path.join(ROOT, rel)))
+            write(os.path.join(stub, 'scripts/run/purlin_run.py'),
+                  'import sys\n\nsys.exit(2)\n')
+            done = subprocess.run(
+                [SH, os.path.join(stub, 'scripts', 'hooks', 'pre-push.sh')],
+                cwd=passing.root, capture_output=True, text=True, timeout=300,
+                stdin=subprocess.DEVNULL)
+            assert done.returncode == 0, done.stdout + done.stderr
+            assert 'not blocked' in done.stdout
+            assert 'exited 2' in done.stdout
+        finally:
+            shutil.rmtree(stub, ignore_errors=True)
+
+    @pytest.mark.proof("scaffold", "PROOF-27", "RULE-27")
     def test_one_line_either_way(self, passing):
         lines = [line for line in passing.push().stdout.splitlines()
                  if line.startswith('purlin:')]
@@ -196,20 +240,23 @@ class TestWhenThereIsNothingToRun:
     @pytest.mark.proof("scaffold", "PROOF-28", "RULE-28")
     def test_a_project_that_is_not_a_purlin_project_exits_zero(self, passing):
         shutil.rmtree(passing.path('.purlin'), ignore_errors=True)
-        done = subprocess.run(['sh', HOOK_SCRIPT], cwd=passing.root,
+        done = subprocess.run([SH, HOOK_SCRIPT], cwd=passing.root,
                               capture_output=True, text=True, timeout=300,
                               stdin=subprocess.DEVNULL)
-        assert done.returncode == 0
+        assert done.returncode == 0, done.stdout + done.stderr
         assert done.stdout == ''
 
     @pytest.mark.proof("scaffold", "PROOF-28", "RULE-28")
     def test_outside_a_repository_it_exits_zero(self):
         directory = tempfile.mkdtemp(prefix='purlin-norepo-')
+        env = dict(os.environ)
+        env.update(OUTSIDE)
         try:
-            done = subprocess.run(['sh', HOOK_SCRIPT], cwd=directory,
+            done = subprocess.run([SH, HOOK_SCRIPT], cwd=directory, env=env,
                                   capture_output=True, text=True, timeout=300,
                                   stdin=subprocess.DEVNULL)
-            assert done.returncode == 0
+            assert done.returncode == 0, done.stdout + done.stderr
+            assert done.stdout == ''
         finally:
             shutil.rmtree(directory, ignore_errors=True)
 
@@ -279,7 +326,7 @@ class TestTheShim:
     @pytest.mark.proof("scaffold", "PROOF-24", "RULE-24")
     def test_the_delegator_survives_a_checkout_without_the_shim(self, passing):
         os.remove(passing.path('.purlin/hooks/pre-push'))
-        done = subprocess.run(['sh', passing.path('.git/hooks/pre-push')],
+        done = subprocess.run([SH, passing.path('.git/hooks/pre-push')],
                               cwd=passing.root, capture_output=True,
                               text=True, timeout=300,
                               stdin=subprocess.DEVNULL)
@@ -300,6 +347,18 @@ class TestTheFilesThemselves:
         assert 'purlin_run.py' in text
         assert 'pytest' not in text
         assert 'npx' not in text
+
+    @pytest.mark.proof("scaffold", "PROOF-28", "RULE-28")
+    def test_the_script_asks_for_sh_and_sets_no_option_outside_posix(self):
+        """The one line that decides which shell reads the rest of the file.
+
+        A host whose `sh` is dash has no `pipefail`, and `set -o pipefail`
+        there exits 2 before line 2 of the script, which is a block.
+        """
+        lines = read(HOOK_SCRIPT).splitlines()
+        assert lines[0] == '#!/bin/sh'
+        options = [line for line in lines if line.startswith('set ')]
+        assert options == ['set -u'], options
 
     @pytest.mark.proof("scaffold", "PROOF-35", "RULE-35")
     def test_the_script_carries_no_retired_word(self):
