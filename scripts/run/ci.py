@@ -134,7 +134,13 @@ def publish_dir(project_root):
     for variable in ('RUNNER_TEMP', 'AGENT_TEMPDIRECTORY'):
         temp = os.environ.get(variable)
         if temp:
-            return os.path.join(temp, ARTIFACT_NAME)
+            # The workflow names this directory with a forward slash, and the
+            # upload step has to read the directory the run wrote to. On a
+            # Windows runner the variable holds a backslash path, so joining
+            # with the local separator would spell it one way here and the
+            # other way there; Windows reads either separator, so both sides
+            # use the one the workflow can write.
+            return '%s/%s' % (temp.rstrip('/\\'), ARTIFACT_NAME)
     return os.path.join(project_root, '.purlin', 'runtime', 'report')
 
 

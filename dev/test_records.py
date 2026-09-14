@@ -216,7 +216,11 @@ def azure_env(monkeypatch):
     monkeypatch.setenv('SYSTEM_TEAMPROJECT', 'widgets')
     monkeypatch.setenv('BUILD_REPOSITORY_ID', 'repo-id')
     monkeypatch.setenv('BUILD_SOURCEBRANCHNAME', 'main')
-    monkeypatch.delenv('GITHUB_REPOSITORY', raising=False)
+    # An Azure build reads no GitHub variable. The run this suite runs inside
+    # may itself be a GitHub Actions job, whose GITHUB_REF_NAME would
+    # otherwise name the branch this fixture is here to decide.
+    for name in ('GITHUB_REPOSITORY', 'GITHUB_REF_NAME', 'GITHUB_HEAD_REF'):
+        monkeypatch.delenv(name, raising=False)
 
 
 # ---------------------------------------------------------------------------
