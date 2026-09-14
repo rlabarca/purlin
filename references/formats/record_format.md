@@ -75,6 +75,12 @@ REQUIRED: `schema_version`, `feature`, `commit`, `timestamp`, `runner`,
 | `environment` | object | where the run happened, described below |
 | `proofs` | array | one entry per proof the run observed |
 
+A record may carry more than this. A verify run also writes the detail it
+gathered on the way: `features` (the per-rule result, tests and attachments),
+`plugins`, `missing`, `log` and `dirty`. Those are OPTIONAL and no reader
+depends on them, so a record written with the fields above alone is a complete
+record.
+
 The `environment` object, and every field in it, is OPTIONAL:
 
 | Field | Type | What it holds |

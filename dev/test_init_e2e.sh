@@ -12,15 +12,12 @@
 #   6. purlin:init --gate recorded    raises the gate
 #   7. verify_gate.py --check         exits 1: a developer record does not count
 #   8. a record committed under the git host's build identity, labelled ci
-#   9. purlin:init --gate approved    raises again
-#  10. verify_gate.py --check         exits 1: no approver list
-#  11. the approver list, then verify_gate exits 1 with no approval
-#  12. verify_gate.py --check         exits 0 once a record counts
+#   9. verify_gate.py --check         exits 0: recorded is met by that record
+#  10. purlin:init --gate approved    raises again
+#  11. verify_gate.py --check         exits 1: no approver list
+#  12. the approver list, then verify_gate exits 1 with no approval
 #  13. approve.py, signed by a throwaway key that exists only in the temp repo
 #  14. verify_gate.py --check         exits 0
-#
-# Steps 12 to 14 wait on the record shape `record_shape_ok` describes; while
-# that is unmet the walk says so and skips them.
 #
 # Nothing here reaches a git host. The CI identity is a GIT_COMMITTER_NAME on a
 # local commit, which is what `record_label` reads, and the signing key is
@@ -162,27 +159,6 @@ print('none')
 PY
 }
 
-# A record reaches Recorded when its `scope_tree` still matches the spec's
-# scoped files. `references/formats/record_format.md` says that field is the
-# one tree hash as a string, and `states.py` compares it to one. A record
-# carrying anything else can never match, and nothing reaches Recorded, so the
-# walk names the gap and skips the steps that depend on it rather than
-# reporting a failure it did not cause.
-record_shape_ok() {  # dir
-  python3 - "$1" <<'PY'
-import glob
-import json
-import os
-import sys
-paths = glob.glob(os.path.join(sys.argv[1], '.purlin', 'records', '*', '*.json'))
-for path in paths:
-    with open(path, encoding='utf-8') as handle:
-        if not isinstance(json.load(handle).get('scope_tree'), str):
-            sys.exit(1)
-sys.exit(0 if paths else 1)
-PY
-}
-
 spec_file() {  # dir feature scope
   mkdir -p "$1/specs/core"
   cat > "$1/specs/core/$2.md" <<EOF
@@ -237,6 +213,11 @@ gate_walk() {  # dir language
     bad "$language: a record the build identity committed is labelled ci" \
       "$(record_label "$dir")"
   fi
+  # CI commits its record on top of the commit it observed, so the record is
+  # never at HEAD. What makes it count is its `scope_tree`: the scoped files
+  # still hash to what the run recorded, so the rule is Recorded.
+  expect_exit "$language: recorded is met by a record CI committed" 0 \
+    python3 "$GATE" --check --project-root "$dir"
 
   init_at "$dir" approved
   commit_all "$dir" "raise the gate to approved"
@@ -250,14 +231,6 @@ gate_walk() {  # dir language
   commit_all "$dir" "name the approvers"
   expect_exit "$language: approved refuses a high-risk rule with no approval" 1 \
     python3 "$GATE" --check --project-root "$dir"
-
-  if ! record_shape_ok "$dir"; then
-    note "$language: the records carry scope_tree as a map of feature to hash, not the one string record_format.md documents, so no record matches its spec scope and no rule reaches Recorded. Written by build_record in scripts/run/purlin_run.py; the reader is _record_verdict in scripts/mcp/purlin/states.py. The recorded and approved verdicts wait on that."
-    return 0
-  fi
-
-  expect_exit "$language: recorded is met by a record CI committed" 0 \
-    python3 "$GATE" --check --project-root "$dir" --json
 
   signing_key "$dir" jane@acme.com
   expect_exit "$language: the approval is written and signed" 0 \
@@ -422,4 +395,5 @@ walk_marketplace
 
 echo ""
 echo "passed $PASS, failed $FAIL, skipped $SKIP"
-[ "$FAIL" -eq 0 ]
+[ "$FAIL" -eq 0 ] || exit 1
+echo "init e2e ok"

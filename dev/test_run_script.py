@@ -24,6 +24,10 @@ RUN_SCRIPT = os.path.join(REPO, 'scripts', 'run', 'purlin_run.py')
 PROOF_DIR = os.path.join(REPO, 'scripts', 'proof')
 PROOF_REL = os.path.join('.purlin', 'runtime', 'proofs')
 
+sys.path.insert(0, os.path.join(REPO, 'scripts', 'mcp'))
+
+from purlin import payload as purlin_payload  # noqa: E402
+
 
 # ---------------------------------------------------------------------------
 # Building a project to run against
@@ -77,6 +81,41 @@ def _run(root, *args):
         [sys.executable, RUN_SCRIPT, '--project-root', str(root)] + list(args),
         capture_output=True, text=True, cwd=cwd)
     return result.returncode, result.stdout + result.stderr
+
+
+def _git(root, *args):
+    """git in the project, loud about a failure so a broken fixture says so."""
+    result = subprocess.run(['git'] + list(args), cwd=str(root),
+                            capture_output=True, text=True)
+    assert result.returncode == 0, result.stdout + result.stderr
+    return result.stdout
+
+
+def _git_repo(root):
+    """A checkout with one commit, no signing, and a fixed identity."""
+    _git(root, 'init', '-q', '.')
+    _git(root, 'symbolic-ref', 'HEAD', 'refs/heads/main')
+    _git(root, 'config', 'user.email', 'dev@example.com')
+    _git(root, 'config', 'user.name', 'Dev')
+    _git(root, 'config', 'commit.gpgsign', 'false')
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-q', '-m', 'the spec and its test')
+
+
+def _head(root):
+    return _git(root, 'rev-parse', 'HEAD').strip()
+
+
+def _newest_record(root, feature):
+    folder = root / '.purlin' / 'records' / feature
+    newest = sorted(path.name for path in folder.glob('*.json'))[-1]
+    return json.loads((folder / newest).read_text(encoding='utf-8'))
+
+
+def _rule_state(root, feature, rule_id):
+    data = purlin_payload.build_payload(str(root))
+    entry = next(f for f in data['features'] if f['name'] == feature)
+    return next(r for r in entry['rules'] if r['id'] == rule_id)['state']
 
 
 def _proofs(root, feature, tier='unit'):
@@ -473,7 +512,9 @@ class TestRecordBuildsThePurlinRecord:
         assert rule['test_strength']['engine'] == 'mutmut'
         assert rule['test_strength']['attribution'] == 'per_scope'
         assert feature['scope_score']['score'] == 80
-        assert record['scope_tree']['feat']
+        assert record['feature'] == 'feat'
+        assert isinstance(record['scope_tree'], str)
+        assert len(record['scope_tree']) == 64
         assert record['missing'] == []
 
     def test_a_rule_with_no_evidence_is_listed_as_missing(
@@ -636,6 +677,58 @@ class TestTheMarkerScanReadsEveryFrameworkSMarker:
             'it("[proof:vendor:PROOF-1:RULE-1]", () => {});\n',
             encoding='utf-8')
         assert purlin_run.scan_markers(str(tmp_path), 'jest') == set()
+
+
+class TestACommittedRecordReachesRecorded:
+    """The walk the design traces, run for real against a git checkout.
+
+    The record writer commits the record, so the commit the run observed is
+    never the commit the record sits on. What tells the reader the record
+    still describes the code is `scope_tree`, the hash of the feature's
+    scoped files, and the rule reaches Recorded only when the record writes
+    that hash the way the reader reads it.
+    """
+
+    def test_verify_then_sync_status_shows_the_rule_recorded(self, tmp_path):
+        root = _pytest_project(tmp_path)
+        (root / 'src').mkdir()
+        (root / 'src' / 'feat.py').write_text('VALUE = 2\n', encoding='utf-8')
+        _spec(root, 'feat')
+        _git_repo(root)
+
+        before = _rule_state(root, 'feat', 'RULE-1')
+        assert before == 'Drafted', before
+
+        code, out = _run(root, '--all', '--record', '--commit')
+        assert code == 0, out
+        assert 'Record committed as developer.' in out, out
+
+        record = _newest_record(root, 'feat')
+        assert isinstance(record['scope_tree'], str), record['scope_tree']
+        assert record['proofs'][0]['id'] == 'PROOF-1'
+        assert record['proofs'][0]['status'] == 'pass'
+        assert record['feature'] == 'feat'
+        assert record['gate'] == 'tested'
+
+        # The record is one commit behind HEAD, which is the case the scope
+        # tree exists to cover.
+        assert record['commit'] != _head(root)
+        assert _rule_state(root, 'feat', 'RULE-1') == 'Recorded'
+
+    def test_a_rule_falls_back_to_tested_when_the_scope_changed(self, tmp_path):
+        root = _pytest_project(tmp_path)
+        (root / 'src').mkdir()
+        (root / 'src' / 'feat.py').write_text('VALUE = 2\n', encoding='utf-8')
+        _spec(root, 'feat')
+        _git_repo(root)
+        code, out = _run(root, '--all', '--record', '--commit')
+        assert code == 0, out
+        assert _rule_state(root, 'feat', 'RULE-1') == 'Recorded'
+
+        (root / 'src' / 'feat.py').write_text('VALUE = 3\n', encoding='utf-8')
+        _git(root, 'add', '-A')
+        _git(root, 'commit', '-q', '-m', 'change the scoped code')
+        assert _rule_state(root, 'feat', 'RULE-1') == 'Tested'
 
 
 class TestHostOs:

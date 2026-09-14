@@ -58,6 +58,8 @@ from purlin import (frameworks as frameworks_module,          # noqa: E402
 
 ARROW = '→'
 RECORD_SCHEMA = 'purlin-record/1'
+# The `schema_version` the record format carries; see references/formats/.
+RECORD_SCHEMA_VERSION = 1
 ATTACHMENT_DIR = os.path.join('.purlin', 'runtime', 'attachments')
 LOG_PATH = os.path.join('.purlin', 'runtime', 'run.log')
 
@@ -440,11 +442,20 @@ def attachments_for(project_root, feature, proof_ids):
 
 
 def build_record(project_root, args, features, selected, index, plugins,
-                 breaks, log_digest):
-    """The `purlin-record/1` dict, exactly as the design lists it."""
+                 breaks, log_digest, gate='tested'):
+    """The record dict `references/formats/record_format.md` describes.
+
+    Every field that file marks REQUIRED is filled here; `os`, `timestamp` and
+    `runner` are finished by the record writer, which owns the file name they
+    have to agree with. The run's own detail (`features`, `plugins`,
+    `missing`, `log`, `dirty`) rides along as optional fields a reader that
+    does not know them ignores.
+    """
     runner, environment = runner_identity(project_root, args)
     record = {
         'schema': RECORD_SCHEMA,
+        'schema_version': RECORD_SCHEMA_VERSION,
+        'gate': gate,
         # One record per feature: the record writer files it under
         # `.purlin/records/<feature>/` and prunes that folder, and the
         # retention rule counts per feature per operating system.
@@ -467,7 +478,15 @@ def build_record(project_root, args, features, selected, index, plugins,
         'plugins': list(plugins),
         'missing': [],
         'features': {},
-        'scope_tree': {},
+        # The git tree hash of the record's own feature scope, one string: the
+        # record is per feature, so there is nothing else to key it by.
+        'scope_tree': '',
+        # The percentage of the deliberate breaks the tests caught over this
+        # feature's scope, or None when no engine measured it.
+        'test_strength': None,
+        # One entry per proof this run observed, which is what the reader
+        # compares a rule's proofs against.
+        'proofs': [],
         'log': log_digest,
     }
     break_features = (breaks.get('features') or {})
@@ -475,11 +494,13 @@ def build_record(project_root, args, features, selected, index, plugins,
         info = features.get(name) or {}
         feature_breaks = break_features.get(name) or {}
         rules = {}
+        own = name == record['feature']
         for rule_id in info.get('rule_order', []):
             proof_ids = info.get('proofs_by_rule', {}).get(rule_id, [])
             tests = []
             statuses = []
             for proof_id in proof_ids:
+                proof = (info.get('proofs') or {}).get(proof_id) or {}
                 for entry in index.get((name, proof_id), []):
                     tests.append({
                         'file': entry.get('test_file', ''),
@@ -488,6 +509,16 @@ def build_record(project_root, args, features, selected, index, plugins,
                         'plugin': entry.get('plugin', ''),
                     })
                     statuses.append(entry.get('status'))
+                    if own:
+                        record['proofs'].append({
+                            'id': proof_id,
+                            'rule': rule_id,
+                            'status': entry.get('status', ''),
+                            'tier': proof.get('tier', ''),
+                            'env': proof.get('env'),
+                            'test_file': entry.get('test_file', ''),
+                            'test_name': entry.get('test_name', ''),
+                        })
             if not statuses:
                 result = 'missing'
                 record['missing'].append('%s %s' % (name, rule_id))
@@ -509,8 +540,11 @@ def build_record(project_root, args, features, selected, index, plugins,
             'rules': rules,
             'scope_score': feature_breaks.get('scope_score'),
         }
-        record['scope_tree'][name] = specs_module.scope_tree(
-            project_root, info.get('scope', []))
+        if own:
+            record['scope_tree'] = specs_module.scope_tree(
+                project_root, info.get('scope', []))
+            record['test_strength'] = (
+                feature_breaks.get('scope_score') or {}).get('score')
     return record
 
 
@@ -653,7 +687,7 @@ def main(argv=None):
 
     if args.action == 'record':
         record_code = _record(project_root, args, features, selected, index,
-                              ran, log)
+                              ran, log, cfg.gate)
         exit_code = exit_code or record_code
 
     print('')
@@ -675,7 +709,8 @@ def _write_log(project_root, log):
             'path': LOG_PATH.replace(os.sep, '/')}
 
 
-def _record(project_root, args, features, selected, index, plugins, log):
+def _record(project_root, args, features, selected, index, plugins, log,
+            gate='tested'):
     """The `--record` arm: breaks, the records, the commit, the CI extras.
 
     One record per feature, because that is what the record writer files and
@@ -692,7 +727,7 @@ def _record(project_root, args, features, selected, index, plugins, log):
     head = ''
     for name in selected:
         record = build_record(project_root, args, features, [name], index,
-                              plugins, breaks, log_digest)
+                              plugins, breaks, log_digest, gate)
         head = record['commit']
         path = write_record(project_root, record, record['runner'],
                             os_name=record['environment']['os'])
