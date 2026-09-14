@@ -5,10 +5,10 @@
 button{font-family:inherit}
 
 /* --- chrome ---------------------------------------------------------- */
-.topbar{display:flex;align-items:center;gap:var(--space-6);height:var(--app-bar-h);padding:0 var(--space-8);background:var(--canvas-deep);border-bottom:1px solid var(--border-hairline)}
+.topbar{display:flex;align-items:center;gap:var(--space-6);height:56px;padding:0 var(--space-8);background:var(--canvas-deep);border-bottom:1px solid var(--border-hairline)}
 .brand{display:inline-flex;align-items:center;gap:var(--space-3)}
-.brand img{display:block;height:32px;width:auto}
-.brand span{font-size:22px;line-height:1;letter-spacing:var(--tracking-hero);color:var(--text-primary)}
+.brand img{display:block;height:24px;width:auto}
+.brand span{font-size:18px;line-height:1;letter-spacing:var(--tracking-hero);color:var(--text-primary)}
 .fresh{display:inline-flex;align-items:center;gap:var(--space-3);font-size:var(--ui-base)}
 .dot{width:9px;height:9px;border-radius:var(--radius-pill);background:currentColor;flex:none}
 .spacer{flex:1}
