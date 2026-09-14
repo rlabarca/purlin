@@ -1,12 +1,15 @@
 {
   "version": "0.10.0",
-  "gate": "tested",
-  "ai_review_at": "never",
-  "ci": "github",
-  "min_strength": 50,
-  "sql_engine": null,
+  "gate": "approved",
+  "ai_review_at": "medium",
+  "min_strength": 80,
   "mutation_engine": "auto",
+  "sql_engine": null,
+  "ci": "github",
   "test_framework": "pytest,shell",
   "digest": "auto",
-  "pre_push": "off"
+  "pre_push": "off",
+  "approvers": [
+    "rich.labarca@gmail.com"
+  ]
 }

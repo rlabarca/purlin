@@ -1,0 +1,89 @@
+# Purlin runs verify here, on every push and every pull request.
+#
+# purlin:init writes this file and purlin:init --update refreshes it. The
+# matrix always carries ubuntu-latest first, then one job per operating system
+# the `@env` tags in specs/ name; a project that tags nothing runs on
+# ubuntu-latest alone. An untagged proof is satisfied by any operating system,
+# so the Linux job proves those and writes the record that counts. Each job
+# runs the same verify a developer runs and writes its own record, so two jobs
+# never write the same file name.
+#
+# A pull request from a fork gets a run and a comment and no commit: GitHub
+# gives a forked pull request a read-only token, and the job says so.
+name: purlin
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  verify:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # This repository is its own plugin, so a checkout that already carries
+      # scripts/run/purlin_run.py is the Purlin to run. A consumer project
+      # installed Purlin from the marketplace and its runner has no plugin, so
+      # the job clones the release the project pins. Set the PURLIN_REF
+      # repository variable to move that pin without editing this file.
+      - name: Locate Purlin
+        shell: bash
+        run: |
+          if [ -f scripts/run/purlin_run.py ]; then
+            echo "PURLIN_ROOT=$PWD" >> "$GITHUB_ENV"
+          else
+            ref="${{ vars.PURLIN_REF }}"
+            if [ -z "$ref" ]; then ref="v0.10.0"; fi
+            git clone --depth 1 --branch "$ref" \
+              https://github.com/rlabarca/purlin "$RUNNER_TEMP/purlin"
+            echo "PURLIN_ROOT=$RUNNER_TEMP/purlin" >> "$GITHUB_ENV"
+          fi
+
+      # What each framework needs before its tests run. A project with none of
+      # these files installs nothing and the step is a no-op.
+      - name: Set up the test framework
+        shell: bash
+        run: |
+          if [ -f requirements.txt ]; then
+            python3 -m pip install -r requirements.txt
+          fi
+          if [ -f conftest.py ] || [ -f pytest.ini ] || [ -f pyproject.toml ]; then
+            python3 -m pip install pytest
+          fi
+          if [ -f package.json ]; then npm ci; fi
+
+      - name: Run verify and write the record
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 "$PURLIN_ROOT/scripts/run/purlin_run.py" --all --record --ci
+
+      - name: Say that a forked pull request writes no commit
+        if: github.event.pull_request.head.repo.fork
+        shell: bash
+        run: |
+          echo "This pull request comes from a fork. The run and the comment"
+          echo "happened; no record was committed."
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: purlin-dashboard
+          path: ${{ runner.temp }}/purlin-dashboard
+          if-no-files-found: ignore
