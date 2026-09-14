@@ -115,9 +115,18 @@ commit that touched it:
 
 | Label | What git shows |
 |---|---|
-| `ci` | the committer is the git host's build identity. On GitHub that is `github-actions[bot]` and `git log --format=%G?` prints `G`, because a commit made through the Git Data API with the Actions token and no author or committer field is signed by GitHub. On Azure DevOps it is the build service and no signature exists, which is what Azure DevOps documents |
+| `ci` | the git host made the commit. On GitHub the committer is `GitHub <noreply@github.com>`, its web identity, and the author is `github-actions[bot]`, because a commit made through the Git Data API with the Actions token and no author or committer field is attributed that way; GitHub signs it with its own key. On Azure DevOps the committer is the build service and no signature exists, which is what Azure DevOps documents |
 | `developer` | a person committed it |
 | `local` | it is not committed at all |
+
+The identity decides and the signature confirms. `git log --format=%G?`
+prints `G` or `U` for a signature this machine checked, `B` for one that
+does not match the commit, and `N` when there is no signature at all,
+which is also what it prints when gpg is not installed. So `B` refuses the
+commit, `N` refuses it only when gpg is installed, and every other answer
+(`E`, `X`, `Y`, `R`: a key this machine does not currently hold) leaves the
+identity to decide. Requiring `G` would throw away every record CI wrote,
+because almost no checkout holds the git host's signing key.
 
 `tested` counts a `ci` or a `developer` record. `recorded` and `approved`
 count a `ci` record alone, which the git host's file-path rule on

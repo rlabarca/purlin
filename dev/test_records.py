@@ -15,8 +15,11 @@ What each group proves:
               remote and an upstream exist and explained when not
 *ci*          blob, tree, commit, ref update, with no author and no committer
               field, retried when the branch moved under the run
-*labels*      `ci` for a signed commit by the git host's build identity,
-              `developer` for a person's, `local` for a file not committed
+*labels*      `ci` for a commit the git host made, which on GitHub is the
+              committer `noreply@github.com` with the author
+              `github-actions[bot]` and a signature that does not
+              contradict it, `developer` for a person's, `local` for a
+              file not committed
 *publishing*  what a CI run puts where anyone else can read it: the pull
               request comment and the dashboard artifact
 *remote*      `--remote` hands the run to the git host and brings it back
@@ -44,6 +47,7 @@ import remote as remote_module  # noqa: E402
 from purlin import records as reader  # noqa: E402
 
 ACTIONS_BOT = 'github-actions[bot]'
+WEB_FLOW_EMAIL = 'noreply@github.com'
 AZURE_BUILD = 'Project Collection Build Service'
 
 
@@ -680,6 +684,97 @@ def test_a_signed_actions_commit_is_ci(project, tmp_path):
     assert verdict.startswith('G\t'), verdict
     assert verdict.endswith(ACTIONS_BOT)
     assert records_module.record_label(project, path) == 'ci'
+
+
+def _web_flow_commit(project, key=None, allowed=None):
+    """Commit the way GitHub's API does: its web identity, the Actions author.
+
+    GitHub signs the commit with its own key, records `GitHub
+    <noreply@github.com>` as the committer and the Actions token as the
+    author. `key` and `allowed` sign it here the way GitHub signs it there.
+    """
+    git(project, 'add', '-A')
+    command = ['git']
+    if key:
+        command += ['-c', 'gpg.format=ssh', '-c', 'user.signingkey=' + key,
+                    '-c', 'gpg.ssh.allowedSignersFile=' + allowed]
+    command += ['-c', 'user.name=GitHub', '-c', 'user.email=' + WEB_FLOW_EMAIL,
+                'commit', '--quiet',
+                '--author=%s <41898282+github-actions[bot]@users.noreply.'
+                'github.com>' % ACTIONS_BOT]
+    if key:
+        command.append('-S')
+    command += ['-m', 'purlin: record for 4f1c2ab']
+    return subprocess.run(command, cwd=project, capture_output=True, text=True)
+
+
+@pytest.mark.proof("records", "PROOF-9", "RULE-9")
+def test_the_web_flow_committer_with_a_good_signature_is_ci(project, tmp_path):
+    """The identity GitHub's API actually writes, signed, is a CI record.
+
+    The committer is `GitHub <noreply@github.com>`, not the Actions bot, so a
+    reader that looks only at the committer name calls this a person's commit
+    and nothing CI wrote counts under `recorded` or `approved`.
+    """
+    key = str(tmp_path / 'signing')
+    made = subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '',
+                           '-C', ACTIONS_BOT, '-f', key],
+                          capture_output=True, text=True)
+    if made.returncode != 0:
+        pytest.skip('ssh-keygen is not available: %s' % made.stderr.strip())
+    with open(key + '.pub', encoding='utf-8') as handle:
+        public = handle.read().strip()
+    allowed = str(tmp_path / 'allowed_signers')
+    with open(allowed, 'w', encoding='utf-8') as handle:
+        handle.write('%s %s\n' % (WEB_FLOW_EMAIL,
+                                  ' '.join(public.split()[:2])))
+
+    path = records_module.write_record(project, record(), 'ci')
+    signed = _web_flow_commit(project, key + '.pub', allowed)
+    if signed.returncode != 0:
+        pytest.skip('this git cannot sign with ssh: %s' % signed.stderr.strip())
+
+    verdict = subprocess.run(
+        ['git', '-c', 'gpg.format=ssh',
+         '-c', 'gpg.ssh.allowedSignersFile=' + allowed,
+         'log', '-1', '--format=%G?\t%cn\t%ce\t%an'],
+        cwd=project, capture_output=True, text=True).stdout.strip()
+    assert verdict.startswith('G\t'), verdict
+    assert verdict.endswith('\t%s\t%s' % (WEB_FLOW_EMAIL, ACTIONS_BOT)), verdict
+    assert records_module.record_label(project, path) == 'ci'
+
+
+@pytest.mark.proof("records", "PROOF-9", "RULE-9")
+def test_the_web_flow_committer_is_ci_when_the_machine_has_no_gpg(project,
+                                                                  monkeypatch):
+    """git prints `N` when it cannot run gpg, which is not an unsigned commit.
+
+    A checkout without gpg reports no signature for every commit, the git
+    host's included. The commit is still the git host's, so the identity
+    decides and the missing checker says nothing against it.
+    """
+    monkeypatch.setattr(reader.shutil, 'which', lambda name: None)
+    path = records_module.write_record(project, record(), 'ci')
+    assert _web_flow_commit(project).returncode == 0
+    assert git(project, 'log', '-1', '--format=%G?').stdout.strip() in ('N', '')
+    assert records_module.record_label(project, path) == 'ci'
+
+
+@pytest.mark.proof("records", "PROOF-9", "RULE-9")
+def test_the_web_flow_committer_with_no_signature_and_gpg_is_a_person(
+        project, monkeypatch):
+    """With gpg installed, `N` means the commit really carries no signature.
+
+    Anyone can set those two names on a commit they make by hand. On a machine
+    that can check, an unsigned commit claiming the git host's identity is read
+    as a person's, so it never counts under `recorded` or `approved`.
+    """
+    monkeypatch.setattr(reader.shutil, 'which',
+                        lambda name: '/usr/bin/gpg' if name == 'gpg' else None)
+    path = records_module.write_record(project, record(), 'ci')
+    assert _web_flow_commit(project).returncode == 0
+    assert git(project, 'log', '-1', '--format=%G?').stdout.strip() in ('N', '')
+    assert records_module.record_label(project, path) == 'developer'
 
 
 @pytest.mark.proof("records", "PROOF-9", "RULE-9")

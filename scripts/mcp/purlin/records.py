@@ -35,8 +35,9 @@ The file:
 **The label comes from git, not from the file.** A file can claim anything.
 The last commit touching a record is what decides whether it counts:
 
-`ci`         the commit is signed and its committer is the git host's build
-             identity (`github-actions[bot]`, or an Azure DevOps build service)
+`ci`         the git host made the commit: on GitHub the committer email is
+             `noreply@github.com` and the author is `github-actions[bot]`,
+             on Azure DevOps the committer is the build service
 `developer`  a person committed it
 `local`      it is not committed at all
 
@@ -48,6 +49,7 @@ host's file-path rule enforces on the other side.
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 
@@ -62,10 +64,17 @@ _RECORD_NAME_RE = re.compile(
     r'^(\d{8}T\d{6}Z)-([0-9a-f]{7})-([a-z0-9-]+?)'
     r'(?:-(windows|macos|linux))?\.json$')
 
-# The git host identities that make a commit a CI commit.
-_CI_COMMITTERS = ('github-actions[bot]', 'github-actions',
-                  'Project Collection Build Service',
-                  'Azure DevOps')
+# The Azure DevOps build identities. Azure DevOps signs nothing, so its
+# commits are read on the committer name alone, which its documentation says.
+_AZURE_COMMITTERS = ('Project Collection Build Service', 'Azure DevOps')
+
+# What a commit GitHub made through its API looks like. GitHub signs the
+# commit with its own key and records its web identity as the committer, so
+# the committer is `GitHub <noreply@github.com>` and the Actions token is the
+# author. Reading the committer name alone misses it.
+_GITHUB_COMMITTERS = ('github-actions[bot]', 'github-actions')
+_GITHUB_COMMITTER_EMAIL = 'noreply@github.com'
+_GITHUB_ACTIONS_AUTHOR = 'github-actions[bot]'
 
 # How many records a feature keeps per operating system before verify prunes.
 RETENTION = 3
@@ -90,30 +99,57 @@ def record_name_parts(basename):
     return m.group(1), m.group(2), m.group(3), m.group(4)
 
 
+def signature_confirms(signature):
+    """True when `%G?` does not contradict a commit the git host claims.
+
+    `G` and `U` are a checked signature and confirm it. `B` is a signature
+    that does not match the commit, which is the one answer that says the
+    commit was changed after it was made. `N` is no signature at all, which
+    is what git reports when it cannot run gpg, so it is read as a machine
+    that cannot check rather than as an unsigned commit only when gpg is
+    absent. Every other answer (`E`, `X`, `Y`, `R`) is a signature this
+    machine holds no current key for, which is the ordinary case for the git
+    host's own key and says nothing against the commit.
+    """
+    if signature == 'B':
+        return False
+    if signature == 'N':
+        return shutil.which('gpg') is None
+    return True
+
+
 def record_label(project_root, rel_path):
     """`ci`, `developer` or `local` for one record, read from git.
 
-    `git log -1 --format='%G? %cn %ae'` over the record's path names the
-    signature status, the committer and the author email of the last commit
-    that touched it. No commit means the file is not committed, which is
-    `local`.
+    `git log -1 --format='%G? %cn %ce %an'` over the record's path names the
+    signature status, the committer name and email and the author name of the
+    last commit that touched it. No commit means the file is not committed,
+    which is `local`.
+
+    The identity decides and the signature confirms. A commit GitHub made
+    through its API carries `GitHub <noreply@github.com>` as the committer
+    and `github-actions[bot]` as the author, and it is signed with a key
+    almost no checkout holds, so requiring a checked signature would throw
+    away every record CI wrote.
     """
     try:
         result = subprocess.run(
-            ['git', 'log', '-1', '--format=%G?\t%cn\t%ae', '--', rel_path],
+            ['git', 'log', '-1', '--format=%G?\t%cn\t%ce\t%an',
+             '--', rel_path],
             capture_output=True, text=True, cwd=project_root, timeout=10)
     except (subprocess.SubprocessError, OSError):
         return 'local'
     if result.returncode != 0 or not result.stdout.strip():
         return 'local'
     parts = result.stdout.strip().split('\t')
-    signature = parts[0] if parts else ''
-    committer = parts[1] if len(parts) > 1 else ''
-    if committer in _CI_COMMITTERS and signature == 'G':
+    parts += [''] * (4 - len(parts))
+    signature, committer, committer_email, author = parts[:4]
+    if committer in _AZURE_COMMITTERS:
         return 'ci'
-    if committer in _CI_COMMITTERS:
-        # Azure DevOps signs nothing, so its build service is read on the
-        # committer name alone; that is what its documentation describes.
+    made_by_github = (committer in _GITHUB_COMMITTERS
+                      or (committer_email == _GITHUB_COMMITTER_EMAIL
+                          and author == _GITHUB_ACTIONS_AUTHOR))
+    if made_by_github and signature_confirms(signature):
         return 'ci'
     return 'developer'
 

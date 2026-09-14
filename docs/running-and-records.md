@@ -181,10 +181,14 @@ it.
 | developer | a person committed it | `tested` only |
 | local | it is not committed at all | nothing |
 
-On GitHub the CI identity is `github-actions[bot]` and `git log --format=%G?` prints `G`,
-because a commit made through the Git Data API with the Actions token and no author or committer
-field is signed by GitHub. On Azure DevOps it is the build service and no signature exists,
-which is what Azure DevOps documents.
+On GitHub a commit made through the Git Data API with the Actions token and no author or
+committer field carries `GitHub <noreply@github.com>` as its committer and
+`github-actions[bot]` as its author, and GitHub signs it with its own key. Purlin reads those
+two names and treats the signature as confirmation: `git log --format=%G?` printing `B`, a
+signature that does not match the commit, refuses it, and `N`, no signature, refuses it when
+gpg is installed. Every other answer means this machine holds no current key for the
+signature, which is the ordinary case for the git host's own key. On Azure DevOps the
+committer is the build service and no signature exists, which is what Azure DevOps documents.
 
 ### Retention and validation tags
 
