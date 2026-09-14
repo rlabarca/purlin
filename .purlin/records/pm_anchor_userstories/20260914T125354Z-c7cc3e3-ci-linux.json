@@ -1,0 +1,126 @@
+{
+  "commit": "c7cc3e36fb75aa6197c8a6cc7a475caa9d7b5a79",
+  "dirty": true,
+  "environment": {
+    "engines": [
+      "none"
+    ],
+    "host": "GitHub Actions 1000000074",
+    "id": "linux-x86_64",
+    "job": "verify",
+    "kind": "ci",
+    "os": "linux"
+  },
+  "feature": "pm_anchor_userstories",
+  "features": {
+    "pm_anchor_userstories": {
+      "rules": {
+        "RULE-1": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-1"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-2": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-2"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-3": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-3"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-4": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-4"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-5": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-5"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        }
+      },
+      "scope_score": {
+        "killed": 0,
+        "score": null,
+        "survived": 0
+      },
+      "spec": "specs/tools/pm_anchor_userstories.md"
+    }
+  },
+  "gate": "approved",
+  "log": {
+    "path": ".purlin/runtime/run.log",
+    "sha256": "31b4b0084b6cec27ddc5b2e68ab8b92986fa15a8f99a42623c43d62de818821c"
+  },
+  "missing": [
+    "pm_anchor_userstories RULE-1",
+    "pm_anchor_userstories RULE-2",
+    "pm_anchor_userstories RULE-3",
+    "pm_anchor_userstories RULE-4",
+    "pm_anchor_userstories RULE-5"
+  ],
+  "os": "linux",
+  "plugins": [
+    "pytest",
+    "shell"
+  ],
+  "proofs": [],
+  "runner": "ci",
+  "schema": "purlin-record/1",
+  "schema_version": 1,
+  "scope_tree": "5e2a0088aa57b5d5aa9ec13f041bf9850e8979043282d996498afd3acc71a5a8",
+  "test_strength": null,
+  "timestamp": "2026-09-14T12:53:54Z"
+}

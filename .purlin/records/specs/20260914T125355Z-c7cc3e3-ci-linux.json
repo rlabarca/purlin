@@ -1,0 +1,271 @@
+{
+  "commit": "c7cc3e36fb75aa6197c8a6cc7a475caa9d7b5a79",
+  "dirty": true,
+  "environment": {
+    "engines": [
+      "none"
+    ],
+    "host": "GitHub Actions 1000000074",
+    "id": "linux-x86_64",
+    "job": "verify",
+    "kind": "ci",
+    "os": "linux"
+  },
+  "feature": "specs",
+  "features": {
+    "specs": {
+      "rules": {
+        "RULE-1": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-1",
+            "PROOF-2"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-10": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-11"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-11": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-12"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-12": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-13"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-13": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-14"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-14": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-15"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-2": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-3"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-3": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-4"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-4": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-5"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-5": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-6"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-6": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-7"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-7": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-8"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-8": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-9"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-9": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-10"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        }
+      },
+      "scope_score": {
+        "killed": 0,
+        "score": null,
+        "survived": 0
+      },
+      "spec": "specs/mcp/specs.md"
+    }
+  },
+  "gate": "approved",
+  "log": {
+    "path": ".purlin/runtime/run.log",
+    "sha256": "31b4b0084b6cec27ddc5b2e68ab8b92986fa15a8f99a42623c43d62de818821c"
+  },
+  "missing": [
+    "specs RULE-1",
+    "specs RULE-2",
+    "specs RULE-3",
+    "specs RULE-4",
+    "specs RULE-5",
+    "specs RULE-6",
+    "specs RULE-7",
+    "specs RULE-8",
+    "specs RULE-9",
+    "specs RULE-10",
+    "specs RULE-11",
+    "specs RULE-12",
+    "specs RULE-13",
+    "specs RULE-14"
+  ],
+  "os": "linux",
+  "plugins": [
+    "pytest",
+    "shell"
+  ],
+  "proofs": [],
+  "runner": "ci",
+  "schema": "purlin-record/1",
+  "schema_version": 1,
+  "scope_tree": "ec2dd0e473afb5a659dba0587d431ad85f3f36742f5112db929d26781399576f",
+  "test_strength": null,
+  "timestamp": "2026-09-14T12:53:55Z"
+}

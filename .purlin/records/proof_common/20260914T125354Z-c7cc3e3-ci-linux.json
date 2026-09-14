@@ -1,0 +1,270 @@
+{
+  "commit": "c7cc3e36fb75aa6197c8a6cc7a475caa9d7b5a79",
+  "dirty": true,
+  "environment": {
+    "engines": [
+      "none"
+    ],
+    "host": "GitHub Actions 1000000074",
+    "id": "linux-x86_64",
+    "job": "verify",
+    "kind": "ci",
+    "os": "linux"
+  },
+  "feature": "proof_common",
+  "features": {
+    "proof_common": {
+      "rules": {
+        "RULE-1": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-1"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-10": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-10"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-11": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-11"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-12": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-12"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-13": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-13"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-14": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-14"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-2": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-2"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-3": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-3"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-4": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-4"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-5": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-5"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-6": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-6"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-7": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-7"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-8": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-8"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-9": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-9"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        }
+      },
+      "scope_score": {
+        "killed": 0,
+        "score": null,
+        "survived": 0
+      },
+      "spec": "specs/_anchors/proof_common.md"
+    }
+  },
+  "gate": "approved",
+  "log": {
+    "path": ".purlin/runtime/run.log",
+    "sha256": "31b4b0084b6cec27ddc5b2e68ab8b92986fa15a8f99a42623c43d62de818821c"
+  },
+  "missing": [
+    "proof_common RULE-1",
+    "proof_common RULE-2",
+    "proof_common RULE-3",
+    "proof_common RULE-4",
+    "proof_common RULE-5",
+    "proof_common RULE-6",
+    "proof_common RULE-7",
+    "proof_common RULE-8",
+    "proof_common RULE-9",
+    "proof_common RULE-10",
+    "proof_common RULE-11",
+    "proof_common RULE-12",
+    "proof_common RULE-13",
+    "proof_common RULE-14"
+  ],
+  "os": "linux",
+  "plugins": [
+    "pytest",
+    "shell"
+  ],
+  "proofs": [],
+  "runner": "ci",
+  "schema": "purlin-record/1",
+  "schema_version": 1,
+  "scope_tree": "cac46cb2f8250d80e0d302095f58c1315e2fd8ee4b7ab536f6b340b5412879b0",
+  "test_strength": null,
+  "timestamp": "2026-09-14T12:53:54Z"
+}

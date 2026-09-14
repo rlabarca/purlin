@@ -1,0 +1,110 @@
+{
+  "commit": "c7cc3e36fb75aa6197c8a6cc7a475caa9d7b5a79",
+  "dirty": true,
+  "environment": {
+    "engines": [
+      "none"
+    ],
+    "host": "GitHub Actions 1000000074",
+    "id": "linux-x86_64",
+    "job": "verify",
+    "kind": "ci",
+    "os": "linux"
+  },
+  "feature": "skill_test",
+  "features": {
+    "skill_test": {
+      "rules": {
+        "RULE-1": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-1"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-2": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-2"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-3": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-3"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-4": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-4"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        }
+      },
+      "scope_score": {
+        "killed": 0,
+        "score": null,
+        "survived": 0
+      },
+      "spec": "specs/skills/skill_test.md"
+    }
+  },
+  "gate": "approved",
+  "log": {
+    "path": ".purlin/runtime/run.log",
+    "sha256": "31b4b0084b6cec27ddc5b2e68ab8b92986fa15a8f99a42623c43d62de818821c"
+  },
+  "missing": [
+    "skill_test RULE-1",
+    "skill_test RULE-2",
+    "skill_test RULE-3",
+    "skill_test RULE-4"
+  ],
+  "os": "linux",
+  "plugins": [
+    "pytest",
+    "shell"
+  ],
+  "proofs": [],
+  "runner": "ci",
+  "schema": "purlin-record/1",
+  "schema_version": 1,
+  "scope_tree": "6bfa56f84f30849fb349ba09bc3c83f90d56494169444d86d3883bc1f20cce43",
+  "test_strength": null,
+  "timestamp": "2026-09-14T12:53:55Z"
+}
