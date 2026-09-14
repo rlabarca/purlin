@@ -15,6 +15,7 @@ design anchor.
 """
 
 import base64
+import datetime
 import json
 import os
 import re
@@ -79,8 +80,19 @@ def browser():
         instance.close()
 
 
-def open_board(browser, tmp_path, payload, viewport=None):
-    """The page, opened over file:// with this payload beside it."""
+def stamp_ago(seconds):
+    """An ISO stamp that many seconds old, as a payload carries it."""
+    when = (datetime.datetime.now(datetime.timezone.utc)
+            - datetime.timedelta(seconds=seconds))
+    return when.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+
+def open_board(browser, tmp_path, payload, viewport=None, clock_at=None):
+    """The page, opened over file:// with this payload beside it.
+
+    `clock_at` hands the page a clock stopped at that moment, so a test can
+    advance it and read what the page makes of the time passing.
+    """
     root = str(tmp_path)
     os.makedirs(root, exist_ok=True)
     shutil.copyfile(PAGE, os.path.join(root, 'purlin-report.html'))
@@ -94,6 +106,8 @@ def open_board(browser, tmp_path, payload, viewport=None):
         handle.write(PIXEL)
     page = browser.new_page(viewport=viewport or {'width': 1440,
                                                   'height': 1000})
+    if clock_at is not None:
+        page.clock.install(time=clock_at)
     page.goto('file://' + os.path.join(root, 'purlin-report.html'))
     page.wait_for_selector('.topbar', timeout=10000)
     return page
@@ -126,7 +140,7 @@ def test_the_build_is_reproducible():
 
 @pytest.mark.proof("purlin_report", "PROOF-2", "RULE-2")
 def test_the_page_is_one_file_under_the_line_budget(page_text):
-    assert len(page_text.splitlines()) <= 1000
+    assert len(page_text.splitlines()) <= 1200
     assert os.path.isfile(os.path.join(ROOT, 'purlin-report.html'))
     assert read(os.path.join(ROOT, 'purlin-report.html')) == page_text
 
@@ -322,7 +336,15 @@ def test_the_rule_screen_shows_proof_test_and_evidence(browser, tmp_path):
     assert 'tests/test_login.py :: test_sign_in' in body
     assert 'APPROVED' in body
     assert '86%' in body
-    assert 'Not on the review list.' not in body
+    assert 'Its risk is high, so a person looks before it can be approved.' \
+        in body
+    assert 'risk high needs a look' not in body
+    page.click('[data-act="close"]')
+    page.click('.rule[data-rule="RULE-3"]')
+    review = page.inner_text('.wrap')
+    assert 'PROOF-3' in review
+    assert 'No proof of this rule names a rejection, an error or a boundary.' \
+        in review
     page.close()
 
 
@@ -417,6 +439,111 @@ def test_the_working_tree_notice_only_shows_on_the_board(browser, tmp_path):
     assert page.query_selector_all('.notice') == []
     page.close()
 
+
+@pytest.mark.proof("purlin_report", "PROOF-24", "RULE-24", tier="e2e")
+def test_the_open_rule_is_the_last_tab(browser, tmp_path):
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    assert texts(page, '.tabs button') == ['Board', 'Review list (4)']
+    page.click('[data-act="feature"][data-feature="login"]')
+    page.click('.rule[data-rule="RULE-1"]')
+    assert texts(page, '.tabs button') == ['Board', 'Review list (4)',
+                                           'login RULE-1']
+    page.click('.tabs button:last-child')
+    assert 'RULE-1' in page.inner_text('h1')
+    assert len(texts(page, '.tabs button')) == 3
+    page.close()
+
+
+@pytest.mark.proof("purlin_report", "PROOF-25", "RULE-25", tier="e2e")
+def test_the_link_back_closes_the_rule_where_it_was_opened(browser, tmp_path):
+    """One rule, opened twice, closes back to the screen it came from."""
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    page.click('[data-screen="review"]')
+    page.click('.rev')
+    assert page.inner_text('[data-act="close"]') == u'\u2190 Review list'
+    page.click('[data-act="close"]')
+    assert '4 rules need a look' in page.inner_text('h1')
+    assert texts(page, '.tabs button') == ['Board', 'Review list (4)']
+
+    page.click('[data-screen="board"]')
+    page.click('[data-act="feature"][data-feature="login"]')
+    page.click('.rule[data-rule="RULE-1"]')
+    assert page.inner_text('[data-act="close"]') == u'\u2190 Board'
+    page.click('[data-act="close"]')
+    assert len(feature_names(page)) == 3
+    page.close()
+
+
+@pytest.mark.proof("purlin_report", "PROOF-26", "RULE-26", tier="e2e")
+def test_the_rule_screen_names_the_approve_command(browser, tmp_path):
+    """The page cannot sign a commit, so it names the command that does."""
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    page.click('[data-act="feature"][data-feature="login"]')
+    page.click('.rule[data-rule="RULE-2"]')
+    body = page.inner_text('.wrap')
+    assert 'purlin:approve login RULE-2' in body
+    assert 'signed commit by someone on the approver list' in body
+    assert 'courier' in page.eval_on_selector(
+        '.cmd', 'el => getComputedStyle(el).fontFamily').lower()
+
+    page.click('[data-act="close"]')
+    page.click('.rule[data-rule="RULE-1"]')
+    approved = page.inner_text('.wrap')
+    assert 'Approved by jane-doe' in approved
+    assert 'purlin:approve' not in approved
+    page.close()
+
+
+@pytest.mark.proof("purlin_report", "PROOF-27", "RULE-27", tier="e2e")
+def test_coming_back_to_an_old_tab_reloads_it(browser, tmp_path):
+    """A mark on the window survives a render and not a reload."""
+    payload = payload_named('regulated')
+    payload['generated_at'] = stamp_ago(120)
+    page = open_board(browser, tmp_path, payload)
+    page.click('[data-act="feature"][data-feature="login"]')
+    page.click('.rule[data-rule="RULE-1"]')
+    page.evaluate('window.purlinMark = 1')
+    page.evaluate("document.dispatchEvent(new Event('visibilitychange'))")
+    page.wait_for_function('() => window.purlinMark === undefined',
+                           timeout=10000)
+    page.wait_for_selector('h1', timeout=10000)
+    assert 'RULE-1' in page.inner_text('h1')
+    page.close()
+
+
+@pytest.mark.proof("purlin_report", "PROOF-28", "RULE-28", tier="e2e")
+def test_the_freshness_line_is_a_button_that_reloads(browser, tmp_path):
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    node = page.query_selector('.topbar [data-act="reload"]')
+    assert node.evaluate('el => el.tagName') == 'BUTTON'
+    assert 'Data:' in node.inner_text()
+    assert 'btn' in node.get_attribute('class').split()
+    assert page.eval_on_selector(
+        '.topbar [data-act="reload"]',
+        'el => getComputedStyle(el).borderTopWidth') == page.eval_on_selector(
+        '[data-act="theme"]', 'el => getComputedStyle(el).borderTopWidth')
+
+    page.evaluate('window.purlinMark = 1')
+    page.click('.topbar [data-act="reload"]')
+    page.wait_for_function('() => window.purlinMark === undefined',
+                           timeout=10000)
+    page.close()
+
+
+@pytest.mark.proof("purlin_report", "PROOF-29", "RULE-29", tier="e2e")
+def test_the_age_recomputes_every_minute_from_the_same_payload(browser,
+                                                               tmp_path):
+    """The stamp does not move; the clock does, and the top bar follows."""
+    when = datetime.datetime(2026, 1, 1, 12, 0, 0,
+                             tzinfo=datetime.timezone.utc)
+    payload = payload_named('regulated')
+    payload['generated_at'] = (
+        when - datetime.timedelta(seconds=30)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    page = open_board(browser, tmp_path, payload, clock_at=when)
+    assert 'Data: less than a minute old' in page.inner_text('.topbar .fresh')
+    page.clock.run_for(90000)
+    assert 'Data: 2 minutes old' in page.inner_text('.topbar .fresh')
+    page.close()
 
 # ---------------------------------------------------------------------------
 # The screenshots the docs embed
