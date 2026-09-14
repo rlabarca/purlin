@@ -267,7 +267,7 @@ def _apply_config(root, files, args, out):
         'version': _version(), 'gate': chosen,
         'ai_review_at': resolved.ai_review_at, 'ci': old.get('ci') or _host(root),
         'min_strength': resolved.min_strength, 'sql_engine': resolved.sql_engine,
-        'mutation_engine': resolved.mutation_engine, 'report': old.get('report', True),
+        'mutation_engine': resolved.mutation_engine,
         'test_framework': resolved.test_framework, 'digest': old.get('digest', 'auto'),
         'pre_push': resolved.pre_push,
     }
