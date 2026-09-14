@@ -36,8 +36,8 @@
   --copper-700:#8F5626;
 
   /* --- Warm light-surface ramp (extrapolated) -------------------- */
-  --purlin-paper-050:#F7F4EF;
-  --purlin-paper-100:#EFEAE2;
+  --purlin-paper-050:#FBF8EC;  /* yellowish white: the light ground */
+  --purlin-paper-100:#F4EFDF;
   --purlin-paper-200:#E4DDD4;
   --purlin-paper-300:#D3C9BC;
   --purlin-ink-700:#1B4A5C;
