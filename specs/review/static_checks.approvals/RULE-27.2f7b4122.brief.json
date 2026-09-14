@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "static_checks",
-  "generated_at": "2026-09-14T17:09:58Z",
+  "generated_at": "2026-09-14T17:22:51Z",
   "layers": [
     "proof text",
     "test body",
@@ -22,7 +22,7 @@
     }
   ],
   "reasons": [],
-  "record": ".purlin/records/static_checks/20260914T170859Z-ff82c7d-ci-windows.json",
+  "record": ".purlin/records/static_checks/20260914T172159Z-2ca875e-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-27",
   "rule_hash": "67635ba12a876e730fb2c5169ebf6e4dd5b7d0e7d5e2efe38271d0f1f83f3abc",

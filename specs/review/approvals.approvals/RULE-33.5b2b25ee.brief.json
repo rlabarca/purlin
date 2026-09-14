@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "approvals",
-  "generated_at": "2026-09-14T17:09:14Z",
+  "generated_at": "2026-09-14T17:22:04Z",
   "layers": [
     "proof text",
     "test body",
@@ -30,7 +30,7 @@
     }
   ],
   "reasons": [],
-  "record": ".purlin/records/approvals/20260914T170856Z-ff82c7d-ci-windows.json",
+  "record": ".purlin/records/approvals/20260914T172159Z-2ca875e-ci-linux.json",
   "risk": "high",
   "rule": "RULE-33",
   "rule_hash": "8b7d429fff3be7e4516276e1f1ecdd46eba0a1574e88f2c4906095d825392c3b",

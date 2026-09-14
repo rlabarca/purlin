@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "purlin_report",
-  "generated_at": "2026-09-14T17:07:47Z",
+  "generated_at": "2026-09-14T17:22:15Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-7 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/purlin_report/20260914T170736Z-e7757ad-ci-linux.json",
+  "record": ".purlin/records/purlin_report/20260914T172159Z-2ca875e-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-7",
   "rule_hash": "313755ebee6d62cae18b4fa0825f65e73eb81fccba45b5673892bfcc274806e3",
   "rule_text": "The board heading states the rule count and the spec count the payload rolled up, the top bar states the gate and how old the data is, and every spec in the payload has a row",
   "schema": "purlin-brief/1",
-  "state": "Tested",
+  "state": "Reviewed",
   "test_hash": "7776b887cd8c3b3b5aa546d8b087fe771288b0d2c290f5c1b31dd9d2c25f3e14",
   "test_hash_kind": "file",
   "test_strength": null,

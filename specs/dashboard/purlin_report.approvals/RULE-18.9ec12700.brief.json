@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "purlin_report",
-  "generated_at": "2026-09-14T17:07:48Z",
+  "generated_at": "2026-09-14T17:22:16Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-18 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/purlin_report/20260914T170736Z-e7757ad-ci-linux.json",
+  "record": ".purlin/records/purlin_report/20260914T172159Z-2ca875e-ci-linux.json",
   "risk": "high",
   "rule": "RULE-18",
   "rule_hash": "7c46e6f28aa0c56b5dc15359336db381c616b577ad71e49214c47aacf9928e62",
   "rule_text": "The review list names how many rules need a look and groups them high risk first with a count per group, and every row carries the feature, the rule id, the rule's text cut to one line, the rule's state as the pill the board draws, and opens the rule screen when clicked",
   "schema": "purlin-brief/1",
-  "state": "Tested",
+  "state": "Reviewed",
   "test_hash": "edc99d0f4997642eb4b3f5441788d82021fc36cc46bb0e2898c95a17cb8628ca",
   "test_hash_kind": "file",
   "test_strength": null,

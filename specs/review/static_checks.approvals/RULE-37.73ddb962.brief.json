@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "static_checks",
-  "generated_at": "2026-09-14T17:08:12Z",
+  "generated_at": "2026-09-14T17:22:53Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,7 +27,7 @@
   "reasons": [
     "PROOF-33 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/static_checks/20260914T170736Z-e7757ad-ci-linux.json",
+  "record": ".purlin/records/static_checks/20260914T172159Z-2ca875e-ci-linux.json",
   "risk": "high",
   "rule": "RULE-37",
   "rule_hash": "955cad9489db3e5adadd15df1beefc18e722b67a750f7717c6b60c24b06f2ad0",

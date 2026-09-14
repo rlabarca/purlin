@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "skill_rename",
-  "generated_at": "2026-09-14T17:09:45Z",
+  "generated_at": "2026-09-14T17:22:37Z",
   "layers": [
     "proof text",
     "test body",
@@ -22,7 +22,7 @@
     }
   ],
   "reasons": [],
-  "record": ".purlin/records/skill_rename/20260914T170858Z-ff82c7d-ci-windows.json",
+  "record": ".purlin/records/skill_rename/20260914T172159Z-2ca875e-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-1",
   "rule_hash": "3b5ab45f1f6cfbda10ef3be93559079e99679c8499f2cd753a79563d8c807384",

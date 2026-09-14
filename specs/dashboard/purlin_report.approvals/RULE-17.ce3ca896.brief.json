@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "purlin_report",
-  "generated_at": "2026-09-14T17:07:48Z",
+  "generated_at": "2026-09-14T17:22:16Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-17 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/purlin_report/20260914T170736Z-e7757ad-ci-linux.json",
+  "record": ".purlin/records/purlin_report/20260914T172159Z-2ca875e-ci-linux.json",
   "risk": "high",
   "rule": "RULE-17",
   "rule_hash": "9724de50b673f7dfc4278cf70ae19983818090d6c0484abce7263cda0ad0f397",
   "rule_text": "A rule whose proof names an operating system that no counting record came from says so on its screen, naming that system, rather than reading as proved",
   "schema": "purlin-brief/1",
-  "state": "Tested",
+  "state": "Reviewed",
   "test_hash": "5a949e6e6b2d7a3e218d505243d6a662cbfac38453c2ad962a4b2c78c37f003c",
   "test_hash_kind": "file",
   "test_strength": null,
