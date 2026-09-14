@@ -32,25 +32,17 @@ EXCLUDED = (
 
 # Paths a later phase still rewrites. Delete an entry when its phase lands.
 PENDING_REWRITE = (
-    # phase 2: the proof plugins, the format contracts, and the tests of them
-    "scripts/proof/", "scripts/mcp/purlin/specs.py", "references/formats/proofs_format.md",
-    "references/formats/spec_format.md", "references/proof_plugin_contract.md",
-    "references/supported_frameworks.md", "dev/fixtures/consumer-ci/",
-    "dev/test_proof_plugins.sh", "dev/test_proof_plugins_missing.py", "dev/test_proof_stress.py",
-    "dev/test_multilang_proof_plugins.py", "dev/test_mcp_server.py", "dev/test_plugin_contract.py",
-    "dev/test_schema_spec_format.py", "dev/test_schema_proof_format.py",
-    "dev/test_e2e_anchor_authority.sh",
-    # phase 3: the run script and the gate check
-    "scripts/ci/verify_gate.py", "dev/test_verify_gate.py", "dev/test_consumer_ci.py",
-    "dev/consumer_ci_dryrun.sh",
+    # phase 9: the migration, which must name the retired `@on(` tag in order
+    # to ignore it, and the tests and the format file that pin that behaviour
+    "scripts/mcp/purlin/specs.py", "references/formats/spec_format.md",
+    "dev/test_mcp_server.py", "dev/test_schema_spec_format.py",
+    "dev/test_schema_proof_format.py",
     # phase 4: the rule-writing examples, which follow the spec guide
     "references/rule_examples.md",
     # phase 5: init, update, the hooks, the template
     "scripts/init/", "scripts/hooks/", "scripts/purlin_python.sh", "templates/config.json",
     "dev/test_init_update.py", "dev/test_init_scaffold.py", "dev/test_init_e2e.sh",
     "dev/test_pre_push_hook.py",
-    # phase 6: the dashboard and its screenshots
-    "scripts/report/", "dev/capture_doc_screenshots.py",
     # phase 8: the docs
     "docs/", "README.md", "CLAUDE.md", "RELEASE_NOTES.md", "assets/purlin-logo.svg",
 )
