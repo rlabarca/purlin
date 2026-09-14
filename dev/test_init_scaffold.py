@@ -83,7 +83,7 @@ def read(path):
 
 def git(root, *args):
     return subprocess.run(['git'] + list(args), cwd=root, capture_output=True,
-                          text=True, timeout=120)
+                          encoding='utf-8', timeout=120)
 
 
 class Project(object):
@@ -108,7 +108,7 @@ class Project(object):
         script = kwargs.get('script', SCAFFOLD)
         done = subprocess.run(
             [sys.executable, script, '--project-root', self.root, '--yes']
-            + list(args), capture_output=True, text=True, timeout=300,
+            + list(args), capture_output=True, encoding='utf-8', timeout=300,
             env=env, stdin=subprocess.DEVNULL)
         assert done.returncode == kwargs.get('code', 0), (
             done.stdout + done.stderr)
@@ -164,7 +164,7 @@ class TestTheOneQuestion:
         try:
             done = subprocess.run(
                 [sys.executable, SCAFFOLD, '--project-root', made.root],
-                input='recorded\n', capture_output=True, text=True,
+                input='recorded\n', capture_output=True, encoding='utf-8',
                 timeout=300)
             assert done.returncode == 0, done.stdout + done.stderr
             assert scaffold_module.GATE_QUESTION in done.stdout
@@ -198,7 +198,7 @@ class TestTheOneQuestion:
         try:
             done = subprocess.run(
                 [sys.executable, SCAFFOLD, '--project-root', made.root],
-                input='whenever\n', capture_output=True, text=True,
+                input='whenever\n', capture_output=True, encoding='utf-8',
                 timeout=300)
             assert made.config()['gate'] == 'tested'
             assert 'is not a gate' in done.stdout
@@ -317,7 +317,7 @@ class TestTheLanguageQuestion:
             done = subprocess.run(
                 [sys.executable, SCAFFOLD, '--project-root', made.root,
                  '--gate', 'tested'], input='pytest\n', capture_output=True,
-                text=True, timeout=300)
+                encoding='utf-8', timeout=300)
             assert done.returncode == 0, done.stdout + done.stderr
             assert made.has('.purlin/plugins/pytest_purlin.py')
             assert made.config()['test_framework'] == 'pytest'
@@ -331,7 +331,7 @@ class TestTheLanguageQuestion:
             done = subprocess.run(
                 [sys.executable, SCAFFOLD, '--project-root', made.root,
                  '--gate', 'tested'], input='rspec\n', capture_output=True,
-                text=True, timeout=300)
+                encoding='utf-8', timeout=300)
             assert 'reading it as shell' in done.stdout
             assert made.config()['test_framework'] == 'shell'
         finally:
@@ -357,7 +357,7 @@ class TestTheApproverQuestion:
                 [sys.executable, SCAFFOLD, '--project-root', made.root,
                  '--gate', 'approved'],
                 input='Jane@Acme.com, sam@acme.com\n', capture_output=True,
-                text=True, timeout=300)
+                encoding='utf-8', timeout=300)
             assert done.returncode == 0, done.stdout + done.stderr
             assert made.config()['approvers'] == ['jane@acme.com',
                                                   'sam@acme.com']
@@ -753,7 +753,7 @@ class TestTheFlags:
             done = subprocess.run(
                 [sys.executable, SCAFFOLD, '--project-root', directory,
                  '--gate', 'recorded', '--yes', '--dry-run'],
-                capture_output=True, text=True, timeout=300,
+                capture_output=True, encoding='utf-8', timeout=300,
                 stdin=subprocess.DEVNULL)
             assert done.returncode == 0, done.stdout + done.stderr
             assert scaffold_module.LANGUAGE_QUESTION in done.stdout
@@ -770,7 +770,7 @@ class TestTheFlags:
         try:
             done = subprocess.run(
                 [sys.executable, SCAFFOLD, '--project-root', directory,
-                 '--gate', 'tested', '--yes'], capture_output=True, text=True,
+                 '--gate', 'tested', '--yes'], capture_output=True, encoding='utf-8',
                 timeout=300, stdin=subprocess.DEVNULL)
             assert done.returncode == 2
             assert 'git init' in done.stderr
@@ -782,7 +782,7 @@ class TestTheFlags:
     def test_a_missing_project_root_is_a_bad_invocation(self):
         done = subprocess.run(
             [sys.executable, SCAFFOLD, '--project-root', '/no/such/dir',
-             '--gate', 'tested', '--yes'], capture_output=True, text=True,
+             '--gate', 'tested', '--yes'], capture_output=True, encoding='utf-8',
             timeout=300)
         assert done.returncode == 2
 
@@ -792,7 +792,7 @@ class TestTheFlags:
         project.run('--gate', 'tested')
         done = subprocess.run(
             [sys.executable, SCAFFOLD, '--project-root', project.root,
-             '--update', '--yes'], capture_output=True, text=True, timeout=300,
+             '--update', '--yes'], capture_output=True, encoding='utf-8', timeout=300,
             stdin=subprocess.DEVNULL)
         if os.path.isfile(os.path.join(ROOT, 'scripts', 'init', 'update.py')):
             assert done.returncode == 0, done.stdout + done.stderr
@@ -807,7 +807,7 @@ class TestTheFlags:
         project.run('--gate', 'tested')
         done = subprocess.run(
             [sys.executable, SCAFFOLD, '--project-root', project.root,
-             '--update', '--dry-run'], capture_output=True, text=True,
+             '--update', '--dry-run'], capture_output=True, encoding='utf-8',
             timeout=300, stdin=subprocess.DEVNULL)
         assert done.returncode in (0, 1, 3), done.stdout + done.stderr
         assert 'does not carry' not in done.stdout

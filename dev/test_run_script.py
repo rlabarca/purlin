@@ -22,6 +22,11 @@ import pytest
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RUN_SCRIPT = os.path.join(REPO, 'scripts', 'run', 'purlin_run.py')
 PROOF_DIR = os.path.join(REPO, 'scripts', 'proof')
+# A path a test writes into a shell script is spelled with forward slashes:
+# bash reads a backslash as an escape, so a Windows path sourced as it comes
+# off os.path.join loses every separator. Git bash reads C:/... unchanged.
+SHELL_HARNESS = os.path.join(PROOF_DIR, 'shell_purlin.sh').replace(
+    os.sep, '/')
 PROOF_REL = os.path.join('.purlin', 'runtime', 'proofs')
 
 sys.path.insert(0, os.path.join(REPO, 'scripts', 'mcp'))
@@ -79,14 +84,14 @@ def _run(root, *args):
     cwd = str(root) if os.path.isdir(str(root)) else REPO
     result = subprocess.run(
         [sys.executable, RUN_SCRIPT, '--project-root', str(root)] + list(args),
-        capture_output=True, text=True, cwd=cwd)
+        capture_output=True, encoding='utf-8', cwd=cwd)
     return result.returncode, result.stdout + result.stderr
 
 
 def _git(root, *args):
     """git in the project, loud about a failure so a broken fixture says so."""
     result = subprocess.run(['git'] + list(args), cwd=str(root),
-                            capture_output=True, text=True)
+                            capture_output=True, encoding='utf-8')
     assert result.returncode == 0, result.stdout + result.stderr
     return result.stdout
 
@@ -204,7 +209,7 @@ class TestQuickRunsEachFramework:
             'source %s\n'
             'purlin_proof "feat" "PROOF-1" "RULE-1" pass "shell case"\n'
             'purlin_proof_finish\n'
-            % os.path.join(PROOF_DIR, 'shell_purlin.sh'), encoding='utf-8')
+            % SHELL_HARNESS, encoding='utf-8')
         code, output = _run(root, '--all', '--quick')
         data = _proofs(root, 'feat')
         assert data is not None, output
