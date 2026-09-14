@@ -887,7 +887,26 @@ one "never shipped" paragraph). Retire `lifecycle-guide.md`, `testing-workflow-g
 
 #### DONE
 
-_pending_
+Wave 6, 2026-09-13. Outline `dev/plans/lanes/8-outline.md`; four doc lanes plus fix lane F5,
+all landed by fast-forward; head `a7c4abd4` after 8D (its rebase met 8A on the vocabulary
+test's pending tuple; both removals kept).
+
+| Lane | Head | What | Tokens |
+|---|---|---|---|
+| F5 | `1cd4a717` | the record carries `scope_tree` as the string, the documented `proofs` list, `schema_version`, `gate`, `test_strength`; a committed record now reaches Recorded (two new tests); the init e2e asserts its `recorded` and `approved` steps: 40 passed, 1 skipped | 139,537 |
+| 8A | `31f61b7a` | `README.md` 243 to 120 on `design/assets/logo.svg`; `docs/index.md` 53; `docs/getting-started.md` 182; `docs/solo-workflow.md` 138; `CLAUDE.md` 110 with the design-and-copy section; `RELEASE_NOTES.md` 0.10.0 rewritten, earlier notes kept and excluded from the vocabulary check as history; `assets/purlin-logo.svg` deleted | 192,084 |
+| 8B | `c775b445` | `team-workflow.md` 135, `regulated-workflow.md` 190 (the seven-state diagram), `review-and-approval.md` 169, `raising-the-gate-and-upgrading.md` 170 | 132,885 |
+| 8C | `bc6f364a` | `specs-and-anchors.md` 239 (the anchor-repo diagram), `design-in-specs.md` 116, `working-together.md` 151, `spec-from-code.md` 102; the old spec-from-code guide deleted | 131,717 |
+| 8D | `a7c4abd4` | `running-and-records.md` 253 (the one place "mutation testing" is named), `dashboard.md` 120 with the five screenshots, `docs/_mermaid.md` 20; the seven old guides deleted; `docs/` left the pending list | 195,202 |
+
+Wave 6 tokens: 791,425. Running total: 4,907,350 (F8 pending).
+
+Whole-set checks after landing: every link in `README.md` and `docs/*.md` resolves; the
+vocabulary check passes with an empty pending list except the five files that must spell a
+retired tag to say it is ignored. Found for fix lane F8: `scripts/run/ci.py` publishes the
+dashboard into `.purlin/runtime/report` while `templates/purlin.yml` uploads
+`$RUNNER_TEMP/purlin-dashboard` (the artifact would be empty); three references still cite
+deleted docs.
 
 ### Phase 9: re-spec, sweep, release (Fable orchestrates; Opus 5 lanes per spec group)
 
