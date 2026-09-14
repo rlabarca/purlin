@@ -224,6 +224,13 @@ h2{font-size:var(--ui-lg);font-weight:var(--weight-bold);margin:0 0 var(--space-
 .sec{color:var(--text-secondary)}
 .tag{display:inline-flex;align-items:center;font-family:var(--font-mono);font-size:var(--ui-sm);padding:3px 10px;border-radius:var(--radius-sm);border:1px solid var(--accent);color:var(--text-primary);white-space:nowrap}
 .tag.plain{border-color:var(--text-muted);color:var(--text-muted)}
+.tag.risk-high{border-color:var(--state-fail)}
+.tag.risk-medium{border-color:var(--state-warn)}
+.tag.risk-low{border-color:var(--text-muted);color:var(--text-muted)}
+.os{display:inline-flex;align-items:center;font-family:var(--font-mono);font-size:var(--ui-sm);padding:1px 7px;border-radius:var(--radius-sm);border:1px solid;margin-right:4px;white-space:nowrap}
+.os.pass{border-color:var(--state-pass);color:var(--state-pass)}
+.os.fail{border-color:var(--state-fail);color:var(--state-fail)}
+.os.none{border-color:var(--border-hairline);color:var(--text-muted)}
 .btn{display:inline-flex;align-items:center;gap:var(--space-2);font-size:var(--ui-sm);letter-spacing:.01em;padding:6px 16px;border-radius:var(--radius-pill);border:1.5px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;transition:background var(--duration-fast) var(--ease-standard)}
 .btn:hover{background:var(--hover-tint)}
 .btn.glyph{padding:4px 12px;font-size:var(--ui-base);line-height:1}
@@ -401,7 +408,7 @@ function riskGrid() {
       total += n;
       return '<td class="n' + (n ? '' : ' zero') + '">' + n + '</td>';
     }).join('');
-    return '<tr><td>' + tag(risk, risk === 'low') + '</td>' + cells
+    return '<tr><td>' + riskTag(risk) + '</td>' + cells
       + '<td class="n">' + total + '</td></tr>';
   }).join('');
   return '<section><p class="eyebrow">Risk by state</p>'
@@ -648,7 +655,7 @@ function renderRule() {
   var reasons = reviewReasons(feature.name, rule.id);
   var rows = [
     ['State', pill(rule.state)],
-    ['Risk', tag(rule.risk, rule.risk === 'low')],
+    ['Risk', riskTag(rule.risk)],
     ['Origin', tag(rule.origin, true)],
     ['Spec', hostLink(feature.spec_path, feature.spec_path)]
   ];
@@ -802,6 +809,11 @@ function tag(text, plain) {
   return '<span class="tag' + (plain ? ' plain' : '') + '">' + esc(text)
     + '</span>';
 }
+function riskTag(risk) {
+  var level = risk === 'high' || risk === 'medium' ? risk : 'low';
+  return '<span class="tag risk-' + level + '">' + esc(risk || 'low')
+    + '</span>';
+}
 function coverage(covered, total) {
   var pct = total ? Math.round((covered / total) * 100) : 0;
   var hue = pct === 100 ? 'pass' : pct >= 60 ? 'warn' : 'fail';
@@ -819,32 +831,44 @@ function recordsFor(feature) {
   var byOs = (DATA.records || {})[feature.name] || {};
   return Object.keys(byOs).sort().map(function (key) { return byOs[key]; });
 }
-function recordMark(record) {
-  var words = [];
-  var label = record.label || 'local';
-  if (label !== 'ci') { words.push(label); }
-  if (record.os) { words.push(record.os); }
-  words.push(record.result === 'fail' ? 'failed' : 'passed');
-  return '<span class="mono" style="color:var(--state-'
-    + (record.result === 'fail' ? 'fail' : 'pass') + ')" title="'
-    + esc((record.timestamp || '') + ' · ' + (record.path || '')) + '">'
-    + esc(words.join(' ')) + '</span>';
+var OS_BOXES = [['linux', 'linux'], ['macos', 'mac'], ['windows', 'win']];
+function newestByOs(feature) {
+  var byOs = {};
+  recordsFor(feature).forEach(function (record) {
+    var os = record.os || '';
+    if (!byOs[os] || (record.timestamp || '') > (byOs[os].timestamp || '')) {
+      byOs[os] = record;
+    }
+  });
+  return byOs;
 }
-function recordJoin(marks) {
-  return marks.join('<span class="muted"> · </span>');
+function osBox(os, short, record) {
+  if (!record) {
+    return '<span class="os none" title="' + esc(os) + ': no record">'
+      + esc(short) + '</span>';
+  }
+  var tone = record.result === 'fail' ? 'fail' : 'pass';
+  var who = record.label || 'local';
+  return '<span class="os ' + tone + '" title="' + esc(os + ': ' + who + ' '
+    + (tone === 'fail' ? 'failed' : 'passed') + ' at ' + (record.timestamp || '')
+    + ' · ' + (record.path || '')) + '">' + esc(short) + '</span>';
 }
 function recordCell(feature) {
-  var records = recordsFor(feature);
-  if (!records.length) { return '<span class="mono muted">—</span>'; }
-  return recordJoin(records.map(recordMark));
+  var byOs = newestByOs(feature);
+  return OS_BOXES.map(function (pair) {
+    return osBox(pair[0], pair[1], byOs[pair[0]]);
+  }).join('');
 }
 function recordLine(feature) {
-  var records = recordsFor(feature);
-  if (!records.length) { return '<span class="mono muted">none</span>'; }
-  return recordJoin(records.map(function (record) {
-    return recordMark(record) + ' '
-      + hostLink(record.path, record.timestamp || record.path);
-  }));
+  var byOs = newestByOs(feature);
+  var any = false;
+  var out = OS_BOXES.map(function (pair) {
+    var record = byOs[pair[0]];
+    if (record) { any = true; }
+    return osBox(pair[0], pair[1], record)
+      + (record ? ' ' + hostLink(record.path, record.timestamp || record.path) : '');
+  }).join(' ');
+  return any ? out : '<span class="mono muted">none</span>';
 }
 function hostLink(path, text) {
   var base = webRemote();

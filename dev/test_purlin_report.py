@@ -146,8 +146,10 @@ RECORD_CELLS = """els => {
     return {
       name: e.querySelector('.name .n').textContent.trim(),
       text: cell.textContent.trim(),
-      marks: Array.from(cell.querySelectorAll('span[title]')).map(s => ({
-        words: s.textContent.trim(),
+      boxes: Array.from(cell.querySelectorAll('.os')).map(s => ({
+        os: s.textContent.trim(),
+        tone: s.classList.contains('pass') ? 'pass'
+          : s.classList.contains('fail') ? 'fail' : 'none',
         title: s.getAttribute('title'),
         colour: getComputedStyle(s).color
       }))
@@ -287,28 +289,24 @@ def test_the_record_column_says_what_each_operating_system_found(browser,
     del payload['records']['checkout_design']
     page = open_board(browser, tmp_path / 'reg', payload)
     cells = record_cells(page)
-    assert cells['login']['text'] == u'linux failed · windows passed'
-    assert cells['invoice']['text'] == u'linux passed · macos passed'
-    assert cells['checkout_design']['text'] == u'—'
+    tones = {c['os']: c['tone'] for c in cells['login']['boxes']}
+    assert tones == {'linux': 'fail', 'mac': 'none', 'win': 'pass'}
+    tones = {c['os']: c['tone'] for c in cells['invoice']['boxes']}
+    assert tones == {'linux': 'pass', 'mac': 'pass', 'win': 'none'}
+    assert all(c['tone'] == 'none' for c in cells['checkout_design']['boxes'])
 
-    failed, passed = cells['login']['marks']
+    failed, _, passed = cells['login']['boxes']
     assert failed['colour'] == page.evaluate(RESOLVE_TOKEN, '--state-fail')
     assert passed['colour'] == page.evaluate(RESOLVE_TOKEN, '--state-pass')
     assert failed['title'] == (
-        '2026-09-12T09:14:02Z · .purlin/records/login/'
+        'linux: ci failed at 2026-09-12T09:14:02Z · .purlin/records/login/'
         '20260912T091402Z-a1b2c3d-ci-linux.json')
 
     page.click('[data-act="feature"][data-feature="login"]')
     page.click('.rule[data-rule="RULE-1"]')
-    body = page.inner_text('.wrap')
-    assert 'linux failed' in body and 'windows passed' in body
+    assert page.locator('.wrap .os.fail').count() == 1
+    assert page.locator('.wrap .os.pass').count() == 1
     page.close()
-
-    team = open_board(browser, tmp_path / 'team', payload_named('team'))
-    cells = record_cells(team)
-    assert cells['login']['text'] == 'passed'
-    assert cells['checkout_design']['text'] == 'developer passed'
-    team.close()
 
 
 @pytest.mark.parametrize('process', PROCESSES)

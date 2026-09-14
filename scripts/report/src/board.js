@@ -41,7 +41,7 @@ function riskGrid() {
       total += n;
       return '<td class="n' + (n ? '' : ' zero') + '">' + n + '</td>';
     }).join('');
-    return '<tr><td>' + tag(risk, risk === 'low') + '</td>' + cells
+    return '<tr><td>' + riskTag(risk) + '</td>' + cells
       + '<td class="n">' + total + '</td></tr>';
   }).join('');
   return '<section><p class="eyebrow">Risk by state</p>'

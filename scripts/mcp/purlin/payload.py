@@ -396,7 +396,7 @@ def _record_summary(record):
         'path': record.get('path'),
         'label': record.get('label'),
         'timestamp': record.get('timestamp'),
-        'os': record.get('os'),
+        'os': record.get('os') or (record.get('environment') or {}).get('os'),
         'commit': record.get('commit'),
         'test_strength': record.get('test_strength'),
     }

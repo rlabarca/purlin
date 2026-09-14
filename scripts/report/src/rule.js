@@ -163,7 +163,7 @@ function renderRule() {
   var reasons = reviewReasons(feature.name, rule.id);
   var rows = [
     ['State', pill(rule.state)],
-    ['Risk', tag(rule.risk, rule.risk === 'low')],
+    ['Risk', riskTag(rule.risk)],
     ['Origin', tag(rule.origin, true)],
     ['Spec', hostLink(feature.spec_path, feature.spec_path)]
   ];

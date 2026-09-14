@@ -71,6 +71,14 @@ function tag(text, plain) {
     + '</span>';
 }
 
+/* A risk tag carries its level in the border: high in the fail hue, medium
+   in the warn hue, low muted. The text stays the primary ink. */
+function riskTag(risk) {
+  var level = risk === 'high' || risk === 'medium' ? risk : 'low';
+  return '<span class="tag risk-' + level + '">' + esc(risk || 'low')
+    + '</span>';
+}
+
 function coverage(covered, total) {
   var pct = total ? Math.round((covered / total) * 100) : 0;
   var hue = pct === 100 ? 'pass' : pct >= 60 ? 'warn' : 'fail';
@@ -95,41 +103,54 @@ function recordsFor(feature) {
   return Object.keys(byOs).sort().map(function (key) { return byOs[key]; });
 }
 
-/* What one record found, in the result's tone. A record's existence is not
-   its result: showing the newest alone read the same whether the run passed
-   or failed every proof in it, so each operating system says its own. The
-   label is named only where it is not `ci`, CI being the expected writer. */
-function recordMark(record) {
-  var words = [];
-  var label = record.label || 'local';
-  if (label !== 'ci') { words.push(label); }
-  if (record.os) { words.push(record.os); }
-  words.push(record.result === 'fail' ? 'failed' : 'passed');
-  return '<span class="mono" style="color:var(--state-'
-    + (record.result === 'fail' ? 'fail' : 'pass') + ')" title="'
-    + esc((record.timestamp || '') + ' · ' + (record.path || '')) + '">'
-    + esc(words.join(' ')) + '</span>';
+/* One small box per operating system, green when that system's newest record
+   passed, red when it failed, grey when no record exists. A record's
+   existence is not its result, so the colour is the result; who wrote it and
+   when sit in the tooltip. */
+var OS_BOXES = [['linux', 'linux'], ['macos', 'mac'], ['windows', 'win']];
+
+function newestByOs(feature) {
+  var byOs = {};
+  recordsFor(feature).forEach(function (record) {
+    var os = record.os || '';
+    if (!byOs[os] || (record.timestamp || '') > (byOs[os].timestamp || '')) {
+      byOs[os] = record;
+    }
+  });
+  return byOs;
 }
 
-function recordJoin(marks) {
-  return marks.join('<span class="muted"> · </span>');
+function osBox(os, short, record) {
+  if (!record) {
+    return '<span class="os none" title="' + esc(os) + ': no record">'
+      + esc(short) + '</span>';
+  }
+  var tone = record.result === 'fail' ? 'fail' : 'pass';
+  var who = record.label || 'local';
+  return '<span class="os ' + tone + '" title="' + esc(os + ': ' + who + ' '
+    + (tone === 'fail' ? 'failed' : 'passed') + ' at ' + (record.timestamp || '')
+    + ' · ' + (record.path || '')) + '">' + esc(short) + '</span>';
 }
 
 function recordCell(feature) {
-  var records = recordsFor(feature);
-  if (!records.length) { return '<span class="mono muted">—</span>'; }
-  return recordJoin(records.map(recordMark));
+  var byOs = newestByOs(feature);
+  return OS_BOXES.map(function (pair) {
+    return osBox(pair[0], pair[1], byOs[pair[0]]);
+  }).join('');
 }
 
-/* The same entries on the rule screen, each beside a link to the file it
+/* The same boxes on the rule screen, each beside a link to the file it
    names, so a record stays addressable on the git host. */
 function recordLine(feature) {
-  var records = recordsFor(feature);
-  if (!records.length) { return '<span class="mono muted">none</span>'; }
-  return recordJoin(records.map(function (record) {
-    return recordMark(record) + ' '
-      + hostLink(record.path, record.timestamp || record.path);
-  }));
+  var byOs = newestByOs(feature);
+  var any = false;
+  var out = OS_BOXES.map(function (pair) {
+    var record = byOs[pair[0]];
+    if (record) { any = true; }
+    return osBox(pair[0], pair[1], record)
+      + (record ? ' ' + hostLink(record.path, record.timestamp || record.path) : '');
+  }).join(' ');
+  return any ? out : '<span class="mono muted">none</span>';
 }
 
 /* A link to the file on the git host, when the payload names a remote this
