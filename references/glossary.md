@@ -1,75 +1,94 @@
 # Glossary
 
-> The one list of the words this repository uses for its own concepts. A term here is the
-> spelling every doc, skill, agent definition and reference uses; the third column names the
-> file that defines it, which is where a definition is edited and where a reader is sent.
-> Nothing on this page is a definition of its own: a second definition is a second answer the
-> first time one of the two is edited.
+The one list of the words this repository uses for its own concepts. A term here is the spelling
+every doc, skill, agent definition and reference uses. The retired table below is the only place
+in the shipped prose where a retired spelling may still be written.
 
-## Canonical terms
+## The words
 
-| Term | What it means | Where the authority lives |
-|------|---------------|---------------------------|
-| spec | A feature's contract: `> Description:` and the two sections `## Rules` and `## Proof` | `references/formats/spec_format.md` |
-| rule | One `- RULE-N:` line: a constraint that must hold | `references/formats/spec_format.md` |
-| proof | One `- PROOF-N (RULE-M):` line: the blueprint for the test that shows the rule holds | `references/formats/spec_format.md` |
-| proof marker | The per-framework annotation a test carries so a run can be attributed to a proof | `references/formats/proofs_format.md` |
-| proof file | The `<feature>.proofs-<tier>.json` a plugin emits beside the spec | `references/formats/proofs_format.md` |
-| tier | What kind of test a proof is: unit, `@integration`, `@e2e` or `@manual` | `references/formats/spec_format.md` |
-| platform | Where a proof must be proved, declared with `@on(<platform-id>)`, and one of the three membership categories | `references/remote_verification.md` |
-| anchor spec | A cross-cutting contract at `specs/_anchors/<name>.md` that other features name in `> Requires:` | `references/formats/anchor_format.md` |
-| upstream-owned anchor | An anchor carrying a `> Source:`: its rules come from outside and are changed at that source, never here | `references/formats/anchor_format.md` |
-| receipt | The `<feature>.receipt.json` `purlin:verify` writes when every rule of a feature has a passing proof | `references/formats/receipt_format.md` |
-| vhash | The hash a receipt carries, and the list of segments it is computed over | `references/formats/receipt_format.md` |
-| digest | `.purlin/report-data.js`: the whole project's state as one generated file, rebuilt by `sync_status` | `docs/dashboard-guide.md` |
-| dashboard | `purlin-report.html` at the project root, which renders the digest in a browser | `docs/dashboard-guide.md` |
-| drift | Committed change that the specs have not caught up with, classified by category and significance | `references/drift_criteria.md` |
-| Proof Design | The gauge that grades a proof description with no test code: is this provable at all? | `references/audit_criteria.md` |
-| Proof Integrity | The gauge that grades the test behind a proof: does it prove what the rule says? | `references/audit_criteria.md` |
-| the eight grade names | `PROVABLE`, `LOOSE`, `UNPROVABLE` and `STRUCTURAL` for Proof Design; `STRONG`, `WEAK`, `HOLLOW` and `EXCLUDED` for Proof Integrity | `references/audit_criteria.md` |
-| the statuses | `VERIFIED`, `PASSING`, `PARTIAL`, `FAILING` and `UNTESTED`, the five readings a feature can have | `references/hard_gates.md` |
-| the hard gate | The one gate the framework enforces: `purlin:verify` issues no receipt until every rule has a passing proof | `references/hard_gates.md` |
-| the CI gate job | Layer 3: the job branch protection marks required, which runs `scripts/ci/verify_gate.py --check` | `references/hard_gates.md` |
-| pre-push mode | Layer 1's setting, `warn`, `strict` or `off`, chosen with `purlin:init --set pre_push` | `references/hard_gates.md` |
-| remote verification | The loop that gets a platform-declared proof proved on a host this one is not, and the config field that declares the bar | `references/remote_verification.md` |
-| pending migration | A reading the installed plugin has moved on from, reported by `sync_status` and cleared by `purlin:init --update` | `references/purlin_commands.md` |
-| mutation check | Break the behaviour, watch that one proof fail, restore: the check that catches a proof passing against broken code | `references/spec_quality_guide.md` |
-| `pm`, `eng`, `qa` | The three role tokens, and the only three: product, engineering and quality | `skills/drift/SKILL.md` |
+- **rule**: a claim about what the software must do, one line in a spec. **proof**: how the
+  claim is observed. **test**: the executable form of a proof, tagged with its rule.
+  **record**: one verify run's observations, a committed file. **approval**: a named
+  person's attestation that a rule, proof and test belong together, a committed file.
+- **anchor**: a spec for something shared across features. **local anchor**: in the project.
+  **anchor repo**: an optional separate repository holding anchors and designs for one or more
+  projects. **pinned anchor**: the project's local copy of an anchor from an anchor repo,
+  tied to a commit.
+- **gate**: the one project setting, what CI must see before a change can merge: `tested`,
+  `recorded`, `approved`.
+- **test strength**: of the deliberate breaks made to the code, the share the tests caught,
+  as a percentage. Config key `min_strength`, record field `test_strength`, status column
+  `strength`.
+- **approver list**: the emails of the people who may approve, kept in `.purlin/config.json`
+  and changed by pull request, so who could approve and when is in git history. An approval
+  counts when its commit is signed by someone on the list. People are added or removed at any
+  time.
+- **git host**: the service that holds the repository, runs CI, and enforces branch rules:
+  GitHub or Azure DevOps. **CI**: the git host's hosted runner executing the same
+  `purlin:verify` a developer runs, on every push and pull request.
+- **origin**: tag on every rule naming its owner: `pm`, `design`, `qa`, `eng`. Default `eng`;
+  required under `approved`. Drift routes changes by origin.
+- **risk**: tag on a rule, `high`, `medium`, `low`; default `low`; required under `approved`.
+- **criterion**: optional tag linking a rule to an upstream acceptance-criterion id.
+- **The seven states** of a rule: Drafted (no proof), Proof ready (the proof text passes the
+  free checks), Tested (a tagged test passes locally), Recorded (a record that counts under the
+  gate exists at HEAD and passes), Reviewed (a brief exists for the current hashes), Approved
+  (a current approval exists and the record passes), Stale (the rule, proof or test text
+  changed after approval; a human must look). A separate flag, **re-verify pending**, means
+  only the code changed: the approval stands and CI clears it on the next run.
 
-## Retired terms
+## Where each is defined
 
-Every row below is a banned string of the repository's prose lint, and this section is the one
-place in the shipped prose where the retired spelling may still be written. The lint reads its
-rows from this table, so a row added here is enforced from that moment and a row removed here
-stops being enforced: there is no second list to keep in step.
-
-| Retired term | Use instead | Why |
-|---|---|---|
-| `3-section format` | `2-section format` | A spec and an anchor carry `## Rules` and `## Proof`. There is no third section, and there has not been one since the format contracts dropped it |
-| `## What it does` | the `> Description:` continuation lines | Nothing ever parsed the section, so what it held was prose no tool and no proof could reach |
-| `anchor file` | `anchor spec` | An anchor is a spec: it carries rules, proofs and a status, and `sync_status` reads it as one. Calling it a file says it is something else that happens to sit nearby |
-| `.anchor.md` | `specs/_anchors/<name>.md` | `sync_status` reads that one directory and that one suffix. A file named the other way is one nothing loads and nothing reports |
-| `specs/schema/` | `specs/_anchors/` | There is no `schema/` category. A routing list that names one writes a cross-cutting contract to a path nothing reads |
-| `toolkit` | `the Purlin plugin` | Purlin is one Claude Code plugin with skills, an MCP server and proof plugins, not a collection a reader assembles |
-| `platform tier` | `platform` | A tier says what kind of test a proof is and a platform says where it must be proved. The two are independent axes, and the compound name collapses them into one |
-| `read-only` | `writes no code and no test files`, or `upstream-owned` for an anchor with a `> Source:` | It meant three different things on three pages: a skill that writes nothing at all, a gate that writes receipts and caches but never touches code, and an anchor owned by somebody else. Each has its own words now |
-| `dev` as a role token | `eng` | The tools declared `pm, dev, qa` while every guide and every workflow said `eng`, so a reader who copied one spelling got an argument the other surface did not know |
-| `/purlin:` | `purlin:` | A skill is invoked as `purlin:<name>`. The leading slash is a Claude Code slash-command spelling that nothing else here uses |
-| `--mcp` | nothing; `purlin:init` wires the server | The flag described itself as redundant and did nothing a plain init did not already do |
-| `--list-plugins` | `ls .purlin/plugins/` | A flag that shells out to a directory listing is a second name for a command the reader already has |
-| `--criteria` | the `audit_criteria` config field | The flag bypassed the criteria SHA pin, so an audit run through it could not say which criteria it graded against |
-| `--anchor` | `purlin:anchor create` | Pure delegation to another skill, which is the skill the reader should be told about |
-| `--review` | Step 6 of `purlin:spec` | The review it named is mandatory in the step anyway, so the flag was a way to ask for what already happens |
-| `--resume` | nothing; the skill always resumes | The behaviour was unconditional, so the flag turned nothing on |
-| `--local` | `--platform none` | The old spelling of skipping the remote path. It still runs and prints one line naming its replacement until 0.12.0 |
-| `(confirmed)` | no tag at all | A rule with no tag is already accepted, so confirming one meant deleting its `(assumed)` tag rather than writing a second one nothing read |
+| Term | Where the authority lives |
+|------|---------------------------|
+| spec, rule, proof, tier | `references/formats/spec_format.md` |
+| proof marker, proof file | `references/formats/proofs_format.md` |
+| anchor spec, pinned anchor | `references/formats/anchor_format.md` |
+| record, test strength, the gate, the approver list | `references/hard_gates.md` |
+| drift, the four role views, config field ownership | `references/drift_criteria.md` |
+| the review list, what makes a rule need a look | `references/review_criteria.md` |
+| every command's syntax and one-liner | `references/purlin_commands.md` |
+| every commit message shape | `references/commit_conventions.md` |
 
 ## Skill one-liners
 
-Every skill has exactly one purpose sentence, and it is the Purpose cell of the Quick Reference
-table in `references/purlin_commands.md#quick-reference`. The frontmatter `description` of
-`skills/<name>/SKILL.md`, the README Skills table, the `agents/purlin.md` Skills table and the
-first sentence of the matching bullet in `docs/index.md` all carry that same sentence.
+Every skill has exactly one purpose sentence, and it lives in the Purpose column of
+`references/purlin_commands.md`. The frontmatter `description` of `skills/<name>/SKILL.md`, the
+README table and the `agents/purlin.md` table all carry that same sentence. It is not copied
+here: another copy is another thing to edit and the one a reader meets stale.
 
-They are not copied here. A sixth copy of a one-liner is a sixth thing to edit and the one a
-reader is most likely to meet stale.
+## Retired terms
+
+The retired spelling on the left may appear on this page and nowhere else in a shipped file.
+The repository's own vocabulary check enforces that, reading this table for the terms.
+
+| Retired | Use instead |
+|---------|-------------|
+| audit, `purlin:audit`, the `purlin-auditor` agent | removed. `purlin:review` is where a person looks at a rule |
+| gauge, Proof Design, Proof Integrity | removed. Both grading scores are gone |
+| `PROVABLE`, `LOOSE`, `UNPROVABLE`, `STRUCTURAL` | removed with Proof Design |
+| `STRONG`, `WEAK`, `HOLLOW`, `EXCLUDED` | removed with Proof Integrity |
+| receipt, vhash, `*.receipt.json` | record: `.purlin/records/<feature>/<timestamp>-<commit7>-<runner>.json` |
+| `verify:` as a commit prefix | `purlin: record for <commit7>` |
+| platform, platform registry, `@on(<id>)`, `--platform` | `@env(windows)`, `@env(macos)`, `@env(linux)`, and the CI matrix |
+| `AWAITING RUNNER` | `needs <os>` |
+| mutation score, caught score, kill rate | test strength |
+| mutation testing | the breaks, in prose; `mutation_engine` in config and code |
+| mode, pre-push mode, external LLM mode | removed. The gate is the one setting |
+| records branch | records live in the tree, under `.purlin/records/` |
+| Pages, the published dashboard site | the `purlin-dashboard` build artefact, linked from the pull request comment |
+| forge | git host |
+| queue, review queue | review list |
+| CODEOWNERS, approver rule | the approver list in `.purlin/config.json` |
+| `verify --manual`, `verify --recheck` | removed. `@manual` proofs are evidenced by an approval file with a one-line note |
+| `figma://`, `> Visual-Reference:`, the visual hash | `designs/<feature>/` files, pinned by a design anchor |
+| `3-section format` | `2-section format`: `## Rules` and `## Proof` |
+| `## What it does` | the `> Description:` continuation lines |
+| `anchor file`, `.anchor.md` | `specs/_anchors/<name>.md` |
+| `specs/schema/` | `specs/_anchors/` |
+| `toolkit` | the Purlin plugin |
+| `read-only` | "writes no code and no test files", or "pinned" for an anchor with a `> Source:` |
+| `dev` as a role token | `eng` |
+| `/purlin:` | `purlin:` |
+| `--set`, `--sync-audit-criteria`, `--criteria`, `--anchor`, `--review`, `--resume`, `--local`, `--list-plugins`, `--mcp` | removed |
+| `(confirmed)` on a rule | no tag at all |

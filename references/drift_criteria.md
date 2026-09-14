@@ -1,203 +1,141 @@
-> Criteria-Version: 2
+> Criteria-Version: 3
 
-# Drift Detection Criteria
+# Drift criteria
 
-This document defines how the `drift` MCP tool and `purlin:drift` skill classify changed files and detect spec drift. The MCP tool implements deterministic classification. The skill applies semantic analysis on top.
+How the `drift` tool classifies a changed file, which config field belongs to which command,
+and what each of the four role views reports. The tool does the deterministic half; the
+`purlin:drift` skill reads the diff and does the judgement half.
 
-## File Classification (MCP Tool: Deterministic)
+## File classification
 
-The tool classifies each changed file in strict order. First match wins.
+The tool classifies each changed file in this order. The first match wins.
 
-| Order | Category | Match condition |
-|-------|----------|----------------|
-| 1 | CHANGED_SPECS | Path starts with `specs/` and ends with `.md` |
-| 2 | TESTS_ADDED | Path matches a test pattern (see below) |
-| 3 | CHANGED_BEHAVIOR | Path is in any spec's `> Scope:` (exact or prefix match) |
-| 4 | NO_IMPACT | Path matches a documentation/config pattern AND is not in a behavioral directory |
-| 5 | NEW_BEHAVIOR | Everything else: unscoped code or behavioral files without a spec |
+| Order | Category | Match |
+|-------|----------|-------|
+| 1 | CHANGED_SPECS | The path starts with `specs/` and ends with `.md` |
+| 2 | CHANGED_DESIGNS | The path starts with `designs/` |
+| 3 | TESTS_ADDED | The path matches a test pattern, below |
+| 4 | CHANGED_BEHAVIOR | The path is in some spec's `> Scope:`, exactly or by prefix |
+| 5 | NO_IMPACT | The path matches a documentation or config pattern and is not in a behavioural directory |
+| 6 | NEW_BEHAVIOR | Everything else: code with no spec behind it |
 
-### Test Patterns
+**Test patterns.** The path contains any of `test_`, `_test.`, `.test.`, `tests/`.
 
-A file is TESTS_ADDED if its path contains any of: `.proofs-`, `test_`, `_test.`, `.test.`, `tests/`, `dev/test_`.
+**No-impact patterns.** `docs/`, `assets/`, `templates/`, `references/`, `.gitignore`,
+`LICENSE`, `README.md`, `RELEASE_NOTES.md`, `.mcp.json`, `settings.json`, and any `.md` file
+outside a behavioural directory.
 
-### NO_IMPACT Patterns
+**Behavioural directories**, excluded from that `.md` catch-all because what they hold decides
+what the agent does: `skills/`, `agents/`, `.claude/agents/`. A file there that no spec scopes
+is NEW_BEHAVIOR, not NO_IMPACT.
 
-Files matching these path prefixes/suffixes are documentation or config with no behavioral impact:
+**Scope matching.** `> Scope: src/api/handler.py` matches that one path. `> Scope: src/api/`,
+with the trailing slash, matches every path beneath it. That is how a spec scopes a directory
+without listing every file in it.
 
-- `docs/`, `assets/`, `templates/`, `references/`
-- `.gitignore`, `LICENSE`, `CLAUDE.md`, `README.md`, `RELEASE_NOTES.md`
-- `.mcp.json`, `settings.json`
-- Any `.md` file not in a behavioral directory
+## Significance
 
-### Behavioral Directory Exclusions
+The category is where the skill starts. The diff decides what it means.
 
-These directories contain behavioral definitions even when files end in `.md`. They are **excluded** from the `.md` catch-all in NO_IMPACT:
+| Significance | What changed | Who cares |
+|--------------|--------------|-----------|
+| Behavioural | What the software does: a new capability, a changed rule, a removed one | PM, engineer, QA |
+| Structural | How it is organised: a rename, a move, a refactor, a dependency bump | Engineer |
+| Operational | How it runs: CI, container, environment | Engineer, QA |
+| Documentation | Prose only | PM when it faces a user |
+| Trivial | Whitespace, formatting, generated files | Nobody |
 
-- `skills/`: skill instructions control what the agent does
-- `agents/` and `.claude/agents/`: agent definitions control agent behavior
+A file the tool calls CHANGED_BEHAVIOR may be structural, and a config file may be operational.
+Read the diff before you report.
 
-Files in these directories that are not in any spec's `> Scope:` are classified as NEW_BEHAVIOR, not NO_IMPACT. This ensures that changing a skill definition triggers a "no spec exists" or "spec drift" flag rather than being silently ignored.
+## Behavioural gap
 
-Note: `specs/` files are already caught by the CHANGED_SPECS rule (order 1) and never reach the NO_IMPACT check.
+A feature whose files changed and whose rules have no passing test has nothing standing behind
+the change. The tool precomputes this: each CHANGED_BEHAVIOR entry carries `behavioral_gap`,
+true when the spec has rules and none of them is Tested. The top-level `drift_flags` array
+lists every such feature, and the skill surfaces those first.
 
-### Scope Matching
+## Broken scope
 
-The tool builds a scope-to-spec map from all `> Scope:` metadata. Matching supports two modes:
+When a spec's `> Scope:` names a file or a directory that is no longer on disk, something was
+deleted or renamed and the spec was not told. The tool checks every scope path against the
+filesystem — exact paths with `os.path.exists`, prefix paths with `os.path.isdir` — and lists
+each spec with a missing path in `broken_scopes`. If it was renamed, `purlin:rename` fixes both
+sides; if it was deleted on purpose, `purlin:spec` updates the spec.
 
-- **Exact match**: `> Scope: scripts/mcp/purlin/specs.py` matches only that exact path
-- **Prefix match**: `> Scope: src/api/` (trailing slash) matches any file whose path starts with `src/api/`
+## Rules behind the change
 
-Prefix match enables directory-scoped specs without listing every file.
+For every spec with changed behaviour files, the tool returns `rule_details`: the rule list,
+each rule's state, the changed files, and the counts. The skill reads the diff against those
+rule descriptions and sorts each rule into one of four:
 
-## Significance Classification (Skill: Semantic)
+- **Covered**: the rule describes behaviour that did not change, or changed compatibly.
+- **Potentially stale**: the rule describes behaviour the diff altered.
+- **Untested**: the rule has no passing test, whatever changed.
+- **Missing**: the diff shows behaviour no rule describes.
 
-The skill re-classifies MCP categories by reading the actual `git diff`. The MCP category is a starting point; the diff tells you the real significance.
+The state in `rule_details` is the state before this change was tested. A feature reading
+"6 of 6 Recorded" after behavioural code changed still needs a look: those records were taken
+against the old behaviour.
 
-| Significance | Meaning | Source | Who cares |
-|-------------|---------|--------|-----------|
-| BEHAVIORAL | Changes what the software does: new features, changed rules, removed capabilities | CHANGED_BEHAVIOR or NEW_BEHAVIOR files where the diff adds/removes logic | PM, Engineer, QA |
-| STRUCTURAL | Changes organization without changing behavior: refactors, renames, file moves, dependency updates | CHANGED_BEHAVIOR files where the diff is a rename/refactor | Engineer |
-| OPERATIONAL | Changes how the software runs (CI, deploy, env vars, Dockerfiles, Makefiles) | Makefiles, Dockerfiles, CI configs, env vars | Engineer, QA |
-| DOCUMENTATION | Changes to docs, comments, READMEs, guides | NO_IMPACT files, or CHANGED_BEHAVIOR files where only comments changed | PM when user-facing, otherwise no one |
-| TRIVIAL | Formatting, whitespace, typo fixes, auto-generated files | Any file where the diff is cosmetic | No one |
+## Pins behind
 
-The MCP tool's NO_IMPACT category maps roughly to DOCUMENTATION and TRIVIAL, but a file it
-classifies CHANGED_BEHAVIOR may be STRUCTURAL (a refactor that changes nothing) or OPERATIONAL
-(a Makefile edit). The diff decides, not the category.
+For every anchor carrying a `> Source:`, drift runs one cached `git ls-remote` against that
+source and compares its `> Pinned:` sha.
 
-## Behavioral Gap Drift Detection
+| Condition | What to report |
+|-----------|----------------|
+| The pin equals the source head | Nothing |
+| The pin is behind | `anchor <name> is N commits behind its pin: RULE-3 changed, RULE-6 added` and `→ Run: purlin:anchor sync <name>` |
+| The source is unreachable | `→ source unreachable; check the URL in the anchor` |
+| A `> Source:` with no `> Pinned:` | `→ Run: purlin:anchor sync <name> to pin it` |
 
-When a feature has zero proved rules AND has changed files, no passing proof stands behind the changed behavior: whatever proofs the spec declares, none of them is passing.
+Drift never advances a pin on its own. A change that came from somewhere else gets read before
+it is adopted.
 
-The MCP tool precomputes this. Each file entry classified as CHANGED_BEHAVIOR includes:
+## The four role views
 
-- `behavioral_gap: true`: when the file's spec has rules but none of them is proved (`total` > 0 and `proved` == 0)
+Each view is a filter over the same data, not a different computation.
 
-The top-level result includes a `drift_flags` array summarizing all features with zero proved rules that have changed files:
+| Role | What it reports |
+|------|-----------------|
+| `pm` | Criteria with no rule carrying them, rules tagged `origin: pm` whose text changed, rules an engineer added, pins behind |
+| `design` | Design files that changed, and rules tagged `origin: design` that went Stale because a mock was re-exported |
+| `qa` | Approvals gone Stale, how long the review list is, rules whose every proof asserts a success path |
+| `eng` | Files touched and the rules behind them, rules with no test, risk or origin tags the gate requires and the spec lacks, pins behind, rules flagged `re-verify pending` |
 
-```json
-{
-  "drift_flags": [
-    {
-      "spec": "purlin_agent",
-      "reason": "behavioral_gap_with_code_change",
-      "files": ["agents/purlin.md"]
-    }
-  ]
-}
-```
+`re-verify pending` appears in the `eng` view as information and never in the `qa` view: the
+code changed, the approval stands, and CI clears it on the next run.
 
-The skill should surface these prominently:
+## Config field ownership
 
-```
-Spec: purlin_agent (8 rules, 0 proved)
-⚠ No rule of this spec is proved. Code changed but no passing proof verifies the new behavior.
-→ Run: purlin:spec purlin_agent (add behavioral rules)
-```
-
-## Broken Scope Detection
-
-When a spec's `> Scope:` references a file or directory that no longer exists on disk, the file was likely deleted or renamed without updating the spec. The `drift` MCP tool checks every scope path in every spec against the filesystem:
-
-- **Exact paths**: checked via `os.path.exists()`
-- **Prefix paths** (trailing `/`): checked via `os.path.isdir()`
-
-Any spec with at least one missing scope path is included in the `broken_scopes` array in the result JSON:
-
-```json
-{
-  "broken_scopes": [
-    {
-      "spec": "login",
-      "missing_paths": ["src/auth/old_login.py"],
-      "existing_paths": ["src/auth/session.js"]
-    }
-  ]
-}
-```
-
-This is surfaced as an action item in drift reports. If the file was renamed, `purlin:rename` updates the scope and references. If the file was intentionally deleted, `purlin:spec` should be used to update or remove the spec.
-
-## External Reference Drift (Anchors with `> Source:`)
-
-Anchors with `> Source:` metadata point to an external origin (git repo, URL). When the external source changes, the anchor may be stale. The skill detects this by comparing the `> Pinned:` SHA or timestamp against the current state of the source.
-
-| Condition | Classification | Action |
-|-----------|---------------|--------|
-| `> Pinned:` SHA matches current source HEAD | No drift | No action needed |
-| `> Pinned:` SHA is behind current source HEAD | External drift | `⚠ Anchor may be stale → Run: purlin:anchor sync <name>` |
-| `> Source:` URL is unreachable | Broken reference | `✗ Source unreachable → Verify URL in anchor` |
-| No `> Pinned:` field on a `> Source:` anchor | Unpinned | `⚠ Unpinned anchor. Run: purlin:anchor sync <name> to pin` |
-
-External drift does not automatically update the anchor. The `purlin:anchor sync` command fetches the latest source, updates the anchor content, and bumps the `> Pinned:` value. This is intentionally manual: external changes require review before adoption.
-
-## Rule-Level Drift Detection
-
-The MCP tool provides a `rule_details` field for every spec that has changed behavior files. This enables the skill to perform **rule-level** gap analysis rather than just file-level "spec may need new rules."
-
-### `rule_details` Structure
-
-```json
-{
-  "rule_details": {
-    "feature_name": {
-      "rules": [
-        {"rule_id": "RULE-1", "description": "Parse config and return defaults", "proof_status": "pass"},
-        {"rule_id": "RULE-2", "description": "Return 400 on invalid input", "proof_status": "pass"},
-        {"rule_id": "RULE-3", "description": "Rate limit to 100 req/s", "proof_status": "unproved"}
-      ],
-      "changed_files": ["src/api/handler.py", "src/api/validator.py"],
-      "total_rules": 3,
-      "proved_rules": 2
-    }
-  }
-}
-```
-
-The `proof_status` per rule is one of: `pass`, `fail`, or `unproved`. This is the state at the time of the drift check: before the changes are tested.
-
-### Skill Responsibilities
-
-The MCP tool provides the **deterministic data** (rule list, proof status, which files changed). The skill performs the **semantic analysis** (reading diffs, cross-referencing changed behavior against rule descriptions, identifying gaps). This split avoids putting LLM judgment in the MCP tool while giving the skill the structured data it needs.
-
-The skill classifies each rule as:
-- **Covered**: rule describes unchanged behavior, or behavior changed in a compatible way
-- **Potentially stale**: rule describes behavior that was modified in the diff
-- **Unproved**: rule has no proof regardless of changes
-- **Missing**: diff reveals new behavior with no matching rule
-
-### Spec Drift Rules
-
-The proof count from `proof_status` reflects the state BEFORE the current changes. A feature showing "6/6 proved" after behavioral code changes still needs spec review: those 6 proofs were for the old behavior. Rule-level analysis surfaces which specific proofs are likely invalid.
-
-## Config Field Ownership
-
-`.purlin/config.json` fields and which skill owns each:
+`.purlin/config.json`, and which command owns each field.
 
 | Field | Written by | Read by | Default |
 |-------|-----------|---------|---------|
-| `version` | `purlin:init` | nothing | from `VERSION` |
-| `test_framework` | `purlin:init` (Step 3) | `purlin:test` (Step 1) | `"auto"` |
-| `pre_push` | `purlin:init --set pre_push` | pre-push hook (`scripts/hooks/pre_push_gate.py` reads it and decides) | `"warn"` (also `"strict"` and `"off"`) |
-| `remote_verification` | `purlin:init` | `sync_status`, the dashboard header, `scripts/ci/verify_gate.py` | `"off"` |
-| `audit_criteria` | `purlin:init --sync-audit-criteria` | `load_criteria()` (additional criteria, appended to built-in) | not set (built-in only) |
-| `audit_criteria_pinned` | `purlin:init --sync-audit-criteria` | `load_criteria()` (SHA pinning) | not set |
-| `audit_llm` | `purlin:init --audit-llm` | `purlin:audit` (External LLM Mode) | not set (uses Claude) |
-| `audit_llm_name` | `purlin:init --audit-llm` | `purlin:audit` (report header) | not set |
-| `mutation_checks` | `purlin:init` (Step 7d), `purlin:init --set mutation_checks`, or `purlin:init --update` (asked, never backfilled) | `purlin:build` (Step: writing tests), `purlin:audit` (Pass 2 cap) | `false` |
-| `report` | `purlin:init --set report` | `sync_status` (report-data.js side effect) | `true` |
-| `digest` | `purlin:init --set digest` | pre-commit hook (digest regeneration) | `"auto"` |
-| `platforms` | `purlin:test` setup offer (with consent), or hand edit | `sync_status`, `purlin:test`, `scripts/ci/verify_gate.py` | not set (family ids `windows`, `macos`, `linux` only) |
-| `quality_gate` | `purlin:init --set quality_gate` | `scripts/ci/verify_gate.py`, `sync_status` | not set (the gate reads an absent key as `"off"`) |
+| `version` | `purlin:init` | The dashboard header | From the `VERSION` file |
+| `gate` | `purlin:init`, `purlin:init --gate` | `sync_status`, `scripts/ci/verify_gate.py`, every skill that names a next step | `tested` |
+| `min_strength` | `purlin:init` | `purlin:verify`, `scripts/ci/verify_gate.py` | 50, 70 or 80, from the gate |
+| `approvers` | By pull request, hand-edited | `scripts/review/approve.py`, `sync_status`, `scripts/ci/verify_gate.py` | Not set; required under `approved` |
+| `ai_review_at` | `purlin:init` | `purlin:review` | never, high or medium, from the gate |
+| `test_framework` | `purlin:init` | `scripts/run/purlin_run.py` | `auto` |
+| `mutation_engine` | `purlin:init` | `scripts/run/purlin_run.py` | Not set; test strength reads `n/a` without one |
+| `git_host` | `purlin:init`, from the remote URL | `purlin:verify --remote`, `purlin:init --ci` | Detected |
+| `sql_engine` | `purlin:init` | The SQL proof plugin | Not set |
 
-`purlin:init` is the only skill that writes config unprompted; `purlin:test` writes `platforms` only after the user accepts its runner setup offer. All other skills read their relevant fields. When a field is missing or set to `"auto"`, the reading skill applies its own fallback logic (e.g., `test` auto-detects the framework).
+`purlin:init` is the only command that writes config unprompted. Every other command reads. A
+field that is absent or set to `auto` leaves the reader to its own fallback. This table must
+name every field `templates/config.json` carries: a field written into new projects but absent
+here has no recorded owner, which is how one went unlisted through four releases.
 
-This table must name every field `templates/config.json` carries and every one of the six
-optional fields a skill or a script reads (`audit_llm`, `audit_llm_name`, `audit_criteria`,
-`audit_criteria_pinned`, `platforms`, `quality_gate`). A field written into new projects, or
-read by a skill, but absent here has no recorded owner, which is how `digest` went unlisted
-through four releases.
+## Project root ownership
 
-## Project Root Ownership
-
-No config field names the project root, because the root is what the reader of the config had to find first. `PURLIN_PROJECT_ROOT` owns that question: `scripts/mcp/config_engine.py` reads it before anything else, and a directory it names that exists wins over the `.purlin/` marker a climb from the working directory would otherwise find. With the variable unset the climb answers, and with no marker anywhere above the working directory the working directory itself is returned, which is a guess rather than a find and is reported as one. Set the variable in the project's `.claude/settings.json` under `env` when the workspace is not at the repository root, the monorepo case `docs/installation-guide.md` covers; the three MCP tools also take a `project_root` argument that overrides it for one call. A root with no `.purlin/config.json` is never reported as a project with no features: every tool says which directory it looked at and which of the three mechanisms chose it.
+No config field names the project root, because the root is what the reader of the config had to
+find first. `PURLIN_PROJECT_ROOT` owns that question: it is read before anything else, and a
+directory it names that exists wins over the `.purlin/` marker a climb from the working
+directory would otherwise find. With the variable unset the climb answers, and with no marker
+anywhere above the working directory the working directory itself is returned, which is a guess
+and is reported as one. Set the variable in the project's `.claude/settings.json` under `env`
+when the workspace is not at the repository root; the tools also take a `project_root` argument
+that overrides it for one call. Every tool says which directory it looked at and which of the
+three mechanisms chose it.

@@ -1,95 +1,111 @@
-# Hard Gates
+# The gate
 
-Purlin has exactly 1 hard gate. Everything else is optional guidance.
+The gate is the one project setting: what CI must see before a change can merge. It is defined
+here and nowhere else. A skill, a doc or a script that needs it links to this page rather than
+restating it, because three copies of this answer drifted into three different answers once
+already.
 
-## Gate 1: Proof Coverage
+**A gate is three things**, and all three must exist for it to mean anything:
 
-`purlin:verify` refuses to issue a verification receipt for any feature where a RULE lacks a passing PROOF.
+1. A CI job running `purlin:verify --ci` on every push and pull request.
+2. A branch rule on the default branch that blocks a merge unless that job passes.
+3. The setting saying what "passes" means.
 
-**What triggers it:** Running `purlin:verify` when a feature has rules without passing proof markers.
+Setting one without the other two is a preference, not a gate.
 
-**How to resolve:** Write tests with proof markers covering every rule, then re-run `purlin:verify`.
+## The three levels
 
-**Implementation:** The verify skill reads `sync_status` output. Features reported as
-**PASSING**, meaning every rule has a passing proof, receive a receipt. Note that VERIFIED is the
-state *after* a receipt exists: `_determine_status` returns VERIFIED only when a matching
-receipt is already on disk, so requiring VERIFIED before issuing one would mean no feature
-could ever get its first receipt. This is enforced in the skill logic, not a hook.
+`gate` in `.purlin/config.json` is one of three values. `purlin:init` asks the one question
+that sets it: what must be true before CI lets a change merge?
 
-## What Is NOT a Gate
+| Level | Who it fits | What CI requires before merge |
+|-------|-------------|-------------------------------|
+| `tested` | One developer | Every rule has a passing tagged test |
+| `recorded` | A team: PM, designer, engineers, QA | Every rule has a record written by CI at this commit, with the test strength at or above `min_strength` |
+| `approved` | The same team under GxP | Everything `recorded` requires, plus a current approval on every high-risk and medium-risk rule, committed with a signed commit by someone on the approver list. Low risk is auto-approved by CI |
 
-- Writing code without invoking a skill: allowed.
-- Writing tests without proof markers: allowed, though `sync_status` will not count them.
-- Writing specs in any format: allowed, though an unnumbered rule gets a WARNING from `sync_status`.
-- Editing anchor specs, external references included: allowed.
-- A low **Proof Design** or **Proof Integrity** score: allowed. Both gauges are
-  advisory by default, and neither blocks a commit, a push, or a receipt. They measure quality; the gate
-  measures coverage. A project can opt in to more: with `quality_gate` set to `"deterministic"`
-  in `.purlin/config.json`, the CI gate job exits 1 on a HOLLOW proof or an UNPROVABLE proof
-  description, which is project policy layered on the one gate and not a second one. The LLM
-  halves of both gauges never block anything.
-- Committing without running verify: allowed.
-- A proof declared `@on(<platform>)` with no result there: allowed. It reports
-  `AWAITING RUNNER`, which warns and never blocks (`references/remote_verification.md`).
-- A pending `legacy-*` migration: allowed, and nothing is blocked by it. While one stands,
-  `purlin:verify` issues no receipt for any feature, because the legacy alias makes coverage a
-  guess and a receipt would be a claim about a reading rather than about a result. That is the
-  skill refusing to claim, not a gate: no commit, no push and no merge is stopped, and clearing
-  the migration (`references/purlin_commands.md#pending-migrations`) restores receipts.
+Each level derives defaults you can override: `min_strength` 50 / 70 / 80, AI review at never /
+high / medium, and risk and origin tags optional / optional / required.
 
-Skills are optional for a human and mandatory for the agent: a person may write specs, code and tests by hand and Purlin reads what they wrote, while `agents/purlin.md`'s NEVER list tells the agent to invoke the skill and nothing in this repository enforces that.
+`purlin:init --gate <level>` changes the level later. Raising it adds what is missing and asks
+before each write. Lowering it deletes nothing.
 
-## No Claude Code Hook Gates Anything
+## Which records count
 
-`hooks/hooks.json` registers one Claude Code hook, and it gates nothing: the digest refresh
-(`scripts/hooks/refresh_digest.py`) runs `async` after a
-tool call or a turn, exits 0 on every path, prints nothing, and only rewrites
-`.purlin/report-data.js` when something it reports has changed. The plugin installs no
-`PreToolUse`, `PermissionRequest` or `UserPromptSubmit` handler, which are the events through
-which a hook could stop or steer a turn. So every **NEVER** in `agents/purlin.md` is an
-instruction to the agent, not a mechanism that stops it. An agent that ignores one is not
-blocked by anything inside this repository.
+The label on a record comes from the last commit that touched it, never from anything inside the
+file. `tested` counts a record committed by CI or by a person. `recorded` and `approved` count a
+record committed by CI alone, so a developer cannot write the evidence their own change is
+measured by.
 
-The controls that survive an agent ignoring an instruction run outside the agent's turn: the
-proof-coverage gate inside `purlin:verify`, the pre-push hook, the CI gate job
-(`scripts/ci/verify_gate.py --check`), and Branch protection making that job required. Read the
-**NEVER** list as the agent's contract and "Enforcement Layers" below as what holds when the
-contract is broken.
+| Label | How it got there |
+|-------|------------------|
+| ci | Created through the git host's API by the CI identity |
+| developer | A person committed it |
+| local | Not committed |
 
-## Enforcement Layers
+A pull request from a fork gets no record commit. Verify still runs and the comment still posts;
+the job says in one line that nothing was written.
 
-This is the project's only enforcement-layer table. `docs/regulated-environments.md`,
-`docs/lifecycle-guide.md` and `docs/testing-workflow-guide.md` link here instead of carrying a
-copy, because three copies drifted into three different answers about what blocks a push.
+## Branch rules the git host enforces
 
-| Layer | Where it runs | What it blocks |
-|---|---|---|
-| **Layer 0: skill logic** | inside `purlin:verify`, in the developer's session | a receipt for any feature with a rule that has no passing proof. This is Gate 1 above, the framework's one gate, and nobody can turn it off: it is how the skill works. Every layer below it is something a project configures for itself |
-| **Layer 1: git pre-push hook** | `git push`, on the developer's machine | in `warn`, a FAILING proof; in `strict`, anything not VERIFIED; in `off`, nothing at all, and it prints one line saying so. The developer sets the mode with `purlin:init --set pre_push` and can bypass any mode with `--no-verify`. Caveat worth knowing before you rely on it: the hook git runs delegates to `.purlin/hooks/pre-push`, which resolves the plugin root at run time, and when no candidate carries the hook script there it has no evidence to read. It then prints a WARNING naming every path it searched and allows the push in `warn` and `off` and exits 1 in `strict`, rather than reporting a pass it did not earn |
-| **Layer 2: your CI test run** | the forge, on the triggers your workflow declares | whatever your own test job blocks on. Purlin ships no pipeline config; you write it. Running every tier here regenerates the proof files from the code as pushed, which is what makes Layer 3 a clean-room reading rather than a re-read of what the developer committed |
-| **Layer 3: the CI gate job** | the forge, as a job branch protection marks required, running `scripts/ci/verify_gate.py --check` and printing `verify-gate:` at the head of every line, which is the token to search a CI log for | a merge while any feature is not VERIFIED or is awaiting a runner, and, where the project set `quality_gate` to `"deterministic"`, a merge while any proof is HOLLOW or any proof description is UNPROVABLE. `.purlin/config.json`'s `remote_verification` and `quality_gate` fields **declare** which bars the project holds itself to; branch protection is what **enforces** them, because both fields are files in the tree the agent can edit |
-| **Not a layer: `purlin:verify --recheck`** | a Claude Code session, on a developer's machine | nothing. It is a local clean-room re-run that re-executes the tests and compares the recomputed vhash against the committed receipts. No workflow can invoke a skill, so it is a check you choose to run, never a gate that runs on you |
+`purlin:init` prints these; you apply them once. On GitHub, three rulesets, so that the bypass
+stays narrow:
 
-## Project Policy Is Not a Framework Gate
+1. Require a pull request, and require the status checks, with the Actions app as the only
+   bypass actor.
+2. Restrict file paths on `.purlin/records/**` and `specs/**/*.approvals/*.ci.json`, with the
+   Actions app as the only bypass actor, so a person cannot push a record or a CI approval.
+3. Block force pushes and restrict deletions, with no bypass at all.
 
-A project can add gates of its own, and one ships as a template: `scripts/ci/verify_gate.py
---check` exits `1` when a feature is not VERIFIED or is awaiting a runner, and branch protection
-marking that job a required check is what makes the exit code matter.
+Under `tested`, only the third is suggested.
 
-That is **project policy layered on top of the framework's single gate**, not a second gate. The
-distinction is not cosmetic:
+On Azure DevOps: the build service alone holds Contribute on those paths through branch
+security, plus no force push and no delete. Same effect, through that host's own mechanism.
 
-| | Purlin's gate | A project's CI gate job |
-|---|---|---|
-| Where it lives | skill logic, in the framework | the project's own workflow files and forge settings |
-| Who can turn it off | nobody; it is how `purlin:verify` works | the project, by changing its own config or branch rules |
-| What it asks | does every rule have a passing proof? | whatever the project decided, e.g. is every feature VERIFIED on every platform? |
+## The approver list
 
-`.purlin/config.json`'s `remote_verification` field **declares** whether a project holds itself to
-the remote bar, and its `quality_gate` field **declares** whether the two deterministic quality
-passes are read as a gate. Neither field enforces anything: both are files in the tree the agent
-can edit, so enforcement has to live outside the repository (`docs/regulated-environments.md`,
-"Policy lives outside the repo"). See `references/remote_verification.md`.
+`approvers` in `.purlin/config.json` holds the emails of the people who may approve. It changes
+by pull request like any other file, so git history records who could approve and when.
 
-So the count stands. Purlin has exactly 1 hard gate; a project may have as many as it configures,
-and none of them are Purlin's.
+An approval counts when all four hold:
+
+- The commit that added the approval file is signed and the signature verifies.
+- The author's email is on the list as of that commit.
+- That author is not the author of the commit that last touched the test.
+- The approval's bound hashes still match the current rule text, proof text and test body.
+
+`purlin:init --gate approved` asks for the emails and prints the one-time signing setup for each
+person. Under `approved` with no list, `sync_status` and `scripts/ci/verify_gate.py --check`
+both print `→ approver list missing: run purlin:init --gate approved` and the check exits 1.
+This works with a single QA person, works the same on both git hosts, and needs nothing the git
+host has to be configured for.
+
+## Auto-approval
+
+CI approves a rule on its own only when every one of these holds: the risk is low, the test
+passes, and the test strength is at or above `min_strength` (or no break engine is installed and
+the free checks pass). High and medium risk are never auto-approved. A proof marked `@manual`
+is never auto-approved either: its evidence is an approval file with a one-line note, written by
+a person.
+
+## What is not a gate
+
+- Writing code without invoking a skill.
+- Writing a test with no proof marker. It runs; `sync_status` does not count it.
+- Committing without verifying.
+- A rule flagged `re-verify pending`. Only the code changed, the approval stands, and CI clears
+  it on the next run.
+- A proof tagged `@env` for an operating system this host is not. It is listed as
+  `needs <os>`, and CI's matrix proves it.
+
+## The pre-push hook is optional and gates nothing
+
+A project may install a pre-push hook. It runs `purlin:test` only: the fast path, no breaks and
+no record, so a push is never held up by a full verify. It prints what it found and lets the
+push through. `git push --no-verify` skips it. It is a convenience, not a control.
+
+**Nothing in a Claude Code hook gates anything.** The plugin registers no `PreToolUse`, no
+`PermissionRequest` and no `UserPromptSubmit` handler, which are the events through which a hook
+could stop or steer a turn. Every NEVER in `agents/purlin.md` is an instruction to the agent,
+not a mechanism that stops it. What survives an agent ignoring an instruction runs outside the
+agent's turn: the CI job, and the branch rule that makes it required.
