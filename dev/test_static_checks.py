@@ -154,7 +154,7 @@ def _write_spec(rules):
 
 class TestAssertTrue:
 
-    @pytest.mark.proof("static_checks", "PROOF-1", "RULE-1")
+    @pytest.mark.proof("static_checks", "PROOF-1", "RULE-1", tier="integration")
     def test_detects_assert_true(self):
         path = _write_tmp('''
 import pytest
@@ -170,7 +170,7 @@ def test_bad():
         finally:
             os.unlink(path)
 
-    @pytest.mark.proof("static_checks", "PROOF-1", "RULE-1")
+    @pytest.mark.proof("static_checks", "PROOF-2", "RULE-2", tier="integration")
     def test_detects_assert_is_not_none(self):
         path = _write_tmp('''
 import pytest
@@ -187,7 +187,7 @@ def test_bad():
         finally:
             os.unlink(path)
 
-    @pytest.mark.proof("static_checks", "PROOF-1", "RULE-1")
+    @pytest.mark.proof("static_checks", "PROOF-3", "RULE-2", tier="integration")
     def test_detects_assert_len_gte_zero(self):
         path = _write_tmp('''
 import pytest
@@ -207,7 +207,7 @@ def test_bad():
 
 class TestNoAssertions:
 
-    @pytest.mark.proof("static_checks", "PROOF-2", "RULE-2")
+    @pytest.mark.proof("static_checks", "PROOF-4", "RULE-3", tier="integration")
     def test_detects_no_assertions(self):
         path = _write_tmp('''
 import pytest
@@ -227,7 +227,7 @@ def test_bad():
 
 class TestBareExcept:
 
-    @pytest.mark.proof("static_checks", "PROOF-3", "RULE-3")
+    @pytest.mark.proof("static_checks", "PROOF-5", "RULE-4", tier="integration")
     def test_detects_bare_except_pass(self):
         path = _write_tmp('''
 import pytest
@@ -247,7 +247,7 @@ def test_bad():
         finally:
             os.unlink(path)
 
-    @pytest.mark.proof("static_checks", "PROOF-3", "RULE-3")
+    @pytest.mark.proof("static_checks", "PROOF-6", "RULE-4", tier="integration")
     def test_detects_bare_except_no_type(self):
         path = _write_tmp('''
 import pytest
@@ -270,7 +270,7 @@ def test_bad():
 
 class TestLogicMirroring:
 
-    @pytest.mark.proof("static_checks", "PROOF-4", "RULE-4")
+    @pytest.mark.proof("static_checks", "PROOF-7", "RULE-5", tier="integration")
     def test_detects_logic_mirroring(self):
         path = _write_tmp('''
 import pytest
@@ -288,7 +288,7 @@ def test_bad():
         finally:
             os.unlink(path)
 
-    @pytest.mark.proof("static_checks", "PROOF-4", "RULE-4")
+    @pytest.mark.proof("static_checks", "PROOF-8", "RULE-7", tier="integration")
     def test_no_mirroring_with_literal(self):
         path = _write_tmp('''
 import pytest
@@ -307,7 +307,7 @@ def test_good():
 
 class TestMockTargetMatch:
 
-    @pytest.mark.proof("static_checks", "PROOF-5", "RULE-5")
+    @pytest.mark.proof("static_checks", "PROOF-9", "RULE-6", tier="integration")
     def test_detects_mock_matching_rule(self):
         path = _write_tmp('''
 import pytest
@@ -329,7 +329,7 @@ def test_bad(mock_checkpw):
             os.unlink(path)
             os.unlink(spec_path)
 
-    @pytest.mark.proof("static_checks", "PROOF-5", "RULE-5")
+    @pytest.mark.proof("static_checks", "PROOF-10", "RULE-7", tier="integration")
     def test_no_match_when_mock_unrelated(self):
         path = _write_tmp('''
 import pytest
@@ -353,7 +353,7 @@ def test_ok(mock_email):
 
 class TestJsonOutput:
 
-    @pytest.mark.proof("static_checks", "PROOF-6", "RULE-6")
+    @pytest.mark.proof("static_checks", "PROOF-11", "RULE-16", tier="integration")
     def test_json_has_required_fields(self):
         path = _write_tmp('''
 import pytest
@@ -387,7 +387,7 @@ def test_bad():
 
 class TestExitCodes:
 
-    @pytest.mark.proof("static_checks", "PROOF-7", "RULE-7")
+    @pytest.mark.proof("static_checks", "PROOF-12", "RULE-17", tier="integration")
     def test_exit_0_when_all_pass(self):
         path = _write_tmp('''
 import pytest
@@ -406,7 +406,7 @@ def test_good():
         finally:
             os.unlink(path)
 
-    @pytest.mark.proof("static_checks", "PROOF-7", "RULE-7")
+    @pytest.mark.proof("static_checks", "PROOF-13", "RULE-17", tier="integration")
     def test_exit_0_with_fail_status_when_defects_found(self):
         path = _write_tmp('''
 import pytest
@@ -426,7 +426,7 @@ def test_bad():
         finally:
             os.unlink(path)
 
-    @pytest.mark.proof("static_checks", "PROOF-67", "RULE-7")
+    @pytest.mark.proof("static_checks", "PROOF-14", "RULE-17", tier="integration")
     def test_exit_2_is_reserved_for_a_real_error(self):
         """RULE-7's other half: exit 2 is reserved for real errors. A test file
         that does not exist is one, and it must not be confused with the exit 0
@@ -451,7 +451,7 @@ def test_bad():
 
 class TestSpecCoverage:
 
-    @pytest.mark.proof("static_checks", "PROOF-8", "RULE-8")
+    @pytest.mark.proof("static_checks", "PROOF-15", "RULE-18", tier="integration")
     def test_spec_coverage_counts(self):
         """check_spec_coverage returns rule_count and proof_count."""
         path = _write_tmp(
@@ -472,7 +472,7 @@ class TestSpecCoverage:
         finally:
             os.unlink(path)
 
-    @pytest.mark.proof("static_checks", "PROOF-8", "RULE-8")
+    @pytest.mark.proof("static_checks", "PROOF-16", "RULE-18", tier="integration")
     def test_spec_coverage_ignores_a_proof_tag(self):
         """A trailing `@e2e` is metadata, so the proof still counts once."""
         path = _write_tmp(
@@ -493,7 +493,7 @@ class TestSpecCoverage:
         finally:
             os.unlink(path)
 
-    @pytest.mark.proof("static_checks", "PROOF-8", "RULE-8")
+    @pytest.mark.proof("static_checks", "PROOF-17", "RULE-18", tier="integration")
     def test_spec_coverage_empty(self):
         """Spec with no rules returns zero counts."""
         path = _write_tmp(
@@ -509,7 +509,7 @@ class TestSpecCoverage:
 
 class TestShellIfElsePair:
 
-    @pytest.mark.proof("static_checks", "PROOF-13", "RULE-13")
+    @pytest.mark.proof("static_checks", "PROOF-18", "RULE-8", tier="integration")
     def test_if_else_pair_not_flagged(self):
         """if/else proof pair with grep condition should pass, not be flagged."""
         path = _write_tmp('''#!/usr/bin/env bash
@@ -529,7 +529,7 @@ fi
         finally:
             os.unlink(path)
 
-    @pytest.mark.proof("static_checks", "PROOF-13", "RULE-13")
+    @pytest.mark.proof("static_checks", "PROOF-19", "RULE-8", tier="integration")
     def test_hardcoded_pass_still_caught(self):
         """A bare purlin_proof pass with no test logic should still be flagged."""
         path = _write_tmp('''#!/usr/bin/env bash
@@ -544,7 +544,7 @@ purlin_proof "testfeat" "PROOF-1" "RULE-1" pass "no test here"
         finally:
             os.unlink(path)
 
-    @pytest.mark.proof("static_checks", "PROOF-13", "RULE-13")
+    @pytest.mark.proof("static_checks", "PROOF-20", "RULE-8", tier="integration")
     def test_if_else_pair_no_condition_flagged(self):
         """if/else pair with no real test logic in condition should still fail."""
         path = _write_tmp('''#!/usr/bin/env bash
@@ -568,7 +568,7 @@ fi
 class TestAssertTrueLiteral:
     """RULE-14: the literal shapes and the heuristic ones get different names."""
 
-    @pytest.mark.proof("static_checks", "PROOF-14", "RULE-14")
+    @pytest.mark.proof("static_checks", "PROOF-21", "RULE-1", tier="integration")
     def test_a_literal_assert_true_is_named_assert_true_literal(self):
         path = _write_tmp('''
 import pytest
@@ -584,7 +584,7 @@ def test_bad():
         finally:
             os.unlink(path)
 
-    @pytest.mark.proof("static_checks", "PROOF-14", "RULE-14")
+    @pytest.mark.proof("static_checks", "PROOF-22", "RULE-2", tier="integration")
     def test_a_heuristic_always_true_assert_is_named_tautology(self):
         path = _write_tmp('''
 import pytest
@@ -692,7 +692,7 @@ class TestProofIdCollision:
     """Proof ID collision detection across all supported language contexts."""
 
     @pytest.mark.parametrize("lang,factory", list(_LANGUAGE_FACTORIES.items()))
-    @pytest.mark.proof("static_checks", "PROOF-15", "RULE-15")
+    @pytest.mark.proof("static_checks", "PROOF-23", "RULE-19", tier="integration")
     def test_detects_collision_per_language(self, tmp_path, lang, factory):
         """Same PROOF-1 targeting RULE-1 and RULE-2 — detected regardless of source language."""
         proofs = [
@@ -707,7 +707,7 @@ class TestProofIdCollision:
         assert collisions[0]['proof_id'] == 'PROOF-1'
         assert set(collisions[0]['rules']) == {'RULE-1', 'RULE-2'}
 
-    @pytest.mark.proof("static_checks", "PROOF-15", "RULE-15")
+    @pytest.mark.proof("static_checks", "PROOF-24", "RULE-19", tier="integration")
     def test_no_collision_when_ids_unique(self, tmp_path):
         """Distinct PROOF-IDs should produce zero findings."""
         proofs = [
@@ -719,7 +719,7 @@ class TestProofIdCollision:
         findings = check_proof_file(proof_path)
         assert len(findings) == 0, f"Expected no findings, got {findings}"
 
-    @pytest.mark.proof("static_checks", "PROOF-15", "RULE-15")
+    @pytest.mark.proof("static_checks", "PROOF-25", "RULE-19", tier="integration")
     def test_collision_with_mixed_languages(self, tmp_path):
         """Collision across language boundaries — Python and TypeScript both claim PROOF-1."""
         proofs = [
@@ -733,7 +733,7 @@ class TestProofIdCollision:
         assert len(collisions) == 1
         assert set(collisions[0]['rules']) == {'RULE-1', 'RULE-3'}
 
-    @pytest.mark.proof("static_checks", "PROOF-15", "RULE-15")
+    @pytest.mark.proof("static_checks", "PROOF-26", "RULE-19", tier="integration")
     def test_multiple_collisions_detected(self, tmp_path):
         """Two separate collisions in one file — both detected."""
         proofs = [
@@ -754,7 +754,7 @@ class TestProofRuleOrphan:
     """Orphan rule detection across all supported language contexts."""
 
     @pytest.mark.parametrize("lang,factory", list(_LANGUAGE_FACTORIES.items()))
-    @pytest.mark.proof("static_checks", "PROOF-16", "RULE-16")
+    @pytest.mark.proof("static_checks", "PROOF-27", "RULE-20", tier="integration")
     def test_detects_orphan_per_language(self, tmp_path, lang, factory):
         """Proof targeting RULE-99 which doesn't exist — detected regardless of language."""
         spec_path = _write_spec_file(tmp_path, "login", {
@@ -772,7 +772,7 @@ class TestProofRuleOrphan:
         assert len(orphans) == 1, f"Expected 1 orphan for {lang}, got {len(orphans)}"
         assert orphans[0]['rule'] == 'RULE-99'
 
-    @pytest.mark.proof("static_checks", "PROOF-16", "RULE-16")
+    @pytest.mark.proof("static_checks", "PROOF-28", "RULE-20", tier="integration")
     def test_no_orphan_when_all_rules_exist(self, tmp_path):
         """All proofs target existing rules — zero orphans."""
         spec_path = _write_spec_file(tmp_path, "login", {
@@ -788,7 +788,7 @@ class TestProofRuleOrphan:
         orphans = [f for f in findings if f['check'] == 'proof_rule_orphan']
         assert len(orphans) == 0, f"Expected no orphans, got {orphans}"
 
-    @pytest.mark.proof("static_checks", "PROOF-16", "RULE-16")
+    @pytest.mark.proof("static_checks", "PROOF-29", "RULE-20", tier="integration")
     def test_required_anchor_rules_not_flagged(self, tmp_path):
         """Rules with '/' (from required anchors) should NOT be flagged as orphans."""
         spec_path = _write_spec_file(tmp_path, "login", {
@@ -809,7 +809,7 @@ class TestProofRuleOrphan:
         orphans = [f for f in findings if f['check'] == 'proof_rule_orphan']
         assert len(orphans) == 0, f"Anchor rules should not be flagged as orphans: {orphans}"
 
-    @pytest.mark.proof("static_checks", "PROOF-16", "RULE-16")
+    @pytest.mark.proof("static_checks", "PROOF-30", "RULE-20", tier="integration")
     def test_no_orphan_check_without_spec(self, tmp_path):
         """Without spec_path, orphan check is skipped — only collision check runs."""
         proofs = [
@@ -825,7 +825,7 @@ class TestProofRuleOrphan:
 class TestFileLocking:
     """The one check this repository keeps for Windows as well as POSIX."""
 
-    @pytest.mark.proof("static_checks", "PROOF-40", "RULE-25")
+    @pytest.mark.proof("static_checks", "PROOF-31", "RULE-34", tier="integration")
     def test_lock_is_held_until_it_is_released(self, tmp_path):
         """lock_exclusive creates the file and takes the lock; unlock frees it.
 
@@ -862,7 +862,7 @@ class TestFileLocking:
             f"unlock did not release the lock: {free.stdout!r}")
         assert handle.closed, "unlock left the handle open"
 
-    @pytest.mark.proof("static_checks", "PROOF-44", "RULE-29")
+    @pytest.mark.proof("static_checks", "PROOF-32", "RULE-35")
     def test_the_windows_branch_is_reachable(self):
         """fcntl is imported under try/except, and both branches set _HAS_FCNTL.
 
@@ -900,6 +900,49 @@ class TestFileLocking:
         source = open(STATIC_CHECKS_PY, encoding='utf-8').read()
         assert 'msvcrt' in source, "the Windows lock branch is gone"
 
+    @pytest.mark.skipif(sys.platform != 'win32',
+                        reason='the native lock is msvcrt, which Windows has '
+                               'and no other operating system does')
+    @pytest.mark.proof("static_checks", "PROOF-33", "RULE-37", tier="integration")
+    def test_the_windows_lock_is_held_until_it_is_released(self, tmp_path):
+        """The msvcrt branch for real: one byte locked, and a second process
+        cannot take it until unlock releases it.
+
+        The probe runs in a second process because a lock is held per open
+        file, and a second lock inside this one would succeed either way.
+        """
+        lock_path = tmp_path / 'records.lock'
+        probe = (
+            'import msvcrt\n'
+            'f = open(%r, "a+", encoding="utf-8")\n'
+            'f.write("\\0")\n'
+            'f.flush()\n'
+            'f.seek(0)\n'
+            'try:\n'
+            '    msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)\n'
+            '    print("free")\n'
+            'except OSError:\n'
+            '    print("held")\n'
+        ) % str(lock_path)
+
+        assert not static_checks._HAS_FCNTL, \
+            "fcntl exists here, so this is not the Windows lock branch"
+        handle = static_checks.lock_exclusive(str(lock_path))
+        try:
+            busy = subprocess.run([sys.executable, '-c', probe],
+                                  capture_output=True, text=True)
+            assert busy.stdout.strip() == 'held', (
+                f"another process took the lock while it was held: "
+                f"{busy.stdout!r}")
+        finally:
+            static_checks.unlock(handle)
+
+        free = subprocess.run([sys.executable, '-c', probe],
+                              capture_output=True, text=True)
+        assert free.stdout.strip() == 'free', (
+            f"unlock did not release the lock: {free.stdout!r}")
+        assert handle.closed, "unlock left the handle open"
+
 
 class TestCheckJs:
     """check_js JS/TS structural checks, exercised through the real CLI."""
@@ -917,7 +960,8 @@ class TestCheckJs:
         finally:
             os.unlink(path)
 
-    @pytest.mark.proof("static_checks", "PROOF-42", "RULE-27", tier="e2e")
+    @pytest.mark.proof("static_checks", "PROOF-34", "RULE-9", tier="integration")
+    @pytest.mark.proof("static_checks", "PROOF-35", "RULE-16", tier="integration")
     def test_check_js_assertion_detection(self):
         """tautology and no_assertion are detected in JS/TS bodies; clean tests pass."""
         proofs = self._run('''
@@ -951,7 +995,7 @@ it("real assertion [proof:jsfeat:PROOF-3:RULE-3]", () => {
         assert proofs["PROOF-1"]["rule_id"] == "RULE-1"
         assert proofs["PROOF-3"]["test_name"].startswith("real assertion")
 
-    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-28", tier="e2e")
+    @pytest.mark.proof("static_checks", "PROOF-36", "RULE-10", tier="integration")
     def test_check_js_tokenizer_handles_braces_and_apostrophes(self):
         """Issue #2 repro: nested-brace bodies are not truncated and apostrophe
         titles are not dropped."""
@@ -988,7 +1032,7 @@ class TestRunsOnWindowsToo:
         with open(STATIC_CHECKS_PY, encoding='utf-8') as f:
             return f.read()
 
-    @pytest.mark.proof("static_checks", "PROOF-44", "RULE-29")
+    @pytest.mark.proof("static_checks", "PROOF-37", "RULE-35")
     def test_no_unconditional_fcntl_import(self):
         """fcntl is imported under try/except ImportError, never unconditionally,
         and _HAS_FCNTL is assigned in both branches."""
@@ -1026,7 +1070,7 @@ class TestRunsOnWindowsToo:
             "_HAS_FCNTL must be set in both the try and except ImportError branches"
         assert hasattr(static_checks, '_HAS_FCNTL'), "module exposes no _HAS_FCNTL flag"
 
-    @pytest.mark.proof("static_checks", "PROOF-45", "RULE-30")
+    @pytest.mark.proof("static_checks", "PROOF-38", "RULE-36")
     def test_all_text_open_calls_specify_utf8(self):
         """Every text open() in static_checks.py passes encoding='utf-8'."""
         tree = ast.parse(self._source())
@@ -1065,7 +1109,7 @@ namespace Demo {{
 }}
 ''', suffix='.cs')
 
-    @pytest.mark.proof("static_checks", "PROOF-46", "RULE-31")
+    @pytest.mark.proof("static_checks", "PROOF-39", "RULE-11", tier="integration")
     def test_detects_assert_true(self):
         path = self._cs("Assert.True(true);")
         try:
@@ -1076,7 +1120,7 @@ namespace Demo {{
         finally:
             os.unlink(path)
 
-    @pytest.mark.proof("static_checks", "PROOF-47", "RULE-31")
+    @pytest.mark.proof("static_checks", "PROOF-40", "RULE-11", tier="integration")
     def test_detects_no_assertions(self):
         path = self._cs("var x = Compute(); var y = x + 1;")
         try:
@@ -1087,7 +1131,7 @@ namespace Demo {{
         finally:
             os.unlink(path)
 
-    @pytest.mark.proof("static_checks", "PROOF-48", "RULE-31")
+    @pytest.mark.proof("static_checks", "PROOF-41", "RULE-11", tier="integration")
     def test_recognizes_all_assertion_frameworks(self):
         """xUnit Assert.Equal, NUnit Assert.That, MSTest Assert.IsTrue, and
         FluentAssertions .Should() each count as a real assertion (status=pass)."""
@@ -1107,7 +1151,7 @@ namespace Demo {{
             finally:
                 os.unlink(path)
 
-    @pytest.mark.proof("static_checks", "PROOF-49", "RULE-31")
+    @pytest.mark.proof("static_checks", "PROOF-42", "RULE-21", tier="integration")
     def test_dispatch_routes_cs_to_check_csharp(self):
         """analyze_test_file routes a .cs file to check_csharp (not the empty fallback)."""
         path = self._cs("Assert.True(true);", proof_id="PROOF-7", rule_id="RULE-9")
@@ -1125,7 +1169,7 @@ namespace Demo {{
         finally:
             os.unlink(path)
 
-    @pytest.mark.proof("static_checks", "PROOF-55", "RULE-31")
+    @pytest.mark.proof("static_checks", "PROOF-43", "RULE-11", tier="integration")
     def test_recognizes_playwright_fluent_assertions(self):
         """A C# test asserting only via Playwright's Expect(...).To*Async() is recognized
         as an assertion (status=pass), but a bare Expect(x) with no matcher is still flagged."""
@@ -1154,7 +1198,7 @@ namespace Demo {{
         finally:
             os.unlink(bare)
 
-    @pytest.mark.proof("static_checks", "PROOF-56", "RULE-32")
+    @pytest.mark.proof("static_checks", "PROOF-44", "RULE-12", tier="integration")
     def test_resolve_test_file_from_name(self):
         """When a proof's test_file is empty (C#/xUnit under dotnet test), the
         source file is resolved from the fully-qualified test_name by locating the
@@ -1189,7 +1233,7 @@ class TestCheckSql:
         return _write_tmp(f'-- @purlin sqlfeat {proof_id} {rule_id} unit\n'
                           f'-- Test: the thing\n{block}\n', suffix='.sql')
 
-    @pytest.mark.proof("static_checks", "PROOF-75", "RULE-46")
+    @pytest.mark.proof("static_checks", "PROOF-45", "RULE-13", tier="integration")
     def test_detects_unconditional_pass(self):
         """A PASS that nothing decides is assert_true, bare or inside a CASE."""
         cases = {
@@ -1208,7 +1252,7 @@ class TestCheckSql:
             finally:
                 os.unlink(path)
 
-    @pytest.mark.proof("static_checks", "PROOF-76", "RULE-46")
+    @pytest.mark.proof("static_checks", "PROOF-46", "RULE-14", tier="integration")
     def test_detects_block_with_no_select(self):
         """A block that never SELECTs observes nothing, and the proof id stands in
         for a missing `-- Test:` name exactly as the shipped plugin does."""
@@ -1223,7 +1267,8 @@ class TestCheckSql:
         finally:
             os.unlink(path)
 
-    @pytest.mark.proof("static_checks", "PROOF-77", "RULE-46")
+    @pytest.mark.proof("static_checks", "PROOF-47", "RULE-13", tier="integration")
+    @pytest.mark.proof("static_checks", "PROOF-48", "RULE-15", tier="integration")
     def test_predicates_that_read_the_database_pass(self):
         """A predicate naming a column, a function or a subquery decides something;
         a block ends at the next marker rather than running on into it; and a
@@ -1265,7 +1310,7 @@ class TestDispatchAllExtensions:
                 '    public void A() { Assert.True(true); }\n  }\n}\n'),
     }
 
-    @pytest.mark.proof("static_checks", "PROOF-71", "RULE-44")
+    @pytest.mark.proof("static_checks", "PROOF-49", "RULE-21", tier="integration")
     def test_every_shipped_extension_dispatches_and_nothing_else_does(self):
         """Each extension a shipped plugin emits reaches a checker that flags the
         always-true fixture; an extension no checker reads yields [] and no
@@ -1454,7 +1499,10 @@ namespace Demo {
         ('worst', 'PROOF-1'): ('fail', 'assert_true_literal'),
     }
 
-    @pytest.mark.proof("static_checks", "PROOF-82", "RULE-49", tier="unit")
+    @pytest.mark.proof("static_checks", "PROOF-50", "RULE-23", tier="integration")
+    @pytest.mark.proof("static_checks", "PROOF-51", "RULE-24", tier="integration")
+    @pytest.mark.proof("static_checks", "PROOF-52", "RULE-25", tier="integration")
+    @pytest.mark.proof("static_checks", "PROOF-53", "RULE-26", tier="integration")
     def test_sweep_grades_every_backing_and_writes_nothing(self, monkeypatch):
         with tempfile.TemporaryDirectory() as tmpdir:
             self._project(tmpdir)
@@ -1535,7 +1583,7 @@ namespace Demo {
             for n in files)
         return status, runtime
 
-    @pytest.mark.proof("static_checks", "PROOF-83", "RULE-50", tier="e2e")
+    @pytest.mark.proof("static_checks", "PROOF-54", "RULE-27", tier="integration")
     def test_cli_sweeps_this_repository_without_touching_it(self):
         """The real CLI over this repository: every spec swept, every backing in
         a language a shipped checker reads, and the checkout byte-identical
@@ -1583,7 +1631,7 @@ class TestCliSelfDocumentation:
     for a completed analysis, contradicting RULE-7.
     """
 
-    @pytest.mark.proof("static_checks", "PROOF-59", "RULE-34")
+    @pytest.mark.proof("static_checks", "PROOF-55", "RULE-32")
     def test_usage_matches_dispatch_chain(self):
         src = open(_STATIC_CHECKS_PY, encoding='utf-8').read()
         tree = ast.parse(src)
@@ -1627,7 +1675,7 @@ class TestCliSelfDocumentation:
         assert 'RULE-7' in docstring, \
             "module docstring should cite the exit convention it follows"
 
-    @pytest.mark.proof("static_checks", "PROOF-59", "RULE-34")
+    @pytest.mark.proof("static_checks", "PROOF-56", "RULE-33", tier="integration")
     def test_bad_invocation_prints_every_usage_line(self):
         r = subprocess.run([sys.executable, _STATIC_CHECKS_PY],
                            capture_output=True, text=True)
@@ -1635,7 +1683,7 @@ class TestCliSelfDocumentation:
         for line in static_checks._USAGE:
             assert line in r.stderr, f"usage line not printed: {line!r}"
 
-    @pytest.mark.proof("static_checks", "PROOF-59", "RULE-34")
+    @pytest.mark.proof("static_checks", "PROOF-57", "RULE-33", tier="integration")
     def test_help_prints_the_usage_and_the_exit_codes(self):
         """--help exits 0 and documents both exit codes, which RULE-7 fixes."""
         r = subprocess.run([sys.executable, _STATIC_CHECKS_PY, '--help'],
@@ -1650,7 +1698,9 @@ class TestCliSelfDocumentation:
 class TestRunScope:
     """RULE-42: inside one run scope every file is read or parsed once."""
 
-    @pytest.mark.proof("static_checks", "PROOF-68", "RULE-42", tier="unit")
+    @pytest.mark.proof("static_checks", "PROOF-58", "RULE-28", tier="integration")
+    @pytest.mark.proof("static_checks", "PROOF-59", "RULE-29", tier="integration")
+    @pytest.mark.proof("static_checks", "PROOF-60", "RULE-31", tier="integration")
     def test_one_parse_per_file_and_identical_results(self, monkeypatch):
         with tempfile.TemporaryDirectory() as tmpdir:
             pairs = []
@@ -1705,7 +1755,7 @@ class TestRunScope:
                 "the scope leaked past its block: an edited test kept its old body"
             assert static_checks._RUN_CACHE is None
 
-    @pytest.mark.proof("static_checks", "PROOF-81", "RULE-42", tier="unit")
+    @pytest.mark.proof("static_checks", "PROOF-61", "RULE-28", tier="integration")
     def test_the_checks_and_the_extractor_share_the_one_parse(self, monkeypatch):
         """The checks and the body extractor go through the same memo, so a file
         carrying two features is parsed once inside a scope however many of them
@@ -1760,7 +1810,7 @@ def test_hashes(mock_checkpw):
             finally:
                 os.unlink(mocked)
 
-    @pytest.mark.proof("static_checks", "PROOF-69", "RULE-42", tier="unit")
+    @pytest.mark.proof("static_checks", "PROOF-62", "RULE-30")
     def test_segment_matches_the_stdlib_byte_for_byte(self):
         source = (
             "import pytest\r\n"
@@ -1831,7 +1881,7 @@ class TestSingleReadPerFile:
                 for feat, data in result['features'].items()
                 for pid, entry in data['proofs'].items()}
 
-    @pytest.mark.proof("static_checks", "PROOF-84", "RULE-51", tier="integration")
+    @pytest.mark.proof("static_checks", "PROOF-63", "RULE-28", tier="integration")
     def test_sweep_opens_every_spec_and_test_file_exactly_once(self, monkeypatch):
         with tempfile.TemporaryDirectory() as tmpdir:
             self._project(tmpdir)
@@ -1901,7 +1951,7 @@ class TestOneBodyCheckDriver:
          "an unconditional SELECT 'PASS' passes whatever the data holds"),
     )
 
-    @pytest.mark.proof("static_checks", "PROOF-85", "RULE-52", tier="integration")
+    @pytest.mark.proof("static_checks", "PROOF-64", "RULE-22", tier="integration")
     def test_every_wrapper_delegates_and_keeps_its_reason_string(self):
         path = STATIC_CHECKS_PY
         with open(path, encoding='utf-8') as f:
@@ -2102,7 +2152,7 @@ console.log(JSON.stringify({ proofs }, null, 2));
         assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
         _assert_proof_passes(data, "TS tautological cheat passes, so it needs the LLM pass")
 
-    @pytest.mark.proof("static_checks", "PROOF-1", "RULE-1")
+    @pytest.mark.proof("static_checks", "PROOF-65", "RULE-1", tier="integration")
     def test_python_tautological(self, tmp_path):
         """Python `assert result or True`, caught by the Pass 1 static checks."""
         test_file = tmp_path / 'test_cheat.py'
@@ -2162,7 +2212,7 @@ console.log(JSON.stringify({ proofs }, null, 2));
         assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
         _assert_proof_passes(data, "TS fixture-only cheat passes, so it needs the LLM pass")
 
-    @pytest.mark.proof("static_checks", "PROOF-6", "RULE-6")
+    @pytest.mark.proof("static_checks", "PROOF-66", "RULE-7", tier="integration")
     def test_python_fixture_only(self, tmp_path):
         """Python fixture-only: Pass 1 passes it because assertions exist."""
         test_file = tmp_path / 'test_cheat.py'
@@ -2220,7 +2270,7 @@ console.log(JSON.stringify({ proofs }, null, 2));
         assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
         _assert_proof_passes(data, "TS happy-path cheat passes, so it needs the LLM pass")
 
-    @pytest.mark.proof("static_checks", "PROOF-6", "RULE-6")
+    @pytest.mark.proof("static_checks", "PROOF-67", "RULE-7", tier="integration")
     def test_python_happy_path_only(self, tmp_path):
         """Python happy-path: Pass 1 passes it, the LLM pass catches the missing case."""
         test_file = tmp_path / 'test_cheat.py'
@@ -2282,7 +2332,7 @@ console.log(JSON.stringify({ proofs }, null, 2));
         assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
         _assert_proof_passes(data, "TS name-drift cheat passes, so it needs the LLM pass")
 
-    @pytest.mark.proof("static_checks", "PROOF-6", "RULE-6")
+    @pytest.mark.proof("static_checks", "PROOF-68", "RULE-7", tier="integration")
     def test_python_name_drift(self, tmp_path):
         """Python name-drift: Pass 1 passes it, the LLM pass catches it."""
         test_file = tmp_path / 'test_cheat.py'
@@ -2349,7 +2399,7 @@ console.log(JSON.stringify({ proofs }, null, 2));
         assert data['proofs'][0]['rule'] == 'RULE-1', "rule linkage must be preserved"
         _assert_proof_passes(data, "TS no-assertion cheat passes, so it needs the LLM pass")
 
-    @pytest.mark.proof("static_checks", "PROOF-2", "RULE-2")
+    @pytest.mark.proof("static_checks", "PROOF-69", "RULE-3", tier="integration")
     def test_python_no_assertion(self, tmp_path):
         """Python no-assertion, caught by Pass 1 with the no_assertions check."""
         test_file = tmp_path / 'test_cheat.py'
