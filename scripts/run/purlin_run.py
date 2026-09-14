@@ -10,9 +10,10 @@
 
 `--record` is what `purlin:verify` runs: the tests, then the breaks, then a
 record. `--commit` commits the record under the developer's identity, which is
-the default at gate `tested`. `--ci` commits it through the git host API,
-auto-approves what may be auto-approved, writes the briefs, posts the pull
-request comment and publishes the dashboard.
+the default at gate `tested`. `--ci` auto-approves what may be auto-approved
+and writes the briefs first, commits the record together with those files
+through the git host API, then posts the pull request comment and publishes
+the dashboard.
 
 `--remote` is what `purlin:verify --remote` runs: push the current branch,
 wait for the workflow, pull the records CI committed, print the table.
@@ -862,7 +863,7 @@ def _write_log(project_root, log):
 
 def _record(project_root, args, features, selected, index, plugins, log,
             gate='tested', arm_logs=None):
-    """The `--record` arm: breaks, the records, the commit, the CI extras.
+    """The `--record` arm: breaks, records, approvals, briefs, the commit.
 
     One record per feature, because that is what the record writer files and
     prunes: `.purlin/records/<feature>/` keeps the newest three per operating
@@ -885,16 +886,21 @@ def _record(project_root, args, features, selected, index, plugins, log,
         paths.append(path)
         print('Record written: %s' % path)
 
+    # The approvals and the briefs are written before the commit, because the
+    # commit is what carries them: an approval that exists only on the runner
+    # is evidence nobody can read.
+    review_paths = _ci_review(project_root) if args.ci else []
+
     if args.commit or args.ci:
         identity = 'ci' if args.ci else 'developer'
-        commit_records(project_root, paths, identity,
+        commit_records(project_root, paths + review_paths, identity,
                        'purlin: record for %s' % head[:7])
         print('Record committed as %s.' % identity)
     if args.tag:
         tag_validated(project_root, args.tag, paths)
         print('Validation tag written: validated/%s' % args.tag)
     if args.ci:
-        _ci_extras(project_root, arm_logs)
+        _ci_publish(project_root, arm_logs)
     return 0
 
 
@@ -921,22 +927,33 @@ def _run_breaks(project_root, args, features, selected, index):
                       tests_by_rule(features, selected, index), args.tier)
 
 
-def _ci_extras(project_root, arm_logs=None):
-    """Auto-approvals, briefs, the pull request comment, the dashboard."""
+def _ci_review(project_root):
+    """The CI auto-approvals and the review list's briefs, as file paths.
+
+    The paths go back to the caller so the one commit that carries the record
+    carries these files too. A rule the run could not auto-approve still gets
+    its brief: the review list is what a reviewer works from, and a reviewer
+    reads it out of the branch rather than off the runner.
+    """
     try:
         from approve import auto_approve
         from brief import write_briefs
     except ImportError:
         print('purlin: the review helpers are not available; nothing was '
               'auto-approved and no brief was written.')
-    else:
-        payload = payload_module.build_payload(project_root,
-                                               generated_by='verify')
-        approved = auto_approve(project_root, payload)
-        briefs = write_briefs(project_root, payload)
-        print('Auto-approved %d low-risk rule%s; %d brief%s written.'
-              % (len(approved), '' if len(approved) == 1 else 's',
-                 len(briefs), '' if len(briefs) == 1 else 's'))
+        return []
+    payload = payload_module.build_payload(project_root,
+                                           generated_by='verify')
+    approved = auto_approve(project_root, payload)
+    briefs = write_briefs(project_root, payload)
+    print('Auto-approved %d low-risk rule%s; %d brief%s written.'
+          % (len(approved), '' if len(approved) == 1 else 's',
+             len(briefs), '' if len(briefs) == 1 else 's'))
+    return [path for path in list(approved) + list(briefs) if path]
+
+
+def _ci_publish(project_root, arm_logs=None):
+    """The pull request comment and the dashboard, after the commit."""
     try:
         from ci import post_pr_comment, publish_dashboard
     except ImportError:

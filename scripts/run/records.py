@@ -19,7 +19,9 @@ committer field, so GitHub signs the commit with its own key and reports
 `github-actions[bot]` as the committer; that is what counts under `recorded`
 and `approved`. Azure DevOps pushes through its Pushes API with the build
 service's token and signs nothing, and its documentation says the committer
-name is the one to read.
+name is the one to read. CI's commit carries more than the record: the
+auto-approvals and the briefs the same run wrote travel in it, because an
+approval that never leaves the runner is evidence nobody can read.
 
 **Retention.** A feature keeps the newest three records per operating system.
 Anything an annotated `validated/<name>` tag names in its message is kept for
@@ -190,12 +192,17 @@ def tag_validated(project_root, name, record_paths):
 # ---------------------------------------------------------------------------
 
 def commit_records(project_root, paths, identity, message):
-    """Commit the records at `paths` and return the commit sha.
+    """Commit the files at `paths` and return the commit sha.
 
     `identity` is `developer` or `ci`. A developer commit is a plain
     `git commit` under the developer's own identity, pushed when a remote and
     an upstream exist; anything else prints why it did not push. A ci commit
     goes through the git host's API so the git host, not Purlin, signs it.
+
+    A developer's run hands over record paths alone. A CI run hands over the
+    records plus the auto-approvals and the briefs it wrote, so one commit
+    carries the evidence and the attestations that rest on it; every path is
+    sent whether it sits under `.purlin/records/` or beside a spec.
     """
     paths = [str(path).replace(os.sep, '/') for path in (paths or [])]
     if identity == 'ci':
@@ -286,8 +293,10 @@ def _read_file(project_root, rel_path):
 def _commit_github(project_root, paths, message):
     """Blob, tree, commit, ref update, retried when the branch moved.
 
-    No `author` and no `committer` field is sent. GitHub then attributes the
-    commit to the Actions token, signs it with its own key, and reports
+    One blob per path handed over, wherever in the tree it sits, plus a
+    deletion entry for every record retention removed. No `author` and no
+    `committer` field is sent. GitHub then attributes the commit to the
+    Actions token, signs it with its own key, and reports
     `github-actions[bot]` as the committer, which is exactly what makes the
     record count under `recorded`.
     """
