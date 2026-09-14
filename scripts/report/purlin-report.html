@@ -216,6 +216,10 @@ button{font-family:inherit}
 .tabs button[aria-current="page"]{color:var(--text-primary);border-bottom-color:var(--accent)}
 .wrap{max-width:1360px;margin:0 auto;padding:var(--space-8)}
 section{margin-bottom:var(--space-10)}
+section.ledger{margin-bottom:var(--space-5)}
+.line{margin:0;font-size:var(--ui-base);color:var(--text-secondary)}
+.line b{font-family:var(--font-mono);font-weight:var(--weight-bold);color:var(--text-primary)}
+.sep{color:var(--text-muted);padding:0 var(--space-3)}
 .eyebrow{font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-accent);margin:0 0 var(--space-4)}
 h1{font-size:var(--ui-metric);font-weight:var(--weight-bold);margin:0 0 var(--space-3);line-height:1.1}
 h2{font-size:var(--ui-lg);font-weight:var(--weight-bold);margin:0 0 var(--space-4)}
@@ -503,13 +507,15 @@ function renderBoard() {
     groups[name].push(feature);
   });
   var rollup = DATA.project_rollup || {};
-  var head = '<section><p class="eyebrow">' + esc(DATA.project || 'project')
-    + '</p><h1>' + (rollup.rules || 0) + ' rules across '
-    + (rollup.features || 0) + ' specs</h1>'
-    + '<p class="sec">The lowest state any rule reached is '
-    + esc(rollup.lowest_state || 'Drafted') + '. ' + (rollup.stale || 0)
-    + ' stale, ' + (rollup.needs_review || 0) + ' on the review list.</p>'
-    + '</section><section>' + statStrip() + '</section>';
+  var head = '<section class="ledger"><p class="line">'
+    + '<b>' + (rollup.rules || 0) + '</b> rules across <b>'
+    + (rollup.features || 0) + '</b> specs'
+    + '<span class="sep">·</span>lowest state <b>'
+    + esc(rollup.lowest_state || 'Drafted') + '</b>'
+    + '<span class="sep">·</span><b>' + (rollup.stale || 0) + '</b> stale'
+    + '<span class="sep">·</span><b>' + (rollup.needs_review || 0)
+    + '</b> on the review list</p></section><section>' + statStrip()
+    + '</section>';
   var table = order.length
     ? '<div class="tbl" style="--cols:' + columns.map(function (c) {
         return c.width;

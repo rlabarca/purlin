@@ -142,13 +142,15 @@ function renderBoard() {
     groups[name].push(feature);
   });
   var rollup = DATA.project_rollup || {};
-  var head = '<section><p class="eyebrow">' + esc(DATA.project || 'project')
-    + '</p><h1>' + (rollup.rules || 0) + ' rules across '
-    + (rollup.features || 0) + ' specs</h1>'
-    + '<p class="sec">The lowest state any rule reached is '
-    + esc(rollup.lowest_state || 'Drafted') + '. ' + (rollup.stale || 0)
-    + ' stale, ' + (rollup.needs_review || 0) + ' on the review list.</p>'
-    + '</section><section>' + statStrip() + '</section>';
+  var head = '<section class="ledger"><p class="line">'
+    + '<b>' + (rollup.rules || 0) + '</b> rules across <b>'
+    + (rollup.features || 0) + '</b> specs'
+    + '<span class="sep">·</span>lowest state <b>'
+    + esc(rollup.lowest_state || 'Drafted') + '</b>'
+    + '<span class="sep">·</span><b>' + (rollup.stale || 0) + '</b> stale'
+    + '<span class="sep">·</span><b>' + (rollup.needs_review || 0)
+    + '</b> on the review list</p></section><section>' + statStrip()
+    + '</section>';
   var table = order.length
     ? '<div class="tbl" style="--cols:' + columns.map(function (c) {
         return c.width;
