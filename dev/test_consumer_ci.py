@@ -1,19 +1,19 @@
-"""Tests for consumer_ci: 2 proofs covering the committed consumer-CI fixture.
+"""Tests for the committed consumer-CI fixture.
 
 `dev/fixtures/consumer-ci/` is a complete minimal consumer project: what
-`purlin:init` writes, plus the one spec, the one test file, the platform
-registry entry and the two workflows a consumer needs to prove an
-`@on(ubuntu-24)` proof on a real Ubuntu runner.
+`purlin:init` writes for a `recorded` gate, plus one spec, one module and one
+test file. It carries no Purlin `scripts/` and no `dev/`, exactly as a project
+that installed Purlin from the marketplace does, so its workflow has to clone
+the tooling on the runner.
 
-The fixture's value is that it is the documentation, executed. PROOF-1 renders
-both workflows from the reference templates and compares them to the committed
-files byte for byte, so the fixture cannot drift from the docs without a red
-test; PROOF-2 asserts the project is complete and that Purlin reads it as one
-feature with one proof awaiting `ubuntu-24`.
+The fixture's value is that it is the documentation, executed. The workflow is
+rendered from `templates/purlin.yml` and compared with the committed file, so
+the fixture cannot drift from the template without a red test; the rest asserts
+the project is complete, that its structure is what a runner will read, and
+that Purlin reads it as one feature with one Linux-scoped proof.
 
-RULE-3, the live dry run itself, is `@manual`: it creates a real GitHub
-repository under the user's account and deletes it again, so there is nothing
-here to run.
+`dev/consumer_ci_dryrun.sh` walks the same workflow's steps locally. It is
+hand-run and touches no account, so there is nothing here to drive it.
 """
 
 import json
@@ -25,277 +25,278 @@ import pytest
 
 DEV = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(DEV)
+sys.path.insert(0, os.path.join(ROOT, 'scripts', 'run'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 
-import purlin_server  # noqa: E402
+import workflow as workflow_module  # noqa: E402
+from purlin import payload as payload_module  # noqa: E402
 
 FIXTURE = os.path.join(ROOT, 'dev', 'fixtures', 'consumer-ci')
 FIXTURE_REL = 'dev/fixtures/consumer-ci'
-REFERENCE = os.path.join(ROOT, 'references', 'remote_verification.md')
-REPO_VERIFY_GATE = os.path.join(ROOT, '.github', 'workflows', 'verify-gate.yml')
+WORKFLOW_REL = '.github/workflows/purlin.yml'
 
-# ---------------------------------------------------------------------------
-# The substitutions (consumer_ci RULE-1)
-# ---------------------------------------------------------------------------
-# `<platform-id>` and `<runs-on>` are the two the reference template names. The
-# third is the tooling pin: the template pins `--branch v<VERSION>`, and this
-# branch is not pushed and not released yet, so the fixture pins the branch
-# instead. It becomes `--branch v<VERSION>` when main is pushed and the release
-# is cut.
-# `<test files>` is the fourth: the template leaves the test command's argument
-# as a placeholder for the project to fill, and a fixture that keeps the
-# placeholder is not runnable.
-PLATFORM_ID = 'ubuntu-24'
-RUNS_ON = 'ubuntu-24.04'
-TOOLING_PIN = 'two-gauges-remote-verification'
-TEST_FILES = 'tests/test_greeting.py'
-
-SUBSTITUTIONS = (
-    ('<platform-id>', PLATFORM_ID),
-    ('<runs-on>', RUNS_ON),
-    ('--branch v<VERSION>', '--branch ' + TOOLING_PIN),
-    ('<test files>', TEST_FILES),
-)
-
-# Every file the fixture is made of (consumer_ci RULE-2). `.purlin/runtime/`,
-# `.purlin/cache/` and `purlin-report.html` are deliberately absent: they are
-# gitignored generated state, not part of a project.
+# Every file the fixture is made of. `.purlin/runtime/`, `.purlin/cache/` and
+# the dashboard page are deliberately absent: they are generated state that the
+# fixture's own `.gitignore` excludes, and a fixture that shipped them would
+# ship a claim about a run that did not happen here.
 FIXTURE_FILES = (
-    '.github/workflows/purlin-ubuntu-24-proofs.yml',
-    '.github/workflows/verify-gate.yml',
+    '.github/workflows/purlin.yml',
     '.gitignore',
     '.purlin/config.json',
     '.purlin/plugins/pytest_purlin.py',
+    '.purlin/records/README.md',
     'conftest.py',
     'greeting.py',
     'specs/core/greeting.md',
     'tests/test_greeting.py',
 )
 
-
-# ---------------------------------------------------------------------------
-# Rendering the two workflows from their templates
-# ---------------------------------------------------------------------------
-
-def _substitute(text):
-    for placeholder, value in SUBSTITUTIONS:
-        text = text.replace(placeholder, value)
-    return text
+# The Purlin release a consumer's runner clones. The fixture is rendered at the
+# version this repository is on, so a release bump and the fixture move
+# together.
+with open(os.path.join(ROOT, 'VERSION'), encoding='utf-8') as _handle:
+    PURLIN_REF = 'v' + _handle.read().strip()
 
 
-def workflow_template(path=REFERENCE):
-    """The runner-workflow template: the yaml fence under `### Workflow template`."""
-    with open(path, encoding='utf-8') as f:
-        text = f.read()
-    heading = text.index('### Workflow template')
-    start = text.index('```yaml\n', heading) + len('```yaml\n')
-    end = text.index('\n```', start) + 1
-    return text[start:end]
+def read(rel, root=FIXTURE):
+    with open(os.path.join(root, rel), encoding='utf-8') as handle:
+        return handle.read()
 
 
-def render_proofs_workflow():
-    """`purlin-ubuntu-24-proofs.yml`: the template with the substitutions applied."""
-    return _substitute(workflow_template())
-
-
-def _lift(text, first_line_prefix, stop_line_prefix):
-    """The slice of `text` from one line to just before another, both by prefix."""
-    lines = text.splitlines(keepends=True)
-    starts = [i for i, line in enumerate(lines) if line.startswith(first_line_prefix)]
-    stops = [i for i, line in enumerate(lines) if line.startswith(stop_line_prefix)]
-    assert starts, 'template has no line starting {!r}'.format(first_line_prefix)
-    assert stops, 'template has no line starting {!r}'.format(stop_line_prefix)
-    start = starts[0]
-    stop = next(i for i in stops if i > start)
-    return ''.join(lines[start:stop]).rstrip('\n') + '\n'
-
-
-def render_verify_gate_workflow():
-    """`verify-gate.yml`, consumer form.
-
-    This repository's own `.github/workflows/verify-gate.yml` is the template.
-    A consumer checkout holds no Purlin `scripts/`, so
-    `references/remote_verification.md` states the adaptation: the job carries
-    `PURLIN_PLUGIN_ROOT`, clones the pinned tooling into it, and reaches every
-    Purlin script through it. The four operations below are that adaptation and
-    nothing else; the trigger paths, the comments and the gate's own arguments
-    are the template's, unchanged.
-    """
-    with open(REPO_VERIFY_GATE, encoding='utf-8') as f:
-        text = f.read()
-    proofs = render_proofs_workflow()
-
-    # D1: the `Locate Purlin tooling` step, lifted verbatim from the proofs
-    # template, inserted after the checkout. It publishes `PURLIN_PLUGIN_ROOT`
-    # through `$GITHUB_ENV`; it is NOT a job `env:` entry, because
-    # `jobs.<id>.env` is evaluated before a runner exists and reading
-    # `${{ runner.temp }}` there is refused at startup with no job created
-    # (purlin_references RULE-29). The job gains no `env:` block at all:
-    # `PURLIN_PLATFORM` is not lifted either, because the gate proves nothing
-    # and names no platform, and an env var that steers proof filenames has no
-    # business in a job that writes no proof file.
-    locate = _lift(proofs, '      - name: Locate Purlin tooling',
-                   '      - uses: actions/setup-python@v5')
-    text = text.replace('      - uses: actions/setup-python@v5\n',
-                        locate + '\n      - uses: actions/setup-python@v5\n', 1)
-
-    # D2: the `Install Purlin tooling` step, lifted verbatim, after setup-python.
-    install = _lift(proofs, '      - name: Install Purlin tooling',
-                    '      - name: Preflight')
-    text = text.replace('      # Prints the declared mode',
-                        install + '\n      # Prints the declared mode', 1)
-
-    # D3: the gate is reached through `$PURLIN_PLUGIN_ROOT`, on bash.
-    text = text.replace(
-        '        run: python3 scripts/ci/verify_gate.py --check --project-root .\n',
-        '        shell: bash\n'
-        '        run: python3 "$PURLIN_PLUGIN_ROOT/scripts/ci/verify_gate.py"'
-        ' --check --project-root .\n', 1)
-
-    # D4: the repo-only step that runs this repository's own dev suite is
-    # dropped. `dev/test_verify_gate.py` does not exist in a consumer checkout.
-    text = text[:text.index('\n      - name: Run the verify_gate proofs')] + '\n'
-    return text
-
-
-RENDERERS = {
-    '.github/workflows/purlin-ubuntu-24-proofs.yml': render_proofs_workflow,
-    '.github/workflows/verify-gate.yml': render_verify_gate_workflow,
-}
-
-
-def _first_difference(expected, actual, rel):
-    """The first differing line, 1-based, or None when the texts are equal."""
-    if expected == actual:
-        return None
-    exp_lines = expected.splitlines()
-    act_lines = actual.splitlines()
-    for i in range(max(len(exp_lines), len(act_lines))):
-        e = exp_lines[i] if i < len(exp_lines) else '<end of file>'
-        a = act_lines[i] if i < len(act_lines) else '<end of file>'
-        if e != a:
-            return ('{} differs from the rendered template at line {}:\n'
-                    '  template renders: {!r}\n'
-                    '  fixture carries:  {!r}'.format(rel, i + 1, e, a))
-    return '{}: the two texts differ only in trailing bytes'.format(rel)
-
-
-def _tracked(rel):
-    """True when `rel` is tracked by git (not merely present on disk)."""
-    listed = subprocess.run(
-        ['git', 'ls-files', '--error-unmatch', '--', rel],
-        cwd=ROOT, capture_output=True, text=True)
+def tracked(rel):
+    """True when `rel` is tracked by git, not merely present on disk."""
+    listed = subprocess.run(['git', 'ls-files', '--error-unmatch', '--', rel],
+                            cwd=ROOT, capture_output=True, text=True)
     return listed.returncode == 0
 
 
 # ---------------------------------------------------------------------------
-# Proofs
+# A structural read of the workflow, with the standard library alone
+# ---------------------------------------------------------------------------
+
+def parse_blocks(text):
+    """`{top-level key: [line, ...]}` for a YAML document of plain mappings.
+
+    This is not a YAML parser and does not pretend to be one. It checks the
+    shape a workflow file has to have: comments and blank lines between
+    blocks, every other line indented under a key at column zero, no tabs, and
+    every indent a multiple of two. Anything else raises, which is the point:
+    a rendered file that is not shaped like a workflow must fail here rather
+    than on a runner.
+    """
+    blocks = {}
+    current = None
+    for number, line in enumerate(text.splitlines(), 1):
+        if '\t' in line:
+            raise ValueError('line %d has a tab' % number)
+        if line.rstrip() != line:
+            raise ValueError('line %d has trailing whitespace' % number)
+        if not line.strip() or line.lstrip().startswith('#'):
+            continue
+        indent = len(line) - len(line.lstrip(' '))
+        if indent % 2:
+            raise ValueError('line %d is indented by %d' % (number, indent))
+        if indent == 0:
+            if ':' not in line:
+                raise ValueError('line %d is not a key: %r' % (number, line))
+            current = line.split(':', 1)[0]
+            blocks[current] = []
+        elif current is None:
+            raise ValueError('line %d is indented under nothing' % number)
+        else:
+            blocks[current].append(line)
+    return blocks
+
+
+def step_names(lines):
+    """Every `- name:` and `- uses:` in a job's lines, in order."""
+    found = []
+    for line in lines:
+        stripped = line.strip()
+        for prefix in ('- name: ', '- uses: '):
+            if stripped.startswith(prefix):
+                found.append(stripped[len(prefix):])
+    return found
+
+
+# ---------------------------------------------------------------------------
+# The workflow
 # ---------------------------------------------------------------------------
 
 @pytest.mark.proof("consumer_ci", "PROOF-1", "RULE-1")
-def test_fixture_workflows_equal_the_rendered_templates():
-    """RULE-1: both fixture workflows equal their templates after substitution."""
-    template = workflow_template()
-    # The placeholders must really be in the template, or the substitutions
-    # are no-ops and the comparison proves only that a file equals itself.
-    for placeholder, _value in SUBSTITUTIONS:
-        assert placeholder in template, (
-            '{!r} is not in the reference template, so substituting it proves '
-            'nothing'.format(placeholder))
+def test_the_fixture_workflow_is_what_the_template_renders():
+    rendered = workflow_module.render_workflow('github', ['linux'], PURLIN_REF)
+    committed = read(WORKFLOW_REL)
+    if rendered != committed:
+        expected = rendered.splitlines()
+        actual = committed.splitlines()
+        for index in range(max(len(expected), len(actual))):
+            left = expected[index] if index < len(expected) else '<end of file>'
+            right = actual[index] if index < len(actual) else '<end of file>'
+            if left != right:
+                raise AssertionError(
+                    '%s/%s differs from the rendered template at line %d:\n'
+                    '  template renders: %r\n'
+                    '  fixture carries:  %r'
+                    % (FIXTURE_REL, WORKFLOW_REL, index + 1, left, right))
+        raise AssertionError('the two texts differ only in trailing bytes')
 
-    for rel, render in sorted(RENDERERS.items()):
-        path = os.path.join(FIXTURE, rel)
-        assert os.path.isfile(path), '{}/{} is missing'.format(FIXTURE_REL, rel)
-        with open(path, encoding='utf-8') as f:
-            actual = f.read()
-        difference = _first_difference(render(), actual, FIXTURE_REL + '/' + rel)
-        assert difference is None, difference
 
-    # The pin is temporary and RULE-1 says so; assert the fixture carries the
-    # branch pin and no `v<VERSION>` tag pin, so the day it is retagged both
-    # the rule and this assertion are the thing that has to be updated.
-    proofs_yml = os.path.join(FIXTURE, '.github', 'workflows',
-                              'purlin-ubuntu-24-proofs.yml')
-    with open(proofs_yml, encoding='utf-8') as f:
-        rendered = f.read()
-    assert '--branch ' + TOOLING_PIN in rendered
-    assert '--branch v<VERSION>' not in rendered
-    assert 'PURLIN_PLATFORM: ' + PLATFORM_ID in rendered
-    assert 'runs-on: ' + RUNS_ON in rendered
+@pytest.mark.proof("consumer_ci", "PROOF-1", "RULE-1")
+def test_the_template_still_carries_the_placeholders():
+    """A substitution that has become a no-op proves nothing."""
+    template = read(os.path.join('templates', 'purlin.yml'), root=ROOT)
+    assert '<<MATRIX>>' in template
+    assert '<<PURLIN_REF>>' in template
 
 
 @pytest.mark.proof("consumer_ci", "PROOF-2", "RULE-2")
-def test_fixture_is_a_complete_tracked_consumer_project():
-    """RULE-2: every named file is tracked, and Purlin reads the project."""
+def test_the_workflow_is_shaped_like_a_workflow():
+    blocks = parse_blocks(read(WORKFLOW_REL))
+    assert sorted(blocks) == ['jobs', 'name', 'on', 'permissions']
+    assert 'contents: write' in read(WORKFLOW_REL)
+    assert 'pull-requests: write' in read(WORKFLOW_REL)
+    assert '  push:' in '\n'.join(blocks['on'])
+    assert '  pull_request:' in '\n'.join(blocks['on'])
+    for placeholder in ('<<MATRIX>>', '<<PURLIN_REF>>'):
+        assert placeholder not in read(WORKFLOW_REL), (
+            '%s was left unfilled' % placeholder)
+
+
+@pytest.mark.proof("consumer_ci", "PROOF-2", "RULE-2")
+def test_the_workflow_names_the_record_step_and_the_artifact():
+    jobs = '\n'.join(parse_blocks(read(WORKFLOW_REL))['jobs'])
+    names = step_names(jobs.splitlines())
+    assert 'actions/checkout@v4' in names
+    assert 'Locate Purlin' in names
+    assert 'Run verify and write the record' in names
+    assert 'actions/upload-artifact@v4' in names
+    assert 'name: purlin-dashboard' in jobs
+    assert 'scripts/run/purlin_run.py" --all --record --ci' in jobs
+
+
+@pytest.mark.proof("consumer_ci", "PROOF-2", "RULE-2")
+def test_the_matrix_is_the_one_operating_system_the_spec_names():
+    jobs = '\n'.join(parse_blocks(read(WORKFLOW_REL))['jobs'])
+    assert 'os: [ubuntu-latest]' in jobs
+    assert 'windows-latest' not in jobs
+    assert workflow_module.env_tags_in_specs(FIXTURE) == ['linux']
+
+
+@pytest.mark.proof("consumer_ci", "PROOF-2", "RULE-2")
+def test_the_workflow_clones_the_release_the_project_pins():
+    jobs = '\n'.join(parse_blocks(read(WORKFLOW_REL))['jobs'])
+    assert 'ref="%s"' % PURLIN_REF in jobs, (
+        'a consumer runner has no plugin, so the ref it clones must be pinned')
+    assert 'https://github.com/rlabarca/purlin' in jobs
+    assert 'vars.PURLIN_REF' in jobs, 'the pin must be movable without an edit'
+
+
+@pytest.mark.proof("consumer_ci", "PROOF-2", "RULE-2")
+def test_a_forked_pull_request_is_told_it_writes_no_commit():
+    jobs = '\n'.join(parse_blocks(read(WORKFLOW_REL))['jobs'])
+    assert 'github.event.pull_request.head.repo.fork' in jobs
+    assert 'no record was committed' in jobs
+
+
+@pytest.mark.proof("consumer_ci", "PROOF-2", "RULE-2")
+def test_the_scheduled_pin_check_is_off_unless_it_is_asked_for():
+    assert 'schedule:' not in read(WORKFLOW_REL)
+    with_check = workflow_module.render_workflow(
+        'github', ['linux'], PURLIN_REF, upstream_check=True)
+    assert 'schedule:' in with_check
+    assert 'upstream-check:' in with_check
+    assert '<<MATRIX>>' not in with_check
+    assert '<<PURLIN_REF>>' not in with_check
+
+
+# ---------------------------------------------------------------------------
+# The project
+# ---------------------------------------------------------------------------
+
+@pytest.mark.proof("consumer_ci", "PROOF-3", "RULE-3")
+def test_the_fixture_is_complete_and_every_file_is_tracked():
+    on_disk = set()
+    for folder, dirnames, filenames in os.walk(FIXTURE):
+        dirnames[:] = [d for d in dirnames if d != '__pycache__']
+        for name in filenames:
+            rel = os.path.relpath(os.path.join(folder, name), FIXTURE)
+            on_disk.add(rel.replace(os.sep, '/'))
+
+    assert on_disk == set(FIXTURE_FILES), (
+        'the fixture holds %s and is missing %s'
+        % (sorted(on_disk - set(FIXTURE_FILES)),
+           sorted(set(FIXTURE_FILES) - on_disk)))
     for rel in FIXTURE_FILES:
-        path = os.path.join(FIXTURE, rel)
-        assert os.path.isfile(path), '{}/{} is missing'.format(FIXTURE_REL, rel)
-        assert _tracked(FIXTURE_REL + '/' + rel), (
-            '{}/{} is on disk but not tracked, so a clone of this repository '
-            'would not carry it'.format(FIXTURE_REL, rel))
+        assert tracked(FIXTURE_REL + '/' + rel), (
+            '%s/%s is on disk but not tracked, so a clone of this repository '
+            'would not carry it' % (FIXTURE_REL, rel))
 
-    # The plugin copy is the plugin, byte for byte: a stale copy is what the
-    # workflow's migrate.py preflight exists to catch.
-    with open(os.path.join(FIXTURE, '.purlin/plugins/pytest_purlin.py'),
-              'rb') as f:
-        copied = f.read()
-    with open(os.path.join(ROOT, 'scripts/proof/pytest_purlin.py'), 'rb') as f:
-        source = f.read()
-    assert copied == source, ('.purlin/plugins/pytest_purlin.py is not a '
-                              'byte-identical copy of scripts/proof/pytest_purlin.py')
 
-    with open(os.path.join(FIXTURE, '.purlin/config.json'), encoding='utf-8') as f:
-        config = json.load(f)
+@pytest.mark.proof("consumer_ci", "PROOF-3", "RULE-3")
+def test_the_config_is_the_shape_this_release_reads():
+    config = json.loads(read('.purlin/config.json'))
+    assert config['gate'] == 'recorded'
     assert config['test_framework'] == 'pytest'
-    assert config['remote_verification'] == 'optional'
-    assert config['platforms']['ubuntu-24'] == {
-        'os': 'linux', 'distro': 'ubuntu', 'version': '24.04',
-        'arch': 'x86_64', 'label': 'Ubuntu 24.04 LTS',
-        'runner': {'provider': 'github', 'runs_on': 'ubuntu-24.04',
-                   'workflow': 'purlin-ubuntu-24-proofs'},
-    }
+    assert config['version'] == PURLIN_REF[1:]
+    retired = {'remote_verification', 'mutation_checks', 'quality_gate',
+               'spec_dir', 'digest', 'report', 'pre_push'}
+    assert not retired & set(config), (
+        'the config still carries %s' % sorted(retired & set(config)))
 
-    payload = purlin_server.read_report_payload(FIXTURE)
-    assert payload is not None, 'Purlin cannot read the fixture as a project'
-    assert payload['platforms']['errors'] == []
-    assert payload['platforms']['remote'] == ['ubuntu-24']
-    assert payload['remote_verification'] == 'optional'
 
-    features = payload['features']
-    assert [f['name'] for f in features] == ['greeting']
-    greeting = features[0]
-    assert [r['id'] for r in greeting['rules']] == ['RULE-1', 'RULE-2']
-    assert greeting['awaiting_runner'] == [
-        {'id': 'PROOF-2', 'tier': 'unit', 'platform': 'ubuntu-24'}]
-
-    summary = payload['platforms']['summary']['ubuntu-24']
-    assert summary['features'] == 1
-    assert summary['proofs'] == {'declared': 1, 'proved': 0, 'failed': 0,
-                                 'awaiting': 1}
+@pytest.mark.proof("consumer_ci", "PROOF-3", "RULE-3")
+def test_the_plugin_copy_is_the_plugin():
+    with open(os.path.join(FIXTURE, '.purlin/plugins/pytest_purlin.py'),
+              'rb') as handle:
+        copied = handle.read()
+    with open(os.path.join(ROOT, 'scripts/proof/pytest_purlin.py'),
+              'rb') as handle:
+        source = handle.read()
+    assert copied == source, (
+        '.purlin/plugins/pytest_purlin.py is not a byte-identical copy of '
+        'scripts/proof/pytest_purlin.py')
 
 
 @pytest.mark.proof("consumer_ci", "PROOF-4", "RULE-4")
-def test_the_documented_clone_ref_exists_as_a_tag():
-    """RULE-4: `v` + VERSION is a tag in this repository.
+def test_the_spec_carries_no_tag_this_release_retired():
+    spec = read('specs/core/greeting.md')
+    assert '@env(linux)' in spec
+    assert '@on(' not in spec
+    assert 'platforms=' not in read('tests/test_greeting.py')
 
-    Skips, naming the owner action, until the tag exists. Every
-    consumer-facing clone recipe pins `--branch v<VERSION>`, and until the
-    owner pushes `main` and tags the release there is no such ref to clone:
-    the reader's first paste fails with `Remote branch not found`. A skipped
-    proof leaves RULE-4 unproved, so consumer_ci earns no receipt, without
-    marking the whole sweep failed and blocking every other receipt.
-    `dev/plans/four-axis-review.md` carries what clears it.
-    """
-    with open(os.path.join(ROOT, 'VERSION'), encoding='utf-8') as f:
-        version = f.read().strip()
-    ref = 'v' + version
-    listed = subprocess.run(['git', 'tag', '--list', ref],
-                            cwd=ROOT, capture_output=True, text=True)
-    assert listed.returncode == 0, listed.stderr
-    existing = subprocess.run(['git', 'tag'], cwd=ROOT,
-                              capture_output=True, text=True).stdout.split()
-    if not listed.stdout.strip():
-        pytest.skip(
-            'the documented clone recipe pins --branch {}, and this repository '
-            'has no such tag (owner action: tag {} and push main); the tags it '
-            'has are {}'.format(ref, ref, ', '.join(existing[-3:]) or '(none)'))
+
+@pytest.mark.proof("consumer_ci", "PROOF-4", "RULE-4")
+def test_purlin_reads_the_fixture_as_one_feature_with_a_linux_proof():
+    data = payload_module.build_payload(FIXTURE, generated_by='test')
+    assert data['warnings'] == []
+    assert [f['name'] for f in data['features']] == ['greeting']
+    greeting = data['features'][0]
+    assert [r['id'] for r in greeting['rules']] == ['RULE-1', 'RULE-2']
+
+    envs = {proof['id']: proof['env']
+            for rule in greeting['rules'] for proof in rule['proofs']}
+    assert envs == {'PROOF-1': None, 'PROOF-2': 'linux'}
+    assert data['gate']['gate'] == 'recorded'
+    assert data['gate']['min_strength'] == 70
+    assert data['records'] == {}, 'no run has happened in the fixture'
+
+
+@pytest.mark.proof("consumer_ci", "PROOF-4", "RULE-4")
+def test_the_fixtures_tests_pass_against_its_own_module():
+    sys.path.insert(0, FIXTURE)
+    try:
+        import greeting
+    finally:
+        sys.path.remove(FIXTURE)
+    assert greeting.greet('Ada') == 'Hello, Ada!'
+    assert greeting.greet('') == 'Hello, world!'
+    assert isinstance(greeting.os_tag(), str)
+
+
+@pytest.mark.proof("consumer_ci", "PROOF-4", "RULE-4")
+def test_the_dry_run_walks_the_committed_workflow():
+    script = read(os.path.join('dev', 'consumer_ci_dryrun.sh'), root=ROOT)
+    assert WORKFLOW_REL in script
+    assert 'purlin_run.py' in script
+    assert 'gh ' not in script, 'the dry run must touch no account'
