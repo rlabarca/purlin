@@ -56,6 +56,30 @@ wire_since_mark() { WIRE_FAIL=$((WIRE_FAIL + FAIL - MARK)); }
 cleanup() { for d in $TMPDIRS; do rm -rf "$d" 2>/dev/null; done; }
 trap cleanup EXIT
 
+# A temporary directory, on GNU and BSD alike.
+#
+# `mktemp -d -t <prefix>` is BSD only. GNU mktemp reads the same argument as a
+# template and refuses one with no X's in it, so on Linux the command fails and
+# the variable is left empty. An empty directory name is the dangerous case,
+# not a loud one: every path below would resolve against the working directory,
+# which is this repository, and the walk would re-initialise it, commit to it
+# and run its whole test suite. Both are avoided by writing the X's out and by
+# stopping here when there is still no directory.
+tmp_dir() {  # prefix
+  # `TMPDIR` ends with a slash on macOS and has none on Linux, and the name
+  # this returns is compared as a string further down, so the trailing slash
+  # goes before the template is built.
+  local base="${TMPDIR:-/tmp}"
+  base="${base%/}"
+  local d
+  d="$(mktemp -d "$base/$1.XXXXXXXX" 2>/dev/null)" || d=""
+  if [ -z "$d" ] || [ ! -d "$d" ]; then
+    echo "  FAIL no temporary directory for $1; the suite stops here." >&2
+    exit 1
+  fi
+  printf '%s\n' "$d"
+}
+
 pass() { PASS=$((PASS + 1)); echo "  ok   $1"; }
 note() { SKIP=$((SKIP + 1)); echo "  skip $1"; }
 bad() {
@@ -258,7 +282,7 @@ gate_walk() {  # dir language
 
 walk_python() {
   local dir
-  dir="$(mktemp -d -t purlin-e2e-py)"
+  dir="$(tmp_dir purlin-e2e-py)" || exit 1
   TMPDIRS="$TMPDIRS $dir"
   echo "--- python ---"
   new_repo "$dir"
@@ -301,7 +325,7 @@ walk_typescript() {
     return 0
   fi
   local dir
-  dir="$(mktemp -d -t purlin-e2e-ts)"
+  dir="$(tmp_dir purlin-e2e-ts)" || exit 1
   TMPDIRS="$TMPDIRS $dir"
   echo "--- typescript ---"
   new_repo "$dir"
@@ -351,7 +375,7 @@ walk_xunit() {
     return 0
   fi
   local dir
-  dir="$(mktemp -d -t purlin-e2e-cs)"
+  dir="$(tmp_dir purlin-e2e-cs)" || exit 1
   TMPDIRS="$TMPDIRS $dir"
   echo "--- xunit ---"
   new_repo "$dir"
@@ -379,8 +403,8 @@ EOF
 
 walk_marketplace() {
   local dir cache installed
-  dir="$(mktemp -d -t purlin-e2e-mk)"
-  cache="$(mktemp -d -t purlin-e2e-cache)"
+  dir="$(tmp_dir purlin-e2e-mk)" || exit 1
+  cache="$(tmp_dir purlin-e2e-cache)" || exit 1
   TMPDIRS="$TMPDIRS $dir $cache"
   echo "--- the marketplace install ---"
   installed="$cache/purlin/purlin/$(cat "$ROOT/VERSION")"

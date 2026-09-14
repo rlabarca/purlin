@@ -62,7 +62,10 @@ trap cleanup EXIT
 
 # ── 1. the fixture, copied and committed ──────────────────────────────
 say "Copy the fixture to a temporary directory and commit it"
-WORK="$(mktemp -d -t purlin-consumer-ci)"
+# `mktemp -d -t <prefix>` is BSD only: GNU reads the argument as a template and
+# refuses one with no X's in it, so the template is written out here.
+TMPBASE="${TMPDIR:-/tmp}"
+WORK="$(mktemp -d "${TMPBASE%/}/purlin-consumer-ci.XXXXXXXX")"
 cmd "cp -R $FIXTURE/. $WORK/"
 cp -R "$FIXTURE/." "$WORK/"
 cd "$WORK"
