@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "upstream",
-  "generated_at": "2026-09-14T17:35:00Z",
+  "generated_at": "2026-09-14T17:53:55Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,7 +26,7 @@
   "reasons": [
     "PROOF-5 implementation_coupling: Names a private symbol, a selector or a path instead of an observable outcome, so a refactor breaks the proof without changing behaviour."
   ],
-  "record": ".purlin/records/upstream/20260914T173330Z-2ca875e-ci-windows.json",
+  "record": ".purlin/records/upstream/20260914T175322Z-93d7729-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-5",
   "rule_hash": "04cdc0f964a7cde6109422dfe9a8a1bda421e59a62473a9ead7ec99db1f5bbba",
