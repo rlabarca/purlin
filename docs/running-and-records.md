@@ -231,9 +231,17 @@ than inventing a state for it.
 ### The commit CI makes
 
 CI creates one commit, `purlin: record for <commit7>`, holding the record, any CI
-auto-approvals and the review list's briefs. It goes through the git host's REST API as blob,
-then tree, then commit with no author or committer field, then a ref update, retrying on a
-non-fast-forward. That is what makes the commit signed and labelled ci.
+auto-approvals and the review list's briefs. It goes through the git host's REST API as one
+tree request carrying the text of every one of those files, then a commit with no author or
+committer field, then a ref update, retrying on a non-fast-forward. That is what makes the
+commit signed and labelled ci.
+
+One run can write several hundred briefs, and a git host limits how many requests that create
+content one token may make in a short span. Sending each file on its own would spend one of
+those requests per file and be refused part way through, so the whole commit is one request.
+If the git host asks for a pause anyway, answering 403 or 429 with `Retry-After` or
+`x-ratelimit-reset`, the run waits what it was asked for, up to 120 seconds, says so in one
+line, and sends the request again, up to 3 times before it gives up.
 
 The auto-approvals and the briefs are written before that commit, because the commit is what
 carries them. An approval or a brief that stayed on the runner is evidence nobody can read: it
