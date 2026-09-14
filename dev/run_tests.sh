@@ -200,7 +200,8 @@ PYTEST_FILES=(
   "$SCRIPT_DIR/test_vocabulary.py" "$SCRIPT_DIR/test_mutation_adapters.py" \
   "$SCRIPT_DIR/test_records.py" "$SCRIPT_DIR/test_run_script.py" \
   "$SCRIPT_DIR/test_scan.py" "$SCRIPT_DIR/test_upstream.py" \
-  "$SCRIPT_DIR/test_brief.py" "$SCRIPT_DIR/test_approvals.py"
+  "$SCRIPT_DIR/test_brief.py" "$SCRIPT_DIR/test_approvals.py" \
+  "$SCRIPT_DIR/test_skills.py"
 )
 # test_purlin_report.py drives a headless browser and adds roughly 80s. It is
 # in the default run; only --fast holds it out, and then no marker is written.
