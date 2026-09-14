@@ -1,9 +1,10 @@
 {
   "version": "0.10.0",
-  "test_framework": "auto",
-  "pre_push": "warn",
-  "remote_verification": "off",
-  "mutation_checks": false,
-  "report": true,
-  "digest": "auto"
+  "gate": "tested",
+  "ai_review_at": "never",
+  "min_strength": 50,
+  "mutation_engine": "auto",
+  "sql_engine": null,
+  "ci": "github",
+  "test_framework": "auto"
 }
