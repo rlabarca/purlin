@@ -35,7 +35,7 @@ def _all_script_files():
 
 
 def _read(path):
-    with open(path) as f:
+    with open(path, encoding='utf-8') as f:
         return f.read()
 
 
@@ -195,7 +195,8 @@ def _make_bare_repo(bare_path, work_path):
     """Create a bare repo with one commit. Returns its HEAD SHA."""
     _git(['init', '--bare', '-q', bare_path])
     _git(['clone', '-q', bare_path, work_path])
-    with open(os.path.join(work_path, 'policy.md'), 'w') as f:
+    with open(os.path.join(work_path, 'policy.md'), 'w',
+              encoding='utf-8') as f:
         f.write('# policy\n')
     _git(['config', 'user.email', 'test@test.com'], cwd=work_path)
     _git(['config', 'user.name', 'Test'], cwd=work_path)
@@ -206,7 +207,8 @@ def _make_bare_repo(bare_path, work_path):
 
 
 def _write_anchor(anchors_dir, name, source, pinned):
-    with open(os.path.join(anchors_dir, name + '.md'), 'w') as f:
+    with open(os.path.join(anchors_dir, name + '.md'), 'w',
+              encoding='utf-8') as f:
         f.write(
             f'# Anchor: {name}\n\n'
             f'> Source: {source}\n'

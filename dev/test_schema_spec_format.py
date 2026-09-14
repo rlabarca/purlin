@@ -264,7 +264,7 @@ class TestSpecFormatConventions:
                                recursive=True)
         pattern = re.compile(r'^-\s+PROOF-\d+\s+\(RULE-\d+\)')
         for path in spec_files:
-            with open(path) as f:
+            with open(path, encoding='utf-8') as f:
                 content = f.read()
             proof_section = re.search(
                 r'^## Proof\s*\n(.*?)(?=^## |\Z)', content,
@@ -284,7 +284,7 @@ class TestSpecFormatConventions:
                                recursive=True)
         valid = re.compile(r'^# (Feature|Anchor): ')
         for path in spec_files:
-            with open(path) as f:
+            with open(path, encoding='utf-8') as f:
                 content = f.read()
             headings = re.findall(r'^# .+', content, re.MULTILINE)
             for h in headings:
