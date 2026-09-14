@@ -166,6 +166,24 @@ def _dirty(root, since=None):
     return False
 
 
+def _stamp(path):
+    """Now, as this filesystem times a write.
+
+    `time.time()` reads the wall clock, which Windows moves forward in steps
+    of about 16 milliseconds while a file written inside one of those steps
+    carries a finer timestamp. Comparing the two reports a write that landed
+    before this generation started as newer than it, and the re-check below
+    then runs again for nothing. Touching a file and reading its time back
+    asks the one clock that stamps the inputs. A filesystem that refuses the
+    touch falls back to the wall clock, which is what this was.
+    """
+    try:
+        os.utime(path, None)
+        return os.stat(path).st_mtime
+    except OSError:
+        return time.time()
+
+
 def main():
     try:
         sys.stdin.read()
@@ -189,13 +207,13 @@ def main():
 
     runtime = os.path.join(root, '.purlin', 'runtime')
     os.makedirs(runtime, exist_ok=True)
-    with open(os.path.join(runtime, 'refresh_digest.lock'), 'a+',
-              encoding='utf-8') as lock:
+    lock_path = os.path.join(runtime, 'refresh_digest.lock')
+    with open(lock_path, 'a+', encoding='utf-8') as lock:
         if not try_lock_exclusive(lock):
             return
         try:
             for _attempt in range(3):
-                started = time.time()
+                started = _stamp(lock_path)
                 generate_digest(root, generated_by='hook', network=False,
                                 only_if_changed=True)
                 if not _dirty(root, since=started):

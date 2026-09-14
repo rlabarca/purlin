@@ -834,13 +834,22 @@ class TestFileLocking:
         would succeed whether or not the first one is held.
         """
         lock_path = tmp_path / 'records.lock'
+        # The probe asks for the lock without waiting, the way the module
+        # takes it: flock where there is an fcntl, and one byte through
+        # msvcrt where there is not, so Windows answers the same question.
         probe = (
             'import sys\n'
             'sys.path.insert(0, %r)\n'
-            'import fcntl\n'
+            'from static_checks import _HAS_FCNTL\n'
             'f = open(%r, "a+", encoding="utf-8")\n'
             'try:\n'
-            '    fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)\n'
+            '    if _HAS_FCNTL:\n'
+            '        import fcntl\n'
+            '        fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)\n'
+            '    else:\n'
+            '        import msvcrt\n'
+            '        f.seek(0)\n'
+            '        msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)\n'
             '    print("free")\n'
             'except OSError:\n'
             '    print("held")\n'
