@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-14T17:07:48Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "5a7de795ae18731abdea1d5e92d498ec413980f149e0edda818c5eb9019b8f6e",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-26",
+      "text": "Open the regulated fixture and open login `RULE-2`, whose approval is missing; verify the screen reads `purlin:approve login RULE-2`, that the span holding it computes to a Courier family, and that it reads `signed commit by someone on the approver list`. Open `RULE-1`, which is approved, and verify it reads `Approved by jane-doe` and that `purlin:approve` is absent",
+      "tier": "e2e"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/purlin_report/20260914T170736Z-e7757ad-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-26",
+  "rule_hash": "bc5ea8d9ba2cc0810bba5cda4cdcc7bb6a7f8fa6583b06790c6023fbad7081bb",
+  "rule_text": "A rule that is not approved names the command that approves it, `purlin:approve <feature> <RULE-N>`, set in the monospace face, and states that an approval is a signed commit this page can only read back; an approved rule names who approved it instead",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "4ee1562daac1ea043102fa0cc21bb170cf956ee94dd91012caf35a0d9842291e",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_rule_screen_names_the_approve_command(browser, tmp_path):\n    \"\"\"The page cannot sign a commit, so it names the command that does.\"\"\"\n    page = open_board(browser, tmp_path, payload_named('regulated'))\n    page.click('[data-act=\"feature\"][data-feature=\"login\"]')\n    page.click('.rule[data-rule=\"RULE-2\"]')\n    body = page.inner_text('.wrap')\n    assert 'purlin:approve login RULE-2' in body\n    assert 'signed commit by someone on the approver list' in body\n    assert 'courier' in page.eval_on_selector(\n        '.cmd', 'el => getComputedStyle(el).fontFamily').lower()\n\n    page.click('[data-act=\"close\"]')\n    page.click('.rule[data-rule=\"RULE-1\"]')\n    approved = page.inner_text('.wrap')\n    assert 'Approved by jane-doe' in approved\n    assert 'purlin:approve' not in approved\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_the_rule_screen_names_the_approve_command",
+      "proof": "PROOF-26",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "af6adb948093e1a27c1ed75645c81823e9ddd86b8daf9a34db25eb2130c80094",
+  "verdict": "ready"
+}

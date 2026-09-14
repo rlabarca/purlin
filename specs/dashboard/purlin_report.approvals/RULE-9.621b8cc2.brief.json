@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-14T17:07:47Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "ed798e83e302793b251448090fed34424d1c99b9a7ed5f6e1de42ca3c2fbdd9f",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-9",
+      "text": "Open the board with the solo fixture, which has never recorded, and verify the heading row offers no latest record, no approvals and no risk, and that no risk-by-state grid is on screen; open it with the team fixture and verify latest record, strength, re-verify and risk are offered, approvals are not, and exactly 1 grid is on screen; open it with the regulated fixture and verify approvals are offered",
+      "tier": "e2e"
+    }
+  ],
+  "reasons": [
+    "PROOF-9 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/purlin_report/20260914T170736Z-e7757ad-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-9",
+  "rule_hash": "d90a2d78e4022c88079d21c1ad461f133556e59e16de206a42c615302e4d11da",
+  "rule_text": "A column appears only where the artifact it reports exists: risk and the risk-by-state grid where a rule is tagged above low, test strength, latest record and re-verify where a record exists, approvals where an approval exists. A project that has never recorded shows none of them",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "07761ec0c1a253296a09a9d1abd310941b7a198802ff9e30fae5829e54a5bf24",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_columns_appear_only_where_their_artifacts_do(browser, tmp_path):\n    \"\"\"A project that has never recorded shows no record column.\"\"\"\n    solo = open_board(browser, tmp_path / 'solo', payload_named('solo'))\n    head = solo.inner_text('.th')\n    assert 'LATEST RECORD' not in head\n    assert 'APPROVALS' not in head\n    assert 'RISK' not in head\n    assert solo.query_selector_all('table.grid') == []\n    solo.close()\n\n    team = open_board(browser, tmp_path / 'team', payload_named('team'))\n    head = team.inner_text('.th')\n    assert 'LATEST RECORD' in head and 'STRENGTH' in head\n    assert 'RE-VERIFY' in head and 'RISK' in head\n    assert 'APPROVALS' not in head\n    assert len(team.query_selector_all('table.grid')) == 1\n    team.close()\n\n    reg = open_board(browser, tmp_path / 'reg', payload_named('regulated'))\n    assert 'APPROVALS' in reg.inner_text('.th')\n    reg.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_columns_appear_only_where_their_artifacts_do",
+      "proof": "PROOF-9",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "621b8cc2897acd69a55fb5918aadb6932f9f1fa9783231f9482f7e7022091e77",
+  "verdict": "add a case"
+}

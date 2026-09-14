@@ -1,0 +1,50 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-14T17:07:47Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "d4a1ffb82cedf40f1bffbc6770a1d1305e0f0113c634a8606502e1f71eef6d10",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-11",
+      "text": "Open the board with the regulated fixture, whose checkout spec pins one image; verify exactly 1 thumbnail is on screen, that it points at `designs/checkout/cart.png`, and that the image loaded, its natural width being 1 pixel",
+      "tier": "e2e"
+    }
+  ],
+  "reasons": [
+    "PROOF-11 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/purlin_report/20260914T170736Z-e7757ad-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-11",
+  "rule_hash": "b326a2b16fad8488575bc89013948939af7eccb0c15e03096e8097875b353e32",
+  "rule_text": "A row whose spec pins a single image file shows that image as a thumbnail beside the name",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "b52af3ac8eb6c92ce95862e9a20b4ed2abe9b3b1f0cf9ea850e1fa2d347a081b",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_design_anchor_row_shows_its_thumbnail(browser, tmp_path):\n    page = open_board(browser, tmp_path, payload_named('regulated'))\n    thumbs = page.query_selector_all('.tr img.thumb')\n    assert len(thumbs) == 1\n    assert thumbs[0].get_attribute('src') == 'designs/checkout/cart.png'\n    assert page.evaluate(\n        'document.querySelector(\".tr img.thumb\").naturalWidth') == 1\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_a_design_anchor_row_shows_its_thumbnail",
+      "proof": "PROOF-11",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "9f1f4be4c5b2e7230d31cb8db613056627fb7e8b25c68a0ee202bfc331d456d2",
+  "verdict": "add a case"
+}

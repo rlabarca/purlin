@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-14T17:07:49Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "c28e52991c57f881342edcaafff544007736f79af6a5079a0e42bd6d8a044449",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-32",
+      "text": "Open the board with the regulated fixture, whose invoice recorded on two operating systems, rewritten so login holds a failing `linux` record and a passing `windows` record and checkout_design holds none; verify the login cell reads `linux failed \u00b7 windows passed` with the first entry in the colour `--state-fail` and the second in `--state-pass`, that the failing entry's tooltip names its timestamp and its path, that the invoice cell reads `linux passed \u00b7 macos passed`, that the checkout_design cell reads `\u2014`, and that login `RULE-1` shows the same two entries; open the team fixture and verify its login cell reads `passed` and its checkout_design cell, written by a person, reads `developer passed`",
+      "tier": "e2e"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/purlin_report/20260914T170736Z-e7757ad-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-31",
+  "rule_hash": "86d92ed6813bda7d8531315207c14fea67ff4622bed1d22c053ee037590338dd",
+  "rule_text": "The latest record column and the rule screen's latest record line carry one entry per operating system that has a record for that spec, reading the label where it is not `ci`, the operating system where the record names one, and `passed` or `failed` in that result's tone, joined by ` \u00b7 `, each carrying its timestamp and its path as a tooltip; a spec with no record reads `\u2014`",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "362314b1ba824188136bf26fd16ac9b24009f3a5b7f43dd1025781cced9f0753",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_record_column_says_what_each_operating_system_found(browser,\n                                                                 tmp_path):\n    \"\"\"A record's existence is not its result, and two jobs disagree.\n\n    The newest record alone read `ci linux` whether that run passed every\n    proof or failed every one of them, and said nothing about the Windows job\n    that passed beside it.\n    \"\"\"\n    payload = payload_named('regulated')\n    payload['records']['login'] = {\n        'linux': {\n            'commit': 'a1b2c3d', 'label': 'ci', 'os': 'linux',\n            'path': '.purlin/records/login/'\n                    '20260912T091402Z-a1b2c3d-ci-linux.json',\n            'result': 'fail', 'test_strength': 86,\n            'timestamp': '2026-09-12T09:14:02Z'},\n        'windows': {\n            'commit': 'a1b2c3d', 'label': 'ci', 'os': 'windows',\n            'path': '.purlin/records/login/'\n                    '20260912T090100Z-a1b2c3d-ci-windows.json',\n            'result': 'pass', 'test_strength': 86,\n            'timestamp': '2026-09-12T09:01:00Z'},\n    }\n    del payload['records']['checkout_design']\n    page = open_board(browser, tmp_path / 'reg', payload)\n    cells = record_cells(page)\n    tones = {c['os']: c['tone'] for c in cells['login']['boxes']}\n    assert tones == {'linux': 'fail', 'mac': 'none', 'win': 'pass'}\n    tones = {c['os']: c['tone'] for c in cells['invoice']['boxes']}\n    assert tones == {'linux': 'pass', 'mac': 'pass', 'win': 'none'}\n    assert all(c['tone'] == 'none' for c in cells['checkout_design']['boxes'])\n\n    failed, _, passed = cells['login']['boxes']\n    assert failed['colour'] == page.evaluate(RESOLVE_TOKEN, '--state-fail')\n    assert passed['colour'] == page.evaluate(RESOLVE_TOKEN, '--state-pass')\n    assert failed['title'] == (\n        'linux: ci failed at 2026-09-12T09:14:02Z \u00b7 .purlin/records/login/'\n        '20260912T091402Z-a1b2c3d-ci-linux.json')\n\n    page.click('[data-act=\"feature\"][data-feature=\"login\"]')\n    page.click('.rule[data-rule=\"RULE-1\"]')\n    assert page.locator('.wrap .os.fail').count() == 1\n    assert page.locator('.wrap .os.pass').count() == 1\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_the_record_column_says_what_each_operating_system_found",
+      "proof": "PROOF-32",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "7d8c66fbc1fec6a814906c166d2b74919ad94b72fcfcdb4e5822550f66d52e2f",
+  "verdict": "ready"
+}

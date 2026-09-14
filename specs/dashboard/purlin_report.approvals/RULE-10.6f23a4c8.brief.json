@@ -1,0 +1,50 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-14T17:07:47Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "d5f9de2ec434fcc7390ad6ce238f80d1ac6f55021cf7f028e21f475ecbbad9ee",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-10",
+      "text": "Open the board with the regulated fixture; verify no rule id is on screen, click the login row and verify the ids read `RULE-1`, `RULE-2`, `RULE-3`, `RULE-4` and that one of them reads `APPROVED`, then click it again and verify no rule id remains",
+      "tier": "e2e"
+    }
+  ],
+  "reasons": [
+    "PROOF-10 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/purlin_report/20260914T170736Z-e7757ad-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-10",
+  "rule_hash": "5dcc47f240deaa69cdf2b349ef4ef5e387c6c5c1d1fa8e5994a2e904b6b5e5ae",
+  "rule_text": "A spec row opens to the rules it owns and closes again on the next click",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "05b38d253a4dd078537bc5e99d701452f33d892d08c8c867ac1c445d366a7d53",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_feature_row_expands_to_its_rules(browser, tmp_path):\n    page = open_board(browser, tmp_path, payload_named('regulated'))\n    assert rule_ids(page) == []\n    page.click('[data-act=\"feature\"][data-feature=\"login\"]')\n    assert rule_ids(page) == ['RULE-1', 'RULE-2', 'RULE-3', 'RULE-4']\n    assert 'APPROVED' in page.inner_text('.rule')\n    page.click('[data-act=\"feature\"][data-feature=\"login\"]')\n    assert rule_ids(page) == []\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_a_feature_row_expands_to_its_rules",
+      "proof": "PROOF-10",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "6f23a4c89080dddd8e325ba8ba214e6c77ca019674d208d340954d317cca7fde",
+  "verdict": "add a case"
+}

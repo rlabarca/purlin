@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-14T17:07:48Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "f6f95af3856f0c00259561172dcda2858001700c314c66863d763a83d3440ff6",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-24",
+      "text": "Open the board with the regulated fixture; verify the tabs read `Board` and `Review list (4)`, open the login row and then `RULE-1` and verify the tabs read `Board`, `Review list (4)`, `login RULE-1` in that order, then click that last tab and verify the heading still names `RULE-1`, with zero extra tabs added",
+      "tier": "e2e"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/purlin_report/20260914T170736Z-e7757ad-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-24",
+  "rule_hash": "38d63af50074a3e5cfcb5f0feab9f932e438fab7342d9a7e21049b543875aec7",
+  "rule_text": "The tabs read Board, then Review list, then the open rule last, and the open rule's tab stays clickable while its screen is showing",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "8bd8884ae8553fb1db3c51cbdb75116f0d911b3deaffe61f2422b78cb9c60577",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_open_rule_is_the_last_tab(browser, tmp_path):\n    page = open_board(browser, tmp_path, payload_named('regulated'))\n    assert texts(page, '.tabs button') == ['Board', 'Review list (4)']\n    page.click('[data-act=\"feature\"][data-feature=\"login\"]')\n    page.click('.rule[data-rule=\"RULE-1\"]')\n    assert texts(page, '.tabs button') == ['Board', 'Review list (4)',\n                                           'login RULE-1']\n    page.click('.tabs button:last-child')\n    assert 'RULE-1' in page.inner_text('h1')\n    assert len(texts(page, '.tabs button')) == 3\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_the_open_rule_is_the_last_tab",
+      "proof": "PROOF-24",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "17634d9e4e6a9fe8828db6a251a3255db66ff04b436fd560ca16729d8a1aa2f5",
+  "verdict": "ready"
+}
