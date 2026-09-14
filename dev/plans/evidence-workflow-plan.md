@@ -930,7 +930,40 @@ Tag `dev/test_*.py`, run verify locally and in CI on this repo, approve in the a
 
 #### DONE
 
-_pending_
+Wave 7, 2026-09-13 to 2026-09-14. The user changed the dogfood to gate `approved` (full GxP,
+one person in every role) and allowed branch pushes for CI; phase 9 lanes commit their tests
+with the agent as git author so the user's signed approvals count. Briefs `9A` to `9H`, `9X`,
+`F9`; order of work in `dev/plans/lanes/9-plan.md`.
+
+| Lane | Head | What | Tokens |
+|---|---|---|---|
+| 9A | `5941569a` | `specs/mcp/` `specs` 14, `proofs` 7, `states` 25, `server` 22, `drift` 17, `config_engine` 12 rules (97); five frozen mcp and hooks specs deleted | 509,281 |
+| 9B | `8e7b51dc` | `specs/run/` `run_script` 38, `records` 20, `mutation` 20; the six plugin specs and `consumer_ci` deleted; root `proof_plugins.test.sh` so the shell arm reaches the suites | 396,099 |
+| 9C | `60cea136` | `specs/review/` `brief` 24, `approvals` 38 (with the gate), `static_checks` 37 (one `@env(windows)` proof holds at Proof ready on a Mac by design); `specs/audit/` and `verify_gate` deleted | 338,216 |
+| 9D | `4cc155c5` | `specs/init/` `scaffold` 37, `update` 20; `pre_push_hook` deleted; root `init_e2e.test.sh`; the dead `report` key no longer written | 291,043 |
+| 9E | `aaf29a89` | `purlin_report` 23, `specs/anchor/upstream` 22, `purlin_version` 9; root `conftest.py` | 237,334 |
+| 9F | `7b81a9b8` | one spec per skill (13), `purlin_agent` 6, the two tools; 76 rules; `dev/test_skills.py` (894, 76 tests) in the sweep | 384,007 |
+| 9G | `4546dc2c` | the four anchors trimmed (`proof_common` 14, `schema_spec_format` 11, `schema_proof_format` 8, `security_no_dangerous_patterns` 6); `dashboard_visual` deleted; the security anchor pin set to the local bare repo's sha | 279,769 |
+| 9H | `ae32dd3d` | `dev/manual/check_spec.py`, `check_build.py`, `check_qa_tool.py`, all three run once against the real `claude` CLI: 5/5, 6/6, 5/5 checks passed | 129,493 |
+| 9X | `6efa7896` | the plugin contract has one home (`run_script` RULE-23 to 35 dropped, `> Requires: proof_common`); one pytest collection guard, not two | 178,599 |
+
+Phase 9 lane tokens: 2,743,841. Running total: 7,792,336 (F9 pending). 37 specs remain,
+all new or rewritten; 501 rules.
+
+Sweep at `7b81a9b8`: ten shell suites pass; pool 970 passed, 6 skipped, 1 failed: the
+release-notes counts line, set at the release step.
+
+Findings from the init dry run on this repository, fix lane F9: the workflow matrix came
+out Windows-only (the Linux job must always exist); the upgrade carried `jest,vitest` from
+the old config into a tree with no `package.json`; ten proofs fail the free checks and
+hold their rules at Drafted. Two design gaps recorded by the lanes, not fixed: the run
+script's shell arm executes only `*.test.sh` at the project root, so shell suites under
+`dev/` prove nothing unless a root wrapper calls them (9B and 9D added wrappers; 9A, 9E
+and 9F left their shell suites untagged and proved the same claims through pytest);
+`scan.py` prints counts only, so the QA tool cannot yet produce a per-rule review list
+from it. Findings from the real-model checks: the spec skill's "three rules out" sentence
+reads as a target count and the model writes five or six; the `[criterion:]` tag is never
+set from a bare sentence (correct).
 
 ## C3. Preloaded decisions (the orchestrator never asks; a lane that meets an unlisted choice picks the simplest option and records it in its DONE note)
 
