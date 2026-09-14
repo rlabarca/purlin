@@ -995,7 +995,16 @@ CI rounds on `evidence-workflow`: run 1 (`34808346536`) Windows committed 37 rec
 printing, Ubuntu cancelled at six hours; run 2 (`34840363131`, with F10) both jobs ended
 inside the cap, Ubuntu's shell arm timed out at 3600 s, Windows 7 rules short; run 3
 (`34842281168`, with F11) Windows every rule Tested or Reviewed yet both arms exit 1, Ubuntu
-as run 2; run 4 (`34851835724`, with F14) Ubuntu in four minutes with one marker missing, CI auto-approved 69 low-risk rules and reviewed 425, both jobs exit 1 on 14 gate tests (Windows 56); run 5 (`34859129349`, with F17): the Windows job green (503 rules: Reviewed 426, Approved 77 by CI's low-risk auto-approval), Ubuntu green but for two pre-push hook tests that expect exit 0 outside a repository and get the run script's 2 (fix lane F18: `/bin/sh` on Ubuntu is dash, which rejects `set -o pipefail` before the hook runs; the hook is POSIX sh now, `0ac7bd5c`, 123,415 tokens); run 6 (`34862218712`, with F18) Ubuntu green, Windows red on the hook tests (the suite asked PATH for `sh`; the orchestrator pointed it at Git for Windows' `sh.exe`, `b2fa0a1b`-era commit); run 7 (`34864380681`): **both jobs green**, Linux in 5 minutes, Windows in 16; each job commits its records through the API with label `ci`; 503 rules read Reviewed 426 and Approved 77 on the runner. Lane F19 (pending) makes the approvals and briefs travel in that commit, since a checkout still reads Recorded 482. Running total with F18: 10,007,982. CI's API commits label `ci` and trigger no
+as run 2; run 4 (`34851835724`, with F14) Ubuntu in four minutes with one marker missing, CI auto-approved 69 low-risk rules and reviewed 425, both jobs exit 1 on 14 gate tests (Windows 56); run 5 (`34859129349`, with F17): the Windows job green (503 rules: Reviewed 426, Approved 77 by CI's low-risk auto-approval), Ubuntu green but for two pre-push hook tests that expect exit 0 outside a repository and get the run script's 2 (fix lane F18: `/bin/sh` on Ubuntu is dash, which rejects `set -o pipefail` before the hook runs; the hook is POSIX sh now, `0ac7bd5c`, 123,415 tokens); run 6 (`34862218712`, with F18) Ubuntu green, Windows red on the hook tests (the suite asked PATH for `sh`; the orchestrator pointed it at Git for Windows' `sh.exe`, `b2fa0a1b`-era commit); run 7 (`34864380681`): **both jobs green**, Linux in 5 minutes, Windows in 16; each job commits its records through the API with label `ci`; 503 rules read Reviewed 426 and Approved 77 on the runner. Lane F19 (pending) makes the approvals and briefs travel in that commit, since a checkout still reads Recorded 482. Running total with F18: 10,007,982.
+
+Run 8 (`34866415760`, with F19, `b97e5dc1`: the auto-approvals and briefs move before the
+commit and travel in it): both jobs died on `HTTP Error 403` from `POST /git/blobs` after
+several hundred blob requests, GitHub's secondary rate limit. F20 (`c6d28806`, 131,424
+tokens): the commit is one tree request with inline content, and a 403 or 429 carrying
+`Retry-After` or `x-ratelimit-reset` is waited out (up to three times, 120 s cap). F19:
+159,253 tokens. Run 9 (`34869803860`, with F20): the closing run; its result is in the
+final message. Lane tokens in total: 10,298,659 across 61 lanes (41 planned, 20 fix), plus
+the orchestrator's own context. Outstanding work: `dev/plans/TODO-0.10.0.md`. CI's API commits label `ci` and trigger no
 further run. `verify_gate.py --check` on this repository still exits 1 under `approved`
 until the user's approvals exist.
 
