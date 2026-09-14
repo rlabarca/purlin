@@ -190,7 +190,8 @@ PYTEST_FILES=(
   "$SCRIPT_DIR/test_purlin_version.py" "$SCRIPT_DIR/test_init_update.py" \
   "$SCRIPT_DIR/test_init_scaffold.py" "$SCRIPT_DIR/test_verify_gate.py" \
   "$SCRIPT_DIR/test_consumer_ci.py" "$SCRIPT_DIR/test_drift.py" \
-  "$SCRIPT_DIR/test_refresh_digest_hook.py" "$SCRIPT_DIR/test_pre_push_hook.py"
+  "$SCRIPT_DIR/test_refresh_digest_hook.py" "$SCRIPT_DIR/test_pre_push_hook.py" \
+  "$SCRIPT_DIR/test_vocabulary.py"
 )
 run_suite "All Pytest Tests" run_pytest "${PYTEST_FILES[@]}" -v
 
