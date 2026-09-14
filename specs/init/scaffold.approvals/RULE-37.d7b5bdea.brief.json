@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "scaffold",
-  "generated_at": "2026-09-14T16:52:32Z",
+  "generated_at": "2026-09-14T17:09:40Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-37 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/scaffold/20260914T165126Z-c6d2880-ci-windows.json",
+  "record": ".purlin/records/scaffold/20260914T170857Z-ff82c7d-ci-windows.json",
   "risk": "high",
   "rule": "RULE-37",
   "rule_hash": "52ce899379cebd7ba9837b9dd18de14fe5962e0427e8467aa1115a6251668032",
   "rule_text": "Each language init supports is wired the same way in a real project, and an install from the marketplace leaves `.purlin/plugin-root` as the only file naming the install",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "test_hash_kind": "none",
   "test_strength": null,
