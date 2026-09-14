@@ -9,9 +9,9 @@
   --surface-sunken:var(--purlin-navy-900);
   --surface-veil:rgba(228,221,212,.30);   /* the deck's full-bleed cream veil */
 
-  --text-primary:var(--purlin-cream-100);
+  --text-primary:var(--purlin-cream-050);
   --text-secondary:var(--purlin-blush-200);
-  --text-muted:var(--purlin-slate-300);
+  --text-muted:var(--purlin-slate-200);
   --text-accent:var(--purlin-copper-500);
   --text-inverse:var(--purlin-navy-900);
 

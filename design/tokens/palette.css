@@ -7,6 +7,8 @@
   --purlin-blush-200:#E6BEB0;  /* secondary ink, eyebrow labels */
   --purlin-copper-500:#C0793F; /* accent, measure lines, gate labels */
   --purlin-slate-300:#93AEB8;  /* muted mono, list numerals */
+  --purlin-slate-200:#BFCED5;  /* muted text on navy, one step brighter for reading */
+  --purlin-cream-050:#F1ECE5;  /* primary ink on navy, one step brighter than the logo cream */
 
   /* --- Product / dashboard: cool slate --------------------------- */
   --slate-950:#0F172A;
