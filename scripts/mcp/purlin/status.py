@@ -60,8 +60,25 @@ def sync_status(project_root):
         lines.extend(data['warnings'])
 
     lines.append('')
-    lines.extend(_directives(data))
+    lines.extend(_directives(data, project_root))
     return '\n'.join(lines)
+
+
+def _update_pending(project_root):
+    """True while `purlin:init --update` still has migrations to apply.
+
+    Imported here rather than at the top: a project that is already on this
+    release pays nothing for the question, and a checkout without the init
+    scripts still prints a table.
+    """
+    init_dir = os.path.join(os.path.dirname(_MCP_DIR), 'init')
+    if init_dir not in sys.path:
+        sys.path.insert(0, init_dir)
+    try:
+        import update
+        return bool(update.pending(project_root))
+    except Exception:                       # noqa: BLE001 - never block status
+        return False
 
 
 # ---------------------------------------------------------------------------
@@ -138,10 +155,11 @@ def _summary(data):
     return lines
 
 
-def _directives(data):
+def _directives(data, project_root):
     """The next step, computed from the state, plus anything to fix first."""
     lines = []
-    if any('purlin:init --update' in warning for warning in data['warnings']):
+    if (any('purlin:init --update' in warning for warning in data['warnings'])
+            or _update_pending(project_root)):
         lines.append('%s Run: purlin:init --update' % ARROW)
 
     counts = data['states']
