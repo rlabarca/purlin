@@ -1,739 +1,259 @@
-# Spec Quality Guide
+# Spec quality guide
 
-How to write good specs. For spec **syntax** (section names, ID format, metadata fields), see [references/formats/spec_format.md](formats/spec_format.md). This guide covers **judgment**: what makes a spec useful for rebuilding, testing, and verifying code. For bad→good rule examples from real projects, see [references/rule_examples.md](rule_examples.md).
+How to write a spec worth proving. For spec syntax, section names, id format and
+metadata fields, see [references/formats/spec_format.md](formats/spec_format.md). For
+bad-to-good rewrites taken from real projects, see
+[references/rule_examples.md](rule_examples.md). For what a reviewer or the review
+brief checks once a rule has a test, see
+[references/review_criteria.md](review_criteria.md).
 
-## Writing Rules
+## Writing rules
+
+### One claim, observable
+
+A rule is one line saying what the software has to do. It makes one claim, and that
+claim is observable: someone or something outside the code can watch it hold or fail.
+
+- Bad: "Use bcrypt.compare for password verification"
+- Good: "Return 401 when the password does not match the stored hash"
+
+The first names the library. The second names what a caller sees, so a test can observe
+it and a refactor cannot break it.
 
 ### The rebuild test
 
-Every rule must pass one test: **"If an engineer rebuilt this feature from only this spec, would they get this wrong without this rule?"**
+Every rule must pass one question: **if an engineer rebuilt this feature from only this
+spec, would they get this wrong without this rule?**
 
-If the answer is "no, they'd figure it out" or "QA would catch it immediately", it's not a rule. Cut it.
+If the answer is "no, they would figure it out" or "QA would catch it immediately", it
+is not a rule. Cut it. This question comes before everything else: coverage, tier tags
+and proof text are all wasted on a rule that does not earn its line.
 
-This question comes before everything else. Coverage dimensions, tier tags, proof descriptions: none of that matters if the rules themselves don't capture what an engineer would get wrong.
+Two more questions for every candidate rule:
 
-Rules describe **behavior, not implementation**:
-- Bad: "Use bcrypt.compare for password verification"
-- Good: "Return 401 when password does not match stored hash"
+- **Behaviour:** does this say what the feature does, or how the code does it? If it
+  names a library, a hook, a CSS value or a token, rewrite it as the observable
+  behaviour, or cut it.
+- **Overlap:** would this rule always pass or fail together with another rule? If so,
+  merge them.
 
-Three tests for every candidate rule:
+### What a missing rule costs
 
-1. **Rebuild test:** Would an engineer get this wrong without this rule?
-2. **Behavior test:** Does this describe what the feature does, or how the code does it? If it names a library, hook, CSS value, or token, rewrite it as the observable behavior, or cut it.
-3. **Overlap test:** Would this rule always pass or fail together with another rule? If yes, merge them.
+| Rebuild risk | What goes wrong | Spec priority |
+|---|---|---|
+| Wrong behaviour | The engineer builds the wrong thing: wrong data source, wrong conditional gate, wrong calculation | Must be a rule. The rebuild produces wrong numbers. |
+| Broken functionality | The feature works, then degrades under real conditions: crashes on missing data, one failure cascades | Must be a rule. An engineer would likely miss it. |
+| Wrong layout | The feature is correct but unusable: content overlaps, controls are hidden | Should be a rule, proved `@e2e` or `@manual`. |
+| Visual polish | Spacing, exact pixel values, animation timing, icon sizing | Not a rule. QA catches it. |
 
-### Rebuild risk tiers
+### Too few rules, too many rules
 
-Not all missing rules are equally dangerous. Prioritize by what would go wrong in a rebuild:
+Signs of too few: data source fields unnamed, so the engineer pulls the wrong API
+field; conditional gates missing, so content reaches the wrong user; no graceful
+degradation, so the rebuild crashes on missing data.
 
-| Tier | Rebuild risk | Example | Spec priority |
-|------|-------------|---------|---------------|
-| **Wrong behavior** | Engineer builds the wrong thing: wrong data source, wrong conditional gate, wrong calculation | "Purchase flow uses `PurchasePriceOrPropertyValue`; refi uses `PropertyValue`" | Must be a rule. A rebuild without this produces wrong numbers. |
-| **Broken functionality** | Feature works but degrades badly under real conditions: crashes on missing data, one section failure cascades | "Accordion sections render independently: one failing does not collapse others" | Must be a rule. An engineer would likely miss this. |
-| **Wrong layout** | Feature works correctly but looks wrong in ways that affect usability: content overlaps, sections hidden | "Loan details and disclaimer do not overlap on any viewport" | Should be a rule with `@e2e` or `@manual` proof. |
-| **Visual polish** | CSS spacing, exact pixel values, animation timing, icon sizing | "Info bar has 16px bottom margin" | Not a rule. QA catches this. |
+Signs of too many: rules that describe implementation ("uses a `forEach` loop"); rules
+that fix a CSS value that is polish rather than behaviour; two rules that always pass
+or fail together; rules for behaviour that exists only in tests.
 
-### Signs of too few / too many rules
+### Coverage
 
-Signs of too few rules:
-- Data source fields not specified: engineer might pull from wrong API field
-- Conditional gates missing: engineer shows content to wrong user segment
-- Graceful degradation absent: engineer's rebuild crashes on missing data
-- Responsive behavior causes functional breakage (overlapping content, hidden controls)
+After the rebuild test, check the feature's contract boundaries. Data crossing a
+boundary is what an engineer gets wrong, and the rule count scales with the feature:
+there is no target.
 
-Signs of too many rules:
-- Rules describe implementation rather than behavior ("uses a `forEach` loop", "uses `rx={h/2}` for SVG elbow")
-- Rules specify CSS values that are visual polish, not behavioral ("margin-top: -66px")
-- Rules overlap: two rules that would always pass or fail together
-- Rules for behavior that exists only in tests, not in the feature itself
-- Implementation notes masquerading as rules (architecture decisions, library choices)
+- **Inbound:** API response fields by exact name, config and environment values, props
+  and parameters, file contents, CLI arguments, webhook payloads.
+- **Outbound:** analytics events with their names and shapes, calls to other services,
+  database writes, file outputs, log entries.
+- **Transformations:** field mappings with the exact name on both sides, calculations,
+  formatters, filters, sorts, aggregations.
+- **State:** the valid states, what triggers each transition, what is forbidden, what
+  expires and when.
+- **Access:** role and permission gates, feature flag conditions, switches that change
+  behaviour.
 
-### Coverage dimensions
+Then the supporting dimensions: each distinct error response, boundary conditions such
+as maximum lengths and retry limits, performance constraints, and what happens when a
+dependency fails.
 
-After applying the rebuild test, check that the spec covers each applicable **contract boundary**. Every feature has data crossing between systems or modules: the contracts at those boundaries are what an engineer would get wrong. The number of rules scales with the feature's complexity: there is no fixed target.
+### Rule tags
 
-**Inbound contracts**: what data enters this feature and in what shape?
-- API response fields the feature consumes (exact field names: this is the #1 rebuild risk)
-- Config/env values the feature reads
-- Props, parameters, or messages from other modules
-- File contents, CLI arguments, webhook payloads
+Three tags go at the end of a rule line: `[risk: high|medium|low]`,
+`[origin: pm|design|qa|eng]` and `[criterion: <id>]`.
 
-**Outbound contracts**: what data does this feature emit?
-- Analytics events (event names, parameter shapes, when they fire)
-- API calls to other services (endpoints, payloads, query params)
-- Database writes, file outputs, log entries
-- Callbacks, events, or messages to other modules
+- **`risk`** says how much a wrong answer costs. It defaults to `low`. Under the
+  `approved` gate, `high` and `medium` need a current human approval and `low` is
+  auto-approved by CI, so the tag decides who has to look at the rule.
+- **`origin`** says who owns the rule. It defaults to `eng`. Drift routes a change by
+  origin, so a PM sees their own rules move and an engineer sees theirs.
+- **`criterion`** links the rule to an upstream acceptance criterion id. It has no
+  default and nothing requires it; it exists so a PM can find the rule from the ticket.
 
-**Transformation rules**: what logic converts between inbound and outbound?
-- Field mappings (API field → display field, with exact names on both sides)
-- Calculations and formulas (the math that produces displayed or stored values)
-- Formatting functions (URL builders, phone formatters, name concatenation)
-- Filters, sorts, and aggregations applied to data
+Under the `approved` gate, `risk` and `origin` are required on every rule. Tag rules as
+you write them: retagging a spec later is a separate pass over every line.
 
-**State transitions**: what lifecycle does this feature have?
-- Valid states and what triggers each transition
-- What's forbidden (can't go from X to Y directly)
-- Timeout/expiry behavior
+## Writing proofs
 
-**Access contracts**: who can see or do what?
-- Role/permission gates
-- Feature flag conditions
-- Mode switches that change behavior (e.g., admin mode, loan officer mode)
+A proof description tells the agent exactly what to do and what to assert. It should
+read straight into a test without interpretation. Five things make it one:
 
-**Project-level anchors** (check once per project, not per feature):
+1. **A trigger.** Something runs before the assertion: a call, a request, a render, a
+   grep. Without one the proof reads an artifact that exists whether or not the code is
+   right.
+2. **An expected value.** A literal, a number, a status code, a quoted string. Without
+   one, almost any assertion satisfies the proof.
+3. **A negative case.** When the rule says reject, block, limit or expire, one proof
+   exercises the rejection. The accepted case alone proves the rule in one direction.
+4. **A tier.** See "Tier assignment" below.
+5. **An `@env` tag, when the operating system matters.** `@env(windows)`, `@env(macos)`
+   or `@env(linux)`, at most one per proof. Those three are the whole vocabulary. Use
+   it only when the behaviour genuinely cannot be observed elsewhere: a native file
+   lock, a default console codec, a case-insensitive filesystem. A proof with no `@env`
+   is satisfied by a record from any operating system.
 
-- **Environment contracts**: runtime version, key dependency versions, build command, env var inventory. Captured in a `project_environment` anchor with `> Global: true`. Every feature implicitly depends on the environment being correct.
-- **API surface**: full endpoint inventory with paths, methods, and parameter shapes. Captured in an `api_surface` anchor. Feature specs reference it for their specific endpoints; the anchor is the single source of truth for base paths, auth patterns, and response envelope conventions.
-- **Domain schemas**: critical field names for types that flow through multiple features. Captured in `schema_` anchors with field-level rules. Not the full interface: the fields that appear in transformations, display, or conditional gates. If an engineer uses the wrong field name, the feature produces wrong output.
+Bad, because none of them names a value or a trigger:
 
-**Supporting dimensions** (check after the above):
-- Error handling paths: each distinct error response
-- Boundary conditions: max lengths, timeouts, retry limits
-- Performance constraints: load times, render budgets, query limits
-- Graceful degradation: what happens when dependencies fail
-
-### Data contract extraction
-
-The five boundaries above are what a spec generator traces per feature. This section says what to
-capture in each and how the rule reads. All five apply to every feature, not only UI: a category
-the code does not exercise comes back empty, which is itself a finding.
-
-**a) Inbound contracts: what data enters, in what shape**
-
-Trace every external data source the feature consumes. Capture the exact field names: this is the
-number one rebuild risk across all codebases.
-
-What to trace:
-- API response fields (exact names: `user.LogoFileName`, never "the logo field")
-- Config and environment values (`NEXT_PUBLIC_API_URL`, `process.env.DATABASE_URL`)
-- Props and parameters from parent modules or callers
-- File contents, CLI arguments, webhook payloads, queue messages
-- Database query results (table names, column names)
-
-**Extraction depth, env vars (mandatory):** grep the feature's scope files for `process.env.`,
-`import.meta.env.`, `os.environ[`, `os.Getenv(`, `System.getenv(`, `ENV[`. Every env var the
-feature reads becomes a rule or references the `project_environment` anchor. If the feature reads
-3 or more env vars, verify they are all listed in the environment anchor.
-
-**Extraction depth, schema cross-reference (mandatory):** if the feature consumes a typed API
-response or shared data structure, check whether a `schema_` anchor exists with field-level rules
-for that type. If not, flag it: "Schema anchor missing field-level rules for `<TypeName>`: feature
-uses fields `<list>` that are not documented." The feature spec's inbound rules must use the same
-field names as the schema anchor.
-
-Write rules specifying **what the feature reads and from where**:
-- Good: "Header logo comes from `formatImageUrl(user.LogoFileName)` via GET /EdgeMobileService/EdgeService.svc/json/GetAnalysisGuidDisplay"
-- Good: "Contact name is built from `user.FirstName + ' ' + user.LastName`"
-- Good: "Config reads `DATABASE_URL` from environment; falls back to `localhost:5432` if unset"
-- Bad: "Fetches data from the API" (no field names, so the engineer guesses wrong)
-- Bad: "Calls useProductQuery hook" (names the mechanism, not the data contract)
-
-**b) Outbound contracts: what data leaves, in what shape**
-
-Find every place the feature emits data to an external system. Capture event names, payload
-shapes, and trigger conditions.
-
-What to trace:
-- Analytics events (Firebase, Segment, Mixpanel: event name, parameter names, when fired)
-- API calls to other services (endpoint, method, payload fields, query params)
-- Database writes (which table, which columns, what triggers the write)
-- Log entries (log level, message format, when emitted)
-- Callbacks, events, or messages to other modules
-
-Write rules specifying **what gets sent, when, and in what shape**:
-- Good: "Fires Firebase event `report_viewed` with params `{reportId, reportType, contactId}` when report page loads"
-- Good: "POST /api/orders with body `{items, total, paymentToken}` on checkout submit"
-- Bad: "Sends analytics events on key interactions" (no event names, no params)
-- Bad: "Logs errors" (no format, no conditions)
-
-**Extraction depth, event payloads (mandatory):** for each analytics or event call, do not stop at
-the event name. Follow the call into the tracking or emit function and extract the full parameter
-object. If the function merges default params (`{...defaultParams, ...eventParams}`), capture both
-sets. The rule carries the complete payload shape, not just the event name.
-
-**c) Transformation rules: what logic converts between inbound and outbound**
-
-Identify every place data changes shape between input and output. Capture the exact mapping,
-formula, or logic.
-
-What to trace:
-- Field mappings (API field to display field, with names on both sides)
-- Calculations and formulas (interest rate computation, cost aggregation)
-- Formatting functions (URL builders, phone and name formatters, currency display)
-- Filters, sorts, and aggregations applied to collections
-- Type conversions that affect correctness (string to number, date parsing)
-
-Write rules specifying **the transformation, not the mechanism**:
-- Good: "Monthly payment = principal * (rate/12) / (1 - (1 + rate/12)^-term)"
-- Good: "`formatImageUrl` prepends CDN base URL to `user.LogoFileName`; returns empty string if null"
-- Good: "Table rows filtered by `LoanProduct.IsHidden === false`, sorted by `LoanProduct.SortOrder`"
-- Bad: "Formats data for display" (no mapping specified)
-- Bad: "Uses lodash.groupBy for categorization" (names the library, not the grouping logic)
-
-**d) State transitions and initialization ordering**
-
-Identify features with distinct states, transition rules, or bootstrap dependencies. Not every
-feature has these: skip if the feature is stateless and has no init ordering constraints.
-
-What to trace:
-- Enum or constant definitions that represent states
-- Transition functions or state machines
-- Timeout and expiry logic
-- Forbidden transitions (cannot go from X to Y)
-- **Initialization ordering:** services, SDKs, or providers that must initialize before others can
-  be used. Look for provider nesting order in React, `await init()` chains, module-level setup
-  calls, `useEffect` dependency ordering, `DOMContentLoaded` or `onMount` sequences. If service B
-  reads from service A, A initializes first.
-- **Teardown ordering:** cleanup that must happen in reverse init order (close connections, flush
-  analytics, revoke URLs)
-
-Write rules specifying **valid states, transitions, and init order**:
-- Good: "Recording lifecycle: idle, recording, paused, stopped. Cannot go from stopped back to recording."
-- Good: "Analysis polling: starts on mount, pauses when tab hidden, resumes on tab focus, stops on unmount"
-- Good: "Firebase initializes before Split SDK; Split SDK initializes before first render; theme applies before content renders"
-- Good: "On unmount: flush pending analytics events, revoke blob URLs, clear polling interval"
-- Bad: "Has multiple states" (no states named, no transitions specified)
-- Bad: "Initializes services on startup" (no ordering specified)
-
-**e) Access contracts: who can see or do what**
-
-Identify every gate that controls visibility or behavior based on user identity, permissions,
-flags, or modes.
-
-What to trace:
-- Role and permission checks (admin, editor, viewer)
-- Feature flag evaluations
-- Mode switches that change behavior (loan officer mode, debug mode)
-- Subscription and entitlement gates
-- Geographic or locale-based restrictions
-
-Write rules specifying **what each segment sees or can do**:
-- Good: "Loan officer mode (activated by `lo=true` URL hash param) shows editable benefit fields and save button"
-- Good: "Password-gated reports show password form; authenticated reports show content directly"
-- Bad: "Checks user permissions" (no specifics)
-
-**Visual reference preservation.** If the code or the old specs carry references to Figma files,
-design mockups, or screenshots:
-- Extract Figma URLs into `> Visual-Reference: figma://fileKey/nodeId`
-- Extract image paths into `> Visual-Reference: ./designs/component.png`
-- Create `@manual` proofs for visual fidelity: "Visual layout matches design spec @manual"
-
-## Rule Tags
-
-Three tags can be added to rule lines:
-
-### (assumed)
-
-Added by `purlin:spec` when the AI translates vague input into a specific constraint. The tag includes what the user actually said so the PM can see the gap:
-
-User: "search should be fast"
-→ RULE-3: Search returns in under 500ms (assumed: user said "fast")
-
-The AI picked 500ms. The user said "fast." The PM decides whether 500ms is right, changes it to 200ms, or confirms it.
-
-**When to add:** only when `purlin:spec` invents a specific number, threshold, algorithm, or constraint that the user didn't explicitly state. NOT when the user was explicit ("must return in under 200ms" → no tag needed).
-
-**When to remove:** PM either accepts the value as written and deletes the tag, or edits the value to what they actually want and deletes the tag. A rule with no tag is already accepted, so there is no second tag to add.
-
-### (deferred)
-
-Added by PM or engineer when a rule is accepted but not being built yet. Deferred rules are excluded from coverage: `sync_status` shows them as DEFERRED and they don't block VERIFIED status.
-
-Use for: next-sprint features, nice-to-haves accepted into the spec but not yet prioritized, rules that depend on infrastructure not yet available.
-
-Remove the tag when work begins. The rule immediately starts requiring proofs.
-
-## Writing Proof Descriptions
-
-Proof descriptions must be **observable assertions with concrete inputs and expected outputs**. The description should tell the agent exactly what to do and what to assert: it should be copy-pasteable into a test without interpretation.
-
-This section is the authoring side of the **Proof Design** gauge. `purlin:audit` grades every
-proof description as `PROVABLE`, `LOOSE`, `UNPROVABLE` or `STRUCTURAL` using exactly these
-rules. See `references/audit_criteria.md` § Pass D for how each level is decided. A description
-can be graded before any test exists, which is the point: a `LOOSE` description caps what the
-eventual test can prove, and an `UNPROVABLE` one guarantees the test will have to be rewritten.
-
-Bad: graded `LOOSE` (a vague verb with no expected value):
 ```
 - PROOF-1 (RULE-1): Test the login
 - PROOF-1 (RULE-1): Verify authentication works
 - PROOF-1 (RULE-1): Check error handling
 ```
 
-Good: the first two graded `PROVABLE`; the third graded `STRUCTURAL`, which is correct rather
-than a defect, because RULE-3 is itself a FORBIDDEN-pattern rule:
+Good:
+
 ```
 - PROOF-1 (RULE-1): POST {"user": "alice", "pass": "wrong"} to /login; verify 401 with {error: "invalid_credentials"}
-- PROOF-2 (RULE-2): Call resolve_config() with only config.json present; verify returned dict matches config.json contents
+- PROOF-2 (RULE-2): Call resolve_config() with only config.json present; verify the returned dict matches config.json
 - PROOF-3 (RULE-3): Grep src/ for eval(); verify zero matches
 ```
 
-Include test setup context when architecture matters:
+Include setup when the architecture matters:
+
 ```
 - PROOF-4 (RULE-4): With PURLIN_PROJECT_ROOT set to /tmp/test, call find_project_root(); verify it returns /tmp/test without climbing directories
 ```
 
-## Proof Levels
+### Proofs about what a person sees
 
-Rules and proofs operate at three levels of confidence. Understanding these levels helps PMs write rules that get the coverage they actually need.
+Describe what a person would see, never the DOM. The agent picks the tool.
 
-These levels are how the **Proof Design** gauge is decided. The bridge rule: **a Level 1
-description against a behavioural rule is graded `UNPROVABLE`.** Level 2 and Level 3
-descriptions are graded `PROVABLE` when they name concrete inputs and expected outputs, and
-`LOOSE` when they do not. Level is *depth*: what the proof reaches for. The Design grade is
-*quality*: whether the description is well formed enough to be proved at all.
+Bad: "Count the table rows with class `fr`; verify the count is 8." Good: "Load the
+dashboard with 3 features (3 of 3 recorded, 2 of 6 partial, 0 of 4 untested); verify
+the table shows 3 rows, the coverage bars are filled proportionally, and the badges
+read Recorded, Partial and Untested; take a screenshot @e2e".
 
-| Level | What it proves | Example rule | Example proof |
-|-------|---------------|-------------|--------------|
-| **Level 1** | A value exists or has the right type | "Config has a timeout field" | `assert config.timeout is not None` |
-| **Level 2** | Code behavior with controlled inputs | "Return 401 on invalid credentials" | `POST wrong password to mock endpoint; verify 401` |
-| **Level 3** | End-to-end behavior through the real system | "User sees 'Invalid credentials' on screen" | `Open browser → enter wrong password → verify error message visible @e2e` |
+No selectors, no class names, no `querySelector`. The proof says what is on screen, so
+it survives a refactor of the markup.
 
-### Why AI writes Level 2 by default
+### `@e2e` proofs are flows
 
-AI agents default to Level 2 because it's fast, deterministic, and easy to mock. Level 2 proofs are correct for most internal logic, but they can pass while the real feature is broken. The mock says the API returns 200, but the real API is misconfigured.
+An `@e2e` proof reads as arrange, act, observe through the real running app.
 
-### How to drive Level 3
-
-**Anyone controls the proof level by how they write rules.** Write a rule that describes a real-world outcome and the proof must exercise the real system: there's no way to mock it.
-
-- "Passwords are hashed with bcrypt" → Level 2 (unit test)
-- "User enters wrong password and sees 'Invalid credentials' on screen" → Level 3 (must render real UI)
-- "Authentication tokens expire and cannot be reused after 30 minutes" → Level 3 (must test real session lifecycle)
-- "Service recovers from database failure within 5 seconds" → Level 3 (must kill and restart real DB)
-
-PMs write Level 3 rules for user flows. Security engineers write them for compliance. Architects write them for system guarantees. QA engineers write them for regressions. The pattern is the same: **describe the outcome you need to see, not the function you need to call.**
-
-### Visual proof descriptions
-
-*Graded as: implementation-coupled visual descriptions are `LOOSE`.*
-
-For rules about UI rendering, write proofs that describe **what a person would see**, not DOM selectors or CSS classes. The agent picks the tool (Playwright, headless Chrome, MCP browser, screenshot + vision, whatever is available).
-
-Bad (implementation-coupled):
-```
-- PROOF-4 (RULE-4): Count table rows with class "fr"; verify count is 8; take screenshot
-- PROOF-5 (RULE-5): Click first element matching "tr.fr"; verify element with class "dr" becomes visible
-```
-
-Good (outcome-based):
-```
-- PROOF-4 (RULE-4): Load dashboard with 3 features (3/3 VERIFIED, 2/6 PARTIAL, 0/4 untested).
-  Verify the table shows 3 rows. Verify coverage bars are filled proportionally: 3/3 full,
-  2/6 roughly one-third, 0/4 empty. Verify status badges read "Verified", "Partial", "Untested".
-  Take screenshot @e2e
-- PROOF-5 (RULE-5): Load dashboard with features. Click a feature row. Verify a detail panel
-  expands showing individual rules with descriptions and proof status. Take screenshot @e2e
-```
-
-The key differences: no CSS selectors, no class names, no `querySelector`. The proof says what the user sees: the agent decides how to verify it. This also makes proofs resilient to HTML refactors.
-
-### E2E proof descriptions (observable flows)
-
-*Graded as: an `@e2e` description that names a source file or internal function, or that asserts a source constant, is `UNPROVABLE`. One that reads as a flow but omits expected values is `LOOSE`.*
-
-An `@e2e` proof description must read as an **observable flow** through the real running app: **arrange → act → observe**.
-
-- **Arrange:** set up the world a user would encounter: seed state, navigate to a URL, stub an upstream API response.
-- **Act:** do what a person does: click, type, submit, scan. Never "call function X".
-- **Observe:** assert what is visible at a boundary: on-screen text, the outbound network request that fired, the storage state after the flow completed. Never a source constant.
-
-**Proof descriptions must not name source files or internal functions.** A proof like "Assert `config.ts` decrypts the keys" or "Assert `loginRedirect` uses scope X" forces the test writer into a unit-style test that imports internals and asserts declarations, which audits WEAK or HOLLOW (see `references/audit_criteria.md`, "E2E Proof Tier Integrity"). When a rule captures a data contract (a request payload, a storage key, a config value), the proof observes that contract **at the boundary it crosses** during a real flow, not by reading the source that declares it.
-
-Bad (implementation-coupled: names internals, satisfiable without launching the app):
-```
-- PROOF-2 (RULE-2): Assert loginRedirect uses the access_as_user scope, sessionStorage
-  cache, and that loginEmail is persisted. @e2e
-- PROOF-1 (RULE-1): Assert config.ts AES-decrypts the four keys from /envconfig.json
-  before authConfig consumes them. @e2e
-```
-
-Good (boundary-observable flows):
-```
-- PROOF-2 (RULE-2): Open the app → enter an email → click "Sign in" → observe the
-  redirect to the identity provider carries scope "access_as_user" → complete login
-  with a test account → verify sessionStorage holds the auth cache and
-  localStorage.loginEmail equals the entered email. @e2e
-- PROOF-1 (RULE-1): Boot the app against an encrypted /envconfig.json fixture →
-  verify the login page renders with no config error and API calls target the
-  decrypted base URL. @e2e
-```
-
-**Tier/description match (the inverse check).** The tier tag and the description must agree:
-
-- A proof tagged `@e2e` that could pass **without launching the app** (it reads a source file, asserts a constant, or names an internal function) is mis-tagged. Either rewrite it as an observable flow, or retag it to the tier that matches what it does (unit or `@integration`).
-- Conversely, a proof that requires rendering, routing, or storage-state-after-a-flow but carries **no tier tag** is under-tagged: it cannot run in the unit tier. Tag it `@e2e`.
-
-**Stay tool-agnostic.** As with visual proofs, the description names the flow, not the runner. It must be executable by whatever e2e tooling the project has: Playwright, Cypress, an MCP-driven browser, or screenshot + vision. Never reference a specific runner's API in the proof description.
-
-### Anchors for Level 3 enforcement
-
-Anchors are the strongest mechanism for Level 3 enforcement. When anyone writes an anchor with outcome-based rules, every feature that requires it must prove those rules end-to-end:
-
-```markdown
-# Anchor: prodbrief_checkout
-
-> Description: Checkout flow requirements from product brief.
-> Type: prodbrief
-> Source: git@github.com:acme/product-briefs.git
-> Path: briefs/checkout-v2.md
-> Pinned: a1b2c3d4
-
-## Rules
-- RULE-1: User adds item to cart, proceeds to checkout, enters payment, sees confirmation page
-- RULE-2: If payment fails, user sees error and can retry without losing cart contents
-- RULE-3: Order confirmation email arrives within 60 seconds
-
-## Proof
-- PROOF-1 (RULE-1): Open browser → add item → checkout → enter test card → verify confirmation page shows order number @e2e
-- PROOF-2 (RULE-2): Open browser → checkout with declined card → verify error → verify cart intact → retry with valid card → verify confirmation @e2e
-- PROOF-3 (RULE-3): Complete checkout → poll inbox for 60s → verify email contains order number @e2e
-```
-
-Every feature that `> Requires: prodbrief_checkout` must prove these rules. The engineer can't satisfy them with mocked tests: the rules describe what users see, not what functions return.
-
-### When to write rules at each level
-
-| Level | When to use | Who typically writes |
-|-------|------------|---------------------|
-| **Level 1** | Never. These are `UNPROVABLE` by construction: `assert X is not None` proves nothing. | Nobody |
-| **Level 2** | Internal logic, data transformations, error codes, validation, algorithms | Engineer or AI |
-| **Level 3** | User-facing flows, multi-system integration, regulatory requirements, things that have broken in production | PM (via prodbrief/spec rules) |
-
-### Recognizing Level 1 proofs (and rejecting them)
-
-If a proof description says "verify X exists", "check that Y is not null", or "assert Z is present", it's Level 1, and `purlin:audit` grades it `UNPROVABLE`. These three phrasings are the deterministic Pass D detector. Rewrite it to test behavior:
-
-- Level 1: "Verify the login endpoint exists"
-- Level 2: "POST to /login with valid credentials; verify 200 and JWT token in response"
-- Level 3: "Open browser, enter credentials, click login, verify dashboard loads"
-
-### Structural-only proofs
-
-A spec covering instruction files (anything under `references/`, `skills/` or `agents/`) can
-end up with every proof a grep or an existence check. That set catches deletion and drift,
-which is worth having, and proves nothing about whether the instructions work. When drafting
-finds all of a spec's proofs structural, say so and offer behavioural rules for that same
-spec, never a separate one:
-
-```
-All proofs for this spec are structural (grep/existence checks). This catches
-deletions and drift but does not prove the instructions work.
-
-Consider adding behavioral rules to this spec. For example:
-  RULE-N: Agent follows the core loop when given "build X" @e2e
-  RULE-N+1: Agent uses purlin:spec when asked to "update the spec" @e2e
-```
-
-A structural proof is not a defect on its own: `purlin:audit` grades it STRUCTURAL rather than
-HOLLOW, which says the proof is honest about what it checks. The defect is a spec where no
-proof observes behaviour at all.
-
-## Tier Assignment
-
-*Graded as: a tier tag that does not match what verifying the description would actually require is `LOOSE`: the design twin of the Proof Integrity finding "tier mismatch".*
-
-Assign a tier tag based on what the proof requires to execute. Proofs without a tag are `unit` tier.
-
-| Heuristic | Tier | Example |
-|-----------|------|---------|
-| Pure logic, no I/O, no external dependencies | unit (no tag) | Validate input format, compute hash, parse config |
-| Needs database, network, filesystem, or external service | `@integration` | API roundtrip, database query, file system operations |
-| Needs browser, full app stack, or UI rendering | `@e2e` | Browser login flow, screenshot comparison, full page render. See "E2E proof descriptions" for how to write the description so it matches the tier |
-| Needs a specific platform the developer machine is not | the tier it is, plus `@on(<platform-id>)` | `@unit @on(windows-2022)` for native `msvcrt` file locking or console codec behaviour under the Windows default encoding |
-| Requires human judgment: visual, UX, brand voice | `@manual` | Review copy against brand guide, verify layout feels balanced |
-
-**When in doubt, tag `@integration`.** A fast test with an `@integration` tag is harmless. A slow test with no tag blocks the unit tier.
-
-**`@on(...)` is a platform tag, not a tier.** It names the platforms a proof must be proved *on*,
-not a stack it needs, and it removes the proof from the local coverage path: a proof tagged
-`@on(windows-2022)` with no result from that platform reports `AWAITING RUNNER` rather than
-`NO PROOF`, does not count against coverage and does not block a receipt. Use it only when the
-behaviour genuinely cannot be observed elsewhere (a real `msvcrt` lock, a native console codec,
-a case-insensitive filesystem) and never as a synonym for "touches Windows paths", which a
-normal test can simulate. A description under `@on(...)` that any host could verify is `LOOSE`
-under Pass D, because the tag hides a rule from local verification. The legacy bare `@windows`
-tier reads as `@unit @on(windows)` with a warning; rewrite it.
-
-Tier tags are not optional: they control which tests run in which CI stage. Every skill that writes proof descriptions (`purlin:spec`, `purlin:spec-from-code`, `purlin:build`) MUST review tier tags before committing.
-
-Append the tier tag to the end of the proof description line:
-
-```
-- PROOF-1 (RULE-1): Parse config file and return default values
-- PROOF-2 (RULE-2): POST to /api/users with mock database; verify 201 response @integration
-- PROOF-3 (RULE-3): Load checkout page in browser; verify 3-click flow @e2e
-- PROOF-4 (RULE-4): Review error messages against brand voice guide @manual
-```
-
-**Manual proof detection heuristics:** Source files in `views/`, `pages/`, `templates/`, `layouts/` directories, React/Vue/Svelte components with layout/styling logic, CSS/SCSS files in scope, or code producing HTML output → proofs are likely `@e2e` or `@manual`. Don't write automated proof descriptions for things that can't actually be automated.
-
-## When to Create Anchors
-
-Anchors capture **cross-cutting constraints shared across features**. If 3+ features would have the same rule, it belongs in an anchor.
-
-- Architecture choices shared across features → `api_` or `schema_` prefix
-- Security patterns applied everywhere → `security_` prefix (always include FORBIDDEN rules)
-- Design system tokens used by multiple components → `design_` prefix
-
-**Anchor type detection heuristics:**
-
-| Prefix | Domain | Detection heuristics |
-|--------|--------|---------------------|
-| `api_` | API contracts, REST conventions | Shared route patterns, middleware chains, response envelope formats, error response shapes, pagination conventions. Look for: express Router, Flask blueprints, API versioning |
-| `security_` | Auth, access control, secrets | Auth middleware, password hashing, token validation, input sanitization, CORS, rate limiting. Look for: bcrypt, JWT, helmet, csrf, rate-limit imports |
-| `design_` | Visual standards, layout | Shared UI component libraries, CSS token files, theme configs, layout patterns. Look for: styled-components, tailwind config, design tokens, shared component dirs |
-| `schema_` | Data models, validation | Database models, ORM definitions, migration files, validation schemas, shared types. Look for: sequelize/prisma/sqlalchemy models, zod/joi schemas, shared TypeScript interfaces |
-| `platform_` | Platform constraints, browser support | Browser compat configs, polyfills, platform-specific code paths, accessibility. Look for: browserslist, babel config, a11y utilities |
-| `brand_` | Voice, naming, identity | Copy constants, i18n files, terminology glossaries, tone-of-voice docs. Look for: locales/, i18n imports, string constant files |
-| `prodbrief_` | User stories, UX requirements | User flow definitions, feature flags, A/B test configs, analytics events. Look for: feature flag configs, analytics track calls |
-| `legal_` | Privacy, data handling, compliance | Cookie consent, privacy policy refs, data retention configs, GDPR helpers. Look for: consent managers, data deletion utilities, PII handling |
-
-Search for each prefix's signals actively rather than waiting to notice them, and group what turns
-up: "these N features all use `<pattern>`, so propose anchor `<prefix>_<name>`."
-
-**Architecture choices should be anchors.** If the codebase uses a specific pattern consistently across multiple features (middleware auth, write-through caching, event-driven architecture), that pattern should become an anchor, not be buried in individual feature specs.
-
-## FORBIDDEN Grep Precision
-
-*Graded as: a FORBIDDEN proof of a structural rule is `STRUCTURAL` and correctly so; an imprecise pattern that would match comments or variable names is `LOOSE`.*
-
-FORBIDDEN proofs use grep to assert absence. The grep pattern must be precise enough to avoid false positives.
-
-**Common false positives:**
-- Comments and docstrings mentioning the keyword (`# never use eval`)
-- Variable names containing the keyword (`password_hash`, `token_expiry`)
-- Test files with intentional mock values
-
-Bad:
-```
-grep -ri "password\|secret" scripts/
-```
-
-Good:
-```
-grep -rn "password\s*=\s*[\"'][^\"']*[\"']" scripts/ --include="*.py" | grep -v test_ | grep -v "# "
-```
-
-Target the **assignment pattern** (`keyword = "literal string"`), not the keyword alone. Exclude test files and comments.
-
-## Edge Case Proof Specificity
-
-*Graded as: an edge-case description that names the expected output but not the triggering input is `LOOSE`.*
-
-Proofs for boundary conditions and edge cases must include the **specific test input that triggers the edge case**, not just the expected output.
-
-Bad:
-```
-- PROOF-4 (RULE-4): Verify the id parser rejects a malformed id
-- PROOF-5 (RULE-5): Check that invalid input is rejected
-```
-
-Good:
-```
-- PROOF-4 (RULE-4): Call parse_id() with `RULE-` (the number missing); verify it raises ValueError naming the input
-- PROOF-5 (RULE-5): Call update_config() with key="" (empty string); verify it raises ValueError
-```
-
-Always ask: **"What exact input triggers this edge case?"** and include it in the proof description.
-
-## FORBIDDEN Patterns
-
-FORBIDDEN rules use standard rule/proof syntax, no special format. They are just rules with **negative proofs** (grep-based assertions that verify dangerous patterns don't exist).
-
-```
-- RULE-1: No eval() or exec() calls in scripts/
-- PROOF-1 (RULE-1): Grep scripts/ for eval( and exec(; verify zero matches
-```
-
-Guidelines:
-- Always create at least one `security_` anchor with FORBIDDEN rules, even if the codebase is clean: proving the absence of dangerous patterns is itself valuable.
-- Test the attack, not the defense. Assert that the bad pattern doesn't exist rather than asserting that "security is good."
-- Common FORBIDDEN patterns: `eval()`, `exec()`, `os.system()`, `subprocess` with `shell=True`, hardcoded credentials/secrets.
-
-## `> Stack:` Metadata
-
-Captures the technology choices for a feature so an agent can rebuild from the spec alone.
-
-Format: `> Stack: <language>/<framework>, <key libraries>, <patterns>`
-
-Examples:
-- `> Stack: python/stdlib, subprocess (list-only), json, hashlib`
-- `> Stack: node/express, axios, redis (cache), JWT auth`
-- `> Stack: shell/bash, jq, curl`
-
-Populate from the **actual imports/dependencies in the feature's source files**, not the project-level tech stack. Two features in the same project may have different stacks.
-
-## `> Requires:` Guidance
-
-- Reference anchors when the feature must follow shared rules or when external constraints apply.
-- **Don't reference specs that are just related**: only specs whose rules MUST be proved by this feature's tests. `> Requires:` means "my tests must also prove these rules."
-- Verify each reference exists (or is queued for generation) before writing it. Broken references produce silent gaps in coverage.
-
-## `> Scope:` Guidance
-
-Scope lists the source files THIS feature implements. It serves two purposes:
-1. **Manual proof staleness detection**: if scope files change after a manual stamp, the stamp goes stale
-2. **Documentation**: helps developers find the code that implements a feature
-
-### What to Include
-
-- Files that implement THIS feature's behavior: `src/auth/login.js, src/auth/session.js`
-- Test files for this feature: `tests/auth/test_login.py`
-- Config files specific to this feature: `src/auth/auth.config.js`
-
-### What NOT to Include
-
-- **Shared utilities** (`utils/helpers.js`, `lib/common.py`): these change frequently and would make manual proofs stale constantly. If a shared utility changes, your feature's behavior probably didn't change.
-- **Framework files** (`package.json`, `tsconfig.json`): these affect every feature. Including them would make every manual proof stale on every dependency update.
-- **Generated files** (`dist/`, `build/`): these are outputs, not source.
-- **Broad directories** (`src/`): too wide. Scope individual files or narrow directories.
-
-### The Staleness Test
-
-Ask: "If THIS file changes, does it mean my feature's behavior MIGHT have changed?" If yes, include it. If no, leave it out.
-
-- `src/auth/login.js` changes → login behavior might have changed → **include**
-- `utils/format-date.js` changes → login behavior didn't change → **exclude**
-- `src/auth/auth.config.js` changes → login config might affect behavior → **include**
-- `package.json` changes → probably just a dependency bump → **exclude**
-
-### Tight Scope = Useful Staleness Detection
-
-A feature with 3 files in scope gets meaningful staleness alerts. A feature with 50 files in scope gets constant false alarms and developers start ignoring the alerts.
-
-### Existing Rules
-
-- Verify each file path exists on disk before listing it.
-- Not used for verification hashing: purely informational for navigation and staleness.
-
-## Spec Categories
-
-Where different types of specs belong. Both `purlin:spec` and `purlin:spec-from-code` use this to determine the output directory.
-
-| Category dir | What goes here | Tier expectations | Example |
-|-------------|---------------|-------------------|---------|
-| Component dirs (`hooks/`, `mcp/`, `proof/`) | Behavioral specs for executable code | Unit tier for unit-level proofs | `specs/hooks/gate-hook.md` |
-| `_anchors/` | Anchors defining formats, contracts, and cross-cutting standards | Unit tier | `specs/_anchors/design_tokens.md` |
-| `integration/` | **Legacy: avoid creating new specs here.** E2E rules belong in the feature spec they validate, tagged `@e2e`. | All proofs tagged `@e2e` | *(migrate existing to feature specs)* |
-| `instructions/` | Structural specs for agent instructions: reference docs, skill definitions, agent definitions | Unit tier (grep-based structural checks) | `specs/instructions/agent_guides.md` |
-
-### Guidelines
-
-- **Executable code** (scripts, hooks, MCP server) → spec category matches the source directory.
-- **Cross-cutting contracts** (file formats, schemas, security rules) → `_anchors/`. `sync_status` reads anchors from `specs/_anchors/` and from nowhere else, so any other anchor directory holds specs nothing loads.
-- **AI instructions** (`references/`, `skills/`, `agents/`) → `instructions/`. Rules verify sections exist and contain required content. Proofs are grep-based. These catch accidental deletions and structural drift.
-- **E2E rules belong in the feature they validate.** If an e2e test proves that checkout spans the cart and the payment service, that rule belongs in `specs/checkout/checkout_flow.md` tagged `@e2e`, not in a separate `e2e_multi_service.md`. Test tier (`@unit`, `@e2e`) is a proof attribute, not a reason to create a separate spec.
-- **Never create test-only specs.** A spec like `e2e_feature_scoped_overwrite` that exists solely to hold integration tests should not exist. Those tests prove `proof_common` RULE-4. Wire them there.
-
-## Audience-Appropriate Language
-
-Specs, drift reports, and other reports serve different audiences. Match the language to the reader:
-
-| Artifact | Audience | Language |
-|----------|----------|----------|
-| Spec rules and proofs | Engineers and agents | Precise, technical: status codes, function names, exact inputs |
-| Drift report CHANGED BEHAVIOR | PMs and QA | User-visible impact: "login is faster", "error message changed" |
-| Drift report NO IMPACT | Engineers | Implementation details: "refactored middleware", "updated dependency" |
-| Verification reports | Engineers and CI | Concise, structured: feature names, rule counts, directives |
-
-**The test for good drift report language:** Could a PM read this line and understand whether it affects users? If not, rephrase or move it to NO IMPACT. "Fixed N+1 query in user list resolver" → "User list page loads faster" (CHANGED BEHAVIOR) + "Optimized database query in user list resolver" (NO IMPACT).
-
-## Test Quality Rules (Proof Integrity)
-
-These rules apply when writing or reviewing any proof-marked test. They are the authoring side
-of the **Proof Integrity** gauge: violating them produces HOLLOW or WEAK assessments during
-audit (see `references/audit_criteria.md` for assessment criteria). They say nothing about
-whether the proof *description* is any good: that is Proof Design, § Writing Proof
-Descriptions above.
-
-- **Assert behavior, not implementation.** Test outputs and side effects, not whether code exists.
-- **Test the attack, not the defense.** Send bad input and assert the error, don't assert that validation code is present.
-- **Never assert True.** Every assertion must check a specific expected value.
-- **Use realistic data.** No empty strings or single-element arrays as representative inputs.
-- **No self-mocking.** Mock external dependencies (network, filesystem), not the code under test.
-
-## Mutation check
-
-A mutation check is the practice of breaking the behaviour a proof covers, watching that proof
-fail, and restoring the code before the commit. It is the authoring twin of Proof Integrity: a
-proof that still passes against broken code proves nothing, and neither a static check nor an LLM
-grade can see it, because both read the test and the rule rather than running one against the
-other.
-
-It is opt-in, from `mutation_checks` in `.purlin/config.json` (`purlin:init` asks; default
-`false`).
-
-**The three steps.**
-
-1. Break the behaviour the proof covers, in the smallest way that is still a real defect: delete
-   the clause, flip the comparison, drop the field. Not the test, and not a syntax error.
-2. Run that proof, and only that proof. It must fail, and the failure must name what you broke.
-3. Restore the code and re-run. The proof passes again, and the working tree is byte-identical to
-   what it was.
-
-**When.** Every new or amended proof, before the commit that carries it. Record the mutation in
-the commit body when `mutation_checks` is `true`, so a reviewer can re-run it.
-
-**A mutation that survives is a finding, not a formality.** It means the fixture cannot tell the
-correct behaviour from the broken one: the proof is weak, not finished. Add the discriminating
-case to the fixture, then re-run the mutation until it fails.
-
-**Worked example: the version comparison.** A rule said `>=14.0` holds on a host running `14.7.1`.
-The proof's fixture asserted exactly that. Replacing the `>=` tuple comparison with a string
-prefix comparison left the proof green, because `"14.7.1"` starts with `"14"` either way. The
-discriminating case was `>=13` against `14.7.1`: true under a numeric comparison, false under a
-prefix one. With that case in the fixture the mutation failed, which is what made the proof a
-proof.
-
-**Worked example: the identifier charset.** A rule restricted platform ids to lower-case letters,
-digits and hyphens. The fixture's invalid id was `Windows_2022`, which is invalid twice over: an
-upper-case letter and an underscore. Removing the underscore from the pattern left the proof
-green, because the capital `W` still rejected the id. The discriminating case was an id whose only
-illegal character was the underscore. One fixture value, and the proof went from asserting "some
-rejection happens" to asserting the rule.
-
-**What it is worth.** A mutation check catches exactly one thing: a proof that passes against
-broken code, which no static check and no LLM grade can see. It costs roughly twice the tokens
-and twice the minutes per proof, because every proof is written once and then run twice more
-around an edit and a revert. Turn it on for regulated or long-lived projects, where a proof that
-never fails is a liability that outlives the person who wrote it. Leave it off for throwaway
-prototypes, where the proof and the code are discarded together.
-
-## When Tests Fail: Fix the Code, Not the Test
-
-When a proof-marked test fails, the agent must diagnose before fixing. There are three possibilities:
-
-| Diagnosis | What's wrong | Action |
-|-----------|-------------|--------|
-| Code bug | The test asserts the correct behavior but the code doesn't implement it | Fix the code. The test is right. |
-| Test bug | The test asserts the wrong thing (wrong status code, wrong field name, bad mock setup) | Fix the test. The code is right. |
-| Spec drift | The rule no longer matches the intended behavior | Update the spec rule first, then update code and test to match. |
-
-**The default assumption is: the code is wrong, not the test.** The test was written to prove a rule from the spec. If the test fails, the code probably doesn't satisfy the rule yet.
-
-Never:
-- Weaken an assertion to make a test pass (`assert status == 200` → `assert status in [200, 401]`)
-- Remove an assertion that was testing the right thing
-- Change the expected value to match the actual value without understanding why they differ
-- Delete a failing test
-
-If the spec itself is wrong (the rule describes behavior that shouldn't exist), update the spec first, change the rule, update the proof description, THEN update the test and code. The spec is the source of truth.
-
-### Assertion Integrity
-
-This is the runtime twin of Proof Design: the description and the assertion are two statements
-of the same claim, so when they disagree, exactly one of them is wrong and you must find out
-which before proceeding. Strengthening the test raises Proof Integrity; rewriting the
-description to demand more raises Proof Design; narrowing the description to match a weaker
-test lowers Proof Design while leaving Integrity flatteringly high, which is the failure mode
-to avoid.
-
-If you change WHAT a test asserts (not just HOW, e.g., changing `assert status == 401` to `assert status == 400`), the proof description in the spec may be wrong. This is a signal, not a bug:
-
-1. Re-read the original proof description from the spec's `## Proof` section
-2. If the new assertion contradicts the proof description, the spec likely needs updating
-3. Flag the change explicitly: in the commit message, in a WARNING to the user, or both
-4. The spec, proof description, test assertion, and code must all agree. If any one disagrees, find out which is wrong before proceeding
-
-Silently changing an assertion to match actual behavior: without checking whether the spec intended that behavior: is the most common way agents introduce correctness bugs.
+- **Arrange:** seed the state a user would meet, navigate to a URL, stub an upstream
+  response.
+- **Act:** do what a person does: click, type, submit. Never "call function X".
+- **Observe:** assert what is visible at a boundary: on-screen text, the outbound
+  request that fired, the storage state after the flow. Never a source constant.
+
+Bad: "Assert `loginRedirect` uses the `access_as_user` scope @e2e". That names an
+internal function, so the test imports internals and asserts a declaration, which the
+free checks report as `tier_mismatch`.
+
+Good: "Open the app, enter an email, click Sign in; observe that the redirect to the
+identity provider carries scope `access_as_user`; complete login with a test account;
+verify `localStorage.loginEmail` equals the entered email. @e2e"
+
+The tag and the description must agree in both directions. A proof tagged `@e2e` that
+could pass without launching the app is mis-tagged; retag it. A proof that needs
+rendering, routing or storage state after a flow and carries no tag is under-tagged;
+tag it `@e2e`. Name the flow, never the runner: the description must be executable by
+whatever end-to-end tooling the project has.
+
+### Grep proofs
+
+A grep-for-absence proof must be precise enough to miss comments, docstrings and
+variable names that contain the keyword. Target the assignment pattern, not the keyword
+on its own: `password\s*=\s*"[^"]*"` over `src/`, restricted to the source extensions
+and with the test files excluded, rather than a bare search for `password`.
+
+A grep proof of a structural rule is honest about what it checks. A spec where no proof
+observes behaviour at all is the defect: when every proof of a spec is a grep or an
+existence check, say so and offer behavioural rules for that same spec.
+
+### Edge cases name their input
+
+A boundary proof must name the exact input that triggers the edge case, not only the
+expected output.
+
+- Bad: "Verify the id parser rejects a malformed id"
+- Good: "Call parse_id() with `RULE-`, the number missing; verify it raises ValueError
+  naming the input"
+
+## Tier assignment
+
+Assign the tier by what the proof needs to execute. A proof with no tag is unit tier.
+
+| What it needs | Tier | Example |
+|---|---|---|
+| Pure logic, memory only, or a grep over local files | none | Validate an input format, compute a hash, parse a config |
+| A database, the network, the filesystem or an external service | `@integration` | An API roundtrip, a query, a file written and read back |
+| A browser, the full stack or a rendered interface | `@e2e` | A login flow, a screenshot, a full page render |
+| Human judgment: visual, wording, brand voice | `@manual` | Read the error messages against the brand voice guide |
+
+When in doubt, tag `@integration`. A fast test carrying that tag is harmless; a slow
+test with no tag blocks the unit tier. Tier tags are not optional: they decide which
+tests run in which CI stage, so review them before you commit.
+
+Source files under `views/`, `pages/`, `templates/` or `layouts/`, components with
+layout logic, and code producing HTML are a signal that the proofs are `@e2e` or
+`@manual`. Do not write an automated proof description for something that cannot be
+automated.
+
+### `@manual`
+
+`@manual` means there is no test. The evidence is an approval file carrying a one-line
+note from the person who looked. It is always human and never auto-approved, at any
+risk level and under any gate. Use it where judgment is the only instrument, and keep
+the rule's `> Scope:` tight: when a scope file changes, the approval goes stale and
+someone must look again.
+
+## When a rule is stuck
+
+Find the rule's state in the status table, then read the row.
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Drafted | The rule has no proof at all. | Write a proof under `## Proof` naming the rule. |
+| Proof ready, never Tested | No test carries the proof marker, or the test fails. | Run `purlin:build` to write the test, then `purlin:test`. |
+| Proof ready, and it will not leave | A blocking free check fires on the proof text: `no_expected_value`, `vague_verb`, `missing_trigger` or `tier_mismatch`. | Rewrite the proof text so it names a trigger and an expected value at a tier it can reach. |
+| Tested, never Recorded | No record that counts under the gate exists at this commit. Under `recorded` and `approved`, only CI's record counts. | Push and let CI run, or run `purlin:verify --remote`. |
+| Tested, and the status says `windows: no record yet` | A proof carries `@env` and no record from that operating system has passed it. | Let the CI matrix run that job, or drop the `@env` tag if any host could prove it. |
+| Recorded, test strength below `min_strength` | The tests did not notice when the behaviour was broken. | Add the case that tells the correct behaviour from the broken one, then verify again. |
+| Recorded, never Reviewed | No brief exists for the current hashes. | Run `purlin:review`; CI writes briefs for the review list. |
+| Reviewed, never Approved | No current approval, or the approval commit is unsigned or from someone off the approver list. | Run `purlin:approve` as a signed commit from a listed approver. |
+| Approved, then Stale | The rule text, the proof text or the test body changed after the approval. | Read what changed, then approve again or fix what broke. |
+| Approved, and `re-verify pending` | Only the code changed. The approval stands. | Nothing. CI clears the flag on the next run. |
+
+## When a test fails, fix the code
+
+There are three diagnoses, and the default assumption is the first.
+
+| Diagnosis | What is wrong | Action |
+|---|---|---|
+| Code bug | The test asserts the correct behaviour and the code does not implement it. | Fix the code. The test is right. |
+| Test bug | The test asserts the wrong thing: wrong status code, wrong field name, bad setup. | Fix the test. The code is right. |
+| Spec drift | The rule no longer matches the intended behaviour. | Update the rule first, then the proof, then the test and the code. |
+
+Never weaken an assertion to make a test pass (`assert status == 200` becoming
+`assert status in [200, 401]`), never remove an assertion that was testing the right
+thing, never change an expected value to match the actual value without finding out why
+they differ, and never delete a failing test.
+
+If you change **what** a test asserts rather than how, the proof text may be wrong.
+Re-read it. The rule, the proof text, the assertion and the code must all agree; when
+one disagrees, find out which before you go on. Narrowing the proof text to match a
+weaker test is not a fix: it lowers the claim instead of strengthening the evidence,
+and on a rule pinned from an anchor it is never allowed, because the anchor is an
+upstream-owned contract. Silently changing an assertion to match actual behaviour is
+the most common way an agent introduces a correctness bug.
