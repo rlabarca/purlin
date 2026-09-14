@@ -353,17 +353,31 @@ class TestTagParsing:
 
     @pytest.mark.proof("schema_spec_format", "PROOF-9", "RULE-9")
     def test_real_spec_is_parsed_correctly(self):
-        """The spec that exposed this: PROOF-4's prose names `@integration`,
-        `@e2e` and `@on(` in backticks before its real tier tag, and none of
-        those is read as a tag or truncated."""
-        info = purlin_specs.scan_specs(PROJECT_ROOT)['schema_proof_format']
-        proof = info['proofs']['PROOF-4']
-        assert proof['tier'] == 'integration', \
-            "PROOF-4's only tag is the trailing @integration"
-        assert proof['text'].rstrip().endswith('`@on(`'), \
+        """The two shapes, read off this repository's own specs.
+
+        PROOF-9 of this anchor quotes several tier and environment tags in
+        backticks and carries no tag of its own; PROOF-11 carries one real
+        trailing tier tag. A parser that read a quoted tag would give the
+        first a tier or an environment it never declared and truncate its
+        description at the last quote."""
+        info = purlin_specs.scan_specs(PROJECT_ROOT)['schema_spec_format']
+
+        quoted = info['proofs']['PROOF-9']
+        assert '`Lock the file @env(macos) @integration`' in quoted['text'], \
+            "PROOF-9 no longer quotes a tag, so this pins nothing"
+        assert quoted['tier'] == 'unit', \
+            "a quoted tag mid-description is not the proof's tier"
+        assert quoted['env'] is None, \
+            "a quoted environment tag mid-description is not an environment"
+        assert quoted['text'].rstrip().endswith('identical tuples'), \
             "the description's final clause must not be truncated"
-        assert proof['env'] is None, \
-            "a backticked `@on(` in prose is not an environment tag"
+
+        tagged = info['proofs']['PROOF-11']
+        assert tagged['tier'] == 'integration', \
+            "PROOF-11's one trailing tag is its tier"
+        assert tagged['env'] is None, tagged['env']
+        assert tagged['text'].rstrip().endswith('still parses'), \
+            "the tier tag is stripped off the description, nothing else is"
 
 
 class TestAnchorNoteMetadata:
