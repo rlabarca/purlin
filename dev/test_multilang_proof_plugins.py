@@ -919,7 +919,7 @@ int main(void) {
         )
 
         # Now run check_proof_file on the result
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'audit'))
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'review'))
         from static_checks import check_proof_file
 
         proof_file = spec_dir / 'auth_login.proofs-unit.json'

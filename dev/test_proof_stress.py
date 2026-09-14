@@ -24,7 +24,7 @@ import pytest
 PROOF_SCRIPTS = os.path.join(os.path.dirname(__file__), '..', 'scripts', 'proof')
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'mcp'))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'audit'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'review'))
 
 from purlin_server import _read_proofs, _build_proof_lookup
 from static_checks import check_python, check_proof_file, _read_rule_descriptions

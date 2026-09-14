@@ -28,7 +28,7 @@ import pytest
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
-sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'audit'))
+sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'review'))
 import static_checks  # noqa: E402
 from static_checks import analyze_test_file  # noqa: E402
 CONTRACT = os.path.join(PROJECT_ROOT, 'references', 'proof_plugin_contract.md')
@@ -48,7 +48,7 @@ WIRING_SITES = (
     'docs/testing-workflow-guide.md',
     'references/formats/proofs_format.md',
     'references/audit_criteria.md',
-    'scripts/audit/static_checks.py',
+    'scripts/review/static_checks.py',
     'specs/proof/',
     'dev/test_multilang_proof_plugins.py',
     'dev/run_tests.sh',
@@ -323,7 +323,7 @@ class TestEveryFrameworkHasACheckerAndAnExtractor:
             checker = getattr(static_checks, checker_name, None)
             assert callable(checker), (
                 f"{framework}: the table names {checker_name!r} as its Pass 1 "
-                "checker and scripts/audit/static_checks.py defines no such "
+                "checker and scripts/review/static_checks.py defines no such "
                 "function")
             for ext in exts:
                 assert static_checks._CHECKERS.get(ext) is checker, (
