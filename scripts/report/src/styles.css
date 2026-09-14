@@ -30,7 +30,7 @@ h2{font-size:var(--ui-lg);font-weight:var(--weight-bold);margin:0 0 var(--space-
 .tag.risk-high{border-color:var(--state-fail)}
 .tag.risk-medium{border-color:var(--state-warn)}
 .tag.risk-low{border-color:var(--text-muted);color:var(--text-muted)}
-.os{display:inline-flex;align-items:center;font-family:var(--font-mono);font-size:var(--ui-sm);padding:1px 7px;border-radius:var(--radius-sm);border:1px solid;margin-right:4px;white-space:nowrap}
+.os{display:inline-flex;align-items:center;font-family:var(--font-mono);font-size:var(--ui-sm);padding:0 5px;border-radius:var(--radius-sm);border:1px solid;margin-right:3px;white-space:nowrap;line-height:1.5}
 .os.pass{border-color:var(--state-pass);color:var(--state-pass)}
 .os.fail{border-color:var(--state-fail);color:var(--state-fail)}
 .os.none{border-color:var(--border-hairline);color:var(--text-muted)}

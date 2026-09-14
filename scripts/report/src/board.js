@@ -57,7 +57,7 @@ function boardColumns() {
   columns.push({label: 'State', width: '1.1fr'});
   if (hasRecords()) {
     columns.push({label: 'Strength', width: '0.8fr'});
-    columns.push({label: 'Latest record', width: '1fr'});
+    columns.push({label: 'Latest record', width: '1.3fr'});
     columns.push({label: 'Re-verify', width: '0.9fr'});
   }
   if (hasApprovals()) {
@@ -81,7 +81,7 @@ function featureRow(feature, columns) {
   var cells = ['<span class="name"><span class="caret">'
     + (open ? '▼' : '▶') + '</span>' + designThumb(feature)
     + '<span class="n">' + esc(feature.name) + '</span></span>'];
-  if (hasRisks()) { cells.push(tag(highestRisk(feature), true)); }
+  if (hasRisks()) { cells.push(riskTag(highestRisk(feature))); }
   cells.push(coverage(rollup.proved || 0, rollup.rules || 0));
   cells.push(pill(rollup.lowest_state || 'Drafted'));
   if (hasRecords()) {
