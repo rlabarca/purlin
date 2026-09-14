@@ -10,6 +10,11 @@
 #
 # A pull request from a fork gets a run and a comment and no commit: GitHub
 # gives a forked pull request a read-only token, and the job says so.
+#
+# The verify job is capped at 90 minutes. GitHub cancels a job at 6 hours and
+# keeps nothing, so a run that stops for something cannot be read; 90 minutes
+# is longer than any suite this runs and short enough to leave a log worth
+# reading. The run caps each arm at an hour of its own.
 name: purlin
 
 on:
@@ -23,6 +28,7 @@ permissions:
 jobs:
   verify:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -56,7 +62,10 @@ jobs:
           fi
 
       # What each framework needs before its tests run. A project with none of
-      # these files installs nothing and the step is a no-op.
+      # these files installs nothing and the step is a no-op. A project whose
+      # tests drive a browser through playwright also needs the browser:
+      # `--with-deps` installs the libraries a Linux runner lacks and does
+      # nothing on Windows and macOS.
       - name: Set up the test framework
         shell: bash
         run: |
@@ -65,6 +74,9 @@ jobs:
           fi
           if [ -f conftest.py ] || [ -f pytest.ini ] || [ -f pyproject.toml ]; then
             python3 -m pip install pytest
+          fi
+          if python3 -c "import playwright" 2>/dev/null; then
+            python3 -m playwright install --with-deps chromium
           fi
           if [ -f package.json ]; then npm ci; fi
 

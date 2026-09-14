@@ -7,6 +7,10 @@
 #
 # The build service writes the record, so give it Contribute on
 # `.purlin/records/**` through branch security and give it nothing else.
+#
+# The verify job is capped at 90 minutes, which is longer than any suite this
+# runs and short enough to leave a log worth reading when a run stops for
+# something. The run caps each arm at an hour of its own.
 trigger:
   branches:
     include:
@@ -19,6 +23,7 @@ pr:
 
 jobs:
   - job: verify
+    timeoutInMinutes: 90
     strategy:
       matrix:
 <<MATRIX>>
@@ -53,13 +58,19 @@ jobs:
         displayName: Locate Purlin
 
       # What each framework needs before its tests run. A project with none of
-      # these files installs nothing and the step is a no-op.
+      # these files installs nothing and the step is a no-op. A project whose
+      # tests drive a browser through playwright also needs the browser:
+      # `--with-deps` installs the libraries a Linux runner lacks and does
+      # nothing on Windows and macOS.
       - bash: |
           if [ -f requirements.txt ]; then
             python3 -m pip install -r requirements.txt
           fi
           if [ -f conftest.py ] || [ -f pytest.ini ] || [ -f pyproject.toml ]; then
             python3 -m pip install pytest
+          fi
+          if python3 -c "import playwright" 2>/dev/null; then
+            python3 -m playwright install --with-deps chromium
           fi
           if [ -f package.json ]; then npm ci; fi
         displayName: Set up the test framework

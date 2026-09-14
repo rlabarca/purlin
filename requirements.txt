@@ -1,0 +1,5 @@
+# What this repository's own tests need. The CI workflow installs this file
+# before it runs verify, and `python3 -m playwright install --with-deps
+# chromium` follows it so the dashboard proofs have a browser to drive.
+pytest
+playwright
