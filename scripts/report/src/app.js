@@ -8,9 +8,13 @@
    fetch is blocked. The query string defeats the file:// cache. */
 
 var DATA = null;
-var VIEW = {screen: 'board', feature: null, rule: null,
+var VIEW = {screen: 'board', feature: null, rule: null, from: 'board',
             features: {}, groups: {}, filters: {}};
 var SCHEMA = 4;
+/* The data file is rewritten seconds after a tool call changed a spec, a
+   record or an approval, and a tab left open would never notice. Coming back
+   to the tab reloads it when what it holds is older than this. */
+var REFRESH_AFTER = 60;
 var STATES = ['Drafted', 'Proof ready', 'Tested', 'Recorded', 'Reviewed',
               'Approved', 'Stale'];
 var TONES = {'Drafted': 'idle', 'Proof ready': 'warn', 'Tested': 'warn',
@@ -181,16 +185,24 @@ function featureNamed(name) {
 
 /* --- chrome and router ------------------------------------------------ */
 
-function topBar() {
+/* How old the data is, and the tone that age reads in. One function, so the
+   minute tick and a full render agree on the threshold. */
+function ageLine() {
   var age = ageText(DATA && DATA.generated_at);
-  var hue = age.stale ? 'warn' : 'pass';
-  var line = 'Data: ' + age.text
-    + (age.stale ? ' — run purlin:status to refresh' : '');
+  return {hue: age.stale ? 'warn' : 'pass',
+          text: 'Data: ' + age.text
+            + (age.stale ? ' — run purlin:status to refresh' : '')};
+}
+
+function topBar() {
+  var line = ageLine();
   var gate = DATA && DATA.gate ? DATA.gate.gate : null;
   return '<header class="topbar"><span class="brand"><img id="brand-mark" src="'
     + logoSrc() + '" alt="Purlin"><span>purlin</span></span>'
-    + '<span class="fresh" style="color:var(--state-' + hue + ')">'
-    + '<span class="dot"></span>' + esc(line) + '</span>'
+    + '<button class="btn fresh" data-act="reload" '
+    + 'style="color:var(--state-' + line.hue + ')">'
+    + '<span class="dot"></span><span class="age">' + esc(line.text)
+    + '</span></button>'
     + '<span class="spacer"></span>'
     + (gate ? tag('gate: ' + gate) : '')
     + (DATA && DATA.commit ? tag(String(DATA.commit).slice(0, 7), true) : '')
@@ -199,9 +211,10 @@ function topBar() {
 
 function tabs() {
   var open = VIEW.screen;
-  var items = [['board', 'Board']];
+  var items = [
+    ['board', 'Board'],
+    ['review', 'Review list (' + (DATA.review_list || []).length + ')']];
   if (VIEW.rule) { items.push(['rule', VIEW.feature + ' ' + VIEW.rule]); }
-  items.push(['review', 'Review list (' + (DATA.review_list || []).length + ')']);
   return '<nav class="tabs">' + items.map(function (item) {
     return '<button data-act="nav" data-screen="' + item[0] + '"'
       + (open === item[0] ? ' aria-current="page"' : '') + '>'
@@ -253,7 +266,13 @@ function onClick(event) {
   if (!node || node === document) { return; }
   var act = node.getAttribute('data-act');
   if (act === 'theme') { toggleTheme(); }
+  else if (act === 'reload') { reloadPage(); return; }
   else if (act === 'nav') { VIEW.screen = node.getAttribute('data-screen'); }
+  else if (act === 'close') {
+    VIEW.screen = node.getAttribute('data-screen') || 'board';
+    VIEW.rule = null;
+    VIEW.feature = null;
+  }
   else if (act === 'filter') {
     var id = node.getAttribute('data-filter');
     VIEW.filters[id] = !VIEW.filters[id];
@@ -264,6 +283,7 @@ function onClick(event) {
     var name = node.getAttribute('data-feature');
     VIEW.features[name] = !VIEW.features[name];
   } else if (act === 'rule') {
+    VIEW.from = VIEW.screen === 'review' ? 'review' : 'board';
     VIEW.feature = node.getAttribute('data-feature');
     VIEW.rule = node.getAttribute('data-rule');
     VIEW.screen = 'rule';
@@ -271,7 +291,62 @@ function onClick(event) {
   render();
 }
 
+/* --- coming back to the tab ------------------------------------------- */
+
+/* The screen and the open rule ride across a reload, the way the theme rides
+   across one, so a refresh puts the reader back where they were. Every
+   storage call is guarded: a browser may refuse the whole store. */
+function restoreView() {
+  var saved = null;
+  try { saved = sessionStorage.getItem('purlin-view'); } catch (e) {}
+  try { sessionStorage.removeItem('purlin-view'); } catch (e) {}
+  if (!saved) { return; }
+  try {
+    var value = JSON.parse(saved);
+    if (value && typeof value === 'object') { VIEW = value; }
+  } catch (e) {}
+}
+
+function reloadPage() {
+  try { sessionStorage.setItem('purlin-view', JSON.stringify(VIEW)); }
+  catch (e) {}
+  location.reload();
+}
+
+/* The stamp does not move, but the clock does, so the top bar recomputes the
+   age every 60 seconds and rewrites that text alone. Nothing is read from
+   disk: the board below it is untouched. */
+function tickAge() {
+  if (!DATA) { return; }
+  var node = document.querySelector('.topbar .fresh');
+  var text = node && node.querySelector('.age');
+  if (!text) { return; }
+  var line = ageLine();
+  node.style.color = 'var(--state-' + line.hue + ')';
+  text.textContent = line.text;
+}
+
+/* At most one reload per stamp: when the data file has not moved, the reload
+   would show the same board again, so the page asks once and then waits for
+   something new to arrive. */
+function refreshIfStale() {
+  var then = Date.parse((DATA && DATA.generated_at) || '');
+  if (!then || (Date.now() - then) / 1000 <= REFRESH_AFTER) { return; }
+  var stamp = String(DATA.generated_at);
+  var last = null;
+  try { last = sessionStorage.getItem('purlin-reloaded'); } catch (e) {}
+  if (last === stamp) { return; }
+  try { sessionStorage.setItem('purlin-reloaded', stamp); } catch (e) {}
+  reloadPage();
+}
+
 restoreTheme();
+restoreView();
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'visible') { refreshIfStale(); }
+});
+window.addEventListener('focus', refreshIfStale);
+setInterval(tickAge, REFRESH_AFTER * 1000);
 document.getElementById('app').addEventListener('click', onClick);
 loadData(function (payload) {
   DATA = payload;

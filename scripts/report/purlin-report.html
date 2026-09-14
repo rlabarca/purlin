@@ -300,6 +300,9 @@ table.grid{border-collapse:collapse;width:100%}
 .kv dd{margin:0;color:var(--text-primary);min-width:0;overflow-wrap:anywhere}
 .stack>*+*{margin-top:var(--space-5)}
 .finding{font-size:var(--ui-sm);color:var(--state-warn)}
+.cmd{font-family:var(--font-mono);font-size:var(--ui-base);color:var(--text-secondary);white-space:nowrap}
+.panel p{margin:0 0 var(--space-3)}
+.panel p:last-child{margin-bottom:0}
 .rev{display:grid;grid-template-columns:1.1fr 0.6fr 0.5fr 2fr;gap:var(--space-4);align-items:center;padding:var(--space-4) var(--space-6);border-bottom:1px solid var(--border-hairline);cursor:pointer}
 .rev:hover{background:var(--hover-tint)}
 .rev>.tag{justify-self:start}
@@ -546,7 +549,16 @@ var FINDING_LABELS = {
   'implementation_coupling': 'names a symbol, not an outcome',
   'happy_path_only': 'no negative case'
 };
+var FINDING_TEXT = {
+  'no_expected_value': 'Names no literal, number, quoted string or named constant, so almost any assertion would satisfy it.',
+  'vague_verb': 'Uses a vague verb with no expected value beside it. A proof should be readable straight into a test.',
+  'missing_trigger': 'Nothing runs before the assertion, so the proof reads an artifact that exists whether or not the code is right.',
+  'tier_mismatch': 'An @e2e proof must read as an observable flow. Drive the real interface or retag the proof to the tier it exercises.',
+  'implementation_coupling': 'Names a private symbol, a selector or a path instead of an observable outcome, so a refactor breaks the proof without changing behaviour.',
+  'happy_path_only': 'No proof of this rule names a rejection, an error or a boundary.'
+};
 function findingLabel(name) { return FINDING_LABELS[name] || name; }
+function findingText(name) { return FINDING_TEXT[name] || findingLabel(name); }
 function ruleInView() {
   var feature = featureNamed(VIEW.feature);
   if (!feature) { return null; }
@@ -565,6 +577,69 @@ function reviewReason(featureName, ruleId) {
   });
   return reason;
 }
+function reviewReasonSentence(reason) {
+  var risk = /^risk (high|medium|low) needs a look$/.exec(reason || '');
+  if (risk) {
+    return 'Its risk is ' + risk[1]
+      + ', so a person looks before it can be approved.';
+  }
+  if (reason === 'the approval is stale') {
+    return 'Its approval is stale, so a person looks at it again before it '
+      + 'counts.';
+  }
+  return 'It is on the review list because ' + reason + '.';
+}
+function reviewPanel(rule, reason) {
+  var lines = [];
+  var order = [];
+  var ids = {};
+  if (reason) {
+    lines.push('<p class="sec">' + esc(reviewReasonSentence(reason)) + '</p>');
+  }
+  (rule.proofs || []).forEach(function (proof) {
+    (proof.findings || []).forEach(function (name) {
+      if (!ids[name]) { ids[name] = []; order.push(name); }
+      if (ids[name].indexOf(proof.id) < 0) { ids[name].push(proof.id); }
+    });
+  });
+  order.forEach(function (name) {
+    lines.push('<p class="sec"><span class="mono">' + esc(ids[name].join(', '))
+      + '</span>: ' + esc(findingText(name)) + '</p>');
+  });
+  if (!lines.length) {
+    lines.push('<p class="sec">This rule is not on the review list, and the '
+      + 'free checks found nothing to raise.</p>');
+  }
+  return '<div class="panel"><h2>Review</h2>' + lines.join('') + '</div>';
+}
+function approvalsFor(feature, rule) {
+  return (feature.approvals || []).filter(function (path) {
+    return path.split('/').pop().indexOf(rule.id + '.') === 0;
+  });
+}
+function approverOf(path) {
+  var parts = path.split('/').pop().split('.');
+  var slug = parts.length > 2 ? parts[2] : '';
+  return slug === 'ci' ? 'CI' : slug;
+}
+function approvePanel(feature, rule) {
+  var approvals = approvalsFor(feature, rule);
+  if (rule.state === 'Approved' && approvals.length) {
+    var who = approvals.map(approverOf).filter(function (name) {
+      return !!name;
+    }).join(', ');
+    return '<div class="panel"><h2>Approved</h2><p class="sec">'
+      + esc('Approved by ' + (who || 'someone on the approver list')
+        + ' against the rule, proof and test text this screen shows. The '
+        + 'approval file beside the spec carries the commit that signed it.')
+      + '</p></div>';
+  }
+  return '<div class="panel"><h2>To approve</h2>'
+    + '<p><span class="cmd">purlin:approve ' + esc(feature.name) + ' '
+    + esc(rule.id) + '</span> <span class="sec">from Claude Code</span></p>'
+    + '<p class="sec">An approval is a signed commit by someone on the '
+    + 'approver list; the page shows it once it is on the branch.</p></div>';
+}
 function proofPanel(proof) {
   var tests = (proof.tests || []).map(function (test) {
     return esc(test.file) + ' :: ' + esc(test.name);
@@ -580,6 +655,11 @@ function proofPanel(proof) {
     + (findings ? '<dt>Free checks</dt><dd>' + findings + '</dd>' : '')
     + '</dl></div>';
 }
+function backLink() {
+  var from = VIEW.from === 'review' ? 'review' : 'board';
+  return '<button class="btn" data-act="close" data-screen="' + from + '">'
+    + (from === 'review' ? '← Review list' : '← Board') + '</button>';
+}
 function renderRule() {
   var found = ruleInView();
   if (!found) {
@@ -590,7 +670,6 @@ function renderRule() {
   var rule = found.rule;
   var record = feature.latest_record;
   var reason = reviewReason(feature.name, rule.id);
-  var findings = findingsOf(rule).map(findingLabel);
   var rows = [
     ['State', pill(rule.state)],
     ['Risk', tag(rule.risk, rule.risk === 'low')],
@@ -607,9 +686,7 @@ function renderRule() {
         + hostLink(record.path, record.timestamp || record.path)
       : '<span class="mono muted">none</span>']);
   }
-  var approvals = (feature.approvals || []).filter(function (path) {
-    return path.split('/').pop().indexOf(rule.id + '.') === 0;
-  });
+  var approvals = approvalsFor(feature, rule);
   if (approvals.length) {
     rows.push(['Approvals', approvals.map(function (path) {
       return hostLink(path, path.split('/').pop());
@@ -624,14 +701,7 @@ function renderRule() {
     rows.push(['Re-verify', '<span class="mono" '
       + 'style="color:var(--state-warn)">pending</span>']);
   }
-  var summary = reason
-    ? 'On the review list because ' + reason + '.'
-    : 'Not on the review list.';
-  if (findings.length) {
-    summary += ' The free checks name ' + findings.join(', ') + '.';
-  }
-  return '<button class="btn" data-act="nav" data-screen="board">'
-    + '← Board</button>'
+  return backLink()
     + '<section style="margin-top:var(--space-6)">'
     + '<p class="eyebrow">' + esc(feature.name) + '</p>'
     + '<h1>' + esc(rule.id) + '</h1>'
@@ -640,8 +710,8 @@ function renderRule() {
     + rows.map(function (row) {
       return '<dt>' + esc(row[0]) + '</dt><dd>' + row[1] + '</dd>';
     }).join('') + '</dl></div>'
-    + '<div class="panel"><h2>Review</h2><p class="sec">' + esc(summary)
-    + '</p></div></section>'
+    + reviewPanel(rule, reason)
+    + approvePanel(feature, rule) + '</section>'
     + '<section><p class="eyebrow">Proofs</p><div class="stack">'
     + ((rule.proofs || []).length
       ? rule.proofs.map(proofPanel).join('')
@@ -679,9 +749,10 @@ function renderReview() {
   return head + '<section><div class="tbl">' + body + '</div></section>';
 }
 var DATA = null;
-var VIEW = {screen: 'board', feature: null, rule: null,
+var VIEW = {screen: 'board', feature: null, rule: null, from: 'board',
             features: {}, groups: {}, filters: {}};
 var SCHEMA = 4;
+var REFRESH_AFTER = 60;
 var STATES = ['Drafted', 'Proof ready', 'Tested', 'Recorded', 'Reviewed',
               'Approved', 'Stale'];
 var TONES = {'Drafted': 'idle', 'Proof ready': 'warn', 'Tested': 'warn',
@@ -819,16 +890,21 @@ function featureNamed(name) {
   });
   return found;
 }
-function topBar() {
+function ageLine() {
   var age = ageText(DATA && DATA.generated_at);
-  var hue = age.stale ? 'warn' : 'pass';
-  var line = 'Data: ' + age.text
-    + (age.stale ? ' — run purlin:status to refresh' : '');
+  return {hue: age.stale ? 'warn' : 'pass',
+          text: 'Data: ' + age.text
+            + (age.stale ? ' — run purlin:status to refresh' : '')};
+}
+function topBar() {
+  var line = ageLine();
   var gate = DATA && DATA.gate ? DATA.gate.gate : null;
   return '<header class="topbar"><span class="brand"><img id="brand-mark" src="'
     + logoSrc() + '" alt="Purlin"><span>purlin</span></span>'
-    + '<span class="fresh" style="color:var(--state-' + hue + ')">'
-    + '<span class="dot"></span>' + esc(line) + '</span>'
+    + '<button class="btn fresh" data-act="reload" '
+    + 'style="color:var(--state-' + line.hue + ')">'
+    + '<span class="dot"></span><span class="age">' + esc(line.text)
+    + '</span></button>'
     + '<span class="spacer"></span>'
     + (gate ? tag('gate: ' + gate) : '')
     + (DATA && DATA.commit ? tag(String(DATA.commit).slice(0, 7), true) : '')
@@ -836,9 +912,10 @@ function topBar() {
 }
 function tabs() {
   var open = VIEW.screen;
-  var items = [['board', 'Board']];
+  var items = [
+    ['board', 'Board'],
+    ['review', 'Review list (' + (DATA.review_list || []).length + ')']];
   if (VIEW.rule) { items.push(['rule', VIEW.feature + ' ' + VIEW.rule]); }
-  items.push(['review', 'Review list (' + (DATA.review_list || []).length + ')']);
   return '<nav class="tabs">' + items.map(function (item) {
     return '<button data-act="nav" data-screen="' + item[0] + '"'
       + (open === item[0] ? ' aria-current="page"' : '') + '>'
@@ -885,7 +962,13 @@ function onClick(event) {
   if (!node || node === document) { return; }
   var act = node.getAttribute('data-act');
   if (act === 'theme') { toggleTheme(); }
+  else if (act === 'reload') { reloadPage(); return; }
   else if (act === 'nav') { VIEW.screen = node.getAttribute('data-screen'); }
+  else if (act === 'close') {
+    VIEW.screen = node.getAttribute('data-screen') || 'board';
+    VIEW.rule = null;
+    VIEW.feature = null;
+  }
   else if (act === 'filter') {
     var id = node.getAttribute('data-filter');
     VIEW.filters[id] = !VIEW.filters[id];
@@ -896,13 +979,54 @@ function onClick(event) {
     var name = node.getAttribute('data-feature');
     VIEW.features[name] = !VIEW.features[name];
   } else if (act === 'rule') {
+    VIEW.from = VIEW.screen === 'review' ? 'review' : 'board';
     VIEW.feature = node.getAttribute('data-feature');
     VIEW.rule = node.getAttribute('data-rule');
     VIEW.screen = 'rule';
   }
   render();
 }
+function restoreView() {
+  var saved = null;
+  try { saved = sessionStorage.getItem('purlin-view'); } catch (e) {}
+  try { sessionStorage.removeItem('purlin-view'); } catch (e) {}
+  if (!saved) { return; }
+  try {
+    var value = JSON.parse(saved);
+    if (value && typeof value === 'object') { VIEW = value; }
+  } catch (e) {}
+}
+function reloadPage() {
+  try { sessionStorage.setItem('purlin-view', JSON.stringify(VIEW)); }
+  catch (e) {}
+  location.reload();
+}
+function tickAge() {
+  if (!DATA) { return; }
+  var node = document.querySelector('.topbar .fresh');
+  var text = node && node.querySelector('.age');
+  if (!text) { return; }
+  var line = ageLine();
+  node.style.color = 'var(--state-' + line.hue + ')';
+  text.textContent = line.text;
+}
+function refreshIfStale() {
+  var then = Date.parse((DATA && DATA.generated_at) || '');
+  if (!then || (Date.now() - then) / 1000 <= REFRESH_AFTER) { return; }
+  var stamp = String(DATA.generated_at);
+  var last = null;
+  try { last = sessionStorage.getItem('purlin-reloaded'); } catch (e) {}
+  if (last === stamp) { return; }
+  try { sessionStorage.setItem('purlin-reloaded', stamp); } catch (e) {}
+  reloadPage();
+}
 restoreTheme();
+restoreView();
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'visible') { refreshIfStale(); }
+});
+window.addEventListener('focus', refreshIfStale);
+setInterval(tickAge, REFRESH_AFTER * 1000);
 document.getElementById('app').addEventListener('click', onClick);
 loadData(function (payload) {
   DATA = payload;

@@ -83,6 +83,9 @@ table.grid{border-collapse:collapse;width:100%}
 .kv dd{margin:0;color:var(--text-primary);min-width:0;overflow-wrap:anywhere}
 .stack>*+*{margin-top:var(--space-5)}
 .finding{font-size:var(--ui-sm);color:var(--state-warn)}
+.cmd{font-family:var(--font-mono);font-size:var(--ui-base);color:var(--text-secondary);white-space:nowrap}
+.panel p{margin:0 0 var(--space-3)}
+.panel p:last-child{margin-bottom:0}
 .rev{display:grid;grid-template-columns:1.1fr 0.6fr 0.5fr 2fr;gap:var(--space-4);align-items:center;padding:var(--space-4) var(--space-6);border-bottom:1px solid var(--border-hairline);cursor:pointer}
 .rev:hover{background:var(--hover-tint)}
 .rev>.tag{justify-self:start}

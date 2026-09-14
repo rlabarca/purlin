@@ -16,7 +16,10 @@ person gets their own.
 
 Open it in any browser. It reads `.purlin/report-data.js`, which the plugin rewrites in the
 background after a tool call or a turn changed a spec, a proof file, a record or the config.
-That file is generated and never committed. Reload the tab to pick up new data.
+That file is generated and never committed. The page reloads itself when you come back to the
+tab and what it is showing is more than 60 seconds old, keeping the screen and the open rule,
+so an approval you have just made appears without you reloading anything. A commit you make by
+hand outside Claude Code shows up after the next `purlin:status`.
 
 **From CI.** A CI verify copies the page and its data into the `purlin-dashboard` build
 artifact. Anyone with repository access downloads it from the run and opens the page. Nothing
@@ -25,8 +28,10 @@ is provisioned, nothing is hosted, and no site has to be published.
 ## The chrome
 
 Every screen carries the same top bar: the logo, how old the data is, the gate in force, the
-commit the data was built from, and the theme toggle. Below it are the tabs: Board, the open
-rule when there is one, and Review list with its count.
+commit the data was built from, and the theme toggle. How old the data is is a button: press it
+to reload the page. The age recomputes itself every 60 seconds from the stamp the data already
+carries, so a tab left open does not read `less than a minute old` an hour later. Below it are
+the tabs: Board, Review list with its count, and the open rule last when there is one.
 
 ## Board
 
@@ -77,9 +82,18 @@ Clicking a rule opens it.
 ![The rule screen for login RULE-1: state, risk, origin, spec path, test strength, latest record, approvals, the review reason, and the proof with its test](images/dashboard-rule.png)
 
 One rule, its state and tags, the spec that holds it, its test strength, the latest record, the
-approval files that bind it, why it is on the review list, and each proof with its tier and the
-tests that ran it. This is the screen to open when a status line says a rule needs a look and
-you want to know what it claims before you decide.
+approval files that bind it, and each proof with its tier and the tests that ran it. This is the
+screen to open when a status line says a rule needs a look and you want to know what it claims
+before you decide.
+
+The Review panel says why the rule is on the review list and what the free checks found, each
+finding in one sentence naming the proofs that carry it. Under it, a rule that is not approved
+names the command that approves it, `purlin:approve <feature> <RULE-N>`, to run in Claude Code:
+an approval is a signed commit by someone on the approver list, so this page can only read one
+back once it is on the branch. A rule that is approved names who approved it instead.
+
+`← Review list` at the top closes the rule and returns to the list it was opened from; from the
+board the same link reads `← Board`.
 
 ## Review list
 
