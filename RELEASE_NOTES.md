@@ -1,222 +1,120 @@
 # Release Notes
 
-## Unreleased
+## Unreleased — 0.10.0
 
-Platform-generic remote verification. A proof can now name the platforms it must be proved on,
-the host is detected, results are scoped per platform, and everything from the status table to
-the dashboard to the CI gate reports per platform rather than pretending one machine saw it all.
-Alongside it, the compliance-adjacent promises that were not backed by mechanism are either
-backed or withdrawn.
+For a project running 0.9.5. One command moves it forward, and the rest of this page says what
+that command changes.
 
-Test sweep at this commit: 1057 passed, 7 skipped across 15 suites, as recorded by
-`dev/run_tests.sh` in `.purlin/runtime/test_run.json` (the pytest pool counts per test; each
-shell suite counts as one).
+0.10.0 replaces two grading scores with one setting, moves the evidence into the repository, and
+gives every rule a state a person can act on. Nothing in it needs a new service or a hosted
+anything: the evidence is files in git, and the enforcement is a CI job and a branch rule.
 
-### Added
+Tests at this commit: 871 passed, 6 skipped.
 
-- **`@on(<platform-id>)` platform tags.** A tier says what kind of test a proof is; `@on(...)`
-  says where it has to run, and a proof carries both (`@unit @on(windows-2022, macos-14)`). Ids
-  resolve against an optional `platforms` registry in `.purlin/config.json`; the family ids
-  `windows`, `macos` and `linux` need no config. An entry with `kind: "environment"` names a tool
-  rather than a host (a Figma MCP server, a CLI that spends money) and is satisfied only by an
-  explicit `PURLIN_PLATFORM`. `spec_format.md` is at Format-Version 9.
+### What a 0.9.5 user does
 
-- **Platform-scoped proof files.** `<feature>.proofs-<tier>@<platform-id>.json`, carrying a
-  `platform` field at the top level and on every entry. The marker decides and the environment
-  names: a marker with no declared platforms writes the agnostic file whatever `PURLIN_PLATFORM`
-  says. All eight proof plugins implement the same semantics and all eight now write `test_file`
-  with forward slashes on every OS. `proofs_format.md` is at Format-Version 6.
+```
+purlin:init --update
+```
 
-- **Host detection and per-platform satisfaction.** `sync_status` detects the host, prints a
-  `Platforms:` block naming what runs locally and what needs a runner, and reports each declared
-  platform as proved, failing or awaiting. A result from a family id satisfies a specific entry of
-  that family; nothing else satisfies. A result under an id its proof does not declare counts
-  toward nothing and is reported as an undeclared platform result rather than silently ignored.
+The update reads what the project actually contains rather than its `version` field, shows the
+delta, and asks before each write. It untracks and deletes the verification files and the proof
+files that used to be committed, untracks the committed dashboard data, rewrites the hooks,
+retires the config keys that no longer exist, asks the gate question once, and rewrites an
+operating-system tag to `@env(...)` where the intended system is unambiguous. Every file it
+replaces is backed up beside the original. `purlin:init --update --check` prints the pending list
+and writes nothing, which is what a preflight in CI runs. Until the update runs, every skill opens
+with `→ Run: purlin:init --update`.
 
-- **Per-platform reporting.** `purlin:status` keeps its five columns and gains the platform lines;
-  the dashboard's Verified, Passing and Proof Integrity cards split per platform and open a modal,
-  and each feature row carries a chip per platform. `scripts/ci/verify_gate.py --check` prints a
-  By-platform section and exits 2 when the registry is unreadable.
+### What changed, by concept
 
-- **`purlin:init --update`.** Detects what a project needs after the plugin moves under it, from
-  the project's own contents rather than from its `version` field, shows the delta, asks before
-  writing, and migrates legacy `@windows` tags, `proofs-windows.json` files, legacy markers, stale
-  `.purlin/plugins/` copies, missing config fields and the legacy `.mcp.json` entry. Every skill
-  points at one advisory anchor when a migration is pending.
+**Vocabulary.** One word per concept, across every skill, reference, doc and line of output: rule,
+proof, test, record, approval, gate, test strength, review list, approver list, git host.
+`references/glossary.md` lists each word and the spelling it replaced.
 
-- **`mutation_checks` config field**, off by default. When on, every new or amended proof is
-  mutation-checked before the commit that carries it.
+**The gate.** One project setting, `gate` in `.purlin/config.json`, with three values: `tested`
+(every rule has a passing tagged test), `recorded` (every rule has a record CI wrote at this
+commit, at or above `min_strength`) and `approved` (that, plus a current human approval on every
+high-risk and medium-risk rule). `purlin:init` asks one question and derives the rest.
+`purlin:init --gate <level>` changes it later; raising adds what is missing, lowering deletes
+nothing. A gate is three things and needs all three: a CI job, a branch rule that blocks merge
+without it, and the setting saying what passing means.
 
-- **A run marker.** `dev/run_tests.sh` writes `.purlin/runtime/test_run.json`, and the receipt
-  issuer refuses to issue against a failed run, a different commit, or evidence no recorded run
-  produced. That refusal is the mechanism; it is why three features on this branch read PASSING
-  rather than VERIFIED until a runner witnesses them.
+**Records.** Evidence lives in the tree, as
+`.purlin/records/<feature>/<timestamp>-<commit7>-<runner>.json`, one file per verify run,
+committed. Adding a file never conflicts, so two branches never fight over it. The last commit
+touching a record decides its label: `ci` when it was written through the git host's API by the CI
+identity, `developer` when a person committed it, `local` when it is uncommitted. `tested` counts
+`ci` or `developer`; `recorded` and `approved` count `ci` alone. Verify keeps the newest three per
+feature per operating system and prunes the rest; a record named in the message of an annotated
+`validated/<name>` tag is kept for ever. The log of what was proved and when is the git history of
+the folder.
 
-### Changed
+**Approvals.** One file per approval,
+`specs/<category>/<feature>.approvals/<RULE-N>.<hash8>.<approver-slug>.json`, so two approvals
+never conflict either. It binds the hashes of the rule text, the proof text and the test body, the
+risk, the approver, the brief and the record. When any of the three hashes changes, the approval
+is stale and a person looks again. CI auto-approves low-risk rules and nothing else. The people
+who may approve are `approvers` in `.purlin/config.json`, changed by pull request, so git history
+records who could approve and when; an approval counts when its commit is signed by one of them.
 
-- **BREAKING: `purlin:unit-test` is now `purlin:test`.** The skill runs every tier when given
-  `--all`, so the old name described a flag rather than the skill. It is also the single owner of
-  test execution (`purlin:build` and `purlin:verify` delegate to it rather than invoking runners
-  themselves), which makes the narrower name actively misleading. **There is no alias:** update
-  any script, prompt or muscle memory that says `purlin:unit-test`. The `skill_unit_test` spec is
-  renamed to `skill_test` along with its proof and receipt files.
+**States.** A rule is in one of seven: Drafted, Proof ready, Tested, Recorded, Reviewed, Approved,
+Stale. A separate flag, re-verify pending, means only the code changed: the approval stands and CI
+clears it on the next run. `purlin:status` and the dashboard report those and nothing else.
 
-- **BREAKING: `purlin:verify --audit` is now `purlin:verify --recheck`.** The old flag collided
-  with the `purlin:audit` skill, which measures something entirely different: `--recheck` is
-  clean-room re-execution against committed receipts, while `purlin:audit` grades proof quality.
-  The collision was real enough that `docs/anchors-guide.md` carried an inline parenthetical
-  explaining the two were not the same thing. That parenthetical is now deleted.
+**Breaks engines.** `purlin:verify` breaks the code on purpose and reports the share of those
+breaks the tests caught as the **test strength**, an integer percent. Three engines ship, chosen
+by `mutation_engine` in the config: mutmut for Python, Stryker for JavaScript and TypeScript, and
+Stryker.NET for C#. SQL and Bash have no engine, so their strength reads `n/a` and the gate falls
+back to the free checks.
 
-- **BREAKING: the verification hash is version 2.** It binds the rule text, the feature, the proof
-  id, the rule, the status, the tier, the platform, the test file, the test name and every counted
-  manual stamp, `\x00`-separated. Version 1 bound rule ids and proof statuses only, so rewording a
-  rule or re-pointing a proof at a different test left the receipt reading current. Every v1
-  receipt reads stale until `purlin:verify` re-issues it. The receipt itself is documented in a new
-  `references/formats/receipt_format.md` at Format-Version 2, and it now carries an `evidence`
-  block recording the run and the provenance of every contributing proof file.
+**`@env`.** A proof that can only be proved on one operating system carries `@env(windows)`,
+`@env(macos)` or `@env(linux)`. Those three are the whole vocabulary. `purlin:init` reads the tags
+in `specs/` and writes a CI matrix to match, one job per system named, each running the same
+verify and writing its own record. A proof with no tag is satisfied by a record from any system.
+On a host that does not match, the test is skipped and the rule reads `needs <os>`;
+`purlin:verify --remote` pushes the branch, waits for the workflow and pulls the records CI wrote.
 
-- **A current `@manual` stamp counts toward coverage.** It printed `PASS (manual)` and incremented
-  nothing, so a feature whose only gap was a stamped rule could never be verified. The stamp enters
-  the vhash, so moving it, re-dating it or changing hands invalidates the receipt.
+**The dashboard.** One HTML page on the design tokens, with no framework and no build step. It
+opens from disk and is published by CI as the `purlin-dashboard` build artifact, linked from the
+pull request comment, so anyone with repository access can read it and nothing is provisioned.
+`scripts/report/scan.py --repo <url>` prints the same rollup for anyone holding only a URL.
 
-- **The pre-push hook reads the payload.** Three modes (`warn`, `strict`, `off`), whole-name
-  matching, nested specs counted, a comma-list `test_framework` that announces both arms, and no
-  fail-open path that reports a pass it did not earn: when the hook cannot resolve the plugin root
-  it warns in `warn` and exits 1 in `strict`.
+**The tools.** `tools/PM/` and `tools/QA/` are Claude Desktop skills for people with no checkout.
+The PM tool drafts and edits specs and anchors and opens the pull request; the QA tool produces
+the triage report and opens pull requests with proof edits and approvals.
 
-- **The audit cache re-keys and invalidates.** A cache entry records the criteria it was graded
-  against and the auditor that graded it; an entry whose key no longer matches reads `invalidated`
-  rather than as a grade. The criteria pin is enforced on every audit with no fall back to the
-  built-in criteria.
+**The commands.** `purlin:review` walks the review list one brief at a time, and `purlin:approve`
+writes a signed approval for a rule, a feature or a batch. `purlin:drift` takes a role: `pm`,
+`design`, `qa` or `eng`. Plain language reaches every command, and every command ends by naming
+the next step.
 
-- **The version string has exactly one place to edit.** `dev/bump_version.sh <semver>` writes
-  `VERSION` and propagates it to every derived location; `--check` exits 1 naming each file that
-  disagrees, and `.github/workflows/version-check.yml` runs it on every push or PR that touches a
-  version-bearing file. The two doc tables that restated a number now cite the `VERSION` file by
-  name. New rules: `purlin_version` RULE-6/7/8/9, with proofs.
+**Formats.** spec 11, proofs 8, anchor 7, and two new files: record 1 and approval 1. A tool that
+parses any of them should read the version line.
 
-- **Docs state what the hash actually binds.** `docs/regulated-environments.md` gained "What the
-  vhash binds" and "What it does not bind"; the enforcement model is described once, in
-  `references/hard_gates.md` under "Enforcement Layers", and the three guides that carried copies
-  now link it. The CI examples are workflows a runner can execute. New spec: `purlin_docs`.
+### What was removed
 
-### Fixed
+Gone in 0.10.0: the two LLM grading scores and the skill and agent that produced them; the runner
+registry and its per-runner proof files, replaced by `@env` and the CI matrix; the committed
+verification files, replaced by records; the committed proof files, which are now runtime state
+under `.purlin/runtime/` and are not committed at all; the committed dashboard data, now a build
+artifact; the design-tool importer, the visual hash and the live design-tool connection, replaced
+by exported files under `designs/` reviewed by pull request; and C and PHP support, so a project
+that used either keeps its proofs only by writing a custom proof plugin. Several flags went with
+them, including the manual and re-check flags on verify and the config setter for keys that no
+longer exist. A `@manual` proof stays: it has no test, its evidence is an approval carrying a
+one-line note, and it is never auto-approved.
 
-- **The pre-commit digest blanked the Proof Design gauge.** `generate_digest`, the entry point
-  the pre-commit hook uses to write `.purlin/report-data.js`, read the audit cache and left
-  `design_summary` at its `None` default. Every digest refresh therefore erased the Proof Design
-  card that `sync_status` had just populated. RULE-24 now requires every writer of report-data.js
-  to populate both gauges, and PROOF-25 exercises `generate_digest` directly.
+### The 0.10.0 line that never shipped
 
-- **Eight test files backed committed proofs and were not in the sweep.** `dev/run_tests.sh` now
-  runs fourteen suites, and `proof_common` RULE-14 keeps it that way: every test file a committed
-  proof names is either executed by the sweep or named only by platform-scoped proof files whose
-  id the registry declares.
+An earlier 0.10.0 development line added two LLM grading scores, one for proof descriptions and
+one for test bodies, together with a skill and an agent to produce them. It was never released,
+and 0.10.0 as it ships has neither. What a person needs before approving a rule is a review brief:
+the free checks, the test strength from the latest record, and a model review only where the risk
+warrants it. `references/review_criteria.md` holds those criteria, and they are the only names a
+finding ever carries.
 
-- **`git ls-remote` was handed an anchor's `> Source:` with no `--`.** Hardened, with the security
-  anchor's scope widened past `.py` and `phpunit_purlin.php`'s `exec()` replaced with `proc_open`.
-
-- **Four legacy files were tracked under `.purlin/cache/` despite the gitignore**, and the
-  committed digest carried `git_sha: null`. Both fixed, each with a rule.
-
-- **A skipped test lost its committed entry** when a sibling in the same file ran. It is now
-  preserved: only an executed test replaces an entry, and only a deleted file reaps one.
-
-- `docs/images/*.png` are regenerated by `dev/capture_doc_screenshots.py`, and the five lifecycle
-  diagrams have tracked Mermaid sources under `assets/src/` so they can be changed at all.
-
-### Upgrade notes
-
-Run **`purlin:init --update`** after updating the plugin. It migrates, in one pass and only after
-showing you the delta:
-
-- legacy `@windows` proof tags to `@unit @on(<platform-id>)` (the id defaults to the `windows` OS
-  family; `--platform-id <id>` names a different one)
-- `<feature>.proofs-windows.json` to `<feature>.proofs-unit@<platform-id>.json`, stamping
-  `platform` on the file and every entry
-- every proof plugin's `windows`-tier marker to tier `unit` plus the platform
-- stale `.purlin/plugins/` copies to the installed plugin's files
-- missing config fields from the template, stamping `version` from the installed `VERSION`
-- the legacy `purlin` entry out of `.mcp.json`
-
-Then the rest, in the order they bite:
-
-- **Receipts are re-issued, not migrated.** A v1 receipt reads stale until `purlin:verify` runs.
-  The update never writes one: a receipt is a claim that tests ran, and the update ran none.
-- **`--compute-proof-hash` is gone**, replaced by `--cache-key`. The old flag hashed proof content
-  under a formula that never invalidated.
-- **`purlin:init --pre-push` now offers `off`** alongside `warn` and `strict`. `off` prints one
-  line saying the hook is off and checks nothing, which is not the same as a hook that passed.
-- **`mutation_checks` is opt-in** and off by default. Turn it on with
-  `purlin:init --mutation-checks on`.
-- **`dev/build_audit_cache.py` is removed.** It hand-wrote grades under a key formula that never
-  invalidated; after the re-keying change every such entry reads `invalidated` anyway.
-- **Format versions bumped:** spec 9, proofs 5, receipt 2 (new file), anchor 5,
-  supported_frameworks 6. A consumer tool that parses any of these should read the version line.
-
-## v0.10.0 — Two proof gauges: Proof Design and Proof Integrity
-
-### Added
-
-- **Proof Design — grade a spec's proofs before any code or test exists.** Every audit pass previously required test code (Pass 0.5 needs proof JSON; Pass 1 and Pass 2 read test files), so a proof *description* was only ever assessed transitively, as the yardstick for a test. `purlin:spec --review` grades rules and never reads the `## Proof` section at all. There was therefore no way to answer "are these proofs any good?" before building, and `agents/purlin.md` actively forbade trying ("If a spec exists but code doesn't, build the code first"). `check_proof_design` now grades each description PROVABLE / LOOSE / UNPROVABLE / STRUCTURAL from the rule and description alone, via `--check-proof-design` (`static_checks` RULE-35). Score = PROVABLE / (PROVABLE + LOOSE + UNPROVABLE), with STRUCTURAL excluded exactly as EXCLUDED is excluded from Integrity.
-
-  The detectors are the authoring rules already in `references/spec_quality_guide.md` made executable, not new criteria — "Recognizing Level 1 proofs" supplies the UNPROVABLE phrasings verbatim. Dogfooding it against this repo's own 543 proof descriptions drove two corrections: presence-only descriptions are STRUCTURAL rather than UNPROVABLE (the discriminator is "did code run to produce what is being asserted on", not the rule's wording), and absence assertions are FORBIDDEN-pattern proofs rather than Level 1 defects. Result: zero false UNPROVABLE across the repo, which scores 92%.
-
-- **The audit derives its mode instead of guessing.** New `--audit-scope` (`static_checks` RULE-36) reports per feature the rule count, declared vs executed proofs, test files, and `scope_files_exist` — which is what finally distinguishes "spec written, nothing built" from "code exists, tests missing". Nothing in the toolchain could tell those apart before, and they need different next steps. `purlin:audit` Step 0 maps that to design-only or both and announces the choice (`skill_audit` RULE-19/20). This also removes a hard failure: Pass 0.5 and Pass 1 exit 2 on missing files, so an audit on a spec-only project used to dead-end.
-
-- **Both gauges surface everywhere.** `sync_status` prints `Proof Design: N%`, and a project with no executed proofs now reads `Proof Integrity: no tests yet` instead of `No audit data` — the two were reported identically, which made a deliberate spec-first project look neglected (`sync_status` RULE-39). The dashboard gains a Proof Design card reusing the integrity colour bands, so `dashboard_visual` RULE-10 is unchanged (`purlin_report` RULE-34, `report_data` RULE-23). `purlin:spec` exit criteria now report the Design score for the descriptions just written and print the next-step directive (`skill_spec` RULE-10).
-
-- **Three authoring pathways, all supported.** Specs-and-proofs-first, specs-then-code-and-tests, and specs-then-code-then-tests-then-verify. `agents/purlin.md` now reads observable state rather than imposing an order (`purlin_agent` RULE-9/10/11), and the Core Loop's "Do the work — write code" opener is gone.
-
-### Fixed
-
-- **The documented audit-cache entry omitted the two fields the reader deduplicates on.** The example at `skills/audit/SKILL.md` showed five fields; `write_audit_cache()` and `_read_audit_summary()` both dedup on `(feature, proof_id)`. An agent following the docs produced entries whose key was `('', '')` for every proof, so on write they all collapsed into one surviving entry and integrity was computed from a single proof — a confident, plausible, wrong percentage. The example now shows all nine fields, and `write_audit_cache` rejects an entry missing either field with a `ValueError` naming the offending key, before touching the filesystem (`static_checks` RULE-33). `--write-cache` surfaces it as JSON with exit 2, and the previously unguarded `json.loads(sys.stdin.read())` no longer raises a traceback on malformed input. Note the docs disagreed with themselves: `agents/purlin-auditor.md` already listed the correct nine fields, and RULE-17 already required them.
-
-- **Nothing wrote the audit cache.** `skills/audit/SKILL.md` said "write all new assessments to the cache" in prose, inside the step that *reads* it, and named no command — `write-cache` appeared zero times in the file. Step 3.5 and Step 4 both opened by assuming a write step that did not exist, so an audit could complete, report per-proof assessments and leave no measurement behind: `sync_status` then printed "No audit data", indistinguishable from never auditing. Now Step 3.4, marked MANDATORY, with the literal command and an explicit `--project-root` (every cache mode silently defaults to `os.getcwd()`) (`skill_audit` RULE-18).
-
-- **`cached_at` re-stamping made staleness undetectable.** RULE-19 mandated stamping *every* entry with the current time, including entries merely carried forward from disk, so the 24h staleness check could never fire and `last_audit` always read "now" even when nothing was re-audited. The rule is reworded and PROOF-33 — which asserted the broken behaviour — now also proves carry-forward entries keep their timestamp.
-
-- **Two cache mutators held no lock.** `write_audit_cache` serialized its read→merge→write cycle but `clear_audit_cache` and `prune_audit_cache` did not, and `purlin:audit` launches up to three parallel auditors then prunes immediately after. RULE-25 now covers every mutating operation.
-
-- **`purlin-builder` was a dead artifact, and the root cause had three victims.** The plugin declared no agents, so all three `.claude/agents/purlin-*.md` definitions were project-local and reached no consumer: "spawn a purlin-builder" was unfollowable in any installed project. `purlin-builder` and `purlin-reviewer` are deleted (neither was ever invoked; `skills/drift/SKILL.md` never mentioned the reviewer it supposedly spawned), and `purlin-auditor` — the only real call site — is promoted to `agents/purlin-auditor.md` so it ships, resolving as `purlin:purlin-auditor`. Remediation everywhere now routes to `purlin:build`.
-
-- **Shell proofs recorded machine-absolute paths.** `shell_purlin.sh` stored `${BASH_SOURCE[1]}` verbatim, so 26 entries across six committed proof files held another machine's home directory. It now relativizes against the project root like the pytest plugin (`proof_plugins_shell` RULE-5). The reason those files never refreshed was a second defect: `dev/test_e2e_teammate_audit_loop.sh` never exported `PURLIN_PROOF_TIER`, so its `@e2e`-declared proofs wrote to unit-tier files and mutually clobbered the proofs pytest writes for the same features.
-
-- **The coverage table broke for two of its five statuses.** The status column was ruled for 9 characters and padded to 7, but `UNTESTED` and `VERIFIED` are 8 — and a spec-only project is 100% UNTESTED, so every row was misaligned (`sync_status` RULE-40). `_get_rule_proof_descs()` was dead code with zero call sites, so the report never showed the proof descriptions a user had just written, and the suggested marker printed the literal `"PROOF-N"` despite the real ids being parsed and available (RULE-41). And `purlin:build` appeared nowhere in `purlin_server.py`, so nothing could route a user into the build loop: a spec with no code was told to run `purlin:unit-test`, which collects nothing (RULE-42).
-
-- **`purlin:unit-test` gave a false diagnosis.** Zero collected tests reported "the proof plugin may not be loaded → `purlin:init --force`", sending users to re-scaffold working infrastructure (`skill_unit_test` RULE-6). **`purlin:verify` had no UNTESTED case** at all, so every feature in a spec-first project fell outside every defined branch (`skill_verify` RULE-7). **`references/hard_gates.md` contradicted the skill it documents**, saying only VERIFIED features receive a receipt when VERIFIED is the state *after* a receipt exists — read literally, no feature could ever receive its first one (`purlin_references` RULE-17). **`skills/status/SKILL.md` documented a sort order omitting FAILING and UNTESTED** (`skill_status` RULE-5).
-
-- **Stale CLI self-documentation.** The usage text listed five of ten CLI forms, omitting `--write-cache`, `--clear-cache`, `--prune-cache`, `--load-criteria` and `--resolve-source`, and the module docstring claimed an exit code contradicting RULE-7. Both are fixed, and RULE-34 parses the dispatch chain so they cannot drift again.
-
-### Changed
-
-- **`references/audit_criteria.md` → Criteria-Version 18.** Gains a `## Pass D` section defining the Design levels in full — restated rather than linked, because `:230` requires the file to be self-contained for external-LLM mode, which is now recorded as a deliberate exception to the no-duplication rule. It also marks the Integrity criteria that are *comparisons against the proof description* with `[relative]`. That is the substantive finding behind this release: four WEAK criteria and three STRONG criteria presuppose a specific description, so against "Verify authentication works" none can fire and a test asserting almost nothing scores STRONG. **Proof Design is therefore not merely a ceiling on Proof Integrity — it is a precondition for Integrity meaning anything.** A high Integrity score over LOOSE descriptions is evidence of an unfalsifiable spec.
-
-- **The Design vocabulary already existed under other names, so the duplicates are retired rather than joined.** `spec_quality_guide.md`'s "Writing Proof Descriptions" and "Recognizing Level 1 proofs" were already the Design criteria and are now labelled with the level each defect earns; the Level 1/2/3 rubric becomes the grading engine via one bridge rule (a Level 1 description against a behavioural rule is UNPROVABLE); "Level 1 is hollow" no longer calls a *description* hollow. HOLLOW, WEAK, STRONG and EXCLUDED are now test-only words everywhere, and `STRUCTURAL` (Design) relates to `EXCLUDED` (Integrity) by a stated causal link rather than by collision.
-
-- **`purlin:build` and `purlin:verify` audits are differentiated.** Both spawned an auditor; undifferentiated, that is the same project-wide audit twice for one number. build's is feature-scoped and advisory, verify's is project-wide and authoritative (`skill_verify` RULE-8).
-
-- **Docs retired the single-gauge model** across README, `docs/index.md`, the installation, lifecycle, testing-workflow, dashboard, spec-from-code, regulated-environments, collaboration and anchors guides, and `references/purlin_commands.md`. The flagship Figma example's own proofs named an internal function and mandated mocks — they would have scored UNPROVABLE under the gauge this release ships — and are rewritten as observable flows.
-
-- **Neither gauge is a gate.** `references/hard_gates.md` still documents exactly one hard gate (proof coverage) and now says so explicitly for both scores.
-
-### Testing
-
-- New proofs: `static_checks` PROOF-57 (cache entries missing the dedup key are rejected and the on-disk cache is left byte-identical), PROOF-58 (prune and clear take the exclusive lock; a prune racing a writer loses no committed entries), PROOF-59 (the usage text and docstring are checked against the dispatch chain via `ast`), PROOF-60/61/62 (each Design level; mode derivation across three project states; the design cache is separate, locked and validated); `sync_status` PROOF-69 (both gauges, STRUCTURAL excluded from the Design denominator), PROOF-70/71/72 (table alignment for every status, declared proof ids surfaced, directive routed on whether scope files exist); `report_data` PROOF-24; `purlin_report` PROOF-34/35; `purlin_agent` PROOF-9/10/11; `skill_audit` PROOF-17/18/19/20; `skill_spec` PROOF-10/11; `skill_verify` PROOF-7/8; `skill_build` PROOF-20; `skill_drift` PROOF-6; `skill_status` PROOF-5; `skill_unit_test` PROOF-6; `purlin_references` PROOF-16/17; `proof_plugins_shell` PROOF-5.
-
-- Four tests asserted behaviour this release changes and were updated rather than deleted around: `static_checks` PROOF-12's fixture (omitted both dedup fields), PROOF-33 (asserted every entry is re-stamped), `sync_status` PROOF-49 (wrote a feature-less entry *through* the now-strict writer, and is reseeded on disk so the reader's tolerance is still proven), and `skill_audit` PROOF-5/6 (asserted the builder spawn protocol).
-
-- `purlin_report` PROOF-34 is the one new proof not executed locally: it drives the real dashboard through Playwright and Chromium could not be downloaded in the build environment. PROOF-35 covers the same rule structurally and does run, so RULE-34 is not left unproven. It emits at the `integration` tier deliberately — two test files emitting one feature at one tier collide under feature-scoped overwrite, which purged all 33 committed browser proofs during development.
-
-- `dev/run_tests.sh` gains `test_purlin_report_markup.py`. Full suite: 383 passed, 8 skipped across 5 suites, zero NO PROOF and zero FAILING across all 40 features. (The entry previously claimed 413 passed, a figure that predated deleting 32 duplicate doc-grep tests and was never re-measured.)
-
-**Upgrading an existing project:** no action required for the gauges — `purlin:audit` writes
-`.purlin/cache/design_cache.json` on its next run and `.purlin/cache/` is already gitignored.
-If your project kept its own copies of the retired teammate agents, delete them:
-`rm -f .claude/agents/purlin-builder.md .claude/agents/purlin-reviewer.md`. The auditor now
-ships with the plugin, so `rm -f .claude/agents/purlin-auditor.md` too, then `/reload-plugins`.
-
-## v0.9.5 — Cross-platform audit Pass-1 (Windows) & C# support
+## 0.9.5 — Windows-scoped proof checks & C# support
 
 ### Fixed
 
@@ -235,7 +133,7 @@ ships with the plugin, so `rm -f .claude/agents/purlin-auditor.md` too, then `/r
 
 - New proofs: `static_checks` PROOF-44/45 (AST structural guards — no unconditional `fcntl` import; `encoding='utf-8'` on every text-mode `open()`), PROOF-46–49 (C# assert-true / no-assertion / multi-framework assertion recognition / `.cs` dispatch), PROOF-50 (Windows lock path driven through an injected fake `msvcrt`, `@integration`), PROOF-51 (full CLI pipeline via real subprocess, `@e2e`), PROOF-52 (the cp1252 failure reproduced by running `--load-criteria` under `PYTHONUTF8=0`/`LC_ALL=C`, `@e2e`); `skill_audit` PROOF-15. PROOF-55 covers the Playwright assertion recognition (and the bare-`Expect` negative). Windows behavior is now verified for real on a `windows-latest` GitHub Actions runner — `.github/workflows/windows-proofs.yml` runs PROOF-53 (native `msvcrt` lock path, `_HAS_FCNTL` genuinely False) and PROOF-54 (`--load-criteria` under the native console codec) in the dedicated `@windows` proof tier and commits the results back — in addition to the host simulation (fake `msvcrt`) and ASCII-locale subprocess repro. Independent audit of the new proofs: STRONG at 100% integrity, 0 WEAK/HOLLOW.
 
-## v0.9.4 — Plugin-bundled MCP server & e2e proof quality
+## 0.9.4 — Plugin-bundled MCP server & e2e proof quality
 
 ### Fixed
 
@@ -260,7 +158,7 @@ ships with the plugin, so `rm -f .claude/agents/purlin-auditor.md` too, then `/r
 - New proofs: `skill_spec_from_code` PROOF-42..45, `skill_spec` PROOF-9, `purlin_references` PROOF-13/14/15 (grep guards over the skill and reference text). Independent audit of the new proofs: 0 WEAK/HOLLOW (all structural documentation guards, excluded from integrity scoring); 3 advisory regex-precision findings applied before commit. Full suite 372 passed, 40/40 features VERIFIED.
 - `skill_init` PROOF-40/41 now parse `.claude-plugin/plugin.json` directly (asserting `mcpServers.purlin` uses `python3` with `${CLAUDE_PLUGIN_ROOT}` args) and PROOF-42 verifies the legacy `.mcp.json` migration instructions, replacing the old greps for project-level `.mcp.json` creation.
 
-## v0.9.3 — Dashboard visibility before tests exist
+## 0.9.3 — Dashboard visibility before tests exist
 
 Quality-of-life release fixing the "empty dashboard" experience after `purlin:spec-from-code`: a freshly specced project now shows its full rule set and coverage plan in `purlin-report.html` before a single test has run.
 
@@ -278,7 +176,7 @@ Quality-of-life release fixing the "empty dashboard" experience after `purlin:sp
 
 - New proofs: planned-proof emission and dedup against executed results including required/global anchor rules (`report_data` PROOF-22), coverage isolation (PROOF-23), greyed "not run" rendering with no audit tag (`purlin_report` PROOF-33, Playwright), and the single-spec folder ban (`skill_spec_from_code` PROOF-41). Dashboard PROOF-19/20/21 updated for the expanded-by-default behavior. Independent audit of the changed proofs: 5 STRONG, 0 WEAK/HOLLOW.
 
-## v0.9.2 — .NET test support (xUnit)
+## 0.9.2 — .NET test support (xUnit)
 
 Incremental release adding .NET to the supported test ecosystems, backed by a refactor of the proof-plugin specs.
 
@@ -306,7 +204,7 @@ Incremental release adding .NET to the supported test ecosystems, backed by a re
 - New integration proofs drive the compiled xUnit logger through a real `dotnet test` run (`dev/test_multilang_proof_plugins.py::TestXUnitProofPlugin`).
 - Strengthened existing proofs: C plugin proofs regenerated from a real `gcc` run, Vitest RULE-1 marker parse now asserted inline, pytest "call phase only" boundary proved, and three audit-pipeline proofs recorded from a full-suite run.
 
-## v0.9.1 — Vitest reporter & JS/TS audit fixes
+## 0.9.1 — Vitest reporter & JS/TS audit fixes
 
 Bug-fix release addressing two reported issues in JavaScript/TypeScript proof handling.
 
@@ -322,7 +220,7 @@ Bug-fix release addressing two reported issues in JavaScript/TypeScript proof ha
 - PROOF-29 was strengthened to actually drive the compiled reporter via a synthetic Vitest 2.x+ task tree (the old proof only ran `tsc` + `node` on hand-built JSON and never invoked the reporter). New regression proofs cover the exact issue #2 repro.
 - Docs aligned: `references/supported_frameworks.md` (Format-Version 3), `references/formats/proofs_format.md`, and `docs/testing-workflow-guide.md` now describe the native Vitest reporter and tested version range.
 
-## v0.9.0 — Rule-Proof Runtime
+## 0.9.0 — Rule-Proof Runtime
 
 Complete redesign. Purlin v0.9.0 replaces the v1 system (35 skills, 5 agents, 8 hooks, 8 MCP tools) with a minimal rule-proof runtime.
 
