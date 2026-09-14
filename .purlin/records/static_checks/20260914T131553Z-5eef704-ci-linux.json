@@ -1,0 +1,670 @@
+{
+  "commit": "5eef704ecfb7ac6011137bfe47345146b6166894",
+  "dirty": true,
+  "environment": {
+    "engines": [
+      "none"
+    ],
+    "host": "GitHub Actions 1000000077",
+    "id": "linux-x86_64",
+    "job": "verify",
+    "kind": "ci",
+    "os": "linux"
+  },
+  "feature": "static_checks",
+  "features": {
+    "static_checks": {
+      "rules": {
+        "RULE-1": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-1",
+            "PROOF-21",
+            "PROOF-65"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-10": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-36"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-11": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-39",
+            "PROOF-40",
+            "PROOF-41",
+            "PROOF-43"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-12": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-44"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-13": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-45",
+            "PROOF-47"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-14": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-46"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-15": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-48"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-16": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-11",
+            "PROOF-35"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-17": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-12",
+            "PROOF-13",
+            "PROOF-14"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-18": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-15",
+            "PROOF-16",
+            "PROOF-17"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-19": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-23",
+            "PROOF-24",
+            "PROOF-25",
+            "PROOF-26"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-2": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-2",
+            "PROOF-3",
+            "PROOF-22"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-20": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-27",
+            "PROOF-28",
+            "PROOF-29",
+            "PROOF-30"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-21": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-42",
+            "PROOF-49"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-22": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-64"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-23": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-50"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-24": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-51"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-25": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-52"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-26": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-53"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-27": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-54"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-28": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-58",
+            "PROOF-61",
+            "PROOF-63"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-29": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-59"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-3": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-4",
+            "PROOF-69"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-30": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-62"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-31": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-60"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-32": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-55"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-33": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-56",
+            "PROOF-57"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-34": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-31"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-35": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-32",
+            "PROOF-37"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-36": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-38"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-37": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-33"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-4": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-5",
+            "PROOF-6"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-5": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-7"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-6": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-9"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-7": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-8",
+            "PROOF-10",
+            "PROOF-66",
+            "PROOF-67",
+            "PROOF-68"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-8": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-18",
+            "PROOF-19",
+            "PROOF-20"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        },
+        "RULE-9": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-34"
+          ],
+          "result": "missing",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": []
+        }
+      },
+      "scope_score": {
+        "killed": 0,
+        "score": null,
+        "survived": 0
+      },
+      "spec": "specs/review/static_checks.md"
+    }
+  },
+  "gate": "approved",
+  "log": {
+    "path": ".purlin/runtime/run.log",
+    "sha256": "f9bef2eb8abc45af2b50819cfda0fc5641c6f4e1cf203995ccc5bafbea99cfc0"
+  },
+  "missing": [
+    "static_checks RULE-1",
+    "static_checks RULE-2",
+    "static_checks RULE-3",
+    "static_checks RULE-4",
+    "static_checks RULE-5",
+    "static_checks RULE-6",
+    "static_checks RULE-7",
+    "static_checks RULE-8",
+    "static_checks RULE-9",
+    "static_checks RULE-10",
+    "static_checks RULE-11",
+    "static_checks RULE-12",
+    "static_checks RULE-13",
+    "static_checks RULE-14",
+    "static_checks RULE-15",
+    "static_checks RULE-16",
+    "static_checks RULE-17",
+    "static_checks RULE-18",
+    "static_checks RULE-19",
+    "static_checks RULE-20",
+    "static_checks RULE-21",
+    "static_checks RULE-22",
+    "static_checks RULE-23",
+    "static_checks RULE-24",
+    "static_checks RULE-25",
+    "static_checks RULE-26",
+    "static_checks RULE-27",
+    "static_checks RULE-28",
+    "static_checks RULE-29",
+    "static_checks RULE-30",
+    "static_checks RULE-31",
+    "static_checks RULE-32",
+    "static_checks RULE-33",
+    "static_checks RULE-34",
+    "static_checks RULE-35",
+    "static_checks RULE-36",
+    "static_checks RULE-37"
+  ],
+  "os": "linux",
+  "plugins": [
+    "pytest",
+    "shell"
+  ],
+  "proofs": [],
+  "runner": "ci",
+  "schema": "purlin-record/1",
+  "schema_version": 1,
+  "scope_tree": "e150ab7c3139856f77b7a7b4e1ebe97ee020ad1247d50af6b3069b3bb1c9899b",
+  "test_strength": null,
+  "timestamp": "2026-09-14T13:15:53Z"
+}
