@@ -104,7 +104,7 @@ Work down the list in order: each step assumes the one above it landed.
 | 5 | `scripts/init/scaffold.py` | A `_WIRING` entry when `purlin:init` writes the framework's config file, and a `_DEST_OVERRIDES` entry when the installed name differs from the plugin's basename. |
 | 6 | `skills/init/SKILL.md` | Nothing hardcoded: the selection list is built from the reference. A framework wired by hand gains a line in the manual-setup note; one whose runner config init writes gains a row in the wiring table. |
 | 7 | `skills/test/SKILL.md` | The plugin path in the write-scoped overwrite paragraph, so the skill names the file that emits the project's evidence. |
-| 8 | `docs/testing-workflow-guide.md` | A framework subsection under `## Proof Markers` showing the marker in that language. |
+| 8 | `docs/running-and-records.md` | A row in the break-engine table under `## Test strength`, or a place in the sentence naming the languages with no engine, so the docs say how the framework's strength is measured. |
 | 9 | `references/formats/proofs_format.md` | A framework subsection under `## Proof Markers by Framework` (marker syntax, the runner command, the plugin path) and a row in the feature-name token table, which is what `purlin:rename` rewrites. |
 | 10 | `scripts/review/static_checks.py` | An entry in the checker table for each of the framework's test extensions, reading the same marker the plugin reads, so the free checks grade the language instead of leaving `assert true` in it ungraded. |
 

@@ -106,5 +106,7 @@ purlin:init --add-plugin <path or git URL>
 What a plugin has to do, and every file a new framework has to be named in before a project can
 select it and a run can execute it, is the checklist in
 [`proof_plugin_contract.md`](proof_plugin_contract.md). The tables above are one step of its
-wiring list, so a framework added here and nowhere else is half wired. A worked sample is in the
-[Testing Workflow Guide](../docs/testing-workflow-guide.md#proof-plugins).
+wiring list, so a framework added here and nowhere else is half wired. The six plugin files the table above
+names are the worked samples; what a run does with what they write, and what it prints when a
+plugin is not wired in, is in
+[running-and-records.md](../docs/running-and-records.md).

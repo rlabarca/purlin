@@ -107,8 +107,8 @@ reader is the agent, which resolves them once.
 Everything else is relative to the project root: `specs/`, `designs/`, `.purlin/`, and the
 project's own source and test files. A consumer project carries no `references/`, no `scripts/`
 and no `templates/` of its own, so the two roots never collide over one path. A shell script
-that needs the same answer outside a skill resolves it the way the hook shims do, which
-`docs/installation-guide.md` describes.
+that needs the same answer outside a skill resolves it the way the hook shims do, from the two
+install locations `docs/getting-started.md` names.
 
 ## Pending migrations
 

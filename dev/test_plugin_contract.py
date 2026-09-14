@@ -45,7 +45,7 @@ WIRING_SITES = (
     'scripts/init/scaffold.py',
     'skills/init/SKILL.md',
     'skills/test/SKILL.md',
-    'docs/testing-workflow-guide.md',
+    'docs/running-and-records.md',
     'references/formats/proofs_format.md',
     'scripts/review/static_checks.py',
 )
