@@ -995,7 +995,7 @@ CI rounds on `evidence-workflow`: run 1 (`34808346536`) Windows committed 37 rec
 printing, Ubuntu cancelled at six hours; run 2 (`34840363131`, with F10) both jobs ended
 inside the cap, Ubuntu's shell arm timed out at 3600 s, Windows 7 rules short; run 3
 (`34842281168`, with F11) Windows every rule Tested or Reviewed yet both arms exit 1, Ubuntu
-as run 2; run 4 (`34851835724`, with F14) Ubuntu in four minutes with one marker missing, CI auto-approved 69 low-risk rules and reviewed 425, both jobs exit 1 on 14 gate tests (Windows 56); run 5 (`34859129349`, with F17) pending. CI's API commits label `ci` and trigger no
+as run 2; run 4 (`34851835724`, with F14) Ubuntu in four minutes with one marker missing, CI auto-approved 69 low-risk rules and reviewed 425, both jobs exit 1 on 14 gate tests (Windows 56); run 5 (`34859129349`, with F17): the Windows job green (503 rules: Reviewed 426, Approved 77 by CI's low-risk auto-approval), Ubuntu green but for two pre-push hook tests that expect exit 0 outside a repository and get the run script's 2 (fix lane F18). CI's API commits label `ci` and trigger no
 further run. `verify_gate.py --check` on this repository still exits 1 under `approved`
 until the user's approvals exist.
 
