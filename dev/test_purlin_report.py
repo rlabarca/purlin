@@ -452,8 +452,7 @@ def test_a_row_states_every_reason_the_group_does_not(browser, tmp_path):
     assert reasons[('login', 'RULE-4')] == 'windows: no record yet'
     assert reasons[('login', 'RULE-2')] == 'stale'
     assert reasons[('invoice', 'RULE-2')] == (
-        'strength 64% under 80%; No proof of this rule names a rejection, '
-        'an error or a boundary.')
+        'strength 64% under 80%; no negative case')
     page.close()
 
 

@@ -711,7 +711,7 @@ function reviewRowReasons(entry) {
   var reasons = [];
   (entry.reasons || []).forEach(function (reason) {
     if (/^risk (high|medium|low)$/.test(reason)) { return; }
-    reasons.push(findingText(reason));
+    reasons.push(findingLabel(reason));
   });
   return reasons;
 }

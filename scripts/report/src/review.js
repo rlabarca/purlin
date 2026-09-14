@@ -27,12 +27,12 @@ function reviewRule(entry) {
 
 /* The reasons worth printing beside a row: the risk is the group it sits in,
    so repeating it would read the same on every row under that header. A free
-   check is read out as the sentence the checks already write. */
+   check is read out by its short label; the Rule screen carries the sentence. */
 function reviewRowReasons(entry) {
   var reasons = [];
   (entry.reasons || []).forEach(function (reason) {
     if (/^risk (high|medium|low)$/.test(reason)) { return; }
-    reasons.push(findingText(reason));
+    reasons.push(findingLabel(reason));
   });
   return reasons;
 }
