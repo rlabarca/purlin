@@ -1,21 +1,25 @@
 #!/usr/bin/env bash
-# Tests for e2e_anchor_authority — 5 proofs covering 5 rules.
-# Verifies drift correctly detects when an externally-referenced anchor
-# with local rules has its external source advance, and that both
-# external staleness and local spec changes are surfaced together.
-# Uses local bare git repos as mock external sources.
+# End-to-end checks for who owns which rule when an anchor comes from an
+# anchor repo.
+#
+# The anchor repo owns the rules in the pinned copy: a sync overwrites them.
+# The project owns the rules in a separate local anchor that `> Requires:` the
+# pinned one, and a sync never touches those. A rule a consumer does add to the
+# pinned copy reaches the anchor repo as a patch, never as a local edit that
+# survives.
+#
+# Every source is a local bare repository on disk, so nothing reaches a
+# network, and every command runs against a temporary project with
+# --project-root, so this repository's own specs/ is never written to.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REAL_PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+UPSTREAM="$REAL_PROJECT_ROOT/scripts/anchor/upstream.py"
+MCP_DIR="$REAL_PROJECT_ROOT/scripts/mcp"
 
-# Load proof harness
-export PURLIN_PROOF_TIER="e2e"
-source "$REAL_PROJECT_ROOT/scripts/proof/shell_purlin.sh"
+echo "=== anchor authority: the anchor repo's rules and the project's ==="
 
-echo "=== e2e_anchor_authority tests ==="
-
-# --- Cleanup ---
 ALL_TMPDIRS=""
 cleanup_all() { for d in $ALL_TMPDIRS; do rm -rf "$d" 2>/dev/null; done; }
 trap cleanup_all EXIT
@@ -23,430 +27,361 @@ trap cleanup_all EXIT
 PASS=0
 FAIL=0
 
-# ==========================================================================
-# Helper: create a bare git repo with a spec file
-# Args: bare_repo_path, spec_file, spec_content
-# Returns: HEAD sha via stdout
-# ==========================================================================
-create_external_repo() {
-  local bare_path="$1"
-  local spec_file="$2"
-  local spec_content="$3"
-
-  git init --bare -q "$bare_path"
-
-  local work_dir="${bare_path}_work"
-  git clone -q "$bare_path" "$work_dir"
-  mkdir -p "$(dirname "$work_dir/$spec_file")"
-  echo "$spec_content" > "$work_dir/$spec_file"
-  (cd "$work_dir" && git add -A && git commit -q -m "initial spec")
-  (cd "$work_dir" && git push -q origin main 2>/dev/null || git push -q origin master 2>/dev/null)
-
-  local sha
-  sha=$(git -C "$bare_path" rev-parse HEAD)
-  rm -rf "$work_dir"
-  echo "$sha"
+record() {
+  local name="$1" ok="$2" detail="${3:-}"
+  if [[ "$ok" == "true" ]]; then
+    echo "  PASS: $name"
+    PASS=$((PASS + 1))
+  else
+    echo "  FAIL: $name"
+    [[ -n "$detail" ]] && echo "        $detail"
+    FAIL=$((FAIL + 1))
+  fi
 }
 
-# ==========================================================================
-# Helper: advance a bare repo with a new commit
-# Args: bare_repo_path, file_path, new_content
-# Returns: new HEAD sha via stdout
-# ==========================================================================
-advance_repo() {
-  local bare_path="$1"
-  local spec_file="$2"
-  local new_content="$3"
+# --------------------------------------------------------------------------
+# Fixtures
+# --------------------------------------------------------------------------
 
-  local work_dir="${bare_path}_work"
-  git clone -q "$bare_path" "$work_dir"
-  echo "$new_content" > "$work_dir/$spec_file"
-  (cd "$work_dir" && git add -A && git commit -q -m "update spec")
-  (cd "$work_dir" && git push -q 2>/dev/null)
+PUBLISHED_V1='# Anchor: ext_security
 
-  local sha
-  sha=$(git -C "$bare_path" rev-parse HEAD)
-  rm -rf "$work_dir"
-  echo "$sha"
+> Description: The security rules the shared security team publishes.
+> Type: security
+
+## Rules
+
+- RULE-1: Every request carries an authenticated principal [risk: high]
+- RULE-2: Secrets are read from the environment, never from a file [risk: high]
+
+## Proof
+
+- PROOF-1 (RULE-1): Call the api with no credentials; verify 401 @integration
+- PROOF-2 (RULE-2): Grep the tree for secret literals; verify zero matches
+'
+
+PUBLISHED_V2='# Anchor: ext_security
+
+> Description: The security rules the shared security team publishes.
+> Type: security
+
+## Rules
+
+- RULE-1: Every request carries an authenticated principal [risk: high]
+- RULE-2: Secrets are read from the environment alone [risk: high]
+- RULE-3: Every failed sign-in is written to the log [risk: medium]
+
+## Proof
+
+- PROOF-1 (RULE-1): Call the api with no credentials; verify 401 @integration
+- PROOF-2 (RULE-2): Grep the tree for secret literals; verify zero matches
+- PROOF-3 (RULE-3): Sign in with a wrong password; verify one log line @integration
+'
+
+LOCAL_ANCHOR='# Anchor: local_security
+
+> Description: The security rules this project adds to the published ones.
+> Requires: ext_security
+
+## Rules
+
+- RULE-1: Every input is sanitised before it reaches the database [risk: high]
+
+## Proof
+
+- PROOF-1 (RULE-1): Post a script tag in every text field; verify it is stored escaped @e2e
+'
+
+create_anchor_repo() {
+  local bare="$1" file="$2" body="$3"
+  local work="${bare}_work"
+  git init --bare -q "$bare"
+  git clone -q "$bare" "$work" 2>/dev/null
+  mkdir -p "$(dirname "$work/$file")"
+  printf '%s' "$body" > "$work/$file"
+  (
+    cd "$work"
+    git config user.email "dev@purlin.local"
+    git config user.name "Purlin Dev"
+    git add -A
+    git commit -q -m "publish the anchor"
+    git push -q origin HEAD:refs/heads/main
+    git rev-parse HEAD
+  )
 }
 
-# ==========================================================================
-# Helper: create a Purlin project
-# Args: project_dir
-# ==========================================================================
+advance_anchor_repo() {
+  local bare="$1" file="$2" body="$3"
+  local work="${bare}_work"
+  printf '%s' "$body" > "$work/$file"
+  (
+    cd "$work"
+    git add -A
+    git commit -q -m "publish the next version"
+    git push -q origin HEAD:refs/heads/main
+    git rev-parse HEAD
+  )
+}
+
 init_project() {
   local tmpdir="$1"
-
-  mkdir -p "$tmpdir/.purlin"
-  mkdir -p "$tmpdir/specs/_anchors"
-  echo '{"version":"0.9.0","test_framework":"auto","pre_push":"warn","report":true}' > "$tmpdir/.purlin/config.json"
-
-  # Copy MCP server for drift to work
-  mkdir -p "$tmpdir/scripts/mcp"
-  cp "$REAL_PROJECT_ROOT/scripts/mcp/purlin_server.py" "$tmpdir/scripts/mcp/"
-  cp "$REAL_PROJECT_ROOT/scripts/mcp/config_engine.py" "$tmpdir/scripts/mcp/"
-  cp "$REAL_PROJECT_ROOT/scripts/mcp/__init__.py" "$tmpdir/scripts/mcp/" 2>/dev/null || true
-
-  # Git init
-  (cd "$tmpdir" && git init -q && git add -A && git commit -q -m "init" --allow-empty)
+  mkdir -p "$tmpdir/.purlin" "$tmpdir/specs/_anchors"
+  printf '{"gate": "tested"}\n' > "$tmpdir/.purlin/config.json"
+  printf '.purlin/runtime/\n' > "$tmpdir/.gitignore"
+  (
+    cd "$tmpdir"
+    git init -q
+    git config user.email "dev@purlin.local"
+    git config user.name "Purlin Dev"
+    git add -A
+    git commit -q -m "set the project up"
+  )
 }
 
-# ==========================================================================
-# Helper: create an externally-referenced anchor with local rules
-# Args: tmpdir, name, source_url, pinned, source_path, num_external_rules, local_rules...
-# Writes the anchor with num_external_rules "external" rules + extra local rules
-# ==========================================================================
-create_mixed_anchor() {
-  local tmpdir="$1" name="$2" source_url="$3" pinned="$4" source_path="$5" num_ext="$6"
-  shift 6
-  local local_rules=("$@")
-
-  local file="$tmpdir/specs/_anchors/$name.md"
-  local rule_num=1
-  local proof_num=1
-  {
-    echo "# Anchor: $name"
-    echo ""
-    echo "> Source: $source_url"
-    [[ -n "$source_path" ]] && echo "> Path: $source_path"
-    [[ -n "$pinned" ]] && echo "> Pinned: $pinned"
-    echo ""
-    echo "## What it does"
-    echo ""
-    echo "Mixed anchor: external rules from source + local rules."
-    echo ""
-    echo "## Rules"
-    echo ""
-    for i in $(seq 1 "$num_ext"); do
-      echo "- RULE-$rule_num: External constraint $i from source"
-      rule_num=$((rule_num + 1))
-    done
-    for lr in "${local_rules[@]}"; do
-      echo "- RULE-$rule_num: $lr"
-      rule_num=$((rule_num + 1))
-    done
-    echo ""
-    echo "## Proof"
-    echo ""
-    local total=$((rule_num - 1))
-    for i in $(seq 1 "$total"); do
-      echo "- PROOF-$i (RULE-$i): Verify rule $i"
-    done
-  } > "$file"
+commit_project() {
+  (cd "$1" && git add -A && git commit -q -m "$2")
 }
 
-# --- Helper: create a feature spec ---
-create_feature() {
-  local tmpdir="$1" name="$2" subdir="$3" num_rules="${4:-1}" requires="${5:-}"
-  mkdir -p "$tmpdir/specs/$subdir"
-  {
-    echo "# Feature: $name"
-    echo ""
-    [[ -n "$requires" ]] && echo "> Requires: $requires"
-    echo ""
-    echo "## What it does"
-    echo ""
-    echo "Test feature."
-    echo ""
-    echo "## Rules"
-    echo ""
-    for i in $(seq 1 "$num_rules"); do
-      echo "- RULE-$i: Feature rule $i"
-    done
-    echo ""
-    echo "## Proof"
-    echo ""
-    for i in $(seq 1 "$num_rules"); do
-      echo "- PROOF-$i (RULE-$i): Verify feature rule $i"
-    done
-  } > "$tmpdir/specs/$subdir/$name.md"
-}
-
-# --- Helper: create proof file ---
-create_proof_file() {
-  local tmpdir="$1" feature="$2" subdir="$3"
-  shift 3
-
-  local proofs="["
-  local first=true
-  for entry in "$@"; do
-    local proof_id rule_id status
-    proof_id=$(echo "$entry" | cut -d'|' -f1)
-    rule_id=$(echo "$entry" | cut -d'|' -f2)
-    status=$(echo "$entry" | cut -d'|' -f3)
-    $first || proofs="$proofs,"
-    first=false
-    proofs="$proofs{\"feature\":\"$feature\",\"id\":\"$proof_id\",\"rule\":\"$rule_id\",\"test_file\":\"test.sh\",\"test_name\":\"test\",\"status\":\"$status\",\"tier\":\"unit\"}"
-  done
-  proofs="$proofs]"
-  echo "{\"tier\":\"unit\",\"proofs\":$proofs}" > "$tmpdir/specs/$subdir/$feature.proofs-unit.json"
-}
-
-# --- Helper: run drift ---
-run_drift() {
+run_upstream() {
   local tmpdir="$1"
-  python3 -c "
-import sys, os
-sys.path.insert(0, os.path.join('$tmpdir', 'scripts', 'mcp'))
-from purlin_server import drift
-print(drift('$tmpdir'))
-" 2>/dev/null
+  shift
+  python3 "$UPSTREAM" --project-root "$tmpdir" "$@"
 }
 
+run_drift() {
+  PURLIN_MCP_DIR="$MCP_DIR" PURLIN_ROOT="$1" python3 -c '
+import os, sys
+sys.path.insert(0, os.environ["PURLIN_MCP_DIR"])
+from purlin import drift
+print(drift.drift(os.environ["PURLIN_ROOT"]))
+'
+}
+
+new_tmpdir() {
+  local d
+  d=$(mktemp -d)
+  ALL_TMPDIRS="$ALL_TMPDIRS $d"
+  echo "$d"
+}
+
+# A project with the published anchor pinned and a local anchor beside it.
+# Sets BARE, PROJECT and FIRST_SHA.
+build_workspace() {
+  local source_path="${1:-specs/security.md}"
+  local tmp
+  tmp=$(new_tmpdir)
+  BARE="$tmp/published.git"
+  FIRST_SHA=$(create_anchor_repo "$BARE" "$source_path" "$PUBLISHED_V1")
+  PROJECT="$tmp/project"
+  mkdir -p "$PROJECT"
+  init_project "$PROJECT"
+  run_upstream "$PROJECT" add "$BARE" --path "$source_path" --name ext_security \
+    >/dev/null
+  printf '%s' "$LOCAL_ANCHOR" > "$PROJECT/specs/_anchors/local_security.md"
+  commit_project "$PROJECT" "pin the published anchor and add the local one"
+  # Drift measures from the newest record, else the newest tag. There is no
+  # record yet, so this tag is the baseline every check below measures from.
+  (cd "$PROJECT" && git tag -a baseline -m "the state these checks measure from")
+  SOURCE_PATH="$source_path"
+}
 
 # ==========================================================================
-# PROOF-1 (RULE-1): Mixed anchor staleness detection
-# External anchor with local rules — external source advances → stale
+# 1. The pin goes behind when the anchor repo publishes
 # ==========================================================================
-echo "--- PROOF-1: Mixed anchor staleness detection ---"
-TMP1=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP1"
-BARE1=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $BARE1"; rm -rf "$BARE1"
-
-SHA1=$(create_external_repo "$BARE1" "security.md" "# external security policy v1")
-
-init_project "$TMP1"
-create_mixed_anchor "$TMP1" "ext_security" "$BARE1" "$SHA1" "security.md" 2 \
-  "Local rule: all inputs must be sanitized"
-(cd "$TMP1" && git add -A && git commit -q -m "add mixed anchor")
-
-# Advance external source (simulates external team publishing new rules)
-NEW_SHA1=$(advance_repo "$BARE1" "security.md" "# external security policy v2 — new rules added")
-
-drift1=$(run_drift "$TMP1")
-p1_result=$(echo "$drift1" | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-drift_entries = data.get('external_anchor_drift', [])
-for d in drift_entries:
-    if (d.get('anchor') == 'ext_security'
-        and d.get('status') == 'stale'
-        and d.get('remote_sha')):
-        print('pass')
-        sys.exit(0)
-print('fail: ' + json.dumps(drift_entries))
-" 2>/dev/null)
-
-if [[ "$p1_result" == "pass" ]]; then
-  echo "  PASS: mixed anchor detected as stale"
-  purlin_proof "drift" "PROOF-12" "RULE-12" pass "mixed anchor staleness detected"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: $p1_result"
-  purlin_proof "drift" "PROOF-12" "RULE-12" fail "mixed anchor staleness: $p1_result"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-2 (RULE-2): Local anchor modification → CHANGED_SPECS
-# ==========================================================================
-echo "--- PROOF-2: Local anchor modification classified as CHANGED_SPECS ---"
-TMP2=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP2"
-BARE2=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $BARE2"; rm -rf "$BARE2"
-
-SHA2=$(create_external_repo "$BARE2" "api.md" "# api contract v1")
-
-init_project "$TMP2"
-create_mixed_anchor "$TMP2" "api_contract" "$BARE2" "$SHA2" "api.md" 2 \
-  "Local rule: rate limiting on all endpoints"
-(cd "$TMP2" && git add -A && git commit -q -m "add anchor")
-
-# Modify the local anchor file: add a new local rule
-cat >> "$TMP2/specs/_anchors/api_contract.md" << 'EOF'
-
-- RULE-4: Local rule: all responses include X-Request-Id header
-EOF
-# Also add the proof entry
-sed -i.bak 's/## Proof/## Proof\n/' "$TMP2/specs/_anchors/api_contract.md"
-rm -f "$TMP2/specs/_anchors/api_contract.md.bak"
-echo "- PROOF-4 (RULE-4): Verify X-Request-Id header" >> "$TMP2/specs/_anchors/api_contract.md"
-(cd "$TMP2" && git add -A && git commit -q -m "add local rule to anchor")
-
-drift2=$(run_drift "$TMP2")
-p2_result=$(echo "$drift2" | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-files = data.get('files', [])
-for f in files:
-    if 'api_contract' in f.get('path', '') and f.get('category') == 'CHANGED_SPECS':
-        print('pass')
-        sys.exit(0)
-print('fail: ' + json.dumps([f for f in files if 'api_contract' in f.get('path', '')]))
-" 2>/dev/null)
-
-if [[ "$p2_result" == "pass" ]]; then
-  echo "  PASS: anchor file classified as CHANGED_SPECS"
-  purlin_proof "drift" "PROOF-13" "RULE-2" pass "local anchor mod → CHANGED_SPECS"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: $p2_result"
-  purlin_proof "drift" "PROOF-13" "RULE-2" fail "anchor classification: $p2_result"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-3 (RULE-3): Simultaneous external staleness + local spec change
-# ==========================================================================
-echo "--- PROOF-3: External staleness AND local spec change surfaced together ---"
-TMP3=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP3"
-BARE3=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $BARE3"; rm -rf "$BARE3"
-
-SHA3=$(create_external_repo "$BARE3" "design.md" "# design system v1")
-
-init_project "$TMP3"
-create_mixed_anchor "$TMP3" "design_tokens" "$BARE3" "$SHA3" "design.md" 2 \
-  "Local rule: font sizes use rem units"
-(cd "$TMP3" && git add -A && git commit -q -m "add anchor")
-
-# Advance external source (external team publishes new rules)
-advance_repo "$BARE3" "design.md" "# design system v2 — colors updated" >/dev/null
-
-# Also modify local anchor (add new local rule)
-cat >> "$TMP3/specs/_anchors/design_tokens.md" << 'EOF'
-
-- RULE-4: Local rule: spacing uses 4px grid
-EOF
-echo "- PROOF-4 (RULE-4): Verify 4px grid spacing" >> "$TMP3/specs/_anchors/design_tokens.md"
-(cd "$TMP3" && git add -A && git commit -q -m "add local design rule")
-
-drift3=$(run_drift "$TMP3")
-p3_result=$(echo "$drift3" | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-
-# Check external_anchor_drift for stale
-stale_found = False
-for d in data.get('external_anchor_drift', []):
-    if d.get('anchor') == 'design_tokens' and d.get('status') == 'stale':
-        stale_found = True
-        break
-
-# Check spec_changes for new rule on the anchor
-spec_change_found = False
-for sc in data.get('spec_changes', []):
-    if sc.get('spec') == 'design_tokens' and sc.get('new_rules'):
-        spec_change_found = True
-        break
-
-if stale_found and spec_change_found:
-    print('pass')
+echo "--- 1: the published anchor advances ---"
+build_workspace
+NEW_SHA=$(advance_anchor_repo "$BARE" "$SOURCE_PATH" "$PUBLISHED_V2")
+drift_json=$(run_drift "$PROJECT")
+result=$(PURLIN_JSON="$drift_json" PURLIN_REMOTE="$NEW_SHA" python3 -c '
+import json, os
+data = json.loads(os.environ["PURLIN_JSON"])
+rows = {p["anchor"]: p for p in data.get("pins", [])}
+if "ext_security" not in rows:
+    print("no pin row: %s" % json.dumps(data.get("pins", [])))
+elif "local_security" in rows:
+    print("the local anchor was reported as pinned")
 else:
-    print(f'fail: stale={stale_found} spec_change={spec_change_found}')
-" 2>/dev/null)
+    row = rows["ext_security"]
+    print("ok" if row["status"] == "behind"
+          and row["remote_sha"] == os.environ["PURLIN_REMOTE"][:7]
+          else json.dumps(row))
+')
+ok=true
+[[ "$result" == "ok" ]] || ok=false
+record "drift names the pinned anchor behind and leaves the local one out" "$ok" "$result"
 
-if [[ "$p3_result" == "pass" ]]; then
-  echo "  PASS: both external staleness and local spec change surfaced"
-  purlin_proof "drift" "PROOF-14" "RULE-13" pass "dual detection: stale + spec change"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: $p3_result"
-  purlin_proof "drift" "PROOF-14" "RULE-13" fail "dual detection: $p3_result"
-  FAIL=$((FAIL + 1))
+# ==========================================================================
+# 2. Editing a spec in the project is a spec change, not a pin change
+# ==========================================================================
+echo "--- 2: a local spec change ---"
+build_workspace
+python3 - "$PROJECT/specs/_anchors/local_security.md" <<'PY'
+import sys
+path = sys.argv[1]
+with open(path, encoding='utf-8') as handle:
+    text = handle.read()
+text = text.replace(
+    '## Proof',
+    '- RULE-2: Every response carries a request id [risk: low]\n\n## Proof')
+text += '- PROOF-2 (RULE-2): Read the response headers; verify X-Request-Id @e2e\n'
+with open(path, 'w', encoding='utf-8') as handle:
+    handle.write(text)
+PY
+commit_project "$PROJECT" "add a local rule"
+drift_json=$(run_drift "$PROJECT")
+result=$(PURLIN_JSON="$drift_json" python3 -c '
+import json, os
+data = json.loads(os.environ["PURLIN_JSON"])
+changed = [f for f in data.get("files", [])
+           if "local_security" in f.get("path", "")]
+spec = [s for s in data.get("spec_changes", [])
+        if s.get("spec") == "local_security"]
+problems = []
+if not changed or changed[0].get("category") != "CHANGED_SPECS":
+    problems.append("files=%s" % json.dumps(changed))
+if not spec or spec[0].get("new_rules") != ["RULE-2"]:
+    problems.append("spec_changes=%s" % json.dumps(spec))
+if data.get("pins"):
+    problems.append("pins=%s" % json.dumps(data["pins"]))
+print("ok" if not problems else ", ".join(problems))
+')
+ok=true
+[[ "$result" == "ok" ]] || ok=false
+record "a local rule is a spec change and moves no pin" "$ok" "$result"
+
+# ==========================================================================
+# 3. A pin behind and a local spec change surface in the same run
+# ==========================================================================
+echo "--- 3: both at once ---"
+build_workspace
+advance_anchor_repo "$BARE" "$SOURCE_PATH" "$PUBLISHED_V2" >/dev/null
+python3 - "$PROJECT/specs/_anchors/local_security.md" <<'PY'
+import sys
+path = sys.argv[1]
+with open(path, encoding='utf-8') as handle:
+    text = handle.read()
+text = text.replace(
+    '## Proof',
+    '- RULE-2: Spacing uses the four pixel grid [risk: low]\n\n## Proof')
+text += '- PROOF-2 (RULE-2): Measure the gutters; verify each is a multiple of four @e2e\n'
+with open(path, 'w', encoding='utf-8') as handle:
+    handle.write(text)
+PY
+commit_project "$PROJECT" "add a local rule while the source is ahead"
+drift_json=$(run_drift "$PROJECT")
+result=$(PURLIN_JSON="$drift_json" python3 -c '
+import json, os
+data = json.loads(os.environ["PURLIN_JSON"])
+behind = any(p.get("anchor") == "ext_security" and p.get("status") == "behind"
+             for p in data.get("pins", []))
+added = any(s.get("spec") == "local_security" and s.get("new_rules") == ["RULE-2"]
+            for s in data.get("spec_changes", []))
+print("ok" if behind and added else "behind=%s added=%s" % (behind, added))
+')
+ok=true
+[[ "$result" == "ok" ]] || ok=false
+record "one drift run carries the pin behind and the local rule" "$ok" "$result"
+
+# ==========================================================================
+# 4. A sync overwrites the pinned copy and leaves the local anchor alone
+# ==========================================================================
+echo "--- 4: what a sync owns ---"
+build_workspace
+python3 - "$PROJECT/specs/_anchors/ext_security.md" <<'PY'
+import sys
+path = sys.argv[1]
+with open(path, encoding='utf-8') as handle:
+    text = handle.read()
+text = text.replace(
+    '## Proof',
+    '- RULE-9: This project alone requires two-person review [risk: low]\n\n## Proof')
+with open(path, 'w', encoding='utf-8') as handle:
+    handle.write(text)
+PY
+commit_project "$PROJECT" "edit the pinned copy, which a sync will undo"
+BEFORE_LOCAL=$(cat "$PROJECT/specs/_anchors/local_security.md")
+advance_anchor_repo "$BARE" "$SOURCE_PATH" "$PUBLISHED_V2" >/dev/null
+sync_out=$(run_upstream "$PROJECT" sync ext_security)
+
+ok=true
+detail="$sync_out"
+grep -q 'RULE-9' "$PROJECT/specs/_anchors/ext_security.md" && {
+  ok=false; detail="the local edit survived the sync"; }
+grep -q '^- RULE-3: Every failed sign-in is written to the log' \
+  "$PROJECT/specs/_anchors/ext_security.md" || {
+  ok=false; detail="the published RULE-3 did not arrive"; }
+[[ "$BEFORE_LOCAL" == "$(cat "$PROJECT/specs/_anchors/local_security.md")" ]] || {
+  ok=false; detail="the local anchor was rewritten"; }
+record "a sync replaces the pinned copy and never the local anchor" "$ok" "$detail"
+
+# ==========================================================================
+# 5. A consumer's edit reaches the anchor repo as a patch
+# ==========================================================================
+echo "--- 5: propose carries the edit upstream ---"
+build_workspace
+python3 - "$PROJECT/specs/_anchors/ext_security.md" <<'PY'
+import sys
+path = sys.argv[1]
+with open(path, encoding='utf-8') as handle:
+    text = handle.read()
+text = text.replace(
+    '## Proof',
+    '- RULE-9: Every session expires after eight hours [risk: medium]\n\n## Proof')
+with open(path, 'w', encoding='utf-8') as handle:
+    handle.write(text)
+PY
+propose_out=$(run_upstream "$PROJECT" propose ext_security)
+PATCH="$PROJECT/.purlin/runtime/anchors/ext_security.patch"
+ok=true
+detail="$propose_out"
+[[ -f "$PATCH" ]] || { ok=false; detail="no patch was written"; }
+if [[ -f "$PATCH" ]]; then
+  grep -q '^+- RULE-9: Every session expires after eight hours' "$PATCH" || {
+    ok=false; detail="the patch does not carry the added rule"; }
+  grep -q '^+> Pinned:' "$PATCH" && {
+    ok=false; detail="the patch carries the consumer's tracking fields"; }
 fi
+echo "$propose_out" | grep -q 'git apply' || {
+  ok=false; detail="the commands to run were not printed"; }
+record "propose writes the patch and names the commands" "$ok" "$detail"
 
 # ==========================================================================
-# PROOF-4 (RULE-4): proof_status totals correct despite staleness
+# 6. The anchor name is the spec name, whatever the source path is
 # ==========================================================================
-echo "--- PROOF-4: proof_status totals correct despite staleness ---"
-TMP4=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP4"
-BARE4=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $BARE4"; rm -rf "$BARE4"
-
-SHA4=$(create_external_repo "$BARE4" "contract.md" "# contract v1")
-
-init_project "$TMP4"
-# Anchor: 2 external rules + 1 local rule = 3 anchor rules
-create_mixed_anchor "$TMP4" "ext_contract" "$BARE4" "$SHA4" "contract.md" 2 \
-  "Local rule: all errors use RFC 7807"
-# Feature: 1 own rule + requires ext_contract (3 anchor rules) = 4 total
-create_feature "$TMP4" "checkout" "core" 1 "ext_contract"
-# Proofs: all 4 rules pass
-create_proof_file "$TMP4" "checkout" "core" \
-  "PROOF-1|RULE-1|pass" \
-  "PROOF-2|ext_contract/RULE-1|pass" \
-  "PROOF-3|ext_contract/RULE-2|pass" \
-  "PROOF-4|ext_contract/RULE-3|pass"
-(cd "$TMP4" && git add -A && git commit -q -m "add specs and proofs")
-
-# Advance external source — makes anchor stale
-advance_repo "$BARE4" "contract.md" "# contract v2 — breaking change" >/dev/null
-
-drift4=$(run_drift "$TMP4")
-p4_result=$(echo "$drift4" | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-
-# Verify anchor is stale
-stale = any(
-    d.get('anchor') == 'ext_contract' and d.get('status') == 'stale'
-    for d in data.get('external_anchor_drift', [])
-)
-
-# Verify proof_status for checkout: total=4, proved=4
-ps = data.get('proof_status', {}).get('checkout', {})
-total = ps.get('total', 0)
-proved = ps.get('proved', 0)
-
-if stale and total == 4 and proved == 4:
-    print('pass')
-else:
-    print(f'fail: stale={stale} total={total} proved={proved}')
-" 2>/dev/null)
-
-if [[ "$p4_result" == "pass" ]]; then
-  echo "  PASS: proof_status 4/4 despite stale anchor"
-  purlin_proof "drift" "PROOF-15" "RULE-5" pass "proof_status correct during staleness"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: $p4_result"
-  purlin_proof "drift" "PROOF-15" "RULE-5" fail "proof_status: $p4_result"
-  FAIL=$((FAIL + 1))
-fi
+echo "--- 6: the name drift reports ---"
+build_workspace "policies/deeply/nested/security.md"
+advance_anchor_repo "$BARE" "$SOURCE_PATH" "$PUBLISHED_V2" >/dev/null
+drift_json=$(run_drift "$PROJECT")
+result=$(PURLIN_JSON="$drift_json" python3 -c '
+import json, os
+data = json.loads(os.environ["PURLIN_JSON"])
+names = sorted(p.get("anchor") for p in data.get("pins", []))
+print("ok" if names == ["ext_security"] else json.dumps(names))
+')
+ok=true
+[[ "$result" == "ok" ]] || ok=false
+record "the anchor is named by its spec file, not by its source path" "$ok" "$result"
 
 # ==========================================================================
-# PROOF-5 (RULE-5): anchor name in external_anchor_drift matches spec name
+# 7. A pin behind does not change what the rollup counts
 # ==========================================================================
-echo "--- PROOF-5: Anchor name matches spec name in drift output ---"
-TMP5=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP5"
-BARE5=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $BARE5"; rm -rf "$BARE5"
-
-SHA5=$(create_external_repo "$BARE5" "deeply/nested/policy.md" "# policy v1")
-
-init_project "$TMP5"
-create_mixed_anchor "$TMP5" "local_security" "$BARE5" "$SHA5" "deeply/nested/policy.md" 1 \
-  "Local rule: audit logging required"
-(cd "$TMP5" && git add -A && git commit -q -m "add anchor")
-
-# Advance external source
-advance_repo "$BARE5" "deeply/nested/policy.md" "# policy v2 — updated" >/dev/null
-
-drift5=$(run_drift "$TMP5")
-p5_result=$(echo "$drift5" | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-for d in data.get('external_anchor_drift', []):
-    if d.get('anchor') == 'local_security' and d.get('status') == 'stale':
-        print('pass')
-        sys.exit(0)
-print('fail: ' + json.dumps(data.get('external_anchor_drift', [])))
-" 2>/dev/null)
-
-if [[ "$p5_result" == "pass" ]]; then
-  echo "  PASS: anchor field is 'local_security' (spec name)"
-  purlin_proof "drift" "PROOF-16" "RULE-14" pass "anchor name matches spec name"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: $p5_result"
-  purlin_proof "drift" "PROOF-16" "RULE-14" fail "anchor name: $p5_result"
-  FAIL=$((FAIL + 1))
-fi
-
-
-# ==========================================================================
-# Emit proof files
-# ==========================================================================
-export PROJECT_ROOT="$REAL_PROJECT_ROOT"
-cd "$PROJECT_ROOT"
-purlin_proof_finish
+echo "--- 7: the rollup while the pin is behind ---"
+build_workspace
+advance_anchor_repo "$BARE" "$SOURCE_PATH" "$PUBLISHED_V2" >/dev/null
+result=$(PURLIN_MCP_DIR="$MCP_DIR" PURLIN_ROOT="$PROJECT" python3 -c '
+import os, sys
+sys.path.insert(0, os.environ["PURLIN_MCP_DIR"])
+from purlin import payload
+data = payload.build_payload(os.environ["PURLIN_ROOT"])
+rows = {f["name"]: f for f in data["features"]}
+published = rows["ext_security"]["rollup"]["rules"]
+local = rows["local_security"]["rollup"]["rules"]
+print("ok" if published == 2 and local == 1
+      else "published=%s local=%s" % (published, local))
+')
+ok=true
+[[ "$result" == "ok" ]] || ok=false
+record "the pinned anchor still counts the rules its copy holds" "$ok" "$result"
 
 echo ""
-echo "e2e_anchor_authority: $PASS passed, $FAIL failed (5 proofs recorded)"
+echo "anchor authority: $PASS passed, $FAIL failed"
 [[ $FAIL -eq 0 ]]

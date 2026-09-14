@@ -1,7 +1,15 @@
 #!/usr/bin/env bash
-# Creates the dog-food external reference repo (once).
-# This bare git repo acts as a mock "remote" for the security_no_dangerous_patterns anchor.
-# Safe to re-run — skips if the repo already exists.
+# Creates the dog-food anchor repo this checkout pins against.
+#
+# `specs/_anchors/security_no_dangerous_patterns.md` carries
+# `> Source: ./dev/external-refs/security-policy.git`. That source is a local
+# bare repository, not a network remote, and this script is what creates it.
+# The copy it publishes is a 0.10.0 anchor: the consumer tracking fields and
+# the retired visual fields are stripped, so the bare repository holds what an
+# anchor repo would hold and nothing a consumer added.
+#
+# Safe to re-run: it does nothing when the repository already exists, and it
+# never writes to specs/.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -9,85 +17,70 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 EXT_DIR="$PROJECT_ROOT/dev/external-refs"
 BARE_REPO="$EXT_DIR/security-policy.git"
 ANCHOR_FILE="$PROJECT_ROOT/specs/_anchors/security_no_dangerous_patterns.md"
+PUBLISHED_NAME="security_policy.md"
+
+report_pin() {
+  local sha="$1"
+  local pinned
+  pinned=$(grep '^> Pinned:' "$ANCHOR_FILE" 2>/dev/null | head -1 | awk '{print $3}')
+  echo "Bare repository: $BARE_REPO"
+  echo "Head:            $sha"
+  echo "Anchor pin:      ${pinned:-none}"
+  if [[ "$pinned" == "$sha" ]]; then
+    echo "The pin is current."
+  else
+    echo "The pin is not this head, so purlin:status reports the anchor behind."
+    echo "To make it current, put $sha on the > Pinned: line of"
+    echo "$ANCHOR_FILE."
+  fi
+}
 
 if [[ -d "$BARE_REPO" ]]; then
-  SHA=$(git -C "$BARE_REPO" rev-parse HEAD 2>/dev/null || echo "unknown")
-  echo "External repo already exists at $BARE_REPO (HEAD: ${SHA:0:7})"
-  echo "To reset: rm -rf $BARE_REPO && bash $0"
+  echo "The anchor repo already exists."
+  report_pin "$(git -C "$BARE_REPO" rev-parse HEAD 2>/dev/null || echo unknown)"
+  echo "To start again: rm -rf $BARE_REPO && bash $0"
   exit 0
 fi
 
-echo "=== Creating external reference repo ==="
+echo "=== Creating the dog-food anchor repo ==="
 
-# Create bare repo
 mkdir -p "$EXT_DIR"
 git init --bare -q "$BARE_REPO"
 
-# Clone, populate, push
 WORK="${BARE_REPO}_work"
-git clone -q "$BARE_REPO" "$WORK"
+git clone -q "$BARE_REPO" "$WORK" 2>/dev/null
 
-# Strip Source/Pinned/Path metadata from the copy going into the external repo
-# (the external repo is the source — it shouldn't contain self-referencing metadata)
-python3 -c "
-with open('$ANCHOR_FILE') as f:
-    lines = f.readlines()
-drop = ('> Source:', '> Pinned:', '> Path:', '> Note:')
-filtered = [l for l in lines if not l.startswith(drop)]
-with open('$WORK/security_policy.md', 'w') as f:
-    f.writelines(filtered)
-"
+# Publish the author's file: the tracking fields a consumer adds, and the
+# fields 0.10.0 retired, are not part of what an anchor repo holds.
+python3 - "$ANCHOR_FILE" "$WORK/$PUBLISHED_NAME" <<'PY'
+import sys
 
-(cd "$WORK" \
-  && git add -A \
-  && GIT_AUTHOR_NAME="Purlin Dev" GIT_AUTHOR_EMAIL="dev@purlin.local" \
-     GIT_COMMITTER_NAME="Purlin Dev" GIT_COMMITTER_EMAIL="dev@purlin.local" \
-     GIT_AUTHOR_DATE="2026-01-01T00:00:00+0000" \
-     GIT_COMMITTER_DATE="2026-01-01T00:00:00+0000" \
-     git commit -q -m "initial security policy spec")
-(cd "$WORK" && git push -q origin main 2>/dev/null || git push -q origin master 2>/dev/null)
+source, target = sys.argv[1], sys.argv[2]
+# The consumer tracking fields, and the `> Visual-` fields 0.10.0 retired.
+drop = ('> Source:', '> Pinned:', '> Path:', '> Note:', '> Visual-')
+with open(source, encoding='utf-8') as handle:
+    lines = handle.readlines()
+with open(target, 'w', encoding='utf-8') as handle:
+    handle.writelines(line for line in lines if not line.startswith(drop))
+PY
 
-# Get the HEAD SHA
+(
+  cd "$WORK"
+  git config user.email "dev@purlin.local"
+  git config user.name "Purlin Dev"
+  git add -A
+  GIT_AUTHOR_DATE="2026-01-01T00:00:00+0000" \
+    GIT_COMMITTER_DATE="2026-01-01T00:00:00+0000" \
+    git commit -q -m "publish the security policy anchor"
+  git push -q origin HEAD:refs/heads/main
+)
+
 SHA=$(git -C "$BARE_REPO" rev-parse HEAD)
-
-# Clean up working copy
 rm -rf "$WORK"
 
-echo "Bare repo: $BARE_REPO"
-echo "HEAD SHA:  $SHA"
-
-# Update the anchor to point to the external repo (only if not already pointing)
-if ! grep -q '^> Source:' "$ANCHOR_FILE" 2>/dev/null; then
-  python3 -c "
-with open('$ANCHOR_FILE') as f:
-    content = f.read()
-
-lines = content.split('\n')
-insert_idx = 1
-for i, line in enumerate(lines):
-    if line.startswith('# Anchor:'):
-        insert_idx = i + 1
-        while insert_idx < len(lines) and lines[insert_idx].strip() == '':
-            insert_idx += 1
-        break
-
-new_lines = [
-    '> Source: ./dev/external-refs/security-policy.git',
-    '> Path: security_policy.md',
-    '> Pinned: $SHA',
-]
-for j, nl in enumerate(new_lines):
-    lines.insert(insert_idx + j, nl)
-
-with open('$ANCHOR_FILE', 'w') as f:
-    f.write('\n'.join(lines))
-"
-  echo "Updated $ANCHOR_FILE with Source/Path/Pinned"
-else
-  echo "Anchor already has > Source: metadata — skipping update"
-fi
-
+report_pin "$SHA"
 echo ""
-echo "Done. Run 'purlin:status' to see the external reference."
-echo "If the anchor's > Pinned: line is not $SHA, update it to that value."
-echo "To test staleness: add a commit to the bare repo, then run 'purlin:drift'."
+echo "Next: run purlin:status to see the anchor, or"
+echo "bash dev/test_e2e_external_refs.sh to run the checks that read it."
+echo "To see a pin go behind, add a commit to the bare repository and run"
+echo "purlin:drift."
