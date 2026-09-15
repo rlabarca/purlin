@@ -1,0 +1,621 @@
+{
+  "commit": "ed20c8b3b92d415c0f0a74eda891a27e548b6df4",
+  "dirty": true,
+  "environment": {
+    "engines": [
+      "none"
+    ],
+    "host": "GitHub Actions 1000000102",
+    "id": "windows",
+    "job": "verify",
+    "kind": "ci",
+    "os": "windows"
+  },
+  "feature": "drift",
+  "features": {
+    "drift": {
+      "rules": {
+        "RULE-1": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-1",
+            "PROOF-2"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_drift.py",
+              "name": "test_hostile_since_is_refused_before_any_subprocess",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_mcp_server.py",
+              "name": "test_a_hostile_since_never_reaches_git",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-10": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-11",
+            "PROOF-12",
+            "PROOF-20"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_drift.py",
+              "name": "test_stale_entry_includes_remote_sha",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_drift.py",
+              "name": "test_mixed_anchor_stale_when_external_source_advances",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_drift.py",
+              "name": "test_a_pin_is_unpinned_an_error_or_not_reported_at_all",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-11": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-13"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_mcp_server.py",
+              "name": "test_a_source_that_is_not_safe_is_refused_before_any_process",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-12": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-14"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_mcp_server.py",
+              "name": "test_one_ls_remote_per_source_per_run",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-13": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-15"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_drift.py",
+              "name": "test_anchor_name_in_drift_matches_spec_name_not_repo_path",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-14": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-16"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_mcp_server.py",
+              "name": "test_the_four_role_views_are_present",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-15": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-17"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_mcp_server.py",
+              "name": "test_a_role_narrows_the_report",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-16": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-18"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_drift.py",
+              "name": "test_rule_details_counts_one_rule_set_in_one_order",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-17": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-19"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_drift.py",
+              "name": "test_payload_carries_no_pretty_printing_whitespace",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-2": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-3"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_drift.py",
+              "name": "test_the_anchor_walks_the_record_then_the_tag_then_the_setup_commit",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-3": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-4"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_drift.py",
+              "name": "test_every_changed_file_lands_in_one_category",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-4": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-5"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_drift.py",
+              "name": "test_a_behaviour_directory_is_never_no_impact",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-5": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-6"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_drift.py",
+              "name": "test_a_directory_scope_matches_the_files_under_it",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-6": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-7"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_drift.py",
+              "name": "test_one_numstat_call_covers_every_changed_file",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-7": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-8"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_drift.py",
+              "name": "test_the_report_names_its_keys_and_the_scope_paths_that_are_gone",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-8": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-9"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_drift.py",
+              "name": "test_the_report_names_its_keys_and_the_scope_paths_that_are_gone",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-9": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-10"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_drift.py",
+              "name": "test_external_advance_plus_local_modification_surfaces_both",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        }
+      },
+      "scope_score": {
+        "killed": 0,
+        "score": null,
+        "survived": 0
+      },
+      "spec": "specs/mcp/drift.md"
+    }
+  },
+  "gate": "approved",
+  "log": {
+    "path": ".purlin/runtime/run.log",
+    "sha256": "7a2521008d6f7da5c3abfa3b9e1c4e8a65af4e917d8711bd654c7ecb7e896bcf"
+  },
+  "missing": [],
+  "os": "windows",
+  "plugins": [
+    "pytest",
+    "shell"
+  ],
+  "proofs": [
+    {
+      "env": null,
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "test_file": "dev/test_drift.py",
+      "test_name": "test_hostile_since_is_refused_before_any_subprocess",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-2",
+      "rule": "RULE-1",
+      "status": "pass",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_a_hostile_since_never_reaches_git",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-3",
+      "rule": "RULE-2",
+      "status": "pass",
+      "test_file": "dev/test_drift.py",
+      "test_name": "test_the_anchor_walks_the_record_then_the_tag_then_the_setup_commit",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-4",
+      "rule": "RULE-3",
+      "status": "pass",
+      "test_file": "dev/test_drift.py",
+      "test_name": "test_every_changed_file_lands_in_one_category",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-5",
+      "rule": "RULE-4",
+      "status": "pass",
+      "test_file": "dev/test_drift.py",
+      "test_name": "test_a_behaviour_directory_is_never_no_impact",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-6",
+      "rule": "RULE-5",
+      "status": "pass",
+      "test_file": "dev/test_drift.py",
+      "test_name": "test_a_directory_scope_matches_the_files_under_it",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-6",
+      "status": "pass",
+      "test_file": "dev/test_drift.py",
+      "test_name": "test_one_numstat_call_covers_every_changed_file",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-8",
+      "rule": "RULE-7",
+      "status": "pass",
+      "test_file": "dev/test_drift.py",
+      "test_name": "test_the_report_names_its_keys_and_the_scope_paths_that_are_gone",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-9",
+      "rule": "RULE-8",
+      "status": "pass",
+      "test_file": "dev/test_drift.py",
+      "test_name": "test_the_report_names_its_keys_and_the_scope_paths_that_are_gone",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-10",
+      "rule": "RULE-9",
+      "status": "pass",
+      "test_file": "dev/test_drift.py",
+      "test_name": "test_external_advance_plus_local_modification_surfaces_both",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-11",
+      "rule": "RULE-10",
+      "status": "pass",
+      "test_file": "dev/test_drift.py",
+      "test_name": "test_stale_entry_includes_remote_sha",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-12",
+      "rule": "RULE-10",
+      "status": "pass",
+      "test_file": "dev/test_drift.py",
+      "test_name": "test_mixed_anchor_stale_when_external_source_advances",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-20",
+      "rule": "RULE-10",
+      "status": "pass",
+      "test_file": "dev/test_drift.py",
+      "test_name": "test_a_pin_is_unpinned_an_error_or_not_reported_at_all",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-13",
+      "rule": "RULE-11",
+      "status": "pass",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_a_source_that_is_not_safe_is_refused_before_any_process",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-14",
+      "rule": "RULE-12",
+      "status": "pass",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_one_ls_remote_per_source_per_run",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-15",
+      "rule": "RULE-13",
+      "status": "pass",
+      "test_file": "dev/test_drift.py",
+      "test_name": "test_anchor_name_in_drift_matches_spec_name_not_repo_path",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-16",
+      "rule": "RULE-14",
+      "status": "pass",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_the_four_role_views_are_present",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-17",
+      "rule": "RULE-15",
+      "status": "pass",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_a_role_narrows_the_report",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-18",
+      "rule": "RULE-16",
+      "status": "pass",
+      "test_file": "dev/test_drift.py",
+      "test_name": "test_rule_details_counts_one_rule_set_in_one_order",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-19",
+      "rule": "RULE-17",
+      "status": "pass",
+      "test_file": "dev/test_drift.py",
+      "test_name": "test_payload_carries_no_pretty_printing_whitespace",
+      "tier": "integration"
+    }
+  ],
+  "runner": "ci",
+  "schema": "purlin-record/1",
+  "schema_version": 1,
+  "scope_tree": "ee39cf05f0315a25c5f03390a8a63a5c051f840dd136edcb40af94cf5c64ab69",
+  "test_strength": null,
+  "timestamp": "2026-09-15T16:20:18Z"
+}
