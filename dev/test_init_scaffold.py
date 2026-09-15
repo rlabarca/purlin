@@ -967,3 +967,29 @@ class TestThePieces:
         sources, tests = scaffold_module.mutmut_paths(project.root)
         assert sources == ['demo']
         assert tests == ['tests']
+
+    @pytest.mark.proof("scaffold", "PROOF-39", "RULE-39")
+    def test_nested_code_is_source_and_a_test_directory_is_the_selection(
+            self, project):
+        shutil.rmtree(project.path('tests'), ignore_errors=True)
+        write(project.path('scripts/run/job.py'), 'def go():\n    return 1\n')
+        write(project.path('dev/test_job.py'), 'def test_go():\n    pass\n')
+        write(project.path('dev/build.py'), '')
+        write(project.path('docs/guide.md'), '# Guide\n')
+        assert scaffold_module.mutmut_paths(project.root) == (['scripts'],
+                                                              ['dev'])
+
+    @pytest.mark.proof("scaffold", "PROOF-39", "RULE-39")
+    def test_src_and_tests_still_win_over_other_directories(self, project):
+        write(project.path('src/app.py'), '')
+        write(project.path('tools/helper.py'), '')
+        write(project.path('tests/test_app.py'), '')
+        write(project.path('dev/test_extra.py'), '')
+        assert scaffold_module.mutmut_paths(project.root) == (['src'],
+                                                              ['tests'])
+
+    @pytest.mark.proof("scaffold", "PROOF-39", "RULE-39")
+    def test_no_python_anywhere_falls_back_to_the_root(self, project):
+        write(project.path('docs/guide.md'), '# Guide\n')
+        sources, _tests = scaffold_module.mutmut_paths(project.root)
+        assert sources == ['.']
