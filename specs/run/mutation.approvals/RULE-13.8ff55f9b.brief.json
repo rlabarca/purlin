@@ -1,0 +1,63 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "mutation",
+  "generated_at": "2026-09-15T16:52:19Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "82152ba90d94dadb0fa037f27f812f6c999a1e78ae8369cb451a6b93e52cf671",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-13",
+      "text": "Call `build_command([\"dotnet\", \"stryker\"], [\"src/A.cs\", \"src/B.cs\"], \"/tmp/out\")`; verify it carries `--mutate src/A.cs`, `--mutate src/B.cs`, `--coverage-analysis perTest`, `--disable-bail`, `--reporter json` and `--output /tmp/out`. Put `mutation-report.json` two directories below the output directory; verify `find_report()` returns it, and returns None when the directory holds no report",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/mutation/20260915T165206Z-e532a0c-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-13",
+  "rule_hash": "b4d8ada2ec8e6da5d29c1cdd3e5f465574baa8a7243ee6657e863875043cffaf",
+  "rule_text": "Stryker.NET is run as `dotnet stryker` with one `--mutate` per scope file, `--coverage-analysis perTest`, `--disable-bail`, `--reporter json` and `--output`, and its report is found by walking that output directory for `mutation-report.json`",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "ee4819267840282d5672578d2be45b29436c67bd1459ad2861710d072341b807",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_dotnet_command_scopes_the_run_and_asks_for_json():\n    command = stryker_net.build_command(['dotnet', 'stryker'],\n                                        ['src/Login/Session.cs', 'src/Api.cs'],\n                                        '/tmp/out')\n    assert command == ['dotnet', 'stryker',\n                       '--mutate', 'src/Login/Session.cs',\n                       '--mutate', 'src/Api.cs',\n                       '--coverage-analysis', 'perTest', '--disable-bail',\n                       '--reporter', 'json', '--output', '/tmp/out']",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_no_report_under_the_output_directory_is_none",
+      "proof": "PROOF-13",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_dotnet_command_scopes_the_run_and_asks_for_json():\n    command = stryker_net.build_command(['dotnet', 'stryker'],\n                                        ['src/Login/Session.cs', 'src/Api.cs'],\n                                        '/tmp/out')\n    assert command == ['dotnet', 'stryker',\n                       '--mutate', 'src/Login/Session.cs',\n                       '--mutate', 'src/Api.cs',\n                       '--coverage-analysis', 'perTest', '--disable-bail',\n                       '--reporter', 'json', '--output', '/tmp/out']",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_the_dotnet_command_scopes_the_run_and_asks_for_json",
+      "proof": "PROOF-13",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_dotnet_command_scopes_the_run_and_asks_for_json():\n    command = stryker_net.build_command(['dotnet', 'stryker'],\n                                        ['src/Login/Session.cs', 'src/Api.cs'],\n                                        '/tmp/out')\n    assert command == ['dotnet', 'stryker',\n                       '--mutate', 'src/Login/Session.cs',\n                       '--mutate', 'src/Api.cs',\n                       '--coverage-analysis', 'perTest', '--disable-bail',\n                       '--reporter', 'json', '--output', '/tmp/out']",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_the_report_is_found_under_the_output_directory",
+      "proof": "PROOF-13",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "8ff55f9b199d6c32e4eb54506ee43da633d6a9c9fc1efba9c2b609986a653355",
+  "verdict": "ready"
+}

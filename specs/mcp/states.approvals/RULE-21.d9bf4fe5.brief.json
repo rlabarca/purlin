@@ -1,0 +1,69 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-15T16:52:54Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "f7bfd6eac8bd02737db5f832bc3d08940aa07a9f697fc555eabeeb15c2fe28c9",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-21",
+      "text": "Run the status report over a project with one feature and read the header line; verify it names Rules, Lowest state, States, Strength, Record, Approvals and Re-verify, that the feature's row carries `Proof ready` and `Tested 1`, and that its strength reads `n/a` because no record exists",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-22",
+      "text": "Run the status report over this repository's own specs; verify the output carries the `Lowest state` column, names at least one of the seven states, and that its last line opens with the arrow",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-21 happy_path_only: No proof of this rule names a rejection, an error or a boundary.",
+    "PROOF-22 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/states/20260915T165206Z-e532a0c-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-21",
+  "rule_hash": "6f13d5985f24560664eb790683a81b05523f0ec44d62eecb4f545ef7dc663235",
+  "rule_text": "The status table is one row per feature under the columns Feature, Rules, Lowest state, States, Strength, Record, Approvals and Re-verify, and a feature with no record shows its strength as `n/a`",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "30b910c8d76b1dd7591927c1165b92881182ff6f80d8e46518de55044913d8a3",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_one_row_per_feature_with_the_seven_state_columns(self, project):\n        project.proofs([_entry('PROOF-2', 'RULE-2')])\n        text = purlin_status.sync_status(project.root)\n        header = next(line for line in text.splitlines()\n                      if line.startswith('Feature'))\n        for column in ('Rules', 'Lowest state', 'States', 'Strength', 'Record',\n                       'Approvals', 'Re-verify'):\n            assert column in header, (column, header)\n        row = next(line for line in text.splitlines()\n                   if line.startswith('login '))\n        assert 'Proof ready' in row and 'Tested 1' in row, row\n        assert 'n/a' in row, 'no record, so no test strength'",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_one_row_per_feature_with_the_seven_state_columns",
+      "proof": "PROOF-21",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_repository_own_specs_print_the_seven_state_table(self):\n        text = purlin_status.sync_status(PROJECT_ROOT)\n        assert 'Lowest state' in text\n        assert any(state in text for state in purlin_states.STATE_ORDER), text\n        assert text.rstrip().splitlines()[-1].startswith('\u2192'), text",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_the_repository_own_specs_print_the_seven_state_table",
+      "proof": "PROOF-22",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "d9bf4fe55e0eb4e4df0e69f3b15c51489e4848851957715d84c9dc9244707256",
+  "verdict": "add a case"
+}

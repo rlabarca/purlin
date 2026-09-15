@@ -1,0 +1,104 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "mutation",
+  "generated_at": "2026-09-15T16:52:17Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "ca73a9b4b165a2de4378b6f4d7a93b3d8e67a74f0ba18409d469dbe7877e1c0d",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-3",
+      "text": "Call `score_percent()` with (0, 0), (1, 1), (2, 1), (3, 0) and (0, 4); verify None, 50, 67, 100 and 0",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/mutation/20260915T165206Z-e532a0c-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-3",
+  "rule_hash": "cd7277502ec583cb35f45cadaa08fc3e80586b6dfc507f7007063d925d2e22d5",
+  "rule_text": "Test strength is `killed / (killed + survived)` as an integer percent rounded half up, and is None when no break ran at all",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "de055ffe7965a1ed94d97bcb57744460f7c80bb331a04ba4f857cecf9f57b0ee",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_score_is_an_integer_percent(killed, survived, score):\n    assert mutation.score_percent(killed, survived) == score",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_score_is_an_integer_percent[0-0-None]",
+      "proof": "PROOF-3",
+      "reasons": []
+    },
+    {
+      "body": "def test_score_is_an_integer_percent(killed, survived, score):\n    assert mutation.score_percent(killed, survived) == score",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_score_is_an_integer_percent[0-1-0]",
+      "proof": "PROOF-3",
+      "reasons": []
+    },
+    {
+      "body": "def test_score_is_an_integer_percent(killed, survived, score):\n    assert mutation.score_percent(killed, survived) == score",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_score_is_an_integer_percent[1-0-100]",
+      "proof": "PROOF-3",
+      "reasons": []
+    },
+    {
+      "body": "def test_score_is_an_integer_percent(killed, survived, score):\n    assert mutation.score_percent(killed, survived) == score",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_score_is_an_integer_percent[1-1-50]",
+      "proof": "PROOF-3",
+      "reasons": []
+    },
+    {
+      "body": "def test_score_is_an_integer_percent(killed, survived, score):\n    assert mutation.score_percent(killed, survived) == score",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_score_is_an_integer_percent[1-2-33]",
+      "proof": "PROOF-3",
+      "reasons": []
+    },
+    {
+      "body": "def test_score_is_an_integer_percent(killed, survived, score):\n    assert mutation.score_percent(killed, survived) == score",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_score_is_an_integer_percent[2-1-67]",
+      "proof": "PROOF-3",
+      "reasons": []
+    },
+    {
+      "body": "def test_score_is_an_integer_percent(killed, survived, score):\n    assert mutation.score_percent(killed, survived) == score",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_score_is_an_integer_percent[5-2-71]",
+      "proof": "PROOF-3",
+      "reasons": []
+    },
+    {
+      "body": "def test_score_is_an_integer_percent(killed, survived, score):\n    assert mutation.score_percent(killed, survived) == score",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_score_is_an_integer_percent[7-4-64]",
+      "proof": "PROOF-3",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "7ddec6391a3b12b0f99a698620a29731c1f31c714623cb9ecf0bdd4653997bc1",
+  "verdict": "ready"
+}

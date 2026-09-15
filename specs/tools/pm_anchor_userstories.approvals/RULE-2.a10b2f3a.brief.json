@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "pm_anchor_userstories",
-  "generated_at": "2026-09-14T18:04:31Z",
+  "generated_at": "2026-09-15T16:52:21Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,7 +27,7 @@
   "reasons": [
     "PROOF-2 implementation_coupling: Names a private symbol, a selector or a path instead of an observable outcome, so a refactor breaks the proof without changing behaviour."
   ],
-  "record": ".purlin/records/pm_anchor_userstories/20260914T180358Z-93d7729-ci-windows.json",
+  "record": ".purlin/records/pm_anchor_userstories/20260915T165206Z-e532a0c-ci-linux.json",
   "risk": "high",
   "rule": "RULE-2",
   "rule_hash": "ef7381eb42ee7a5b83426fdc7a7f3dfd1cd9141b8197a9a617e0e6f046fce6b2",

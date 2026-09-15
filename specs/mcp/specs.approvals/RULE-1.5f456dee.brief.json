@@ -1,0 +1,70 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "specs",
+  "generated_at": "2026-09-15T16:52:50Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "00d47de09aa3f79f38062c149ea412f0c6c997772001bbd4344cc62c57d9a609",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-1",
+      "text": "Parse a spec whose RULE-1 line ends `[risk: high] [origin: pm] [criterion: US-12]`; verify the parsed text is exactly `Valid credentials return 200 with a session token` with no bracket left in it, and that the rule's metadata is exactly `{\"risk\": \"high\", \"origin\": \"pm\", \"criterion\": \"US-12\"}`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-2",
+      "text": "Call the rule tag splitter on `Tokens expire [origin: qa] [risk: medium]` and `Tokens expire [risk: medium] [origin: qa]`; verify both return the text `Tokens expire` and the same metadata, so the order the tags are written in changes nothing",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-1 happy_path_only: No proof of this rule names a rejection, an error or a boundary.",
+    "PROOF-2 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/specs/20260915T165206Z-e532a0c-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-1",
+  "rule_hash": "e7398e7975a6368f5b862aef9f896dd285b42f65ecde8c95f6749fe892c0dbbf",
+  "rule_text": "A rule line's `[risk: ...]`, `[origin: ...]` and `[criterion: ...]` tags are read off the end of the line one at a time in any order, and the text that remains is the claim alone",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "53d31f46646bdfe91445724c52a02f93e0dadbff03c1bb3092b3add092f0f027",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_rule_tags_are_read_off_the_end_and_stripped(self, project):\n        info = purlin_specs.scan_specs(project.root)['login']\n        assert info['rules']['RULE-1'] == (\n            'Valid credentials return 200 with a session token'), info['rules']\n        assert info['rule_meta']['RULE-1'] == {\n            'risk': 'high', 'origin': 'pm', 'criterion': 'US-12'}\n        # The defaults, for a rule that names none of them.\n        assert info['rule_meta']['RULE-2'] == {'risk': 'low', 'origin': 'eng'}",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_rule_tags_are_read_off_the_end_and_stripped",
+      "proof": "PROOF-1",
+      "reasons": []
+    },
+    {
+      "body": "def test_tag_order_does_not_matter(self):\n        first, meta = purlin_specs.split_rule_tags(\n            'Tokens expire [origin: qa] [risk: medium]')\n        second, other = purlin_specs.split_rule_tags(\n            'Tokens expire [risk: medium] [origin: qa]')\n        assert first == second == 'Tokens expire'\n        assert meta == other == {'risk': 'medium', 'origin': 'qa'}",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_tag_order_does_not_matter",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "5f456dee149c87d63e9b24bdc5c2228e7e16bc63cee578b4e0929b02b96a15bd",
+  "verdict": "add a case"
+}

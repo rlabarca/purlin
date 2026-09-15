@@ -1,0 +1,64 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-15T16:52:41Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "46984d229b3b946b4155ea9f75a0e2e97e0cf6c23cd7ab8f5f7ab16efb71a5ba",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-25",
+      "text": "Run init and verify the shim's text contains neither this checkout's path, nor the project's path, nor the contents of the `VERSION` file",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-25 logic_mirroring"
+  ],
+  "record": ".purlin/records/scaffold/20260915T165206Z-e532a0c-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-25",
+  "rule_hash": "c9e58091b2e054e870ddc71373d48ec51cecc62244121665233d3ace2b231db1",
+  "rule_text": "The shim names no machine, no checkout and no release, so the file is right for every clone and everything machine-specific is resolved when it runs",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "f3eea6b494259b04cc0bac401caf58e37f719aac2e48fbedceb9d63cd7dfc297",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_shim_names_no_machine(self, project):\n        project.run('--gate', 'tested')\n        shim = read(project.path('.purlin/hooks/pre-push'))\n        assert ROOT not in shim\n        assert project.root not in shim",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_shim_names_no_machine",
+      "proof": "PROOF-25",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_shim_names_no_machine_and_no_release(self, passing):\n        shim = read(passing.path('.purlin/hooks/pre-push'))\n        assert ROOT not in shim\n        assert passing.root not in shim\n        assert read(os.path.join(ROOT, 'VERSION')).strip() not in shim",
+      "file": "dev/test_pre_push_hook.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_the_shim_names_no_machine_and_no_release",
+      "proof": "PROOF-25",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "8e11ce10d22c95cd9ddcf23e5b71980a23bca6926b4b3c0c695fed38897f3b21",
+  "verdict": "needs a human"
+}

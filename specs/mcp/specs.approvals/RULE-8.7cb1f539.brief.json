@@ -1,0 +1,50 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "specs",
+  "generated_at": "2026-09-15T16:52:51Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "dbbbc09fb6b82b49a06804b66989e35afd157a75a2159fb35648126470d18916",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-9",
+      "text": "Scan the two specs above and read the warning; verify it is a single line naming `specs/auth/login.md` and `specs/auth/legacy.md` and carrying no newline, and that a scan of specs carrying no such tag returns no warning at all",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-9 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/specs/20260915T165206Z-e532a0c-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-8",
+  "rule_hash": "726b76d9bbc1730be33095d50efb366175a05909d63db8b4cef7a9e417a879f6",
+  "rule_text": "The unknown-tag warning is one line naming at most five carrying files and counting the rest, and is absent when no spec carries such a tag",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "557089c158496c43a10fc9404d51ac528a20be5a34256889d6bbcbf652653ce7",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_unknown_tags_are_ignored_with_one_warning_naming_the_files(self,\n                                                                       project):\n        project.spec(\n            '# Feature: login\\n\\n## Rules\\n\\n- RULE-1: Files lock\\n\\n'\n            '## Proof\\n\\n'\n            '- PROOF-1 (RULE-1): Lock a file; verify 1 open fails '\n            '@unit @on(windows-2022)\\n')\n        project.spec(\n            '# Feature: legacy\\n\\n> Visual-Reference: ./designs/a.png\\n\\n'\n            '## Rules\\n\\n- RULE-1: It renders\\n\\n'\n            '## Proof\\n\\n- PROOF-1 (RULE-1): Look at it @manual(a@b.c, '\n            '2026-03-31, abc1234)\\n', name='legacy')\n        features = purlin_specs.scan_specs(project.root)\n        assert features['login']['proofs']['PROOF-1']['env'] is None\n        assert features['login']['unknown_tags'] == ['@on(windows-2022)']\n        assert features['legacy']['proofs']['PROOF-1']['tier'] == 'manual'\n        assert set(features['legacy']['unknown_tags']) == {\n            '@manual(...)', '> Visual-Reference:'}\n        warning = purlin_specs.unknown_tag_warning(features)\n        assert warning and 'specs/auth/login.md' in warning, warning\n        assert 'specs/auth/legacy.md' in warning, warning\n        # One line, naming the files: not one warning per proof line.\n        assert warning.count('\\n') == 0, warning\n        # A scan whose specs carry no such tag warns about nothing at all.\n        clean = {name: dict(info, unknown_tags=[])\n                 for name, info in features.items()}\n        assert purlin_specs.unknown_tag_warning(clean) is None",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_unknown_tags_are_ignored_with_one_warning_naming_the_files",
+      "proof": "PROOF-9",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "7cb1f539c6d46ad3a938e71384fba2739ffdc75ae5f6f7bb605408ad1cd8b412",
+  "verdict": "add a case"
+}

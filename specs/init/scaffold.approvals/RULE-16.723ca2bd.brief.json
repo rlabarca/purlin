@@ -1,0 +1,54 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-15T16:52:39Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "52ea8bc9b0ebacf6faba2162120e49cc60849b609f4bd848e1b5a65b722dd1e6",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-16",
+      "text": "Run `--gate recorded --ci github --upstream-check` and verify the workflow contains `upstream-check:` and `schedule:`; run `--gate recorded` without the flag and verify `upstream-check:` is absent",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/scaffold/20260915T165206Z-e532a0c-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-16",
+  "rule_hash": "8d0773501f23aa9b6ca03f0571d75a2f15f2a7d1bc3a8980284f5d22b5cae386",
+  "rule_text": "`--upstream-check` adds the scheduled job that watches the pins, and without the flag that job is absent",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "633ce4bce9bb9099053e77019e7e49d2fdfd7de3783501bd53b50020a0181750",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_upstream_check_adds_the_scheduled_job(self, project):\n        project.run('--gate', 'recorded', '--ci', 'github',\n                    '--upstream-check')\n        workflow = read(project.path('.github/workflows/purlin.yml'))\n        assert 'upstream-check:' in workflow\n        assert 'schedule:' in workflow",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_upstream_check_adds_the_scheduled_job",
+      "proof": "PROOF-16",
+      "reasons": []
+    },
+    {
+      "body": "def test_upstream_check_adds_the_scheduled_job(self, project):\n        project.run('--gate', 'recorded', '--ci', 'github',\n                    '--upstream-check')\n        workflow = read(project.path('.github/workflows/purlin.yml'))\n        assert 'upstream-check:' in workflow\n        assert 'schedule:' in workflow",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_without_it_the_scheduled_job_is_absent",
+      "proof": "PROOF-16",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "723ca2bd649a274900a3e7000afc9c271ad8ae2be3bb05f3cea4bd1795c14f9c",
+  "verdict": "ready"
+}

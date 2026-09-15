@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "skill_spec",
-  "generated_at": "2026-09-14T18:05:01Z",
+  "generated_at": "2026-09-15T16:52:49Z",
   "layers": [
     "proof text",
     "test body",
@@ -22,7 +22,7 @@
     }
   ],
   "reasons": [],
-  "record": ".purlin/records/skill_spec/20260914T180400Z-93d7729-ci-windows.json",
+  "record": ".purlin/records/skill_spec/20260915T165206Z-e532a0c-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-1",
   "rule_hash": "c1d5d8fb672b2609acb474369ae1f77c9d3ff76be1fc6aff36bd843c720ae32d",

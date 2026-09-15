@@ -1,0 +1,58 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-15T16:52:42Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "e16cf354f21d4829c0d9778d9015ad0066b29ea4611f4ee996b596609c595ab7",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-34",
+      "text": "Run `--gate tested` on a project with no spec and verify the last line starts with the arrow and names `purlin:spec`; write one spec, run again and verify the last line still starts with the arrow",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-34 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/scaffold/20260915T165206Z-e532a0c-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-34",
+  "rule_hash": "d7c4758d7eecc254cfcd70ba7b512f152fb1a0c183385fc18519073fe8c546d7",
+  "rule_text": "The last line of a run is the next step, computed from the state the project is now in",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "db1f07dccc22201379a1f0e471a313a85ab7631b737b09e4726c5fdfdddf909e",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_next_step_is_the_last_line(self, project):\n        lines = project.run('--gate', 'tested').strip().splitlines()\n        assert lines[-1].startswith('\u2192')\n        assert 'purlin:spec' in lines[-1]",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_next_step_is_the_last_line",
+      "proof": "PROOF-34",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_next_step_is_the_last_line(self, project):\n        lines = project.run('--gate', 'tested').strip().splitlines()\n        assert lines[-1].startswith('\u2192')\n        assert 'purlin:spec' in lines[-1]",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_next_step_reads_the_state_once_specs_exist",
+      "proof": "PROOF-34",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "3c903d6ee71df2f8fe992084d3af9fefb75abc1ebe726ee0a53631c70580c42d",
+  "verdict": "add a case"
+}

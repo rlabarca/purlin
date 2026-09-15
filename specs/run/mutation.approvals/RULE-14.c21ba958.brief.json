@@ -1,0 +1,71 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "mutation",
+  "generated_at": "2026-09-15T16:52:19Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "a11dd35b4226d43040939ef9deed6ecfa092780949a822d3b67cd87fcb3565b8",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-14",
+      "text": "Take `dotnet` off the PATH; verify `available()` is False with a reason naming dotnet, and that a run answers engine `none`. Put a `dotnet` on the PATH that exits non-zero for `--version`; verify the reason names `dotnet tool install -g dotnet-stryker`. Make it exit 0; verify `available()` is True",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/mutation/20260915T165206Z-e532a0c-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-14",
+  "rule_hash": "949526d9b5ceb9d4bf1f5d13a4461dd120dae28c798d0c8fd863af776f941175",
+  "rule_text": "Without `dotnet` on the PATH there is no engine for C#, and with `dotnet` but no Stryker.NET installed the reason names the `dotnet tool install` command; the install check is `dotnet stryker --version` answering 0",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "8d46d1d375c4b88ac96f942f83625e91c6949f01c064a1112386ce4be849e5e0",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_no_dotnet_means_no_engine(monkeypatch):\n    monkeypatch.setattr(stryker_net.shutil, 'which', lambda name: None)\n    installed, reason = stryker_net.available('/project')\n    assert installed is False\n    assert 'dotnet is not installed' in reason",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_a_dotnet_run_with_no_tool_installed_leaves_no_engine",
+      "proof": "PROOF-14",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_dotnet_means_no_engine(monkeypatch):\n    monkeypatch.setattr(stryker_net.shutil, 'which', lambda name: None)\n    installed, reason = stryker_net.available('/project')\n    assert installed is False\n    assert 'dotnet is not installed' in reason",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_dotnet_without_the_tool_says_how_to_install_it",
+      "proof": "PROOF-14",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_dotnet_means_no_engine(monkeypatch):\n    monkeypatch.setattr(stryker_net.shutil, 'which', lambda name: None)\n    installed, reason = stryker_net.available('/project')\n    assert installed is False\n    assert 'dotnet is not installed' in reason",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_no_dotnet_means_no_engine",
+      "proof": "PROOF-14",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_dotnet_means_no_engine(monkeypatch):\n    monkeypatch.setattr(stryker_net.shutil, 'which', lambda name: None)\n    installed, reason = stryker_net.available('/project')\n    assert installed is False\n    assert 'dotnet is not installed' in reason",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_the_tool_answering_its_version_is_the_install_check",
+      "proof": "PROOF-14",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "c21ba9584f5bfc2dc481fa65c90d31e22a4a705f9345a0337d6da655377ca627",
+  "verdict": "ready"
+}

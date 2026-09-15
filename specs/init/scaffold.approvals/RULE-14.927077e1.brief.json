@@ -1,0 +1,115 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-15T16:52:39Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "1463fce583029900e01cfcee04c44596e41108f67c4ba55bb411db0e082b9535",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-14",
+      "text": "Read the host off each of five remote URLs and verify `https://github.com/acme/demo.git` and `git@github.com:acme/demo.git` give `github`, the two Azure DevOps URLs give `azure` and an unknown host gives nothing; verify a project with no remote reads no host. Then run `--gate recorded` on a GitHub remote and verify the config reads `github` with the workflow written, on an Azure remote and verify `purlin.azure-pipelines.yml` with `Azure DevOps` in the output, and on a GitHub remote with `--ci ado` and verify the pipeline file and `azure` in the config",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-14 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/scaffold/20260915T165206Z-e532a0c-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-14",
+  "rule_hash": "482415fbd3778867c0e5bfb30d4e091353533e672c963733c4f00b4cb5a5112e",
+  "rule_text": "The git host is read from the remote URL as `github`, `azure` or nothing at all, and `--ci` overrides what the remote said",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "6d8fa1b312b8fe0a1ee4e21ba970c0786077d476b725466ed95376fe5bcb764c",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_host_is_read_from_the_remote(self):\n        made = Project('pytest', remote='https://github.com/acme/demo.git')\n        try:\n            made.run('--gate', 'recorded')\n            assert made.config()['ci'] == 'github'\n            assert made.has('.github/workflows/purlin.yml')\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_an_azure_remote_gets_the_pipeline",
+      "proof": "PROOF-14",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_host_is_read_from_the_remote(self):\n        made = Project('pytest', remote='https://github.com/acme/demo.git')\n        try:\n            made.run('--gate', 'recorded')\n            assert made.config()['ci'] == 'github'\n            assert made.has('.github/workflows/purlin.yml')\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_ci_ado_overrides_the_remote",
+      "proof": "PROOF-14",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_host_is_read_from_the_remote(self):\n        made = Project('pytest', remote='https://github.com/acme/demo.git')\n        try:\n            made.run('--gate', 'recorded')\n            assert made.config()['ci'] == 'github'\n            assert made.has('.github/workflows/purlin.yml')\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_no_remote_reads_no_host",
+      "proof": "PROOF-14",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_host_is_read_from_the_remote(self):\n        made = Project('pytest', remote='https://github.com/acme/demo.git')\n        try:\n            made.run('--gate', 'recorded')\n            assert made.config()['ci'] == 'github'\n            assert made.has('.github/workflows/purlin.yml')\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_host_is_read_from_the_remote",
+      "proof": "PROOF-14",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_host_is_read_from_the_remote(self):\n        made = Project('pytest', remote='https://github.com/acme/demo.git')\n        try:\n            made.run('--gate', 'recorded')\n            assert made.config()['ci'] == 'github'\n            assert made.has('.github/workflows/purlin.yml')\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_host_is_read_from_the_url[git@github.com:acme/demo.git-github]",
+      "proof": "PROOF-14",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_host_is_read_from_the_remote(self):\n        made = Project('pytest', remote='https://github.com/acme/demo.git')\n        try:\n            made.run('--gate', 'recorded')\n            assert made.config()['ci'] == 'github'\n            assert made.has('.github/workflows/purlin.yml')\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_host_is_read_from_the_url[https://acme.visualstudio.com/demo/_git/demo-azure]",
+      "proof": "PROOF-14",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_host_is_read_from_the_remote(self):\n        made = Project('pytest', remote='https://github.com/acme/demo.git')\n        try:\n            made.run('--gate', 'recorded')\n            assert made.config()['ci'] == 'github'\n            assert made.has('.github/workflows/purlin.yml')\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_host_is_read_from_the_url[https://dev.azure.com/acme/demo/_git/demo-azure]",
+      "proof": "PROOF-14",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_host_is_read_from_the_remote(self):\n        made = Project('pytest', remote='https://github.com/acme/demo.git')\n        try:\n            made.run('--gate', 'recorded')\n            assert made.config()['ci'] == 'github'\n            assert made.has('.github/workflows/purlin.yml')\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_host_is_read_from_the_url[https://git.example.com/acme/demo.git-None]",
+      "proof": "PROOF-14",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_host_is_read_from_the_remote(self):\n        made = Project('pytest', remote='https://github.com/acme/demo.git')\n        try:\n            made.run('--gate', 'recorded')\n            assert made.config()['ci'] == 'github'\n            assert made.has('.github/workflows/purlin.yml')\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_host_is_read_from_the_url[https://github.com/acme/demo.git-github]",
+      "proof": "PROOF-14",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "927077e17d8aa3227197e5306b9c48835e203bba7162a37048e5989c13e4e2ba",
+  "verdict": "add a case"
+}

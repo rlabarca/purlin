@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "drift",
+  "generated_at": "2026-09-15T16:52:16Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "5b74f4f443923c2a875a546678f277f931932de3d23a323f7dc2ba2510e1c047",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-17",
+      "text": "Run drift with the role `qa`; verify the report's role reads `qa` and that its view carries exactly the keys `approvals_stale`, `review_list_size` and `rules_without_a_negative_case`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-17 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/drift/20260915T165205Z-e532a0c-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-15",
+  "rule_hash": "569f64006933df4259768029eb953b3341146afd01d1060638ee5acb80f9926a",
+  "rule_text": "A role argument narrows the answer to `since`, `role`, `view` and `commits`, and nothing else",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "2aa15251ed316a2b6613bd7fb00c3b2bc06b796653248f75b499c709504c19f9",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_role_narrows_the_report(self, project):\n        report = json.loads(purlin_drift.drift(project.root, since='1',\n                                               role='qa'))\n        assert report['role'] == 'qa'\n        assert sorted(report['view']) == [\n            'approvals_stale', 'review_list_size',\n            'rules_without_a_negative_case']",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_a_role_narrows_the_report",
+      "proof": "PROOF-17",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "8f49e06e3be830270fa34cb9bb11dd0a37eac4fdc31c5f3e034580f85df1f04e",
+  "verdict": "add a case"
+}

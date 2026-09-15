@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "specs",
+  "generated_at": "2026-09-15T16:52:51Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "60b5f0550c42e92c481fa99c76828880543a90ad8c988240c824498d71216af8",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-8",
+      "text": "Write one spec whose proof line ends with the retired operating-system tag naming `windows-2022`, and a second carrying `> Visual-Reference:` and a stamped `@manual(a@b.c, 2026-03-31, abc1234)`; scan them and verify the first proof reads no operating system and lists exactly that one retired tag, and that the second proof still parses at tier `manual` while listing the stamp and `> Visual-Reference:`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-8 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/specs/20260915T165206Z-e532a0c-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-7",
+  "rule_hash": "9220147eb5697b4a29c0911dc7366b6dd57241737c7cb4664a0ec4845e70bcbb",
+  "rule_text": "Tags this release does not read (the retired operating-system tag `@env` replaced, a bare `@windows` used as a tier, a stamped `@manual(...)` carrying an email, a date and a sha) and the retired fields `> Visual-Reference:` and `> Visual-Hash:` are ignored rather than refused, and every spec carrying one lists it under `unknown_tags`",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "557089c158496c43a10fc9404d51ac528a20be5a34256889d6bbcbf652653ce7",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_unknown_tags_are_ignored_with_one_warning_naming_the_files(self,\n                                                                       project):\n        project.spec(\n            '# Feature: login\\n\\n## Rules\\n\\n- RULE-1: Files lock\\n\\n'\n            '## Proof\\n\\n'\n            '- PROOF-1 (RULE-1): Lock a file; verify 1 open fails '\n            '@unit @on(windows-2022)\\n')\n        project.spec(\n            '# Feature: legacy\\n\\n> Visual-Reference: ./designs/a.png\\n\\n'\n            '## Rules\\n\\n- RULE-1: It renders\\n\\n'\n            '## Proof\\n\\n- PROOF-1 (RULE-1): Look at it @manual(a@b.c, '\n            '2026-03-31, abc1234)\\n', name='legacy')\n        features = purlin_specs.scan_specs(project.root)\n        assert features['login']['proofs']['PROOF-1']['env'] is None\n        assert features['login']['unknown_tags'] == ['@on(windows-2022)']\n        assert features['legacy']['proofs']['PROOF-1']['tier'] == 'manual'\n        assert set(features['legacy']['unknown_tags']) == {\n            '@manual(...)', '> Visual-Reference:'}\n        warning = purlin_specs.unknown_tag_warning(features)\n        assert warning and 'specs/auth/login.md' in warning, warning\n        assert 'specs/auth/legacy.md' in warning, warning\n        # One line, naming the files: not one warning per proof line.\n        assert warning.count('\\n') == 0, warning\n        # A scan whose specs carry no such tag warns about nothing at all.\n        clean = {name: dict(info, unknown_tags=[])\n                 for name, info in features.items()}\n        assert purlin_specs.unknown_tag_warning(clean) is None",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_unknown_tags_are_ignored_with_one_warning_naming_the_files",
+      "proof": "PROOF-8",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "ec4e6d00709ddb0106eecd704add6dce4053c329574eb3fd4726b98184a36892",
+  "verdict": "add a case"
+}

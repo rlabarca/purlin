@@ -1,0 +1,67 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-15T16:52:43Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "cbf51b0c502b49cc523200c2b8092aeff4655ad3f451d08669d690dc25b4291b",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-39",
+      "text": "Write `scripts/run/job.py`, `dev/test_job.py`, `dev/build.py` and `docs/guide.md` and verify the paths are `([\"scripts\"], [\"dev\"])`; write `src/app.py`, `tools/helper.py`, `tests/test_app.py` and `dev/test_extra.py` into another project and verify `([\"src\"], [\"tests\"])`; on a project whose one file is `docs/guide.md` verify the source is `[\".\"]`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-39 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/scaffold/20260915T165206Z-e532a0c-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-39",
+  "rule_hash": "6916ad35752dd0de2ca2d2db8ac3d0ba0ba001e6488fdfe2af765dfa4543c122",
+  "rule_text": "The mutmut block names as source every top-level directory holding a `.py` file at any depth and no test file at its top level, and names as the test selection the directories that do hold one, with `src`, `lib` and `app` preferred as source and `tests` and `test` as the selection",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "e6f7a2322eaba804c4760c87bc7a4d4363b5aba5fe131d78cb3907b350077e73",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_nested_code_is_source_and_a_test_directory_is_the_selection(\n            self, project):\n        shutil.rmtree(project.path('tests'), ignore_errors=True)\n        write(project.path('scripts/run/job.py'), 'def go():\\n    return 1\\n')\n        write(project.path('dev/test_job.py'), 'def test_go():\\n    pass\\n')\n        write(project.path('dev/build.py'), '')\n        write(project.path('docs/guide.md'), '# Guide\\n')\n        assert scaffold_module.mutmut_paths(project.root) == (['scripts'],\n                                                              ['dev'])",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_nested_code_is_source_and_a_test_directory_is_the_selection",
+      "proof": "PROOF-39",
+      "reasons": []
+    },
+    {
+      "body": "def test_nested_code_is_source_and_a_test_directory_is_the_selection(\n            self, project):\n        shutil.rmtree(project.path('tests'), ignore_errors=True)\n        write(project.path('scripts/run/job.py'), 'def go():\\n    return 1\\n')\n        write(project.path('dev/test_job.py'), 'def test_go():\\n    pass\\n')\n        write(project.path('dev/build.py'), '')\n        write(project.path('docs/guide.md'), '# Guide\\n')\n        assert scaffold_module.mutmut_paths(project.root) == (['scripts'],\n                                                              ['dev'])",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_no_python_anywhere_falls_back_to_the_root",
+      "proof": "PROOF-39",
+      "reasons": []
+    },
+    {
+      "body": "def test_nested_code_is_source_and_a_test_directory_is_the_selection(\n            self, project):\n        shutil.rmtree(project.path('tests'), ignore_errors=True)\n        write(project.path('scripts/run/job.py'), 'def go():\\n    return 1\\n')\n        write(project.path('dev/test_job.py'), 'def test_go():\\n    pass\\n')\n        write(project.path('dev/build.py'), '')\n        write(project.path('docs/guide.md'), '# Guide\\n')\n        assert scaffold_module.mutmut_paths(project.root) == (['scripts'],\n                                                              ['dev'])",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_src_and_tests_still_win_over_other_directories",
+      "proof": "PROOF-39",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "71231871a0eb3fec56f4b9bd86e97273061a8df84021175d31a5f3835ffb7b05",
+  "verdict": "add a case"
+}

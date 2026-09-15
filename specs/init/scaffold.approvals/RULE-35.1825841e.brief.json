@@ -1,0 +1,54 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-15T16:52:42Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "3633a7ff27b880e60da0961c56df6abed6e623fc03caf8f5303a15c9f1f3e4c2",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-35",
+      "text": "Run `--gate approved` and verify the output holds none of the retired terms and no character at or above U+1F000; read `scripts/hooks/pre-push.sh` and verify it holds none of them either",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/scaffold/20260915T165206Z-e532a0c-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-35",
+  "rule_hash": "8bb068fab08ed07c0d9b3f67b9122598cebde8a924ef7580c1f30c37f6253545",
+  "rule_text": "Nothing init prints, and nothing in the hook script it installs, carries an emoji or a term this release retired",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "327f4e7e526573d251733f4f762529e2bd7f5caa34c5dce7367ffb37fdbc1779",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_no_emoji_and_no_retired_word_in_the_output(self, project):\n        output = project.run('--gate', 'approved')\n        # Spelled in halves so this file does not carry the words either.\n        for word in ('rece' + 'ipt', 'au' + 'dit', 'CODE' + 'OWNERS',\n                     'fo' + 'rge', 'plat' + 'form'):\n            assert word not in output.lower()\n        assert all(ord(ch) < 0x1F000 for ch in output)",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_no_emoji_and_no_retired_word_in_the_output",
+      "proof": "PROOF-35",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_script_carries_no_retired_word(self):\n        text = read(HOOK_SCRIPT).lower()\n        # Spelled in halves so this file does not carry the words either.\n        for word in ('rece' + 'ipt', 'au' + 'dit', 'ga' + 'uge',\n                     'str' + 'ict', 'fo' + 'rge'):\n            assert word not in text",
+      "file": "dev/test_pre_push_hook.py",
+      "findings": [],
+      "name": "test_the_script_carries_no_retired_word",
+      "proof": "PROOF-35",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "1825841e102ec72e9dba21f48e9699e0be959f91bbab3aad698a55899ecf13e7",
+  "verdict": "ready"
+}

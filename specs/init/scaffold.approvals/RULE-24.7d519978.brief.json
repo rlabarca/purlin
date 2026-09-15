@@ -1,0 +1,83 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-15T16:52:40Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "8bdf87d57117277647f87b27be69d9c9d876e5ee9a86ccdedb0ac4d1f8ffe4e1",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-24",
+      "text": "Run init and verify `.purlin/hooks/pre-push` names `scripts/hooks/pre-push.sh` and is executable, `.git/hooks/pre-push` names `.purlin/hooks/pre-push` and is executable, and neither `.purlin/hooks/pre-commit` nor `.git/hooks/pre-commit` exists; delete the shim, run the delegator and verify exit 0 with `no hook shim` on stdout; verify `scripts/hooks/` carries neither a pre-commit script nor a separate gate script",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-24 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/scaffold/20260915T165206Z-e532a0c-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-24",
+  "rule_hash": "a03a4b37ef5a5f0f2a7afb7b75c99bf242298491a8d32d896502d15d9369bda6",
+  "rule_text": "init writes the tracked shim `.purlin/hooks/pre-push` and the delegator git runs, both executable, the delegator reaching the shim and saying so rather than failing when the shim is absent; no pre-commit hook is installed and the plugin ships no pre-commit script",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "31e8f732408e983e621fcea74c636c438bc272a64fb961bcda3ddf9b24b0e0fb",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_shim_and_the_delegator_are_written(self, project):\n        project.run('--gate', 'tested')\n        shim = read(project.path('.purlin/hooks/pre-push'))\n        assert 'scripts/hooks/pre-push.sh' in shim\n        assert os.access(project.path('.purlin/hooks/pre-push'), os.X_OK)\n        delegator = read(project.path('.git/hooks/pre-push'))\n        assert '.purlin/hooks/pre-push' in delegator",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_no_pre_commit_hook_is_installed",
+      "proof": "PROOF-24",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_shim_and_the_delegator_are_written(self, project):\n        project.run('--gate', 'tested')\n        shim = read(project.path('.purlin/hooks/pre-push'))\n        assert 'scripts/hooks/pre-push.sh' in shim\n        assert os.access(project.path('.purlin/hooks/pre-push'), os.X_OK)\n        delegator = read(project.path('.git/hooks/pre-push'))\n        assert '.purlin/hooks/pre-push' in delegator",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_shim_and_the_delegator_are_written",
+      "proof": "PROOF-24",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_delegator_git_runs_reaches_the_shim(self, passing):\n        delegator = read(passing.path('.git/hooks/pre-push'))\n        assert '.purlin/hooks/pre-push' in delegator\n        assert os.access(passing.path('.git/hooks/pre-push'), os.X_OK)",
+      "file": "dev/test_pre_push_hook.py",
+      "findings": [],
+      "name": "test_no_pre_commit_script_ships",
+      "proof": "PROOF-24",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_delegator_git_runs_reaches_the_shim(self, passing):\n        delegator = read(passing.path('.git/hooks/pre-push'))\n        assert '.purlin/hooks/pre-push' in delegator\n        assert os.access(passing.path('.git/hooks/pre-push'), os.X_OK)",
+      "file": "dev/test_pre_push_hook.py",
+      "findings": [],
+      "name": "test_the_delegator_git_runs_reaches_the_shim",
+      "proof": "PROOF-24",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_delegator_git_runs_reaches_the_shim(self, passing):\n        delegator = read(passing.path('.git/hooks/pre-push'))\n        assert '.purlin/hooks/pre-push' in delegator\n        assert os.access(passing.path('.git/hooks/pre-push'), os.X_OK)",
+      "file": "dev/test_pre_push_hook.py",
+      "findings": [],
+      "name": "test_the_delegator_survives_a_checkout_without_the_shim",
+      "proof": "PROOF-24",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "7d519978798af1f874980e9bb86209b4a597996fcae5ff36685fbd9fcb50dd6e",
+  "verdict": "add a case"
+}

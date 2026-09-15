@@ -1,0 +1,55 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-15T16:52:38Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "32d34002e402ad89d8647bab3519493aa2e16b7831f01b8894e0199b4603fcfb",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-13",
+      "text": "Run with `--gate tested` and verify `.github/workflows/purlin.yml` is absent and the output contains `pass --ci to write it anyway`; run with `--gate tested --ci github` and verify the file is there",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/scaffold/20260915T165206Z-e532a0c-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-13",
+  "rule_hash": "a4e88d6ec904257082a20aeb4809f4382da34016dc1d4dec6c131ded82379c68",
+  "rule_text": "Under `tested` no CI workflow is written and the summary says `--ci` writes it anyway; `--ci` under `tested` writes it",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "643dfa76940b06e507b8c9f87ad609dec3eb4def11f2af92d5b004ad5b5c4807",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_tested_writes_no_workflow(self, project):\n        output = project.run('--gate', 'tested')\n        assert not project.has('.github/workflows/purlin.yml')\n        assert 'pass --ci to write it anyway' in output",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_ci_under_tested_writes_it_anyway",
+      "proof": "PROOF-13",
+      "reasons": []
+    },
+    {
+      "body": "def test_tested_writes_no_workflow(self, project):\n        output = project.run('--gate', 'tested')\n        assert not project.has('.github/workflows/purlin.yml')\n        assert 'pass --ci to write it anyway' in output",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_tested_writes_no_workflow",
+      "proof": "PROOF-13",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "8f9274960d618266256376623d917b6d443b9cb8f924dd95d53c251b6c812d23",
+  "verdict": "ready"
+}
