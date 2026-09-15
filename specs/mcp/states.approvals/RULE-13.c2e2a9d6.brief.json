@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-15T16:09:47Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "e467a94e80fe8f27039fdfa8d1ed224dfb5f08933459220490cb2db7fcdd90de",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-13",
+      "text": "Read the state order and verify its first entry is `Stale`, its last is `Approved` and its length is exactly 7; ask for the lowest of `Approved` and `Tested` and verify the answer is `Tested`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-13 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/states/20260915T160902Z-ed20c8b-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-13",
+  "rule_hash": "7f15372ebff847b3a31ccb06fc0931cc2f764635f5f66d3686d02346f2e71250",
+  "rule_text": "The state order is the seven states with Stale first and Approved last, so the feature holding a stale approval sorts to the top of the table",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "4ab7886377a847dc77aaafc211480c708bec5643e69696a6d82a78b5adf4b43d",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_state_order_puts_stale_first_and_approved_last(self):\n        assert purlin_states.STATE_ORDER[0] == 'Stale'\n        assert purlin_states.STATE_ORDER[-1] == 'Approved'\n        assert len(purlin_states.STATE_ORDER) == 7\n        assert purlin_states.lowest(['Approved', 'Tested']) == 'Tested'",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_the_state_order_puts_stale_first_and_approved_last",
+      "proof": "PROOF-13",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "c2e2a9d6d212e8d135162299f39af36d73d1e84ef44b75f4b92b8565fb40eeb7",
+  "verdict": "add a case"
+}

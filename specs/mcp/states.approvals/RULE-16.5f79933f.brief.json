@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-15T16:09:48Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "d72ddf6cff74fae3c3e854c60367bb2490b9ed6d33525a4304858e4d3f659a2d",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-16",
+      "text": "Build the payload and verify `schema_version` is exactly 4, that all twelve named top-level keys are present, that `gate.gate` reads `tested` and that `generated_at` ends in `Z`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-16 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/states/20260915T160902Z-ed20c8b-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-16",
+  "rule_hash": "0a936233e14875291ce4daa3544b9f588963ce359e184f384d91ccc25711be0e",
+  "rule_text": "The payload carries schema version 4 and the top-level keys `generated_at`, `generated_by`, `project`, `version`, `commit`, `dirty`, `gate`, `states`, `features`, `review_list`, `records` and `warnings`",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "2947688ab2197b6d111b6e2b7b3a0ab052c8d3df7db467b28a2413da101641a5",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_schema_four_carries_the_documented_top_level(self, project):\n        data = project.payload()\n        assert data['schema_version'] == 4\n        for key in ('generated_at', 'generated_by', 'project', 'version',\n                    'commit', 'dirty', 'gate', 'states', 'features',\n                    'review_list', 'records', 'warnings'):\n            assert key in data, key\n        assert data['gate']['gate'] == 'tested'\n        assert data['generated_at'].endswith('Z')",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_schema_four_carries_the_documented_top_level",
+      "proof": "PROOF-16",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "5f79933f30002234b7aaa72701f19c0ffbdba4e69f866d810a2df19a7a611fc9",
+  "verdict": "add a case"
+}

@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "scaffold",
-  "generated_at": "2026-09-14T18:04:48Z",
+  "generated_at": "2026-09-15T16:09:31Z",
   "layers": [
     "proof text",
     "test body",
@@ -22,7 +22,7 @@
     }
   ],
   "reasons": [],
-  "record": ".purlin/records/scaffold/20260914T180359Z-93d7729-ci-windows.json",
+  "record": ".purlin/records/scaffold/20260915T160902Z-ed20c8b-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-6",
   "rule_hash": "17a2de73b4575d33629d7fd1642f1aaecc3b0affacec8fa20146b70753af326e",

@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "specs",
+  "generated_at": "2026-09-15T16:09:44Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "1b68930e161559ea79fb7d1b9d912f5e625122357e83138e146b16537e209458",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-3",
+      "text": "Parse a rule line carrying no tag; verify its metadata is exactly `{\"risk\": \"low\", \"origin\": \"eng\"}` and that no `criterion` key is present",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-3 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/specs/20260915T160902Z-ed20c8b-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-2",
+  "rule_hash": "af98e4e730aa71c6c2c6cccc382a961afad40c9c4102ed78dc67943fe26fa3d6",
+  "rule_text": "A rule naming no tag takes `risk` `low` and `origin` `eng`, and carries no `criterion` key at all",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "cff6cdb9f2cfaa3b1b7829a804067df653d896260a87090155db77d418a16213",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_rule_tags_are_read_off_the_end_and_stripped(self, project):\n        info = purlin_specs.scan_specs(project.root)['login']\n        assert info['rules']['RULE-1'] == (\n            'Valid credentials return 200 with a session token'), info['rules']\n        assert info['rule_meta']['RULE-1'] == {\n            'risk': 'high', 'origin': 'pm', 'criterion': 'US-12'}\n        # The defaults, for a rule that names none of them.\n        assert info['rule_meta']['RULE-2'] == {'risk': 'low', 'origin': 'eng'}",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_rule_tags_are_read_off_the_end_and_stripped",
+      "proof": "PROOF-3",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "78056649af3a9ff1c0e6203f63def9e2209f7efe7a2d0e23e1faa346055a1586",
+  "verdict": "add a case"
+}

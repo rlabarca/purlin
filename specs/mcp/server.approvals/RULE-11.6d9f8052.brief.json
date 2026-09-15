@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "server",
+  "generated_at": "2026-09-15T16:09:39Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "9e3459342d722ce50c2de0cda8581387d010fc443aea602c2fa4a25a14a8db02",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-11",
+      "text": "Call `generate_digest` with the producer `hook` and the network off; verify the file it names exists, that the payload read back carries `generated_by` `hook` and that its schema version is exactly 4",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-11 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/server/20260915T160902Z-ed20c8b-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-11",
+  "rule_hash": "3b3cd3521d1126c5b57568752f163799b408cabb9aa72f00a64c16568aa9361e",
+  "rule_text": "`generate_digest` writes the dashboard's data file at schema version 4, naming the producer it was given",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "dad5177a5ffd2b521fc6d0c331024d9620cfde4d4825e2f188f2ef92b4f9be10",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_generate_digest_writes_the_data_file(self, project):\n        path = purlin_srv.generate_digest(project.root,\n                                             generated_by='hook',\n                                             network=False)\n        assert path and os.path.isfile(path)\n        data = purlin_payload.read_report_payload(project.root)\n        assert data['generated_by'] == 'hook'\n        assert data['schema_version'] == 4",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_generate_digest_writes_the_data_file",
+      "proof": "PROOF-11",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "6d9f8052a7cb1a06a23b35b5525ea382bf0d835e13853388e50e8102e2b5f2f9",
+  "verdict": "add a case"
+}

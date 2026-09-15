@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "run_script",
-  "generated_at": "2026-09-14T18:04:45Z",
+  "generated_at": "2026-09-15T16:09:29Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,7 +26,7 @@
   "reasons": [
     "PROOF-15 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/run_script/20260914T180359Z-93d7729-ci-windows.json",
+  "record": ".purlin/records/run_script/20260915T160902Z-ed20c8b-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-15",
   "rule_hash": "eab6a1e40137291fd57e23b0850f076e64cca310e009dd05f1e83f6158e8331c",
