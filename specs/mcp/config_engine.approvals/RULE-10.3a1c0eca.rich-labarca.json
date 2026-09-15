@@ -1,0 +1,17 @@
+{
+  "approver": "rich.labarca@gmail.com",
+  "brief": "specs/mcp/config_engine.approvals/RULE-10.3a1c0eca.brief.json",
+  "design_hash": null,
+  "feature": "config_engine",
+  "gate": "approved",
+  "proof_hash": "30a00b298c5f93d2cea9a2e4ea7914862441e694b4ad2d22104c2e1bf082182b",
+  "record": ".purlin/records/config_engine/20260915T172303Z-eacb477-ci-windows.json",
+  "risk": "high",
+  "rule": "RULE-10",
+  "rule_hash": "c268e8e4f5932274be31a051f94b80ae8145c6b6039160b58d8eaf3e6066dcde",
+  "schema": "purlin-approval/1",
+  "test_hash": "3da2f3d4474f2140db35bcbec196d33474706772583ef07384caa7b8edef25d7",
+  "test_hash_kind": "file",
+  "timestamp": "2026-09-15T18:37:30Z",
+  "triple": "3a1c0eca13771c03"
+}

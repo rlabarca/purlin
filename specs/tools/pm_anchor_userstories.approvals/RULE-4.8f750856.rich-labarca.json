@@ -1,0 +1,17 @@
+{
+  "approver": "rich.labarca@gmail.com",
+  "brief": "specs/tools/pm_anchor_userstories.approvals/RULE-4.8f750856.brief.json",
+  "design_hash": null,
+  "feature": "pm_anchor_userstories",
+  "gate": "approved",
+  "proof_hash": "ba45b04baaaca66758e93f10c4c704c4bccf5c9505197d4f2d8e196bfba565ad",
+  "record": ".purlin/records/pm_anchor_userstories/20260915T172303Z-eacb477-ci-windows.json",
+  "risk": "medium",
+  "rule": "RULE-4",
+  "rule_hash": "3997017e82480b961e2df8a1ca1abf53bf74eebf1529f39696be4975fd36f1d9",
+  "schema": "purlin-approval/1",
+  "test_hash": "266b938a4e4081c8419e423afc970e84cae7e673d0587d752dfae37a800c6627",
+  "test_hash_kind": "file",
+  "timestamp": "2026-09-15T18:37:41Z",
+  "triple": "8f75085666485cb4"
+}

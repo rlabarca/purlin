@@ -1,0 +1,17 @@
+{
+  "approver": "rich.labarca@gmail.com",
+  "brief": "specs/review/static_checks.approvals/RULE-22.ef7cb547.brief.json",
+  "design_hash": null,
+  "feature": "static_checks",
+  "gate": "approved",
+  "proof_hash": "7d32e52cf5e1878a01abafdf245dda91c8942316f184f80c1b7280fcc6a4c207",
+  "record": ".purlin/records/static_checks/20260915T172307Z-eacb477-ci-windows.json",
+  "risk": "medium",
+  "rule": "RULE-22",
+  "rule_hash": "8d61541b898719a288ff9aefdc03399c0a74874a852ae486b20125d724e09392",
+  "schema": "purlin-approval/1",
+  "test_hash": "64d3552b1006497b800e1f2be163213aa6862f383ef6ab10dbc1c55fa95bdd60",
+  "test_hash_kind": "file",
+  "timestamp": "2026-09-15T18:37:49Z",
+  "triple": "ef7cb547bcc288a0"
+}

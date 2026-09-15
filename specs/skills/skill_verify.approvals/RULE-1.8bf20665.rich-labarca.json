@@ -1,0 +1,17 @@
+{
+  "approver": "rich.labarca@gmail.com",
+  "brief": "specs/skills/skill_verify.approvals/RULE-1.8bf20665.brief.json",
+  "design_hash": null,
+  "feature": "skill_verify",
+  "gate": "approved",
+  "proof_hash": "c3c3bd41f6bacc9ac89084571e1c487e7f331566279b7de34bc9277835122174",
+  "record": ".purlin/records/skill_verify/20260915T172307Z-eacb477-ci-windows.json",
+  "risk": "medium",
+  "rule": "RULE-1",
+  "rule_hash": "fee2b2ac457ba4748b16eac4d68172962e2925b835fa343a2d20ed3d994d3e0f",
+  "schema": "purlin-approval/1",
+  "test_hash": "6c1237a279f1acab7dbeac48815d28d72f87bb91a694a302e1facf286432bc03",
+  "test_hash_kind": "file",
+  "timestamp": "2026-09-15T18:37:47Z",
+  "triple": "8bf20665991d6ce8"
+}

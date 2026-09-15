@@ -1,0 +1,17 @@
+{
+  "approver": "rich.labarca@gmail.com",
+  "brief": "specs/mcp/drift.approvals/RULE-7.52204db2.brief.json",
+  "design_hash": null,
+  "feature": "drift",
+  "gate": "approved",
+  "proof_hash": "444bfc2b2cd33a631ddcd8d40ef374fa7f1d2161a198c905ad0b28f74ddb80c0",
+  "record": ".purlin/records/drift/20260915T172303Z-eacb477-ci-windows.json",
+  "risk": "high",
+  "rule": "RULE-7",
+  "rule_hash": "a00ee2788cc3a272e4db6b83df50381f5a90fcd0aac6696706f17b408022cae7",
+  "schema": "purlin-approval/1",
+  "test_hash": "6f7c3e966390b2d0a08240207447cd5a075a182497db67d124f391e4a10bcce9",
+  "test_hash_kind": "file",
+  "timestamp": "2026-09-15T18:37:30Z",
+  "triple": "52204db2e1c845a9"
+}

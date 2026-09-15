@@ -1,0 +1,17 @@
+{
+  "approver": "rich.labarca@gmail.com",
+  "brief": "specs/mcp/states.approvals/RULE-12.11304890.brief.json",
+  "design_hash": null,
+  "feature": "states",
+  "gate": "approved",
+  "proof_hash": "5db75961c8fd578d035575b75fdd19255efe6efcdd470a57fafa0ef8434fb6c0",
+  "record": ".purlin/records/states/20260915T172307Z-eacb477-ci-windows.json",
+  "risk": "medium",
+  "rule": "RULE-12",
+  "rule_hash": "6da8818049feeee9a56cb544c8beef45faff0390e74d3259436b6800da69139c",
+  "schema": "purlin-approval/1",
+  "test_hash": "cdb7be13e6b4e81d9648cbf6e3c59fb02fee844fb95a550f75d7e07f8cf98e66",
+  "test_hash_kind": "file",
+  "timestamp": "2026-09-15T18:37:48Z",
+  "triple": "113048909d22d657"
+}

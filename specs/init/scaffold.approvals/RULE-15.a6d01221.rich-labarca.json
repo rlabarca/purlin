@@ -1,0 +1,17 @@
+{
+  "approver": "rich.labarca@gmail.com",
+  "brief": "specs/init/scaffold.approvals/RULE-15.a6d01221.brief.json",
+  "design_hash": null,
+  "feature": "scaffold",
+  "gate": "approved",
+  "proof_hash": "676abaf9c27350d16eb5124f910785031ad8300c211196df1fe3e9c22a09e359",
+  "record": ".purlin/records/scaffold/20260915T172305Z-eacb477-ci-windows.json",
+  "risk": "medium",
+  "rule": "RULE-15",
+  "rule_hash": "be48e9c2e2b4a0510a3a6ef27ebf03428cdb92b33468ba23df8e5c907d67fb26",
+  "schema": "purlin-approval/1",
+  "test_hash": "04b0afc00a5a071c61ab738b32002438aa3d57f9b84fa5b5306285f1c21614c5",
+  "test_hash_kind": "file",
+  "timestamp": "2026-09-15T18:37:44Z",
+  "triple": "a6d012210a6afeab"
+}
