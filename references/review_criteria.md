@@ -37,7 +37,9 @@ Either rewrite it as that flow or retag it to the tier it actually exercises.
 
 **`implementation_coupling`.** The description names a private symbol, a CSS selector
 or a source path instead of an observable outcome, so a refactor breaks the proof
-without changing behaviour. Say what a person or a caller would see.
+without changing behaviour. Say what a person or a caller would see. A name that opens
+with an underscore after a `/`, such as `specs/_anchors/` or `/_git/`, is a path or URL
+segment and does not raise it.
 
 **`happy_path_only`.** No proof of this rule names a rejection, an error or a
 boundary. A rule that says reject, block, limit or expire has been proved in one

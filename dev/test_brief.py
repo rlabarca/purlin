@@ -115,6 +115,26 @@ class TestTheFindings:
         finally:
             made.close()
 
+    @pytest.mark.proof("brief", "PROOF-37", "RULE-25", tier="integration")
+    def test_a_path_segment_is_not_a_private_symbol(self):
+        original = ('POST /login with the password "secret"; verify 200 and '
+                    'a token @integration')
+        cases = (
+            ('POST /login, then read specs/_anchors/policy.md and '
+             'https://dev.azure.com/acme/_git/policies; verify 200 '
+             '@integration', False),
+            ('Call _resolve_token and verify 200 @integration', True),
+        )
+        for text, coupled in cases:
+            made = Project(spec=SPEC.replace(original, text))
+            try:
+                made.proofs()
+                found = build(made, 'RULE-1')['proofs'][0]['findings']
+                assert ('implementation_coupling' in found) is coupled, (
+                    text, found)
+            finally:
+                made.close()
+
     @pytest.mark.proof("brief", "PROOF-7", "RULE-6", tier="integration")
     def test_the_test_body_findings_reach_the_brief(self, proved):
         proved.edit_test(TEST_FILE.replace(

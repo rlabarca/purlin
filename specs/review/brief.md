@@ -37,6 +37,7 @@
 - RULE-22: The text rendering names the rule, its proofs and its verdict, and carries no emoji [risk: low] [origin: eng]
 - RULE-23: `brief.py --help` exits 0, an unknown option or a missing `--feature` exits 2, and a feature with no rule in the project exits 1 [risk: low] [origin: eng]
 - RULE-24: `brief.py --feature <name>` with no `--rule` builds, prints and writes a brief for every rule of that feature [risk: low] [origin: eng]
+- RULE-25: A name that opens with an underscore reaches the brief as `implementation_coupling` unless it follows a `/`, so a path or URL segment such as `specs/_anchors/` or `/_git/` is not read as a private symbol [risk: medium] [origin: eng]
 
 ## Proof
 
@@ -76,3 +77,4 @@
 - PROOF-34 (RULE-24): Run the command for `--feature login --rule RULE-1`; verify it exits 0, prints `login RULE-1` and a `Verdict:` line, and creates the `login.approvals` directory @integration
 - PROOF-35 (RULE-24): Run the command for `--feature login` with no rule named; verify it exits 0 and prints both `login RULE-1` and `login RULE-2` @integration
 - PROOF-36 (RULE-23): Run `brief.py` as a command in a separate process against a recorded project; verify it exits 0 and its output carries a `Verdict:` line @integration
+- PROOF-37 (RULE-25): Write a proof reading `POST /login, then read specs/_anchors/policy.md and https://dev.azure.com/acme/_git/policies; verify 200`, build the brief and verify its findings carry no `implementation_coupling`; rewrite it to call a function whose name opens with an underscore and verify 200, and verify `implementation_coupling` is present @integration

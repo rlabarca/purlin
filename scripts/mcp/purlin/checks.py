@@ -54,8 +54,11 @@ _TRIGGER_RE = re.compile(
 _INTERNAL_CALL_RE = re.compile(r'\b(?:call|invoke)\b[^.;]{0,40}?\w+\(', re.IGNORECASE)
 
 # A private symbol, a CSS selector or a source path in place of an outcome.
+# An underscore word right after `/` is a path or URL segment the reader can
+# see (`specs/_anchors/`, `/_git/`), not a private name, so it never counts.
 _COUPLING_RE = re.compile(
-    r'(?:\b_[a-z][a-z0-9_]{2,}\b|(?:^|\s)[#.][a-zA-Z][\w-]{2,}(?=\s|$))')
+    r'(?:(?<![\w/])_[a-z][a-z0-9_]{2,}\b|'
+    r'(?:^|\s)[#.][a-zA-Z][\w-]{2,}(?=\s|$))')
 
 # Words that mark a rejection, an error or a boundary.
 _NEGATIVE_RE = re.compile(
