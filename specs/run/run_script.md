@@ -43,6 +43,7 @@
 - RULE-40: An arm that exits non-zero or is killed has the last 60 lines of its own output printed to stdout under `--- <arm> output (last 60 lines) ---` before the missing-evidence lines, and under `--ci` every arm's whole output is published as `logs/<arm>.log` in the dashboard directory [risk: medium] [origin: eng]
 - RULE-41: `--project-root` with an empty value exits 2 naming the flag, rather than resolving to the working directory and running there [risk: medium] [origin: eng]
 - RULE-42: `--ci` writes the auto-approvals and the review list's briefs before the commit and hands their paths to it, so the one commit that carries the record carries the `.ci.json` and `.brief.json` files beside the spec too; `--commit` writes neither and its commit carries the records alone [risk: high] [origin: eng]
+- RULE-43: The pytest arm never collects `mutants/`, the copy mutmut leaves of the project, so a test mutmut copied is not collected twice and does not stop the run [risk: medium] [origin: eng]
 
 ## Proof
 
@@ -77,3 +78,4 @@
 - PROOF-59 (RULE-40): Run `--all --record --ci` with no runner temporary directory in the environment, over a project whose pytest test fails; verify `.purlin/runtime/report/logs/pytest.log` exists and holds the arm's own output including the command line the arm ran @unit
 - PROOF-60 (RULE-41): Run `--all --quick --project-root ""` from a directory holding a project; verify exit 2, that the message names `--project-root`, and that no proof file was written under that directory @unit
 - PROOF-61 (RULE-42): Run `--all --record --ci` with the auto-approval writer and the brief writer standing in for the real ones, each returning one path under `specs/<category>/<feature>.approvals/`; verify both ran before the commit call was made, that the commit call carries the identity `ci` with the record path first and both returned paths after it, and that the run prints `Auto-approved 1 low-risk rule; 1 brief written.`. Run `--all --record --commit` with the same stand-ins; verify neither writer ran and the commit call carries the record path alone @unit
+- PROOF-62 (RULE-43): Build a project with one marked pytest test at `tests/test_feat.py` and put a copy of it at `mutants/tests/test_feat.py`; run `--all --quick` and verify exit 0, that the output holds no `import file mismatch`, and that `feat.unit.json` holds exactly one entry, whose `test_file` is `tests/test_feat.py` @unit

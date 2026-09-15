@@ -403,7 +403,11 @@ def run_framework(project_root, framework, tier, config, log,
     answer that never arrives.
     """
     if framework == 'pytest':
-        command = [sys.executable, '-m', 'pytest', '-q', '-p', 'no:cacheprovider']
+        # `mutants/` is mutmut's copy of the project, tests included. A test
+        # collected twice under one module name stops pytest before a single
+        # test runs, so the copy is never collected.
+        command = [sys.executable, '-m', 'pytest', '-q', '-p', 'no:cacheprovider',
+                   '--ignore=mutants']
         if tier == 'unit':
             # The tier a proof marker names is also a pytest marker on the
             # test, so this expression actually deselects something.

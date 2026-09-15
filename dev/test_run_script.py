@@ -134,6 +134,27 @@ def _proofs(root, feature, tier='unit'):
 # The command line
 # ---------------------------------------------------------------------------
 
+class TestTheMutmutCopy:
+    """mutmut leaves `mutants/` behind, a copy of the project, tests included."""
+
+    @pytest.mark.proof("run_script", "PROOF-62", "RULE-43")
+    def test_the_copy_mutmut_leaves_is_never_collected(self, tmp_path):
+        root = _pytest_project(tmp_path)
+        _spec(root, 'feat')
+        copy = root / 'mutants' / 'tests'
+        copy.mkdir(parents=True)
+        (copy / 'test_feat.py').write_text(
+            (root / 'tests' / 'test_feat.py').read_text(encoding='utf-8'),
+            encoding='utf-8')
+        code, output = _run(root, '--all', '--quick')
+        assert code == 0, output
+        assert 'import file mismatch' not in output
+        data = _proofs(root, 'feat')
+        assert data is not None, output
+        assert [entry['test_file'] for entry in data['proofs']] == [
+            'tests/test_feat.py'], data
+
+
 class TestTheCommandLine:
     """A bad invocation exits 2 and says which part was wrong."""
 
