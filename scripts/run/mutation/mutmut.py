@@ -30,6 +30,7 @@ rarely the repository path: a file at `src/login/session.py` is imported as
 segments match the most of the name's first segments.
 """
 
+import fnmatch
 import os
 import re
 import shutil
@@ -132,7 +133,33 @@ def _segments(entry):
         path = path[2:]
     if path.endswith('.py'):
         path = path[:-3]
-    return [part for part in path.strip('/').split('/') if part]
+    parts = [part for part in path.strip('/').split('/') if part]
+    # mutmut names a break in `pkg/__init__.py` after the package, `pkg`.
+    if parts and parts[-1] == '__init__':
+        parts.pop()
+    return parts
+
+
+def _module_parts(key_parts):
+    """The module segments of a break's name, before the function's `x_`."""
+    for index, part in enumerate(key_parts):
+        if part.startswith('x_') or part.startswith(u'xǁ'):
+            return key_parts[:index]
+    return key_parts[:-1]
+
+
+def _glob_covers(entry, key_parts):
+    """True when a glob scope entry such as `scripts/**/*.py` names the file."""
+    path = '/'.join(_module_parts(key_parts))
+    if not path:
+        return False
+    pattern = str(entry).replace('\\', '/').strip()
+    while pattern.startswith('./'):
+        pattern = pattern[2:]
+    candidates = (path + '.py', path + '/__init__.py',
+                  'src/' + path + '.py', 'src/' + path + '/__init__.py')
+    return any(fnmatch.fnmatchcase(candidate, pattern)
+               for candidate in candidates)
 
 
 def _overlap(key_parts, scope_parts):
@@ -159,7 +186,12 @@ def source_file(key, scope_entries):
     key_parts = [part for part in str(key or '').split('.') if part]
     best, best_length = None, 0
     for entry in scope_entries or ():
-        length = _overlap(key_parts, _segments(entry))
+        if '*' in str(entry):
+            # A glob covers the file but names nothing deeper, so any entry
+            # that names the file or its directory wins over it.
+            length = 0.5 if _glob_covers(entry, key_parts) else 0
+        else:
+            length = _overlap(key_parts, _segments(entry))
         if length > best_length:
             best, best_length = entry, length
     return best
