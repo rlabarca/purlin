@@ -1,0 +1,50 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "mutation",
+  "generated_at": "2026-09-15T19:26:41Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "7bbde361c1774a8ddda398e9a3669420f22427d80b371bf2c8773264259db187",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-4",
+      "text": "Call `rules_by_feature()` with the keys `(\"f\", \"RULE-10\")`, `(\"f\", \"RULE-2\")` and `(\"f\", \"RULE-1\")`; verify the list is `[\"RULE-1\", \"RULE-2\", \"RULE-10\"]`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-4 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/mutation/20260915T192630Z-04c92e2-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-4",
+  "rule_hash": "94513c889c978b11bd14f1a49281b79e9b14a993cbeafc81ee918afe9004aca4",
+  "rule_text": "The rules of a feature are reported in rule-number order, so `RULE-2` comes before `RULE-10`",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "c30eda7bcf07428660530837cadef5afd173dd2e289a20d11742166c1649c604",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_rules_are_listed_in_number_order():\n    tests_by_rule = {('login', 'RULE-10'): [], ('login', 'RULE-2'): [],\n                     ('reports', 'RULE-1'): []}\n    assert mutation.rules_by_feature(tests_by_rule) == {\n        'login': ['RULE-2', 'RULE-10'], 'reports': ['RULE-1']}",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_rules_are_listed_in_number_order",
+      "proof": "PROOF-4",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "f7f98c0ddce1a612913a57537733c934e6feebe1f4429e6ab83bf6ad35265400",
+  "verdict": "add a case"
+}

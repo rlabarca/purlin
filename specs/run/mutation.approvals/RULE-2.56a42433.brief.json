@@ -1,0 +1,63 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "mutation",
+  "generated_at": "2026-09-15T19:26:41Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "59e72457fee60283bcfbc85d32aad6f88807e21caaf8851e792f67b154a863ad",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-2",
+      "text": "Call `select_engine({\"mutation_engine\": \"stryker\"}, [\"pytest\"])`; verify `stryker`. Call it with `\"nosuchengine\"`; verify `none`. Call it with no key at all and `[\"pytest\"]`; verify `mutmut`, the answer `auto` gives",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/mutation/20260915T192630Z-04c92e2-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-2",
+  "rule_hash": "409a58b4bfb6f1e48922b48b9848cc284d550f62bc67b660c0f84c95602beae8",
+  "rule_text": "A `mutation_engine` naming an engine wins over the detected frameworks, a name outside the four shipped engines reads as `none` rather than being guessed at, and a missing key reads as `auto`",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "f8e92b44092928476c9e0c79604de6ef42e82e9344c31a336c5a96dd3d1fb5f7",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_config_that_names_an_engine_wins_over_the_frameworks():\n    assert mutation.select_engine({'mutation_engine': 'mutmut'},\n                                  ['jest']) == 'mutmut'\n    assert mutation.select_engine({'mutation_engine': 'none'},\n                                  ['pytest']) == 'none'",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_a_config_that_names_an_engine_wins_over_the_frameworks",
+      "proof": "PROOF-2",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_config_that_names_an_engine_wins_over_the_frameworks():\n    assert mutation.select_engine({'mutation_engine': 'mutmut'},\n                                  ['jest']) == 'mutmut'\n    assert mutation.select_engine({'mutation_engine': 'none'},\n                                  ['pytest']) == 'none'",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_a_missing_key_is_read_as_auto",
+      "proof": "PROOF-2",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_config_that_names_an_engine_wins_over_the_frameworks():\n    assert mutation.select_engine({'mutation_engine': 'mutmut'},\n                                  ['jest']) == 'mutmut'\n    assert mutation.select_engine({'mutation_engine': 'none'},\n                                  ['pytest']) == 'none'",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_an_engine_name_nobody_ships_reads_as_none",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "56a424336bc9a4bee7bb5fc10965f60d9e184f442188d1154a7666868e0ad8c6",
+  "verdict": "ready"
+}

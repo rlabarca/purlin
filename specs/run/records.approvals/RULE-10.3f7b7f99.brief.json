@@ -1,0 +1,125 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-15T19:26:55Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "669a488ac356aab0eed9a7c6735d20987490999e9623fa2dcbfa5d5d47031753",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-10",
+      "text": "With `GITHUB_REPOSITORY`, `GITHUB_TOKEN` and a pull request event, call `post_pr_comment(text)`; verify the POST goes to `/repos/<repo>/issues/<number>/comments` with `body` equal to the text and the call returns True. Drop the event; verify it returns False and prints `not a pull request`. Drop every variable; verify it returns False and prints that no comment was posted. Make `urlopen` raise; verify it returns False and prints the reason",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-23",
+      "text": "With the Azure DevOps build variables, `SYSTEM_PULLREQUEST_PULLREQUESTID=42` and `urlopen` standing in, call `post_pr_comment(text)`; verify exactly one POST to `https://dev.azure.com/acme/widgets/_apis/git/repositories/repo-id/pullRequests/42/threads?api-version=7.0` with a 30 second timeout, the header `Authorization: Bearer a-token` and the body `{\"comments\": [{\"parentCommentId\": 0, \"content\": <text>, \"commentType\": \"text\"}], \"status\": \"closed\"}`, and that it returns True. Unset the token, the project, the repository id and the pull request id in turn; verify each call returns False, sends nothing and prints `not an Azure DevOps pull request`. Make `urlopen` raise HTTP 401; verify it returns False and prints `The comment was not posted` with `401`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/records/20260915T192630Z-04c92e2-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-10",
+  "rule_hash": "05c9943a6ef157a013c266f0a26de84e5b2c3c832cc7f88ad7a81bf0a08d415a",
+  "rule_text": "A CI run posts the seven-state rollup as a comment on the pull request it belongs to; a run that is not a pull request, or is not on a git host, posts nothing and is not an error, and a refusal by the git host is printed rather than raised",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "25e0ac0876cb5e2c396fac8170070fa860f696a81b84f05563e58727510e2b9b",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_comment_goes_to_the_pull_request_this_run_belongs_to(\n        project, github_env, monkeypatch, tmp_path):\n    event = tmp_path / 'event.json'\n    with open(str(event), 'w', encoding='utf-8') as handle:\n        json.dump({'pull_request': {'number': 12,\n                                    'head': {'repo': {'fork': False}}}}, handle)\n    monkeypatch.setenv('GITHUB_EVENT_PATH', str(event))\n    sent = []\n\n    def urlopen(request, timeout=None):\n        sent.append((request.full_url,\n                     json.loads(request.data.decode('utf-8'))))\n        return Response({})\n\n    monkeypatch.setattr(urllib.request, 'urlopen', urlopen)\n\n    assert ci_module.post_pr_comment(project, 'Purlin: 2 rules Recorded.')\n    url, body = sent[0]\n    assert url.endswith('/repos/acme/widgets/issues/12/comments')\n    assert body == {'body': 'Purlin: 2 rules Recorded.'}",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_local_run_posts_nothing_and_is_not_an_error",
+      "proof": "PROOF-10",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_comment_goes_to_the_pull_request_this_run_belongs_to(\n        project, github_env, monkeypatch, tmp_path):\n    event = tmp_path / 'event.json'\n    with open(str(event), 'w', encoding='utf-8') as handle:\n        json.dump({'pull_request': {'number': 12,\n                                    'head': {'repo': {'fork': False}}}}, handle)\n    monkeypatch.setenv('GITHUB_EVENT_PATH', str(event))\n    sent = []\n\n    def urlopen(request, timeout=None):\n        sent.append((request.full_url,\n                     json.loads(request.data.decode('utf-8'))))\n        return Response({})\n\n    monkeypatch.setattr(urllib.request, 'urlopen', urlopen)\n\n    assert ci_module.post_pr_comment(project, 'Purlin: 2 rules Recorded.')\n    url, body = sent[0]\n    assert url.endswith('/repos/acme/widgets/issues/12/comments')\n    assert body == {'body': 'Purlin: 2 rules Recorded.'}",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_refused_comment_is_reported_rather_than_raised",
+      "proof": "PROOF-10",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_comment_goes_to_the_pull_request_this_run_belongs_to(\n        project, github_env, monkeypatch, tmp_path):\n    event = tmp_path / 'event.json'\n    with open(str(event), 'w', encoding='utf-8') as handle:\n        json.dump({'pull_request': {'number': 12,\n                                    'head': {'repo': {'fork': False}}}}, handle)\n    monkeypatch.setenv('GITHUB_EVENT_PATH', str(event))\n    sent = []\n\n    def urlopen(request, timeout=None):\n        sent.append((request.full_url,\n                     json.loads(request.data.decode('utf-8'))))\n        return Response({})\n\n    monkeypatch.setattr(urllib.request, 'urlopen', urlopen)\n\n    assert ci_module.post_pr_comment(project, 'Purlin: 2 rules Recorded.')\n    url, body = sent[0]\n    assert url.endswith('/repos/acme/widgets/issues/12/comments')\n    assert body == {'body': 'Purlin: 2 rules Recorded.'}",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_run_that_is_not_a_pull_request_posts_nothing",
+      "proof": "PROOF-10",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_comment_goes_to_the_pull_request_this_run_belongs_to(\n        project, github_env, monkeypatch, tmp_path):\n    event = tmp_path / 'event.json'\n    with open(str(event), 'w', encoding='utf-8') as handle:\n        json.dump({'pull_request': {'number': 12,\n                                    'head': {'repo': {'fork': False}}}}, handle)\n    monkeypatch.setenv('GITHUB_EVENT_PATH', str(event))\n    sent = []\n\n    def urlopen(request, timeout=None):\n        sent.append((request.full_url,\n                     json.loads(request.data.decode('utf-8'))))\n        return Response({})\n\n    monkeypatch.setattr(urllib.request, 'urlopen', urlopen)\n\n    assert ci_module.post_pr_comment(project, 'Purlin: 2 rules Recorded.')\n    url, body = sent[0]\n    assert url.endswith('/repos/acme/widgets/issues/12/comments')\n    assert body == {'body': 'Purlin: 2 rules Recorded.'}",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_comment_goes_to_the_pull_request_this_run_belongs_to",
+      "proof": "PROOF-10",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_azure_comment_opens_a_thread_on_the_pull_request(\n        project, azure_pr, monkeypatch):\n    sent = []\n\n    def urlopen(request, timeout=None):\n        sent.append((request.get_method(), request.full_url, timeout,\n                     dict(request.header_items()),\n                     json.loads(request.data.decode('utf-8'))))\n        return Response({})\n\n    monkeypatch.setattr(urllib.request, 'urlopen', urlopen)\n\n    assert ci_module.post_pr_comment(project,\n                                     'Purlin: 2 rules Recorded.') is True\n    assert len(sent) == 1, sent\n    method, url, timeout, headers, body = sent[0]\n    assert method == 'POST'\n    # The collection URI ends in a slash, and the thread URL carries one\n    # separator, not two.\n    assert url == AZURE_THREADS\n    assert timeout == 30\n    assert headers['Authorization'] == 'Bearer a-token'\n    assert headers['Content-type'] == 'application/json'\n    assert body == {'comments': [{'parentCommentId': 0,\n                                  'content': 'Purlin: 2 rules Recorded.',\n                                  'commentType': 'text'}],\n                    'status': 'closed'}",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_refused_azure_comment_is_reported_rather_than_raised",
+      "proof": "PROOF-23",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_azure_comment_opens_a_thread_on_the_pull_request(\n        project, azure_pr, monkeypatch):\n    sent = []\n\n    def urlopen(request, timeout=None):\n        sent.append((request.get_method(), request.full_url, timeout,\n                     dict(request.header_items()),\n                     json.loads(request.data.decode('utf-8'))))\n        return Response({})\n\n    monkeypatch.setattr(urllib.request, 'urlopen', urlopen)\n\n    assert ci_module.post_pr_comment(project,\n                                     'Purlin: 2 rules Recorded.') is True\n    assert len(sent) == 1, sent\n    method, url, timeout, headers, body = sent[0]\n    assert method == 'POST'\n    # The collection URI ends in a slash, and the thread URL carries one\n    # separator, not two.\n    assert url == AZURE_THREADS\n    assert timeout == 30\n    assert headers['Authorization'] == 'Bearer a-token'\n    assert headers['Content-type'] == 'application/json'\n    assert body == {'comments': [{'parentCommentId': 0,\n                                  'content': 'Purlin: 2 rules Recorded.',\n                                  'commentType': 'text'}],\n                    'status': 'closed'}",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_an_azure_run_missing_a_variable_posts_nothing[BUILD_REPOSITORY_ID]",
+      "proof": "PROOF-23",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_azure_comment_opens_a_thread_on_the_pull_request(\n        project, azure_pr, monkeypatch):\n    sent = []\n\n    def urlopen(request, timeout=None):\n        sent.append((request.get_method(), request.full_url, timeout,\n                     dict(request.header_items()),\n                     json.loads(request.data.decode('utf-8'))))\n        return Response({})\n\n    monkeypatch.setattr(urllib.request, 'urlopen', urlopen)\n\n    assert ci_module.post_pr_comment(project,\n                                     'Purlin: 2 rules Recorded.') is True\n    assert len(sent) == 1, sent\n    method, url, timeout, headers, body = sent[0]\n    assert method == 'POST'\n    # The collection URI ends in a slash, and the thread URL carries one\n    # separator, not two.\n    assert url == AZURE_THREADS\n    assert timeout == 30\n    assert headers['Authorization'] == 'Bearer a-token'\n    assert headers['Content-type'] == 'application/json'\n    assert body == {'comments': [{'parentCommentId': 0,\n                                  'content': 'Purlin: 2 rules Recorded.',\n                                  'commentType': 'text'}],\n                    'status': 'closed'}",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_an_azure_run_missing_a_variable_posts_nothing[SYSTEM_ACCESSTOKEN]",
+      "proof": "PROOF-23",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_azure_comment_opens_a_thread_on_the_pull_request(\n        project, azure_pr, monkeypatch):\n    sent = []\n\n    def urlopen(request, timeout=None):\n        sent.append((request.get_method(), request.full_url, timeout,\n                     dict(request.header_items()),\n                     json.loads(request.data.decode('utf-8'))))\n        return Response({})\n\n    monkeypatch.setattr(urllib.request, 'urlopen', urlopen)\n\n    assert ci_module.post_pr_comment(project,\n                                     'Purlin: 2 rules Recorded.') is True\n    assert len(sent) == 1, sent\n    method, url, timeout, headers, body = sent[0]\n    assert method == 'POST'\n    # The collection URI ends in a slash, and the thread URL carries one\n    # separator, not two.\n    assert url == AZURE_THREADS\n    assert timeout == 30\n    assert headers['Authorization'] == 'Bearer a-token'\n    assert headers['Content-type'] == 'application/json'\n    assert body == {'comments': [{'parentCommentId': 0,\n                                  'content': 'Purlin: 2 rules Recorded.',\n                                  'commentType': 'text'}],\n                    'status': 'closed'}",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_an_azure_run_missing_a_variable_posts_nothing[SYSTEM_PULLREQUEST_PULLREQUESTID]",
+      "proof": "PROOF-23",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_azure_comment_opens_a_thread_on_the_pull_request(\n        project, azure_pr, monkeypatch):\n    sent = []\n\n    def urlopen(request, timeout=None):\n        sent.append((request.get_method(), request.full_url, timeout,\n                     dict(request.header_items()),\n                     json.loads(request.data.decode('utf-8'))))\n        return Response({})\n\n    monkeypatch.setattr(urllib.request, 'urlopen', urlopen)\n\n    assert ci_module.post_pr_comment(project,\n                                     'Purlin: 2 rules Recorded.') is True\n    assert len(sent) == 1, sent\n    method, url, timeout, headers, body = sent[0]\n    assert method == 'POST'\n    # The collection URI ends in a slash, and the thread URL carries one\n    # separator, not two.\n    assert url == AZURE_THREADS\n    assert timeout == 30\n    assert headers['Authorization'] == 'Bearer a-token'\n    assert headers['Content-type'] == 'application/json'\n    assert body == {'comments': [{'parentCommentId': 0,\n                                  'content': 'Purlin: 2 rules Recorded.',\n                                  'commentType': 'text'}],\n                    'status': 'closed'}",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_an_azure_run_missing_a_variable_posts_nothing[SYSTEM_TEAMPROJECT]",
+      "proof": "PROOF-23",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_azure_comment_opens_a_thread_on_the_pull_request(\n        project, azure_pr, monkeypatch):\n    sent = []\n\n    def urlopen(request, timeout=None):\n        sent.append((request.get_method(), request.full_url, timeout,\n                     dict(request.header_items()),\n                     json.loads(request.data.decode('utf-8'))))\n        return Response({})\n\n    monkeypatch.setattr(urllib.request, 'urlopen', urlopen)\n\n    assert ci_module.post_pr_comment(project,\n                                     'Purlin: 2 rules Recorded.') is True\n    assert len(sent) == 1, sent\n    method, url, timeout, headers, body = sent[0]\n    assert method == 'POST'\n    # The collection URI ends in a slash, and the thread URL carries one\n    # separator, not two.\n    assert url == AZURE_THREADS\n    assert timeout == 30\n    assert headers['Authorization'] == 'Bearer a-token'\n    assert headers['Content-type'] == 'application/json'\n    assert body == {'comments': [{'parentCommentId': 0,\n                                  'content': 'Purlin: 2 rules Recorded.',\n                                  'commentType': 'text'}],\n                    'status': 'closed'}",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_azure_comment_opens_a_thread_on_the_pull_request",
+      "proof": "PROOF-23",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "3f7b7f99eb5bd041b2f5762bec78afc8c5e5297bcc80a811c46cfec639f47d08",
+  "verdict": "ready"
+}

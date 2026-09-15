@@ -1,0 +1,76 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-15T19:27:26Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "789f5e9e70e8c8b3656105a9c91c83864ca7cd541977bcc6f37fc6a2a9449316",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-15",
+      "text": "Read the coverage of a spec carrying 3 rules and 3 proofs; verify both counts are 3",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-16",
+      "text": "Read the coverage of a spec whose two proof lines end in a tier tag; verify both counts are 2 and that each description reads `test` with the tag removed",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-17",
+      "text": "Read the coverage of a spec whose rules section is empty; verify both counts are zero",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/static_checks/20260915T192630Z-04c92e2-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-18",
+  "rule_hash": "aa0b0166f2f759c9fb7ed59e7cd41b84c64834721a647066d8a759d0b6f839eb",
+  "rule_text": "Spec coverage counts a spec's rules and its proofs, a trailing tier tag is metadata rather than part of the description, and a spec with no rule counts zero of both",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "82764f02c8d621039d6001529669a8566209da7fc5a60bbc3b126ba1fdd12537",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_spec_coverage_counts(self):\n        \"\"\"check_spec_coverage returns rule_count and proof_count.\"\"\"\n        path = _write_tmp(\n            \"# Feature: testfeat\\n\\n## What it does\\nTest\\n\\n## Rules\\n\"\n            \"- RULE-1: Verify agent.md contains ## Core Loop section\\n\"\n            \"- RULE-2: Returns 200 on valid credentials\\n\"\n            \"- RULE-3: Grep skill files for ## Usage heading\\n\"\n            \"\\n## Proof\\n\"\n            \"- PROOF-1 (RULE-1): test\\n\"\n            \"- PROOF-2 (RULE-2): test\\n\"\n            \"- PROOF-3 (RULE-3): test\\n\",\n            suffix='.md'\n        )\n        try:\n            result = check_spec_coverage(path)\n            assert result['rule_count'] == 3\n            assert result['proof_count'] == 3\n        finally:\n            os.unlink(path)",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_spec_coverage_counts",
+      "proof": "PROOF-15",
+      "reasons": []
+    },
+    {
+      "body": "def test_spec_coverage_ignores_a_proof_tag(self):\n        \"\"\"A trailing `@e2e` is metadata, so the proof still counts once.\"\"\"\n        path = _write_tmp(\n            \"# Feature: testfeat\\n\\n## What it does\\nTest\\n\\n## Rules\\n\"\n            \"- RULE-1: Verify file exists in specs directory\\n\"\n            \"- RULE-2: Returns error when missing\\n\"\n            \"\\n## Proof\\n\"\n            \"- PROOF-1 (RULE-1): test @e2e\\n\"\n            \"- PROOF-2 (RULE-2): test @manual(qa@example.com, 2026-01-01, abc1234)\\n\",\n            suffix='.md'\n        )\n        try:\n            result = check_spec_coverage(path)\n            assert result['rule_count'] == 2\n            assert result['proof_count'] == 2\n            descriptions = static_checks._read_proof_descriptions(path)\n            assert [d['description'] for d in descriptions] == ['test', 'test']\n        finally:\n            os.unlink(path)",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_spec_coverage_ignores_a_proof_tag",
+      "proof": "PROOF-16",
+      "reasons": []
+    },
+    {
+      "body": "def test_spec_coverage_empty(self):\n        \"\"\"Spec with no rules returns zero counts.\"\"\"\n        path = _write_tmp(\n            \"# Feature: testfeat\\n\\n## What it does\\nTest\\n\\n## Rules\\n\",\n            suffix='.md'\n        )\n        try:\n            result = check_spec_coverage(path)\n            assert result['rule_count'] == 0\n            assert result['proof_count'] == 0\n        finally:\n            os.unlink(path)",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_spec_coverage_empty",
+      "proof": "PROOF-17",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "e0221e8256e1872c0e2bbb9f417af3ce0305b81af06c16d459c40320ed9ec7f3",
+  "verdict": "ready"
+}

@@ -1,0 +1,48 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-15T19:27:29Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "cd156a3ddd3eca578425811fcb649cdf2f5c42511f317900cff3ce4e2d7f2c3b",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-51",
+      "text": "Run the sweep over that same project; verify the record naming a file nobody wrote is `missing_file`, the file carrying no marker for its proof is `marker_not_found`, the `.rb` backing is `no_checker`, and that none of them appears among the failing rows",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/static_checks/20260915T192630Z-04c92e2-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-24",
+  "rule_hash": "014e17851c31e94539a0bf55d5285c585347771c5da5fa400c61cc011da58a60",
+  "rule_text": "A backing the sweep cannot measure is reported `no_checker`, `missing_file` or `marker_not_found`, never as a defect",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "c50ccd307a9880d24eba8193c58cb213ea2cb83a429bc40320c251e44fe322db",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_sweep_grades_every_backing_and_writes_nothing(self, monkeypatch):\n        with tempfile.TemporaryDirectory() as tmpdir:\n            self._project(tmpdir)\n            before = _tree_snapshot(tmpdir)\n\n            parses = []\n            real_parse = static_checks.ast.parse\n            monkeypatch.setattr(\n                static_checks.ast, 'parse',\n                lambda *a, **k: (parses.append(1), real_parse(*a, **k))[1])\n            result = deterministic_sweep(tmpdir)\n\n            assert result['project_root'] == tmpdir\n            specs = glob.glob(os.path.join(tmpdir, 'specs', '**', '*.md'),\n                              recursive=True)\n            assert result['counts']['features'] == len(specs) == 12, result['counts']\n\n            got = {(feat, pid): (entry['status'], entry['check'])\n                   for feat, data in result['features'].items()\n                   for pid, entry in data['proofs'].items()}\n            assert got == self._EXPECTED\n\n            # A .rb backing is a measurement gap, never a defect.\n            assert ('rbfeat', 'PROOF-1') not in {(r['feature'], r['proof_id'])\n                                                 for r in result['failing']}\n\n            # An empty test_file resolved from the fully-qualified test name.\n            csharp = result['features']['csfeat']['proofs']['PROOF-1']\n            assert csharp['test_file'] == 'tests/CsharpTests.cs', csharp\n            assert csharp['test_name'] == 'AlwaysTrue', csharp\n\n            # Precedence across several backings.\n            multi = result['features']['multi']['proofs']['PROOF-1']\n            assert (multi['backings'], multi['test_file']) == (2, 'tests/test_multi_bad.py')\n            mixed = result['features']['mixed']['proofs']['PROOF-1']\n            assert (mixed['backings'], mixed['test_file']) == (2, 'tests/test_mixed.rb')\n            worst = result['features']['worst']['proofs']['PROOF-1']\n            assert (worst['backings'], worst['test_file']) == (2, 'tests/test_worst_bad.py'), \\\n                \"an unmeasurable backing outranked a failing one\"\n\n            # A manual stamp has no test backing, so it is neither failing nor\n            # unmeasurable: it is simply not a proof a machine checked.\n            assert 'PROOF-9' not in result['features']['alpha']['proofs']\n            assert ('alpha', 'PROOF-9') not in {\n                (r['feature'], r['proof_id'])\n                for r in result['unmeasurable'] + result['failing']}\n\n            for name in ('failing', 'unmeasurable'):\n                rows = result[name]\n                assert rows == sorted(\n                    rows, key=lambda r: (r['feature'], r['proof_id'],\n                                         r.get('test_file', ''))), \\\n                    f\"{name} is not sorted by (feature, proof_id, test_file)\"\n            assert result['counts']['failing'] == len(result['failing']) == 7\n            assert result['counts']['unmeasurable'] == len(result['unmeasurable']) == 4\n            assert result['counts']['backings'] == 17, result['counts']\n\n            assert len(parses) == len(self._PY_FILES), (\n                f\"{len(self._PY_FILES)} Python test files must mean \"\n                f\"{len(self._PY_FILES)} parses, not {len(parses)}\")\n\n            assert _tree_snapshot(tmpdir) == before, \\\n                \"the sweep wrote to the project it was only supposed to read\"",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_sweep_grades_every_backing_and_writes_nothing",
+      "proof": "PROOF-51",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a111a508834e2360b0df08e8eeb3baec53372c001025d08c62b884d328047913",
+  "verdict": "ready"
+}

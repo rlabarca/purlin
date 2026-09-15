@@ -1,0 +1,56 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "mutation",
+  "generated_at": "2026-09-15T19:26:45Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "60b1703132c02f70d22620dc2706555b2b8ee28b3d4573e190d97f7dafe74df4",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-21",
+      "text": "Call `source_file(\"scripts.run.mutation.x_score_percent__mutmut_1\", [\"scripts/run/mutation/__init__.py\", \"scripts/run/mutation/mutmut.py\"])`; verify `scripts/run/mutation/__init__.py`, and that `scripts.run.mutation.mutmut.x_binary__mutmut_2` answers `scripts/run/mutation/mutmut.py`. Call it with the scope `[\"scripts/**/*.py\"]` for `scripts.run.records.x_commit__mutmut_1` and `scripts.mcp.purlin.x_read__mutmut_1`; verify the glob both times, that `dev.build_report.x_build__mutmut_1` answers None, and that adding `scripts/run/records.py` beside the glob makes that entry win",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/mutation/20260915T192630Z-04c92e2-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-21",
+  "rule_hash": "76a57c688b779650524890bc6b67dce10804de74001ff578315cd9393e08135e",
+  "rule_text": "A mutmut break in a package's `__init__.py` is attributed to the scope entry naming that `__init__.py`, and a scope entry holding `*` is matched as a glob against the file the break changed, losing to any entry that names the file or its directory",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "33df285ae04d944a2c433397e909642b3666d77e3719fe94f49a12e08e737eaf",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_break_in_a_package_init_belongs_to_that_init():\n    scope = ['scripts/run/mutation/__init__.py',\n             'scripts/run/mutation/mutmut.py']\n    assert mutmut.source_file(\n        'scripts.run.mutation.x_score_percent__mutmut_1',\n        scope) == 'scripts/run/mutation/__init__.py'\n    assert mutmut.source_file(\n        'scripts.run.mutation.mutmut.x_binary__mutmut_2',\n        scope) == 'scripts/run/mutation/mutmut.py'",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_a_break_in_a_package_init_belongs_to_that_init",
+      "proof": "PROOF-21",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_break_in_a_package_init_belongs_to_that_init():\n    scope = ['scripts/run/mutation/__init__.py',\n             'scripts/run/mutation/mutmut.py']\n    assert mutmut.source_file(\n        'scripts.run.mutation.x_score_percent__mutmut_1',\n        scope) == 'scripts/run/mutation/__init__.py'\n    assert mutmut.source_file(\n        'scripts.run.mutation.mutmut.x_binary__mutmut_2',\n        scope) == 'scripts/run/mutation/mutmut.py'",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_a_glob_scope_entry_covers_the_files_it_matches",
+      "proof": "PROOF-21",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "b2b67b94c3c6fff94c7229b123e0f028ef952489f06c80e8334a38ccdea04d50",
+  "verdict": "ready"
+}

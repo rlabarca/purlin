@@ -1,0 +1,111 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "mutation",
+  "generated_at": "2026-09-15T19:26:41Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "11cf836539f12d579b3f683a0d0fdde92336dab908ba278916005f0340e355a9",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-1",
+      "text": "Call `select_engine({}, [framework])` for each of jest, vitest, xunit, pytest, shell and sql; verify `stryker`, `stryker`, `stryker_net`, `mutmut`, `none`, `none`. Call it with `[\"pytest\", \"jest\"]`; verify `mutmut`, the first with an engine. Call it with `[\"shell\", \"jest\"]`; verify `stryker`, so a framework with no engine is skipped rather than deciding. Call it with `[]`; verify `none`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/mutation/20260915T192630Z-04c92e2-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-1",
+  "rule_hash": "863fbe57cc14908524fd3cf3bb76ae44be9cc3511dffe7ad3cc3b4bb503fd36b",
+  "rule_text": "With `mutation_engine` set to `auto`, jest and vitest select `stryker`, xunit selects `stryker_net`, pytest selects `mutmut`, and shell and sql select `none`; the first detected framework that has an engine decides, and a project with no framework selects `none`",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "5e48e3e2432b5b00644bf97c7f47972dabe0cf05682f402ac9ba656ea4538bee",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_auto_picks_the_engine_for_each_framework(framework, engine):\n    assert mutation.select_engine({'mutation_engine': 'auto'},\n                                  [framework]) == engine",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_auto_picks_the_engine_for_each_framework[jest-stryker]",
+      "proof": "PROOF-1",
+      "reasons": []
+    },
+    {
+      "body": "def test_auto_picks_the_engine_for_each_framework(framework, engine):\n    assert mutation.select_engine({'mutation_engine': 'auto'},\n                                  [framework]) == engine",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_auto_picks_the_engine_for_each_framework[pytest-mutmut]",
+      "proof": "PROOF-1",
+      "reasons": []
+    },
+    {
+      "body": "def test_auto_picks_the_engine_for_each_framework(framework, engine):\n    assert mutation.select_engine({'mutation_engine': 'auto'},\n                                  [framework]) == engine",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_auto_picks_the_engine_for_each_framework[shell-none]",
+      "proof": "PROOF-1",
+      "reasons": []
+    },
+    {
+      "body": "def test_auto_picks_the_engine_for_each_framework(framework, engine):\n    assert mutation.select_engine({'mutation_engine': 'auto'},\n                                  [framework]) == engine",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_auto_picks_the_engine_for_each_framework[sql-none]",
+      "proof": "PROOF-1",
+      "reasons": []
+    },
+    {
+      "body": "def test_auto_picks_the_engine_for_each_framework(framework, engine):\n    assert mutation.select_engine({'mutation_engine': 'auto'},\n                                  [framework]) == engine",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_auto_picks_the_engine_for_each_framework[vitest-stryker]",
+      "proof": "PROOF-1",
+      "reasons": []
+    },
+    {
+      "body": "def test_auto_picks_the_engine_for_each_framework(framework, engine):\n    assert mutation.select_engine({'mutation_engine': 'auto'},\n                                  [framework]) == engine",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_auto_picks_the_engine_for_each_framework[xunit-stryker_net]",
+      "proof": "PROOF-1",
+      "reasons": []
+    },
+    {
+      "body": "def test_auto_picks_the_engine_for_each_framework(framework, engine):\n    assert mutation.select_engine({'mutation_engine': 'auto'},\n                                  [framework]) == engine",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_auto_reads_the_first_framework_that_has_an_engine",
+      "proof": "PROOF-1",
+      "reasons": []
+    },
+    {
+      "body": "def test_auto_picks_the_engine_for_each_framework(framework, engine):\n    assert mutation.select_engine({'mutation_engine': 'auto'},\n                                  [framework]) == engine",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_auto_skips_a_framework_with_no_engine",
+      "proof": "PROOF-1",
+      "reasons": []
+    },
+    {
+      "body": "def test_auto_picks_the_engine_for_each_framework(framework, engine):\n    assert mutation.select_engine({'mutation_engine': 'auto'},\n                                  [framework]) == engine",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_no_framework_leaves_no_engine",
+      "proof": "PROOF-1",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "e44c50ade0df190c6a2aac22c82140974dd0c587376a2c8436b57f83ab5c58bf",
+  "verdict": "ready"
+}
