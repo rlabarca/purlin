@@ -800,16 +800,16 @@ def test_a_run_that_applies_nothing_writes_no_commit(tmp_path, capsys,
 # --- the line sync_status prints ---------------------------------------------
 
 @pytest.mark.proof("update", "PROOF-19", "RULE-19")
-def test_pending_is_true_for_a_project_that_has_not_updated(tmp_path):
+def test_status_says_it_for_a_project_that_has_not_updated(tmp_path):
     root = _project(tmp_path, V095)
-    assert status_module._update_pending(root) is True
+    assert 'Run: purlin:init --update' in status_module.sync_status(root)
 
 
 @pytest.mark.proof("update", "PROOF-19", "RULE-19")
-def test_pending_is_false_once_the_update_has_run(tmp_path):
+def test_status_stops_saying_it_once_the_old_project_has_updated(tmp_path):
     root = _project(tmp_path, V095)
     _apply(root)
-    assert status_module._update_pending(root) is False
+    assert 'Run: purlin:init --update' not in status_module.sync_status(root)
 
 
 @pytest.mark.proof("update", "PROOF-19", "RULE-19")

@@ -20,8 +20,6 @@ CONFIG_TEMPLATE = os.path.join(PROJECT_ROOT, 'templates', 'config.json')
 PLUGIN_MANIFEST = os.path.join(PROJECT_ROOT, '.claude-plugin', 'plugin.json')
 PACKAGE_INIT = os.path.join(PROJECT_ROOT, 'scripts', 'mcp', 'purlin',
                             '__init__.py')
-SERVER_PY = os.path.join(PROJECT_ROOT, 'scripts', 'mcp', 'purlin',
-                         'server.py')
 PROJECT_CONFIG = os.path.join(PROJECT_ROOT, '.purlin', 'config.json')
 BUMP_SCRIPT = os.path.join(PROJECT_ROOT, 'dev', 'bump_version.sh')
 
@@ -56,34 +54,31 @@ class TestVersionFileSemver:
 class TestServerReadsVersionFromFile:
 
     @pytest.mark.proof("purlin_version", "PROOF-2", "RULE-2")
-    def test_the_package_reads_the_version_from_the_file(self):
-        """The package must define _read_version() and assign its result to
-        PURLIN_VERSION; SERVER_INFO must use PURLIN_VERSION."""
-        # Verify _read_version is defined and callable
-        assert hasattr(purlin_package, '_read_version'), \
-            "_read_version() not found in the purlin package"
-        assert callable(purlin_package._read_version), \
-            "_read_version is not callable"
+    def test_the_package_reads_the_version_from_the_file(self, tmp_path):
+        """A copy of the package beside a VERSION of 9.8.7 reports 9.8.7.
 
-        # Verify PURLIN_VERSION is set from the function
-        with open(PACKAGE_INIT, encoding='utf-8') as f:
-            init_source = f.read()
-        assert 'PURLIN_VERSION = _read_version()' in init_source, \
-            "PURLIN_VERSION must be assigned via _read_version(), not a literal"
+        A literal in the package or in the server would still report the
+        checkout's number, so only a value read from the file passes.
+        """
+        shutil.copytree(os.path.join(PROJECT_ROOT, 'scripts', 'mcp'),
+                        str(tmp_path / 'scripts' / 'mcp'),
+                        ignore=shutil.ignore_patterns('__pycache__'))
+        (tmp_path / 'VERSION').write_text('9.8.7\n', encoding='utf-8')
+        probe = ('import json, sys\n'
+                 'sys.path.insert(0, sys.argv[1])\n'
+                 'import purlin\n'
+                 'from purlin import server\n'
+                 'print(json.dumps([purlin.PURLIN_VERSION,'
+                 ' server.SERVER_INFO["version"]]))\n')
+        answer = subprocess.run(
+            [sys.executable, '-c', probe,
+             str(tmp_path / 'scripts' / 'mcp')],
+            capture_output=True, text=True, cwd=str(tmp_path), timeout=60)
+        assert answer.returncode == 0, answer.stderr
+        reported = json.loads(answer.stdout.strip().splitlines()[-1])
+        assert reported == ['9.8.7', '9.8.7'], reported
 
-        # Verify SERVER_INFO uses PURLIN_VERSION
-        with open(SERVER_PY, encoding='utf-8') as f:
-            source = f.read()
-        assert 'SERVER_INFO' in source, "SERVER_INFO not found in server.py"
-        server_info_match = re.search(
-            r'SERVER_INFO\s*=\s*\{[^}]*"version"\s*:\s*PURLIN_VERSION',
-            source,
-            re.DOTALL,
-        )
-        assert server_info_match, \
-            'SERVER_INFO must use PURLIN_VERSION for the "version" field, not a literal'
-
-        # Verify the runtime value matches the VERSION file
+        # The package in this checkout reports the checkout's VERSION file
         with open(VERSION_FILE) as f:
             expected = f.read().strip()
         assert purlin_package.PURLIN_VERSION == expected, \

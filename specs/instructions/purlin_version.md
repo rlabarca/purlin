@@ -26,7 +26,7 @@
 ## Proof
 
 - PROOF-1 (RULE-1): Read the `VERSION` file; verify it exists, is not empty, and that its stripped content matches `^\d+\.\d+\.\d+$` @unit
-- PROOF-2 (RULE-2): Import the `purlin` package and read `scripts/mcp/purlin/__init__.py` as text; verify the package defines a callable version reader, that the source assigns `PURLIN_VERSION = _read_version()` rather than a literal, that `scripts/mcp/purlin/server.py` gives `SERVER_INFO` its `"version"` from `PURLIN_VERSION`, and that the imported `PURLIN_VERSION` equals the stripped content of the `VERSION` file @unit
+- PROOF-2 (RULE-2): Copy `scripts/mcp` under a temporary root whose `VERSION` file reads `9.8.7`, import the copied `purlin` package and its server in a fresh interpreter, and verify `PURLIN_VERSION` and the server's reported version both read exactly `9.8.7`; then import the package in this checkout and verify `PURLIN_VERSION` equals the stripped content of the `VERSION` file @unit
 - PROOF-3 (RULE-3): Read the `VERSION` file and parse `templates/config.json`; verify the file carries a `version` key and that its value is exactly the `VERSION` string @unit
 - PROOF-4 (RULE-4): Read every `.py` file of `scripts/mcp/purlin/`, drop the full-line comments, and grep the rest for a quoted `X.Y.Z` literal; verify the only match allowed is the sentinel `0.0.0` the reader returns when the `VERSION` file cannot be read, so a release number such as `0.10.0` written into any module fails naming it @unit
 - PROOF-5 (RULE-5): Read the `VERSION` file and parse `.claude-plugin/plugin.json`; verify the manifest carries a `version` key and that its value is exactly the `VERSION` string @unit
