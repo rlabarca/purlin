@@ -5,6 +5,8 @@ config.local.json = per-user overrides (gitignored, sparse).
 Resolution = merge config.json base + config.local.json overlay.
 """
 
+import contextlib
+import io
 import json
 import os
 import shutil
@@ -395,3 +397,42 @@ class TestCLI:
         )
         assert r.returncode == 0
         assert r.stdout.strip() == "0.9.0"
+
+    def _main(self, *args):
+        """The command line's `main()` in this process: (exit code, stdout).
+
+        In-process is what lets a mutation run see which case caught a break;
+        the two cases above still start the script as a child.
+        """
+        out = io.StringIO()
+        code = 0
+        env = {'PURLIN_PROJECT_ROOT': self.project_root}
+        with mock.patch.object(sys, 'argv', ['config_engine.py'] + list(args)), \
+                mock.patch.dict(os.environ, env), \
+                contextlib.redirect_stdout(out), \
+                contextlib.redirect_stderr(io.StringIO()):
+            try:
+                config_engine.main()
+            except SystemExit as stop:
+                code = stop.code if isinstance(stop.code, int) else 1
+        return code, out.getvalue()
+
+    @pytest.mark.proof("config_engine", "PROOF-4", "RULE-4")
+    def test_dump_in_process_shows_the_merged_config(self):
+        with open(os.path.join(self.purlin_dir, 'config.json'), 'w') as f:
+            json.dump({"team": "default"}, f)
+        with open(os.path.join(self.purlin_dir, 'config.local.json'), 'w') as f:
+            json.dump({"local": True}, f)
+        code, out = self._main('--dump')
+        assert code == 0
+        assert json.loads(out) == {"team": "default", "local": True}
+
+    @pytest.mark.proof("config_engine", "PROOF-5", "RULE-5")
+    def test_key_in_process_prints_the_value(self):
+        with open(os.path.join(self.purlin_dir, 'config.json'), 'w') as f:
+            json.dump({"version": "0.9.0"}, f)
+        code, out = self._main('--key', 'version')
+        assert code == 0
+        assert out == "0.9.0\n"
+        assert not os.path.exists(
+            os.path.join(self.purlin_dir, 'config.local.json'))
