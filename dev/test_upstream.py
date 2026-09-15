@@ -17,6 +17,8 @@ What the tests hold:
            for the git host
 """
 
+import contextlib
+import io
 import json
 import os
 import subprocess
@@ -181,11 +183,19 @@ def _copy_text(workspace, name='no_eval'):
 
 
 def _cli(workspace, args):
-    """Run the command line in a subprocess. Returns `(exit_code, stdout)`."""
-    result = subprocess.run(
-        [sys.executable, UPSTREAM_PY, '--project-root', workspace.root] + args,
-        capture_output=True, text=True)
-    return result.returncode, result.stdout
+    """Run the command line's `main()` in this process. Returns `(exit_code, stdout)`.
+
+    In-process is what lets a mutation run see which case caught a break;
+    `test_help_and_a_bare_call_are_usable` still starts the script as a child.
+    """
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out), \
+            contextlib.redirect_stderr(io.StringIO()):
+        try:
+            code = upstream.main(['--project-root', workspace.root] + args)
+        except SystemExit as stop:
+            code = stop.code if isinstance(stop.code, int) else 1
+    return code, out.getvalue()
 
 
 # ---------------------------------------------------------------------------
