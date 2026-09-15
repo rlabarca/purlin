@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "scaffold",
-  "generated_at": "2026-09-15T20:12:15Z",
+  "generated_at": "2026-09-15T20:21:03Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-39 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/scaffold/20260915T201110Z-e78d186-ci-windows.json",
+  "record": ".purlin/records/scaffold/20260915T202037Z-6883ed3-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-39",
   "rule_hash": "8fb5a52494f8cb9af3d79fc38dc559ae4d37ab6a745f2a4a634ac8ff803ae2a3",
   "rule_text": "The mutmut block names as source every top-level directory holding a `.py` file at any depth and no test file at its top level, and names as the test selection the directories that do hold one, with `src`, `lib` and `app` preferred as source and `tests` and `test` as the selection; a project with no such directory names each non-test `.py` module at its root, and names `.` only when there is none",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "d7a615653af9adcde7737bbb5a3a46017e25b0a7b4a48d87427f4f3b0a601049",
   "test_hash_kind": "file",
   "test_strength": null,

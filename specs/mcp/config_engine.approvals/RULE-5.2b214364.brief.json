@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "config_engine",
-  "generated_at": "2026-09-15T20:11:38Z",
+  "generated_at": "2026-09-15T20:20:42Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-5 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/config_engine/20260915T201108Z-e78d186-ci-windows.json",
+  "record": ".purlin/records/config_engine/20260915T202037Z-6883ed3-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-5",
   "rule_hash": "f45a5ff8a32d60a58e0afb37eca97cccfa07cdf1e8f01b7db178f1a5f8b6586e",
   "rule_text": "With no `config.local.json` on disk the merged config is `config.json` alone, and nothing creates the local file",
   "schema": "purlin-brief/1",
-  "state": "Stale",
+  "state": "Approved",
   "test_hash": "6f4d175533367ec4c17e2a6d5f3813fac832626d5a9b75984d26bc59a2c3e08b",
   "test_hash_kind": "file",
   "test_strength": null,

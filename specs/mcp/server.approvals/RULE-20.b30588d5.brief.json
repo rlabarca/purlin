@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "server",
-  "generated_at": "2026-09-15T20:12:19Z",
+  "generated_at": "2026-09-15T20:21:05Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-20 logic_mirroring"
   ],
-  "record": ".purlin/records/server/20260915T201110Z-e78d186-ci-windows.json",
+  "record": ".purlin/records/server/20260915T202037Z-6883ed3-ci-linux.json",
   "risk": "high",
   "rule": "RULE-20",
   "rule_hash": "4a95e937420b975451cec7eeaa80a8e1ab00a99faaefc8aafa9e6751a4a4458a",
   "rule_text": "The hook generates with the producer `hook`, the network off and a write only if the payload changed, so no remote is ever listed from a background hook and an unchanged payload is touched rather than rewritten into a dirty working tree",
   "schema": "purlin-brief/1",
-  "state": "Stale",
+  "state": "Approved",
   "test_hash": "1dc7d2684ddbbd43e8f6a2ee1a95899fba919ed8d26ba53606d852561075301d",
   "test_hash_kind": "file",
   "test_strength": null,

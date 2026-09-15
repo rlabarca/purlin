@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "static_checks",
-  "generated_at": "2026-09-15T20:12:43Z",
+  "generated_at": "2026-09-15T20:21:18Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-62 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/static_checks/20260915T201112Z-e78d186-ci-windows.json",
+  "record": ".purlin/records/static_checks/20260915T202037Z-6883ed3-ci-linux.json",
   "risk": "high",
   "rule": "RULE-30",
   "rule_hash": "fb71634d075a7a4291606d15e82823d222c3268ba21015eefe1d5af23fd3928d",
   "rule_text": "A function's source is sliced from one line split that matches the standard library byte for byte",
   "schema": "purlin-brief/1",
-  "state": "Stale",
+  "state": "Approved",
   "test_hash": "35ecc507c383c0d7691e265b5e6a195e3be702487f74f1017f8fe598aee8bb37",
   "test_hash_kind": "file",
   "test_strength": null,

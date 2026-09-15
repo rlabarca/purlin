@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "records",
-  "generated_at": "2026-09-15T20:11:55Z",
+  "generated_at": "2026-09-15T20:20:52Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-4 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/records/20260915T201109Z-e78d186-ci-windows.json",
+  "record": ".purlin/records/records/20260915T202037Z-6883ed3-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-4",
   "rule_hash": "661d6b097832c39ad85ad641f3f9d22c52b45de940a0c98ff6895b3d8f67a784",
   "rule_text": "A developer's commit stages the records and the deletions retention made, commits under the developer's own git identity and pushes; with no remote, no upstream or nothing staged it prints the reason and exits 0",
   "schema": "purlin-brief/1",
-  "state": "Stale",
+  "state": "Approved",
   "test_hash": "edaed1d0311daef36985860bb4aff800a630a60ce3087a1d5354c629defd536f",
   "test_hash_kind": "file",
   "test_strength": null,

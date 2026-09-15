@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "scaffold",
-  "generated_at": "2026-09-15T20:12:11Z",
+  "generated_at": "2026-09-15T20:21:01Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-20 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/scaffold/20260915T201110Z-e78d186-ci-windows.json",
+  "record": ".purlin/records/scaffold/20260915T202037Z-6883ed3-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-20",
   "rule_hash": "f155001c7f6e24911b9a020fa9dbd90737364fabafd88fdd0bc02d37b0d51a71",
   "rule_text": "A second run at the same gate writes no file",
   "schema": "purlin-brief/1",
-  "state": "Stale",
+  "state": "Approved",
   "test_hash": "ddbaa380858f9d866b77f60d8657bc96bcf04f3362e7bef5b7c0d268236e71d9",
   "test_hash_kind": "file",
   "test_strength": null,

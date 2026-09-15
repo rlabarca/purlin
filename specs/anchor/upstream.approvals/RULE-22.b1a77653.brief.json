@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "upstream",
-  "generated_at": "2026-09-15T20:12:51Z",
+  "generated_at": "2026-09-15T20:21:23Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-22 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/upstream/20260915T201112Z-e78d186-ci-windows.json",
+  "record": ".purlin/records/upstream/20260915T202037Z-6883ed3-ci-linux.json",
   "risk": "high",
   "rule": "RULE-22",
   "rule_hash": "e92ef5c5549d63b2d28e7f00f0780acf4026f80d18ff5068763470808a6a3705",
   "rule_text": "Every file the module writes lies under the project root it was given",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "6d85ba05d5b1c7ff4db6467f616c6c90ef86f9636658a96a9880a96b6b02f080",
   "test_hash_kind": "file",
   "test_strength": null,

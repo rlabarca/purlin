@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "records",
-  "generated_at": "2026-09-15T20:12:00Z",
+  "generated_at": "2026-09-15T20:20:54Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-21 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/records/20260915T201109Z-e78d186-ci-windows.json",
+  "record": ".purlin/records/records/20260915T202037Z-6883ed3-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-21",
   "rule_hash": "a7a156c38e7ebf5bff2cc5ab4ffb49de203d272db108b5f052c08921f658460a",
   "rule_text": "The default branch is the one `origin/HEAD` points at; with no remote it is the branch `HEAD` names, and `main` only when neither can be read, so a repository whose only branch is `master` is never told its approval is not on the branch",
   "schema": "purlin-brief/1",
-  "state": "Stale",
+  "state": "Approved",
   "test_hash": "95025b20334ad921f3a7aecd6519c6947cee04ccc979c21ea8df8519494a9ec5",
   "test_hash_kind": "file",
   "test_strength": null,

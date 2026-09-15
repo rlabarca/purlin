@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "upstream",
-  "generated_at": "2026-09-15T20:12:51Z",
+  "generated_at": "2026-09-15T20:21:23Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-19 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/upstream/20260915T201112Z-e78d186-ci-windows.json",
+  "record": ".purlin/records/upstream/20260915T202037Z-6883ed3-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-19",
   "rule_hash": "009070719900aa405e6534319b7f5b7b4190d408edf652e5849fe376949c33d8",
   "rule_text": "`propose` prints the commands that carry the patch upstream, ending with the one the source's git host takes: `gh pr create` for GitHub and `az repos pr create` for Azure DevOps",
   "schema": "purlin-brief/1",
-  "state": "Stale",
+  "state": "Approved",
   "test_hash": "5966f1ec7a10b865c4d7ed827c235a2421b7846222fe59aeefa7a16fdb16e766",
   "test_hash_kind": "file",
   "test_strength": null,

@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "upstream",
-  "generated_at": "2026-09-15T20:12:49Z",
+  "generated_at": "2026-09-15T20:21:22Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-2 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/upstream/20260915T201112Z-e78d186-ci-windows.json",
+  "record": ".purlin/records/upstream/20260915T202037Z-6883ed3-ci-linux.json",
   "risk": "high",
   "rule": "RULE-2",
   "rule_hash": "2681aa0d2e6d200deca3fb3d7cc243ab570468e2d6d91bb289b5417a46628bec",
   "rule_text": "The pin `add` writes is the source's head commit as a full 40-character sha, and no branch name reaches the copy",
   "schema": "purlin-brief/1",
-  "state": "Stale",
+  "state": "Approved",
   "test_hash": "7b913fd082e11270bbf0fdd50fcd89d0d3766bc54768e1490294227fb5a97089",
   "test_hash_kind": "file",
   "test_strength": null,

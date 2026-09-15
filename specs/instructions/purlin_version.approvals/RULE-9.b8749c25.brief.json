@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "purlin_version",
-  "generated_at": "2026-09-15T20:11:53Z",
+  "generated_at": "2026-09-15T20:20:51Z",
   "layers": [
     "proof text",
     "test body",
@@ -24,7 +24,7 @@
   "reasons": [
     "PROOF-9 tautology"
   ],
-  "record": ".purlin/records/purlin_version/20260915T201109Z-e78d186-ci-windows.json",
+  "record": ".purlin/records/purlin_version/20260915T202037Z-6883ed3-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-9",
   "rule_hash": "febf5cd7afff284afe433ca37e7a247951a5c2bff1c3f4dacb12fd9abe7af550",

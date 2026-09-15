@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "config_engine",
-  "generated_at": "2026-09-15T20:11:37Z",
+  "generated_at": "2026-09-15T20:20:41Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-2 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/config_engine/20260915T201108Z-e78d186-ci-windows.json",
+  "record": ".purlin/records/config_engine/20260915T202037Z-6883ed3-ci-linux.json",
   "risk": "high",
   "rule": "RULE-2",
   "rule_hash": "b5074b80cdc699f57ff836f09f5d7781ee7a01309607bba83e6984d0ece3ea16",
   "rule_text": "Failing that, the root is found by climbing from the start directory to the nearest ancestor holding a `.purlin/` marker directory",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "22ac317c2084a777c42579c75a9be555076f70741cbbdf79dfa1948cb122d47c",
   "test_hash_kind": "file",
   "test_strength": null,

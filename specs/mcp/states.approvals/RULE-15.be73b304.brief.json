@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-15T20:12:29Z",
+  "generated_at": "2026-09-15T20:21:10Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-15 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/states/20260915T201111Z-e78d186-ci-windows.json",
+  "record": ".purlin/records/states/20260915T202037Z-6883ed3-ci-linux.json",
   "risk": "high",
   "rule": "RULE-15",
   "rule_hash": "0bf16519051de02c37bd5145bcb6ec6aa2cc155ae288108a2e487650c128dd53",
   "rule_text": "The project rollup counts each rule once, under the feature that owns it, so a global anchor's rule is counted once however many features have to prove it",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "95061a2d057ad31e17d6e058a5d647849684610bdbe67b444275b5d9f4168232",
   "test_hash_kind": "file",
   "test_strength": null,

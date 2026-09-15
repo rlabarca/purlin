@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "upstream",
-  "generated_at": "2026-09-15T20:12:50Z",
+  "generated_at": "2026-09-15T20:21:23Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-11 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/upstream/20260915T201112Z-e78d186-ci-windows.json",
+  "record": ".purlin/records/upstream/20260915T202037Z-6883ed3-ci-linux.json",
   "risk": "high",
   "rule": "RULE-11",
   "rule_hash": "57de8775676a5d7f0017166fc6e0f48f3d0123351f1416d68b5971562fe21fad",
   "rule_text": "`sync <name>` rewrites the copy from the source at its new head, advances `> Pinned:`, and reports the rule delta as added, removed and changed ids plus a one-line summary",
   "schema": "purlin-brief/1",
-  "state": "Stale",
+  "state": "Approved",
   "test_hash": "045395a29d2222193ea1a38407bacf66a3cd5005e0ad066b76bebb0853fcd07a",
   "test_hash_kind": "file",
   "test_strength": null,

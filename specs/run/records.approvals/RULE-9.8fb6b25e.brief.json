@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "records",
-  "generated_at": "2026-09-15T20:11:57Z",
+  "generated_at": "2026-09-15T20:20:53Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-9 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/records/20260915T201109Z-e78d186-ci-windows.json",
+  "record": ".purlin/records/records/20260915T202037Z-6883ed3-ci-linux.json",
   "risk": "high",
   "rule": "RULE-9",
   "rule_hash": "1cb47a8401ad41f34b79216ccc974ac005cd768faae58af712e262771d2c61f9",
   "rule_text": "A record is labelled from the last commit that touched it: `ci` when the git host made it, which on GitHub is the committer email `noreply@github.com` with the author `github-actions[bot]` and on Azure DevOps the build service, and only when the signature does not contradict that identity; `developer` when a person did; `local` when it is not committed at all",
   "schema": "purlin-brief/1",
-  "state": "Stale",
+  "state": "Approved",
   "test_hash": "a0bdfc0aee35041301f2a226e4ded6a78db3f1970b891e9425c055aa45c30700",
   "test_hash_kind": "file",
   "test_strength": null,

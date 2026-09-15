@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "upstream",
-  "generated_at": "2026-09-15T20:12:50Z",
+  "generated_at": "2026-09-15T20:21:23Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-13 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/upstream/20260915T201112Z-e78d186-ci-windows.json",
+  "record": ".purlin/records/upstream/20260915T202037Z-6883ed3-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-13",
   "rule_hash": "e4af6257041eebefebafcc082c936aae18e62939ec5fe446ea251fde3a4fee6e",
   "rule_text": "A sync copies every design file the source's text names into `designs/<anchor>/`, and creates no directory when the source names none",
   "schema": "purlin-brief/1",
-  "state": "Stale",
+  "state": "Approved",
   "test_hash": "cc025ba984a77ad7f4309d3396887203199e8c949d94c92b1a677322d208c980",
   "test_hash_kind": "file",
   "test_strength": null,

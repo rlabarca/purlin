@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "config_engine",
-  "generated_at": "2026-09-15T20:11:38Z",
+  "generated_at": "2026-09-15T20:20:42Z",
   "layers": [
     "proof text",
     "test body",
@@ -25,13 +25,13 @@
   "reasons": [
     "PROOF-10 logic_mirroring"
   ],
-  "record": ".purlin/records/config_engine/20260915T201108Z-e78d186-ci-windows.json",
+  "record": ".purlin/records/config_engine/20260915T202037Z-6883ed3-ci-linux.json",
   "risk": "high",
   "rule": "RULE-10",
   "rule_hash": "c268e8e4f5932274be31a051f94b80ae8145c6b6039160b58d8eaf3e6066dcde",
   "rule_text": "A write is atomic: the whole file is written beside the target and then moved onto it, so an interrupted write leaves the previous contents and no temporary file behind",
   "schema": "purlin-brief/1",
-  "state": "Stale",
+  "state": "Approved",
   "test_hash": "73b2cece35ee4788de6500cea0a9544972cde6e0ac1138f19841c670314d19e8",
   "test_hash_kind": "file",
   "test_strength": null,

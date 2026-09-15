@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "scaffold",
-  "generated_at": "2026-09-15T20:12:10Z",
+  "generated_at": "2026-09-15T20:21:00Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-14 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/scaffold/20260915T201110Z-e78d186-ci-windows.json",
+  "record": ".purlin/records/scaffold/20260915T202037Z-6883ed3-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-14",
   "rule_hash": "482415fbd3778867c0e5bfb30d4e091353533e672c963733c4f00b4cb5a5112e",
   "rule_text": "The git host is read from the remote URL as `github`, `azure` or nothing at all, and `--ci` overrides what the remote said",
   "schema": "purlin-brief/1",
-  "state": "Stale",
+  "state": "Approved",
   "test_hash": "acf932796ed1b12aabeb63be21d99df8756765419e12f88e0aa2370f3ec7b0ca",
   "test_hash_kind": "file",
   "test_strength": null,

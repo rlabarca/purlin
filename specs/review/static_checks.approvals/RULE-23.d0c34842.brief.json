@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "static_checks",
-  "generated_at": "2026-09-15T20:12:41Z",
+  "generated_at": "2026-09-15T20:21:17Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-50 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/static_checks/20260915T201112Z-e78d186-ci-windows.json",
+  "record": ".purlin/records/static_checks/20260915T202037Z-6883ed3-ci-linux.json",
   "risk": "high",
   "rule": "RULE-23",
   "rule_hash": "7510de5a53963d007b6a421b4fa5107bd02a62be61af0bbe9e4d7056f8eca2af",
   "rule_text": "The sweep grades every executed backing of every proof the project's specs declare",
   "schema": "purlin-brief/1",
-  "state": "Stale",
+  "state": "Approved",
   "test_hash": "c50ccd307a9880d24eba8193c58cb213ea2cb83a429bc40320c251e44fe322db",
   "test_hash_kind": "file",
   "test_strength": null,

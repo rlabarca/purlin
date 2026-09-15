@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "scaffold",
-  "generated_at": "2026-09-15T20:12:15Z",
+  "generated_at": "2026-09-15T20:21:03Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-40 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/scaffold/20260915T201110Z-e78d186-ci-windows.json",
+  "record": ".purlin/records/scaffold/20260915T202037Z-6883ed3-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-40",
   "rule_hash": "c1bb3fdde4d6da95eade38608167649cd75391884d3663746f3e0737633049ef",
   "rule_text": "Writing the mutmut block also appends `mutants/` to the project's `.gitignore`, once and never twice, so the copy mutmut breaks is never committed",
   "schema": "purlin-brief/1",
-  "state": "Stale",
+  "state": "Approved",
   "test_hash": "0f9720ce9c234fa59cc21575a7a3fae1894f4a1a3d5ba1b019b81d3506c0137d",
   "test_hash_kind": "file",
   "test_strength": null,

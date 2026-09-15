@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "mutation",
-  "generated_at": "2026-09-15T20:11:45Z",
+  "generated_at": "2026-09-15T20:20:46Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-15 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/mutation/20260915T201108Z-e78d186-ci-windows.json",
+  "record": ".purlin/records/mutation/20260915T202037Z-6883ed3-ci-linux.json",
   "risk": "high",
   "rule": "RULE-15",
   "rule_hash": "33f9f7aa38af5fac5defea04bbed40f5ef521396b5058edad440ab4ced973055",
   "rule_text": "mutmut needs a config block naming the source paths and the test selection, written to `pyproject.toml` as `[tool.mutmut]` when that file exists and to `setup.cfg` as `[mutmut]` with one value a line otherwise; without the block no breaks are made and the reason names the block and the file",
   "schema": "purlin-brief/1",
-  "state": "Stale",
+  "state": "Approved",
   "test_hash": "1d6f39230e325c7468684e4406be7a7fc013b651f73e54aa999cd98c18b84939",
   "test_hash_kind": "file",
   "test_strength": null,

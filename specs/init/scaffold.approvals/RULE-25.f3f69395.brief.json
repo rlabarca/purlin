@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "scaffold",
-  "generated_at": "2026-09-15T20:12:12Z",
+  "generated_at": "2026-09-15T20:21:01Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-25 logic_mirroring"
   ],
-  "record": ".purlin/records/scaffold/20260915T201110Z-e78d186-ci-windows.json",
+  "record": ".purlin/records/scaffold/20260915T202037Z-6883ed3-ci-linux.json",
   "risk": "high",
   "rule": "RULE-25",
   "rule_hash": "c9e58091b2e054e870ddc71373d48ec51cecc62244121665233d3ace2b231db1",
   "rule_text": "The shim names no machine, no checkout and no release, so the file is right for every clone and everything machine-specific is resolved when it runs",
   "schema": "purlin-brief/1",
-  "state": "Stale",
+  "state": "Approved",
   "test_hash": "b7efac794265bc6821e0085e0cbc6fcc39e48ff0a2f4a17b8505d984a22068d1",
   "test_hash_kind": "file",
   "test_strength": null,

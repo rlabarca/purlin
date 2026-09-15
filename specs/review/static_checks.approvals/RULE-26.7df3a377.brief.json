@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "static_checks",
-  "generated_at": "2026-09-15T20:12:41Z",
+  "generated_at": "2026-09-15T20:21:18Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-53 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/static_checks/20260915T201112Z-e78d186-ci-windows.json",
+  "record": ".purlin/records/static_checks/20260915T202037Z-6883ed3-ci-linux.json",
   "risk": "high",
   "rule": "RULE-26",
   "rule_hash": "8702a7b01c0d949deb3375e31ef9f39c345cd95577765a7f03a3cba41fc969b7",
   "rule_text": "The sweep opens nothing for writing, so the project it read is byte-identical afterwards",
   "schema": "purlin-brief/1",
-  "state": "Stale",
+  "state": "Approved",
   "test_hash": "c50ccd307a9880d24eba8193c58cb213ea2cb83a429bc40320c251e44fe322db",
   "test_hash_kind": "file",
   "test_strength": null,

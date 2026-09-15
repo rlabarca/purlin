@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-15T20:12:28Z",
+  "generated_at": "2026-09-15T20:21:10Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-12 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/states/20260915T201111Z-e78d186-ci-windows.json",
+  "record": ".purlin/records/states/20260915T202037Z-6883ed3-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-12",
   "rule_hash": "6da8818049feeee9a56cb544c8beef45faff0390e74d3259436b6800da69139c",
   "rule_text": "A rule needs a model to read it first when its risk is at or above the project's review threshold, when an approval has gone stale, or when the test strength is under the minimum; with no break engine available the threshold drops one level, so more rules get a look rather than fewer",
   "schema": "purlin-brief/1",
-  "state": "Stale",
+  "state": "Approved",
   "test_hash": "2d7039e1655c14f10f153eed813305c05ebe86991ac5c7b5dec487a7675e4bbb",
   "test_hash_kind": "file",
   "test_strength": null,

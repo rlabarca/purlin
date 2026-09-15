@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "server",
-  "generated_at": "2026-09-15T20:12:19Z",
+  "generated_at": "2026-09-15T20:21:05Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-14 logic_mirroring"
   ],
-  "record": ".purlin/records/server/20260915T201110Z-e78d186-ci-windows.json",
+  "record": ".purlin/records/server/20260915T202037Z-6883ed3-ci-linux.json",
   "risk": "high",
   "rule": "RULE-14",
   "rule_hash": "16a10a75fa52b36823f8e57965629cb7901ffedd44efb6dde6887efbf67f3a58",
   "rule_text": "The hook regenerates only when an input is newer than the data file: the spec directory, the runtime proof files, the records and `.purlin/config.json`, with a missing data file counting as newer. Nothing else under `.purlin/runtime/` is an input, so a run can never make the next run dirty",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "9ee119812173c30e9354cf51ceed867f3c2ad1eb5f16ac7eabe5140c2a28028f",
   "test_hash_kind": "file",
   "test_strength": null,

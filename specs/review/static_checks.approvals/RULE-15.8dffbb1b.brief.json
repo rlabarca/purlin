@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "static_checks",
-  "generated_at": "2026-09-15T20:12:36Z",
+  "generated_at": "2026-09-15T20:21:15Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-48 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/static_checks/20260915T201112Z-e78d186-ci-windows.json",
+  "record": ".purlin/records/static_checks/20260915T202037Z-6883ed3-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-15",
   "rule_hash": "20a16d75b26d1025fa9680a8d88a521613a24f54398acb2b5756578831d46ae2",
   "rule_text": "A SQL proof block runs from its marker to the next marker, so a block another feature owns never enters this feature's results",
   "schema": "purlin-brief/1",
-  "state": "Stale",
+  "state": "Approved",
   "test_hash": "1cdfa09bb68d34d2872f6fa7060c682bc240899c29784f92116fbc53444feeb9",
   "test_hash_kind": "file",
   "test_strength": null,
