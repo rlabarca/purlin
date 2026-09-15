@@ -51,6 +51,8 @@
 - RULE-35: The module imports where there is no fcntl: the import sits under a try that catches an import error, both branches set the flag every lock helper reads, and the Windows lock branch is in the source [risk: high] [origin: eng]
 - RULE-36: Every text file the module opens is opened as UTF-8, whatever the console codec is [risk: medium] [origin: eng]
 - RULE-37: On Windows the exclusive lock is taken through msvcrt on one byte, and a second process cannot take it until it is released [risk: high] [origin: eng]
+- RULE-38: The JavaScript reader skips a regex literal whole, so a `}`, a quote or a `/` inside its character class or behind a backslash never ends a test body, and skips a `}` inside a line or block comment the same way; a `/` that follows a value, or one whose literal would run past the end of its line, is read as division [risk: medium] [origin: eng]
+- RULE-39: Without `--json` an analysis prints one line per proof, `pass <proof> <test name>` or `fail <proof> <check>: <reason>`, and `--sweep` prints one line of counts naming features, backings, pass, failing and unmeasurable, then one line per failing or unmeasurable backing [risk: low] [origin: eng]
 
 ## Proof
 
@@ -123,3 +125,5 @@
 - PROOF-67 (RULE-7): Run the Python checker over a marked test that exercises only the accepting direction of a rejecting rule; verify its status is `pass`, because a missing case is not a structural defect @integration
 - PROOF-68 (RULE-7): Run the Python checker over a marked test whose name says rejects and whose assertion says accepted; verify its status is `pass`, because a name that drifts is not a structural defect @integration
 - PROOF-69 (RULE-3): Run the Python checker over a marked test that builds a payload, encrypts it and decodes it without asserting; verify its status is `fail` @integration
+- PROOF-70 (RULE-38): Run the JavaScript checker over one file whose first test divides across a line break after `"a" +`, whose second builds `/[}/"']+/g`, whose third builds `/\/}/`, whose fourth holds a `}` in a `//` comment and in a `/* */` comment, and whose fifth and sixth sit on one line dividing `4 / 2` and `8 / 4`, each with its assertion after that character; verify exactly the 6 proofs `PROOF-1` to `PROOF-6` come back, every one with status `pass` and none with the check `no_assertion` @integration
+- PROOF-71 (RULE-39): Call the command in the same process without `--json` over a file holding one marked test asserting a literal and one asserting `True`; verify it exits 0 and prints exactly the two lines `pass PROOF-1 test_good` and `fail PROOF-2 assert_true_literal: <reason>`. Scaffold a project whose one proof is backed by `assert True` and call `--sweep --project-root <it>`; verify it exits 0, that its first line is `1 features, 1 backings, 0 pass, 1 failing, 0 unmeasurable`, and that its second names the feature, `PROOF-1`, `fail`, `assert_true_literal` and the test file @integration

@@ -1035,6 +1035,54 @@ describe("repro", () => {
         assert proofs["PROOF-1"].get("check") != "no_assertion"
         assert proofs["PROOF-2"]["status"] == "pass"
 
+    @pytest.mark.proof("static_checks", "PROOF-70", "RULE-38", tier="integration")
+    def test_check_js_skips_regex_literals_and_comments_and_reads_division(self):
+        """A `}` or `/` inside a regex literal or a comment never ends a body.
+
+        Each body below holds its only assertion after the character that
+        would cut it short, so a misread body comes back `no_assertion`, and a
+        misread `/` swallows the next test's title, so a proof goes missing.
+        The division across a line comes first, so a regex read from it would
+        run on into the tests after it.
+        """
+        path = _write_tmp(r'''import { it, expect } from "vitest";
+
+it("division across a line [proof:rx:PROOF-1:RULE-1]", () => {
+  const s = "a" +
+    / 2;
+  expect(s).toBe("a");
+});
+
+it("a class holding a brace, a slash and quotes [proof:rx:PROOF-2:RULE-2]", () => {
+  const re = /[}/"']+/g;
+  expect("a}/b".replace(re, "")).toBe("ab");
+});
+
+it("an escaped slash [proof:rx:PROOF-3:RULE-3]", () => {
+  const re = /\/}/;
+  expect("x/}".match(re)[0]).toBe("/}");
+});
+
+it("comments [proof:rx:PROOF-4:RULE-4]", () => {
+  // a } in a line comment
+  /* and } in a block one */
+  expect(1 + 1).toBe(2);
+});
+
+it("division [proof:rx:PROOF-5:RULE-5]", () => { const q = 4 / 2; expect(q).toBe(2); }); it("division again [proof:rx:PROOF-6:RULE-6]", () => { expect(8 / 4).toBe(2); });
+''', suffix='.js')
+        try:
+            results = check_js(path, 'rx')
+        finally:
+            os.unlink(path)
+
+        by_id = {r['proof_id']: r for r in results}
+        assert sorted(by_id) == ['PROOF-%d' % n for n in range(1, 7)], (
+            f"a misread `/` swallowed a test: {sorted(by_id)}")
+        for proof_id, entry in sorted(by_id.items()):
+            assert entry['status'] == 'pass', (proof_id, entry)
+            assert entry.get('check') != 'no_assertion', (proof_id, entry)
+
 
 class TestRunsOnWindowsToo:
     """RULE-29/30: static_checks.py imports and runs on Windows as well as POSIX."""
@@ -1705,6 +1753,108 @@ class TestCliSelfDocumentation:
         assert 'Exit codes:' in r.stdout, r.stdout
         assert '0 for a completed analysis' in r.stdout, r.stdout
         assert '2 for a real error' in r.stdout, r.stdout
+
+
+_MIXED_TESTS = '''\
+import pytest
+
+@pytest.mark.proof("testfeat", "PROOF-1", "RULE-1")
+def test_good():
+    result = do_something()
+    assert result == "expected"
+
+@pytest.mark.proof("testfeat", "PROOF-2", "RULE-2")
+def test_bad():
+    assert True
+'''
+
+
+class TestCliInProcess:
+    """The command's own `main()`, called in this process.
+
+    The subprocess tests above prove the same exits from outside, where a
+    mutation engine cannot see which lines of `main()` ran.
+    """
+
+    @staticmethod
+    def _main(monkeypatch, capsys, *args):
+        monkeypatch.setattr(sys, 'argv', ['static_checks.py', *args])
+        with pytest.raises(SystemExit) as exit_info:
+            static_checks.main()
+        captured = capsys.readouterr()
+        return exit_info.value.code, captured.out, captured.err
+
+    @pytest.mark.proof("static_checks", "PROOF-56", "RULE-33", tier="integration")
+    def test_no_argument_prints_the_usage_on_stderr_and_exits_2(self, monkeypatch,
+                                                                capsys):
+        code, out, err = self._main(monkeypatch, capsys)
+        assert code == 2
+        assert out == ''
+        for line in static_checks._USAGE:
+            assert f'static_checks.py {line}' in err, (line, err)
+
+        code, out, err = self._main(monkeypatch, capsys, 'only_a_file.py')
+        assert code == 2
+        assert err.startswith('Usage: static_checks.py '), err
+
+    @pytest.mark.proof("static_checks", "PROOF-57", "RULE-33", tier="integration")
+    def test_help_prints_the_usage_and_both_exit_codes(self, monkeypatch, capsys):
+        code, out, err = self._main(monkeypatch, capsys, '--help')
+        assert code == 0
+        assert out.startswith('Usage: static_checks.py '), out
+        for line in static_checks._USAGE:
+            assert f'static_checks.py {line}' in out, (line, out)
+        assert '0 for a completed analysis' in out
+        assert '2 for a real error' in out
+
+    @pytest.mark.proof("static_checks", "PROOF-14", "RULE-17", tier="integration")
+    def test_a_file_not_on_disk_exits_2_and_names_it(self, monkeypatch, capsys,
+                                                     tmp_path):
+        missing = str(tmp_path / 'absent_test.py')
+        code, out, err = self._main(monkeypatch, capsys, missing, 'testfeat')
+        assert code == 2
+        assert json.loads(out) == {'error': f'File not found: {missing}'}
+
+    @pytest.mark.proof("static_checks", "PROOF-12", "RULE-17", tier="integration")
+    @pytest.mark.proof("static_checks", "PROOF-13", "RULE-17", tier="integration")
+    def test_a_completed_analysis_exits_0_however_weak(self, monkeypatch, capsys,
+                                                       tmp_path):
+        path = tmp_path / 'test_mixed.py'
+        path.write_text(_MIXED_TESTS, encoding='utf-8')
+        code, out, err = self._main(monkeypatch, capsys, str(path), 'testfeat',
+                                    '--json')
+        assert code == 0
+        proofs = {p['proof_id']: p for p in json.loads(out)['proofs']}
+        assert proofs['PROOF-1']['status'] == 'pass'
+        assert proofs['PROOF-2']['status'] == 'fail'
+
+    @pytest.mark.proof("static_checks", "PROOF-71", "RULE-39", tier="integration")
+    def test_without_json_an_analysis_prints_one_line_per_proof(self, monkeypatch,
+                                                               capsys, tmp_path):
+        path = tmp_path / 'test_mixed.py'
+        path.write_text(_MIXED_TESTS, encoding='utf-8')
+        code, out, err = self._main(monkeypatch, capsys, str(path), 'testfeat',
+                                    '--project-root', str(tmp_path))
+        assert code == 0
+        lines = out.splitlines()
+        assert len(lines) == 2, lines
+        assert lines[0] == 'pass PROOF-1 test_good'
+        prefix = 'fail PROOF-2 assert_true_literal: '
+        assert lines[1].startswith(prefix), lines[1]
+        assert len(lines[1]) > len(prefix), 'the failing line names no reason'
+
+    @pytest.mark.proof("static_checks", "PROOF-71", "RULE-39", tier="integration")
+    def test_without_json_the_sweep_prints_counts_then_one_row_per_failure(
+            self, monkeypatch, capsys, tmp_path):
+        _scaffold_proof(str(tmp_path), test_body='    assert True')
+        code, out, err = self._main(monkeypatch, capsys, '--sweep',
+                                    '--project-root', str(tmp_path))
+        assert code == 0
+        lines = out.splitlines()
+        assert len(lines) == 2, lines
+        assert lines[0] == '1 features, 1 backings, 0 pass, 1 failing, 0 unmeasurable'
+        assert lines[1] == '  login: PROOF-1 fail (assert_true_literal) tests/test_login.py'
+
 
 class TestRunScope:
     """RULE-42: inside one run scope every file is read or parsed once."""
