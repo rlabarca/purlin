@@ -10,6 +10,8 @@ under `.purlin/records/`, an approval beside the spec. Nothing here reads the
 repository's own specs except where a test says so.
 """
 
+import contextlib
+import io
 import json
 import os
 import shutil
@@ -1189,13 +1191,34 @@ class TestDriftRoles:
 # The MCP transport
 # ---------------------------------------------------------------------------
 
-def _rpc(root, *requests):
+def _rpc(root, *requests, **kwargs):
+    """The server's answers to `requests` on stdin, and what it wrote to stderr.
+
+    The server's `main()` runs in this process with `root` as the working
+    directory, so a mutation run can see which case caught a break.
+    `child=True` starts `server.py` as the client does instead.
+    """
     lines = '\n'.join(json.dumps(request) for request in requests) + '\n'
-    result = subprocess.run([sys.executable, SERVER_PY], input=lines,
-                            capture_output=True, text=True, cwd=root,
-                            timeout=180)
-    return [json.loads(line) for line in result.stdout.splitlines()
-            if line.strip()], result.stderr
+    if kwargs.get('child'):
+        result = subprocess.run([sys.executable, SERVER_PY], input=lines,
+                                capture_output=True, text=True, cwd=root,
+                                timeout=180)
+        stdout, stderr = result.stdout, result.stderr
+    else:
+        out, err = io.StringIO(), io.StringIO()
+        cwd, stdin = os.getcwd(), sys.stdin
+        os.chdir(root)
+        sys.stdin = io.StringIO(lines)
+        try:
+            with contextlib.redirect_stdout(out), \
+                    contextlib.redirect_stderr(err):
+                purlin_srv.main()
+        finally:
+            os.chdir(cwd)
+            sys.stdin = stdin
+        stdout, stderr = out.getvalue(), err.getvalue()
+    return [json.loads(line) for line in stdout.splitlines()
+            if line.strip()], stderr
 
 
 class TestTransport:
@@ -1206,7 +1229,8 @@ class TestTransport:
         responses, stderr = _rpc(project.root, {
             'jsonrpc': '2.0', 'id': 1, 'method': 'initialize',
             'params': {'protocolVersion': '2024-11-05', 'capabilities': {},
-                       'clientInfo': {'name': 't', 'version': '0'}}})
+                       'clientInfo': {'name': 't', 'version': '0'}}},
+            child=True)
         result = responses[0]['result']
         assert result['protocolVersion'] == '2024-11-05'
         assert result['serverInfo']['name'] == 'purlin'

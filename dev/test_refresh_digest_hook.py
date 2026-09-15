@@ -1,7 +1,8 @@
 """Tests for scripts/hooks/refresh_digest.py and its registration in
 hooks/hooks.json (specs/mcp/server.md, RULE-13 to RULE-21)."""
 
-import importlib.util
+import contextlib
+import importlib
 import io
 import json
 import os
@@ -9,6 +10,7 @@ import re
 import subprocess
 import sys
 import time
+import traceback
 
 import pytest
 
@@ -95,12 +97,38 @@ def _read_digest(tmp):
     return json.loads(content[len('const PURLIN_DATA = '):].rstrip().rstrip(';'))
 
 
-def _run(tmp, env=None):
+def _run(tmp, env=None, child=False):
+    """The hook against `tmp`: its exit code and what it printed.
+
+    The hook's `main()` runs in this process, so a mutation run can see which
+    case caught a break, and an exception fails the case where the script's
+    wrapper would have swallowed it. `child=True` starts the script the way
+    Claude Code does, wrapper and all.
+    """
     full_env = {k: v for k, v in os.environ.items() if k != 'PURLIN_SKIP_DIGEST'}
     full_env.update(env or {})
-    return subprocess.run([sys.executable, HOOK], cwd=tmp, input=STDIN,
-                          capture_output=True, text=True, env=full_env,
-                          timeout=120)
+    if child:
+        return subprocess.run([sys.executable, HOOK], cwd=tmp, input=STDIN,
+                              capture_output=True, text=True, env=full_env,
+                              timeout=120)
+    module = _load_hook_module()
+    saved = dict(os.environ)
+    out, err = io.StringIO(), io.StringIO()
+    code = 0
+    os.environ.clear()
+    os.environ.update(full_env)
+    try:
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            try:
+                _main_in(tmp, module)
+            except Exception:                                  # noqa: BLE001
+                code = 1
+                err.write(traceback.format_exc())
+    finally:
+        os.environ.clear()
+        os.environ.update(saved)
+    return subprocess.CompletedProcess([HOOK], code, out.getvalue(),
+                                       err.getvalue())
 
 
 def _assert_silent_zero(result, label):
@@ -110,10 +138,17 @@ def _assert_silent_zero(result, label):
 
 
 def _load_hook_module():
-    spec = importlib.util.spec_from_file_location('refresh_digest', HOOK)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    """A fresh import of the hook, found the way any module on `sys.path` is.
+
+    An import through `sys.path` goes through the import system's finders, so
+    a mutation run's module rename applies to it; a file loaded by location
+    would never switch a break on.
+    """
+    hooks = os.path.dirname(HOOK)
+    if hooks not in sys.path:
+        sys.path.insert(0, hooks)
+    sys.modules.pop('refresh_digest', None)
+    return importlib.import_module('refresh_digest')
 
 
 def _main_in(tmp, module):
@@ -139,12 +174,15 @@ class TestSilentAndNonBlocking:
     @pytest.mark.proof("server", "PROOF-13", "RULE-13", tier="integration")
     def test_every_path_exits_zero_and_prints_nothing(self, tmp_path):
         project = _project(str(tmp_path / 'p'))
-        _assert_silent_zero(_run(project), 'fresh project')
+        _assert_silent_zero(_run(project, child=True), 'fresh project')
         assert os.path.isfile(_digest_path(project)), 'the first run must write the digest'
 
         bare = str(tmp_path / 'not-git')
         os.makedirs(bare)
-        _assert_silent_zero(_run(bare), 'not a git repository')
+        _assert_silent_zero(_run(bare, child=True), 'not a git repository')
+        assert not os.path.exists(os.path.join(bare, '.purlin'))
+        _assert_silent_zero(_run(str(tmp_path / 'p')), 'fresh project, in process')
+        _assert_silent_zero(_run(bare), 'not a git repository, in process')
         assert not os.path.exists(os.path.join(bare, '.purlin'))
 
         off = _project(str(tmp_path / 'off'), digest='off')
@@ -157,7 +195,7 @@ class TestSilentAndNonBlocking:
         with open(os.path.join(locked, '.purlin', 'runtime', 'refresh_digest.lock'), 'a+') as lock:
             hook.lock_exclusive(lock)
             try:
-                _assert_silent_zero(_run(locked), 'lock held')
+                _assert_silent_zero(_run(locked, child=True), 'lock held')
             finally:
                 hook.unlock(lock)
         assert not os.path.exists(_digest_path(locked))
@@ -234,7 +272,7 @@ class TestSingleFlight:
         with open(lock_path, 'a+') as lock:
             hook.lock_exclusive(lock)
             try:
-                _assert_silent_zero(_run(project), 'lock held')
+                _assert_silent_zero(_run(project, child=True), 'lock held')
                 assert not os.path.exists(_digest_path(project)), \
                     'a second instance must not generate while the first holds the lock'
             finally:
