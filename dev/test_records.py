@@ -1030,6 +1030,47 @@ def test_a_matrix_keeps_one_latest_record_per_operating_system(project):
     assert sorted(k for k in loaded) == ['linux', 'windows']
 
 
+def _put_text(root, feature, name, text):
+    """Write a file under `.purlin/records/<feature>/` holding `text` as it is."""
+    folder = os.path.join(root, reader.RECORDS_DIR, feature)
+    os.makedirs(folder, exist_ok=True)
+    with open(os.path.join(folder, name), 'w', encoding='utf-8') as handle:
+        handle.write(text)
+
+
+@pytest.mark.proof("records", "PROOF-25", "RULE-23")
+def test_records_read_at_a_ref_come_out_of_git(project):
+    name = '20260913T120000Z-4f1c2ab-ada.json'
+    greeting = put_record(project, 'greeting', name)
+    _put_text(project, 'broken', name, 'not json')
+    _put_text(project, 'listed', name, '[1, 2]')
+    git(project, 'add', '-A')
+    git(project, 'commit', '--quiet', '-m', 'the records')
+    put_record(project, 'farewell', '20260913T130000Z-4f1c2ab-ada.json',
+               record('farewell'))
+    git(project, 'add', '-A')
+    git(project, 'commit', '--quiet', '-m', 'one more record')
+    edited = record()
+    edited['test_strength'] = 5
+    put_record(project, 'greeting', name, edited)
+
+    at_parent = records_module.load_records(project, 'HEAD~1')
+    assert sorted(at_parent) == ['greeting'], at_parent
+    entry = at_parent['greeting'][None]
+    assert entry['test_strength'] == 71
+    assert entry['label'] == 'developer'
+    assert entry['path'] == greeting
+
+    at_head = records_module.load_records(project, 'HEAD')
+    assert sorted(at_head) == ['farewell', 'greeting'], at_head
+    assert at_head['greeting'][None]['test_strength'] == 71
+    # Without a ref the disk is read, and the disk holds the edit.
+    assert records_module.load_records(project)['greeting'][None][
+        'test_strength'] == 5
+
+    assert records_module.load_records(project, 'no-such-ref') == {}
+
+
 # ---------------------------------------------------------------------------
 # What a CI run publishes
 # ---------------------------------------------------------------------------
@@ -1089,6 +1130,76 @@ def test_a_refused_comment_is_reported_rather_than_raised(project, github_env,
     monkeypatch.setattr(urllib.request, 'urlopen', refuse)
     assert ci_module.post_pr_comment(project, 'anything') is False
     assert 'The comment was not posted' in capsys.readouterr().out
+
+
+AZURE_THREADS = ('https://dev.azure.com/acme/widgets/_apis/git/repositories/'
+                 'repo-id/pullRequests/42/threads?api-version=7.0')
+
+
+@pytest.fixture
+def azure_pr(azure_env, monkeypatch):
+    monkeypatch.setenv('SYSTEM_PULLREQUEST_PULLREQUESTID', '42')
+
+
+@pytest.mark.proof("records", "PROOF-23", "RULE-10")
+def test_the_azure_comment_opens_a_thread_on_the_pull_request(
+        project, azure_pr, monkeypatch):
+    sent = []
+
+    def urlopen(request, timeout=None):
+        sent.append((request.get_method(), request.full_url, timeout,
+                     dict(request.header_items()),
+                     json.loads(request.data.decode('utf-8'))))
+        return Response({})
+
+    monkeypatch.setattr(urllib.request, 'urlopen', urlopen)
+
+    assert ci_module.post_pr_comment(project,
+                                     'Purlin: 2 rules Recorded.') is True
+    assert len(sent) == 1, sent
+    method, url, timeout, headers, body = sent[0]
+    assert method == 'POST'
+    # The collection URI ends in a slash, and the thread URL carries one
+    # separator, not two.
+    assert url == AZURE_THREADS
+    assert timeout == 30
+    assert headers['Authorization'] == 'Bearer a-token'
+    assert headers['Content-type'] == 'application/json'
+    assert body == {'comments': [{'parentCommentId': 0,
+                                  'content': 'Purlin: 2 rules Recorded.',
+                                  'commentType': 'text'}],
+                    'status': 'closed'}
+
+
+@pytest.mark.proof("records", "PROOF-23", "RULE-10")
+@pytest.mark.parametrize('missing', ['SYSTEM_ACCESSTOKEN', 'SYSTEM_TEAMPROJECT',
+                                     'BUILD_REPOSITORY_ID',
+                                     'SYSTEM_PULLREQUEST_PULLREQUESTID'])
+def test_an_azure_run_missing_a_variable_posts_nothing(project, azure_pr,
+                                                       monkeypatch, capsys,
+                                                       missing):
+    monkeypatch.delenv(missing)
+    sent = []
+    monkeypatch.setattr(urllib.request, 'urlopen',
+                        lambda request, timeout=None: sent.append(request))
+
+    assert ci_module.post_pr_comment(project, 'anything') is False
+    assert sent == []
+    assert 'not an Azure DevOps pull request' in capsys.readouterr().out
+
+
+@pytest.mark.proof("records", "PROOF-23", "RULE-10")
+def test_a_refused_azure_comment_is_reported_rather_than_raised(
+        project, azure_pr, monkeypatch, capsys):
+    def refuse(request, timeout=None):
+        raise urllib.error.HTTPError(request.full_url, 401, 'Unauthorized', {},
+                                     None)
+
+    monkeypatch.setattr(urllib.request, 'urlopen', refuse)
+    assert ci_module.post_pr_comment(project, 'anything') is False
+    printed = capsys.readouterr().out
+    assert 'The comment was not posted' in printed
+    assert '401' in printed
 
 
 @pytest.mark.proof("records", "PROOF-11", "RULE-11")
@@ -1200,6 +1311,110 @@ def test_the_follow_up_for_azure_is_marked_in_the_source():
     with open(os.path.join(ROOT, 'scripts', 'run', 'remote.py'),
               encoding='utf-8') as handle:
         assert 'TODO(ado-remote)' in handle.read()
+
+
+class FakeProcesses(object):
+    """`subprocess.run` for `remote.py`: git and gh answer, and nothing runs.
+
+    The branch is `feature-x` and `origin` is a GitHub URL. Every process
+    other than those two reads is recorded in `started`, in order, with the
+    directory it was started in.
+    """
+
+    def __init__(self, push=0, watch=0):
+        self.push = push
+        self.watch = watch
+        self.started = []
+        self.cwds = []
+
+    def __call__(self, argv, cwd=None, capture_output=False, text=False,
+                 timeout=None):
+        argv = list(argv)
+        if argv[:3] == ['git', 'rev-parse', '--abbrev-ref']:
+            return subprocess.CompletedProcess(argv, 0, 'feature-x\n', '')
+        if argv[:3] == ['git', 'remote', 'get-url']:
+            return subprocess.CompletedProcess(
+                argv, 0, 'https://github.com/acme/widgets.git\n', '')
+        self.started.append(argv)
+        self.cwds.append(cwd)
+        code = 0
+        if argv[:2] == ['git', 'push']:
+            code = self.push
+        elif argv[:1] == ['gh']:
+            code = self.watch
+        return subprocess.CompletedProcess(argv, code, '', '')
+
+
+@pytest.fixture
+def remote_run(monkeypatch, tmp_path):
+    """Stand in for every process `run_remote` starts, with or without `gh`."""
+    def arrange(push=0, watch=0, gh=True):
+        folder = tmp_path / ('with-gh' if gh else 'without-gh')
+        folder.mkdir()
+        if gh:
+            (folder / 'gh').write_text('', encoding='utf-8')
+        monkeypatch.setenv('PATH', str(folder))
+        fake = FakeProcesses(push=push, watch=watch)
+        monkeypatch.setattr(remote_module.subprocess, 'run', fake)
+        monkeypatch.setattr(remote_module, '_table',
+                            lambda project_root: 'the status table')
+        return fake
+    return arrange
+
+
+PUSH = ['git', 'push', '-u', 'origin', 'feature-x']
+WATCH = ['gh', 'run', 'watch', '--exit-status']
+PULL = ['git', 'pull', '--ff-only']
+
+
+@pytest.mark.proof("records", "PROOF-24", "RULE-12")
+def test_the_github_branch_pushes_watches_and_pulls(project, remote_run,
+                                                    capsys):
+    fake = remote_run()
+
+    assert remote_module.run_remote(project) == 0
+    assert fake.started == [PUSH, WATCH, PULL]
+    assert fake.cwds == [project, project, project]
+    printed = capsys.readouterr().out
+    assert 'Pushing feature-x.' in printed
+    assert 'Waiting for the purlin.yml workflow on feature-x.' in printed
+    assert 'finished red' not in printed
+    assert printed.rstrip().endswith('the status table')
+
+
+@pytest.mark.proof("records", "PROOF-24", "RULE-12")
+def test_a_red_run_still_pulls_and_prints_the_table(project, remote_run,
+                                                    capsys):
+    fake = remote_run(watch=1)
+
+    assert remote_module.run_remote(project) == 1
+    assert fake.started == [PUSH, WATCH, PULL]
+    printed = capsys.readouterr().out
+    assert 'The run finished red. The table below is what came back.' in printed
+    assert printed.rstrip().endswith('the status table')
+
+
+@pytest.mark.proof("records", "PROOF-24", "RULE-12")
+def test_without_gh_the_run_is_neither_watched_nor_pulled(project, remote_run,
+                                                          capsys):
+    fake = remote_run(gh=False)
+
+    assert remote_module.run_remote(project) == 1
+    assert fake.started == [PUSH]
+    printed = capsys.readouterr().out
+    assert 'GitHub CLI `gh` is not installed' in printed
+    assert 'the status table' not in printed
+
+
+@pytest.mark.proof("records", "PROOF-24", "RULE-12")
+def test_a_failed_push_starts_no_run(project, remote_run, capsys):
+    fake = remote_run(push=1)
+
+    assert remote_module.run_remote(project) == 1
+    assert fake.started == [PUSH]
+    printed = capsys.readouterr().out
+    assert 'The push failed, so no run was started.' in printed
+    assert 'Waiting for' not in printed
 
 
 # ---------------------------------------------------------------------------
