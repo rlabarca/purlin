@@ -217,7 +217,7 @@ button{font-family:inherit}
 .wrap{max-width:1360px;margin:0 auto;padding:var(--space-8)}
 section{margin-bottom:var(--space-10)}
 section.ledger{margin-bottom:var(--space-5)}
-.line{margin:0;font-size:var(--ui-base);color:var(--text-secondary)}
+.line{margin:0;font-size:var(--ui-base);font-weight:normal;line-height:inherit;color:var(--text-secondary)}
 .line b{font-family:var(--font-mono);font-weight:var(--weight-bold);color:var(--text-primary)}
 .sep{color:var(--text-muted);padding:0 var(--space-3)}
 .eyebrow{font-size:var(--ui-sm);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-accent);margin:0 0 var(--space-4)}
@@ -507,14 +507,14 @@ function renderBoard() {
     groups[name].push(feature);
   });
   var rollup = DATA.project_rollup || {};
-  var head = '<section class="ledger"><p class="line">'
+  var head = '<section class="ledger"><h1 class="line">'
     + '<b>' + (rollup.rules || 0) + '</b> rules across <b>'
     + (rollup.features || 0) + '</b> specs'
     + '<span class="sep">·</span>lowest state <b>'
     + esc(rollup.lowest_state || 'Drafted') + '</b>'
     + '<span class="sep">·</span><b>' + (rollup.stale || 0) + '</b> stale'
     + '<span class="sep">·</span><b>' + (rollup.needs_review || 0)
-    + '</b> on the review list</p></section><section>' + statStrip()
+    + '</b> on the review list</h1></section><section>' + statStrip()
     + '</section>';
   var table = order.length
     ? '<div class="tbl" style="--cols:' + columns.map(function (c) {

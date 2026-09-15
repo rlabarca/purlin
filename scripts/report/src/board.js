@@ -142,14 +142,14 @@ function renderBoard() {
     groups[name].push(feature);
   });
   var rollup = DATA.project_rollup || {};
-  var head = '<section class="ledger"><p class="line">'
+  var head = '<section class="ledger"><h1 class="line">'
     + '<b>' + (rollup.rules || 0) + '</b> rules across <b>'
     + (rollup.features || 0) + '</b> specs'
     + '<span class="sep">·</span>lowest state <b>'
     + esc(rollup.lowest_state || 'Drafted') + '</b>'
     + '<span class="sep">·</span><b>' + (rollup.stale || 0) + '</b> stale'
     + '<span class="sep">·</span><b>' + (rollup.needs_review || 0)
-    + '</b> on the review list</p></section><section>' + statStrip()
+    + '</b> on the review list</h1></section><section>' + statStrip()
     + '</section>';
   var table = order.length
     ? '<div class="tbl" style="--cols:' + columns.map(function (c) {
