@@ -13,6 +13,8 @@ and what happens when there is nothing to write.
   sql                  the comment marker and the engine it runs against
 """
 
+import contextlib
+import io
 import json
 import os
 import shutil
@@ -78,15 +80,32 @@ def _proof_files(root):
 
 
 def _run_pytest_with_plugin(tmp_path, test_code, allow_failure=False):
-    """Run pytest with `pytest_purlin` loaded, in `tmp_path`."""
+    """Run pytest with `pytest_purlin` loaded, in `tmp_path`, in this process.
+
+    A session nested in this process is what lets a mutation run see which
+    case caught a break in the plugin; a plugin loaded only by a child pytest
+    counts as untested. The registered-markers case below still starts pytest
+    as a child, so the command-line load stays proved.
+    """
     test_file = tmp_path / "test_s.py"
     test_file.write_text(textwrap.dedent(test_code), encoding="utf-8")
-    result = subprocess.run(
-        [sys.executable, "-m", "pytest", str(test_file),
-         "-p", "pytest_purlin",
-         "--override-ini=pythonpath=%s" % PROOF_SCRIPTS_INI,
-         "-q", "--no-header", "-p", "no:cacheprovider"],
-        capture_output=True, text=True, cwd=str(tmp_path))
+    modules, path, cwd = set(sys.modules), list(sys.path), os.getcwd()
+    out, err = io.StringIO(), io.StringIO()
+    os.chdir(str(tmp_path))
+    try:
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = int(pytest.main(
+                [str(test_file), "-p", "pytest_purlin", "-s", "-q",
+                 "--no-header", "-p", "no:cacheprovider",
+                 "--rootdir", str(tmp_path), "--confcutdir", str(tmp_path)]))
+    finally:
+        os.chdir(cwd)
+        sys.path[:] = path
+        for name in set(sys.modules) - modules:
+            if name.split(".")[0] in ("test_s", "conftest"):
+                del sys.modules[name]
+    result = subprocess.CompletedProcess(["pytest"], code, out.getvalue(),
+                                         err.getvalue())
     if not allow_failure and result.returncode not in (0, 1):
         pytest.fail("pytest internal error:\n%s\n%s"
                     % (result.stdout, result.stderr))
