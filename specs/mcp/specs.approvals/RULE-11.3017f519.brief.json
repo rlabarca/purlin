@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "specs",
-  "generated_at": "2026-09-15T16:21:29Z",
+  "generated_at": "2026-09-15T16:37:48Z",
   "layers": [
     "proof text",
     "test body",
@@ -16,7 +16,6 @@
     {
       "env": null,
       "findings": [
-        "implementation_coupling",
         "happy_path_only"
       ],
       "id": "PROOF-12",
@@ -25,16 +24,15 @@
     }
   ],
   "reasons": [
-    "PROOF-12 implementation_coupling: Names a private symbol, a selector or a path instead of an observable outcome, so a refactor breaks the proof without changing behaviour.",
     "PROOF-12 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/specs/20260915T162022Z-ed20c8b-ci-windows.json",
+  "record": ".purlin/records/specs/20260915T163718Z-c30af23-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-11",
   "rule_hash": "303118c2bbaf8bf91b6368f5c4ac2ad67c4343b5fc7ec3d3de834fa819cd0c0d",
   "rule_text": "A spec is an anchor when its path lies under an `_anchors/` directory or its first line opens `# Anchor:`, and an anchor carries its `> Source:` and its `> Pinned:` sha",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "d3b0c2291d5393a76f44fb50a664de0cd1b6b87afa103ad74495ee2a3f3d16a1",
   "test_hash_kind": "file",
   "test_strength": null,

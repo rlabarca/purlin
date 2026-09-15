@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-15T16:21:33Z",
+  "generated_at": "2026-09-15T16:37:50Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-19 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/states/20260915T162022Z-ed20c8b-ci-windows.json",
+  "record": ".purlin/records/states/20260915T163718Z-c30af23-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-19",
   "rule_hash": "1f6e20c41ff70288056bd34d16ba429ec3e860d34dc99f6d9dfddfe5d8b26527",
   "rule_text": "The dashboard's data file is written as `const PURLIN_DATA = ` followed by the payload and a trailing semicolon, and reads back as the payload that was written",
   "schema": "purlin-brief/1",
-  "state": "Tested",
+  "state": "Reviewed",
   "test_hash": "7dad480ca1042aa6da920625e438f143546c5affa2fa8aed5c9c4be7dd3a38e0",
   "test_hash_kind": "file",
   "test_strength": null,

@@ -1,0 +1,50 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "brief",
+  "generated_at": "2026-09-15T16:37:23Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "58eab29dd170fa3a98165bc2e1926f263d19135cb86add5b6cd7693045708198",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-18",
+      "text": "Read the four verdicts the module declares; verify they are `ready`, `add a case`, `rewrite the proof`, `needs a human` and that a built brief's verdict is one of them",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-18 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/brief/20260915T163718Z-c30af23-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-14",
+  "rule_hash": "72ccac095ba7e70d4004abf01216f17dfea45bde699f4c9dfd1eb085dbdf7085",
+  "rule_text": "The brief writes one of exactly four verdicts and no fifth word",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "84d616aaafeeb31f1861daf5f2b43ca4ecaaafe3b4d030dbb3240d0be820c511",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_four_words_are_the_only_four(self, proved):\n        assert brief_module.VERDICTS == (\n            'ready', 'add a case', 'rewrite the proof', 'needs a human')\n        assert build(proved, 'RULE-1')['verdict'] in brief_module.VERDICTS",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_the_four_words_are_the_only_four",
+      "proof": "PROOF-18",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "d6a0305526b986965989499a478c5dc976b850050f09650b9612f17d5cba7abf",
+  "verdict": "add a case"
+}

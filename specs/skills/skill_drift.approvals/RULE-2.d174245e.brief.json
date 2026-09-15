@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "skill_drift",
-  "generated_at": "2026-09-15T16:21:24Z",
+  "generated_at": "2026-09-15T16:37:46Z",
   "layers": [
     "proof text",
     "test body",
@@ -22,7 +22,7 @@
     }
   ],
   "reasons": [],
-  "record": ".purlin/records/skill_drift/20260915T162021Z-ed20c8b-ci-windows.json",
+  "record": ".purlin/records/skill_drift/20260915T163718Z-c30af23-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-2",
   "rule_hash": "e8cbd4c80db0008820e2b74f5c8eb200ebbcd394f87ba1dcaa0299338972d310",

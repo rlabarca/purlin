@@ -1,0 +1,66 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-15T16:38:01Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "31c4d89f3a40b24dea7c545363eae0dc1ba70b202dba8372280de24833fc3393",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-20",
+      "text": "Apply the v0.9.5 fixture and verify every character printed is below U+2190 or is the arrow or the horizontal rule, and that the last line is `\u2192 Next: run purlin:status to see where every rule stands.`; decline the records question and verify the last line is `\u2192 Next: run purlin:init --update again for records.`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-20 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/update/20260915T163718Z-c30af23-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-20",
+  "rule_hash": "f366e682c2a9b0cd5db26a50edaf279ca03aff3815e14718d27360f386e40b0e",
+  "rule_text": "What the run prints carries no emoji, and its last line names the next step: the update again while something is left, otherwise `purlin:status`",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "18d80c365e7390c0dd95e0d38e038f2c7a84ad4b6742f51512cb7a2017a9b202",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_what_the_update_prints_carries_no_emoji(tmp_path, capsys):\n    root = _project(tmp_path, V095)\n    _apply(root)\n    printed = capsys.readouterr().out\n    for char in printed:\n        assert ord(char) < 0x2190 or char in '\u2192\u2500', repr(char)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_a_run_that_leaves_work_names_it",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": "def test_what_the_update_prints_carries_no_emoji(tmp_path, capsys):\n    root = _project(tmp_path, V095)\n    _apply(root)\n    printed = capsys.readouterr().out\n    for char in printed:\n        assert ord(char) < 0x2190 or char in '\u2192\u2500', repr(char)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_run_ends_by_naming_the_next_step",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": "def test_what_the_update_prints_carries_no_emoji(tmp_path, capsys):\n    root = _project(tmp_path, V095)\n    _apply(root)\n    printed = capsys.readouterr().out\n    for char in printed:\n        assert ord(char) < 0x2190 or char in '\u2192\u2500', repr(char)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_what_the_update_prints_carries_no_emoji",
+      "proof": "PROOF-20",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "c5b0abdd67938c76fec97c5c99ccb60eea2edf29a14a79a5aadc8ed1bdc88fc3",
+  "verdict": "add a case"
+}

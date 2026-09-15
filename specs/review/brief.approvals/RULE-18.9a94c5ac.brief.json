@@ -1,0 +1,62 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "brief",
+  "generated_at": "2026-09-15T16:37:23Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "73f938ab7a343036e9d3e9707568cd2642ff80171a2a7162c6e4b3d5a296c816",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-25",
+      "text": "Write a mock at `designs/login/sign-in.png` and a screenshot for `PROOF-1`, then build the brief for an `[origin: design]` rule; verify both paths are shown and the pinned hash reads `3f2a1b0c9d8e7f6a`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-26",
+      "text": "Build the same design rule's brief with no screenshot on disk; verify the mock is shown as the glob `designs/login/*.png`, the screenshot list is empty and the verdict is `needs a human`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/brief/20260915T163718Z-c30af23-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-18",
+  "rule_hash": "3cd1fe341f94608950bb755df8da816cb4f97302ff831d705ac957c4c840457c",
+  "rule_text": "A rule a designer owns shows the pinned mock beside the screenshot the test captured, and a missing screenshot makes the verdict `needs a human`",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "fd298169ff7e84002e8ebd078ec0fd3335ca7809a3a94c8c4514da5852b87727",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_mock_and_the_screenshot_stand_beside_each_other(self):\n        made = Project(spec=DESIGN_SPEC)\n        try:\n            write(os.path.join(made.root, '.purlin', 'runtime', 'attachments',\n                               'login', 'PROOF-1.png'), 'not really a png')\n            write(os.path.join(made.root, 'designs', 'login', 'sign-in.png'),\n                  'not really a png either')\n            built = brief_module.build_brief(made.root, None, 'login', 'RULE-1')\n            assert built['design']['mock'] == ['designs/login/sign-in.png']\n            assert built['design']['screenshot'] == [\n                '.purlin/runtime/attachments/login/PROOF-1.png']\n            assert built['design']['pinned'] == '3f2a1b0c9d8e7f6a'\n            assert built['design_hash'] == '3f2a1b0c9d8e7f6a'\n        finally:\n            made.close()",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_the_mock_and_the_screenshot_stand_beside_each_other",
+      "proof": "PROOF-25",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_design_rule_with_no_screenshot_needs_a_human(self):\n        made = Project(spec=DESIGN_SPEC)\n        try:\n            built = brief_module.build_brief(made.root, None, 'login', 'RULE-1')\n            assert built['design']['mock'] == ['designs/login/*.png'], (\n                'a glob that matches nothing is shown as the glob')\n            assert built['design']['screenshot'] == []\n            assert built['verdict'] == 'needs a human'\n        finally:\n            made.close()",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_a_design_rule_with_no_screenshot_needs_a_human",
+      "proof": "PROOF-26",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "9a94c5acaa0f07c7678719e55941efb90d6914b6c6dcc167df5dd06fda106eff",
+  "verdict": "ready"
+}

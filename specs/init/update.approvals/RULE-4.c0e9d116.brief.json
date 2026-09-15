@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-15T16:37:58Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "811ca7d65769b6e9bd32b47174d0b3cbc1dc1fb6e5712e82765d0364791e5158",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-4",
+      "text": "Run `--check --project-root` against an empty directory and verify the return code is 2 and stderr contains `nothing to update`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/update/20260915T163718Z-c30af23-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-4",
+  "rule_hash": "5f73da986afd7521c6b0c03c89686be525df6d2438a2884c9ef40bc784b9957e",
+  "rule_text": "A project root with no `.purlin/` exits 2 saying there is nothing to update and naming the command that sets a project up",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "1a5a6f8fa0e4dd5203199eb260200845b141623633d0c3300a9bc019828ea43b",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_root_without_purlin_exits_2(tmp_path, capsys):\n    empty = str(tmp_path / 'empty')\n    os.makedirs(empty)\n    assert update.main(['--check', '--project-root', empty]) == 2\n    assert 'nothing to update' in capsys.readouterr().err",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_a_root_without_purlin_exits_2",
+      "proof": "PROOF-4",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "c0e9d116c750c25aad1b81ce03ac2402170d3c81b57d094924d60e8159faf983",
+  "verdict": "ready"
+}

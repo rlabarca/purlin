@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_version",
+  "generated_at": "2026-09-15T16:37:32Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "0d2b9a3969e6c3b4676cd95e1b84b1d8c5d015614c3975670ceadea1bc0b5684",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-6",
+      "text": "Read the `VERSION` file and parse this repository's own `.purlin/config.json`; verify it carries a `version` key equal to the `VERSION` string, so a stamp left at `0.9.2` while the file reads `0.10.0` fails naming both",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/purlin_version/20260915T163718Z-c30af23-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-6",
+  "rule_hash": "947c113fb11f5d6aab935058350449be02c37970c23975e3ec786701fa659228",
+  "rule_text": "Where `.purlin/config.json` exists, because the repository is itself a Purlin project, its `version` field equals the `VERSION` file: the project's own stamp never lags the framework it ships",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "55049da34701ee22afa5f753aaa0c7d86151a92b12f25a5100673a56fde24d16",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_project_config_version_matches_version_file(self):\n        \"\"\"This repo's own .purlin/config.json version must match VERSION.\n\n        Purlin develops itself, so the repo is also a Purlin project. Its\n        config.json carries the framework version that initialized it, and the\n        dashboard reports that field. It drifted to 0.9.2 while VERSION,\n        templates/config.json and plugin.json all read 0.10.0, and the three\n        existing rules could not see it.\n        \"\"\"\n        with open(VERSION_FILE, encoding='utf-8') as f:\n            file_version = f.read().strip()\n\n        assert os.path.isfile(PROJECT_CONFIG), \\\n            f\".purlin/config.json not found at {PROJECT_CONFIG}\"\n        with open(PROJECT_CONFIG, encoding='utf-8') as f:\n            config = json.load(f)\n\n        assert 'version' in config, \\\n            \".purlin/config.json has no 'version' field\"\n        assert config['version'] == file_version, \\\n            (f\".purlin/config.json version is '{config['version']}' \"\n             f\"but VERSION file contains '{file_version}'. \"\n             f\"Fix with: bash dev/bump_version.sh {file_version}\")",
+      "file": "dev/test_purlin_version.py",
+      "findings": [],
+      "name": "test_project_config_version_matches_version_file",
+      "proof": "PROOF-6",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "ff69d42c1c3b538340281a3f271f85cb72fabc4919da894f018c445ed4207d70",
+  "verdict": "ready"
+}

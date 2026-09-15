@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_version",
+  "generated_at": "2026-09-15T16:37:32Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "86b1f61f246d490745f9108fdf74d437c2d608b1d5b40e8ad46c533f7e3b928b",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-3",
+      "text": "Read the `VERSION` file and parse `templates/config.json`; verify the file carries a `version` key and that its value is exactly the `VERSION` string",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-3 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/purlin_version/20260915T163718Z-c30af23-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-3",
+  "rule_hash": "d2ef93cf0485df442354a711f5448ee0be4419bb22ca0de5f81d033adab25e5e",
+  "rule_text": "The `version` field of `templates/config.json`, which `purlin:init` stamps into a new project, equals the `VERSION` file",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "a254aef661e2524fd14abe8f48c70aeba35b849711f32c6a6984ba94ad738893",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_template_config_version_matches_version_file(self):\n        \"\"\"templates/config.json version field must match VERSION file content.\"\"\"\n        with open(VERSION_FILE) as f:\n            file_version = f.read().strip()\n\n        assert os.path.isfile(CONFIG_TEMPLATE), \\\n            f\"templates/config.json not found at {CONFIG_TEMPLATE}\"\n        with open(CONFIG_TEMPLATE) as f:\n            config = json.load(f)\n\n        assert 'version' in config, \\\n            \"templates/config.json has no 'version' field\"\n        assert config['version'] == file_version, \\\n            (f\"templates/config.json version is '{config['version']}' \"\n             f\"but VERSION file contains '{file_version}'\")",
+      "file": "dev/test_purlin_version.py",
+      "findings": [],
+      "name": "test_template_config_version_matches_version_file",
+      "proof": "PROOF-3",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "897a6c5d58ccb1a96857009151a9bfd93da90db68e32ceee9c058964d01bfde0",
+  "verdict": "add a case"
+}

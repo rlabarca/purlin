@@ -1,0 +1,68 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "brief",
+  "generated_at": "2026-09-15T16:37:24Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "962736a4438f67670a05aea0a02023ea09161fbe84f69be959838c2b98167403",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-34",
+      "text": "Run the command for `--feature login --rule RULE-1`; verify it exits 0, prints `login RULE-1` and a `Verdict:` line, and creates the `login.approvals` directory",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-35",
+      "text": "Run the command for `--feature login` with no rule named; verify it exits 0 and prints both `login RULE-1` and `login RULE-2`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-34 happy_path_only: No proof of this rule names a rejection, an error or a boundary.",
+    "PROOF-35 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/brief/20260915T163718Z-c30af23-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-24",
+  "rule_hash": "ec24b070973ca902568e69b6a6e2885ad4a65dc837c1a51cf0b40b657afc149c",
+  "rule_text": "`brief.py --feature <name>` with no `--rule` builds, prints and writes a brief for every rule of that feature",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "0b8d82b227522dc05a7ae2542ef35ae1ea0192df305a3d11b984a53c540c80f7",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_one_rule_prints_its_brief_and_writes_it(self, proved, capsys):\n        code = brief_module.main(['--feature', 'login', '--rule', 'RULE-1',\n                                  '--project-root', proved.root])\n        output = capsys.readouterr().out\n        assert code == 0\n        assert 'login RULE-1' in output\n        assert 'Verdict:' in output\n        assert os.path.isdir(os.path.join(proved.root, 'specs', 'auth',\n                                          'login.approvals'))",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_one_rule_prints_its_brief_and_writes_it",
+      "proof": "PROOF-34",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_feature_with_no_rule_named_covers_every_rule(self, proved,\n                                                            capsys):\n        code = brief_module.main(['--feature', 'login',\n                                  '--project-root', proved.root])\n        output = capsys.readouterr().out\n        assert code == 0\n        assert 'login RULE-1' in output and 'login RULE-2' in output",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_a_feature_with_no_rule_named_covers_every_rule",
+      "proof": "PROOF-35",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "e7aae11be4c6357fcb883e9d7eab143ec24834393aa35aad55be1d733ae07b02",
+  "verdict": "add a case"
+}

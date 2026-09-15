@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "proofs",
-  "generated_at": "2026-09-15T16:20:55Z",
+  "generated_at": "2026-09-15T16:37:30Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-4 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/proofs/20260915T162019Z-ed20c8b-ci-windows.json",
+  "record": ".purlin/records/proofs/20260915T163718Z-c30af23-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-4",
   "rule_hash": "79a022dcb6198ec7ad8341cbb724a847660a603175b3e354f2a14a484918d997",
   "rule_text": "An entry that names no tier of its own takes the tier the file name carries",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "b85e79bc5e77d5a150be72bf4c8770e298fb74ec41b0e9bbfdbeb47de9e0de35",
   "test_hash_kind": "file",
   "test_strength": null,

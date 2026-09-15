@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "pm_anchor_userstories",
-  "generated_at": "2026-09-15T16:20:52Z",
+  "generated_at": "2026-09-15T16:37:28Z",
   "layers": [
     "proof text",
     "test body",
@@ -16,18 +16,14 @@
   "proofs": [
     {
       "env": null,
-      "findings": [
-        "implementation_coupling"
-      ],
+      "findings": [],
       "id": "PROOF-2",
       "text": "Read `tools/PM/purlin-anchor-userstories.md`; verify it carries the sentence `Never commit to the default branch.`, that `specs/<category>/<name>.md`, `specs/_anchors/<name>.md` and `designs/<feature>/` each appear, and that the sentence `Create no other folder.` appears, one assertion per literal so the failure names the missing one. Deleting `Create no other folder.` fails naming it",
       "tier": "unit"
     }
   ],
-  "reasons": [
-    "PROOF-2 implementation_coupling: Names a private symbol, a selector or a path instead of an observable outcome, so a refactor breaks the proof without changing behaviour."
-  ],
-  "record": ".purlin/records/pm_anchor_userstories/20260915T162019Z-ed20c8b-ci-windows.json",
+  "reasons": [],
+  "record": ".purlin/records/pm_anchor_userstories/20260915T163718Z-c30af23-ci-linux.json",
   "risk": "high",
   "rule": "RULE-2",
   "rule_hash": "ef7381eb42ee7a5b83426fdc7a7f3dfd1cd9141b8197a9a617e0e6f046fce6b2",

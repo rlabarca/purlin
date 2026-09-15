@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "server",
-  "generated_at": "2026-09-15T16:21:21Z",
+  "generated_at": "2026-09-15T16:37:44Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-11 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/server/20260915T162021Z-ed20c8b-ci-windows.json",
+  "record": ".purlin/records/server/20260915T163718Z-c30af23-ci-linux.json",
   "risk": "high",
   "rule": "RULE-11",
   "rule_hash": "3b3cd3521d1126c5b57568752f163799b408cabb9aa72f00a64c16568aa9361e",
   "rule_text": "`generate_digest` writes the dashboard's data file at schema version 4, naming the producer it was given",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "dad5177a5ffd2b521fc6d0c331024d9620cfde4d4825e2f188f2ef92b4f9be10",
   "test_hash_kind": "file",
   "test_strength": null,

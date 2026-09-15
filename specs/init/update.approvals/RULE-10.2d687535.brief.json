@@ -1,0 +1,72 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-15T16:37:59Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "b59188af17332d3dd4d09131d7d12c963934b8d6dd1ec67e7847012e45bcd625",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-10",
+      "text": "Run the update with `--yes` on each fixture and verify the config reads `version` equal to the `VERSION` file, `gate` `tested`, `ai_review_at` `never`, `min_strength` 50, `mutation_engine` `auto`, `sql_engine` null, `ci` `github` and `pre_push` either `on` or `off`; verify the fixture carried at least one retired key before and that none is present after",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/update/20260915T163718Z-c30af23-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-10",
+  "rule_hash": "3161ea26c33d90c85d31b4e294ecc5b9cd72e956e19e4d04525f85762d59304d",
+  "rule_text": "The config the run leaves is the gate and what the gate derives, carrying `version`, `gate`, `ai_review_at`, `ci`, `min_strength`, `sql_engine`, `mutation_engine`, `test_framework`, `digest` and `pre_push`, and none of the keys this release stopped reading",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "18e022ef5dc8821386f13ded10690341f83eb17e09d5a0e75fefe0171658b33d",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_config_is_the_gate_shape(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    _apply(root)\n    config = json.loads(_read(root, '.purlin/config.json'))\n    assert config['version'] == VERSION\n    assert config['gate'] == 'tested'\n    assert config['ai_review_at'] == 'never'\n    assert config['min_strength'] == 50\n    assert config['mutation_engine'] == 'auto'\n    assert config['sql_engine'] is None\n    assert config['ci'] == 'github'\n    assert config['pre_push'] in ('on', 'off')",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_retired_keys_are_gone[upgrade-0.10-dev]",
+      "proof": "PROOF-10",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_config_is_the_gate_shape(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    _apply(root)\n    config = json.loads(_read(root, '.purlin/config.json'))\n    assert config['version'] == VERSION\n    assert config['gate'] == 'tested'\n    assert config['ai_review_at'] == 'never'\n    assert config['min_strength'] == 50\n    assert config['mutation_engine'] == 'auto'\n    assert config['sql_engine'] is None\n    assert config['ci'] == 'github'\n    assert config['pre_push'] in ('on', 'off')",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_retired_keys_are_gone[upgrade-0.9.5]",
+      "proof": "PROOF-10",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_config_is_the_gate_shape(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    _apply(root)\n    config = json.loads(_read(root, '.purlin/config.json'))\n    assert config['version'] == VERSION\n    assert config['gate'] == 'tested'\n    assert config['ai_review_at'] == 'never'\n    assert config['min_strength'] == 50\n    assert config['mutation_engine'] == 'auto'\n    assert config['sql_engine'] is None\n    assert config['ci'] == 'github'\n    assert config['pre_push'] in ('on', 'off')",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_config_is_the_gate_shape[upgrade-0.10-dev]",
+      "proof": "PROOF-10",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_config_is_the_gate_shape(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    _apply(root)\n    config = json.loads(_read(root, '.purlin/config.json'))\n    assert config['version'] == VERSION\n    assert config['gate'] == 'tested'\n    assert config['ai_review_at'] == 'never'\n    assert config['min_strength'] == 50\n    assert config['mutation_engine'] == 'auto'\n    assert config['sql_engine'] is None\n    assert config['ci'] == 'github'\n    assert config['pre_push'] in ('on', 'off')",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_config_is_the_gate_shape[upgrade-0.9.5]",
+      "proof": "PROOF-10",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "2d687535d0bf2238221f741c6f4084c46eb2bdd92986d6c2b15559cf5d5ab17f",
+  "verdict": "ready"
+}

@@ -1,0 +1,70 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "brief",
+  "generated_at": "2026-09-15T16:37:23Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "a22d7c26471c611ce86d6e3606aae7579fe7ffd32436fe5ea05493389cfdcb32",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-23",
+      "text": "Replace the model launch with an answer opening `add a case`; verify one `claude -p` call is made and the brief's verdict is `add a case`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-24",
+      "text": "Read the verdict out of the answers `It looks fine to me.`, `not available` and `Ready.`; verify the first two name nothing and the third names `ready`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-23 happy_path_only: No proof of this rule names a rejection, an error or a boundary.",
+    "PROOF-24 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/brief/20260915T163718Z-c30af23-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-17",
+  "rule_hash": "22327e1867acb961d0c3894aaf40b6c3fe7b592eab817b0c9267de7812871e49",
+  "rule_text": "A model answer opening with one of the four verdicts decides the brief's verdict; an answer naming none decides nothing",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "442acf211be9b623dc8b9379549fe4fc7472eefe4e5ffd50735121ca73c344c6",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_model_answer_decides_the_verdict(self, reviewed, monkeypatch):\n        calls = []\n        real_run = brief_module.subprocess.run\n\n        class Result(object):\n            returncode = 0\n            stdout = 'add a case\\nNothing proves the lockout boundary.\\n'\n\n        def fake_run(command, **kwargs):\n            if command and command[0] == 'claude':\n                calls.append(command)\n                return Result()\n            return real_run(command, **kwargs)\n\n        monkeypatch.setattr(brief_module.shutil, 'which',\n                            lambda name: '/usr/local/bin/claude')\n        monkeypatch.setattr(brief_module.subprocess, 'run', fake_run)\n        built = build(reviewed, 'RULE-2', ai=True)\n        assert len(calls) == 1 and calls[0][:2] == ['claude', '-p']\n        assert built['ai_review'].startswith('add a case')\n        assert built['verdict'] == 'add a case'",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_the_model_answer_decides_the_verdict",
+      "proof": "PROOF-23",
+      "reasons": []
+    },
+    {
+      "body": "def test_an_answer_that_names_no_verdict_decides_nothing(self):\n        assert brief_module.model_verdict('It looks fine to me.') is None\n        assert brief_module.model_verdict('not available') is None\n        assert brief_module.model_verdict('Ready.') == 'ready'",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_an_answer_that_names_no_verdict_decides_nothing",
+      "proof": "PROOF-24",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "8b8f1b62fa841c81c588e4b0d980f6f8d58623398f875f9d1cb169ef45c6da3b",
+  "verdict": "add a case"
+}

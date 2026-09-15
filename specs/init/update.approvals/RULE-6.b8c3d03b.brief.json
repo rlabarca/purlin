@@ -1,0 +1,69 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-15T16:37:58Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "3ae025201956162fdef0bffa222a3d67611bb4d28ea50b58d53e21f4737f7366",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-6",
+      "text": "Run the update on the v0.9.5 fixture answering every question `n`; verify the output contains `skipped config` and the pending ids are exactly what they were; then answer `n` to the records question alone and verify the pending ids afterwards are exactly `['records']`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-6 logic_mirroring",
+    "PROOF-6 logic_mirroring"
+  ],
+  "record": ".purlin/records/update/20260915T163718Z-c30af23-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-6",
+  "rule_hash": "bf16e8d6c1e0aa483cc3a99068e35c055df94a1ef404302f0e2d50b99b7bd9c1",
+  "rule_text": "Every migration asks before it writes; a declined one is reported as skipped and left pending, and declining one never stops the others",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "50003d34b228769804590a6e273815848584982ca9e919e9c362a199fbba4ae2",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_declined_migration_is_left_pending(tmp_path, capsys, monkeypatch):\n    root = _project(tmp_path, V095)\n    before = _ids(root)\n    _answers(monkeypatch, default='n')\n    assert _apply(root, argv=()) == 0\n    printed = capsys.readouterr().out\n    assert 'skipped config' in printed\n    assert _ids(root) == before",
+      "file": "dev/test_init_update.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_a_declined_migration_is_left_pending",
+      "proof": "PROOF-6",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_a_declined_migration_is_left_pending(tmp_path, capsys, monkeypatch):\n    root = _project(tmp_path, V095)\n    before = _ids(root)\n    _answers(monkeypatch, default='n')\n    assert _apply(root, argv=()) == 0\n    printed = capsys.readouterr().out\n    assert 'skipped config' in printed\n    assert _ids(root) == before",
+      "file": "dev/test_init_update.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_one_declined_migration_does_not_stop_the_others",
+      "proof": "PROOF-6",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "b8c3d03be075e3794f485293fed4f0e4e3d5acfa61c0d160f1e53343e290e426",
+  "verdict": "needs a human"
+}
