@@ -5,16 +5,16 @@ is what the run could not finish, found and left, or left to a person.
 
 ## For the user, in order
 
-1. **Approve the rest.** 324 high and medium rules are approved in the signed commit
-   `72c4f1f4`, each after a review read its test against its proof. 110 are held with the
-   missing case named in `dev/plans/held-rules-0.10.0.md`; the 13 `skill_*` RULE-3 holds are
-   one weakness in the shared next-step check. Six `schema_proof_format` approvals (RULE-1, 2,
-   3, 4, 6, 7) do not count: the approver authored `d1006609`, the last commit to
+1. **Approve the rest.** 329 of 437 high and medium rules are approved, in the signed commits
+   `72c4f1f4` and `6883ed3f`, each after a review read its test against its proof. 108 are held
+   with the missing case named in `dev/plans/held-rules-0.10.0.md`; the 13 `skill_*` RULE-3 holds
+   are one weakness in the shared next-step check. Six `schema_proof_format` approvals (RULE-1,
+   2, 3, 4, 6, 7) do not count: the approver authored `d1006609`, the last commit to
    `dev/test_schema_proof_format.py`, so another approver signs those, or the approver signs
-   again after someone else's next real change to that file. Rules whose test files change
-   after `72c4f1f4` go stale and need a second look. The public key still has to be uploaded
-   to GitHub for the host to show Verified, and `verify_gate.py --check` counts an approval
-   only once its commit is on `origin/main`.
+   again after someone else's next real change to that file. A change to a test file stales
+   every approval that file backs. The public key still has to be uploaded to GitHub for the
+   host to show Verified, and `verify_gate.py --check` counts an approval only once its commit
+   is on `origin/main`.
 2. **Apply the three GitHub rulesets** init printed (require a pull request and the `purlin`
    check with the Actions app as the only bypass; restrict `.purlin/records/**` and
    `specs/**/*.approvals/*.ci.json` to the Actions app; block force pushes and deletions).
@@ -28,21 +28,23 @@ is what the run could not finish, found and left, or left to a person.
 
 ## Defects and gaps found by the run, not fixed
 
-5. **Test strength is real locally and `n/a` in CI.** `setup.cfg` now points mutmut at
-   `scripts/` under the `dev/` tests, and init names nested source and a test directory. CI
-   does not install mutmut: a full run over `scripts/` takes about 4.5 hours on this Mac and
-   mutmut 3 does not run on Windows, so CI records carry `n/a` and the gate skips the
-   comparison. Measure locally with `--arm-timeout 18000`, or in a scheduled Linux job.
-   Partial run of 2026-09-15, 21,872 breaks, 55% judged when read: scaffold 12, server 15,
-   upstream 56, brief 58, static_checks 58, drift 65, approvals 68, mutation 73 (final);
-   proof_common 11, run_script 42, config_engine 54, purlin_version 60, states 61, records 64,
-   specs 78, update 78, proofs 100 (partial). Every final number is under the 80 minimum, so
-   `approved` fails on a record that carries them. About 2,100 of the 2,516 breaks with no
-   covering test are code the tests reach only by subprocess (`scaffold.py` `main`,
-   `refresh_digest.py`, `pytest_purlin.py`, the CLI entry points); a few hundred are
-   functions no test reaches (`ci._post_azure`, `records._read_at_ref`, `remote._github`,
-   `static_checks._skip_regex`). In-process tests for both are the next step, then a full
-   rerun. `security_no_dangerous_patterns` scopes `scripts/**/*.py`, so its number is all of
+5. **Test strength is real locally and `n/a` in CI.** `setup.cfg` points mutmut at `scripts/`
+   under the `dev/` tests; init names nested source and a test directory, and ignores
+   `mutants/`. CI does not install mutmut: a full run takes hours here and mutmut 3 does not
+   run on Windows, so CI records carry `n/a` and the gate skips the comparison. Measure locally
+   with `--arm-timeout 18000`, or in a scheduled Linux job. The first full run (2026-09-15, 55%
+   judged) read under 80 on every finished feature (scaffold 12, server 15, upstream 56), and
+   2,516 breaks had no covering test, about 2,100 of them code reached only by subprocess.
+   In-process tests closed most of that reach. Scoped runs, before and after: scaffold 12 to
+   69, server 15 to 58, upstream 59 to 68, config_engine 62 to 75, `pytest_purlin.py` 18 to 50,
+   `ci.py` 46 to 71, `remote.py` 30 to 65, `records.py` 50 to 60, `static_checks.py` 58 to 68.
+   What remains is mostly assertion strength, not reach: server keeps 257 survivors with no
+   uncovered break. A full rerun at `e78d1868` was stopped at about 40% (8,600 of 22,012) to
+   free the machine; its state is kept, so `mutmut run` in that worktree resumes where it
+   stopped and only then are the per-feature numbers final. Partial reads at that point:
+   mutation 73, records 71, config_engine 70, static_checks 66, states 66, upstream 62,
+   approvals 57, server 53, brief 51, proof_common 46, scaffold 43, run_script 36, drift 28,
+   with only 142 breaks left uncovered across `scripts/`. `security_no_dangerous_patterns` scopes `scripts/**/*.py`, so its number is all of
    `scripts/`; nine tests that read git state or source text are deselected under mutmut.
 6. **The local anchor repository is not reproducible.** `dev/setup-external-refs.sh` yields a
    different sha on each fresh setup, so `specs/_anchors/security_no_dangerous_patterns.md`'s

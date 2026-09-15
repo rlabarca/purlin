@@ -1,8 +1,8 @@
 # Held rules, 0.10.0 review
 
-434 rules read; 324 cleared to sign, 110 held.
+437 high and medium rules; 329 approved, 108 held. Each line names the case a test is missing.
 
-## proof_common (11)
+## proof_common (10)
 
 - `RULE-1` [high]: vitest, sql and xUnit plugins never run
 - `RULE-2` [high]: second specs/ or .purlin/ beside the run not checked; no-marker fallback not covered
@@ -10,13 +10,12 @@
 - `RULE-4` [medium]: only the shell entry is checked for seven keys
 - `RULE-6` [high]: replace-own-entry leg is in an unmarked test
 - `RULE-8` [medium]: temp-name construction checked loosely; no-leftover test unmarked
-- `RULE-9` [medium]: marked tests never assert exit zero
 - `RULE-11` [high]: stderr naming the offending marker never asserted
 - `RULE-12` [medium]: skip-exempt check is a text search only
 - `RULE-13` [medium]: only jest and vitest imports checked
 - `RULE-14` [medium]: tier default file/top-level tier/e2e absence unchecked; proof names a test file without the marker
 
-## server (11)
+## server (10)
 
 - `RULE-1` [high]: capabilities tools not asserted
 - `RULE-2` [high]: project_root optional not checked
@@ -28,7 +27,6 @@
 - `RULE-12` [medium]: no data file written not asserted
 - `RULE-14` [high]: spec/record input triggers not tested
 - `RULE-15` [medium]: behavioural half touches a proof file, not specs/
-- `RULE-18` [high]: no malformed config case
 
 ## mutation (9)
 
