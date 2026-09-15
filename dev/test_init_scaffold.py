@@ -1,7 +1,9 @@
 """Behavioural proofs for `scripts/init/scaffold.py`, the whole of init.
 
-Every case drives the real script against a temp git project, most of them as
-a subprocess, so the script and these proofs cannot drift apart. Nothing here
+Every case drives the real script against a temp git project. Most call its
+`main()` in this process, so a mutation run can see which case caught a
+break; the copied-plugin cases and one comparison case run it as a subprocess,
+so the command line and these proofs cannot drift apart. Nothing here
 re-implements what the script does: the fixture builds a repository, the
 script writes, and the assertions read what is on disk and what the summary
 said it wrote.
@@ -13,6 +15,8 @@ copy and runs that copy's script, which is what an install from the
 marketplace is.
 """
 
+import contextlib
+import io
 import json
 import os
 import shutil
@@ -101,17 +105,48 @@ class Project(object):
             git(self.root, 'remote', 'add', 'origin', remote)
 
     def run(self, *args, **kwargs):
+        """Init against this project, and what its summary printed.
+
+        A case runs `main()` in this process, which is what lets a mutation
+        run see which break it caught: a break reached only through a child
+        process counts as untested. `script=` (a copied plugin) and
+        `subprocess=True` run the script as a child instead, the way init
+        actually reaches it, and `test_a_child_run_and_an_in_process_run_agree`
+        holds the two paths to the same answer.
+        """
+        env = kwargs.get('env') or {}
+        if kwargs.get('script') or kwargs.get('subprocess'):
+            return self._run_child(args, env, kwargs.get('script', SCAFFOLD),
+                                   kwargs.get('code', 0))
+        argv = ['--project-root', self.root, '--yes'] + list(args)
+        saved = dict(os.environ)
+        os.environ.pop('CLAUDE_PLUGIN_ROOT', None)
+        os.environ.update(env)
+        out, err = io.StringIO(), io.StringIO()
+        try:
+            with contextlib.redirect_stdout(out), \
+                    contextlib.redirect_stderr(err):
+                try:
+                    code = scaffold_module.main(argv)
+                except SystemExit as stop:
+                    code = stop.code if isinstance(stop.code, int) else 1
+        finally:
+            os.environ.clear()
+            os.environ.update(saved)
+        assert (code or 0) == kwargs.get('code', 0), (
+            out.getvalue() + err.getvalue())
+        return out.getvalue()
+
+    def _run_child(self, args, env, script, code):
         """The script as a subprocess, which is how init actually reaches it."""
-        env = dict(os.environ)
-        env.pop('CLAUDE_PLUGIN_ROOT', None)
-        env.update(kwargs.get('env') or {})
-        script = kwargs.get('script', SCAFFOLD)
+        child = dict(os.environ)
+        child.pop('CLAUDE_PLUGIN_ROOT', None)
+        child.update(env)
         done = subprocess.run(
             [sys.executable, script, '--project-root', self.root, '--yes']
             + list(args), capture_output=True, encoding='utf-8', timeout=300,
-            env=env, stdin=subprocess.DEVNULL)
-        assert done.returncode == kwargs.get('code', 0), (
-            done.stdout + done.stderr)
+            env=child, stdin=subprocess.DEVNULL)
+        assert done.returncode == code, done.stdout + done.stderr
         return done.stdout
 
     def path(self, rel):
@@ -213,6 +248,21 @@ class TestTheOneQuestion:
                                   'min_strength', 'mutation_engine',
                                   'sql_engine', 'test_framework', 'version']
         assert config['version'] == read(os.path.join(ROOT, 'VERSION')).strip()
+
+    @pytest.mark.proof("scaffold", "PROOF-5", "RULE-5")
+    def test_a_child_run_and_an_in_process_run_agree(self):
+        """The command line and `main()` write the same config and summary."""
+        child, inline = Project(), Project()
+        try:
+            child_out = child.run('--gate', 'recorded', subprocess=True)
+            inline_out = inline.run('--gate', 'recorded')
+            assert child.config() == inline.config()
+            assert summary_paths(child_out) == summary_paths(inline_out)
+            assert (child_out.replace(child.root, '<root>')
+                    == inline_out.replace(inline.root, '<root>'))
+        finally:
+            child.close()
+            inline.close()
 
     @pytest.mark.proof("scaffold", "PROOF-5", "RULE-5")
     def test_the_template_carries_the_same_shape(self):
