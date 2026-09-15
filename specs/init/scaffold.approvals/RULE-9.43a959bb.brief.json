@@ -1,0 +1,58 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-15T17:13:04Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "eb0b0b4103f866ca74faae3ccd94bb6268566e5779bb13facd810ef86f2444d9",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-9",
+      "text": "Run init on a project holding an xunit `.csproj` and verify the output contains `TestLogger.dll` and `dotnet test --logger purlin`; run it on a vitest project and verify the output names Stryker",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-9 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/scaffold/20260915T171238Z-eacb477-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-9",
+  "rule_hash": "89d3e9d72a1da57d58f3df43130a6da9ad6765eff21ef53bdd30ffab4c5e2764",
+  "rule_text": "A framework whose tooling init cannot wire is told what to do instead: an xunit project that its logger needs a `*.TestLogger.dll` assembly and `dotnet test --logger purlin`, and a node project that Stryker is what measures the breaks",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "9b2ecc0fe0cdb610854f6ba46c0a45f1cb306298af19034a22311f1f070a56e4",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_xunit_is_told_how_to_wire_its_logger(self):\n        made = Project('xunit')\n        try:\n            output = made.run('--gate', 'tested')\n            assert 'TestLogger.dll' in output\n            assert 'dotnet test --logger purlin' in output\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_a_node_project_is_told_about_stryker",
+      "proof": "PROOF-9",
+      "reasons": []
+    },
+    {
+      "body": "def test_xunit_is_told_how_to_wire_its_logger(self):\n        made = Project('xunit')\n        try:\n            output = made.run('--gate', 'tested')\n            assert 'TestLogger.dll' in output\n            assert 'dotnet test --logger purlin' in output\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_xunit_is_told_how_to_wire_its_logger",
+      "proof": "PROOF-9",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "43a959bbc5d7385f75d70bdd69994688786c5b9a4400d235c9de60dac6b26416",
+  "verdict": "add a case"
+}

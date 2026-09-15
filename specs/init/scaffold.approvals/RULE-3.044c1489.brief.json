@@ -1,0 +1,55 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-15T17:13:03Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "144cd2dc82ebb2437b18b590d1a464c0635408b640af79f20688b9223af90c30",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-3",
+      "text": "Run with `--gate tested` and verify the gate question is absent from the output; then run `--gate recorded`, run again with no flag, and verify the question is still absent and the config still reads `recorded`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/scaffold/20260915T171238Z-eacb477-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-3",
+  "rule_hash": "189939e3fb89c195775d5c2909d1244cf357bb345bdf88f7d23d8a17cf459fab",
+  "rule_text": "`--gate` answers the question without asking it, and a later run with no flag keeps the gate the project already recorded",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "76ffb81bea2af647f5fe1cc3b26f8e2ee28f909dfa98beecfdbfd2e8bfcb1aa4",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_gate_flag_answers_the_question_without_asking(self, project):\n        output = project.run('--gate', 'tested')\n        assert scaffold_module.GATE_QUESTION not in output",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_gate_flag_answers_the_question_without_asking",
+      "proof": "PROOF-3",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_gate_flag_answers_the_question_without_asking(self, project):\n        output = project.run('--gate', 'tested')\n        assert scaffold_module.GATE_QUESTION not in output",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_gate_is_remembered_when_no_flag_names_one",
+      "proof": "PROOF-3",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "044c148981bed59093e1ec58fa3bd5418a8824c5ee807e9ea43b14aab8dcf7cd",
+  "verdict": "ready"
+}

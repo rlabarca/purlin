@@ -1,0 +1,54 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-15T17:13:01Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "f0161b7a790590ea95100d99f0bd6c57d7861650232f5447a23a5213940c362b",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-11",
+      "text": "Run `--all --quick` on a project with one spec; verify the output holds `Purlin status:` and a `Lowest state` column and that its last non-empty line starts with the arrow. Run it on a project with no spec; verify `No specs found under specs/` and exit 1",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/run_script/20260915T171238Z-eacb477-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-11",
+  "rule_hash": "31ada0b5fdb03c7270586f5291c57be1ed0f1f6feffc24d42b64cb73c1a17b0a",
+  "rule_text": "Every run ends with the state table and one line naming the next step; a project with no specs says so and exits 1",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "bde05652732d433d839d3084e7cdc4109dd8479d0d0489250cc730812d6144cf",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_table_and_one_next_step_are_printed(self, tmp_path):\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat')\n        _code, output = _run(root, '--all', '--quick')\n        assert 'Purlin status:' in output\n        assert 'Lowest state' in output\n        lines = [line for line in output.strip().splitlines() if line.strip()]\n        assert lines[-1].startswith('\u2192 ')",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_a_project_with_no_specs_says_so",
+      "proof": "PROOF-11",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_table_and_one_next_step_are_printed(self, tmp_path):\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat')\n        _code, output = _run(root, '--all', '--quick')\n        assert 'Purlin status:' in output\n        assert 'Lowest state' in output\n        lines = [line for line in output.strip().splitlines() if line.strip()]\n        assert lines[-1].startswith('\u2192 ')",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_the_table_and_one_next_step_are_printed",
+      "proof": "PROOF-11",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "2a90da57efa1c31d7377c36e1cd61a2ee18559e2d467bc975da7080a0983db9c",
+  "verdict": "ready"
+}

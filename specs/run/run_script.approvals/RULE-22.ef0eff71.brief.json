@@ -1,0 +1,52 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-15T17:13:02Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "3bedeb326f37f8c0f8fea9fafecc2eaf99e86dd126bd685d280ca72d28e3b74a",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-22",
+      "text": "Read `scripts/run/purlin_run.py`; verify none of the retired words appears in it, that every occurrence of the operating-system attribute is the `sys.` one, and that no character in the file is an emoji",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-22 logic_mirroring"
+  ],
+  "record": ".purlin/records/run_script/20260915T171238Z-eacb477-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-22",
+  "rule_hash": "bcffd5fd012177e3f3ccbbb9c21ecfd08675944932f00934764413e045cfa380",
+  "rule_text": "The run script's source carries none of the words this release retired and no emoji, and reads the operating system only through `sys.platform`",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "e8b0808f5ac6d89ae877846c1865ca4042340cf8a4a19cec7e0526bc74b81414",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_no_retired_word_and_no_emoji(self):\n        source = open(RUN_SCRIPT, encoding='utf-8').read()\n        for word in self.RETIRED:\n            assert word not in source, word\n        # `sys.platform` is the one place the operating system is read.\n        marker = 'sys.' + 'plat' + 'form'\n        assert source.count(marker[4:]) == source.count(marker)\n        assert all(ord(character) < 0x1F000 for character in source)",
+      "file": "dev/test_run_script.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_no_retired_word_and_no_emoji",
+      "proof": "PROOF-22",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "ef0eff7144d45992a280c837fbc0e72cb583c1b20571f90d8637a32794c88b84",
+  "verdict": "needs a human"
+}

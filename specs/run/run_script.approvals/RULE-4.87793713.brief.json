@@ -1,0 +1,82 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-15T17:13:00Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "01ab66b09056cd065558b773b87e7764ee856aa76bf91d5a6e6c983f6b7f8b90",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-4",
+      "text": "Write `feat.test.sh` at the project root recording one proof and run `--all --quick` with the shell framework; verify the entry's `test_name` is `shell case`. Write `tests/test_feat.sql` carrying `-- @purlin feat PROOF-1 RULE-1 unit` and a block selecting `'PASS'`, run `--all --quick` with the sql framework; verify the entry's `status` is `pass`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-4 tautology",
+    "PROOF-4 tautology",
+    "PROOF-4 tautology",
+    "PROOF-4 tautology"
+  ],
+  "record": ".purlin/records/run_script/20260915T171238Z-eacb477-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-4",
+  "rule_hash": "ae8df491a1c69b050f0cdff5ac773348b12abe8b956387e9eccc81b0ab06562e",
+  "rule_text": "The shell arm runs each `*.test.sh` at the project root, and the sql arm runs each `.sql` file under `tests/` through the sql harness with the engine `sql_engine` names, defaulting to `sqlite3`",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "5afb123eee4f9281eb26021302df976b68206aaa72321daf1d976f1fb8a05a00",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_engine_comes_from_the_config(self, tmp_path):\n        \"\"\"`sql_engine` names the command; a bad one fails every block.\"\"\"\n        root = _project(tmp_path)\n        (root / \".purlin\" / \"config.json\").write_text(\n            json.dumps({\"sql_engine\": \"no-such-engine\"}), encoding=\"utf-8\")\n        self._run(root, \"-- @purlin feat PROOF-1 RULE-1 unit\\n\"\n                        \"SELECT 'PASS';\\n\")\n        assert _proofs(root, \"feat\")[\"proofs\"][0][\"status\"] == \"fail\"",
+      "file": "dev/test_proof_plugins_missing.py",
+      "findings": [],
+      "name": "test_the_engine_comes_from_the_config",
+      "proof": "PROOF-4",
+      "reasons": []
+    },
+    {
+      "body": "def test_shell_arm_runs_the_root_test_scripts(self, tmp_path):\n        root = _project(tmp_path, frameworks='shell')\n        _spec(root, 'feat')\n        (root / 'feat.test.sh').write_text(\n            'source %s\\n'\n            'purlin_proof \"feat\" \"PROOF-1\" \"RULE-1\" pass \"shell case\"\\n'\n            'purlin_proof_finish\\n'\n            % SHELL_HARNESS, encoding='utf-8')\n        code, output = _run(root, '--all', '--quick')\n        data = _proofs(root, 'feat')\n        assert data is not None, output\n        assert data['proofs'][0]['test_name'] == 'shell case'\n        assert code == 0, output",
+      "file": "dev/test_run_script.py",
+      "findings": [
+        "tautology",
+        "tautology"
+      ],
+      "name": "test_shell_arm_runs_the_root_test_scripts",
+      "proof": "PROOF-4",
+      "reasons": [
+        "tautological assertion (assert True or equivalent)",
+        "tautological assertion (assert True or equivalent)"
+      ]
+    },
+    {
+      "body": "def test_shell_arm_runs_the_root_test_scripts(self, tmp_path):\n        root = _project(tmp_path, frameworks='shell')\n        _spec(root, 'feat')\n        (root / 'feat.test.sh').write_text(\n            'source %s\\n'\n            'purlin_proof \"feat\" \"PROOF-1\" \"RULE-1\" pass \"shell case\"\\n'\n            'purlin_proof_finish\\n'\n            % SHELL_HARNESS, encoding='utf-8')\n        code, output = _run(root, '--all', '--quick')\n        data = _proofs(root, 'feat')\n        assert data is not None, output\n        assert data['proofs'][0]['test_name'] == 'shell case'\n        assert code == 0, output",
+      "file": "dev/test_run_script.py",
+      "findings": [
+        "tautology",
+        "tautology"
+      ],
+      "name": "test_sql_arm_runs_the_tests_directory",
+      "proof": "PROOF-4",
+      "reasons": [
+        "tautological assertion (assert True or equivalent)",
+        "tautological assertion (assert True or equivalent)"
+      ]
+    }
+  ],
+  "triple_hash": "87793713c84e219853d74be339d8ea1e4e6dd36e5ff91629affd0ed53c90a8b1",
+  "verdict": "needs a human"
+}

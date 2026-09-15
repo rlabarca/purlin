@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-15T17:13:09Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "9bac44440c5c09aa482782c0917e6ab80050170e56efd4262ab5dcb22751e4b5",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-40",
+      "text": "Write `greeting.py` and `tests/test_greeting.py`, run init twice and verify `.gitignore` carries the line `mutants/` exactly once",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-40 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/scaffold/20260915T171238Z-eacb477-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-40",
+  "rule_hash": "c1bb3fdde4d6da95eade38608167649cd75391884d3663746f3e0737633049ef",
+  "rule_text": "Writing the mutmut block also appends `mutants/` to the project's `.gitignore`, once and never twice, so the copy mutmut breaks is never committed",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "56b09b757e7ab2023efe555f1e39c58fede9fb9ecf00a0f2645478948efb0a8f",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_mutmut_copy_is_ignored_once(self, project):\n        write(project.path('greeting.py'), 'def greet(name):\\n    return name\\n')\n        write(project.path('tests/test_greeting.py'), 'def test_greet():\\n    pass\\n')\n        project.run('--gate', 'tested')\n        project.run('--gate', 'tested')\n        lines = read(project.path('.gitignore')).splitlines()\n        assert lines.count('mutants/') == 1",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_mutmut_copy_is_ignored_once",
+      "proof": "PROOF-40",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "b16c7f8439c2ccb07f12d4a2c706857c9d3efa11c1b14cb696a5433ee61bd4c6",
+  "verdict": "add a case"
+}

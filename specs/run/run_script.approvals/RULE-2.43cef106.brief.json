@@ -1,0 +1,59 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-15T17:12:59Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "e3a82749e59feacb67ca90cd0c8479a7c2602071cb39a2046d5a209bfe4a5906",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-2",
+      "text": "Run `--feature nosuch --quick` against a project holding only `feat`; verify exit 2 and `no spec named nosuch`. Run `--all --quick --project-root <a path that does not exist>`; verify exit 2 and `is not a directory`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-2 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/run_script/20260915T171238Z-eacb477-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-2",
+  "rule_hash": "ebfe77da5c2fedbb9c676267468830e157b3600b640f07abdc62decd0e70ae31",
+  "rule_text": "A `--feature` name with no spec under `specs/` exits 2 naming it, and a `--project-root` that is not a directory exits 2 saying so",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "b83f7127ce2059a3328ec77f0a728373311082d424c2b2e15b70441057e0032c",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_an_unknown_feature_exits_two(self, tmp_path):\n        root = _project(tmp_path)\n        _spec(root, 'feat')\n        code, output = _run(root, '--feature', 'nosuch', '--quick')\n        assert code == 2\n        assert 'no spec named nosuch' in output",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_a_missing_project_root_exits_two",
+      "proof": "PROOF-2",
+      "reasons": []
+    },
+    {
+      "body": "def test_an_unknown_feature_exits_two(self, tmp_path):\n        root = _project(tmp_path)\n        _spec(root, 'feat')\n        code, output = _run(root, '--feature', 'nosuch', '--quick')\n        assert code == 2\n        assert 'no spec named nosuch' in output",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_an_unknown_feature_exits_two",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "43cef10689216f42d4f237d2ab0a20e04300c7992313e297e3e3f2bf0620d572",
+  "verdict": "add a case"
+}

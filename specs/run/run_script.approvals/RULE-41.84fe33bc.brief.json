@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-15T17:13:02Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "ab7cbd14163861599d34d8ecb5ee84a68c62834680ebc73ce157c4e237777e7a",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-60",
+      "text": "Run `--all --quick --project-root \"\"` from a directory holding a project; verify exit 2, that the message names `--project-root`, and that no proof file was written under that directory",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-60 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/run_script/20260915T171238Z-eacb477-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-41",
+  "rule_hash": "b11fd0ec3b851ee808b105d1418854288320f2cfbcdb8cefc98282e294b16b48",
+  "rule_text": "`--project-root` with an empty value exits 2 naming the flag, rather than resolving to the working directory and running there",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "5441d4ed3be90ccee2caf3dd1998fb44b2afe58584dad4acb0813474564403d5",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_an_empty_project_root_exits_2_and_runs_nothing(self, tmp_path):\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat')\n        result = subprocess.run(\n            [sys.executable, RUN_SCRIPT, '--all', '--quick',\n             '--project-root', ''],\n            capture_output=True, encoding='utf-8', cwd=str(root))\n        output = result.stdout + result.stderr\n        assert result.returncode == 2, output\n        assert '--project-root' in output, output\n        assert not (root / PROOF_REL).exists(), output",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_an_empty_project_root_exits_2_and_runs_nothing",
+      "proof": "PROOF-60",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "84fe33bc5f6ea85184e14d4358d50f09e46386d868888b6d72d27b3c59b698d0",
+  "verdict": "add a case"
+}

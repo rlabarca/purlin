@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "update",
-  "generated_at": "2026-09-15T16:50:51Z",
+  "generated_at": "2026-09-15T17:13:29Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-2 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/update/20260915T164921Z-c30af23-ci-windows.json",
+  "record": ".purlin/records/update/20260915T171238Z-eacb477-ci-linux.json",
   "risk": "high",
   "rule": "RULE-2",
   "rule_hash": "e01f97f0755898fb0781f245b83dfe14d48918f1badff1af6dd9e964baef6f0d",
   "rule_text": "The detectors read both older layouts, the one v0.9.5 left and the one the 0.10 development branch left, and each layout's own leftovers are what it reports",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "844ce2bbf4b2dedc3e5f75253721031edd14887da496422836ce7409e691c498",
   "test_hash_kind": "file",
   "test_strength": null,

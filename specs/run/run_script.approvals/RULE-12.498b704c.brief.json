@@ -1,0 +1,48 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-15T17:13:01Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "a203570198f4a484bd91ab9860c6521bdac398f0414b34cb2e5257304f053f3c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-12",
+      "text": "Run `--all --record` with the record writer standing in; verify the record's `schema` is `purlin-record/1`, that it carries `commit`, `dirty`, `runner`, `timestamp`, `environment`, `plugins`, `missing`, `features`, `scope_tree` and `log`, that `environment` holds exactly `os`, `id`, `kind`, `host`, `job` and `engines` with `os` one of the three names and `kind` `local`, that `pytest` is among the plugins, and that the file name's runner and operating system are the record's own",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/run_script/20260915T171238Z-eacb477-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-12",
+  "rule_hash": "c56a7d874899bb01808ccec925234af685decf2aa8934688dc0a5bf744c8ff6f",
+  "rule_text": "`--record` builds one `purlin-record/1` record per feature carrying the commit, whether the tree was dirty, the runner, the timestamp, the environment, the plugins that ran, the operating system, the scope tree hash and the log",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "e8b6628150c5d3733064d9c94625cfecb1372ee87db0530e2e0accaec1c6745c",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_record_carries_every_field_the_design_lists(\n            self, tmp_path, record_run, capsys):\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat')\n        _code, calls = record_run(root, '--all')\n        capsys.readouterr()\n        assert len(calls['write']) == 1\n        record, runner, os_name = calls['write'][0]\n        assert record['schema'] == 'purlin-record/1'\n        assert set(record) >= {'commit', 'dirty', 'runner', 'timestamp',\n                               'environment', 'plugins', 'missing', 'features',\n                               'scope_tree', 'log'}\n        assert isinstance(record['runner'], str)\n        assert set(record['environment']) == {'os', 'id', 'kind', 'job',\n                                              'host', 'engines'}\n        assert record['environment']['os'] in ('windows', 'macos', 'linux')\n        assert os_name == record['environment']['os']\n        assert runner == record['runner']\n        assert record['environment']['kind'] == 'local'\n        assert 'pytest' in record['plugins']",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_the_record_carries_every_field_the_design_lists",
+      "proof": "PROOF-12",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "498b704c2ccdb57c21e4abd59256271a100c2a33eec3d55684ae0fa613c0d885",
+  "verdict": "ready"
+}

@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "brief",
-  "generated_at": "2026-09-15T16:49:47Z",
+  "generated_at": "2026-09-15T17:12:43Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-19 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/brief/20260915T164916Z-c30af23-ci-windows.json",
+  "record": ".purlin/records/brief/20260915T171237Z-eacb477-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-15",
   "rule_hash": "ddfa7f24b9bc6e1e97f15b9c8fed6ceae6a5cdd3cab1a28ba0ce7580fc11303d",
   "rule_text": "The model prompt is `references/review_criteria.md` verbatim, followed by this rule's rule text, proof text, test bodies and test strength",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "7ed929b195951752aa7693af255d2e658a987f0198df226ef5b5038d8f9fd64c",
   "test_hash_kind": "file",
   "test_strength": null,

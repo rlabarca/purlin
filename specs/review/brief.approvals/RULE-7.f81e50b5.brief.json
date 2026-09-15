@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "brief",
-  "generated_at": "2026-09-15T16:49:47Z",
+  "generated_at": "2026-09-15T17:12:43Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-8 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/brief/20260915T164916Z-c30af23-ci-windows.json",
+  "record": ".purlin/records/brief/20260915T171237Z-eacb477-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-7",
   "rule_hash": "442ecb9490dcbcf4fa2cf0ed25e63c43532e74ca5c3695ba358a06c427bb303f",
   "rule_text": "The brief shows the marked test's file, its name and its source beside the rule",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "8cb415274ebb128454b776308bb3509545d5e0fac8ce3558509df0c18e711669",
   "test_hash_kind": "file",
   "test_strength": null,

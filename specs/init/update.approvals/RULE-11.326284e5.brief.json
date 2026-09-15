@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "update",
-  "generated_at": "2026-09-15T16:50:53Z",
+  "generated_at": "2026-09-15T17:13:30Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-11 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/update/20260915T164921Z-c30af23-ci-windows.json",
+  "record": ".purlin/records/update/20260915T171238Z-eacb477-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-11",
   "rule_hash": "403dbab1b41605927051f691e894776c441cea9fc104f6e3761696e3054a5c7c",
   "rule_text": "The rewritten config carries no key nothing reads: the dashboard switch an older release carried is not written back",
   "schema": "purlin-brief/1",
-  "state": "Recorded",
+  "state": "Reviewed",
   "test_hash": "2f0adee58d3b76125baa3483cd128b0750730cb1cb1c5223032cc9f5dadb1abf",
   "test_hash_kind": "file",
   "test_strength": null,

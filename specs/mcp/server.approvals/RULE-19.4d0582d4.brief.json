@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "server",
-  "generated_at": "2026-09-15T16:50:26Z",
+  "generated_at": "2026-09-15T17:13:12Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,7 +27,7 @@
   "reasons": [
     "PROOF-19 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/server/20260915T164919Z-c30af23-ci-windows.json",
+  "record": ".purlin/records/server/20260915T171238Z-eacb477-ci-linux.json",
   "risk": "high",
   "rule": "RULE-19",
   "rule_hash": "0d1bae9d9cab78f11ed6167189e7a2e5a0735eb1d41b5507d978442508bff33b",
