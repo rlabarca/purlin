@@ -182,12 +182,22 @@ def _copy_text(workspace, name='no_eval'):
         return handle.read()
 
 
-def _cli(workspace, args):
-    """Run the command line's `main()` in this process. Returns `(exit_code, stdout)`.
+def _child(args, cwd=None):
+    """Run `upstream.py` as a child process. Returns `(exit_code, stdout)`."""
+    result = subprocess.run([sys.executable, UPSTREAM_PY] + list(args),
+                            capture_output=True, text=True, cwd=cwd)
+    return result.returncode, result.stdout
 
-    In-process is what lets a mutation run see which case caught a break;
-    `test_help_and_a_bare_call_are_usable` still starts the script as a child.
+
+def _cli(workspace, args, child=False):
+    """Run the command line against the workspace. Returns `(exit_code, stdout)`.
+
+    `main()` runs in this process, which is what lets a mutation run see which
+    case caught a break. `child=True` starts the script as a process instead,
+    for the cases whose proof names the command line's exit code.
     """
+    if child:
+        return _child(['--project-root', workspace.root] + list(args))
     out = io.StringIO()
     with contextlib.redirect_stdout(out), \
             contextlib.redirect_stderr(io.StringIO()):
@@ -355,6 +365,32 @@ def test_check_exit_code_and_json_from_the_command_line(workspace):
     assert code == 1
     assert 'is behind its source' in out
     assert 'purlin:anchor sync no_eval' in out
+
+
+@pytest.mark.proof("upstream", "PROOF-9", "RULE-9", tier="integration")
+@pytest.mark.proof("upstream", "PROOF-10", "RULE-10", tier="integration")
+def test_check_exit_codes_from_a_child_process(workspace):
+    """The exit codes a caller's shell sees, from the script run as a process."""
+    _add(workspace)
+    code, out = _cli(workspace, ['sync', '--check', '--json'], child=True)
+    assert code == 0
+    assert json.loads(out)['behind'] == 0
+
+    new_sha = _advance(workspace)
+    code, out = _cli(workspace, ['sync', '--check', '--json'], child=True)
+    assert code == 1
+    payload = json.loads(out)
+    assert payload['behind'] == 1
+    assert payload['anchors'][0]['remote_sha'] == new_sha
+
+    code, out = _cli(workspace, ['sync', '--check'], child=True)
+    assert code == 1
+    assert 'purlin:anchor sync no_eval' in out
+
+    code, out = _cli(workspace, ['sync', 'absent', '--check', '--json'],
+                     child=True)
+    assert code == 2
+    assert json.loads(out)['anchors'][0]['status'] == 'error'
 
 
 @pytest.mark.proof("upstream", "PROOF-9", "RULE-9", tier="integration")
@@ -572,9 +608,16 @@ def test_help_and_a_bare_call_are_usable(workspace):
     assert result.returncode == 0
     for command in ('add', 'sync', 'propose'):
         assert command in result.stdout
-    code, out = _cli(workspace, [])
+
+    # No arguments at all: not even `--project-root`.
+    code, out = _child([], cwd=workspace.root)
     assert code == 2
     assert '--project-root' in out
+
+    inline = io.StringIO()
+    with contextlib.redirect_stdout(inline):
+        assert upstream.main([]) == 2
+    assert '--project-root' in inline.getvalue()
 
 
 @pytest.mark.proof("upstream", "PROOF-1", "RULE-1", tier="integration")

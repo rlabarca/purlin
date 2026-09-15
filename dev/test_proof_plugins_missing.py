@@ -79,6 +79,16 @@ def _proof_files(root):
         return []
 
 
+def _run_pytest_child(tmp_path):
+    """`python -m pytest` with `pytest_purlin` loaded, as a child process."""
+    return subprocess.run(
+        [sys.executable, "-m", "pytest", str(tmp_path / "test_s.py"),
+         "-p", "pytest_purlin",
+         "--override-ini=pythonpath=%s" % PROOF_SCRIPTS_INI,
+         "-q", "--no-header", "-p", "no:cacheprovider"],
+        capture_output=True, text=True, cwd=str(tmp_path))
+
+
 def _run_pytest_with_plugin(tmp_path, test_code, allow_failure=False):
     """Run pytest with `pytest_purlin` loaded, in `tmp_path`, in this process.
 
@@ -175,10 +185,15 @@ def test_proof_file_naming(tmp_path):
 def test_no_markers_no_proof_files(tmp_path):
     """A run that collected no marker writes nothing at all."""
     root = _project(tmp_path)
-    _run_pytest_with_plugin(root, """
+    result = _run_pytest_with_plugin(root, """
         def test_plain():
             assert 1 == 1
     """)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert _proof_files(root) == []
+
+    child = _run_pytest_child(root)
+    assert child.returncode == 0, child.stdout + child.stderr
     assert _proof_files(root) == []
 
 

@@ -186,7 +186,8 @@ class TestSilentAndNonBlocking:
         assert not os.path.exists(os.path.join(bare, '.purlin'))
 
         off = _project(str(tmp_path / 'off'), digest='off')
-        _assert_silent_zero(_run(off), 'digest off')
+        _assert_silent_zero(_run(off, child=True), 'digest off')
+        _assert_silent_zero(_run(off), 'digest off, in process')
         assert not os.path.exists(_digest_path(off))
 
         locked = _project(str(tmp_path / 'locked'))
@@ -201,7 +202,10 @@ class TestSilentAndNonBlocking:
         assert not os.path.exists(_digest_path(locked))
 
         skipped = _project(str(tmp_path / 'skipped'))
-        _assert_silent_zero(_run(skipped, env={'PURLIN_SKIP_DIGEST': '1'}), 'PURLIN_SKIP_DIGEST')
+        _assert_silent_zero(_run(skipped, env={'PURLIN_SKIP_DIGEST': '1'}, child=True),
+                            'PURLIN_SKIP_DIGEST')
+        _assert_silent_zero(_run(skipped, env={'PURLIN_SKIP_DIGEST': '1'}),
+                            'PURLIN_SKIP_DIGEST, in process')
         assert not os.path.exists(_digest_path(skipped))
 
 
@@ -345,7 +349,8 @@ class TestSkipConditions:
         index_lock = os.path.join(git_dir, 'index.lock')
         with open(index_lock, 'w') as f:
             f.write('')
-        _assert_silent_zero(_run(committing), 'index.lock present')
+        _assert_silent_zero(_run(committing, child=True), 'index.lock present')
+        _assert_silent_zero(_run(committing), 'index.lock present, in process')
         assert not os.path.exists(_digest_path(committing)), \
             'a commit in flight belongs to the pre-commit hook'
         os.remove(index_lock)

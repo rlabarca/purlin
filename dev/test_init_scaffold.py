@@ -256,6 +256,10 @@ class TestTheOneQuestion:
         try:
             child_out = child.run('--gate', 'recorded', subprocess=True)
             inline_out = inline.run('--gate', 'recorded')
+            assert sorted(child.config()) == ['ai_review_at', 'ci', 'gate',
+                                              'min_strength',
+                                              'mutation_engine', 'sql_engine',
+                                              'test_framework', 'version']
             assert child.config() == inline.config()
             assert summary_paths(child_out) == summary_paths(inline_out)
             assert (child_out.replace(child.root, '<root>')
