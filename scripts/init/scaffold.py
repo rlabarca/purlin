@@ -239,14 +239,39 @@ def untagged_rules(root):
     return found
 
 
+def _is_test_file(name):
+    return name.endswith('.py') and (name.startswith('test_')
+                                     or name.endswith('_test.py'))
+
+
+def _holds_python(path):
+    """True when a `.py` file sits anywhere under `path`."""
+    for current, subdirs, files in os.walk(path):
+        subdirs[:] = [d for d in subdirs if not d.startswith('.')
+                      and d not in ('__pycache__', 'node_modules')]
+        if any(f.endswith('.py') for f in files):
+            return True
+    return False
+
+
 def mutmut_paths(root):
-    """`(source paths, test selection)` for the engine's config block."""
+    """`(source paths, test selection)` for the engine's config block.
+
+    A directory holding a test file at its top level, such as `dev/` with its
+    `test_*.py` files, is where the tests are. Any other directory holding a
+    `.py` file at any depth, such as `scripts/` whose code sits one level
+    down, is source. `src`, `lib` and `app` win as source, and `tests` and
+    `test` win as the selection, whenever they are there.
+    """
     dirs = [n for n in sorted(os.listdir(root)) if not n.startswith('.')
             and os.path.isdir(os.path.join(root, n))]
+    test_dirs = [n for n in dirs if any(
+        _is_test_file(f) for f in os.listdir(os.path.join(root, n)))]
     sources = [n for n in ('src', 'lib', 'app') if n in dirs] or [
         n for n in dirs if n not in ('tests', 'test', 'specs', 'designs')
-        and any(f.endswith('.py') for f in os.listdir(os.path.join(root, n)))]
-    return sources or ['.'], [n for n in ('tests', 'test') if n in dirs] or ['.']
+        and n not in test_dirs and _holds_python(os.path.join(root, n))]
+    tests = [n for n in ('tests', 'test') if n in dirs] or test_dirs
+    return sources or ['.'], tests or ['.']
 
 
 # --- Asking, and writing ---------------------------------------------------
