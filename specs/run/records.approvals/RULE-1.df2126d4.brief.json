@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "records",
-  "generated_at": "2026-09-15T19:26:51Z",
+  "generated_at": "2026-09-15T19:38:32Z",
   "layers": [
     "proof text",
     "test body",
@@ -30,7 +30,7 @@
     "PROOF-1 tautology",
     "PROOF-1 tautology"
   ],
-  "record": ".purlin/records/records/20260915T192630Z-04c92e2-ci-linux.json",
+  "record": ".purlin/records/records/20260915T193750Z-04c92e2-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-1",
   "rule_hash": "4549b1ee0a6c45f25b875f77878928ee1e11ad65bd9e29312d2993bddf638004",
