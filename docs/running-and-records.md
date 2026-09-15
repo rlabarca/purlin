@@ -121,6 +121,14 @@ report which test caught which break, so a rule carries its own tests' number. m
 totals per file, so every rule in that feature carries the same number. A run with no engine
 installed prints the install line above and measures nothing.
 
+mutmut names a break after the file it changed, `scripts/run/records.py` as
+`scripts.run.records`, and switches a break on only in a function whose module carries that
+name. Tests that import the file as `records`, through a `sys.path` entry, never switch a break
+on, and mutmut stops before running one. Import by the full dotted path, or rename the modules
+while mutmut runs, as this repository's root `conftest.py` does. mutmut runs on Linux and macOS,
+not on Windows. A test that reads git state or the source text sees the copy mutmut makes under
+`mutants/`, so name such tests in `pytest_add_cli_args` with `--deselect`.
+
 ### SQL projects
 
 A SQL project has no break engine, but it does choose the binary its tests run against.
