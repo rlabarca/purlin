@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "drift",
-  "generated_at": "2026-09-15T16:37:25Z",
+  "generated_at": "2026-09-15T16:49:50Z",
   "layers": [
     "proof text",
     "test body",
@@ -30,7 +30,7 @@
     }
   ],
   "reasons": [],
-  "record": ".purlin/records/drift/20260915T163718Z-c30af23-ci-linux.json",
+  "record": ".purlin/records/drift/20260915T164916Z-c30af23-ci-windows.json",
   "risk": "high",
   "rule": "RULE-1",
   "rule_hash": "651118fc6c70a8419d090af964b884a6f1bb4f36cc7f7b3f32042987c5a9c2a5",
