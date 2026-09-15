@@ -1,15 +1,20 @@
-# Purlin 0.10.0: outstanding after the unattended run (2026-09-14, closed at `2ca875e5`)
+# Purlin 0.10.0: outstanding after the unattended run (2026-09-14, closed at `2ca875e5`; updated 2026-09-15)
 
 Everything below is open. The refactor's lanes have all landed on `evidence-workflow`; this
 is what the run could not finish, found and left, or left to a person.
 
 ## For the user, in order
 
-1. **Approve.** 428 rules are recorded and not approved (high and medium); CI has auto-approved
-   the 77 low-risk ones and its approvals are on the branch. `purlin:review` walks them; `purlin:approve <feature> RULE-N` makes each
-   signed commit (repo-local SSH signing is configured; the public key still has to be
-   uploaded to GitHub for the host to show Verified). `verify_gate.py --check` exits 1 until
-   every high and medium rule has a current approval on the branch.
+1. **Approve the rest.** 324 high and medium rules are approved in the signed commit
+   `72c4f1f4`, each after a review read its test against its proof. 110 are held with the
+   missing case named in `dev/plans/held-rules-0.10.0.md`; the 13 `skill_*` RULE-3 holds are
+   one weakness in the shared next-step check. Six `schema_proof_format` approvals (RULE-1, 2,
+   3, 4, 6, 7) do not count: the approver authored `d1006609`, the last commit to
+   `dev/test_schema_proof_format.py`, so another approver signs those, or the approver signs
+   again after someone else's next real change to that file. Rules whose test files change
+   after `72c4f1f4` go stale and need a second look. The public key still has to be uploaded
+   to GitHub for the host to show Verified, and `verify_gate.py --check` counts an approval
+   only once its commit is on `origin/main`.
 2. **Apply the three GitHub rulesets** init printed (require a pull request and the `purlin`
    check with the Actions app as the only bypass; restrict `.purlin/records/**` and
    `specs/**/*.approvals/*.ci.json` to the Actions app; block force pushes and deletions).
@@ -23,15 +28,26 @@ is what the run could not finish, found and left, or left to a person.
 
 ## Defects and gaps found by the run, not fixed
 
-5. **Test strength is `n/a` everywhere.** No engine runs in CI: `requirements.txt` installs
-   pytest and playwright only, and `setup.cfg`'s `[mutmut]` block names `source_paths = dev`,
-   which would mutate the tests rather than `scripts/`. Decide whether CI installs mutmut
-   (a full run over `scripts/` is slow) and fix the block init writes for this repository.
-   With no engine the gate does not compare strength to the 80 minimum.
+5. **Test strength is real locally and `n/a` in CI.** `setup.cfg` now points mutmut at
+   `scripts/` under the `dev/` tests, and init names nested source and a test directory. CI
+   does not install mutmut: a full run over `scripts/` takes about 4.5 hours on this Mac and
+   mutmut 3 does not run on Windows, so CI records carry `n/a` and the gate skips the
+   comparison. Measure locally with `--arm-timeout 18000`, or in a scheduled Linux job.
+   Partial run of 2026-09-15, 21,872 breaks, 55% judged when read: scaffold 12, server 15,
+   upstream 56, brief 58, static_checks 58, drift 65, approvals 68, mutation 73 (final);
+   proof_common 11, run_script 42, config_engine 54, purlin_version 60, states 61, records 64,
+   specs 78, update 78, proofs 100 (partial). Every final number is under the 80 minimum, so
+   `approved` fails on a record that carries them. About 2,100 of the 2,516 breaks with no
+   covering test are code the tests reach only by subprocess (`scaffold.py` `main`,
+   `refresh_digest.py`, `pytest_purlin.py`, the CLI entry points); a few hundred are
+   functions no test reaches (`ci._post_azure`, `records._read_at_ref`, `remote._github`,
+   `static_checks._skip_regex`). In-process tests for both are the next step, then a full
+   rerun. `security_no_dangerous_patterns` scopes `scripts/**/*.py`, so its number is all of
+   `scripts/`; nine tests that read git state or source text are deselected under mutmut.
 6. **The local anchor repository is not reproducible.** `dev/setup-external-refs.sh` yields a
    different sha on each fresh setup, so `specs/_anchors/security_no_dangerous_patterns.md`'s
-   pin (`379a046`) reads as behind on every other machine. Fix the script's determinism
-   (fixed author, committer and dates) or pin after each setup.
+   pin (`379a046`) reads as behind on every other machine. The script now fixes the commit
+   dates; confirm the sha is stable across two fresh setups, or pin after each setup.
 7. **`scan.py` prints counts only**, so the QA tool in Claude Desktop cannot produce a
    per-rule review list from it; it reports an empty list plus the Drafted count.
 8. **The shell arm runs only `*.test.sh` at the project root.** Shell suites under `dev/`
@@ -43,7 +59,7 @@ is what the run could not finish, found and left, or left to a person.
    F11's note; the CI path is fine).
 10. **Two stale sentences** still say the matrix is "one job per operating system named":
     `skills/init/SKILL.md` around line 121 and `docs/raising-the-gate-and-upgrading.md`
-    around line 43. Linux is always in the matrix now.
+    around line 44. Linux is always in the matrix now.
 11. **The spec skill's "one sentence in, three rules out"** reads as a target count; the
     real model writes five or six defensible rules (lane 9H's finding). Say "at least three".
 12. **`dev/manual/` checks** drive the nested CLI with permissions skipped; fine for a
@@ -55,17 +71,22 @@ is what the run could not finish, found and left, or left to a person.
     identity, the bot is the author); the matrix wording (Linux always present); the
     `report` config key, which no longer exists. The DONE sections record the corrections;
     the design file itself was left verbatim.
-
-18. **16 approvals on `purlin_report` went stale** when the dashboard's own files changed after
-    run 9; the next CI run re-issues the low-risk ones, the rest wait for you like the others.
-19. **The dashboard changed after the last green run** (brand navy, the record boxes, the risk
-    tints, the one-line ledger, the shorter bar); run 10 onwards covers them. Look at the
-    board once more with your own data before release.
+19. **The dashboard changed after run 9** (brand navy, the record boxes, the risk tints, the
+    one-line ledger, the shorter bar); CI is green on it from `ed20c8b3`. Look at the board
+    once more with your own data before release.
+20. **A brief shows the wrong test body** when one proof has several tests: `brief.py` prints
+    the first test's body under every test name (seen on 14 `run_script` rules). A person
+    approving from the brief alone reads code that is not the test named.
+21. **Reading a brief dirties the tree.** Every `brief.py` run rewrites the tracked
+    `<RULE-N>.<hash8>.brief.json` beside the approvals and writes an untracked `.brief.txt`
+    that `.gitignore` does not cover, so a local review leaves hundreds of changed files.
+22. **A timed-out engine records a partial number.** When an engine hits `--arm-timeout`,
+    the run still reads the partial results and records a strength; only the exit code in
+    the log shows it. The fix is a lane in flight: a timed-out run measures nothing and says
+    why.
 
 ## Housekeeping
 
-15. Delete the merged `lane/*` branches (41) and the harness's `worktree-agent-*` branches
-    (`git branch -D`); prune `.claude/worktrees/`.
 16. `.purlin/records/` now holds three records per feature per runner plus the developer's;
     retention is working. The first `validated/*` tag will pin the ones that matter.
 17. The design system copy under `design/` leaves out the PNG renders (gitignored `*.png`),
