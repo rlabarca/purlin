@@ -80,10 +80,15 @@ is what the run could not finish, found and left, or left to a person.
 21. **Reading a brief dirties the tree.** Every `brief.py` run rewrites the tracked
     `<RULE-N>.<hash8>.brief.json` beside the approvals and writes an untracked `.brief.txt`
     that `.gitignore` does not cover, so a local review leaves hundreds of changed files.
-22. **A timed-out engine records a partial number.** When an engine hits `--arm-timeout`,
-    the run still reads the partial results and records a strength; only the exit code in
-    the log shows it. The fix is a lane in flight: a timed-out run measures nothing and says
-    why.
+22. **Fixed in `b4b7a783`: a timed-out engine no longer records a partial number.** A run
+    past `--arm-timeout` now measures nothing and prints why (`mutation` RULE-22). mutmut
+    loses every feature's number because it runs the whole project at once; Stryker and
+    Stryker.NET lose only the feature that timed out.
+23. **An approval's test hash depends on which tests ran on the machine.** `proof_common` RULE-5
+    read Stale locally with no change to `dev/test_multilang_proof_plugins.py`: the xUnit test
+    that backs PROOF-5 did not run without `dotnet@8` on PATH, so the tests listed for the
+    proof, and the hash over them, differed from the run the approval was signed after. A
+    runner that cannot run every backing test can read a current approval as Stale.
 
 ## Housekeeping
 
