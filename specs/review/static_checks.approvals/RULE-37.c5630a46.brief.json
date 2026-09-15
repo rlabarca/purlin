@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "static_checks",
-  "generated_at": "2026-09-15T17:24:37Z",
+  "generated_at": "2026-09-15T18:59:07Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-33 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/static_checks/20260915T172307Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/static_checks/20260915T185743Z-72c4f1f-ci-windows.json",
   "risk": "high",
   "rule": "RULE-37",
   "rule_hash": "955cad9489db3e5adadd15df1beefc18e722b67a750f7717c6b60c24b06f2ad0",
   "rule_text": "On Windows the exclusive lock is taken through msvcrt on one byte, and a second process cannot take it until it is released",
   "schema": "purlin-brief/1",
-  "state": "Reviewed",
+  "state": "Stale",
   "test_hash": "142f51bcc23dc3079c087b70f4a4589ba7f7184449a249ae24f15690a53c7def",
   "test_hash_kind": "file",
   "test_strength": null,

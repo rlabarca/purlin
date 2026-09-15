@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "pm_anchor_userstories",
-  "generated_at": "2026-09-15T18:45:30Z",
+  "generated_at": "2026-09-15T18:58:16Z",
   "layers": [
     "proof text",
     "test body",
@@ -23,7 +23,7 @@
     }
   ],
   "reasons": [],
-  "record": ".purlin/records/pm_anchor_userstories/20260915T184517Z-72c4f1f-ci-linux.json",
+  "record": ".purlin/records/pm_anchor_userstories/20260915T185739Z-72c4f1f-ci-windows.json",
   "risk": "high",
   "rule": "RULE-5",
   "rule_hash": "351898ef75af1e85adb62688a5627cc2e879c4bfddad6069bbf3772bf7b75ba9",
