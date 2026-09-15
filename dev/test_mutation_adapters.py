@@ -577,6 +577,32 @@ def test_a_break_is_owned_by_the_scope_entry_that_matches_deepest():
                               ['src/login/session.py']) is None
 
 
+@pytest.mark.proof("mutation", "PROOF-21", "RULE-21")
+def test_a_break_in_a_package_init_belongs_to_that_init():
+    scope = ['scripts/run/mutation/__init__.py',
+             'scripts/run/mutation/mutmut.py']
+    assert mutmut.source_file(
+        'scripts.run.mutation.x_score_percent__mutmut_1',
+        scope) == 'scripts/run/mutation/__init__.py'
+    assert mutmut.source_file(
+        'scripts.run.mutation.mutmut.x_binary__mutmut_2',
+        scope) == 'scripts/run/mutation/mutmut.py'
+
+
+@pytest.mark.proof("mutation", "PROOF-21", "RULE-21")
+def test_a_glob_scope_entry_covers_the_files_it_matches():
+    assert mutmut.source_file('scripts.run.records.x_commit__mutmut_1',
+                              ['scripts/**/*.py']) == 'scripts/**/*.py'
+    assert mutmut.source_file('scripts.mcp.purlin.x_read__mutmut_1',
+                              ['scripts/**/*.py']) == 'scripts/**/*.py'
+    assert mutmut.source_file('dev.build_report.x_build__mutmut_1',
+                              ['scripts/**/*.py']) is None
+    assert mutmut.source_file(
+        'scripts.run.records.x_commit__mutmut_1',
+        ['scripts/**/*.py', 'scripts/run/records.py']) == \
+        'scripts/run/records.py'
+
+
 @pytest.mark.proof("mutation", "PROOF-17", "RULE-17")
 def test_breaks_are_grouped_by_the_file_they_changed():
     entries = mutmut.parse_results(read_fixture('mutmut_results.txt'))

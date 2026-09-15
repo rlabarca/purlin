@@ -33,6 +33,7 @@
 - RULE-18: Without mutmut installed there is no engine and the reason names `pip install mutmut` [risk: medium] [origin: eng]
 - RULE-19: The empty engine measures nothing: every rule carries a score of None and `attribution: "unavailable"`, and the reason is a sentence saying why [risk: medium] [origin: eng]
 - RULE-20: Every engine answers the same shape, so a caller reads one: an engine name outside the four is not run, a rule the engine never reported is filled in with `attribution: "unavailable"`, and a feature the engine never reached is still listed [risk: high] [origin: eng]
+- RULE-21: A mutmut break in a package's `__init__.py` is attributed to the scope entry naming that `__init__.py`, and a scope entry holding `*` is matched as a glob against the file the break changed, losing to any entry that names the file or its directory [risk: high] [origin: eng]
 
 ## Proof
 
@@ -56,3 +57,4 @@
 - PROOF-18 (RULE-18): Take `mutmut` off the PATH and run the engine; verify the answer's engine is `none`, that it is not available, and that the reason names `pip install mutmut` @unit
 - PROOF-19 (RULE-19): Call the empty engine with one feature and two rules; verify the engine is `none`, `available` is False, the reason is a sentence, and every rule carries `score: None` with `attribution: "unavailable"` @unit
 - PROOF-20 (RULE-20): Call `run_breaks()` with the engine `none` and with a real engine standing in; verify both answers carry `engine`, `available`, `reason`, `features` and `log`. Call it with the engine `nosuchengine`; verify no engine module was imported and the reason names it. Have an engine report one rule of two; verify the other is filled in with `attribution: "unavailable"`, and have it report no feature at all; verify every feature the caller named is still listed @unit
+- PROOF-21 (RULE-21): Call `source_file("scripts.run.mutation.x_score_percent__mutmut_1", ["scripts/run/mutation/__init__.py", "scripts/run/mutation/mutmut.py"])`; verify `scripts/run/mutation/__init__.py`, and that `scripts.run.mutation.mutmut.x_binary__mutmut_2` answers `scripts/run/mutation/mutmut.py`. Call it with the scope `["scripts/**/*.py"]` for `scripts.run.records.x_commit__mutmut_1` and `scripts.mcp.purlin.x_read__mutmut_1`; verify the glob both times, that `dev.build_report.x_build__mutmut_1` answers None, and that adding `scripts/run/records.py` beside the glob makes that entry win @unit
