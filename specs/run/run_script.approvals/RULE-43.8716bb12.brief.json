@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "run_script",
-  "generated_at": "2026-09-15T17:13:03Z",
+  "generated_at": "2026-09-15T17:24:04Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,7 +26,7 @@
   "reasons": [
     "PROOF-62 tautology"
   ],
-  "record": ".purlin/records/run_script/20260915T171238Z-eacb477-ci-linux.json",
+  "record": ".purlin/records/run_script/20260915T172305Z-eacb477-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-43",
   "rule_hash": "9e4dd8ac9cc452c352cbfdbf4c17851f10f20bc3bd16da5e3878474fa66e28ef",
