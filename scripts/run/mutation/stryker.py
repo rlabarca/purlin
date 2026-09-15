@@ -29,8 +29,9 @@ import re
 import shutil
 import tempfile
 
-from . import (execute, feature_tests, none, result, rule_entry,
-               rules_by_feature, scope_entry)
+from . import (TIMED_OUT, execute, feature_tests, none, result, rule_entry,
+               rules_by_feature, scope_entry, timed_out_feature,
+               timeout_reason)
 
 # What the statuses mean for test strength. A timeout is a catch: the break
 # made the test hang, and the test noticed. A break no test covers is a miss
@@ -202,6 +203,7 @@ def run(project_root, scope_by_feature, tests_by_rule, tier=None):
     lines = ['engine stryker, test runner %s, tier %s'
              % (runner, tier or 'all')]
     features = {}
+    reason = ''
     work = tempfile.mkdtemp(prefix='purlin-breaks-')
     try:
         for feature in sorted(scope_by_feature or {}):
@@ -218,6 +220,12 @@ def run(project_root, scope_by_feature, tests_by_rule, tier=None):
                 json.dump(build_config(files, runner, report_path), handle)
             code, output = execute(command + ['run', config_path],
                                    project_root, report_path)
+            if code == TIMED_OUT:
+                reason = timeout_reason()
+                features[feature] = timed_out_feature('stryker', feature,
+                                                       files, tests_by_rule)
+                lines.append('%s: %s' % (feature, reason))
+                continue
             report = read_report(report_path)
             if report is None:
                 features[feature] = _nothing(tests_for_feature)
@@ -231,7 +239,7 @@ def run(project_root, scope_by_feature, tests_by_rule, tier=None):
                             features[feature]['scope_score']['score'] or 0))
     finally:
         shutil.rmtree(work, ignore_errors=True)
-    return result('stryker', True, '', features, '\n'.join(lines))
+    return result('stryker', True, reason, features, '\n'.join(lines))
 
 
 def _nothing(tests_for_feature):

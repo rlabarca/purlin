@@ -197,6 +197,26 @@ def result(engine, available, reason, features, log=''):
             'log': log or ''}
 
 
+def timeout_reason():
+    """The sentence for an engine invocation that ran past `ARM_TIMEOUT`."""
+    return ('the engine timed out after %d s, so the breaks it made are '
+            'partial and measure nothing: raise --arm-timeout to give it '
+            'longer' % ARM_TIMEOUT)
+
+
+def timed_out_feature(engine, feature, scope_files, tests_by_rule):
+    """One feature's entry after the invocation breaking it timed out.
+
+    A partial run's number would read as a measurement it is not, so every
+    rule carries a score of None with `attribution: unavailable`, whatever
+    report the engine left behind.
+    """
+    tests = dict((key, value) for key, value in (tests_by_rule or {}).items()
+                 if isinstance(key, tuple) and key[:1] == (feature,))
+    return empty_features({feature: scope_files}, tests, engine,
+                          'unavailable')[feature]
+
+
 def run_breaks(project_root, engine, scope_by_feature, tests_by_rule, tier=None):
     """Break the scope files of every feature and report what the tests caught.
 

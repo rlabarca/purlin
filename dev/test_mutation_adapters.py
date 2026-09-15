@@ -784,3 +784,105 @@ def test_a_feature_an_engine_never_reached_is_still_listed():
         {('login', 'RULE-1'): []})
     assert sorted(answer['features']) == ['login', 'reports']
     assert answer['features']['login']['rules']['RULE-1']['killed'] == 0
+
+
+# ---------------------------------------------------------------------------
+# An engine that runs past --arm-timeout
+# ---------------------------------------------------------------------------
+
+def assert_names_the_timeout(answer):
+    for text in (answer['reason'], answer['log']):
+        assert 'timed out after 90 s' in text
+        assert '--arm-timeout' in text
+
+
+def assert_unmeasured(entry, engine, rules):
+    assert entry['scope_score']['score'] is None
+    for rule in rules:
+        assert entry['rules'][rule] == {
+            'engine': engine, 'score': None, 'killed': 0, 'survived': 0,
+            'attribution': 'unavailable'}
+
+
+@pytest.mark.proof("mutation", "PROOF-22", "RULE-22")
+def test_a_mutmut_run_that_timed_out_measures_nothing(tmp_path, monkeypatch):
+    (tmp_path / 'pyproject.toml').write_text(
+        '[project]\n' + mutmut.mutmut_config_block(['src'], ['tests']),
+        encoding='utf-8')
+
+    def execute(command, cwd, report_path=None):
+        if command[1] == 'results':
+            return 0, read_fixture('mutmut_results.txt')
+        return mutation.TIMED_OUT, 'partial\nthe engine timed out after 90 s'
+
+    monkeypatch.setattr(mutation, 'ARM_TIMEOUT', 90)
+    monkeypatch.setattr(mutmut, 'binary', lambda root=None: '/usr/bin/mutmut')
+    monkeypatch.setattr(mutmut, 'execute', execute)
+    answer = mutmut.run(str(tmp_path),
+                        {'login': ['src/login/session.py'],
+                         'reports': ['src/reports/render.py']},
+                        {('login', 'RULE-1'): [],
+                         ('login', 'RULE-2'): [],
+                         ('reports', 'RULE-1'): []}, 'unit')
+    assert answer['engine'] == 'mutmut'
+    assert answer['available'] is True
+    assert_unmeasured(answer['features']['login'], 'mutmut',
+                      ('RULE-1', 'RULE-2'))
+    assert_unmeasured(answer['features']['reports'], 'mutmut', ('RULE-1',))
+    assert_names_the_timeout(answer)
+
+
+@pytest.mark.proof("mutation", "PROOF-22", "RULE-22")
+def test_a_stryker_feature_that_timed_out_measures_nothing(monkeypatch):
+    def execute(command, cwd, report_path=None):
+        config_path = command[-1]
+        with open(config_path, 'r', encoding='utf-8') as handle:
+            config = json.load(handle)
+        with open(config['jsonReporter']['fileName'], 'w',
+                  encoding='utf-8') as handle:
+            json.dump(read_fixture('stryker_report.json'), handle)
+        if os.path.basename(config_path).startswith('slow.'):
+            return mutation.TIMED_OUT, 'partial'
+        return 0, 'Done in 1 second.'
+
+    monkeypatch.setattr(mutation, 'ARM_TIMEOUT', 90)
+    monkeypatch.setattr(stryker, 'binary', lambda root: ['stryker'])
+    monkeypatch.setattr(stryker, 'test_runner', lambda root: 'jest')
+    monkeypatch.setattr(stryker, 'execute', execute)
+    answer = stryker.run('/project',
+                         {'calc': ['src/calc.js'], 'slow': ['src/calc.js']},
+                         {('calc', 'RULE-1'): CALC_TESTS['RULE-1'],
+                          ('calc', 'RULE-2'): CALC_TESTS['RULE-2'],
+                          ('slow', 'RULE-1'): CALC_TESTS['RULE-1']}, 'unit')
+    assert answer['features']['calc']['scope_score']['score'] == 64
+    assert_unmeasured(answer['features']['slow'], 'stryker', ('RULE-1',))
+    assert_names_the_timeout(answer)
+
+
+@pytest.mark.proof("mutation", "PROOF-22", "RULE-22")
+def test_a_dotnet_feature_that_timed_out_measures_nothing(monkeypatch):
+    def execute(command, cwd, report_path=None):
+        output_dir = command[command.index('--output') + 1]
+        reports = os.path.join(output_dir, 'reports')
+        os.makedirs(reports)
+        with open(os.path.join(reports, 'mutation-report.json'), 'w',
+                  encoding='utf-8') as handle:
+            json.dump(read_fixture('stryker_net_report.json'), handle)
+        if os.path.basename(output_dir) == 'slow':
+            return mutation.TIMED_OUT, 'partial'
+        return 0, ''
+
+    monkeypatch.setattr(mutation, 'ARM_TIMEOUT', 90)
+    monkeypatch.setattr(stryker_net, 'available', lambda root: (True, ''))
+    monkeypatch.setattr(stryker_net, 'binary',
+                        lambda root=None: ['dotnet', 'stryker'])
+    monkeypatch.setattr(stryker_net, 'execute', execute)
+    answer = stryker_net.run('/project',
+                             {'login': ['src/Login/Session.cs'],
+                              'slow': ['src/Login/Session.cs']},
+                             {('login', 'RULE-1'): SESSION_TESTS['RULE-1'],
+                              ('slow', 'RULE-1'): SESSION_TESTS['RULE-1']},
+                             'unit')
+    assert answer['features']['login']['scope_score']['score'] == 60
+    assert_unmeasured(answer['features']['slow'], 'stryker_net', ('RULE-1',))
+    assert_names_the_timeout(answer)

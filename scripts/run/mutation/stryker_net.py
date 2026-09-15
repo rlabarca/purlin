@@ -16,8 +16,9 @@ import os
 import shutil
 import tempfile
 
-from . import (execute, feature_tests, none, result, rule_entry,
-               rules_by_feature, scope_entry, stryker)
+from . import (TIMED_OUT, execute, feature_tests, none, result, rule_entry,
+               rules_by_feature, scope_entry, stryker, timed_out_feature,
+               timeout_reason)
 
 REPORT_NAME = 'mutation-report.json'
 
@@ -82,6 +83,7 @@ def run(project_root, scope_by_feature, tests_by_rule, tier=None):
     rules = rules_by_feature(tests_by_rule)
     lines = ['engine stryker_net, tier %s' % (tier or 'all')]
     features = {}
+    reason = ''
     work = tempfile.mkdtemp(prefix='purlin-breaks-')
     try:
         for feature in sorted(scope_by_feature or {}):
@@ -97,6 +99,12 @@ def run(project_root, scope_by_feature, tests_by_rule, tier=None):
             code, output = execute(
                 build_command(command, files, output_dir),
                 project_root, output_dir)
+            if code == TIMED_OUT:
+                reason = timeout_reason()
+                features[feature] = timed_out_feature('stryker_net', feature,
+                                                       files, tests_by_rule)
+                lines.append('%s: %s' % (feature, reason))
+                continue
             path = find_report(output_dir)
             report = stryker.read_report(path) if path else None
             if report is None:
@@ -116,7 +124,7 @@ def run(project_root, scope_by_feature, tests_by_rule, tier=None):
                             entry['scope_score']['score'] or 0, attribution))
     finally:
         shutil.rmtree(work, ignore_errors=True)
-    return result('stryker_net', True, '', features, '\n'.join(lines))
+    return result('stryker_net', True, reason, features, '\n'.join(lines))
 
 
 def _nothing(tests_for_feature):

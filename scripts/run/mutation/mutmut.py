@@ -35,8 +35,8 @@ import os
 import re
 import shutil
 
-from . import (execute, none, result, rule_entry, rules_by_feature,
-               scope_entry)
+from . import (TIMED_OUT, empty_features, execute, none, result, rule_entry,
+               rules_by_feature, scope_entry, timeout_reason)
 
 # What mutmut's statuses mean for test strength. `no tests` is mutmut's name
 # for a break no test covers, which counts survived the way `NoCoverage` does
@@ -241,6 +241,15 @@ def run(project_root, scope_by_feature, tests_by_rule, tier=None):
              % (section, path, tier or 'all')]
     code = execute(RUN_COMMAND, project_root)[0]
     lines.append('mutmut run exited %d' % code)
+    if code == TIMED_OUT:
+        # One run breaks the whole project, so what it left is partial for
+        # every feature alike.
+        reason = timeout_reason()
+        lines.append(reason)
+        return result('mutmut', True, reason,
+                      empty_features(scope_by_feature, tests_by_rule, 'mutmut',
+                                     'unavailable'),
+                      '\n'.join(lines))
     listing = execute(RESULTS_COMMAND, project_root)[1]
     entries = parse_results(listing)
     lines.append('%d breaks read' % len(entries))

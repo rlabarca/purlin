@@ -926,9 +926,15 @@ def _run_breaks(project_root, args, features, selected, index):
     # module rather than passed down through every adapter.
     mutation_module.ARM_TIMEOUT = args.arm_timeout
     print('Measuring the breaks with the %s engine.' % engine)
-    return run_breaks(project_root, engine,
-                      scope_by_feature(features, selected),
-                      tests_by_rule(features, selected, index), args.tier)
+    answer = run_breaks(project_root, engine,
+                        scope_by_feature(features, selected),
+                        tests_by_rule(features, selected, index), args.tier)
+    # An installed engine answers a reason only when it measured nothing it
+    # set out to, a timeout being the one case, so the person sees why the
+    # strength reads n/a rather than finding it in the log.
+    if answer.get('available') and answer.get('reason'):
+        print('purlin: %s' % answer['reason'])
+    return answer
 
 
 def _ci_review(project_root):
