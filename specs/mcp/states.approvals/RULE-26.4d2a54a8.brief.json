@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-15T17:24:26Z",
+  "generated_at": "2026-09-15T18:45:59Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-28 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/states/20260915T172307Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/states/20260915T184518Z-72c4f1f-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-26",
   "rule_hash": "26cede553194aae52bdca3911fe5b6d86235706df0dffa899fe3b2d14ca80b49",
   "rule_text": "A review list entry carries `reasons`, one short code or text for each thing that put the rule on the list, ordered stale, risk, test strength, operating system, re-verify, free checks, and keeps `reason` beside it as those joined with `; `",
   "schema": "purlin-brief/1",
-  "state": "Reviewed",
+  "state": "Approved",
   "test_hash": "be811bbf6407cb917ba6f00166a6404ac9fbc9866316fb53ea9c67b79eae9331",
   "test_hash_kind": "file",
   "test_strength": null,

@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "static_checks",
-  "generated_at": "2026-09-15T17:24:37Z",
+  "generated_at": "2026-09-15T18:46:08Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-31 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/static_checks/20260915T172307Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/static_checks/20260915T184518Z-72c4f1f-ci-linux.json",
   "risk": "high",
   "rule": "RULE-34",
   "rule_hash": "6704df9190984492d31af624069da8f56633e237f52c6f1c4fdd6851e9af73be",
   "rule_text": "An exclusive lock the module takes is held against a second process until it is released, and releasing it closes the handle",
   "schema": "purlin-brief/1",
-  "state": "Reviewed",
+  "state": "Approved",
   "test_hash": "c574cdaa7a76987578082ac4fca5a1fc307ac43b86bf21f7ae1ce7a7b8f1e5a9",
   "test_hash_kind": "file",
   "test_strength": null,

@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "upstream",
-  "generated_at": "2026-09-15T17:24:43Z",
+  "generated_at": "2026-09-15T18:46:13Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-17 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/upstream/20260915T172307Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/upstream/20260915T184518Z-72c4f1f-ci-linux.json",
   "risk": "high",
   "rule": "RULE-17",
   "rule_hash": "9c619797e38ce8f3a284dc17d0c04371eaf01ab470ac02ab08c4cc91c0c96c1a",
   "rule_text": "The patch is taken against the pin rather than the source's head, so a rule the source added after the pin is never proposed back to it",
   "schema": "purlin-brief/1",
-  "state": "Reviewed",
+  "state": "Approved",
   "test_hash": "05e4b980baaf23a9d4c65b7b60f8d9475613ef3c8b858d72bbfdea8e84f5baf2",
   "test_hash_kind": "file",
   "test_strength": null,

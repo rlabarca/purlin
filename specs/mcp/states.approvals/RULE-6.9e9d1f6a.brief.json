@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-15T17:24:24Z",
+  "generated_at": "2026-09-15T18:45:57Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-6 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/states/20260915T172307Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/states/20260915T184518Z-72c4f1f-ci-linux.json",
   "risk": "high",
   "rule": "RULE-6",
   "rule_hash": "12f8a567ece35513b81512220c082e8a5c65ee4c319c8402113db26f70e637b6",
   "rule_text": "A proof carrying `@env` is proved only by a record from that operating system: the rule stays out of Recorded, names the operating system under `missing_env`, and gives the reason `<os>: no record yet` rather than taking an eighth state",
   "schema": "purlin-brief/1",
-  "state": "Reviewed",
+  "state": "Approved",
   "test_hash": "5a172b0c08e39ecf2ba32277e99984bd2b1a8d23c797c879f9e7e72665f7ad42",
   "test_hash_kind": "file",
   "test_strength": null,

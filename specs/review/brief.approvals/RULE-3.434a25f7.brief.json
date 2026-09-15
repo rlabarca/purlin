@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "brief",
-  "generated_at": "2026-09-15T17:23:32Z",
+  "generated_at": "2026-09-15T18:45:22Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-4 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/brief/20260915T172303Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/brief/20260915T184517Z-72c4f1f-ci-linux.json",
   "risk": "high",
   "rule": "RULE-3",
   "rule_hash": "d3efc084a867a20844c37c73999a7c6ad651a1a72e27c92e20f371e7a161ee7e",
   "rule_text": "A high-risk rule's brief runs all four layers, the model review last",
   "schema": "purlin-brief/1",
-  "state": "Reviewed",
+  "state": "Approved",
   "test_hash": "ed74070fb46eb2145c890963392e3e6ea9e34abd0070464ac71a1ba02fd7ccfb",
   "test_hash_kind": "file",
   "test_strength": null,

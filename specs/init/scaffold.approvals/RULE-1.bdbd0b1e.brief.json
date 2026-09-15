@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "scaffold",
-  "generated_at": "2026-09-15T17:24:04Z",
+  "generated_at": "2026-09-15T18:45:42Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-1 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/scaffold/20260915T172305Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/scaffold/20260915T184518Z-72c4f1f-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-1",
   "rule_hash": "d0b245a6185a1694f97007f6d5df4980b525b306b589e6e750b44f18133cdbc2",
   "rule_text": "A project with code to detect is asked the gate question and no other question",
   "schema": "purlin-brief/1",
-  "state": "Tested",
+  "state": "Approved",
   "test_hash": "5b5d03d801cb0e48f667b81b20d6489ed5ef7fd1fa21b1ec1a825b21604be783",
   "test_hash_kind": "file",
   "test_strength": null,

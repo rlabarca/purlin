@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "mutation",
-  "generated_at": "2026-09-15T17:23:40Z",
+  "generated_at": "2026-09-15T18:45:27Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-10 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/mutation/20260915T172303Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/mutation/20260915T184517Z-72c4f1f-ci-linux.json",
   "risk": "high",
   "rule": "RULE-10",
   "rule_hash": "a9b25adaa99082a11cbd1439d83a59536a23ac43bbbc59d358b6bc064812bf33",
   "rule_text": "A test in the report is matched to a rule's test by the proof marker in its name when both names carry one, and never across two files of the same name",
   "schema": "purlin-brief/1",
-  "state": "Tested",
+  "state": "Approved",
   "test_hash": "e41c9ca5062a83c47fd7b11f3307c8cefadb73a14c3586aabbf64a4c021c9c9e",
   "test_hash_kind": "file",
   "test_strength": null,

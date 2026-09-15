@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "purlin_report",
-  "generated_at": "2026-09-15T17:23:49Z",
+  "generated_at": "2026-09-15T18:45:33Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-13 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/purlin_report/20260915T172304Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/purlin_report/20260915T184517Z-72c4f1f-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-13",
   "rule_hash": "7a3f5b53c72b562f458db0e4f246bba81b96c252973cc8cf8d08e77921fd6e46",
   "rule_text": "The board offers five filters, and each narrows the table to the rules it accepts: high risk not approved, stale, no negative case, low test strength, open items",
   "schema": "purlin-brief/1",
-  "state": "Reviewed",
+  "state": "Approved",
   "test_hash": "410d2805d30d39969ef51b85ccc057fa2517b255b2a4b474b169212c173c936e",
   "test_hash_kind": "file",
   "test_strength": null,

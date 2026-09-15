@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-15T17:24:25Z",
+  "generated_at": "2026-09-15T18:45:58Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-13 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/states/20260915T172307Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/states/20260915T184518Z-72c4f1f-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-13",
   "rule_hash": "7f15372ebff847b3a31ccb06fc0931cc2f764635f5f66d3686d02346f2e71250",
   "rule_text": "The state order is the seven states with Stale first and Approved last, so the feature holding a stale approval sorts to the top of the table",
   "schema": "purlin-brief/1",
-  "state": "Reviewed",
+  "state": "Approved",
   "test_hash": "4ab7886377a847dc77aaafc211480c708bec5643e69696a6d82a78b5adf4b43d",
   "test_hash_kind": "file",
   "test_strength": null,

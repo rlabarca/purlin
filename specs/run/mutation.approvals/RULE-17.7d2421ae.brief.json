@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "mutation",
-  "generated_at": "2026-09-15T17:23:43Z",
+  "generated_at": "2026-09-15T18:45:29Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-17 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/mutation/20260915T172303Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/mutation/20260915T184517Z-72c4f1f-ci-linux.json",
   "risk": "high",
   "rule": "RULE-17",
   "rule_hash": "0121653a3a61c5e3c4d0b773cb8cb02e60363c0aeb7c50645932885d8380076f",
   "rule_text": "A mutmut break is attributed to the scope entry whose last path segments match the most of the break's module name, a break no scope entry covers is left out, and every rule of a feature carries that feature's scope number with `attribution: \"per_scope\"`",
   "schema": "purlin-brief/1",
-  "state": "Tested",
+  "state": "Approved",
   "test_hash": "97802ee667aa2254ecf235f051b2d55b5fca9263baaae92b3e1cb94c0b46acb1",
   "test_hash_kind": "file",
   "test_strength": null,

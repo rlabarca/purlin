@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "drift",
-  "generated_at": "2026-09-15T17:23:37Z",
+  "generated_at": "2026-09-15T18:45:26Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,7 +26,7 @@
   "reasons": [
     "PROOF-17 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/drift/20260915T172303Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/drift/20260915T184517Z-72c4f1f-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-15",
   "rule_hash": "569f64006933df4259768029eb953b3341146afd01d1060638ee5acb80f9926a",

@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "approvals",
-  "generated_at": "2026-09-15T17:23:29Z",
+  "generated_at": "2026-09-15T18:45:20Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-19 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/approvals/20260915T172303Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/approvals/20260915T184517Z-72c4f1f-ci-linux.json",
   "risk": "high",
   "rule": "RULE-15",
   "rule_hash": "773ff9257d724ab4070695a1ee41ead829f803c6c8eab7280d738175aff96458",
   "rule_text": "CI never auto-approves a rule proved by a `@manual` proof, because that evidence is a person's note",
   "schema": "purlin-brief/1",
-  "state": "Reviewed",
+  "state": "Approved",
   "test_hash": "5270ea63faaae8b316416533a85512f554a3c66bea09ed886122a619e9443d09",
   "test_hash_kind": "file",
   "test_strength": null,

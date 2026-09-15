@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "upstream",
-  "generated_at": "2026-09-15T17:24:42Z",
+  "generated_at": "2026-09-15T18:46:12Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-4 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/upstream/20260915T172307Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/upstream/20260915T184518Z-72c4f1f-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-4",
   "rule_hash": "388692f1280d962a7d6c477c8a65d248a3b2b037fc16cbf08939f8c1fa2d0515",
   "rule_text": "Tracking fields the source itself carried are stripped before the copy is written, so a copy of a copy holds one `> Source:` and one `> Pinned:`, both this project's",
   "schema": "purlin-brief/1",
-  "state": "Reviewed",
+  "state": "Approved",
   "test_hash": "37eda57cfbf268100bba5a4b4cbc44323e2987ef0eaa808a53c695f75b1e98e2",
   "test_hash_kind": "file",
   "test_strength": null,

@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "drift",
-  "generated_at": "2026-09-15T17:23:35Z",
+  "generated_at": "2026-09-15T18:45:24Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-3 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/drift/20260915T172303Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/drift/20260915T184517Z-72c4f1f-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-2",
   "rule_hash": "b16e7e1026bde685cf01d4dd577eab60cbdb6754c7b7129df4a173196721007c",
   "rule_text": "With no argument the anchor is the last commit touching `.purlin/records/`, then the most recent tag, then the commit that added `.purlin/config.json`; a project with no verification history and 30 commits or more gets a `spec-from-code` recommendation instead of a diff of everything",
   "schema": "purlin-brief/1",
-  "state": "Reviewed",
+  "state": "Approved",
   "test_hash": "cf442f8154ee636432bad260df8f7fb1a39bff84b8bbdee89d9e180510b53f41",
   "test_hash_kind": "file",
   "test_strength": null,

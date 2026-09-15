@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "update",
-  "generated_at": "2026-09-15T17:24:42Z",
+  "generated_at": "2026-09-15T18:46:12Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-21 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/update/20260915T172307Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/update/20260915T184518Z-72c4f1f-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-21",
   "rule_hash": "980d40670b9f88d92bd3e4d415d1fc51dfb50499f7ceffeedf0243aab02cdc62",
   "rule_text": "A recorded `test_framework` name that detection does not find and the tree carries no wiring for is dropped and the drop is printed, while a name the tree does carry is kept",
   "schema": "purlin-brief/1",
-  "state": "Reviewed",
+  "state": "Approved",
   "test_hash": "0f76c4444452dca0a48565615a6da5b000518266674285e8b742d6f41fe0d128",
   "test_hash_kind": "file",
   "test_strength": null,

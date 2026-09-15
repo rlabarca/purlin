@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "brief",
-  "generated_at": "2026-09-15T17:23:33Z",
+  "generated_at": "2026-09-15T18:45:23Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-17 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/brief/20260915T172303Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/brief/20260915T184517Z-72c4f1f-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-13",
   "rule_hash": "aaadd5e91aa8c774477240008460076161fec7dcef675b0b058c0be79d8014c4",
   "rule_text": "A rule with no finding anywhere and enough test strength gets the verdict `ready`",
   "schema": "purlin-brief/1",
-  "state": "Reviewed",
+  "state": "Approved",
   "test_hash": "da1f51d15f74a0292a51045b8988379daf72405cfd7e99bf9dac8b4fade2db6a",
   "test_hash_kind": "file",
   "test_strength": null,

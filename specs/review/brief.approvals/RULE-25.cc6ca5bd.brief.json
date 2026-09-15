@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "brief",
-  "generated_at": "2026-09-15T17:23:34Z",
+  "generated_at": "2026-09-15T18:45:23Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-37 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/brief/20260915T172303Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/brief/20260915T184517Z-72c4f1f-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-25",
   "rule_hash": "0fe98b3485646de7db7f61bf66dee10b9b307915ee1ac32306d0fc3a1c0a0d69",
   "rule_text": "A name that opens with an underscore reaches the brief as `implementation_coupling` unless it follows a `/`, so a path or URL segment such as `specs/_anchors/` or `/_git/` is not read as a private symbol",
   "schema": "purlin-brief/1",
-  "state": "Reviewed",
+  "state": "Approved",
   "test_hash": "6d45621452231c24cb9f7185a55c942767add2fefba1c3b9015dc4e7f5f2d191",
   "test_hash_kind": "file",
   "test_strength": null,

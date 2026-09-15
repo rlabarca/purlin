@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "purlin_version",
-  "generated_at": "2026-09-15T17:23:51Z",
+  "generated_at": "2026-09-15T18:45:34Z",
   "layers": [
     "proof text",
     "test body",
@@ -24,13 +24,13 @@
   "reasons": [
     "PROOF-9 tautology"
   ],
-  "record": ".purlin/records/purlin_version/20260915T172304Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/purlin_version/20260915T184517Z-72c4f1f-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-9",
   "rule_hash": "febf5cd7afff284afe433ca37e7a247951a5c2bff1c3f4dacb12fd9abe7af550",
   "rule_text": "The `## Unreleased` section of `RELEASE_NOTES.md` states the counts of the run it describes once, as `N passed, M skipped`, and those two numbers equal `passed` and `skipped` in `.purlin/runtime/last_sweep.json`, the sweep's own whole record of itself rather than the shared marker each proof plugin rewrites as it finishes. That record is runtime state, so a checkout that has never run the sweep has nothing to compare and the proof reports that instead of failing",
   "schema": "purlin-brief/1",
-  "state": "Reviewed",
+  "state": "Stale",
   "test_hash": "ad6407b67a60497a63c3d0d93c1254393f7eca395ff3bff94a481bed618e7874",
   "test_hash_kind": "file",
   "test_strength": null,

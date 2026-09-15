@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "update",
-  "generated_at": "2026-09-15T17:24:40Z",
+  "generated_at": "2026-09-15T18:46:11Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-14 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/update/20260915T172307Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/update/20260915T184518Z-72c4f1f-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-14",
   "rule_hash": "dad96fe0d45a48ef9f89c84fee7e76d2acc8546fc4771111b0a067c7ef3947d6",
   "rule_text": "A design source that named a design tool becomes `designs/<feature>/`, the retired visual fields and their continuation lines are dropped, and the rest of the spec is untouched",
   "schema": "purlin-brief/1",
-  "state": "Reviewed",
+  "state": "Approved",
   "test_hash": "314b5ffc721c39c4073347da3b715d88d32ec043335d659f08b85fb0ab9fba14",
   "test_hash_kind": "file",
   "test_strength": null,

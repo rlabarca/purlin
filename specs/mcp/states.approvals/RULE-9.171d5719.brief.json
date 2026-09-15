@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-15T17:24:24Z",
+  "generated_at": "2026-09-15T18:45:57Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-9 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/states/20260915T172307Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/states/20260915T184518Z-72c4f1f-ci-linux.json",
   "risk": "high",
   "rule": "RULE-9",
   "rule_hash": "1c84a25a3d740ca4faa2f4bd0450152fb830cd85e4d3c11e6e24c654fc3d82cf",
   "rule_text": "A rule that carries approvals none of which is current is Stale, whatever else its evidence shows",
   "schema": "purlin-brief/1",
-  "state": "Reviewed",
+  "state": "Approved",
   "test_hash": "f2c20bc0bd84698f772175ee362a4381e27541b4ead2aeb6e913933ec3dcc2f9",
   "test_hash_kind": "file",
   "test_strength": null,

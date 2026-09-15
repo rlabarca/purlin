@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-15T17:24:24Z",
+  "generated_at": "2026-09-15T18:45:57Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-7 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/states/20260915T172307Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/states/20260915T184518Z-72c4f1f-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-7",
   "rule_hash": "9455a24e859f7eb4365fa9cdcc57d1ae0639ce2b8fdafc6b787ef439efa15aca",
   "rule_text": "A rule is Reviewed when a brief exists for its current rule, proof and test hashes together; a brief written for other text is no brief at all",
   "schema": "purlin-brief/1",
-  "state": "Reviewed",
+  "state": "Approved",
   "test_hash": "5ce939df94a6baad9d5d7b43603bcb3440a2412210a42d0d6d3a003bfd7bab09",
   "test_hash_kind": "file",
   "test_strength": null,
