@@ -582,11 +582,36 @@ def test_a_file_that_is_not_text_gets_a_blob_of_its_own(project, github_env,
 # The pause the git host asks for
 # ---------------------------------------------------------------------------
 
+class _RecordedTime(object):
+    """The `time` module as `records.py` sees it, with `sleep` recorded.
+
+    Every other attribute is the real module's, so `time.time()` still reads
+    the clock the reset header is measured against.
+    """
+
+    def __init__(self, waits):
+        self.sleep = waits.append
+
+    def __getattr__(self, name):
+        return getattr(time, name)
+
+
 @pytest.fixture
 def slept(monkeypatch):
-    """Every wait the run takes, recorded rather than waited out."""
+    """Every wait `records.py` takes, recorded rather than waited out.
+
+    The stand-in replaces the `time` name in the module whose functions run,
+    found through a function's own `__module__`, rather than `time.sleep`
+    itself: patching the shared `time` module would also record any other
+    sleep in this process, and under mutmut the module runs under its path
+    name, `scripts.run.records`, as well as the `records` imported here.
+    """
     waits = []
-    monkeypatch.setattr(records_module.time, 'sleep', waits.append)
+    stand_in = _RecordedTime(waits)
+    running = sys.modules[records_module._api.__module__]
+    for module in {id(records_module): records_module,
+                   id(running): running}.values():
+        monkeypatch.setattr(module, 'time', stand_in)
     return waits
 
 
