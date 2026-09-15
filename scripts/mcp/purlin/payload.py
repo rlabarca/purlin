@@ -163,7 +163,11 @@ def _feature_entry(project_root, name, info, features, runtime_proofs,
         rule_results[(owner, rule_id)] = summary
         if label == 'own' and own_results is not None:
             own_results[(owner, rule_id)] = summary
-        if result['flags'].get('needs_ai_review') or result['state'] == states.STALE:
+        # The review list names each rule once, under its owner, as the
+        # project rollup counts it; a required or global rule is reviewed
+        # where it is written, not once per feature that proves it.
+        if label == 'own' and (result['flags'].get('needs_ai_review')
+                               or result['state'] == states.STALE):
             reasons = _review_reasons(result, cfg)
             review_list.append({
                 'feature': name, 'owner': owner, 'rule': rule_id,

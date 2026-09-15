@@ -1043,6 +1043,25 @@ class TestPayload:
         assert login['rollup']['rules'] == 3, (
             'the feature must prove the global anchor\'s rule too')
 
+    @pytest.mark.proof("states", "PROOF-30", "RULE-28", tier="integration")
+    def test_the_review_list_names_a_global_anchor_rule_once(self):
+        made = Project(gate='recorded')
+        try:
+            made.spec(
+                '# Anchor: security\n\n> Global: true\n\n'
+                '## Rules\n\n- RULE-1: No eval anywhere [risk: high]\n\n'
+                '## Proof\n\n'
+                '- PROOF-1 (RULE-1): Grep for eval(; verify 0 matches\n',
+                name='security', category='_anchors')
+            data = made.payload()
+            entries = [(e['feature'], e['rule']) for e in data['review_list']]
+            assert sorted(entries) == [('login', 'RULE-1'),
+                                       ('security', 'RULE-1')], entries
+            assert data['project_rollup']['needs_review'] == 2, (
+                data['project_rollup'])
+        finally:
+            made.close()
+
 
 # ---------------------------------------------------------------------------
 # The status table
