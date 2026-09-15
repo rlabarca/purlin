@@ -89,6 +89,11 @@ is what the run could not finish, found and left, or left to a person.
     that backs PROOF-5 did not run without `dotnet@8` on PATH, so the tests listed for the
     proof, and the hash over them, differed from the run the approval was signed after. A
     runner that cannot run every backing test can read a current approval as Stale.
+24. **CI auto-approves a low-risk rule a review held.** `records` RULE-12 (PROOF-12 names
+    `run_remote()` with an Azure DevOps origin; the tests call `_azure` and `_host` apart) and
+    `static_checks` RULE-39 (no sweep prints an unmeasurable row) were held on review, and
+    CI writes their `.ci.json` approvals anyway: auto-approval reads the free checks and the
+    strength, never whether the test proves the proof text.
 
 ## Housekeeping
 
