@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "specs",
+  "generated_at": "2026-09-15T19:59:19Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "1a104ba83ab72c3a5baef80e1d1ddfc0a61a64aa76fa3bbb8065b7d783795ef3",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-14",
+      "text": "Write anchor `api` with one rule, global anchor `security` with one rule and feature `login` with two own rules and `> Requires: api`; call the rule reference walk for `login` and verify it returns exactly `login/RULE-1 own`, `login/RULE-2 own`, `api/RULE-1 required` and `security/RULE-1 global` in that order; call it for `security` and verify it returns that anchor's own rule alone",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-14 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/specs/20260915T195829Z-e78d186-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-13",
+  "rule_hash": "ae761a971d1d14301fdb83b9841df0b160ddc829315904769745e4f57ccb5015",
+  "rule_text": "A feature must prove its own rules, the rules of every spec it requires and of everything those require in turn, and the rules of every anchor carrying `> Global: true`, labelled `own`, `required` and `global`; an anchor proves its own rules and nothing else",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "b4cb63afa7be67a5050c70641e7783dd09ca0dafbf697b44b3d4b6b8f27a571b",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_requires_and_global_pull_rules_into_a_feature(self, project):\n        project.spec(\n            '# Anchor: api\\n\\n## Rules\\n\\n- RULE-1: Responses carry a type\\n\\n'\n            '## Proof\\n\\n- PROOF-1 (RULE-1): GET /x; verify the header\\n',\n            name='api', category='schema')\n        project.spec(\n            '# Anchor: security\\n\\n> Global: true\\n\\n'\n            '## Rules\\n\\n- RULE-1: No eval anywhere\\n\\n'\n            '## Proof\\n\\n- PROOF-1 (RULE-1): Grep for eval(; verify 0 matches\\n',\n            name='security', category='_anchors')\n        project.spec(SPEC.replace('# Feature: login\\n',\n                                  '# Feature: login\\n\\n> Requires: api\\n'))\n        features = purlin_specs.scan_specs(project.root)\n        refs = purlin_specs.rule_refs('login', features)\n        assert refs == [\n            ('login', 'RULE-1', 'own'), ('login', 'RULE-2', 'own'),\n            ('api', 'RULE-1', 'required'),\n            ('security', 'RULE-1', 'global')], refs\n        # An anchor proves its own rules and nothing else.\n        assert purlin_specs.rule_refs('security', features) == [\n            ('security', 'RULE-1', 'own')]",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_requires_and_global_pull_rules_into_a_feature",
+      "proof": "PROOF-14",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "7475a4c02ab025577a705831c850f646442eda3bd05634c8a6a784752dfd330a",
+  "verdict": "add a case"
+}

@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-15T19:59:21Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "6461584046dcfda6e5e43ed1d0780f537ad8c57a44ba7b96e316fa87dc487a4e",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-17",
+      "text": "Build the payload for a feature whose RULE-1 is tagged high risk, origin pm and criterion US-12; verify the feature entry names the spec path `specs/auth/login.md` and the category `auth`, that the rule carries those three tag values, and that its proof reads tier `integration` with no operating system",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-17 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/states/20260915T195829Z-e78d186-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-17",
+  "rule_hash": "b3f6d7a6672df08580d9f1a9e70812aecb22e11a17e28277c0fe2446b34b1110",
+  "rule_text": "A feature entry carries its spec path and category, and each of its rules with the risk, the origin and the criterion the spec tagged, and each proof with its tier and its operating system",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "11fde20fb1668ded774bc4154dcd95467391f1a85ed0c04e72d0cb7c165010de",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_feature_carries_its_rules_with_their_tags_and_proofs(self,\n                                                                   project):\n        feature = next(f for f in project.payload()['features']\n                       if f['name'] == 'login')\n        assert feature['spec_path'] == 'specs/auth/login.md'\n        assert feature['category'] == 'auth'\n        rule = next(r for r in feature['rules'] if r['id'] == 'RULE-1')\n        assert (rule['risk'], rule['origin'], rule['criterion']) == (\n            'high', 'pm', 'US-12')\n        assert rule['proofs'][0]['tier'] == 'integration'\n        assert rule['proofs'][0]['env'] is None",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_a_feature_carries_its_rules_with_their_tags_and_proofs",
+      "proof": "PROOF-17",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "e8a1cc2deba8f51bbc0db55f0dada0bd0a3f46334fdf0b1a5ae0c6758b4cdbcd",
+  "verdict": "add a case"
+}

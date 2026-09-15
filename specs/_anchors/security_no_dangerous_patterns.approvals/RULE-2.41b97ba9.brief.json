@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "security_no_dangerous_patterns",
-  "generated_at": "2026-09-15T19:38:55Z",
+  "generated_at": "2026-09-15T19:59:11Z",
   "layers": [
     "proof text",
     "test body",
@@ -23,7 +23,7 @@
     }
   ],
   "reasons": [],
-  "record": ".purlin/records/security_no_dangerous_patterns/20260915T193750Z-04c92e2-ci-windows.json",
+  "record": ".purlin/records/security_no_dangerous_patterns/20260915T195829Z-e78d186-ci-linux.json",
   "risk": "high",
   "rule": "RULE-2",
   "rule_hash": "379b01850ca40136c342be1432ad0305fde4aa244318b404f09957e25142596e",

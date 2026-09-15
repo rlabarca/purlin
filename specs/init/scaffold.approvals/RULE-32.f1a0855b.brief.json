@@ -1,0 +1,58 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-15T19:59:09Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "32ed0288bcb1a4da6f34830ef8465244ff9e8d793b094d7af768b40b36d7e82a",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-32",
+      "text": "Run init on a pytest project, then `--add vitest`, and verify `test_framework` reads `pytest,vitest` with both plugins installed; run `--add vitest` once more and verify the value is unchanged",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-32 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/scaffold/20260915T195829Z-e78d186-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-32",
+  "rule_hash": "a35be48511355d483a13deb06391098aa311eaab474cf99e45d7fd416e81c452",
+  "rule_text": "`--add <framework>` keeps what was detected and records the framework once however many times it is added",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "c287b8e637795657aadd1576c50a5a642ee43f1fc1d78b310d65844fec0bec38",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_add_keeps_what_was_detected(self, project):\n        project.run('--gate', 'tested')\n        project.run('--add', 'vitest')\n        assert project.config()['test_framework'] == 'pytest,vitest'\n        assert project.has('.purlin/plugins/pytest_purlin.py')\n        assert project.has('.purlin/plugins/vitest_purlin.ts')",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_add_keeps_what_was_detected",
+      "proof": "PROOF-32",
+      "reasons": []
+    },
+    {
+      "body": "def test_add_keeps_what_was_detected(self, project):\n        project.run('--gate', 'tested')\n        project.run('--add', 'vitest')\n        assert project.config()['test_framework'] == 'pytest,vitest'\n        assert project.has('.purlin/plugins/pytest_purlin.py')\n        assert project.has('.purlin/plugins/vitest_purlin.ts')",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_add_twice_names_the_framework_once",
+      "proof": "PROOF-32",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "f1a0855b49d1b497820c41b539ed6b63f2466cec54ad78876185d426e4d5bdbc",
+  "verdict": "add a case"
+}

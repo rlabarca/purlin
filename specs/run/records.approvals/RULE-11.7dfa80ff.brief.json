@@ -1,0 +1,79 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-15T19:58:56Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "31a5a95cc222578280f93133d2807b0167a9364c0f17136dbb1286206dd829df",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-11",
+      "text": "Call `publish_dashboard()` with `RUNNER_TEMP=/tmp/rt`; verify the directory is `/tmp/rt/purlin-dashboard` and holds `purlin-report.html` and `.purlin/report-data.js`. Repeat with `AGENT_TEMPDIRECTORY` set instead and verify the directory is under it; with neither set, verify it is `.purlin/runtime/report` in the project. With no data file present, verify the page is still copied and a line names the missing data",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/records/20260915T195829Z-e78d186-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-11",
+  "rule_hash": "4ba672f986b9a2adea4545da7c300e79ddfc421c815c03ece70fa83a90846333",
+  "rule_text": "A CI run copies the dashboard page and `.purlin/report-data.js` into the directory the runner's own temporary-directory variable names, which is the directory the upload step reads; off a runner it goes to `.purlin/runtime/report` in the project",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "878feee786bcdabf41b015c70e4aa88761a50e7681dd04d2978199a9960fea96",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_artifact_carries_the_page_and_the_data(project, tmp_path):\n    data = os.path.join(project, ci_module.DATA_FILE)\n    os.makedirs(os.path.dirname(data))\n    with open(data, 'w', encoding='utf-8') as handle:\n        handle.write('const PURLIN_DATA = {};\\n')\n    out = str(tmp_path / 'artifact')\n\n    assert ci_module.publish_dashboard(project, out) == out\n    assert os.path.isfile(os.path.join(out, 'purlin-report.html'))\n    with open(os.path.join(out, '.purlin', 'report-data.js'),\n              encoding='utf-8') as handle:\n        assert handle.read() == 'const PURLIN_DATA = {};\\n'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_artifact_carries_the_page_and_the_data",
+      "proof": "PROOF-11",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_artifact_carries_the_page_and_the_data(project, tmp_path):\n    data = os.path.join(project, ci_module.DATA_FILE)\n    os.makedirs(os.path.dirname(data))\n    with open(data, 'w', encoding='utf-8') as handle:\n        handle.write('const PURLIN_DATA = {};\\n')\n    out = str(tmp_path / 'artifact')\n\n    assert ci_module.publish_dashboard(project, out) == out\n    assert os.path.isfile(os.path.join(out, 'purlin-report.html'))\n    with open(os.path.join(out, '.purlin', 'report-data.js'),\n              encoding='utf-8') as handle:\n        assert handle.read() == 'const PURLIN_DATA = {};\\n'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_artifact_goes_to_the_azure_agent_temp_directory",
+      "proof": "PROOF-11",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_artifact_carries_the_page_and_the_data(project, tmp_path):\n    data = os.path.join(project, ci_module.DATA_FILE)\n    os.makedirs(os.path.dirname(data))\n    with open(data, 'w', encoding='utf-8') as handle:\n        handle.write('const PURLIN_DATA = {};\\n')\n    out = str(tmp_path / 'artifact')\n\n    assert ci_module.publish_dashboard(project, out) == out\n    assert os.path.isfile(os.path.join(out, 'purlin-report.html'))\n    with open(os.path.join(out, '.purlin', 'report-data.js'),\n              encoding='utf-8') as handle:\n        assert handle.read() == 'const PURLIN_DATA = {};\\n'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_artifact_goes_to_the_github_runner_temp_directory",
+      "proof": "PROOF-11",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_artifact_carries_the_page_and_the_data(project, tmp_path):\n    data = os.path.join(project, ci_module.DATA_FILE)\n    os.makedirs(os.path.dirname(data))\n    with open(data, 'w', encoding='utf-8') as handle:\n        handle.write('const PURLIN_DATA = {};\\n')\n    out = str(tmp_path / 'artifact')\n\n    assert ci_module.publish_dashboard(project, out) == out\n    assert os.path.isfile(os.path.join(out, 'purlin-report.html'))\n    with open(os.path.join(out, '.purlin', 'report-data.js'),\n              encoding='utf-8') as handle:\n        assert handle.read() == 'const PURLIN_DATA = {};\\n'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_artifact_goes_under_the_project_when_no_runner_names_a_directory",
+      "proof": "PROOF-11",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_artifact_carries_the_page_and_the_data(project, tmp_path):\n    data = os.path.join(project, ci_module.DATA_FILE)\n    os.makedirs(os.path.dirname(data))\n    with open(data, 'w', encoding='utf-8') as handle:\n        handle.write('const PURLIN_DATA = {};\\n')\n    out = str(tmp_path / 'artifact')\n\n    assert ci_module.publish_dashboard(project, out) == out\n    assert os.path.isfile(os.path.join(out, 'purlin-report.html'))\n    with open(os.path.join(out, '.purlin', 'report-data.js'),\n              encoding='utf-8') as handle:\n        assert handle.read() == 'const PURLIN_DATA = {};\\n'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_artifact_says_when_there_is_no_data_to_carry",
+      "proof": "PROOF-11",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "7dfa80ff8fdb81e32e8f1cbd2e32ae16cfab964b72a7e17184ba16433831558c",
+  "verdict": "ready"
+}

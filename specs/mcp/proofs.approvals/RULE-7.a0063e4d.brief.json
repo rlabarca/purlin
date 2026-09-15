@@ -1,0 +1,50 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "proofs",
+  "generated_at": "2026-09-15T19:58:48Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "6e7a1fcbbd0cf57dc3eb64093f92b0d1ec63a743b9e6dbc87a222f0e67b8f8ab",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-7",
+      "text": "Write the same test file and test name twice for `PROOF-1`; ask for the tests backing it and verify the answer is exactly one pair, `tests/test_login.py` with `test_proof_1`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-7 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/proofs/20260915T195829Z-e78d186-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-7",
+  "rule_hash": "f589c9535fc0099c375a76aab553d6cac9c3c37fe966056ffdb7ff7e912dba9a",
+  "rule_text": "The tests backing a proof are named once each, so a file run twice does not report the same test twice",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "8e5359b2b76c17f3f386fd0ea19c094ad3f4ba401497175fe855a9439f636371",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_tests_backing_a_proof_are_named_once_each(self, project):\n        project.proofs([_entry('PROOF-1', 'RULE-1'),\n                        _entry('PROOF-1', 'RULE-1')])\n        entries = purlin_proofs.load_proofs(project.root)['login']\n        assert purlin_proofs.tests_for(entries, 'PROOF-1') == [\n            ('tests/test_login.py', 'test_proof_1')]",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_the_tests_backing_a_proof_are_named_once_each",
+      "proof": "PROOF-7",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a0063e4d33e491b20649c257ad1e29622ea2a0a9e966ccb6690c0782c700ffb7",
+  "verdict": "add a case"
+}

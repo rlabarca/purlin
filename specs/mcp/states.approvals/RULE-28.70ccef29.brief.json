@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-15T19:59:22Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "9d80ce3922e790aaee755b72921bc3d3f3e638c49b05a33c7aa1bdf14c650f7c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-30",
+      "text": "At gate `recorded`, add a global anchor holding one high-risk rule to a project whose one feature holds one high-risk rule; build the payload and verify the review list is exactly 2 entries, one per owner, that the anchor's rule appears once under the feature `security` and zero times under `login`, and that `project_rollup.needs_review` reads 2",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/states/20260915T195829Z-e78d186-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-28",
+  "rule_hash": "ed1eac4fd19521e4b4094edef3bac9c0515d8824671188a8e0337f13d96142f7",
+  "rule_text": "The review list names each rule once, under the feature that owns it, so a required or global anchor's rule is one entry however many features have to prove it, and the list's length equals the project rollup's review count",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "080b87c4d34bcaa00046b295be0bf5fe42a9f8d672c83485f0dcb5a5b4dd0a54",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_review_list_names_a_global_anchor_rule_once(self):\n        made = Project(gate='recorded')\n        try:\n            made.spec(\n                '# Anchor: security\\n\\n> Global: true\\n\\n'\n                '## Rules\\n\\n- RULE-1: No eval anywhere [risk: high]\\n\\n'\n                '## Proof\\n\\n'\n                '- PROOF-1 (RULE-1): Grep for eval(; verify 0 matches\\n',\n                name='security', category='_anchors')\n            data = made.payload()\n            entries = [(e['feature'], e['rule']) for e in data['review_list']]\n            assert sorted(entries) == [('login', 'RULE-1'),\n                                       ('security', 'RULE-1')], entries\n            assert data['project_rollup']['needs_review'] == 2, (\n                data['project_rollup'])\n        finally:\n            made.close()",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_the_review_list_names_a_global_anchor_rule_once",
+      "proof": "PROOF-30",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "70ccef29dd2f56b9c0ef66e7f02820d586c4db463dd8192b1342c3fdddd38be5",
+  "verdict": "ready"
+}

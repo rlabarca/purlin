@@ -1,0 +1,54 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "config_engine",
+  "generated_at": "2026-09-15T19:58:39Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "30a00b298c5f93d2cea9a2e4ea7914862441e694b4ad2d22104c2e1bf082182b",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-10",
+      "text": "Wrap the atomic move in a recording spy and set the key `key` to `val`; verify the spy recorded at least 1 call, that the last call's source ends in `.tmp` and its destination is `config.local.json`, that the file on disk parses to `{\"key\": \"val\"}` and that no temporary file remains. Then, with the local file already holding `{\"key\": \"val\"}`, patch the move to raise `OSError` and set the same key to `other`; verify the file still parses to exactly `{\"key\": \"val\"}` and no temporary file is left",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-10 logic_mirroring"
+  ],
+  "record": ".purlin/records/config_engine/20260915T195829Z-e78d186-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-10",
+  "rule_hash": "c268e8e4f5932274be31a051f94b80ae8145c6b6039160b58d8eaf3e6066dcde",
+  "rule_text": "A write is atomic: the whole file is written beside the target and then moved onto it, so an interrupted write leaves the previous contents and no temporary file behind",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "73b2cece35ee4788de6500cea0a9544972cde6e0ac1138f19841c670314d19e8",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_atomic_replacement(self):\n        local_path = os.path.join(self.purlin_dir, 'config.local.json')\n\n        # Behavioral proof of the atomic mechanism: the durable file is produced\n        # by renaming a .tmp via os.replace, never by an in-place write.\n        real_replace = os.replace\n        replace_calls = []\n\n        def spy_replace(src, dst):\n            replace_calls.append((src, dst))\n            return real_replace(src, dst)\n\n        with mock.patch.object(config_engine.os, 'replace', side_effect=spy_replace):\n            update_config(self.project_root, \"key\", \"val\")\n\n        assert replace_calls, \"update_config is not atomic \u2014 os.replace was never called\"\n        src, dst = replace_calls[-1]\n        assert src.endswith('.tmp'), f\"expected rename from a .tmp file, got {src!r}\"\n        assert os.path.abspath(dst) == os.path.abspath(local_path), \\\n            f\"os.replace target {dst!r} is not config.local.json\"\n\n        # No partial write: file exists, is valid JSON with the new key, no .tmp left.\n        assert os.path.exists(local_path)\n        assert not os.path.exists(local_path + '.tmp')\n        with open(local_path) as f:\n            assert json.load(f)[\"key\"] == \"val\"\n\n        # An interrupted rename must leave the original file untouched (no partial write).\n        with open(local_path, 'w') as f:\n            json.dump({\"key\": \"val\"}, f)\n        with mock.patch.object(config_engine.os, 'replace',\n                               side_effect=OSError(\"simulated crash mid-rename\")):\n            try:\n                update_config(self.project_root, \"key\", \"other\")\n            except OSError:\n                pass\n        with open(local_path) as f:\n            assert json.load(f) == {\"key\": \"val\"}, \"interrupted write corrupted the config\"\n        assert not os.path.exists(local_path + '.tmp')",
+      "file": "dev/test_config_engine.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_atomic_replacement",
+      "proof": "PROOF-10",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "640982acdbf329586604cf1b3f06647799c3399928aeaaad8990345aa93687d7",
+  "verdict": "needs a human"
+}

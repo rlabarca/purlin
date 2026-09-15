@@ -1,0 +1,59 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-15T19:59:08Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "f42bb5b2988f163459aca084260b018202ab893f890cc55ce007806d0989b0ce",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-26",
+      "text": "Write `#!/bin/sh\\necho mine\\n` into `.git/hooks/pre-push`, run init and verify the file is unchanged and the output says `add this line to it`; on a second project write `.pre-commit-config.yaml`, run init and verify the output names the pre-commit framework and `.git/hooks/pre-push` was not written",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-26 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/scaffold/20260915T195829Z-e78d186-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-26",
+  "rule_hash": "db2ad183bbd3d97cf96e1d1143bef3257adaa6bb1e235a8fcad7f2fb9f574c81",
+  "rule_text": "A pre-push hook someone else wrote, or a repository whose hooks another tool manages, is named in the summary with the line to add rather than written over",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "9a27877db65eda59911a4f0cab8f0d9fa129ff7726e62b74ecf2aaf9636bd338",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_hook_someone_else_wrote_is_kept(self, project):\n        write(project.path('.git/hooks/pre-push'), '#!/bin/sh\\necho mine\\n')\n        output = project.run('--gate', 'tested')\n        assert read(project.path('.git/hooks/pre-push')) == \\\n            '#!/bin/sh\\necho mine\\n'\n        assert 'add this line to it' in output",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_a_hook_manager_is_named_rather_than_written_over",
+      "proof": "PROOF-26",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_hook_someone_else_wrote_is_kept(self, project):\n        write(project.path('.git/hooks/pre-push'), '#!/bin/sh\\necho mine\\n')\n        output = project.run('--gate', 'tested')\n        assert read(project.path('.git/hooks/pre-push')) == \\\n            '#!/bin/sh\\necho mine\\n'\n        assert 'add this line to it' in output",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_a_hook_someone_else_wrote_is_kept",
+      "proof": "PROOF-26",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "371afcd633b3dd9c05f8e3854ae11b370997311a3dfe6713421f1f5d5bf0e1c6",
+  "verdict": "add a case"
+}

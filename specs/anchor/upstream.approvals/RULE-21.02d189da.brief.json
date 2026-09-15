@@ -1,0 +1,50 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "upstream",
+  "generated_at": "2026-09-15T19:59:39Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "c356f77ed4605021883a21229d3d3de322679add4aaf1eec45307077c89b8f0e",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-21",
+      "text": "Run the module with `--help` and verify exit 0 with `add`, `sync` and `propose` in the output; run it with no arguments at all and verify exit 2 with `--project-root` in the output",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-21 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/upstream/20260915T195829Z-e78d186-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-21",
+  "rule_hash": "503bb4f050bfa64bd06b22372a8db350e64f8bd638a0ea00638861697a48e70d",
+  "rule_text": "`--help` names `add`, `sync` and `propose`, and a call with no arguments exits 2 naming `--project-root`",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "0e3f9c95491f030c54505dfab727cb24a707e03ce3e62634749149f211d1100c",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_help_and_a_bare_call_are_usable(workspace):\n    result = subprocess.run([sys.executable, UPSTREAM_PY, '--help'],\n                            capture_output=True, text=True)\n    assert result.returncode == 0\n    for command in ('add', 'sync', 'propose'):\n        assert command in result.stdout\n\n    # No arguments at all: not even `--project-root`.\n    code, out = _child([], cwd=workspace.root)\n    assert code == 2\n    assert '--project-root' in out\n\n    inline = io.StringIO()\n    with contextlib.redirect_stdout(inline):\n        assert upstream.main([]) == 2\n    assert '--project-root' in inline.getvalue()",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_help_and_a_bare_call_are_usable",
+      "proof": "PROOF-21",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "02d189da9b03fd7c4dfb988cb1cf4c06c5190d41b7901d9c52a2557b643f8e9a",
+  "verdict": "add a case"
+}

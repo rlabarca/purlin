@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "upstream",
+  "generated_at": "2026-09-15T19:59:37Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "f174d403a8e8871bd640477d604dc1b2a3369a2d384d92f463731d5072e8da12",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-4",
+      "text": "Publish an anchor whose own text already carries `> Source: git@example.com:other.git a.md` and `> Pinned: deadbeef`, run `add` on it, and verify the copy holds exactly one `> Source:` line, exactly one `> Pinned:` line, and no occurrence of `deadbeef`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-4 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/upstream/20260915T195829Z-e78d186-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-4",
+  "rule_hash": "388692f1280d962a7d6c477c8a65d248a3b2b037fc16cbf08939f8c1fa2d0515",
+  "rule_text": "Tracking fields the source itself carried are stripped before the copy is written, so a copy of a copy holds one `> Source:` and one `> Pinned:`, both this project's",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "b32483d9ed93b69dba71c0db99f701b68b4a2d9c9458a97f408c4fb34056444f",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_add_strips_the_tracking_fields_the_source_carried(workspace):\n    \"\"\"A source that is itself a consumer copy must not bring its pin along.\"\"\"\n    _write(os.path.join(workspace.anchor_work, 'specs', 'no_eval.md'),\n           ANCHOR_V1.replace(\n               '> Type: security',\n               '> Type: security\\n> Source: git@example.com:other.git a.md\\n'\n               '> Pinned: deadbeef'))\n    _publish(workspace.anchor_work, 'publish a copy that carries tracking')\n    _add(workspace)\n    text = _copy_text(workspace)\n    assert text.count('> Source:') == 1\n    assert text.count('> Pinned:') == 1\n    assert 'deadbeef' not in text",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_add_strips_the_tracking_fields_the_source_carried",
+      "proof": "PROOF-4",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "46298172fb12dd440225944585935c21f5982c163e81210896db9c46b5ad9af2",
+  "verdict": "add a case"
+}

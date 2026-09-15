@@ -1,0 +1,63 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-15T19:59:03Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "50d7976fb4e3059cfc21ee4fc3fda9f0760e9cd3753a691c86ed1ab081a1aa4e",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-6",
+      "text": "Run against an empty tree and verify the framework question is asked with `shell` as the default and the config records `shell`; answer `pytest` on stdin and verify `.purlin/plugins/pytest_purlin.py` exists and the config records `pytest`; answer `rspec` and verify the output says `reading it as shell` and the config records `shell`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/scaffold/20260915T195829Z-e78d186-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-6",
+  "rule_hash": "17a2de73b4575d33629d7fd1642f1aaecc3b0affacec8fa20146b70753af326e",
+  "rule_text": "A tree with nothing to detect is asked which framework its tests use, that answer is the one installed, and a name this release ships no plugin for is reported and read as `shell`",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "4e019be597204b9c07940a07920cae5235a5725d05e576efb3fa15b4c9c7421b",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_an_empty_tree_is_asked_and_shell_is_the_default(self):\n        made = Project(None)\n        try:\n            output = made.run('--gate', 'tested')\n            assert scaffold_module.LANGUAGE_QUESTION in output\n            assert '[shell]: shell' in output\n            assert made.config()['test_framework'] == 'shell'\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_a_framework_with_no_plugin_is_read_as_shell",
+      "proof": "PROOF-6",
+      "reasons": []
+    },
+    {
+      "body": "def test_an_empty_tree_is_asked_and_shell_is_the_default(self):\n        made = Project(None)\n        try:\n            output = made.run('--gate', 'tested')\n            assert scaffold_module.LANGUAGE_QUESTION in output\n            assert '[shell]: shell' in output\n            assert made.config()['test_framework'] == 'shell'\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_an_empty_tree_is_asked_and_shell_is_the_default",
+      "proof": "PROOF-6",
+      "reasons": []
+    },
+    {
+      "body": "def test_an_empty_tree_is_asked_and_shell_is_the_default(self):\n        made = Project(None)\n        try:\n            output = made.run('--gate', 'tested')\n            assert scaffold_module.LANGUAGE_QUESTION in output\n            assert '[shell]: shell' in output\n            assert made.config()['test_framework'] == 'shell'\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_named_framework_is_the_one_installed",
+      "proof": "PROOF-6",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "6f195d0a7d43a12239a1bedfca90fb7d8026f260f9cc6966d5374991e7b76202",
+  "verdict": "ready"
+}

@@ -1,0 +1,107 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-15T19:58:52Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "0eacdce04a01e154132b91c1c96b58a5b56bf8a20e28c2ecb93ec7180b5491ed",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-1",
+      "text": "Call `write_record()` with a record whose commit is `4f1c2ab9e1d4e8c9b5f2a7d3c6e0b8a1d9f4c2e7` and a runner email `ada@example.com`; verify the returned path is `.purlin/records/greeting/<timestamp>-4f1c2ab-ada.json`, that the reader parses the four parts back out of it, that `os_name=\"windows\"` adds the `-windows` tail and sets the file's `os` field to `windows`, and that the dict the caller handed over is not mutated",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-1 tautology",
+    "PROOF-1 tautology",
+    "PROOF-1 tautology",
+    "PROOF-1 tautology",
+    "PROOF-1 tautology"
+  ],
+  "record": ".purlin/records/records/20260915T195829Z-e78d186-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-1",
+  "rule_hash": "4549b1ee0a6c45f25b875f77878928ee1e11ad65bd9e29312d2993bddf638004",
+  "rule_text": "A record is written to `.purlin/records/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json`, where `<runner>` is `ci` or the local part of the committer's email, and the `runner`, `os` and `timestamp` fields inside the file are set to match the name rather than left as the caller handed them over",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "96e25124c01093b2036643e13d1bb84025d339f18711039010df3079e25121ac",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_file_name_carries_the_run(project):\n    when = datetime(2026, 9, 13, 12, 0, 0)\n    name = records_module.record_filename(\n        '4f1c2ab9e1d4e8c9b5f2a7d3c6e0b8a1', 'ada@example.com', 'linux', when)\n    assert name == '20260913T120000Z-4f1c2ab-ada-linux.json'\n    parts = reader.record_name_parts(name)\n    assert parts == ('20260913T120000Z', '4f1c2ab', 'ada', 'linux')",
+      "file": "dev/test_records.py",
+      "findings": [
+        "tautology"
+      ],
+      "name": "test_the_file_name_carries_the_run",
+      "proof": "PROOF-1",
+      "reasons": [
+        "tautological assertion (assert True or equivalent)"
+      ]
+    },
+    {
+      "body": "def test_the_file_name_carries_the_run(project):\n    when = datetime(2026, 9, 13, 12, 0, 0)\n    name = records_module.record_filename(\n        '4f1c2ab9e1d4e8c9b5f2a7d3c6e0b8a1', 'ada@example.com', 'linux', when)\n    assert name == '20260913T120000Z-4f1c2ab-ada-linux.json'\n    parts = reader.record_name_parts(name)\n    assert parts == ('20260913T120000Z', '4f1c2ab', 'ada', 'linux')",
+      "file": "dev/test_records.py",
+      "findings": [
+        "tautology"
+      ],
+      "name": "test_the_runner_slug_is_ci_or_the_email_local_part",
+      "proof": "PROOF-1",
+      "reasons": [
+        "tautological assertion (assert True or equivalent)"
+      ]
+    },
+    {
+      "body": "def test_the_file_name_carries_the_run(project):\n    when = datetime(2026, 9, 13, 12, 0, 0)\n    name = records_module.record_filename(\n        '4f1c2ab9e1d4e8c9b5f2a7d3c6e0b8a1', 'ada@example.com', 'linux', when)\n    assert name == '20260913T120000Z-4f1c2ab-ada-linux.json'\n    parts = reader.record_name_parts(name)\n    assert parts == ('20260913T120000Z', '4f1c2ab', 'ada', 'linux')",
+      "file": "dev/test_records.py",
+      "findings": [
+        "tautology"
+      ],
+      "name": "test_write_record_does_not_mutate_what_the_run_handed_it",
+      "proof": "PROOF-1",
+      "reasons": [
+        "tautological assertion (assert True or equivalent)"
+      ]
+    },
+    {
+      "body": "def test_the_file_name_carries_the_run(project):\n    when = datetime(2026, 9, 13, 12, 0, 0)\n    name = records_module.record_filename(\n        '4f1c2ab9e1d4e8c9b5f2a7d3c6e0b8a1', 'ada@example.com', 'linux', when)\n    assert name == '20260913T120000Z-4f1c2ab-ada-linux.json'\n    parts = reader.record_name_parts(name)\n    assert parts == ('20260913T120000Z', '4f1c2ab', 'ada', 'linux')",
+      "file": "dev/test_records.py",
+      "findings": [
+        "tautology"
+      ],
+      "name": "test_write_record_names_the_operating_system_of_a_matrix_job",
+      "proof": "PROOF-1",
+      "reasons": [
+        "tautological assertion (assert True or equivalent)"
+      ]
+    },
+    {
+      "body": "def test_the_file_name_carries_the_run(project):\n    when = datetime(2026, 9, 13, 12, 0, 0)\n    name = records_module.record_filename(\n        '4f1c2ab9e1d4e8c9b5f2a7d3c6e0b8a1', 'ada@example.com', 'linux', when)\n    assert name == '20260913T120000Z-4f1c2ab-ada-linux.json'\n    parts = reader.record_name_parts(name)\n    assert parts == ('20260913T120000Z', '4f1c2ab', 'ada', 'linux')",
+      "file": "dev/test_records.py",
+      "findings": [
+        "tautology"
+      ],
+      "name": "test_write_record_returns_a_path_the_reader_parses",
+      "proof": "PROOF-1",
+      "reasons": [
+        "tautological assertion (assert True or equivalent)"
+      ]
+    }
+  ],
+  "triple_hash": "1d1a4b70b0a85701ae489165f84a14cdac34931e9575981377977ba106e4e555",
+  "verdict": "needs a human"
+}

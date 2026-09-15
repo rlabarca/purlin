@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "server",
+  "generated_at": "2026-09-15T19:59:13Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "be1eb49b6dde79cbae03e6c3f136d7205f301f72d28c8de6f7795c528c5c0c5d",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-16",
+      "text": "Make the project dirty, take the hook's lock from the test, run the hook as a subprocess and verify it exits 0 with no output and writes no data file; release the lock, run it again and verify the data file appears",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-16 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/server/20260915T195829Z-e78d186-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-16",
+  "rule_hash": "30d759db81bf662cf261b281bb6777266f3001326214e57b9054fb17650cbe1b",
+  "rule_text": "One generation at a time: the hook takes a lock that does not wait, and a second instance finding it held leaves without generating, because the holder re-reads the inputs after writing",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "2656282f466de8d52ac0f9826424e40b2dff721b2bb6cfc56f2bf47931b4c4c8",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_held_lock_means_leave(self, tmp_path):\n        project = _project(str(tmp_path))\n        os.makedirs(os.path.join(project, '.purlin', 'runtime'), exist_ok=True)\n        lock_path = os.path.join(project, '.purlin', 'runtime', 'refresh_digest.lock')\n        hook = _load_hook_module()\n        with open(lock_path, 'a+') as lock:\n            hook.lock_exclusive(lock)\n            try:\n                _assert_silent_zero(_run(project, child=True), 'lock held')\n                assert not os.path.exists(_digest_path(project)), \\\n                    'a second instance must not generate while the first holds the lock'\n            finally:\n                hook.unlock(lock)\n        _assert_silent_zero(_run(project), 'lock released')\n        assert os.path.isfile(_digest_path(project))",
+      "file": "dev/test_refresh_digest_hook.py",
+      "findings": [],
+      "name": "test_a_held_lock_means_leave",
+      "proof": "PROOF-16",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "07098770a7ea253824aee5a35d5f27cf692b27e24461a3dd172464c11df07cde",
+  "verdict": "add a case"
+}

@@ -1,0 +1,50 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-15T19:59:22Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "bb8d8ad4e29d8066902e39ef3d8b7a193f95b8b50fa15ae4dcc68f4cbd9cfbf1",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-24",
+      "text": "Run the status report on a project with no spec files; verify the text carries `No specs found` and names `purlin:init`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-24 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/states/20260915T195829Z-e78d186-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-23",
+  "rule_hash": "3aecfc2df7449d12658defc01f58707f1ad0e446f1f2cb674450e4d47a2599e6",
+  "rule_text": "A project with no specs under `specs/` says what to run instead of printing an empty table",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "8c21a1f61a5ccaca3c47129225b6fbba90cdb4c37e7ec95c537b6079bdb0017f",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_an_empty_project_says_what_to_run(self):\n        made = Project(spec=None)\n        try:\n            text = purlin_status.sync_status(made.root)\n            assert 'No specs found' in text and 'purlin:init' in text\n        finally:\n            made.close()",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_an_empty_project_says_what_to_run",
+      "proof": "PROOF-24",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "6b8f6780548f48a2d3acea0d96fda7dfe234fbf42e713d5f098ea86a7300ecb2",
+  "verdict": "add a case"
+}

@@ -1,0 +1,212 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-15T19:59:04Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "9b497748def496dea49a3e872d7ece37fd05be98dfad68375b6838d0241bc6ed",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-7",
+      "text": "For each of pytest, vitest, jest, xunit, sql and shell, build a project that framework is detected in, run init, and verify the installed file named by the registry exists and its bytes equal the plugin under `scripts/proof/`; verify the registry answers all six ids and each source file it names exists",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-7 logic_mirroring",
+    "PROOF-7 logic_mirroring",
+    "PROOF-7 logic_mirroring",
+    "PROOF-7 logic_mirroring",
+    "PROOF-7 logic_mirroring",
+    "PROOF-7 logic_mirroring",
+    "PROOF-7 logic_mirroring",
+    "PROOF-7 logic_mirroring",
+    "PROOF-7 logic_mirroring",
+    "PROOF-7 logic_mirroring",
+    "PROOF-7 logic_mirroring",
+    "PROOF-7 logic_mirroring",
+    "PROOF-7 logic_mirroring"
+  ],
+  "record": ".purlin/records/scaffold/20260915T195829Z-e78d186-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-7",
+  "rule_hash": "887480b02ec276cbe963a2a67f807c954daeec46bc205a8e10286f201429193c",
+  "rule_text": "The framework detected in the tree gets its proof plugin copied into `.purlin/plugins/` byte for byte, under the file name the framework registry gives it",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "0548851eab781c7b839239f180c8865936e35cca80cd33e613c6bbe1ccd9d02b",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_detection_installs_that_language_s_plugin(self, language):\n        made = Project(language)\n        try:\n            output = made.run('--gate', 'tested')\n            plugin = LANGUAGES[language][1]\n            assert made.has(plugin), output\n            # Shell has no detector, so it is the one answer a person gives.\n            assert made.config()['test_framework'] == (\n                'shell' if language == 'shell' else 'auto')\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_detection_installs_that_language_s_plugin[jest]",
+      "proof": "PROOF-7",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_detection_installs_that_language_s_plugin(self, language):\n        made = Project(language)\n        try:\n            output = made.run('--gate', 'tested')\n            plugin = LANGUAGES[language][1]\n            assert made.has(plugin), output\n            # Shell has no detector, so it is the one answer a person gives.\n            assert made.config()['test_framework'] == (\n                'shell' if language == 'shell' else 'auto')\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_detection_installs_that_language_s_plugin[pytest]",
+      "proof": "PROOF-7",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_detection_installs_that_language_s_plugin(self, language):\n        made = Project(language)\n        try:\n            output = made.run('--gate', 'tested')\n            plugin = LANGUAGES[language][1]\n            assert made.has(plugin), output\n            # Shell has no detector, so it is the one answer a person gives.\n            assert made.config()['test_framework'] == (\n                'shell' if language == 'shell' else 'auto')\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_detection_installs_that_language_s_plugin[shell]",
+      "proof": "PROOF-7",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_detection_installs_that_language_s_plugin(self, language):\n        made = Project(language)\n        try:\n            output = made.run('--gate', 'tested')\n            plugin = LANGUAGES[language][1]\n            assert made.has(plugin), output\n            # Shell has no detector, so it is the one answer a person gives.\n            assert made.config()['test_framework'] == (\n                'shell' if language == 'shell' else 'auto')\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_detection_installs_that_language_s_plugin[sql]",
+      "proof": "PROOF-7",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_detection_installs_that_language_s_plugin(self, language):\n        made = Project(language)\n        try:\n            output = made.run('--gate', 'tested')\n            plugin = LANGUAGES[language][1]\n            assert made.has(plugin), output\n            # Shell has no detector, so it is the one answer a person gives.\n            assert made.config()['test_framework'] == (\n                'shell' if language == 'shell' else 'auto')\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_detection_installs_that_language_s_plugin[vitest]",
+      "proof": "PROOF-7",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_detection_installs_that_language_s_plugin(self, language):\n        made = Project(language)\n        try:\n            output = made.run('--gate', 'tested')\n            plugin = LANGUAGES[language][1]\n            assert made.has(plugin), output\n            # Shell has no detector, so it is the one answer a person gives.\n            assert made.config()['test_framework'] == (\n                'shell' if language == 'shell' else 'auto')\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_detection_installs_that_language_s_plugin[xunit]",
+      "proof": "PROOF-7",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_detection_installs_that_language_s_plugin(self, language):\n        made = Project(language)\n        try:\n            output = made.run('--gate', 'tested')\n            plugin = LANGUAGES[language][1]\n            assert made.has(plugin), output\n            # Shell has no detector, so it is the one answer a person gives.\n            assert made.config()['test_framework'] == (\n                'shell' if language == 'shell' else 'auto')\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_the_copy_is_byte_equal_to_the_plugin_it_came_from[jest]",
+      "proof": "PROOF-7",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_detection_installs_that_language_s_plugin(self, language):\n        made = Project(language)\n        try:\n            output = made.run('--gate', 'tested')\n            plugin = LANGUAGES[language][1]\n            assert made.has(plugin), output\n            # Shell has no detector, so it is the one answer a person gives.\n            assert made.config()['test_framework'] == (\n                'shell' if language == 'shell' else 'auto')\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_the_copy_is_byte_equal_to_the_plugin_it_came_from[pytest]",
+      "proof": "PROOF-7",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_detection_installs_that_language_s_plugin(self, language):\n        made = Project(language)\n        try:\n            output = made.run('--gate', 'tested')\n            plugin = LANGUAGES[language][1]\n            assert made.has(plugin), output\n            # Shell has no detector, so it is the one answer a person gives.\n            assert made.config()['test_framework'] == (\n                'shell' if language == 'shell' else 'auto')\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_the_copy_is_byte_equal_to_the_plugin_it_came_from[shell]",
+      "proof": "PROOF-7",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_detection_installs_that_language_s_plugin(self, language):\n        made = Project(language)\n        try:\n            output = made.run('--gate', 'tested')\n            plugin = LANGUAGES[language][1]\n            assert made.has(plugin), output\n            # Shell has no detector, so it is the one answer a person gives.\n            assert made.config()['test_framework'] == (\n                'shell' if language == 'shell' else 'auto')\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_the_copy_is_byte_equal_to_the_plugin_it_came_from[sql]",
+      "proof": "PROOF-7",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_detection_installs_that_language_s_plugin(self, language):\n        made = Project(language)\n        try:\n            output = made.run('--gate', 'tested')\n            plugin = LANGUAGES[language][1]\n            assert made.has(plugin), output\n            # Shell has no detector, so it is the one answer a person gives.\n            assert made.config()['test_framework'] == (\n                'shell' if language == 'shell' else 'auto')\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_the_copy_is_byte_equal_to_the_plugin_it_came_from[vitest]",
+      "proof": "PROOF-7",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_detection_installs_that_language_s_plugin(self, language):\n        made = Project(language)\n        try:\n            output = made.run('--gate', 'tested')\n            plugin = LANGUAGES[language][1]\n            assert made.has(plugin), output\n            # Shell has no detector, so it is the one answer a person gives.\n            assert made.config()['test_framework'] == (\n                'shell' if language == 'shell' else 'auto')\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_the_copy_is_byte_equal_to_the_plugin_it_came_from[xunit]",
+      "proof": "PROOF-7",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_detection_installs_that_language_s_plugin(self, language):\n        made = Project(language)\n        try:\n            output = made.run('--gate', 'tested')\n            plugin = LANGUAGES[language][1]\n            assert made.has(plugin), output\n            # Shell has no detector, so it is the one answer a person gives.\n            assert made.config()['test_framework'] == (\n                'shell' if language == 'shell' else 'auto')\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_the_registry_answers_every_framework",
+      "proof": "PROOF-7",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "e1c79f466617101edc3aac4268c9e5dfea229e72079d64af7996999fa189f75e",
+  "verdict": "needs a human"
+}
