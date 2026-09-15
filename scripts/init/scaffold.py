@@ -73,6 +73,9 @@ APPROVER_QUESTION = 'Who may approve a rule? Emails, separated by commas.'
 # inside a project is written, so this script and the upgrade cannot disagree.
 _REGISTRY = os.path.join('references', 'supported_frameworks.md')
 
+MUTANTS_IGNORE = ('# The copy mutmut breaks, rebuilt on every run, never committed\n'
+                  'mutants/\n')
+
 _WIRING = {
     'pytest': ('conftest.py',
                '# Purlin proof plugin, wired by purlin:init. `.purlin` is not\n'
@@ -262,14 +265,25 @@ def mutmut_paths(root):
     `.py` file at any depth, such as `scripts/` whose code sits one level
     down, is source. `src`, `lib` and `app` win as source, and `tests` and
     `test` win as the selection, whenever they are there.
+
+    A project whose code is modules at the root is named module by module,
+    never as `.`: mutmut copies every source path into `mutants/`, and `.`
+    would copy `.git` and `mutants/` itself along with the code.
     """
-    dirs = [n for n in sorted(os.listdir(root)) if not n.startswith('.')
+    names = sorted(os.listdir(root))
+    dirs = [n for n in names if not n.startswith('.')
             and os.path.isdir(os.path.join(root, n))]
     test_dirs = [n for n in dirs if any(
         _is_test_file(f) for f in os.listdir(os.path.join(root, n)))]
     sources = [n for n in ('src', 'lib', 'app') if n in dirs] or [
-        n for n in dirs if n not in ('tests', 'test', 'specs', 'designs')
+        n for n in dirs if n not in ('tests', 'test', 'specs', 'designs',
+                                     'mutants')
         and n not in test_dirs and _holds_python(os.path.join(root, n))]
+    if not sources:
+        sources = [n for n in names if n.endswith('.py')
+                   and os.path.isfile(os.path.join(root, n))
+                   and not _is_test_file(n) and n not in ('conftest.py',
+                                                          'setup.py')]
     tests = [n for n in ('tests', 'test') if n in dirs] or test_dirs
     return sources or ['.'], tests or ['.']
 
@@ -537,6 +551,9 @@ def write_engine(plan, root, selected):
         sources, tests = mutmut_paths(root)
         plan.append(rel, mutmut.mutmut_config_block(sources, tests, style),
                     section)
+        # mutmut leaves its working copy in `mutants/`. Committed, it carries
+        # a copy of every test and every record into the next commit.
+        plan.append('.gitignore', MUTANTS_IGNORE, 'mutants/')
     for name in [f for f in ('jest', 'vitest', 'xunit') if f in selected]:
         plan.note(_STRYKER_NOTE % name)
 

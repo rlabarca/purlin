@@ -596,6 +596,15 @@ class TestWhatInitWrites:
         project.run('--gate', 'tested')
         assert '[mutmut]' in read(project.path('setup.cfg'))
 
+    @pytest.mark.proof("scaffold", "PROOF-40", "RULE-40")
+    def test_the_mutmut_copy_is_ignored_once(self, project):
+        write(project.path('greeting.py'), 'def greet(name):\n    return name\n')
+        write(project.path('tests/test_greeting.py'), 'def test_greet():\n    pass\n')
+        project.run('--gate', 'tested')
+        project.run('--gate', 'tested')
+        lines = read(project.path('.gitignore')).splitlines()
+        assert lines.count('mutants/') == 1
+
     @pytest.mark.proof("scaffold", "PROOF-19", "RULE-19")
     def test_the_engine_block_is_added_once(self, project):
         project.run('--gate', 'tested')
@@ -987,6 +996,14 @@ class TestThePieces:
         write(project.path('dev/test_extra.py'), '')
         assert scaffold_module.mutmut_paths(project.root) == (['src'],
                                                               ['tests'])
+
+    @pytest.mark.proof("scaffold", "PROOF-39", "RULE-39")
+    def test_modules_at_the_root_are_named_one_by_one(self, project):
+        write(project.path('greeting.py'), 'def greet(name):\n    return name\n')
+        write(project.path('conftest.py'), '')
+        write(project.path('test_greeting.py'), 'def test_greet():\n    pass\n')
+        sources, _tests = scaffold_module.mutmut_paths(project.root)
+        assert sources == ['greeting.py']
 
     @pytest.mark.proof("scaffold", "PROOF-39", "RULE-39")
     def test_no_python_anywhere_falls_back_to_the_root(self, project):
