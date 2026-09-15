@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "run_script",
-  "generated_at": "2026-09-15T17:24:04Z",
+  "generated_at": "2026-09-15T19:31:48Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-61 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/run_script/20260915T172305Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/run_script/20260915T193117Z-91d34e0-ci-linux.json",
   "risk": "high",
   "rule": "RULE-42",
   "rule_hash": "82f3749d2110afd3b8d28173830791eaaa60a03cf783e549e98cdf9645c6a3e3",
   "rule_text": "`--ci` writes the auto-approvals and the review list's briefs before the commit and hands their paths to it, so the one commit that carries the record carries the `.ci.json` and `.brief.json` files beside the spec too; `--commit` writes neither and its commit carries the records alone",
   "schema": "purlin-brief/1",
-  "state": "Tested",
+  "state": "Reviewed",
   "test_hash": "8dd3aa341678922034a7324ea25d5effec7edaa186a0ce605d73a373191dd992",
   "test_hash_kind": "file",
   "test_strength": null,

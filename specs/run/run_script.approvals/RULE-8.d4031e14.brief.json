@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "run_script",
-  "generated_at": "2026-09-15T17:24:00Z",
+  "generated_at": "2026-09-15T19:31:45Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-8 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/run_script/20260915T172305Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/run_script/20260915T193117Z-91d34e0-ci-linux.json",
   "risk": "high",
   "rule": "RULE-8",
   "rule_hash": "75373322c9d73984f031c01cdf717163e803b3b0f035555e56a4135bf841a61b",
   "rule_text": "A marker in a test source that produced no proof entry in this run exits the run 1 and is named; at most 5 are listed and the rest are counted",
   "schema": "purlin-brief/1",
-  "state": "Tested",
+  "state": "Reviewed",
   "test_hash": "7121b84d27218db80b94ee57dbaccdc730b95f6088765eb05b691289d055b754",
   "test_hash_kind": "file",
   "test_strength": null,

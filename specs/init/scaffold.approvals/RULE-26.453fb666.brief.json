@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "scaffold",
-  "generated_at": "2026-09-15T17:24:10Z",
+  "generated_at": "2026-09-15T19:31:53Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-26 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/scaffold/20260915T172305Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/scaffold/20260915T193117Z-91d34e0-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-26",
   "rule_hash": "db2ad183bbd3d97cf96e1d1143bef3257adaa6bb1e235a8fcad7f2fb9f574c81",
   "rule_text": "A pre-push hook someone else wrote, or a repository whose hooks another tool manages, is named in the summary with the line to add rather than written over",
   "schema": "purlin-brief/1",
-  "state": "Tested",
+  "state": "Reviewed",
   "test_hash": "8dfdd26e511bd5627452e300821f892b0ff96f7ef13f9990310c7d5d79bbb2a5",
   "test_hash_kind": "file",
   "test_strength": null,

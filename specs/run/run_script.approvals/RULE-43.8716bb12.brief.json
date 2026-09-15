@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "run_script",
-  "generated_at": "2026-09-15T17:24:04Z",
+  "generated_at": "2026-09-15T19:31:48Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-62 tautology"
   ],
-  "record": ".purlin/records/run_script/20260915T172305Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/run_script/20260915T193117Z-91d34e0-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-43",
   "rule_hash": "9e4dd8ac9cc452c352cbfdbf4c17851f10f20bc3bd16da5e3878474fa66e28ef",
   "rule_text": "The pytest arm never collects `mutants/`, the copy mutmut leaves of the project, so a test mutmut copied is not collected twice and does not stop the run",
   "schema": "purlin-brief/1",
-  "state": "Tested",
+  "state": "Reviewed",
   "test_hash": "d60d958bd471278e662396db4e346757480771550623f4ae369e549ffbaa4c19",
   "test_hash_kind": "file",
   "test_strength": null,

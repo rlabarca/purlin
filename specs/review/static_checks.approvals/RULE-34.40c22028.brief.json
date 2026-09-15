@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-15T19:32:17Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "f3ccbf141aa5f6d9db599c58b4d23d600088264c8aad653174ed1f60cb444386",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-31",
+      "text": "Take the exclusive lock on a file, then run a second process that tries the same lock without blocking; verify it prints `held`, then release the lock and verify a second run prints `free` and the handle is closed",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-31 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/static_checks/20260915T193118Z-91d34e0-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-34",
+  "rule_hash": "6704df9190984492d31af624069da8f56633e237f52c6f1c4fdd6851e9af73be",
+  "rule_text": "An exclusive lock the module takes is held against a second process until it is released, and releasing it closes the handle",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "3ca56555ec4b6e384da1f71583a727a88d35b0437793d6a6b85bc450437641f1",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_lock_is_held_until_it_is_released(self, tmp_path):\n        \"\"\"lock_exclusive creates the file and takes the lock; unlock frees it.\n\n        The non-blocking probe runs in a second process, because a POSIX flock is\n        held per open file description and a second lock inside this process\n        would succeed whether or not the first one is held.\n        \"\"\"\n        lock_path = tmp_path / 'records.lock'\n        # The probe asks for the lock without waiting, the way the module\n        # takes it: flock where there is an fcntl, and one byte through\n        # msvcrt where there is not, so Windows answers the same question.\n        probe = (\n            'import sys\\n'\n            'sys.path.insert(0, %r)\\n'\n            'from static_checks import _HAS_FCNTL\\n'\n            'f = open(%r, \"a+\", encoding=\"utf-8\")\\n'\n            'try:\\n'\n            '    if _HAS_FCNTL:\\n'\n            '        import fcntl\\n'\n            '        fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)\\n'\n            '    else:\\n'\n            '        import msvcrt\\n'\n            '        f.seek(0)\\n'\n            '        msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)\\n'\n            '    print(\"free\")\\n'\n            'except OSError:\\n'\n            '    print(\"held\")\\n'\n        ) % (os.path.dirname(STATIC_CHECKS_PY), str(lock_path))\n\n        handle = static_checks.lock_exclusive(str(lock_path))\n        try:\n            assert lock_path.exists(), \"lock_exclusive did not create the lock file\"\n            busy = subprocess.run([sys.executable, '-c', probe],\n                                  capture_output=True, text=True)\n            assert busy.stdout.strip() == 'held', (\n                f\"another process took the lock while it was held: {busy.stdout!r}\")\n        finally:\n            static_checks.unlock(handle)\n\n        free = subprocess.run([sys.executable, '-c', probe],\n                              capture_output=True, text=True)\n        assert free.stdout.strip() == 'free', (\n            f\"unlock did not release the lock: {free.stdout!r}\")\n        assert handle.closed, \"unlock left the handle open\"",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_lock_is_held_until_it_is_released",
+      "proof": "PROOF-31",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "40c22028a9bafaba7b326f0dd6684198e6eb46a779ca78131576e0f4db3c6ca0",
+  "verdict": "add a case"
+}

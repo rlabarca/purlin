@@ -1,0 +1,83 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-15T19:31:38Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "456aa8c4591e7a2f6cd9f2a456fea3f9e838a03849c1b9a94d94ed03bb65f526",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-4",
+      "text": "Call `commit_records(identity=\"developer\")` in a repository with an upstream; verify `git log -1` names the record file and the remote's HEAD moved. Repeat with a record retention deleted and verify the commit carries the deletion. Repeat with no upstream, with no remote, and with the record already at HEAD; verify each prints `no upstream`, `No remote is configured` and `Nothing to commit` respectively and returns without raising",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-4 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/records/20260915T193117Z-91d34e0-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-4",
+  "rule_hash": "661d6b097832c39ad85ad641f3f9d22c52b45de940a0c98ff6895b3d8f67a784",
+  "rule_text": "A developer's commit stages the records and the deletions retention made, commits under the developer's own git identity and pushes; with no remote, no upstream or nothing staged it prints the reason and exits 0",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "ce7adfe60c371c08ecf8605f0ef8ff61b3179f48ead32c3632813a7b6102edf4",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_developer_commit_lands_and_pushes(project, with_remote):\n    path = records_module.write_record(project, record(), 'ada@example.com')\n    sha = records_module.commit_records(\n        project, [path], 'developer', 'purlin: record for 4f1c2ab')\n\n    assert len(sha) == 40\n    subject = git(project, 'log', '-1', '--format=%s').stdout.strip()\n    assert subject == 'purlin: record for 4f1c2ab'\n    listed = git(with_remote, 'ls-tree', '-r', '--name-only', 'main').stdout\n    assert path in listed, 'the record did not reach the remote'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_developer_commit_carries_the_deletions_retention_made",
+      "proof": "PROOF-4",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_developer_commit_lands_and_pushes(project, with_remote):\n    path = records_module.write_record(project, record(), 'ada@example.com')\n    sha = records_module.commit_records(\n        project, [path], 'developer', 'purlin: record for 4f1c2ab')\n\n    assert len(sha) == 40\n    subject = git(project, 'log', '-1', '--format=%s').stdout.strip()\n    assert subject == 'purlin: record for 4f1c2ab'\n    listed = git(with_remote, 'ls-tree', '-r', '--name-only', 'main').stdout\n    assert path in listed, 'the record did not reach the remote'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_developer_commit_lands_and_pushes",
+      "proof": "PROOF-4",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_developer_commit_lands_and_pushes(project, with_remote):\n    path = records_module.write_record(project, record(), 'ada@example.com')\n    sha = records_module.commit_records(\n        project, [path], 'developer', 'purlin: record for 4f1c2ab')\n\n    assert len(sha) == 40\n    subject = git(project, 'log', '-1', '--format=%s').stdout.strip()\n    assert subject == 'purlin: record for 4f1c2ab'\n    listed = git(with_remote, 'ls-tree', '-r', '--name-only', 'main').stdout\n    assert path in listed, 'the record did not reach the remote'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_developer_commit_without_a_remote_says_so",
+      "proof": "PROOF-4",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_developer_commit_lands_and_pushes(project, with_remote):\n    path = records_module.write_record(project, record(), 'ada@example.com')\n    sha = records_module.commit_records(\n        project, [path], 'developer', 'purlin: record for 4f1c2ab')\n\n    assert len(sha) == 40\n    subject = git(project, 'log', '-1', '--format=%s').stdout.strip()\n    assert subject == 'purlin: record for 4f1c2ab'\n    listed = git(with_remote, 'ls-tree', '-r', '--name-only', 'main').stdout\n    assert path in listed, 'the record did not reach the remote'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_developer_commit_without_an_upstream_says_so",
+      "proof": "PROOF-4",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_developer_commit_lands_and_pushes(project, with_remote):\n    path = records_module.write_record(project, record(), 'ada@example.com')\n    sha = records_module.commit_records(\n        project, [path], 'developer', 'purlin: record for 4f1c2ab')\n\n    assert len(sha) == 40\n    subject = git(project, 'log', '-1', '--format=%s').stdout.strip()\n    assert subject == 'purlin: record for 4f1c2ab'\n    listed = git(with_remote, 'ls-tree', '-r', '--name-only', 'main').stdout\n    assert path in listed, 'the record did not reach the remote'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_nothing_to_commit_is_said_and_not_an_error",
+      "proof": "PROOF-4",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "93aa16323b867bf2890fdbadd84679cfe36d75a702f9fab5e317c5b415617e60",
+  "verdict": "add a case"
+}

@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "scaffold",
-  "generated_at": "2026-09-15T17:24:10Z",
+  "generated_at": "2026-09-15T19:31:52Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-24 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/scaffold/20260915T172305Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/scaffold/20260915T193117Z-91d34e0-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-24",
   "rule_hash": "a03a4b37ef5a5f0f2a7afb7b75c99bf242298491a8d32d896502d15d9369bda6",
   "rule_text": "init writes the tracked shim `.purlin/hooks/pre-push` and the delegator git runs, both executable, the delegator reaching the shim and saying so rather than failing when the shim is absent; no pre-commit hook is installed and the plugin ships no pre-commit script",
   "schema": "purlin-brief/1",
-  "state": "Tested",
+  "state": "Reviewed",
   "test_hash": "eba8e8574e73b577c882c6a5732dccea5c285cb92edc7155eedce9fc43b16304",
   "test_hash_kind": "file",
   "test_strength": null,

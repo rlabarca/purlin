@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-15T19:32:18Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "30e72b79d68e138a45ca4ac22b3a70b42518f3a3cbd1555e04fd8ab5085c6a4b",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-70",
+      "text": "Run the JavaScript checker over one file whose first test divides across a line break after `\"a\" +`, whose second builds `/[}/\"']+/g`, whose third builds `/\\/}/`, whose fourth holds a `}` in a `//` comment and in a `/* */` comment, and whose fifth and sixth sit on one line dividing `4 / 2` and `8 / 4`, each with its assertion after that character; verify exactly the 6 proofs `PROOF-1` to `PROOF-6` come back, every one with status `pass` and none with the check `no_assertion`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/static_checks/20260915T193118Z-91d34e0-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-38",
+  "rule_hash": "1e253f48298bb85b45048ee9acbe2a77e2df2728a36ea0add88c37d2fda3f91a",
+  "rule_text": "The JavaScript reader skips a regex literal whole, so a `}`, a quote or a `/` inside its character class or behind a backslash never ends a test body, and skips a `}` inside a line or block comment the same way; a `/` that follows a value, or one whose literal would run past the end of its line, is read as division",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "71774e6c5d13d2cb0c95f27200f4f58fd11bd3b29f90afb00ffcb50fec33e6bb",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_check_js_skips_regex_literals_and_comments_and_reads_division(self):\n        \"\"\"A `}` or `/` inside a regex literal or a comment never ends a body.\n\n        Each body below holds its only assertion after the character that\n        would cut it short, so a misread body comes back `no_assertion`, and a\n        misread `/` swallows the next test's title, so a proof goes missing.\n        The division across a line comes first, so a regex read from it would\n        run on into the tests after it.\n        \"\"\"\n        path = _write_tmp(r'''import { it, expect } from \"vitest\";\n\nit(\"division across a line [proof:rx:PROOF-1:RULE-1]\", () => {\n  const s = \"a\" +\n    / 2;\n  expect(s).toBe(\"a\");\n});\n\nit(\"a class holding a brace, a slash and quotes [proof:rx:PROOF-2:RULE-2]\", () => {\n  const re = /[}/\"']+/g;\n  expect(\"a}/b\".replace(re, \"\")).toBe(\"ab\");\n});\n\nit(\"an escaped slash [proof:rx:PROOF-3:RULE-3]\", () => {\n  const re = /\\/}/;\n  expect(\"x/}\".match(re)[0]).toBe(\"/}\");\n});\n\nit(\"comments [proof:rx:PROOF-4:RULE-4]\", () => {\n  // a } in a line comment\n  /* and } in a block one */\n  expect(1 + 1).toBe(2);\n});\n\nit(\"division [proof:rx:PROOF-5:RULE-5]\", () => { const q = 4 / 2; expect(q).toBe(2); }); it(\"division again [proof:rx:PROOF-6:RULE-6]\", () => { expect(8 / 4).toBe(2); });\n''', suffix='.js')\n        try:\n            results = check_js(path, 'rx')\n        finally:\n            os.unlink(path)\n\n        by_id = {r['proof_id']: r for r in results}\n        assert sorted(by_id) == ['PROOF-%d' % n for n in range(1, 7)], (\n            f\"a misread `/` swallowed a test: {sorted(by_id)}\")\n        for proof_id, entry in sorted(by_id.items()):\n            assert entry['status'] == 'pass', (proof_id, entry)\n            assert entry.get('check') != 'no_assertion', (proof_id, entry)",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_check_js_skips_regex_literals_and_comments_and_reads_division",
+      "proof": "PROOF-70",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "17cd50afe4477db6233be0fef20db54a664a195958f259b38e20858aa9eb04e3",
+  "verdict": "ready"
+}

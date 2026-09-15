@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "run_script",
-  "generated_at": "2026-09-15T17:24:01Z",
+  "generated_at": "2026-09-15T19:31:46Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-14 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/run_script/20260915T172305Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/run_script/20260915T193117Z-91d34e0-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-14",
   "rule_hash": "b62abfbc5b05100d2927d968c0a3a81a996598ff25f18c5440943627f0ffe67a",
   "rule_text": "A capture a test wrote under `.purlin/runtime/attachments/<feature>/<PROOF-N>.<ext>` is hashed into the record beside the rule its proof belongs to",
   "schema": "purlin-brief/1",
-  "state": "Tested",
+  "state": "Reviewed",
   "test_hash": "d29a21edce32167037c6a0a8ce0a8f91bd91ccc07cc86cc024d1f4dc94875da4",
   "test_hash_kind": "file",
   "test_strength": null,

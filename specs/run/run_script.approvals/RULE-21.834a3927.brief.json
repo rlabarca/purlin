@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "run_script",
-  "generated_at": "2026-09-15T17:24:03Z",
+  "generated_at": "2026-09-15T19:31:47Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,13 +26,13 @@
   "reasons": [
     "PROOF-21 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/run_script/20260915T172305Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/run_script/20260915T193117Z-91d34e0-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-21",
   "rule_hash": "31cac87d7e521c58d0da2a4ee58be13e8cb4d64d6d1ac325d85aa9f7d344fd55",
   "rule_text": "The operating system this run is on is reported as `windows`, `macos` or `linux` and never as anything else",
   "schema": "purlin-brief/1",
-  "state": "Tested",
+  "state": "Reviewed",
   "test_hash": "95b90d4bd64be49743b04348ef6d0ccda40d86c6b572873ab8b6ad9e270cff84",
   "test_hash_kind": "file",
   "test_strength": null,

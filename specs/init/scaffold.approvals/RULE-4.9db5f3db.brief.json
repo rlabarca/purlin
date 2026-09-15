@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "scaffold",
-  "generated_at": "2026-09-15T17:24:04Z",
+  "generated_at": "2026-09-15T19:31:48Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-4 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/scaffold/20260915T172305Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/scaffold/20260915T193117Z-91d34e0-ci-linux.json",
   "risk": "high",
   "rule": "RULE-4",
   "rule_hash": "374c070ed0b0126e45f0fb76994676adc00c3696e10a67397760e39d57f8de28",
   "rule_text": "An answer that is not one of the three gates is read as `tested` and the fallback is printed, so a typo lowers what CI enforces loudly rather than raising it silently",
   "schema": "purlin-brief/1",
-  "state": "Tested",
+  "state": "Reviewed",
   "test_hash": "8d7d1b283cceea75647aa523237365a0c1facfcbf28f3dc5772209fcc8822664",
   "test_hash_kind": "file",
   "test_strength": null,

@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "run_script",
-  "generated_at": "2026-09-15T17:24:02Z",
+  "generated_at": "2026-09-15T19:31:46Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,13 +27,13 @@
   "reasons": [
     "PROOF-17 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/run_script/20260915T172305Z-eacb477-ci-windows.json",
+  "record": ".purlin/records/run_script/20260915T193117Z-91d34e0-ci-linux.json",
   "risk": "high",
   "rule": "RULE-17",
   "rule_hash": "cddd2e41dc4cd2c82dae8e9506ecc25731fb63b8007ede5e29cf89e9936bee55",
   "rule_text": "`--commit` commits the records under the developer's identity and `--ci` under the git host's, both with the message `purlin: record for <commit7>`; `--tag <name>` names the records the validation tag vouches for; with neither flag nothing is committed, and `--ci` also auto-approves, writes the briefs and says how many of each",
   "schema": "purlin-brief/1",
-  "state": "Tested",
+  "state": "Reviewed",
   "test_hash": "5b311fa45708d76762afbe39a9b9065c17086083a56edf5437002d0a20527350",
   "test_hash_kind": "file",
   "test_strength": null,

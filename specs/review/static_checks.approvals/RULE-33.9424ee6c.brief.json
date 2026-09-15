@@ -1,0 +1,77 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-15T19:32:17Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "dec6155c358c56338200816f0b97511758d7d1382ad2252f5c6a7c7342f14ab2",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-56",
+      "text": "Run the command with no argument at all; verify it exits 2 and prints every usage line on the error stream",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-57",
+      "text": "Run the command with `--help`; verify it exits 0, prints every usage line, and prints `0 for a completed analysis` and `2 for a real error`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/static_checks/20260915T193118Z-91d34e0-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-33",
+  "rule_hash": "aaff55c95597d104668e62e7cf31148255af010b6f0e8f44d7a20eb9f712071a",
+  "rule_text": "A bad invocation prints every usage line on the error stream and exits 2, and `--help` prints them with both exit codes and exits 0",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "cc9ed460ca4004e70079bda4f347c2a4ef0d21053450fd4d61e7ed6da274739b",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_bad_invocation_prints_every_usage_line(self):\n        r = subprocess.run([sys.executable, _STATIC_CHECKS_PY],\n                           capture_output=True, text=True)\n        assert r.returncode == 2, f\"expected exit 2 for a bad invocation, got {r.returncode}\"\n        for line in static_checks._USAGE:\n            assert line in r.stderr, f\"usage line not printed: {line!r}\"",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_bad_invocation_prints_every_usage_line",
+      "proof": "PROOF-56",
+      "reasons": []
+    },
+    {
+      "body": "def test_bad_invocation_prints_every_usage_line(self):\n        r = subprocess.run([sys.executable, _STATIC_CHECKS_PY],\n                           capture_output=True, text=True)\n        assert r.returncode == 2, f\"expected exit 2 for a bad invocation, got {r.returncode}\"\n        for line in static_checks._USAGE:\n            assert line in r.stderr, f\"usage line not printed: {line!r}\"",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_no_argument_prints_the_usage_on_stderr_and_exits_2",
+      "proof": "PROOF-56",
+      "reasons": []
+    },
+    {
+      "body": "def test_help_prints_the_usage_and_the_exit_codes(self):\n        \"\"\"--help exits 0 and documents both exit codes, which RULE-7 fixes.\"\"\"\n        r = subprocess.run([sys.executable, _STATIC_CHECKS_PY, '--help'],\n                           capture_output=True, text=True)\n        assert r.returncode == 0, r.stderr\n        for line in static_checks._USAGE:\n            assert line in r.stdout, f\"usage line not printed: {line!r}\"\n        assert 'Exit codes:' in r.stdout, r.stdout\n        assert '0 for a completed analysis' in r.stdout, r.stdout\n        assert '2 for a real error' in r.stdout, r.stdout",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_help_prints_the_usage_and_both_exit_codes",
+      "proof": "PROOF-57",
+      "reasons": []
+    },
+    {
+      "body": "def test_help_prints_the_usage_and_the_exit_codes(self):\n        \"\"\"--help exits 0 and documents both exit codes, which RULE-7 fixes.\"\"\"\n        r = subprocess.run([sys.executable, _STATIC_CHECKS_PY, '--help'],\n                           capture_output=True, text=True)\n        assert r.returncode == 0, r.stderr\n        for line in static_checks._USAGE:\n            assert line in r.stdout, f\"usage line not printed: {line!r}\"\n        assert 'Exit codes:' in r.stdout, r.stdout\n        assert '0 for a completed analysis' in r.stdout, r.stdout\n        assert '2 for a real error' in r.stdout, r.stdout",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_help_prints_the_usage_and_the_exit_codes",
+      "proof": "PROOF-57",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "9424ee6c1bf30acfab759d7eb2c5e767034e15e53f0113da523a23dda73d0230",
+  "verdict": "ready"
+}
