@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "skill_verify",
-  "generated_at": "2026-09-15T16:52:50Z",
+  "generated_at": "2026-09-15T17:05:46Z",
   "layers": [
     "proof text",
     "test body",
@@ -23,7 +23,7 @@
     }
   ],
   "reasons": [],
-  "record": ".purlin/records/skill_verify/20260915T165206Z-e532a0c-ci-linux.json",
+  "record": ".purlin/records/skill_verify/20260915T170439Z-e532a0c-ci-windows.json",
   "risk": "high",
   "rule": "RULE-5",
   "rule_hash": "2aa42ca7a3a96486cd7a863a2ee2555899b98fe5c61afcba58cffc846034ef72",

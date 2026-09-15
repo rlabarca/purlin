@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "update",
-  "generated_at": "2026-09-15T16:53:09Z",
+  "generated_at": "2026-09-15T17:06:08Z",
   "layers": [
     "proof text",
     "test body",
@@ -29,7 +29,7 @@
     "PROOF-19 implementation_coupling: Names a private symbol, a selector or a path instead of an observable outcome, so a refactor breaks the proof without changing behaviour.",
     "PROOF-19 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/update/20260915T165206Z-e532a0c-ci-linux.json",
+  "record": ".purlin/records/update/20260915T170439Z-e532a0c-ci-windows.json",
   "risk": "high",
   "rule": "RULE-19",
   "rule_hash": "3d5cf1d8d1f02784d72001d9f056d672e0c6cb930f293d5a9552bd16c51a7666",

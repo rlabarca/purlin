@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "scaffold",
-  "generated_at": "2026-09-15T16:52:40Z",
+  "generated_at": "2026-09-15T17:05:35Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,7 +26,7 @@
   "reasons": [
     "PROOF-20 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/scaffold/20260915T165206Z-e532a0c-ci-linux.json",
+  "record": ".purlin/records/scaffold/20260915T170437Z-e532a0c-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-20",
   "rule_hash": "f155001c7f6e24911b9a020fa9dbd90737364fabafd88fdd0bc02d37b0d51a71",
