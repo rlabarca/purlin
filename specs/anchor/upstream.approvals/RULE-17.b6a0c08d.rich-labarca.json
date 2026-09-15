@@ -1,0 +1,17 @@
+{
+  "approver": "rich.labarca@gmail.com",
+  "brief": "specs/anchor/upstream.approvals/RULE-17.b6a0c08d.brief.json",
+  "design_hash": null,
+  "feature": "upstream",
+  "gate": "approved",
+  "proof_hash": "6d42618166eca1f258daa6bb4792d1a31b8190753b519a143dd1ad545426bae9",
+  "record": ".purlin/records/upstream/20260915T201112Z-e78d186-ci-windows.json",
+  "risk": "high",
+  "rule": "RULE-17",
+  "rule_hash": "9c619797e38ce8f3a284dc17d0c04371eaf01ab470ac02ab08c4cc91c0c96c1a",
+  "schema": "purlin-approval/1",
+  "test_hash": "d8c742c33596eff1a35446c2c8d5802cffdd1830f7b658b38359b0d8900be325",
+  "test_hash_kind": "file",
+  "timestamp": "2026-09-15T20:16:14Z",
+  "triple": "b6a0c08d6d4d9ab2"
+}

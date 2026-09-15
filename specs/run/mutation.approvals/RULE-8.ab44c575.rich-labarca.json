@@ -1,0 +1,17 @@
+{
+  "approver": "rich.labarca@gmail.com",
+  "brief": "specs/run/mutation.approvals/RULE-8.ab44c575.brief.json",
+  "design_hash": null,
+  "feature": "mutation",
+  "gate": "approved",
+  "proof_hash": "dd695694db2cd60e0103d2564305433dcbf21b81d64a2576200ada30851bee4b",
+  "record": ".purlin/records/mutation/20260915T201108Z-e78d186-ci-windows.json",
+  "risk": "high",
+  "rule": "RULE-8",
+  "rule_hash": "ebfbfe589fcfae465b987bf3b87083c34cffb89f394ca6b8cf3b1c1766b51a8b",
+  "schema": "purlin-approval/1",
+  "test_hash": "a54e781ee8bc424db8bbf74573b160db45c3f54e2211843eeb47bba4c5d53b61",
+  "test_hash_kind": "file",
+  "timestamp": "2026-09-15T20:16:12Z",
+  "triple": "ab44c5752ff44af4"
+}
