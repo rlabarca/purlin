@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "scaffold",
-  "generated_at": "2026-09-15T19:59:05Z",
+  "generated_at": "2026-09-15T20:12:09Z",
   "layers": [
     "proof text",
     "test body",
@@ -30,7 +30,7 @@
     "PROOF-12 logic_mirroring",
     "PROOF-12 logic_mirroring"
   ],
-  "record": ".purlin/records/scaffold/20260915T195829Z-e78d186-ci-linux.json",
+  "record": ".purlin/records/scaffold/20260915T201110Z-e78d186-ci-windows.json",
   "risk": "high",
   "rule": "RULE-12",
   "rule_hash": "2919071bb3706eb66f4f846c20ad9f524e911f002be11b4d9018e961619bb3c1",
