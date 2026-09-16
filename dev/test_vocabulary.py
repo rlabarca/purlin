@@ -47,7 +47,7 @@ PENDING_REWRITE = (
     "specs/review/signatures.md", "references/formats/signature_format.md",
     # lane 2A: sign, brief, gate
     "scripts/review/approve.py", "scripts/review/brief.py", "scripts/review/static_checks.py",
-    "scripts/ci/verify_gate.py", "dev/test_verify_gate.py", "dev/test_brief.py",
+    "dev/test_brief.py",
     "dev/test_brief_files.py", "dev/test_brief_tests_named.py", "dev/test_static_checks.py",
     # these two name the command that writes a signature, which is renamed with it
     "dev/test_signatures.py", "dev/test_holds.py",
