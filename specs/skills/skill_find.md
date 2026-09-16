@@ -15,6 +15,6 @@
 ## Proof
 
 - PROOF-1 (RULE-1): Read `skills/find/SKILL.md`; verify the file opens with `---`, that the frontmatter carries `name: find` and a `description:` whose value is one non-empty line, and that `references/purlin_commands.md` contains the literal `purlin:find`. Deleting the `name:` line fails naming the file
-- PROOF-2 (RULE-2): Read `skills/find/SKILL.md`; verify it names `sync_status`, and that the sentence about the risk and origin columns names both `risk` and `origin` and the `tested` gate under which they are optional. Deleting that sentence fails naming it
+- PROOF-2 (RULE-2): Read `skills/find/SKILL.md`; verify it names `sync_status`, and that the sentence about the risk and origin columns names both `risk` and `origin` and the `passed` gate under which they are optional. Deleting that sentence fails naming it
 - PROOF-3 (RULE-3): Read `skills/find/SKILL.md` and split it on its `## ` headings; verify the last heading matches `next step` or `when you are done` case-insensitively, that the text under it names at least two outcomes as list items or table rows, and that at least one of its lines carries `→`. Deleting the closing section fails naming the heading it found instead
 - PROOF-4 (RULE-4): Read `skills/find/SKILL.md` and count its lines; verify the count is at most 85. Appending prose until the file passes 85 lines fails, and the failure reports the count it found beside the ceiling

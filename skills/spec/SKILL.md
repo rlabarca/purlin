@@ -34,8 +34,8 @@ read `references/spec_quality_guide.md`. Neither is restated here.
 | Mocks in `designs/<feature>/` | Read the images. Write rules about what a person would see on the screen, tagged `[origin: design]` |
 | An existing spec plus a change | Edit in place. Never renumber. See "Whose rule is it" below |
 
-Ask at most one round of questions, and only where a claim cannot be tested as written. "Fast"
-and "secure" always need a number; most other gaps can wait for the build.
+Ask at most one round of questions, and only where a claim no test could settle as written.
+"Fast" and "secure" always need a number; most other gaps can wait for the build.
 
 One sentence in, at least three rules out:
 
@@ -51,9 +51,9 @@ rule covering all three would pass while two thirds of the behaviour was missing
 When rules arrive from more than one direction, run this skill on the feature with no new
 input. It reads the spec as it now stands, lists what changed since the last time it was
 written, and reports three things: rules that lost their proof, proofs that name a rule id
-that no longer exists, and rules whose text changed since an approval was bound to them. Fix
+that no longer exists, and rules whose text changed since a signature was bound to them. Fix
 the first two here. The third is a person's decision, so name the rules and leave them for
-`purlin:review`.
+`purlin:sign`.
 
 ## The shape
 
@@ -79,9 +79,9 @@ the first two here. The third is a person's decision, so name the rules and leav
 ```
 
 `> Scope:` earns its place: a record carries the git tree hash of those files, which is what
-lets Purlin tell a code change (the approval stands, re-verify pending) from a rule change
-(the approval goes stale and a person must look). A spec with no `> Scope:` cannot make that
-distinction.
+lets Purlin tell a code change (the signature stands and the passed cell reads `code
+changed`, which CI clears on the next run) from a rule change (the signature goes stale and a
+person must look). A spec with no `> Scope:` cannot make that distinction.
 
 ## Rules
 
@@ -90,12 +90,13 @@ tags sit at the end of the line and are read off it, so the claim text stays cle
 
 | Tag | Values | Default | What it decides |
 |-----|--------|---------|-----------------|
-| `[risk: ...]` | `high`, `medium`, `low` | `low` | Under the `approved` gate, high and medium need a human approval and low is auto-approved by CI |
+| `[risk: ...]` | `high`, `medium`, `low` | `low` | Read only at `strong` and above: it decides when the model reviews a rule, and under `signed` which rules need a signature |
 | `[origin: ...]` | `pm`, `design`, `qa`, `eng` | `eng` | Who owns the rule. `purlin:drift` routes a change by it |
 | `[criterion: ...]` | any id | none | The upstream acceptance criterion the rule came from |
 
-Under the `approved` gate, risk and origin are required and an untagged rule is reported.
-Re-tagging a rule never stales an approval, so add a missing tag freely.
+Under the `signed` gate, risk and origin are required and an untagged rule is reported. Under
+`passed` risk is never read, so do not ask for it. Re-tagging a rule's risk stales its
+signature, because risk is one of the things a signature binds; say so before you change one.
 
 A rule about what the software must never do is an ordinary rule with a proof that asserts
 absence. There is no separate syntax for it.
@@ -109,18 +110,17 @@ name one rule, and one proof may name several rules when it drives a flow throug
 
 Tag a proof that is not a plain unit test: `@integration` for a database, the network, the
 filesystem or an external service; `@e2e` for a browser or the full stack; `@manual` for human
-judgment. A `@manual` proof has no test: its evidence is an approval carrying a one-line note,
-always written by a person and never auto-approved.
+judgment. A `@manual` proof has no test: its rule reads `needs a person` until a signature
+carrying a one-line note settles it, and that note is always written by a person.
 
 Add `@env(windows)`, `@env(macos)` or `@env(linux)` when the claim can only be proved on one
 operating system. Those three are the whole vocabulary. A proof with no `@env` is satisfied by
-a record from any system; a proof with one is Recorded only when a record from that system
-passes it.
+a record from any system; a proof with one has its passed cell met only when a record from
+that system passes it.
 
 A design rule's proof is an end-to-end observable: a route, a state, visible text, presence.
 Never a selector, never a pixel comparison. The test writes its capture under
-`.purlin/runtime/attachments/<feature>/<PROOF-N>.png` and the review brief puts the mock
-beside it.
+`.purlin/runtime/attachments/<feature>/<PROOF-N>.png` and the brief puts the mock beside it.
 
 ## Ids
 
@@ -133,7 +133,7 @@ from purlin import ids; print(ids.next_ids('.', 'specs/auth/login.md'))"
 ```
 
 Ids are never reused. A retired rule leaves its number vacant and every other rule keeps the
-number it had. Renumbering would silently repoint every test marker and every approval that
+number it had. Renumbering would silently repoint every test marker and every signature that
 already names the old id, so do not do it by hand.
 
 ## Whose rule is it
@@ -151,7 +151,7 @@ A rule tagged `[origin: eng]`, or carrying no origin at all, is yours to edit.
 `purlin:build` calls this skill when a rule turns out to be wrong while the code is being
 written: the claim contradicts another rule, or it cannot be observed as stated. Fix the rule
 text in place, keep the id, and say in the commit what changed and why. Changing rule text
-stales any approval bound to it, which is the point: a person has to look again.
+stales any signature bound to it, which is the point: a person has to look again.
 
 ## After a merge conflict
 
@@ -161,9 +161,9 @@ purlin:spec <name> --resolve
 
 Run this when `sync_status` warns that a spec carries a duplicate rule or proof id, which
 happens when two branches allocated the same number before either fetched. `--resolve` keeps
-both rules, renumbers the incoming one, and rewrites its test markers and its approval
+both rules, renumbers the incoming one, and rewrites its test markers and its signature
 filenames to match. When the conflict is two different texts on the same line, it shows both
-versions, asks which survives, and says which approvals that answer stales.
+versions, asks which survives, and says which signatures that answer stales.
 
 Two branches that advanced the same anchor pin resolve to the newer sha.
 
@@ -177,6 +177,6 @@ Spec created: <name>. Build it now?
 ```
 
 When you edited an existing spec rather than creating one, say what moved before the offer:
-which rules were added, which text changed, and which approvals that stales. When the gate is
-`approved` and a rule still has no risk or origin tag, name those rules first: the gate cannot
+which rules were added, which text changed, and which signatures that stales. When the gate is
+`signed` and a rule still has no risk or origin tag, name those rules first: the gate cannot
 be met until they are tagged.

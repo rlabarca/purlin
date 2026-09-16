@@ -66,11 +66,6 @@ PENDING_REWRITE = (
     "dev/test_e2e_required_rules.sh", "dev/test_e2e_anchor_authority.sh",
     "dev/test_e2e_external_refs.sh", "dev/test_e2e_feature_scoped_overwrite.sh",
     "specs/init/scaffold.md", "specs/init/update.md",
-    # lane 5A: skills and agent
-    "skills/status/", "skills/init/", "skills/find/", "skills/test/", "skills/spec/",
-    "skills/drift/", "agents/purlin.md", "dev/test_skills.py",
-    "specs/skills/skill_init.md", "specs/skills/skill_find.md",
-    "specs/instructions/purlin_agent.md",
     # lane 5C: word swaps
     "skills/build/", "skills/spec-from-code/", "skills/anchor/", "skills/rename/",
     "specs/skills/skill_rename.md", "specs/skills/skill_drift.md",

@@ -244,7 +244,7 @@ def init_question_problems():
     text = read(rel)
     problems = carries(rel, [
         'what must be true before CI lets a change merge',
-        '`tested`', '`recorded`', '`approved`'])
+        '`passed`', '`strong`', '`signed`'])
     body = section(text, r'exception')
     if body is None:
         problems.append('%s has no section naming the further questions' % rel)
@@ -254,7 +254,7 @@ def init_question_problems():
         problems.append('%s names %d further questions, expected 2'
                         % (rel, len(items)))
     flattened = flat(body)
-    for needle in ('empty repository', 'approver emails'):
+    for needle in ('empty repository', 'signer emails'):
         if needle not in flattened:
             problems.append('%s exceptions do not name %r' % (rel, needle))
     return problems
@@ -686,7 +686,7 @@ class TestSkillFind:
         assert carries(skill_path('find'), [
             'sync_status',
             'Show the risk and the origin only when the spec carries them',
-            'under the `tested` gate both are optional']) == []
+            'under the `passed` gate both are optional']) == []
 
     @pytest.mark.proof("skill_find", "PROOF-3", "RULE-3")
     def test_it_closes_by_naming_the_next_step(self):

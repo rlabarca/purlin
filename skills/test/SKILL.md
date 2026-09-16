@@ -1,10 +1,11 @@
 ---
 name: test
-description: Run the tagged tests and print the state of every rule
+description: Run the tagged tests and print each rule's passed cell
 ---
 
 Run the tests that carry proof markers, write the proof files into `.purlin/runtime/proofs/`,
-and print the state of every rule. This takes seconds: no breaks, no record, no approval.
+and print the passed cell of every rule. This is level 1 and it takes seconds: no breaks, no
+record, no signature.
 
 **Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
 is relative to the plugin root; see `references/purlin_commands.md#path-resolution`.
@@ -30,46 +31,54 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --all --quick
 ```
 
 One feature at a time is `--feature <name>`, repeated for each. Every tier is `--tier all`.
-The run script owns test execution for the whole plugin: `purlin:build` and `purlin:verify`
+The run script owns test execution for the whole plugin: `purlin:build` and `purlin:audit`
 call it too, so there is one answer to how a test is run.
 
 Exit codes: `0` everything ran and passed, `1` a test failed, `2` the invocation was wrong.
 
 ## Step 2: read the table
 
-The script prints one line per rule with its state. This run moves a rule into one of three:
+The script prints the spec status of each rule, `drafted` or `ready`, and the word its passed
+cell reads:
 
-| State | What it means |
-|-------|---------------|
-| Drafted | The rule has no proof text yet |
-| Proof ready | The proof text is written, but no passing test carries its marker |
-| Tested | A test tagged with the proof ran here and passed |
+| Word | What it means |
+|------|---------------|
+| `passed` | A test tagged with the rule's proof ran here and passed |
+| `failed` | A tagged test ran and failed; the script names the test and the assertion |
+| `no test` | The proof is written and no test carries its marker |
+| `not run` | A test carries the marker and this run did not reach it |
+| `code changed` | The last counting run covered a different tree |
 
-A test that fails leaves its rule at Proof ready and the run exits 1. The script names the
-test and the assertion; it never reports a rule as Tested on a failing run.
+A rule whose spec status is `drafted` has no proof text yet, so it has no passed cell to read.
 
-Records, reviews and approvals are not this skill's business; `purlin:verify` and
-`purlin:status` report those. Print the table as the script returned it. Do not recount it.
+## Step 3: what the gate changes
 
-## Step 3: operating systems
+This is the pattern every Purlin skill follows. Under `passed` the whole project is this one
+cell: no strength, no risk, no review list, no signature, and no column for any of them. Under
+`strong` the strong cell and the test strength appear beside it, and only a record CI wrote
+counts. Under `signed` the signed cell and the signer list appear as well. Read the gate from
+`.purlin/config.json` and print only what exists; `references/hard_gates.md` defines the three
+gates once.
+
+## Step 4: operating systems
 
 A proof tagged `@env(windows)`, `@env(macos)` or `@env(linux)` runs only on that operating
-system. On a host that does not match, the script skips the test and lists the rule as
-`needs windows` rather than as a pass or a failure. An untagged proof runs anywhere.
+system. On a host that does not match, the script skips the test and reads the rule as
+`not run` with `needs windows` beside it rather than as a pass or a failure. An untagged proof
+runs anywhere. Those three tags are the whole vocabulary.
 
-Those three tags are the whole vocabulary. Nothing else is scoped this way.
-
-## Step 4: name the next step
+## Step 5: name the next step
 
 End with one line, computed from the table:
 
 | What the table shows | The line to print |
 |----------------------|-------------------|
 | A test failed | `→ Run: purlin:build <feature>` (fix the code or the test) |
-| A rule is Proof ready with no test | `→ Run: purlin:build <feature>` |
-| A rule is Drafted | `→ Run: purlin:spec <feature>` |
-| Every rule is Tested | `→ Run: purlin:verify` |
-| Only `needs <os>` rules remain | `→ Run: purlin:verify --remote` |
+| A rule reads `no test` | `→ Run: purlin:build <feature>` |
+| A rule's spec status is `drafted` | `→ Run: purlin:spec <feature>` |
+| Every rule reads `passed`, gate `passed` | `→ Push.` |
+| Every rule reads `passed`, gate `strong` or `signed` | `→ Run: purlin:audit` |
+| Only `needs <os>` rules remain | `→ Run: purlin:audit --remote` |
 
 Diagnose a failure before changing anything: `references/spec_quality_guide.md` says which of
 the rule, the proof and the code is usually at fault.
