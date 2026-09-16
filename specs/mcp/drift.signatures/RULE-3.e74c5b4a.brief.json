@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "drift",
+  "generated_at": "2026-09-16T21:09:08Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "d709f0642fc2a9f533c3c4736ecf8064e4f61a2ee6ddad6a389af09b03108a36",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-4",
+      "text": "Commit a changed spec, a changed test file, a changed scoped source file, a file under `designs/`, a new `README.md` and a new file no spec scopes; run drift and verify the six entries read CHANGED_SPECS, TESTS_CHANGED, CHANGED_BEHAVIOR, CHANGED_DESIGNS, NO_IMPACT and NEW_BEHAVIOR, one category each",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-4 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/drift/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-3",
+  "rule_hash": "57e6ad885cbec5f0ba36da1141f10dc7b26767c54c44d474508f5e491ad269cf",
+  "rule_text": "Every changed file is classified exactly once, as one of CHANGED_SPECS, CHANGED_DESIGNS, TESTS_CHANGED, CHANGED_BEHAVIOR, NO_IMPACT or NEW_BEHAVIOR",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "c9637a4a6db5d31638c8b229fe1f3c4a5d35505a9e97f3c1ffec581046208b16",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_every_changed_file_lands_in_one_category(self, tmp_path):\n        root = self._repo(str(tmp_path / 'proj'))\n        _write(os.path.join(root, 'specs', 'mcp', 'thing.md'),\n               '# Feature: thing\\n\\n> Scope: src/thing.py\\n\\n'\n               '## Rules\\n\\n- RULE-1: Does the thing\\n'\n               '- RULE-2: Does it twice\\n\\n'\n               '## Proof\\n\\n- PROOF-1 (RULE-1): Call it and verify 1\\n'\n               '- PROOF-2 (RULE-2): Call it twice and verify 2\\n')\n        for path, text in (('src/thing.py', 'def thing():\\n    return 2\\n'),\n                           ('src/other.py', 'def other():\\n    return 3\\n'),\n                           ('tests/test_thing.py',\n                            'def test_thing():\\n    assert 1\\n'),\n                           ('designs/thing/mock.svg', '<svg><rect/></svg>\\n'),\n                           ('README.md', '# thing, revised\\n')):\n            _write(os.path.join(root, *path.split('/')), text)\n        _commit(root, 'feat: move everything')\n\n        data = json.loads(purlin_drift.drift(root, since='1'))\n        found = {entry['path']: entry['category'] for entry in data['files']}\n        assert found == {\n            'specs/mcp/thing.md': 'CHANGED_SPECS',\n            'tests/test_thing.py': 'TESTS_CHANGED',\n            'src/thing.py': 'CHANGED_BEHAVIOR',\n            'designs/thing/mock.svg': 'CHANGED_DESIGNS',\n            'README.md': 'NO_IMPACT',\n            'src/other.py': 'NEW_BEHAVIOR',\n        }, found",
+      "file": "dev/test_drift.py",
+      "findings": [],
+      "name": "test_every_changed_file_lands_in_one_category",
+      "proof": "PROOF-4",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "e74c5b4a6926f6fce2a4f44d8d5600fce5950fcc57bb41323dbf593244f9ea2a",
+  "verdict": "add a case"
+}

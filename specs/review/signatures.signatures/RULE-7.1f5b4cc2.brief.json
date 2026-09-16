@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-16T21:09:41Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "905ce3b7f2b65abcb1d252913fc684d518e464876620bbf2336234bd7e624f2e",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-11",
+      "text": "Write a signature, then edit the rule text; verify the reader still returns exactly 1 signature for the rule, that its signer is `jane@acme.com` and that it is no longer current",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-11 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/signatures/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-7",
+  "rule_hash": "e253f80a894d44cd35aa7bbf1d0545b5b2f3323cabc3b74a4fce1bd937706a93",
+  "rule_text": "A signature whose triple no longer matches still comes back from the reader, so the signed cell can read `stale` rather than `unsigned`",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "9f5eb2182523d1df19a34b6598d5321373f6d004c768f8a24f4bfeaf9e8dcdf8",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_stale_signature_still_comes_back_from_the_reader(self, proved):\n        sign_one(proved)\n        proved.spec(SPEC.replace('return 200 with a session token',\n                                 'return 200 with two session tokens'))\n        found = proved.load()[('login', 'RULE-1')]\n        assert len(found) == 1, found\n        assert found[0]['signer'] == 'jane@acme.com'\n        assert self._current(proved) == [], (\n            'the signed cell reads stale only while the file is still there')",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_a_stale_signature_still_comes_back_from_the_reader",
+      "proof": "PROOF-11",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "1f5b4cc2a5e150db373d738c50ce9ad11690ca9e785456bc08d29366a8e6c56d",
+  "verdict": "add a case"
+}

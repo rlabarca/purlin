@@ -1,0 +1,68 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T21:09:34Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "631cdcc6f645303bd3eaea5830ef87cc05df982c2945843645c5aeaa0a7fad6b",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-21",
+      "text": "Run init from this checkout and verify `.purlin/plugin-root` holds this checkout's path. Then copy the plugin into a temp directory, run that copy's script with `CLAUDE_PLUGIN_ROOT` set to it, and verify `.purlin/plugin-root` holds the copy's path and that no other readable file in the project carries that path",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-21 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/scaffold/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-21",
+  "rule_hash": "463c5dab43378af6902bb793d0bcd56e34709ef3d40139647f55c3e0cc810c9a",
+  "rule_text": "`.purlin/plugin-root` holds the directory the run came out of, and is the only file in the project that names that directory",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "a99ddee76e2401516f9e91c77bf359a77ab6b1fec787a08a3efa3ba260955535",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_nothing_a_project_holds_names_the_plugin_but_that_one_file(self):\n        cache, installed = self.copy_plugin()\n        made = Project('pytest')\n        try:\n            made.run('--gate', 'recorded',\n                     script=os.path.join(installed, 'scripts', 'init',\n                                         'scaffold.py'),\n                     env={'CLAUDE_PLUGIN_ROOT': installed})\n            for base, _dirs, names in os.walk(made.root):\n                if '.git' in base.split(os.sep):\n                    continue\n                for name in names:\n                    path = os.path.join(base, name)\n                    # The one file that is meant to name the install.\n                    # The walk spells its path the local way, so the\n                    # comparison spells it the same way.\n                    if os.path.relpath(path, made.root) == os.path.join(\n                            '.purlin', 'plugin-root'):\n                        continue\n                    try:\n                        text = read(path)\n                    except (UnicodeDecodeError, OSError):\n                        continue\n                    assert installed not in text, path\n        finally:\n            made.close()\n            shutil.rmtree(cache, ignore_errors=True)",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_nothing_a_project_holds_names_the_plugin_but_that_one_file",
+      "proof": "PROOF-21",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_plugin_root_file_names_the_install(self):\n        cache, installed = self.copy_plugin()\n        made = Project('pytest')\n        try:\n            made.run('--gate', 'tested',\n                     script=os.path.join(installed, 'scripts', 'init',\n                                         'scaffold.py'),\n                     env={'CLAUDE_PLUGIN_ROOT': installed})\n            assert read(made.path('.purlin/plugin-root')).strip() == installed\n        finally:\n            made.close()\n            shutil.rmtree(cache, ignore_errors=True)",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_plugin_root_file_names_the_install",
+      "proof": "PROOF-21",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_plugin_root_file_points_at_this_checkout(self, project):\n        project.run('--gate', 'tested')\n        assert read(project.path('.purlin/plugin-root')).strip() == ROOT",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_plugin_root_file_points_at_this_checkout",
+      "proof": "PROOF-21",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "9ec0502c060f73e6ea60c77c83f2ff6f0b146efb48345a77bdb70817ede92a13",
+  "verdict": "add a case"
+}

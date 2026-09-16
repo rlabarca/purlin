@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_status",
+  "generated_at": "2026-09-16T21:09:46Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "d729671ec61a9227e3ae7fac4319a526a586ca79ff0c32d95ee62a2e52377af1",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-1",
+      "text": "Read `skills/status/SKILL.md`; verify the file opens with `---`, that the frontmatter carries `name: status` and a `description:` whose value is one non-empty line, and that `references/purlin_commands.md` contains the literal `purlin:status`. Deleting the `name:` line fails naming the file",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/skill_status/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-1",
+  "rule_hash": "0c02cfe5a26645592ce98cca34f7a69a8036a20822675c2ab278ced4e8af815b",
+  "rule_text": "`skills/status/SKILL.md` opens with a frontmatter block whose `name` is `status` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:status`",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "6c1237a279f1acab7dbeac48815d28d72f87bb91a694a302e1facf286432bc03",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_frontmatter_names_the_skill(self):\n        assert frontmatter_problems('status') == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_the_frontmatter_names_the_skill",
+      "proof": "PROOF-1",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "7d2c592fa871351834c93b5e8d59c96881f5117730d5e4f6a20d8111be871a64",
+  "verdict": "ready"
+}

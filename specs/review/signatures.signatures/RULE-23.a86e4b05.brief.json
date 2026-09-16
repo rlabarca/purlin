@@ -1,0 +1,53 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-16T21:09:42Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "5e05fad94bf980f089f94a7f60085dd110af257a09b9c72ff7022d3a66374dbc",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "missing_trigger",
+        "happy_path_only"
+      ],
+      "id": "PROOF-29",
+      "text": "Sign `RULE-1` on a branch called `side`; verify the signature is not an ancestor of `main`, then fast-forward `main` onto `side` and verify it is",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-29 missing_trigger: Nothing runs before the assertion, so the proof reads an artifact that exists whether or not the code is right."
+  ],
+  "record": ".purlin/records/signatures/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-23",
+  "rule_hash": "3d31e2eea983384d634b5ae5d22965e27315135de65ab37d75d1bdceea09253e",
+  "rule_text": "A signature committed on a side branch is not on the protected branch until that branch merges",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "9b577855dc527f77bcac0db0d60ecc79d8906f625713f1fad626f5698c789cd3",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_signature_on_a_side_branch_is_not_on_the_protected_branch(\n            self, proved):\n        signing_key(proved.root)\n        git(proved.root, 'checkout', '-q', '-b', 'side')\n        sign_module.main(['login', 'RULE-1', '--project-root', proved.root])\n        path = proved.load()[('login', 'RULE-1')][0]['path']\n        assert not purlin_signatures.is_ancestor(proved.root, path, 'main')\n        git(proved.root, 'checkout', '-q', 'main')\n        git(proved.root, 'merge', '-q', '--ff-only', 'side')\n        assert purlin_signatures.is_ancestor(proved.root, path, 'main')",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_a_signature_on_a_side_branch_is_not_on_the_protected_branch",
+      "proof": "PROOF-29",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a86e4b054c563e8801eecd5b19f34cdb976cd0ae15af8bf1cfc251264577bbaf",
+  "verdict": "rewrite the proof"
+}

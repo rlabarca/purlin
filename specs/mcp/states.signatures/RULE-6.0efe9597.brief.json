@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T21:09:49Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "4c7d316a4cc8292a88b0176b4f8814550fb17ab9f1df08ac32e17c0110e7426c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-6",
+      "text": "Write a proof carrying `@env(windows)` and commit a passing record from `linux`; verify the rule is not `Recorded`, that `missing_env` is exactly `[\"windows\"]` and that the reasons carry `windows: no record yet`; then commit a passing record from `windows` and verify the rule is `Recorded`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-6 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/states/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-6",
+  "rule_hash": "12f8a567ece35513b81512220c082e8a5c65ee4c319c8402113db26f70e637b6",
+  "rule_text": "A proof carrying `@env` is proved only by a record from that operating system: the rule stays out of Recorded, names the operating system under `missing_env`, and gives the reason `<os>: no record yet` rather than taking an eighth state",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "fee5ca52dd879466c48e90ba0c138daa77e0ac5447aa5e1d5eb715ec95dd77ce",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_an_env_proof_needs_a_record_from_that_operating_system(self,\n                                                                   project):\n        project.spec(\n            '# Feature: login\\n\\n## Rules\\n\\n- RULE-1: Files lock\\n\\n'\n            '## Proof\\n\\n- PROOF-1 (RULE-1): Lock a file; verify a second open '\n            'returns 0 handles @env(windows)\\n')\n        project.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'}],\n                       os_name='linux')\n        rule = project.rule('RULE-1')\n        assert rule['state'] != 'Recorded'\n        assert rule['missing_env'] == ['windows'], rule\n        assert 'windows: no record yet' in rule['reasons'], rule\n        project.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'}],\n                       os_name='windows')\n        assert project.rule('RULE-1')['state'] == 'Recorded'",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_an_env_proof_needs_a_record_from_that_operating_system",
+      "proof": "PROOF-6",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "0efe9597f062110d259ad424f43030782c0d9666fa796296f863f43428729ae7",
+  "verdict": "add a case"
+}

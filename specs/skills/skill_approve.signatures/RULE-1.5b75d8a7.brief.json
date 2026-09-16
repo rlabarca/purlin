@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_approve",
+  "generated_at": "2026-09-16T21:09:43Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "6531c97a84bb4aa18bbfab6d7352f41a45d876941e8c15e6d66e492d9903ee80",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-1",
+      "text": "Read `skills/approve/SKILL.md`; verify the file opens with `---`, that the frontmatter carries `name: approve` and a `description:` whose value is one non-empty line, and that `references/purlin_commands.md` contains the literal `purlin:approve`. Deleting the `name:` line fails naming the file",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/skill_approve/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-1",
+  "rule_hash": "a73b9b0349f49fe6ee35292007686dcd3f8cfa78f1d73474ffec2aa2e1679384",
+  "rule_text": "`skills/approve/SKILL.md` opens with a frontmatter block whose `name` is `approve` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:approve`",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "6c1237a279f1acab7dbeac48815d28d72f87bb91a694a302e1facf286432bc03",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_frontmatter_names_the_skill(self):\n        assert frontmatter_problems('approve') == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_the_frontmatter_names_the_skill",
+      "proof": "PROOF-1",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "5b75d8a765885204be3afd7e787d6690d55705b04fc2a48b02657e7909a27ae6",
+  "verdict": "ready"
+}

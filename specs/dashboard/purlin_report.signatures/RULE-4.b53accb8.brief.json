@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-16T21:09:17Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "9b4831309bc30b590f2f7af09825493fcc18ece290d7ebf5177b7701bb8fdf53",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-4",
+      "text": "Run the build and verify the page outside the token block contains no `box-shadow`, that the whole page contains no `gradient`, and that no character of it falls in the emoji ranges",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-4 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/purlin_report/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-4",
+  "rule_hash": "4d48deb38ad171ffd75265c865bef07b86c92626bb616031cbf070893e9b043e",
+  "rule_text": "The page carries no shadow, no gradient and no emoji",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "dec4df954f097204854e0d7cd9ae23fb8bf18e06ef8633387fc0a108e37bb8e8",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_no_shadow_no_gradient_no_emoji_and_no_outside_request(page_text):\n    \"\"\"The page opens from a disk with no network behind it.\"\"\"\n    inside, outside = token_block(page_text)\n    assert 'box-shadow' not in outside\n    assert 'gradient' not in page_text\n    assert not re.search(u'[\\U0001F300-\\U0001FAFF\u2600-\u27bf]', page_text)\n    # Nothing is fetched: no stylesheet link, no remote script or image, no\n    # request of any kind. The page is the whole page.\n    assert '<link' not in page_text\n    assert '@import' not in page_text\n    assert 'fetch(' not in page_text\n    assert not re.search(r'(?:src|href)\\s*=\\s*\"https?:', page_text)",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_no_shadow_no_gradient_no_emoji_and_no_outside_request",
+      "proof": "PROOF-4",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "b53accb8ac19e285f54bd3b31f2a2f96896976946a1cf2eb8ce5d6ea2d94f5a5",
+  "verdict": "add a case"
+}

@@ -1,0 +1,72 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-16T21:10:05Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "3a574c33a97ca4bf764495a0611791fc655842493d9e0f1d7a8d8d28d31b0881",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-12",
+      "text": "Apply the v0.9.5 fixture with `--yes` and verify the gate is `tested`; set the old pre-push setting to the blocking value, apply, and verify the gate is `recorded` with `min_strength` 70 and `ai_review_at` `high`; answer the gate question `approved` and verify the gate is `approved` with `approvers` empty and that a prompt starting `Gate [` was asked; answer `whenever` and verify the gate is `tested`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/update/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-12",
+  "rule_hash": "d634718dc46efd1dd0d541e10d1933f53fcedcc77e7788a308be9a1795351553",
+  "rule_text": "The gate question is asked once more on an update, defaulting to `recorded` when the old pre-push setting was the blocking one and to `tested` otherwise, taking the answer typed when it is one of the three gates and leaving the default when it is not",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "63504de723ca0618cff1e888b6d305a2f2ce72b4669ee175a33b62c266bdf684",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_an_answer_that_is_not_a_gate_leaves_the_default(tmp_path, capsys,\n                                                         monkeypatch):\n    root = _project(tmp_path, V095)\n    _answers(monkeypatch, [('Gate [', 'whenever')])\n    _apply(root, argv=())\n    capsys.readouterr()\n    assert json.loads(_read(root, '.purlin/config.json'))['gate'] == 'tested'",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_an_answer_that_is_not_a_gate_leaves_the_default",
+      "proof": "PROOF-12",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_gate_defaults_to_recorded_when_the_hook_was_strict(tmp_path):\n    root = _project(tmp_path, V095)\n    config = json.loads(_read(root, '.purlin/config.json'))\n    config['pre_push'] = 'strict'\n    _write(root, '.purlin/config.json', json.dumps(config, indent=2))\n    _apply(root)\n    written = json.loads(_read(root, '.purlin/config.json'))\n    assert written['gate'] == 'recorded'\n    assert written['min_strength'] == 70\n    assert written['ai_review_at'] == 'high'",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_gate_defaults_to_recorded_when_the_hook_was_strict",
+      "proof": "PROOF-12",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_gate_defaults_to_tested(tmp_path):\n    root = _project(tmp_path, V095)\n    _apply(root)\n    assert json.loads(_read(root, '.purlin/config.json'))['gate'] == 'tested'",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_gate_defaults_to_tested",
+      "proof": "PROOF-12",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_gate_question_takes_the_answer_you_type(tmp_path, capsys,\n                                                     monkeypatch):\n    root = _project(tmp_path, V095)\n    asked = _answers(monkeypatch, [('Gate [', 'approved')])\n    _apply(root, argv=())\n    capsys.readouterr()\n    assert any('Gate [' in prompt for prompt in asked)\n    written = json.loads(_read(root, '.purlin/config.json'))\n    assert written['gate'] == 'approved'\n    assert written['approvers'] == []",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_gate_question_takes_the_answer_you_type",
+      "proof": "PROOF-12",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "5f7f0c204acbcf00e8bcc9fb71c87d0e420b95c1e6c32fff3a4b9b360149c104",
+  "verdict": "ready"
+}

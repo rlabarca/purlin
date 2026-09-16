@@ -1,0 +1,48 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "config_engine",
+  "generated_at": "2026-09-16T21:09:07Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "54427a1183d1d962e9ed61fe9d93e52fda3208675b0f8f6e32f2cf78c150d08b",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-6",
+      "text": "Write a `config.local.json` holding invalid JSON beside a `config.json` holding `{\"key\": \"fallback\"}`; resolve the config and verify it returns `{\"key\": \"fallback\"}` and that stderr carries a warning naming the malformed file",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/config_engine/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-6",
+  "rule_hash": "75c9b6afdda8275093ff3dbb75022adab0678303774e457db07a7cfdd667fa4f",
+  "rule_text": "A `config.local.json` holding invalid JSON is ignored with a warning on stderr, and `config.json` alone is returned",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "41252b4594dc907f6ca7675dc178a897b12de9899593d283dc89b1ef25013b58",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_malformed_local_falls_back(self, capsys):\n        \"\"\"Malformed local is ignored with warning. Returns shared only.\"\"\"\n        self._write_local(\"{bad json}}}\")\n        self._write_shared({\"key\": \"fallback\"})\n        result = resolve_config(self.project_root)\n        assert result == {\"key\": \"fallback\"}\n        assert \"Warning\" in capsys.readouterr().err",
+      "file": "dev/test_config_engine.py",
+      "findings": [],
+      "name": "test_malformed_local_falls_back",
+      "proof": "PROOF-6",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "0059f875ed094f756f94ea171fa1c3f6ff547e47c8bcc1bf69895529786e7767",
+  "verdict": "ready"
+}

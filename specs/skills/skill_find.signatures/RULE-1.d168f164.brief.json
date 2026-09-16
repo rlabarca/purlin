@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_find",
+  "generated_at": "2026-09-16T21:09:44Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "950fced3f4d4c1c44d3c6d486db28675480986dd5bc46a2b495c79a33525c316",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-1",
+      "text": "Read `skills/find/SKILL.md`; verify the file opens with `---`, that the frontmatter carries `name: find` and a `description:` whose value is one non-empty line, and that `references/purlin_commands.md` contains the literal `purlin:find`. Deleting the `name:` line fails naming the file",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/skill_find/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-1",
+  "rule_hash": "dc0ec32d16076f7f55305ab86757a9e749eb8b31d8ed213cc6ac653191876c22",
+  "rule_text": "`skills/find/SKILL.md` opens with a frontmatter block whose `name` is `find` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:find`",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "6c1237a279f1acab7dbeac48815d28d72f87bb91a694a302e1facf286432bc03",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_frontmatter_names_the_skill(self):\n        assert frontmatter_problems('find') == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_the_frontmatter_names_the_skill",
+      "proof": "PROOF-1",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "d168f1643b7d47ba125660a659bb48e36ba8a33e188730397274032c9711d358",
+  "verdict": "ready"
+}

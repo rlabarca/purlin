@@ -1,0 +1,75 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "config_engine",
+  "generated_at": "2026-09-16T21:09:07Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "eb9eb521802bc974ec4dff3be8aef0c69d241cf0a652ae5ca331a70f033d05e1",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-5",
+      "text": "Write `config.json` holding `{\"key\": \"val\"}` and no local file; resolve the config and verify it returns `{\"key\": \"val\"}` and that `config.local.json` was not created",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-5 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/config_engine/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-5",
+  "rule_hash": "f45a5ff8a32d60a58e0afb37eca97cccfa07cdf1e8f01b7db178f1a5f8b6586e",
+  "rule_text": "With no `config.local.json` on disk the merged config is `config.json` alone, and nothing creates the local file",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "6f4d175533367ec4c17e2a6d5f3813fac832626d5a9b75984d26bc59a2c3e08b",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_cli_key(self):\n        with open(os.path.join(self.purlin_dir, 'config.json'), 'w') as f:\n            json.dump({\"version\": \"0.9.0\"}, f)\n\n        script = os.path.join(os.path.dirname(__file__), '..', 'scripts', 'mcp', 'config_engine.py')\n        env = {**os.environ, 'PURLIN_PROJECT_ROOT': self.project_root}\n\n        r = subprocess.run(\n            [sys.executable, script, '--key', 'version'],\n            capture_output=True, text=True, cwd=self.project_root, env=env,\n        )\n        assert r.returncode == 0\n        assert r.stdout.strip() == \"0.9.0\"",
+      "file": "dev/test_config_engine.py",
+      "findings": [],
+      "name": "test_cli_key",
+      "proof": "PROOF-5",
+      "reasons": []
+    },
+    {
+      "body": "def test_key_in_process_prints_the_value(self):\n        with open(os.path.join(self.purlin_dir, 'config.json'), 'w') as f:\n            json.dump({\"version\": \"0.9.0\"}, f)\n        code, out = self._main('--key', 'version')\n        assert code == 0\n        assert out == \"0.9.0\\n\"\n        assert not os.path.exists(\n            os.path.join(self.purlin_dir, 'config.local.json'))",
+      "file": "dev/test_config_engine.py",
+      "findings": [],
+      "name": "test_key_in_process_prints_the_value",
+      "proof": "PROOF-5",
+      "reasons": []
+    },
+    {
+      "body": "def test_local_without_shared(self):\n        \"\"\"local exists but shared doesn't \u2014 local is the full config.\"\"\"\n        self._write_local({\"standalone\": True})\n        result = resolve_config(self.project_root)\n        assert result == {\"standalone\": True}",
+      "file": "dev/test_config_engine.py",
+      "findings": [],
+      "name": "test_local_without_shared",
+      "proof": "PROOF-5",
+      "reasons": []
+    },
+    {
+      "body": "def test_shared_only_no_copy(self):\n        \"\"\"config.json returned when no local exists. Local file NOT created.\"\"\"\n        self._write_shared({\"key\": \"val\"})\n        result = resolve_config(self.project_root)\n        assert result == {\"key\": \"val\"}\n        assert not self._local_exists(), \"config.local.json should NOT be created\"",
+      "file": "dev/test_config_engine.py",
+      "findings": [],
+      "name": "test_shared_only_no_copy",
+      "proof": "PROOF-5",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "2b21436472706549d7ab0e861559974ecf4c6cdb91e0b9f640ff0b89fe39b745",
+  "verdict": "add a case"
+}

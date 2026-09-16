@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "drift",
+  "generated_at": "2026-09-16T21:09:09Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "e8b45e85099f01b5551bc106e8dec679bc774f7d02578222d7d8ca914febb9f1",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-15",
+      "text": "Create a bare repository holding `constraints.md`, pin the anchor `local_security` to its first commit, advance the remote and run drift; verify the entry that is behind names the anchor `local_security` and names neither the repository path nor `constraints.md`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-15 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/drift/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-13",
+  "rule_hash": "c3ab34b89bc6921e8e1e24108d113bff23b8c7694c2aa7add31547a4538570ef",
+  "rule_text": "A pin row names the anchor's own spec name, never the repository path and never the file inside it",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "2a01d99e24f1f225e071be55b5b0452073ca9454cdba9a721bb18c4ffc10dcb6",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_anchor_name_in_drift_matches_spec_name_not_repo_path(self):\n        \"\"\"The anchor field in external_anchor_drift uses the spec's anchor name\n        (from '# Anchor: <name>'), not the external repo URL or file path.\"\"\"\n        # Step 1: Create bare repo and project with anchor named 'local_security'\n        initial_sha = _create_bare_repo(self.bare_path, 'constraints.md', '# constraints v1')\n        _init_project(self.project_root, self.bare_path, 'local_security', initial_sha)\n\n        # Step 2: Advance the external repo to trigger a stale status\n        _advance_bare_repo(self.bare_path, 'constraints.md', '# constraints v2')\n\n        # Step 3: Add a commit so drift has a range to work with\n        placeholder_path = os.path.join(self.project_root, 'placeholder.txt')\n        with open(placeholder_path, 'w') as f:\n            f.write('trigger drift range\\n')\n        _git(['add', '-A'], self.project_root)\n        _git(['commit', '-m', 'feat: add placeholder'], self.project_root)\n\n        # Step 4: Run drift and verify anchor name in result\n        result_text = purlin_drift.drift(self.project_root)\n        data = json.loads(result_text)\n\n        stale_entries = [\n            e for e in data.get('pins', [])\n            if e.get('status') == 'behind'\n        ]\n        assert len(stale_entries) >= 1, (\n            f\"Expected at least 1 pins entry that is behind, \"\n            f\"got: {data.get('pins', [])}\"\n        )\n\n        # The anchor field must be 'local_security' (the spec name),\n        # not the bare_path (repo path) or 'constraints.md' (file path)\n        anchor_names = [e.get('anchor') for e in stale_entries]\n        assert 'local_security' in anchor_names, (\n            f\"Expected anchor='local_security' in stale entries, got anchor names: {anchor_names}. \"\n            f\"Full entries: {stale_entries}\"\n        )\n        for entry in stale_entries:\n            assert entry.get('anchor') != self.bare_path, (\n                f\"anchor field must not be the repo path, got: {entry.get('anchor')}\"\n            )\n            assert entry.get('anchor') != 'constraints.md', (\n                f\"anchor field must not be the file path, got: {entry.get('anchor')}\"\n            )",
+      "file": "dev/test_drift.py",
+      "findings": [],
+      "name": "test_anchor_name_in_drift_matches_spec_name_not_repo_path",
+      "proof": "PROOF-15",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "d468133761edd3ee63fcab77a34f9338ed1bedcea29813d74b4c967f4d9f7dfe",
+  "verdict": "add a case"
+}

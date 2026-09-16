@@ -1,0 +1,67 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-16T21:09:25Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "bb8aeb71aacd2bfba03d5225561ffb797f3d1e63011e16d859a923af25208731",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-21",
+      "text": "Point a repository's `origin/HEAD` at `refs/remotes/origin/trunk` and call `default_branch()`; verify `trunk`. Call it on a repository with no remote made with `init.defaultBranch=master`; verify `master`, not `main`. Call it on a repository whose HEAD is detached; verify `main`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-21 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/records/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-21",
+  "rule_hash": "a7a156c38e7ebf5bff2cc5ab4ffb49de203d272db108b5f052c08921f658460a",
+  "rule_text": "The default branch is the one `origin/HEAD` points at; with no remote it is the branch `HEAD` names, and `main` only when neither can be read, so a repository whose only branch is `master` is never told its approval is not on the branch",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "95025b20334ad921f3a7aecd6519c6947cee04ccc979c21ea8df8519494a9ec5",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_detached_head_falls_back_to_main(project):\n    git(project, 'checkout', '--quiet',\n        git(project, 'rev-parse', 'HEAD').stdout.strip())\n    assert reader.default_branch(project) == 'main'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_detached_head_falls_back_to_main",
+      "proof": "PROOF-21",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_default_branch_is_what_origin_points_at(project):\n    git(project, 'update-ref', 'refs/remotes/origin/trunk',\n        git(project, 'rev-parse', 'HEAD').stdout.strip())\n    git(project, 'symbolic-ref', 'refs/remotes/origin/HEAD',\n        'refs/remotes/origin/trunk')\n    assert reader.default_branch(project) == 'trunk'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_default_branch_is_what_origin_points_at",
+      "proof": "PROOF-21",
+      "reasons": []
+    },
+    {
+      "body": "def test_with_no_remote_the_default_branch_is_the_one_head_names(tmp_path):\n    \"\"\"A `master` repository is not told its approval is off the branch.\n\n    A git configured for `master` makes one, and that repository has no\n    `origin/HEAD` to read: answering `main` there sends the gate looking for a\n    branch that does not exist and every approval reads as not on it.\n    \"\"\"\n    root = str(tmp_path / 'no-remote')\n    os.makedirs(root)\n    git(root, '-c', 'init.defaultBranch=master', 'init', '--quiet')\n    assert reader.default_branch(root) == 'master'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_with_no_remote_the_default_branch_is_the_one_head_names",
+      "proof": "PROOF-21",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "c243fbc34b2429364fc3c2c903d9324551cebd41d76f2dcd687c964742c2881e",
+  "verdict": "add a case"
+}

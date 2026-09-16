@@ -1,0 +1,56 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-16T21:09:28Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "eb4db6ab3a20eb2117c026dbfc44b8fed8cde5ad752dccd6528cdbfdafd9a61c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-13",
+      "text": "Run `--all --record` over a spec with two rules, one of them unproved; verify the proved rule carries `proofs: [\"PROOF-1\"]`, `result: \"pass\"`, the test name `test_ok` in `tests/test_feat.py` and a `test_strength` naming the engine and its attribution, that the feature's `scope_score` is 80, that `scope_tree` is 64 characters, and that the unproved rule has `result: \"missing\"` with `missing == [\"feat RULE-2\"]`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/run_script/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-13",
+  "rule_hash": "7bbe604b3ed508ece8e140d7407a57acf0b7a1fb5d92b94ed67d115336496fd9",
+  "rule_text": "Each rule of a record carries its proof ids, the tests that observed them, the result `pass`, `fail` or `missing`, and the test strength; a rule with no evidence is listed under `missing`",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "eb4d826da29be698114d868ca850feaa33195d8228d9d39d15b2dd06ff7c5605",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_rule_carries_its_proofs_tests_result_and_strength(\n            self, tmp_path, record_run, capsys):\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat')\n        _code, calls = record_run(root, '--all')\n        capsys.readouterr()\n        record = calls['write'][0][0]\n        feature = record['features']['feat']\n        assert feature['spec'] == 'specs/a/feat.md'\n        rule = feature['rules']['RULE-1']\n        assert rule['proofs'] == ['PROOF-1']\n        assert rule['result'] == 'pass'\n        assert rule['tests'][0]['name'] == 'test_ok'\n        assert rule['tests'][0]['file'] == 'tests/test_feat.py'\n        assert rule['test_strength']['engine'] == 'mutmut'\n        assert rule['test_strength']['attribution'] == 'per_scope'\n        assert feature['scope_score']['score'] == 80\n        assert record['feature'] == 'feat'\n        assert isinstance(record['scope_tree'], str)\n        assert len(record['scope_tree']) == 64\n        assert record['missing'] == []",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_a_rule_carries_its_proofs_tests_result_and_strength",
+      "proof": "PROOF-13",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_rule_with_no_evidence_is_listed_as_missing(\n            self, tmp_path, record_run, capsys):\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat', proofs=(('PROOF-1', 'RULE-1', ''),\n                                    ('PROOF-2', 'RULE-2', '')), rules=2)\n        _code, calls = record_run(root, '--all')\n        capsys.readouterr()\n        record = calls['write'][0][0]\n        assert record['missing'] == ['feat RULE-2']\n        assert record['features']['feat']['rules']['RULE-2']['result'] == 'missing'",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_a_rule_with_no_evidence_is_listed_as_missing",
+      "proof": "PROOF-13",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "7c63ec08af23cd64d53a57fd6dd82b3a2e7dc80e116a0bd92a40ddcc49e3dd7b",
+  "verdict": "ready"
+}

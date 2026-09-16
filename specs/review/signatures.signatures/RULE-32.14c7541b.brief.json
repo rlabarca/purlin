@@ -1,0 +1,63 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-16T21:09:42Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "ff6449d044dccdfbe0f02073af4fbc5c3b5657d7e92f55b0b6a1f0b100ad2424",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-47",
+      "text": "Run the gate at gate `approved` over a project with no approver list; verify it exits 1, prints `approver list missing: run purlin:init --gate approved` and never prints `PASS`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-54",
+      "text": "Run the gate with `--json` at gate `approved` with no approver list; verify it exits 1 and the JSON reports the approver list `missing`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/signatures/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-32",
+  "rule_hash": "6fb1127c7ff251cec50d4f3f9edf794eddb910e78c739e501bfde13c8ece9658",
+  "rule_text": "At gate `approved` with no approver list the gate prints the missing-list directive and fails without grading a rule",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "d4c91ef90b709a0d7db337e4307d48afd47dab53e717760bd256a6475f46c9f6",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_no_approver_list_names_the_command_and_fails(self):\n        made = project_at('approved')\n        try:\n            code, output = run(made)\n            assert code == 1\n            assert '\u2192 approver list missing: run purlin:init --gate ' \\\n                   'approved' in output\n            assert 'PASS' not in output\n        finally:\n            made.close()",
+      "file": "dev/test_verify_gate.py",
+      "findings": [],
+      "name": "test_no_approver_list_names_the_command_and_fails",
+      "proof": "PROOF-47",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_missing_approver_list_says_so_in_the_json(self):\n        made = project_at('approved')\n        try:\n            code, output = run(made, as_json=True)\n            data = json.loads(output[output.index('{'):])\n            assert code == 1\n            assert data['approver_list'] == 'missing'\n        finally:\n            made.close()",
+      "file": "dev/test_verify_gate.py",
+      "findings": [],
+      "name": "test_a_missing_approver_list_says_so_in_the_json",
+      "proof": "PROOF-54",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "14c7541b2f6d326e8896d95e9cd790984b6048cf01238e4f71024be007fe91fa",
+  "verdict": "ready"
+}

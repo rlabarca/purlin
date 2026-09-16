@@ -1,0 +1,95 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T21:09:52Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "4d09b317f53e0f06282de5520b879332350d448d3f73d9aa5e3eb6c7a2919199",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-34",
+      "text": "In a recorded project read `RULE-1`'s test hash; rewrite the runtime proof file so `PROOF-1` also names `test_only_this_machine_runs`, then so it names no test for `PROOF-1` at all; verify the test hash is the same all three times",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-35",
+      "text": "In a project with runtime proofs and no record, read `RULE-1`'s test hash, add `test_only_this_machine_runs` for `PROOF-1` to the runtime proof file and read it again; verify the two hashes differ",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [
+        "missing_trigger",
+        "happy_path_only"
+      ],
+      "id": "PROOF-36",
+      "text": "Commit a `linux` record observing `test_valid_credentials_return_200` for `PROOF-1` and a `windows` record observing it and `test_the_windows_lock`; verify `RULE-1`'s tests are exactly those two names, each once, while the runtime proof file names only the first",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-36 missing_trigger: Nothing runs before the assertion, so the proof reads an artifact that exists whether or not the code is right."
+  ],
+  "record": ".purlin/records/states/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-30",
+  "rule_hash": "72cad8ae550fd1733deafe182f324c24250e2cfda72f1e950da54aa96039e78d",
+  "rule_text": "The tests a rule's test hash binds for a proof are the ones its feature's latest counting records observed, on every operating system together, so every checkout and CI read the same hash; this checkout's runtime proofs name them only for a proof no counting record has observed, and a test this checkout ran or could not run changes nothing once a record exists",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "f02d9fd260e5dbbff7f96bd9c7247f3d378f52fc7925e7ff99146c202dbba2d6",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_what_this_checkout_ran_does_not_move_the_hash(self, project):\n        project.proofs()\n        project.record()\n        first = project.rule('RULE-1')['test_hash']\n        _runtime(project, [TEST_NAMES['PROOF-1'], EXTRA])\n        assert project.rule('RULE-1')['test_hash'] == first, \\\n            'a test only this checkout ran moved the hash'\n        _runtime(project, [])\n        assert project.rule('RULE-1')['test_hash'] == first, \\\n            'a test this checkout could not run moved the hash'",
+      "file": "dev/test_backing_tests.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_what_this_checkout_ran_does_not_move_the_hash",
+      "proof": "PROOF-34",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_with_no_record_the_runtime_names_the_tests(self, project):\n        project.proofs()\n        before = project.rule('RULE-1')['test_hash']\n        _runtime(project, [TEST_NAMES['PROOF-1'], EXTRA])\n        assert project.rule('RULE-1')['test_hash'] != before",
+      "file": "dev/test_backing_tests.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_with_no_record_the_runtime_names_the_tests",
+      "proof": "PROOF-35",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_every_operating_system_s_record_counts(self, project):\n        project.proofs()\n        _os_record(project, 'linux', '20260913T120000Z',\n                   [TEST_NAMES['PROOF-1']])\n        _os_record(project, 'windows', '20260913T121000Z',\n                   [TEST_NAMES['PROOF-1'], 'test_the_windows_lock'])\n        proof = next(p for p in project.rule('RULE-1')['proofs']\n                     if p['id'] == 'PROOF-1')\n        names = [test['name'] for test in proof['tests']]\n        assert sorted(names) == sorted([TEST_NAMES['PROOF-1'],\n                                        'test_the_windows_lock']), names",
+      "file": "dev/test_backing_tests.py",
+      "findings": [],
+      "name": "test_every_operating_system_s_record_counts",
+      "proof": "PROOF-36",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "f3f8e2c81f6052870ae0c63765551f99f1ee4a115bcc0fabc3c4e1775b6c04de",
+  "verdict": "rewrite the proof"
+}

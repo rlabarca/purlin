@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-16T21:09:19Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "5aab9b95238846a4510285eee56406c7204b628edf879d1f4c5bc7dbe7b01e00",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-17",
+      "text": "Open the regulated fixture and open `RULE-4`, whose proof is scoped to one operating system with no record from it; verify the screen reads `windows: no record yet` and does not read `no negative case`",
+      "tier": "e2e"
+    }
+  ],
+  "reasons": [
+    "PROOF-17 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/purlin_report/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-17",
+  "rule_hash": "9724de50b673f7dfc4278cf70ae19983818090d6c0484abce7263cda0ad0f397",
+  "rule_text": "A rule whose proof names an operating system that no counting record came from says so on its screen, naming that system, rather than reading as proved",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "05f805ec9fcfbeb0433ae21eca5d1da0c95c48ddc2302701b05529aa6fe5ae07",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_rule_waiting_on_an_operating_system_says_so(browser, tmp_path):\n    page = open_board(browser, tmp_path, payload_named('regulated'))\n    page.click('[data-act=\"feature\"][data-feature=\"login\"]')\n    page.click('.rule[data-rule=\"RULE-4\"]')\n    body = page.inner_text('.wrap')\n    assert 'windows: no record yet' in body\n    assert 'no negative case' not in body\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_a_rule_waiting_on_an_operating_system_says_so",
+      "proof": "PROOF-17",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "00f378e3b71feb1d2425191946a217c83e922ca64d3bb0370dd396d3182c472a",
+  "verdict": "add a case"
+}

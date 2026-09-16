@@ -1,0 +1,83 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-16T21:10:04Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "54da0e784d273b155f113d9dc771c3e7553a95d841de23fb16076900ea16f657",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-5",
+      "text": "On each fixture run with `--yes`, verify the return code is 0 and `pending()` is then empty; record `HEAD` and `git status --porcelain`, run with `--yes` again and verify both are unchanged",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-5 logic_mirroring",
+    "PROOF-5 logic_mirroring"
+  ],
+  "record": ".purlin/records/update/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-5",
+  "rule_hash": "bf46fbcad2b4ac339f61f0d3eece1e281067a15a6eaf567ff979e4daa349f9bd",
+  "rule_text": "`--yes` answers yes to every question and applies every pending migration, and a second run finds nothing left to do and changes neither the commit nor the tree",
+  "schema": "purlin-brief/1",
+  "state": "Proof ready",
+  "test_hash": "8502ba92fffa298be3f1129cbe359ccf96792a4e424e5edf9a1565d6415f9469",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_running_yes_twice_changes_nothing_the_second_time(tmp_path, capsys,\n                                                           layout):\n    root = _project(tmp_path, layout)\n    _apply(root)\n    head = _git(root, 'rev-parse', 'HEAD').stdout.strip()\n    tree = _git(root, 'status', '--porcelain').stdout\n    capsys.readouterr()\n    assert _apply(root) == 0\n    assert _git(root, 'rev-parse', 'HEAD').stdout.strip() == head\n    assert _git(root, 'status', '--porcelain').stdout == tree",
+      "file": "dev/test_init_update.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_running_yes_twice_changes_nothing_the_second_time[upgrade-0.10-dev]",
+      "proof": "PROOF-5",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_running_yes_twice_changes_nothing_the_second_time(tmp_path, capsys,\n                                                           layout):\n    root = _project(tmp_path, layout)\n    _apply(root)\n    head = _git(root, 'rev-parse', 'HEAD').stdout.strip()\n    tree = _git(root, 'status', '--porcelain').stdout\n    capsys.readouterr()\n    assert _apply(root) == 0\n    assert _git(root, 'rev-parse', 'HEAD').stdout.strip() == head\n    assert _git(root, 'status', '--porcelain').stdout == tree",
+      "file": "dev/test_init_update.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_running_yes_twice_changes_nothing_the_second_time[upgrade-0.9.5]",
+      "proof": "PROOF-5",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_yes_applies_every_migration(tmp_path, capsys, layout):\n    root = _project(tmp_path, layout)\n    assert _apply(root) == 0\n    capsys.readouterr()\n    assert update.pending(root) == []\n    assert update.main(['--check', '--project-root', root]) == 0\n    assert 'Nothing is pending' in capsys.readouterr().out",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_yes_applies_every_migration[upgrade-0.10-dev]",
+      "proof": "PROOF-5",
+      "reasons": []
+    },
+    {
+      "body": "def test_yes_applies_every_migration(tmp_path, capsys, layout):\n    root = _project(tmp_path, layout)\n    assert _apply(root) == 0\n    capsys.readouterr()\n    assert update.pending(root) == []\n    assert update.main(['--check', '--project-root', root]) == 0\n    assert 'Nothing is pending' in capsys.readouterr().out",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_yes_applies_every_migration[upgrade-0.9.5]",
+      "proof": "PROOF-5",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "8bd169c01d23af9180cf9b4af882af159d8724c85b3205046e388472644f320e",
+  "verdict": "needs a human"
+}

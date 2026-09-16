@@ -1,0 +1,68 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-16T21:09:26Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "c2cf5bf0efb2f311a46b282d43ca5405c0ad0202ba5567914ec3efaa64c3853c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-28",
+      "text": "Render the review list of a payload listing `billing RULE-2` low, `login RULE-10` high Reviewed, `login RULE-3` high Stale and `auth RULE-1` medium; verify the header reads `Review list: 4 rules.` and the lines follow in the order `login RULE-3`, `login RULE-10`, `auth RULE-1`, `billing RULE-2`, each carrying its risk, its state and its reason. Render a payload with an empty list and verify it reads `Review list: no rule needs a person.`",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-29",
+      "text": "Scan a local repository whose spec tags `RULE-1` `[risk: high]`; verify the output carries a `Review list:` line after the rollup and a line naming `high`, `greeting RULE-1` and its state",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-29 logic_mirroring"
+  ],
+  "record": ".purlin/records/records/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-25",
+  "rule_hash": "5c72c483a7734e12625161f7d97c7844f0b643641634a13da3c23fccb109cd0c",
+  "rule_text": "`scan.py` prints the review list after the rollup, one line per rule naming its risk, its feature and rule id, its state and why it is on the list, high risk first and a Stale rule first within a risk, and says so in one line when no rule needs a person",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "9a294b65e67a6a0339380aaea6c38b80977279615a1626b9a970f91d9ab2ffe4",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_list_is_one_line_per_rule_in_review_order():\n    payload = _payload(\n        [('billing', 'RULE-2', 'low', 'no_expected_value'),\n         ('login', 'RULE-10', 'high', 'risk high'),\n         ('login', 'RULE-3', 'high', 'stale; risk high'),\n         ('auth', 'RULE-1', 'medium', 'risk medium')],\n        {('billing', 'RULE-2'): 'Recorded', ('login', 'RULE-10'): 'Reviewed',\n         ('login', 'RULE-3'): 'Stale', ('auth', 'RULE-1'): 'Tested'})\n    lines = scan_module.review_list_text(payload).splitlines()\n    assert lines[0] == 'Review list: 4 rules.'\n    order = [line.split()[1] + ' ' + line.split()[2] for line in lines[1:]]\n    assert order == ['login RULE-3', 'login RULE-10', 'auth RULE-1',\n                     'billing RULE-2'], lines\n    assert lines[1].split()[:4] == ['high', 'login', 'RULE-3', 'Stale']\n    assert lines[1].endswith('stale; risk high'), lines[1]\n    assert lines[3].split()[:4] == ['medium', 'auth', 'RULE-1', 'Tested']\n    assert lines[4].endswith('no_expected_value'), lines[4]\n    assert scan_module.review_list_text(_payload([], {})) == \\\n        'Review list: no rule needs a person.'",
+      "file": "dev/test_scan_review_list.py",
+      "findings": [],
+      "name": "test_the_list_is_one_line_per_rule_in_review_order",
+      "proof": "PROOF-28",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_scan_prints_the_list_after_the_rollup(tmp_path):\n    source = str(tmp_path / 'source')\n    make_project(source)\n    spec = os.path.join(source, 'specs', 'core', 'greeting.md')\n    with open(spec, 'w', encoding='utf-8') as handle:\n        handle.write(SPEC.replace('returns `Hello, <name>!`',\n                                  'returns `Hello, <name>!` [risk: high]'))\n    git(source, 'commit', '--quiet', '-am', 'a high-risk rule')\n    bare = str(tmp_path / 'origin.git')\n    git(tmp_path, 'init', '--bare', '--quiet', '-b', 'main', bare)\n    git(source, 'push', '--quiet', bare, 'main')\n    text = scan_module.scan(bare, 'main')\n    assert 'Review list:' in text\n    assert text.index('Review list:') > text.index('rules.')\n    rows = [line.split() for line in text.splitlines()\n            if 'greeting RULE-1' in line]\n    assert rows and rows[0][:3] == ['high', 'greeting', 'RULE-1'], text\n    assert len(rows[0]) >= 4, rows",
+      "file": "dev/test_scan_review_list.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_the_scan_prints_the_list_after_the_rollup",
+      "proof": "PROOF-29",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "e4131f0b571838f7d4617b5ad7eb778a797ca53a81e5d70405389f15f0e9dd82",
+  "verdict": "needs a human"
+}

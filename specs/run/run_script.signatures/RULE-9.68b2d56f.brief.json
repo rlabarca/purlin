@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-16T21:09:27Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "2c9bccfe09e025ba5f624dc19422bdb7b68e69ef2225345e6512f0dd28d35900",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-9",
+      "text": "Give a project a spec `feat` and a spec `other`, mark a skipped test for `other`, and run `--feature feat --quick`; verify `other PROOF-1` is absent from the output and the run exits 0",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/run_script/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-9",
+  "rule_hash": "00d378061a1140126efe12db4f6af74cb348825c96e6418e428dead9221d8dab",
+  "rule_text": "A marker naming a feature this run did not select is not reported as missing",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "08e4715f1b7d8e75b40ab160f26b3775e65f96877c5ddb68b0db07f1c705e7ff",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_marker_for_an_unselected_feature_is_not_named(self, tmp_path):\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat')\n        _spec(root, 'other')\n        (root / 'tests' / 'test_other.py').write_text(\n            'import pytest\\n\\n'\n            '@pytest.mark.proof(\"other\", \"PROOF-1\", \"RULE-1\")\\n'\n            '@pytest.mark.skip(reason=\"no tool here\")\\n'\n            'def test_skipped():\\n'\n            '    assert True\\n', encoding='utf-8')\n        code, output = _run(root, '--feature', 'feat', '--quick')\n        assert 'other PROOF-1' not in output\n        assert code == 0, output",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_a_marker_for_an_unselected_feature_is_not_named",
+      "proof": "PROOF-9",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "68b2d56f074d7c6dbb2d97e4d745e5c5bf65334b98fff59cb18fc837694aae9a",
+  "verdict": "ready"
+}

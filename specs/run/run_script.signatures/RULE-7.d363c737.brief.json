@@ -1,0 +1,56 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-16T21:09:27Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "27589e27924e05bb3f51888cd0c254947c296c543a0377e7eadb9767e504666c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-7",
+      "text": "Run `--all --quick` over a project whose test carries a marker and whose plugin is not loaded; verify exit 1 and the line `the pytest arm ran and its plugin wrote no proof entry`, naming `1 marked test(s)`. Run the same project with no marker anywhere; verify `wrote no proof entry` is absent, the table reads `Drafted 1` and the run exits 0",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/run_script/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-7",
+  "rule_hash": "2f272ddeeb38cebfad066cd6a048d0102b93036d1382d014de24d66c847ad031",
+  "rule_text": "An arm that ran while its framework's markers sit in the tree, and whose plugin appended no entry at all, exits the run 1 and names that framework and how many marked tests were found; an arm with no markers is silent and not a failure",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "dc8ba1dd097de61c88015aa65c8b7b262beafba8bff0fa8a361362d05af56aec",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_an_arm_that_wrote_nothing_is_named(self, tmp_path):\n        # The markers are in the tree and the plugin is not loaded: pytest\n        # passes, and nothing at all is written. This is the failure the test\n        # framework itself reports as success.\n        root = _project(tmp_path)\n        _spec(root, 'feat')\n        (root / 'tests').mkdir()\n        (root / 'tests' / 'test_feat.py').write_text(\n            'import pytest\\n\\n'\n            '@pytest.mark.proof(\"feat\", \"PROOF-1\", \"RULE-1\")\\n'\n            'def test_ok():\\n'\n            '    assert True\\n', encoding='utf-8')\n        code, output = _run(root, '--all', '--quick')\n        assert code == 1, output\n        assert 'the pytest arm ran and its plugin wrote no proof entry' in output\n        assert '1 marked test(s)' in output",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_an_arm_that_wrote_nothing_is_named",
+      "proof": "PROOF-7",
+      "reasons": []
+    },
+    {
+      "body": "def test_an_arm_with_no_markers_is_not_a_failure(self, tmp_path):\n        root = _project(tmp_path, frameworks='shell')\n        _spec(root, 'feat')\n        code, output = _run(root, '--all', '--quick')\n        # Nothing was marked, so nothing went missing: the arm is silent and\n        # the table is what says the rule has no evidence yet.\n        assert 'wrote no proof entry' not in output\n        assert 'Drafted 1' in output\n        assert code == 0, output",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_an_arm_with_no_markers_is_not_a_failure",
+      "proof": "PROOF-7",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "d363c73781bf02fd3ac94e0210b1d7dea755d4dd1772d3497c4aadd8eadee21a",
+  "verdict": "ready"
+}

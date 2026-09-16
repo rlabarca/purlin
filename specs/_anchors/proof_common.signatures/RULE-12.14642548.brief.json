@@ -1,0 +1,87 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "proof_common",
+  "generated_at": "2026-09-16T21:09:16Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "05a36e6a9cbe33abc9bdb2836819f15258bd5dd9028ebcc1a510432635ea4449",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-12",
+      "text": "Read the sources and verify pytest, jest, vitest and the xUnit logger each track the tests they skipped while the shell and sql plugins carry no such set, a plugin found on the wrong side failing by name, in `dev/test_multilang_proof_plugins.py`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/proof_common/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-12",
+  "rule_hash": "1599fcc475530a053cea4b6ce9043e2b554ed835b4f4d2d3519dd9a6449ad1ad",
+  "rule_text": "Every plugin whose framework reports a skip observes it, which is pytest, jest, vitest and the xUnit logger; the shell and sql plugins are exempt because their marker is an explicit call, so a script that never called it cannot be told apart from one that skipped",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "0b96c369f146bb209025a1e7482a176aa4c02843d6c3e9b2f5140795e21181b2",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_skip_capable_plugin_tracks_skipped_tests(self, framework):\n        source = open(os.path.join(PROOF_SCRIPTS, PLUGINS[framework]),\n                      encoding='utf-8').read()\n        assert 'skip' in source.lower()\n        for token in ('run_wrote', 'runWrote', 'runWrote'):\n            if token in source:\n                break\n        else:\n            pytest.fail('%s has no this-run-wrote set' % framework)",
+      "file": "dev/test_multilang_proof_plugins.py",
+      "findings": [],
+      "name": "test_a_skip_capable_plugin_tracks_skipped_tests[jest]",
+      "proof": "PROOF-12",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_skip_capable_plugin_tracks_skipped_tests(self, framework):\n        source = open(os.path.join(PROOF_SCRIPTS, PLUGINS[framework]),\n                      encoding='utf-8').read()\n        assert 'skip' in source.lower()\n        for token in ('run_wrote', 'runWrote', 'runWrote'):\n            if token in source:\n                break\n        else:\n            pytest.fail('%s has no this-run-wrote set' % framework)",
+      "file": "dev/test_multilang_proof_plugins.py",
+      "findings": [],
+      "name": "test_a_skip_capable_plugin_tracks_skipped_tests[pytest]",
+      "proof": "PROOF-12",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_skip_capable_plugin_tracks_skipped_tests(self, framework):\n        source = open(os.path.join(PROOF_SCRIPTS, PLUGINS[framework]),\n                      encoding='utf-8').read()\n        assert 'skip' in source.lower()\n        for token in ('run_wrote', 'runWrote', 'runWrote'):\n            if token in source:\n                break\n        else:\n            pytest.fail('%s has no this-run-wrote set' % framework)",
+      "file": "dev/test_multilang_proof_plugins.py",
+      "findings": [],
+      "name": "test_a_skip_capable_plugin_tracks_skipped_tests[vitest]",
+      "proof": "PROOF-12",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_skip_capable_plugin_tracks_skipped_tests(self, framework):\n        source = open(os.path.join(PROOF_SCRIPTS, PLUGINS[framework]),\n                      encoding='utf-8').read()\n        assert 'skip' in source.lower()\n        for token in ('run_wrote', 'runWrote', 'runWrote'):\n            if token in source:\n                break\n        else:\n            pytest.fail('%s has no this-run-wrote set' % framework)",
+      "file": "dev/test_multilang_proof_plugins.py",
+      "findings": [],
+      "name": "test_a_skip_capable_plugin_tracks_skipped_tests[xunit]",
+      "proof": "PROOF-12",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_skip_exempt_plugin_says_it_has_no_skip_signal(self, framework):\n        source = open(os.path.join(PROOF_SCRIPTS, PLUGINS[framework]),\n                      encoding='utf-8').read()\n        assert 'no skip signal' in source",
+      "file": "dev/test_multilang_proof_plugins.py",
+      "findings": [],
+      "name": "test_a_skip_exempt_plugin_says_it_has_no_skip_signal[shell]",
+      "proof": "PROOF-12",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_skip_exempt_plugin_says_it_has_no_skip_signal(self, framework):\n        source = open(os.path.join(PROOF_SCRIPTS, PLUGINS[framework]),\n                      encoding='utf-8').read()\n        assert 'no skip signal' in source",
+      "file": "dev/test_multilang_proof_plugins.py",
+      "findings": [],
+      "name": "test_a_skip_exempt_plugin_says_it_has_no_skip_signal[sql]",
+      "proof": "PROOF-12",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "146425487c87e7b5417f9f378b4b2beb06073fe9b19de5598140a4aa190716d3",
+  "verdict": "ready"
+}

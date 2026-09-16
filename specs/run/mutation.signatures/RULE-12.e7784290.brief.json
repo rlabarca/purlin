@@ -1,0 +1,63 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "mutation",
+  "generated_at": "2026-09-16T21:09:12Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "b6de56251b88ba199c6f9d6d99bb0c6deb3b10e84e4546c6f5f6db6a46c7d610",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-12",
+      "text": "Point `read_report()` at a path holding invalid JSON and at a path that does not exist; verify None both times. Run the engine with a binary that writes no report; verify the feature's score is None and the log line says the engine wrote no report",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/mutation/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-12",
+  "rule_hash": "40ef07ec56286fcae01d92be5d8f77269a567259f0be43ea3263cb5b3e3cce99",
+  "rule_text": "A run that wrote no report, or whose report cannot be read, measures nothing for that feature and says so in the log rather than raising",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "46d77b0d5045b39c8669d6ce584445bb9e59caa8757c44b619d6f74b08559823",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_feature_with_no_scope_files_measures_nothing(monkeypatch):\n    execute, _ = fake_stryker_run('stryker_report.json')\n    monkeypatch.setattr(stryker, 'binary', lambda root: ['stryker'])\n    monkeypatch.setattr(stryker, 'test_runner', lambda root: 'jest')\n    monkeypatch.setattr(stryker, 'execute', execute)\n    answer = stryker.run('/project', {'calc': []},\n                         {('calc', 'RULE-1'): CALC_TESTS['RULE-1']}, None)\n    assert answer['features']['calc']['scope_score']['score'] is None\n    assert answer['features']['calc']['rules']['RULE-1']['score'] is None\n    assert 'no scope files' in answer['log']",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_a_feature_with_no_scope_files_measures_nothing",
+      "proof": "PROOF-12",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_run_that_wrote_no_report_says_so(monkeypatch):\n    monkeypatch.setattr(stryker, 'binary', lambda root: ['stryker'])\n    monkeypatch.setattr(stryker, 'test_runner', lambda root: 'jest')\n    monkeypatch.setattr(stryker, 'execute',\n                        lambda command, cwd, report_path=None: (1, 'boom'))\n    answer = stryker.run('/project', {'calc': ['src/calc.js']},\n                         {('calc', 'RULE-1'): CALC_TESTS['RULE-1']}, None)\n    assert answer['features']['calc']['rules']['RULE-1']['score'] is None\n    assert 'wrote no report' in answer['log']\n    assert 'boom' in answer['log']",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_a_run_that_wrote_no_report_says_so",
+      "proof": "PROOF-12",
+      "reasons": []
+    },
+    {
+      "body": "def test_an_unreadable_report_is_not_a_report(tmp_path):\n    path = tmp_path / 'report.json'\n    path.write_text('not json', encoding='utf-8')\n    assert stryker.read_report(str(path)) is None\n    assert stryker.read_report(str(tmp_path / 'missing.json')) is None",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_an_unreadable_report_is_not_a_report",
+      "proof": "PROOF-12",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "e7784290cc15256587d386c579b3c28b76e2e69dc6d881a77131ed6dfb111cd7",
+  "verdict": "ready"
+}

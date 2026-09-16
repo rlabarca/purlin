@@ -1,0 +1,48 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T21:09:52Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "1705b5cfa0b4423ce5c49b480af82ad9929cae09cefca352c8cb43cf9da8621c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-38",
+      "text": "In a project whose record observed `PROOF-1` failing and `PROOF-2` passing, verify `RULE-1` is flagged `failing` with the reason `failing: the record`, `RULE-2` is not, and the project rollup's `failing` is 1; then write the runtime proofs with `PROOF-2` failing and verify `RULE-2` is flagged with `failing: this checkout` and the count is 2",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/states/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-32",
+  "rule_hash": "2a8d894f42c7da8b70fb8e2e11b77963da239a4850c6e9a78d25d9d32a8b96a0",
+  "rule_text": "A rule is flagged `failing` when a counting record observed a failing proof of it, reading a `@env` proof only from that operating system's record, or when this checkout's last run failed one; its reasons name where, as `failing: <os> record` or `failing: this checkout`, and every rollup counts the failing rules",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "2780f4916015e7c3ba1f1541f75a35e617b905b2d730e4825f784a5af8440277",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_failing_test_is_named_where_it_failed(project):\n    project.proofs()\n    project.record({'PROOF-1': 'fail', 'PROOF-2': 'pass'})\n    one, two = project.rule('RULE-1'), project.rule('RULE-2')\n    assert one['flags']['failing'] is True\n    assert 'failing: the record' in one['reasons'], one['reasons']\n    assert two['flags']['failing'] is False\n    assert project.payload()['project_rollup']['failing'] == 1\n\n    project.proofs({'PROOF-1': 'pass', 'PROOF-2': 'fail'})\n    two = project.rule('RULE-2')\n    assert two['flags']['failing'] is True\n    assert 'failing: this checkout' in two['reasons'], two['reasons']\n    assert project.payload()['project_rollup']['failing'] == 2",
+      "file": "dev/test_failing.py",
+      "findings": [],
+      "name": "test_a_failing_test_is_named_where_it_failed",
+      "proof": "PROOF-38",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a9542ae15e78e489fab73d4f8dfd29b0351acfd49d42bb245fe64fb4660b2437",
+  "verdict": "ready"
+}

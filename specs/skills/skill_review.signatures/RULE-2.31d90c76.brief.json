@@ -1,0 +1,48 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_review",
+  "generated_at": "2026-09-16T21:09:45Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "13d77165ce4391f80139304a83513632f22e12c86a3e42c3a2f236c12fbfae43",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-2",
+      "text": "Read `skills/review/SKILL.md`; verify it carries `payload.review_list`, the literal `\"${CLAUDE_PLUGIN_ROOT}/scripts/review/brief.py\"` and the literal `\"${CLAUDE_PLUGIN_ROOT}/scripts/review/approve.py\"`, one assertion per literal. Replacing the brief fence with a bare `brief.py` fails naming the missing literal",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/skill_review/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-2",
+  "rule_hash": "100360ccf222fc32b490c9c1f04c56e05e94baf25173cd8a5f0830815b7140fc",
+  "rule_text": "The skill reads the review list from `sync_status` as `payload.review_list`, shows each rule with `scripts/review/brief.py` and writes the approval with `scripts/review/approve.py`, both inside `${CLAUDE_PLUGIN_ROOT}`",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "39e345d9714c6362a7dbc2e041a34b930bd5040fcdbca95ea8ec2b3790a31bcb",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_reads_the_list_and_runs_the_review_scripts(self):\n        assert carries(skill_path('review'), [\n            'payload.review_list',\n            '\"${CLAUDE_PLUGIN_ROOT}/scripts/review/brief.py\"',\n            '\"${CLAUDE_PLUGIN_ROOT}/scripts/review/approve.py\"']) == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_it_reads_the_list_and_runs_the_review_scripts",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "31d90c76cff34f49ed4756558da134c399359be6b07885fe15dffb0799a615dd",
+  "verdict": "ready"
+}

@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "qa_report",
+  "generated_at": "2026-09-16T21:09:20Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "987e04a75769ba2bc9611dda66b4dbbca504df98772d2de8a69a2ec4564cd62e",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-3",
+      "text": "Read `tools/QA/purlin-qa-report.md`; verify a fenced block carries `scripts/report/scan.py` followed by `--repo` on the same line, and that the file carries `seven states`, the heading text `The gate.` and the phrase `commits the branch has moved past the newest record`, one assertion per literal. Deleting the commits-behind bullet fails naming that phrase",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/qa_report/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-3",
+  "rule_hash": "aa9ed8ab679c0501bfeeb2df97f8e90e162baeae740573d08e69c49841a96508",
+  "rule_text": "The skill reaches a project by running `scripts/report/scan.py --repo <url>` from a checkout of the Purlin repository, and reads three things off the rollup: the gate, how many rules sit in each of the seven states, and how many commits the branch has moved past the newest record",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "97e7d31fca80e715fc1cfb8e3e235b597baec93035aebd6c94c77111c49041af",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_scans_the_project_and_reads_the_rollup(self):\n        assert (same_line(QA_MD, ['scripts/report/scan.py', '--repo'])\n                + carries(QA_MD, [\n                    'seven states', 'The gate.',\n                    'commits the branch has moved past the newest record'])) == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_it_scans_the_project_and_reads_the_rollup",
+      "proof": "PROOF-3",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "c554b23103289649425e30d01cadaf500b99ffd1402c5d7ffb0fee7f53bb0701",
+  "verdict": "ready"
+}

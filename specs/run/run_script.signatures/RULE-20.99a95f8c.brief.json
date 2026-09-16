@@ -1,0 +1,60 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-16T21:09:29Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "640ff41ef779ec0f3883c5da20aed950aea802459f4ec9868585c5d9f98b80e0",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-20",
+      "text": "In a git checkout, run `--all --record --commit`; verify `Record committed as developer.`, that the record's `commit` differs from HEAD because the record's own commit came after it, and that the rule's state is `Recorded`. Change the scoped file `src/feat.py` and commit it; verify the rule's state is `Tested`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-20 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/run_script/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-20",
+  "rule_hash": "36b1e0fd07104a767b49243a24297bbab221d3a6ff4e83ab400d2fd233ff7581",
+  "rule_text": "A record carries the git tree hash of its feature's scoped files, so a rule stays Recorded while only other files change and falls back to Tested when a scoped file changes",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "1cdddd9e995c43a792b8161394a666499103f40828c3eb2daa324cf7bc6e4b29",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_rule_falls_back_to_tested_when_the_scope_changed(self, tmp_path):\n        root = _pytest_project(tmp_path)\n        (root / 'src').mkdir()\n        (root / 'src' / 'feat.py').write_text('VALUE = 2\\n', encoding='utf-8')\n        _spec(root, 'feat')\n        _git_repo(root)\n        code, out = _run(root, '--all', '--record', '--commit')\n        assert code == 0, out\n        assert _rule_state(root, 'feat', 'RULE-1') == 'Recorded'\n\n        (root / 'src' / 'feat.py').write_text('VALUE = 3\\n', encoding='utf-8')\n        _git(root, 'add', '-A')\n        _git(root, 'commit', '-q', '-m', 'change the scoped code')\n        assert _rule_state(root, 'feat', 'RULE-1') == 'Tested'",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_a_rule_falls_back_to_tested_when_the_scope_changed",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": "def test_verify_then_sync_status_shows_the_rule_recorded(self, tmp_path):\n        root = _pytest_project(tmp_path)\n        (root / 'src').mkdir()\n        (root / 'src' / 'feat.py').write_text('VALUE = 2\\n', encoding='utf-8')\n        _spec(root, 'feat')\n        _git_repo(root)\n\n        before = _rule_state(root, 'feat', 'RULE-1')\n        assert before == 'Drafted', before\n\n        code, out = _run(root, '--all', '--record', '--commit')\n        assert code == 0, out\n        assert 'Record committed as developer.' in out, out\n\n        record = _newest_record(root, 'feat')\n        assert isinstance(record['scope_tree'], str), record['scope_tree']\n        assert record['proofs'][0]['id'] == 'PROOF-1'\n        assert record['proofs'][0]['status'] == 'pass'\n        assert record['feature'] == 'feat'\n        assert record['gate'] == 'tested'\n\n        # The record is one commit behind HEAD, which is the case the scope\n        # tree exists to cover.\n        assert record['commit'] != _head(root)\n        assert _rule_state(root, 'feat', 'RULE-1') == 'Recorded'",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_verify_then_sync_status_shows_the_rule_recorded",
+      "proof": "PROOF-20",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "99a95f8c3ccf20344df7e627521aec8caa5e6178a3b42e0147b494b4a9b631a0",
+  "verdict": "add a case"
+}

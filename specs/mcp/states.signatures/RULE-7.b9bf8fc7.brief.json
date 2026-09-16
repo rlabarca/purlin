@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T21:09:49Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "2702c6de296763c442871884efdccb3fe0dccefe1a21f58dad3000ec23a1751d",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-7",
+      "text": "Build the rule state with a brief whose triple hash equals the rule's own; verify the state is `Reviewed`. Repeat with a brief whose triple hash is 64 `f` characters and verify the state falls back to `Proof ready`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-7 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/states/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-7",
+  "rule_hash": "9455a24e859f7eb4365fa9cdcc57d1ae0639ce2b8fdafc6b787ef439efa15aca",
+  "rule_text": "A rule is Reviewed when a brief exists for its current rule, proof and test hashes together; a brief written for other text is no brief at all",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "8b0dc460ec14b94f785effce1017db7e3fd3da6e63e6ba53ef728f734582b1e8",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_reviewed_when_a_brief_matches_the_triple(self, project):\n        rule = project.rule('RULE-2')\n        expected = purlin_signatures.triple_hash(\n            rule['rule_hash'], rule['proof_hash'], rule['test_hash'])\n        result = purlin_states.rule_state({\n            'proofs': [{'id': 'PROOF-2', 'tier': 'unit', 'env': None,\n                        'text': 'x', 'findings': []}],\n            'brief': {'triple_hash': expected},\n            'rule_hash': rule['rule_hash'], 'proof_hash': rule['proof_hash'],\n            'test_hash': rule['test_hash'], 'risk': 'low',\n        }, purlin_gate.resolve_gate({}))\n        assert result['state'] == 'Reviewed'\n        # A brief for other text is no brief at all.\n        stale = purlin_states.rule_state({\n            'proofs': [{'id': 'PROOF-2', 'tier': 'unit', 'env': None,\n                        'text': 'x', 'findings': []}],\n            'brief': {'triple_hash': 'f' * 64},\n            'rule_hash': rule['rule_hash'], 'proof_hash': rule['proof_hash'],\n            'test_hash': rule['test_hash'], 'risk': 'low',\n        }, purlin_gate.resolve_gate({}))\n        assert stale['state'] == 'Proof ready'",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_reviewed_when_a_brief_matches_the_triple",
+      "proof": "PROOF-7",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "b9bf8fc73c61f53636c9cb38d31d2d1068ced95a8054f08df78733af6a16f3a8",
+  "verdict": "add a case"
+}

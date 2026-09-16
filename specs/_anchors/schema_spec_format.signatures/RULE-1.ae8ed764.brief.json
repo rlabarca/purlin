@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "schema_spec_format",
+  "generated_at": "2026-09-16T21:09:37Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "079a13557822cf63248eefd59bc2edec62351f44ece1301136762df63416b242",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-1",
+      "text": "Read `references/formats/spec_format.md`, find the block under its `## Required sections` heading and verify it names both `## Rules` and `## Proof`; grep both format files for the retired third heading `What it does` and verify zero matches; then write a spec that carries that heading between its metadata and its `## Rules`, run `sync_status` over it, and verify the report names the spec, that the built payload lists its rules as exactly `[\"RULE-1\"]`, and that the report carries zero warnings",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/schema_spec_format/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-1",
+  "rule_hash": "8ac01e3f8ddc094ac3dd0ebbc2081d24c9560b0420d41a065ef72c7131e85559",
+  "rule_text": "A spec carries two sections, `## Rules` and `## Proof`, and the format names no third; a spec carrying a heading the format does not name still parses, its rules are still read, and nothing is reported about the extra heading",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "7145d1bee24c7af696b2f3f0d9737115f8eadcd74f0abc789b3a9bc61dfd608a",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_format_documents_two_sections(self):\n        formats = os.path.join(PROJECT_ROOT, 'references', 'formats')\n        with open(os.path.join(formats, 'spec_format.md')) as f:\n            content = f.read()\n        # Find the Required Sections area specifically\n        req_match = re.search(\n            r'## Required [Ss]ections\\s*\\n(.*?)(?=^## |\\Z)', content,\n            re.MULTILINE | re.DOTALL\n        )\n        assert req_match, \"No '## Required sections' heading in spec_format.md\"\n        req_section = req_match.group(1)\n        assert '## Rules' in req_section, \\\n            \"'## Rules' not listed in Required Sections\"\n        assert '## Proof' in req_section, \\\n            \"'## Proof' not listed in Required Sections\"\n\n        # No third section is part of the format: neither format file names the\n        # retired `## What it does` heading.\n        for name in ('spec_format.md', 'anchor_format.md'):\n            with open(os.path.join(formats, name)) as f:\n                text = f.read()\n            assert 'What it does' not in text, (\n                f\"{name} still names the retired `## What it does` heading; \"\n                \"the format defines two sections and no third\")\n\n        # A spec written against the older three-section format still parses:\n        # the heading is ignored, not rejected, so a consumer's existing specs\n        # keep working after the format drops it.\n        project_root = tempfile.mkdtemp()\n        try:\n            os.makedirs(os.path.join(project_root, '.purlin'))\n            spec_dir = os.path.join(project_root, 'specs', 'test')\n            os.makedirs(spec_dir)\n            with open(os.path.join(spec_dir, 'legacy_feat.md'), 'w') as f:\n                f.write(\n                    '# Feature: legacy_feat\\n\\n'\n                    '> Description: A spec authored against the 3-section format\\n\\n'\n                    '## What it does\\n\\nIt does the legacy thing.\\n\\n'\n                    '## Rules\\n- RULE-1: The legacy rule still counts\\n\\n'\n                    '## Proof\\n- PROOF-1 (RULE-1): Test the legacy rule\\n'\n                )\n            result = purlin_status.sync_status(project_root)\n            assert 'legacy_feat' in result, (\n                \"a spec carrying `## What it does` was not parsed at all:\\n\"\n                f\"{result}\")\n            data = purlin_payload.build_payload(project_root)\n            feature = next(f for f in data['features']\n                           if f['name'] == 'legacy_feat')\n            assert [r['id'] for r in feature['rules']] == ['RULE-1'], (\n                \"the rule of a spec carrying `## What it does` is missing:\"\n                f\"\\n{feature['rules']}\")\n            assert 'WARNING' not in result, (\n                \"an ignored heading must not be reported as a defect: a \"\n                f\"consumer's older specs keep working:\\n{result}\")\n        finally:\n            shutil.rmtree(project_root)",
+      "file": "dev/test_schema_spec_format.py",
+      "findings": [],
+      "name": "test_format_documents_two_sections",
+      "proof": "PROOF-1",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "ae8ed764dc1637a53beb5e267510548f6f039f41a58b3fe5f4ce2a04fbd869fa",
+  "verdict": "ready"
+}

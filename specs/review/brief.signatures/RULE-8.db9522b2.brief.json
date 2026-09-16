@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "brief",
+  "generated_at": "2026-09-16T21:09:05Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "cfb2fd627dff000084228f68dd901ffe037d01e20d9feab2714c3e39328b7b82",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-9",
+      "text": "Retag the proof `@manual` and build the brief; verify the test entry names no file and its findings are exactly `manual`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-9 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/brief/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-8",
+  "rule_hash": "8384bd3daf5e736ab810a09c578f50c53e75a39222335fa3e9cd3937db4b1f80",
+  "rule_text": "A `@manual` proof carries a note where a test would be and no test file, because its evidence is the approver's own",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "c5fbf27981a740be43caa5bc8e2b919feda54e2915ceec7f765c5629f282da52",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_manual_proof_has_a_note_where_a_test_would_be(self):\n        made = Project(spec=SPEC.replace(\n            'verify 200 and a token @integration',\n            'verify 200 and a token @manual'))\n        try:\n            test = build(made, 'RULE-1')['tests'][0]\n            assert test['file'] is None\n            assert test['findings'] == ['manual']\n        finally:\n            made.close()",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_a_manual_proof_has_a_note_where_a_test_would_be",
+      "proof": "PROOF-9",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "db9522b266daaefc8dca3291d50e965c5f77f64080d92d7b6b800a0c8edf2068",
+  "verdict": "add a case"
+}

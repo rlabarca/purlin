@@ -1,0 +1,48 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-16T21:09:55Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "94fa18fcbc1af2a60a033d5b93de73f403a7cfb716c8f1c15e523abe5db5ac9b",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-34",
+      "text": "Run the command with `--json` over a TypeScript file carrying a tautological test, an empty body and a real assertion; verify the three results read `tautology`, `no_assertion` and `pass`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/static_checks/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-9",
+  "rule_hash": "2452ad168477ab97031a62d0e9a949afb1c773f80949ecd98ff73d7cefdc353e",
+  "rule_text": "A JavaScript or TypeScript body asserting `expect(true).toBe(true)` is reported `tautology`, a body with no `expect(` call is reported `no_assertion`, and a body with a real assertion passes",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "ae36b811487c45f0e80001a8f17a284236fcd0f633bdc8dfe2c953dbc871fe0f",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_check_js_assertion_detection(self):\n        \"\"\"tautology and no_assertion are detected in JS/TS bodies; clean tests pass.\"\"\"\n        proofs = self._run('''\nimport { it, expect } from \"vitest\";\n\nit(\"tautological [proof:jsfeat:PROOF-1:RULE-1]\", () => {\n  expect(true).toBe(true);\n});\n\nit(\"empty body [proof:jsfeat:PROOF-2:RULE-2]\", () => {\n  const x = 5;\n});\n\nit(\"real assertion [proof:jsfeat:PROOF-3:RULE-3]\", () => {\n  expect(2 + 2).toBe(4);\n});\n''', \"jsfeat\")\n\n        assert proofs[\"PROOF-1\"][\"status\"] == \"fail\"\n        assert proofs[\"PROOF-1\"][\"check\"] == \"tautology\"\n        assert proofs[\"PROOF-2\"][\"status\"] == \"fail\"\n        assert proofs[\"PROOF-2\"][\"check\"] == \"no_assertion\"\n        assert proofs[\"PROOF-3\"][\"status\"] == \"pass\"\n\n        # RULE-27: check_js returns the same JSON shape as check_python \u2014\n        # every proof dict carries proof_id, rule_id, test_name, status, reason.\n        for pid in (\"PROOF-1\", \"PROOF-2\", \"PROOF-3\"):\n            entry = proofs[pid]\n            for field in (\"proof_id\", \"rule_id\", \"test_name\", \"status\", \"reason\"):\n                assert field in entry, f\"{pid} missing '{field}' (shape must match check_python): {entry}\"\n        assert proofs[\"PROOF-1\"][\"rule_id\"] == \"RULE-1\"\n        assert proofs[\"PROOF-3\"][\"test_name\"].startswith(\"real assertion\")",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_check_js_assertion_detection",
+      "proof": "PROOF-34",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "88a99cba5e66820d4023bc780ad61c81c7a17bdfef733da7f66531ee86049398",
+  "verdict": "ready"
+}

@@ -1,0 +1,84 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "mutation",
+  "generated_at": "2026-09-16T21:09:13Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "7fe73633674d128e860a3f1e49ae7c220c2a7b08c0f5396ac93f2178597e3879",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-17",
+      "text": "Call `source_file(\"login.session.x__mutmut_1\", [\"src\", \"src/login/session.py\"])`; verify the deeper entry wins. Group breaks over two scope files; verify each file carries its own caught and missed counts and that a break in a module no entry covers is left out. Run the engine over a feature with two scope files; verify every rule of that feature carries the feature's total with `attribution: \"per_scope\"`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-17 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/mutation/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-17",
+  "rule_hash": "0121653a3a61c5e3c4d0b773cb8cb02e60363c0aeb7c50645932885d8380076f",
+  "rule_text": "A mutmut break is attributed to the scope entry whose last path segments match the most of the break's module name, a break no scope entry covers is left out, and every rule of a feature carries that feature's scope number with `attribution: \"per_scope\"`",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "70e9ae54c3115e0ba3bb0a7ac889cbb7f61751c790c1ffa75d4bb317a22766fa",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_break_is_owned_by_the_scope_entry_that_matches_deepest():\n    scope = ['src', 'src/login/session.py']\n    assert mutmut.source_file('login.session.x_lock__mutmut_1',\n                              scope) == 'src/login/session.py'\n    assert mutmut.source_file('login.session.Session.x_reset__mutmut_1',\n                              ['src/login/session.py']) == 'src/login/session.py'\n    assert mutmut.source_file('calc.ops.x_add__mutmut_1', ['calc']) == 'calc'\n    assert mutmut.source_file('other.thing.x_go__mutmut_1',\n                              ['src/login/session.py']) is None",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_a_break_is_owned_by_the_scope_entry_that_matches_deepest",
+      "proof": "PROOF-17",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_break_outside_every_scope_is_left_out():\n    entries = mutmut.parse_results(read_fixture('mutmut_results.txt'))\n    counts = mutmut.group_by_file(entries, ['src/login/session.py'])\n    assert list(counts) == ['src/login/session.py']\n    assert sum(pair['killed'] + pair['survived']\n               for pair in counts.values()) == 6",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_a_break_outside_every_scope_is_left_out",
+      "proof": "PROOF-17",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_mutmut_run_scores_every_rule_of_a_feature_the_same(tmp_path, monkeypatch):\n    (tmp_path / 'pyproject.toml').write_text(\n        '[project]\\n' + mutmut.mutmut_config_block(['src'], ['tests']),\n        encoding='utf-8')\n    seen = []\n\n    def execute(command, cwd, report_path=None):\n        seen.append(command)\n        if command[1] == 'results':\n            return 0, read_fixture('mutmut_results.txt')\n        return 0, 'done'\n\n    monkeypatch.setattr(mutmut, 'binary', lambda root=None: '/usr/bin/mutmut')\n    monkeypatch.setattr(mutmut, 'execute', execute)\n    answer = mutmut.run(str(tmp_path),\n                        {'login': ['src/login/session.py'],\n                         'reports': ['src/reports/render.py']},\n                        {('login', 'RULE-1'): [],\n                         ('login', 'RULE-2'): [],\n                         ('reports', 'RULE-1'): []}, 'unit')\n    assert seen[0] == ['mutmut', 'run']\n    assert seen[1] == ['mutmut', 'results', '--all', 'true']\n    assert answer['engine'] == 'mutmut'\n    assert answer['available'] is True\n    login = answer['features']['login']\n    assert login['scope_score'] == {'score': 67, 'killed': 4, 'survived': 2}\n    for rule in ('RULE-1', 'RULE-2'):\n        assert login['rules'][rule] == {\n            'engine': 'mutmut', 'score': 67, 'killed': 4, 'survived': 2,\n            'attribution': 'per_scope'}\n    assert answer['features']['reports']['rules']['RULE-1']['score'] == 0",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_a_mutmut_run_scores_every_rule_of_a_feature_the_same",
+      "proof": "PROOF-17",
+      "reasons": []
+    },
+    {
+      "body": "def test_breaks_are_grouped_by_the_file_they_changed():\n    entries = mutmut.parse_results(read_fixture('mutmut_results.txt'))\n    counts = mutmut.group_by_file(entries, ['src/login/session.py',\n                                            'src/reports/render.py'])\n    assert counts['src/login/session.py'] == {'killed': 4, 'survived': 2}\n    assert counts['src/reports/render.py'] == {'killed': 0, 'survived': 1}",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_breaks_are_grouped_by_the_file_they_changed",
+      "proof": "PROOF-17",
+      "reasons": []
+    },
+    {
+      "body": "def test_each_feature_gets_the_total_for_its_own_files():\n    entries = mutmut.parse_results(read_fixture('mutmut_results.txt'))\n    totals = mutmut.score_by_feature(entries,\n                                     {'login': ['src/login/session.py'],\n                                      'reports': ['src/reports/render.py']})\n    assert totals == {'login': {'killed': 4, 'survived': 2},\n                      'reports': {'killed': 0, 'survived': 1}}",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_each_feature_gets_the_total_for_its_own_files",
+      "proof": "PROOF-17",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "1b0ecb627dfa56128cd5cf71c42ccb9899e0ef00e8626ca780c395323e38063e",
+  "verdict": "add a case"
+}

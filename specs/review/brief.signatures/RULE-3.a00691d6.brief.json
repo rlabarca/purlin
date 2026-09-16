@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "brief",
+  "generated_at": "2026-09-16T21:09:05Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "8b45639481b9314f58e60f969454b7bafb3a1bffaccd10d2549dd635c0efb5e5",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-4",
+      "text": "Build the brief for a `[risk: high]` rule; verify its layers are `proof text`, `test body`, `test strength`, `model review` in that order",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-4 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/brief/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-3",
+  "rule_hash": "d3efc084a867a20844c37c73999a7c6ad651a1a72e27c92e20f371e7a161ee7e",
+  "rule_text": "A high-risk rule's brief runs all four layers, the model review last",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "dfa54fc13100ef4ea7f4067ba121eafc32d3b0993d11e62548979d1a7ab941c8",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_high_risk_runs_every_layer(self, proved):\n        assert build(proved, 'RULE-2')['layers'] == [\n            'proof text', 'test body', 'test strength', 'model review']",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_high_risk_runs_every_layer",
+      "proof": "PROOF-4",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a00691d6e687f5d0410cdbc2db94d3bd77bacc37995df1f0bd65b78a8e11f159",
+  "verdict": "add a case"
+}

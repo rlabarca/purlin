@@ -1,0 +1,102 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "config_engine",
+  "generated_at": "2026-09-16T21:09:07Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "eedf19593e2c8379d0eb3d1d74582cd828ecd92651995b6aed9bfe87cba02de5",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-4",
+      "text": "Write `config.json` holding `{\"team\": \"default\", \"shared\": \"base\"}` and `config.local.json` holding `{\"shared\": \"override\", \"local_only\": true}`; resolve the config and verify the result is exactly `{\"team\": \"default\", \"shared\": \"override\", \"local_only\": true}`",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-11",
+      "text": "Write `config.json` holding `{\"digest\": \"auto\", \"version\": \"0.9.0\"}` and `config.local.json` holding `{\"pre_push\": \"strict\"}`; resolve the config and verify all 3 keys are present, so a new framework default stays visible through an existing local override",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-4 happy_path_only: No proof of this rule names a rejection, an error or a boundary.",
+    "PROOF-11 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/config_engine/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-4",
+  "rule_hash": "1040d8728bcdfc6d5873857a67d7c9be034414beea2fdea10ef931c3d3205143",
+  "rule_text": "The merged config is `config.json` with `config.local.json` laid over it: a local key wins where both name it, a base key survives where the local file does not, and a key only the local file names is included",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "37124cd3c10551d8138f076e2537babaa01b43abbfdfb96f14bb90bb7c745b95",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_cli_dump(self):\n        with open(os.path.join(self.purlin_dir, 'config.json'), 'w') as f:\n            json.dump({\"team\": \"default\"}, f)\n        with open(os.path.join(self.purlin_dir, 'config.local.json'), 'w') as f:\n            json.dump({\"local\": True}, f)\n\n        script = os.path.join(os.path.dirname(__file__), '..', 'scripts', 'mcp', 'config_engine.py')\n        env = {**os.environ, 'PURLIN_PROJECT_ROOT': self.project_root}\n\n        r = subprocess.run(\n            [sys.executable, script, '--dump'],\n            capture_output=True, text=True, cwd=self.project_root, env=env,\n        )\n        assert r.returncode == 0\n        data = json.loads(r.stdout)\n        # Must show merged result\n        assert data[\"team\"] == \"default\"\n        assert data[\"local\"] is True",
+      "file": "dev/test_config_engine.py",
+      "findings": [],
+      "name": "test_cli_dump",
+      "proof": "PROOF-4",
+      "reasons": []
+    },
+    {
+      "body": "def test_dump_in_process_shows_the_merged_config(self):\n        with open(os.path.join(self.purlin_dir, 'config.json'), 'w') as f:\n            json.dump({\"team\": \"default\"}, f)\n        with open(os.path.join(self.purlin_dir, 'config.local.json'), 'w') as f:\n            json.dump({\"local\": True}, f)\n        code, out = self._main('--dump')\n        assert code == 0\n        assert json.loads(out) == {\"team\": \"default\", \"local\": True}",
+      "file": "dev/test_config_engine.py",
+      "findings": [],
+      "name": "test_dump_in_process_shows_the_merged_config",
+      "proof": "PROOF-4",
+      "reasons": []
+    },
+    {
+      "body": "def test_empty_local_returns_shared(self):\n        \"\"\"Empty local override file means all shared keys visible.\"\"\"\n        self._write_shared({\"version\": \"0.9.0\", \"report\": True})\n        self._write_local({})\n        result = resolve_config(self.project_root)\n        assert result == {\"version\": \"0.9.0\", \"report\": True}",
+      "file": "dev/test_config_engine.py",
+      "findings": [],
+      "name": "test_empty_local_returns_shared",
+      "proof": "PROOF-4",
+      "reasons": []
+    },
+    {
+      "body": "def test_local_only_keys_included(self):\n        \"\"\"Keys in local that aren't in shared are still in the merge.\"\"\"\n        self._write_shared({\"version\": \"0.9.0\"})\n        self._write_local({\"custom_setting\": 42})\n        result = resolve_config(self.project_root)\n        assert result == {\"version\": \"0.9.0\", \"custom_setting\": 42}",
+      "file": "dev/test_config_engine.py",
+      "findings": [],
+      "name": "test_local_only_keys_included",
+      "proof": "PROOF-4",
+      "reasons": []
+    },
+    {
+      "body": "def test_merge_base_with_overrides(self):\n        \"\"\"Local keys win, base keys preserved, local-only keys included.\"\"\"\n        self._write_shared({\"team\": \"default\", \"shared\": \"base\"})\n        self._write_local({\"shared\": \"override\", \"local_only\": True})\n        result = resolve_config(self.project_root)\n        assert result == {\"team\": \"default\", \"shared\": \"override\", \"local_only\": True}",
+      "file": "dev/test_config_engine.py",
+      "findings": [],
+      "name": "test_merge_base_with_overrides",
+      "proof": "PROOF-4",
+      "reasons": []
+    },
+    {
+      "body": "def test_framework_new_key_visible_through_existing_local(self):\n        \"\"\"When framework adds a new key to config.json, it's visible even\n        when config.local.json already exists with unrelated overrides.\n        This is the scenario that broke with copy-on-first-access.\"\"\"\n        self._write_shared({\"digest\": \"auto\", \"version\": \"0.9.0\"})\n        self._write_local({\"pre_push\": \"strict\"})\n        result = resolve_config(self.project_root)\n        assert result[\"digest\"] == \"auto\", \"new framework key must be visible\"\n        assert result[\"version\"] == \"0.9.0\", \"shared key preserved\"\n        assert result[\"pre_push\"] == \"strict\", \"local override preserved\"",
+      "file": "dev/test_config_engine.py",
+      "findings": [],
+      "name": "test_framework_new_key_visible_through_existing_local",
+      "proof": "PROOF-11",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "de9b31e4f6359ec336d0cd98adf67f7ae5d93576778ad2985effa2eb20a5faa8",
+  "verdict": "add a case"
+}

@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "mutation",
+  "generated_at": "2026-09-16T21:09:13Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "13e62a77ed5f2d518c7197e7be0bb017b059e4144d6f5f41b6817e08fe101a50",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-18",
+      "text": "Take `mutmut` off the PATH and run the engine; verify the answer's engine is `none`, that it is not available, and that the reason names `pip install mutmut`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/mutation/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-18",
+  "rule_hash": "dc02df128e04c6d556b40562974d5238589a4f89347242815384458211cbdb7b",
+  "rule_text": "Without mutmut installed there is no engine and the reason names `pip install mutmut`",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "32ec5fe0429f9eb87ff5ed720b4b00b3dac530fc4ba4eac041da82fed0fd036a",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_mutmut_missing_leaves_no_engine(monkeypatch):\n    monkeypatch.setattr(mutmut, 'binary', lambda root=None: None)\n    answer = mutmut.run('/project', {'login': ['src/login/session.py']},\n                        {('login', 'RULE-1'): []}, None)\n    assert answer['engine'] == 'none'\n    assert 'pip install mutmut' in answer['reason']\n    assert answer['features']['login']['rules']['RULE-1'][\n        'attribution'] == 'unavailable'",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_mutmut_missing_leaves_no_engine",
+      "proof": "PROOF-18",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "e115d5f27331a48bb42c757158efa91c0a68ab7b34a19c7ad143f910ee85463c",
+  "verdict": "ready"
+}

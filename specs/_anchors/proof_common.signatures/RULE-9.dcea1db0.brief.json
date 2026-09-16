@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "proof_common",
+  "generated_at": "2026-09-16T21:09:16Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "b92279dda8008705517ea3ba157614074ec1836fab12c23ae8e2f7dd2bec8ff2",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-9",
+      "text": "Run a suite holding no proof marker and verify the run exits zero and `.purlin/runtime/proofs/` holds no file, in `dev/test_multilang_proof_plugins.py`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/proof_common/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-9",
+  "rule_hash": "2eb76b03312041ed8b1e1fc3370fefdd3b96ed881713b6d363aa964f164aa2bf",
+  "rule_text": "A run that collected no proof marker writes no proof file and exits zero, so a suite that has nothing to say about a spec says nothing",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "6f1c124dc0f2daa46f85521ec2ad9e3ef063ce6bead6cf81fda8d806bd44a3ba",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_no_markers_no_proof_files(tmp_path):\n    \"\"\"A run that collected no marker writes nothing at all.\"\"\"\n    root = _project(tmp_path)\n    result = _run_pytest_with_plugin(root, \"\"\"\n        def test_plain():\n            assert 1 == 1\n    \"\"\")\n    assert result.returncode == 0, result.stdout + result.stderr\n    assert _proof_files(root) == []\n\n    child = _run_pytest_child(root)\n    assert child.returncode == 0, child.stdout + child.stderr\n    assert _proof_files(root) == []",
+      "file": "dev/test_proof_plugins_missing.py",
+      "findings": [],
+      "name": "test_no_markers_no_proof_files",
+      "proof": "PROOF-9",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "dcea1db01f40695952c9baaa623d8a41f59ab900dc0725d6bb6b90b75e38e70b",
+  "verdict": "ready"
+}

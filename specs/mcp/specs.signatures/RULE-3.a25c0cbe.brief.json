@@ -1,0 +1,56 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "specs",
+  "generated_at": "2026-09-16T21:09:47Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "671dbb658a8340c79f169fbbeaaf83333c0b1c2cc238634afd5aeb23a345a4e2",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-4",
+      "text": "Call the rule text hash on `Tokens expire after 24 hours`, then call it on the text left by splitting `Tokens  expire   after 24 hours [risk: high]`; verify the two hashes are equal, so neither a doubled space nor a tag stales the approval that binds the rule",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-4 logic_mirroring"
+  ],
+  "record": ".purlin/records/specs/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-3",
+  "rule_hash": "dd43542a41a23f7c46b12e4a347a3532d8a814e71f3fcd7e92a0d5986f247a0b",
+  "rule_text": "The rule and proof text hashes normalise runs of whitespace to one space, so reflowing or retagging a line returns the hash it already had",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "62f5ac8e6e019d18b955de19ad6e30fd0d613ff506c10440b242f2d9d5412fdf",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_hash_ignores_the_tags_and_the_whitespace(self):\n        plain = purlin_specs.rule_text_hash('Tokens expire after 24 hours')\n        tagged, _meta = purlin_specs.split_rule_tags(\n            'Tokens  expire   after 24 hours [risk: high]')\n        assert purlin_specs.rule_text_hash(tagged) == plain, (\n            're-tagging or reflowing a rule must not stale its approval')",
+      "file": "dev/test_mcp_server.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_the_hash_ignores_the_tags_and_the_whitespace",
+      "proof": "PROOF-4",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "a25c0cbe70d58dcb33dc480d4b22d6091977891cac378994ca4e4687849bb795",
+  "verdict": "needs a human"
+}

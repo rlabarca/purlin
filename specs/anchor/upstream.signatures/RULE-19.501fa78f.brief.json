@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "upstream",
+  "generated_at": "2026-09-16T21:10:08Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "138914907087c609085d7b915c74ec6bb3adb6ea33ad0c40f4cb68bb55c87a89",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-19",
+      "text": "Run `propose` on an edited copy and verify the printed commands include `git checkout -b purlin/no_eval`, `gh pr create` and `az repos pr create`; then build the commands for `https://github.com/acme/policies.git` and verify the last is exactly `gh pr create --fill`, and for `https://dev.azure.com/acme/_git/policies` and verify the last begins `az repos pr create`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-19 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/upstream/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-19",
+  "rule_hash": "009070719900aa405e6534319b7f5b7b4190d408edf652e5849fe376949c33d8",
+  "rule_text": "`propose` prints the commands that carry the patch upstream, ending with the one the source's git host takes: `gh pr create` for GitHub and `az repos pr create` for Azure DevOps",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "5966f1ec7a10b865c4d7ed827c235a2421b7846222fe59aeefa7a16fdb16e766",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_propose_names_the_command_for_the_git_host(workspace):\n    _add(workspace)\n    _add_local_rule(workspace)\n    result = upstream.propose(workspace.root, 'no_eval')\n    joined = ' '.join(result['commands'])\n    assert 'git checkout -b purlin/no_eval' in joined\n    assert 'gh pr create' in joined\n    assert 'az repos pr create' in joined\n\n    github = upstream._propose_commands(\n        'https://github.com/acme/policies.git', 'no_eval', 'p.patch')\n    assert github[-1] == 'gh pr create --fill'\n    ado = upstream._propose_commands(\n        'https://dev.azure.com/acme/_git/policies', 'no_eval', 'p.patch')\n    assert ado[-1].startswith('az repos pr create')",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_propose_names_the_command_for_the_git_host",
+      "proof": "PROOF-19",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "501fa78ff6a0fb1eba031f87f5bada8f91838ae2bc679a3bcac24185bd86052e",
+  "verdict": "add a case"
+}

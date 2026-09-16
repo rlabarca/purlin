@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "brief",
+  "generated_at": "2026-09-16T21:09:06Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "133a0f3a8ad6f12eab2a200d9a066fa647cb85dbd57dd6e92c1dd45906df1606",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-17",
+      "text": "Build the brief for a recorded high-risk rule with no finding; verify the verdict is `ready`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-17 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/brief/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-13",
+  "rule_hash": "aaadd5e91aa8c774477240008460076161fec7dcef675b0b058c0be79d8014c4",
+  "rule_text": "A rule with no finding anywhere and enough test strength gets the verdict `ready`",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "98e6336baadfa735094b5a8a275927a2a50fbdbc28084d94087fc0e4f404f7d5",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_clean_rule_is_ready(self, proved):\n        assert build(proved, 'RULE-2')['verdict'] == 'ready'",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_a_clean_rule_is_ready",
+      "proof": "PROOF-17",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "9759dd589671bacc5d9c1ca669d9415ae62f185044ee3fc5c9e463fe19ca675f",
+  "verdict": "add a case"
+}

@@ -1,0 +1,70 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-16T21:09:42Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "7be3f48391d971126c0e8c7d4cf8481aad454b314905fb3b1caa20bca0f08da9",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-34",
+      "text": "Run the gate at gate `recorded` over a record committed under the build identity; verify it exits 0 and prints `gate = recorded`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-35",
+      "text": "Run the gate at gate `recorded` over a record a person committed; verify it exits 1, opens `Not recorded (2):` and gives the reason `no record CI wrote covers this commit`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-34 happy_path_only: No proof of this rule names a rejection, an error or a boundary.",
+    "PROOF-35 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/signatures/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-26",
+  "rule_hash": "149fa568084f2f7ee392c83aa130bfb4ad441eedbe242a0422716206ef5fdb20",
+  "rule_text": "At gate `recorded` only a record CI committed counts, and a record a person committed is reported as no record at all",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "5c61abe231484bb18abb2728746266bf058ec1d892e3f63406f0d521c4e37046",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_record_ci_committed_passes(self):\n        made = project_at('recorded')\n        try:\n            code, output = run(made)\n            assert code == 0, output\n            assert 'verify-gate: gate = recorded' in output\n        finally:\n            made.close()",
+      "file": "dev/test_verify_gate.py",
+      "findings": [],
+      "name": "test_a_record_ci_committed_passes",
+      "proof": "PROOF-34",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_developer_record_does_not_count(self):\n        made = project_at('recorded', by_ci=False)\n        try:\n            code, output = run(made)\n            assert code == 1\n            assert 'Not recorded (2):' in output\n            assert 'no record CI wrote covers this commit' in output\n        finally:\n            made.close()",
+      "file": "dev/test_verify_gate.py",
+      "findings": [],
+      "name": "test_a_developer_record_does_not_count",
+      "proof": "PROOF-35",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "8899a60b9c5a5cd776e3c3732cc22b2a0bf612913970ec879ad93a8e14af1f41",
+  "verdict": "add a case"
+}

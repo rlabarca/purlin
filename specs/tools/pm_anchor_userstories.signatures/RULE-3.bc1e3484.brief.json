@@ -1,0 +1,48 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "pm_anchor_userstories",
+  "generated_at": "2026-09-16T21:09:14Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "ad7bdd9ef42e8f0bc4f23c848d40152ae1f1e7f1eee21b5ce2fc6e830dc2cdce",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-3",
+      "text": "Read `tools/PM/purlin-anchor-userstories.md`; verify the owner-comment section names `[origin: eng]` and `[origin: qa]`, carries `Never edit its text` and `never delete it`, and shows a pull request comment carrying a `RULE-` id. Deleting the section fails naming `[origin: qa]`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/pm_anchor_userstories/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-3",
+  "rule_hash": "102d953ae9bc5b0ba06be51a5301088b6d89675583e9c8989b78ea9186c7fe1d",
+  "rule_text": "A rule tagged `[origin: eng]` or `[origin: qa]` is never edited and never deleted, whoever asks: the proposed replacement goes in a pull request comment naming the rule id",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "235cb50e9ed8d5d5f0e0c151f8400efc1239ce03dc688d93475c86b220691523",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_rule_owned_by_someone_else_is_left_alone(self):\n        assert pm_owner_problems() == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_a_rule_owned_by_someone_else_is_left_alone",
+      "proof": "PROOF-3",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "bc1e34843978758bc95ab42a692f95a99a6ab5f8d6bff7431c6a00ef4cb75a61",
+  "verdict": "ready"
+}

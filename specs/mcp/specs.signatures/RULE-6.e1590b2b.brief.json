@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "specs",
+  "generated_at": "2026-09-16T21:09:47Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "336a7a3481e75ff98811062dd60ba1da6513fd4c8c3fe1bba292159eb230a832",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-7",
+      "text": "Split `Lock it @env(macos) @env(windows)`; verify the operating system read is `windows` and the unknown tags are exactly `[\"@env(macos)\"]`, so the second tag is refused rather than merged",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/specs/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-6",
+  "rule_hash": "fa0d3a02cd1ca069fac1d6057e1f995763ef188f7ace65773e64e6eb66b7e81f",
+  "rule_text": "At most one `@env` per proof: the trailing one is the one read and the earlier one is listed as an unknown tag rather than merged with it",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "9b4329930a700eaea14e07a523daf1e5979a5ee89497e2a7a4849ae4b4530a8d",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_second_env_tag_is_refused_not_merged(self):\n        _clean, _tier, env, unknown = purlin_specs.split_proof_tags(\n            'Lock it @env(macos) @env(windows)')\n        assert env == 'windows', 'the trailing tag is the one that is read'\n        assert unknown == ['@env(macos)'], unknown",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_a_second_env_tag_is_refused_not_merged",
+      "proof": "PROOF-7",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "e1590b2bb81d74448dcae4874cddda86c0fd35bb889cc4a5919c1a2599487588",
+  "verdict": "ready"
+}

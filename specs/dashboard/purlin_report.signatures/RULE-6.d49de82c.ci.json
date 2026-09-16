@@ -1,0 +1,18 @@
+{
+  "brief": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "gate": "approved",
+  "note": null,
+  "proof_hash": "e1cf542f9588f777bd273b41c90c57885069a2d04e8f43327c571d9cc6200266",
+  "record": ".purlin/records/purlin_report/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-6",
+  "rule_hash": "bb17ff49ebcea6a4bc7b8e437a45082a98dc60471f12f89e73fe201b1ede962d",
+  "schema": "purlin-signature/1",
+  "signer": "ci",
+  "test_hash": "b741936508906f137565830a22048f638313d229a5200e4c1fd697efeb047761",
+  "test_hash_kind": "file",
+  "timestamp": "2026-09-16T21:08:58Z",
+  "triple": "d49de82cc1219904"
+}

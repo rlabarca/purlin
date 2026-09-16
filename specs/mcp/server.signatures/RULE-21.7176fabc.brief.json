@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "server",
+  "generated_at": "2026-09-16T21:09:40Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "63d6357df733eb3e68786e600c1c9889333a70fd9183efc5d82b637e9f233ad0",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-21",
+      "text": "Read `hooks/hooks.json` and verify its event keys are exactly `PostToolUse`, `SubagentStop` and `Stop`, that the first matcher is `Bash|Write|Edit|MultiEdit`, that all 3 entries are commands with an integer timeout that run without waiting, that every command is exactly the interpreter resolver invoked on the hook script, that the token `python3` appears nowhere in the file, and that no key named `PreToolUse`, `PermissionRequest` or `UserPromptSubmit` exists",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-21 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/server/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-21",
+  "rule_hash": "c4e48c6fd8bed5a44e9383c98f67ea7eb05b7355b1cd744278c768976d3c04a4",
+  "rule_text": "`hooks/hooks.json` registers this one script under exactly the events `PostToolUse` with the matcher `Bash|Write|Edit|MultiEdit`, `SubagentStop` and `Stop`, every entry a command with an integer timeout that runs without waiting, each command reaching the script through the interpreter resolver so that no interpreter is named; no entry exists under any event through which a hook could gate or steer a turn",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "2af52a5ae4212e5b76e6fb25d30fc10d01e85ac59374ff56b479d97f4d08e111",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_hooks_json_registers_exactly_this_script_async_on_three_events(self):\n        path = os.path.join(PROJECT_ROOT, 'hooks', 'hooks.json')\n        with open(path, encoding='utf-8') as f:\n            raw = f.read()\n        manifest = json.loads(raw)\n        hooks = manifest['hooks']\n        assert set(hooks) == {'PostToolUse', 'SubagentStop', 'Stop'}, sorted(hooks)\n        for forbidden in ('PreToolUse', 'PermissionRequest', 'UserPromptSubmit'):\n            assert forbidden not in hooks\n        assert hooks['PostToolUse'][0]['matcher'] == 'Bash|Write|Edit|MultiEdit'\n        entries = [h for event in hooks.values() for group in event for h in group['hooks']]\n        assert len(entries) == 3\n        expected = ('sh \"${CLAUDE_PLUGIN_ROOT}/scripts/purlin_python.sh\" '\n                    '\"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/refresh_digest.py\"')\n        for entry in entries:\n            assert entry['type'] == 'command'\n            assert entry.get('async') is True, entry\n            assert isinstance(entry.get('timeout'), int), entry\n            assert entry['command'] == expected, (\n                'the hook command must go through the interpreter resolver, '\n                f'not name one: {entry[\"command\"]!r}')\n        # The interpreter the command must not name. `python3` is absent from\n        # a python.org install on Windows, so a hooks.json that names it\n        # registers three hooks that cannot start there.\n        assert 'python3' not in raw, (\n            f'{path} still names an interpreter: '\n            + next(line for line in raw.splitlines() if 'python3' in line))",
+      "file": "dev/test_refresh_digest_hook.py",
+      "findings": [],
+      "name": "test_hooks_json_registers_exactly_this_script_async_on_three_events",
+      "proof": "PROOF-21",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "7176fabc7d8d3557e1bb014b5aa93aaad4869ce05cf4b6aabe65759938704d2b",
+  "verdict": "add a case"
+}

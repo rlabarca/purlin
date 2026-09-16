@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-16T21:09:56Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "a2ed0791c6073c8368e382b2a69d04ecbd55d731f676120cc14d19be179f85aa",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-44",
+      "text": "Write `tests/AuthLogicTests.cs` declaring the class and a build copy under `bin/`, then resolve `Demo.Tests.AuthLogicTests.Evaluate_NullRow`; verify it returns `tests/AuthLogicTests.cs`, that a class declared nowhere returns empty, and that asking for the extension `.java` returns empty",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/static_checks/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-12",
+  "rule_hash": "c940ab2c0b0783ffb5ee520b88162f928f1c662769e4f12ea0e70f4a2e320147",
+  "rule_text": "A C# test whose record names no file has its source resolved from the fully-qualified test name, preferring the file whose stem is the declaring type, skipping build output, and returning empty when the type is declared nowhere",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "c3e5d9ac4ea93139bbe2e8e4fe094adb88b90550b736afba6816b65e772a8839",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_resolve_test_file_from_name(self):\n        \"\"\"When a proof's test_file is empty (C#/xUnit under dotnet test), the\n        source file is resolved from the fully-qualified test_name by locating the\n        declaring class \u2014 preferring the authored file over a bin/ build copy.\"\"\"\n        with tempfile.TemporaryDirectory() as root:\n            os.makedirs(os.path.join(root, 'tests'))\n            os.makedirs(os.path.join(root, 'bin'))\n            authored = os.path.join(root, 'tests', 'AuthLogicTests.cs')\n            with open(authored, 'w', encoding='utf-8') as f:\n                f.write('namespace Demo.Tests {\\n  public class AuthLogicTests {\\n'\n                        '    [Fact] public void Evaluate_NullRow() { }\\n  }\\n}\\n')\n            # A build-output copy that must be skipped.\n            with open(os.path.join(root, 'bin', 'AuthLogicTests.cs'), 'w', encoding='utf-8') as f:\n                f.write('public class AuthLogicTests { }\\n')\n\n            got = resolve_test_file_from_name(\n                'Demo.Tests.AuthLogicTests.Evaluate_NullRow', root)\n            assert got == 'tests/AuthLogicTests.cs', f\"resolved to {got!r}\"\n\n            # A test_name whose class is not declared anywhere resolves to ''.\n            assert resolve_test_file_from_name('Demo.Tests.MissingClass.X', root) == ''\n\n            # A file the walk must skip cannot win by sorting first.\n            assert resolve_test_file_from_name(\n                'Demo.Tests.AuthLogicTests.Evaluate_NullRow', root,\n                ext='.java') == '', \"the extension filter let a .cs file through\"",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_resolve_test_file_from_name",
+      "proof": "PROOF-44",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "aab7fee2362ae695ef54389083cab4d873cf7682aa24698358e77cbb369f6f6e",
+  "verdict": "ready"
+}

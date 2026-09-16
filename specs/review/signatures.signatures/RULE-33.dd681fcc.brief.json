@@ -1,0 +1,63 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-16T21:09:43Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "37421ee9f89589677118de1f81e7e86f8acdc9e620a18f5c304ecac588e885b9",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-48",
+      "text": "Run the gate over a passing project, then a failing one, then a directory holding no project; verify the exit codes are 0, 1 and 2 and that the last prints `failing closed`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-49",
+      "text": "Run the gate over a directory that does not exist; verify it exits 2 and prints `cannot read a Purlin project`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/signatures/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-33",
+  "rule_hash": "8b7d429fff3be7e4516276e1f1ecdd46eba0a1574e88f2c4906095d825392c3b",
+  "rule_text": "The gate exits 0 when it is met, 1 when it is not, and 2 when it cannot read the evidence, so an unreadable project never passes",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "2921ac0c885238dfa2902c248354fe7935a634f1411b2e79e3fd027ac4924de3",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_zero_one_and_two(self, tmp_path):\n        passing = project_at('tested', by_ci=False)\n        failing = Project(gate='tested')\n        try:\n            assert run(passing)[0] == 0\n            assert run(failing)[0] == 1\n        finally:\n            passing.close()\n            failing.close()\n        out = io.StringIO()\n        assert verify_gate.check(str(tmp_path), out=out) == 2\n        assert 'failing closed' in out.getvalue()",
+      "file": "dev/test_verify_gate.py",
+      "findings": [],
+      "name": "test_zero_one_and_two",
+      "proof": "PROOF-48",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_directory_that_is_not_a_project_never_passes(self, tmp_path):\n        out = io.StringIO()\n        code = verify_gate.check(str(tmp_path / 'nothing here'), out=out)\n        assert code == 2\n        assert 'cannot read a Purlin project' in out.getvalue()",
+      "file": "dev/test_verify_gate.py",
+      "findings": [],
+      "name": "test_a_directory_that_is_not_a_project_never_passes",
+      "proof": "PROOF-49",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "dd681fcc942df1401b89298e53bd92272c178b824b415715e1f1001b76c87427",
+  "verdict": "ready"
+}

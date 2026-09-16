@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "proof_common",
+  "generated_at": "2026-09-16T21:09:16Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "3b58b4efc791d153295c786160d159b7ecfdfd666b0dd51dc12d5970f47d555a",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-14",
+      "text": "Run a marker naming tier `integration` and a marker naming no tier and verify the first entry lands in `feat.integration.json` with `tier` reading `integration` at the top of the file and on the entry, and the second in `feat.unit.json`, with `feat.e2e.json` absent, in `dev/test_multilang_proof_plugins.py`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/proof_common/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-14",
+  "rule_hash": "d5466ffc256f9334a98575eaec1a757d9c515504ef82df3a498d6a9651f6d34c",
+  "rule_text": "The tier a marker names decides which file the entry lands in and is written on the entry and at the top of the file; a marker that names no tier is tier `unit`",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "78670eb6c7c339704c2ce9d50edeb02a8bbf6c1c8668d2ed9f68294965b58a1f",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_three_tiers_read_back_as_one_feature(self, tmp_path):\n        root = _project(tmp_path)\n        for index, tier in enumerate(('unit', 'integration', 'e2e'), start=1):\n            _shell_run(root, 'tests/%s.test.sh' % tier, 'alpha',\n                       [('PROOF-%d' % index, 'RULE-%d' % index, 'pass', tier)],\n                       tier=tier)\n        entries = _read(root)['alpha']\n        assert {e['tier'] for e in entries} == {'unit', 'integration', 'e2e'}\n        assert len(entries) == 3",
+      "file": "dev/test_proof_stress.py",
+      "findings": [],
+      "name": "test_three_tiers_read_back_as_one_feature",
+      "proof": "PROOF-14",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "f807b753ede1d0016fb849443832017da74fe07ea1618ed047c0ab9d71c929d7",
+  "verdict": "ready"
+}

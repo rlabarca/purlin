@@ -1,0 +1,59 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-16T21:10:07Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "9b3bf42e8f0351195d3c85d4d9a3627646262d4002e366f1703d17473d3fe0bd",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-21",
+      "text": "Write a `conftest.py` into the 0.10 development fixture, whose recorded `test_framework` reads `pytest,jest,shell,vitest` and which carries no `package.json`; apply everything and verify the written value is `pytest,shell` and that the output holds `dropped jest from test_framework: nothing in the tree runs it` and the same line for `vitest`. Write a `package.json` beside the `conftest.py`, apply again on a fresh copy and verify the value is still `pytest,jest,shell,vitest` and that no `dropped ... from test_framework` line was printed",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-21 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/update/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-21",
+  "rule_hash": "980d40670b9f88d92bd3e4d415d1fc51dfb50499f7ceffeedf0243aab02cdc62",
+  "rule_text": "A recorded `test_framework` name that detection does not find and the tree carries no wiring for is dropped and the drop is printed, while a name the tree does carry is kept",
+  "schema": "purlin-brief/1",
+  "state": "Proof ready",
+  "test_hash": "0f76c4444452dca0a48565615a6da5b000518266674285e8b742d6f41fe0d128",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_framework_the_tree_cannot_run_is_dropped(tmp_path, capsys):\n    \"\"\"An older release recorded every plugin it shipped, runnable or not.\"\"\"\n    root = _project(tmp_path, V010)\n    _write(root, 'conftest.py', '')\n    before = json.loads(_read(root, '.purlin/config.json'))\n    assert before['test_framework'] == 'pytest,jest,shell,vitest'\n    _apply(root)\n    printed = capsys.readouterr().out\n    assert json.loads(_read(root, '.purlin/config.json'))['test_framework'] == (\n        'pytest,shell')\n    assert 'dropped jest from test_framework: nothing in the tree runs it' in (\n        printed)\n    assert 'dropped vitest from test_framework: nothing in the tree runs it' in (\n        printed)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_a_framework_the_tree_cannot_run_is_dropped",
+      "proof": "PROOF-21",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_framework_the_tree_carries_is_kept(tmp_path, capsys):\n    \"\"\"Wiring the tree carries outranks detection, which is the stricter test.\"\"\"\n    root = _project(tmp_path, V010)\n    _write(root, 'conftest.py', '')\n    _write(root, 'package.json', '{\"name\": \"app\"}\\n')\n    _apply(root)\n    printed = capsys.readouterr().out\n    assert json.loads(_read(root, '.purlin/config.json'))['test_framework'] == (\n        'pytest,jest,shell,vitest')\n    assert 'from test_framework' not in printed",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_a_framework_the_tree_carries_is_kept",
+      "proof": "PROOF-21",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "df5976f98586ae6ebe428d98ca10385adddf3221c611a34e838ff18223abb3f6",
+  "verdict": "add a case"
+}

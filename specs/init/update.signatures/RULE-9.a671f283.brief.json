@@ -1,0 +1,88 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-16T21:10:05Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "5a2a8071458d2b670031b45ea371dee35a66e943aa3e0723921fa499854da4d1",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-9",
+      "text": "On the 0.10 fixture verify `.purlin/hooks/pre-commit` exists, apply everything and verify it is gone and untracked; write a Purlin delegator into `.git/hooks/pre-commit`, verify it is listed under the `hooks` migration and gone after the run; write a delegator calling another tool instead and verify it survives. Point the pre-push shim at an older script, verify the shim is listed, apply, and verify it names `scripts/hooks/pre-push.sh`, no longer names the old script, and still carries the rest of its body; verify a shim already pointing here is byte-identical afterwards",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-9 logic_mirroring"
+  ],
+  "record": ".purlin/records/update/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-9",
+  "rule_hash": "1210bc6c2f80fc56abf3b83b9a78d8e2719c641a45ed157661c67ff351cffb4b",
+  "rule_text": "The pre-commit shim and the delegator git ran for it are deleted and untracked, a delegator another tool wrote is left alone, and a pre-push shim pointing at an older script is repointed at `scripts/hooks/pre-push.sh` with the rest of the shim untouched",
+  "schema": "purlin-brief/1",
+  "state": "Proof ready",
+  "test_hash": "8561e5f34ecc460273cc53268115a1066874bd84dd856887608ace77e83bb8b9",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_foreign_delegator_is_left_alone(tmp_path):\n    root = _project(tmp_path, V010)\n    delegator = os.path.join(root, '.git', 'hooks', 'pre-commit')\n    with open(delegator, 'w', encoding='utf-8') as handle:\n        handle.write('#!/bin/sh\\nexec ./node_modules/.bin/lint-staged\\n')\n    _apply(root)\n    assert os.path.isfile(delegator)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_a_foreign_delegator_is_left_alone",
+      "proof": "PROOF-9",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_shim_already_pointing_here_is_left_alone(tmp_path):\n    root = _project(tmp_path, V010)\n    before = _read(root, '.purlin/hooks/pre-push')\n    _apply(root)\n    assert _read(root, '.purlin/hooks/pre-push') == before",
+      "file": "dev/test_init_update.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_a_shim_already_pointing_here_is_left_alone",
+      "proof": "PROOF-9",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_the_delegator_git_runs_goes_too(tmp_path):\n    root = _project(tmp_path, V010)\n    delegator = os.path.join(root, '.git', 'hooks', 'pre-commit')\n    with open(delegator, 'w', encoding='utf-8') as handle:\n        handle.write('#!/bin/sh\\nexec \"$(git rev-parse --show-toplevel)\"'\n                     '/.purlin/hooks/pre-commit \"$@\"\\n')\n    assert '.git/hooks/pre-commit' in [\n        item['files'] for item in update.pending(root)\n        if item['id'] == 'hooks'][0]\n    _apply(root)\n    assert not os.path.exists(delegator)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_delegator_git_runs_goes_too",
+      "proof": "PROOF-9",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_pre_commit_shim_goes(tmp_path):\n    root = _project(tmp_path, V010)\n    assert os.path.isfile(os.path.join(root, '.purlin', 'hooks', 'pre-commit'))\n    _apply(root)\n    assert not os.path.exists(\n        os.path.join(root, '.purlin', 'hooks', 'pre-commit'))\n    assert '.purlin/hooks/pre-commit' not in _tracked(root)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_pre_commit_shim_goes",
+      "proof": "PROOF-9",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_pre_push_shim_is_repointed(tmp_path):\n    root = _project(tmp_path, V010)\n    shim = '.purlin/hooks/pre-push'\n    text = _read(root, shim).replace(\n        'PURLIN_SCRIPT=\"scripts/hooks/pre-push.sh\"',\n        'PURLIN_SCRIPT=\"scripts/hooks/pre_push_hook.py\"')\n    _write(root, shim, text)\n    _git(root, 'commit', '-aqm', 'an older shim')\n    assert shim in [item['files'] for item in update.pending(root)\n                    if item['id'] == 'hooks'][0]\n    _apply(root)\n    after = _read(root, shim)\n    assert 'PURLIN_SCRIPT=\"scripts/hooks/pre-push.sh\"' in after\n    assert 'pre_push_hook.py' not in after\n    assert 'purlin_interpreter()' in after",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_pre_push_shim_is_repointed",
+      "proof": "PROOF-9",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a671f2835fbc5832bf1a389f545cc28d577b1897cb7e1274da068124ba4e8525",
+  "verdict": "needs a human"
+}

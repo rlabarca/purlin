@@ -1,0 +1,18 @@
+{
+  "brief": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "gate": "approved",
+  "note": null,
+  "proof_hash": "52ea8bc9b0ebacf6faba2162120e49cc60849b609f4bd848e1b5a65b722dd1e6",
+  "record": ".purlin/records/scaffold/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-16",
+  "rule_hash": "8d0773501f23aa9b6ca03f0571d75a2f15f2a7d1bc3a8980284f5d22b5cae386",
+  "schema": "purlin-signature/1",
+  "signer": "ci",
+  "test_hash": "65ee75f162199c8106b482c502d8c2ad12c6721e687992b87b91d087b7d9baff",
+  "test_hash_kind": "file",
+  "timestamp": "2026-09-16T21:09:00Z",
+  "triple": "810120521f1a33ea"
+}

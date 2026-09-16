@@ -1,0 +1,48 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-16T21:09:54Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "3df4df249a7bd688698b6e9d5fb170e156bb8d97e860589b3a6b68335e69a62f",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-9",
+      "text": "Run the Python checker over a marked test patching `auth.bcrypt.checkpw` against a rule reading `Passwords hashed with bcrypt`; verify its status is `fail` and its check is `mock_of_target`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/static_checks/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-6",
+  "rule_hash": "bd51593873b87ae8b67b5e3638949efd435d2cb3f46ca067e798f678cdcdf472",
+  "rule_text": "A marked Python test whose patch target names a word the rule text uses is reported `mock_of_target`",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "6dfbdbfbf6071cea377ff5bb8c53130f511ec6e471796068ddab6d949fccf3a4",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_detects_mock_matching_rule(self):\n        path = _write_tmp('''\nimport pytest\nfrom unittest.mock import patch\n\n@pytest.mark.proof(\"testfeat\", \"PROOF-1\", \"RULE-1\")\n@patch(\"auth.bcrypt.checkpw\")\ndef test_bad(mock_checkpw):\n    mock_checkpw.return_value = True\n    assert login(\"alice\") == 200\n''')\n        spec_path = _write_spec({\"RULE-1\": \"Passwords hashed with bcrypt\"})\n        try:\n            results = check_python(path, \"testfeat\", _read_rule_descriptions(spec_path))\n            assert len(results) == 1\n            assert results[0]['status'] == 'fail'\n            assert results[0]['check'] == 'mock_of_target'\n        finally:\n            os.unlink(path)\n            os.unlink(spec_path)",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_detects_mock_matching_rule",
+      "proof": "PROOF-9",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "b7025b6abfcc8a867cc53e7d98c27e2dca689077337d629df8b46b3b9afa20b4",
+  "verdict": "ready"
+}

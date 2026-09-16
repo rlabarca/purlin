@@ -1,0 +1,69 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-16T21:09:26Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "2693356f6ee8998d5f4b9b50960a0d1db410f47660a2c70e0c2dc47fe786e7ae",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-26",
+      "text": "With the records directory spelled `.purlin\\records` as Windows joins it and git replaced by a recorder, call `deleted_records()` and `commit_records(identity=\"developer\")`; verify every argument after `--` in the `ls-files` and `add` calls is free of `\\` and the records pathspec reads `.purlin/records`",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-27",
+      "text": "In a repository with two committed records, delete one on disk, write a new one and call `commit_records(identity=\"developer\")` with the new path; verify `deleted_records()` named the deleted file before the commit and that the commit carries the new record added and the old one deleted",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-26 happy_path_only: No proof of this rule names a rejection, an error or a boundary.",
+    "PROOF-27 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/records/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-24",
+  "rule_hash": "835385c5739c74608d74342744041d688e8ccddc6f3e0e6eaaba61e141f2e026",
+  "rule_text": "A developer's record commit hands git the pathspec `.purlin/records` with `/` on every operating system, both to find the records retention deleted and to stage the records, so a record commit made on Windows stages the new record and the deletions",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "d7c44dcd0b921230bf0c70e111905810fce2d41871fa36a405f7baa442eddf89",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_git_is_handed_a_forward_slash_pathspec(tmp_path, monkeypatch):\n    root = str(tmp_path)\n    os.makedirs(os.path.join(root, '.purlin', 'records'))\n    monkeypatch.setattr(records_module, 'RECORDS_DIR', '.purlin\\\\records')\n    calls = []\n\n    def fake_git(project_root, args, check=True):\n        calls.append(list(args))\n        if args[:2] == ['diff', '--cached']:\n            return ''\n        return ''\n\n    monkeypatch.setattr(records_module, '_git', fake_git)\n    records_module.deleted_records(root)\n    records_module.commit_records(\n        root, ['.purlin/records/login/20260916T120000Z-abc1234-ada.json'],\n        'developer', 'purlin: record for abc1234')\n    handed = [(args[0], args[args.index('--') + 1:]) for args in calls\n              if args[0] in ('ls-files', 'add')]\n    assert [command for command, _specs in handed] == ['ls-files', 'add'], calls\n    for command, specs in handed:\n        assert specs and not [spec for spec in specs if '\\\\' in spec], \\\n            (command, specs)\n        assert '.purlin/records' in specs, (command, specs)",
+      "file": "dev/test_records_pathspec.py",
+      "findings": [],
+      "name": "test_git_is_handed_a_forward_slash_pathspec",
+      "proof": "PROOF-26",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_commit_carries_the_new_record_and_the_deletion(tmp_path):\n    root = str(tmp_path)\n    _git(root, 'init', '-q')\n    _git(root, 'config', 'user.email', 'dev@example.com')\n    _git(root, 'config', 'user.name', 'Dev')\n    _git(root, 'config', 'commit.gpgsign', 'false')\n    old = '.purlin/records/login/20260915T120000Z-abc1234-ada.json'\n    kept = '.purlin/records/login/20260915T130000Z-abc1234-ada.json'\n    new = '.purlin/records/login/20260916T120000Z-def5678-ada.json'\n    _write(root, old)\n    _write(root, kept)\n    _git(root, 'add', '-A')\n    _git(root, 'commit', '-q', '-m', 'records')\n    os.remove(os.path.join(root, *old.split('/')))\n    _write(root, new)\n    assert records_module.deleted_records(root) == [old]\n    sha = records_module.commit_records(root, [new], 'developer',\n                                        'purlin: record for def5678')\n    assert sha\n    changed = _git(root, 'show', '--no-renames', '--name-status', '--format=', sha).split('\\n')\n    assert 'D\\t' + old in changed, changed\n    assert 'A\\t' + new in changed, changed",
+      "file": "dev/test_records_pathspec.py",
+      "findings": [],
+      "name": "test_the_commit_carries_the_new_record_and_the_deletion",
+      "proof": "PROOF-27",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "ec7f31ab13b11b4568c129f393d03a30dd66d09f6427924b941124a339989e3d",
+  "verdict": "add a case"
+}

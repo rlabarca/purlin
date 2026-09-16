@@ -1,0 +1,48 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "server",
+  "generated_at": "2026-09-16T21:09:39Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "5c23fe6ec0db44306463ec999be923c04d29db8d3a35b9c2d0e8409ada212e4b",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-6",
+      "text": "Start the server in an empty directory and send `sync_status` with `project_root` naming a real workspace; verify the answer carries the feature name `login` from that workspace",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/server/20260916T210854Z-4f36835-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-6",
+  "rule_hash": "52c01f583cb338d0d7532ecfe4373c1419be259a949feb615d5f38dc09e4a906",
+  "rule_text": "A call may name its own workspace with `project_root`, which is resolved and used for that call alone; without it the tool uses the root the server resolved at startup",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "4c708da68093186d7a89195e96b2ceca5e23b6b67dc46735122b4d579c136e56",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_project_root_can_be_named_per_call(self, project, tmp_path):\n        responses, _stderr = _rpc(str(tmp_path), {\n            'jsonrpc': '2.0', 'id': 1, 'method': 'tools/call',\n            'params': {'name': 'sync_status',\n                       'arguments': {'project_root': project.root}}})\n        assert 'login' in responses[0]['result']['content'][0]['text']",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_project_root_can_be_named_per_call",
+      "proof": "PROOF-6",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a3391593e0c4a9512b1673c65fdb0390e90f8d8e7b0e7d92b84b9012f980b658",
+  "verdict": "ready"
+}
