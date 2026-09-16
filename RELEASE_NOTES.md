@@ -5,9 +5,10 @@
 For a project running 0.9.5. One command moves it forward, and the rest of this page says what
 that command changes.
 
-0.10.0 replaces two grading scores with one setting, moves the evidence into the repository, and
-gives every rule a state a person can act on. Nothing in it needs a new service or a hosted
-anything: the evidence is files in git, and the enforcement is a CI job and a branch rule.
+0.10.0 replaces two grading scores and one ladder of seven states with a spec status and three
+evidence levels, moves the evidence into the repository, and gives each level one command.
+Nothing in it needs a new service or a hosted anything: the evidence is files in git, and the
+enforcement is a CI job and a branch rule.
 
 Tests at this commit: 986 passed, 6 skipped.
 
@@ -18,101 +19,171 @@ purlin:init --update
 ```
 
 The update reads what the project actually contains rather than its `version` field, shows the
-delta, and asks before each write. It untracks and deletes the verification files and the proof
+delta, and asks before each write. It untracks and deletes the evidence files and the proof
 files that used to be committed, untracks the committed dashboard data, rewrites the hooks,
 retires the config keys that no longer exist, asks the gate question once, and rewrites an
 operating-system tag to `@env(...)` where the intended system is unambiguous. Every file it
-replaces is backed up beside the original. `purlin:init --update --check` prints the pending list
-and writes nothing, which is what a preflight in CI runs. Until the update runs, every skill opens
-with `→ Run: purlin:init --update`.
+replaces is backed up beside the original. `purlin:init --update --check` prints the pending
+list and writes nothing, which is what a preflight in CI runs. Until the update runs, every
+skill opens with `→ Run: purlin:init --update`.
+
+The evidence a person wrote under 0.9.5 does not carry forward. Those files bound hashes this
+release computes differently, so the update drops them rather than converting them into
+something nobody attested to; they stay in git history, and `purlin:sign` walks the list
+afterwards.
 
 ### What changed, by concept
 
-**Vocabulary.** One word per concept, across every skill, reference, doc and line of output: rule,
-proof, test, record, approval, gate, test strength, review list, approver list, git host.
-`references/glossary.md` lists each word and the spelling it replaced.
+**The spec status and the three levels.** A rule has a spec status and up to three cells, each
+of which reads one word and carries its reasons. The spec status is `drafted` when no proof line
+names the rule, `ready` when one does and no blocking free check fires on the proof text. Then:
 
-**The gate.** One project setting, `gate` in `.purlin/config.json`, with three values: `tested`
-(every rule has a passing tagged test), `recorded` (every rule has a record CI wrote at this
-commit, at or above `min_strength`) and `approved` (that, plus a current human approval on every
-high-risk and medium-risk rule). `purlin:init` asks one question and derives the rest.
-`purlin:init --gate <level>` changes it later; raising adds what is missing, lowering deletes
-nothing. A gate is three things and needs all three: a CI job, a branch rule that blocks merge
-without it, and the setting saying what passing means.
+| Level | The question | Words the cell can read |
+|-------|--------------|-------------------------|
+| passed | did every tagged test for this rule pass? | `passed`, `failed`, `no test`, `not run`, `code changed` |
+| strong | are those tests worth trusting? | `strong`, `weak`, `needs a person` |
+| signed | did a person say the rule, the proof and the test belong together? | `signed`, `unsigned`, `stale`, `held`, `not required` |
+
+A cell exists only at or below the project's gate. Above the gate it is absent, not empty, which
+is why raising the gate is what makes a column, a tile or a filter appear.
+
+**The gate.** One project setting, `gate` in `.purlin/config.json`, with three values named for
+the word the last cell reads when it is met: `passed`, `strong` and `signed`. `purlin:init` asks
+one question and derives the rest: `min_strength` unused, 70 and 80; `ai_review_at` never, high
+and medium; `sign_at` absent, absent and `medium`; the breaks off under `passed` and on above
+it. `purlin:init --gate <value>` changes it later; raising adds what is missing, lowering
+deletes nothing. A gate is three things and needs all three: a CI job, a branch rule that blocks
+a merge without it, and the setting saying what passing means.
+
+**Three commands, one per level.** `purlin:test` runs the tagged tests and prints each rule's
+passed cell. `purlin:audit` runs the tests and the breaks, then the free checks and the model
+review where the risk asks, and writes the record; on CI it writes the briefs too. `purlin:sign`
+walks the review list one brief at a time when given no rule, and signs, holds or notes a rule
+when given one. `purlin:verify`, `purlin:review` and `purlin:approve` are gone, not aliased, and
+the skill count falls from 13 to 12.
+
+**Level 2 is fully automatic.** Nobody is asked to do anything to reach `strong`. A person first
+appears at level 3.
 
 **Records.** Evidence lives in the tree, as
-`.purlin/records/<feature>/<timestamp>-<commit7>-<runner>.json`, one file per verify run,
+`.purlin/records/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json`, one file per audit run,
 committed. Adding a file never conflicts, so two branches never fight over it. The last commit
-touching a record decides its label: `ci` when it was written through the git host's API by the CI
-identity, `developer` when a person committed it, `local` when it is uncommitted. `tested` counts
-`ci` or `developer`; `recorded` and `approved` count `ci` alone. Verify keeps the newest three per
-feature per operating system and prunes the rest; a record named in the message of an annotated
-`validated/<name>` tag is kept for ever. The log of what was proved and when is the git history of
-the folder.
+touching a record decides its `source`: `ci` when it was written through the git host's API by
+the CI identity, `developer` when a person committed it, `local` when it is uncommitted. Under
+`passed` every source counts; under `strong` and `signed` only `ci` does, and a record that does
+not count leaves the passed cell reading `not run` with the reason naming the source and the
+gate. The audit keeps the newest three records per feature per operating system and prunes the
+rest; a record named in the message of an annotated `record/<name>` tag is kept for ever.
 
-**Approvals.** One file per approval,
-`specs/<category>/<feature>.approvals/<RULE-N>.<hash8>.<approver-slug>.json`, so two approvals
-never conflict either. It binds the hashes of the rule text, the proof text and the test body, the
-risk, the approver, the brief and the record. When any of the three hashes changes, the approval
-is stale and a person looks again. CI auto-approves low-risk rules and nothing else. The people
-who may approve are `approvers` in `.purlin/config.json`, changed by pull request, so git history
-records who could approve and when; an approval counts when its commit is signed by one of them.
+**Briefs.** One file per rule per set of hashes,
+`.purlin/briefs/<feature>/<RULE-N>.<hash8>.brief.json`, written by CI and committed beside the
+records. A brief reports four things: the test strength beside the minimum, the free-check
+findings on the proof text, the free-check findings on the test body, and what the model review
+observed together with whether it could settle the question. **It recommends nothing.** The four
+verdict words are retired with it.
 
-**States.** A rule is in one of seven: Drafted, Proof ready, Tested, Recorded, Reviewed, Approved,
-Stale. A separate flag, re-verify pending, means only the code changed: the approval stands and CI
-clears it on the next run. `purlin:status` and the dashboard report those and nothing else.
+**Signatures and holds.** One file per signature,
+`specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, so two signatures
+never conflict either. It binds the hashes of the rule text, the proof text and the test body,
+plus the rule's risk, so a risk re-tag stales it like any other change. The people who may sign
+are `signers` in `.purlin/config.json`, changed by pull request, so git history records who
+could sign and when. A hold is a person's committed statement that the test does not prove the
+proof, with the missing case named; while it is current the strong cell reads `needs a person`
+and the signed cell reads `held`. A `--note` is the one line a signer writes for a `@manual`
+proof or a review the model could not settle.
 
-**Breaks engines.** `purlin:verify` breaks the code on purpose and reports the share of those
-breaks the tests caught as the **test strength**, an integer percent. Three engines ship, chosen
-by `mutation_engine` in the config: mutmut for Python, Stryker for JavaScript and TypeScript, and
-Stryker.NET for C#. SQL and Bash have no engine, so their strength reads `n/a` and the gate falls
-back to the free checks.
+**CI writes no signature file, ever.** The auto-approval of low-risk rules is gone with the
+`.ci.json` file it wrote. A signature directory holds only files a person wrote; CI's one commit,
+`purlin: record for <commit7>`, carries the records and the briefs and nothing else. The CI-only
+branch ruleset now covers `.purlin/records/**` and `.purlin/briefs/**`.
+
+**The review list** holds only what needs a person: a strong cell reading `needs a person`, or a
+signed cell reading `unsigned`, `stale` or `held`. A weak rule is build work and stays on the
+board.
+
+**The gate check.** `scripts/ci/verify_gate.py` becomes `scripts/ci/gate_check.py`, its log
+prefix `gate:`, its sections `Not passed (n)`, `Weak (n)` and `Not signed (n)`, and its JSON key
+`result` in place of `verdict`.
+
+**Breaks engines.** `purlin:audit` breaks the code on purpose at `strong` and above and reports
+the share of those breaks the tests caught as the **test strength**, an integer percent. Three
+engines ship, chosen by `mutation_engine` in the config: mutmut for Python, Stryker for
+JavaScript and TypeScript, and Stryker.NET for C#. SQL and Bash have no engine, so their
+strength reads `n/a` and the strong cell rests on the free checks.
 
 **`@env`.** A proof that can only be proved on one operating system carries `@env(windows)`,
-`@env(macos)` or `@env(linux)`. Those three are the whole vocabulary. `purlin:init` reads the tags
-in `specs/` and writes a CI matrix to match, one job per system named, each running the same
-verify and writing its own record. A proof with no tag is satisfied by a record from any system.
-On a host that does not match, the test is skipped and the rule reads `needs <os>`;
-`purlin:verify --remote` pushes the branch, waits for the workflow and pulls the records CI wrote.
+`@env(macos)` or `@env(linux)`. Those three are the whole vocabulary. `purlin:init` reads the
+tags in `specs/` and writes a CI matrix to match, one job per system named, each running the
+same audit and writing its own record. A proof with no tag is satisfied by a record from any
+system. On a host that does not match, the test is skipped and the passed cell reads `not run`
+with `<os>: no record yet`; `purlin:audit --remote` pushes the branch, waits for the workflow
+and pulls the records CI wrote.
 
-**The dashboard.** One HTML page on the design tokens, with no framework and no build step. It
-opens from disk and is published by CI as the `purlin-dashboard` build artifact, linked from the
-pull request comment, so anyone with repository access can read it and nothing is provisioned.
+**The dashboard.** One HTML page on the design tokens, with no framework and no build step. Its
+tiles, columns and filters scale with the gate: three tiles and five columns at `passed`, a
+`Strong` tile and two more columns at `strong`, a `Signed` tile, a `Stale` flag card and one
+more column at `signed`. It opens from disk and is published by CI as the `purlin-dashboard`
+build artifact, linked from the pull request comment.
 `scripts/report/scan.py --repo <url>` prints the same rollup for anyone holding only a URL.
 
-**The tools.** `tools/PM/` and `tools/QA/` are Claude Desktop skills for people with no checkout.
-The PM tool drafts and edits specs and anchors and opens the pull request; the QA tool produces
-the triage report and opens pull requests with proof edits and approvals.
+**The tools.** `tools/PM/` and `tools/QA/` are Claude Desktop skills for people with no
+checkout. The PM tool drafts and edits specs and anchors and opens the pull request; the QA tool
+produces the triage report and opens pull requests with proof edits.
 
-**The commands.** `purlin:review` walks the review list one brief at a time, and `purlin:approve`
-writes a signed approval for a rule, a feature or a batch. `purlin:drift` takes a role: `pm`,
-`design`, `qa` or `eng`. Plain language reaches every command, and every command ends by naming
-the next step.
+**Formats.** spec 11, proofs 8 and anchor 7 change wording only. The record format goes to 2 for
+the gate enum, the null strength under `passed` and the source. `approval_format.md` becomes
+`signature_format.md` at version 3. The payload schema goes from 4 to 5, and
+`references/drift_criteria.md` from criteria version 3 to 4. A tool that parses any of them
+should read the version line.
 
-**Formats.** spec 11, proofs 8, anchor 7, and two new files: record 1 and approval 1. A tool that
-parses any of them should read the version line.
+### The words that were retired
+
+Every one of these is gone from the code, the skills, the references, the docs and every line of
+output, in any casing:
+
+| Retired | What says it now |
+|---------|------------------|
+| `tested`, the gate value | `passed` |
+| `recorded`, the gate value | `strong` |
+| `approved`, the gate value | `signed` |
+| `approve`, `approval`, `approvals` | `sign`, `signature`, `signatures` |
+| `approver`, `approvers` | `signer`, `signers` |
+| `verified`, `verify` as a command name | the cell's own word; `purlin:audit` for the run |
+| `verdict` | what the brief reports: strength, findings, observations, settled |
+| `Reviewed`, the state | the strong cell's word |
+| `re-verify pending` | the passed cell reading `code changed` |
+| `Proof ready` | the spec status `ready` |
+| `lowest state`, `seven states` | the spec status and the three cells |
+| `auto-approval` | nothing: CI writes no signature file |
+| `review queue` | `review list` |
+| `purlin:verify`, `purlin:review`, `purlin:approve` | `purlin:audit`, `purlin:sign` |
+| `verify_gate`, `verify-gate:` | `gate_check`, `gate:` |
+| `validated/<name>` tags | `record/<name>` tags |
+
+`audit` is un-retired and means one thing: the level 2 run. An audit proves a rule strong or
+weak. The grading scores the earlier `purlin:audit` produced stay retired.
+`references/glossary.md` lists each word and the spelling it replaced.
 
 ### What was removed
 
-Gone in 0.10.0: the two LLM grading scores and the skill and agent that produced them; the runner
-registry and its per-runner proof files, replaced by `@env` and the CI matrix; the committed
-verification files, replaced by records; the committed proof files, which are now runtime state
-under `.purlin/runtime/` and are not committed at all; the committed dashboard data, now a build
-artifact; the design-tool importer, the visual hash and the live design-tool connection, replaced
-by exported files under `designs/` reviewed by pull request; and C and PHP support, so a project
-that used either keeps its proofs only by writing a custom proof plugin. Several flags went with
-them, including the manual and re-check flags on verify and the config setter for keys that no
-longer exist. A `@manual` proof stays: it has no test, its evidence is an approval carrying a
-one-line note, and it is never auto-approved.
+Gone in 0.10.0: the two LLM grading scores and the skill and agent that produced them; the
+runner registry and its per-runner proof files, replaced by `@env` and the CI matrix; the
+committed evidence files, replaced by records; the committed proof files, which are now runtime
+state under `.purlin/runtime/` and are not committed at all; the committed dashboard data, now a
+build artifact; the design-tool importer, the visual hash and the live design-tool connection,
+replaced by exported files under `designs/` reviewed by pull request; and C and PHP support, so
+a project that used either keeps its proofs only by writing a custom proof plugin. Several flags
+went with them. A `@manual` proof stays: it has no test, its strong cell reads `needs a person`,
+and its evidence is a signature carrying a one-line note.
 
 ### The 0.10.0 line that never shipped
 
 An earlier 0.10.0 development line added two LLM grading scores, one for proof descriptions and
-one for test bodies, together with a skill and an agent to produce them. It was never released,
-and 0.10.0 as it ships has neither. What a person needs before approving a rule is a review brief:
-the free checks, the test strength from the latest record, and a model review only where the risk
-warrants it. `references/review_criteria.md` holds those criteria, and they are the only names a
-finding ever carries.
+one for test bodies, together with a skill and an agent to produce them. A later one added a
+seven-state ladder. Neither was released, and 0.10.0 as it ships has neither. What a person needs
+before signing a rule is a brief: the free checks, the test strength from the newest record, and
+a model review only where the risk warrants it. `references/review_criteria.md` holds those
+criteria, and they are the only names a finding ever carries.
 
 ## 0.9.5 — Windows-scoped proof checks & C# support
 
