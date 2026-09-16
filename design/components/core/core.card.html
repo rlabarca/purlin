@@ -7,8 +7,8 @@
 <style>body{padding:18px 20px;background:var(--canvas)}.row{display:flex;flex-wrap:wrap;align-items:center;gap:14px}.col{display:flex;flex-direction:column;gap:12px}</style></head><body><div id="root"></div>
 <script type="text/babel">const {Button,StatusPill,Tag,Panel,Divider}=window.PurlinDesignSystem_6896a8;
 ReactDOM.createRoot(document.getElementById('root')).render(<div className="col">
-<div className="row"><Button>Remote: 7 awaiting</Button><Button variant="solid" tone="pass">Approve</Button><Button variant="ghost">Dismiss</Button><Button disabled>Disabled</Button></div>
-<div className="row"><StatusPill status="passing"/><StatusPill status="verified"/><StatusPill status="failing"/><StatusPill status="stale"/><StatusPill status="excluded"/></div>
+<div className="row"><Button>Remote: 7 awaiting</Button><Button variant="solid" tone="pass">Sign</Button><Button variant="ghost">Dismiss</Button><Button disabled>Disabled</Button></div>
+<div className="row"><StatusPill status="passed"/><StatusPill status="signed"/><StatusPill status="failed"/><StatusPill status="stale"/><StatusPill status="not required"/></div>
 <div className="row"><Tag>claude-cli …</Tag><Tag tone="pass">gemini-cli …</Tag><Tag tone="muted">7c41d0a</Tag></div>
 <div className="row" style={{alignItems:'stretch'}}><Panel style={{flex:1,fontSize:13,color:'var(--text-secondary)'}}>default</Panel><Panel tone="veil" style={{flex:1,fontSize:13,color:'var(--text-secondary)'}}>veil</Panel><Panel tone="accent" style={{flex:1,fontSize:13,color:'var(--text-accent)'}}>accent</Panel></div>
 <Divider/></div>);</script></body></html>

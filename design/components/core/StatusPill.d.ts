@@ -1,6 +1,6 @@
-/** Rule/spec state badge. Outline = measured by machine, solid = signed by a person. */
+/** Rule-cell badge. Outline = computed by a machine, solid = signed by a person. */
 export interface StatusPillProps {
-  status?: 'passing' | 'verified' | 'failing' | 'incomplete' | 'stale' | 'excluded' | 'drafted';
+  status?: 'passed' | 'signed' | 'failed' | 'weak' | 'stale' | 'not required' | 'drafted';
   /** Override the label text; the status still sets the colour. */
   children?: React.ReactNode;
   style?: React.CSSProperties;

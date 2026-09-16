@@ -1,18 +1,18 @@
 import React from 'react';
 
 const map = {
-  passing: { label: 'PASSING', hue: 'var(--state-pass)', solid: false },
-  verified: { label: 'VERIFIED', hue: 'var(--state-pass)', solid: true },
-  failing: { label: 'FAILING', hue: 'var(--state-fail)', solid: false },
-  incomplete: { label: 'INCOMPLETE', hue: 'var(--state-warn)', solid: false },
-  stale: { label: 'STALE', hue: 'var(--state-warn)', solid: false },
-  excluded: { label: 'EXCLUDED', hue: 'var(--state-neutral)', solid: false },
+  passed: { label: 'PASSED', hue: 'var(--state-pass)', solid: false },
+  signed: { label: 'SIGNED', hue: 'var(--state-pass)', solid: true },
+  failed: { label: 'FAILED', hue: 'var(--state-fail)', solid: false },
+  weak: { label: 'WEAK', hue: 'var(--state-warn)', solid: false },
+  stale: { label: 'STALE', hue: 'var(--state-fail)', solid: false },
+  'not required': { label: 'NOT REQUIRED', hue: 'var(--state-idle)', solid: false },
   drafted: { label: 'DRAFTED', hue: 'var(--state-idle)', solid: false },
 };
 
-/** The seven-state badge. Solid fill means a human signed; outline means a machine measured. */
-export function StatusPill({ status = 'passing', children, style, ...rest }) {
-  const s = map[status] || map.passing;
+/** The rule-cell badge. Solid fill means a person signed; outline means a machine computed it. */
+export function StatusPill({ status = 'passed', children, style, ...rest }) {
+  const s = map[status] || map.passed;
   return (
     <span
       style={{

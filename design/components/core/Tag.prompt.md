@@ -1,4 +1,4 @@
-Use `Tag` when the string came from the machine rather than a person — `claude-cli`, `gemini-cli`, `gate: recorded`, `7c41d0a`.
+Use `Tag` when the string came from the machine rather than a person — `claude-cli`, `gemini-cli`, `gate: strong`, `7c41d0a`.
 
 ```jsx
 <Tag>claude-cli …</Tag>

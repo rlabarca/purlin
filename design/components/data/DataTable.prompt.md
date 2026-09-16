@@ -4,7 +4,7 @@ Use `DataTable` + `TableHead` + `TableRow` for the spec list. Pass the same `col
 const cols = [{label:'Spec',width:'2fr'},{label:'Coverage',width:'1.4fr'},{label:'Status',width:'1.2fr'}];
 <DataTable>
   <TableHead columns={cols} />
-  <TableRow columns={cols} cells={[<DisclosureRow label="skill_audit" />, <CoverageBar covered={19} total={19} />, <StatusPill status="passing" />]} />
+  <TableRow columns={cols} cells={[<DisclosureRow label="skill_audit" />, <CoverageBar covered={19} total={19} />, <StatusPill status="passed" />]} />
 </DataTable>
 ```
 

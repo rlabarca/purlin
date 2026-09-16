@@ -1,4 +1,4 @@
-Use `NumberedItem` for the deck's enumerated explainer lists — "Five things Purlin keeps track of", "From one sentence to tested code in five steps".
+Use `NumberedItem` for the deck's enumerated explainer lists — "Five things Purlin keeps track of", "From one sentence to passing code in five steps".
 
 ```jsx
 <NumberedItem index="01" term="Rule">One line saying what the software has to do.</NumberedItem>

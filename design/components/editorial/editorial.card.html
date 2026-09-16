@@ -7,7 +7,7 @@
 <style>body{padding:18px 20px;background:var(--canvas)}.row{display:flex;flex-wrap:wrap;align-items:center;gap:14px}.col{display:flex;flex-direction:column;gap:12px}</style></head><body><div id="root"></div>
 <script type="text/babel">const {CodeBlock,CommandChip,NumberedItem}=window.PurlinDesignSystem_6896a8;
 ReactDOM.createRoot(document.getElementById('root')).render(<div className="col">
-<div className="row" style={{justifyContent:'space-between'}}><CommandChip size="16px">purlin:verify login</CommandChip><CommandChip tone="accent" size="16px">gate: tested</CommandChip></div>
+<div className="row" style={{justifyContent:'space-between'}}><CommandChip size="16px">purlin:audit login</CommandChip><CommandChip tone="accent" size="16px">gate: passed</CommandChip></div>
 <CodeBlock size="13px" lines={['break 7 of 41   src/auth.py:71','-   if token.issued_at < now - TTL:','+   if token.issued_at > now - TTL:',{text:'    test_expired_token_rejected  FAILED',kind:'muted'},{text:'    noticed',kind:'accent'}]}/>
 <div><NumberedItem index="01" term="Rule" style={{fontSize:13}}>One line saying what the software has to do.</NumberedItem></div>
 </div>);</script></body></html>

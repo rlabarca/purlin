@@ -28,7 +28,7 @@ No codebase or Figma file was provided. Everything in `components/` and `ui_kits
 
 **Person.** Second person for the reader's actions ("you commit it yourself", "before you push"), third person for the system's ("Purlin breaks your code on purpose", "CI writes the notes during verify"). First person never appears. The product does not say "we".
 
-**Casing.** Sentence case for titles, buttons and body. Uppercase is reserved for two things: tracked eyebrow labels above a section ("WAYS OF WORKING — 01", "A COVERAGE BOARD") and state badges ("PASSING", "VERIFIED"). Command names are always lowercase with a colon: `purlin:verify`, never `Purlin Verify`.
+**Casing.** Sentence case for titles, buttons and body. Uppercase is reserved for two things: tracked eyebrow labels above a section ("WAYS OF WORKING — 01", "A COVERAGE BOARD") and state badges ("PASSED", "STRONG", "SIGNED"). Command names are always lowercase with a colon: `purlin:audit`, never `Purlin Audit`.
 
 **Honesty as a tone.** The deck labels its own limits out loud — a slide is literally headed "THE HONEST NOTE", and another says "Purlin can't prove code is right. It gives you a paper trail." Copy for this brand should keep that: state the gap rather than skip it.
 
@@ -113,7 +113,7 @@ SKILL.md              Agent Skills entry point
 
 `tokens/palette.css` holds raw values; never reference those in a component. `tokens/theme-dark.css` defines the semantic aliases and is the default. `tokens/theme-light.css` defines the same aliases under `[data-theme="light"]`. `[data-surface="product"]` overrides grounds and text for the slate surface and composes with either theme.
 
-**Light mode is extrapolated, not sourced.** Neither the deck nor the dashboard has a light variant. The light theme reads the warm half forward: paper grounds `#F7F4EF → #D3C9BC` from the cream, navy ink, copper darkened to `#8F5626` for contrast, and the four state hues dropped to their 700 steps so they clear 4.5:1 on paper. Treat it as a proposal to review, not a recreation.
+**The light theme is extrapolated, not sourced.** Neither the deck nor the dashboard has a light variant. The light theme reads the warm half forward: paper grounds `#F7F4EF → #D3C9BC` from the cream, navy ink, copper darkened to `#8F5626` for contrast, and the four state hues dropped to their 700 steps so they clear 4.5:1 on paper. Treat it as a proposal to review, not a recreation.
 
 ### Components
 
@@ -129,7 +129,7 @@ Every component has a sibling `.d.ts` (props contract) and `.prompt.md` (what & 
 
 ### UI kit
 
-`ui_kits/dashboard/` — board, rule detail and QA review queue, click-through. **Marked as a reference recreation of the v0.9.5 dashboard**, recoloured onto the current system rather than the borrowed slate ramp the screenshot used. See its README for what is inert and why.
+`ui_kits/dashboard/` — board, rule detail and QA review list, click-through. **Marked as a reference recreation of the v0.9.5 dashboard**, recoloured onto the current system rather than the borrowed slate ramp the screenshot used. See its README for what is inert and why.
 
 ### Slides
 
@@ -141,4 +141,4 @@ Every component has a sibling `.d.ts` (props contract) and `.prompt.md` (what & 
 
 - **Fonts.** The PPTX names only Arial and Courier New. Exported decks often flatten a licensed face to Arial, so the real brand font may be something else. If Purlin has one, drop the files in and point `--font-sans` at it.
 - **The cream veil.** The deck applies a 30% cream overlay across every slide, which would render the ground as `#4D676F` rather than `#0C3444`. This system treats it as a panel tint instead. If the slides really are meant to read slate, say so and the grounds move.
-- **Light mode** is an extrapolation, as noted above.
+- **The light theme** is an extrapolation, as noted above.

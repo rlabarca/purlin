@@ -10,13 +10,13 @@ const cols=[{label:'Spec',width:'1.6fr'},{label:'Coverage',width:'1.4fr'},{label
 ReactDOM.createRoot(document.getElementById('root')).render(<div className="col">
 <div className="row" style={{gap:10,alignItems:'stretch'}}>
 <StatTile value={42} label="Specs" note="+ 5 anchors" style={{flex:1}}/>
-<StatTile value={37} label="Verified" tone="pass" note="39 on host" style={{flex:1}}/>
+<StatTile value={37} label="Signed" tone="pass" note="39 on host" style={{flex:1}}/>
 <StatTile value={1} label="Failing" tone="fail" style={{flex:1}}/>
 <ScorePanel value="43%" label="Proof integrity" detail="884 of 1195" tone="fail" style={{flex:1.2,padding:'18px 12px'}}/>
 </div>
 <DataTable>
-<GroupHeader title="SKILLS" count={12} covered={158} total={158} summary={[{label:'9 verified'},{label:'3 passing'}]}/>
+<GroupHeader title="SKILLS" count={12} covered={158} total={158} summary={[{label:'9 signed'},{label:'3 passed'}]}/>
 <TableHead columns={cols}/>
-<TableRow columns={cols} cells={[<DisclosureRow label="skill_audit"/>,<CoverageBar covered={19} total={19}/>,<StatusPill status="passing"/>,<MetricValue value="86%"/>,<MetricValue value="89%"/>]}/>
-<TableRow columns={cols} cells={[<DisclosureRow label="skill_drift"/>,<CoverageBar covered={5} total={5}/>,<StatusPill status="verified"/>,<MetricValue value="100%"/>,<MetricValue value="excluded"/>]}/>
+<TableRow columns={cols} cells={[<DisclosureRow label="skill_audit"/>,<CoverageBar covered={19} total={19}/>,<StatusPill status="passed"/>,<MetricValue value="86%"/>,<MetricValue value="89%"/>]}/>
+<TableRow columns={cols} cells={[<DisclosureRow label="skill_drift"/>,<CoverageBar covered={5} total={5}/>,<StatusPill status="signed"/>,<MetricValue value="100%"/>,<MetricValue value="excluded"/>]}/>
 </DataTable></div>);</script></body></html>
