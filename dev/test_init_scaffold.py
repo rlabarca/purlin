@@ -199,20 +199,20 @@ class TestTheOneQuestion:
         try:
             done = subprocess.run(
                 [sys.executable, SCAFFOLD, '--project-root', made.root],
-                input='recorded\n', capture_output=True, encoding='utf-8',
+                input='strong\n', capture_output=True, encoding='utf-8',
                 timeout=300)
             assert done.returncode == 0, done.stdout + done.stderr
             assert scaffold_module.GATE_QUESTION in done.stdout
             assert scaffold_module.LANGUAGE_QUESTION not in done.stdout
-            assert scaffold_module.APPROVER_QUESTION not in done.stdout
-            assert made.config()['gate'] == 'recorded'
+            assert scaffold_module.SIGNER_QUESTION not in done.stdout
+            assert made.config()['gate'] == 'strong'
         finally:
             made.close()
 
     @pytest.mark.parametrize('gate,strength,review',
-                             [('tested', 50, 'never'),
-                              ('recorded', 70, 'high'),
-                              ('approved', 80, 'medium')])
+                             [('passed', None, 'never'),
+                              ('strong', 70, 'high'),
+                              ('signed', 80, 'medium')])
     @pytest.mark.proof("scaffold", "PROOF-2", "RULE-2")
     def test_each_answer_derives_its_own_settings(self, project, gate,
                                                   strength, review):
@@ -224,25 +224,25 @@ class TestTheOneQuestion:
 
     @pytest.mark.proof("scaffold", "PROOF-3", "RULE-3")
     def test_the_gate_flag_answers_the_question_without_asking(self, project):
-        output = project.run('--gate', 'tested')
+        output = project.run('--gate', 'passed')
         assert scaffold_module.GATE_QUESTION not in output
 
     @pytest.mark.proof("scaffold", "PROOF-4", "RULE-4")
-    def test_an_unreadable_answer_falls_back_to_tested(self):
+    def test_an_unreadable_answer_falls_back_to_passed(self):
         made = Project('pytest')
         try:
             done = subprocess.run(
                 [sys.executable, SCAFFOLD, '--project-root', made.root],
                 input='whenever\n', capture_output=True, encoding='utf-8',
                 timeout=300)
-            assert made.config()['gate'] == 'tested'
+            assert made.config()['gate'] == 'passed'
             assert 'is not a gate' in done.stdout
         finally:
             made.close()
 
     @pytest.mark.proof("scaffold", "PROOF-5", "RULE-5")
     def test_the_config_holds_the_shape_and_no_retired_key(self, project):
-        project.run('--gate', 'recorded')
+        project.run('--gate', 'strong')
         config = project.config()
         assert sorted(config) == ['ai_review_at', 'ci', 'gate',
                                   'min_strength', 'mutation_engine',
@@ -254,8 +254,8 @@ class TestTheOneQuestion:
         """The command line and `main()` write the same config and summary."""
         child, inline = Project(), Project()
         try:
-            child_out = child.run('--gate', 'recorded', subprocess=True)
-            inline_out = inline.run('--gate', 'recorded')
+            child_out = child.run('--gate', 'strong', subprocess=True)
+            inline_out = inline.run('--gate', 'strong')
             assert sorted(child.config()) == ['ai_review_at', 'ci', 'gate',
                                               'min_strength',
                                               'mutation_engine', 'sql_engine',
@@ -289,7 +289,7 @@ class TestEachLanguage:
     def test_detection_installs_that_language_s_plugin(self, language):
         made = Project(language)
         try:
-            output = made.run('--gate', 'tested')
+            output = made.run('--gate', 'passed')
             plugin = LANGUAGES[language][1]
             assert made.has(plugin), output
             # Shell has no detector, so it is the one answer a person gives.
@@ -303,7 +303,7 @@ class TestEachLanguage:
     def test_the_copy_is_byte_equal_to_the_plugin_it_came_from(self, language):
         made = Project(language)
         try:
-            made.run('--gate', 'tested')
+            made.run('--gate', 'passed')
             installed = made.path(LANGUAGES[language][1])
             source = os.path.join(
                 PROOF_DIR,
@@ -324,7 +324,7 @@ class TestEachLanguage:
             if language == 'pytest':
                 os.remove(made.path('conftest.py'))
                 write(made.path('pyproject.toml'), '[tool.pytest]\n')
-            made.run('--gate', 'tested')
+            made.run('--gate', 'passed')
             assert '%s_purlin' % language in read(made.path(wiring))
         finally:
             made.close()
@@ -334,7 +334,7 @@ class TestEachLanguage:
         made = Project('jest')
         try:
             write(made.path('jest.config.js'), '// ours\n')
-            output = made.run('--gate', 'tested')
+            output = made.run('--gate', 'passed')
             assert read(made.path('jest.config.js')) == '// ours\n'
             assert summary_paths(output)['jest.config.js'] == 'kept'
         finally:
@@ -344,7 +344,7 @@ class TestEachLanguage:
     def test_xunit_is_told_how_to_wire_its_logger(self):
         made = Project('xunit')
         try:
-            output = made.run('--gate', 'tested')
+            output = made.run('--gate', 'passed')
             assert 'TestLogger.dll' in output
             assert 'dotnet test --logger purlin' in output
         finally:
@@ -357,7 +357,7 @@ class TestTheLanguageQuestion:
     def test_an_empty_tree_is_asked_and_shell_is_the_default(self):
         made = Project(None)
         try:
-            output = made.run('--gate', 'tested')
+            output = made.run('--gate', 'passed')
             assert scaffold_module.LANGUAGE_QUESTION in output
             assert '[shell]: shell' in output
             assert made.config()['test_framework'] == 'shell'
@@ -370,7 +370,7 @@ class TestTheLanguageQuestion:
         try:
             done = subprocess.run(
                 [sys.executable, SCAFFOLD, '--project-root', made.root,
-                 '--gate', 'tested'], input='pytest\n', capture_output=True,
+                 '--gate', 'passed'], input='pytest\n', capture_output=True,
                 encoding='utf-8', timeout=300)
             assert done.returncode == 0, done.stdout + done.stderr
             assert made.has('.purlin/plugins/pytest_purlin.py')
@@ -384,7 +384,7 @@ class TestTheLanguageQuestion:
         try:
             done = subprocess.run(
                 [sys.executable, SCAFFOLD, '--project-root', made.root,
-                 '--gate', 'tested'], input='rspec\n', capture_output=True,
+                 '--gate', 'passed'], input='rspec\n', capture_output=True,
                 encoding='utf-8', timeout=300)
             assert 'reading it as shell' in done.stdout
             assert made.config()['test_framework'] == 'shell'
@@ -393,15 +393,15 @@ class TestTheLanguageQuestion:
 
 
 # ---------------------------------------------------------------------------
-# The approver question
+# The signer question
 # ---------------------------------------------------------------------------
 
-class TestTheApproverQuestion:
+class TestTheSignerQuestion:
 
     @pytest.mark.proof("scaffold", "PROOF-10", "RULE-10")
-    def test_only_approved_is_asked(self, project):
-        assert scaffold_module.APPROVER_QUESTION not in project.run(
-            '--gate', 'recorded')
+    def test_only_signed_is_asked(self, project):
+        assert scaffold_module.SIGNER_QUESTION not in project.run(
+            '--gate', 'strong')
 
     @pytest.mark.proof("scaffold", "PROOF-10", "RULE-10")
     def test_the_emails_are_written_and_the_signing_setup_printed(self):
@@ -409,12 +409,12 @@ class TestTheApproverQuestion:
         try:
             done = subprocess.run(
                 [sys.executable, SCAFFOLD, '--project-root', made.root,
-                 '--gate', 'approved'],
+                 '--gate', 'signed'],
                 input='Jane@Acme.com, sam@acme.com\n', capture_output=True,
                 encoding='utf-8', timeout=300)
             assert done.returncode == 0, done.stdout + done.stderr
-            assert made.config()['approvers'] == ['jane@acme.com',
-                                                  'sam@acme.com']
+            assert made.config()['signers'] == ['jane@acme.com',
+                                                'sam@acme.com']
             assert 'git config gpg.format ssh' in done.stdout
             assert 'git config commit.gpgsign true' in done.stdout
         finally:
@@ -422,14 +422,14 @@ class TestTheApproverQuestion:
 
     @pytest.mark.proof("scaffold", "PROOF-11", "RULE-11")
     def test_no_list_prints_the_directive_the_gate_will_fail_on(self, project):
-        output = project.run('--gate', 'approved')
-        assert 'approver list' in output
-        assert project.config()['approvers'] == []
+        output = project.run('--gate', 'signed')
+        assert 'signer list' in output
+        assert project.config()['signers'] == []
 
     @pytest.mark.proof("scaffold", "PROOF-11", "RULE-11")
     def test_rules_without_a_risk_tag_are_listed(self, project):
         project.spec()
-        output = project.run('--gate', 'approved')
+        output = project.run('--gate', 'signed')
         assert 'login RULE-1' in output
         assert 'no risk tag' in output
 
@@ -438,7 +438,7 @@ class TestTheApproverQuestion:
         write(project.path('specs/core/login.md'),
               SPEC.replace('and a password',
                            'and a password [risk: high] [origin: pm]'))
-        output = project.run('--gate', 'approved')
+        output = project.run('--gate', 'signed')
         assert 'login RULE-1' not in output
 
 
@@ -449,51 +449,51 @@ class TestTheApproverQuestion:
 class TestTheGateTransitions:
 
     @pytest.mark.proof("scaffold", "PROOF-12", "RULE-12")
-    def test_raising_to_recorded_adds_the_workflow(self, project):
-        project.run('--gate', 'tested')
+    def test_raising_to_strong_adds_the_workflow(self, project):
+        project.run('--gate', 'passed')
         assert not project.has('.github/workflows/purlin.yml')
-        project.run('--gate', 'recorded')
+        project.run('--gate', 'strong')
         assert project.has('.github/workflows/purlin.yml')
-        assert project.config()['gate'] == 'recorded'
+        assert project.config()['gate'] == 'strong'
 
     @pytest.mark.proof("scaffold", "PROOF-12", "RULE-12")
-    def test_raising_to_approved_keeps_what_recorded_wrote(self, project):
-        project.run('--gate', 'recorded')
+    def test_raising_to_signed_keeps_what_strong_wrote(self, project):
+        project.run('--gate', 'strong')
         before = read(project.path('.github/workflows/purlin.yml'))
-        output = project.run('--gate', 'approved')
+        output = project.run('--gate', 'signed')
         assert read(project.path('.github/workflows/purlin.yml')) == before
         assert summary_paths(output)['.github/workflows/purlin.yml'] == 'kept'
 
     @pytest.mark.proof("scaffold", "PROOF-12", "RULE-12")
     def test_lowering_writes_the_setting_and_deletes_nothing(self, project):
-        project.run('--gate', 'approved')
-        project.run('--gate', 'tested')
-        assert project.config()['gate'] == 'tested'
-        assert project.config()['min_strength'] == 50
+        project.run('--gate', 'signed')
+        project.run('--gate', 'passed')
+        assert project.config()['gate'] == 'passed'
+        assert project.config()['min_strength'] is None
         assert project.has('.github/workflows/purlin.yml')
 
     @pytest.mark.proof("scaffold", "PROOF-12", "RULE-12")
-    def test_lowering_from_approved_keeps_the_approver_list(self, project):
-        project.run('--gate', 'approved')
+    def test_lowering_from_signed_keeps_the_signer_list(self, project):
+        project.run('--gate', 'signed')
         config = project.config()
-        config['approvers'] = ['jane@acme.com']
+        config['signers'] = ['jane@acme.com']
         write(project.path('.purlin/config.json'),
               json.dumps(config, indent=2) + '\n')
-        project.run('--gate', 'recorded')
-        assert project.config()['approvers'] == ['jane@acme.com']
+        project.run('--gate', 'strong')
+        assert project.config()['signers'] == ['jane@acme.com']
 
     @pytest.mark.proof("scaffold", "PROOF-20", "RULE-20")
     def test_a_second_run_at_the_same_gate_changes_nothing(self, project):
-        project.run('--gate', 'recorded')
-        output = project.run('--gate', 'recorded')
+        project.run('--gate', 'strong')
+        output = project.run('--gate', 'strong')
         assert 'wrote' not in summary_paths(output).values()
 
     @pytest.mark.proof("scaffold", "PROOF-3", "RULE-3")
     def test_the_gate_is_remembered_when_no_flag_names_one(self, project):
-        project.run('--gate', 'recorded')
+        project.run('--gate', 'strong')
         output = project.run()
         assert scaffold_module.GATE_QUESTION not in output
-        assert project.config()['gate'] == 'recorded'
+        assert project.config()['gate'] == 'strong'
 
 
 # ---------------------------------------------------------------------------
@@ -503,21 +503,21 @@ class TestTheGateTransitions:
 class TestTheWorkflow:
 
     @pytest.mark.proof("scaffold", "PROOF-13", "RULE-13")
-    def test_tested_writes_no_workflow(self, project):
-        output = project.run('--gate', 'tested')
+    def test_passed_writes_no_workflow(self, project):
+        output = project.run('--gate', 'passed')
         assert not project.has('.github/workflows/purlin.yml')
         assert 'pass --ci to write it anyway' in output
 
     @pytest.mark.proof("scaffold", "PROOF-13", "RULE-13")
-    def test_ci_under_tested_writes_it_anyway(self, project):
-        project.run('--gate', 'tested', '--ci', 'github')
+    def test_ci_under_passed_writes_it_anyway(self, project):
+        project.run('--gate', 'passed', '--ci', 'github')
         assert project.has('.github/workflows/purlin.yml')
 
     @pytest.mark.proof("scaffold", "PROOF-14", "RULE-14")
     def test_the_host_is_read_from_the_remote(self):
         made = Project('pytest', remote='https://github.com/acme/demo.git')
         try:
-            made.run('--gate', 'recorded')
+            made.run('--gate', 'strong')
             assert made.config()['ci'] == 'github'
             assert made.has('.github/workflows/purlin.yml')
         finally:
@@ -528,7 +528,7 @@ class TestTheWorkflow:
         made = Project('pytest',
                        remote='https://dev.azure.com/acme/demo/_git/demo')
         try:
-            output = made.run('--gate', 'recorded')
+            output = made.run('--gate', 'strong')
             assert made.config()['ci'] == 'azure'
             assert made.has('purlin.azure-pipelines.yml')
             assert 'Azure DevOps' in output
@@ -539,7 +539,7 @@ class TestTheWorkflow:
     def test_ci_ado_overrides_the_remote(self):
         made = Project('pytest', remote='https://github.com/acme/demo.git')
         try:
-            made.run('--gate', 'recorded', '--ci', 'ado')
+            made.run('--gate', 'strong', '--ci', 'ado')
             assert made.has('purlin.azure-pipelines.yml')
             assert made.config()['ci'] == 'azure'
         finally:
@@ -549,7 +549,7 @@ class TestTheWorkflow:
     def test_the_matrix_is_rendered_from_the_env_tags(self, project):
         write(project.path('specs/core/login.md'),
               SPEC.replace('@unit', '@unit @env(windows)'))
-        output = project.run('--gate', 'recorded')
+        output = project.run('--gate', 'strong')
         workflow = read(project.path('.github/workflows/purlin.yml'))
         assert 'windows-latest' in workflow
         assert 'windows-latest' in output
@@ -557,21 +557,21 @@ class TestTheWorkflow:
     @pytest.mark.proof("scaffold", "PROOF-15", "RULE-15")
     def test_no_env_tag_means_one_linux_job(self, project):
         project.spec()
-        project.run('--gate', 'recorded')
+        project.run('--gate', 'strong')
         workflow = read(project.path('.github/workflows/purlin.yml'))
         assert 'ubuntu-latest' in workflow
         assert 'windows-latest' not in workflow
 
     @pytest.mark.proof("scaffold", "PROOF-15", "RULE-15")
     def test_the_purlin_release_is_pinned(self, project):
-        project.run('--gate', 'recorded')
+        project.run('--gate', 'strong')
         version = read(os.path.join(ROOT, 'VERSION')).strip()
         assert 'v%s' % version in read(
             project.path('.github/workflows/purlin.yml'))
 
     @pytest.mark.proof("scaffold", "PROOF-16", "RULE-16")
     def test_upstream_check_adds_the_scheduled_job(self, project):
-        project.run('--gate', 'recorded', '--ci', 'github',
+        project.run('--gate', 'strong', '--ci', 'github',
                     '--upstream-check')
         workflow = read(project.path('.github/workflows/purlin.yml'))
         assert 'upstream-check:' in workflow
@@ -579,20 +579,20 @@ class TestTheWorkflow:
 
     @pytest.mark.proof("scaffold", "PROOF-16", "RULE-16")
     def test_without_it_the_scheduled_job_is_absent(self, project):
-        project.run('--gate', 'recorded')
+        project.run('--gate', 'strong')
         workflow = read(project.path('.github/workflows/purlin.yml'))
         assert 'upstream-check:' not in workflow
 
     @pytest.mark.proof("scaffold", "PROOF-17", "RULE-17")
     def test_the_branch_rules_are_printed(self, project):
-        output = project.run('--gate', 'recorded')
+        output = project.run('--gate', 'strong')
         assert '.purlin/records/**' in output
-        assert 'specs/**/*.approvals/*.ci.json' in output
+        assert '.purlin/briefs/**' in output
         assert 'force push' in output.lower()
 
     @pytest.mark.proof("scaffold", "PROOF-17", "RULE-17")
-    def test_tested_prints_only_the_force_push_rule(self, project):
-        output = project.run('--gate', 'tested')
+    def test_passed_prints_only_the_force_push_rule(self, project):
+        output = project.run('--gate', 'passed')
         assert 'force push' in output.lower()
         assert '.purlin/records/**' not in output
 
@@ -605,7 +605,7 @@ class TestWhatInitWrites:
 
     @pytest.mark.proof("scaffold", "PROOF-18", "RULE-18")
     def test_the_summary_names_every_write(self, project):
-        output = project.run('--gate', 'recorded')
+        output = project.run('--gate', 'strong')
         named = summary_paths(output)
         for rel in ('.purlin/config.json', '.purlin/plugin-root',
                     '.purlin/plugins/pytest_purlin.py', 'conftest.py',
@@ -618,16 +618,16 @@ class TestWhatInitWrites:
 
     @pytest.mark.proof("scaffold", "PROOF-18", "RULE-18")
     def test_the_two_readmes_are_three_lines_each(self, project):
-        project.run('--gate', 'recorded')
+        project.run('--gate', 'strong')
         for rel in ('designs/README.md', '.purlin/records/README.md'):
             assert len(read(project.path(rel)).strip().splitlines()) == 3
 
     @pytest.mark.proof("scaffold", "PROOF-19", "RULE-19")
     def test_the_gitignore_block_is_added_once(self, project):
         write(project.path('.gitignore'), 'node_modules/\n')
-        project.run('--gate', 'tested')
+        project.run('--gate', 'passed')
         first = read(project.path('.gitignore'))
-        project.run('--gate', 'tested')
+        project.run('--gate', 'passed')
         assert read(project.path('.gitignore')) == first
         assert first.startswith('node_modules/\n')
         assert '.purlin/runtime/' in first
@@ -638,7 +638,7 @@ class TestWhatInitWrites:
         write(project.path('pyproject.toml'), '[project]\nname = "demo"\n')
         os.makedirs(project.path('src'), exist_ok=True)
         write(project.path('src/app.py'), 'def go():\n    return 1\n')
-        project.run('--gate', 'tested')
+        project.run('--gate', 'passed')
         text = read(project.path('pyproject.toml'))
         assert '[tool.mutmut]' in text
         assert 'source_paths = ["src"]' in text
@@ -647,57 +647,59 @@ class TestWhatInitWrites:
 
     @pytest.mark.proof("scaffold", "PROOF-19", "RULE-19")
     def test_without_a_pyproject_the_block_lands_in_setup_cfg(self, project):
-        project.run('--gate', 'tested')
+        project.run('--gate', 'passed')
         assert '[mutmut]' in read(project.path('setup.cfg'))
 
     @pytest.mark.proof("scaffold", "PROOF-40", "RULE-40")
     def test_the_mutmut_copy_is_ignored_once(self, project):
         write(project.path('greeting.py'), 'def greet(name):\n    return name\n')
         write(project.path('tests/test_greeting.py'), 'def test_greet():\n    pass\n')
-        project.run('--gate', 'tested')
-        project.run('--gate', 'tested')
+        project.run('--gate', 'passed')
+        project.run('--gate', 'passed')
         lines = read(project.path('.gitignore')).splitlines()
         assert lines.count('mutants/') == 1
 
     @pytest.mark.proof("scaffold", "PROOF-19", "RULE-19")
     def test_the_engine_block_is_added_once(self, project):
-        project.run('--gate', 'tested')
-        project.run('--gate', 'tested')
+        project.run('--gate', 'passed')
+        project.run('--gate', 'passed')
         assert read(project.path('setup.cfg')).count('[mutmut]') == 1
 
     @pytest.mark.proof("scaffold", "PROOF-9", "RULE-9")
     def test_a_node_project_is_told_about_stryker(self):
         made = Project('vitest')
         try:
-            assert 'Stryker' in made.run('--gate', 'tested')
+            assert 'Stryker' in made.run('--gate', 'passed')
         finally:
             made.close()
 
     @pytest.mark.proof("scaffold", "PROOF-18", "RULE-18")
     def test_the_dashboard_is_copied(self, project):
-        project.run('--gate', 'tested')
+        project.run('--gate', 'passed')
         source = os.path.join(ROOT, 'scripts', 'report', 'purlin-report.html')
         assert read(project.path('purlin-report.html')) == read(source)
 
     @pytest.mark.proof("scaffold", "PROOF-34", "RULE-34")
     def test_the_next_step_is_the_last_line(self, project):
-        lines = project.run('--gate', 'tested').strip().splitlines()
+        lines = project.run('--gate', 'passed').strip().splitlines()
         assert lines[-1].startswith('→')
         assert 'purlin:spec' in lines[-1]
 
     @pytest.mark.proof("scaffold", "PROOF-34", "RULE-34")
     def test_the_next_step_reads_the_state_once_specs_exist(self, project):
         project.spec()
-        lines = project.run('--gate', 'tested').strip().splitlines()
+        lines = project.run('--gate', 'passed').strip().splitlines()
         assert lines[-1].startswith('→')
 
     @pytest.mark.proof("scaffold", "PROOF-35", "RULE-35")
     def test_no_emoji_and_no_retired_word_in_the_output(self, project):
-        output = project.run('--gate', 'approved')
+        output = project.run('--gate', 'signed')
         # Spelled in halves so this file does not carry the words either.
-        for word in ('rece' + 'ipt', 'au' + 'dit', 'CODE' + 'OWNERS',
-                     'fo' + 'rge', 'plat' + 'form'):
-            assert word not in output.lower()
+        for word in ('rece' + 'ipt', 'CODE' + 'OWNERS', 'fo' + 'rge',
+                     'plat' + 'form', 'tes' + 'ted', 'reco' + 'rded',
+                     'appro' + 'ved', 'appro' + 'ver', 'ver' + 'dict',
+                     'verify' + '_gate'):
+            assert word not in output.lower(), word
         assert all(ord(ch) < 0x1F000 for ch in output)
 
 
@@ -705,7 +707,7 @@ class TestTheHook:
 
     @pytest.mark.proof("scaffold", "PROOF-24", "RULE-24")
     def test_the_shim_and_the_delegator_are_written(self, project):
-        project.run('--gate', 'tested')
+        project.run('--gate', 'passed')
         shim = read(project.path('.purlin/hooks/pre-push'))
         assert 'scripts/hooks/pre-push.sh' in shim
         assert os.access(project.path('.purlin/hooks/pre-push'), os.X_OK)
@@ -714,13 +716,13 @@ class TestTheHook:
 
     @pytest.mark.proof("scaffold", "PROOF-24", "RULE-24")
     def test_no_pre_commit_hook_is_installed(self, project):
-        project.run('--gate', 'tested')
+        project.run('--gate', 'passed')
         assert not project.has('.purlin/hooks/pre-commit')
         assert not project.has('.git/hooks/pre-commit')
 
     @pytest.mark.proof("scaffold", "PROOF-25", "RULE-25")
     def test_the_shim_names_no_machine(self, project):
-        project.run('--gate', 'tested')
+        project.run('--gate', 'passed')
         shim = read(project.path('.purlin/hooks/pre-push'))
         assert ROOT not in shim
         assert project.root not in shim
@@ -728,7 +730,7 @@ class TestTheHook:
     @pytest.mark.proof("scaffold", "PROOF-26", "RULE-26")
     def test_a_hook_someone_else_wrote_is_kept(self, project):
         write(project.path('.git/hooks/pre-push'), '#!/bin/sh\necho mine\n')
-        output = project.run('--gate', 'tested')
+        output = project.run('--gate', 'passed')
         assert read(project.path('.git/hooks/pre-push')) == \
             '#!/bin/sh\necho mine\n'
         assert 'add this line to it' in output
@@ -736,13 +738,13 @@ class TestTheHook:
     @pytest.mark.proof("scaffold", "PROOF-26", "RULE-26")
     def test_a_hook_manager_is_named_rather_than_written_over(self, project):
         write(project.path('.pre-commit-config.yaml'), 'repos: []\n')
-        output = project.run('--gate', 'tested')
+        output = project.run('--gate', 'passed')
         assert 'pre-commit framework' in output
         assert not project.has('.git/hooks/pre-push')
 
     @pytest.mark.proof("scaffold", "PROOF-21", "RULE-21")
     def test_the_plugin_root_file_points_at_this_checkout(self, project):
-        project.run('--gate', 'tested')
+        project.run('--gate', 'passed')
         assert read(project.path('.purlin/plugin-root')).strip() == ROOT
 
 
@@ -754,7 +756,7 @@ class TestTheFlags:
 
     @pytest.mark.proof("scaffold", "PROOF-32", "RULE-32")
     def test_add_keeps_what_was_detected(self, project):
-        project.run('--gate', 'tested')
+        project.run('--gate', 'passed')
         project.run('--add', 'vitest')
         assert project.config()['test_framework'] == 'pytest,vitest'
         assert project.has('.purlin/plugins/pytest_purlin.py')
@@ -762,20 +764,20 @@ class TestTheFlags:
 
     @pytest.mark.proof("scaffold", "PROOF-32", "RULE-32")
     def test_add_twice_names_the_framework_once(self, project):
-        project.run('--gate', 'tested')
+        project.run('--gate', 'passed')
         project.run('--add', 'vitest')
         project.run('--add', 'vitest')
         assert project.config()['test_framework'] == 'pytest,vitest'
 
     @pytest.mark.proof("scaffold", "PROOF-38", "RULE-38")
     def test_a_gate_change_drops_a_framework_the_tree_cannot_run(self, project):
-        """An older release recorded every plugin it shipped, runnable or not."""
-        project.run('--gate', 'tested')
-        recorded = project.config()
-        recorded['test_framework'] = 'pytest,jest,shell,vitest'
+        """An older release wrote down every plugin it shipped, runnable or not."""
+        project.run('--gate', 'passed')
+        written = project.config()
+        written['test_framework'] = 'pytest,jest,shell,vitest'
         write(project.path('.purlin/config.json'),
-              json.dumps(recorded, indent=2))
-        output = project.run('--gate', 'recorded')
+              json.dumps(written, indent=2))
+        output = project.run('--gate', 'strong')
         assert project.config()['test_framework'] == 'pytest,shell'
         for name in ('jest', 'vitest'):
             assert ('dropped %s from test_framework: nothing in the tree '
@@ -787,12 +789,12 @@ class TestTheFlags:
     def test_a_framework_the_tree_carries_survives_a_gate_change(self, project):
         """Wiring the tree carries outranks detection, the stricter test."""
         write(project.path('package.json'), '{"name": "app"}\n')
-        project.run('--gate', 'tested')
-        recorded = project.config()
-        recorded['test_framework'] = 'pytest,jest,shell'
+        project.run('--gate', 'passed')
+        written = project.config()
+        written['test_framework'] = 'pytest,jest,shell'
         write(project.path('.purlin/config.json'),
-              json.dumps(recorded, indent=2))
-        output = project.run('--gate', 'recorded')
+              json.dumps(written, indent=2))
+        output = project.run('--gate', 'strong')
         assert project.config()['test_framework'] == 'pytest,jest,shell'
         assert 'dropped' not in output
 
@@ -800,7 +802,7 @@ class TestTheFlags:
     def test_dry_run_writes_nothing_and_prints_the_plan(self):
         made = Project('pytest')
         try:
-            output = made.run('--gate', 'recorded', '--dry-run')
+            output = made.run('--gate', 'strong', '--dry-run')
             assert '.purlin/config.json' in summary_paths(output)
             assert not made.has('.purlin')
             assert not made.has('conftest.py') or read(
@@ -815,7 +817,7 @@ class TestTheFlags:
         try:
             done = subprocess.run(
                 [sys.executable, SCAFFOLD, '--project-root', directory,
-                 '--gate', 'recorded', '--yes', '--dry-run'],
+                 '--gate', 'strong', '--yes', '--dry-run'],
                 capture_output=True, encoding='utf-8', timeout=300,
                 stdin=subprocess.DEVNULL)
             assert done.returncode == 0, done.stdout + done.stderr
@@ -833,7 +835,7 @@ class TestTheFlags:
         try:
             done = subprocess.run(
                 [sys.executable, SCAFFOLD, '--project-root', directory,
-                 '--gate', 'tested', '--yes'], capture_output=True, encoding='utf-8',
+                 '--gate', 'passed', '--yes'], capture_output=True, encoding='utf-8',
                 timeout=300, stdin=subprocess.DEVNULL)
             assert done.returncode == 2
             assert 'git init' in done.stderr
@@ -845,14 +847,14 @@ class TestTheFlags:
     def test_a_missing_project_root_is_a_bad_invocation(self):
         done = subprocess.run(
             [sys.executable, SCAFFOLD, '--project-root', '/no/such/dir',
-             '--gate', 'tested', '--yes'], capture_output=True, encoding='utf-8',
+             '--gate', 'passed', '--yes'], capture_output=True, encoding='utf-8',
             timeout=300)
         assert done.returncode == 2
 
     @pytest.mark.proof("scaffold", "PROOF-33", "RULE-33")
     def test_update_hands_the_project_to_the_upgrade(self, project):
         """`--update` reaches update.py, which is what owns the upgrade."""
-        project.run('--gate', 'tested')
+        project.run('--gate', 'passed')
         done = subprocess.run(
             [sys.executable, SCAFFOLD, '--project-root', project.root,
              '--update', '--yes'], capture_output=True, encoding='utf-8', timeout=300,
@@ -867,7 +869,7 @@ class TestTheFlags:
     @pytest.mark.proof("scaffold", "PROOF-33", "RULE-33")
     def test_update_with_dry_run_asks_the_upgrade_what_is_pending(self,
                                                                   project):
-        project.run('--gate', 'tested')
+        project.run('--gate', 'passed')
         done = subprocess.run(
             [sys.executable, SCAFFOLD, '--project-root', project.root,
              '--update', '--dry-run'], capture_output=True, encoding='utf-8',
@@ -903,7 +905,7 @@ class TestTheMarketplacePath:
         cache, installed = self.copy_plugin()
         made = Project('pytest')
         try:
-            output = made.run('--gate', 'recorded',
+            output = made.run('--gate', 'strong',
                               script=os.path.join(installed, 'scripts', 'init',
                                                   'scaffold.py'),
                               env={'CLAUDE_PLUGIN_ROOT': installed})
@@ -919,7 +921,7 @@ class TestTheMarketplacePath:
         cache, installed = self.copy_plugin()
         made = Project('pytest')
         try:
-            made.run('--gate', 'tested',
+            made.run('--gate', 'passed',
                      script=os.path.join(installed, 'scripts', 'init',
                                          'scaffold.py'),
                      env={'CLAUDE_PLUGIN_ROOT': installed})
@@ -933,7 +935,7 @@ class TestTheMarketplacePath:
         cache, installed = self.copy_plugin()
         made = Project('pytest')
         try:
-            made.run('--gate', 'recorded',
+            made.run('--gate', 'strong',
                      script=os.path.join(installed, 'scripts', 'init',
                                          'scaffold.py'),
                      env={'CLAUDE_PLUGIN_ROOT': installed})
@@ -961,7 +963,7 @@ class TestTheMarketplacePath:
     def test_no_project_file_points_at_the_repository_s_own_dev_folder(self):
         made = Project('pytest')
         try:
-            made.run('--gate', 'recorded')
+            made.run('--gate', 'strong')
             for base, _dirs, names in os.walk(made.root):
                 if '.git' in base.split(os.sep):
                     continue
