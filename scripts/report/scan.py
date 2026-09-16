@@ -5,11 +5,12 @@
 
 QA and a PM want the rollup without a checkout and without a build. This
 fetches `specs/` and `.purlin/records/` alone, reads them with the same
-package every other surface reads, and prints the seven-state rollup and how
-far the working branch has moved past the newest record. CI prints the same
-text as a pull request comment, so one rollup is read everywhere. The review
-list follows, one line per rule, so a reader without a checkout can work it:
-the risk, the rule, its state, and why it is on the list.
+package every other surface reads, and prints how many rules meet the gate,
+one line per bucket, and how far the working branch has moved past the newest
+record. CI prints the same text as a pull request comment, so one rollup is
+read everywhere. The review list follows, one line per rule, so a reader
+without a checkout can work it: the risk, the rule, the cell that blocks it
+and why a person is needed.
 
 Nothing is written outside the temporary directory, and the directory is
 removed before the command returns.
@@ -35,6 +36,8 @@ SPARSE = ('specs', '.purlin')
 RECORDS_DIR = '.purlin/records'
 # The order a person reads the review list in.
 RISK_ORDER = ('high', 'medium', 'low')
+# The separator the status line and the board both use between two counts.
+DOT = ' · '
 
 # How much history is fetched. Enough to count the commits since the newest
 # record on any branch anyone reviews; a deeper count says so instead.
@@ -97,26 +100,35 @@ def newest_record(payload):
 
 
 def rollup_text(project_root, payload):
-    """The seven-state rollup, plus how far HEAD has moved past the record."""
-    rollup = payload['project_rollup']
-    lines = ['Purlin: %s, gate %s'
-             % (payload['project'], payload['gate']['gate']),
-             '']
+    """The rollup: the gate, one line per bucket, and the newest record.
+
+    A bucket is the one tile a rule is counted in, so the counts add up to
+    the rule total and a reader can check them. The flags `stale`, `held` and
+    `needs a person` are counted beside the buckets, never instead of them,
+    and each is printed only when it stands.
+    """
+    summary = payload['summary']
+    gate = payload['gate']['gate']
+    lines = ['Purlin: %s, gate %s' % (payload['project'], gate), '']
+    lines.append('%d of %d rules meet the gate %s%s%d failing'
+                 % (summary['met'], summary['rules'], gate, DOT,
+                    summary.get('failing') or 0))
     lines.append('%d features, %d rules.'
-                 % (rollup['features'], rollup['rules']))
+                 % (summary['features'], summary['rules']))
 
     from purlin import states
-    for state in states.STATE_ORDER:
-        count = (rollup.get('counts') or {}).get(state)
-        if count:
-            lines.append('  %-12s %d' % (state, count))
+    for bucket in states.bucket_keys(gate):
+        lines.append('  %-12s %d' % (bucket, summary.get(bucket) or 0))
 
-    if rollup.get('stale'):
-        lines.append('%d rules are Stale: a human must look.'
-                     % rollup['stale'])
-    if rollup.get('re_verify_pending'):
-        lines.append('%d rules are re-verify pending: only the code changed.'
-                     % rollup['re_verify_pending'])
+    if summary.get('stale'):
+        lines.append('%d signatures stale: the hashes changed after signing.'
+                     % summary['stale'])
+    if summary.get('held'):
+        lines.append('%d rules held: a person said a test does not prove '
+                     'its proof.' % summary['held'])
+    if summary.get('needs_person'):
+        lines.append('%d rules need a person: the machine could not settle '
+                     'them.' % summary['needs_person'])
 
     record = newest_record(payload)
     lines.append('')
@@ -139,33 +151,31 @@ def rollup_text(project_root, payload):
 
 
 def review_list_text(payload):
-    """The review list, one line per rule: risk, rule, state and reasons.
+    """The review list, one line per rule: risk, rule, cell, and why.
 
-    High risk first, then medium, then low; inside a level a Stale rule first,
-    then by feature and rule number.
+    High risk first, then medium, then low; inside a level a stale or held
+    rule first, then by feature and rule number, which is the order the
+    payload already sorts them in and the order a person works them in. The
+    `why` tokens are the closed set `unsigned`, `stale`, `held`,
+    `needs a person` and `manual`.
     """
-    states_by_rule = {}
-    for feature in payload.get('features') or ():
-        for rule in feature.get('rules') or ():
-            if rule.get('feature') == feature.get('name'):
-                states_by_rule[(rule['feature'], rule['id'])] = rule.get('state')
     entries = []
     for item in payload.get('review_list') or ():
         owner = item.get('owner') or item.get('feature')
-        state = states_by_rule.get((owner, item.get('rule'))) or 'unknown'
         risk = item.get('risk') or 'low'
+        why = list(item.get('why') or ())
         number = str(item.get('rule') or '').rpartition('-')[2]
         entries.append((RISK_ORDER.index(risk) if risk in RISK_ORDER else 3,
-                        state != 'Stale', owner or '',
+                        0 if set(why) & {'stale', 'held'} else 1, owner or '',
                         int(number) if number.isdigit() else 0,
                         '  %-6s  %s %s  %s  %s' % (
-                            risk, owner, item.get('rule'), state,
-                            item.get('reason') or '; '.join(
-                                item.get('reasons') or ()))))
+                            risk, owner, item.get('rule'),
+                            item.get('cell') or '', ', '.join(why))))
     if not entries:
         return 'Review list: no rule needs a person.'
-    lines = ['Review list: %d rule%s.'
-             % (len(entries), '' if len(entries) == 1 else 's')]
+    lines = ['Review list: %d %s a person.'
+             % (len(entries),
+                'rule needs' if len(entries) == 1 else 'rules need')]
     lines.extend(line.rstrip() for *_key, line in sorted(entries))
     return '\n'.join(lines)
 
@@ -201,8 +211,8 @@ def _git(cwd, args, check=True):
 def main(argv=None):
     console_module.force_utf8_stdio()
     parser = argparse.ArgumentParser(
-        description='Print a repository\'s seven-state rollup without '
-                    'cloning it whole.')
+        description='Print a repository\'s rollup without cloning it '
+                    'whole.')
     parser.add_argument('--repo', required=True,
                         help='the repository URL, or a local path')
     parser.add_argument('--ref', default=None,
