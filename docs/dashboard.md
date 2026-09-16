@@ -18,10 +18,10 @@ Open it in any browser. It reads `.purlin/report-data.js`, which the plugin rewr
 background after a tool call or a turn changed a spec, a proof file, a record or the config.
 That file is generated and never committed. The page reloads itself when you come back to the
 tab and what it is showing is more than 60 seconds old, keeping the screen and the open rule,
-so an approval you have just made appears without you reloading anything. A commit you make by
-hand outside Claude Code shows up after the next `purlin:status`.
+so a signature you have just written appears without you reloading anything. A commit you make
+by hand outside Claude Code shows up after the next `purlin:status`.
 
-**From CI.** A CI verify copies the page and its data into a build artifact named
+**From CI.** A CI run copies the page and its data into a build artifact named
 `purlin-dashboard-<runner>`, one per job in the matrix, so a run on two operating systems
 leaves two pages rather than one. Anyone with repository access downloads one from the run and
 opens the page. Nothing is provisioned, nothing is hosted, and no site has to be published.
@@ -32,88 +32,120 @@ Every screen carries the same top bar: the logo, how old the data is, the gate i
 commit the data was built from, and the theme toggle. How old the data is is a button: press it
 to reload the page. The age recomputes itself every 60 seconds from the stamp the data already
 carries, so a tab left open does not read `less than a minute old` an hour later. Below it are
-the tabs: Board, Review list with its count, and the open rule last when there is one.
+the tabs: Board, Review list with its count where the gate has one, and the open rule last when
+there is one.
 
 ## Board
 
-The Board is where every rule stands.
+The Board is where every rule stands. Its headline is one line:
 
-![The Board at the tested gate: seven state tiles, and two specs with coverage bars and state badges](images/dashboard-solo.png)
+```
+3 of 5 rules meet the gate passed · 0 failing
+```
 
-At the `tested` gate the board carries a headline count, one tile per state, and a table of
-specs grouped by category with coverage and state. Three columns, because three artifacts
-exist.
+A rule meets the gate when every cell up to the gate's level is met. The gate decides how many
+cells a rule has, so it also decides how much of this page exists.
 
-![The Board at the recorded gate, with the risk grid and the strength, latest record and re-verify columns](images/dashboard-team.png)
+![The Board at the passed gate: the Untested, Failing and Passed tiles, and two specs with their spec status, tests and last run](images/dashboard-solo.png)
 
-At `recorded` the same board has more in it, because more exists to show: a risk-by-state grid,
-and the strength, latest record and re-verify columns. The latest record column prints one entry
-per operating system that recorded, reading `passed` or `failed` in that result's colour, so a
-Linux job that failed and a Windows job that passed do not read the same. A record a person
-committed names its label, `developer` or `local`, beside the result; a record CI wrote names
-none, CI being the writer the gate expects. The timestamp and the file path are on the tooltip.
+At the `passed` gate a rule has two cells, its spec status and its passed cell, so the board
+carries three tiles and five columns. The tiles are `Untested`, `Failing` and `Passed`. The
+columns are `Spec`, `Rules`, `Spec status`, `Tests` and `Last run`.
 
-![The Board at the approved gate, with the approvals column, a stale rule, and two warnings above the ledger](images/dashboard-regulated.png)
+| Column | What it reads |
+|---|---|
+| `Spec` | the feature name, with its category above the group |
+| `Rules` | how many rules the spec holds |
+| `Spec status` | `ready · drafted`, the two counts of what the spec says |
+| `Tests` | `passed · failing · no test`, each count in its own tone |
+| `Last run` | the source of the newest record, the operating system where the run was one job of a matrix, and its age |
 
-At `approved` an approvals column joins them. Warnings sit above the ledger: an uncommitted
-working tree, or a spec line the parser could not read as a rule. A Stale badge and a pending
-re-verify are both visible in one row here, and they mean different things: Stale is text that
-changed and needs a human, `1 pending` is code that changed and clears on the next CI run.
+![The Board at the strong gate: a Strong tile beside the first three, and the Strength and Strong columns](images/dashboard-team.png)
 
-**Columns exist only where their artifact does.** Risk appears when rules carry risk tags.
-Strength, latest record and re-verify appear when records exist. Approvals appears when approval
-files exist. A project at `tested` is not shown seven empty columns, and nothing has to be
-configured to get the rest.
+At `strong` each rule gains a strong cell, so a `Strong` tile joins the three and two columns
+join the five: `Strength`, the test strength of the newest counting record, and `Strong`, `n of
+m` with a bar. The `Last run` column names the source of that record. Only a record CI wrote
+counts at this gate, so a record a person committed reads `developer` and the rules it covers
+read `not run`.
+
+![The Board at the signed gate: a Signed tile and a Stale flag card, and the Signed column](images/dashboard-regulated.png)
+
+At `signed` each rule gains a signed cell. A `Signed` tile joins the four, a `Stale` flag card
+sits beside the tiles, and a `Signed` column joins the seven, reading `n of m` with the stale
+count in the fail tone. The flag card is counted beside the tiles and never instead of them: a
+stale rule is still in whichever tile its cells put it. Warnings sit above the table: an
+uncommitted working tree, or a spec line the parser could not read as a rule.
+
+**A column exists only where its cell does.** A project at `passed` is not shown two empty
+evidence columns, and nothing has to be configured to get the rest: `purlin:init --gate strong`
+is the whole of it.
+
+Pressing a spec expands its rules. Each row carries the rule id, the rule text, and one pill per
+cell that exists, so a rule at `signed` shows three pills and the same rule at `passed` shows
+one. A pill reads the cell's word: `passed`, `failed`, `no test`, `not run` or `code changed` at
+level 1; `strong`, `weak` or `needs a person` at level 2; `signed`, `unsigned`, `stale`, `held`
+or `not required` at level 3.
 
 ## Filters
 
-Five filter pills sit above the spec table. Each answers a question someone arrives with, and
-they compose: a rule shows when every active filter accepts it, and a spec shows when one of its
-rules does.
+Filter pills sit above the spec table. Each answers a question someone arrives with, and they
+compose: a rule shows when every active filter accepts it, and a spec shows when one of its
+rules does. The gate decides which exist, because a filter with no cell behind it selects
+nothing.
 
-| Filter | What it selects |
-|---|---|
-| High risk not approved | Rules tagged `high` that are not in the Approved state |
-| Stale | Rules whose text changed after their approval |
-| No negative case | Rules whose proofs only cover the happy path |
-| Low test strength | Specs whose test strength is below `min_strength` |
-| Open items | Drafted, Stale, awaiting an AI review, or re-verify pending |
+| Filter | What it selects | Exists at |
+|---|---|---|
+| `Untested` | rules in the untested tile: drafted, or ready with no test or no current counting run | every gate |
+| `Failing` | rules whose counting run failed | every gate |
+| `Weak` | rules whose strong cell reads `weak` | `strong` and above |
+| `Unsigned` | rules whose signed cell reads `unsigned` | `signed` |
+| `Stale or held` | rules flagged stale, held, or both | `signed` |
 
 ## Rule
 
-Clicking a rule opens it.
+Pressing a rule opens it.
 
-![The rule screen for login RULE-1: state, risk, origin, spec path, test strength, latest record, approvals, the review reason, and the proof with its test](images/dashboard-rule.png)
+![The rule screen for login RULE-1: the spec status, the passed, strong and signed cell rows, the proofs, the brief panel and the sign panel](images/dashboard-rule.png)
 
-One rule, its state and tags, the spec that holds it, its test strength, the latest record, the
-approval files that bind it, and each proof with its tier and the tests that ran it. This is the
-screen to open when a status line says a rule needs a look and you want to know what it claims
-before you decide.
+The screen opens with the spec status, `ready` or `drafted`, then one row per cell that exists.
+Each row carries the cell's word and the reasons it carries: `failing: tests/test_login.py`,
+`windows: no record yet`, `code changed since 9f8e7d6`, `strength 64% under 80%`, `manual
+proof`, `held by sam@acme.com: the lock expiry is never read`, `by jane@acme.com`. A cell with
+nothing to add carries no reason. Under the rows sit the Proofs, each with its tier and the
+tests that ran it.
 
-The Review panel says why the rule is on the review list and what the free checks found, each
-finding in one sentence naming the proofs that carry it. Under it, a rule that is not approved
-names the command that approves it, `purlin:approve <feature> <RULE-N>`, to run in Claude Code:
-an approval is a signed commit by someone on the approver list, so this page can only read one
-back once it is on the branch. A rule that is approved names who approved it instead.
+At `strong` and above the **Brief panel** follows: the test strength beside `min_strength`, the
+free-check findings on the proof text and the test body, and what the model review observed,
+each in one sentence naming the proofs it concerns. The brief reports and recommends nothing,
+so what you read here is what was seen, not what to do about it.
+
+At `signed` the **Sign panel** is last. A rule that is not signed names the command that signs
+it, `purlin:sign <feature> <RULE-N>`, to run in Claude Code: a signature is a signed commit by
+someone on the signer list, so this page can only read one back once it is on the branch. A
+rule that is signed reads `Signed by <email>` instead.
 
 `← Review list` at the top closes the rule and returns to the list it was opened from; from the
 board the same link reads `← Board`.
 
 ## Review list
 
-The review list is what CI put in front of a person.
+The review list is the rules whose next step is a person. The tab exists at `strong` and above,
+because below that there is no cell a person answers.
 
-![The review list: four rules grouped high, medium and low, each with its spec, rule id, rule text, state and the reason it is listed](images/dashboard-review-list.png)
+![The review list: the header, the risk summary, and three rows grouped by risk, each with its feature, rule id, text, risk tag, cell word and reasons](images/dashboard-review-list.png)
 
-Rules are grouped by risk, highest first. A row carries the spec, the rule id, the rule's
-text cut to one line and its state, so you read what you are about to open before you open
-it. A reason sits beside that only where it says more than the group already does: `stale`,
-`strength 64% under 80%`, `windows: no record yet`, `re-verify pending`, or the sentence a
-free check writes. A rule whose only reason is its risk carries none, because the group
-header said it. QA works this list, never the whole rule table. When nothing is waiting the
-tab reads `Review list (0)` and the screen says so.
+The header says `<n> rules need a person`. Under it the risk summary prints one line per risk
+with the counts of unsigned, stale, held and needs-a-person rules in that risk. Then the rows,
+grouped by risk with high first, and within a group the stale and held rules before the rest.
+A row carries the feature, the rule id, the rule's text cut to one line, its risk tag, the word
+of the cell that blocks it, and that cell's reasons.
 
-`purlin:review` walks the same list one brief at a time in a checkout. The page is the read-only
+A rule is on the list when its blocking cell is the strong cell reading `needs a person`, or
+the signed cell reading `unsigned`, `stale` or `held`. Nothing else is: a rule with no test, a
+failing rule and a weak rule are all build work, and they stay on the board. When nothing is
+waiting the tab reads `Review list (0)` and the screen says so.
+
+`purlin:sign` walks the same list one brief at a time in a checkout. The page is the read-only
 view of it, for someone who has no checkout.
 
 ## Both themes
@@ -130,13 +162,13 @@ Anyone with a repository URL can print the same rollup without cloning the repos
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/report/scan.py" --repo <url> [--ref <branch-or-tag>]
 ```
 
-It reads `specs/` and `.purlin/records/` by sparse fetch and prints the seven-state rollup,
-noting how many commits behind the latest record the ref is, then the review list, one line per
-rule with its risk, its state and why it is listed. `--repo` also takes a local path.
-CI posts the same rollup as a pull request comment, so a reviewer reads one answer whether they
-are on the pull request, in a checkout, or looking at the page.
+It reads `specs/` and `.purlin/records/` by sparse fetch and prints one line per bucket, noting
+how many commits behind the newest record the ref is, then the review list, one line per rule
+with its risk, the word of its blocking cell and why it is listed. `--repo` also takes a local
+path. CI posts the same rollup as a pull request comment, so a reviewer reads one answer
+whether they are on the pull request, in a checkout, or looking at the page.
 
 ## Next
 
 - [running-and-records.md](running-and-records.md): what writes the data this page shows.
-- [review-and-approval.md](review-and-approval.md): working the review list.
+- [review-and-signing.md](review-and-signing.md): working the review list.
