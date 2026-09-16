@@ -1,0 +1,64 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T22:36:38Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "05fb797431478d216d727031303c880c4d1151325c65821e551f3011a13d1bf3",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-17",
+      "text": "Run `--gate strong` and verify the output contains `.purlin/records/**`, `.purlin/briefs/**` and `force push`; run `--gate passed` and verify it contains `force push` and not `.purlin/records/**`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-17",
+  "rule_hash": "651fc3bf907a1d702d7fb606531f4dffb345af84686da85dd279c8aebb714db5",
+  "rule_text": "The branch rules the git host has to enforce are printed: under `passed` the force-push and deletion rule alone, and above it the restrictions on `.purlin/records/**` and `.purlin/briefs/**` as well",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "4a33b673988367fefcce4668315fd399962f98f1863e9a44a439b450cc218463",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_passed_prints_only_the_force_push_rule(self, project):\n        output = project.run('--gate', 'passed')\n        assert 'force push' in output.lower()\n        assert '.purlin/records/**' not in output",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_passed_prints_only_the_force_push_rule",
+      "proof": "PROOF-17",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_branch_rules_are_printed(self, project):\n        output = project.run('--gate', 'strong')\n        assert '.purlin/records/**' in output\n        assert '.purlin/briefs/**' in output\n        assert 'force push' in output.lower()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_branch_rules_are_printed",
+      "proof": "PROOF-17",
+      "reasons": []
+    },
+    {
+      "body": null,
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_tested_prints_only_the_force_push_rule",
+      "proof": "PROOF-17",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "4382af46e64f59ffd45943720fd19e03a71005978bbf871c0e8436c426c5dde2"
+}

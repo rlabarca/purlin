@@ -1,0 +1,92 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "brief",
+  "generated_at": "2026-09-16T22:36:18Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "a99edbc83e4358169c05bdda5f587f9093bcf9a544cce232cb678a4dae07cbca",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-38",
+      "text": "Mark `test_valid_credentials_return_200` and a second test `test_a_token_comes_back` with `PROOF-1`, write both into the record, and build the brief; verify the first entry's body holds `def test_valid_credentials_return_200` and `== 200` and not `def test_a_token_comes_back`, and the second entry's body holds `def test_a_token_comes_back` and `token` and not `def test_valid_credentials_return_200`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-39",
+      "text": "Write the second test so that it asserts nothing; verify `no_assertion` is among the second entry's findings and not among the first's",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-40",
+      "text": "Write a third name `test_renamed_away` into the record for `PROOF-1` that the file no longer holds; verify its body is empty while the other two still show their own source",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-41",
+      "text": "Read the names a record carries, `Acme.LoginTests.Denied(user: \"x\")`, `test_found[jest-[proof:f:PROOF-1:RULE-1]]`, `TestLogin::test_found` and `works [proof:login:PROOF-1:RULE-1]` against the source names `Allowed`, `Denied`, `test_found` and `works [proof:login:PROOF-1:RULE-1]`; verify each finds its own source name and nothing else, and `test_gone` finds none",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/brief/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-26",
+  "rule_hash": "4794c13e7bc9eac2e50543b38c4959b556828a8b5284563dff8310963c5ff7ba",
+  "rule_text": "When several tests back one proof, each test in the brief shows its own source and its own findings; a test whose source cannot be found shows none rather than another test's",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "c494a0bee0f2e6bbd8635ae8eb194affda7c54257be2e000a9da480ea6284a83",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_each_name_shows_its_own_body(self, project):\n        _two_tests(project)\n        tests = _tests_by_name(project)\n        assert sorted(tests) == sorted(NAMES), tests\n        first = tests['test_valid_credentials_return_200']['body']\n        second = tests['test_a_token_comes_back']['body']\n        assert 'def test_valid_credentials_return_200' in first, first\n        assert '== 200' in first, first\n        assert 'def test_a_token_comes_back' not in first, first\n        assert 'def test_a_token_comes_back' in second, second\n        assert 'token' in second, second\n        assert 'def test_valid_credentials_return_200' not in second, second",
+      "file": "dev/test_brief_tests_named.py",
+      "findings": [],
+      "name": "test_each_name_shows_its_own_body",
+      "proof": "PROOF-38",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_finding_stays_with_the_test_it_was_found_in(self, project):\n        _two_tests(project, second=NO_ASSERTION)\n        tests = _tests_by_name(project)\n        assert 'no_assertion' in tests['test_a_token_comes_back']['findings'], \\\n            tests['test_a_token_comes_back']\n        assert 'no_assertion' not in \\\n            tests['test_valid_credentials_return_200']['findings'], \\\n            tests['test_valid_credentials_return_200']",
+      "file": "dev/test_brief_tests_named.py",
+      "findings": [],
+      "name": "test_a_finding_stays_with_the_test_it_was_found_in",
+      "proof": "PROOF-39",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_name_the_file_no_longer_holds_shows_no_body(self, project):\n        _two_tests(project, names=NAMES + ('test_renamed_away',))\n        tests = _tests_by_name(project)\n        assert tests['test_renamed_away']['body'] is None, \\\n            tests['test_renamed_away']\n        assert 'def test_valid_credentials_return_200' in \\\n            tests['test_valid_credentials_return_200']['body']\n        assert 'def test_a_token_comes_back' in \\\n            tests['test_a_token_comes_back']['body']",
+      "file": "dev/test_brief_tests_named.py",
+      "findings": [],
+      "name": "test_a_name_the_file_no_longer_holds_shows_no_body",
+      "proof": "PROOF-40",
+      "reasons": []
+    },
+    {
+      "body": "def test_each_runner_name_form_finds_its_own_test(self):\n        names = ['Allowed', 'Denied', 'test_found',\n                 'works [proof:login:PROOF-1:RULE-1]']\n        expected = {\n            'Acme.LoginTests.Denied(user: \"x\")': [1],\n            'test_found[jest-[proof:f:PROOF-1:RULE-1]]': [2],\n            'TestLogin::test_found': [2],\n            'works [proof:login:PROOF-1:RULE-1]': [3],\n            'test_gone': [],\n        }\n        for written, indexes in expected.items():\n            assert static_checks.test_name_matches(written, names) == indexes, \\\n                written",
+      "file": "dev/test_brief_tests_named.py",
+      "findings": [],
+      "name": "test_each_runner_name_form_finds_its_own_test",
+      "proof": "PROOF-41",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "3c3db10afbca97d7792b0f127cc06afae82ea852aad1a9326ddec455c8e9ed56"
+}

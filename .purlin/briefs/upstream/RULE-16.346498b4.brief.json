@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "upstream",
+  "generated_at": "2026-09-16T22:37:04Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "8a5e4d55c694088f73471ad29669ea4f0740f583640d63d80e97ffe0111771d7",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-16",
+      "text": "Pin an anchor, add `- RULE-9: No pickle imports [risk: low]` to the local copy, then run `propose no_eval`; verify the result reads `written` and names `.purlin/runtime/anchors/no_eval.patch`, and that the patch holds `+- RULE-9: No pickle imports [risk: low]`, the header lines `--- a/specs/no_eval.md` and `+++ b/specs/no_eval.md`, and no `> Pinned:` or `> Source:` line",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/upstream/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-16",
+  "rule_hash": "a96f626fe2d0bba69877bc8eadc9eae6340add2f49cda91271eb6967a003ac9a",
+  "rule_text": "`propose <name>` writes the difference between the local copy and the source to `.purlin/runtime/anchors/<name>.patch` as a patch against the source's own path, and the project's tracking fields never reach it",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "70e4a2963887f96921924a430ac6e734db5b6d453f2cc7e7d89f46e731848fa3",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_propose_writes_the_patch_the_anchor_repo_needs(workspace):\n    _add(workspace)\n    _add_local_rule(workspace)\n    result = upstream.propose(workspace.root, 'no_eval')\n    assert result['status'] == 'written'\n    assert result['patch'] == '.purlin/runtime/anchors/no_eval.patch'\n    with open(os.path.join(workspace.root, result['patch']), 'r',\n              encoding='utf-8') as handle:\n        patch = handle.read()\n    assert '+- RULE-9: No pickle imports [risk: low]' in patch\n    assert '--- a/specs/no_eval.md' in patch\n    assert '+++ b/specs/no_eval.md' in patch\n    # The tracking fields are the consumer's, so they never reach the patch.\n    assert '> Pinned:' not in patch\n    assert '> Source:' not in patch",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_propose_writes_the_patch_the_anchor_repo_needs",
+      "proof": "PROOF-16",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "346498b482a75de59d44e45a03953750fd263619af44c60af30e422a4c6ca97b"
+}

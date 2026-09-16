@@ -1,0 +1,53 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "specs",
+  "generated_at": "2026-09-16T22:36:44Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "154d60c582f12ddb51be426529597e63f12582189f37192fbe556c9c3fac6516",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-4",
+      "text": "Call the rule text hash on `Tokens expire after 24 hours`, then call it on the text left by splitting `Tokens  expire   after 24 hours [risk: high]`; verify the two hashes are equal, so neither a doubled space nor a tag changes the rule text hash a signature binds",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/specs/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-3",
+  "rule_hash": "dd43542a41a23f7c46b12e4a347a3532d8a814e71f3fcd7e92a0d5986f247a0b",
+  "rule_text": "The rule and proof text hashes normalise runs of whitespace to one space, so reflowing or retagging a line returns the hash it already had",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "448b3e9cc1b2bf94e723414e41e9da5915fe121ac24ce66623175e502f1745c4",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_hash_ignores_the_tags_and_the_whitespace(self):\n        plain = purlin_specs.rule_text_hash('Tokens expire after 24 hours')\n        tagged, _meta = purlin_specs.split_rule_tags(\n            'Tokens  expire   after 24 hours [risk: high]')\n        assert purlin_specs.rule_text_hash(tagged) == plain, (\n            're-tagging or reflowing a rule must not change its rule text hash')",
+      "file": "dev/test_mcp_server.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_the_hash_ignores_the_tags_and_the_whitespace",
+      "proof": "PROOF-4",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "80397d2009195829108c83f2b2443612af44b041cbc0e51de05dc72f924e45e6"
+}

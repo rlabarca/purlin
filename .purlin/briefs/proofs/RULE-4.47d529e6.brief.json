@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "proofs",
+  "generated_at": "2026-09-16T22:36:25Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "63695d87ea3c9ca1bbbec013d33afb46a51c4673c08be3593e72601f21dbb61e",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-4",
+      "text": "Write `login.integration.json` holding one entry with no `tier` key of its own; load it and verify the entry comes back with tier `integration`, taken from the file name",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/proofs/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-4",
+  "rule_hash": "79a022dcb6198ec7ad8341cbb724a847660a603175b3e354f2a14a484918d997",
+  "rule_text": "An entry that names no tier of its own takes the tier the file name carries",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "5620c1277083862a5dd39aa5dbf08f91c1fcb36ff7326b4c5865180b5c5e6f44",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_file_name_decides_the_tier_and_a_bad_file_is_skipped(\n            self, project):\n        parts = purlin_proofs.proof_file_parts\n        assert parts('login.unit.json') == ('login', 'unit')\n        assert parts('purlin.report.data.integration.json') == (\n            'purlin.report.data', 'integration')\n        assert parts('notes.txt') is None\n\n        directory = os.path.join(project.root, '.purlin', 'runtime', 'proofs')\n        entry = _entry('PROOF-1', 'RULE-1')\n        entry.pop('tier')\n        _write(os.path.join(directory, 'login.integration.json'),\n               json.dumps({'proofs': [entry]}))\n        loaded = purlin_proofs.load_proofs(project.root)\n        assert [e['tier'] for e in loaded['login']] == ['integration'], loaded\n\n        _write(os.path.join(directory, 'broken.unit.json'), 'not json at all')\n        _write(os.path.join(directory, 'listed.unit.json'), '[]')\n        _write(os.path.join(directory, 'stray.json'),\n               json.dumps({'proofs': [_entry('PROOF-9', 'RULE-9')]}))\n        after = purlin_proofs.load_proofs(project.root)\n        assert sorted(after) == ['login'], sorted(after)\n        assert len(after['login']) == 1, after['login']",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_the_file_name_decides_the_tier_and_a_bad_file_is_skipped",
+      "proof": "PROOF-4",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "47d529e62f6a499102e27c638bedc6451deb07c3d4c8c0f310524e989af04c7b"
+}

@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "schema_proof_format",
+  "generated_at": "2026-09-16T22:36:40Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "4818629ee56e4ce0d5a086d9a38148f9786d664313b3859c17494da4dd99c4de",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-1",
+      "text": "Write a spec holding `RULE-1` and `PROOF-1`, build the payload with an empty proof directory and verify the rule's passed cell reads `no test`; write `.purlin/runtime/proofs/foo.unit.json` holding one passing entry for `PROOF-1`, build the payload again and verify the cell reads `passed`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/schema_proof_format/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-1",
+  "rule_hash": "a4174bc486c8bce07ee6186338fbaccb765b74cb306fc060c07d633a9ed9c073",
+  "rule_text": "A proof file lives at `.purlin/runtime/proofs/<feature>.<tier>.json`, and a passing entry there is what makes a rule's passed cell read `passed` under the gate `passed`; a rule whose proof has no entry reads `no test`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "c86184422c12fb218ef9102b3d2d86d190065172d5c318e83a03cbf20c0bcd57",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_runtime_proof_file_is_read(self):\n        self._write_spec('foo', (\n            '# Feature: foo\\n\\n'\n            '## Rules\\n- RULE-1: The parser returns 200 for a valid body\\n\\n'\n            '## Proof\\n- PROOF-1 (RULE-1): POST a valid body; verify 200\\n'\n        ))\n        assert self._word('foo', 'RULE-1') == 'no test', \\\n            'with no proof file nothing backs the rule'\n        self._write_proofs('foo', [\n            {'feature': 'foo', 'id': 'PROOF-1', 'rule': 'RULE-1',\n             'test_file': 'tests/test_foo.py', 'test_name': 'test_it',\n             'status': 'pass', 'tier': 'unit'},\n        ])\n        assert self._word('foo', 'RULE-1') == 'passed', \\\n            'a passing entry in .purlin/runtime/proofs/ meets level 1'",
+      "file": "dev/test_schema_proof_format.py",
+      "findings": [],
+      "name": "test_a_runtime_proof_file_is_read",
+      "proof": "PROOF-1",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "1ced55c8ec37e5a31127b90b9cdd04d67e1f5411eab2b9a9b488174a18776159"
+}

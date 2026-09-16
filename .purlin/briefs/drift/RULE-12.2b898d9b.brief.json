@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "drift",
+  "generated_at": "2026-09-16T22:36:19Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "9cb700545363e10e8dcda27543fe20a37d3eaf8acd8aa7f12a0fb9f226671e2c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-14",
+      "text": "Check the same pinned source 3 times through one cache while `subprocess.run` is wrapped by a capturing spy; verify exactly 1 captured call lists the remote",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/drift/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-12",
+  "rule_hash": "64f31c59020deb5fa75601e8fdfd39f00e0ceaf768e0efdde83f517b6c53f46b",
+  "rule_text": "One remote listing per source per run: an anchor repository serving six anchors is reached once",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "bc76518770e20b3fd94aca6bb30dc061fa5638c842694e9116bfc3d8c444aa46",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_one_ls_remote_per_source_per_run(self, project, monkeypatch):\n        calls = []\n        real_run = purlin_drift.subprocess.run\n\n        def spy(args, *rest, **kwargs):\n            calls.append(list(args))\n            return real_run(args, *rest, **kwargs)\n\n        monkeypatch.setattr(purlin_drift.subprocess, 'run', spy)\n        cache = {}\n        for _ in range(3):\n            purlin_drift.check_pin(project.root,\n                                   'https://github.invalid/acme/p.git',\n                                   'abc1234', cache)\n        assert len([c for c in calls if 'ls-remote' in c]) == 1, calls",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_one_ls_remote_per_source_per_run",
+      "proof": "PROOF-14",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "2b898d9bb94421c5fb0ff54a1632ae0f2a9044cf2d9e7a5bdc72f8b9e195ddae"
+}

@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-16T22:36:34Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "a9eba5221c40b64476a683e225aa09492bd8c91d8253dcd7c646e437a2c919f6",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-57",
+      "text": "Run `purlin_run.py --all --quick` on a project holding one spec and one tagged test with `PYTHONIOENCODING=cp1252` in the environment; verify the output carries no traceback and no `UnicodeEncodeError`, and that the arrow the next-step line prints is in it",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/run_script/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-39",
+  "rule_hash": "efff851e867a87fc909c8bc53e7207990f5febbcc4047fa7e72a52a1a755c34c",
+  "rule_text": "The run script reconfigures stdout and stderr to UTF-8 before it prints anything, so a console whose codec is cp1252 prints the state table's glyphs instead of ending the run with an encoding error",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "da9621374620ab0cbe3b7b5501c3b4e87533706b4bbbaf86df4949ee866535b2",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_cp1252_console_gets_the_glyphs_and_no_traceback(self, tmp_path):\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat')\n        environment = dict(os.environ, PYTHONIOENCODING='cp1252')\n        result = subprocess.run(\n            [sys.executable, RUN_SCRIPT, '--project-root', str(root),\n             '--all', '--quick'],\n            capture_output=True, encoding='utf-8', cwd=str(root),\n            env=environment)\n        output = result.stdout + result.stderr\n        assert 'Traceback' not in output, output\n        assert 'UnicodeEncodeError' not in output, output\n        assert '\\u2192' in output, output",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_a_cp1252_console_gets_the_glyphs_and_no_traceback",
+      "proof": "PROOF-57",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "eec523db9b4a8699992bbcbcdf2d60d1b67771d1daf52f4af6bd1f6d85452378"
+}

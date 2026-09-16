@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_spec_from_code",
+  "generated_at": "2026-09-16T22:36:44Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "6664e08bfe1b4c102e6444aaa006e0a8fb14f7bdf81df4e14ab61ec85fa4e4a4",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-2",
+      "text": "Read `skills/spec-from-code/SKILL.md`; verify the section that precedes the procedure names `sync_status`, `.purlin/config.json` and `purlin:init`, one assertion per literal. Deleting that section fails naming `sync_status`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/skill_spec_from_code/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-2",
+  "rule_hash": "26946568a2cd7e4f2e31a65e948da66fc4ff1f7a562bf74940d5c3e815211959",
+  "rule_text": "The skill calls `sync_status` before it surveys anything and sends the reader to `purlin:init` when the project carries no `.purlin/config.json`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "fa276ef5fe7e75a6f2ce98a0fa5f282f4430727231bd714e9dd58e30f27c92aa",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_reads_the_state_before_it_starts(self):\n        assert spec_from_code_start_problems() == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_it_reads_the_state_before_it_starts",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "575e07cdbd1e9f2f944205da99daca4b1a9e8444f04d8b482b19f3e0814fe105"
+}

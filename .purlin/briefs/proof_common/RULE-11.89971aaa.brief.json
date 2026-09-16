@@ -1,0 +1,55 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "proof_common",
+  "generated_at": "2026-09-16T22:36:24Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "3dff979e2a9b535947ca0c60c72cb16e3d7212d1abd33e7d341c0209af4b9237",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-11",
+      "text": "Run a fixture whose marker carries the retired operating-system keyword in each plugin's own spelling and verify the run exits non-zero, the standard error names that marker and carries the literal `@env(`, and no proof file was written, in `dev/test_multilang_proof_plugins.py`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/proof_common/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-11",
+  "rule_hash": "dd2c8925b30a4a93e41fd13d173646b080b3bca55585e830414da98c389f11cb",
+  "rule_text": "The retired operating-system keyword on a marker is refused rather than ignored: the run exits non-zero and prints one line naming the markers that carry it and the `@env(...)` proof line that replaces it",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "9308d49d48522839cd10de27a4e93a3986cc8faeee8ba17956b105064e270db2",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": null,
+      "file": "dev/test_proof_plugins.sh",
+      "findings": [],
+      "name": "a retired marker keyword is refused and names @env",
+      "proof": "PROOF-11",
+      "reasons": []
+    },
+    {
+      "body": "def test_pytest_platforms_kwarg(self, tmp_path):\n        root = _purlin_project(tmp_path)\n        (root / 'tests').mkdir()\n        (root / 'tests' / 'test_feat.py').write_text(\n            'import pytest\\n\\n'\n            '@pytest.mark.proof(\"feat\", \"PROOF-1\", \"RULE-1\", '\n            'platforms=(\"windows-2022\",))\\n'\n            'def test_ok():\\n    assert True\\n', encoding='utf-8')\n        result = _run_pytest(root)\n        assert result.returncode != 0\n        assert '@env(windows)' in result.stderr\n        assert _read_proofs(root, 'feat') is None",
+      "file": "dev/test_multilang_proof_plugins.py",
+      "findings": [],
+      "name": "test_pytest_platforms_kwarg",
+      "proof": "PROOF-11",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "89971aaae81e5c059d468f8d8c21ee98d637d9848fb17cfcb996bcac4f08c83a"
+}

@@ -1,0 +1,82 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "config_engine",
+  "generated_at": "2026-09-16T22:36:18Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "8d4527a41fd6dbd5bb72f38b1e83a2ba2724ee048197cdde94512ded0431cf3c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-8",
+      "text": "Write `config.json` holding `{\"team\": \"v1\"}`, then set the key `user_pref` to `dark`; verify `config.json` still holds `{\"team\": \"v1\"}` unchanged and that `config.local.json` holds `{\"user_pref\": \"dark\"}`",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-12",
+      "text": "Set the key `digest` to `off`; verify `config.json` is untouched, that `config.local.json` now holds `\"digest\": \"off\"`, and that the merged config reads `off`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/config_engine/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-8",
+  "rule_hash": "6416013f98e6f9665c22e27867419eaddfdeff4e02a499e55b1d7351bc36e2d8",
+  "rule_text": "A write reaches `config.local.json` and never `config.json`, which belongs to `purlin:init` and to version control",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "fafc3f69b50cb49885bd571f71f611ce61f7145af3d1d8876d92808c2de80cac",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_update_creates_local_if_missing(self):\n        \"\"\"update_config creates config.local.json if it doesn't exist.\"\"\"\n        local_path = os.path.join(self.purlin_dir, 'config.local.json')\n        assert not os.path.exists(local_path)\n        update_config(self.project_root, \"new\", True)\n        assert os.path.exists(local_path)\n        with open(local_path) as f:\n            assert json.load(f) == {\"new\": True}",
+      "file": "dev/test_config_engine.py",
+      "findings": [],
+      "name": "test_update_creates_local_if_missing",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_writes_only_to_local(self):\n        \"\"\"update_config writes to config.local.json, not config.json.\"\"\"\n        shared_path = os.path.join(self.purlin_dir, 'config.json')\n        with open(shared_path, 'w') as f:\n            json.dump({\"team\": \"v1\"}, f)\n        shared_mtime = os.path.getmtime(shared_path)\n\n        update_config(self.project_root, \"user_pref\", \"dark\")\n\n        # config.json unchanged\n        assert os.path.getmtime(shared_path) == shared_mtime\n        with open(shared_path) as f:\n            assert json.load(f) == {\"team\": \"v1\"}\n\n        # config.local.json has the new key\n        with open(os.path.join(self.purlin_dir, 'config.local.json')) as f:\n            local = json.load(f)\n        assert local == {\"user_pref\": \"dark\"}",
+      "file": "dev/test_config_engine.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_writes_only_to_local",
+      "proof": "PROOF-8",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_local_override_wins_in_merge(self):\n        \"\"\"User overrides a framework default. config.json untouched.\"\"\"\n        self._write_shared({\"digest\": \"auto\", \"version\": \"0.9.0\"})\n        shared_before = json.loads(open(os.path.join(self.purlin_dir, 'config.json')).read())\n\n        update_config(self.project_root, \"digest\", \"off\")\n\n        # config.json must not change\n        shared_after = json.loads(open(os.path.join(self.purlin_dir, 'config.json')).read())\n        assert shared_after == shared_before, \"config.json must be untouched\"\n\n        # local should have the override\n        with open(os.path.join(self.purlin_dir, 'config.local.json')) as f:\n            local = json.load(f)\n        assert local[\"digest\"] == \"off\"\n\n        # Merged result should have local's value\n        result = resolve_config(self.project_root)\n        assert result[\"digest\"] == \"off\", \"local override must win\"\n        assert result[\"version\"] == \"0.9.0\", \"unrelated shared key preserved\"",
+      "file": "dev/test_config_engine.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_local_override_wins_in_merge",
+      "proof": "PROOF-12",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "b7e96bf9b7da1d0987db1cd954de32783d8c838c94452fc2d045e8883721d1cb"
+}

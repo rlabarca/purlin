@@ -1,0 +1,65 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "upstream",
+  "generated_at": "2026-09-16T22:37:04Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "681452b53dd916ab75fa190825d5eb5ba85f3390fe1974309cc36d89055774dc",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-11",
+      "text": "Pin an anchor, publish a version that reworded RULE-2 and added RULE-3, then run `sync no_eval`; verify the row reads `synced`, that `previous` is the old sha and `pinned` the new one, that the rule delta reads added `RULE-3`, removed nothing and changed `RULE-2`, that the summary reads `RULE-2 changed, RULE-3 added`, and that the copy now carries the new `> Pinned:` line and the line `- RULE-3: No compile() in source files [risk: medium]`. Publish instead a version with RULE-2 deleted and verify the delta reports it removed and the summary reads `RULE-2 removed`. Run the same sync from the command line and verify the printed lines carry the summary",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/upstream/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-11",
+  "rule_hash": "57de8775676a5d7f0017166fc6e0f48f3d0123351f1416d68b5971562fe21fad",
+  "rule_text": "`sync <name>` rewrites the copy from the source at its new head, advances `> Pinned:`, and reports the rule delta as added, removed and changed ids plus a one-line summary",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "b7c9c2278acb5308ba11bcb5259b77c0d9df36b6b38bc7f36eb735059618834b",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_sync_advances_the_pin_and_names_the_rule_delta(workspace):\n    _add(workspace)\n    new_sha = _advance(workspace)\n\n    result = upstream.sync(workspace.root, names=['no_eval'])\n    row = result['anchors'][0]\n    assert row['status'] == 'synced'\n    assert row['previous'] == workspace.first_sha\n    assert row['pinned'] == new_sha\n    assert row['rule_changes'] == {'added': ['RULE-3'], 'removed': [],\n                                   'changed': ['RULE-2']}\n    assert row['summary'] == 'RULE-2 changed, RULE-3 added'\n\n    text = _copy_text(workspace)\n    assert '> Pinned: %s' % new_sha in text\n    assert '- RULE-3: No compile() in source files [risk: medium]' in text\n    assert 'No exec() anywhere in the tree' in text",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_sync_advances_the_pin_and_names_the_rule_delta",
+      "proof": "PROOF-11",
+      "reasons": []
+    },
+    {
+      "body": "def test_sync_from_the_command_line_prints_the_delta(workspace):\n    _add(workspace)\n    _advance(workspace)\n    code, out = _cli(workspace, ['sync', 'no_eval'])\n    assert code == 0\n    assert 'RULE-2 changed, RULE-3 added' in out\n    assert 'design copied: designs/no_eval/cart.png' in out",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_sync_from_the_command_line_prints_the_delta",
+      "proof": "PROOF-11",
+      "reasons": []
+    },
+    {
+      "body": "def test_sync_reports_a_removed_rule(workspace):\n    _add(workspace)\n    _advance(workspace, ANCHOR_V1.replace(\n        '- RULE-2: No exec() in source files [risk: high]\\n', ''))\n    row = upstream.sync(workspace.root, names=['no_eval'])['anchors'][0]\n    assert row['rule_changes']['removed'] == ['RULE-2']\n    assert row['summary'] == 'RULE-2 removed'",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_sync_reports_a_removed_rule",
+      "proof": "PROOF-11",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "1ddef8f5f64389d631a479c5e4e3f8d1113d2c3cbe4231fdcbfa0df536f41016"
+}

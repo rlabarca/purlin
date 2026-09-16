@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "brief",
+  "generated_at": "2026-09-16T22:36:17Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "e0fa8dd02cac77b2c08231175664e709c00d5e76f5433612d0244b918f171f8f",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-3",
+      "text": "Retag the rule `[risk: medium]`, run the tests and write a record, then build the brief; verify its layers are `proof text`, `test body`, `test strength` and nothing after",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/brief/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-2",
+  "rule_hash": "cb5a08a2d644198ff4d6508e85ab783aa2c16cebd512b1135592abc8ca492aba",
+  "rule_text": "A medium-risk rule's brief adds the test strength layer and stops there",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "f69c71da30be3135bd5b3541bcd44f2c6df558b8c56f05d855fd8b47c0f85947",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_medium_risk_stops_after_the_test_strength(self):\n        made = Project(spec=SPEC.replace('[risk: high]', '[risk: medium]'))\n        try:\n            made.proofs()\n            made.record()\n            assert build(made, 'RULE-2')['layers'] == [\n                'proof text', 'test body', 'test strength']\n        finally:\n            made.close()",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_medium_risk_stops_after_the_test_strength",
+      "proof": "PROOF-3",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "e75ebb7e5142807de357179ac18d95b601236fc16c7d5ad8e44d81db229fa948"
+}

@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "pm_anchor_userstories",
+  "generated_at": "2026-09-16T22:36:23Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "204962fc30f502ff66b4a5a058a430d32f2134d72738c7e49af6523762fc711b",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-4",
+      "text": "Read `tools/PM/purlin-anchor-userstories.md`; verify `[risk:`, `[origin:` and `[criterion:` each appear, that `[risk: high]`, `[risk: medium]` and `[risk: low]` each appear, that the file carries the sentence \"Under the `signed` gate risk and origin are both required\", that `@integration`, `@e2e` and `@manual` each appear, and that `@env(windows)`, `@env(macos)` and `@env(linux)` each appear. Dropping the `@env` sentence fails naming `@env(macos)`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/pm_anchor_userstories/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-4",
+  "rule_hash": "79f9f68d2b98d5f85daa59615441b03473121dc10bdc2a3e337bacddf1dd97ec",
+  "rule_text": "The skill names the three rule tags `[risk: ...]`, `[origin: ...]` and `[criterion: ...]` with their values, says risk and origin are both required under the `signed` gate, and names the four proof tiers and the three `@env` values",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "b54292c3924b6a848315908f5152c39562c754026ecb57ae61e01351a48b9e68",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_names_the_tags_and_the_tiers(self):\n        assert carries(PM_MD, [\n            '[risk:', '[origin:', '[criterion:', '`[risk: high]`',\n            '`[risk: medium]`', '`[risk: low]`',\n            'Under the `signed` gate risk and origin are both required',\n            '@integration', '@e2e', '@manual',\n            '@env(windows)', '@env(macos)', '@env(linux)']) == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_it_names_the_tags_and_the_tiers",
+      "proof": "PROOF-4",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "8130cf390e4de607632978783f41ef4950cd69b6beb801af24b23db21c48936f"
+}

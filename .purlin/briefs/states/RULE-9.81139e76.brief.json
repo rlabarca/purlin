@@ -1,0 +1,55 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T22:36:47Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "68d09e68372076f0d94f53de295d3cec26f0405b4fdfc63bded3a4d1f1a5a354",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-11",
+      "text": "In a project whose record observed `PROOF-1` failing and `PROOF-2` passing, verify `RULE-1`'s passed cell reads `failed` with the reason `failing: the record` and the `failing` flag true, that `RULE-2` is not failing, and that the summary counts 1 failing; then write the runtime proofs with `PROOF-2` failing and verify its reason reads `failing: this checkout` and the count is 2",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-9",
+  "rule_hash": "44f99848802774a69299249c9f5ebc6640a51108008f5297120087614e887086",
+  "rule_text": "The passed cell reads `failed` when a counting record observed a failing proof of the rule, reading a `@env` proof only from that operating system's record, or when this checkout's last run failed one; its reasons name where, as `failing: <os> record` or `failing: this checkout`, and the `failing` flag is raised",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "e543859dbc9af1bfa1cf9d2c34db18773a408852f1199697fec6d2a780d585b4",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_failing_test_is_named_where_it_failed(project):\n    project.proofs()\n    project.record({'PROOF-1': 'fail', 'PROOF-2': 'pass'})\n    one, two = project.rule('RULE-1'), project.rule('RULE-2')\n    assert one['cells']['passed']['word'] == 'failed', one\n    assert one['flags']['failing'] is True\n    assert 'failing: the record' in one['cells']['passed']['reasons'], one\n    assert two['flags']['failing'] is False\n    assert one['bucket'] == 'failing', one\n    assert project.payload()['summary']['failing'] == 1\n\n    project.proofs({'PROOF-1': 'pass', 'PROOF-2': 'fail'})\n    two = project.rule('RULE-2')\n    assert two['flags']['failing'] is True\n    assert 'failing: this checkout' in two['cells']['passed']['reasons'], two\n    assert project.payload()['summary']['failing'] == 2",
+      "file": "dev/test_failing.py",
+      "findings": [],
+      "name": "test_a_failing_test_is_named_where_it_failed",
+      "proof": "PROOF-11",
+      "reasons": []
+    },
+    {
+      "body": null,
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_auto_approvable_is_low_risk_with_a_strong_enough_record",
+      "proof": "PROOF-11",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "81139e76381694ee20ba1bc38acc70339612cb0b64936d1f5cc99e2466136fce"
+}

@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-16T22:36:33Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "01ab5c5c95e5a0e4214c5f391d542ac01541283f402a746a186587b178ad88b6",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-15",
+      "text": "Run `--all --record`; verify the record's `log.path` is `.purlin/runtime/run.log`, that `log.sha256` is 64 characters and that the file exists on disk",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/run_script/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-15",
+  "rule_hash": "eab6a1e40137291fd57e23b0850f076e64cca310e009dd05f1e83f6158e8331c",
+  "rule_text": "The run's console log is written to `.purlin/runtime/run.log` and the record carries that path with the log's sha256",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "fd7f3f1ddefc2cc5668fa5f369095f6a53d8f2c4e481f4c25c478eee1129f193",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_log_is_written_and_hashed(self, tmp_path, record_run, capsys):\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat')\n        _code, calls = record_run(root, '--all')\n        capsys.readouterr()\n        log = calls['write'][0][0]['log']\n        assert log['path'] == '.purlin/runtime/run.log'\n        assert len(log['sha256']) == 64\n        assert (root / '.purlin' / 'runtime' / 'run.log').exists()",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_the_log_is_written_and_hashed",
+      "proof": "PROOF-15",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "3f1aba5b6f6687cc2793fabea2b3b30536ab2183006270f98824e13b442165ec"
+}

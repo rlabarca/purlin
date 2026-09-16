@@ -1,0 +1,71 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "upstream",
+  "generated_at": "2026-09-16T22:37:03Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "ac45372dee08f389dafdb84594733a195087b8dd51ce4c2338f500b14e6fb21a",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-9",
+      "text": "Run `sync --check` on a current pin and verify the exit code is 0 and the row reads `current`; publish a new version and verify the exit code is 1; run `sync --check` naming an anchor that does not exist and verify the row reads `error` and the exit code is 2; delete the source repository from disk and verify an unreachable source is also an error at exit code 2",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/upstream/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-9",
+  "rule_hash": "e7736267c1db4d1a7060780dc214393224012af5051e2d0039918e5808516187",
+  "rule_text": "`sync --check` exits 0 when every pin is current, 1 when a pin is behind, and 2 when a named anchor does not exist or a source cannot be read",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "a09c9884a42675e8965cec4a91440579f943d4540379c1f969315bed2d030720",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_check_exit_codes_from_a_child_process(workspace):\n    \"\"\"The exit codes a caller's shell sees, from the script run as a process.\"\"\"\n    _add(workspace)\n    code, out = _cli(workspace, ['sync', '--check', '--json'], child=True)\n    assert code == 0\n    assert json.loads(out)['behind'] == 0\n\n    new_sha = _advance(workspace)\n    code, out = _cli(workspace, ['sync', '--check', '--json'], child=True)\n    assert code == 1\n    payload = json.loads(out)\n    assert payload['behind'] == 1\n    assert payload['anchors'][0]['remote_sha'] == new_sha\n\n    code, out = _cli(workspace, ['sync', '--check'], child=True)\n    assert code == 1\n    assert 'purlin:anchor sync no_eval' in out\n\n    code, out = _cli(workspace, ['sync', 'absent', '--check', '--json'],\n                     child=True)\n    assert code == 2\n    assert json.loads(out)['anchors'][0]['status'] == 'error'",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_check_exit_codes_from_a_child_process",
+      "proof": "PROOF-9",
+      "reasons": []
+    },
+    {
+      "body": "def test_check_names_an_anchor_that_does_not_exist(workspace):\n    result = upstream.sync(workspace.root, names=['absent'], check=True)\n    assert result['anchors'][0]['status'] == 'error'\n    assert upstream._exit_code(result) == 2",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_check_names_an_anchor_that_does_not_exist",
+      "proof": "PROOF-9",
+      "reasons": []
+    },
+    {
+      "body": "def test_check_on_a_current_pin_reports_current(workspace):\n    _add(workspace)\n    result = upstream.sync(workspace.root, check=True)\n    assert [row['status'] for row in result['anchors']] == ['current']\n    assert result['behind'] == 0\n    assert upstream._exit_code(result) == 0",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_check_on_a_current_pin_reports_current",
+      "proof": "PROOF-9",
+      "reasons": []
+    },
+    {
+      "body": "def test_check_reports_an_unreachable_source(workspace, tmp_path):\n    _add(workspace)\n    _rmtree(workspace.anchor_repo)\n    result = upstream.sync(workspace.root, check=True)\n    assert result['anchors'][0]['status'] == 'error'\n    assert upstream._exit_code(result) == 2",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_check_reports_an_unreachable_source",
+      "proof": "PROOF-9",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "5f64db0c5f162c73998f787df966268afd000fd6d32a237cc890561140a7cd46"
+}

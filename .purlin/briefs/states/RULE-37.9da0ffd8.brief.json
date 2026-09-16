@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T22:36:51Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "2cdd875efdba151b5920f9fe4d92ff782c366607f15a256169c8cd2373918953",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-44",
+      "text": "Run the status report over a project with 2 rules of which 1 meets the gate `passed`; verify the summary reads `1 of 2 rules meet the gate passed.` and that the line under it names no test strength and no risk threshold",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-37",
+  "rule_hash": "f26ab30af0969ced91b918892f63821984e446f016a5fac845c009d087e6e8f8",
+  "rule_text": "The status report's summary line reads `<met> of <rules> rules meet the gate <gate>`, and the line under it names a test strength, a risk threshold or a signature count only at the gate that asks for one",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "b94fc8c8d0cd426aa5a45209d21868a8292dfa537a275a0f1cef0233aa55556d",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_summary_counts_the_rules_that_meet_the_gate(self, project):\n        project.proofs([_entry('PROOF-2', 'RULE-2')])\n        text = purlin_status.sync_status(project.root)\n        line = next(line for line in text.splitlines()\n                    if 'meet the gate' in line)\n        assert line == '1 of 2 rules meet the gate passed.', line\n        second = text.splitlines()[text.splitlines().index(line) + 1]\n        assert 'test strength' not in second, second\n        assert 'risk' not in second, second",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_the_summary_counts_the_rules_that_meet_the_gate",
+      "proof": "PROOF-44",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "9da0ffd8c1f495f364714e9d2e5b1233e17cdb9d790d344c763e7c3ff740d8ec"
+}

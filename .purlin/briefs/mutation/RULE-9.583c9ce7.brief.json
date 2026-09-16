@@ -1,0 +1,63 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "mutation",
+  "generated_at": "2026-09-16T22:36:22Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "cf05d166c32c1902345735b7610cffa0229fe4bc0c80b58e68230fce3b4a9261",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-9",
+      "text": "Parse a report where test `t1` carries RULE-1's marker and `t2` carries RULE-2's; verify RULE-1's entry counts only the breaks `t1` killed or covered, that a break only `t2` killed counts missed for RULE-1, and that a rule whose test the report never lists has a score of None",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/mutation/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-9",
+  "rule_hash": "a71c5bc38772b3c421787caa2df4649afafe0c799c14da16c559b7ae56d016d4",
+  "rule_text": "A rule's number is what its own tests caught: a break only another rule's test caught counts missed for this one, and a rule whose tests the report never lists measures nothing",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "e95865ac5a9189a1b3cf15db54b6e64a31c5fdc4ec56e7b597827b72547d3a22",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_break_another_rules_test_caught_counts_survived_for_this_one():\n    report = read_fixture('stryker_report.json')\n    entry = stryker.parse_report(report, {'RULE-2': CALC_TESTS['RULE-2']})\n    # Mutants 4 and 5 are covered by RULE-2's test and killed by nothing.\n    assert entry['rules']['RULE-2']['survived'] == 2",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_a_break_another_rules_test_caught_counts_survived_for_this_one",
+      "proof": "PROOF-9",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_rule_whose_tests_the_report_never_saw_measures_nothing():\n    tests = {'RULE-9': [{'file': 'test/other.test.js',\n                         'name': 'unrelated [proof:calc:PROOF-9:RULE-9]',\n                         'plugin': 'jest'}]}\n    entry = stryker.parse_report(read_fixture('stryker_report.json'), tests)\n    assert entry['rules']['RULE-9']['score'] is None\n    assert entry['rules']['RULE-9']['killed'] == 0\n    assert entry['rules']['RULE-9']['survived'] == 0",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_a_rule_whose_tests_the_report_never_saw_measures_nothing",
+      "proof": "PROOF-9",
+      "reasons": []
+    },
+    {
+      "body": "def test_each_rule_carries_what_its_own_tests_caught():\n    entry = stryker.parse_report(read_fixture('stryker_report.json'),\n                                 CALC_TESTS)\n    assert entry['rules']['RULE-1'] == {\n        'engine': 'stryker', 'score': 100, 'killed': 3, 'survived': 0,\n        'attribution': 'per_test'}\n    assert entry['rules']['RULE-2'] == {\n        'engine': 'stryker', 'score': 71, 'killed': 5, 'survived': 2,\n        'attribution': 'per_test'}",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_each_rule_carries_what_its_own_tests_caught",
+      "proof": "PROOF-9",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "583c9ce7031340ec12e8750e433e1dce7a18c722e2a39d9a13ef234b9c78cb9a"
+}

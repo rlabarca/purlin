@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "upstream",
+  "generated_at": "2026-09-16T22:37:03Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "d33d7fef85d6b039f591e2c051a95afdbf7438a22e541964510fc86e8e8f19be",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-2",
+      "text": "Run `add` against a published anchor; verify the pin returned equals `git rev-parse HEAD` in the source, that it is 40 characters long, and that the text above `## Rules` in the copy contains no occurrence of `main`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/upstream/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-2",
+  "rule_hash": "2681aa0d2e6d200deca3fb3d7cc243ab570468e2d6d91bb289b5417a46628bec",
+  "rule_text": "The pin `add` writes is the source's head commit as a full 40-character sha, and no branch name reaches the copy",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "57d7652d1a8f94448a5ec0947575a8eab15ec4e95751cb01f1dde52d40e1cc65",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_add_pins_a_commit_not_a_branch(workspace):\n    result = _add(workspace)\n    head = _git(['rev-parse', 'HEAD'], workspace.anchor_work)\n    assert result['pinned'] == head\n    assert len(result['pinned']) == 40\n    assert 'main' not in _copy_text(workspace).split('## Rules')[0]",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_add_pins_a_commit_not_a_branch",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "cb8aeed25e37f91ceaceb1fce30657f8ee803f2c8bff199aab152e0c2c8566db"
+}

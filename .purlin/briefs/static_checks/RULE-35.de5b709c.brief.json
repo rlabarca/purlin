@@ -1,0 +1,62 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-16T22:36:59Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "7a22676519d21bf15e0328f99fb64ccd41e06b64e7d33859f75b6ae67ceeec20",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-32",
+      "text": "Parse the module's own source; verify no top-level statement imports fcntl outright, that the flag is assigned inside the try and inside an except that catches an import error, and that `msvcrt` appears in the source",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-37",
+      "text": "Parse the module's own source; verify fcntl is imported inside a try, that `_HAS_FCNTL` is assigned in the try and in an except catching an import error, and that the module exposes that flag",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/static_checks/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-35",
+  "rule_hash": "5785962f814dd15fa10677c4c3c67c85dd323e5539ca4d4f3f39ac60edc1370f",
+  "rule_text": "The module imports where there is no fcntl: the import sits under a try that catches an import error, both branches set the flag every lock helper reads, and the Windows lock branch is in the source",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "cd787e42a7b33e98686b8a90f75eeb963582c556f0ecf9ee2beac62668b8cb91",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_windows_branch_is_reachable(self):\n        \"\"\"fcntl is imported under try/except, and both branches set _HAS_FCNTL.\n\n        A machine with no fcntl must still import this module, so the flag is\n        assigned in the try and in the except, and every lock helper reads it.\n        \"\"\"\n        with open(STATIC_CHECKS_PY, encoding='utf-8') as f:\n            tree = ast.parse(f.read())\n        for node in tree.body:\n            if isinstance(node, ast.Import):\n                assert 'fcntl' not in [a.name for a in node.names], \\\n                    \"fcntl is imported unconditionally at module level\"\n        in_try = in_except = False\n        for node in tree.body:\n            if not isinstance(node, ast.Try):\n                continue\n            for stmt in node.body:\n                if isinstance(stmt, ast.Import) and any(\n                        a.name == 'fcntl' for a in stmt.names):\n                    in_try = any(\n                        isinstance(s, ast.Assign) and any(\n                            getattr(t, 'id', None) == '_HAS_FCNTL' for t in s.targets)\n                        for s in node.body)\n            catches_import_error = any(\n                isinstance(h.type, ast.Name) and h.type.id == 'ImportError'\n                for h in node.handlers)\n            for h in node.handlers:\n                if any(isinstance(s, ast.Assign) and any(\n                        getattr(t, 'id', None) == '_HAS_FCNTL' for t in s.targets)\n                        for s in h.body):\n                    in_except = catches_import_error\n        assert in_try and in_except, \\\n            \"_HAS_FCNTL must be set in both the try and the except ImportError branch\"\n        assert hasattr(static_checks, '_HAS_FCNTL'), \"no _HAS_FCNTL flag\"\n        source = open(STATIC_CHECKS_PY, encoding='utf-8').read()\n        assert 'msvcrt' in source, \"the Windows lock branch is gone\"",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_the_windows_branch_is_reachable",
+      "proof": "PROOF-32",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_unconditional_fcntl_import(self):\n        \"\"\"fcntl is imported under try/except ImportError, never unconditionally,\n        and _HAS_FCNTL is assigned in both branches.\"\"\"\n        tree = ast.parse(self._source())\n\n        # No top-level `import fcntl` in the module body.\n        for node in tree.body:\n            if isinstance(node, ast.Import):\n                assert 'fcntl' not in [a.name for a in node.names], \\\n                    \"fcntl is imported unconditionally at module level\"\n\n        fcntl_in_try = False\n        flag_in_try = False\n        flag_in_except = False\n        for node in tree.body:\n            if not isinstance(node, ast.Try):\n                continue\n            for stmt in node.body:\n                if isinstance(stmt, ast.Import) and any(a.name == 'fcntl' for a in stmt.names):\n                    fcntl_in_try = True\n                if isinstance(stmt, ast.Assign) and any(\n                        getattr(t, 'id', None) == '_HAS_FCNTL' for t in stmt.targets):\n                    flag_in_try = True\n            # The except must catch ImportError and set the flag.\n            catches_import_error = any(\n                h.type is not None and isinstance(h.type, ast.Name) and h.type.id == 'ImportError'\n                for h in node.handlers)\n            for h in node.handlers:\n                if any(isinstance(s, ast.Assign) and any(\n                        getattr(t, 'id', None) == '_HAS_FCNTL' for t in s.targets) for s in h.body):\n                    flag_in_except = catches_import_error\n\n        assert fcntl_in_try, \"fcntl is not imported inside a try block\"\n        assert flag_in_try and flag_in_except, \\\n            \"_HAS_FCNTL must be set in both the try and except ImportError branches\"\n        assert hasattr(static_checks, '_HAS_FCNTL'), \"module exposes no _HAS_FCNTL flag\"",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_no_unconditional_fcntl_import",
+      "proof": "PROOF-37",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "de5b709c1f3034e1c1bc5e34ebbfcdb84848f86caddbce77ff33f4d342fa4036"
+}

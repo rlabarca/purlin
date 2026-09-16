@@ -1,0 +1,123 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-16T22:36:57Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "f7565eb4bf14d15740a1c99556926c862707932e5515ca718e26adc0be524a29",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-23",
+      "text": "Write a record in which `PROOF-1` names `RULE-1` and `RULE-2`, for each of the five languages a plugin writes; verify exactly 1 collision comes back naming `PROOF-1` with both rules",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-24",
+      "text": "Write a record whose three proof ids are distinct; verify zero findings come back",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-25",
+      "text": "Write a record in which a Python entry and a TypeScript entry both claim `PROOF-1` for different rules; verify exactly 1 collision comes back naming `RULE-1` and `RULE-3`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-26",
+      "text": "Write a record carrying two separate collisions; verify 2 collisions come back, naming `PROOF-1` and `PROOF-3`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/static_checks/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-19",
+  "rule_hash": "8b57a8f56931ce3de485d38b8396d0c5766326b3e45179fc3fe583a60f0ee5d4",
+  "rule_text": "One proof id targeting two rules inside one record is reported `proof_id_collision`, whatever language wrote the record",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "56ba657373fcee866c8b7d86d2305d11bf4ce1a0a26c5c115df9628ea93c5592",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_detects_collision_per_language(self, tmp_path, lang, factory):\n        \"\"\"Same PROOF-1 targeting RULE-1 and RULE-2 \u2014 detected regardless of source language.\"\"\"\n        proofs = [\n            factory(\"login\", \"PROOF-1\", \"RULE-1\"),\n            factory(\"login\", \"PROOF-1\", \"RULE-2\"),\n            factory(\"login\", \"PROOF-2\", \"RULE-3\"),  # no collision\n        ]\n        proof_path = _write_proof_json(tmp_path, \"login\", \"unit\", proofs)\n        findings = check_proof_file(proof_path)\n        collisions = [f for f in findings if f['check'] == 'proof_id_collision']\n        assert len(collisions) == 1, f\"Expected 1 collision for {lang}, got {len(collisions)}\"\n        assert collisions[0]['proof_id'] == 'PROOF-1'\n        assert set(collisions[0]['rules']) == {'RULE-1', 'RULE-2'}",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_detects_collision_per_language[javascript-_jest_proof]",
+      "proof": "PROOF-23",
+      "reasons": []
+    },
+    {
+      "body": "def test_detects_collision_per_language(self, tmp_path, lang, factory):\n        \"\"\"Same PROOF-1 targeting RULE-1 and RULE-2 \u2014 detected regardless of source language.\"\"\"\n        proofs = [\n            factory(\"login\", \"PROOF-1\", \"RULE-1\"),\n            factory(\"login\", \"PROOF-1\", \"RULE-2\"),\n            factory(\"login\", \"PROOF-2\", \"RULE-3\"),  # no collision\n        ]\n        proof_path = _write_proof_json(tmp_path, \"login\", \"unit\", proofs)\n        findings = check_proof_file(proof_path)\n        collisions = [f for f in findings if f['check'] == 'proof_id_collision']\n        assert len(collisions) == 1, f\"Expected 1 collision for {lang}, got {len(collisions)}\"\n        assert collisions[0]['proof_id'] == 'PROOF-1'\n        assert set(collisions[0]['rules']) == {'RULE-1', 'RULE-2'}",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_detects_collision_per_language[python-_python_proof]",
+      "proof": "PROOF-23",
+      "reasons": []
+    },
+    {
+      "body": "def test_detects_collision_per_language(self, tmp_path, lang, factory):\n        \"\"\"Same PROOF-1 targeting RULE-1 and RULE-2 \u2014 detected regardless of source language.\"\"\"\n        proofs = [\n            factory(\"login\", \"PROOF-1\", \"RULE-1\"),\n            factory(\"login\", \"PROOF-1\", \"RULE-2\"),\n            factory(\"login\", \"PROOF-2\", \"RULE-3\"),  # no collision\n        ]\n        proof_path = _write_proof_json(tmp_path, \"login\", \"unit\", proofs)\n        findings = check_proof_file(proof_path)\n        collisions = [f for f in findings if f['check'] == 'proof_id_collision']\n        assert len(collisions) == 1, f\"Expected 1 collision for {lang}, got {len(collisions)}\"\n        assert collisions[0]['proof_id'] == 'PROOF-1'\n        assert set(collisions[0]['rules']) == {'RULE-1', 'RULE-2'}",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_detects_collision_per_language[shell-_shell_proof]",
+      "proof": "PROOF-23",
+      "reasons": []
+    },
+    {
+      "body": "def test_detects_collision_per_language(self, tmp_path, lang, factory):\n        \"\"\"Same PROOF-1 targeting RULE-1 and RULE-2 \u2014 detected regardless of source language.\"\"\"\n        proofs = [\n            factory(\"login\", \"PROOF-1\", \"RULE-1\"),\n            factory(\"login\", \"PROOF-1\", \"RULE-2\"),\n            factory(\"login\", \"PROOF-2\", \"RULE-3\"),  # no collision\n        ]\n        proof_path = _write_proof_json(tmp_path, \"login\", \"unit\", proofs)\n        findings = check_proof_file(proof_path)\n        collisions = [f for f in findings if f['check'] == 'proof_id_collision']\n        assert len(collisions) == 1, f\"Expected 1 collision for {lang}, got {len(collisions)}\"\n        assert collisions[0]['proof_id'] == 'PROOF-1'\n        assert set(collisions[0]['rules']) == {'RULE-1', 'RULE-2'}",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_detects_collision_per_language[sql-_sql_proof]",
+      "proof": "PROOF-23",
+      "reasons": []
+    },
+    {
+      "body": "def test_detects_collision_per_language(self, tmp_path, lang, factory):\n        \"\"\"Same PROOF-1 targeting RULE-1 and RULE-2 \u2014 detected regardless of source language.\"\"\"\n        proofs = [\n            factory(\"login\", \"PROOF-1\", \"RULE-1\"),\n            factory(\"login\", \"PROOF-1\", \"RULE-2\"),\n            factory(\"login\", \"PROOF-2\", \"RULE-3\"),  # no collision\n        ]\n        proof_path = _write_proof_json(tmp_path, \"login\", \"unit\", proofs)\n        findings = check_proof_file(proof_path)\n        collisions = [f for f in findings if f['check'] == 'proof_id_collision']\n        assert len(collisions) == 1, f\"Expected 1 collision for {lang}, got {len(collisions)}\"\n        assert collisions[0]['proof_id'] == 'PROOF-1'\n        assert set(collisions[0]['rules']) == {'RULE-1', 'RULE-2'}",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_detects_collision_per_language[typescript-_typescript_proof]",
+      "proof": "PROOF-23",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_collision_when_ids_unique(self, tmp_path):\n        \"\"\"Distinct PROOF-IDs should produce zero findings.\"\"\"\n        proofs = [\n            _python_proof(\"login\", \"PROOF-1\", \"RULE-1\"),\n            _python_proof(\"login\", \"PROOF-2\", \"RULE-2\"),\n            _jest_proof(\"login\", \"PROOF-3\", \"RULE-3\"),\n        ]\n        proof_path = _write_proof_json(tmp_path, \"login\", \"unit\", proofs)\n        findings = check_proof_file(proof_path)\n        assert len(findings) == 0, f\"Expected no findings, got {findings}\"",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_no_collision_when_ids_unique",
+      "proof": "PROOF-24",
+      "reasons": []
+    },
+    {
+      "body": "def test_collision_with_mixed_languages(self, tmp_path):\n        \"\"\"Collision across language boundaries \u2014 Python and TypeScript both claim PROOF-1.\"\"\"\n        proofs = [\n            _python_proof(\"auth\", \"PROOF-1\", \"RULE-1\"),\n            _typescript_proof(\"auth\", \"PROOF-1\", \"RULE-3\"),\n            _shell_proof(\"auth\", \"PROOF-2\", \"RULE-2\"),\n        ]\n        proof_path = _write_proof_json(tmp_path, \"auth\", \"unit\", proofs)\n        findings = check_proof_file(proof_path)\n        collisions = [f for f in findings if f['check'] == 'proof_id_collision']\n        assert len(collisions) == 1\n        assert set(collisions[0]['rules']) == {'RULE-1', 'RULE-3'}",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_collision_with_mixed_languages",
+      "proof": "PROOF-25",
+      "reasons": []
+    },
+    {
+      "body": "def test_multiple_collisions_detected(self, tmp_path):\n        \"\"\"Two separate collisions in one file \u2014 both detected.\"\"\"\n        proofs = [\n            _jest_proof(\"cart\", \"PROOF-1\", \"RULE-1\"),\n            _jest_proof(\"cart\", \"PROOF-1\", \"RULE-2\"),\n            _sql_proof(\"cart\", \"PROOF-3\", \"RULE-3\"),\n            _sql_proof(\"cart\", \"PROOF-3\", \"RULE-4\"),\n        ]\n        proof_path = _write_proof_json(tmp_path, \"cart\", \"unit\", proofs)\n        findings = check_proof_file(proof_path)\n        collisions = [f for f in findings if f['check'] == 'proof_id_collision']\n        assert len(collisions) == 2\n        collision_ids = {c['proof_id'] for c in collisions}\n        assert collision_ids == {'PROOF-1', 'PROOF-3'}",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_multiple_collisions_detected",
+      "proof": "PROOF-26",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "79c1a796fb8d66a8845614c919743bfadc233aa1e5ed4cfe22c5303f2c0a6898"
+}

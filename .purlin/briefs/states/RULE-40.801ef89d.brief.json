@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T22:36:51Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "b67823629750c9669d99d186448f61eb9bda8b30db281fca2a27421595446360",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-47",
+      "text": "Run the status report and read every character of it; verify each one is below U+2000 or is one of the four glyphs the design system allows, so no emoji reaches a terminal",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-40",
+  "rule_hash": "b59a7d1193bc183e12aee136c1deeeefb9d7b265bac45cec89c35a827fb6715c",
+  "rule_text": "The report carries no emoji: the only characters above U+2000 it prints are the arrow, the two triangles and the horizontal rule the design system allows",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "94207ebeb3047791b5ebf111f680b8861d188889669cd730341e036076c27d3b",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_no_emoji_and_only_the_four_glyphs(self, project):\n        text = purlin_status.sync_status(project.root)\n        allowed = set('\u2192\u25b6\u25bc\u2500')\n        for char in text:\n            assert ord(char) < 0x2000 or char in allowed, repr(char)",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_no_emoji_and_only_the_four_glyphs",
+      "proof": "PROOF-47",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "801ef89d65156b7b6ba1c4df4224c761ed5ea7ebc22f15d24575b5f593465718"
+}

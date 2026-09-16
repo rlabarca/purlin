@@ -1,0 +1,57 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T22:36:47Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "961ed345a9d241bc9bf5865f60bb22ac3b9f322aa10b14a0c0e4569600086e9d",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-9",
+      "text": "Write and commit a record carrying the current scope tree, verify the passed cell reads `passed`, then rewrite the scoped source file and commit it; verify the cell reads `code changed`, that its reason opens `code changed since ` and that the `code_changed` flag is true",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-7",
+  "rule_hash": "90b75e36346d57b97f6df36fccda19d2f7c65037d6174eff7384d636eb259294",
+  "rule_text": "A passing record that describes neither the head commit nor the current scope tree leaves the passed cell at `code changed` with the reason `code changed since <commit7>` and raises the `code_changed` flag: only the code moved, and CI clears it on the next run",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "4c13b845a25155fa8a15afd8b682699f8258d4b4e6cc2b39669e87525e508f5a",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_code_changed_when_only_the_code_moved(self, project):\n        tree = purlin_specs.scope_tree(project.root, ['src/login.py'])\n        project.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'}],\n                       scope_tree=tree)\n        assert project.cell('RULE-1', 'passed')['word'] == 'passed'\n        _write(os.path.join(project.root, 'src', 'login.py'),\n               'def login():\\n    return 200  # rewritten\\n')\n        _git(project.root, 'add', '-A')\n        _git(project.root, 'commit', '-q', '-m', 'refactor: login')\n        rule = project.rule('RULE-1')\n        cell = rule['cells']['passed']\n        assert cell['word'] == 'code changed', cell\n        assert cell['reasons'][0].startswith('code changed since '), cell\n        assert rule['flags']['code_changed'] is True",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_code_changed_when_only_the_code_moved",
+      "proof": "PROOF-9",
+      "reasons": []
+    },
+    {
+      "body": "def test_code_changed_when_only_the_code_moved(self, project):\n        tree = purlin_specs.scope_tree(project.root, ['src/login.py'])\n        project.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'}],\n                       scope_tree=tree)\n        assert project.cell('RULE-1', 'passed')['word'] == 'passed'\n        _write(os.path.join(project.root, 'src', 'login.py'),\n               'def login():\\n    return 200  # rewritten\\n')\n        _git(project.root, 'add', '-A')\n        _git(project.root, 'commit', '-q', '-m', 'refactor: login')\n        rule = project.rule('RULE-1')\n        cell = rule['cells']['passed']\n        assert cell['word'] == 'code changed', cell\n        assert cell['reasons'][0].startswith('code changed since '), cell\n        assert rule['flags']['code_changed'] is True",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_stale_when_the_rule_text_changed_after_the_approval",
+      "proof": "PROOF-9",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "f1cabf646c7425b775d0688c650d90f6a4569ced48da959b0bd7edc9e677ccec"
+}

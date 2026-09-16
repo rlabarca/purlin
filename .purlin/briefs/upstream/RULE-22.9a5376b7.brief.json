@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "upstream",
+  "generated_at": "2026-09-16T22:37:04Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "7027099e670f3e51c34fc3d4f9edb041e68001ff98d83ad4e96e076e88a32421",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-22",
+      "text": "Run `add` and then `sync` against a project directory, and verify the parent directory of that project still holds exactly the four entries it held before: the two bare repositories, the anchor checkout and the project",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/upstream/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-22",
+  "rule_hash": "e92ef5c5549d63b2d28e7f00f0780acf4026f80d18ff5068763470808a6a3705",
+  "rule_text": "Every file the module writes lies under the project root it was given",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "dd24fc83691de9812329b142327b6bb2085a3d6ace8a6d7e91c92f7902a0b8f9",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_nothing_written_outside_the_project_root(workspace):\n    \"\"\"Every path the module writes is under the project root it was given.\"\"\"\n    _add(workspace)\n    _advance(workspace)\n    upstream.sync(workspace.root, names=['no_eval'])\n    parent = os.path.dirname(workspace.root)\n    assert sorted(os.listdir(parent)) == [\n        'policies.git', 'policies_work', 'project', 'project.git']",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_nothing_written_outside_the_project_root",
+      "proof": "PROOF-22",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "9a5376b710dba568c2bcf404ef4d3da7c4c9d14c3b89a1b2ea50d8df718a89f4"
+}

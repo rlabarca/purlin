@@ -1,0 +1,55 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T22:36:50Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "4839bfcc885ec0221d46d54327ab3b50d48217f3569866da7eb65c6468a6998f",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-33",
+      "text": "At the gate `signed`, build the payload over a project holding one stale rule, one held rule, one rule needing a person and one rule with no test; verify the review list names the first three and not the fourth, that each row carries `feature`, `owner`, `rule`, `risk`, `cell` and `why`, and that the same project at the gate `passed` has an empty review list",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-29",
+  "rule_hash": "3e32f95eec12d921a6e7f5d28c859a0425391bb2d7e1d844ffa0df519b4bbf87",
+  "rule_text": "The review list holds exactly the rules blocked at the strong cell by `needs a person` and the rules blocked at the signed cell, each row naming the feature, the owner, the rule, the risk, the cell and why; a rule blocked at `spec` or `passed` is never on it and the list is empty under the gate `passed`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "afe03e16e8ac2a171916f95ca241963e42961fc238272043dc315be50716545b",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_list_holds_the_rules_whose_next_step_is_a_person(listed):\n    payload = listed.payload()\n    rows = {row['rule']: row for row in payload['review_list']}\n    assert sorted(rows) == ['RULE-1', 'RULE-2', 'RULE-3', 'RULE-5'], rows\n    assert 'RULE-4' not in rows, 'a rule with no test is build work'\n    for row in rows.values():\n        assert sorted(row) == ['cell', 'feature', 'owner', 'risk', 'rule',\n                               'why'], row\n        assert row['feature'] == 'review' and row['owner'] == 'review'\n    assert rows['RULE-1']['cell'] == 'signed'\n    assert rows['RULE-2']['cell'] == 'strong'\n    assert rows['RULE-5']['risk'] == 'high'",
+      "file": "dev/test_review_list.py",
+      "findings": [],
+      "name": "test_the_list_holds_the_rules_whose_next_step_is_a_person",
+      "proof": "PROOF-33",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_list_is_empty_under_the_passed_gate(listed):\n    listed.config_value('gate', 'passed')\n    payload = listed.payload()\n    assert payload['review_list'] == [], payload['review_list']\n    assert 'strong' not in payload['features'][0]['rules'][0]['cells']",
+      "file": "dev/test_review_list.py",
+      "findings": [],
+      "name": "test_the_list_is_empty_under_the_passed_gate",
+      "proof": "PROOF-33",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "090955be575d659595f7537108cb7b0c0a93a5cfd690cdb4be0fd8b60ac2bebc"
+}

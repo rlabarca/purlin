@@ -1,0 +1,69 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-16T22:37:00Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "9ed715b3377da20b4bea83f2d9a58c9ae49013924688ae108e981e58488fac9c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-3",
+      "text": "Run `--check` on the v0.9.5 fixture and verify the return code is 1, every pending id is on stdout and the line `Run: purlin:init --update` is too; run the script as a subprocess and verify exit 1 with `untracked-files` named. Verify `git status --porcelain` is unchanged by a `--check` run. Apply everything, then run `--check` and verify 0 with `Nothing is pending`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/update/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-3",
+  "rule_hash": "94f5a5d7dfd2ce57d2b8984900d9dc1d914b24982fb005d8d36051eddf2a651f",
+  "rule_text": "`--check` prints the pending list with the command that applies it, exits 1 while anything is pending, writes nothing at all, and exits 0 saying nothing is pending once nothing is",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "7f606a9b6626a198b5b74e1c38b991b7bed993ff8b5f5084239867f53a355297",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_check_exits_1_while_anything_is_pending(tmp_path):\n    root = _project(tmp_path, V095)\n    done = subprocess.run([sys.executable, UPDATE, '--check',\n                           '--project-root', root],\n                          capture_output=True, text=True)\n    assert done.returncode == 1\n    assert 'untracked-files' in done.stdout",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_check_exits_1_while_anything_is_pending",
+      "proof": "PROOF-3",
+      "reasons": []
+    },
+    {
+      "body": "def test_check_on_the_v095_layout_names_every_migration(tmp_path, capsys):\n    root = _project(tmp_path, V095)\n    assert update.main(['--check', '--project-root', root]) == 1\n    printed = capsys.readouterr().out\n    for migration_id in _ids(root):\n        assert migration_id in printed\n    assert 'Run: purlin:init --update' in printed",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_check_on_the_v095_layout_names_every_migration",
+      "proof": "PROOF-3",
+      "reasons": []
+    },
+    {
+      "body": "def test_check_writes_nothing(tmp_path):\n    root = _project(tmp_path, V095)\n    before = _git(root, 'status', '--porcelain').stdout\n    update.main(['--check', '--project-root', root])\n    assert _git(root, 'status', '--porcelain').stdout == before",
+      "file": "dev/test_init_update.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_check_writes_nothing",
+      "proof": "PROOF-3",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "e8512e0b340ae3fa0148a2f7607b9cab68e057ae70bca566fe71ff39528da4ef"
+}

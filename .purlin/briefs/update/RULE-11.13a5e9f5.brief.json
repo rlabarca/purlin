@@ -1,0 +1,56 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-16T22:37:01Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "eb89aa6cd4bea1dfb9fb88d44f8383f9e7e893ff9e50dd1666d820bd98df5d05",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-11",
+      "text": "Apply everything on the v0.9.5 fixture and verify the written config has no `report` key, and that `scripts/init/update.py` contains no assignment writing one",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/update/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-11",
+  "rule_hash": "403dbab1b41605927051f691e894776c441cea9fc104f6e3761696e3054a5c7c",
+  "rule_text": "The rewritten config carries no key nothing reads: the dashboard switch an older release carried is not written back",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "839c4a55590d73a1a57e5bb96c58afacd0ed3e2af8cd440054a1233d93d1bd41",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_no_key_nothing_reads_is_written_back(tmp_path, layout):\n    \"\"\"The dashboard switch an older release carried is not carried forward.\n\n    It is not a retired key, so `resolve_gate` never warns about it and\n    nothing would report it; the only thing that keeps it out of the file the\n    update leaves is that the update does not write it.\n    \"\"\"\n    root = _project(tmp_path, layout)\n    _apply(root)\n    written = json.loads(_read(root, '.purlin/config.json'))\n    assert 'report' not in written, written\n    source = _read(ROOT, 'scripts/init/update.py')\n    assert \"'report'\" not in source, 'the update writes a key nothing reads'",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_no_key_nothing_reads_is_written_back[upgrade-0.9.5]",
+      "proof": "PROOF-11",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_key_nothing_reads_is_written_back(tmp_path, layout):\n    \"\"\"The dashboard switch an older release carried is not carried forward.\n\n    It is not a retired key, so `resolve_gate` never warns about it and\n    nothing would report it; the only thing that keeps it out of the file the\n    update leaves is that the update does not write it.\n    \"\"\"\n    root = _project(tmp_path, layout)\n    _apply(root)\n    written = json.loads(_read(root, '.purlin/config.json'))\n    assert 'report' not in written, written\n    source = _read(ROOT, 'scripts/init/update.py')\n    assert \"'report'\" not in source, 'the update writes a key nothing reads'",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_no_key_nothing_reads_is_written_back[upgrade-0.10-dev]",
+      "proof": "PROOF-11",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "13a5e9f54b5cd8d2a1dc43e2cf01894b1ec2213e9167bb87fbb4da6dda95bcd4"
+}

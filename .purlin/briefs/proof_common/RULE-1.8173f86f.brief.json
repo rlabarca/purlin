@@ -1,0 +1,71 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "proof_common",
+  "generated_at": "2026-09-16T22:36:24Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "2b40cf79ed3ba7d59163b3ca93bd20dbe6deb5b17307a6cafa3bc134118bc0c4",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-1",
+      "text": "Drive each shipped plugin over one passing marked test for feature `feat` in a temporary project and verify the single file it wrote is `.purlin/runtime/proofs/feat.unit.json`, and that zero files were written under `specs/`, in `dev/test_multilang_proof_plugins.py`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/proof_common/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-1",
+  "rule_hash": "853bfb58d226ffcaefbd8bf8ad29bf8af3c059f4b56d16b87838fae55f4aef64",
+  "rule_text": "A plugin writes its evidence to `.purlin/runtime/proofs/<feature>.<tier>.json` under the project root and to no other path, so nothing a test run produces is ever committed",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "6b5c48d73ffc0cf4995e1ce81a21e7e541feccf52f44bcf394f978b04396a477",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": null,
+      "file": "dev/test_proof_plugins.sh",
+      "findings": [],
+      "name": "the jest reporter writes the runtime proof file",
+      "proof": "PROOF-1",
+      "reasons": []
+    },
+    {
+      "body": null,
+      "file": "dev/test_proof_plugins.sh",
+      "findings": [],
+      "name": "the proof file is written to the runtime directory",
+      "proof": "PROOF-1",
+      "reasons": []
+    },
+    {
+      "body": "def test_proof_file_naming(tmp_path):\n    \"\"\"One file per feature and tier, under the runtime directory.\"\"\"\n    root = _project(tmp_path)\n    _run_shell_proof(root, \"feat\", [(\"PROOF-1\", \"RULE-1\", \"pass\", \"a\")])\n    _run_shell_proof(root, \"feat\", [(\"PROOF-2\", \"RULE-2\", \"pass\", \"b\")],\n                     tier=\"integration\", name=\"second.sh\")\n    _run_shell_proof(root, \"other\", [(\"PROOF-1\", \"RULE-1\", \"pass\", \"c\")],\n                     name=\"third.sh\")\n    assert _proof_files(root) == [\"feat.integration.json\", \"feat.unit.json\",\n                                  \"other.unit.json\"]",
+      "file": "dev/test_proof_plugins_missing.py",
+      "findings": [],
+      "name": "test_proof_file_naming",
+      "proof": "PROOF-1",
+      "reasons": []
+    },
+    {
+      "body": "def test_pytest_and_shell_both_land(self, tmp_path):\n        root = _project(tmp_path)\n        _shell_run(root, 'tests/alpha.test.sh', 'alpha',\n                   [('PROOF-1', 'RULE-1', 'pass', 'shell case')])\n        _pytest_run(root, 'tests/test_alpha.py',\n                    'import pytest\\n\\n'\n                    '@pytest.mark.proof(\"alpha\", \"PROOF-2\", \"RULE-2\")\\n'\n                    'def test_two():\\n    assert True\\n')\n        entries = _read(root)['alpha']\n        assert {e['id'] for e in entries} == {'PROOF-1', 'PROOF-2'}\n        assert {e['test_file'] for e in entries} == {\n            'tests/alpha.test.sh', 'tests/test_alpha.py'}",
+      "file": "dev/test_proof_stress.py",
+      "findings": [],
+      "name": "test_pytest_and_shell_both_land",
+      "proof": "PROOF-1",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "8173f86f36a9eb52e2a2d8983c3afcf1e30e2083403c69ce55137d5d9c99fe22"
+}

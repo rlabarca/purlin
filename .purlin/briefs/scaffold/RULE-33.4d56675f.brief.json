@@ -1,0 +1,54 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T22:36:40Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "d0b5c8f912f2bfeeefce110f3db96aeb04e7ffade4983d31e8d565d58011f946",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-33",
+      "text": "Run init, then run `--update --yes` and verify exit 0 with `does not carry` absent from the output; run `--update --dry-run` and verify the same line is absent and the exit code is one the upgrade uses",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-33",
+  "rule_hash": "0f88c6ed82a4e0dbe338399c809e6410d943db8db1003551e4e709ea25a434c4",
+  "rule_text": "`--update` hands the project to `scripts/init/update.py`, and `--update --dry-run` asks it what is pending instead of applying anything",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "4dc73f5a66983be22cc997088ad6e963438fdae3553e6d8a41031b8c7384cd33",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_update_hands_the_project_to_the_upgrade(self, project):\n        \"\"\"`--update` reaches update.py, which is what owns the upgrade.\"\"\"\n        project.run('--gate', 'passed')\n        done = subprocess.run(\n            [sys.executable, SCAFFOLD, '--project-root', project.root,\n             '--update', '--yes'], capture_output=True, encoding='utf-8', timeout=300,\n            stdin=subprocess.DEVNULL)\n        if os.path.isfile(os.path.join(ROOT, 'scripts', 'init', 'update.py')):\n            assert done.returncode == 0, done.stdout + done.stderr\n            assert 'does not carry' not in done.stdout\n        else:\n            assert done.returncode == 1\n            assert 'scripts/init/update.py' in done.stdout",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_update_hands_the_project_to_the_upgrade",
+      "proof": "PROOF-33",
+      "reasons": []
+    },
+    {
+      "body": "def test_update_with_dry_run_asks_the_upgrade_what_is_pending(self,\n                                                                  project):\n        project.run('--gate', 'passed')\n        done = subprocess.run(\n            [sys.executable, SCAFFOLD, '--project-root', project.root,\n             '--update', '--dry-run'], capture_output=True, encoding='utf-8',\n            timeout=300, stdin=subprocess.DEVNULL)\n        assert done.returncode in (0, 1, 3), done.stdout + done.stderr\n        assert 'does not carry' not in done.stdout",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_update_with_dry_run_asks_the_upgrade_what_is_pending",
+      "proof": "PROOF-33",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "4d56675f243cc7614371b7b4723bf23852d8a5ed622b7331c9e8edc1b7aa35f4"
+}

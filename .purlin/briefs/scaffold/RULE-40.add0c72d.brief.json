@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T22:36:40Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "9bac44440c5c09aa482782c0917e6ab80050170e56efd4262ab5dcb22751e4b5",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-40",
+      "text": "Write `greeting.py` and `tests/test_greeting.py`, run init twice and verify `.gitignore` carries the line `mutants/` exactly once",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-40",
+  "rule_hash": "c1bb3fdde4d6da95eade38608167649cd75391884d3663746f3e0737633049ef",
+  "rule_text": "Writing the mutmut block also appends `mutants/` to the project's `.gitignore`, once and never twice, so the copy mutmut breaks is never committed",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "7801b2c1c22d04a70c44230df92604c8ab71049b9d9d1e37fcafc0ff78af4680",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_mutmut_copy_is_ignored_once(self, project):\n        write(project.path('greeting.py'), 'def greet(name):\\n    return name\\n')\n        write(project.path('tests/test_greeting.py'), 'def test_greet():\\n    pass\\n')\n        project.run('--gate', 'passed')\n        project.run('--gate', 'passed')\n        lines = read(project.path('.gitignore')).splitlines()\n        assert lines.count('mutants/') == 1",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_mutmut_copy_is_ignored_once",
+      "proof": "PROOF-40",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "add0c72dae36a4c3cbf4d7a3c3506581674292978aa3d01f4c9b9b0782ee8c4f"
+}

@@ -1,0 +1,54 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T22:36:35Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "5dcd7e0139cc26d95374bae26a9a3698649edf48a6a31f16c608ace5a03f8488",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-3",
+      "text": "Run with `--gate passed` and verify the gate question is absent from the output; then run `--gate strong`, run again with no flag, and verify the question is still absent and the config still reads `strong`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-3",
+  "rule_hash": "3eb07df35d8efd1888b9247f421bdc719bfa666a4024ab3c2eaec5a25b174f04",
+  "rule_text": "`--gate` answers the question without asking it, and a later run with no flag keeps the gate the config already names",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "428fde8526df866ce29492e451667d51d1e7ec9dfc1e50527db50acbcd92a2f7",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_gate_flag_answers_the_question_without_asking(self, project):\n        output = project.run('--gate', 'passed')\n        assert scaffold_module.GATE_QUESTION not in output",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_gate_flag_answers_the_question_without_asking",
+      "proof": "PROOF-3",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_gate_is_remembered_when_no_flag_names_one(self, project):\n        project.run('--gate', 'strong')\n        output = project.run()\n        assert scaffold_module.GATE_QUESTION not in output\n        assert project.config()['gate'] == 'strong'",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_gate_is_remembered_when_no_flag_names_one",
+      "proof": "PROOF-3",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "08d1bdaba83e8bbd80939b7103fde35493f7da26e025343235d0074146f3c023"
+}

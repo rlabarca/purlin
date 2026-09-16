@@ -1,0 +1,65 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "brief",
+  "generated_at": "2026-09-16T22:36:18Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "19f2b55daaa5de91d10190c4309ac23cca61211b1036800aff966ae622ddfc25",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-19",
+      "text": "Build the model prompt for a high-risk rule at gate `strong`; verify it opens with `references/review_criteria.md` byte for byte and then names `RULE-2`, the rule text, the test `test_a_bad_password_is_denied` and `Test strength: 90 percent (minimum 70)`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-44",
+      "text": "Build the model prompt for a high-risk rule; verify it holds `settled: yes`, `one line per observation`, `Do not recommend a change` and `do not grade the rule`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/brief/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-15",
+  "rule_hash": "7a62534c015afc2fa90e08caee30c21424be455ed9d49da5a949670f0cb28d15",
+  "rule_text": "The model prompt is `references/review_criteria.md` verbatim, then this rule's rule text, proof text, test bodies and test strength, and it asks for observations rather than a recommendation or a score",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "ae1d688804b37e29195af77a3e7e7872c510280540bcc6c83c4ec9df049fae95",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_prompt_is_the_criteria_file_verbatim(self, at_strong):\n        built = build(at_strong, 'RULE-2')\n        prompt = brief_module.model_prompt(at_strong.root, built)\n        with open(CRITERIA, encoding='utf-8') as handle:\n            criteria = handle.read()\n        assert prompt.startswith(criteria)\n        assert 'RULE-2' in prompt\n        assert 'Invalid credentials return 401' in prompt\n        assert 'test_a_bad_password_is_denied' in prompt\n        assert 'Test strength: 90 percent (minimum 70)' in prompt",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_the_prompt_is_the_criteria_file_verbatim",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_prompt_asks_for_observations_and_bars_a_recommendation(\n            self, at_strong):\n        prompt = brief_module.model_prompt(at_strong.root,\n                                           build(at_strong, 'RULE-2'))\n        assert 'settled: yes' in prompt\n        assert 'one line per observation' in prompt\n        assert 'Do not recommend a change' in prompt\n        assert 'do not grade the rule' in prompt",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_the_prompt_asks_for_observations_and_bars_a_recommendation",
+      "proof": "PROOF-44",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "dbfacff7c06f9f5f0ce8a78ff76cf649535cdcb30aeeff9111daf8805b9c8dd7"
+}

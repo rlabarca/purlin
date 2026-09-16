@@ -1,0 +1,62 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T22:36:50Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "086d66b5bdfe680241fba59553564855c4df59f1adafdeea25327efe35b71ff6",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-29",
+      "text": "Write one passing entry for `PROOF-2` of a two-rule feature at the gate `passed` and build the payload; verify the feature's rollup reads exactly the keys `rules`, `met`, `untested`, `failing`, `passed`, `stale`, `held`, `needs_person`, `test_strength` and `latest_record`, with 2 rules, 1 met, 1 passed and 1 untested",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-25",
+  "rule_hash": "a80f4c0921274ab79ab35a56a698c2c0f5e603b3f6a951031fd577ee12bfc29a",
+  "rule_text": "A feature's rollup carries `rules`, `met`, one count per bucket the gate reaches, `stale`, `held`, `needs_person`, the test strength and the latest record",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "914e73f89aeed6342a321455610811ae1b9a1c9792f5ec6aa134ce46f6c0cd1e",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_every_fixture_has_the_key_set_the_builder_writes(self):\n        for name, gate in (('solo', 'passed'), ('team', 'strong'),\n                           ('regulated', 'signed')):\n            fixture = self._fixture(name)\n            assert fixture['schema_version'] == purlin_payload.SCHEMA_VERSION\n            assert fixture['gate']['gate'] == gate\n            made = Project(gate=gate, extra_config={'signers': []})\n            try:\n                built = made.payload()\n            finally:\n                made.close()\n            assert sorted(fixture['gate']) == sorted(built['gate']), name\n            assert sorted(fixture['summary']) == sorted(built['summary']), name\n            feature = fixture['features'][0]\n            assert sorted(feature) == sorted(built['features'][0]), name\n            assert sorted(feature['rollup']) == sorted(\n                built['features'][0]['rollup']), name\n            rule = feature['rules'][0]\n            assert sorted(rule) == sorted(built['features'][0]['rules'][0]), name\n            assert sorted(rule['cells']) == sorted(purlin_states.cells_for(gate))\n            for cell_name, cell in rule['cells'].items():\n                built_cell = built['features'][0]['rules'][0]['cells'][cell_name]\n                assert sorted(cell) == sorted(built_cell), (name, cell_name)\n            assert sorted(rule['flags']) == sorted(purlin_states.FLAGS), name",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_every_fixture_has_the_key_set_the_builder_writes",
+      "proof": "PROOF-29",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_rollup_counts_the_buckets_the_gate_reaches(self, project):\n        project.proofs([_entry('PROOF-2', 'RULE-2')])\n        data = project.payload()\n        feature = next(f for f in data['features'] if f['name'] == 'login')\n        rollup = feature['rollup']\n        assert sorted(rollup) == sorted([\n            'rules', 'met', 'untested', 'failing', 'passed', 'stale', 'held',\n            'needs_person', 'test_strength', 'latest_record']), rollup\n        assert (rollup['rules'], rollup['met']) == (2, 1)\n        assert (rollup['passed'], rollup['untested']) == (1, 1), rollup\n        assert data['summary']['features'] == 1",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_the_rollup_counts_the_buckets_the_gate_reaches",
+      "proof": "PROOF-29",
+      "reasons": []
+    },
+    {
+      "body": null,
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_a_record_carries_the_result_of_the_run_it_names",
+      "proof": "PROOF-29",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "03bb60289b4b24778358f162abfc6d14dca1ffdd1eaa0bb499cf96e29b125686"
+}

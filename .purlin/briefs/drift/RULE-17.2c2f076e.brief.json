@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "drift",
+  "generated_at": "2026-09-16T22:36:19Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "d5c84dc04ca41f549a6448e684087f885faa993241e05ada0f59f9ffb8fabb39",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-19",
+      "text": "Run drift over a committed change and verify the returned string carries neither a newline followed by two spaces nor a colon followed by a space, that it parses back to an object carrying every key, and that its length is strictly less than the same object re-serialized with an indent of 2",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/drift/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-17",
+  "rule_hash": "ec20decee6d7a97c9e48910b9aa938c7966a3b62657cc14d405720e37fd0f159",
+  "rule_text": "The report is serialized with no indentation and no space after a separator, because its only reader is a model paying by the token",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "0b57ec626fc4436a3b43cabdc5a4c830f9ab1b22ae5f0cfd1f07a4f55633a701",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_payload_carries_no_pretty_printing_whitespace(self, tmp_path):\n        root = str(tmp_path / 'proj')\n        os.makedirs(root)\n        self._repo(root)\n\n        text = purlin_drift.drift(root, since='1')\n\n        assert '\\n  ' not in text, \"payload still carries indentation\"\n        assert '\": ' not in text, \"payload still carries a space after the key separator\"\n\n        data = json.loads(text)\n        assert isinstance(data, dict), type(data)\n        for key in ('since', 'commits', 'files', 'spec_changes', 'pins',\n                    'rule_details', 'roles'):\n            assert key in data, (key, sorted(data))\n\n        indented = json.dumps(data, indent=2)\n        assert len(text) < len(indented), (len(text), len(indented))",
+      "file": "dev/test_drift.py",
+      "findings": [],
+      "name": "test_payload_carries_no_pretty_printing_whitespace",
+      "proof": "PROOF-19",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "2c2f076e28e13252d117e2bca0328001587a84a16e21d85bee91297b0db73f69"
+}

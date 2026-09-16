@@ -1,0 +1,84 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "brief",
+  "generated_at": "2026-09-16T22:36:18Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "7bfc53d01c6ec4fcabdc265804cb9dde3a8d8c53a631a13dad60a11e449d78bc",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-20",
+      "text": "Build the brief for a rule that asks for a model review without passing `--ai`; verify the review it carries reads `not available`, no observation comes back and the rendering reads `Settled: not answered`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-21",
+      "text": "With no `claude` on the path, build the brief with `--ai`; verify the review it carries reads `not available`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-22",
+      "text": "Build the brief for a rule whose risk is below `ai_review_at` with `--ai` and a probe that raises if the path is searched; verify no model is reached, the review it carries is `none` and the rendering holds no `Observations` heading",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/brief/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-16",
+  "rule_hash": "d0a94a81ae4488fe3e81b4a6acd7b528c39ca726f249de97a0b59b86880f5655",
+  "rule_text": "The model review runs only when the caller passes `--ai` and the rule's risk is at or above `ai_review_at`; without it, and with no model on the path, the brief records `not available`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "4f00fd24b842f3442bc8361e6122e2d6dcef89932df3ef60d9ebd274dcf8c732",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_without_ai_the_brief_says_not_available(self, at_strong):\n        built = build(at_strong, 'RULE-2')\n        assert built['ai_review'] == 'not available'\n        assert built['observations'] == [] and built['settled'] is None\n        assert 'Settled: not answered' in brief_module.render_brief(built)",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_without_ai_the_brief_says_not_available",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": "def test_with_no_claude_on_the_path_it_says_not_available(\n            self, at_strong, monkeypatch):\n        monkeypatch.setattr(brief_module.shutil, 'which', lambda name: None)\n        assert build(at_strong, 'RULE-2', ai=True)['ai_review'] == (\n            'not available')",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_with_no_claude_on_the_path_it_says_not_available",
+      "proof": "PROOF-21",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_rule_below_the_review_level_never_calls_a_model(\n            self, at_strong, monkeypatch):\n        def fail(*args, **kwargs):\n            raise AssertionError('a low-risk rule must not call a model')\n\n        monkeypatch.setattr(brief_module.shutil, 'which', fail)\n        built = build(at_strong, 'RULE-1', ai=True)\n        assert built['ai_review'] is None\n        assert 'Observations' not in brief_module.render_brief(built)",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_a_rule_below_the_review_level_never_calls_a_model",
+      "proof": "PROOF-22",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_rule_below_the_review_level_never_calls_a_model(\n            self, at_strong, monkeypatch):\n        def fail(*args, **kwargs):\n            raise AssertionError('a low-risk rule must not call a model')\n\n        monkeypatch.setattr(brief_module.shutil, 'which', fail)\n        built = build(at_strong, 'RULE-1', ai=True)\n        assert built['ai_review'] is None\n        assert 'Observations' not in brief_module.render_brief(built)",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_a_low_risk_rule_never_calls_a_model",
+      "proof": "PROOF-22",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "152022a99519635a7086e2e2fdbbc43aa324f549176188876c9a417a496c2282"
+}

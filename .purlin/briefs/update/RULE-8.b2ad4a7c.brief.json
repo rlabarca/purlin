@@ -1,0 +1,95 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-16T22:37:01Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "a6d7a9f2fd6448749a3af98838000770c93392807906d0de5c85b412dfe263eb",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-8",
+      "text": "Verify the v0.9.5 fixture starts with files matching `*.proofs-*.json` and the retired run file name; run the update with `--yes` and verify no such file is left on disk and none is tracked. Verify `.purlin/report-data.js` is tracked before and not after, is still on disk, and that `.gitignore` then names it and `.purlin/report-stamp.js`. Commit the cache directory the way a project would, verify `untracked-files` becomes pending, apply, and verify nothing under `.purlin/cache/` is tracked while the directory is still on disk",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/update/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-8",
+  "rule_hash": "69871b3b43efa40ff0939ed82b6fd323514f3fb720256050ffa2a9f934183576",
+  "rule_text": "No proof file and no run file is left beside a spec, on disk or tracked; the dashboard data and the cache are untracked, left on disk, and named in `.gitignore`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "ff4495ab452e1a1da3e9d1ff50f6be5df2b12f50a8c481c10d89f3c73454be70",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_committed_cache_is_untracked_and_left_on_disk(tmp_path):\n    \"\"\"The v0.9.5 fixture ignores its cache, so commit one the way a project would.\"\"\"\n    root = _project(tmp_path, V095)\n    _git(root, 'add', '-f', '.purlin/cache')\n    _git(root, 'commit', '-qm', 'a committed cache')\n    assert any(rel.startswith('.purlin/cache/') for rel in _tracked(root))\n    assert 'untracked-files' in _ids(root)\n    _apply(root)\n    assert not any(rel.startswith('.purlin/cache/') for rel in _tracked(root))\n    assert os.path.isdir(os.path.join(root, '.purlin', 'cache'))",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_a_committed_cache_is_untracked_and_left_on_disk",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_proof_or_verification_file_remains_on_disk(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    assert _walk(root, LEFTOVER), 'the fixture should start with some'\n    _apply(root)\n    assert _walk(root, LEFTOVER) == []",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_no_proof_or_verification_file_remains_on_disk[upgrade-0.9.5]",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_proof_or_verification_file_remains_tracked(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    _apply(root)\n    left = [rel for rel in _tracked(root)\n            if any(fnmatch.fnmatch(os.path.basename(rel), p)\n                   for p in LEFTOVER)]\n    assert left == []",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_no_proof_or_verification_file_remains_tracked[upgrade-0.9.5]",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_dashboard_data_is_untracked_and_ignored(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    assert '.purlin/report-data.js' in _tracked(root)\n    _apply(root)\n    assert '.purlin/report-data.js' not in _tracked(root)\n    assert os.path.isfile(os.path.join(root, '.purlin', 'report-data.js'))\n    ignored = _read(root, '.gitignore').splitlines()\n    assert '.purlin/report-data.js' in ignored\n    assert '.purlin/report-stamp.js' in ignored",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_dashboard_data_is_untracked_and_ignored[upgrade-0.9.5]",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_proof_or_verification_file_remains_on_disk(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    assert _walk(root, LEFTOVER), 'the fixture should start with some'\n    _apply(root)\n    assert _walk(root, LEFTOVER) == []",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_no_proof_or_verification_file_remains_on_disk[upgrade-0.10-dev]",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_proof_or_verification_file_remains_tracked(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    _apply(root)\n    left = [rel for rel in _tracked(root)\n            if any(fnmatch.fnmatch(os.path.basename(rel), p)\n                   for p in LEFTOVER)]\n    assert left == []",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_no_proof_or_verification_file_remains_tracked[upgrade-0.10-dev]",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_dashboard_data_is_untracked_and_ignored(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    assert '.purlin/report-data.js' in _tracked(root)\n    _apply(root)\n    assert '.purlin/report-data.js' not in _tracked(root)\n    assert os.path.isfile(os.path.join(root, '.purlin', 'report-data.js'))\n    ignored = _read(root, '.gitignore').splitlines()\n    assert '.purlin/report-data.js' in ignored\n    assert '.purlin/report-stamp.js' in ignored",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_dashboard_data_is_untracked_and_ignored[upgrade-0.10-dev]",
+      "proof": "PROOF-8",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "b2ad4a7ccba3c41af34f4e1d02d777449d138128cdbe55c776d0b21feb9307a1"
+}

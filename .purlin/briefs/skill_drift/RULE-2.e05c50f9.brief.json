@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_drift",
+  "generated_at": "2026-09-16T22:36:43Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "635a23c51cd79b8a58bdc2c3f35542a42ac2a58784bfb9560b5009215b04f486",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-2",
+      "text": "Read `skills/drift/SKILL.md` with its line wrapping collapsed; verify it carries the fenced call `drift(role=\"eng\")`, the path `references/drift_criteria.md` and the instruction `do not restate them here and do not invent a category the tool does not return`, one assertion per literal so a failure names the missing one. Deleting the do-not-restate sentence fails naming it",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/skill_drift/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-2",
+  "rule_hash": "e8cbd4c80db0008820e2b74f5c8eb200ebbcd394f87ba1dcaa0299338972d310",
+  "rule_text": "The skill takes its data from the `drift` tool and points at `references/drift_criteria.md` for the file classification rather than restating it, and it invents no category the tool does not return",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "df81a9fe6ea81471a4a87c5e565d363339072754e9e4ee29c18f60b1f30124ba",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_takes_its_data_from_the_tool(self):\n        assert carries(skill_path('drift'), [\n            'drift(role=\"eng\")', 'references/drift_criteria.md',\n            'do not restate them here and do not invent a category the tool '\n            'does not return']) == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_it_takes_its_data_from_the_tool",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "e05c50f919df60c82965ce85f5619074b8a5fdb0ea36091db7a0931e1721e0da"
+}

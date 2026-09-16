@@ -1,0 +1,54 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "mutation",
+  "generated_at": "2026-09-16T22:36:23Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "70356d147ab94219810b7dbc341eee9ee55e5ce9e8ac7fbb0783519652e72ccd",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-16",
+      "text": "Call `parse_results()` on the captured output of a real mutmut run; verify every entry's status is one of `killed`, `timeout`, `survived`, `no tests`, `skipped`, `suspicious` and `not checked`. Call it on output holding progress lines and an error line; verify the returned list is empty",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/mutation/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-16",
+  "rule_hash": "1b483bc7d3fa9c18ef17c2f8e2b71a69998c23eee5187f6874e5abba025a6c00",
+  "rule_text": "The output of `mutmut results --all true` is read one line per break, and a line whose status is not one mutmut writes is not counted as a break",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "9212b75fe8b0230289c43a14127a5925e8977bec79272c34d3efca1e1cddff35",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_noise_around_the_results_is_not_a_break():\n    text = ('2 files mutated, 0 ignored, 0 unmodified\\n'\n            '244.79 mutations/second\\n'\n            '    login.session.x_lock_account__mutmut_1: killed\\n'\n            'Error: something else entirely\\n')\n    entries = mutmut.parse_results(text)\n    assert entries == [{'key': 'login.session.x_lock_account__mutmut_1',\n                        'status': 'killed'}]",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_the_noise_around_the_results_is_not_a_break",
+      "proof": "PROOF-16",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_results_of_a_real_run_are_read():\n    entries = mutmut.parse_results(read_fixture('mutmut_results_smoke.txt'))\n    assert len(entries) == 5\n    assert entries[0] == {'key': 'calc.ops.x_add__mutmut_1', 'status': 'killed'}\n    killed = [e for e in entries if e['status'] in mutmut.KILLED_STATUSES]\n    assert len(killed) == 1",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_the_results_of_a_real_run_are_read",
+      "proof": "PROOF-16",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "36c405173ab854efa2c367d84b6d4b3c734333adc9f1eec6ef22438a960d93d6"
+}

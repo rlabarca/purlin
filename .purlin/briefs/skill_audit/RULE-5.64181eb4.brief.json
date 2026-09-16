@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_audit",
+  "generated_at": "2026-09-16T22:36:43Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "2463535a601d0b78b7eceabcd73ccd52258d7a2417afc92109f1c417b0445b2c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-5",
+      "text": "Read the record-source table in `skills/audit/SKILL.md`; verify it carries one row each for `ci`, `developer` and `local`, that the `ci` row names all three gates, and that the `developer` and `local` rows each name `passed` and neither `strong` nor `signed`. Changing the `developer` row to name `strong` fails, naming the gate it found there",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/skill_audit/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-5",
+  "rule_hash": "045d62c548a2750ac5b52948b484838720c755a4867bcec367c82f05bcf99fa3",
+  "rule_text": "The skill states which record counts under which gate: a `ci` record counts under `passed`, `strong` and `signed`, and a `developer` or a `local` record under `passed` alone",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "aec617d6b3c4467397ac9e825adb1a94948a7481fda5137b1b559c298c598672",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_says_which_record_counts_under_which_gate(self):\n        assert record_source_problems() == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_it_says_which_record_counts_under_which_gate",
+      "proof": "PROOF-5",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "64181eb45bb7790e9009ce969d0874c85a60b8f11ea107049b41713066dec12a"
+}

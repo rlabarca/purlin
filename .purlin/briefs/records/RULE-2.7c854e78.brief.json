@@ -1,0 +1,64 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-16T22:36:27Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "dcbbffb6c23f85b3a89d1c5e757601875d3171ef10cd617a36c18b825def0ecf",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-2",
+      "text": "Write 5 records for one feature on one operating system; verify the 3 newest by timestamp remain. Write 3 more named `-windows`; verify the Linux three are still there, so the count is per operating system",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/records/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-2",
+  "rule_hash": "761c80c535bd09cf5887f546f8a4dc24840fb230c697fd69c65511fe507bcf2d",
+  "rule_text": "A feature keeps the three newest records for each operating system and a write prunes the rest as it goes, so a Windows job never deletes what a Linux job wrote",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "ff806608d09793203d131208f58fe268c084c962d641e9910e4c89ecd3d8bd55",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_retention_counts_each_operating_system_on_its_own(project):\n    for day in range(5):\n        put_record(project, 'greeting',\n                   '2026091%dT120000Z-4f1c2ab-ci-linux.json' % day)\n    for day in range(2):\n        put_record(project, 'greeting',\n                   '2026091%dT120000Z-4f1c2ab-ci-windows.json' % day)\n    records_module.prune(project, 'greeting', 'linux')\n    kept = names(project, 'greeting')\n    assert len([n for n in kept if n.endswith('-linux.json')]) == 3\n    assert len([n for n in kept if n.endswith('-windows.json')]) == 2",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_retention_counts_each_operating_system_on_its_own",
+      "proof": "PROOF-2",
+      "reasons": []
+    },
+    {
+      "body": "def test_retention_keeps_the_newest_three(project):\n    for hour in range(6):\n        put_record(project, 'greeting',\n                   '2026091%dT120000Z-4f1c2ab-ci.json' % hour)\n    records_module.prune(project, 'greeting')\n    kept = names(project, 'greeting')\n    assert len(kept) == 3\n    assert kept == ['20260913T120000Z-4f1c2ab-ci.json',\n                    '20260914T120000Z-4f1c2ab-ci.json',\n                    '20260915T120000Z-4f1c2ab-ci.json']",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_retention_keeps_the_newest_three",
+      "proof": "PROOF-2",
+      "reasons": []
+    },
+    {
+      "body": "def test_writing_prunes_as_it_goes(project):\n    for _ in range(5):\n        put_record(project, 'greeting',\n                   '2026090%dT120000Z-4f1c2ab-ada.json' % len(\n                       names(project, 'greeting')))\n    records_module.write_record(project, record(), 'ada@example.com')\n    assert len(names(project, 'greeting')) == 3",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_writing_prunes_as_it_goes",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "7c854e78fe1a275472cc3f0940f3a141176047a5cfe385247706582112028e9d"
+}

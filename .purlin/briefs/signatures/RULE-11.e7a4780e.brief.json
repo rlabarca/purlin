@@ -1,0 +1,101 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-16T22:36:42Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "d2a90c3229611b86b1e6631ae091279593d5a02195fb7a97ab4deee17afddb17",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-31",
+      "text": "Run the walk over a project at gate `signed`, answering `hold` with a case for `RULE-2` and `sign` for `RULE-1`; verify 2 commits are made, a signature file names `RULE-1` and a `.hold.json` file stands beside it",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-32",
+      "text": "Run the walk over the same project, answering `skip` at every stop; verify 2 rules are skipped, the signatures directory is empty and the close prints `Run: purlin:sign`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-33",
+      "text": "Run the walk over the same project, answering `case` with `it should also reject an expired token` at every stop; verify 2 cases come back, the signatures directory is empty, the close prints that sentence and it prints `Run: purlin:build`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/signatures/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-11",
+  "rule_hash": "c635caee352f7c6e2f860a5dabeecd4cf07624a45a06d843c308358a6e2749fa",
+  "rule_text": "With no feature named the command walks the review list one brief at a time, taking one of the four answers sign, case, hold or skip at each stop, and writes nothing until the walk closes",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "cf33498024bbd3d800ea8b678ab448a0bb2fbe9287bf969321b95e8273593124",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_four_answers_each_do_their_own_thing(self, capsys):\n        made = signing_project(sign_at='low')\n        try:\n            answers = {'RULE-2': ('hold', 'no case for an expired token'),\n                       'RULE-1': 'sign'}\n            given = sign_module.walk(\n                made.root, answer=lambda entry, _text: answers[entry['id']])\n            capsys.readouterr()\n            assert given['signed'] == [('login', 'RULE-1')]\n            assert given['held'] == [('login', 'RULE-2')]\n            assert len(given['commits']) == 2, given\n            names = made.signatures()\n            assert any(name.startswith('RULE-1.') and not\n                       name.endswith('.hold.json') for name in names), names\n            assert any(name.endswith('.hold.json') for name in names), names\n        finally:\n            made.close()",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_the_four_answers_each_do_their_own_thing",
+      "proof": "PROOF-31",
+      "reasons": []
+    },
+    {
+      "body": null,
+      "file": "dev/test_verify_gate.py",
+      "findings": [],
+      "name": "test_the_test_strength_is_not_read_at_tested",
+      "proof": "PROOF-31",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_skipped_rule_is_written_nothing_and_stays_on_the_list(\n            self, capsys):\n        made = signing_project(sign_at='low')\n        try:\n            given = sign_module.walk(made.root,\n                                     answer=lambda _entry, _text: 'skip')\n            output = capsys.readouterr().out\n            assert given['signed'] == [] and given['held'] == []\n            assert len(given['skipped']) == 2\n            assert made.signatures() == []\n            assert 'Run: purlin:sign' in output, output\n        finally:\n            made.close()",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_a_skipped_rule_is_written_nothing_and_stays_on_the_list",
+      "proof": "PROOF-32",
+      "reasons": []
+    },
+    {
+      "body": null,
+      "file": "dev/test_verify_gate.py",
+      "findings": [],
+      "name": "test_a_rule_with_no_record_fails_and_is_named",
+      "proof": "PROOF-32",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_case_is_carried_to_the_close_and_written_nowhere(self, capsys):\n        made = signing_project(sign_at='low')\n        try:\n            given = sign_module.walk(\n                made.root,\n                answer=lambda _entry, _text: ('case', 'it should also reject '\n                                              'an expired token'))\n            output = capsys.readouterr().out\n            assert len(given['cases']) == 2\n            assert made.signatures() == []\n            assert 'it should also reject an expired token' in output\n            assert 'Run: purlin:build' in output, output\n        finally:\n            made.close()",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_a_case_is_carried_to_the_close_and_written_nowhere",
+      "proof": "PROOF-33",
+      "reasons": []
+    },
+    {
+      "body": null,
+      "file": "dev/test_verify_gate.py",
+      "findings": [],
+      "name": "test_a_failing_proof_fails_the_gate",
+      "proof": "PROOF-33",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "e7a4780e0cd720d8fbb7f26360fa75ff814020fdd8a0459440e45b6dc7651b3d"
+}

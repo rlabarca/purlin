@@ -1,0 +1,77 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-16T22:36:53Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "db9642336f48b7376fb64044e526aa92d64aba8290a5783b10e44621e84d2b1c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-18",
+      "text": "Run the shell checker over a script recording one proof in both branches of an `if ... grep`; verify exactly 1 result comes back with status `pass` for `PROOF-1`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-19",
+      "text": "Run the shell checker over a script whose only line is a bare `purlin_proof ... pass`; verify its status is `fail` and its check is `tautology`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-20",
+      "text": "Run the shell checker over a script recording one proof in both branches of `if true`; verify the pair is merged into exactly 1 result rather than two",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/static_checks/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-8",
+  "rule_hash": "374d72440500287858c75cd96e8c92668663abf9e79e9f0f461bf1c5d953d433",
+  "rule_text": "A shell proof emitted once with no test logic before it is reported `tautology`, and an if/else pair emitting one proof both ways is one result judged by the condition above it",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "8869e4251241231c2ae033be09b11503a6d561cb991dc46f96abbf1e181ad5e7",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_if_else_pair_not_flagged(self):\n        \"\"\"if/else proof pair with grep condition should pass, not be flagged.\"\"\"\n        path = _write_tmp('''#!/usr/bin/env bash\nsource shell_purlin.sh\noutput=$(some_command)\nif echo \"$output\" | grep -q \"CONFIRMED\"; then\n  purlin_proof \"testfeat\" \"PROOF-1\" \"RULE-1\" pass \"checks CONFIRMED\"\nelse\n  purlin_proof \"testfeat\" \"PROOF-1\" \"RULE-1\" fail \"checks CONFIRMED\"\nfi\n''', suffix='.sh')\n        try:\n            results = check_shell(path, \"testfeat\")\n            assert len(results) == 1\n            assert results[0]['status'] == 'pass'\n            assert results[0]['proof_id'] == 'PROOF-1'\n        finally:\n            os.unlink(path)",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_if_else_pair_not_flagged",
+      "proof": "PROOF-18",
+      "reasons": []
+    },
+    {
+      "body": "def test_hardcoded_pass_still_caught(self):\n        \"\"\"A bare purlin_proof pass with no test logic should still be flagged.\"\"\"\n        path = _write_tmp('''#!/usr/bin/env bash\nsource shell_purlin.sh\npurlin_proof \"testfeat\" \"PROOF-1\" \"RULE-1\" pass \"no test here\"\n''', suffix='.sh')\n        try:\n            results = check_shell(path, \"testfeat\")\n            assert len(results) == 1\n            assert results[0]['status'] == 'fail'\n            assert results[0]['check'] == 'tautology'\n        finally:\n            os.unlink(path)",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_hardcoded_pass_still_caught",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": "def test_if_else_pair_no_condition_flagged(self):\n        \"\"\"if/else pair with no real test logic in condition should still fail.\"\"\"\n        path = _write_tmp('''#!/usr/bin/env bash\nsource shell_purlin.sh\nif true; then\n  purlin_proof \"testfeat\" \"PROOF-1\" \"RULE-1\" pass \"no real check\"\nelse\n  purlin_proof \"testfeat\" \"PROOF-1\" \"RULE-1\" fail \"no real check\"\nfi\n''', suffix='.sh')\n        try:\n            results = check_shell(path, \"testfeat\")\n            assert len(results) == 1\n            # The `if` keyword IS in the segment, so has_logic is true\n            # This is acceptable \u2014 `if true` has test logic (the if keyword)\n            # The deeper semantic issue would be caught by LLM Pass 2\n        finally:\n            os.unlink(path)",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_if_else_pair_no_condition_flagged",
+      "proof": "PROOF-20",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "972828d84c8cb5ce347cff9a47063b59234fb2229084b6e3d15aaa0c41d55a22"
+}

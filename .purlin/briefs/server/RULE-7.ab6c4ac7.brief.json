@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "server",
+  "generated_at": "2026-09-16T22:36:41Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "18988845061e8ffb30875ddb65d8fb182348235aa88bdb85e49b641d9ad8bdfc",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-7",
+      "text": "Start the server in an empty directory and send `sync_status` with no arguments; verify the answer carries `No Purlin workspace` and names `purlin:init`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/server/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-7",
+  "rule_hash": "3ecef84f31313e467b0243920bab0b07d3a788773b02a90e8e0c38a849fc087f",
+  "rule_text": "A root holding no `.purlin/config.json` answers with a line naming that root, how it was chosen and what to run, rather than reporting a project with nothing in it",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "f269e9025514776b8ce0c4f06dfac15f140eb34ec38a01a99f09a1b3c8c0efb3",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_root_with_no_workspace_says_so_rather_than_reporting_nothing(\n            self, tmp_path):\n        responses, _stderr = _rpc(str(tmp_path), {\n            'jsonrpc': '2.0', 'id': 1, 'method': 'tools/call',\n            'params': {'name': 'sync_status', 'arguments': {}}})\n        text = responses[0]['result']['content'][0]['text']\n        assert 'No Purlin workspace' in text and 'purlin:init' in text",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_a_root_with_no_workspace_says_so_rather_than_reporting_nothing",
+      "proof": "PROOF-7",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "ab6c4ac72855e5e83927a713aa8bdb08f7b49646f98b05cf3db83a290297de29"
+}

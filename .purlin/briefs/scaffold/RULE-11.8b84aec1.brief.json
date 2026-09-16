@@ -1,0 +1,71 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T22:36:36Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "2247813a1058d80bf2f14f55a83065677c79cd9d26729f455eff6c6c883f09c5",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-11",
+      "text": "Run with `--gate signed` and no emails; verify the output names the signer list and `signers` is empty. Then write a spec holding one untagged rule, run again and verify the output contains `login RULE-1` and `no risk tag`; tag that rule `[risk: high] [origin: pm]`, run again and verify `login RULE-1` is absent",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-11",
+  "rule_hash": "00f9fd168267cb284371a352f29af20329b1114029e6e793dc760e4db5e0da47",
+  "rule_text": "Under `signed`, init prints what the gate will otherwise fail on: the missing signer list with the command that writes it, and every rule carrying no risk tag named by feature and rule id",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "8218819b9023e2d49b9e6b71a3984cf4437d8a17574ee12e9afc484c1abab49d",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_tagged_rule_is_not_listed(self, project):\n        write(project.path('specs/core/login.md'),\n              SPEC.replace('and a password',\n                           'and a password [risk: high] [origin: pm]'))\n        output = project.run('--gate', 'signed')\n        assert 'login RULE-1' not in output",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_a_tagged_rule_is_not_listed",
+      "proof": "PROOF-11",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_list_prints_the_directive_the_gate_will_fail_on(self, project):\n        output = project.run('--gate', 'signed')\n        assert 'signer list' in output\n        assert project.config()['signers'] == []",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_no_list_prints_the_directive_the_gate_will_fail_on",
+      "proof": "PROOF-11",
+      "reasons": []
+    },
+    {
+      "body": "def test_rules_without_a_risk_tag_are_listed(self, project):\n        project.spec()\n        output = project.run('--gate', 'signed')\n        assert 'login RULE-1' in output\n        assert 'no risk tag' in output",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_rules_without_a_risk_tag_are_listed",
+      "proof": "PROOF-11",
+      "reasons": []
+    },
+    {
+      "body": "def test_untagged_rules_names_the_feature_and_the_rule(self, project):\n        project.spec()\n        assert scaffold_module.untagged_rules(project.root) == [\n            ('login', 'RULE-1')]",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_untagged_rules_names_the_feature_and_the_rule",
+      "proof": "PROOF-11",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "8b84aec11059706809033c8a088448747dec3ed64c1f142d9c972415e507a344"
+}

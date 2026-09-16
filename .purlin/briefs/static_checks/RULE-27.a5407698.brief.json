@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-16T22:36:58Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "36d2751d847d36e70096735c63ddc69331cda436f5c9f000a125a67f6ffddf87",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-54",
+      "text": "Run `--sweep --json` over this repository; verify it exits 0, that it swept one feature per spec file on disk, that zero backings are unmeasurable for want of a checker, and that the checkout and the runtime directory are byte-identical afterwards",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/static_checks/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-27",
+  "rule_hash": "67635ba12a876e730fb2c5169ebf6e4dd5b7d0e7d5e2efe38271d0f1f83f3abc",
+  "rule_text": "`--sweep` prints the sweep as JSON and exits 0, and over this repository no backing is unmeasurable for want of a checker",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "1e38863c8bed877a8626c34765909db4adff2fbbd8ceba057eff603b848fdcef",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_cli_sweeps_this_repository_without_touching_it(self):\n        \"\"\"The real CLI over this repository: every spec swept, every backing in\n        a language a shipped checker reads, and the checkout byte-identical\n        afterwards.\"\"\"\n        root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))\n        before_status, before_runtime = self._repo_state(root)\n\n        proc = subprocess.run(\n            [sys.executable, _STATIC_CHECKS_PY, '--sweep', '--json',\n             '--project-root', root],\n            capture_output=True, text=True)\n        assert proc.returncode == 0, proc.stderr\n        result = json.loads(proc.stdout)\n\n        specs = glob.glob(os.path.join(root, 'specs', '**', '*.md'), recursive=True)\n        assert result['counts']['features'] == len(specs) > 0, \\\n            f\"{len(specs)} specs on disk, {result['counts']['features']} swept\"\n        assert set(result['features']) == {\n            os.path.splitext(os.path.basename(p))[0] for p in specs}\n\n        no_checker = [(r['feature'], r['proof_id'], r['test_file'])\n                      for r in result['unmeasurable'] if r['check'] == 'no_checker']\n        assert no_checker == [], (\n            \"every language this repository's proofs are written in has a checker, \"\n            f\"so no backing may be unmeasurable for want of one: {no_checker}\")\n\n        after_status, after_runtime = self._repo_state(root)\n        assert after_status == before_status, \\\n            \"the sweep changed a tracked file in the checkout it was only reading\"\n        assert after_runtime == before_runtime, \\\n            \"the sweep wrote under .purlin/\"\n\n        bare = subprocess.run([sys.executable, _STATIC_CHECKS_PY],\n                              capture_output=True, text=True)\n        assert bare.returncode == 2\n        assert '--sweep [--project-root <path>] [--json]' in bare.stderr, \\\n            \"the sweep is missing from the usage text\"",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_cli_sweeps_this_repository_without_touching_it",
+      "proof": "PROOF-54",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a5407698a6ba9bd5b81f294d6b4dfe87d0ea334dea37a0c9e43d98e5736479f6"
+}

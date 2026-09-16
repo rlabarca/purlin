@@ -1,0 +1,58 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "schema_spec_format",
+  "generated_at": "2026-09-16T22:36:40Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "bc62213934cefde435ce04c818946a27d49a944b70ac875035d8d77658cb3c10",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-9",
+      "text": "Call the tag splitter with `Grep the file; verify present @e2e`, `Lock the file @unit @env(windows)`, `Lock the file @env(macos) @integration`, `Lock the file @env(linux)` and a description whose prose ends in a list of at-words after a comma; verify the tier and environment of each, that the prose case returns tier `unit`, an empty environment, an empty unknown list and a description returned whole, and that the two orders of the same pair of tags return identical tuples",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/schema_spec_format/20260916T223615Z-3aa5d77-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-9",
+  "rule_hash": "6a9824fb0c70208d8141e6704cd7a8ba18f201dfe7dba33b628568ddf5aaabdb",
+  "rule_text": "A proof line carries at most one tier tag and at most one `@env` tag, in either order, read off the end of the line; a tag that follows a list connector (a comma, `and`, `or`) is not a tag, so a description whose prose ends in an at-word is left whole and its tier defaults to `unit`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "b7afb9645a02fefe7a1e679cf58f919caea0352645e593f65fda99b5bbba56ae",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_prose_ending_in_an_at_word_is_not_a_tag(self):\n        split = purlin_specs.split_proof_tags\n        cases = [\n            ('Grep the file; verify present @e2e', 'e2e', None),\n            ('Run it against a database @integration', 'integration', None),\n            ('Lock the file @unit @env(windows)', 'unit', 'windows'),\n            ('Lock the file @env(macos) @integration', 'integration', 'macos'),\n            # `@env` alone: the tier defaults to unit.\n            ('Lock the file @env(linux)', 'unit', 'linux'),\n            # Prose that merely ends in an @word is not a tag at all.\n            ('verify `spec_format.md` documents @integration, @e2e, and @windows',\n             'unit', None),\n            ('Check the documented tiers @integration, @e2e', 'unit', None),\n            ('Accepts either @e2e or @integration', 'unit', None),\n        ]\n        for desc, tier, env in cases:\n            clean, got_tier, got_env, unknown = split(desc)\n            assert got_tier == tier, f\"{desc!r}: tier {got_tier!r}, wanted {tier!r}\"\n            assert got_env == env, f\"{desc!r}: env {got_env!r}, wanted {env!r}\"\n            assert not unknown, f\"{desc!r}: unexpected unknown tags {unknown!r}\"\n            if tier != 'unit' or env:\n                assert ' @' not in clean, f\"{desc!r}: tags not stripped: {clean!r}\"\n\n        prose = 'verify `spec_format.md` documents @integration, @e2e, and @windows'\n        assert split(prose)[0] == prose, \\\n            \"a description with no tag must not be truncated\"\n\n        # Either order is one grammar: the tuple must not depend on tag order.\n        assert (split('Lock the file @unit @env(windows)')\n                == split('Lock the file @env(windows) @unit'))",
+      "file": "dev/test_schema_spec_format.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_prose_ending_in_an_at_word_is_not_a_tag",
+      "proof": "PROOF-9",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_real_spec_is_parsed_correctly(self):\n        \"\"\"The two shapes, read off this repository's own specs.\n\n        PROOF-9 of this anchor quotes several tier and environment tags in\n        backticks and carries no tag of its own; PROOF-11 carries one real\n        trailing tier tag. A parser that read a quoted tag would give the\n        first a tier or an environment it never declared and truncate its\n        description at the last quote.\"\"\"\n        info = purlin_specs.scan_specs(PROJECT_ROOT)['schema_spec_format']\n\n        quoted = info['proofs']['PROOF-9']\n        assert '`Lock the file @env(macos) @integration`' in quoted['text'], \\\n            \"PROOF-9 no longer quotes a tag, so this pins nothing\"\n        assert quoted['tier'] == 'unit', \\\n            \"a quoted tag mid-description is not the proof's tier\"\n        assert quoted['env'] is None, \\\n            \"a quoted environment tag mid-description is not an environment\"\n        assert quoted['text'].rstrip().endswith('identical tuples'), \\\n            \"the description's final clause must not be truncated\"\n\n        tagged = info['proofs']['PROOF-11']\n        assert tagged['tier'] == 'integration', \\\n            \"PROOF-11's one trailing tag is its tier\"\n        assert tagged['env'] is None, tagged['env']\n        assert tagged['text'].rstrip().endswith('still parses'), \\\n            \"the tier tag is stripped off the description, nothing else is\"",
+      "file": "dev/test_schema_spec_format.py",
+      "findings": [],
+      "name": "test_real_spec_is_parsed_correctly",
+      "proof": "PROOF-9",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "ae663803574aace01c9d7511277284952fc0b07892276560eaec55dc7dc23a77"
+}
