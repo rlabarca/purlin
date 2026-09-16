@@ -745,8 +745,8 @@ class TestPurlinAgent:
     def test_it_reads_the_state_before_it_answers(self):
         assert carries(AGENT, [
             'Call `sync_status` before you answer any question about state.',
-            'Drafted', 'Proof ready', 'Tested', 'Recorded', 'Reviewed',
-            'Approved', 'Stale', 're-verify pending']) == []
+            '`drafted`', '`ready`', '`passed`', '`strong`', '`signed`',
+            '`code changed`']) == []
 
     @pytest.mark.proof("purlin_agent", "PROOF-6", "RULE-6")
     def test_it_stays_under_its_ceiling(self):
@@ -774,7 +774,7 @@ def core_loop_problems():
     if not loop:
         return ['%s has no fenced block naming purlin:drift' % AGENT]
     steps = ['purlin:drift', 'purlin:spec', 'purlin:build', 'purlin:test',
-             'purlin:verify', 'push']
+             'purlin:audit', 'push']
     text = loop[0]
     missing = [step for step in steps if step not in text]
     if missing:
@@ -795,9 +795,9 @@ def never_problems():
     if len(items) != 5:
         problems.append('%s carries %d NEVERs, expected 5' % (AGENT, len(items)))
     flattened = flat(body)
-    for needle in ('origin', 'proof file', 'record', 'approval',
-                   'approve a rule whose test you wrote', 'verify',
-                   '`recorded`', '`approved`', 'retired term'):
+    for needle in ('origin', 'proof file', 'record', 'signature',
+                   'sign a rule whose test you wrote', 'purlin:audit',
+                   '`strong`', '`signed`', 'retired term'):
         if needle not in flattened:
             problems.append('%s NEVERs do not name %r' % (AGENT, needle))
     return problems
