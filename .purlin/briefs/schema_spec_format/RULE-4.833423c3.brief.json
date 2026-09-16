@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "schema_spec_format",
-  "generated_at": "2026-09-16T22:35:37Z",
+  "generated_at": "2026-09-16T22:49:16Z",
   "layers": [
     "proof text",
     "test body",
@@ -23,7 +23,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/schema_spec_format/20260916T223512Z-06a3ac6-ci-linux.json",
+  "record": ".purlin/records/schema_spec_format/20260916T224831Z-06a3ac6-ci-windows.json",
   "risk": "high",
   "rule": "RULE-4",
   "rule_hash": "3fbadf5d964ad32ade4753003611c8935dc37cf0ebf55916b34759e5245b4034",
@@ -38,7 +38,7 @@
       "body": "def test_a_rule_with_no_proof_line_is_drafted(self):\n        self._write_spec('test_feat', (\n            '# Feature: test_feat\\n\\n'\n            '## What it does\\nTesting.\\n\\n'\n            '## Rules\\n- RULE-1: Must work\\n\\n'\n            '## Proof\\n'\n        ))\n        data = purlin_payload.build_payload(self.project_root)\n        feature = next(f for f in data['features'] if f['name'] == 'test_feat')\n        rule = next(r for r in feature['rules'] if r['id'] == 'RULE-1')\n        assert rule['proofs'] == [], f\"RULE-1 has no proof line: {rule}\"\n        assert rule['spec'] == 'drafted', (\n            f\"a rule with no proof is drafted, got {rule['spec']!r}\")",
       "file": "dev/test_schema_spec_format.py",
       "findings": [],
-      "name": "test_a_rule_with_no_proof_line_is_drafted",
+      "name": "test_rule_without_proof_shows_uncovered",
       "proof": "PROOF-4",
       "reasons": []
     },
@@ -46,7 +46,7 @@
       "body": "def test_a_rule_with_no_proof_line_is_drafted(self):\n        self._write_spec('test_feat', (\n            '# Feature: test_feat\\n\\n'\n            '## What it does\\nTesting.\\n\\n'\n            '## Rules\\n- RULE-1: Must work\\n\\n'\n            '## Proof\\n'\n        ))\n        data = purlin_payload.build_payload(self.project_root)\n        feature = next(f for f in data['features'] if f['name'] == 'test_feat')\n        rule = next(r for r in feature['rules'] if r['id'] == 'RULE-1')\n        assert rule['proofs'] == [], f\"RULE-1 has no proof line: {rule}\"\n        assert rule['spec'] == 'drafted', (\n            f\"a rule with no proof is drafted, got {rule['spec']!r}\")",
       "file": "dev/test_schema_spec_format.py",
       "findings": [],
-      "name": "test_rule_without_proof_shows_uncovered",
+      "name": "test_a_rule_with_no_proof_line_is_drafted",
       "proof": "PROOF-4",
       "reasons": []
     }

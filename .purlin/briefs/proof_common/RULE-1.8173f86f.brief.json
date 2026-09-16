@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "proof_common",
-  "generated_at": "2026-09-16T22:35:21Z",
+  "generated_at": "2026-09-16T22:48:57Z",
   "layers": [
     "proof text",
     "test body",
@@ -23,7 +23,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/proof_common/20260916T223512Z-06a3ac6-ci-linux.json",
+  "record": ".purlin/records/proof_common/20260916T224829Z-06a3ac6-ci-windows.json",
   "risk": "high",
   "rule": "RULE-1",
   "rule_hash": "853bfb58d226ffcaefbd8bf8ad29bf8af3c059f4b56d16b87838fae55f4aef64",
@@ -34,22 +34,6 @@
   "test_hash_kind": "file",
   "test_strength": null,
   "tests": [
-    {
-      "body": "def test_proof_file_naming(tmp_path):\n    \"\"\"One file per feature and tier, under the runtime directory.\"\"\"\n    root = _project(tmp_path)\n    _run_shell_proof(root, \"feat\", [(\"PROOF-1\", \"RULE-1\", \"pass\", \"a\")])\n    _run_shell_proof(root, \"feat\", [(\"PROOF-2\", \"RULE-2\", \"pass\", \"b\")],\n                     tier=\"integration\", name=\"second.sh\")\n    _run_shell_proof(root, \"other\", [(\"PROOF-1\", \"RULE-1\", \"pass\", \"c\")],\n                     name=\"third.sh\")\n    assert _proof_files(root) == [\"feat.integration.json\", \"feat.unit.json\",\n                                  \"other.unit.json\"]",
-      "file": "dev/test_proof_plugins_missing.py",
-      "findings": [],
-      "name": "test_proof_file_naming",
-      "proof": "PROOF-1",
-      "reasons": []
-    },
-    {
-      "body": "def test_pytest_and_shell_both_land(self, tmp_path):\n        root = _project(tmp_path)\n        _shell_run(root, 'tests/alpha.test.sh', 'alpha',\n                   [('PROOF-1', 'RULE-1', 'pass', 'shell case')])\n        _pytest_run(root, 'tests/test_alpha.py',\n                    'import pytest\\n\\n'\n                    '@pytest.mark.proof(\"alpha\", \"PROOF-2\", \"RULE-2\")\\n'\n                    'def test_two():\\n    assert True\\n')\n        entries = _read(root)['alpha']\n        assert {e['id'] for e in entries} == {'PROOF-1', 'PROOF-2'}\n        assert {e['test_file'] for e in entries} == {\n            'tests/alpha.test.sh', 'tests/test_alpha.py'}",
-      "file": "dev/test_proof_stress.py",
-      "findings": [],
-      "name": "test_pytest_and_shell_both_land",
-      "proof": "PROOF-1",
-      "reasons": []
-    },
     {
       "body": null,
       "file": "dev/test_proof_plugins.sh",
@@ -63,6 +47,22 @@
       "file": "dev/test_proof_plugins.sh",
       "findings": [],
       "name": "the proof file is written to the runtime directory",
+      "proof": "PROOF-1",
+      "reasons": []
+    },
+    {
+      "body": "def test_proof_file_naming(tmp_path):\n    \"\"\"One file per feature and tier, under the runtime directory.\"\"\"\n    root = _project(tmp_path)\n    _run_shell_proof(root, \"feat\", [(\"PROOF-1\", \"RULE-1\", \"pass\", \"a\")])\n    _run_shell_proof(root, \"feat\", [(\"PROOF-2\", \"RULE-2\", \"pass\", \"b\")],\n                     tier=\"integration\", name=\"second.sh\")\n    _run_shell_proof(root, \"other\", [(\"PROOF-1\", \"RULE-1\", \"pass\", \"c\")],\n                     name=\"third.sh\")\n    assert _proof_files(root) == [\"feat.integration.json\", \"feat.unit.json\",\n                                  \"other.unit.json\"]",
+      "file": "dev/test_proof_plugins_missing.py",
+      "findings": [],
+      "name": "test_proof_file_naming",
+      "proof": "PROOF-1",
+      "reasons": []
+    },
+    {
+      "body": "def test_pytest_and_shell_both_land(self, tmp_path):\n        root = _project(tmp_path)\n        _shell_run(root, 'tests/alpha.test.sh', 'alpha',\n                   [('PROOF-1', 'RULE-1', 'pass', 'shell case')])\n        _pytest_run(root, 'tests/test_alpha.py',\n                    'import pytest\\n\\n'\n                    '@pytest.mark.proof(\"alpha\", \"PROOF-2\", \"RULE-2\")\\n'\n                    'def test_two():\\n    assert True\\n')\n        entries = _read(root)['alpha']\n        assert {e['id'] for e in entries} == {'PROOF-1', 'PROOF-2'}\n        assert {e['test_file'] for e in entries} == {\n            'tests/alpha.test.sh', 'tests/test_alpha.py'}",
+      "file": "dev/test_proof_stress.py",
+      "findings": [],
+      "name": "test_pytest_and_shell_both_land",
       "proof": "PROOF-1",
       "reasons": []
     }

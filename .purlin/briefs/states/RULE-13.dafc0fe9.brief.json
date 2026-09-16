@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-16T22:35:45Z",
+  "generated_at": "2026-09-16T22:49:25Z",
   "layers": [
     "proof text",
     "test body",
@@ -24,7 +24,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/states/20260916T223512Z-06a3ac6-ci-linux.json",
+  "record": ".purlin/records/states/20260916T224833Z-06a3ac6-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-13",
   "rule_hash": "4799264b7377f8ca2cbaf93295e68d754322108361c5a87b666ac4b3dbec68fc",
@@ -39,7 +39,7 @@
       "body": "def test_with_no_engine_the_free_checks_are_the_whole_of_level_two(self):\n        made = Project(gate='strong')\n        try:\n            made.record([{'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}],\n                        ci=True, strength=None)\n            cell = made.cell('RULE-2', 'strong')\n            assert cell['word'] == 'strong', cell\n            assert cell['reasons'] == ['no engine: free checks only'], cell\n            made.spec(SPEC.replace(\n                'POST /login with a bad password; verify 401 and the '\n                'body \"denied\"', 'Check that the login handles it properly'))\n            blocked = made.rule('RULE-2')\n            assert blocked['spec'] == 'drafted', blocked\n            assert blocked['cells']['strong']['word'] == 'weak', blocked\n        finally:\n            made.close()",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_with_no_engine_the_free_checks_are_the_whole_of_level_two",
+      "name": "test_global_anchor_rules_are_counted_once_in_the_project_rollup",
       "proof": "PROOF-15",
       "reasons": []
     },
@@ -47,7 +47,7 @@
       "body": "def test_with_no_engine_the_free_checks_are_the_whole_of_level_two(self):\n        made = Project(gate='strong')\n        try:\n            made.record([{'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}],\n                        ci=True, strength=None)\n            cell = made.cell('RULE-2', 'strong')\n            assert cell['word'] == 'strong', cell\n            assert cell['reasons'] == ['no engine: free checks only'], cell\n            made.spec(SPEC.replace(\n                'POST /login with a bad password; verify 401 and the '\n                'body \"denied\"', 'Check that the login handles it properly'))\n            blocked = made.rule('RULE-2')\n            assert blocked['spec'] == 'drafted', blocked\n            assert blocked['cells']['strong']['word'] == 'weak', blocked\n        finally:\n            made.close()",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_global_anchor_rules_are_counted_once_in_the_project_rollup",
+      "name": "test_with_no_engine_the_free_checks_are_the_whole_of_level_two",
       "proof": "PROOF-15",
       "reasons": []
     }

@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-16T22:35:44Z",
+  "generated_at": "2026-09-16T22:49:24Z",
   "layers": [
     "proof text",
     "test body",
@@ -25,7 +25,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/states/20260916T223512Z-06a3ac6-ci-linux.json",
+  "record": ".purlin/records/states/20260916T224833Z-06a3ac6-ci-windows.json",
   "risk": "high",
   "rule": "RULE-7",
   "rule_hash": "90b75e36346d57b97f6df36fccda19d2f7c65037d6174eff7384d636eb259294",
@@ -40,7 +40,7 @@
       "body": "def test_code_changed_when_only_the_code_moved(self, project):\n        tree = purlin_specs.scope_tree(project.root, ['src/login.py'])\n        project.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'}],\n                       scope_tree=tree)\n        assert project.cell('RULE-1', 'passed')['word'] == 'passed'\n        _write(os.path.join(project.root, 'src', 'login.py'),\n               'def login():\\n    return 200  # rewritten\\n')\n        _git(project.root, 'add', '-A')\n        _git(project.root, 'commit', '-q', '-m', 'refactor: login')\n        rule = project.rule('RULE-1')\n        cell = rule['cells']['passed']\n        assert cell['word'] == 'code changed', cell\n        assert cell['reasons'][0].startswith('code changed since '), cell\n        assert rule['flags']['code_changed'] is True",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_code_changed_when_only_the_code_moved",
+      "name": "test_stale_when_the_rule_text_changed_after_the_approval",
       "proof": "PROOF-9",
       "reasons": []
     },
@@ -48,7 +48,7 @@
       "body": "def test_code_changed_when_only_the_code_moved(self, project):\n        tree = purlin_specs.scope_tree(project.root, ['src/login.py'])\n        project.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'}],\n                       scope_tree=tree)\n        assert project.cell('RULE-1', 'passed')['word'] == 'passed'\n        _write(os.path.join(project.root, 'src', 'login.py'),\n               'def login():\\n    return 200  # rewritten\\n')\n        _git(project.root, 'add', '-A')\n        _git(project.root, 'commit', '-q', '-m', 'refactor: login')\n        rule = project.rule('RULE-1')\n        cell = rule['cells']['passed']\n        assert cell['word'] == 'code changed', cell\n        assert cell['reasons'][0].startswith('code changed since '), cell\n        assert rule['flags']['code_changed'] is True",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_stale_when_the_rule_text_changed_after_the_approval",
+      "name": "test_code_changed_when_only_the_code_moved",
       "proof": "PROOF-9",
       "reasons": []
     }

@@ -1,0 +1,57 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T22:49:27Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "f2481e5941049d5cbff3bd6de0e1446e3ddd0865c8c37f227d3208e3f7b0a941",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-28",
+      "text": "Build the payload for those same five rules and verify `meets_gate` is true for the signed one alone, and that `blocked_by` reads `spec`, `passed`, `strong`, `signed` and null in that order",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260916T224833Z-06a3ac6-ci-windows.json",
+  "risk": "high",
+  "rule": "RULE-24",
+  "rule_hash": "938624e6b9e5d5a46d8ec1ed06c73b69253c06b7c99198e87c8afb260c7dd03b",
+  "rule_text": "`meets_gate` is true when the spec status is `ready` and every cell up to the gate is met, and `blocked_by` names the lowest cell that is not, in the order `spec`, `passed`, `strong`, `signed`, and is null when the rule meets the gate",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "b23044feb94160855e5ea0ebb906ca0170c3b490e39343a45eb57df062e72496",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_gate_is_met_by_one_of_them_and_blocked_by_name(self):\n        made = _five_bucket_project()\n        try:\n            rules = [made.rule('RULE-%d' % n, 'ledger') for n in range(1, 6)]\n            assert [r['meets_gate'] for r in rules] == [\n                False, False, False, False, True]\n            assert [r['blocked_by'] for r in rules] == [\n                'spec', 'passed', 'strong', 'signed', None]\n        finally:\n            made.close()",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_a_review_entry_lists_its_reasons_and_joins_them",
+      "proof": "PROOF-28",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_gate_is_met_by_one_of_them_and_blocked_by_name(self):\n        made = _five_bucket_project()\n        try:\n            rules = [made.rule('RULE-%d' % n, 'ledger') for n in range(1, 6)]\n            assert [r['meets_gate'] for r in rules] == [\n                False, False, False, False, True]\n            assert [r['blocked_by'] for r in rules] == [\n                'spec', 'passed', 'strong', 'signed', None]\n        finally:\n            made.close()",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_the_gate_is_met_by_one_of_them_and_blocked_by_name",
+      "proof": "PROOF-28",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "d66f31b655b8ca510abcaaafa9fe9c41878b61ac0b90e52ef1078df8f4191cdd"
+}

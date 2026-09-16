@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "signatures",
-  "generated_at": "2026-09-16T22:35:39Z",
+  "generated_at": "2026-09-16T22:49:19Z",
   "layers": [
     "proof text",
     "test body",
@@ -30,7 +30,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/signatures/20260916T223512Z-06a3ac6-ci-linux.json",
+  "record": ".purlin/records/signatures/20260916T224832Z-06a3ac6-ci-windows.json",
   "risk": "high",
   "rule": "RULE-16",
   "rule_hash": "0e3d68af73e09c8ebfee3dff478d68c6fae63c69bd17885df9a026359e626de1",
@@ -45,7 +45,7 @@
       "body": "def test_it_is_the_unsigned_the_stale_and_the_ones_needing_a_person(self):\n        made = signing_project(sign_at='medium')\n        try:\n            assert sign_module.signable(made.payload()) == [\n                ('login', 'RULE-2')], (\n                'only the high-risk rule is at or above sign_at')\n            sign_module.main(['login', 'RULE-2', '--project-root', made.root])\n            assert sign_module.signable(made.payload()) == []\n            made.spec(SPEC.replace('return 401 and the body \"denied\"',\n                                   'return 403 and the body \"denied\"'))\n            assert sign_module.signable(made.payload()) == [\n                ('login', 'RULE-2')], 'a stale signature is signable again'\n        finally:\n            made.close()",
       "file": "dev/test_signatures.py",
       "findings": [],
-      "name": "test_it_is_the_unsigned_the_stale_and_the_ones_needing_a_person",
+      "name": "test_a_rule_already_approved_is_left_alone",
       "proof": "PROOF-20",
       "reasons": []
     },
@@ -53,16 +53,8 @@
       "body": "def test_it_is_the_unsigned_the_stale_and_the_ones_needing_a_person(self):\n        made = signing_project(sign_at='medium')\n        try:\n            assert sign_module.signable(made.payload()) == [\n                ('login', 'RULE-2')], (\n                'only the high-risk rule is at or above sign_at')\n            sign_module.main(['login', 'RULE-2', '--project-root', made.root])\n            assert sign_module.signable(made.payload()) == []\n            made.spec(SPEC.replace('return 401 and the body \"denied\"',\n                                   'return 403 and the body \"denied\"'))\n            assert sign_module.signable(made.payload()) == [\n                ('login', 'RULE-2')], 'a stale signature is signable again'\n        finally:\n            made.close()",
       "file": "dev/test_signatures.py",
       "findings": [],
-      "name": "test_a_rule_already_approved_is_left_alone",
+      "name": "test_it_is_the_unsigned_the_stale_and_the_ones_needing_a_person",
       "proof": "PROOF-20",
-      "reasons": []
-    },
-    {
-      "body": "def test_a_rule_needing_a_person_is_signable_under_the_review_gate(self):\n        made = Project(gate=REVIEW_GATE, config={'min_strength': 50})\n        try:\n            made.proofs()\n            made.record(runner='ci', commit_it=False)\n            commit_as_ci(made.root)\n            assert sign_module.signable(made.payload()) == [\n                ('login', 'RULE-2')], (\n                'the high-risk rule has no brief, so it needs a person')\n        finally:\n            made.close()",
-      "file": "dev/test_signatures.py",
-      "findings": [],
-      "name": "test_a_rule_needing_a_person_is_signable_under_the_review_gate",
-      "proof": "PROOF-30",
       "reasons": []
     },
     {
@@ -70,6 +62,14 @@
       "file": "dev/test_verify_gate.py",
       "findings": [],
       "name": "test_a_developer_record_is_enough",
+      "proof": "PROOF-30",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_rule_needing_a_person_is_signable_under_the_review_gate(self):\n        made = Project(gate=REVIEW_GATE, config={'min_strength': 50})\n        try:\n            made.proofs()\n            made.record(runner='ci', commit_it=False)\n            commit_as_ci(made.root)\n            assert sign_module.signable(made.payload()) == [\n                ('login', 'RULE-2')], (\n                'the high-risk rule has no brief, so it needs a person')\n        finally:\n            made.close()",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_a_rule_needing_a_person_is_signable_under_the_review_gate",
       "proof": "PROOF-30",
       "reasons": []
     }

@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "records",
-  "generated_at": "2026-09-16T22:35:25Z",
+  "generated_at": "2026-09-16T22:49:02Z",
   "layers": [
     "proof text",
     "test body",
@@ -22,7 +22,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/records/20260916T223512Z-06a3ac6-ci-linux.json",
+  "record": ".purlin/records/records/20260916T224831Z-06a3ac6-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-3",
   "rule_hash": "0a074a38124d9c34936aa5fae82690378fc05c74735fbe17ccb0ed7d62f49ce4",
@@ -33,30 +33,6 @@
   "test_hash_kind": "file",
   "test_strength": null,
   "tests": [
-    {
-      "body": "def test_a_record_tag_keeps_the_records_its_message_names(project):\n    oldest = put_record(project, 'greeting',\n                        '20260101T120000Z-4f1c2ab-ci.json')\n    for day in range(11, 16):\n        put_record(project, 'greeting',\n                   '202609%dT120000Z-4f1c2ab-ci.json' % day)\n    git(project, 'add', '-A')\n    git(project, 'commit', '--quiet', '-m', 'records')\n    records_module.tag_record(project, '1.0', [oldest])\n\n    assert records_module.tagged_paths(project) == {oldest}\n    records_module.prune(project, 'greeting')\n    kept = names(project, 'greeting')\n    assert os.path.basename(oldest) in kept\n    assert len(kept) == 4, 'the newest three plus the one the tag names'",
-      "file": "dev/test_records.py",
-      "findings": [],
-      "name": "test_a_record_tag_keeps_the_records_its_message_names",
-      "proof": "PROOF-3",
-      "reasons": []
-    },
-    {
-      "body": "def test_tagged_paths_is_empty_outside_a_repository(tmp_path):\n    assert records_module.tagged_paths(str(tmp_path)) == set()",
-      "file": "dev/test_records.py",
-      "findings": [],
-      "name": "test_tagged_paths_is_empty_outside_a_repository",
-      "proof": "PROOF-3",
-      "reasons": []
-    },
-    {
-      "body": "def test_the_record_tag_is_annotated_and_lists_every_path(project):\n    first = put_record(project, 'greeting', '20260101T120000Z-4f1c2ab-ci.json')\n    second = put_record(project, 'greeting', '20260102T120000Z-4f1c2ab-ci.json')\n    git(project, 'add', '-A')\n    git(project, 'commit', '--quiet', '-m', 'records')\n    ref = records_module.tag_record(project, '1.0', [first, second])\n\n    assert ref == 'record/1.0'\n    kind = git(project, 'cat-file', '-t', 'record/1.0').stdout.strip()\n    assert kind == 'tag', 'a lightweight tag carries no message to read'\n    message = git(project, 'for-each-ref', '--format=%(contents)',\n                  'refs/tags/record/').stdout\n    assert first in message and second in message",
-      "file": "dev/test_records.py",
-      "findings": [],
-      "name": "test_the_record_tag_is_annotated_and_lists_every_path",
-      "proof": "PROOF-3",
-      "reasons": []
-    },
     {
       "body": null,
       "file": "dev/test_records.py",
@@ -78,6 +54,30 @@
       "file": "dev/test_records.py",
       "findings": [],
       "name": "test_validated_paths_is_empty_outside_a_repository",
+      "proof": "PROOF-3",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_record_tag_keeps_the_records_its_message_names(project):\n    oldest = put_record(project, 'greeting',\n                        '20260101T120000Z-4f1c2ab-ci.json')\n    for day in range(11, 16):\n        put_record(project, 'greeting',\n                   '202609%dT120000Z-4f1c2ab-ci.json' % day)\n    git(project, 'add', '-A')\n    git(project, 'commit', '--quiet', '-m', 'records')\n    records_module.tag_record(project, '1.0', [oldest])\n\n    assert records_module.tagged_paths(project) == {oldest}\n    records_module.prune(project, 'greeting')\n    kept = names(project, 'greeting')\n    assert os.path.basename(oldest) in kept\n    assert len(kept) == 4, 'the newest three plus the one the tag names'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_record_tag_keeps_the_records_its_message_names",
+      "proof": "PROOF-3",
+      "reasons": []
+    },
+    {
+      "body": "def test_tagged_paths_is_empty_outside_a_repository(tmp_path):\n    assert records_module.tagged_paths(str(tmp_path)) == set()",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_tagged_paths_is_empty_outside_a_repository",
+      "proof": "PROOF-3",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_record_tag_is_annotated_and_lists_every_path(project):\n    first = put_record(project, 'greeting', '20260101T120000Z-4f1c2ab-ci.json')\n    second = put_record(project, 'greeting', '20260102T120000Z-4f1c2ab-ci.json')\n    git(project, 'add', '-A')\n    git(project, 'commit', '--quiet', '-m', 'records')\n    ref = records_module.tag_record(project, '1.0', [first, second])\n\n    assert ref == 'record/1.0'\n    kind = git(project, 'cat-file', '-t', 'record/1.0').stdout.strip()\n    assert kind == 'tag', 'a lightweight tag carries no message to read'\n    message = git(project, 'for-each-ref', '--format=%(contents)',\n                  'refs/tags/record/').stdout\n    assert first in message and second in message",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_record_tag_is_annotated_and_lists_every_path",
       "proof": "PROOF-3",
       "reasons": []
     }

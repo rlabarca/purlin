@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "signatures",
-  "generated_at": "2026-09-16T22:35:39Z",
+  "generated_at": "2026-09-16T22:49:18Z",
   "layers": [
     "proof text",
     "test body",
@@ -51,7 +51,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/signatures/20260916T223512Z-06a3ac6-ci-linux.json",
+  "record": ".purlin/records/signatures/20260916T224832Z-06a3ac6-ci-windows.json",
   "risk": "high",
   "rule": "RULE-6",
   "rule_hash": "e2a79c10332ad4e84630b339f2cfcdfcb18ef825ca4512da70f065974ec87350",
@@ -66,7 +66,7 @@
       "body": "def test_a_fresh_signature_is_current(self, proved):\n        sign_one(proved)\n        assert len(self._current(proved)) == 1",
       "file": "dev/test_signatures.py",
       "findings": [],
-      "name": "test_a_fresh_signature_is_current",
+      "name": "test_a_fresh_approval_is_current",
       "proof": "PROOF-6",
       "reasons": []
     },
@@ -74,7 +74,7 @@
       "body": "def test_a_fresh_signature_is_current(self, proved):\n        sign_one(proved)\n        assert len(self._current(proved)) == 1",
       "file": "dev/test_signatures.py",
       "findings": [],
-      "name": "test_a_fresh_approval_is_current",
+      "name": "test_a_fresh_signature_is_current",
       "proof": "PROOF-6",
       "reasons": []
     },
