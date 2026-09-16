@@ -46,11 +46,11 @@ PENDING_REWRITE = (
     # lane 1B: signatures
     "references/formats/signature_format.md",
     # lane 3: init and update
-    "scripts/init/scaffold.py", "scripts/init/update.py", "templates/config.json",
-    "dev/test_init_scaffold.py", "dev/test_init_update.py", "dev/test_init_e2e.sh",
+    "scripts/init/update.py",
+    "dev/test_init_update.py", "dev/test_init_e2e.sh",
     "dev/test_e2e_required_rules.sh", "dev/test_e2e_anchor_authority.sh",
     "dev/test_e2e_external_refs.sh", "dev/test_e2e_feature_scoped_overwrite.sh",
-    "specs/init/scaffold.md", "specs/init/update.md",
+    "specs/init/update.md",
     # lane 6A: docs rewrites
     "docs/dashboard.md", "docs/regulated-workflow.md", "docs/review-and-approval.md",
     "docs/review-and-signing.md", "docs/running-and-records.md", "docs/team-workflow.md",
@@ -69,6 +69,7 @@ SKIP = EXCLUDED + PENDING_REWRITE
 # file type, and this proof steps over exactly those lines in exactly these
 # files. Everything else in the file is held to the vocabulary.
 MARKED = {
+    "scripts/init/scaffold.py": "# retired",
     "scripts/init/update.py": "# retired",
     "scripts/mcp/purlin/gate.py": "# retired",
     "scripts/mcp/purlin/specs.py": "# retired",

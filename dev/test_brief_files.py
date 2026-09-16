@@ -98,5 +98,5 @@ def test_the_update_adds_the_rendering_to_gitignore(tmp_path):
     assert 'untracked-files' in [item['id'] for item in update.pending(root)]
     assert update.main(['--yes', '--project-root', root]) == 0
     lines = _read(root, '.gitignore').splitlines()
-    assert lines.count('*.brief.txt') == 1, lines
+    assert lines.count('.purlin/briefs/**/*.brief.txt') == 1, lines
     assert 'untracked-files' not in [item['id'] for item in update.pending(root)]

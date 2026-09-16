@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """purlin:init: one question, then every file a project needs.
 
-    scaffold.py [--gate tested|recorded|approved] [--ci github|ado]
+    scaffold.py [--gate passed|strong|signed] [--ci github|ado]
                 [--upstream-check] [--add <language>] [--update]
                 [--dry-run] [--project-root DIR] [--plugin-root DIR] [--yes]
 
@@ -12,15 +12,15 @@ On a project that has code, init asks one question and nothing else:
 Everything else is derived from that answer or read from the tree: the
 language from detection, the git host from the remote URL, the minimum test
 strength and the review threshold from the gate. Two honest exceptions: a tree
-with nothing to detect is asked which framework its tests use, and `approved`
-is asked who may approve.
+with nothing to detect is asked which framework its tests use, and `signed` is
+asked who may sign.
 
 It then writes, in this order and naming every one in the summary: the config,
 the plugin copies and `.purlin/plugin-root`, the runner's wiring, the engine's
 config block, the `.gitignore` entries, `designs/` and `.purlin/records/` with
-their READMEs, the dashboard, the pre-push hook, and under `recorded` and
-`approved` the workflow CI runs. It ends with the branch rules the git host
-has to enforce, and the next step computed from the state.
+their READMEs, the dashboard, the pre-push hook, and under `strong` and
+`signed` the workflow CI runs. It ends with the branch rules the git host has
+to enforce, and the next step computed from the state.
 
 Both ways of loading Purlin work, and neither is written into a project: this
 checkout under `--plugin-dir`, and the marketplace copy under the plugin cache.
@@ -61,13 +61,13 @@ DROPPED_FRAMEWORK = ('dropped %s from test_framework: nothing in the tree '
 
 GATE_QUESTION = 'What must be true before CI lets a change merge?'
 GATE_CHOICES = (
-    'tested    every rule has a passing tagged test',
-    'recorded  every rule has a record CI wrote, at the minimum test strength',
-    'approved  recorded, plus a current approval on every high and medium rule',
+    'passed  every rule has a passing tagged test, from any source',
+    'strong  every rule has a record CI wrote, at the minimum test strength',
+    'signed  strong, plus a signature on every rule at or above medium risk',
 )
 LANGUAGE_QUESTION = ('There is nothing here to detect a test framework from. '
                      'Which one do the tests use?')
-APPROVER_QUESTION = 'Who may approve a rule? Emails, separated by commas.'
+SIGNER_QUESTION = 'Who may sign a rule? Emails, separated by commas.'
 
 # The registry's **Installed as** column is the one place a plugin's name
 # inside a project is written, so this script and the upgrade cannot disagree.
@@ -114,30 +114,32 @@ _STRYKER_NOTE = ('%s: Stryker measures the breaks. Without it the test '
 _READMES = {
     'designs': """The mocks a design rule is written against: PNG, PDF, SVG or an HTML prototype.
 A design anchor pins the hash of these files, and a feature spec requires that anchor.
-A new export stales the approvals of that anchor's rules, so a person looks again.
+A new export stales the signatures of that anchor's rules, so a person looks again.
 """,
-    '.purlin/records': """Every verify run writes one record per feature here, and commits it.
-CI writes the records that count under recorded and approved; a person writes the ones that
-count under tested. Verify keeps the newest three per feature per runner.
+    '.purlin/records': """Every purlin:audit run writes one record per feature here, and commits it.
+CI writes the records that count under strong and signed; a person writes the ones that count
+under passed. An audit keeps the newest three records per feature per runner.
 """,
 }
 
-# A gate is three things: a job running verify on every push, a rule blocking
-# merge unless it passes, and the setting saying what pass means. The setting
-# is in .purlin/config.json; these two are what the git host has to be told.
+# A gate is three things: a job running the audit on every push, a rule
+# blocking merge unless it passes, and the setting saying what pass means. The
+# setting is in .purlin/config.json; these two are what the git host is told.
+# The two restricted paths are the ones only CI writes: the records and the
+# briefs.
 _BRANCH_RULES = {
     'github': """Branch rules to apply on GitHub:
   1. Require a pull request, and require the purlin status check. Bypass: the GitHub Actions app alone.
-  2. Restrict file paths .purlin/records/** and specs/**/*.approvals/*.ci.json. Bypass: the GitHub
-     Actions app alone, so a person cannot push a record or a CI approval.
+  2. Restrict file paths .purlin/records/** and .purlin/briefs/**. Bypass: the GitHub Actions app
+     alone, so a person cannot push a record or a brief.
   3. Block force pushes and restrict deletions, with no bypass.""",
     'azure': """Branch security to apply on Azure DevOps:
   1. Require a pull request, with the purlin pipeline as a build validation policy.
-  2. Grant Contribute on .purlin/records/** and specs/**/*.approvals/*.ci.json to the build service
-     alone, so a person cannot push a record or a CI approval.
+  2. Grant Contribute on .purlin/records/** and .purlin/briefs/** to the build service alone, so a
+     person cannot push a record or a brief.
   3. Deny Force Push and Delete branch for everyone.""",
-    'tested': """Branch rules to apply on the git host: block force pushes and restrict deletions, with no bypass.
-The gate is tested, so nothing else is required until you raise it.""",
+    'passed': """Branch rules to apply on the git host: block force pushes and restrict deletions, with no bypass.
+The gate is passed, so nothing else is required until you raise it.""",
 }
 
 
@@ -502,7 +504,7 @@ def install_hook(plan, root, hooks):
 
 # --- The steps -------------------------------------------------------------
 
-def write_config(plan, plugin_root, existing, gate, host, framework, approvers):
+def write_config(plan, plugin_root, existing, gate, host, framework, signers):
     """`.purlin/config.json`: the template, the gate, and what follows from it."""
     config = json.loads(_read(plugin_root, 'templates', 'config.json'))
     config.update(existing or {})
@@ -516,8 +518,8 @@ def write_config(plan, plugin_root, existing, gate, host, framework, approvers):
         config['test_framework'] = framework
     for key in gate_module.RETIRED_KEYS:
         config.pop(key, None)
-    if gate == 'approved':
-        config['approvers'] = approvers
+    if gate == 'signed':
+        config['signers'] = signers
     plan.write('.purlin/config.json', json.dumps(config, indent=2) + '\n',
                own=True)
     return config
@@ -626,24 +628,24 @@ def resolve_frameworks(root, console, existing, add):
     Detection answers on a project with code, and nothing is asked. A tree
     with nothing to detect is asked once, which is the second exception.
 
-    A recorded name the tree cannot run is dropped rather than carried: an
-    older release recorded every plugin it shipped, and wiring a runner with
-    nothing to run makes every run print that runner exiting non-zero. A
-    recorded name the tree does carry stays even when detection would not have
-    picked it.
+    A name the config carries that the tree cannot run is dropped rather than
+    carried: an older release wrote down every plugin it shipped, and wiring a
+    runner with nothing to run makes every run print that runner exiting
+    non-zero. A name the tree does carry stays even when detection would not
+    have picked it.
     """
-    recorded = (existing or {}).get('test_framework')
-    recorded = recorded if isinstance(recorded, str) else ''
+    written = (existing or {}).get('test_framework')
+    written = written if isinstance(written, str) else ''
     if add:
         named = (frameworks_module.detect_frameworks(root)
-                 if recorded in ('', 'auto')
-                 else frameworks_module.resolve_frameworks(root, recorded)[0])
+                 if written in ('', 'auto')
+                 else frameworks_module.resolve_frameworks(root, written)[0])
         named, dropped = frameworks_module.prune_unwired(root, named)
         named += [part.strip() for part in add.split(',') if part.strip()]
         named = list(dict.fromkeys(named))
         return named, ','.join(named), dropped
-    if recorded and recorded != 'auto':
-        named = frameworks_module.resolve_frameworks(root, recorded)[0]
+    if written and written != 'auto':
+        named = frameworks_module.resolve_frameworks(root, written)[0]
         named, dropped = frameworks_module.prune_unwired(root, named)
         return named, ','.join(named), dropped
     detected = frameworks_module.detect_frameworks(root)
@@ -667,22 +669,35 @@ def _existing_config(root):
     return value if isinstance(value, dict) else None
 
 
-def print_approved(root, approvers):
-    """What `approved` needs beyond the config: signers, and tagged risk."""
-    import approve as approve_module                           # noqa: PLC0415
+def signing_setup():
+    """The one-time commit-signing setup, from the module that owns signing.
+
+    The fallback reaches the module under the name it carried before this
+    release renamed it, so a plugin copy that predates the rename still
+    prints the setup rather than failing here.
+    """
+    try:
+        import sign as module                                  # noqa: PLC0415
+    except ImportError:
+        import approve as module        # noqa: PLC0415        # retired
+    return module.SIGNING_SETUP
+
+
+def print_signed(root, signers):
+    """What `signed` needs beyond the config: the signer list, and tagged risk."""
     print('')
-    if approvers:
-        print('Approvers: %s.' % ', '.join(approvers))
+    if signers:
+        print('Signers: %s.' % ', '.join(signers))
     else:
-        print('%s No approver list yet. Run purlin:init --gate approved and '
-              'name the emails; the gate exits 1 without them.' % ARROW)
-    print('Each approver runs this once, then uploads the public key to the '
-          'git host:')
-    for command in approve_module.SIGNING_SETUP:
+        print('%s No signer list yet. Run purlin:init --gate signed and name '
+              'the emails; the gate exits 1 without them.' % ARROW)
+    print('Each signer runs this once, then uploads the public key to the git '
+          'host:')
+    for command in signing_setup():
         print('  %s' % command)
     untagged = untagged_rules(root)
     if untagged:
-        print('%s %d rules carry no risk tag, and approved requires one. Run '
+        print('%s %d rules carry no risk tag, and signed requires one. Run '
               'purlin:spec to tag them:' % (ARROW, len(untagged)))
         for feature, rule in untagged[:20]:
             print('  %s %s' % (feature, rule))
@@ -724,12 +739,12 @@ def main(argv=None):
                   % (gate, gate_module.DEFAULT_GATE))
             gate = gate_module.DEFAULT_GATE
 
-    approvers = [str(e).strip().lower() for e
-                 in ((existing or {}).get('approvers') or []) if str(e).strip()]
-    if gate == 'approved' and not approvers:
-        approvers = [part.strip().lower()
-                     for part in console.ask(APPROVER_QUESTION, '').split(',')
-                     if part.strip()]
+    signers = [str(e).strip().lower() for e
+               in ((existing or {}).get('signers') or []) if str(e).strip()]
+    if gate == 'signed' and not signers:
+        signers = [part.strip().lower()
+                   for part in console.ask(SIGNER_QUESTION, '').split(',')
+                   if part.strip()]
 
     selected, framework, dropped = resolve_frameworks(
         root, console, existing, args.add)
@@ -745,7 +760,7 @@ def main(argv=None):
         plan.directory(name)
 
     config = write_config(plan, plugin_root, existing, gate, host, framework,
-                          approvers)
+                          signers)
     install_plugins(plan, plugin_root, selected)
     plan.write('.purlin/plugin-root', installed_plugin_root() + '\n', own=True)
     write_wiring(plan, selected)
@@ -757,20 +772,20 @@ def main(argv=None):
     plan.copy(os.path.join(plugin_root, 'scripts', 'report',
                            'purlin-report.html'), 'purlin-report.html')
     install_hook(plan, root, hooks)
-    if gate != 'tested' or args.ci:
+    if gate != 'passed' or args.ci:
         write_workflow(plan, root, host or 'github',
                        'v%s' % config.get('version', ''), args.upstream_check)
     else:
         plan.skip('the CI workflow',
-                  'the gate is tested; pass --ci to write it anyway')
+                  'the gate is passed; pass --ci to write it anyway')
 
     for line in plan.lines:
         print(line)
     print('')
-    print(_BRANCH_RULES['tested' if gate == 'tested' and not args.ci
+    print(_BRANCH_RULES['passed' if gate == 'passed' and not args.ci
                         else ('azure' if host == 'azure' else 'github')])
-    if gate == 'approved':
-        print_approved(root, approvers)
+    if gate == 'signed':
+        print_signed(root, signers)
 
     print('')
     for line in next_step(root):
