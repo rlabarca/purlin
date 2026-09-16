@@ -4,7 +4,7 @@
 > Stack: python/stdlib
 > Description: The one feature of the consumer-CI fixture project. RULE-1 is a claim any host can
 >   prove, so its proof carries no `@env` tag. RULE-2 is a claim only a Linux host can prove, so
->   its proof carries `@env(linux)` and reaches Recorded only when a Linux job's record says it
+>   its proof carries `@env(linux)` and reaches `strong` only when a Linux job's record says it
 >   passed. The fixture is therefore the smallest project that needs a matrix.
 
 ## Rules

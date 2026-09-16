@@ -29,7 +29,7 @@
 # interpreter means rather than inheriting a status from here.
 #
 # POSIX sh only. This file runs before anything has established that bash is
-# present, on the platform least likely to have it.
+# present, on the operating system least likely to have it.
 
 purlin_python() {
     PURLIN_PY=""

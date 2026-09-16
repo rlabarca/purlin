@@ -3,7 +3,7 @@
 The plugin reads `@pytest.mark.proof` markers during a run and writes what it
 observed to `.purlin/runtime/proofs/<feature>.<tier>.json`. Proof files are
 runtime: they are gitignored, so two runs on two branches never conflict and
-nothing about a run is committed. The record `purlin:verify` writes is what
+nothing about a run is committed. The record `purlin:audit` writes is what
 says where a run happened, and it says it once per run.
 
 Usage in tests:
@@ -22,7 +22,7 @@ proof line. The retired `platforms=` keyword is refused rather than ignored,
 so a test carrying one fails the run with a line saying what to write instead.
 
 The project root is the nearest ancestor of the working directory holding
-`specs/` or `.purlin/`, and every recorded `test_file` is relative to it with
+`specs/` or `.purlin/`, and every `test_file` it writes is relative to it with
 `/` separators on every operating system, so a run started from a
 subdirectory writes into the project's own tree rather than a second one
 beside it.
@@ -97,7 +97,7 @@ def _project_root(start=None):
 
 
 def _relativize(root, path):
-    """`path` recorded relative to `root` with `/` separators.
+    """`path` written relative to `root` with `/` separators.
 
     Whatever shape the framework handed over is resolved against the working
     directory first, so an absolute path and a relative one naming the same
@@ -136,7 +136,7 @@ def _entry_order(entry):
 class ProofCollector:
     def __init__(self):
         # Resolved once, from the working directory pytest was started in, and
-        # used for the existence check and every recorded `test_file`.
+        # used for the existence check and every `test_file` this run writes.
         self.root = _project_root()
         self.proofs = {}   # keyed by (feature, tier)
         # (feature, id, test_file) for every marked test this run skipped, so
@@ -245,7 +245,7 @@ class ProofCollector:
             # feature's entries from test files this run did not execute, so
             # two files covering one (feature, tier) can run in any order; reap
             # entries whose test file is gone. The existence check resolves
-            # each recorded path from the project root, the same root it was
+            # each path it wrote from the project root, the same root it was
             # relativized against, so a run started from a subdirectory reads
             # the paths it wrote rather than reaping all of them.
             run_files = {e["test_file"] for e in new_entries}

@@ -12,15 +12,15 @@
 // The logger collects the `PurlinProof` test trait during the run and writes
 // what it observed to `.purlin/runtime/proofs/<feature>.<tier>.json`. Proof
 // files are runtime: they are gitignored, so two runs on two branches never
-// conflict and nothing about a run is committed. The record `purlin:verify`
+// conflict and nothing about a run is committed. The record `purlin:audit`
 // writes is what says where a run happened, and it says it once per run.
 //
 // The marker is a test trait rather than a parsed string because TestCase.Traits
 // is the metadata channel vstest hands every logger. The logger
 // reads exactly one trait name, "PurlinProof", compared ordinally: a trait named
 // "Category", "Property", "TestProperty", or "PurlinProof" spelled in any other
-// casing is not a marker and is ignored. Only xUnit is supported and tested;
-// NUnit and MSTest support is not claimed. The trait value is colon-delimited:
+// casing is not a marker and is ignored. Only xUnit is supported; NUnit and
+// MSTest support is not claimed. The trait value is colon-delimited:
 // "feature:PROOF-N:RULE-N[:tier]" (tier optional, defaults to "unit").
 //
 //     [Fact]
@@ -33,7 +33,7 @@
 // trait carrying one fails the run with a line saying what to write instead.
 //
 // The project root is the nearest ancestor of the working directory holding
-// `specs/` or `.purlin/`, and every recorded `test_file` is relative to it with
+// `specs/` or `.purlin/`, and every `test_file` it writes is relative to it with
 // `/` separators on every operating system. The test host's working directory is
 // the test output folder, well below the root, so nothing here is resolved from
 // it.
@@ -169,7 +169,7 @@ namespace Purlin
                 ? tc.FullyQualifiedName
                 : tc.DisplayName ?? "";
 
-            // A skipped test is not recorded at all, and the entry it would have
+            // A skipped test writes no entry, and the entry it would have
             // written is protected from this run's reap.
             if (result.Outcome == TestOutcome.Skipped)
             {
@@ -332,7 +332,7 @@ namespace Purlin
             return FindRootOrNull(start) ?? start;
         }
 
-        // The roots a recorded path is measured from, in order: the project being
+        // The roots a written path is measured from, in order: the project being
         // written to, then the project the source file itself lives in.
         private static IEnumerable<string> RootCandidates(string root, string abs)
         {
@@ -441,9 +441,9 @@ namespace Purlin
             return sb.ToString();
         }
 
-        // `file` recorded relative to the project root. The path vstest
+        // `file` written relative to the project root. The path vstest
         // hands over is absolute; a relative one is resolved against `root` first,
-        // so both spellings record the same value. A file outside `root` is
+        // so both spellings write the same value. A file outside `root` is
         // measured from the nearest project root above the file itself, and left
         // absolute when there is none, rather than rewritten with "../" segments:
         // under the merge key a path that differs by invocation form does not

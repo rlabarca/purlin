@@ -4,7 +4,7 @@
  * The reporter reads proof markers from test titles during a run and writes
  * what it observed to `.purlin/runtime/proofs/<feature>.<tier>.json`. Proof
  * files are runtime: they are gitignored, so two runs on two branches never
- * conflict and nothing about a run is committed. The record `purlin:verify`
+ * conflict and nothing about a run is committed. The record `purlin:audit`
  * writes is what says where a run happened, and it says it once per run.
  *
  * Marker syntax in test titles:
@@ -18,7 +18,7 @@
  * write instead.
  *
  * The project root is the nearest ancestor of jest's own rootDir holding
- * `specs/` or `.purlin/`, and every recorded `test_file` is relative to it
+ * `specs/` or `.purlin/`, and every `test_file` it writes is relative to it
  * with `/` separators on every operating system, so running jest from a
  * subdirectory writes into the project's own tree.
  *
@@ -91,7 +91,7 @@ function sortProofEntries(entries) {
   );
 }
 
-// `filePath` recorded relative to the project root with "/" separators on
+// `filePath` written relative to the project root with "/" separators on
 // every OS. Whatever shape jest handed over is resolved against the working
 // directory first, so an absolute path and a relative one naming the same file
 // record the same value. A file outside `root` is made relative to the nearest
@@ -119,8 +119,8 @@ class PurlinProofReporter {
   constructor(globalConfig, reporterOptions) {
     this.globalConfig = globalConfig;
     this.options = reporterOptions || {};
-    // Resolved once, and used for the existence check and every recorded
-    // `test_file`. The walk starts at jest's own `rootDir`, which is where
+    // Resolved once, and used for the existence check and every `test_file`
+    // this run writes. The walk starts at jest's own `rootDir`, which is where
     // jest says this run lives and a firmer statement than the reporter
     // process's working directory; `rootDir` is not itself the project root
     // when jest was started from a subdirectory, which is what the walk is for.
@@ -211,7 +211,7 @@ class PurlinProofReporter {
 
       // Write-scoped overwrite keyed by (feature, tier, test_file); the file
       // carries the tier, so within it the key is (feature, test_file). Entries
-      // whose test file no longer exists are reaped. Each recorded path is
+      // whose test file no longer exists are reaped. Each path it wrote is
       // resolved from the project root, the same root it was relativized
       // against.
       const runFiles = new Set(newEntries.map((e) => e.test_file));

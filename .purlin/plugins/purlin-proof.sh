@@ -12,7 +12,7 @@
 # The harness writes what it observed to
 # .purlin/runtime/proofs/<feature>.<tier>.json. Proof files are runtime: they
 # are gitignored, so two runs on two branches never conflict and nothing about
-# a run is committed. The record purlin:verify writes is what says where a run
+# a run is committed. The record purlin:audit writes is what says where a run
 # happened, and it says it once per run.
 #
 # The operating system a proof must be proved on is a property of the spec,
@@ -22,7 +22,7 @@
 # write instead.
 #
 # The project root is the nearest ancestor of the working directory holding
-# specs/ or .purlin/, and every recorded test_file is relative to it with /
+# specs/ or .purlin/, and every test_file it writes is relative to it with /
 # separators on every operating system, so sourcing this harness from a
 # subdirectory writes into the project's own tree.
 #
@@ -167,7 +167,7 @@ for (feature, tier), new_entries in entries.items():
             existing = []
     # Write-scoped overwrite keyed by (feature, tier, test_file); the file
     # carries the tier, so within it the key is (feature, test_file). Entries
-    # whose test file no longer exists are reaped. Each recorded path is
+    # whose test file no longer exists are reaped. Each path it wrote is
     # resolved from the project root, the same root it was relativized
     # against. The harness has no skip signal: a script that never called
     # purlin_proof cannot be told apart from one that skipped.

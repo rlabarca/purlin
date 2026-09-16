@@ -4,7 +4,7 @@
  * The reporter reads proof markers from test names during a run and writes
  * what it observed to `.purlin/runtime/proofs/<feature>.<tier>.json`. Proof
  * files are runtime: they are gitignored, so two runs on two branches never
- * conflict and nothing about a run is committed. The record `purlin:verify`
+ * conflict and nothing about a run is committed. The record `purlin:audit`
  * writes is what says where a run happened, and it says it once per run.
  *
  * Two hooks, one collection. `onTestRunEnd(testModules, errors, reason)` is
@@ -24,7 +24,7 @@
  * write instead.
  *
  * The project root is the nearest ancestor of the working directory holding
- * `specs/` or `.purlin/`, and every recorded `test_file` is relative to it
+ * `specs/` or `.purlin/`, and every `test_file` it writes is relative to it
  * with `/` separators on every operating system.
  *
  * A run that saw markers and wrote no entry at all fails: it exits non-zero
@@ -101,7 +101,7 @@ function sortProofEntries(entries: ProofEntry[]): ProofEntry[] {
   );
 }
 
-// `filePath` recorded relative to the project root with "/" separators on
+// `filePath` written relative to the project root with "/" separators on
 // every OS. Whatever shape vitest handed over is resolved against the working
 // directory first, so an absolute path and a relative one naming the same file
 // record the same value. A file outside `root` is made relative to the nearest
@@ -191,7 +191,7 @@ class PurlinVitestReporter implements Reporter {
   // True once the files have been written, so the two hooks never write twice.
   private done = false;
   // Resolved once, from the working directory vitest was started in, and used
-  // for the existence check and every recorded `test_file`.
+  // for the existence check and every `test_file` this run writes.
   private root: string;
 
   constructor() {
@@ -321,8 +321,8 @@ class PurlinVitestReporter implements Reporter {
 
       // Write-scoped overwrite keyed by (feature, tier, test_file); the file
       // carries the tier, so within it the key is (feature, test_file).
-      // Entries whose test file no longer exists are reaped. Each recorded
-      // path is resolved from the project root, the same root it was
+      // Entries whose test file no longer exists are reaped. Each path it
+      // wrote is resolved from the project root, the same root it was
       // relativized against.
       const runFiles = new Set(newEntries.map((e) => e.test_file));
       // What this run wrote, so a skipped test's protection never keeps an

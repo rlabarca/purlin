@@ -1,6 +1,6 @@
 """The consumer project's one test file: one plain proof, one scoped to Linux.
 
-PROOF-2 is tagged `@env(linux)` in the spec, so it reaches Recorded only when a
+PROOF-2 is tagged `@env(linux)` in the spec, so it reaches `strong` only when a
 Linux job's record says it passed. The marker here names the feature, the proof
 and the rule and nothing else: which operating system a proof needs is the
 spec's to say, and CI reads it from there to build the matrix.

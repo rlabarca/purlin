@@ -29,7 +29,7 @@
 # instead.
 #
 # The project root is the nearest ancestor of the working directory holding
-# specs/ or .purlin/, and the recorded test_file is relative to it with /
+# specs/ or .purlin/, and the test_file it writes is relative to it with /
 # separators on every operating system.
 #
 # The run exits non-zero when it saw markers and wrote no entry at all, so
@@ -91,7 +91,7 @@ def _project_root(start=None):
 
 
 def _relativize(base_root, raw_path):
-    '''raw_path recorded relative to base_root with / separators.
+    '''raw_path written relative to base_root with / separators.
 
     The argv path is resolved against the working directory first, so an
     absolute invocation and a relative one naming the same file record the
@@ -131,7 +131,7 @@ def _sql_engine(root):
 
 
 root = _project_root()
-# Recorded relative to the project root, with '/' separators on every OS; the
+# Written relative to the project root, with '/' separators on every OS; the
 # path as given is still used to read the file.
 recorded_file = _relativize(root, test_file)
 engine = _sql_engine(root)
@@ -223,7 +223,7 @@ for (feature, tier), new_entries in proofs_by_key.items():
             existing = []
     # Write-scoped overwrite keyed by (feature, tier, test_file); the file
     # carries the tier, so within it the key is (feature, test_file). Entries
-    # whose test file no longer exists are reaped. Each recorded path is
+    # whose test file no longer exists are reaped. Each path it wrote is
     # resolved from the project root, the same root it was relativized
     # against. A SQL block that is never reached emits no marker, so the
     # harness has no skip signal.
