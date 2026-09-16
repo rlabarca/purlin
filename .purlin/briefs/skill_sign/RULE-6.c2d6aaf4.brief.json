@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_sign",
+  "generated_at": "2026-09-16T22:26:07Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "69c301db841896360c4aadfcd1e7a67d13df648ea1a9f1647e6bba56bbfab635",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-6",
+      "text": "Read `skills/sign/SKILL.md`; verify the section whose heading names the answers carries the four bold labels `**Sign.**`, `**Add a case.**`, `**Hold.**` and `**Skip.**`, one assertion per label, and that the section carries the sentence `A skipped rule is on the list again next time`. Deleting the hold answer fails naming `**Hold.**`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/skill_sign/20260916T222539Z-73fdd7a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-6",
+  "rule_hash": "a8961451820f0f12470c1d89be9a8db9b9df02615258b81ab480a531420ec2db",
+  "rule_text": "The skill names the walk's four answers, sign, add a case, hold and skip, and says that a skipped rule is on the list again next time",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "c563b10ccf6f248906dcd6a81fe59b21ad3875ac7118e3e5daf52a2e1710cb4e",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_walk_takes_one_of_four_answers(self):\n        assert sign_answer_problems() == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_the_walk_takes_one_of_four_answers",
+      "proof": "PROOF-6",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "c2d6aaf42971cb537dc4f13b1d9d4992ae8bddb7e6a50fe6a3c39940fe5a7f1a"
+}

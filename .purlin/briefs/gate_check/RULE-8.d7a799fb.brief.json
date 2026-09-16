@@ -1,0 +1,62 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "gate_check",
+  "generated_at": "2026-09-16T22:25:44Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "690ad2557f850d79178797360284b62e208c9b233eb0e6cb75ecee678d3aa8a5",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-18",
+      "text": "Run the gate at gate `signed` over a project with no signer list; verify it exits 1, prints `signer list missing: run purlin:init --gate signed`, never prints `PASS` and opens no `Not signed` section",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-28",
+      "text": "Run the gate with `--json` at gate `signed` with no signer list; verify it exits 1 and the JSON reports the signer list `missing`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/gate_check/20260916T222538Z-73fdd7a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-8",
+  "rule_hash": "66ea7b9bce8bbe0037e05a5ac87e2c19722c9bd6f28472431fb6a9363cf8c6ca",
+  "rule_text": "Under `signed` with no signer list the gate prints the missing-list directive and fails without grading a rule",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "d8daa158e4dbe71ccddb5b097736c7753f8a5703e5540ec0fba835d81b55619c",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_no_signer_list_names_the_command_and_fails(self):\n        made = project_at('signed', config={'min_strength': 80})\n        try:\n            code, output = run(made)\n            assert code == 1\n            assert '\u2192 signer list missing: run purlin:init --gate ' \\\n                   'signed' in output\n            assert 'PASS' not in output\n            assert 'Not signed' not in output, (\n                'the gate fails without grading a rule')\n        finally:\n            made.close()",
+      "file": "dev/test_gate_check.py",
+      "findings": [],
+      "name": "test_no_signer_list_names_the_command_and_fails",
+      "proof": "PROOF-18",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_missing_signer_list_says_so_in_the_json(self):\n        made = project_at('signed', config={'min_strength': 80})\n        try:\n            code, output = run(made, as_json=True)\n            data = json.loads(output[output.index('{'):])\n            assert code == 1\n            assert data['signer_list'] == 'missing'\n        finally:\n            made.close()",
+      "file": "dev/test_gate_check.py",
+      "findings": [],
+      "name": "test_a_missing_signer_list_says_so_in_the_json",
+      "proof": "PROOF-28",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "d7a799fb50ffcfaafe48bec48c309740b2f941121ffec6b1f3ae5814436e2e76"
+}

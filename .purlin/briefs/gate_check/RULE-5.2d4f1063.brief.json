@@ -1,0 +1,151 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "gate_check",
+  "generated_at": "2026-09-16T22:25:44Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "1856c0667fa0ccc4e37a7db63613b61545f677be27b38ff171fa71494233216d",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-11",
+      "text": "Sign the high-risk rule with a signed commit by the listed signer, then run the gate at gate `signed`; verify it exits 0 and prints `gate: gate = signed`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-12",
+      "text": "Sign only the high-risk rule and run the gate at gate `signed` with `sign_at` at `medium`; verify it exits 0 and never names `login RULE-1`, whose risk is below `sign_at`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-13",
+      "text": "Run the gate at gate `signed` with no signature written; verify it exits 1, opens `Not signed (1):` and reads `login RULE-2: unsigned`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-14",
+      "text": "Write a signature and commit it without a signature on the commit, then run the gate at gate `signed`; verify it exits 1 and reads `the signing commit is not signed`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-15",
+      "text": "Put the author of the test on the signer list, sign with that identity and run the gate at gate `signed`; verify it exits 1 and reads `the signer last touched the test`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-16",
+      "text": "Sign every rule at gate `signed`, then change `200` to `signed 200` in the low-risk rule and run the gate; verify it exits 1, reads `login RULE-1: stale` and gives the reason `hashes changed after the signature`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-17",
+      "text": "Sign the high-risk rule on a branch called `side` and run the gate at gate `signed`; verify it exits 1 and reads `the signing commit is not on main`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/gate_check/20260916T222538Z-73fdd7a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-5",
+  "rule_hash": "4e3fc971ab906a924bf9c89744e4469b5b7ee40425a6451591f3f32912142a6d",
+  "rule_text": "A rule blocked at the signed cell is named under `Not signed` with the cell's word and its reasons",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "84940ad1e552b4cc0933aee5fc5e10ec8c348eb77a75edde99e45f21398623c4",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_current_signature_by_a_signer_passes_its_rule(self):\n        made = signed_project()\n        try:\n            assert sign_module.main(\n                ['login', 'RULE-2', '--project-root', made.root]) == 0\n            code, output = run(made)\n            assert code == 0, output\n            assert 'gate: gate = signed' in output\n        finally:\n            made.close()",
+      "file": "dev/test_gate_check.py",
+      "findings": [],
+      "name": "test_a_current_signature_by_a_signer_passes_its_rule",
+      "proof": "PROOF-11",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_rule_below_sign_at_needs_no_signature(self):\n        made = signed_project()\n        try:\n            sign_module.main(['login', 'RULE-2', '--project-root', made.root])\n            code, output = run(made)\n            assert code == 0, output\n            assert 'login RULE-1' not in output, (\n                'low risk is below sign_at and never blocks the branch')\n        finally:\n            made.close()",
+      "file": "dev/test_gate_check.py",
+      "findings": [],
+      "name": "test_a_rule_below_sign_at_needs_no_signature",
+      "proof": "PROOF-12",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_rule_with_no_signature_is_not_signed(self):\n        made = signed_project()\n        try:\n            code, output = run(made)\n            assert code == 1\n            assert 'Not signed (1):' in output\n            assert 'login RULE-2: unsigned' in output, output\n        finally:\n            made.close()",
+      "file": "dev/test_gate_check.py",
+      "findings": [],
+      "name": "test_a_rule_with_no_signature_is_not_signed",
+      "proof": "PROOF-13",
+      "reasons": []
+    },
+    {
+      "body": "def test_an_unsigned_commit_does_not_carry_a_signature(self):\n        made = signed_project()\n        try:\n            entry = made.rule('RULE-2')\n            sign_module.write_signature(\n                made.root, 'login', 'RULE-2', 'jane@acme.com', None, None,\n                'signed', 'high', entry=entry)\n            git(made.root, 'add', '-A')\n            git(made.root, '-c', 'commit.gpgsign=false', 'commit', '-q', '-m',\n                'chore: a signature nobody signed')\n            code, output = run(made)\n            assert code == 1\n            assert 'the signing commit is not signed' in output, output\n        finally:\n            made.close()",
+      "file": "dev/test_gate_check.py",
+      "findings": [],
+      "name": "test_an_unsigned_commit_does_not_carry_a_signature",
+      "proof": "PROOF-14",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_author_of_the_test_may_not_sign_it(self):\n        made = signed_project(signer='dev@example.com')\n        try:\n            assert sign_module.main(\n                ['login', 'RULE-2', '--project-root', made.root]) == 0\n            code, output = run(made)\n            assert code == 1\n            assert 'the signer last touched the test' in output, output\n        finally:\n            made.close()",
+      "file": "dev/test_gate_check.py",
+      "findings": [],
+      "name": "test_the_author_of_the_test_may_not_sign_it",
+      "proof": "PROOF-15",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_signature_the_text_moved_under_reads_stale(self):\n        made = signed_project(config={'sign_at': 'low'})\n        try:\n            assert sign_module.main(\n                ['login', '--project-root', made.root]) == 0\n            made.spec(SPEC.replace('return 200 with a session token',\n                                   'return 200 with a signed session token'))\n            code, output = run(made)\n            assert code == 1\n            assert 'login RULE-1: stale' in output, output\n            assert 'hashes changed after the signature' in output\n        finally:\n            made.close()",
+      "file": "dev/test_gate_check.py",
+      "findings": [],
+      "name": "test_a_signature_the_text_moved_under_reads_stale",
+      "proof": "PROOF-16",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_signature_only_on_a_side_branch_is_not_on_the_branch(self):\n        made = signed_project()\n        try:\n            # A side branch is only a side branch next to a protected one, and\n            # what says which that is is `origin/HEAD`. Without it the reader\n            # has nothing but the branch it is standing on, and every branch\n            # is the branch.\n            git(made.root, 'update-ref', 'refs/remotes/origin/main',\n                git(made.root, 'rev-parse', 'HEAD').stdout.strip())\n            git(made.root, 'symbolic-ref', 'refs/remotes/origin/HEAD',\n                'refs/remotes/origin/main')\n            git(made.root, 'checkout', '-q', '-b', 'side')\n            sign_module.main(['login', 'RULE-2', '--project-root', made.root])\n            code, output = run(made)\n            assert code == 1\n            assert 'the signing commit is not on main' in output, output\n        finally:\n            made.close()",
+      "file": "dev/test_gate_check.py",
+      "findings": [],
+      "name": "test_a_signature_only_on_a_side_branch_is_not_on_the_branch",
+      "proof": "PROOF-17",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "2d4f10632ae69f88ef64918f03ad883233cda26b53420a0351a2b6b1160931e2"
+}

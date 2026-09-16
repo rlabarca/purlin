@@ -1,0 +1,94 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-16T22:25:57Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "d1a09d6222455f232c456127841473142341f3e73dff44fc8438b6f7d8a04d92",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-19",
+      "text": "Write one marked file per framework (`test_a.py`, `a.test.js`, `a.test.ts`, `A.cs`, `a.test.sh`, `test_a.sql`) and scan each framework; verify every scan returns exactly `{(\"feat\", \"PROOF-1\")}`. Put a marked file under `node_modules/`; verify the jest scan returns an empty set",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/run_script/20260916T222538Z-73fdd7a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-19",
+  "rule_hash": "7510821ed156646d7ab39b6801982d3a8f2a8951f9a0c3b8ffb991ab60d3b646",
+  "rule_text": "The marker scan reads the marker of each of the six shipped frameworks out of that framework's own file extensions, and never descends into `node_modules`, `bin`, `obj` or a dotted directory",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "7442d30e7bc45f86fd969c50456788888b4dea1e112d9798be898460658c285d",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_node_modules_is_not_scanned(self, tmp_path):\n        purlin_run = _load_run_script()\n        vendored = tmp_path / 'node_modules' / 'other'\n        vendored.mkdir(parents=True)\n        (vendored / 'a.test.js').write_text(\n            'it(\"[proof:vendor:PROOF-1:RULE-1]\", () => {});\\n',\n            encoding='utf-8')\n        assert purlin_run.scan_markers(str(tmp_path), 'jest') == set()",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_node_modules_is_not_scanned",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": "def test_one_marker_is_found(self, tmp_path, framework, name, source):\n        purlin_run = _load_run_script()\n        (tmp_path / name).write_text(source + '\\n', encoding='utf-8')\n        assert purlin_run.scan_markers(str(tmp_path), framework) == {\n            ('feat', 'PROOF-1')}",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_one_marker_is_found[jest-a.test.js-it(\"does [proof:feat:PROOF-1:RULE-1:unit]\", () => {});]",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": "def test_one_marker_is_found(self, tmp_path, framework, name, source):\n        purlin_run = _load_run_script()\n        (tmp_path / name).write_text(source + '\\n', encoding='utf-8')\n        assert purlin_run.scan_markers(str(tmp_path), framework) == {\n            ('feat', 'PROOF-1')}",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_one_marker_is_found[pytest-test_a.py-@pytest.mark.proof(\"feat\", \"PROOF-1\", \"RULE-1\")]",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": "def test_one_marker_is_found(self, tmp_path, framework, name, source):\n        purlin_run = _load_run_script()\n        (tmp_path / name).write_text(source + '\\n', encoding='utf-8')\n        assert purlin_run.scan_markers(str(tmp_path), framework) == {\n            ('feat', 'PROOF-1')}",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_one_marker_is_found[shell-a.test.sh-purlin_proof \"feat\" \"PROOF-1\" \"RULE-1\" pass \"x\"]",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": "def test_one_marker_is_found(self, tmp_path, framework, name, source):\n        purlin_run = _load_run_script()\n        (tmp_path / name).write_text(source + '\\n', encoding='utf-8')\n        assert purlin_run.scan_markers(str(tmp_path), framework) == {\n            ('feat', 'PROOF-1')}",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_one_marker_is_found[sql-test_a.sql--- @purlin feat PROOF-1 RULE-1 unit]",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": "def test_one_marker_is_found(self, tmp_path, framework, name, source):\n        purlin_run = _load_run_script()\n        (tmp_path / name).write_text(source + '\\n', encoding='utf-8')\n        assert purlin_run.scan_markers(str(tmp_path), framework) == {\n            ('feat', 'PROOF-1')}",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_one_marker_is_found[vitest-a.test.ts-it(\"does [proof:feat:PROOF-1:RULE-1]\", () => {});]",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": "def test_one_marker_is_found(self, tmp_path, framework, name, source):\n        purlin_run = _load_run_script()\n        (tmp_path / name).write_text(source + '\\n', encoding='utf-8')\n        assert purlin_run.scan_markers(str(tmp_path), framework) == {\n            ('feat', 'PROOF-1')}",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_one_marker_is_found[xunit-A.cs-[Trait(\"PurlinProof\", \"feat:PROOF-1:RULE-1:unit\")]]",
+      "proof": "PROOF-19",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "aa3c26f8161bb64441811756161d063d2789ead33af4849f954039d4cfee6bdc"
+}

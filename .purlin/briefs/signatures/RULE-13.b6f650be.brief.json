@@ -1,0 +1,81 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-16T22:26:06Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "777c63bfe0ca6aa94d6a6b6014bb0af3a905ec67dcda06fada93b6546da305dd",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-16",
+      "text": "Run `login RULE-2 --note \"I ran the lockout by hand.\"`; verify it exits 0 and the signature's `note` reads `I ran the lockout by hand.`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-17",
+      "text": "Run `login RULE-1 --note` with no line, `login --note \"a line\"` with no rule, and `--batch --note \"a line\"`; verify each exits 2",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/signatures/20260916T222539Z-73fdd7a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-13",
+  "rule_hash": "9a40008bc30831cee1edfc03cf073be1ccf0ad00bbc227e6fdcb7ee12c887dab",
+  "rule_text": "`--note` puts one line on the signature, for a `@manual` proof or a review the model could not settle; `--note` with no rule named, or with no line, exits 2",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "752d242392f51fe3f23a42f4d3ebb895583c57be492aa4bc7141f48b593942ed",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_note_records_what_the_signer_checked(self, capsys):\n        made = signing_project()\n        try:\n            code = sign_module.main(\n                ['login', 'RULE-2', '--note', 'I ran the lockout by hand.',\n                 '--project-root', made.root])\n            capsys.readouterr()\n            assert code == 0\n            path = made.load()[('login', 'RULE-2')][0]['path']\n            with open(os.path.join(made.root, path), encoding='utf-8') as f:\n                assert json.load(f)['note'] == 'I ran the lockout by hand.'\n        finally:\n            made.close()",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_a_note_records_what_the_signer_checked",
+      "proof": "PROOF-16",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_note_records_what_the_signer_checked(self, capsys):\n        made = signing_project()\n        try:\n            code = sign_module.main(\n                ['login', 'RULE-2', '--note', 'I ran the lockout by hand.',\n                 '--project-root', made.root])\n            capsys.readouterr()\n            assert code == 0\n            path = made.load()[('login', 'RULE-2')][0]['path']\n            with open(os.path.join(made.root, path), encoding='utf-8') as f:\n                assert json.load(f)['note'] == 'I ran the lockout by hand.'\n        finally:\n            made.close()",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_high_risk_is_never_auto_approved",
+      "proof": "PROOF-16",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_note_needs_a_rule_and_a_line(self):\n        for argv in (['login', 'RULE-1', '--note'],\n                     ['login', '--note', 'a line'],\n                     ['--batch', '--note', 'a line']):\n            assert sign_module.main(argv + ['--project-root', '.']) == 2, argv",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_a_note_needs_a_rule_and_a_line",
+      "proof": "PROOF-17",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_note_needs_a_rule_and_a_line(self):\n        for argv in (['login', 'RULE-1', '--note'],\n                     ['login', '--note', 'a line'],\n                     ['--batch', '--note', 'a line']):\n            assert sign_module.main(argv + ['--project-root', '.']) == 2, argv",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_below_the_minimum_strength_nothing_is_written",
+      "proof": "PROOF-17",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "b6f650bec7431c4d4a7a7c07e60dd75917fd56cc85887c8cc67afd48250db757"
+}

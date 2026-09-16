@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "proofs",
+  "generated_at": "2026-09-16T22:25:49Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "ea2517b02370078be4a67ff04560b522a94e73a60a4f0adeee4383d02dca293a",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-6",
+      "text": "Write two entries for `PROOF-1`, the first `pass` from one test file and the second `fail` from another; read the statuses and verify `PROOF-1` is `fail`, so the failing test decides",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/proofs/20260916T222538Z-73fdd7a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-6",
+  "rule_hash": "53f8c449329a1039188f5c7f66316eee8d1fce6f62d05f2f28ef66a8e8d4f85d",
+  "rule_text": "A proof has one status per run and `fail` wins: a proof some test claiming it failed on is not proved, whatever another test reported",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "06e378d1c9ec2e024e2435af3909a6f9f1be3efdd8e27460328c130eea55ff95",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_fail_beats_a_pass_for_the_same_proof(self, project):\n        project.proofs([_entry('PROOF-1', 'RULE-1'),\n                        _entry('PROOF-1', 'RULE-1', status='fail',\n                               test_file='tests/other.py')])\n        entries = purlin_proofs.load_proofs(project.root)['login']\n        assert purlin_proofs.status_by_proof(entries) == {\n            ('login', 'PROOF-1'): 'fail'}",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_a_fail_beats_a_pass_for_the_same_proof",
+      "proof": "PROOF-6",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "9c505553a1ffe588e8e468f3649127d638dd11435ff27f584c7f668b14f34ca1"
+}

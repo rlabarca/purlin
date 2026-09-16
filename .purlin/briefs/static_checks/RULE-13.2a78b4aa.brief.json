@@ -1,0 +1,62 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-16T22:26:18Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "9d835ce822e5ee917cf00fc3bc346917ea358bf5bca03852a16642578adfc69d",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-45",
+      "text": "Run the SQL checker over a bare `SELECT 'PASS'`, over a `CASE WHEN 1 = 1`, and over a `CASE WHEN 'alice' = 'alice'`; verify each is `fail` with the check `tautology` and the test name `the thing`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-47",
+      "text": "Run the SQL checker over three blocks whose predicates read a subquery, a function and a column; verify all three come back with status `pass`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/static_checks/20260916T222539Z-73fdd7a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-13",
+  "rule_hash": "da96ec45d468c69c14ec9736e3ccba9a344475cea7af462065cd19a255dfb176",
+  "rule_text": "A SQL block whose first PASS producer is unconditional is reported `tautology`, while a predicate naming a column, a function or a subquery passes",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "b4712f2b91a80291b345369e64820f62379842a05d46e53eac73ff94cb4bb9eb",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_detects_unconditional_pass(self):\n        \"\"\"A PASS that nothing decides is assert_true, bare or inside a CASE.\"\"\"\n        cases = {\n            'bare': \"DELETE FROM parents WHERE id = 1;\\nSELECT 'PASS';\",\n            'constant case': \"SELECT CASE WHEN 1 = 1 THEN 'PASS' ELSE 'FAIL' END;\",\n            'fixture case': \"SELECT CASE WHEN 'alice' = 'alice' THEN 'PASS' ELSE 'FAIL' END;\",\n        }\n        for name, block in cases.items():\n            path = self._sql(block)\n            try:\n                results = check_sql(path, \"sqlfeat\")\n                assert len(results) == 1, f\"{name}: expected 1 proof, got {results}\"\n                assert results[0]['status'] == 'fail', f\"{name}: not flagged \u2014 {results[0]}\"\n                assert results[0]['check'] == 'tautology', f\"{name}: {results[0]}\"\n                assert results[0]['test_name'] == 'the thing', results[0]\n            finally:\n                os.unlink(path)",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_detects_unconditional_pass",
+      "proof": "PROOF-45",
+      "reasons": []
+    },
+    {
+      "body": "def test_predicates_that_read_the_database_pass(self):\n        \"\"\"A predicate naming a column, a function or a subquery decides something;\n        a block ends at the next marker rather than running on into it; and a\n        trailing `--` comment is not read as SQL the block runs.\"\"\"\n        path = _write_tmp(\"\"\"-- @purlin sqlfeat PROOF-1 RULE-1 unit\n-- Test: subquery\nSELECT CASE WHEN (SELECT count(*) FROM users) = 1 THEN 'PASS' ELSE 'FAIL' END;\n\n-- @purlin sqlfeat PROOF-2 RULE-2 unit\n-- Test: function\nSELECT CASE WHEN changes() = 1 THEN 'PASS' ELSE 'FAIL' END;\n\n-- @purlin sqlfeat PROOF-3 RULE-3 unit\n-- Test: column\nSELECT CASE WHEN email IS NOT NULL THEN 'PASS' ELSE 'FAIL' END FROM users; -- not SELECT 'PASS'\n\n-- @purlin otherfeat PROOF-9 RULE-9 unit\n-- Test: not this feature\nSELECT 'PASS';\n\"\"\", suffix='.sql')\n        try:\n            results = check_sql(path, \"sqlfeat\")\n            assert [r['proof_id'] for r in results] == ['PROOF-1', 'PROOF-2', 'PROOF-3'], \\\n                f\"another feature's block leaked in \u2014 {results}\"\n            for r in results:\n                assert r['status'] == 'pass', f\"a real predicate was flagged \u2014 {r}\"\n        finally:\n            os.unlink(path)",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_predicates_that_read_the_database_pass",
+      "proof": "PROOF-47",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "2a78b4aa1f3c4ee1f91db9228d21d5ae4973b3f1a65cd2705285e8db184d2564"
+}

@@ -1,0 +1,55 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "proof_common",
+  "generated_at": "2026-09-16T22:25:48Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "dce38520a3720fb0e834af7b9db40d46e1ace27f3c87f7c0992b05b24d2bf095",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-10",
+      "text": "Run a suite whose markers are collected while the plugin is prevented from appending any entry, and verify the run exits non-zero and its standard error carries the feature name and the words `no proof entry was written`, in `dev/test_multilang_proof_plugins.py`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/proof_common/20260916T222538Z-73fdd7a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-10",
+  "rule_hash": "8782787dc5246ee2ceff48b79219ddadcd19d458dcc16906213a15c3aa7073d1",
+  "rule_text": "A run that collected at least one marker and appended no entry at all exits non-zero and prints one line naming the features whose evidence went missing, because the alternative is a reader trusting a proof file an earlier run wrote",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "76f83a7053390bcf15b13902584a685665e311c36fefd3fc88383a4db73398a4",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_pytest_exits_non_zero_and_names_the_feature(self, tmp_path):\n        root = _purlin_project(tmp_path)\n        (root / 'tests').mkdir()\n        (root / 'tests' / 'test_feat.py').write_text(\n            'import pytest\\n\\n'\n            '@pytest.mark.proof(\"feat\", \"PROOF-1\", \"RULE-1\")\\n'\n            '@pytest.mark.skip(reason=\"no tool\")\\n'\n            'def test_skipped():\\n    assert True\\n', encoding='utf-8')\n        result = _run_pytest(root)\n        assert result.returncode != 0\n        assert 'markers were seen and no proof entry was written for feat' \\\n            in result.stderr\n        assert _read_proofs(root, 'feat') is None",
+      "file": "dev/test_multilang_proof_plugins.py",
+      "findings": [],
+      "name": "test_pytest_exits_non_zero_and_names_the_feature",
+      "proof": "PROOF-10",
+      "reasons": []
+    },
+    {
+      "body": null,
+      "file": "dev/test_proof_plugins.sh",
+      "findings": [],
+      "name": "markers seen and nothing written fails the run",
+      "proof": "PROOF-10",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "222431ab843b250411bdd725d487f929ee9d4d32bfba3e5e24f051160395d380"
+}

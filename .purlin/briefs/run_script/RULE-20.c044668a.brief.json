@@ -1,0 +1,73 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-16T22:25:57Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "d120939a1d4bb6d160c64ce8f6ca3f26f6053c68f64b314711494c6c13ca3af4",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-20",
+      "text": "In a git checkout at the gate `passed`, run `--all --record --commit`; verify `Record committed as developer.`, that the record's `commit` differs from HEAD because the record's own commit came after it, and that the rule's passed cell reads `passed`. Change the scoped file `src/feat.py` and commit it; verify the passed cell reads `code changed`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/run_script/20260916T222538Z-73fdd7a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-20",
+  "rule_hash": "7cd210e25b8983f41d4808c1954ca8db3f539b92a9c7034989cb8960e4225be8",
+  "rule_text": "A record carries the git tree hash of its feature's scoped files, so a rule's passed cell reads `passed` while only other files change and reads `code changed` once a scoped file changes",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "861f3b8e5caaceca35631f7a2ce04d3db2e99777b2352eee40b16de3dbb8a494",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_committed_record_makes_the_passed_cell_read_passed(\n            self, tmp_path):\n        root = _pytest_project(tmp_path)\n        (root / 'src').mkdir()\n        (root / 'src' / 'feat.py').write_text('VALUE = 2\\n', encoding='utf-8')\n        _spec(root, 'feat')\n        _git_repo(root)\n\n        assert _rule(root, 'feat', 'RULE-1')['spec'] == 'drafted'\n\n        code, out = _run(root, '--all', '--record', '--commit')\n        assert code == 0, out\n        assert 'Record committed as developer.' in out, out\n\n        record = _newest_record(root, 'feat')\n        assert isinstance(record['scope_tree'], str), record['scope_tree']\n        assert record['proofs'][0]['id'] == 'PROOF-1'\n        assert record['proofs'][0]['status'] == 'pass'\n        assert record['feature'] == 'feat'\n        assert record['gate'] == 'passed'\n\n        # The record is one commit behind HEAD, which is the case the scope\n        # tree exists to cover.\n        assert record['commit'] != _head(root)\n        assert _passed_word(root, 'feat', 'RULE-1') == 'passed'",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_a_committed_record_makes_the_passed_cell_read_passed",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_cell_reads_code_changed_when_the_scope_changed(self, tmp_path):\n        root = _pytest_project(tmp_path)\n        (root / 'src').mkdir()\n        (root / 'src' / 'feat.py').write_text('VALUE = 2\\n', encoding='utf-8')\n        _spec(root, 'feat')\n        _git_repo(root)\n        code, out = _run(root, '--all', '--record', '--commit')\n        assert code == 0, out\n        assert _passed_word(root, 'feat', 'RULE-1') == 'passed'\n\n        (root / 'src' / 'feat.py').write_text('VALUE = 3\\n', encoding='utf-8')\n        _git(root, 'add', '-A')\n        _git(root, 'commit', '-q', '-m', 'change the scoped code')\n        assert _passed_word(root, 'feat', 'RULE-1') == 'code changed'",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_the_cell_reads_code_changed_when_the_scope_changed",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": null,
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_a_rule_falls_back_to_tested_when_the_scope_changed",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": null,
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_verify_then_sync_status_shows_the_rule_recorded",
+      "proof": "PROOF-20",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "c044668a6d3d51d8355b27ea4708c66dc5bca464d0ea09cd517354ffe3a0d371"
+}

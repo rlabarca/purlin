@@ -1,0 +1,101 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-16T22:26:19Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "7e1139c25ba88528324a2e8958070c7fb33389abbeba0a74c4f40b0cfd809e55",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-12",
+      "text": "Run the command over a file whose marked test asserts a real value; verify it exits 0",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-13",
+      "text": "Run the command with `--json` over a file whose marked test is `assert True`; verify it exits 0 and at least one proof carries the status `fail`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-14",
+      "text": "Run the command naming a test file that is not on disk; verify it exits 2, prints an error naming that file, and reports no analysis at all",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/static_checks/20260916T222539Z-73fdd7a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-17",
+  "rule_hash": "c0f3c511590d6b6c15a00873580177c92c619bdebfb49af2498ecab7d59aa32b",
+  "rule_text": "The command exits 0 for any completed analysis however weak the test it read, and 2 only for a real error such as a file that is not on disk",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "f318f76c6fbe0e248c8558750d36c216251366e6fce929dfd32e336d1493aac7",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_completed_analysis_exits_0_however_weak(self, monkeypatch, capsys,\n                                                       tmp_path):\n        path = tmp_path / 'test_mixed.py'\n        path.write_text(_MIXED_TESTS, encoding='utf-8')\n        code, out, err = self._main(monkeypatch, capsys, str(path), 'testfeat',\n                                    '--json')\n        assert code == 0\n        proofs = {p['proof_id']: p for p in json.loads(out)['proofs']}\n        assert proofs['PROOF-1']['status'] == 'pass'\n        assert proofs['PROOF-2']['status'] == 'fail'",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_a_completed_analysis_exits_0_however_weak",
+      "proof": "PROOF-12",
+      "reasons": []
+    },
+    {
+      "body": "def test_exit_0_when_all_pass(self):\n        path = _write_tmp('''\nimport pytest\n\n@pytest.mark.proof(\"testfeat\", \"PROOF-1\", \"RULE-1\")\ndef test_good():\n    result = do_something()\n    assert result == \"expected\"\n''')\n        try:\n            result = subprocess.run(\n                [sys.executable, STATIC_CHECKS_PY, path, \"testfeat\"],\n                capture_output=True, text=True\n            )\n            assert result.returncode == 0\n        finally:\n            os.unlink(path)",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_exit_0_when_all_pass",
+      "proof": "PROOF-12",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_completed_analysis_exits_0_however_weak(self, monkeypatch, capsys,\n                                                       tmp_path):\n        path = tmp_path / 'test_mixed.py'\n        path.write_text(_MIXED_TESTS, encoding='utf-8')\n        code, out, err = self._main(monkeypatch, capsys, str(path), 'testfeat',\n                                    '--json')\n        assert code == 0\n        proofs = {p['proof_id']: p for p in json.loads(out)['proofs']}\n        assert proofs['PROOF-1']['status'] == 'pass'\n        assert proofs['PROOF-2']['status'] == 'fail'",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_a_completed_analysis_exits_0_however_weak",
+      "proof": "PROOF-13",
+      "reasons": []
+    },
+    {
+      "body": "def test_exit_0_with_fail_status_when_defects_found(self):\n        path = _write_tmp('''\nimport pytest\n\n@pytest.mark.proof(\"testfeat\", \"PROOF-1\", \"RULE-1\")\ndef test_bad():\n    assert True\n''')\n        try:\n            result = subprocess.run(\n                [sys.executable, STATIC_CHECKS_PY, path, \"testfeat\", \"--json\"],\n                capture_output=True, text=True\n            )\n            assert result.returncode == 0\n            data = json.loads(result.stdout)\n            assert any(p['status'] == 'fail' for p in data['proofs'])\n        finally:\n            os.unlink(path)",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_exit_0_with_fail_status_when_defects_found",
+      "proof": "PROOF-13",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_file_not_on_disk_exits_2_and_names_it(self, monkeypatch, capsys,\n                                                     tmp_path):\n        missing = str(tmp_path / 'absent_test.py')\n        code, out, err = self._main(monkeypatch, capsys, missing, 'testfeat')\n        assert code == 2\n        assert json.loads(out) == {'error': f'File not found: {missing}'}",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_a_file_not_on_disk_exits_2_and_names_it",
+      "proof": "PROOF-14",
+      "reasons": []
+    },
+    {
+      "body": "def test_exit_2_is_reserved_for_a_real_error(self):\n        \"\"\"RULE-7's other half: exit 2 is reserved for real errors. A test file\n        that does not exist is one, and it must not be confused with the exit 0\n        a completed analysis returns however weak the test it graded.\"\"\"\n        missing = os.path.join(tempfile.gettempdir(),\n                               'purlin_no_such_test_file_9184.py')\n        assert not os.path.exists(missing), missing\n        result = subprocess.run(\n            [sys.executable, STATIC_CHECKS_PY, missing, \"testfeat\"],\n            capture_output=True, text=True\n        )\n        assert result.returncode == 2, (\n            \"a missing input file is a real error and must exit 2, got \"\n            f\"{result.returncode}\\nstdout={result.stdout!r}\\n\"\n            f\"stderr={result.stderr!r}\")\n        data = json.loads(result.stdout)\n        assert data['error'] == f'File not found: {missing}', (\n            f\"exit 2 did not name the missing file: {data!r}\")\n        assert 'proofs' not in data, (\n            f\"a real error must not report an analysis: {data!r}\")",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_exit_2_is_reserved_for_a_real_error",
+      "proof": "PROOF-14",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "523112579286c2b1d6fd547cad35bb27d0cdc745d92f473a3944ad9a1f5a3645"
+}

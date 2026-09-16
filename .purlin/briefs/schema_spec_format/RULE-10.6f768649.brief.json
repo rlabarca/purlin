@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "schema_spec_format",
+  "generated_at": "2026-09-16T22:26:04Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "e412d3f6ec2ffb21ef288ef3c61d323fc3ae3fa46f9233d06916448cf79e62ef",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-10",
+      "text": "Call the tag splitter with `@env(windows)`, `@env(macos)` and `@env(linux)` and verify each sets that environment with an empty unknown list; call it with `@env(windows-2022)`, `@env(ubuntu-24.04)` and `@env(Windows)` and verify each sets no environment and returns exactly one unknown naming the rejected value; call it with the retired scope tag and verify it sets no environment, leaves the tier `unit` and is returned as unknown",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/schema_spec_format/20260916T222539Z-73fdd7a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-10",
+  "rule_hash": "d7b6ebefae6b3079be090717aa77dad3bc61d72baf4d79331528daeddc92480a",
+  "rule_text": "`@env` takes `windows`, `macos` or `linux` and nothing else; any other value, and any tag this release stopped reading, is returned in the unknown list and sets no environment, so a proof is never treated as owned by an operating system the release cannot name",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "d99aee7c05952f81d3caab8449bf785104d924f0c8ed60769f5600885afd3ad1",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_env_takes_three_values_and_nothing_else(self):\n        split = purlin_specs.split_proof_tags\n        for good in ('windows', 'macos', 'linux'):\n            clean, tier, env, unknown = split('Lock the file @unit @env(%s)' % good)\n            assert (clean, tier, env, unknown) == ('Lock the file', 'unit', good, [])\n        # windows-2022 is a runner name, not one of the three values, so it is\n        # ignored and named rather than read as a fourth operating system.\n        for bad in ('windows-2022', 'ubuntu-24.04', 'Windows'):\n            clean, tier, env, unknown = split('Lock the file @unit @env(%s)' % bad)\n            assert env is None, f\"{bad!r} must not be read as an environment\"\n            assert unknown == ['@env(%s)' % bad], unknown\n            assert (clean, tier) == ('Lock the file', 'unit')\n        # A retired tag is ignored and named, never read.\n        clean, tier, env, unknown = split('Lock the file @unit @on(windows-2022)')  # retired\n        assert (clean, tier, env) == ('Lock the file', 'unit', None)\n        assert unknown == ['@on(windows-2022)'], unknown",
+      "file": "dev/test_schema_spec_format.py",
+      "findings": [],
+      "name": "test_env_takes_three_values_and_nothing_else",
+      "proof": "PROOF-10",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "6f7686495f0ca9ecca1501ba6a86de8ad36c50d416c08bfe6a02edd46c4f6b64"
+}

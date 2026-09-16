@@ -1,0 +1,86 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "proof_common",
+  "generated_at": "2026-09-16T22:25:48Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "38c5971c6e8d111318993ba370f8a0cb92fafc035475424f7d4d4293deb9584c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-8",
+      "text": "Read each plugin source and verify every line that builds a temp name carries that language's process-id expression; run each plugin in a temporary project and verify zero files ending `.tmp` are left under `.purlin/runtime/`, in `dev/test_multilang_proof_plugins.py`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/proof_common/20260916T222538Z-73fdd7a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-8",
+  "rule_hash": "5b1329c5e17b7ef63672fb301e8da1c9e6217c4b7b14b2708e850707eb937da1",
+  "rule_text": "Every write creates a temp file beside the target whose name carries the writing process's own id and replaces the target with it in one filesystem operation; nothing deletes the target first, and a run leaves no temp file behind",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "8b1574790b79d070033a314000d0cccf97c718835e26548bdd9395814d80e9bb",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_temp_name_carries_the_process_id(self, framework):\n        source = open(os.path.join(PROOF_SCRIPTS, PLUGINS[framework]),\n                      encoding='utf-8').read()\n        assert '.tmp' in source\n        assert any(token in source for token in\n                   ('os.getpid()', 'process.pid', 'Environment.ProcessId'))",
+      "file": "dev/test_multilang_proof_plugins.py",
+      "findings": [],
+      "name": "test_the_temp_name_carries_the_process_id[jest]",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_temp_name_carries_the_process_id(self, framework):\n        source = open(os.path.join(PROOF_SCRIPTS, PLUGINS[framework]),\n                      encoding='utf-8').read()\n        assert '.tmp' in source\n        assert any(token in source for token in\n                   ('os.getpid()', 'process.pid', 'Environment.ProcessId'))",
+      "file": "dev/test_multilang_proof_plugins.py",
+      "findings": [],
+      "name": "test_the_temp_name_carries_the_process_id[pytest]",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_temp_name_carries_the_process_id(self, framework):\n        source = open(os.path.join(PROOF_SCRIPTS, PLUGINS[framework]),\n                      encoding='utf-8').read()\n        assert '.tmp' in source\n        assert any(token in source for token in\n                   ('os.getpid()', 'process.pid', 'Environment.ProcessId'))",
+      "file": "dev/test_multilang_proof_plugins.py",
+      "findings": [],
+      "name": "test_the_temp_name_carries_the_process_id[shell]",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_temp_name_carries_the_process_id(self, framework):\n        source = open(os.path.join(PROOF_SCRIPTS, PLUGINS[framework]),\n                      encoding='utf-8').read()\n        assert '.tmp' in source\n        assert any(token in source for token in\n                   ('os.getpid()', 'process.pid', 'Environment.ProcessId'))",
+      "file": "dev/test_multilang_proof_plugins.py",
+      "findings": [],
+      "name": "test_the_temp_name_carries_the_process_id[sql]",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_temp_name_carries_the_process_id(self, framework):\n        source = open(os.path.join(PROOF_SCRIPTS, PLUGINS[framework]),\n                      encoding='utf-8').read()\n        assert '.tmp' in source\n        assert any(token in source for token in\n                   ('os.getpid()', 'process.pid', 'Environment.ProcessId'))",
+      "file": "dev/test_multilang_proof_plugins.py",
+      "findings": [],
+      "name": "test_the_temp_name_carries_the_process_id[vitest]",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_temp_name_carries_the_process_id(self, framework):\n        source = open(os.path.join(PROOF_SCRIPTS, PLUGINS[framework]),\n                      encoding='utf-8').read()\n        assert '.tmp' in source\n        assert any(token in source for token in\n                   ('os.getpid()', 'process.pid', 'Environment.ProcessId'))",
+      "file": "dev/test_multilang_proof_plugins.py",
+      "findings": [],
+      "name": "test_the_temp_name_carries_the_process_id[xunit]",
+      "proof": "PROOF-8",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "643bbbb95de79c00e7529b55fb79218ae1dd90ae69a65c1c41445143ad4e1335"
+}

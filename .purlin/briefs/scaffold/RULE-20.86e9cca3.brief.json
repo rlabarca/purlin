@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T22:26:02Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "6783aea7b911933d1f5676c18c1ce98d303317a69619e19e75f90105bd1cf9e1",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-20",
+      "text": "Run `--gate recorded` twice and verify no line of the second summary reports a write",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T222539Z-73fdd7a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-20",
+  "rule_hash": "f155001c7f6e24911b9a020fa9dbd90737364fabafd88fdd0bc02d37b0d51a71",
+  "rule_text": "A second run at the same gate writes no file",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "ddbaa380858f9d866b77f60d8657bc96bcf04f3362e7bef5b7c0d268236e71d9",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_second_run_at_the_same_gate_changes_nothing(self, project):\n        project.run('--gate', 'recorded')\n        output = project.run('--gate', 'recorded')\n        assert 'wrote' not in summary_paths(output).values()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_a_second_run_at_the_same_gate_changes_nothing",
+      "proof": "PROOF-20",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "86e9cca3e9df6ed0a75053bb0a5ea9dd2a19a8611ec03c6e7ee433359f5d6bf2"
+}

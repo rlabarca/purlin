@@ -1,0 +1,85 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-16T22:26:16Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "d2789b2d74bcd764cbad7cf500b3d0cc236204b06a533a1e2629e6124b0f4639",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-2",
+      "text": "Run the Python checker over a marked test asserting `result is not None`; verify its status is `fail` and its check is `tautology`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-3",
+      "text": "Run the Python checker over a marked test asserting `len(items) >= 0`; verify its status is `fail` and its check is `tautology`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-22",
+      "text": "Run the Python checker over a marked test asserting `result is not None`; verify the check is named `tautology` and not the literal name",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/static_checks/20260916T222539Z-73fdd7a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-2",
+  "rule_hash": "5ad69a47bff310d37079b0ba7c27ab63ce4d24bc9b081694c5b1f9768c23ff5f",
+  "rule_text": "A marked Python test whose assertion cannot fail, comparing a result with `None`, a length at or above zero, or two constants, is reported `tautology`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "3e5a71868fa8ade3c1cfe85207d64051f22bea5ec50f6391f9cbcab3c65bac5b",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_detects_assert_is_not_none(self):\n        path = _write_tmp('''\nimport pytest\n@pytest.mark.proof(\"testfeat\", \"PROOF-1\", \"RULE-1\")\ndef test_bad():\n    result = do_something()\n    assert result is not None\n''')\n        try:\n            results = check_python(path, \"testfeat\")\n            assert len(results) == 1\n            assert results[0]['status'] == 'fail'\n            assert results[0]['check'] == 'tautology'\n        finally:\n            os.unlink(path)",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_detects_assert_is_not_none",
+      "proof": "PROOF-2",
+      "reasons": []
+    },
+    {
+      "body": "def test_asserting_the_fixture_rather_than_the_code_passes(self, tmp_path):\n        \"\"\"The test never calls the code it claims to prove, and it passes.\"\"\"\n        path = tmp_path / 'test_fixture_cheat.py'\n        path.write_text(\n            'import pytest\\n\\n'\n            'EXPECTED_USERS = [\"alice\", \"bob\", \"charlie\"]\\n\\n\\n'\n            '@pytest.mark.proof(\"user_mgmt\", \"PROOF-1\", \"RULE-1\")\\n'\n            'def test_list_users_returns_three():\\n'\n            '    assert len(EXPECTED_USERS) == 3\\n'\n            '    assert \"alice\" in EXPECTED_USERS\\n', encoding='utf-8')\n        results = check_python(str(path), 'user_mgmt')\n        assert len(results) == 1\n        assert results[0]['status'] == 'pass', (\n            'there are real assertions, so the free checks pass it: a person '\n            'is what catches this one')",
+      "file": "dev/test_proof_stress.py",
+      "findings": [],
+      "name": "test_asserting_the_fixture_rather_than_the_code_passes",
+      "proof": "PROOF-2",
+      "reasons": []
+    },
+    {
+      "body": "def test_detects_assert_len_gte_zero(self):\n        path = _write_tmp('''\nimport pytest\n@pytest.mark.proof(\"testfeat\", \"PROOF-1\", \"RULE-1\")\ndef test_bad():\n    items = get_items()\n    assert len(items) >= 0\n''')\n        try:\n            results = check_python(path, \"testfeat\")\n            assert len(results) == 1\n            assert results[0]['status'] == 'fail'\n            assert results[0]['check'] == 'tautology'\n        finally:\n            os.unlink(path)",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_detects_assert_len_gte_zero",
+      "proof": "PROOF-3",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_heuristic_always_true_assert_is_named_tautology(self):\n        path = _write_tmp('''\nimport pytest\n@pytest.mark.proof(\"testfeat\", \"PROOF-1\", \"RULE-1\")\ndef test_bad():\n    result = do_something()\n    assert result is not None\n''')\n        try:\n            results = check_python(path, \"testfeat\")\n            assert len(results) == 1\n            assert results[0]['status'] == 'fail'\n            assert results[0]['check'] == 'tautology', results[0]\n        finally:\n            os.unlink(path)",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_a_heuristic_always_true_assert_is_named_tautology",
+      "proof": "PROOF-22",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "67db3aa4cd35308a154d1b98b914914c5badf2829e5093f4748cecb4be0a14ca"
+}

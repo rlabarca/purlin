@@ -1,0 +1,58 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_version",
+  "generated_at": "2026-09-16T22:25:50Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "923f5057482ab1db4c4a77c67df5d7e6ddcec1709c8591f6b70f7f520a5a2e01",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-9",
+      "text": "Four legs. Leg (a): cut the marker-writing function out of `dev/run_tests.sh`, run that text in a shell whose working directory is a temporary repository, with the counts `PASS=2`, `FAIL=0`, `PYTEST_PASSED=11`, `PYTEST_FAILED=0`, `PYTEST_SKIPPED=3` and the two suite names `Proof Plugins (Shell)` and `All Pytest Tests`; verify it exits 0 and writes `last_sweep.json` beside `test_run.json`, that the record reads `passed` 12, `failed` 0, `skipped` 3, `ok` true, those two suite names, the temporary repository's own head sha, a timestamp, and no `runs` key, while the shared marker written by the same call names the sweep and does carry `runs`. Leg (b): read the text between `## Unreleased` and the next heading in `RELEASE_NOTES.md` and verify it holds exactly one line matching `N passed, M skipped`. Leg (c): given a record whose `passed` is one higher than the notes, verify the comparison raises naming both numbers, and given a path with no file, verify it returns a reason naming that path and `bash dev/run_tests.sh` and asserts nothing. Leg (d): run the same comparison against the real `.purlin/runtime/last_sweep.json`, skipping with that reason when it is absent",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/purlin_version/20260916T222538Z-73fdd7a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-9",
+  "rule_hash": "febf5cd7afff284afe433ca37e7a247951a5c2bff1c3f4dacb12fd9abe7af550",
+  "rule_text": "The `## Unreleased` section of `RELEASE_NOTES.md` states the counts of the run it describes once, as `N passed, M skipped`, and those two numbers equal `passed` and `skipped` in `.purlin/runtime/last_sweep.json`, the sweep's own whole record of itself rather than the shared marker each proof plugin rewrites as it finishes. That record is runtime state, so a checkout that has never run the sweep has nothing to compare and the proof reports that instead of failing",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "866285a29efa7fb403debed8e54ef4ebb7e3d9de34313624bd8117246d49868c",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_sweep_exit_trap_writes_its_own_sweep_record(self, tmp_path):\n        \"\"\"Leg (a): drive the sweep's real writer and verify it writes\n        last_sweep.json, unmerged, beside the shared test_run.json.\"\"\"\n        root = tmp_path / 'proj'\n        (root / '.purlin' / 'runtime').mkdir(parents=True)\n        git = ['git', '-c', 'user.email=t@example.com', '-c', 'user.name=t']\n        subprocess.run(['git', '-c', 'init.defaultBranch=main', 'init', '-q'], cwd=str(root), check=True)\n        subprocess.run(git + ['commit', '-q', '--allow-empty', '-m', 'seed'],\n                       cwd=str(root), check=True, capture_output=True)\n        head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=str(root),\n                              capture_output=True, text=True,\n                              check=True).stdout.strip()\n\n        marker = root / '.purlin' / 'runtime' / 'test_run.json'\n        record = root / '.purlin' / 'runtime' / 'last_sweep.json'\n        preamble = '\\n'.join([\n            'ROOT=' + shlex.quote(str(root)),\n            'MARKER=' + shlex.quote(str(marker)),\n            'LAST_SWEEP=' + shlex.quote(str(record)),\n            'PYTEST_LOG=' + shlex.quote(str(tmp_path / 'pytest.log')),\n            # The pytest pool counts as one suite in PASS; its 11 tests are\n            # counted individually, so the record must report 11 + 1 = 12.\n            \"SUITES=$'Proof Plugins (Shell)\\\\nAll Pytest Tests\\\\n'\",\n            \"TEST_FILES=$'dev/test_purlin_version.py\\\\n'\",\n            'PASS=2',\n            'FAIL=0',\n            'PYTEST_PASSED=11',\n            'PYTEST_FAILED=0',\n            'PYTEST_SKIPPED=3',\n            'SWEEP_COMPLETE=1',\n        ])\n        run = subprocess.run(\n            [BASH, '-c', preamble + '\\n' + _write_marker_function_text()\n             + '\\nwrite_marker\\n'],\n            cwd=str(root), capture_output=True, text=True,\n        )\n        assert run.returncode == 0, (\n            f\"write_marker exited {run.returncode}\\n\"\n            f\"stdout:{run.stdout}\\nstderr:{run.stderr}\")\n\n        assert marker.is_file(), (\n            f\"the sweep's exit trap wrote no test_run.json at {marker}\\n\"\n            f\"stdout:{run.stdout}\\nstderr:{run.stderr}\")\n        assert record.is_file(), (\n            f\"the sweep's exit trap wrote no last_sweep.json at {record}: the \"\n            f\"dev sweep must record its own counts in last_sweep.json beside \"\n            f\"test_run.json, because the shared marker is rewritten by every \"\n            f\"proof plugin as it finishes\\n\"\n            f\"stdout:{run.stdout}\\nstderr:{run.stderr}\")\n\n        sweep = json.loads(record.read_text(encoding='utf-8'))\n        assert sweep.get('passed') == 12, \\\n            f\"last_sweep.json passed is {sweep.get('passed')!r}, expected 12\"\n        assert sweep.get('failed') == 0, \\\n            f\"last_sweep.json failed is {sweep.get('failed')!r}, expected 0\"\n        assert sweep.get('skipped') == 3, \\\n            f\"last_sweep.json skipped is {sweep.get('skipped')!r}, expected 3\"\n        assert sweep.get('ok') is True, \\\n            f\"last_sweep.json ok is {sweep.get('ok')!r}, expected True\"\n        assert sweep.get('suites') == ['Proof Plugins (Shell)',\n                                       'All Pytest Tests'], \\\n            f\"last_sweep.json suites is {sweep.get('suites')!r}\"\n        assert sweep.get('commit') == head, \\\n            f\"last_sweep.json commit is {sweep.get('commit')!r}, expected {head!r}\"\n        assert sweep.get('at'), \"last_sweep.json carries no `at` timestamp\"\n        assert 'runs' not in sweep, (\n            f\"last_sweep.json is the sweep's own record and is never merged \"\n            f\"with the plugin runs, so it must carry no `runs` key; it has \"\n            f\"{sweep.get('runs')!r}\")\n\n        shared = json.loads(marker.read_text(encoding='utf-8'))\n        assert shared.get('sweep') == DEV_SWEEP, (\n            f\"test_run.json sweep is {shared.get('sweep')!r}, expected \"\n            f\"{DEV_SWEEP!r}\")\n        assert 'runs' in shared, \\\n            \"test_run.json is the merged marker and must carry a `runs` list\"",
+      "file": "dev/test_purlin_version.py",
+      "findings": [],
+      "name": "test_sweep_exit_trap_writes_its_own_sweep_record",
+      "proof": "PROOF-9",
+      "reasons": []
+    },
+    {
+      "body": "def test_unreleased_counts_match_the_sweep_record(self, tmp_path):\n        \"\"\"Legs (b), (c) and (d): the notes parse, the comparison helper, and\n        the real record.\"\"\"\n        # \u2500\u2500 (b) exactly one counts line in the Unreleased section \u2500\u2500\u2500\u2500\u2500\u2500\n        passed, skipped = _parse_unreleased_counts()\n\n        # \u2500\u2500 (c) the helper fails loudly on a disagreement \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n        disagreeing = tmp_path / 'last_sweep.json'\n        disagreeing.write_text(json.dumps({\n            'at': '2026-01-01T00:00:00+00:00',\n            'commit': 'deadbeef',\n            'passed': passed + 1,\n            'failed': 0,\n            'skipped': skipped,\n            'ok': True,\n            'suites': ['All Pytest Tests'],\n        }), encoding='utf-8')\n        with pytest.raises(AssertionError) as raised:\n            _compare_notes_to_sweep(passed, skipped, str(disagreeing))\n        message = str(raised.value)\n        assert str(passed) in message and str(passed + 1) in message, (\n            f\"the failure must name the notes count and the sweep's count \"\n            f\"side by side; got: {message}\")\n\n        # \u2500\u2500 (c) an absent record is an absent observation, not a failure \u2500\n        absent = tmp_path / 'never-swept' / 'last_sweep.json'\n        reason = _compare_notes_to_sweep(passed, skipped, str(absent))\n        assert reason is not None, \\\n            \"an absent sweep record must yield a skip reason, not a comparison\"\n        assert str(absent) in reason and 'bash dev/run_tests.sh' in reason, (\n            f\"the skip reason must name the missing path and how to write it; \"\n            f\"got: {reason}\")\n\n        # \u2500\u2500 (d) the real record \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n        reason = _compare_notes_to_sweep(passed, skipped, SWEEP_RECORD)\n        if reason is not None:\n            pytest.skip(reason)",
+      "file": "dev/test_purlin_version.py",
+      "findings": [
+        "tautology"
+      ],
+      "name": "test_unreleased_counts_match_the_sweep_record",
+      "proof": "PROOF-9",
+      "reasons": [
+        "tautological assertion (assert True or equivalent)"
+      ]
+    }
+  ],
+  "triple_hash": "ce4249abd6c3206c7eac6d4c12f2dd99fd417614c8e07b2243b8eb823d3b8827"
+}

@@ -1,0 +1,97 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-16T22:26:27Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "5088317e3940abc35d9c7f30fc27283970b32563cb58ba37a685c24748fd7825",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-19",
+      "text": "Run `sync_status` on the v0.9.5 fixture and verify it contains `Run: purlin:init --update`, then apply the update and verify it no longer does; run it on the 0.10 fixture and verify it contains the line, that it still does after the run once `.purlin/records/README.md` is deleted, and that it does not once nothing is pending",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/update/20260916T222539Z-73fdd7a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-19",
+  "rule_hash": "3d5cf1d8d1f02784d72001d9f056d672e0c6cb930f293d5a9552bd16c51a7666",
+  "rule_text": "`sync_status` prints the directive to run the update while anything is pending, including when the config alone is already clean, and stops printing it once nothing is",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "3a78f77f30a5b43083ecaa551a70e3ad4c45ca8a24c565eb08ddf106848ad42a",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_status_says_it_even_when_the_config_is_already_clean(tmp_path):\n    \"\"\"The line must come from the pending list, not only from a config warning.\"\"\"\n    root = _project(tmp_path, V010)\n    _apply(root)\n    os.remove(os.path.join(root, '.purlin', 'records', 'README.md'))\n    assert update.pending(root)\n    assert 'Run: purlin:init --update' in status_module.sync_status(root)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_status_says_it_even_when_the_config_is_already_clean",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": "def test_status_says_it_for_a_project_that_has_not_updated(tmp_path):\n    root = _project(tmp_path, V095)\n    assert 'Run: purlin:init --update' in status_module.sync_status(root)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_status_says_it_for_a_project_that_has_not_updated",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": "def test_status_says_run_the_update_while_something_is_pending(tmp_path):\n    root = _project(tmp_path, V010)\n    assert 'Run: purlin:init --update' in status_module.sync_status(root)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_status_says_run_the_update_while_something_is_pending",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": "def test_status_stops_saying_it_once_nothing_is_pending(tmp_path):\n    root = _project(tmp_path, V010)\n    _apply(root)\n    assert 'Run: purlin:init --update' not in status_module.sync_status(root)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_status_stops_saying_it_once_nothing_is_pending",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": "def test_status_stops_saying_it_once_the_old_project_has_updated(tmp_path):\n    root = _project(tmp_path, V095)\n    _apply(root)\n    assert 'Run: purlin:init --update' not in status_module.sync_status(root)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_status_stops_saying_it_once_the_old_project_has_updated",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": null,
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_pending_is_false_once_the_update_has_run",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": null,
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_pending_is_true_for_a_project_that_has_not_updated",
+      "proof": "PROOF-19",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "f1488e90ba29bfd3f8c619027c49a5db00bb45d4a415421766bba0b519ceabd9"
+}

@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_audit",
+  "generated_at": "2026-09-16T22:26:07Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "011853912fef1a864fb67e7b333377232bb3ee12bdcbbde40855781abcfbaaa2",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-6",
+      "text": "Read the gate table of `skills/audit/SKILL.md`; verify the `passed` row names `n/a` and says the run does the tests only, and that the `strong` row carries the word `preview` and says the local record does not count. Removing the word `preview` fails naming the row it read",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/skill_audit/20260916T222539Z-73fdd7a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-6",
+  "rule_hash": "6ff4b172ce3669319d30e2790f4c94239e3505cc9354aada9935cec59e8b0efd",
+  "rule_text": "The skill states that under `passed` the run does the tests only and the record carries test strength `n/a`, and that under `strong` and `signed` a local run is a preview whose record does not count",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "6548db4685f8e749f637a09ff0727d449dedf0bede35af88a57122cdb898fba8",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_gate_decides_the_breaks_and_the_preview(self):\n        assert audit_gate_problems() == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_the_gate_decides_the_breaks_and_the_preview",
+      "proof": "PROOF-6",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "390cdbf727f90a4811d9c30089fdaac44cfccc53c8944ce6aaf5a8ee906dde9e"
+}

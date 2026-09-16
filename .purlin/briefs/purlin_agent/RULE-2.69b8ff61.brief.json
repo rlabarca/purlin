@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_agent",
+  "generated_at": "2026-09-16T22:25:49Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "42316f987656a7dada2fac385dff0c4e839ab02cb1024ad65eeb52b4b7eeff68",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-2",
+      "text": "Read `agents/purlin.md`; find the fenced block holding `purlin:drift` and verify the offsets of `purlin:drift`, `purlin:spec`, `purlin:build`, `purlin:test`, `purlin:audit` and `push` inside it increase in that order. Moving `purlin:test` after `purlin:audit` fails on the offset comparison",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/purlin_agent/20260916T222538Z-73fdd7a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-2",
+  "rule_hash": "4a22448d3546598421e484d788850fc3b19037338b650ba0e31fb8f5818a6a52",
+  "rule_text": "The agent states the core loop once, as `purlin:drift`, `purlin:spec`, `purlin:build`, `purlin:test`, `purlin:audit`, push, in that order",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "a9b43e299039be468d2813e03b60db9592e2b693e65711ff452d014704c2fdd1",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_core_loop_runs_in_order(self):\n        assert core_loop_problems() == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_the_core_loop_runs_in_order",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "69b8ff6190f809df6ca0ef04898f672bc0534401ac90d76af25e16da1dbc50f6"
+}

@@ -1,0 +1,80 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-16T22:25:52Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "456aa8c4591e7a2f6cd9f2a456fea3f9e838a03849c1b9a94d94ed03bb65f526",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-4",
+      "text": "Call `commit_records(identity=\"developer\")` in a repository with an upstream; verify `git log -1` names the record file and the remote's HEAD moved. Repeat with a record retention deleted and verify the commit carries the deletion. Repeat with no upstream, with no remote, and with the record already at HEAD; verify each prints `no upstream`, `No remote is configured` and `Nothing to commit` respectively and returns without raising",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/records/20260916T222538Z-73fdd7a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-4",
+  "rule_hash": "661d6b097832c39ad85ad641f3f9d22c52b45de940a0c98ff6895b3d8f67a784",
+  "rule_text": "A developer's commit stages the records and the deletions retention made, commits under the developer's own git identity and pushes; with no remote, no upstream or nothing staged it prints the reason and exits 0",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "14035987eb71e1860ad32fc07190789b8e98208ad7eeee681d5769194b0d83b2",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_developer_commit_carries_the_deletions_retention_made(\n        project, with_remote):\n    old = [put_record(project, 'greeting',\n                      '2026091%dT120000Z-4f1c2ab-ada.json' % day)\n           for day in range(5)]\n    records_module.commit_records(project, old, 'developer', 'purlin: records')\n    fresh = records_module.write_record(project, record(), 'ada@example.com')\n    records_module.commit_records(project, [fresh], 'developer',\n                                  'purlin: record')\n\n    listed = git(with_remote, 'ls-tree', '-r', '--name-only', 'main').stdout\n    assert fresh in listed\n    assert old[0] not in listed, 'a pruned record stayed in the remote copy'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_developer_commit_carries_the_deletions_retention_made",
+      "proof": "PROOF-4",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_developer_commit_lands_and_pushes(project, with_remote):\n    path = records_module.write_record(project, record(), 'ada@example.com')\n    sha = records_module.commit_records(\n        project, [path], 'developer', 'purlin: record for 4f1c2ab')\n\n    assert len(sha) == 40\n    subject = git(project, 'log', '-1', '--format=%s').stdout.strip()\n    assert subject == 'purlin: record for 4f1c2ab'\n    listed = git(with_remote, 'ls-tree', '-r', '--name-only', 'main').stdout\n    assert path in listed, 'the record did not reach the remote'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_developer_commit_lands_and_pushes",
+      "proof": "PROOF-4",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_developer_commit_without_a_remote_says_so(project, capsys):\n    path = records_module.write_record(project, record(), 'ada@example.com')\n    records_module.commit_records(project, [path], 'developer',\n                                  'purlin: record')\n    assert 'No remote is configured' in capsys.readouterr().out",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_developer_commit_without_a_remote_says_so",
+      "proof": "PROOF-4",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_developer_commit_without_an_upstream_says_so(project, capsys):\n    git(project, 'remote', 'add', 'origin', 'https://example.invalid/x.git')\n    path = records_module.write_record(project, record(), 'ada@example.com')\n    sha = records_module.commit_records(project, [path], 'developer',\n                                        'purlin: record')\n    printed = capsys.readouterr().out\n    assert len(sha) == 40\n    assert 'no upstream' in printed\n    assert 'git push -u origin HEAD' in printed",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_developer_commit_without_an_upstream_says_so",
+      "proof": "PROOF-4",
+      "reasons": []
+    },
+    {
+      "body": "def test_nothing_to_commit_is_said_and_not_an_error(project, capsys):\n    path = records_module.write_record(project, record(), 'ada@example.com')\n    records_module.commit_records(project, [path], 'developer', 'purlin: one')\n    capsys.readouterr()\n    sha = records_module.commit_records(project, [path], 'developer',\n                                        'purlin: again')\n    assert sha == ''\n    assert 'Nothing to commit' in capsys.readouterr().out",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_nothing_to_commit_is_said_and_not_an_error",
+      "proof": "PROOF-4",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "d001ac484b5794d5d760d66df055212c32897f456b1b571a55455a15bc74fa98"
+}

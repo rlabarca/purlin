@@ -1,0 +1,57 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T22:26:14Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "9862d1fb778ae7d48314fcc6f8fb2d1dc436ea117ac96113156f5a514e0dee4c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-30",
+      "text": "Add a global anchor with one rule to a project whose one feature has two own rules; build the payload and verify the summary counts exactly 3 rules and 1 feature key while the feature's own rollup counts 3, so the anchor's rule is counted once and proved by the feature",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260916T222539Z-73fdd7a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-26",
+  "rule_hash": "ad06bed20ebfa0b96000b25b0f6179e171d459706b29671f39c10d92264901a3",
+  "rule_text": "The project summary counts each rule once, under the feature that owns it, so a global anchor's rule is counted once however many features have to prove it, and it adds `features` to the rollup's keys",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "c6b4a0fa8899f4c83063c1f95efb9f72e0614197da12f41e79d62df76bac2c0c",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_global_anchor_rules_are_counted_once_in_the_summary(self, project):\n        project.spec(\n            '# Anchor: security\\n\\n> Global: true\\n\\n'\n            '## Rules\\n\\n- RULE-1: No eval anywhere\\n\\n'\n            '## Proof\\n\\n- PROOF-1 (RULE-1): Grep for eval(; verify 0 matches\\n',\n            name='security', category='_anchors')\n        data = project.payload()\n        assert data['summary']['rules'] == 3, (\n            'two own rules plus the anchor\\'s one, counted once')\n        assert data['summary']['features'] == 2\n        login = next(f for f in data['features'] if f['name'] == 'login')\n        assert login['rollup']['rules'] == 3, (\n            'the feature must prove the global anchor\\'s rule too')",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_global_anchor_rules_are_counted_once_in_the_summary",
+      "proof": "PROOF-30",
+      "reasons": []
+    },
+    {
+      "body": "def test_global_anchor_rules_are_counted_once_in_the_summary(self, project):\n        project.spec(\n            '# Anchor: security\\n\\n> Global: true\\n\\n'\n            '## Rules\\n\\n- RULE-1: No eval anywhere\\n\\n'\n            '## Proof\\n\\n- PROOF-1 (RULE-1): Grep for eval(; verify 0 matches\\n',\n            name='security', category='_anchors')\n        data = project.payload()\n        assert data['summary']['rules'] == 3, (\n            'two own rules plus the anchor\\'s one, counted once')\n        assert data['summary']['features'] == 2\n        login = next(f for f in data['features'] if f['name'] == 'login')\n        assert login['rollup']['rules'] == 3, (\n            'the feature must prove the global anchor\\'s rule too')",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_the_review_list_names_a_global_anchor_rule_once",
+      "proof": "PROOF-30",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "c5c34f5fe9e11da16f3870b12391c1153218eccfa7164c3535f88dfc1a2cb9ac"
+}

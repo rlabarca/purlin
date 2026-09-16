@@ -1,0 +1,90 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-16T22:26:23Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "181d9a1dad987fc5516507bea79cb303833c4420e7c4345d86e1ad099e62fc67",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-58",
+      "text": "Extract the bodies of 7 proofs across two Python files and one shell file outside a run scope, then twice inside one; verify the Python files are parsed exactly 2 times in total and the three answers are equal",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-61",
+      "text": "Run the checks for two features over one file and extract a body inside one run scope; verify the file is parsed exactly 1 time, that the scoped results equal the unscoped ones, and that the second feature's result names `PROOF-2`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-63",
+      "text": "Run the sweep over a project of 4 specs sharing 2 test files with a spy on open; verify every spec file and every test file is opened exactly 1 time and that no path is opened twice",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/static_checks/20260916T222539Z-73fdd7a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-28",
+  "rule_hash": "5777b0934786474b62ad1060f3b63bdbcd1250678cd6e8eef02ebce5aa5ed4b5",
+  "rule_text": "Inside one run scope each file is read once and each Python file parsed once, however many features or proofs ask for it, and the answers match those taken outside one",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "7797358dad4fcb0ec3309728a0264409391154ac8c4c0137d187bf5ab347a57e",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_one_parse_per_file_and_identical_results(self, monkeypatch):\n        with tempfile.TemporaryDirectory() as tmpdir:\n            pairs = []\n            for feature in ('alpha', 'beta'):\n                for n in (1, 2, 3):\n                    _scaffold_proof(\n                        tmpdir, feature, f'PROOF-{n}', f'RULE-{n}',\n                        test_file=f'tests/test_{feature}.py',\n                        test_name=f'test_{feature}_{n}',\n                        test_body=f'    value = {n} + 0\\n    assert value == {n}')\n                    pairs.append((feature, f'PROOF-{n}', f'tests/test_{feature}.py'))\n            _scaffold_proof(tmpdir, 'gamma', 'PROOF-1', 'RULE-1',\n                            test_file='tests/test_gamma.sh', test_name='test_gamma')\n            pairs.append(('gamma', 'PROOF-1', 'tests/test_gamma.sh'))\n\n            def _bodies():\n                return {(f, p): static_checks._extract_test_code(tmpdir, f, p, t)\n                        for f, p, t in pairs}\n\n            outside = _bodies()\n            assert len(outside) == 7\n            assert outside[('alpha', 'PROOF-1')] is not None, \\\n                \"the Python body did not come back\"\n            assert outside[('gamma', 'PROOF-1')] is None, \\\n                \"shell has no extractor, so it has no body\"\n\n            parses, segments = [], []\n            real_parse = static_checks.ast.parse\n            monkeypatch.setattr(static_checks.ast, 'parse',\n                                lambda *a, **k: (parses.append(1), real_parse(*a, **k))[1])\n            monkeypatch.setattr(static_checks.ast, 'get_source_segment',\n                                lambda *a, **k: (segments.append(1), None)[1])\n            with static_checks.run_scope():\n                inside = _bodies()\n                again = _bodies()\n            assert len(parses) == 2, (\n                f\"two Python test files must mean two parses, not {len(parses)}\")\n            assert segments == [], \\\n                \"function source must come from the one line split, never get_source_segment\"\n            assert inside == outside, \"a scoped body differs from the unscoped one\"\n            assert again == outside\n\n            # Outside a scope nothing is memoized: an edit is seen at once.\n            test_path = os.path.join(tmpdir, 'tests', 'test_alpha.py')\n            with open(test_path, encoding='utf-8') as f:\n                source = f.read()\n            with open(test_path, 'w', encoding='utf-8') as f:\n                f.write(source.replace('value == 1', 'value == 10'))\n            assert static_checks._extract_test_code(\n                tmpdir, 'alpha', 'PROOF-1', 'tests/test_alpha.py') \\\n                != outside[('alpha', 'PROOF-1')], \\\n                \"the scope leaked past its block: an edited test kept its old body\"\n            assert static_checks._RUN_CACHE is None",
+      "file": "dev/test_static_checks.py",
+      "findings": [
+        "tautology"
+      ],
+      "name": "test_one_parse_per_file_and_identical_results",
+      "proof": "PROOF-58",
+      "reasons": [
+        "tautological assertion (assert True or equivalent)"
+      ]
+    },
+    {
+      "body": "def test_the_checks_and_the_extractor_share_the_one_parse(self, monkeypatch):\n        \"\"\"The checks and the body extractor go through the same memo, so a file\n        carrying two features is parsed once inside a scope however many of them\n        ask for it, and no check reaches for ast.get_source_segment.\"\"\"\n        with tempfile.TemporaryDirectory() as tmpdir:\n            for feature, pid, rid in (('alpha', 'PROOF-1', 'RULE-1'),\n                                      ('beta', 'PROOF-2', 'RULE-2')):\n                _scaffold_proof(tmpdir, feature, pid, rid,\n                                test_file='tests/test_both.py',\n                                test_name=f'test_{feature}',\n                                test_body='    value = 1 + 1\\n    assert value == 2')\n            path = os.path.join(tmpdir, 'tests', 'test_both.py')\n            unscoped = analyze_test_file(path, 'alpha')\n\n            parses, segments = [], []\n            real_parse = static_checks.ast.parse\n            monkeypatch.setattr(static_checks.ast, 'parse',\n                                lambda *a, **k: (parses.append(1), real_parse(*a, **k))[1])\n            monkeypatch.setattr(static_checks.ast, 'get_source_segment',\n                                lambda *a, **k: (segments.append(1), None)[1])\n            with static_checks.run_scope():\n                scoped = analyze_test_file(path, 'alpha')\n                other = analyze_test_file(path, 'beta')\n                body = static_checks._extract_test_code(\n                    tmpdir, 'alpha', 'PROOF-1', 'tests/test_both.py')\n            assert len(parses) == 1, (\n                \"one file carrying two features and one extracted body must mean \"\n                f\"one ast.parse, not {len(parses)}\")\n            assert segments == [], \\\n                \"a check reached for get_source_segment instead of the one line split\"\n            assert scoped == unscoped, \"a scoped result differs from the unscoped one\"\n            assert [r['proof_id'] for r in other] == ['PROOF-2'], other\n            assert body and 'def test_alpha' in body, body\n\n            # The mock-target check reads the decorator from that same split.\n            mocked = _write_tmp('''import pytest\nfrom unittest.mock import patch\n\n@patch(\"auth.bcrypt.checkpw\")\n@pytest.mark.proof(\"alpha\", \"PROOF-3\", \"RULE-3\")\ndef test_hashes(mock_checkpw):\n    mock_checkpw.return_value = True\n    assert login(\"a\", \"b\") == 200\n''')\n            try:\n                with static_checks.run_scope():\n                    results = check_python(mocked, 'alpha',\n                                           {'RULE-3': 'Passwords are hashed with bcrypt'})\n                assert results[0]['check'] == 'mock_of_target', results\n                assert segments == [], \\\n                    \"mock_of_target still calls get_source_segment\"\n            finally:\n                os.unlink(mocked)",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_the_checks_and_the_extractor_share_the_one_parse",
+      "proof": "PROOF-61",
+      "reasons": []
+    },
+    {
+      "body": "def test_sweep_opens_every_spec_and_test_file_exactly_once(self, monkeypatch):\n        with tempfile.TemporaryDirectory() as tmpdir:\n            self._project(tmpdir)\n            plain = deterministic_sweep(tmpdir)\n\n            opens = {}\n            real_open = builtins.open\n\n            def spy(file, *args, **kwargs):\n                try:\n                    key = os.path.abspath(os.fspath(file))\n                except TypeError:          # an fd, not a path\n                    key = repr(file)\n                opens[key] = opens.get(key, 0) + 1\n                return real_open(file, *args, **kwargs)\n\n            monkeypatch.setattr(builtins, 'open', spy)\n            spied = deterministic_sweep(tmpdir)\n            monkeypatch.setattr(builtins, 'open', real_open)\n\n            for feature in ('alpha', 'beta', 'gamma', 'shfeat'):\n                spec = os.path.abspath(\n                    os.path.join(tmpdir, 'specs', 'app', f'{feature}.md'))\n                assert opens.get(spec) == 1, \\\n                    f\"{feature}.md was opened {opens.get(spec)} times, not once\"\n            for rel in ('tests/test_shared.py', 'tests/test_sh.sh'):\n                test_path = os.path.abspath(os.path.join(tmpdir, *rel.split('/')))\n                assert opens.get(test_path) == 1, \\\n                    f\"{rel} was opened {opens.get(test_path)} times, not once\"\n            repeated = {k: v for k, v in opens.items() if v > 1}\n            assert repeated == {}, f\"paths opened more than once: {repeated}\"\n\n            assert spied['counts'] == plain['counts']\n            assert self._verdicts(spied) == self._verdicts(plain)\n            assert self._verdicts(plain) == {\n                ('alpha', 'PROOF-1'): ('pass', 'none'),\n                ('beta', 'PROOF-2'): ('fail', 'assert_true_literal'),\n                ('gamma', 'PROOF-3'): ('pass', 'none'),\n                ('shfeat', 'PROOF-1'): ('pass', 'none'),\n            }",
+      "file": "dev/test_static_checks.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_sweep_opens_every_spec_and_test_file_exactly_once",
+      "proof": "PROOF-63",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "62f1f1678b4d01fab2690ac51900c639954f6db3ced8eb86fc14fd726763db0d"
+}

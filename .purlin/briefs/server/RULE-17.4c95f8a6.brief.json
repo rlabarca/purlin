@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "server",
+  "generated_at": "2026-09-16T22:26:05Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "444faded80ef04e520bdd531137d820d21b7dc7ab057ca81b1a6f57c9d385ade",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-17",
+      "text": "Call the hook in-process with the generator replaced by a wrapper that, on its first call only, appends a proof entry after delegating; verify the wrapper ran exactly 2 times and the data file carries the appended proof. Replace it with a wrapper that always appends and verify it ran exactly 3 times",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/server/20260916T222539Z-73fdd7a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-17",
+  "rule_hash": "4aa7079993d26bdb54321e0b03181f633b4d8354d04c96baff51cc10473d86f4",
+  "rule_text": "After writing, the hook re-reads the inputs against the moment it started generating and builds again when something landed meanwhile, at most three times in one run",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "6cba2c6bdb5e5e5b2035fbf49e121b68632ad75d7ac49b53e1c4c89234b5699c",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_write_during_generation_is_picked_up(self, tmp_path, monkeypatch):\n        project = _project(str(tmp_path))\n        module = _load_hook_module()\n        real = purlin_srv.generate_digest\n        calls = []\n\n        def once(root, **kw):\n            path = real(root, **kw)\n            if len(calls) == 0:\n                time.sleep(0.02)\n                _write_proofs(project, [_entry('PROOF-1', 'RULE-1'), _entry('PROOF-2', 'RULE-2')])\n            calls.append(kw)\n            return path\n\n        monkeypatch.setattr(purlin_srv, 'generate_digest', once)\n        _main_in(project, module)\n        assert len(calls) == 2, f'expected a second generation for the write that landed, got {len(calls)}'\n        assert _passing(_read_digest(project)) == 2\n        assert all(kw == {'generated_by': 'hook', 'network': False, 'only_if_changed': True}\n                   for kw in calls), calls\n\n        calls.clear()\n        n = [2]\n\n        def always(root, **kw):\n            path = real(root, **kw)\n            time.sleep(0.02)\n            n[0] += 1\n            _write_proofs(project, [_entry(f'PROOF-{i}', f'RULE-{1 + i % 2}') for i in range(1, n[0] + 1)])\n            calls.append(kw)\n            return path\n\n        _age(_digest_path(project))\n        os.utime(os.path.join(project, '.purlin', 'config.json'), None)\n        monkeypatch.setattr(purlin_srv, 'generate_digest', always)\n        _main_in(project, module)\n        assert len(calls) == 3, f'the re-check is bounded at three runs, got {len(calls)}'",
+      "file": "dev/test_refresh_digest_hook.py",
+      "findings": [],
+      "name": "test_a_write_during_generation_is_picked_up",
+      "proof": "PROOF-17",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "4c95f8a6f48d5b576a95b301e6bafa6a92552f957d1253e65a7b8d22e445ff25"
+}

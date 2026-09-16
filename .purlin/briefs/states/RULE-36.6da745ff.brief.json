@@ -1,0 +1,65 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T22:26:15Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "7b913927c6093ba9c922628a3b8c1040fe0078cf26b4b8951fd7a9b794fbe79f",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-43",
+      "text": "Run the status report over a project with one feature at the gate `passed` and read the header line; verify it names Rules, Spec, Tests and Run and neither Strength nor Signed, that the feature's row carries `1 passed` and that its strength is not printed; then run it at `strong` and verify Strength and Strong appear and the strength reads `n/a`, and at `signed` and verify Signed appears too",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-49",
+      "text": "Run the status report over this repository's own specs; verify the output carries the `Spec` and `Tests` columns, that a row names a count of rules, and that its last line opens with the arrow",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260916T222539Z-73fdd7a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-36",
+  "rule_hash": "a4525ff4d9b34ab6ed47bc17964035f92cea6dcbdf5c2a52781a42252d042294",
+  "rule_text": "The status table is one row per feature under the columns Feature, Rules, Spec, Tests and Run, with Strength and Strong added at the gate `strong` and Signed added at `signed`, and a feature with no record shows its strength as `n/a`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "722146ca060d74d4add150a1776fb360572b876ff01a64be2333f600e80409c0",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_columns_scale_with_the_gate(self, project):\n        project.proofs([_entry('PROOF-2', 'RULE-2')])\n        text = purlin_status.sync_status(project.root)\n        header = next(line for line in text.splitlines()\n                      if line.startswith('Feature'))\n        for column in ('Rules', 'Spec', 'Tests', 'Run'):\n            assert column in header, (column, header)\n        assert 'Strength' not in header and 'Signed' not in header, header\n        row = next(line for line in text.splitlines()\n                   if line.startswith('login '))\n        assert '1 passed' in row, row\n\n        for gate, expected in (('strong', ('Strength', 'Strong')),\n                               ('signed', ('Strength', 'Strong', 'Signed'))):\n            made = Project(gate=gate)\n            try:\n                text = purlin_status.sync_status(made.root)\n                header = next(line for line in text.splitlines()\n                              if line.startswith('Feature'))\n                for column in expected:\n                    assert column in header, (gate, header)\n                row = next(line for line in text.splitlines()\n                           if line.startswith('login '))\n                assert 'n/a' in row, 'no record, so no test strength'\n            finally:\n                made.close()",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_the_columns_scale_with_the_gate",
+      "proof": "PROOF-43",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_repository_own_specs_print_the_table(self):\n        text = purlin_status.sync_status(PROJECT_ROOT)\n        header = next(line for line in text.splitlines()\n                      if line.startswith('Feature'))\n        assert 'Spec' in header and 'Tests' in header, header\n        assert any('ready' in line for line in text.splitlines()), text\n        assert text.rstrip().splitlines()[-1].startswith('\u2192'), text",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_the_repository_own_specs_print_the_table",
+      "proof": "PROOF-49",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "6da745ffc6fd503972de93e3eb64637e810eb2af6ac8d8947be11dc761713718"
+}

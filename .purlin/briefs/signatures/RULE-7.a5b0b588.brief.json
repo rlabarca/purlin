@@ -1,0 +1,57 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-16T22:26:05Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "905ce3b7f2b65abcb1d252913fc684d518e464876620bbf2336234bd7e624f2e",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-11",
+      "text": "Write a signature, then edit the rule text; verify the reader still returns exactly 1 signature for the rule, that its signer is `jane@acme.com` and that it is no longer current",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/signatures/20260916T222539Z-73fdd7a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-7",
+  "rule_hash": "e253f80a894d44cd35aa7bbf1d0545b5b2f3323cabc3b74a4fce1bd937706a93",
+  "rule_text": "A signature whose triple no longer matches still comes back from the reader, so the signed cell can read `stale` rather than `unsigned`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "966d7f292eb62319b243b38380b547f2d64edefa036766824f7dea3c6e8d1787",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_stale_signature_still_comes_back_from_the_reader(self, proved):\n        sign_one(proved)\n        proved.spec(SPEC.replace('return 200 with a session token',\n                                 'return 200 with two session tokens'))\n        found = proved.load()[('login', 'RULE-1')]\n        assert len(found) == 1, found\n        assert found[0]['signer'] == 'jane@acme.com'\n        assert self._current(proved) == [], (\n            'the signed cell reads stale only while the file is still there')",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_a_stale_signature_still_comes_back_from_the_reader",
+      "proof": "PROOF-11",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_stale_signature_still_comes_back_from_the_reader(self, proved):\n        sign_one(proved)\n        proved.spec(SPEC.replace('return 200 with a session token',\n                                 'return 200 with two session tokens'))\n        found = proved.load()[('login', 'RULE-1')]\n        assert len(found) == 1, found\n        assert found[0]['signer'] == 'jane@acme.com'\n        assert self._current(proved) == [], (\n            'the signed cell reads stale only while the file is still there')",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_a_stale_approval_puts_the_rule_in_stale",
+      "proof": "PROOF-11",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a5b0b58864ee81e5553ca3aab06f71a75ebfc3987af392116d5df4d0748697ac"
+}

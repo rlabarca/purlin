@@ -1,0 +1,57 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T22:26:12Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "8ad62405937245d6e08c6abb548840301fa13c03e99ae4f790913c64395e6d98",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-22",
+      "text": "Beside that current hold, write a signature for the same hashes; verify the strong cell reads `strong` and the signed cell reads `signed`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260916T222539Z-73fdd7a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-18",
+  "rule_hash": "5ed53912eec4bb332dc50e16180b5e12a0998a60eb431595d8ab62db40f35dfe",
+  "rule_text": "A signature for the current hashes clears every reason a person was needed for, the hold included, because what it settles there is a question the machine could not",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "bb8571c3c01d58697bf6ffe727eb5cf857ef2c7930ad7507b7286a3cb76ce130",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_signature_for_the_same_hashes_outranks_the_hold(self):\n        made = self._signed_project()\n        try:\n            made.hold('RULE-2', 'no case for an expired token')\n            made.sign_commits()\n            made.signature('RULE-2')\n            rule = made.rule('RULE-2')\n            assert rule['cells']['strong']['word'] == 'strong', rule\n            assert rule['cells']['signed']['word'] == 'signed', rule\n        finally:\n            made.close()",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_a_signature_for_the_same_hashes_outranks_the_hold",
+      "proof": "PROOF-22",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_signature_for_the_same_hashes_outranks_the_hold(self):\n        made = self._signed_project()\n        try:\n            made.hold('RULE-2', 'no case for an expired token')\n            made.sign_commits()\n            made.signature('RULE-2')\n            rule = made.rule('RULE-2')\n            assert rule['cells']['strong']['word'] == 'strong', rule\n            assert rule['cells']['signed']['word'] == 'signed', rule\n        finally:\n            made.close()",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_the_repository_own_specs_print_the_seven_state_table",
+      "proof": "PROOF-22",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "69e20f577d0a98d86b37e4cdfd8234fbd9bfa54f819686bdf9d99664ef8217c5"
+}

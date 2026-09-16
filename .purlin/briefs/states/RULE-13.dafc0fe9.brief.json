@@ -1,0 +1,56 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T22:26:11Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "b6a2220d3fef0ae4fa8a1e3d8d96ab80e1e95aa356f4f6c6f516ada14b0f3992",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-15",
+      "text": "At the gate `strong`, commit a ci record whose test strength was never measured; build the payload and verify the strong cell reads `strong` with the one reason `no engine: free checks only`, then rewrite the proof text as `Check that the login handles it properly` and verify the rule's spec status is `drafted` and its strong cell reads `weak`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260916T222539Z-73fdd7a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-13",
+  "rule_hash": "4799264b7377f8ca2cbaf93295e68d754322108361c5a87b666ac4b3dbec68fc",
+  "rule_text": "Where nothing measured a test strength the strong cell carries the reason `no engine: free checks only` and reads `weak` only when a blocking finding stands against the proof text",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "6b424d3d21bff1bdabb17f471353bd9a365c7520803347d0ae876f84f4128b6f",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_with_no_engine_the_free_checks_are_the_whole_of_level_two(self):\n        made = Project(gate='strong')\n        try:\n            made.record([{'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}],\n                        ci=True, strength=None)\n            cell = made.cell('RULE-2', 'strong')\n            assert cell['word'] == 'strong', cell\n            assert cell['reasons'] == ['no engine: free checks only'], cell\n            made.spec(SPEC.replace(\n                'POST /login with a bad password; verify 401 and the '\n                'body \"denied\"', 'Check that the login handles it properly'))\n            blocked = made.rule('RULE-2')\n            assert blocked['spec'] == 'drafted', blocked\n            assert blocked['cells']['strong']['word'] == 'weak', blocked\n        finally:\n            made.close()",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_with_no_engine_the_free_checks_are_the_whole_of_level_two",
+      "proof": "PROOF-15",
+      "reasons": []
+    },
+    {
+      "body": "def test_with_no_engine_the_free_checks_are_the_whole_of_level_two(self):\n        made = Project(gate='strong')\n        try:\n            made.record([{'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}],\n                        ci=True, strength=None)\n            cell = made.cell('RULE-2', 'strong')\n            assert cell['word'] == 'strong', cell\n            assert cell['reasons'] == ['no engine: free checks only'], cell\n            made.spec(SPEC.replace(\n                'POST /login with a bad password; verify 401 and the '\n                'body \"denied\"', 'Check that the login handles it properly'))\n            blocked = made.rule('RULE-2')\n            assert blocked['spec'] == 'drafted', blocked\n            assert blocked['cells']['strong']['word'] == 'weak', blocked\n        finally:\n            made.close()",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_global_anchor_rules_are_counted_once_in_the_project_rollup",
+      "proof": "PROOF-15",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "dafc0fe993fd06e1039eb11b230c942bdc3beb341aaf337c00b1e037c3ba9b2e"
+}

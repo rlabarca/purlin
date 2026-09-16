@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_sign",
+  "generated_at": "2026-09-16T22:26:07Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "1ecfff0ea5f958faa11c590153022ec79b8242cf8356ce0280acf3b75c39bd26",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-7",
+      "text": "Read the gate table of `skills/sign/SKILL.md`; verify it carries one row each for `passed`, `strong` and `signed`, that the `passed` row names `purlin:init --gate strong` and the word `stops`, that the `strong` row names `--note` and `--hold`, and that the `signed` row names `sign_at`. Removing the `passed` row fails naming the gate it did not find",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/skill_sign/20260916T222539Z-73fdd7a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-7",
+  "rule_hash": "41845e7915db0956dd59275e149cb70b4785b9ab4524a962ec136fe083613c62",
+  "rule_text": "The skill says what each of the three gates leaves it able to do: under `passed` it names what `purlin:init --gate strong` would add and stops, under `strong` the walk, `--note` and `--hold` work, and under `signed` every rule at or above `sign_at` needs a signature",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "c183bbf65d3d7f26882414f077fdc8f3b453d60872734068344d430ca4c2bd55",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_says_what_each_gate_leaves_it_able_to_do(self):\n        assert sign_gate_problems() == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_it_says_what_each_gate_leaves_it_able_to_do",
+      "proof": "PROOF-7",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "79ce8a827e7bc653374477c7d66c3fec6860f9bb9d1a78e6928f4311dcdd1dbd"
+}

@@ -1,0 +1,64 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-16T22:26:06Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "a23dc461a3b1e200ca6c2a4b93e2562abe7d64a0005f987441a146abc2d0e9d2",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-15",
+      "text": "Run `--batch` in a project at gate `signed` whose `sign_at` is `medium`; verify it exits 0, prints `Signed 1 rule in` and writes a signature for `RULE-2` alone",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/signatures/20260916T222539Z-73fdd7a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-12",
+  "rule_hash": "62d37d84e277cfb6219df4738d59da84783e545cbdbc8e804f2c5b71f2722ffc",
+  "rule_text": "`--batch` signs every rule that is signable now, in one signed commit",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "aac818613eb843e52d948e13834cffa0dd240e88f5faeb72e0d9d259df6b5a02",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_batch_signs_everything_signable(self, capsys):\n        made = signing_project(sign_at='medium')\n        try:\n            code = sign_module.main(['--batch', '--project-root', made.root])\n            output = capsys.readouterr().out\n            assert code == 0, output\n            assert made.signatures() == [\n                name for name in made.signatures() if name.startswith('RULE-2.')\n            ], made.signatures()\n            assert 'Signed 1 rule in' in output, output\n        finally:\n            made.close()",
+      "file": "dev/test_signatures.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_a_batch_signs_everything_signable",
+      "proof": "PROOF-15",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_a_batch_signs_everything_signable(self, capsys):\n        made = signing_project(sign_at='medium')\n        try:\n            code = sign_module.main(['--batch', '--project-root', made.root])\n            output = capsys.readouterr().out\n            assert code == 0, output\n            assert made.signatures() == [\n                name for name in made.signatures() if name.startswith('RULE-2.')\n            ], made.signatures()\n            assert 'Signed 1 rule in' in output, output\n        finally:\n            made.close()",
+      "file": "dev/test_signatures.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_low_risk_with_a_passing_record_and_enough_strength",
+      "proof": "PROOF-15",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "d5f572fe8162e715187991d4b49feb27872e96ff37549a2a9c4069975f82f626"
+}

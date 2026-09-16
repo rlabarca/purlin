@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "security_no_dangerous_patterns",
+  "generated_at": "2026-09-16T22:26:04Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "9ab36357db46cf9df0c217be9e40f55831666b8330c5bb9a12eb72c147136c6c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-5",
+      "text": "Over the same file list, verify every launch site passes a container rather than a string: the first argument of Python `subprocess.run`, `call`, `check_call` and `check_output` begins `[` or `*`, the first argument of PHP `proc_open(` begins `[`, the second argument of JS and TS `spawn`, `spawnSync`, `execFile` and `execFileSync` begins `[`, and no C# file assigns a string to `.Arguments`; verify zero violations, naming the file and the offending call",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/security_no_dangerous_patterns/20260916T222539Z-73fdd7a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-5",
+  "rule_hash": "a323566a5a048368bfd33dddbc5443b256a4607419c044b682402e3f62b7d67d",
+  "rule_text": "Every subprocess launch passes an argument vector rather than a command string: a list in Python, an array in PHP `proc_open`, an args array for JS and TS `spawn` and `execFile`, and `ArgumentList` rather than an `Arguments` string in C#",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "6a0ace8ad6afe0848a312d1be2fbef528d9246619496bacd3d8f7321c5598036",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_subprocess_uses_list_args(self):\n        py_call = re.compile(r'subprocess\\.(run|call|check_call|check_output)\\s*\\(')\n        py_string_arg = re.compile(\n            r'subprocess\\.(run|call|check_call|check_output)\\s*\\(\\s*[\"\\']')\n        php_call = re.compile(r'\\bproc_open\\s*\\(')\n        js_call = re.compile(\n            r'\\b(spawn|spawnSync|execFile|execFileSync)\\s*\\([^,)]*,\\s*')\n        cs_string_args = re.compile(r'\\.Arguments\\s*=\\s*\"')\n\n        for path in _all_script_files():\n            ext = _ext(path)\n            content = _strip_comments(_read(path), ext)\n\n            if ext == '.py':\n                assert not py_string_arg.findall(content), \\\n                    f\"Found subprocess with string arg in {path}\"\n                for m in py_call.finditer(content):\n                    after_paren = content[m.end():m.end() + 50].lstrip()\n                    assert after_paren.startswith('[') or after_paren.startswith('*'), \\\n                        f\"subprocess call at {path}:{content[:m.start()].count(chr(10))+1} \" \\\n                        f\"first arg is not a list literal: ...{after_paren[:30]}\"\n            elif ext == '.php':\n                for m in php_call.finditer(content):\n                    after_paren = content[m.end():m.end() + 50].lstrip()\n                    assert after_paren.startswith('['), \\\n                        f\"proc_open at {path}:{content[:m.start()].count(chr(10))+1} \" \\\n                        f\"first arg is not an array literal: ...{after_paren[:30]}\"\n            elif ext in ('.js', '.ts'):\n                for m in js_call.finditer(content):\n                    after_comma = content[m.end():m.end() + 50].lstrip()\n                    assert after_comma.startswith('['), \\\n                        f\"{m.group(1)} at {path}:{content[:m.start()].count(chr(10))+1} \" \\\n                        f\"args argument is not an array literal: ...{after_comma[:30]}\"\n            elif ext == '.cs':\n                assert not cs_string_args.findall(content), \\\n                    f\"Found ProcessStartInfo.Arguments string assignment in {path}\"",
+      "file": "dev/test_security.py",
+      "findings": [],
+      "name": "test_subprocess_uses_list_args",
+      "proof": "PROOF-5",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "e3c8ec619a1e00e546b09050ed954c717fa6cf0851ccb4b9ee97737d40552ff6"
+}

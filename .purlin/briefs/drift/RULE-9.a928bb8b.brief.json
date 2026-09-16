@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "drift",
+  "generated_at": "2026-09-16T22:25:43Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "6f260c3969ebc6919044017e5cdc89adc01f8347275f75b9ee3ec46316447c28",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-10",
+      "text": "Add a rule to a committed anchor file and commit it; run drift and verify `spec_changes` holds exactly one entry for that anchor whose added rule ids carry `RULE-2`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/drift/20260916T222538Z-73fdd7a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-9",
+  "rule_hash": "734e17c3a599ddb43b882e0d58b614aa64a5669245e95091cb786bcab092ee51",
+  "rule_text": "`spec_changes` names, per changed spec, the rule ids the range added and the rule ids it removed",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "c075d162ba967ce854bd7fe8da865665bce112316d9d0be5c07f62848a50f05e",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_external_advance_plus_local_modification_surfaces_both(self):\n        \"\"\"Advance external source AND modify local anchor: drift returns both stale entry\n        in external_anchor_drift AND a spec_changes entry with the new rule.\"\"\"\n        # Step 1: Create bare repo at a known SHA and project pinned to it\n        initial_sha = _create_bare_repo(self.bare_path, 'spec.md', '# external policy v1')\n        _init_project(self.project_root, self.bare_path, 'security_policy', initial_sha)\n\n        # Step 2: Advance the external repo (making the pinned SHA stale)\n        _advance_bare_repo(self.bare_path, 'spec.md', '# external policy v2 \u2014 new constraint')\n\n        # Step 3: Modify the local anchor file \u2014 add a new rule (RULE-2)\n        anchor_path = os.path.join(\n            self.project_root, 'specs', '_anchors', 'security_policy.md'\n        )\n        with open(anchor_path, 'w') as f:\n            f.write(\n                f'# Anchor: security_policy\\n\\n'\n                f'> Source: {self.bare_path}\\n'\n                f'> Pinned: {initial_sha}\\n\\n'\n                '## What it does\\n\\nExternal anchor for testing.\\n\\n'\n                '## Rules\\n\\n'\n                '- RULE-1: External constraint one\\n'\n                '- RULE-2: New constraint added locally\\n\\n'\n                '## Proof\\n\\n'\n                '- PROOF-1 (RULE-1): Verify constraint one\\n'\n                '- PROOF-2 (RULE-2): Verify constraint two\\n'\n            )\n        _git(['add', '-A'], self.project_root)\n        _git(['commit', '-m', 'feat: add RULE-2 to local anchor'], self.project_root)\n\n        # Step 4: Run drift and parse results\n        result_text = purlin_drift.drift(self.project_root)\n        data = json.loads(result_text)\n\n        # Verify external_anchor_drift has a stale entry for security_policy\n        stale_entries = [\n            e for e in data.get('pins', [])\n            if e.get('anchor') == 'security_policy' and e.get('status') == 'behind'\n        ]\n        assert len(stale_entries) == 1, (\n            f\"Expected 1 pins entry that is behind for security_policy, \"\n            f\"got: {data.get('pins', [])}\"\n        )\n\n        # Verify spec_changes includes security_policy with new_rules containing RULE-2\n        policy_changes = [\n            c for c in data.get('spec_changes', [])\n            if c.get('spec') == 'security_policy'\n        ]\n        assert len(policy_changes) == 1, (\n            f\"Expected 1 spec_changes entry for security_policy, \"\n            f\"got: {data.get('spec_changes', [])}\"\n        )\n        assert 'RULE-2' in policy_changes[0].get('new_rules', []), (\n            f\"Expected RULE-2 in new_rules, got: {policy_changes[0]}\"\n        )",
+      "file": "dev/test_drift.py",
+      "findings": [],
+      "name": "test_external_advance_plus_local_modification_surfaces_both",
+      "proof": "PROOF-10",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a928bb8b0d0678c67cd9c5670a6b8f813864f8459428e86d4bc147657e4c14b6"
+}
