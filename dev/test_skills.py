@@ -1,4 +1,4 @@
-"""Text checks for the thirteen skills, the agent definition and the two tools.
+"""Text checks for the twelve skills, the agent definition and the two tools.
 
 Every rule of `specs/skills/*.md`, `specs/instructions/purlin_agent.md`,
 `specs/tools/pm_anchor_userstories.md` and `specs/tools/qa_report.md` is proved
@@ -31,11 +31,11 @@ from purlin_run import bash_command  # noqa: E402
 # question rather than asking it again.
 BASH = bash_command()
 
-# The thirteen skills, each with the ceiling its spec sets.
+# The twelve skills, each with the ceiling its spec sets.
 CEILINGS = {
-    'anchor': 160, 'approve': 95, 'build': 130, 'drift': 150, 'find': 85,
-    'init': 240, 'rename': 85, 'review': 145, 'spec': 210,
-    'spec-from-code': 130, 'status': 80, 'test': 90, 'verify': 105,
+    'anchor': 160, 'audit': 105, 'build': 130, 'drift': 150, 'find': 85,
+    'init': 240, 'rename': 85, 'sign': 150, 'spec': 210,
+    'spec-from-code': 130, 'status': 80, 'test': 90,
 }
 COMMANDS = sorted(CEILINGS)
 
@@ -470,133 +470,162 @@ class TestSkillTest:
 
 
 # ---------------------------------------------------------------------------
-# skill_verify
+# skill_audit
 # ---------------------------------------------------------------------------
 
-class TestSkillVerify:
+class TestSkillAudit:
 
-    @pytest.mark.proof("skill_verify", "PROOF-1", "RULE-1")
+    @pytest.mark.proof("skill_audit", "PROOF-1", "RULE-1")
     def test_the_frontmatter_names_the_skill(self):
-        assert frontmatter_problems('verify') == []
+        assert frontmatter_problems('audit') == []
 
-    @pytest.mark.proof("skill_verify", "PROOF-2", "RULE-2")
+    @pytest.mark.proof("skill_audit", "PROOF-2", "RULE-2")
     def test_it_runs_the_run_script_and_leaves_ci_to_ci(self):
-        rel = skill_path('verify')
+        rel = skill_path('audit')
         assert (same_line(rel, [
             '"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py"',
             '--record', '--commit'])
             + carries(rel, ['You never pass `--ci` by hand.'])) == []
 
-    @pytest.mark.proof("skill_verify", "PROOF-3", "RULE-3")
+    @pytest.mark.proof("skill_audit", "PROOF-3", "RULE-3")
     def test_it_closes_by_naming_the_next_step(self):
-        assert next_step_problems('verify') == []
+        assert next_step_problems('audit') == []
 
-    @pytest.mark.proof("skill_verify", "PROOF-4", "RULE-4")
+    @pytest.mark.proof("skill_audit", "PROOF-4", "RULE-4")
     def test_it_stays_under_its_ceiling(self):
-        assert skill_ceiling_problems('verify') == []
+        assert skill_ceiling_problems('audit') == []
 
-    @pytest.mark.proof("skill_verify", "PROOF-5", "RULE-5")
+    @pytest.mark.proof("skill_audit", "PROOF-5", "RULE-5")
     def test_it_says_which_record_counts_under_which_gate(self):
-        assert record_label_problems() == []
+        assert record_source_problems() == []
+
+    @pytest.mark.proof("skill_audit", "PROOF-6", "RULE-6")
+    def test_the_gate_decides_the_breaks_and_the_preview(self):
+        assert audit_gate_problems() == []
+
+    @pytest.mark.proof("skill_audit", "PROOF-7", "RULE-7")
+    def test_it_names_the_briefs_and_the_record_tag(self):
+        assert carries(skill_path('audit'), [
+            '.purlin/briefs/',
+            '`--tag <name>` writes an annotated tag `record/<name>`']) == []
 
 
-def record_label_problems():
-    rel = skill_path('verify')
+def record_source_problems():
+    rel = skill_path('audit')
     rows = {cells[0]: cells[-1]
-            for cells in table_rows(read(rel), '| Label |')}
+            for cells in table_rows(read(rel), '| Source |')}
     problems = []
-    for label in ('ci', 'developer', 'local'):
-        if label not in rows:
-            problems.append('%s record table has no %r row' % (rel, label))
+    for source in ('ci', 'developer', 'local'):
+        if source not in rows:
+            problems.append('%s record table has no %r row' % (rel, source))
     if problems:
         return problems
-    for gate in ('tested', 'recorded', 'approved'):
+    for gate in ('passed', 'strong', 'signed'):
         if gate not in rows['ci']:
             problems.append('%s ci row does not count under %r' % (rel, gate))
-    if 'tested' not in rows['developer']:
-        problems.append('%s developer row does not count under tested' % rel)
-    for gate in ('recorded', 'approved'):
-        if gate in rows['developer']:
-            problems.append('%s developer row counts under %r' % (rel, gate))
-    if rows['local'] != 'nothing':
-        problems.append('%s local row counts under %r, expected nothing'
-                        % (rel, rows['local']))
+    for source in ('developer', 'local'):
+        if 'passed' not in rows[source]:
+            problems.append('%s %s row does not count under passed'
+                            % (rel, source))
+        for gate in ('strong', 'signed'):
+            if gate in rows[source]:
+                problems.append('%s %s row counts under %r'
+                                % (rel, source, gate))
+    return problems
+
+
+def audit_gate_problems():
+    rel = skill_path('audit')
+    rows = {cells[0]: cells[-1] for cells in table_rows(read(rel), '| Gate |')}
+    problems = []
+    for gate in ('`passed`', '`strong`', '`signed`'):
+        if gate not in rows:
+            problems.append('%s gate table has no %s row' % (rel, gate))
+    if problems:
+        return problems
+    for needle in ('n/a', 'tests only'):
+        if needle not in rows['`passed`']:
+            problems.append('%s passed row does not name %r' % (rel, needle))
+    for needle in ('preview', 'does not count'):
+        if needle not in rows['`strong`']:
+            problems.append('%s strong row does not name %r' % (rel, needle))
     return problems
 
 
 # ---------------------------------------------------------------------------
-# skill_review
+# skill_sign
 # ---------------------------------------------------------------------------
 
-class TestSkillReview:
+class TestSkillSign:
 
-    @pytest.mark.proof("skill_review", "PROOF-1", "RULE-1")
+    @pytest.mark.proof("skill_sign", "PROOF-1", "RULE-1")
     def test_the_frontmatter_names_the_skill(self):
-        assert frontmatter_problems('review') == []
+        assert frontmatter_problems('sign') == []
 
-    @pytest.mark.proof("skill_review", "PROOF-2", "RULE-2")
-    def test_it_reads_the_list_and_runs_the_review_scripts(self):
-        assert carries(skill_path('review'), [
-            'payload.review_list',
-            '"${CLAUDE_PLUGIN_ROOT}/scripts/review/brief.py"',
-            '"${CLAUDE_PLUGIN_ROOT}/scripts/review/approve.py"']) == []
+    @pytest.mark.proof("skill_sign", "PROOF-2", "RULE-2")
+    def test_it_shows_the_brief_before_it_writes_the_signature(self):
+        rel = skill_path('sign')
+        assert (carries(rel, ['payload.review_list'])
+                + in_order(rel, [
+                    '"${CLAUDE_PLUGIN_ROOT}/scripts/review/brief.py"',
+                    '"${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py"'])) == []
 
-    @pytest.mark.proof("skill_review", "PROOF-3", "RULE-3")
+    @pytest.mark.proof("skill_sign", "PROOF-3", "RULE-3")
     def test_it_closes_by_naming_the_next_step(self):
-        assert next_step_problems('review') == []
+        assert next_step_problems('sign') == []
 
-    @pytest.mark.proof("skill_review", "PROOF-4", "RULE-4")
+    @pytest.mark.proof("skill_sign", "PROOF-4", "RULE-4")
     def test_it_stays_under_its_ceiling(self):
-        assert skill_ceiling_problems('review') == []
+        assert skill_ceiling_problems('sign') == []
 
-    @pytest.mark.proof("skill_review", "PROOF-5", "RULE-5")
-    def test_re_verify_pending_never_reaches_the_list(self):
-        assert review_list_problems() == []
+    @pytest.mark.proof("skill_sign", "PROOF-5", "RULE-5")
+    def test_the_author_of_the_test_cannot_sign_it(self):
+        assert carries(skill_path('sign'), [
+            'That author did not author the last commit to the test file',
+            'the commit is on the protected branch']) == []
+
+    @pytest.mark.proof("skill_sign", "PROOF-6", "RULE-6")
+    def test_the_walk_takes_one_of_four_answers(self):
+        assert sign_answer_problems() == []
+
+    @pytest.mark.proof("skill_sign", "PROOF-7", "RULE-7")
+    def test_it_says_what_each_gate_leaves_it_able_to_do(self):
+        assert sign_gate_problems() == []
 
 
-def review_list_problems():
-    rel = skill_path('review')
-    text = read(rel)
-    problems = carries(rel, [
-        'Rules with only `re-verify pending` are **not** on the list',
-        'the approval stands'])
-    for cells in table_rows(text, '| Reason |'):
-        if 're-verify' in ' '.join(cells):
-            problems.append('%s lists re-verify pending as a reason: %s'
-                            % (rel, cells))
+def sign_answer_problems():
+    rel = skill_path('sign')
+    body = section(read(rel), r'four answers')
+    if body is None:
+        return ["%s has no section naming the walk's answers" % rel]
+    flattened = flat(body)
+    problems = ['%s answers do not name %r' % (rel, label)
+                for label in ('**Sign.**', '**Add a case.**', '**Hold.**',
+                              '**Skip.**')
+                if label not in flattened]
+    if 'A skipped rule is on the list again next time' not in flattened:
+        problems.append('%s answers do not say a skipped rule comes back' % rel)
     return problems
 
 
-# ---------------------------------------------------------------------------
-# skill_approve
-# ---------------------------------------------------------------------------
-
-class TestSkillApprove:
-
-    @pytest.mark.proof("skill_approve", "PROOF-1", "RULE-1")
-    def test_the_frontmatter_names_the_skill(self):
-        assert frontmatter_problems('approve') == []
-
-    @pytest.mark.proof("skill_approve", "PROOF-2", "RULE-2")
-    def test_it_shows_the_brief_before_it_writes_the_approval(self):
-        assert in_order(skill_path('approve'), [
-            '"${CLAUDE_PLUGIN_ROOT}/scripts/review/brief.py"',
-            '"${CLAUDE_PLUGIN_ROOT}/scripts/review/approve.py"']) == []
-
-    @pytest.mark.proof("skill_approve", "PROOF-3", "RULE-3")
-    def test_it_closes_by_naming_the_next_step(self):
-        assert next_step_problems('approve') == []
-
-    @pytest.mark.proof("skill_approve", "PROOF-4", "RULE-4")
-    def test_it_stays_under_its_ceiling(self):
-        assert skill_ceiling_problems('approve') == []
-
-    @pytest.mark.proof("skill_approve", "PROOF-5", "RULE-5")
-    def test_the_author_of_the_test_cannot_approve_it(self):
-        assert carries(skill_path('approve'), [
-            'An approval also does not count when you are the author of the '
-            'commit that last touched the test.',
-            'it reaches the default branch by pull request']) == []
+def sign_gate_problems():
+    rel = skill_path('sign')
+    rows = {cells[0]: cells[-1] for cells in table_rows(read(rel), '| Gate |')}
+    problems = []
+    for gate in ('`passed`', '`strong`', '`signed`'):
+        if gate not in rows:
+            problems.append('%s gate table has no %s row' % (rel, gate))
+    if problems:
+        return problems
+    for needle in ('purlin:init --gate strong', 'stops'):
+        if needle not in rows['`passed`']:
+            problems.append('%s passed row does not name %r' % (rel, needle))
+    for needle in ('--note', '--hold'):
+        if needle not in rows['`strong`']:
+            problems.append('%s strong row does not name %r' % (rel, needle))
+    if 'sign_at' not in rows['`signed`']:
+        problems.append('%s signed row does not name sign_at' % rel)
+    return problems
 
 
 # ---------------------------------------------------------------------------
@@ -787,7 +816,7 @@ def routing_problems():
                            '\n'.join('|'.join(cells) for cells in rows)))
     for command in sorted(named - set(COMMANDS)):
         problems.append('%s routes to purlin:%s, which is not one of the '
-                        'thirteen commands' % (AGENT, command))
+                        'twelve commands' % (AGENT, command))
     return problems
 
 
