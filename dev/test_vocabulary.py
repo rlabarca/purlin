@@ -63,7 +63,6 @@ SKIP = EXCLUDED + PENDING_REWRITE
 # file type, and this proof steps over exactly those lines in exactly these
 # files. Everything else in the file is held to the vocabulary.
 MARKED = {
-    "scripts/init/scaffold.py": "# retired",
     "scripts/init/update.py": "# retired",
     "scripts/mcp/purlin/gate.py": "# retired",
     "scripts/mcp/purlin/specs.py": "# retired",
