@@ -36,12 +36,12 @@ Create no other folder.
 Read through the connector. Do not clone.
 
 - The target spec, when it exists.
-- `.purlin/config.json`, for the `gate` value and for whether an approver list is set.
+- `.purlin/config.json`, for the `gate` value and for whether a signer list is set.
 - The other specs in the same folder, so a new rule does not repeat one that exists.
 
 Rule ids continue the sequence in the file and are never reused, not even a vacant number. A
 retired rule leaves its number empty and the rules that remain keep the numbers they had,
-because renumbering would repoint every test and every approval that names the old id.
+because renumbering would repoint every test and every signature that names the old id.
 
 ## Step 2: write the rules and proofs
 
@@ -69,13 +69,14 @@ A spec is two sections and a few metadata lines:
 Tag every rule you write with `[origin: pm]`, and carry the upstream id across as
 `[criterion: <id>]` whenever the material has one: a ticket number, a story id, a row in a
 requirements sheet. Set `[risk: high]`, `[risk: medium]` or `[risk: low]` on each rule by what
-a wrong answer costs; the default when the tag is absent is `low`. Under the `approved` gate
-risk and origin are both required, so write them every time.
+a wrong answer costs; the default when the tag is absent is `low`. Under the `signed` gate risk
+and origin are both required, so write them every time. Risk is read at the `strong` gate and
+above: it decides at which risk a model review runs and at which risk a person has to sign.
 
 Tag a proof with its tier: no tag for pure logic, `@integration` when it needs a database, the
 network or the filesystem, `@e2e` when it needs a browser or the full stack, `@manual` when it
-needs human judgment and no test can settle it. At most one `@env(windows)`, `@env(macos)` or
-`@env(linux)` per proof, and only when the operating system is part of the claim.
+needs a person's judgment and no test can settle it. At most one `@env(windows)`, `@env(macos)`
+or `@env(linux)` per proof, and only when the operating system is part of the claim.
 
 **The quality bar.** Before you propose a rule, check it against the four failures that keep a
 rule out of the pipeline:
@@ -111,10 +112,10 @@ When the product manager uploads mocks, screenshots, a PDF or an HTML prototype,
 files to `designs/<feature>/` in the same pull request and write `[origin: design]` rules about
 what a person would see: the text, the order of the elements, the states present. Never write a
 rule or a proof that names a CSS selector, a class or a pixel value; a refactor breaks it
-without changing behaviour, and the review sends it back.
+without changing behaviour, and the free checks report it as `implementation_coupling`.
 
-A design is a versioned file reviewed by pull request, never a live connection to a design
-tool. There is no importer: the files the product manager uploads are the design.
+A design is a versioned file read and merged by pull request, never a live connection to a
+design tool. There is no importer: the files the product manager uploads are the design.
 
 ## Step 3: show the draft, then open the pull request
 
@@ -134,19 +135,20 @@ Then, through the connector:
 Close with what the product manager will see, in this order:
 
 - The pull request renders the diff. Reading it and merging it is the whole review.
-- CI runs `purlin:verify` on the branch and again after the merge. It writes a record, posts
-  the same rollup as a pull request comment, and publishes the dashboard as a build artifact
-  linked from that comment. Open the artifact to see the state of every rule.
+- CI runs `purlin:audit` on the branch and again after the merge. It writes a record, posts the
+  same rollup as a pull request comment, and publishes the dashboard as a build artifact linked
+  from that comment. Open the artifact to see every rule's cells.
 - `purlin:drift pm`, which the engineer runs in the checkout, lists the criteria that have no
   rule yet, the pm-origin rules that changed, and the rules the engineer added.
-- A new rule starts at Drafted and moves to Proof ready, Tested, Recorded, Reviewed and
-  Approved as the work lands. How far it must go before a change can merge is the project's
-  gate: `tested`, `recorded` or `approved`.
+- A new rule's spec status is `drafted` until a proof names it, and `ready` once one does. From
+  there it answers up to three questions, each one a cell: `passed`, then `strong`, then
+  `signed`. How far it must go before a change can merge is the project's gate: `passed`,
+  `strong` or `signed`.
 
 ## Limits, stated plainly
 
-- This skill writes specs. It does not write code, run tests, or approve anything.
-- It cannot tell whether a rule is worth having. It can only tell whether a rule is testable.
+- This skill writes specs. It does not write code, run tests, or sign anything.
+- It cannot tell whether a rule is worth having. It can only tell whether a rule can be proved.
 - An anchor pinned from another repository carries `> Source:` and `> Pinned:` lines. Never
   edit that copy in the consuming project: change it in the repository it came from, and the
   engineer advances the pin.
