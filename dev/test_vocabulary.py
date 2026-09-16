@@ -52,14 +52,6 @@ PENDING_REWRITE = (
     # these two name the command that writes a signature, which is renamed with it
     "dev/test_signatures.py", "dev/test_holds.py",
     "specs/review/brief.md", "specs/review/static_checks.md",
-    # lane 2B: run and scan
-    "scripts/run/purlin_run.py", "scripts/run/records.py", "scripts/run/remote.py",
-    "scripts/run/mutation/__init__.py", "scripts/report/scan.py",
-    "dev/manual/check_qa_tool.py", "dev/manual/check_spec.py",
-    "dev/test_run_script.py", "dev/test_records.py", "dev/test_scan_review_list.py",
-    "dev/test_scan.py", "dev/test_consumer_ci.py",
-    "specs/run/records.md", "specs/run/run_script.md", "specs/run/mutation.md",
-    "references/formats/record_format.md",
     # lane 3: init and update
     "scripts/init/scaffold.py", "scripts/init/update.py", "templates/config.json",
     "dev/test_init_scaffold.py", "dev/test_init_update.py", "dev/test_init_e2e.sh",

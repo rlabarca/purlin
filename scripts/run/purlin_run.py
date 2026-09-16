@@ -6,16 +6,18 @@
                   [--project-root DIR]
 
 `--quick` is what `purlin:test` runs: the plugins run the tagged tests into
-`.purlin/runtime/proofs/` and the state table is printed. Seconds, tests only.
+`.purlin/runtime/proofs/` and the table is printed. Seconds, tests only.
 
-`--record` is what `purlin:verify` runs: the tests, then the breaks, then a
-record. `--commit` commits the record under the developer's identity, which is
-the default at gate `tested`. `--ci` auto-approves what may be auto-approved
-and writes the briefs first, commits the record together with those files
-through the git host API, then posts the pull request comment and publishes
-the dashboard.
+`--record` is what `purlin:audit` runs: the tests, then the breaks, then a
+record. The gate decides whether the breaks run at all: under `passed`
+nothing measures test strength, so the record writes `null` for it. `--commit`
+commits the record under the developer's identity, which is what the `passed`
+gate reads. `--ci` writes the briefs first, commits the record together with
+them through the git host API, then posts the pull request comment and
+publishes the dashboard. Under `strong` and `signed` only a record CI wrote
+counts, so a run here prints its strength as a preview and says so.
 
-`--remote` is what `purlin:verify --remote` runs: push the current branch,
+`--remote` is what `purlin:audit --remote` runs: push the current branch,
 wait for the workflow, pull the records CI committed, print the table.
 
 A proof the spec tags `@env` for another operating system is not run here: it
@@ -41,9 +43,9 @@ themselves:
 
 Both are silent by default in every test framework there is, and both leave a
 reader looking at a proof file from an earlier run believing it describes this
-one. Under `--record` the run then measures the breaks per spec scope, hashes
-the attachments, builds the `purlin-record/1` dict and hands it to the record
-writer.
+one. Under `--record` the run then measures the breaks per spec scope where
+the gate asks for them, hashes the attachments, builds the `purlin-record/2`
+dict and hands it to the record writer.
 """
 
 import hashlib
@@ -68,9 +70,9 @@ from purlin import (console as console_module,                # noqa: E402
                     specs as specs_module, status as status_module)
 
 ARROW = '→'
-RECORD_SCHEMA = 'purlin-record/1'
+RECORD_SCHEMA = 'purlin-record/2'
 # The `schema_version` the record format carries; see references/formats/.
-RECORD_SCHEMA_VERSION = 1
+RECORD_SCHEMA_VERSION = 2
 ATTACHMENT_DIR = os.path.join('.purlin', 'runtime', 'attachments')
 LOG_PATH = os.path.join('.purlin', 'runtime', 'run.log')
 
@@ -592,7 +594,7 @@ def attachments_for(project_root, feature, proof_ids):
 
 
 def build_record(project_root, args, features, selected, index, plugins,
-                 breaks, log_digest, gate='tested'):
+                 breaks, log_digest, gate='passed'):
     """The record dict `references/formats/record_format.md` describes.
 
     Every field that file marks REQUIRED is filled here; `os`, `timestamp` and
@@ -632,7 +634,8 @@ def build_record(project_root, args, features, selected, index, plugins,
         # record is per feature, so there is nothing else to key it by.
         'scope_tree': '',
         # The percentage of the deliberate breaks the tests caught over this
-        # feature's scope, or None when no engine measured it.
+        # feature's scope. None when no engine measured it, which is every
+        # run under the `passed` gate, where the breaks do not run at all.
         'test_strength': None,
         # One entry per proof this run observed, which is what the reader
         # compares a rule's proofs against.
@@ -852,7 +855,7 @@ def main(argv=None):
 
     if args.action == 'record':
         record_code = _record(project_root, args, features, selected, index,
-                              ran, log, cfg.gate, arm_logs)
+                              ran, log, cfg, arm_logs)
         exit_code = exit_code or record_code
 
     print('')
@@ -875,20 +878,23 @@ def _write_log(project_root, log):
 
 
 def _record(project_root, args, features, selected, index, plugins, log,
-            gate='tested', arm_logs=None):
-    """The `--record` arm: breaks, records, approvals, briefs, the commit.
+            cfg=None, arm_logs=None):
+    """The `--record` arm: the breaks, the records, the briefs, the commit.
 
     One record per feature, because that is what the record writer files and
     prunes: `.purlin/records/<feature>/` keeps the newest three per operating
     system, which it cannot do for a file covering several features at once.
     """
-    breaks = _run_breaks(project_root, args, features, selected, index)
+    gate = cfg.gate if cfg else 'passed'
+    breaks = (_run_breaks(project_root, args, features, selected, index)
+              if (cfg is None or cfg.breaks) else _no_breaks(gate))
     log_digest = _write_log(project_root, log)
 
-    from records import write_record, commit_records, tag_validated
+    from records import write_record, commit_records, tag_record
 
     print('')
     paths = []
+    written = []
     head = ''
     for name in selected:
         record = build_record(project_root, args, features, [name], index,
@@ -897,24 +903,56 @@ def _record(project_root, args, features, selected, index, plugins, log,
         path = write_record(project_root, record, record['runner'],
                             os_name=record['environment']['os'])
         paths.append(path)
+        written.append(record)
         print('Record written: %s' % path)
 
-    # The approvals and the briefs are written before the commit, because the
-    # commit is what carries them: an approval that exists only on the runner
-    # is evidence nobody can read.
-    review_paths = _ci_review(project_root) if args.ci else []
+    if not args.ci and gate != 'passed':
+        _preview(written, gate)
+
+    # The briefs are written before the commit, because the commit is what
+    # carries them: a brief that exists only on the runner is evidence
+    # nobody can read.
+    brief_paths = _ci_review(project_root) if args.ci else []
 
     if args.commit or args.ci:
         identity = 'ci' if args.ci else 'developer'
-        commit_records(project_root, paths + review_paths, identity,
+        commit_records(project_root, paths + brief_paths, identity,
                        'purlin: record for %s' % head[:7])
         print('Record committed as %s.' % identity)
     if args.tag:
-        tag_validated(project_root, args.tag, paths)
-        print('Validation tag written: validated/%s' % args.tag)
+        tag_record(project_root, args.tag, paths)
+        print('Record tag written: record/%s' % args.tag)
     if args.ci:
         _ci_publish(project_root, arm_logs)
     return 0
+
+
+def _no_breaks(gate):
+    """What a gate that asks for no breaks hands the record instead.
+
+    Under `passed` nothing measures test strength, so there is no number to
+    write and the record carries `null`. The run says so on its own line,
+    because a blank where a percentage usually sits reads as a missing engine
+    rather than as a setting.
+    """
+    print('Strength n/a: the gate is %s.' % gate)
+    return {'engine': None, 'available': False, 'features': {}}
+
+
+def _preview(records, gate):
+    """What a record written here measures, and why it is not evidence.
+
+    Under `strong` and `signed` only a record CI committed counts, so a run
+    on this machine prints its strength as a preview and says plainly that
+    the cell will not move until CI writes its own.
+    """
+    for record in records:
+        strength = record.get('test_strength')
+        print('Preview: %s test strength %s.'
+              % (record.get('feature') or 'the run',
+                 'n/a' if strength is None else '%d%%' % round(strength)))
+    print('This record does not count under %s: only a CI record counts.'
+          % gate)
 
 
 def _run_breaks(project_root, args, features, selected, index):
@@ -947,28 +985,26 @@ def _run_breaks(project_root, args, features, selected, index):
 
 
 def _ci_review(project_root):
-    """The CI auto-approvals and the review list's briefs, as file paths.
+    """The briefs this run wrote, as file paths. CI writes nothing else.
 
     The paths go back to the caller so the one commit that carries the record
-    carries these files too. A rule the run could not auto-approve still gets
-    its brief: the review list is what a reviewer works from, and a reviewer
-    reads it out of the branch rather than off the runner.
+    carries the briefs too: a brief is what a person works from, and a person
+    reads it out of the branch rather than off the runner. No signature file
+    is ever written here, by CI or by anyone else: a signature is a named
+    person's attestation and a runner is nobody.
     """
     try:
-        from approve import auto_approve
         from brief import write_briefs
     except ImportError:
-        print('purlin: the review helpers are not available; nothing was '
-              'auto-approved and no brief was written.')
+        print('purlin: the brief writer is not available; no brief was '
+              'written.')
         return []
     payload = payload_module.build_payload(project_root,
-                                           generated_by='verify')
-    approved = auto_approve(project_root, payload)
+                                           generated_by='audit')
     briefs = write_briefs(project_root, payload)
-    print('Auto-approved %d low-risk rule%s; %d brief%s written.'
-          % (len(approved), '' if len(approved) == 1 else 's',
-             len(briefs), '' if len(briefs) == 1 else 's'))
-    return [path for path in list(approved) + list(briefs) if path]
+    print('%d brief%s written.'
+          % (len(briefs), '' if len(briefs) == 1 else 's'))
+    return [path for path in briefs if path]
 
 
 def _ci_publish(project_root, arm_logs=None):

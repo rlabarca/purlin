@@ -1,14 +1,14 @@
 """What a CI run publishes: the pull request comment and the dashboard artifact.
 
-A CI run's verify writes the record; these two functions are how anyone else
-sees it. The comment carries the same seven-state rollup `purlin:status`
-prints, so a reviewer reads one thing whether they are on the pull request or
-in a checkout. The dashboard is copied into the runner's own temporary
+A CI run's audit writes the record; these two functions are how anyone else
+sees it. The comment carries the same rollup `purlin:status` prints, so a
+reader reads one thing whether they are on the pull request or in a
+checkout. The dashboard is copied into the runner's own temporary
 directory, which is the one the workflow's upload step reads, so anyone with
 repository access opens it from the run and nothing has to be provisioned.
 
 Both return False, or an empty path, with a printed reason when the run is not
-on a git host: a developer running verify locally is not an error.
+on a git host: a developer running an audit locally is not an error.
 """
 
 import json

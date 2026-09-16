@@ -73,7 +73,7 @@ def main(argv=None):
     print('scan of %s:\n%s' % (args.repo, rollup.strip()))
     total = re.search(r'(\d+)\s+rules', rollup)
     total = int(total.group(1)) if total else 0
-    gate = re.search(r'gate\s+(tested|recorded|approved)', rollup)
+    gate = re.search(r'gate\s+(passed|strong|signed)', rollup)
     gate = gate.group(1) if gate else ''
 
     reply, transcript = call_claude(

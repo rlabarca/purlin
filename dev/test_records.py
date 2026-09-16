@@ -10,13 +10,13 @@ What each group proves:
               the operating system, and the file's own fields agree with it
 *retention*   three records per feature per operating system survive, another
               operating system's records are untouched, and a record an
-              annotated `validated/<name>` tag names is kept for ever
+              annotated `record/<name>` tag names is kept for ever
 *developer*   a plain commit under the developer's identity, pushed when a
               remote and an upstream exist and explained when not
 *ci*          one tree request carrying every file's text, then commit, then
               ref update, with no author and no committer field, retried
               when the branch moved and paused when the git host asks
-*labels*      `ci` for a commit the git host made, which on GitHub is the
+*sources*     `ci` for a commit the git host made, which on GitHub is the
               committer `noreply@github.com` with the author
               `github-actions[bot]` and a signature that does not
               contradict it, `developer` for a person's, `local` for a
@@ -87,7 +87,7 @@ def record(feature='greeting', commit='4f1c2ab9e1d4e8c9b5f2a7d3c6e0b8a1d9f4c2e7'
         'schema_version': 1,
         'feature': feature,
         'commit': commit,
-        'gate': 'recorded',
+        'gate': 'strong',
         'test_strength': 71,
         'scope_tree': 'a' * 40,
         'proofs': [{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': status,
@@ -335,7 +335,7 @@ def test_writing_prunes_as_it_goes(project):
 
 
 @pytest.mark.proof("records", "PROOF-3", "RULE-3")
-def test_a_validated_tag_keeps_the_records_its_message_names(project):
+def test_a_record_tag_keeps_the_records_its_message_names(project):
     oldest = put_record(project, 'greeting',
                         '20260101T120000Z-4f1c2ab-ci.json')
     for day in range(11, 16):
@@ -343,9 +343,9 @@ def test_a_validated_tag_keeps_the_records_its_message_names(project):
                    '202609%dT120000Z-4f1c2ab-ci.json' % day)
     git(project, 'add', '-A')
     git(project, 'commit', '--quiet', '-m', 'records')
-    records_module.tag_validated(project, '1.0', [oldest])
+    records_module.tag_record(project, '1.0', [oldest])
 
-    assert records_module.validated_paths(project) == {oldest}
+    assert records_module.tagged_paths(project) == {oldest}
     records_module.prune(project, 'greeting')
     kept = names(project, 'greeting')
     assert os.path.basename(oldest) in kept
@@ -353,24 +353,24 @@ def test_a_validated_tag_keeps_the_records_its_message_names(project):
 
 
 @pytest.mark.proof("records", "PROOF-3", "RULE-3")
-def test_the_validated_tag_is_annotated_and_lists_every_path(project):
+def test_the_record_tag_is_annotated_and_lists_every_path(project):
     first = put_record(project, 'greeting', '20260101T120000Z-4f1c2ab-ci.json')
     second = put_record(project, 'greeting', '20260102T120000Z-4f1c2ab-ci.json')
     git(project, 'add', '-A')
     git(project, 'commit', '--quiet', '-m', 'records')
-    ref = records_module.tag_validated(project, '1.0', [first, second])
+    ref = records_module.tag_record(project, '1.0', [first, second])
 
-    assert ref == 'validated/1.0'
-    kind = git(project, 'cat-file', '-t', 'validated/1.0').stdout.strip()
+    assert ref == 'record/1.0'
+    kind = git(project, 'cat-file', '-t', 'record/1.0').stdout.strip()
     assert kind == 'tag', 'a lightweight tag carries no message to read'
     message = git(project, 'for-each-ref', '--format=%(contents)',
-                  'refs/tags/validated/').stdout
+                  'refs/tags/record/').stdout
     assert first in message and second in message
 
 
 @pytest.mark.proof("records", "PROOF-3", "RULE-3")
-def test_validated_paths_is_empty_outside_a_repository(tmp_path):
-    assert records_module.validated_paths(str(tmp_path)) == set()
+def test_tagged_paths_is_empty_outside_a_repository(tmp_path):
+    assert records_module.tagged_paths(str(tmp_path)) == set()
 
 
 # ---------------------------------------------------------------------------
@@ -455,9 +455,9 @@ def test_the_ci_commit_is_one_tree_then_commit_then_ref(project, github_env,
                                                         monkeypatch):
     """The file's text travels in the tree request, so it costs no request.
 
-    A run that writes a record, its auto-approvals and several hundred briefs
-    would otherwise make one content-creating request per file, which is what
-    the git host's limit on those counts.
+    A run that writes a record and several hundred briefs would otherwise
+    make one content-creating request per file, which is what the git host's
+    limit on those counts.
     """
     host = FakeHost()
     monkeypatch.setattr(urllib.request, 'urlopen', host)
@@ -514,36 +514,36 @@ def test_the_tree_entry_carries_the_file_and_its_permission(project,
 @pytest.mark.proof("records", "PROOF-5", "RULE-5")
 def test_the_ci_commit_carries_a_path_outside_the_records_directory(
         project, github_env, monkeypatch):
-    """A CI run's approvals and briefs ride in the same commit as the record.
+    """A CI run's briefs ride in the same commit as the record.
 
-    An approval that stayed on the runner is evidence nobody can read, so the
+    A brief that stayed on the runner is evidence nobody can read, so the
     tree the commit names holds every path the run handed over and not only
     the ones under `.purlin/records/`.
     """
     host = FakeHost()
     monkeypatch.setattr(urllib.request, 'urlopen', host)
     path = records_module.write_record(project, record(), 'ci')
-    approval = 'specs/core/greeting.approvals/RULE-1.1a2b3c4d.ci.json'
-    brief = 'specs/core/greeting.approvals/RULE-2.5e6f7a8b.brief.json'
-    directory = os.path.join(project, 'specs', 'core', 'greeting.approvals')
+    first = '.purlin/briefs/greeting/RULE-1.1a2b3c4d.brief.json'
+    second = '.purlin/briefs/greeting/RULE-2.5e6f7a8b.brief.json'
+    directory = os.path.join(project, '.purlin', 'briefs', 'greeting')
     os.makedirs(directory)
-    for rel, text in ((approval, '{"rule": "RULE-1", "approver": "ci"}\n'),
-                      (brief, '{"rule": "RULE-2", "verdict": "ready"}\n')):
+    for rel, text in ((first, '{"rule": "RULE-1", "settled": true}\n'),
+                      (second, '{"rule": "RULE-2", "settled": false}\n')):
         with open(os.path.join(project, *rel.split('/')), 'w',
                   encoding='utf-8') as handle:
             handle.write(text)
 
-    records_module.commit_records(project, [path, approval, brief], 'ci',
+    records_module.commit_records(project, [path, first, second], 'ci',
                                   'purlin: record for 4f1c2ab')
 
     tree = host.body_for('/git/trees', method='POST')
     paths = [entry['path'] for entry in tree['tree']]
-    assert paths == [path, approval, brief]
-    beside_the_spec = [name for name in paths
-                       if not name.startswith('.purlin/records/')]
-    assert beside_the_spec == [approval, brief]
-    assert json.loads(tree['tree'][1]['content'])['approver'] == 'ci'
-    assert json.loads(tree['tree'][2]['content'])['verdict'] == 'ready'
+    assert paths == [path, first, second]
+    outside_the_records = [name for name in paths
+                           if not name.startswith('.purlin/records/')]
+    assert outside_the_records == [first, second]
+    assert json.loads(tree['tree'][1]['content'])['settled'] is True
+    assert json.loads(tree['tree'][2]['content'])['settled'] is False
     assert [url for url in host.urls() if url.endswith('/blobs')] == [], \
         'three files that are all text asked for three blobs'
 
@@ -553,7 +553,7 @@ def test_a_file_that_is_not_text_gets_a_blob_of_its_own(project, github_env,
                                                         monkeypatch):
     """Bytes that are not UTF-8 cannot travel inline, so they go as a blob.
 
-    Nothing a verify run writes is such a file, but the tree request would
+    Nothing an audit run writes is such a file, but the tree request would
     be refused rather than carry one, so the branch has to exist.
     """
     host = FakeHost()
@@ -583,7 +583,7 @@ def test_a_file_that_is_not_text_gets_a_blob_of_its_own(project, github_env,
 # ---------------------------------------------------------------------------
 
 class _RecordedTime(object):
-    """The `time` module as `records.py` sees it, with `sleep` recorded.
+    """The `time` module as `records.py` sees it, with `sleep` captured.
 
     Every other attribute is the real module's, so `time.time()` still reads
     the clock the reset header is measured against.
@@ -598,7 +598,7 @@ class _RecordedTime(object):
 
 @pytest.fixture
 def slept(monkeypatch):
-    """Every wait `records.py` takes, recorded rather than waited out.
+    """Every wait `records.py` takes, captured rather than waited out.
 
     The stand-in replaces the `time` name in the module whose functions run,
     found through a function's own `__module__`, rather than `time.sleep`
@@ -896,13 +896,13 @@ def test_a_signed_actions_commit_is_ci(project, tmp_path):
     if signed.returncode != 0:
         pytest.skip('this git cannot sign with ssh: %s' % signed.stderr.strip())
 
-    verdict = subprocess.run(
+    shown = subprocess.run(
         ['git', '-c', 'gpg.format=ssh',
          '-c', 'gpg.ssh.allowedSignersFile=' + allowed,
          'log', '-1', '--format=%G?\t%cn'],
         cwd=project, capture_output=True, text=True).stdout.strip()
-    assert verdict.startswith('G\t'), verdict
-    assert verdict.endswith(ACTIONS_BOT)
+    assert shown.startswith('G\t'), shown
+    assert shown.endswith(ACTIONS_BOT)
     assert records_module.record_label(project, path) == 'ci'
 
 
@@ -972,7 +972,7 @@ def test_the_web_flow_committer_with_a_good_signature_is_ci(project, tmp_path):
 
     The committer is `GitHub <noreply@github.com>`, not the Actions bot, so a
     reader that looks only at the committer name calls this a person's commit
-    and nothing CI wrote counts under `recorded` or `approved`.
+    and nothing CI wrote counts under `strong` or `signed`.
     """
     key = str(tmp_path / 'signing')
     made = subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '',
@@ -992,13 +992,13 @@ def test_the_web_flow_committer_with_a_good_signature_is_ci(project, tmp_path):
     if signed.returncode != 0:
         pytest.skip('this git cannot sign with ssh: %s' % signed.stderr.strip())
 
-    verdict = subprocess.run(
+    shown = subprocess.run(
         ['git', '-c', 'gpg.format=ssh',
          '-c', 'gpg.ssh.allowedSignersFile=' + allowed,
          'log', '-1', '--format=%G?\t%cn\t%ce\t%an'],
         cwd=project, capture_output=True, text=True).stdout.strip()
-    assert verdict.startswith('G\t'), verdict
-    assert verdict.endswith('\t%s\t%s' % (WEB_FLOW_EMAIL, ACTIONS_BOT)), verdict
+    assert shown.startswith('G\t'), shown
+    assert shown.endswith('\t%s\t%s' % (WEB_FLOW_EMAIL, ACTIONS_BOT)), shown
     assert records_module.record_label(project, path) == 'ci'
 
 
@@ -1025,7 +1025,7 @@ def test_the_web_flow_committer_with_no_signature_and_gpg_is_a_person(
 
     Anyone can set those two names on a commit they make by hand. On a machine
     that can check, an unsigned commit claiming the git host's identity is read
-    as a person's, so it never counts under `recorded` or `approved`.
+    as a person's, so it never counts under `strong` or `signed`.
     """
     monkeypatch.setattr(reader.shutil, 'which',
                         lambda name: '/usr/bin/gpg' if name == 'gpg' else None)
@@ -1117,10 +1117,10 @@ def test_the_comment_goes_to_the_pull_request_this_run_belongs_to(
 
     monkeypatch.setattr(urllib.request, 'urlopen', urlopen)
 
-    assert ci_module.post_pr_comment(project, 'Purlin: 2 rules Recorded.')
+    assert ci_module.post_pr_comment(project, 'Purlin: 2 rules meet the gate.')
     url, body = sent[0]
     assert url.endswith('/repos/acme/widgets/issues/12/comments')
-    assert body == {'body': 'Purlin: 2 rules Recorded.'}
+    assert body == {'body': 'Purlin: 2 rules meet the gate.'}
 
 
 @pytest.mark.proof("records", "PROOF-10", "RULE-10")
@@ -1180,7 +1180,7 @@ def test_the_azure_comment_opens_a_thread_on_the_pull_request(
     monkeypatch.setattr(urllib.request, 'urlopen', urlopen)
 
     assert ci_module.post_pr_comment(project,
-                                     'Purlin: 2 rules Recorded.') is True
+                                     'Purlin: 2 rules meet the gate.') is True
     assert len(sent) == 1, sent
     method, url, timeout, headers, body = sent[0]
     assert method == 'POST'
@@ -1191,7 +1191,7 @@ def test_the_azure_comment_opens_a_thread_on_the_pull_request(
     assert headers['Authorization'] == 'Bearer a-token'
     assert headers['Content-type'] == 'application/json'
     assert body == {'comments': [{'parentCommentId': 0,
-                                  'content': 'Purlin: 2 rules Recorded.',
+                                  'content': 'Purlin: 2 rules meet the gate.',
                                   'commentType': 'text'}],
                     'status': 'closed'}
 
@@ -1342,7 +1342,7 @@ class FakeProcesses(object):
     """`subprocess.run` for `remote.py`: git and gh answer, and nothing runs.
 
     The branch is `feature-x` and `origin` is a GitHub URL. Every process
-    other than those two reads is recorded in `started`, in order, with the
+    other than those two reads is kept in `started`, in order, with the
     directory it was started in.
     """
 
@@ -1457,11 +1457,11 @@ def test_the_default_branch_is_what_origin_points_at(project):
 
 @pytest.mark.proof("records", "PROOF-21", "RULE-21")
 def test_with_no_remote_the_default_branch_is_the_one_head_names(tmp_path):
-    """A `master` repository is not told its approval is off the branch.
+    """A `master` repository is not told its signature is off the branch.
 
     A git configured for `master` makes one, and that repository has no
     `origin/HEAD` to read: answering `main` there sends the gate looking for a
-    branch that does not exist and every approval reads as not on it.
+    branch that does not exist and every signature reads as not on it.
     """
     root = str(tmp_path / 'no-remote')
     os.makedirs(root)

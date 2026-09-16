@@ -222,7 +222,7 @@ def run_breaks(project_root, engine, scope_by_feature, tests_by_rule, tier=None)
 
     `scope_by_feature` is `{feature: [scope file paths]}` and `tests_by_rule`
     is `{(feature, "RULE-N"): [{"file", "name", "plugin"}]}`. `tier` is the
-    tier the run covered; it is recorded in the log and changes nothing else,
+    tier the run covered; the log holds it and it changes nothing else,
     because every engine selects its tests from its own config rather than
     from a tier.
 

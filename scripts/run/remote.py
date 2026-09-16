@@ -1,4 +1,4 @@
-"""`purlin:verify --remote`: let CI do the run and bring its records back.
+"""`purlin:audit --remote`: let CI do the run and bring its records back.
 
 A proof tagged `@env(windows)` cannot be proven on a Mac. Rather than ask
 anyone to own a second machine, `--remote` pushes the branch, waits for the

@@ -1,31 +1,31 @@
-"""Write, prune, commit and tag the records a verify run produces.
+"""Write, prune, commit and tag the records an audit run produces.
 
-A record is one verify run's observations for one feature, written as a file
+A record is one audit run's observations for one feature, written as a file
 in the tree and committed:
 
     .purlin/records/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json
 
 Adding a file never conflicts, so two runs never collide and the log of what
-was verified is the git history of that folder.
+ran is the git history of that folder.
 
-Who committed a record is what decides whether it counts, and git answers
-that: `scripts/mcp/purlin/records.py` reads the label off the last commit
+Who committed a record is its source, and that is what decides whether it
+counts: `scripts/mcp/purlin/records.py` reads the source off the last commit
 touching the file. This module is the writing half.
 
-**Two identities write.** A developer's verify commits under the developer's
-own git identity and pushes, which counts under the `tested` gate. CI's
-verify commits through the git host's REST API with no author and no
-committer field, so GitHub signs the commit with its own key and reports
-`github-actions[bot]` as the committer; that is what counts under `recorded`
-and `approved`. Azure DevOps pushes through its Pushes API with the build
-service's token and signs nothing, and its documentation says the committer
-name is the one to read. CI's commit carries more than the record: the
-auto-approvals and the briefs the same run wrote travel in it, because an
-approval that never leaves the runner is evidence nobody can read.
+**Two identities write.** A developer's audit commits under the developer's
+own git identity and pushes, which is the source `developer` and counts under
+the `passed` gate. CI's audit commits through the git host's REST API with no
+author and no committer field, so GitHub signs the commit with its own key
+and reports `github-actions[bot]` as the committer; that is the source `ci`,
+the only one that counts under `strong` and `signed`. Azure DevOps pushes
+through its Pushes API with the build service's token and signs nothing, and
+its documentation says the committer name is the one to read. CI's commit
+carries more than the record: the briefs the same run wrote travel in it,
+because a brief that never leaves the runner is evidence nobody can read.
 
 **Retention.** A feature keeps the newest three records per operating system.
-Anything an annotated `validated/<name>` tag names in its message is kept for
-ever, so a state someone validated stays readable however many runs follow.
+Anything an annotated `record/<name>` tag names in its message is kept for
+ever, so a state someone named stays readable however many runs follow.
 """
 
 import base64
@@ -61,7 +61,7 @@ _PERM_KEY = 'm' + 'ode'
 _FILE_PERM = '100644'
 
 _GITHUB_API = 'https://api.github.com'
-_VALIDATED_PREFIX = 'refs/tags/validated/'
+_RECORD_TAG_PREFIX = 'refs/tags/record/'
 _RECORD_PATH_RE = re.compile(r'\.purlin/records/[^\s"\']+\.json')
 
 # How many times a ref update is retried when someone else moved the branch
@@ -140,11 +140,11 @@ def write_record(project_root, record, runner, os_name=None):
     return os.path.relpath(path, project_root).replace(os.sep, '/')
 
 
-def validated_paths(project_root):
-    """Every record path named in the message of a `validated/*` tag."""
+def tagged_paths(project_root):
+    """Every record path named in the message of a `record/*` tag."""
     try:
         result = subprocess.run(
-            ['git', 'for-each-ref', '--format=%(contents)', _VALIDATED_PREFIX],
+            ['git', 'for-each-ref', '--format=%(contents)', _RECORD_TAG_PREFIX],
             capture_output=True, text=True, cwd=project_root, timeout=15)
     except (subprocess.SubprocessError, OSError):
         return set()
@@ -158,12 +158,12 @@ def prune(project_root, feature, os_name=None, keep=RETENTION):
 
     Records for another operating system are untouched: a matrix keeps three
     per OS, so a Windows job never prunes what a Linux job wrote. A path an
-    annotated `validated/<name>` tag names in its message is never deleted.
+    annotated `record/<name>` tag names in its message is never deleted.
     """
     folder = os.path.join(reader.records_dir(project_root), feature)
     if not os.path.isdir(folder):
         return []
-    protected = validated_paths(project_root)
+    protected = tagged_paths(project_root)
     candidates = []
     for name in os.listdir(folder):
         parts = reader.record_name_parts(name)
@@ -186,18 +186,18 @@ def prune(project_root, feature, os_name=None, keep=RETENTION):
     return removed
 
 
-def tag_validated(project_root, name, record_paths):
-    """Write the annotated tag `validated/<name>` naming the records it vouches for.
+def tag_record(project_root, name, record_paths):
+    """Write the annotated tag `record/<name>` naming the records it vouches for.
 
     The message is the one place retention reads, so the paths go in one per
     line under a heading a person can read.
     """
-    lines = ['Validated state: %s' % name, '',
+    lines = ['Named state: %s' % name, '',
              'Records this tag vouches for:']
     lines.extend(str(path) for path in record_paths)
     message = '\n'.join(lines) + '\n'
-    _git(project_root, ['tag', '-a', 'validated/%s' % name, '-m', message])
-    return 'validated/%s' % name
+    _git(project_root, ['tag', '-a', 'record/%s' % name, '-m', message])
+    return 'record/%s' % name
 
 
 # ---------------------------------------------------------------------------
@@ -213,9 +213,9 @@ def commit_records(project_root, paths, identity, message):
     goes through the git host's API so the git host, not Purlin, signs it.
 
     A developer's run hands over record paths alone. A CI run hands over the
-    records plus the auto-approvals and the briefs it wrote, so one commit
-    carries the evidence and the attestations that rest on it; every path is
-    sent whether it sits under `.purlin/records/` or beside a spec.
+    records plus the briefs it wrote, so one commit carries the evidence and
+    the reports that rest on it; every path is sent whether it sits under
+    `.purlin/records/` or under `.purlin/briefs/`.
     """
     paths = [str(path).replace(os.sep, '/') for path in (paths or [])]
     if identity == 'ci':
@@ -309,8 +309,8 @@ def _tree_entry(project_root, token, base, rel):
     The trees endpoint creates the blob itself for an entry that carries
     `content`, so a file whose bytes are valid UTF-8 costs no request of its
     own. A file that is not valid UTF-8 cannot travel inline and gets one
-    blob request; nothing a verify run writes is such a file, because a
-    record, an approval and a brief are all JSON.
+    blob request; nothing an audit run writes is such a file, because a
+    record and a brief are both JSON.
     """
     with open(os.path.join(project_root, rel), 'rb') as handle:
         raw = handle.read()
@@ -331,8 +331,8 @@ def _commit_github(project_root, paths, message):
 
     One tree request carries every path handed over, wherever in the tree it
     sits, plus a deletion entry for every record retention removed. A run
-    that writes a record, its auto-approvals and several hundred briefs
-    therefore asks the git host once rather than once per file, which is what
+    that writes a record and several hundred briefs therefore asks the git
+    host once rather than once per file, which is what
     its limit on content-creating requests counts. GitHub's own limit on a
     tree request is on the size of the request body, not on the number of
     entries, and the few hundred small JSON files one run writes are far
@@ -340,8 +340,8 @@ def _commit_github(project_root, paths, message):
 
     No `author` and no `committer` field is sent. GitHub then attributes the
     commit to the Actions token, signs it with its own key, and reports
-    `github-actions[bot]` as the committer, which is exactly what makes the
-    record count under `recorded`.
+    `github-actions[bot]` as the committer, which is exactly what gives the
+    record the source `ci`.
     """
     repo = os.environ.get('GITHUB_REPOSITORY') or ''
     token = os.environ.get('GITHUB_TOKEN') or ''

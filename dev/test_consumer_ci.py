@@ -1,7 +1,7 @@
 """Tests for the committed consumer-CI fixture.
 
 `dev/fixtures/consumer-ci/` is a complete minimal consumer project: what
-`purlin:init` writes for a `recorded` gate, plus one spec, one module and one
+`purlin:init` writes for a `strong` gate, plus one spec, one module and one
 test file. It carries no Purlin `scripts/` and no `dev/`, exactly as a project
 that installed Purlin from the marketplace does, so its workflow has to clone
 the tooling on the runner.
@@ -276,7 +276,7 @@ def test_the_fixture_is_complete_and_every_file_is_tracked():
 @pytest.mark.proof("records", "PROOF-20", "RULE-20")
 def test_the_config_is_the_shape_this_release_reads():
     config = json.loads(read('.purlin/config.json'))
-    assert config['gate'] == 'recorded'
+    assert config['gate'] == 'strong'
     assert config['test_framework'] == 'pytest'
     assert config['version'] == PURLIN_REF[1:]
     retired = {'remote_verification', 'mutation_checks', 'quality_gate',
@@ -325,7 +325,7 @@ def test_purlin_reads_the_fixture_as_one_feature_with_a_linux_proof():
     envs = {proof['id']: proof['env']
             for rule in greeting['rules'] for proof in rule['proofs']}
     assert envs == {'PROOF-1': None, 'PROOF-2': 'linux'}
-    assert data['gate']['gate'] == 'recorded'
+    assert data['gate']['gate'] == 'strong'
     assert data['gate']['min_strength'] == 70
     assert data['records'] == {}, 'no run has happened in the fixture'
 
