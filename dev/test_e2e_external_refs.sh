@@ -408,7 +408,7 @@ else
   ok=true
   detail=""
   grep -q '^> Pinned: [0-9a-f]\{40\}$' "$COPY11" || { ok=false; detail="no 40-character pin"; }
-  grep -q '^- RULE-1: FORBIDDEN' "$COPY11" || { ok=false; detail="$detail no RULE-1"; }
+  grep -q '^- RULE-1: No file under' "$COPY11" || { ok=false; detail="$detail no RULE-1"; }
   grep -qi '^> Visual-' "$COPY11" && { ok=false; detail="$detail a retired field survived"; }
   run_upstream "$PROJECT11" sync --check >/dev/null || { ok=false; detail="$detail the fresh pin read as behind"; }
   record "the dog-food repo serves a 0.10.0 anchor that pins clean" "$ok" "$detail"
