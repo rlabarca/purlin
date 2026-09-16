@@ -91,11 +91,16 @@ is what the run could not finish, found and left, or left to a person.
     past `--arm-timeout` now measures nothing and prints why (`mutation` RULE-22). mutmut
     loses every feature's number because it runs the whole project at once; Stryker and
     Stryker.NET lose only the feature that timed out.
-23. **An approval's test hash depends on which tests ran on the machine.** `proof_common` RULE-5
-    read Stale locally with no change to `dev/test_multilang_proof_plugins.py`: the xUnit test
-    that backs PROOF-5 did not run without `dotnet@8` on PATH, so the tests listed for the
-    proof, and the hash over them, differed from the run the approval was signed after. A
-    runner that cannot run every backing test can read a current approval as Stale.
+23. **Fixed: an approval's test hash no longer depends on which tests ran on the machine.**
+    T now binds the tests the feature's latest counting records observed, every operating system
+    together; a checkout's own runtime proofs speak only for a proof no record has observed
+    (`states` RULE-30). Moving to it staled two approvals whose T had bound a machine's own run:
+    `purlin_version` RULE-9 (its approval bound `test_unreleased_counts_match_the_sweep_record`,
+    which CI never runs) and `static_checks` RULE-37 (its approval bound no test for PROOF-33,
+    whose one test runs on Windows only). The fixture `Project.record` in
+    `dev/test_approvals.py` wrote test names its runtime proofs did not use; fixing it stales the
+    approvals that file backs.
+
 24. **Fixed: CI approves alone only what the free checks can settle, and gives way to a hold.**
     CI cannot read whether a test proves its proof text. It now also needs a clear body on every
     backing test (`approvals` RULE-39), and a person who finds the test does not prove the proof

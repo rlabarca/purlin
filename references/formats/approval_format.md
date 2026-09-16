@@ -35,7 +35,7 @@ What an approval binds is three hashes, not the files they came from:
 |---|---|
 | R | the rule text, its tags stripped and its whitespace normalised, so reflowing a long line does not stale the approval |
 | P | the proof descriptions of that rule, in order, normalised the same way |
-| T | the test files backing those proofs, each with the test's name and the file's blob id |
+| T | the test files backing those proofs, each with the test's name and the file's blob id. The tests are the ones the feature's latest counting records observed, every operating system together, so every checkout reads the same T; a proof no record has observed yet takes them from the checkout's own runtime proofs |
 | D | the pinned design a `origin: design` rule rests on, and null for every other origin |
 
 The triple hash is `sha256` over R, P and T, one per line, and the first eight

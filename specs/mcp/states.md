@@ -40,6 +40,7 @@
 - RULE-27: Every record in the payload's `records` map carries the result of the run it names, `fail` where any proof it observed failed and `pass` otherwise, beside the label read from git [risk: medium] [origin: eng]
 - RULE-28: The review list names each rule once, under the feature that owns it, so a required or global anchor's rule is one entry however many features have to prove it, and the list's length equals the project rollup's review count [risk: medium] [origin: eng]
 - RULE-29: A current hold keeps a rule out of Approved when every current approval it has is CI's, sets the `held` flag, clears `auto_approvable` and names the holder and the missing case among the reasons; a person's current approval beside the hold still makes the rule Approved, and a hold bound to other hashes does nothing [risk: high] [origin: eng]
+- RULE-30: The tests a rule's test hash binds for a proof are the ones its feature's latest counting records observed, on every operating system together, so every checkout and CI read the same hash; this checkout's runtime proofs name them only for a proof no counting record has observed, and a test this checkout ran or could not run changes nothing once a record exists [risk: high] [origin: eng]
 
 ## Proof
 
@@ -76,3 +77,6 @@
 - PROOF-31 (RULE-29): In a recorded project, write a CI approval and a hold by `jane@acme.com` reading `no case for an expired token` for the low-risk `RULE-1`'s current text; verify its state is not `Approved`, `held` is true, `auto_approvable` is false, and a reason reads `held by jane@acme.com: no case for an expired token` @integration
 - PROOF-32 (RULE-29): Beside that hold and CI approval, write a person's approval for the same text; verify the state is `Approved` @integration
 - PROOF-33 (RULE-29): Write the hold with a `test_hash` of 64 zeros beside the CI approval; verify the state is `Approved`, `held` is false and no reason names a hold @integration
+- PROOF-34 (RULE-30): In a recorded project read `RULE-1`'s test hash; rewrite the runtime proof file so `PROOF-1` also names `test_only_this_machine_runs`, then so it names no test for `PROOF-1` at all; verify the test hash is the same all three times @integration
+- PROOF-35 (RULE-30): In a project with runtime proofs and no record, read `RULE-1`'s test hash, add `test_only_this_machine_runs` for `PROOF-1` to the runtime proof file and read it again; verify the two hashes differ @integration
+- PROOF-36 (RULE-30): Commit a `linux` record observing `test_valid_credentials_return_200` for `PROOF-1` and a `windows` record observing it and `test_the_windows_lock`; verify `RULE-1`'s tests are exactly those two names, each once, while the runtime proof file names only the first @integration

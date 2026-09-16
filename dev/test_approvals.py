@@ -79,6 +79,9 @@ TEST_FILE = (
     '    assert login("ada", "wrong") == 401\n'
 )
 
+TEST_NAMES = {'PROOF-1': 'test_valid_credentials_return_200',
+              'PROOF-2': 'test_a_bad_password_is_denied'}
+
 
 def git(root, *args):
     return subprocess.run(['git'] + list(args), cwd=root, capture_output=True,
@@ -145,24 +148,29 @@ class Project(object):
                 'rule': 'RULE-1' if proof_id == 'PROOF-1' else 'RULE-2',
                 'status': status, 'tier': tier,
                 'test_file': 'tests/test_login.py',
-                'test_name': ('test_valid_credentials_return_200'
-                              if proof_id == 'PROOF-1'
-                              else 'test_a_bad_password_is_denied')})
+                'test_name': TEST_NAMES[proof_id]})
         write(os.path.join(self.root, '.purlin', 'runtime', 'proofs',
                            'login.%s.json' % tier),
               json.dumps({'tier': tier, 'proofs': entries}))
 
     def record(self, statuses=None, runner='ada', strength=90,
-               commit_it=True, stamp='20260913T120000Z'):
+               commit_it=True, stamp='20260913T120000Z', tests=None):
+        """Write a record naming the tests the runtime proofs name.
+
+        `tests` maps a proof to the test names the record observed for it, for
+        a proof backed by more than one test.
+        """
         statuses = statuses or {'PROOF-1': 'pass', 'PROOF-2': 'pass'}
         proofs = []
         for proof_id, status in sorted(statuses.items()):
-            proofs.append({
-                'id': proof_id,
-                'rule': 'RULE-1' if proof_id == 'PROOF-1' else 'RULE-2',
-                'status': status, 'tier': 'unit', 'env': None,
-                'test_file': 'tests/test_login.py',
-                'test_name': 'test_' + proof_id.lower().replace('-', '_')})
+            for test_name in (tests or {}).get(proof_id,
+                                               [TEST_NAMES[proof_id]]):
+                proofs.append({
+                    'id': proof_id,
+                    'rule': 'RULE-1' if proof_id == 'PROOF-1' else 'RULE-2',
+                    'status': status, 'tier': 'unit', 'env': None,
+                    'test_file': 'tests/test_login.py',
+                    'test_name': test_name})
         name = '%s-%s-%s.json' % (stamp, self.head()[:7], runner)
         rel = '.purlin/records/login/' + name
         iso = '%s-%s-%sT%s:%s:%sZ' % (stamp[0:4], stamp[4:6], stamp[6:8],

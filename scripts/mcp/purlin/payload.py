@@ -141,9 +141,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
 def _feature_entry(project_root, name, info, features, runtime_proofs,
                    all_records, all_approvals, cfg, head, blob_cache,
                    scope_cache, review_list, own_results=None, all_holds=None):
-    counting = {os_name: record
-                for os_name, record in (all_records.get(name) or {}).items()
-                if records_module.counts_under(cfg.gate, record.get('label'))}
+    counting = _counting(all_records, name, cfg)
     latest = _latest(all_records.get(name) or {})
     test_strength = latest.get('test_strength') if latest else None
 
@@ -156,7 +154,8 @@ def _feature_entry(project_root, name, info, features, runtime_proofs,
         result = _rule_entry(
             project_root, name, owner, owner_info, rule_id, label,
             runtime_proofs, counting, all_approvals, cfg, head,
-            blob_cache, scope_cache, test_strength, all_holds)
+            blob_cache, scope_cache, test_strength, all_holds,
+            _counting(all_records, owner, cfg))
         rule_entries.append(result)
         summary = {'state': result['state'], 'flags': result['flags'],
                    'risk': result['risk'],
@@ -243,7 +242,8 @@ def _review_reasons(rule, cfg):
 
 def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
                 runtime_proofs, counting, all_approvals, cfg, head,
-                blob_cache, scope_cache, test_strength=None, all_holds=None):
+                blob_cache, scope_cache, test_strength=None, all_holds=None,
+                owner_counting=None):
     text = owner_info['rules'].get(rule_id, '')
     meta = owner_info.get('rule_meta', {}).get(rule_id, {})
     proof_ids = owner_info.get('proofs_by_rule', {}).get(rule_id, [])
@@ -265,7 +265,8 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
             'text': proof['text'],
             'findings': findings,
             'tests': [{'file': f, 'name': n}
-                      for f, n in proofs_module.tests_for(entries, proof_id)],
+                      for f, n in _backing_tests(entries, owner_counting,
+                                                 proof_id)],
         })
     rule_level = checks.rule_findings(proof_texts)
     for finding in rule_level:
@@ -328,6 +329,32 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
     }
 
 
+def _counting(all_records, feature, cfg):
+    """`{os: record}`, the latest records of one feature that count under the gate."""
+    return {os_name: record
+            for os_name, record in (all_records.get(feature) or {}).items()
+            if records_module.counts_under(cfg.gate, record.get('label'))}
+
+
+def _backing_tests(runtime_entries, records, proof_id):
+    """`[(test_file, test_name), ...]` backing one proof, the same on every machine.
+
+    The tests a committed record observed for the proof come first, across every
+    operating system's latest counting record, because a record is the one list
+    every checkout reads alike. This machine's runtime proofs answer only for a
+    proof no record has observed yet. Reading the runtime first made T depend on
+    which tests this machine could run: a checkout with no `dotnet` ran no xUnit
+    test, listed fewer tests, and read a current approval as Stale.
+    """
+    recorded = []
+    for os_name in sorted(records or {}, key=lambda name: name or ''):
+        for pair in proofs_module.tests_for(
+                (records[os_name] or {}).get('proofs'), proof_id):
+            if pair not in recorded:
+                recorded.append(pair)
+    return recorded or proofs_module.tests_for(runtime_entries, proof_id)
+
+
 def _test_hash(project_root, proof_dicts, blob_cache):
     """The T of the triple: the blob ids of the test files, with their names.
 
@@ -336,6 +363,8 @@ def _test_hash(project_root, proof_dicts, blob_cache):
     stales an approval whenever the test that backs a rule changes, which is
     the behaviour the approval is meant to have. `approvals.test_hash_kind`
     names what was read beside the hash, so an approval says so on its face.
+    Which tests back each proof is `_backing_tests`'s answer, read from the
+    records so it does not depend on the machine.
     """
     parts = []
     for proof in proof_dicts:
