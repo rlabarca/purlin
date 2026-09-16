@@ -1,10 +1,10 @@
 """Proofs for `scripts/init/update.py`, the edits `purlin:init --update` makes.
 
 Every case here drives the real script against a real git repository made from
-one of the two upgrade fixtures, never against a hand-built expectation of what
-the script would do, so the script and these proofs cannot drift apart. The
-fixtures themselves are frozen: each test copies one into a temporary directory
-and runs `git init` there.
+the v0.9.5 upgrade fixture, never against a hand-built expectation of what the
+script would do, so the script and these proofs cannot drift apart. The fixture
+itself is frozen: each test copies it into a temporary directory and runs
+`git init` there, then writes by hand whatever that layout does not carry.
 
 One convention runs through this file. The spellings this release retired are
 never written out: the scope tag is built as `'@' + 'on('`, the verification
@@ -15,11 +15,11 @@ spelled out in full would fail that proof.
 
 What each group proves:
 
-*pending*     what `--check` finds in each old layout, what it prints, what it
+*pending*     what `--check` finds in the old layout, what it prints, what it
               exits with, and that it writes nothing
 *applying*    `--yes` applies every migration, a second run finds nothing, and
               a declined migration stays pending
-*specs*       no proof or verification file survives beside a spec
+*specs*       no proof file and no run file survives beside a spec
 *config*      the file that is left is the gate and what the gate derives
 *tags*        a scope becomes `@env(<os>)` when the person confirms it, and is
               dropped when they do not or when it names no operating system
@@ -53,12 +53,19 @@ import update  # noqa: E402
 from purlin import status as status_module  # noqa: E402
 
 V095 = 'upgrade-0.9.5'
-V010 = 'upgrade-0.10-dev'
-LAYOUTS = (V095, V010)
+LAYOUTS = (V095,)
 
 # The retired spellings, never written out. See the module docstring.
 SCOPE = '@' + 'on('
 LEFTOVER = ('*.proofs-*.json', '*.recei[p]t.json')
+
+# A pre-commit shim an older release installed, and the pre-push shim it wrote
+# beside it. The v0.9.5 fixture carries neither, so a hooks case writes them.
+OLD_PRE_COMMIT = '#!/bin/sh\nexec purlin-pre-commit "$@"\n'
+OLD_PRE_PUSH = ('#!/bin/sh\n'
+                'PURLIN_SCRIPT="scripts/hooks/pre_push_hook.py"\n'
+                'purlin_interpreter() { command -v python3; }\n'
+                'exec "$(purlin_interpreter)" "$PURLIN_SCRIPT" "$@"\n')
 
 VERSION = open(os.path.join(ROOT, 'VERSION'), encoding='utf-8').read().strip()
 
@@ -176,8 +183,9 @@ def test_the_v095_layout_needs_the_migrations_that_layout_left(tmp_path):
 
 
 @pytest.mark.proof("update", "PROOF-2", "RULE-2")
-def test_the_010_layout_needs_its_hooks_migrated_too(tmp_path):
-    root = _project(tmp_path, V010)
+def test_a_retired_hook_adds_the_hook_migration(tmp_path):
+    root = _project(tmp_path, V095)
+    _write(root, '.purlin/hooks/pre-commit', OLD_PRE_COMMIT)
     found = _ids(root)
     assert 'hooks' in found, found
     for expected in ('os-tags', 'untracked-files', 'config', 'workflows',
@@ -197,7 +205,7 @@ def test_check_exits_1_while_anything_is_pending(tmp_path):
 
 @pytest.mark.proof("update", "PROOF-3", "RULE-3")
 def test_check_writes_nothing(tmp_path):
-    root = _project(tmp_path, V010)
+    root = _project(tmp_path, V095)
     before = _git(root, 'status', '--porcelain').stdout
     update.main(['--check', '--project-root', root])
     assert _git(root, 'status', '--porcelain').stdout == before
@@ -335,13 +343,29 @@ def test_the_config_is_the_gate_shape(tmp_path, layout):
     _apply(root)
     config = json.loads(_read(root, '.purlin/config.json'))
     assert config['version'] == VERSION
-    assert config['gate'] == 'tested'
+    assert config['gate'] == 'passed'
     assert config['ai_review_at'] == 'never'
-    assert config['min_strength'] == 50
+    assert config['min_strength'] is None
     assert config['mutation_engine'] == 'auto'
     assert config['sql_engine'] is None
     assert config['ci'] == 'github'
     assert config['pre_push'] in ('on', 'off')
+
+
+@pytest.mark.proof("update", "PROOF-10", "RULE-10")
+def test_the_old_gate_name_and_signer_key_carry_over(tmp_path):
+    """An older release named the top gate and its people by other words."""
+    root = _project(tmp_path, V095)
+    was = [name for name, now in update.GATE_RENAMES.items() if now == 'signed']
+    config = json.loads(_read(root, '.purlin/config.json'))
+    config.update({'gate': was[0],
+                   update.SIGNER_KEY_WAS: ['Jane@Acme.com']})
+    _write(root, '.purlin/config.json', json.dumps(config, indent=2))
+    _apply(root)
+    written = json.loads(_read(root, '.purlin/config.json'))
+    assert written['gate'] == 'signed'
+    assert written['signers'] == ['jane@acme.com']
+    assert update.SIGNER_KEY_WAS not in written
 
 
 @pytest.mark.parametrize('layout', LAYOUTS)
@@ -357,21 +381,21 @@ def test_retired_keys_are_gone(tmp_path, layout):
 
 
 @pytest.mark.proof("update", "PROOF-12", "RULE-12")
-def test_the_gate_defaults_to_tested(tmp_path):
+def test_the_gate_defaults_to_passed(tmp_path):
     root = _project(tmp_path, V095)
     _apply(root)
-    assert json.loads(_read(root, '.purlin/config.json'))['gate'] == 'tested'
+    assert json.loads(_read(root, '.purlin/config.json'))['gate'] == 'passed'
 
 
 @pytest.mark.proof("update", "PROOF-12", "RULE-12")
-def test_the_gate_defaults_to_recorded_when_the_hook_was_strict(tmp_path):
+def test_the_gate_defaults_to_strong_when_the_hook_was_strict(tmp_path):
     root = _project(tmp_path, V095)
     config = json.loads(_read(root, '.purlin/config.json'))
     config['pre_push'] = 'strict'
     _write(root, '.purlin/config.json', json.dumps(config, indent=2))
     _apply(root)
     written = json.loads(_read(root, '.purlin/config.json'))
-    assert written['gate'] == 'recorded'
+    assert written['gate'] == 'strong'
     assert written['min_strength'] == 70
     assert written['ai_review_at'] == 'high'
 
@@ -380,13 +404,13 @@ def test_the_gate_defaults_to_recorded_when_the_hook_was_strict(tmp_path):
 def test_the_gate_question_takes_the_answer_you_type(tmp_path, capsys,
                                                      monkeypatch):
     root = _project(tmp_path, V095)
-    asked = _answers(monkeypatch, [('Gate [', 'approved')])
+    asked = _answers(monkeypatch, [('Gate [', 'signed')])
     _apply(root, argv=())
     capsys.readouterr()
     assert any('Gate [' in prompt for prompt in asked)
     written = json.loads(_read(root, '.purlin/config.json'))
-    assert written['gate'] == 'approved'
-    assert written['approvers'] == []
+    assert written['gate'] == 'signed'
+    assert written['signers'] == []
 
 
 @pytest.mark.proof("update", "PROOF-12", "RULE-12")
@@ -396,7 +420,7 @@ def test_an_answer_that_is_not_a_gate_leaves_the_default(tmp_path, capsys,
     _answers(monkeypatch, [('Gate [', 'whenever')])
     _apply(root, argv=())
     capsys.readouterr()
-    assert json.loads(_read(root, '.purlin/config.json'))['gate'] == 'tested'
+    assert json.loads(_read(root, '.purlin/config.json'))['gate'] == 'passed'
 
 
 @pytest.mark.proof("update", "PROOF-11", "RULE-11")
@@ -418,8 +442,8 @@ def test_no_key_nothing_reads_is_written_back(tmp_path, layout):
 
 @pytest.mark.proof("update", "PROOF-21", "RULE-21")
 def test_a_framework_the_tree_cannot_run_is_dropped(tmp_path, capsys):
-    """An older release recorded every plugin it shipped, runnable or not."""
-    root = _project(tmp_path, V010)
+    """An older release wrote down every plugin it shipped, runnable or not."""
+    root = _project(tmp_path, V095)
     _write(root, 'conftest.py', '')
     before = json.loads(_read(root, '.purlin/config.json'))
     assert before['test_framework'] == 'pytest,jest,shell,vitest'
@@ -436,7 +460,7 @@ def test_a_framework_the_tree_cannot_run_is_dropped(tmp_path, capsys):
 @pytest.mark.proof("update", "PROOF-21", "RULE-21")
 def test_a_framework_the_tree_carries_is_kept(tmp_path, capsys):
     """Wiring the tree carries outranks detection, which is the stricter test."""
-    root = _project(tmp_path, V010)
+    root = _project(tmp_path, V095)
     _write(root, 'conftest.py', '')
     _write(root, 'package.json', '{"name": "app"}\n')
     _apply(root)
@@ -448,10 +472,57 @@ def test_a_framework_the_tree_carries_is_kept(tmp_path, capsys):
 
 # --- operating-system tags ---------------------------------------------------
 
+# One proof line carrying a retired scope, and the registry entry that says
+# which operating system that scope ran on. The v0.9.5 layout wrote both, and
+# a copy of the fixture takes them here rather than carrying them frozen.
+SCOPED_SPEC = """# Feature: locking
+
+> Scope: src/locking.py
+
+## Rules
+
+- RULE-1: The cache is written under an exclusive lock
+
+## Proof
+
+- PROOF-1 (RULE-1): Take the lock on a real runner and verify the entries round-trip %swindows-2022)
+- PROOF-2 (RULE-1): Take the lock on the design host and verify the same %sfigma-mcp)
+""" % (SCOPE, SCOPE)
+
+# A second spec, where the same spelling is prose rather than a tag: the
+# rewrite has to leave it exactly as it is.
+PROSE_SPEC = """# Feature: runners
+
+> Scope: src/runners.py
+
+## Rules
+
+- RULE-1: A proof names the operating system it needs
+
+## Proof
+
+- PROOF-1 (RULE-1): Read a proof line written %s<runner>) and verify it is left alone @unit
+""" % SCOPE
+
+
+def _with_scopes(tmp_path):
+    """A v0.9.5 project whose specs carry the retired scope tags."""
+    root = _project(tmp_path, V095)
+    _write(root, 'specs/core/locking.md', SCOPED_SPEC)
+    _write(root, 'specs/core/runners.md', PROSE_SPEC)
+    config = json.loads(_read(root, '.purlin/config.json'))
+    config[update.REGISTRY_KEY] = {'windows-2022': {'os': 'windows'},
+                                   'figma-mcp': {}}
+    _write(root, '.purlin/config.json', json.dumps(config, indent=2))
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'the scoped specs')
+    return root
+
+
 @pytest.mark.proof("update", "PROOF-13", "RULE-13")
 def test_a_confirmed_scope_becomes_env(tmp_path):
-    root = _project(tmp_path, V010)
-    rel = _spec_holding(root, 'msvcrt.locking')
+    root = _with_scopes(tmp_path)
+    rel = 'specs/core/locking.md'
     assert SCOPE in _read(root, rel)
     _apply(root)
     text = _read(root, rel)
@@ -472,8 +543,8 @@ def test_no_spec_carries_the_retired_scope_afterwards(tmp_path, layout):
 
 @pytest.mark.proof("update", "PROOF-13", "RULE-13")
 def test_a_declined_scope_drops_the_tag(tmp_path, capsys, monkeypatch):
-    root = _project(tmp_path, V010)
-    rel = _spec_holding(root, 'msvcrt.locking')
+    root = _with_scopes(tmp_path)
+    rel = 'specs/core/locking.md'
     _answers(monkeypatch, [('Rewrite the windows-2022 scope', 'n')])
     _apply(root, argv=())
     printed = capsys.readouterr().out
@@ -499,8 +570,8 @@ def test_the_retired_tier_tag_becomes_unit_and_env(tmp_path):
 
 @pytest.mark.proof("update", "PROOF-13", "RULE-13")
 def test_a_scope_naming_no_operating_system_is_dropped(tmp_path, capsys):
-    root = _project(tmp_path, V010)
-    rel = _spec_holding(root, 'TEZI0T6lObCJrC9mkmZT8v')
+    root = _with_scopes(tmp_path)
+    rel = 'specs/core/locking.md'
     assert SCOPE in _read(root, rel)
     _apply(root)
     printed = capsys.readouterr().out
@@ -510,8 +581,8 @@ def test_a_scope_naming_no_operating_system_is_dropped(tmp_path, capsys):
 
 @pytest.mark.proof("update", "PROOF-13", "RULE-13")
 def test_prose_that_is_not_a_tag_is_left_alone(tmp_path):
-    root = _project(tmp_path, V010)
-    rel = _spec_holding(root, 'awaiting_runner')
+    root = _with_scopes(tmp_path)
+    rel = 'specs/core/runners.md'
     before = _read(root, rel)
     assert '%s<' % SCOPE in before       # a placeholder, not a real scope
     _apply(root)
@@ -559,7 +630,7 @@ def test_a_design_source_becomes_a_designs_path(tmp_path):
 
 @pytest.mark.proof("update", "PROOF-14", "RULE-14")
 def test_the_visual_fields_are_dropped(tmp_path):
-    root = _with_design(tmp_path, V010)
+    root = _with_design(tmp_path, V095)
     _apply(root)
     text = _read(root, 'specs/_anchors/checkout_design.md')
     assert 'Visual-Reference' not in text
@@ -571,16 +642,26 @@ def test_the_visual_fields_are_dropped(tmp_path):
 
 @pytest.mark.proof("update", "PROOF-14", "RULE-14")
 def test_the_design_migration_is_not_pending_afterwards(tmp_path):
-    root = _with_design(tmp_path, V010)
+    root = _with_design(tmp_path, V095)
     _apply(root)
     assert 'design-sources' not in _ids(root)
 
 
 # --- hooks -------------------------------------------------------------------
 
+def _with_hooks(tmp_path):
+    """A v0.9.5 project carrying the two hooks an older release installed."""
+    root = _project(tmp_path, V095)
+    _write(root, '.purlin/hooks/pre-commit', OLD_PRE_COMMIT)
+    _write(root, '.purlin/hooks/pre-push', OLD_PRE_PUSH)
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'the hooks that release installed')
+    return root
+
+
 @pytest.mark.proof("update", "PROOF-9", "RULE-9")
 def test_the_pre_commit_shim_goes(tmp_path):
-    root = _project(tmp_path, V010)
+    root = _with_hooks(tmp_path)
     assert os.path.isfile(os.path.join(root, '.purlin', 'hooks', 'pre-commit'))
     _apply(root)
     assert not os.path.exists(
@@ -590,7 +671,7 @@ def test_the_pre_commit_shim_goes(tmp_path):
 
 @pytest.mark.proof("update", "PROOF-9", "RULE-9")
 def test_the_delegator_git_runs_goes_too(tmp_path):
-    root = _project(tmp_path, V010)
+    root = _with_hooks(tmp_path)
     delegator = os.path.join(root, '.git', 'hooks', 'pre-commit')
     with open(delegator, 'w', encoding='utf-8') as handle:
         handle.write('#!/bin/sh\nexec "$(git rev-parse --show-toplevel)"'
@@ -604,7 +685,7 @@ def test_the_delegator_git_runs_goes_too(tmp_path):
 
 @pytest.mark.proof("update", "PROOF-9", "RULE-9")
 def test_a_foreign_delegator_is_left_alone(tmp_path):
-    root = _project(tmp_path, V010)
+    root = _with_hooks(tmp_path)
     delegator = os.path.join(root, '.git', 'hooks', 'pre-commit')
     with open(delegator, 'w', encoding='utf-8') as handle:
         handle.write('#!/bin/sh\nexec ./node_modules/.bin/lint-staged\n')
@@ -614,13 +695,8 @@ def test_a_foreign_delegator_is_left_alone(tmp_path):
 
 @pytest.mark.proof("update", "PROOF-9", "RULE-9")
 def test_the_pre_push_shim_is_repointed(tmp_path):
-    root = _project(tmp_path, V010)
+    root = _with_hooks(tmp_path)
     shim = '.purlin/hooks/pre-push'
-    text = _read(root, shim).replace(
-        'PURLIN_SCRIPT="scripts/hooks/pre-push.sh"',
-        'PURLIN_SCRIPT="scripts/hooks/pre_push_hook.py"')
-    _write(root, shim, text)
-    _git(root, 'commit', '-aqm', 'an older shim')
     assert shim in [item['files'] for item in update.pending(root)
                     if item['id'] == 'hooks'][0]
     _apply(root)
@@ -632,7 +708,8 @@ def test_the_pre_push_shim_is_repointed(tmp_path):
 
 @pytest.mark.proof("update", "PROOF-9", "RULE-9")
 def test_a_shim_already_pointing_here_is_left_alone(tmp_path):
-    root = _project(tmp_path, V010)
+    root = _with_hooks(tmp_path)
+    _apply(root)
     before = _read(root, '.purlin/hooks/pre-push')
     _apply(root)
     assert _read(root, '.purlin/hooks/pre-push') == before
@@ -665,6 +742,19 @@ def test_purlin_yml_carries_the_matrix_the_tags_name(tmp_path):
     text = _read(root, '.github/workflows/purlin.yml')
     assert 'windows-latest' in text
     assert 'v%s' % VERSION in text
+
+
+@pytest.mark.proof("update", "PROOF-15", "RULE-15")
+def test_a_workflow_named_for_the_retired_gate_check_is_removed(tmp_path):
+    root = _project(tmp_path, V095)
+    rel = '%s/%s' % (update.WORKFLOW_DIR, update.WORKFLOW_NAMES[0])
+    _write(root, rel, 'name: gate\non: push\njobs: {}\n')
+    _git(root, 'add', '-A')
+    _git(root, 'commit', '-qm', 'the workflow that release wrote')
+    assert rel in [item['files'] for item in update.pending(root)
+                   if item['id'] == 'workflows'][0]
+    _apply(root)
+    assert not os.path.exists(os.path.join(root, rel))
 
 
 @pytest.mark.proof("update", "PROOF-15", "RULE-15")
@@ -719,7 +809,7 @@ def test_the_records_folder_and_its_readme_are_created(tmp_path, layout):
     root = _project(tmp_path, layout)
     _apply(root)
     readme = _read(root, '.purlin/records/README.md')
-    assert 'One file per verify run' in readme
+    assert 'One file per audit run' in readme
     assert '.purlin/records/README.md' in _tracked(root)
 
 
@@ -813,26 +903,13 @@ def test_status_stops_saying_it_once_the_old_project_has_updated(tmp_path):
 
 
 @pytest.mark.proof("update", "PROOF-19", "RULE-19")
-def test_status_says_run_the_update_while_something_is_pending(tmp_path):
-    root = _project(tmp_path, V010)
-    assert 'Run: purlin:init --update' in status_module.sync_status(root)
-
-
-@pytest.mark.proof("update", "PROOF-19", "RULE-19")
 def test_status_says_it_even_when_the_config_is_already_clean(tmp_path):
     """The line must come from the pending list, not only from a config warning."""
-    root = _project(tmp_path, V010)
+    root = _project(tmp_path, V095)
     _apply(root)
     os.remove(os.path.join(root, '.purlin', 'records', 'README.md'))
     assert update.pending(root)
     assert 'Run: purlin:init --update' in status_module.sync_status(root)
-
-
-@pytest.mark.proof("update", "PROOF-19", "RULE-19")
-def test_status_stops_saying_it_once_nothing_is_pending(tmp_path):
-    root = _project(tmp_path, V010)
-    _apply(root)
-    assert 'Run: purlin:init --update' not in status_module.sync_status(root)
 
 
 # --- the copy the update prints ----------------------------------------------

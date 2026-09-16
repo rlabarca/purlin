@@ -10,8 +10,9 @@ has to be deterministic, so the skill asks and this script edits.
 line saying what it does, and the files it touches. `--check` prints that list
 and exits 1 while anything is pending, and `sync_status` reads the same
 function, so the advisory you see and the work this script does cannot disagree.
-The detectors read both old layouts: the one v0.9.5 left and the one the 0.10
-development branch left. Every migration asks before it writes, and every file
+The detectors read the layout v0.9.5 left, and a project lands straight on this
+release's layout: the three gate values, the signer list, and no directory of
+evidence beside a spec. Every migration asks before it writes, and every file
 it rewrites is copied beside itself first as `<name>.local-<sha8>.bak`. `--yes`
 answers yes to every question. A file this release deletes rather than rewrites
 is left in git history instead of copied.
@@ -53,18 +54,22 @@ SCOPE_TAG_RE = re.compile(r'[ \t]*@on\(([a-z0-9][a-z0-9-]*)\)')  # retired
 TIER_TAG_RE = re.compile(r'(?m)[ \t]*@windows[ \t]*$')     # retired
 DESIGN_SCHEME = 'figma://'                                 # retired
 DESIGN_FIELDS = ('> Visual-Reference:', '> Visual-Hash:')  # retired
-WORKFLOW_MARKERS = ('PURLIN_PLATFORM', 'scripts/ci/verify_gate.py',
+WORKFLOW_MARKERS = ('PURLIN_PLATFORM',                      # retired
+                    'scripts/ci/verify_gate.py',           # retired
                     'scripts/update/migrate.py', '.proofs-')  # retired
+WORKFLOW_NAMES = ('verify-gate.yml', 'verify-gate.yaml')   # retired
+GATE_RENAMES = {'tested': 'passed', 'recorded': 'strong',  # retired
+                'approved': 'signed'}                      # retired
+SIGNER_KEY_WAS = 'approvers'                               # retired
 
 # --- what this release writes instead --------------------------------------
 IGNORE_LINES = ('.purlin/report-data.js', '.purlin/report-stamp.js',
-                '*.brief.txt')
+                '.purlin/briefs/**/*.brief.txt')
 PRE_PUSH_SCRIPT = 'scripts/hooks/pre-push.sh'
 _SHIM_LINE = 'PURLIN_SCRIPT="%s"' % PRE_PUSH_SCRIPT
 RECORDS_DIR = '.purlin/records'
 WORKFLOW_DIR = '.github/workflows'
 OS_NAMES = ('linux', 'macos', 'windows')
-GATES = ('tested', 'recorded', 'approved')  # the gate question's three answers
 ARROW = '→'
 DROPPED_FRAMEWORK = ('dropped %s from test_framework: nothing in the tree '
                      'runs it')
@@ -75,18 +80,18 @@ PLUGIN_SOURCES = {OLD_SHELL_PLUGIN: 'shell_purlin.sh'}
 
 GATE_QUESTION = """
 What must be true before CI lets a change merge?
-  tested    every rule has a passing tagged test
-  recorded  CI writes a record at this commit, at or above the minimum strength
-  approved  recorded, plus a current approval on every high and medium risk rule"""
+  passed  every rule has a passing tagged test, from any source
+  strong  CI writes a record at this commit, at or above the minimum strength
+  signed  strong, plus a signature on every rule at or above medium risk"""
 
 RECORDS_README = """# Records
 
-One file per verify run, committed, at
+One file per audit run, committed, at
 `.purlin/records/<feature>/<timestamp>-<commit7>-<runner>.json`. A record says
 what ran, on which commit, what passed and the test strength. The git history of
-this folder is the log, so adding a file never conflicts. Verify prunes a
-feature's records past the newest three unless a `validated/<name>` tag names
-them. You do not edit anything here by hand.
+this folder is the log, so adding a file never conflicts. An audit prunes a
+feature's records past the newest three unless a `record/<name>` tag names them.
+You do not edit anything here by hand.
 """
 
 # --- helpers ---------------------------------------------------------------
@@ -255,9 +260,23 @@ def _detect_config(root):
              or any(key in config for key in _gate().RETIRED_KEYS))
     return ['.purlin/config.json'] if stale else []
 
-def _ask_gate(previous, assume_yes):
+def _gate_default(old):
+    """The gate to offer: the one the project named, read in this release's words.
+
+    A project that already named a gate keeps it, under the name this release
+    reads. A project that named none is offered `strong` when its pre-push
+    setting was the blocking one and `passed` otherwise.
+    """
+    gates = _gate().GATES
+    named = str(old.get('gate') or '').strip().lower()
+    named = GATE_RENAMES.get(named, named)
+    if named in gates:
+        return named
+    return 'strong' if str(old.get('pre_push')).strip() == 'strict' else 'passed'
+
+
+def _ask_gate(default, assume_yes):
     """The one question init asks, asked once more on an update."""
-    default = 'recorded' if str(previous).strip() == 'strict' else 'tested'
     if assume_yes:
         return default
     print(GATE_QUESTION)
@@ -265,20 +284,20 @@ def _ask_gate(previous, assume_yes):
         answer = input('Gate [%s]: ' % default).strip().lower()
     except (EOFError, KeyboardInterrupt):
         return default
-    return answer if answer in GATES else default
+    return answer if answer in _gate().GATES else default
 
-def _prune_frameworks(root, recorded):
-    """`(the value to record, the names dropped)` for one project tree.
+def _prune_frameworks(root, written):
+    """`(the value to write, the names dropped)` for one project tree.
 
-    An older release recorded every plugin it shipped, so a Python-only tree
+    An older release wrote down every plugin it shipped, so a Python-only tree
     can carry `pytest,jest,shell,vitest` and print a jest runner exiting
-    non-zero on every run. A recorded name that detection does not find and
-    the tree carries no wiring for is dropped; a name the tree does carry
-    stays even when detection would not have picked it. `auto` is left alone:
-    it names nothing to drop.
+    non-zero on every run. A name that detection does not find and the tree
+    carries no wiring for is dropped; a name the tree does carry stays even
+    when detection would not have picked it. `auto` is left alone: it names
+    nothing to drop.
     """
     frameworks = _frameworks()
-    raw = str(recorded or '')
+    raw = str(written or '')
     if not raw.strip() or 'auto' in [part.strip() for part in raw.split(',')]:
         return raw or 'auto', []
     named, unknown = frameworks.resolve_frameworks(root, raw)
@@ -291,8 +310,11 @@ def _apply_config(root, files, args, out):
     old = _config(root)
     path = os.path.join(root, '.purlin', 'config.json')
     out.kept(_back_up_copy(path, '.purlin/config.json'))
-    chosen = _ask_gate(old.get('pre_push'), args.yes)
-    resolved = gate.resolve_gate(dict(old, gate=chosen))
+    chosen = _ask_gate(_gate_default(old), args.yes)
+    # The list of people who may sign carries over under its new key, so a
+    # project that named one before does not have to name it again.
+    signers = old.get('signers') or old.get(SIGNER_KEY_WAS) or []
+    resolved = gate.resolve_gate(dict(old, gate=chosen, signers=signers))
     framework, unwired = _prune_frameworks(root, resolved.test_framework)
     config = {
         'version': _version(), 'gate': chosen,
@@ -304,8 +326,8 @@ def _apply_config(root, files, args, out):
     }
     for name in unwired:
         out.say(DROPPED_FRAMEWORK % name)
-    if chosen == 'approved':
-        config['approvers'] = resolved.approvers
+    if chosen == 'signed':
+        config['signers'] = resolved.signers
     dropped = sorted(key for key in gate.RETIRED_KEYS if key in old)
     _write(path, json.dumps(config, indent=2) + '\n')
     out.done('.purlin/config.json')
@@ -387,6 +409,9 @@ def _apply_design_sources(root, files, args, out):
 def _detect_workflows(root):
     hits = []
     for rel in _files_under(root, WORKFLOW_DIR, ('*.yml', '*.yaml')):
+        if os.path.basename(rel) in WORKFLOW_NAMES:
+            hits.append(rel)
+            continue
         try:
             text = _read(os.path.join(root, rel))
         except (IOError, OSError, UnicodeDecodeError):
@@ -452,7 +477,7 @@ def _detect_records(root):
 def _apply_records(root, files, args, out):
     _write(os.path.join(root, files[0]), RECORDS_README)
     out.done(files[0])
-    out.say('created %s, where verify commits one file per run' % RECORDS_DIR)
+    out.say('created %s, where an audit commits one file per run' % RECORDS_DIR)
 
 # Order matters: the tags are rewritten before the config drops the registry that
 # maps them, and before the workflow matrix is rendered from them.
@@ -471,7 +496,7 @@ MIGRATIONS = (
      _detect_workflows, _apply_workflows),
     ('plugin-copies', 'refresh the proof plugin copies under .purlin/plugins/',
      _detect_plugin_copies, _apply_plugin_copies),
-    ('records', 'create .purlin/records/ for the records verify commits',
+    ('records', 'create .purlin/records/ for the records CI commits',
      _detect_records, _apply_records),
 )
 
