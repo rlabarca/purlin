@@ -39,7 +39,7 @@ claude --plugin-dir /path/to/purlin
 ```
 
 Your project never carries a copy of Purlin. Neither does a CI runner, which is why the workflow
-`purlin:init` writes clones Purlin at a pinned tag and runs verify from that checkout.
+`purlin:init` writes clones Purlin at a pinned tag and runs the audit from that checkout.
 
 ## Initialize
 
@@ -48,24 +48,25 @@ purlin:init
 ```
 
 Init asks one question: **what must be true before CI lets a change merge?** The answer is the
-**gate**, and it is the only setting.
+**gate**, and it is the only setting. Each value names one more level of evidence, and the value
+is the word a rule's last cell reads when it is met.
 
 | Gate | Who it fits | What CI requires before merge |
 |------|-------------|-------------------------------|
-| `tested` | One developer | Every rule has a passing tagged test |
-| `recorded` | A team of PM, designers, engineers and QA | Every rule has a record written by CI at this commit, with the test strength at or above `min_strength` |
-| `approved` | The same team under GxP | Everything `recorded` requires, plus a current approval on every high-risk and medium-risk rule, in a signed commit by someone on the approver list |
+| `passed` | One developer | Every rule has a passing tagged test, from a run of any source |
+| `strong` | A team of PM, designers, engineers and QA | Every rule has a record CI wrote at this commit, with the test strength at or above `min_strength`, no free-check finding and no hold |
+| `signed` | The same team under GxP | Everything `strong` requires, plus a current signature on every rule at or above `sign_at`, in a signed commit by someone on the signer list |
 
-Answer `tested` for now. You can raise the gate later with `purlin:init --gate recorded`, which
+Answer `passed` for now. You can raise the gate later with `purlin:init --gate strong`, which
 adds what is missing and asks before each write.
 
 Init asks nothing else. It reads the language and the test framework from the tree and the git
 host from the remote URL. Two questions remain only because no answer can be read from anywhere:
-an empty repository is asked which language it will be, and `approved` is asked for the approver
+an empty repository is asked which language it will be, and `signed` is asked for the signer
 emails.
 
 It writes `.purlin/config.json` with the gate and the derived defaults, `specs/` for the specs,
-and `.purlin/records/` with a README saying that `purlin:verify` writes the files in it. It
+and `.purlin/records/` with a README saying that `purlin:audit` writes the files in it. It
 installs the proof plugin for the detected framework and the breaks engine for the language,
 adds a `.gitignore` block for `.purlin/runtime/`, copies the dashboard page so it opens from
 disk, and offers a pre-push hook. It ends by printing every file it wrote or edited, one per
@@ -110,7 +111,7 @@ tell a code change from a rule change later.
 
 The skill ends with `Spec created: login. Build it now?`
 
-## Build, test, verify
+## Build, test, audit
 
 ```
 purlin:build login
@@ -135,15 +136,17 @@ purlin:test login
 ```
 
 `purlin:test` runs the tagged tests, writes proof files into `.purlin/runtime/proofs/`, which is
-not committed, and prints the state of every rule. It takes seconds: no breaks, no record.
+not committed, and prints the passed cell of every rule. It takes seconds: no breaks, no record.
 
 ```
-purlin:verify
+purlin:audit
 ```
 
-`purlin:verify` runs the tests, then breaks the code on purpose and measures the share of those
-breaks the tests caught. That share is the **test strength**. It writes
+`purlin:audit` runs the tests and writes
 `.purlin/records/login/<timestamp>-<commit7>-developer.json`, commits it, and prints the table.
+At the `passed` gate that is all it does, and the record's test strength reads `n/a`. From
+`strong` upward it also breaks the code on purpose and measures the share of those breaks the
+tests caught: that share is the **test strength**.
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"background": "#0C3444", "primaryColor": "#092936", "primaryTextColor": "#E4DDD4", "primaryBorderColor": "#C0793F", "lineColor": "#C0793F", "secondaryColor": "#0C3444", "tertiaryColor": "#092936", "fontFamily": "Arial", "textColor": "#E4DDD4"}}}%%
@@ -151,32 +154,36 @@ flowchart LR
   spec["purlin:spec"] --> build["purlin:build"]
   build --> test["purlin:test"]
   test --> build
-  test --> verify["purlin:verify"]
-  verify --> push["push"]
-  verify --> build
+  test --> audit["purlin:audit"]
+  audit --> push["push"]
+  audit --> build
 ```
 
 ## Read the table
 
 ```
-  Feature                    Rules   Tested   Recorded   strength
-  ──────────────────────────────────────────────────────────────
-  login                          3        3          3        74%
+  Feature        Rules   Spec        Tests           Run
+  ───────────────────────────────────────────────────────────────
+  login              3   3 ready     3 · 0 · 0       local, 2m ago
+
+  3 of 3 meet the gate passed
 ```
 
 `purlin:status` prints that table any time, one row per feature and per anchor, sorted so the
-rows needing the most work come first. A column exists only when the artifact behind it does, so
-a project at the `tested` gate has no approvals column. `strength` is `n/a` when no breaks
-engine is installed.
+rows needing the most work come first. `Spec` counts the rules a proof names against the rules
+that are still drafted; `Tests` counts passed, failing and no test; `Run` names the source of
+the newest record and its age. A column exists only when the cell behind it does, so a project
+at the `passed` gate has no `Strength`, `Strong` or `Signed` column. The gate is what adds them:
+`purlin:init --gate strong` adds the first two, `--gate signed` adds the third.
 
-Every command ends with a `→` line naming the next step, computed from the state it found: `→
-Run: purlin:build login` when a test failed, `→ Run: purlin:verify` when every rule is tested,
-`→ Push.` when the record is written and the gate is `tested`. Follow the line rather than
-remembering an order.
+Every command ends with one `→ Next:` line naming the step to take, computed from the cell that
+blocks the most rules: `purlin:spec` for a drafted rule, `purlin:build` for a rule with no test
+or a failing one, `purlin:sign` for a rule that needs a person, and "nothing is outstanding at
+gate passed" when every rule meets it. Follow the line rather than remembering an order.
 
 ## Where to go next
 
-- One developer, gate `tested`: [solo-workflow.md](solo-workflow.md).
-- A team, gate `recorded`: [team-workflow.md](team-workflow.md).
-- Under GxP or a similar obligation, gate `approved`: [regulated-workflow.md](regulated-workflow.md).
+- One developer, gate `passed`: [solo-workflow.md](solo-workflow.md).
+- A team, gate `strong`: [team-workflow.md](team-workflow.md).
+- Under GxP or a similar obligation, gate `signed`: [regulated-workflow.md](regulated-workflow.md).
 - An existing codebase with no specs yet: [spec-from-code.md](spec-from-code.md).

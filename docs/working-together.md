@@ -29,7 +29,7 @@ still have no rule:
 drift pm: 3 things to look at
 
   criterion ACC-14           no rule carries it
-  login RULE-3 (origin: pm)  text changed on this branch; approval Stale
+  login RULE-3 (origin: pm)  text changed on this branch; signature stale
   login RULE-9               added by an engineer, origin: eng, derived from RULE-3
   design_tokens (anchor)     pinned 4 commits behind its source
 ```
@@ -43,19 +43,19 @@ for you. No checkout and no git.
 drafts rules about what a person would see, tagged `[origin: design]`, and a design anchor
 pins the files by hash.
 
-**What you see.** `purlin:drift design` names what moved and which of your rules went Stale
-because a mock was re-exported. The review brief pairs your mock with the screenshot the test
+**What you see.** `purlin:drift design` names what moved and which of your rules have a stale
+signature because a mock was re-exported. The brief pairs your mock with the screenshot the test
 captured. The whole flow is in [design-in-specs.md](design-in-specs.md).
 
 ## QA
 
 **What you need.** One of three, by preference.
 
-- **A checkout with Claude Code.** `purlin:review` computes the list of rules that need a
-  look, orders it by risk, and walks it one brief at a time. At each stop you approve, add a
-  case in plain language, or skip.
+- **A checkout with Claude Code.** `purlin:sign` computes the list of rules whose next step is
+  a person, orders it by risk, and walks it one brief at a time. At each stop you sign, add a
+  case in plain language, hold or skip.
 - **An assistant with the repository connected.** It reads the same rollup, opens pull
-  requests carrying proof edits, and batches approvals into one commit.
+  requests carrying proof edits, and batches signatures into one commit.
 - **No AI at all.** Open the `purlin-dashboard` artifact from the pull request and review the
   diff by hand.
 
@@ -65,16 +65,16 @@ Anyone with the repository URL can print the same rollup without cloning it whol
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/report/scan.py" --repo <url> [--ref <branch|tag>]
 ```
 
-**What you work.** The review list, never the whole rule list. A rule reaches it when its text
-changed after an approval, when a brief exists and nobody acted on it, when it has a counting
-record and no approval of any age, or when every one of its proofs asserts a success path.
-Rules flagged `re-verify pending` are not on it: only the code changed, the approval stands,
-and CI clears it on the next run.
+**What you work.** The review list, never the whole rule list. A rule reaches it only when the
+cell that blocks it is one a person answers: a strong cell reading `needs a person`, or a signed
+cell reading `unsigned`, `stale` or `held`. A rule with no test, a failing rule and a weak rule
+are build work and stay on the board. A rule whose passed cell reads `code changed` is not on
+the list either: only the code moved, the signature stands, and CI clears it on the next run.
 
 Adding a case is plain language. Say "it should also reject an expired token" and the proof
 line is written into the spec with the next free proof id; the test arrives on the next
-`purlin:build`. The walk and what makes an approval count are in
-[review-and-approval.md](review-and-approval.md).
+`purlin:build`. The walk and what makes a signature count are in
+[review-and-signing.md](review-and-signing.md).
 
 ## The engineer
 
@@ -89,7 +89,7 @@ purlin:anchor sync <name>   when a pin is behind
 purlin:spec <name>          when a rule is missing or wrong
 purlin:build <name>         code and tagged tests
 purlin:test                 seconds, tests only
-purlin:verify               tests, breaks, and the record
+purlin:audit                tests, breaks, and the record
 ```
 
 Then push. Rules you add are tagged `[origin: eng]`, and the PM sees them as derived rather
@@ -105,12 +105,12 @@ drift eng: 14 files since the last record (a1b2c3d)
   login RULE-7               no test carries PROOF-7
   billing RULE-3             no risk tag; the gate needs one
   design_tokens (anchor)     pinned 4 commits behind
-  export                     re-verify pending: code changed, approvals stand
+  export RULE-1              code changed since 9f8e7d6; CI clears it on the next run
 ```
 
-You may also be the person who reviews. Under the `recorded` gate that is fine. Under
-`approved` the approver list decides, and an approval never counts when its author is the
-author of the commit that last touched the test.
+You may also be the person who signs. Under the `strong` gate that is fine. Under `signed` the
+signer list decides, and a signature never counts when its author is the author of the commit
+that last touched the test.
 
 ## The owner rule
 
@@ -132,9 +132,9 @@ A rule that came from a pinned anchor belongs to the anchor repository, whoever 
 | Role | What it reports |
 |------|-----------------|
 | `pm` | Criteria with no rule carrying them, `origin: pm` rules whose text changed, rules an engineer added, pins behind |
-| `design` | Design files that changed, and `origin: design` rules that went Stale because a mock was re-exported |
-| `qa` | Approvals gone Stale, how long the review list is, rules whose every proof asserts a success path |
-| `eng` | Files touched and the rules behind them, rules with no test, risk or origin tags the gate requires and the spec lacks, pins behind, rules flagged `re-verify pending` |
+| `design` | Design files that changed, and `origin: design` rules whose signature went stale because a mock was re-exported |
+| `qa` | Signatures gone stale, how long the review list is, rules that need a person |
+| `eng` | Files touched and the rules behind them, rules with no test, risk or origin tags the gate requires and the spec lacks, pins behind, rules whose passed cell reads `code changed` |
 
 Run it at four moments: at the start of a session, after an anchor pin or a design export
 moved, before QA opens the review list, and before a release. Those are the four times the
