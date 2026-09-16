@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "brief",
-  "generated_at": "2026-09-16T22:35:18Z",
+  "generated_at": "2026-09-16T22:42:57Z",
   "layers": [
     "proof text",
     "test body",
@@ -23,7 +23,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/brief/20260916T223516Z-e8bd239-ci-linux.json",
+  "record": ".purlin/records/brief/20260916T224240Z-e8bd239-ci-windows.json",
   "risk": "high",
   "rule": "RULE-10",
   "rule_hash": "90806f50a734395926a8f90cca8124f86d4be9f6a3a6243be1d79bf43c6fe4c9",
@@ -38,7 +38,7 @@
       "body": "def test_the_brief_carries_no_recommendation_and_no_grade(self, proved):\n        built = build(proved, 'RULE-1')\n        assert set(built) == {\n            'schema', 'feature', 'rule', 'risk', 'origin', 'rule_text',\n            'proofs', 'rule_hash', 'proof_hash', 'test_hash', 'test_hash_kind',\n            'design_hash', 'triple_hash', 'layers', 'tests', 'test_strength',\n            'min_strength', 'record', 'design', 'ai_review', 'observations',\n            'settled', 'generated_at'}, sorted(built)\n        assert built['schema'] == 'purlin-brief/2'\n        assert built['observations'] == []",
       "file": "dev/test_brief.py",
       "findings": [],
-      "name": "test_the_brief_carries_no_recommendation_and_no_grade",
+      "name": "test_a_blocking_proof_finding_is_rewrite_the_proof",
       "proof": "PROOF-12",
       "reasons": []
     },
@@ -46,7 +46,7 @@
       "body": "def test_the_brief_carries_no_recommendation_and_no_grade(self, proved):\n        built = build(proved, 'RULE-1')\n        assert set(built) == {\n            'schema', 'feature', 'rule', 'risk', 'origin', 'rule_text',\n            'proofs', 'rule_hash', 'proof_hash', 'test_hash', 'test_hash_kind',\n            'design_hash', 'triple_hash', 'layers', 'tests', 'test_strength',\n            'min_strength', 'record', 'design', 'ai_review', 'observations',\n            'settled', 'generated_at'}, sorted(built)\n        assert built['schema'] == 'purlin-brief/2'\n        assert built['observations'] == []",
       "file": "dev/test_brief.py",
       "findings": [],
-      "name": "test_a_blocking_proof_finding_is_rewrite_the_proof",
+      "name": "test_the_brief_carries_no_recommendation_and_no_grade",
       "proof": "PROOF-12",
       "reasons": []
     }

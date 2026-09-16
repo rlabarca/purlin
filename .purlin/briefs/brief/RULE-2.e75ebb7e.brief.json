@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "brief",
-  "generated_at": "2026-09-16T22:35:18Z",
+  "generated_at": "2026-09-16T22:42:57Z",
   "layers": [
     "proof text",
     "test body",
@@ -24,7 +24,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/brief/20260916T223516Z-e8bd239-ci-linux.json",
+  "record": ".purlin/records/brief/20260916T224240Z-e8bd239-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-2",
   "rule_hash": "cb5a08a2d644198ff4d6508e85ab783aa2c16cebd512b1135592abc8ca492aba",

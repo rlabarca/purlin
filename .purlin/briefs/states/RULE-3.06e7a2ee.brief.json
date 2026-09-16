@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-16T22:35:41Z",
+  "generated_at": "2026-09-16T22:43:17Z",
   "layers": [
     "proof text",
     "test body",
@@ -34,7 +34,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/states/20260916T223516Z-e8bd239-ci-linux.json",
+  "record": ".purlin/records/states/20260916T224244Z-e8bd239-ci-windows.json",
   "risk": "high",
   "rule": "RULE-3",
   "rule_hash": "d46d5b0589c4d28c09a77e6ea027525b01ef6d88d81cac066afd4f97a84c80f7",
@@ -49,7 +49,7 @@
       "body": "def test_a_local_run_meets_level_one_under_the_passed_gate(self, project):\n        project.proofs([_entry('PROOF-2', 'RULE-2')])\n        cell = project.cell('RULE-2', 'passed')\n        assert cell['word'] == 'passed'\n        assert (cell['source'], cell['current'], cell['counts']) == (\n            'local', True, True)",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_a_local_run_meets_level_one_under_the_passed_gate",
+      "name": "test_tested_when_the_tagged_test_passes_locally",
       "proof": "PROOF-3",
       "reasons": []
     },
@@ -57,7 +57,7 @@
       "body": "def test_a_local_run_meets_level_one_under_the_passed_gate(self, project):\n        project.proofs([_entry('PROOF-2', 'RULE-2')])\n        cell = project.cell('RULE-2', 'passed')\n        assert cell['word'] == 'passed'\n        assert (cell['source'], cell['current'], cell['counts']) == (\n            'local', True, True)",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_tested_when_the_tagged_test_passes_locally",
+      "name": "test_a_local_run_meets_level_one_under_the_passed_gate",
       "proof": "PROOF-3",
       "reasons": []
     },
@@ -65,7 +65,7 @@
       "body": "def test_a_ci_record_at_head_meets_level_one(self, project):\n        project.record([{'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}],\n                       ci=True)\n        cell = project.cell('RULE-2', 'passed')\n        assert cell['word'] == 'passed'\n        assert cell['source'] == 'ci'",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_a_ci_record_at_head_meets_level_one",
+      "name": "test_recorded_when_a_counting_record_at_head_passes",
       "proof": "PROOF-4",
       "reasons": []
     },
@@ -73,7 +73,7 @@
       "body": "def test_a_ci_record_at_head_meets_level_one(self, project):\n        project.record([{'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}],\n                       ci=True)\n        cell = project.cell('RULE-2', 'passed')\n        assert cell['word'] == 'passed'\n        assert cell['source'] == 'ci'",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_recorded_when_a_counting_record_at_head_passes",
+      "name": "test_a_ci_record_at_head_meets_level_one",
       "proof": "PROOF-4",
       "reasons": []
     }

@@ -1,0 +1,195 @@
+{
+  "commit": "e8bd239e429ff40ff6d8acc5fb93205717fec556",
+  "dirty": true,
+  "environment": {
+    "engines": [],
+    "host": "GitHub Actions 1000000182",
+    "id": "windows",
+    "job": "verify",
+    "kind": "ci",
+    "os": "windows"
+  },
+  "feature": "skill_spec_from_code",
+  "features": {
+    "skill_spec_from_code": {
+      "rules": {
+        "RULE-1": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-1"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_skills.py",
+              "name": "test_the_frontmatter_names_the_skill",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-2": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-2"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_skills.py",
+              "name": "test_it_reads_the_state_before_it_starts",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-3": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-3"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_skills.py",
+              "name": "test_it_closes_by_naming_the_next_step",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-4": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-4"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_skills.py",
+              "name": "test_it_stays_under_its_ceiling",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-5": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-5"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_skills.py",
+              "name": "test_every_rule_it_writes_is_engineer_owned_and_low_risk",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        }
+      },
+      "scope_score": null,
+      "spec": "specs/skills/skill_spec_from_code.md"
+    }
+  },
+  "gate": "passed",
+  "log": {
+    "path": ".purlin/runtime/run.log",
+    "sha256": "2abb06e4de7e6bb324774b2eb28b8fba962dabee94175761275ed1e6846604bd"
+  },
+  "missing": [],
+  "os": "windows",
+  "plugins": [
+    "pytest",
+    "shell"
+  ],
+  "proofs": [
+    {
+      "env": null,
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "test_file": "dev/test_skills.py",
+      "test_name": "test_the_frontmatter_names_the_skill",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass",
+      "test_file": "dev/test_skills.py",
+      "test_name": "test_it_reads_the_state_before_it_starts",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass",
+      "test_file": "dev/test_skills.py",
+      "test_name": "test_it_closes_by_naming_the_next_step",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass",
+      "test_file": "dev/test_skills.py",
+      "test_name": "test_it_stays_under_its_ceiling",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass",
+      "test_file": "dev/test_skills.py",
+      "test_name": "test_every_rule_it_writes_is_engineer_owned_and_low_risk",
+      "tier": "unit"
+    }
+  ],
+  "runner": "ci",
+  "schema": "purlin-record/2",
+  "schema_version": 2,
+  "scope_tree": "7f18f550f03747348263e928afcea599ebf0b46968edcc5375d3f6534dfeafbd",
+  "test_strength": null,
+  "timestamp": "2026-09-16T22:42:43Z"
+}

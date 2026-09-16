@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "proof_common",
-  "generated_at": "2026-09-16T22:35:24Z",
+  "generated_at": "2026-09-16T22:43:02Z",
   "layers": [
     "proof text",
     "test body",
@@ -22,7 +22,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/proof_common/20260916T223516Z-e8bd239-ci-linux.json",
+  "record": ".purlin/records/proof_common/20260916T224241Z-e8bd239-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-14",
   "rule_hash": "d5466ffc256f9334a98575eaec1a757d9c515504ef82df3a498d6a9651f6d34c",
@@ -34,18 +34,18 @@
   "test_strength": null,
   "tests": [
     {
-      "body": "def test_three_tiers_read_back_as_one_feature(self, tmp_path):\n        root = _project(tmp_path)\n        for index, tier in enumerate(('unit', 'integration', 'e2e'), start=1):\n            _shell_run(root, 'tests/%s.test.sh' % tier, 'alpha',\n                       [('PROOF-%d' % index, 'RULE-%d' % index, 'pass', tier)],\n                       tier=tier)\n        entries = _read(root)['alpha']\n        assert {e['tier'] for e in entries} == {'unit', 'integration', 'e2e'}\n        assert len(entries) == 3",
-      "file": "dev/test_proof_stress.py",
-      "findings": [],
-      "name": "test_three_tiers_read_back_as_one_feature",
-      "proof": "PROOF-14",
-      "reasons": []
-    },
-    {
       "body": null,
       "file": "dev/test_proof_plugins.sh",
       "findings": [],
       "name": "the file name carries the feature and the tier",
+      "proof": "PROOF-14",
+      "reasons": []
+    },
+    {
+      "body": "def test_three_tiers_read_back_as_one_feature(self, tmp_path):\n        root = _project(tmp_path)\n        for index, tier in enumerate(('unit', 'integration', 'e2e'), start=1):\n            _shell_run(root, 'tests/%s.test.sh' % tier, 'alpha',\n                       [('PROOF-%d' % index, 'RULE-%d' % index, 'pass', tier)],\n                       tier=tier)\n        entries = _read(root)['alpha']\n        assert {e['tier'] for e in entries} == {'unit', 'integration', 'e2e'}\n        assert len(entries) == 3",
+      "file": "dev/test_proof_stress.py",
+      "findings": [],
+      "name": "test_three_tiers_read_back_as_one_feature",
       "proof": "PROOF-14",
       "reasons": []
     }

@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-16T22:35:43Z",
+  "generated_at": "2026-09-16T22:43:19Z",
   "layers": [
     "proof text",
     "test body",
@@ -30,7 +30,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/states/20260916T223516Z-e8bd239-ci-linux.json",
+  "record": ".purlin/records/states/20260916T224244Z-e8bd239-ci-windows.json",
   "risk": "high",
   "rule": "RULE-15",
   "rule_hash": "1fd96072761c5376b42ac1247cfaac5818173071c523813c02a676da05b6a120",
@@ -45,7 +45,7 @@
       "body": "def test_the_brief_settles_level_two_where_the_risk_asks_for_one(self):\n        assert _strong()['word'] == 'needs a person'\n        assert _strong()['reasons'] == ['no brief for the current hashes']\n        unsettled = _strong(brief={'settled': False, 'observations': []})\n        assert unsettled['reasons'] == ['review not settled'], unsettled\n        observed = _strong(brief={\n            'settled': True,\n            'observations': ['The test reads the status code alone.']})\n        assert observed['word'] == 'needs a person'\n        assert observed['reasons'] == [\n            'The test reads the status code alone.'], observed\n        settled = _strong(brief={'settled': True, 'observations': []})\n        assert settled['word'] == 'strong', settled",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_the_brief_settles_level_two_where_the_risk_asks_for_one",
+      "name": "test_a_feature_carries_its_rules_with_their_tags_and_proofs",
       "proof": "PROOF-17",
       "reasons": []
     },
@@ -53,7 +53,7 @@
       "body": "def test_the_brief_settles_level_two_where_the_risk_asks_for_one(self):\n        assert _strong()['word'] == 'needs a person'\n        assert _strong()['reasons'] == ['no brief for the current hashes']\n        unsettled = _strong(brief={'settled': False, 'observations': []})\n        assert unsettled['reasons'] == ['review not settled'], unsettled\n        observed = _strong(brief={\n            'settled': True,\n            'observations': ['The test reads the status code alone.']})\n        assert observed['word'] == 'needs a person'\n        assert observed['reasons'] == [\n            'The test reads the status code alone.'], observed\n        settled = _strong(brief={'settled': True, 'observations': []})\n        assert settled['word'] == 'strong', settled",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_a_feature_carries_its_rules_with_their_tags_and_proofs",
+      "name": "test_the_brief_settles_level_two_where_the_risk_asks_for_one",
       "proof": "PROOF-17",
       "reasons": []
     },
@@ -61,7 +61,7 @@
       "body": "def test_with_no_break_engine_the_threshold_drops_one_level(self):\n        assert _strong(risk='medium')['word'] == 'strong'\n        widened = _strong(risk='medium', mutation_engine_available=False)\n        assert widened['word'] == 'needs a person', widened",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_with_no_break_engine_the_threshold_drops_one_level",
+      "name": "test_the_review_list_names_the_rule_and_why",
       "proof": "PROOF-18",
       "reasons": []
     },
@@ -69,7 +69,7 @@
       "body": "def test_with_no_break_engine_the_threshold_drops_one_level(self):\n        assert _strong(risk='medium')['word'] == 'strong'\n        widened = _strong(risk='medium', mutation_engine_available=False)\n        assert widened['word'] == 'needs a person', widened",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_the_review_list_names_the_rule_and_why",
+      "name": "test_with_no_break_engine_the_threshold_drops_one_level",
       "proof": "PROOF-18",
       "reasons": []
     }

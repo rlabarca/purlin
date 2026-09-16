@@ -1,0 +1,74 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-16T22:43:09Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "cab01530270560571db605476660a787d3007ad0cd3f7cc7f96bb344044ddfd8",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "implementation_coupling",
+        "happy_path_only"
+      ],
+      "id": "PROOF-61",
+      "text": "Run `--all --record --ci` with the brief writer standing in for the real one, returning one path under `.purlin/briefs/<feature>/`; verify it ran before the commit call was made, that the commit call carries the identity `ci` with the record path first and the brief path after it, and that the run prints `1 brief written.`. Run `--all --record --commit` with the same stand-in; verify the brief writer did not run and the commit call carries the record path alone. Call `_ci_review()` with the same stand-in; verify the paths it hands back are exactly the brief writer's one path, so nothing else a run writes can reach the commit",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/run_script/20260916T224242Z-e8bd239-ci-windows.json",
+  "risk": "high",
+  "rule": "RULE-42",
+  "rule_hash": "0defe5bcc67ce6dbfede26eae8a04cc98eb6f0cf8526d05b74a1f199f7fb9bc3",
+  "rule_text": "`--ci` writes the briefs before the commit and hands their paths to it, so the one commit that carries the record carries the `.brief.json` files under `.purlin/briefs/` too; `--commit` writes none and its commit carries the records alone, and no run of any kind writes a signature file",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "d745f4e688146d8ceb290fc6b9b1737fb9ab7e28995a6cb65ef5c8fb1dd169c6",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": null,
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_ci_hands_the_approvals_and_the_briefs_to_the_commit",
+      "proof": "PROOF-61",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_developer_commit_carries_the_records_alone(\n            self, tmp_path, record_run, monkeypatch, capsys):\n        order = []\n        _fake_briefs(monkeypatch, order,\n                     ['.purlin/briefs/feat/RULE-2.5e6f7a8b.brief.json'])\n\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat')\n        _code, calls = record_run(root, '--all', '--commit')\n        capsys.readouterr()\n\n        paths, identity, _message = calls['commit'][0]\n        assert identity == 'developer'\n        assert paths == [os.path.join('.purlin', 'records', 'feat', 'r.json')]\n        assert order == ['commit']",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_the_developer_commit_carries_the_records_alone",
+      "proof": "PROOF-61",
+      "reasons": []
+    },
+    {
+      "body": "def test_ci_hands_the_briefs_to_the_commit(\n            self, tmp_path, record_run, monkeypatch, capsys):\n        \"\"\"A brief that exists only on a runner is evidence nobody reads.\n\n        So the files the CI run writes go into the same commit as the record\n        they rest on, which means they have to be written before it.\n        \"\"\"\n        brief = '.purlin/briefs/feat/RULE-2.5e6f7a8b.brief.json'\n        order = []\n        _fake_briefs(monkeypatch, order, [brief])\n\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat')\n        _code, calls = record_run(root, '--all', '--ci')\n        output = capsys.readouterr().out\n\n        paths, identity, _message = calls['commit'][0]\n        assert identity == 'ci'\n        assert paths == [os.path.join('.purlin', 'records', 'feat', 'r.json'),\n                         brief]\n        assert order == ['write_briefs', 'commit'], (\n            'the commit was made before the files it must carry')\n        assert '1 brief written.' in output",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_ci_hands_the_briefs_to_the_commit",
+      "proof": "PROOF-61",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_ci_arm_hands_back_the_briefs_and_nothing_else(\n            self, tmp_path, monkeypatch, capsys):\n        \"\"\"CI writes no signature file, ever: a runner is nobody.\"\"\"\n        written = '.purlin/briefs/feat/RULE-1.1a2b3c4d.brief.json'\n        order = []\n\n        def write_briefs(project_root, payload=None, rules=None, ai=False):\n            order.append('write_briefs')\n            return [written]\n\n        monkeypatch.setitem(sys.modules, 'brief',\n                            _FakeModule(write_briefs=write_briefs))\n\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat')\n        purlin_run = _load_run_script()\n        assert purlin_run._ci_review(str(root)) == [written]\n        assert order == ['write_briefs']\n        assert '1 brief written.' in capsys.readouterr().out",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_the_ci_arm_hands_back_the_briefs_and_nothing_else",
+      "proof": "PROOF-61",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "e746e79fa2e3f265d4913fa9ccc77dcac69690bb4abebb31c3a94cda8c830085"
+}

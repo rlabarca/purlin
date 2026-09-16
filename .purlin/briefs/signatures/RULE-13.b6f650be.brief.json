@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "signatures",
-  "generated_at": "2026-09-16T22:35:38Z",
+  "generated_at": "2026-09-16T22:43:14Z",
   "layers": [
     "proof text",
     "test body",
@@ -33,7 +33,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/signatures/20260916T223516Z-e8bd239-ci-linux.json",
+  "record": ".purlin/records/signatures/20260916T224243Z-e8bd239-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-13",
   "rule_hash": "9a40008bc30831cee1edfc03cf073be1ccf0ad00bbc227e6fdcb7ee12c887dab",
@@ -48,7 +48,7 @@
       "body": "def test_a_note_records_what_the_signer_checked(self, capsys):\n        made = signing_project()\n        try:\n            code = sign_module.main(\n                ['login', 'RULE-2', '--note', 'I ran the lockout by hand.',\n                 '--project-root', made.root])\n            capsys.readouterr()\n            assert code == 0\n            path = made.load()[('login', 'RULE-2')][0]['path']\n            with open(os.path.join(made.root, path), encoding='utf-8') as f:\n                assert json.load(f)['note'] == 'I ran the lockout by hand.'\n        finally:\n            made.close()",
       "file": "dev/test_signatures.py",
       "findings": [],
-      "name": "test_a_note_records_what_the_signer_checked",
+      "name": "test_high_risk_is_never_auto_approved",
       "proof": "PROOF-16",
       "reasons": []
     },
@@ -56,7 +56,7 @@
       "body": "def test_a_note_records_what_the_signer_checked(self, capsys):\n        made = signing_project()\n        try:\n            code = sign_module.main(\n                ['login', 'RULE-2', '--note', 'I ran the lockout by hand.',\n                 '--project-root', made.root])\n            capsys.readouterr()\n            assert code == 0\n            path = made.load()[('login', 'RULE-2')][0]['path']\n            with open(os.path.join(made.root, path), encoding='utf-8') as f:\n                assert json.load(f)['note'] == 'I ran the lockout by hand.'\n        finally:\n            made.close()",
       "file": "dev/test_signatures.py",
       "findings": [],
-      "name": "test_high_risk_is_never_auto_approved",
+      "name": "test_a_note_records_what_the_signer_checked",
       "proof": "PROOF-16",
       "reasons": []
     },
@@ -64,7 +64,7 @@
       "body": "def test_a_note_needs_a_rule_and_a_line(self):\n        for argv in (['login', 'RULE-1', '--note'],\n                     ['login', '--note', 'a line'],\n                     ['--batch', '--note', 'a line']):\n            assert sign_module.main(argv + ['--project-root', '.']) == 2, argv",
       "file": "dev/test_signatures.py",
       "findings": [],
-      "name": "test_a_note_needs_a_rule_and_a_line",
+      "name": "test_below_the_minimum_strength_nothing_is_written",
       "proof": "PROOF-17",
       "reasons": []
     },
@@ -72,7 +72,7 @@
       "body": "def test_a_note_needs_a_rule_and_a_line(self):\n        for argv in (['login', 'RULE-1', '--note'],\n                     ['login', '--note', 'a line'],\n                     ['--batch', '--note', 'a line']):\n            assert sign_module.main(argv + ['--project-root', '.']) == 2, argv",
       "file": "dev/test_signatures.py",
       "findings": [],
-      "name": "test_below_the_minimum_strength_nothing_is_written",
+      "name": "test_a_note_needs_a_rule_and_a_line",
       "proof": "PROOF-17",
       "reasons": []
     }

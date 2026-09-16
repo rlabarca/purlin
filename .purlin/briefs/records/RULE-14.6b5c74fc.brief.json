@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "records",
-  "generated_at": "2026-09-16T22:35:29Z",
+  "generated_at": "2026-09-16T22:43:07Z",
   "layers": [
     "proof text",
     "test body",
@@ -24,7 +24,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/records/20260916T223516Z-e8bd239-ci-linux.json",
+  "record": ".purlin/records/records/20260916T224242Z-e8bd239-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-14",
   "rule_hash": "52f98d40fb5fa29cc7bf13014bfc301bca9af5a97d2db89dd1caa59012cc66d6",
@@ -36,10 +36,10 @@
   "test_strength": null,
   "tests": [
     {
-      "body": "def test_every_bucket_the_package_names_can_be_printed():\n    from purlin import states\n    buckets = states.bucket_keys('signed')\n    summary = {'features': 1, 'rules': len(buckets), 'met': 1,\n               'stale': 1, 'held': 1, 'needs_person': 2}\n    summary.update({bucket: 1 for bucket in buckets})\n    payload = {'project': 'x', 'gate': {'gate': 'signed'},\n               'summary': summary, 'records': {}}\n    text = scan_module.rollup_text('.', payload)\n    for bucket in buckets:\n        assert bucket in text, '%s was not printed' % bucket\n    assert '1 signatures stale' in text\n    assert '2 rules need a person' in text",
+      "body": null,
       "file": "dev/test_scan.py",
       "findings": [],
-      "name": "test_every_bucket_the_package_names_can_be_printed",
+      "name": "test_every_state_the_package_names_can_be_printed",
       "proof": "PROOF-14",
       "reasons": []
     },
@@ -60,26 +60,26 @@
       "reasons": []
     },
     {
-      "body": "def test_the_rollup_names_the_project_the_gate_and_the_buckets(remote):\n    bare, _source = remote\n    text = scan_module.scan(bare, 'main')\n\n    assert 'gate strong' in text\n    assert '1 features, 2 rules.' in text\n    assert 'untested' in text, 'no bucket was counted'\n    assert 'No record has been committed yet.' in text",
-      "file": "dev/test_scan.py",
-      "findings": [],
-      "name": "test_the_rollup_names_the_project_the_gate_and_the_buckets",
-      "proof": "PROOF-14",
-      "reasons": []
-    },
-    {
-      "body": null,
-      "file": "dev/test_scan.py",
-      "findings": [],
-      "name": "test_every_state_the_package_names_can_be_printed",
-      "proof": "PROOF-14",
-      "reasons": []
-    },
-    {
       "body": null,
       "file": "dev/test_scan.py",
       "findings": [],
       "name": "test_the_rollup_names_the_project_the_gate_and_the_states",
+      "proof": "PROOF-14",
+      "reasons": []
+    },
+    {
+      "body": "def test_every_bucket_the_package_names_can_be_printed():\n    from purlin import states\n    buckets = states.bucket_keys('signed')\n    summary = {'features': 1, 'rules': len(buckets), 'met': 1,\n               'stale': 1, 'held': 1, 'needs_person': 2}\n    summary.update({bucket: 1 for bucket in buckets})\n    payload = {'project': 'x', 'gate': {'gate': 'signed'},\n               'summary': summary, 'records': {}}\n    text = scan_module.rollup_text('.', payload)\n    for bucket in buckets:\n        assert bucket in text, '%s was not printed' % bucket\n    assert '1 signatures stale' in text\n    assert '2 rules need a person' in text",
+      "file": "dev/test_scan.py",
+      "findings": [],
+      "name": "test_every_bucket_the_package_names_can_be_printed",
+      "proof": "PROOF-14",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_rollup_names_the_project_the_gate_and_the_buckets(remote):\n    bare, _source = remote\n    text = scan_module.scan(bare, 'main')\n\n    assert 'gate strong' in text\n    assert '1 features, 2 rules.' in text\n    assert 'untested' in text, 'no bucket was counted'\n    assert 'No record has been committed yet.' in text",
+      "file": "dev/test_scan.py",
+      "findings": [],
+      "name": "test_the_rollup_names_the_project_the_gate_and_the_buckets",
       "proof": "PROOF-14",
       "reasons": []
     }

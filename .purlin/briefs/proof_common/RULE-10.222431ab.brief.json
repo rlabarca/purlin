@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "proof_common",
-  "generated_at": "2026-09-16T22:35:24Z",
+  "generated_at": "2026-09-16T22:43:02Z",
   "layers": [
     "proof text",
     "test body",
@@ -23,7 +23,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/proof_common/20260916T223516Z-e8bd239-ci-linux.json",
+  "record": ".purlin/records/proof_common/20260916T224241Z-e8bd239-ci-windows.json",
   "risk": "high",
   "rule": "RULE-10",
   "rule_hash": "8782787dc5246ee2ceff48b79219ddadcd19d458dcc16906213a15c3aa7073d1",
@@ -35,18 +35,18 @@
   "test_strength": null,
   "tests": [
     {
-      "body": "def test_pytest_exits_non_zero_and_names_the_feature(self, tmp_path):\n        root = _purlin_project(tmp_path)\n        (root / 'tests').mkdir()\n        (root / 'tests' / 'test_feat.py').write_text(\n            'import pytest\\n\\n'\n            '@pytest.mark.proof(\"feat\", \"PROOF-1\", \"RULE-1\")\\n'\n            '@pytest.mark.skip(reason=\"no tool\")\\n'\n            'def test_skipped():\\n    assert True\\n', encoding='utf-8')\n        result = _run_pytest(root)\n        assert result.returncode != 0\n        assert 'markers were seen and no proof entry was written for feat' \\\n            in result.stderr\n        assert _read_proofs(root, 'feat') is None",
-      "file": "dev/test_multilang_proof_plugins.py",
-      "findings": [],
-      "name": "test_pytest_exits_non_zero_and_names_the_feature",
-      "proof": "PROOF-10",
-      "reasons": []
-    },
-    {
       "body": null,
       "file": "dev/test_proof_plugins.sh",
       "findings": [],
       "name": "markers seen and nothing written fails the run",
+      "proof": "PROOF-10",
+      "reasons": []
+    },
+    {
+      "body": "def test_pytest_exits_non_zero_and_names_the_feature(self, tmp_path):\n        root = _purlin_project(tmp_path)\n        (root / 'tests').mkdir()\n        (root / 'tests' / 'test_feat.py').write_text(\n            'import pytest\\n\\n'\n            '@pytest.mark.proof(\"feat\", \"PROOF-1\", \"RULE-1\")\\n'\n            '@pytest.mark.skip(reason=\"no tool\")\\n'\n            'def test_skipped():\\n    assert True\\n', encoding='utf-8')\n        result = _run_pytest(root)\n        assert result.returncode != 0\n        assert 'markers were seen and no proof entry was written for feat' \\\n            in result.stderr\n        assert _read_proofs(root, 'feat') is None",
+      "file": "dev/test_multilang_proof_plugins.py",
+      "findings": [],
+      "name": "test_pytest_exits_non_zero_and_names_the_feature",
       "proof": "PROOF-10",
       "reasons": []
     }

@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "signatures",
-  "generated_at": "2026-09-16T22:35:38Z",
+  "generated_at": "2026-09-16T22:43:14Z",
   "layers": [
     "proof text",
     "test body",
@@ -25,7 +25,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/signatures/20260916T223516Z-e8bd239-ci-linux.json",
+  "record": ".purlin/records/signatures/20260916T224243Z-e8bd239-ci-windows.json",
   "risk": "high",
   "rule": "RULE-7",
   "rule_hash": "e253f80a894d44cd35aa7bbf1d0545b5b2f3323cabc3b74a4fce1bd937706a93",
@@ -40,7 +40,7 @@
       "body": "def test_a_stale_signature_still_comes_back_from_the_reader(self, proved):\n        sign_one(proved)\n        proved.spec(SPEC.replace('return 200 with a session token',\n                                 'return 200 with two session tokens'))\n        found = proved.load()[('login', 'RULE-1')]\n        assert len(found) == 1, found\n        assert found[0]['signer'] == 'jane@acme.com'\n        assert self._current(proved) == [], (\n            'the signed cell reads stale only while the file is still there')",
       "file": "dev/test_signatures.py",
       "findings": [],
-      "name": "test_a_stale_signature_still_comes_back_from_the_reader",
+      "name": "test_a_stale_approval_puts_the_rule_in_stale",
       "proof": "PROOF-11",
       "reasons": []
     },
@@ -48,7 +48,7 @@
       "body": "def test_a_stale_signature_still_comes_back_from_the_reader(self, proved):\n        sign_one(proved)\n        proved.spec(SPEC.replace('return 200 with a session token',\n                                 'return 200 with two session tokens'))\n        found = proved.load()[('login', 'RULE-1')]\n        assert len(found) == 1, found\n        assert found[0]['signer'] == 'jane@acme.com'\n        assert self._current(proved) == [], (\n            'the signed cell reads stale only while the file is still there')",
       "file": "dev/test_signatures.py",
       "findings": [],
-      "name": "test_a_stale_approval_puts_the_rule_in_stale",
+      "name": "test_a_stale_signature_still_comes_back_from_the_reader",
       "proof": "PROOF-11",
       "reasons": []
     }

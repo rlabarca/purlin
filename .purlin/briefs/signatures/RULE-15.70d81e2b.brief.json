@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "signatures",
-  "generated_at": "2026-09-16T22:35:38Z",
+  "generated_at": "2026-09-16T22:43:14Z",
   "layers": [
     "proof text",
     "test body",
@@ -24,7 +24,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/signatures/20260916T223516Z-e8bd239-ci-linux.json",
+  "record": ".purlin/records/signatures/20260916T224243Z-e8bd239-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-15",
   "rule_hash": "ae772fbaa1026cc88a8f44f02c3c0e02ddec5432eb096430b53075556dd718d3",
@@ -39,7 +39,7 @@
       "body": "def test_under_the_review_gate_a_bare_signature_says_so_and_is_written(\n            self, at_strong, capsys):\n        signing_key(at_strong.root)\n        code = sign_module.main(['login', 'RULE-1', '--project-root',\n                                 at_strong.root])\n        output = capsys.readouterr().out\n        assert code == 0, output\n        assert 'required only under the gate signed' in output\n        assert len(at_strong.signatures()) == 1",
       "file": "dev/test_signatures.py",
       "findings": [],
-      "name": "test_under_the_review_gate_a_bare_signature_says_so_and_is_written",
+      "name": "test_a_manual_proof_is_never_auto_approved",
       "proof": "PROOF-19",
       "reasons": []
     },
@@ -47,7 +47,7 @@
       "body": "def test_under_the_review_gate_a_bare_signature_says_so_and_is_written(\n            self, at_strong, capsys):\n        signing_key(at_strong.root)\n        code = sign_module.main(['login', 'RULE-1', '--project-root',\n                                 at_strong.root])\n        output = capsys.readouterr().out\n        assert code == 0, output\n        assert 'required only under the gate signed' in output\n        assert len(at_strong.signatures()) == 1",
       "file": "dev/test_signatures.py",
       "findings": [],
-      "name": "test_a_manual_proof_is_never_auto_approved",
+      "name": "test_under_the_review_gate_a_bare_signature_says_so_and_is_written",
       "proof": "PROOF-19",
       "reasons": []
     }

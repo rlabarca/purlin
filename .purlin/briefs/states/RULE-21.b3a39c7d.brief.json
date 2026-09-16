@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-16T22:35:44Z",
+  "generated_at": "2026-09-16T22:43:20Z",
   "layers": [
     "proof text",
     "test body",
@@ -25,7 +25,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/states/20260916T223516Z-e8bd239-ci-linux.json",
+  "record": ".purlin/records/states/20260916T224244Z-e8bd239-ci-windows.json",
   "risk": "high",
   "rule": "RULE-21",
   "rule_hash": "12720a564984ec89cd45201f0b58522c969f34548c54a3e106b8bc7c3ffc22b1",
@@ -40,7 +40,7 @@
       "body": "def test_a_signature_is_required_only_at_or_above_sign_at(self):\n        made = self._signed_project()\n        try:\n            low = made.cell('RULE-2', 'signed')\n            assert (low['word'], low['required']) == ('not required', False)\n            assert purlin_states.cell_is_met('signed', low)\n            high = made.cell('RULE-1', 'signed')\n            assert (high['word'], high['required']) == ('unsigned', True)\n        finally:\n            made.close()",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_a_signature_is_required_only_at_or_above_sign_at",
+      "name": "test_no_emoji_and_only_the_three_glyphs",
       "proof": "PROOF-25",
       "reasons": []
     },
@@ -48,7 +48,7 @@
       "body": "def test_a_signature_is_required_only_at_or_above_sign_at(self):\n        made = self._signed_project()\n        try:\n            low = made.cell('RULE-2', 'signed')\n            assert (low['word'], low['required']) == ('not required', False)\n            assert purlin_states.cell_is_met('signed', low)\n            high = made.cell('RULE-1', 'signed')\n            assert (high['word'], high['required']) == ('unsigned', True)\n        finally:\n            made.close()",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_no_emoji_and_only_the_three_glyphs",
+      "name": "test_a_signature_is_required_only_at_or_above_sign_at",
       "proof": "PROOF-25",
       "reasons": []
     }
