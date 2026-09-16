@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'init'))
 
 import brief as brief_module  # noqa: E402
 import update  # noqa: E402
-from test_approvals import Project, git, write  # noqa: E402
+from test_signatures import Project, git, write  # noqa: E402
 from test_init_update import LAYOUTS, _project, _read  # noqa: E402
 
 TEMPLATE = os.path.join(ROOT, 'templates', 'gitignore.purlin')
@@ -77,14 +77,14 @@ class TestTheTextRenderingIsIgnored:
         git(root, 'init', '-q')
         with open(TEMPLATE, encoding='utf-8') as handle:
             write(os.path.join(root, '.gitignore'), handle.read())
-        stem = os.path.join(root, 'specs', 'auth', 'login.approvals',
+        stem = os.path.join(root, 'specs', 'auth', 'login.signatures',
                             'RULE-1.0123abcd.brief')
         write(stem + '.json', '{}\n')
         write(stem + '.txt', 'login RULE-1\n')
         status = subprocess.run(
             ['git', 'status', '--porcelain', '--untracked-files=all'],
             cwd=root, capture_output=True, text=True).stdout
-        assert 'specs/auth/login.approvals/RULE-1.0123abcd.brief.json' in status
+        assert 'specs/auth/login.signatures/RULE-1.0123abcd.brief.json' in status
         assert '.brief.txt' not in status, status
 
 

@@ -1,24 +1,21 @@
-"""Tests for `scripts/review/approve.py`: the triple, the file, the commit.
+"""Tests for the signature reader and the command that writes one.
 
 Every fixture is written by the test in a throwaway project: a spec, a test
-file, a runtime proof file, a record, an approval. Nothing here reads this
+file, a runtime proof file, a record, a signature. Nothing here reads this
 repository's own specs, reaches a network, or signs with a key that exists
 anywhere but the temporary directory the test made.
 
 What each group holds:
 
-*the triple*   the three hashes an approval binds, and what does and does not
-               change them: reflowing a rule and re-tagging it do not, editing
+*the triple*   the three hashes a signature binds, and what does and does not
+               change them: reflowing a rule and adding a tag do not, editing
                the rule, the proof or the test do
-*stale*        an approval stops being current when any part of the triple or
+*stale*        a signature stops being current when any part of the triple or
                the risk moves under it
-*the file*     the name, the fields, and the brief it points at
-*auto*         CI approves low risk with a passing record and enough test
-               strength, and nothing else: never medium or high, never below
-               the minimum, never a manual proof, never twice
+*the file*     the name, the fields, and the brief the reader steps over
 *the commit*   one signed commit for a batch, and the exact setup to print
                when this checkout cannot sign
-*ancestor*     an approval on a side branch is not on the protected branch
+*ancestor*     a signature on a side branch is not on the protected branch
 """
 
 import json
@@ -35,12 +32,22 @@ ROOT = os.path.dirname(DEV)
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 
-import approve as approve_module  # noqa: E402
-from purlin import approvals as purlin_approvals  # noqa: E402
+import approve as sign_module  # noqa: E402
+from purlin import gate as purlin_gate  # noqa: E402
 from purlin import payload as purlin_payload  # noqa: E402
+from purlin import signatures as purlin_signatures  # noqa: E402
 from purlin import specs as purlin_specs  # noqa: E402
 
-APPROVE_PY = os.path.join(ROOT, 'scripts', 'review', 'approve.py')
+SIGN_PY = os.path.join(ROOT, 'scripts', 'review', 'approve.py')
+
+# The gate the project sits at by default, and the one that asks for a
+# signature: the bottom and the top of the three the resolver reads.
+FIRST_GATE = purlin_gate.GATES[0]
+SIGNING_GATE = purlin_gate.GATES[-1]
+
+# The config key the resolver reads for the signer list.
+SIGNER_KEY = ('signers' if 'signers' in purlin_gate.GateConfig.__slots__
+              else 'approvers')
 
 
 # ---------------------------------------------------------------------------
@@ -99,9 +106,10 @@ def write(path, text):
 class Project(object):
     """A throwaway project: git, a config, one spec, one test file."""
 
-    def __init__(self, spec=SPEC, gate='tested', config=None):
+    def __init__(self, spec=SPEC, gate=None, config=None):
         self.root = tempfile.mkdtemp()
-        settings = {'gate': gate, 'project_name': 'proj'}
+        settings = {'gate': gate or FIRST_GATE,
+                    'project_name': 'proj'}
         settings.update(config or {})
         write(os.path.join(self.root, '.purlin', 'config.json'),
               json.dumps(settings))
@@ -178,7 +186,7 @@ class Project(object):
         write(os.path.join(self.root, rel), json.dumps({
             'schema_version': 1, 'feature': 'login', 'commit': self.head(),
             'timestamp': iso, 'runner': runner,
-            'os': None, 'gate': 'tested', 'test_strength': strength,
+            'os': None, 'gate': FIRST_GATE, 'test_strength': strength,
             'scope_tree': purlin_specs.scope_tree(self.root, ['src/login.py']),
             'proofs': proofs}))
         if commit_it:
@@ -194,23 +202,21 @@ class Project(object):
         entry = next(f for f in data['features'] if f['name'] == 'login')
         return next(r for r in entry['rules'] if r['id'] == rule_id)
 
-    def approvals(self):
-        directory = os.path.join(self.root, 'specs', 'auth', 'login.approvals')
+    def signatures(self):
+        directory = os.path.join(self.root, 'specs', 'auth',
+                                 'login.signatures')
         if not os.path.isdir(directory):
             return []
         return sorted(os.listdir(directory))
 
-
-@pytest.fixture
-def project():
-    made = Project()
-    yield made
-    made.close()
+    def load(self, kind='signatures'):
+        reader = getattr(purlin_signatures, 'load_' + kind)
+        return reader(self.root, purlin_specs.scan_specs(self.root))
 
 
 @pytest.fixture
 def proved():
-    """A project whose rules are recorded, so an approval has something to bind."""
+    """A project whose rules have a record, so a signature has something to bind."""
     made = Project()
     made.proofs()
     made.record()
@@ -236,15 +242,24 @@ def signing_key(root, email='jane@acme.com'):
     return key + '.pub'
 
 
+def sign_one(project, rule='RULE-1', email='jane@acme.com', brief=None,
+             record=None, gate='passed', risk=None):
+    """Write one signature for a rule and return its project-relative path."""
+    entry = project.rule(rule)
+    return sign_module.write_approval(
+        project.root, 'login', rule, email, brief, record, gate,
+        entry['risk'] if risk is None else risk, entry=entry)
+
+
 # ---------------------------------------------------------------------------
 # The triple
 # ---------------------------------------------------------------------------
 
 class TestTheTriple:
 
-    @pytest.mark.proof("approvals", "PROOF-1", "RULE-1", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-1", "RULE-1", tier="integration")
     def test_the_three_hashes_come_back_with_their_kind(self, proved):
-        parts = approve_module.rule_proof_test_hashes(
+        parts = sign_module.rule_proof_test_hashes(
             proved.root, 'login', 'RULE-1')
         rule_hash, proof_hash, test_hash, kind, design = parts
         assert len(rule_hash) == 64 and len(proof_hash) == 64
@@ -252,50 +267,50 @@ class TestTheTriple:
         assert kind == 'file'
         assert design is None
 
-    @pytest.mark.proof("approvals", "PROOF-2", "RULE-2", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-2", "RULE-2", tier="integration")
     def test_a_rule_that_is_not_there_has_no_hashes(self, proved):
-        assert approve_module.rule_proof_test_hashes(
+        assert sign_module.rule_proof_test_hashes(
             proved.root, 'login', 'RULE-99') == (None, None, None, None, None)
 
-    @pytest.mark.proof("approvals", "PROOF-3", "RULE-3", tier="integration")
-    def test_reflowing_a_rule_and_re_tagging_it_keep_the_triple(self, proved):
-        before = approve_module.triple_for(proved.rule('RULE-1'))
+    @pytest.mark.proof("signatures", "PROOF-3", "RULE-3", tier="integration")
+    def test_reflowing_a_rule_and_adding_a_tag_keep_the_triple(self, proved):
+        before = sign_module.triple_for(proved.rule('RULE-1'))
         proved.spec(SPEC.replace(
             '- RULE-1: Valid credentials return 200 with a session token '
             '[risk: low]',
             '- RULE-1: Valid   credentials  return 200  with a session token '
             '[origin: pm] [risk: low]'))
-        after = approve_module.triple_for(proved.rule('RULE-1'))
+        after = sign_module.triple_for(proved.rule('RULE-1'))
         assert after == before, (
-            'reflowing a rule or re-tagging it must not stale its approval')
+            'the triple binds the rule text with its tags stripped')
 
-    @pytest.mark.proof("approvals", "PROOF-4", "RULE-4", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-4", "RULE-4", tier="integration")
     def test_editing_the_rule_the_proof_or_the_test_moves_the_triple(
             self, proved):
-        before = approve_module.triple_for(proved.rule('RULE-1'))
+        before = sign_module.triple_for(proved.rule('RULE-1'))
 
         proved.spec(SPEC.replace('return 200 with a session token',
                                  'return 201 with a session token'))
-        rule_changed = approve_module.triple_for(proved.rule('RULE-1'))
+        rule_changed = sign_module.triple_for(proved.rule('RULE-1'))
         assert rule_changed != before
 
         proved.spec(SPEC.replace('verify 200 and a token',
                                  'verify 200 and a token that expires'))
-        proof_changed = approve_module.triple_for(proved.rule('RULE-1'))
+        proof_changed = sign_module.triple_for(proved.rule('RULE-1'))
         assert proof_changed != before
 
         proved.spec(SPEC)
         proved.edit_test(TEST_FILE.replace('== 200', '== 200  # checked'))
-        test_changed = approve_module.triple_for(proved.rule('RULE-1'))
+        test_changed = sign_module.triple_for(proved.rule('RULE-1'))
         assert test_changed != before
 
-    @pytest.mark.proof("approvals", "PROOF-5", "RULE-5", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-5", "RULE-5", tier="integration")
     def test_a_manual_proof_says_so_instead_of_naming_a_file(self):
         made = Project(spec=SPEC.replace(
             'verify 401 and the body "denied"',
             'verify 401 and the body "denied" @manual'))
         try:
-            parts = approve_module.rule_proof_test_hashes(
+            parts = sign_module.rule_proof_test_hashes(
                 made.root, 'login', 'RULE-2')
             assert parts[3] == 'manual'
         finally:
@@ -308,65 +323,60 @@ class TestTheTriple:
 
 class TestStale:
 
-    def _approve(self, project, rule='RULE-1'):
-        entry = project.rule(rule)
-        return approve_module.write_approval(
-            project.root, 'login', rule, 'jane@acme.com', None, None,
-            'tested', entry['risk'], entry=entry)
-
     def _current(self, project, rule='RULE-1'):
         entry = project.rule(rule)
-        loaded = purlin_approvals.load_approvals(
-            project.root, purlin_specs.scan_specs(project.root))
-        found = loaded.get(('login', rule)) or []
-        return [a for a in found
-                if purlin_approvals.is_current(
-                    a, entry['rule_hash'], entry['proof_hash'],
+        found = project.load().get(('login', rule)) or []
+        return [s for s in found
+                if purlin_signatures.is_current(
+                    s, entry['rule_hash'], entry['proof_hash'],
                     entry['test_hash'], entry['risk'], entry['design_hash'])]
 
-    @pytest.mark.proof("approvals", "PROOF-6", "RULE-6", tier="integration")
-    def test_a_fresh_approval_is_current(self, proved):
-        self._approve(proved)
+    @pytest.mark.proof("signatures", "PROOF-6", "RULE-6", tier="integration")
+    def test_a_fresh_signature_is_current(self, proved):
+        sign_one(proved)
         assert len(self._current(proved)) == 1
 
-    @pytest.mark.proof("approvals", "PROOF-7", "RULE-6", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-7", "RULE-6", tier="integration")
     def test_the_rule_text_changing_stales_it(self, proved):
-        self._approve(proved)
+        sign_one(proved)
         proved.spec(SPEC.replace('return 200 with a session token',
                                  'return 200 with a signed session token'))
         assert self._current(proved) == []
 
-    @pytest.mark.proof("approvals", "PROOF-8", "RULE-6", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-8", "RULE-6", tier="integration")
     def test_the_proof_text_changing_stales_it(self, proved):
-        self._approve(proved)
+        sign_one(proved)
         proved.spec(SPEC.replace('verify 200 and a token',
                                  'verify 200, a token and a cookie'))
         assert self._current(proved) == []
 
-    @pytest.mark.proof("approvals", "PROOF-9", "RULE-6", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-9", "RULE-6", tier="integration")
     def test_the_test_changing_stales_it(self, proved):
-        self._approve(proved)
+        sign_one(proved)
         proved.edit_test(TEST_FILE.replace('== 200', '== 200 or True'))
         assert self._current(proved) == []
 
-    @pytest.mark.proof("approvals", "PROOF-10", "RULE-6", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-10", "RULE-6", tier="integration")
     def test_the_risk_changing_stales_it(self, proved):
-        self._approve(proved)
+        sign_one(proved)
         proved.spec(SPEC.replace(
             '- RULE-1: Valid credentials return 200 with a session token '
             '[risk: low]',
             '- RULE-1: Valid credentials return 200 with a session token '
             '[risk: high]'))
         assert self._current(proved) == [], (
-            'raising a rule from low to high changes what approving it meant')
+            'raising a rule from low to high changes what signing it meant')
 
-    @pytest.mark.proof("approvals", "PROOF-11", "RULE-7", tier="integration")
-    def test_a_stale_approval_puts_the_rule_in_stale(self, proved):
-        self._approve(proved)
-        assert proved.rule('RULE-1')['state'] == 'Approved'
+    @pytest.mark.proof("signatures", "PROOF-11", "RULE-7", tier="integration")
+    def test_a_stale_signature_still_comes_back_from_the_reader(self, proved):
+        sign_one(proved)
         proved.spec(SPEC.replace('return 200 with a session token',
                                  'return 200 with two session tokens'))
-        assert proved.rule('RULE-1')['state'] == 'Stale'
+        found = proved.load()[('login', 'RULE-1')]
+        assert len(found) == 1, found
+        assert found[0]['signer'] == 'jane@acme.com'
+        assert self._current(proved) == [], (
+            'the signed cell reads stale only while the file is still there')
 
 
 # ---------------------------------------------------------------------------
@@ -375,119 +385,45 @@ class TestStale:
 
 class TestTheFile:
 
-    @pytest.mark.proof("approvals", "PROOF-12", "RULE-8", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-12", "RULE-8", tier="integration")
     def test_the_name_carries_the_rule_the_triple_and_the_slug(self, proved):
-        entry = proved.rule('RULE-1')
-        triple = approve_module.triple_for(entry)
-        approve_module.write_approval(
-            proved.root, 'login', 'RULE-1', 'Rich.LaBarca+purlin@example.com',
-            None, None, 'tested', 'low', entry=entry)
-        assert proved.approvals() == [
+        triple = sign_module.triple_for(proved.rule('RULE-1'))
+        sign_one(proved, email='Rich.LaBarca+purlin@example.com')
+        assert proved.signatures() == [
             'RULE-1.%s.rich-labarca-purlin.json' % triple[:8]]
 
-    @pytest.mark.proof("approvals", "PROOF-13", "RULE-9", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-13", "RULE-9", tier="integration")
     def test_the_fields_are_the_ones_the_format_names(self, proved):
-        entry = proved.rule('RULE-1')
         record = proved.record()
-        path = approve_module.write_approval(
-            proved.root, 'login', 'RULE-1', 'jane@acme.com',
-            'specs/auth/login.approvals/RULE-1.brief.json', record,
-            'recorded', 'low', entry=entry)
+        path = sign_one(
+            proved, brief='.purlin/briefs/login/RULE-1.brief.json',
+            record=record, gate='strong')
         with open(os.path.join(proved.root, path), encoding='utf-8') as handle:
             data = json.load(handle)
-        assert data['schema'] == 'purlin-approval/1'
+        assert data['schema'] == 'purlin-signature/1'
         assert set(data) == {
             'schema', 'feature', 'rule', 'triple', 'rule_hash', 'proof_hash',
-            'test_hash', 'test_hash_kind', 'design_hash', 'risk', 'approver',
-            'timestamp', 'gate', 'brief', 'record'}
+            'test_hash', 'test_hash_kind', 'design_hash', 'risk', 'signer',
+            'note', 'timestamp', 'gate', 'brief', 'record'}
         assert data['feature'] == 'login' and data['rule'] == 'RULE-1'
-        assert data['triple'] == approve_module.triple_for(entry)[:16]
-        assert data['approver'] == 'jane@acme.com'
-        assert data['gate'] == 'recorded' and data['risk'] == 'low'
+        assert data['triple'] == sign_module.triple_for(
+            proved.rule('RULE-1'))[:16]
+        assert data['signer'] == 'jane@acme.com'
+        assert data['note'] is None
+        assert data['risk'] == 'low'
         assert data['record'] == record
         assert data['timestamp'].endswith('Z')
 
-    @pytest.mark.proof("approvals", "PROOF-14", "RULE-10", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-14", "RULE-10", tier="integration")
     def test_the_reader_finds_it_and_never_reads_a_brief_as_one(self, proved):
-        entry = proved.rule('RULE-1')
-        approve_module.write_approval(
-            proved.root, 'login', 'RULE-1', 'jane@acme.com', None, None,
-            'tested', 'low', entry=entry)
-        triple = approve_module.triple_for(entry)
-        write(os.path.join(proved.root, 'specs', 'auth', 'login.approvals',
+        triple = sign_module.triple_for(proved.rule('RULE-1'))
+        sign_one(proved)
+        write(os.path.join(proved.root, 'specs', 'auth', 'login.signatures',
                            'RULE-1.%s.brief.json' % triple[:8]),
               json.dumps({'schema': 'purlin-brief/1', 'rule': 'RULE-1'}))
-        loaded = purlin_approvals.load_approvals(
-            proved.root, purlin_specs.scan_specs(proved.root))
+        loaded = proved.load()
         assert len(loaded[('login', 'RULE-1')]) == 1
-        assert loaded[('login', 'RULE-1')][0]['approver'] == 'jane@acme.com'
-
-
-# ---------------------------------------------------------------------------
-# CI auto-approval
-# ---------------------------------------------------------------------------
-
-class TestAutoApproval:
-
-    @pytest.mark.proof("approvals", "PROOF-15", "RULE-11", tier="integration")
-    def test_low_risk_with_a_passing_record_and_enough_strength(self, proved):
-        written = approve_module.auto_approve(proved.root)
-        assert len(written) == 1, written
-        assert written[0].endswith('.ci.json')
-        with open(os.path.join(proved.root, written[0]),
-                  encoding='utf-8') as handle:
-            data = json.load(handle)
-        assert data['approver'] == 'ci' and data['risk'] == 'low'
-        assert data['record'].startswith('.purlin/records/login/')
-
-    @pytest.mark.proof("approvals", "PROOF-16", "RULE-12", tier="integration")
-    def test_high_risk_is_never_auto_approved(self, proved):
-        written = approve_module.auto_approve(proved.root)
-        assert [path for path in written if 'RULE-2' in path] == [], (
-            'RULE-2 is high risk and needs a person')
-
-    @pytest.mark.proof("approvals", "PROOF-17", "RULE-13", tier="integration")
-    def test_below_the_minimum_strength_nothing_is_written(self):
-        made = Project(config={'min_strength': 70})
-        try:
-            made.proofs()
-            made.record(strength=30)
-            assert approve_module.auto_approve(made.root) == []
-            made.record(strength=95, stamp='20260913T130000Z')
-            assert len(approve_module.auto_approve(made.root)) == 1
-        finally:
-            made.close()
-
-    @pytest.mark.proof("approvals", "PROOF-18", "RULE-14", tier="integration")
-    def test_a_failing_record_is_not_auto_approved(self):
-        made = Project()
-        try:
-            made.proofs({'PROOF-1': 'fail', 'PROOF-2': 'pass'})
-            made.record({'PROOF-1': 'fail', 'PROOF-2': 'pass'})
-            assert approve_module.auto_approve(made.root) == []
-        finally:
-            made.close()
-
-    @pytest.mark.proof("approvals", "PROOF-19", "RULE-15", tier="integration")
-    def test_a_manual_proof_is_never_auto_approved(self):
-        made = Project(spec=SPEC.replace(
-            'verify 200 and a token @integration',
-            'verify 200 and a token @manual'))
-        try:
-            made.proofs()
-            made.record()
-            assert approve_module.auto_approve(made.root) == [], (
-                'the evidence for a manual proof is a person\'s note')
-        finally:
-            made.close()
-
-    @pytest.mark.proof("approvals", "PROOF-20", "RULE-16", tier="integration")
-    def test_a_rule_already_approved_is_left_alone(self, proved):
-        entry = proved.rule('RULE-1')
-        approve_module.write_approval(
-            proved.root, 'login', 'RULE-1', 'jane@acme.com', None, None,
-            'tested', 'low', entry=entry)
-        assert approve_module.auto_approve(proved.root) == []
+        assert loaded[('login', 'RULE-1')][0]['signer'] == 'jane@acme.com'
 
 
 # ---------------------------------------------------------------------------
@@ -496,75 +432,79 @@ class TestAutoApproval:
 
 class TestTheSignedCommit:
 
-    @pytest.mark.proof("approvals", "PROOF-21", "RULE-17", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-21", "RULE-17", tier="integration")
     def test_without_signing_the_setup_is_printed_and_nothing_is_written(
             self, proved, capsys):
-        code = approve_module.main(['login', '--project-root', proved.root])
+        code = sign_module.main(['login', '--project-root', proved.root])
         output = capsys.readouterr().out
         assert code == 1
         assert 'git config gpg.format ssh' in output
         assert 'git config user.signingkey ~/.ssh/id_ed25519.pub' in output
         assert 'git config commit.gpgsign true' in output
-        assert proved.approvals() == []
+        assert proved.signatures() == []
 
-    @pytest.mark.proof("approvals", "PROOF-23", "RULE-18", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-23", "RULE-18", tier="integration")
     def test_one_signed_commit_carries_the_batch(self, proved, capsys):
         signing_key(proved.root)
-        code = approve_module.main(['login', '--project-root', proved.root])
+        code = sign_module.main(['login', '--project-root', proved.root])
         capsys.readouterr()
         assert code == 0
-        assert len(proved.approvals()) == 2
+        assert len(proved.signatures()) == 2
         log = git(proved.root, 'log', '-1', '--format=%G?%n%s').stdout
         signature, subject = log.strip().splitlines()
         assert signature == 'G', log
-        assert subject == 'approve(login): RULE-2 RULE-1', subject
+        assert subject == 'sign(login): RULE-2 RULE-1', subject
 
-    @pytest.mark.proof("approvals", "PROOF-25", "RULE-20", tier="integration")
-    def test_the_counted_approval_needs_the_signature_and_the_list(
-            self, proved):
+    @pytest.mark.proof("signatures", "PROOF-25", "RULE-20", tier="integration")
+    def test_what_a_counting_signature_is_at_each_gate(self, proved):
         signing_key(proved.root)
-        approve_module.main(['login', 'RULE-1', '--project-root', proved.root])
-        loaded = purlin_approvals.load_approvals(
-            proved.root, purlin_specs.scan_specs(proved.root))
-        approval = loaded[('login', 'RULE-1')][0]
-        counted, reason = purlin_approvals.counts(
-            proved.root, approval, ['jane@acme.com'])
+        sign_module.main(['login', 'RULE-1', '--project-root', proved.root])
+        found = proved.load()[('login', 'RULE-1')][0]
+
+        counted, reason = purlin_signatures.counts(
+            proved.root, found, ['jane@acme.com'], gate='signed')
         assert counted, reason
-        counted, reason = purlin_approvals.counts(
-            proved.root, approval, ['someone@else.com'])
-        assert not counted and 'approver list' in reason
 
-    @pytest.mark.proof("approvals", "PROOF-24", "RULE-19")
+        counted, reason = purlin_signatures.counts(
+            proved.root, found, ['someone@else.com'], gate='signed')
+        assert not counted and 'signer is not on the list' in reason
+
+        counted, reason = purlin_signatures.counts(
+            proved.root, found, ['someone@else.com'], gate='strong')
+        assert counted, (
+            'under strong a signature from anyone settles what the machine '
+            'could not: %s' % reason)
+
+    @pytest.mark.proof("signatures", "PROOF-24", "RULE-19")
     def test_a_batch_across_features_names_each_one(self):
-        assert approve_module.commit_message(
+        assert sign_module.commit_message(
             [('login', 'RULE-1'), ('login', 'RULE-2')]) == (
-            'approve(login): RULE-1 RULE-2')
-        assert approve_module.commit_message(
+            'sign(login): RULE-1 RULE-2')
+        assert sign_module.commit_message(
             [('login', 'RULE-1'), ('billing', 'RULE-3')]) == (
-            'approve(batch): login RULE-1, billing RULE-3')
+            'sign(batch): login RULE-1, billing RULE-3')
 
-    @pytest.mark.proof("approvals", "PROOF-26", "RULE-21", tier="integration")
-    def test_the_approver_list_bounds_who_may_run_it(self, proved, capsys):
-        proved.config(approvers=['someone@else.com'])
-        code = approve_module.main(['login', '--project-root', proved.root])
+    @pytest.mark.proof("signatures", "PROOF-26", "RULE-21", tier="integration")
+    def test_the_signer_list_bounds_who_may_run_it(self, proved, capsys):
+        proved.config(**{SIGNER_KEY: ['someone@else.com']})
+        code = sign_module.main(['login', '--project-root', proved.root])
         output = capsys.readouterr().out
         assert code == 1
-        assert 'not on the approver list' in output
+        assert 'not on the signer list' in output
 
-    @pytest.mark.proof("approvals", "PROOF-27", "RULE-21", tier="integration")
-    def test_the_approved_gate_with_no_list_names_the_command(self, capsys):
-        made = Project(gate='approved')
+    @pytest.mark.proof("signatures", "PROOF-27", "RULE-21", tier="integration")
+    def test_the_signing_gate_with_no_list_names_the_command(self, capsys):
+        made = Project(gate=SIGNING_GATE)
         try:
             made.proofs()
             made.record()
-            code = approve_module.main(['login', '--project-root', made.root])
+            code = sign_module.main(['login', '--project-root', made.root])
             output = capsys.readouterr().out
             assert code == 1
-            assert 'approver list missing: run purlin:init --gate approved' \
+            assert 'signer list missing: run purlin:init --gate signed' \
                 in output
         finally:
             made.close()
-
 
 # ---------------------------------------------------------------------------
 # The ancestor check
@@ -572,19 +512,17 @@ class TestTheSignedCommit:
 
 class TestTheAncestorCheck:
 
-    @pytest.mark.proof("approvals", "PROOF-29", "RULE-23", tier="integration")
-    def test_an_approval_on_a_side_branch_is_not_on_the_protected_branch(
+    @pytest.mark.proof("signatures", "PROOF-29", "RULE-23", tier="integration")
+    def test_a_signature_on_a_side_branch_is_not_on_the_protected_branch(
             self, proved):
         signing_key(proved.root)
         git(proved.root, 'checkout', '-q', '-b', 'side')
-        approve_module.main(['login', 'RULE-1', '--project-root', proved.root])
-        loaded = purlin_approvals.load_approvals(
-            proved.root, purlin_specs.scan_specs(proved.root))
-        path = loaded[('login', 'RULE-1')][0]['path']
-        assert not purlin_approvals.is_ancestor(proved.root, path, 'main')
+        sign_module.main(['login', 'RULE-1', '--project-root', proved.root])
+        path = proved.load()[('login', 'RULE-1')][0]['path']
+        assert not purlin_signatures.is_ancestor(proved.root, path, 'main')
         git(proved.root, 'checkout', '-q', 'main')
         git(proved.root, 'merge', '-q', '--ff-only', 'side')
-        assert purlin_approvals.is_ancestor(proved.root, path, 'main')
+        assert purlin_signatures.is_ancestor(proved.root, path, 'main')
 
 
 # ---------------------------------------------------------------------------
@@ -593,16 +531,16 @@ class TestTheAncestorCheck:
 
 class TestTheCommandLine:
 
-    @pytest.mark.proof("approvals", "PROOF-28", "RULE-22")
+    @pytest.mark.proof("signatures", "PROOF-28", "RULE-22")
     def test_help_exits_zero_and_a_bad_option_exits_two(self):
-        assert approve_module.main(['--help']) == 0
-        assert approve_module.main(['login', '--nope']) == 2
-        assert approve_module.main([]) == 2
+        assert sign_module.main(['--help']) == 0
+        assert sign_module.main(['login', '--nope']) == 2
+        assert sign_module.main([]) == 2
 
-    @pytest.mark.proof("approvals", "PROOF-22", "RULE-17", tier="integration")
+    @pytest.mark.proof("signatures", "PROOF-22", "RULE-17", tier="integration")
     def test_the_script_runs_as_a_command(self, proved):
         result = subprocess.run(
-            [sys.executable, APPROVE_PY, 'login', '--project-root',
+            [sys.executable, SIGN_PY, 'login', '--project-root',
              proved.root], capture_output=True, text=True, timeout=120)
         assert result.returncode == 1, result.stdout + result.stderr
         assert 'git config gpg.format ssh' in result.stdout

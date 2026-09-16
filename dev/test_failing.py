@@ -1,7 +1,7 @@
 """Tests for the `failing` flag: where a test backing a rule last failed.
 
 A failing test only holds a rule in a lower state, so the state alone cannot
-say a test is failing. The throwaway project is `dev/test_approvals.py`'s.
+say a test is failing. The throwaway project is `dev/test_signatures.py`'s.
 """
 
 import os
@@ -14,7 +14,7 @@ ROOT = os.path.dirname(DEV)
 sys.path.insert(0, DEV)
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 
-from test_approvals import Project  # noqa: E402
+from test_signatures import Project  # noqa: E402
 
 
 @pytest.fixture

@@ -24,7 +24,7 @@ import pytest
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'mcp'))
 
-from purlin import approvals as purlin_approvals
+from purlin import signatures as purlin_signatures
 from purlin import checks as purlin_checks
 from purlin import drift as purlin_drift
 from purlin import frameworks as purlin_frameworks
@@ -130,7 +130,7 @@ class Project(object):
     def approval(self, rule_id, data, feature='login', category='auth',
                  slug='jane'):
         directory = os.path.join(self.root, 'specs', category,
-                                 feature + '.approvals')
+                                 feature + '.signatures')
         name = '%s.%s.%s.json' % (rule_id, data['rule_hash'][:8], slug)
         _write(os.path.join(directory, name), json.dumps(data))
         return os.path.join(directory, name)
@@ -497,9 +497,9 @@ class TestIds:
         with open(os.path.join(project.root, 'tests', 'test_login.py'),
                   encoding='utf-8') as handle:
             assert '"PROOF-14", "RULE-14"' in handle.read()
-        approvals_dir = os.path.join(project.root, 'specs', 'auth',
-                                     'login.approvals')
-        assert [n.split('.')[0] for n in os.listdir(approvals_dir)] == ['RULE-14']
+        directory = os.path.join(project.root, 'specs', 'auth',
+                                 'login.signatures')
+        assert [n.split('.')[0] for n in os.listdir(directory)] == ['RULE-14']
         assert any(p.endswith('tests/test_login.py') for p in changed), changed
 
     def test_renumber_never_lets_one_id_eat_a_longer_one(self, project):
@@ -683,7 +683,7 @@ def _approval_payload(project, rule_id='RULE-1', risk='high', **overrides):
         'test_hash': rule['test_hash'], 'design_hash': None,
         'brief_hash': 'd' * 64, 'record': None,
     }
-    data['triple_hash'] = purlin_approvals.triple_hash(
+    data['triple_hash'] = purlin_signatures.triple_hash(
         data['rule_hash'], data['proof_hash'], data['test_hash'])
     data.update(overrides)
     return data
@@ -694,7 +694,7 @@ class TestApprovals:
     def test_an_approval_is_one_file_named_for_its_rule_and_hash(self, project):
         data = _approval_payload(project)
         project.approval('RULE-1', data)
-        loaded = purlin_approvals.load_approvals(
+        loaded = purlin_signatures.load_signatures(
             project.root, purlin_specs.scan_specs(project.root))
         assert list(loaded) == [('login', 'RULE-1')]
         approval = loaded[('login', 'RULE-1')][0]
@@ -704,23 +704,23 @@ class TestApprovals:
     def test_a_ci_auto_approval_is_named_ci(self, project):
         data = _approval_payload(project, risk='low')
         project.approval('RULE-1', data, slug='ci')
-        loaded = purlin_approvals.load_approvals(
+        loaded = purlin_signatures.load_signatures(
             project.root, purlin_specs.scan_specs(project.root))
         assert loaded[('login', 'RULE-1')][0]['is_ci'] is True
 
     def test_current_means_the_triple_and_the_risk_still_match(self, project):
         data = _approval_payload(project)
-        assert purlin_approvals.is_current(
+        assert purlin_signatures.is_current(
             data, data['rule_hash'], data['proof_hash'], data['test_hash'],
             'high')
         # Any one of the three, or the risk, and it is not current.
-        assert not purlin_approvals.is_current(
+        assert not purlin_signatures.is_current(
             data, 'x' * 64, data['proof_hash'], data['test_hash'], 'high')
-        assert not purlin_approvals.is_current(
+        assert not purlin_signatures.is_current(
             data, data['rule_hash'], 'x' * 64, data['test_hash'], 'high')
-        assert not purlin_approvals.is_current(
+        assert not purlin_signatures.is_current(
             data, data['rule_hash'], data['proof_hash'], 'x' * 64, 'high')
-        assert not purlin_approvals.is_current(
+        assert not purlin_signatures.is_current(
             data, data['rule_hash'], data['proof_hash'], data['test_hash'],
             'medium')
 
@@ -730,19 +730,19 @@ class TestApprovals:
         _git(project.root, 'add', '-A')
         _git(project.root, 'commit', '-q', '-m', 'chore: approve')
         rel = os.path.relpath(path, project.root).replace(os.sep, '/')
-        loaded = purlin_approvals.load_approvals(
+        loaded = purlin_signatures.load_signatures(
             project.root, purlin_specs.scan_specs(project.root))
         approval = loaded[('login', 'RULE-1')][0]
-        counted, reason = purlin_approvals.counts(
+        counted, reason = purlin_signatures.counts(
             project.root, approval, ['jane@acme.com'])
         assert counted is False and 'not signed' in reason, (reason, rel)
 
     def test_a_ci_approval_needs_no_signature_of_its_own(self, project):
         data = _approval_payload(project, risk='low')
         project.approval('RULE-1', data, slug='ci')
-        loaded = purlin_approvals.load_approvals(
+        loaded = purlin_signatures.load_signatures(
             project.root, purlin_specs.scan_specs(project.root))
-        counted, reason = purlin_approvals.counts(
+        counted, reason = purlin_signatures.counts(
             project.root, loaded[('login', 'RULE-1')][0], ['jane@acme.com'])
         assert counted is True, reason
 
@@ -816,7 +816,7 @@ class TestStates:
     @pytest.mark.proof("states", "PROOF-7", "RULE-7", tier="integration")
     def test_reviewed_when_a_brief_matches_the_triple(self, project):
         rule = project.rule('RULE-2')
-        expected = purlin_approvals.triple_hash(
+        expected = purlin_signatures.triple_hash(
             rule['rule_hash'], rule['proof_hash'], rule['test_hash'])
         result = purlin_states.rule_state({
             'proofs': [{'id': 'PROOF-2', 'tier': 'unit', 'env': None,

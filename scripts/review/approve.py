@@ -46,7 +46,7 @@ from purlin import (console as console_module,                 # noqa: E402
                     signatures as signatures_module,
                     specs as specs_module)
 
-SCHEMA = 'purlin-approval/1'
+SCHEMA = 'purlin-signature/1'
 HOLD_SCHEMA = 'purlin-hold/1'
 USAGE = ('Usage: approve.py <feature> [RULE-N ...] [--batch] '
          '[--hold REASON] [--project-root DIR]')
@@ -153,7 +153,8 @@ def write_approval(project_root, feature, rule, approver_email, brief_path,
         'test_hash_kind': entry.get('test_hash_kind'),
         'design_hash': entry.get('design_hash'),
         'risk': risk if risk is not None else entry.get('risk'),
-        'approver': 'ci' if is_ci else str(approver_email),
+        'signer': 'ci' if is_ci else str(approver_email),
+        'note': None,
         'timestamp': payload_module.now_iso(),
         'gate': gate,
         'brief': brief_path,
@@ -333,12 +334,12 @@ def commit_message(targets):
             features.append(feature)
     if len(features) == 1:
         rules = [rule for _feature, rule in targets]
-        return 'approve(%s): %s' % (features[0], ' '.join(rules))
+        return 'sign(%s): %s' % (features[0], ' '.join(rules))
     parts = []
     for feature in features:
         rules = [rule for name, rule in targets if name == feature]
         parts.append('%s %s' % (feature, ' '.join(rules)))
-    return 'approve(batch): %s' % ', '.join(parts)
+    return 'sign(batch): %s' % ', '.join(parts)
 
 
 def approve_and_commit(project_root, targets, approver_email, batch=False):
@@ -523,13 +524,14 @@ def main(argv=None):
     resolved = gate_module.resolve_gate(
         {'gate': (payload.get('gate') or {}).get('gate')})
     email = _config(project_root, 'user.email').lower()
-    approvers = (payload.get('gate') or {}).get('approvers') or []
+    gate_fields = payload.get('gate') or {}
+    signers = gate_fields.get('signers') or gate_fields.get('approvers') or []
 
-    if resolved.gate == 'approved' and not approvers:
-        print('approve: approver list missing: run purlin:init --gate approved')
+    if resolved.gate in ('signed', 'approved') and not signers:
+        print('approve: signer list missing: run purlin:init --gate signed')
         return EXIT_NOTHING
-    if approvers and email not in approvers:
-        print('approve: %s is not on the approver list. Add it by pull '
+    if signers and email not in signers:
+        print('approve: %s is not on the signer list. Add it by pull '
               'request, or ask someone on it.' % (email or 'this checkout'))
         return EXIT_NOTHING
 

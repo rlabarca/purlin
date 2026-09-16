@@ -3,7 +3,7 @@
 A proof may be backed by more than one test, and a person approving from the
 brief reads the source shown under each test's name. These tests hold that the
 source and the findings under a name are that test's own. The throwaway project
-is `dev/test_approvals.py`'s, with a second test marked for the same proof.
+is `dev/test_signatures.py`'s, with a second test marked for the same proof.
 """
 
 import json
@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 
 import brief as brief_module  # noqa: E402
 import static_checks  # noqa: E402
-from test_approvals import TEST_FILE, Project, write  # noqa: E402
+from test_signatures import TEST_FILE, Project, write  # noqa: E402
 
 SECOND_TEST = (
     '\n\n'
