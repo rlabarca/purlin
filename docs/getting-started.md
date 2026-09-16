@@ -162,24 +162,27 @@ flowchart LR
 ## Read the table
 
 ```
-  Feature        Rules   Spec        Tests           Run
-  ───────────────────────────────────────────────────────────────
-  login              3   3 ready     3 · 0 · 0       local, 2m ago
+Feature  Rules  Spec                 Tests                             Run
+──────────────────────────────────────────────────────────────────────────
+login        3  3 ready · 0 drafted  3 passed · 0 failing · 0 no test  developer
 
-  3 of 3 meet the gate passed
+3 of 3 rules meet the gate passed.
+→ Next: nothing is outstanding at gate passed.
 ```
 
 `purlin:status` prints that table any time, one row per feature and per anchor, sorted so the
 rows needing the most work come first. `Spec` counts the rules a proof names against the rules
-that are still drafted; `Tests` counts passed, failing and no test; `Run` names the source of
-the newest record and its age. A column exists only when the cell behind it does, so a project
-at the `passed` gate has no `Strength`, `Strong` or `Signed` column. The gate is what adds them:
-`purlin:init --gate strong` adds the first two, `--gate signed` adds the third.
+still drafted; `Tests` counts passed, failing and no test; `Run` names the source of the newest
+record, and the operating system when the run was one job of a matrix. A column exists only
+when the cell behind it does, so a project at the `passed` gate has no `Strength`, `Strong` or
+`Signed` column. The gate is what adds them: `purlin:init --gate strong` adds the first two,
+`--gate signed` adds the third.
 
 Every command ends with one `→ Next:` line naming the step to take, computed from the cell that
-blocks the most rules: `purlin:spec` for a drafted rule, `purlin:build` for a rule with no test
-or a failing one, `purlin:sign` for a rule that needs a person, and "nothing is outstanding at
-gate passed" when every rule meets it. Follow the line rather than remembering an order.
+blocks the rules: `purlin:spec` when a rule has no proof that clears the free checks,
+`purlin:build` when a test fails or a proof has none, `purlin:test` when there is no run to
+read, and `purlin:sign` when a rule is waiting for a person. Follow the line rather than
+remembering an order.
 
 ## Where to go next
 

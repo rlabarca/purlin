@@ -105,7 +105,7 @@ drift eng: 14 files since the last record (a1b2c3d)
   login RULE-7               no test carries PROOF-7
   billing RULE-3             no risk tag; the gate needs one
   design_tokens (anchor)     pinned 4 commits behind
-  export RULE-1              code changed since 9f8e7d6; CI clears it on the next run
+  export                     code changed: the code moved, the signatures stand
 ```
 
 You may also be the person who signs. Under the `strong` gate that is fine. Under `signed` the
@@ -133,7 +133,7 @@ A rule that came from a pinned anchor belongs to the anchor repository, whoever 
 |------|-----------------|
 | `pm` | Criteria with no rule carrying them, `origin: pm` rules whose text changed, rules an engineer added, pins behind |
 | `design` | Design files that changed, and `origin: design` rules whose signature went stale because a mock was re-exported |
-| `qa` | Signatures gone stale, how long the review list is, rules that need a person |
+| `qa` | Signatures gone stale, how long the review list is, how many rules need a person, rules whose every proof asserts a success path |
 | `eng` | Files touched and the rules behind them, rules with no test, risk or origin tags the gate requires and the spec lacks, pins behind, rules whose passed cell reads `code changed` |
 
 Run it at four moments: at the start of a session, after an anchor pin or a design export

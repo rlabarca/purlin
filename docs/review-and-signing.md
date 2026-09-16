@@ -17,15 +17,12 @@ No arguments and no prior reading. The skill asks for the list, prints the count
 the first few rows, then starts the walk.
 
 ```
-3 rules need a person
+Review list: 12 rules need a person, across 4 features
+  high 3   medium 6   low 3
 
-  high     0 unsigned   0 stale   0 held   0 needs a person
-  medium   0 unsigned   1 stale   0 held   1 needs a person
-  low      0 unsigned   0 stale   1 held   0 needs a person
-
-  login             RULE-2   medium   stale            hashes changed after the signature
-  checkout_design   RULE-1   medium   needs a person   review not settled
-  login             RULE-3   low      held             held by sam@acme.com: the lock expiry is never read
+  login       RULE-3   high     stale: the rule text changed after the signature
+  login       RULE-7   high     needs a person: the model review did not settle
+  billing     RULE-2   high     unsigned
 ```
 
 A rule is on the list when the cell that blocks it is one only a person can answer:
@@ -140,9 +137,15 @@ The walk closes by saying what happened and what is left:
 
 ```
 Walked 12 rules: 8 signed, 1 case added, 1 held, 2 skipped.
-Signatures committed: 8 (signed, 1 commit)
-Left on the list: 4
+  billing RULE-2   add this proof line: reject an expired token with 401
+Commits: 4f1a9c2, 9b3e07d
+→ Run: purlin:build
+→ Run: purlin:sign
 ```
+
+The first `→` line appears when a case was added, the second when a rule is still on the list.
+With nothing left, the line names the next step for the gate: the pull request under `signed`,
+`purlin:status` under `strong`.
 
 ## Signing outside the walk
 
@@ -165,28 +168,33 @@ saw for a `@manual` proof, or the judgment the model could not settle. It is all
 whose strong cell reads `needs a person`, and it lands in the signature file's `note` field.
 
 If your email is not in `signers` in `.purlin/config.json`, the skill stops and says
-`<email> is not on the signer list`. Add it by pull request, or ask someone on the list. With no
-list at all it says `sign: signer list missing: run purlin:init --gate signed`.
+`sign: <email> is not on the signer list. Add it by pull request, or ask someone on it.` With no
+list at all under the `signed` gate it says
+`sign: signer list missing: run purlin:init --gate signed`.
 
-Under the `strong` gate a signature is not required by anything, and `purlin:sign <feature>
-RULE-N` says so before it writes one. It still writes it if you ask, and the file still clears a
-`needs a person` cell, from anyone: at `strong` the signer list is not read. Under `signed` the
-signer rules apply in full.
+Under the `strong` gate a signature is not required by anything, so a bare signature says
+`sign: a signature is required only under the gate signed. Writing it anyway.` and writes it.
+The file still clears a `needs a person` cell, from anyone: at `strong` the signer list is not
+read. Under `signed` the signer rules apply in full. Under `passed` nothing is written at all:
+the skill says the gate is `passed`, names what `purlin:init --gate strong` would add, and
+stops.
 
 ## What makes a signature count
 
 A signature file binds three hashes - the rule text, the proof descriptions, and the test files
 behind them - plus the pinned design for an `origin: design` rule, the risk at the time, your
 email, the brief you read and the record you rested on. These conditions decide whether it
-counts, and the status shows which one failed:
+counts, and the signed cell names the one that failed:
 
-1. The commit that added the file is signed and the signature verifies.
-2. The author's email is on the signer list as of that commit.
-3. That author is not the author of the commit that last touched the test.
-4. The bound hashes still match the current text.
+| The signature counts when | What the cell reads when it does not |
+|---|---|
+| The commit that added the file is signed and the host verifies it | `the signing commit is not signed` |
+| The author's email is on `signers` as of that commit | `the signer is not on the list` |
+| That author did not author the last commit to the test file | `the signer last touched the test` |
+| The bound rule, proof, test and risk hashes still match | `hashes changed after the signature` |
+| Under `signed`, the commit is on the protected branch | `the signing commit is not on <branch>` |
 
-Under `signed`, the gate also checks that the signing commit is an ancestor of the protected
-branch head, so a signature living only on a side branch does not let a change merge.
+The last of them is why a signature living only on a side branch does not let a change merge.
 
 ## What stales a signature
 
