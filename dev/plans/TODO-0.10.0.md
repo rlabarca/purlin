@@ -80,9 +80,13 @@ is what the run could not finish, found and left, or left to a person.
     under every test name when one proof had several tests (seen on 14 `run_script` rules). The
     body and the free findings are now looked up by the recorded test name, and a name the file
     no longer holds shows no body rather than another test's (`brief` RULE-26).
-21. **Reading a brief dirties the tree.** Every `brief.py` run rewrites the tracked
-    `<RULE-N>.<hash8>.brief.json` beside the approvals and writes an untracked `.brief.txt`
-    that `.gitignore` does not cover, so a local review leaves hundreds of changed files.
+21. **Fixed: reading a brief no longer dirties the tree.** The brief JSON is evidence and stays
+    committed: CI commits it, Reviewed reads it and an approval names it. Writing a brief again
+    for the same triple leaves the JSON untouched unless its evidence changed (`brief` RULE-27).
+    The `.brief.txt` beside it is a local view: `*.brief.txt` is in this repository's
+    `.gitignore`, in the block init writes (`scaffold` RULE-41), and the update adds it to an
+    existing project (`update` RULE-22). The first CI run after the item 20 fix rewrites the
+    briefs whose test bodies were wrong, about 120, once.
 22. **Fixed in `b4b7a783`: a timed-out engine no longer records a partial number.** A run
     past `--arm-timeout` now measures nothing and prints why (`mutation` RULE-22). mutmut
     loses every feature's number because it runs the whole project at once; Stryker and

@@ -21,6 +21,12 @@ The brief is written beside the approval it informs, as
 rendering beside it. A brief is named for the triple it was built from, so a
 brief for text that has since changed is simply not found again.
 
+The JSON is evidence: CI commits it with the record, the rule reads Reviewed
+because it exists, and an approval names it. Building a brief again for the same
+triple leaves that file untouched unless the evidence in it changed, so reading
+a brief does not dirty the tree. The `.brief.txt` beside it is a local view,
+named in `.gitignore` and never committed.
+
 Exit codes: 0 a brief was built, 1 the rule is not in the project, 2 the
 command line was wrong.
 """
@@ -379,8 +385,29 @@ def brief_paths(project_root, feature, rule, triple):
     return stem + '.json', stem + '.txt'
 
 
+# What says when and where a brief was built, not what it found. A brief that
+# differs from the one on disk only here is the same evidence.
+_WHEN_BUILT = ('generated_at', 'state', 'record')
+
+
+def same_evidence(one, other):
+    """True when two briefs differ at most in when and where they were built."""
+    if not isinstance(one, dict) or not isinstance(other, dict):
+        return False
+
+    def evidence(brief):
+        # Through JSON, so a tuple built in memory equals the list read back.
+        return json.loads(json.dumps({key: value for key, value in brief.items()
+                                      if key not in _WHEN_BUILT}))
+    return evidence(one) == evidence(other)
+
+
 def write_brief(project_root, brief):
-    """Write one brief and its text rendering. Returns the JSON path."""
+    """Write one brief and its text rendering. Returns the JSON path.
+
+    The JSON is left untouched when the brief already on disk for this triple
+    holds the same evidence, so a second read of a brief changes no tracked file.
+    """
     json_path, text_path = brief_paths(
         project_root, brief['feature'], brief['rule'], brief['triple_hash'])
     if not json_path:
@@ -388,9 +415,15 @@ def write_brief(project_root, brief):
     directory = os.path.dirname(json_path)
     if not os.path.isdir(directory):
         os.makedirs(directory)
-    with open(json_path, 'w', encoding='utf-8') as handle:
-        json.dump(brief, handle, indent=2, sort_keys=True)
-        handle.write('\n')
+    try:
+        with open(json_path, 'r', encoding='utf-8') as handle:
+            existing = json.load(handle)
+    except (OSError, ValueError, UnicodeDecodeError):
+        existing = None
+    if not same_evidence(existing, brief):
+        with open(json_path, 'w', encoding='utf-8') as handle:
+            json.dump(brief, handle, indent=2, sort_keys=True)
+            handle.write('\n')
     with open(text_path, 'w', encoding='utf-8') as handle:
         handle.write(render_brief(brief))
     return os.path.relpath(json_path, project_root).replace(os.sep, '/')

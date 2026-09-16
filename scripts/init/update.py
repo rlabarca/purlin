@@ -57,7 +57,8 @@ WORKFLOW_MARKERS = ('PURLIN_PLATFORM', 'scripts/ci/verify_gate.py',
                     'scripts/update/migrate.py', '.proofs-')  # retired
 
 # --- what this release writes instead --------------------------------------
-IGNORE_LINES = ('.purlin/report-data.js', '.purlin/report-stamp.js')
+IGNORE_LINES = ('.purlin/report-data.js', '.purlin/report-stamp.js',
+                '*.brief.txt')
 PRE_PUSH_SCRIPT = 'scripts/hooks/pre-push.sh'
 _SHIM_LINE = 'PURLIN_SCRIPT="%s"' % PRE_PUSH_SCRIPT
 RECORDS_DIR = '.purlin/records'

@@ -19,6 +19,9 @@
 # Dashboard data, regenerated locally, never committed
 .purlin/report-data.js
 
+# The text rendering of a review brief, a local view of the committed JSON beside it
+*.brief.txt
+
 # Where this machine keeps the installed plugin (read by .purlin/hooks/)
 .purlin/plugin-root
 

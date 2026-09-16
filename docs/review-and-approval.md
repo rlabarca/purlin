@@ -50,6 +50,12 @@ At each stop the walk shows a brief. The brief answers one question - does this 
 rule? - and it gathers the evidence in layers, cheapest first, stopping when it has enough for
 the rule's risk.
 
+The brief is written beside the approval it informs as `<RULE-N>.<hash8>.brief.json`. That file
+is evidence: CI commits it, the rule reads Reviewed because it exists, and your approval names
+it. Reading the brief again for the same hashes leaves the file as it was unless what the brief
+found changed. The `.brief.txt` beside it is a local view, and `.gitignore` keeps it out of every
+commit.
+
 | Layer | What it reads | Runs at |
 |-------|---------------|---------|
 | The free checks on the proof text | the proof description and its tier tag alone | every risk |

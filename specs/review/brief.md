@@ -39,6 +39,7 @@
 - RULE-24: `brief.py --feature <name>` with no `--rule` builds, prints and writes a brief for every rule of that feature [risk: low] [origin: eng]
 - RULE-25: A name that opens with an underscore reaches the brief as `implementation_coupling` unless it follows a `/`, so a path or URL segment such as `specs/_anchors/` or `/_git/` is not read as a private symbol [risk: medium] [origin: eng]
 - RULE-26: When several tests back one proof, each test in the brief shows its own source and its own findings; a test whose source cannot be found shows none rather than another test's [risk: high] [origin: eng]
+- RULE-27: Writing a brief again for a triple that already has one leaves the JSON byte for byte as it was unless the evidence in it changed; a difference only in when it was built, the state it was built in or the record it was built from is not a change, so reading a brief dirties no tracked file [risk: medium] [origin: eng]
 
 ## Proof
 
@@ -83,3 +84,5 @@
 - PROOF-39 (RULE-26): Make the second test assert nothing; verify `no_assertion` is among the second entry's findings and not among the first's @integration
 - PROOF-40 (RULE-26): Record a third name `test_renamed_away` for `PROOF-1` that the file no longer holds; verify its body is empty while the other two still show their own source @integration
 - PROOF-41 (RULE-26): Match the recorded names `Acme.LoginTests.Denied(user: "x")`, `test_found[jest-[proof:f:PROOF-1:RULE-1]]`, `TestLogin::test_found` and `works [proof:login:PROOF-1:RULE-1]` against the source names `Allowed`, `Denied`, `test_found` and `works [proof:login:PROOF-1:RULE-1]`; verify each finds its own source name and nothing else, and `test_gone` finds none
+- PROOF-42 (RULE-27): Write the brief for `RULE-1`, then write a copy whose `generated_at`, `state` and `record` differ; verify the JSON on disk is byte for byte the first write @integration
+- PROOF-43 (RULE-27): Write the brief for `RULE-1`, then write a copy whose verdict reads `rewrite the proof`; verify the JSON on disk now carries `rewrite the proof` @integration
