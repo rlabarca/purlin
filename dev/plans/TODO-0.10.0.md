@@ -56,9 +56,9 @@ is what the run could not finish, found and left, or left to a person.
    prove nothing unless a root wrapper calls them (`init_e2e.test.sh`,
    `proof_plugins.test.sh` exist); three proofs carry `@env(linux)` because the wrappers skip
    on Windows. A consumer with shell tests under a subdirectory meets the same limit.
-9. **A Windows developer's record commit stages nothing**: `scripts/run/records.py`
-   `deleted_records` and `_commit_as_developer` hand git a `.purlin\records` pathspec (lane
-   F11's note; the CI path is fine).
+9. **Fixed: a Windows developer's record commit stages its records.** `scripts/run/records.py`
+   `deleted_records` and `_commit_as_developer` now hand git `.purlin/records` with `/` on every
+   operating system (`records` RULE-24).
 10. **Two stale sentences** still say the matrix is "one job per operating system named":
     `skills/init/SKILL.md` around line 121 and `docs/raising-the-gate-and-upgrading.md`
     around line 44. Linux is always in the matrix now.

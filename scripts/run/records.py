@@ -48,6 +48,10 @@ if _MCP_DIR not in sys.path:
 from purlin import records as reader  # noqa: E402
 
 RECORDS_DIR = reader.RECORDS_DIR
+# What git is handed. A pathspec takes `/` on every operating system: the
+# `os.path.join` spelling of RECORDS_DIR is `.purlin\\records` on Windows, which
+# matches nothing, so a developer's record commit there staged nothing.
+RECORDS_PATHSPEC = '.purlin/records'
 RETENTION = reader.RETENTION
 
 # The tree entry's file-permission key and value, spelled the way GitHub's
@@ -225,17 +229,17 @@ def deleted_records(project_root):
     Retention deletes on disk as it writes, so the commit has to carry those
     deletions or a pruned record lives on in the git host's copy for ever.
     """
-    listed = _git(project_root, ['ls-files', '--deleted', '--', RECORDS_DIR],
-                  check=False)
+    listed = _git(project_root,
+                  ['ls-files', '--deleted', '--', RECORDS_PATHSPEC], check=False)
     return [line.strip() for line in (listed or '').splitlines()
             if line.strip()]
 
 
 def _commit_as_developer(project_root, paths, message):
     targets = list(paths or [])
-    if os.path.isdir(os.path.join(project_root, RECORDS_DIR)):
-        targets.append(RECORDS_DIR)
-    _git(project_root, ['add', '--all', '--'] + (targets or [RECORDS_DIR]))
+    if os.path.isdir(os.path.join(project_root, *RECORDS_PATHSPEC.split('/'))):
+        targets.append(RECORDS_PATHSPEC)
+    _git(project_root, ['add', '--all', '--'] + (targets or [RECORDS_PATHSPEC]))
     staged = _git(project_root, ['diff', '--cached', '--name-only'])
     if not (staged or '').strip():
         print('Nothing to commit: the records are already at HEAD.')
