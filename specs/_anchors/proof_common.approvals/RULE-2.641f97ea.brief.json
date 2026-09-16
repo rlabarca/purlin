@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "proof_common",
-  "generated_at": "2026-09-15T20:34:07Z",
+  "generated_at": "2026-09-16T21:03:03Z",
   "layers": [
     "proof text",
     "test body",
@@ -24,11 +24,9 @@
   ],
   "reasons": [
     "PROOF-2 tautology",
-    "PROOF-2 tautology",
-    "PROOF-2 tautology",
     "PROOF-2 tautology"
   ],
-  "record": ".purlin/records/proof_common/20260915T203331Z-6883ed3-ci-windows.json",
+  "record": ".purlin/records/proof_common/20260916T210253Z-dc36ae3-ci-linux.json",
   "risk": "high",
   "rule": "RULE-2",
   "rule_hash": "a9d6ff24e9335660bad6dae2f8bd101bd7f12610231c757e5c25a519bac70b95",
@@ -43,27 +41,23 @@
       "body": "def test_pytest_from_a_subdirectory(self, tmp_path):\n        root = _purlin_project(tmp_path)\n        (root / 'service' / 'tests').mkdir(parents=True)\n        (root / 'service' / 'tests' / 'test_feat.py').write_text(\n            'import pytest\\n\\n'\n            '@pytest.mark.proof(\"feat\", \"PROOF-1\", \"RULE-1\")\\n'\n            'def test_ok():\\n    assert True\\n', encoding='utf-8')\n        (root / 'service' / 'conftest.py').write_text(\n            'import sys\\n'\n            'sys.path.insert(0, %r)\\n'\n            'from pytest_purlin import pytest_configure  # noqa: F401\\n'\n            % PROOF_SCRIPTS, encoding='utf-8')\n        subprocess.run([sys.executable, '-m', 'pytest', '-q',\n                        '-p', 'no:cacheprovider'],\n                       cwd=str(root / 'service'), capture_output=True,\n                       text=True)\n        assert not (root / 'service' / '.purlin').exists()\n        data = _read_proofs(root, 'feat')\n        assert data is not None\n        assert data['proofs'][0]['test_file'] == 'service/tests/test_feat.py'",
       "file": "dev/test_multilang_proof_plugins.py",
       "findings": [
-        "tautology",
         "tautology"
       ],
       "name": "test_pytest_from_a_subdirectory",
       "proof": "PROOF-2",
       "reasons": [
-        "tautological assertion (assert True or equivalent)",
         "tautological assertion (assert True or equivalent)"
       ]
     },
     {
-      "body": "def test_pytest_from_a_subdirectory(self, tmp_path):\n        root = _purlin_project(tmp_path)\n        (root / 'service' / 'tests').mkdir(parents=True)\n        (root / 'service' / 'tests' / 'test_feat.py').write_text(\n            'import pytest\\n\\n'\n            '@pytest.mark.proof(\"feat\", \"PROOF-1\", \"RULE-1\")\\n'\n            'def test_ok():\\n    assert True\\n', encoding='utf-8')\n        (root / 'service' / 'conftest.py').write_text(\n            'import sys\\n'\n            'sys.path.insert(0, %r)\\n'\n            'from pytest_purlin import pytest_configure  # noqa: F401\\n'\n            % PROOF_SCRIPTS, encoding='utf-8')\n        subprocess.run([sys.executable, '-m', 'pytest', '-q',\n                        '-p', 'no:cacheprovider'],\n                       cwd=str(root / 'service'), capture_output=True,\n                       text=True)\n        assert not (root / 'service' / '.purlin').exists()\n        data = _read_proofs(root, 'feat')\n        assert data is not None\n        assert data['proofs'][0]['test_file'] == 'service/tests/test_feat.py'",
+      "body": "def test_shell_from_a_subdirectory(self, tmp_path):\n        root = _purlin_project(tmp_path)\n        (root / 'service').mkdir()\n        script = root / 'service' / 'feat.test.sh'\n        script.write_text(\n            'source %s\\n'\n            'purlin_proof \"feat\" \"PROOF-1\" \"RULE-1\" pass \"sub case\"\\n'\n            'purlin_proof_finish\\n'\n            % SHELL_HARNESS,\n            encoding='utf-8')\n        subprocess.run([BASH, 'feat.test.sh'], cwd=str(root / 'service'),\n                       capture_output=True, text=True)\n        data = _read_proofs(root, 'feat')\n        assert data is not None\n        assert data['proofs'][0]['test_file'] == 'service/feat.test.sh'",
       "file": "dev/test_multilang_proof_plugins.py",
       "findings": [
-        "tautology",
         "tautology"
       ],
       "name": "test_shell_from_a_subdirectory",
       "proof": "PROOF-2",
       "reasons": [
-        "tautological assertion (assert True or equivalent)",
         "tautological assertion (assert True or equivalent)"
       ]
     }

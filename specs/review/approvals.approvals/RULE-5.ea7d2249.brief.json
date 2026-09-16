@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "approvals",
+  "generated_at": "2026-09-16T21:02:57Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "992d5d75141abbe34597ef63d2a86deb676dd58c6478f0f416ac75b8e1c30df4",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-5",
+      "text": "Retag `PROOF-2` as `@manual` and read the hashes of `RULE-2`; verify the kind of the test hash is `manual`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-5 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/approvals/20260916T210253Z-dc36ae3-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-5",
+  "rule_hash": "df09d74a8977cf921ef0e23e7106bb23692df7cd1846ae3f77d54bf47d902538",
+  "rule_text": "A rule proved only by a `@manual` proof records `manual` as the kind of its test hash instead of naming a test file",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "71b0d80bb9d4c40877339d87e1809e864b53e0cb5f73dba2de5841293cc6d756",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_manual_proof_says_so_instead_of_naming_a_file(self):\n        made = Project(spec=SPEC.replace(\n            'verify 401 and the body \"denied\"',\n            'verify 401 and the body \"denied\" @manual'))\n        try:\n            parts = approve_module.rule_proof_test_hashes(\n                made.root, 'login', 'RULE-2')\n            assert parts[3] == 'manual'\n        finally:\n            made.close()",
+      "file": "dev/test_approvals.py",
+      "findings": [],
+      "name": "test_a_manual_proof_says_so_instead_of_naming_a_file",
+      "proof": "PROOF-5",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "ea7d2249fc3d8ae427f7eff4776c952e9d6d30e421dd2fcb6a2a72341aba7bd8",
+  "verdict": "add a case"
+}

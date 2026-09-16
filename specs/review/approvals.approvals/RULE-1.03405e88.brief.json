@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "approvals",
+  "generated_at": "2026-09-16T21:02:57Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "71633ef8bbb7ed7d7317f49744120c1c6662523425b993c52ba18fea05e8d9cf",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-1",
+      "text": "Read the hashes of `login RULE-1` in a recorded project; verify the rule, proof and test hashes are each 64 characters, the kind is `file` and the design hash is `none`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/approvals/20260916T210253Z-dc36ae3-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-1",
+  "rule_hash": "3cefeefbf45b3d940529c56b22152594b78acc06e8dab6e25f7cc0323e01b273",
+  "rule_text": "The three hashes an approval binds come back together with the kind of the test hash and the pinned design hash of a design rule",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "9546062c1c7a72d82e4c28dfe14aac46b655d80d529724ca9492ea7dcb05d3d6",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_three_hashes_come_back_with_their_kind(self, proved):\n        parts = approve_module.rule_proof_test_hashes(\n            proved.root, 'login', 'RULE-1')\n        rule_hash, proof_hash, test_hash, kind, design = parts\n        assert len(rule_hash) == 64 and len(proof_hash) == 64\n        assert len(test_hash) == 64\n        assert kind == 'file'\n        assert design is None",
+      "file": "dev/test_approvals.py",
+      "findings": [],
+      "name": "test_the_three_hashes_come_back_with_their_kind",
+      "proof": "PROOF-1",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "03405e886a161a99669fd40b467fe06b172f21cd90e50258d5623bdaefa22d82",
+  "verdict": "ready"
+}

@@ -1,0 +1,56 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "approvals",
+  "generated_at": "2026-09-16T21:02:57Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "50eb2596050a6ce0a1c30fd11ec0babcc0024bd8eef129794af498201e8dafb4",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-3",
+      "text": "Read the triple, rewrite the rule line with doubled spaces and an added `[origin: pm]` tag, and read it again; verify the two values are equal",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-3 logic_mirroring"
+  ],
+  "record": ".purlin/records/approvals/20260916T210253Z-dc36ae3-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-3",
+  "rule_hash": "68fa48634a481ef9a8aa8203fde3b525acd5fd006b4509be79f23257f610ceeb",
+  "rule_text": "Reflowing a rule's whitespace or changing its tags leaves the triple where it was, so re-tagging never stales an approval",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "7d0aef29a39135404d7ce69e3d74a6a38dedbae58ff0d9e02bab60d93f2dfeca",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_reflowing_a_rule_and_re_tagging_it_keep_the_triple(self, proved):\n        before = approve_module.triple_for(proved.rule('RULE-1'))\n        proved.spec(SPEC.replace(\n            '- RULE-1: Valid credentials return 200 with a session token '\n            '[risk: low]',\n            '- RULE-1: Valid   credentials  return 200  with a session token '\n            '[origin: pm] [risk: low]'))\n        after = approve_module.triple_for(proved.rule('RULE-1'))\n        assert after == before, (\n            'reflowing a rule or re-tagging it must not stale its approval')",
+      "file": "dev/test_approvals.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_reflowing_a_rule_and_re_tagging_it_keep_the_triple",
+      "proof": "PROOF-3",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "921ad980591ce553d5687b3b9e524c610bb94fce1c6e694db0c7bed7a56b6d39",
+  "verdict": "needs a human"
+}

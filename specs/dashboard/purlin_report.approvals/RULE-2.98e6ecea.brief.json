@@ -1,0 +1,50 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-16T21:03:04Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "975caf2f5673fa7c21542a8c70a2d528441a0450174897c4e02dae1184a745a6",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-2",
+      "text": "Run the build; verify the written page has at most 1200 lines and that the copy at the project root is the same text as the one under `scripts/report/`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-2 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/purlin_report/20260916T210253Z-dc36ae3-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-2",
+  "rule_hash": "6cd61ca2eb58eff2f52ce02abae11d1e9968f8d3677d1fe6387155d06c566b34",
+  "rule_text": "The build writes one file of at most 1200 lines and copies it to the project root, where the data file and the design files a spec names resolve beside it",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "12fbe876ed816a987dd94a494b682682e3af5bf48f91c5d18b10184c4ee80e07",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_page_is_one_file_under_the_line_budget(page_text):\n    assert len(page_text.splitlines()) <= 1200\n    assert os.path.isfile(os.path.join(ROOT, 'purlin-report.html'))\n    assert read(os.path.join(ROOT, 'purlin-report.html')) == page_text",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_the_page_is_one_file_under_the_line_budget",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "98e6ecea916a0205f9ecdd59b18bd3bc64802f02ada7077cf40ddd23c8047aec",
+  "verdict": "add a case"
+}

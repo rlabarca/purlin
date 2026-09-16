@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "run_script",
-  "generated_at": "2026-09-15T20:34:20Z",
+  "generated_at": "2026-09-16T21:03:11Z",
   "layers": [
     "proof text",
     "test body",
@@ -24,10 +24,9 @@
     }
   ],
   "reasons": [
-    "PROOF-4 tautology",
     "PROOF-4 tautology"
   ],
-  "record": ".purlin/records/run_script/20260915T203333Z-6883ed3-ci-windows.json",
+  "record": ".purlin/records/run_script/20260916T210253Z-dc36ae3-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-4",
   "rule_hash": "ae8df491a1c69b050f0cdff5ac773348b12abe8b956387e9eccc81b0ab06562e",
@@ -42,13 +41,11 @@
       "body": "def test_shell_arm_runs_the_root_test_scripts(self, tmp_path):\n        root = _project(tmp_path, frameworks='shell')\n        _spec(root, 'feat')\n        (root / 'feat.test.sh').write_text(\n            'source %s\\n'\n            'purlin_proof \"feat\" \"PROOF-1\" \"RULE-1\" pass \"shell case\"\\n'\n            'purlin_proof_finish\\n'\n            % SHELL_HARNESS, encoding='utf-8')\n        code, output = _run(root, '--all', '--quick')\n        data = _proofs(root, 'feat')\n        assert data is not None, output\n        assert data['proofs'][0]['test_name'] == 'shell case'\n        assert code == 0, output",
       "file": "dev/test_run_script.py",
       "findings": [
-        "tautology",
         "tautology"
       ],
       "name": "test_shell_arm_runs_the_root_test_scripts",
       "proof": "PROOF-4",
       "reasons": [
-        "tautological assertion (assert True or equivalent)",
         "tautological assertion (assert True or equivalent)"
       ]
     }

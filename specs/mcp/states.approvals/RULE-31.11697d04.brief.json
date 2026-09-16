@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T21:03:17Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "2e53d5e000a287bb0273e68fed09e545ae940f9a112bcb3c2d88fc478a6063b4",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-37",
+      "text": "At gate `tested` with `ai_review_at` `high`, build the payload with the high-risk `RULE-2` recorded and verify the review list names it and the review count is 1; write a person's approval for its current text and verify the list no longer names it, the review count is 0 and `needs_ai_review` is still true; reword the rule and verify its state is `Stale` and the list names it again",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-37 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/states/20260916T210253Z-dc36ae3-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-31",
+  "rule_hash": "dc89a4a3f8f9464944ed92b3357b1d6d16f5e591c6161da07c9c6227ee8f5c85",
+  "rule_text": "A rule whose current approval stands is not on the review list and is not in the review count, even though its risk still asks for a model review; the rule goes back on the list when that approval goes stale",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "bc3323752f37956cc02413fb7c8eaae694bdedb2cc9dc11ede7d340677dbd008",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_an_approval_takes_a_rule_off_the_list_until_it_goes_stale(reviewed):\n    before = reviewed.payload()\n    assert ('login', 'RULE-2') in _listed(before), before['review_list']\n    assert before['project_rollup']['needs_review'] == 1\n\n    approve_module.write_approval(reviewed.root, 'login', 'RULE-2',\n                                  'ada@acme.com', None, None, 'tested', 'high')\n    after = reviewed.payload()\n    assert ('login', 'RULE-2') not in _listed(after), after['review_list']\n    assert after['project_rollup']['needs_review'] == 0\n    assert reviewed.rule('RULE-2')['flags']['needs_ai_review'] is True\n\n    reviewed.spec(SPEC.replace('return 401 and the body \"denied\"',\n                               'return 401 and the body \"denied\" at once'))\n    assert reviewed.rule('RULE-2')['state'] == 'Stale'\n    assert ('login', 'RULE-2') in _listed(reviewed.payload())",
+      "file": "dev/test_review_list.py",
+      "findings": [],
+      "name": "test_an_approval_takes_a_rule_off_the_list_until_it_goes_stale",
+      "proof": "PROOF-37",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "11697d04c52e7b112c0469baa9a5c25f42dc00eff500c1f1a0ca052e06eeb5c5",
+  "verdict": "add a case"
+}

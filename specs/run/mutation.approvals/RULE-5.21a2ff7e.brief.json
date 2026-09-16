@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "mutation",
-  "generated_at": "2026-09-15T20:34:02Z",
+  "generated_at": "2026-09-16T21:03:01Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,7 +27,7 @@
   "reasons": [
     "PROOF-5 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/mutation/20260915T203331Z-6883ed3-ci-windows.json",
+  "record": ".purlin/records/mutation/20260916T210253Z-dc36ae3-ci-linux.json",
   "risk": "high",
   "rule": "RULE-5",
   "rule_hash": "13c3957a48c12c8e0f6d9e52cd981d81c1665dec4667ad44c10a41e7a1b12511",
@@ -39,7 +39,7 @@
   "test_strength": null,
   "tests": [
     {
-      "body": "def test_the_generated_config_scopes_the_run_to_the_spec_files():\n    config = stryker.build_config(['src/calc.js', 'src/util.js'], 'jest',\n                                  '/tmp/report.json')\n    assert config == {\n        'mutate': ['src/calc.js', 'src/util.js'],\n        'coverageAnalysis': 'perTest',\n        'disableBail': True,\n        'reporters': ['json'],\n        'testRunner': 'jest',\n        'jsonReporter': {'fileName': '/tmp/report.json'},\n    }",
+      "body": "def test_a_run_writes_the_scoped_config_and_reads_the_report(monkeypatch):\n    execute, seen = fake_stryker_run('stryker_report.json')\n    monkeypatch.setattr(stryker, 'binary', lambda root: ['stryker'])\n    monkeypatch.setattr(stryker, 'test_runner', lambda root: 'jest')\n    monkeypatch.setattr(stryker, 'execute', execute)\n    answer = stryker.run('/project', {'calc': ['src/calc.js']},\n                         {('calc', 'RULE-1'): CALC_TESTS['RULE-1'],\n                          ('calc', 'RULE-2'): CALC_TESTS['RULE-2']}, 'unit')\n    assert seen['config']['mutate'] == ['src/calc.js']\n    assert seen['config']['coverageAnalysis'] == 'perTest'\n    assert seen['config']['disableBail'] is True\n    assert seen['config']['reporters'] == ['json']\n    assert seen['command'][:2] == ['stryker', 'run']\n    assert answer['engine'] == 'stryker'\n    assert answer['available'] is True\n    assert answer['features']['calc']['scope_score']['score'] == 64\n    assert answer['features']['calc']['rules']['RULE-2']['score'] == 71\n    assert 'calc' in answer['log']",
       "file": "dev/test_mutation_adapters.py",
       "findings": [],
       "name": "test_a_run_writes_the_scoped_config_and_reads_the_report",

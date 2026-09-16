@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-16T21:03:07Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "50eef822edc6b7ebd17a370d29d4b1eba9eccec0ae173411fe52fd2394cc4c21",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-25",
+      "text": "Open the regulated fixture, open the review list and click its first row; verify the link back reads `\u2190 Review list`, click it and verify the heading reads `3 rules need a person`, that 2 tabs remain and zero rule headings are on screen. Open login from the board and then `RULE-1`; verify the link back reads `\u2190 Board`, click it and verify 4 spec rows are on screen",
+      "tier": "e2e"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/purlin_report/20260916T210253Z-dc36ae3-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-25",
+  "rule_hash": "3ed8858534e1539d2361c698a5c255ee8399c4c775db37180d134aaaedfd7a1e",
+  "rule_text": "The rule screen carries one link back at its top which closes the rule and returns to the screen the rule was opened from, reading `\u2190 Review list` from the review list and `\u2190 Board` from the board",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "ea776f978471e0831942a65e1de830b5d8275f78adb864a9f229c944d3fb783a",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_link_back_closes_the_rule_where_it_was_opened(browser, tmp_path):\n    \"\"\"One rule, opened twice, closes back to the screen it came from.\"\"\"\n    page = open_board(browser, tmp_path, payload_named('regulated'))\n    page.click('[data-screen=\"review\"]')\n    page.click('.rev')\n    assert page.inner_text('[data-act=\"close\"]') == u'\\u2190 Review list'\n    page.click('[data-act=\"close\"]')\n    assert '3 rules need a person' in page.inner_text('h1')\n    assert texts(page, '.tabs button') == ['Board', 'Review list (3)']\n\n    page.click('[data-screen=\"board\"]')\n    page.click('[data-act=\"feature\"][data-feature=\"login\"]')\n    page.click('.rule[data-rule=\"RULE-1\"]')\n    assert page.inner_text('[data-act=\"close\"]') == u'\\u2190 Board'\n    page.click('[data-act=\"close\"]')\n    assert len(feature_names(page)) == 4\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_the_link_back_closes_the_rule_where_it_was_opened",
+      "proof": "PROOF-25",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "3dc7b6a53ed6259d982d7d24b38567f4b66b0b04db986e51a054f29affc853f5",
+  "verdict": "ready"
+}

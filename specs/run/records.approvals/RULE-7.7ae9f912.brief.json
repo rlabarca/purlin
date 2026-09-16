@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "records",
-  "generated_at": "2026-09-15T20:34:16Z",
+  "generated_at": "2026-09-16T21:03:09Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,7 +27,7 @@
   "reasons": [
     "PROOF-7 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/records/20260915T203332Z-6883ed3-ci-windows.json",
+  "record": ".purlin/records/records/20260916T210253Z-dc36ae3-ci-linux.json",
   "risk": "high",
   "rule": "RULE-7",
   "rule_hash": "ffb25f17c284d3bd534b5b59c2c321c5f6a294e90b2e41e02cdddaaf2379809c",
@@ -47,7 +47,7 @@
       "reasons": []
     },
     {
-      "body": "def test_a_forked_pull_request_writes_no_commit(project, github_env,\n                                                monkeypatch, tmp_path, capsys):\n    event = tmp_path / 'event.json'\n    with open(str(event), 'w', encoding='utf-8') as handle:\n        json.dump({'pull_request': {'number': 7,\n                                    'head': {'repo': {'fork': True}}}}, handle)\n    monkeypatch.setenv('GITHUB_EVENT_PATH', str(event))\n    host = FakeHost()\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    sha = records_module.commit_records(project, [path], 'ci',\n                                        'purlin: record')\n\n    assert sha == ''\n    assert host.calls == [], 'a forked pull request reached the git host'\n    assert 'fork' in capsys.readouterr().out",
+      "body": "def test_no_token_writes_no_commit(project, monkeypatch, capsys):\n    monkeypatch.setenv('GITHUB_REPOSITORY', 'acme/widgets')\n    monkeypatch.delenv('GITHUB_TOKEN', raising=False)\n    monkeypatch.delenv('SYSTEM_TEAMFOUNDATIONCOLLECTIONURI', raising=False)\n    path = records_module.write_record(project, record(), 'ci')\n\n    assert records_module.commit_records(project, [path], 'ci', 'x') == ''\n    assert 'GITHUB_TOKEN' in capsys.readouterr().out",
       "file": "dev/test_records.py",
       "findings": [],
       "name": "test_no_token_writes_no_commit",

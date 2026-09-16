@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "mutation",
-  "generated_at": "2026-09-15T20:34:04Z",
+  "generated_at": "2026-09-16T21:03:02Z",
   "layers": [
     "proof text",
     "test body",
@@ -22,7 +22,7 @@
     }
   ],
   "reasons": [],
-  "record": ".purlin/records/mutation/20260915T203331Z-6883ed3-ci-windows.json",
+  "record": ".purlin/records/mutation/20260916T210253Z-dc36ae3-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-13",
   "rule_hash": "b4d8ada2ec8e6da5d29c1cdd3e5f465574baa8a7243ee6657e863875043cffaf",
@@ -34,7 +34,7 @@
   "test_strength": null,
   "tests": [
     {
-      "body": "def test_the_dotnet_command_scopes_the_run_and_asks_for_json():\n    command = stryker_net.build_command(['dotnet', 'stryker'],\n                                        ['src/Login/Session.cs', 'src/Api.cs'],\n                                        '/tmp/out')\n    assert command == ['dotnet', 'stryker',\n                       '--mutate', 'src/Login/Session.cs',\n                       '--mutate', 'src/Api.cs',\n                       '--coverage-analysis', 'perTest', '--disable-bail',\n                       '--reporter', 'json', '--output', '/tmp/out']",
+      "body": "def test_no_report_under_the_output_directory_is_none(tmp_path):\n    assert stryker_net.find_report(str(tmp_path)) is None",
       "file": "dev/test_mutation_adapters.py",
       "findings": [],
       "name": "test_no_report_under_the_output_directory_is_none",
@@ -50,7 +50,7 @@
       "reasons": []
     },
     {
-      "body": "def test_the_dotnet_command_scopes_the_run_and_asks_for_json():\n    command = stryker_net.build_command(['dotnet', 'stryker'],\n                                        ['src/Login/Session.cs', 'src/Api.cs'],\n                                        '/tmp/out')\n    assert command == ['dotnet', 'stryker',\n                       '--mutate', 'src/Login/Session.cs',\n                       '--mutate', 'src/Api.cs',\n                       '--coverage-analysis', 'perTest', '--disable-bail',\n                       '--reporter', 'json', '--output', '/tmp/out']",
+      "body": "def test_the_report_is_found_under_the_output_directory(tmp_path):\n    reports = tmp_path / 'reports'\n    reports.mkdir()\n    (reports / 'mutation-report.json').write_text('{}', encoding='utf-8')\n    assert stryker_net.find_report(str(tmp_path)) == str(\n        reports / 'mutation-report.json')",
       "file": "dev/test_mutation_adapters.py",
       "findings": [],
       "name": "test_the_report_is_found_under_the_output_directory",

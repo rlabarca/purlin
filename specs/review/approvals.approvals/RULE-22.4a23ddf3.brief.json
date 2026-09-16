@@ -1,0 +1,50 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "approvals",
+  "generated_at": "2026-09-16T21:02:59Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "99793a2edd27b59165474a5458829043b1909fc2034e184bc250fa85df8de947",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-28",
+      "text": "Run the command with `--help`, with `login --nope` and with no argument; verify the exit codes are 0, 2 and 2",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-28 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/approvals/20260916T210253Z-dc36ae3-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-22",
+  "rule_hash": "b263e8c900e507680f99d61bf00dadd81f0c47de1adf6294765191515a20542c",
+  "rule_text": "`approve.py --help` exits 0 and an unknown option or no feature at all exits 2",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "36481afeb81040a2c25c8eb92cad3e1f481049c31549185fda8aaa331f9df054",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_help_exits_zero_and_a_bad_option_exits_two(self):\n        assert approve_module.main(['--help']) == 0\n        assert approve_module.main(['login', '--nope']) == 2\n        assert approve_module.main([]) == 2",
+      "file": "dev/test_approvals.py",
+      "findings": [],
+      "name": "test_help_exits_zero_and_a_bad_option_exits_two",
+      "proof": "PROOF-28",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "4a23ddf3859564e568e63ca3b4e8de8c1168d594a17615740f023bd1f8033851",
+  "verdict": "add a case"
+}

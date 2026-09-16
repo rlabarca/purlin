@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "mutation",
-  "generated_at": "2026-09-15T20:34:06Z",
+  "generated_at": "2026-09-16T21:03:02Z",
   "layers": [
     "proof text",
     "test body",
@@ -23,7 +23,7 @@
     }
   ],
   "reasons": [],
-  "record": ".purlin/records/mutation/20260915T203331Z-6883ed3-ci-windows.json",
+  "record": ".purlin/records/mutation/20260916T210253Z-dc36ae3-ci-linux.json",
   "risk": "high",
   "rule": "RULE-21",
   "rule_hash": "76a57c688b779650524890bc6b67dce10804de74001ff578315cd9393e08135e",
@@ -43,7 +43,7 @@
       "reasons": []
     },
     {
-      "body": "def test_a_break_in_a_package_init_belongs_to_that_init():\n    scope = ['scripts/run/mutation/__init__.py',\n             'scripts/run/mutation/mutmut.py']\n    assert mutmut.source_file(\n        'scripts.run.mutation.x_score_percent__mutmut_1',\n        scope) == 'scripts/run/mutation/__init__.py'\n    assert mutmut.source_file(\n        'scripts.run.mutation.mutmut.x_binary__mutmut_2',\n        scope) == 'scripts/run/mutation/mutmut.py'",
+      "body": "def test_a_glob_scope_entry_covers_the_files_it_matches():\n    assert mutmut.source_file('scripts.run.records.x_commit__mutmut_1',\n                              ['scripts/**/*.py']) == 'scripts/**/*.py'\n    assert mutmut.source_file('scripts.mcp.purlin.x_read__mutmut_1',\n                              ['scripts/**/*.py']) == 'scripts/**/*.py'\n    assert mutmut.source_file('dev.build_report.x_build__mutmut_1',\n                              ['scripts/**/*.py']) is None\n    assert mutmut.source_file(\n        'scripts.run.records.x_commit__mutmut_1',\n        ['scripts/**/*.py', 'scripts/run/records.py']) == \\\n        'scripts/run/records.py'",
       "file": "dev/test_mutation_adapters.py",
       "findings": [],
       "name": "test_a_glob_scope_entry_covers_the_files_it_matches",

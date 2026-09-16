@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-16T21:03:08Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "ca537db3eb742dbd0a4d7381d62a0faf809c0b1cd8d5546b49075911ba121ac9",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-33",
+      "text": "Open the board with the regulated fixture at widths 1440 and 1024 with every group open; verify that for each spec row, each cell's left edge is within 1 pixel of its heading's left edge",
+      "tier": "e2e"
+    }
+  ],
+  "reasons": [
+    "PROOF-33 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/purlin_report/20260916T210253Z-dc36ae3-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-33",
+  "rule_hash": "13d8eff6a79b0a7eaac488d5779ff17ab66f569b2dbcee3fa0e4f2218783a8a2",
+  "rule_text": "Every column heading of the spec table starts where its column's cells start in every row, so a wide cell never pushes its row's columns out of line with the headings",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "654e4aac9575bb9e751ec0aae1882910e27c1e11f6ebb6ea26250a617882f9e2",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_every_heading_starts_where_its_cells_start(browser, tmp_path):  # noqa: F811\n    for width in (1440, 1024):\n        page = open_board(browser, tmp_path / str(width),\n                          payload_named('regulated'),\n                          viewport={'width': width, 'height': 1000})\n        offsets = page.evaluate(OFFSETS)\n        assert offsets, 'no spec row rendered'\n        worst = max(max(row) for row in offsets)\n        assert worst <= 1, (width, offsets)\n        page.close()",
+      "file": "dev/test_purlin_report_board_layout.py",
+      "findings": [],
+      "name": "test_every_heading_starts_where_its_cells_start",
+      "proof": "PROOF-33",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "e22bd6fa3d13dd1dd1947062cf9722c86240df7e5796e8ad4ebcd02f277513ff",
+  "verdict": "add a case"
+}

@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "approvals",
+  "generated_at": "2026-09-16T21:02:58Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "f2bc3873b267df5d3e0b0773d5912f8cc559f8db8a6cf130cd7845285af92537",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-14",
+      "text": "Write an approval and a brief for the same rule into one approvals directory, then load the approvals; verify exactly 1 comes back and its approver is `jane@acme.com`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-14 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/approvals/20260916T210253Z-dc36ae3-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-10",
+  "rule_hash": "bebff05963896446f1d3408ac9ec7bd3e3d90c75e21f54cd837634e697ed3f36",
+  "rule_text": "The approval reader finds an approval beside its spec and never reads a brief written in the same directory as one",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "db6cb5299f0eddc43490dd42209c4f72fe8f9c64698faf5ce2bb131be0b93d8d",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_reader_finds_it_and_never_reads_a_brief_as_one(self, proved):\n        entry = proved.rule('RULE-1')\n        approve_module.write_approval(\n            proved.root, 'login', 'RULE-1', 'jane@acme.com', None, None,\n            'tested', 'low', entry=entry)\n        triple = approve_module.triple_for(entry)\n        write(os.path.join(proved.root, 'specs', 'auth', 'login.approvals',\n                           'RULE-1.%s.brief.json' % triple[:8]),\n              json.dumps({'schema': 'purlin-brief/1', 'rule': 'RULE-1'}))\n        loaded = purlin_approvals.load_approvals(\n            proved.root, purlin_specs.scan_specs(proved.root))\n        assert len(loaded[('login', 'RULE-1')]) == 1\n        assert loaded[('login', 'RULE-1')][0]['approver'] == 'jane@acme.com'",
+      "file": "dev/test_approvals.py",
+      "findings": [],
+      "name": "test_the_reader_finds_it_and_never_reads_a_brief_as_one",
+      "proof": "PROOF-14",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "76715d75f7b4645a81ca17021ecfabf7d3a975165e17f11cfc6a8ff55e4fca16",
+  "verdict": "add a case"
+}

@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "approvals",
+  "generated_at": "2026-09-16T21:02:59Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "ed044f0495eb53a43b85770e2e413b49b145afea5d2621e80b9adf34553908ef",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-59",
+      "text": "Edit the low-risk rule's test to call `login(\"ada\", \"secret\")` and assert nothing, record the project and run the auto-approval; verify nothing is written. Restore `assert login(\"ada\", \"secret\") == 200`, record again, run it again and verify exactly 1 file is written and it names `RULE-1`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-59 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/approvals/20260916T210253Z-dc36ae3-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-39",
+  "rule_hash": "fc41e04477ebce3a9b49f3739b479e554bde30f65f15f5c04a994ed9134db141",
+  "rule_text": "CI never auto-approves a low-risk rule when a free check found anything in the body of a test backing it",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "7f3b9efb98bac67b78fa4a5cbd368f55e875eb320665caa5354fa07c5ab254ff",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_finding_in_the_test_body_stops_it(self, proved):\n        proved.edit_test(TEST_FILE.replace(ASSERTION, 'login(\"ada\", \"secret\")'))\n        proved.record(stamp='20260913T130000Z')\n        assert approve_module.auto_approve(proved.root) == []\n        proved.edit_test(TEST_FILE)\n        proved.record(stamp='20260913T140000Z')\n        written = approve_module.auto_approve(proved.root)\n        assert _rule_one_written(written), written",
+      "file": "dev/test_holds.py",
+      "findings": [],
+      "name": "test_a_finding_in_the_test_body_stops_it",
+      "proof": "PROOF-59",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a1f81a877a31ca9da8fa280c8719b8cedeca40ce822cdc0b27ac6f229d98a1cd",
+  "verdict": "add a case"
+}

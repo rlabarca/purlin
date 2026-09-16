@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "run_script",
-  "generated_at": "2026-09-15T20:34:23Z",
+  "generated_at": "2026-09-16T21:03:11Z",
   "layers": [
     "proof text",
     "test body",
@@ -22,7 +22,7 @@
     }
   ],
   "reasons": [],
-  "record": ".purlin/records/run_script/20260915T203333Z-6883ed3-ci-windows.json",
+  "record": ".purlin/records/run_script/20260916T210253Z-dc36ae3-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-19",
   "rule_hash": "7510821ed156646d7ab39b6801982d3a8f2a8951f9a0c3b8ffb991ab60d3b646",
@@ -34,7 +34,7 @@
   "test_strength": null,
   "tests": [
     {
-      "body": "def test_one_marker_is_found(self, tmp_path, framework, name, source):\n        purlin_run = _load_run_script()\n        (tmp_path / name).write_text(source + '\\n', encoding='utf-8')\n        assert purlin_run.scan_markers(str(tmp_path), framework) == {\n            ('feat', 'PROOF-1')}",
+      "body": "def test_node_modules_is_not_scanned(self, tmp_path):\n        purlin_run = _load_run_script()\n        vendored = tmp_path / 'node_modules' / 'other'\n        vendored.mkdir(parents=True)\n        (vendored / 'a.test.js').write_text(\n            'it(\"[proof:vendor:PROOF-1:RULE-1]\", () => {});\\n',\n            encoding='utf-8')\n        assert purlin_run.scan_markers(str(tmp_path), 'jest') == set()",
       "file": "dev/test_run_script.py",
       "findings": [],
       "name": "test_node_modules_is_not_scanned",

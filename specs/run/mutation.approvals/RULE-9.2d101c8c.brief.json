@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "mutation",
-  "generated_at": "2026-09-15T20:34:03Z",
+  "generated_at": "2026-09-16T21:03:01Z",
   "layers": [
     "proof text",
     "test body",
@@ -23,7 +23,7 @@
     }
   ],
   "reasons": [],
-  "record": ".purlin/records/mutation/20260915T203331Z-6883ed3-ci-windows.json",
+  "record": ".purlin/records/mutation/20260916T210253Z-dc36ae3-ci-linux.json",
   "risk": "high",
   "rule": "RULE-9",
   "rule_hash": "a71c5bc38772b3c421787caa2df4649afafe0c799c14da16c559b7ae56d016d4",
@@ -35,7 +35,7 @@
   "test_strength": null,
   "tests": [
     {
-      "body": "def test_each_rule_carries_what_its_own_tests_caught():\n    entry = stryker.parse_report(read_fixture('stryker_report.json'),\n                                 CALC_TESTS)\n    assert entry['rules']['RULE-1'] == {\n        'engine': 'stryker', 'score': 100, 'killed': 3, 'survived': 0,\n        'attribution': 'per_test'}\n    assert entry['rules']['RULE-2'] == {\n        'engine': 'stryker', 'score': 71, 'killed': 5, 'survived': 2,\n        'attribution': 'per_test'}",
+      "body": "def test_a_break_another_rules_test_caught_counts_survived_for_this_one():\n    report = read_fixture('stryker_report.json')\n    entry = stryker.parse_report(report, {'RULE-2': CALC_TESTS['RULE-2']})\n    # Mutants 4 and 5 are covered by RULE-2's test and killed by nothing.\n    assert entry['rules']['RULE-2']['survived'] == 2",
       "file": "dev/test_mutation_adapters.py",
       "findings": [],
       "name": "test_a_break_another_rules_test_caught_counts_survived_for_this_one",
@@ -43,7 +43,7 @@
       "reasons": []
     },
     {
-      "body": "def test_each_rule_carries_what_its_own_tests_caught():\n    entry = stryker.parse_report(read_fixture('stryker_report.json'),\n                                 CALC_TESTS)\n    assert entry['rules']['RULE-1'] == {\n        'engine': 'stryker', 'score': 100, 'killed': 3, 'survived': 0,\n        'attribution': 'per_test'}\n    assert entry['rules']['RULE-2'] == {\n        'engine': 'stryker', 'score': 71, 'killed': 5, 'survived': 2,\n        'attribution': 'per_test'}",
+      "body": "def test_a_rule_whose_tests_the_report_never_saw_measures_nothing():\n    tests = {'RULE-9': [{'file': 'test/other.test.js',\n                         'name': 'unrelated [proof:calc:PROOF-9:RULE-9]',\n                         'plugin': 'jest'}]}\n    entry = stryker.parse_report(read_fixture('stryker_report.json'), tests)\n    assert entry['rules']['RULE-9']['score'] is None\n    assert entry['rules']['RULE-9']['killed'] == 0\n    assert entry['rules']['RULE-9']['survived'] == 0",
       "file": "dev/test_mutation_adapters.py",
       "findings": [],
       "name": "test_a_rule_whose_tests_the_report_never_saw_measures_nothing",

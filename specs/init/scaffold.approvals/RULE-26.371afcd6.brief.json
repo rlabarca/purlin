@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "scaffold",
-  "generated_at": "2026-09-15T20:34:30Z",
+  "generated_at": "2026-09-16T21:03:12Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,7 +26,7 @@
   "reasons": [
     "PROOF-26 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/scaffold/20260915T203333Z-6883ed3-ci-windows.json",
+  "record": ".purlin/records/scaffold/20260916T210253Z-dc36ae3-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-26",
   "rule_hash": "db2ad183bbd3d97cf96e1d1143bef3257adaa6bb1e235a8fcad7f2fb9f574c81",
@@ -38,7 +38,7 @@
   "test_strength": null,
   "tests": [
     {
-      "body": "def test_a_hook_someone_else_wrote_is_kept(self, project):\n        write(project.path('.git/hooks/pre-push'), '#!/bin/sh\\necho mine\\n')\n        output = project.run('--gate', 'tested')\n        assert read(project.path('.git/hooks/pre-push')) == \\\n            '#!/bin/sh\\necho mine\\n'\n        assert 'add this line to it' in output",
+      "body": "def test_a_hook_manager_is_named_rather_than_written_over(self, project):\n        write(project.path('.pre-commit-config.yaml'), 'repos: []\\n')\n        output = project.run('--gate', 'tested')\n        assert 'pre-commit framework' in output\n        assert not project.has('.git/hooks/pre-push')",
       "file": "dev/test_init_scaffold.py",
       "findings": [],
       "name": "test_a_hook_manager_is_named_rather_than_written_over",

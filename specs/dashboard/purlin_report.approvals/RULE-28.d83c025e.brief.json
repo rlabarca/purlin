@@ -1,0 +1,52 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-16T21:03:07Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "e4e7504351969770e29074cdcaefeec90a6eb19c6fba836b1a8564f125b36183",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-28",
+      "text": "Open the regulated fixture; verify the freshness element in the top bar is a `BUTTON` carrying the text `Data:` and the `btn` class the theme button carries, with the same computed border width; set a mark on the window, click it, and verify the mark is absent",
+      "tier": "e2e"
+    }
+  ],
+  "reasons": [
+    "PROOF-28 logic_mirroring"
+  ],
+  "record": ".purlin/records/purlin_report/20260916T210253Z-dc36ae3-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-28",
+  "rule_hash": "9bf19656e22d727686ccc0492e3b567fade2e63652d995a550d3fe8a94e01fb5",
+  "rule_text": "The freshness line in the top bar is a button carrying that same age text, styled as the theme button is, and pressing it reloads the page",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "5dc226ddc808de9cdddf20b3baa58ab89d420cd8c5c9adca5be4aac29cabda62",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_freshness_line_is_a_button_that_reloads(browser, tmp_path):\n    page = open_board(browser, tmp_path, payload_named('regulated'))\n    node = page.query_selector('.topbar [data-act=\"reload\"]')\n    assert node.evaluate('el => el.tagName') == 'BUTTON'\n    assert 'Data:' in node.inner_text()\n    assert 'btn' in node.get_attribute('class').split()\n    assert page.eval_on_selector(\n        '.topbar [data-act=\"reload\"]',\n        'el => getComputedStyle(el).borderTopWidth') == page.eval_on_selector(\n        '[data-act=\"theme\"]', 'el => getComputedStyle(el).borderTopWidth')\n\n    page.evaluate('window.purlinMark = 1')\n    page.click('.topbar [data-act=\"reload\"]')\n    page.wait_for_function('() => window.purlinMark === undefined',\n                           timeout=10000)\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_the_freshness_line_is_a_button_that_reloads",
+      "proof": "PROOF-28",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "d83c025e219902299b006f205b13f87ede0c4291dd6a87cf1592cde328166136",
+  "verdict": "needs a human"
+}

@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "update",
-  "generated_at": "2026-09-15T20:35:00Z",
+  "generated_at": "2026-09-16T21:03:19Z",
   "layers": [
     "proof text",
     "test body",
@@ -25,11 +25,9 @@
     }
   ],
   "reasons": [
-    "PROOF-3 logic_mirroring",
-    "PROOF-3 logic_mirroring",
     "PROOF-3 logic_mirroring"
   ],
-  "record": ".purlin/records/update/20260915T203335Z-6883ed3-ci-windows.json",
+  "record": ".purlin/records/update/20260916T210253Z-dc36ae3-ci-linux.json",
   "risk": "high",
   "rule": "RULE-3",
   "rule_hash": "94f5a5d7dfd2ce57d2b8984900d9dc1d914b24982fb005d8d36051eddf2a651f",
@@ -41,31 +39,23 @@
   "test_strength": null,
   "tests": [
     {
-      "body": "def test_check_on_the_v095_layout_names_every_migration(tmp_path, capsys):\n    root = _project(tmp_path, V095)\n    assert update.main(['--check', '--project-root', root]) == 1\n    printed = capsys.readouterr().out\n    for migration_id in _ids(root):\n        assert migration_id in printed\n    assert 'Run: purlin:init --update' in printed",
+      "body": "def test_check_exits_1_while_anything_is_pending(tmp_path):\n    root = _project(tmp_path, V095)\n    done = subprocess.run([sys.executable, UPDATE, '--check',\n                           '--project-root', root],\n                          capture_output=True, text=True)\n    assert done.returncode == 1\n    assert 'untracked-files' in done.stdout",
       "file": "dev/test_init_update.py",
-      "findings": [
-        "logic_mirroring"
-      ],
+      "findings": [],
       "name": "test_check_exits_1_while_anything_is_pending",
       "proof": "PROOF-3",
-      "reasons": [
-        "expected value computed by same function as SUT"
-      ]
+      "reasons": []
     },
     {
       "body": "def test_check_on_the_v095_layout_names_every_migration(tmp_path, capsys):\n    root = _project(tmp_path, V095)\n    assert update.main(['--check', '--project-root', root]) == 1\n    printed = capsys.readouterr().out\n    for migration_id in _ids(root):\n        assert migration_id in printed\n    assert 'Run: purlin:init --update' in printed",
       "file": "dev/test_init_update.py",
-      "findings": [
-        "logic_mirroring"
-      ],
+      "findings": [],
       "name": "test_check_on_the_v095_layout_names_every_migration",
       "proof": "PROOF-3",
-      "reasons": [
-        "expected value computed by same function as SUT"
-      ]
+      "reasons": []
     },
     {
-      "body": "def test_check_on_the_v095_layout_names_every_migration(tmp_path, capsys):\n    root = _project(tmp_path, V095)\n    assert update.main(['--check', '--project-root', root]) == 1\n    printed = capsys.readouterr().out\n    for migration_id in _ids(root):\n        assert migration_id in printed\n    assert 'Run: purlin:init --update' in printed",
+      "body": "def test_check_writes_nothing(tmp_path):\n    root = _project(tmp_path, V010)\n    before = _git(root, 'status', '--porcelain').stdout\n    update.main(['--check', '--project-root', root])\n    assert _git(root, 'status', '--porcelain').stdout == before",
       "file": "dev/test_init_update.py",
       "findings": [
         "logic_mirroring"

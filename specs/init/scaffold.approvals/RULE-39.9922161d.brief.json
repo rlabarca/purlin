@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "scaffold",
-  "generated_at": "2026-09-15T20:34:32Z",
+  "generated_at": "2026-09-16T21:03:13Z",
   "layers": [
     "proof text",
     "test body",
@@ -26,7 +26,7 @@
   "reasons": [
     "PROOF-39 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/scaffold/20260915T203333Z-6883ed3-ci-windows.json",
+  "record": ".purlin/records/scaffold/20260916T210253Z-dc36ae3-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-39",
   "rule_hash": "8fb5a52494f8cb9af3d79fc38dc559ae4d37ab6a745f2a4a634ac8ff803ae2a3",
@@ -38,7 +38,7 @@
   "test_strength": null,
   "tests": [
     {
-      "body": "def test_nested_code_is_source_and_a_test_directory_is_the_selection(\n            self, project):\n        shutil.rmtree(project.path('tests'), ignore_errors=True)\n        write(project.path('scripts/run/job.py'), 'def go():\\n    return 1\\n')\n        write(project.path('dev/test_job.py'), 'def test_go():\\n    pass\\n')\n        write(project.path('dev/build.py'), '')\n        write(project.path('docs/guide.md'), '# Guide\\n')\n        assert scaffold_module.mutmut_paths(project.root) == (['scripts'],\n                                                              ['dev'])",
+      "body": "def test_modules_at_the_root_are_named_one_by_one(self, project):\n        write(project.path('greeting.py'), 'def greet(name):\\n    return name\\n')\n        write(project.path('conftest.py'), '')\n        write(project.path('test_greeting.py'), 'def test_greet():\\n    pass\\n')\n        sources, _tests = scaffold_module.mutmut_paths(project.root)\n        assert sources == ['greeting.py']",
       "file": "dev/test_init_scaffold.py",
       "findings": [],
       "name": "test_modules_at_the_root_are_named_one_by_one",
@@ -54,7 +54,7 @@
       "reasons": []
     },
     {
-      "body": "def test_nested_code_is_source_and_a_test_directory_is_the_selection(\n            self, project):\n        shutil.rmtree(project.path('tests'), ignore_errors=True)\n        write(project.path('scripts/run/job.py'), 'def go():\\n    return 1\\n')\n        write(project.path('dev/test_job.py'), 'def test_go():\\n    pass\\n')\n        write(project.path('dev/build.py'), '')\n        write(project.path('docs/guide.md'), '# Guide\\n')\n        assert scaffold_module.mutmut_paths(project.root) == (['scripts'],\n                                                              ['dev'])",
+      "body": "def test_no_python_anywhere_falls_back_to_the_root(self, project):\n        write(project.path('docs/guide.md'), '# Guide\\n')\n        sources, _tests = scaffold_module.mutmut_paths(project.root)\n        assert sources == ['.']",
       "file": "dev/test_init_scaffold.py",
       "findings": [],
       "name": "test_no_python_anywhere_falls_back_to_the_root",
@@ -62,7 +62,7 @@
       "reasons": []
     },
     {
-      "body": "def test_nested_code_is_source_and_a_test_directory_is_the_selection(\n            self, project):\n        shutil.rmtree(project.path('tests'), ignore_errors=True)\n        write(project.path('scripts/run/job.py'), 'def go():\\n    return 1\\n')\n        write(project.path('dev/test_job.py'), 'def test_go():\\n    pass\\n')\n        write(project.path('dev/build.py'), '')\n        write(project.path('docs/guide.md'), '# Guide\\n')\n        assert scaffold_module.mutmut_paths(project.root) == (['scripts'],\n                                                              ['dev'])",
+      "body": "def test_src_and_tests_still_win_over_other_directories(self, project):\n        write(project.path('src/app.py'), '')\n        write(project.path('tools/helper.py'), '')\n        write(project.path('tests/test_app.py'), '')\n        write(project.path('dev/test_extra.py'), '')\n        assert scaffold_module.mutmut_paths(project.root) == (['src'],\n                                                              ['tests'])",
       "file": "dev/test_init_scaffold.py",
       "findings": [],
       "name": "test_src_and_tests_still_win_over_other_directories",

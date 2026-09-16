@@ -1,0 +1,54 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-16T21:03:04Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "c9802367ea93ca14b7266780d0898eef50c49175482a92ad63361d4f82c2d378",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-1",
+      "text": "Run the build twice over unchanged sources and verify the two pages are the same string, byte for byte, so 0 bytes differ between the two runs",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-1 logic_mirroring"
+  ],
+  "record": ".purlin/records/purlin_report/20260916T210253Z-dc36ae3-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-1",
+  "rule_hash": "5d038273854568c9fc35038b3d1a087b7a2c04d4ba32a8ba19993de83c3d5e8f",
+  "rule_text": "The build is a pure function of its parts: two runs over unchanged sources write the same bytes",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "2706e2c838f6e6f5ffc8982cd004255f05926f5ddd33b33beb1cd57a8871c140",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_build_is_reproducible():\n    \"\"\"Two builds of the same parts give the same bytes.\"\"\"\n    first = build_page()\n    second = build_page()\n    assert first == second",
+      "file": "dev/test_purlin_report.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_the_build_is_reproducible",
+      "proof": "PROOF-1",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "5aa8f155406d8ee328610caa61b96f7f5be8ec03f7310387259e3ba38f1c808e",
+  "verdict": "needs a human"
+}

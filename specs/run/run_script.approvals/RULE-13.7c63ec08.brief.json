@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "run_script",
-  "generated_at": "2026-09-15T20:34:21Z",
+  "generated_at": "2026-09-16T21:03:11Z",
   "layers": [
     "proof text",
     "test body",
@@ -23,7 +23,7 @@
     }
   ],
   "reasons": [],
-  "record": ".purlin/records/run_script/20260915T203333Z-6883ed3-ci-windows.json",
+  "record": ".purlin/records/run_script/20260916T210253Z-dc36ae3-ci-linux.json",
   "risk": "high",
   "rule": "RULE-13",
   "rule_hash": "7bbe604b3ed508ece8e140d7407a57acf0b7a1fb5d92b94ed67d115336496fd9",
@@ -43,7 +43,7 @@
       "reasons": []
     },
     {
-      "body": "def test_a_rule_carries_its_proofs_tests_result_and_strength(\n            self, tmp_path, record_run, capsys):\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat')\n        _code, calls = record_run(root, '--all')\n        capsys.readouterr()\n        record = calls['write'][0][0]\n        feature = record['features']['feat']\n        assert feature['spec'] == 'specs/a/feat.md'\n        rule = feature['rules']['RULE-1']\n        assert rule['proofs'] == ['PROOF-1']\n        assert rule['result'] == 'pass'\n        assert rule['tests'][0]['name'] == 'test_ok'\n        assert rule['tests'][0]['file'] == 'tests/test_feat.py'\n        assert rule['test_strength']['engine'] == 'mutmut'\n        assert rule['test_strength']['attribution'] == 'per_scope'\n        assert feature['scope_score']['score'] == 80\n        assert record['feature'] == 'feat'\n        assert isinstance(record['scope_tree'], str)\n        assert len(record['scope_tree']) == 64\n        assert record['missing'] == []",
+      "body": "def test_a_rule_with_no_evidence_is_listed_as_missing(\n            self, tmp_path, record_run, capsys):\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat', proofs=(('PROOF-1', 'RULE-1', ''),\n                                    ('PROOF-2', 'RULE-2', '')), rules=2)\n        _code, calls = record_run(root, '--all')\n        capsys.readouterr()\n        record = calls['write'][0][0]\n        assert record['missing'] == ['feat RULE-2']\n        assert record['features']['feat']['rules']['RULE-2']['result'] == 'missing'",
       "file": "dev/test_run_script.py",
       "findings": [],
       "name": "test_a_rule_with_no_evidence_is_listed_as_missing",

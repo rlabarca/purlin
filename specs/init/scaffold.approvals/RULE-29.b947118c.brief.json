@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "scaffold",
-  "generated_at": "2026-09-15T20:34:31Z",
+  "generated_at": "2026-09-16T21:03:12Z",
   "layers": [
     "proof text",
     "test body",
@@ -23,7 +23,7 @@
     }
   ],
   "reasons": [],
-  "record": ".purlin/records/scaffold/20260915T203333Z-6883ed3-ci-windows.json",
+  "record": ".purlin/records/scaffold/20260916T210253Z-dc36ae3-ci-linux.json",
   "risk": "high",
   "rule": "RULE-29",
   "rule_hash": "409242f2ef9a944e12157581d91a77f20a33494aecb78d9ee6223bc00d8f1775",
@@ -35,7 +35,7 @@
   "test_strength": null,
   "tests": [
     {
-      "body": "def test_the_pinned_plugin_root_is_enough(self, passing):\n        done = passing.push(plugin_root=None)\n        assert done.returncode == 0, done.stdout + done.stderr\n        assert 'the tagged tests passed' in done.stdout\n        assert read(passing.path('.purlin/plugin-root')).strip() == ROOT",
+      "body": "def test_a_marketplace_copy_under_home_is_found(self, passing):\n        installed = os.path.join(passing.home, '.claude', 'plugins', 'cache',\n                                 'purlin', 'purlin', '0.10.0')\n        os.makedirs(os.path.dirname(installed), exist_ok=True)\n        shutil.copytree(ROOT, installed,\n                        ignore=shutil.ignore_patterns('.git', 'design',\n                                                      'docs', '__pycache__'))\n        os.remove(passing.path('.purlin/plugin-root'))\n        done = passing.push(plugin_root=None)\n        assert done.returncode == 0, done.stdout + done.stderr\n        assert 'the tagged tests passed' in done.stdout",
       "file": "dev/test_pre_push_hook.py",
       "findings": [],
       "name": "test_a_marketplace_copy_under_home_is_found",
@@ -43,7 +43,7 @@
       "reasons": []
     },
     {
-      "body": "def test_the_pinned_plugin_root_is_enough(self, passing):\n        done = passing.push(plugin_root=None)\n        assert done.returncode == 0, done.stdout + done.stderr\n        assert 'the tagged tests passed' in done.stdout\n        assert read(passing.path('.purlin/plugin-root')).strip() == ROOT",
+      "body": "def test_an_environment_root_wins_over_the_pinned_one(self, passing):\n        write(passing.path('.purlin/plugin-root'), '/no/such/plugin\\n')\n        done = passing.push()\n        assert done.returncode == 0, done.stdout + done.stderr\n        assert 'the tagged tests passed' in done.stdout",
       "file": "dev/test_pre_push_hook.py",
       "findings": [],
       "name": "test_an_environment_root_wins_over_the_pinned_one",
@@ -51,7 +51,7 @@
       "reasons": []
     },
     {
-      "body": "def test_the_pinned_plugin_root_is_enough(self, passing):\n        done = passing.push(plugin_root=None)\n        assert done.returncode == 0, done.stdout + done.stderr\n        assert 'the tagged tests passed' in done.stdout\n        assert read(passing.path('.purlin/plugin-root')).strip() == ROOT",
+      "body": "def test_claude_plugin_root_is_enough(self, passing):\n        os.remove(passing.path('.purlin/plugin-root'))\n        done = passing.push(plugin_root=None,\n                            env={'CLAUDE_PLUGIN_ROOT': ROOT})\n        assert done.returncode == 0, done.stdout + done.stderr\n        assert 'the tagged tests passed' in done.stdout",
       "file": "dev/test_pre_push_hook.py",
       "findings": [],
       "name": "test_claude_plugin_root_is_enough",
@@ -59,7 +59,7 @@
       "reasons": []
     },
     {
-      "body": "def test_the_pinned_plugin_root_is_enough(self, passing):\n        done = passing.push(plugin_root=None)\n        assert done.returncode == 0, done.stdout + done.stderr\n        assert 'the tagged tests passed' in done.stdout\n        assert read(passing.path('.purlin/plugin-root')).strip() == ROOT",
+      "body": "def test_no_plugin_anywhere_warns_and_never_blocks(self, passing):\n        os.remove(passing.path('.purlin/plugin-root'))\n        done = passing.push(plugin_root=None)\n        assert done.returncode == 0, done.stdout + done.stderr\n        assert 'the plugin was not found' in done.stdout\n        assert 'PURLIN_PLUGIN_ROOT' in done.stdout",
       "file": "dev/test_pre_push_hook.py",
       "findings": [],
       "name": "test_no_plugin_anywhere_warns_and_never_blocks",

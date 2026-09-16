@@ -1,0 +1,76 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-16T21:03:08Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "e89a5fd4d275e1393dddfdc74d30899046e17e802debbe880d21442b2d1ae681",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-31",
+      "text": "Open the regulated fixture and open the review list; verify login `RULE-2` reads `hashes changed after the signature`, that checkout_design `RULE-1` reads the word `NEEDS A PERSON` beside `review not settled`, and that login `RULE-3` reads `held by sam@acme.com: the lock expiry is never read`",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-38",
+      "text": "Open the regulated fixture with login `RULE-2`'s signed cell reasons emptied, open the review list, and verify that row reads the sentence `Its signature no longer matches the rule, proof and test it was written against.`",
+      "tier": "e2e"
+    }
+  ],
+  "reasons": [
+    "PROOF-31 happy_path_only: No proof of this rule names a rejection, an error or a boundary.",
+    "PROOF-38 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/purlin_report/20260916T210253Z-dc36ae3-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-30",
+  "rule_hash": "a78101f4a0d626481cca27e03c355f4683090f37b90ed408755967a81b46c776",
+  "rule_text": "A review row states the blocking cell's word and that cell's reasons as the payload writes them; where the cell carries no reason of its own, the row reads the entry's `why` tokens as sentences instead",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "b9b9dc8b054a6abeec9952cca0626ee7af37f38a9c1238e6028ddeaf06705a5d",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_review_row_states_the_blocking_cell_and_its_reasons(browser,\n                                                               tmp_path):\n    page = open_board(browser, tmp_path, payload_named('regulated'))\n    page.click('[data-screen=\"review\"]')\n    rows = {(row[0], row[1]): row for row in review_cells(page)}\n    assert rows[('login', 'RULE-2')][5] == 'hashes changed after the signature'\n    assert rows[('checkout_design', 'RULE-1')][4] == 'NEEDS A PERSON'\n    assert rows[('checkout_design', 'RULE-1')][5] == 'review not settled'\n    assert rows[('login', 'RULE-3')][5] == (\n        'held by sam@acme.com: the lock expiry is never read')\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_a_row_states_every_reason_the_group_does_not",
+      "proof": "PROOF-31",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_review_row_states_the_blocking_cell_and_its_reasons(browser,\n                                                               tmp_path):\n    page = open_board(browser, tmp_path, payload_named('regulated'))\n    page.click('[data-screen=\"review\"]')\n    rows = {(row[0], row[1]): row for row in review_cells(page)}\n    assert rows[('login', 'RULE-2')][5] == 'hashes changed after the signature'\n    assert rows[('checkout_design', 'RULE-1')][4] == 'NEEDS A PERSON'\n    assert rows[('checkout_design', 'RULE-1')][5] == 'review not settled'\n    assert rows[('login', 'RULE-3')][5] == (\n        'held by sam@acme.com: the lock expiry is never read')\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_a_row_whose_only_reason_is_its_risk_states_none",
+      "proof": "PROOF-31",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_row_with_no_reason_of_its_own_reads_its_why_as_a_sentence(\n        browser, tmp_path):\n    \"\"\"The payload's token is a word; a person reads a sentence.\"\"\"\n    payload = payload_named('regulated')\n    for feature in payload['features']:\n        for rule in feature['rules']:\n            if feature['name'] == 'login' and rule['id'] == 'RULE-2':\n                rule['cells']['signed']['reasons'] = []\n    page = open_board(browser, tmp_path, payload)\n    page.click('[data-screen=\"review\"]')\n    rows = {(row[0], row[1]): row for row in review_cells(page)}\n    assert rows[('login', 'RULE-2')][5] == (\n        'Its signature no longer matches the rule, proof and test it was '\n        'written against.')\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_a_row_with_no_reason_of_its_own_reads_its_why_as_a_sentence",
+      "proof": "PROOF-38",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "70ce84ff788155d31d93acd1d4245a7a6fd02ce5055e17653bb26bf54e8fd23c",
+  "verdict": "add a case"
+}

@@ -1,0 +1,61 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-16T21:03:07Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "4f87412e9b5ec5fbb1313f547179dbc44b99e8770a49a15a3bf03a8669743e58",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-26",
+      "text": "Open the regulated fixture and open login `RULE-2`, whose signature is stale; verify the screen reads `purlin:sign login RULE-2`, that the span holding it computes to a Courier family, and that it reads `signed commit by someone on the signer list`. Open `RULE-1`, which is signed, and verify it reads `Signed by jane@acme.com` and that `purlin:sign` is absent",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-39",
+      "text": "Open the team fixture, whose gate is `strong`, and open login `RULE-1`; verify the screen holds 0 occurrences of `purlin:sign` and that its Brief panel reads `could not settle`",
+      "tier": "e2e"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/purlin_report/20260916T210253Z-dc36ae3-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-26",
+  "rule_hash": "a689ee55661886a097d6ecb2c944f348b6713ebe3ce2ad3ce3d259a6dee5dc64",
+  "rule_text": "A rule that is not signed names the command that signs it, `purlin:sign <feature> <RULE-N>`, set in the monospace face, and states that a signature is a signed commit this page can only read back; a signed rule names who signed it instead. Below the `signed` gate the panel is absent",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "7ddce46fa6c3c82f74b68e4f5af661752ae388768af892f0bcdb8925f82a7780",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_rule_screen_names_the_sign_command(browser, tmp_path):\n    \"\"\"The page cannot sign a commit, so it names the command that does.\"\"\"\n    page = open_board(browser, tmp_path, payload_named('regulated'))\n    page.click('[data-act=\"feature\"][data-feature=\"login\"]')\n    page.click('.rule[data-rule=\"RULE-2\"]')\n    body = page.inner_text('.wrap')\n    assert 'purlin:sign login RULE-2' in body\n    assert 'signed commit by someone on the signer list' in body\n    assert 'courier' in page.eval_on_selector(\n        '.cmd', 'el => getComputedStyle(el).fontFamily').lower()\n\n    page.click('[data-act=\"close\"]')\n    page.click('.rule[data-rule=\"RULE-1\"]')\n    signed = page.inner_text('.wrap')\n    assert 'Signed by jane@acme.com' in signed\n    assert 'purlin:sign' not in signed\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_the_rule_screen_names_the_approve_command",
+      "proof": "PROOF-26",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_sign_panel_is_absent_below_the_signed_gate(browser, tmp_path):\n    \"\"\"Under `strong` no signature is read, so none is asked for.\"\"\"\n    page = open_board(browser, tmp_path, payload_named('team'))\n    page.click('[data-act=\"feature\"][data-feature=\"login\"]')\n    page.click('.rule[data-rule=\"RULE-1\"]')\n    body = page.inner_text('.wrap')\n    assert 'purlin:sign' not in body\n    assert 'Brief' in body\n    assert 'could not settle' in body\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_the_sign_panel_is_absent_below_the_signed_gate",
+      "proof": "PROOF-39",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "927ba2f76aef85a8e789d9d85d497073ef6ebb0580df626a6b746fd7137194e9",
+  "verdict": "ready"
+}

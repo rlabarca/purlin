@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "mutation",
-  "generated_at": "2026-09-15T20:34:03Z",
+  "generated_at": "2026-09-16T21:03:01Z",
   "layers": [
     "proof text",
     "test body",
@@ -22,7 +22,7 @@
     }
   ],
   "reasons": [],
-  "record": ".purlin/records/mutation/20260915T203331Z-6883ed3-ci-windows.json",
+  "record": ".purlin/records/mutation/20260916T210253Z-dc36ae3-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-7",
   "rule_hash": "e89535995a0d4fec2a96b13c868d06d04f0fcbb1a71ee298ca0474aa9cddfa7c",
@@ -34,7 +34,7 @@
   "test_strength": null,
   "tests": [
     {
-      "body": "def test_the_project_binary_wins_over_one_on_the_path(tmp_path, monkeypatch):\n    local = tmp_path / 'node_modules' / '.bin'\n    local.mkdir(parents=True)\n    (local / 'stryker').write_text('#!/bin/sh\\n', encoding='utf-8')\n    monkeypatch.setattr(stryker.shutil, 'which', lambda name: '/usr/bin/stryker')\n    assert stryker.binary(str(tmp_path)) == [str(local / 'stryker')]",
+      "body": "def test_a_missing_binary_leaves_no_engine_and_says_what_to_install(monkeypatch):\n    monkeypatch.setattr(stryker, 'binary', lambda root: None)\n    answer = stryker.run('/project', {'calc': ['src/calc.js']},\n                         {('calc', 'RULE-1'): CALC_TESTS['RULE-1']}, None)\n    assert answer['engine'] == 'none'\n    assert answer['available'] is False\n    assert 'stryker is not installed' in answer['reason']\n    rule = answer['features']['calc']['rules']['RULE-1']\n    assert rule['attribution'] == 'unavailable'\n    assert rule['score'] is None",
       "file": "dev/test_mutation_adapters.py",
       "findings": [],
       "name": "test_a_missing_binary_leaves_no_engine_and_says_what_to_install",
@@ -42,7 +42,7 @@
       "reasons": []
     },
     {
-      "body": "def test_the_project_binary_wins_over_one_on_the_path(tmp_path, monkeypatch):\n    local = tmp_path / 'node_modules' / '.bin'\n    local.mkdir(parents=True)\n    (local / 'stryker').write_text('#!/bin/sh\\n', encoding='utf-8')\n    monkeypatch.setattr(stryker.shutil, 'which', lambda name: '/usr/bin/stryker')\n    assert stryker.binary(str(tmp_path)) == [str(local / 'stryker')]",
+      "body": "def test_the_binary_is_none_when_stryker_is_not_installed(tmp_path, monkeypatch):\n    monkeypatch.setattr(stryker.shutil, 'which', lambda name: None)\n    assert stryker.binary(str(tmp_path)) is None",
       "file": "dev/test_mutation_adapters.py",
       "findings": [],
       "name": "test_the_binary_is_none_when_stryker_is_not_installed",

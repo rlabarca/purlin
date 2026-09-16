@@ -1,0 +1,72 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-16T21:03:12Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "4f5b9f2871e8edef61d7ffc376ac2a78c906958fc34b69dd84136c8ad7aac5a7",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-63",
+      "text": "Write `tests/shell/feat.test.sh` recording `PROOF-1` and `mutants/tests/shell/feat.test.sh` and `.hidden/feat.test.sh` each recording `PROOF-2`, run `--all --quick` with the shell framework; verify an entry for `PROOF-1` has `test_file` `tests/shell/feat.test.sh` and status `pass`, and no entry names `PROOF-2`",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-64",
+      "text": "Write `b/z.test.sh`, `a.test.sh`, `a/y.test.sh`, `node_modules/x/n.test.sh` and `a/helper.sh`; verify the shell tests found are exactly `a.test.sh`, `a/y.test.sh`, `b/z.test.sh` in that order",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-63 tautology"
+  ],
+  "record": ".purlin/records/run_script/20260916T210253Z-dc36ae3-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-44",
+  "rule_hash": "2fe9912aa265b1d78ccd8e45694c7aa3ef5c1070cd2a065ae1d2c72deaa9905c",
+  "rule_text": "The shell arm also runs each `*.test.sh` in a subdirectory, from the project root by its relative path in sorted order, and steps over hidden directories, `node_modules`, `bin`, `obj` and `mutants/`, so a consumer's shell tests under `tests/` prove what they record",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "114fd9a41a98ec3968123948f2b7f41a260f8d3ebf68e734a1c5ca962f4daca2",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_shell_test_in_a_subdirectory_proves_what_it_records(tmp_path):\n    root = _project(tmp_path, frameworks='shell')\n    _spec(root, 'feat')\n    _script(root, 'tests/shell/feat.test.sh', 'PROOF-1')\n    _script(root, 'mutants/tests/shell/feat.test.sh', 'PROOF-2')\n    _script(root, '.hidden/feat.test.sh', 'PROOF-2')\n    code, output = _run(root, '--all', '--quick')\n    data = _proofs(root, 'feat')\n    assert data is not None, output\n    entries = data['proofs']\n    ours = [entry for entry in entries if entry['id'] == 'PROOF-1']\n    assert ours and ours[0]['test_file'] == 'tests/shell/feat.test.sh', entries\n    assert ours[0]['status'] == 'pass', entries\n    assert not [entry for entry in entries if entry['id'] == 'PROOF-2'], entries",
+      "file": "dev/test_run_script_shell_tree.py",
+      "findings": [
+        "tautology"
+      ],
+      "name": "test_a_shell_test_in_a_subdirectory_proves_what_it_records",
+      "proof": "PROOF-63",
+      "reasons": [
+        "tautological assertion (assert True or equivalent)"
+      ]
+    },
+    {
+      "body": "def test_the_shell_tests_are_found_in_sorted_order(tmp_path):\n    for rel in ('b/z.test.sh', 'a.test.sh', 'a/y.test.sh',\n                'node_modules/x/n.test.sh', 'a/helper.sh'):\n        path = tmp_path.joinpath(*rel.split('/'))\n        path.parent.mkdir(parents=True, exist_ok=True)\n        path.write_text('true\\n', encoding='utf-8')\n    assert purlin_run.shell_tests(str(tmp_path)) == [\n        'a.test.sh', 'a/y.test.sh', 'b/z.test.sh']",
+      "file": "dev/test_run_script_shell_tree.py",
+      "findings": [],
+      "name": "test_the_shell_tests_are_found_in_sorted_order",
+      "proof": "PROOF-64",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "c89fc05468a4811e3a6c5a3fbc72f371f2913ec0317f33ba34fec6403bbbfabb",
+  "verdict": "needs a human"
+}

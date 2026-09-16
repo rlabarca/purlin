@@ -1,0 +1,48 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "approvals",
+  "generated_at": "2026-09-16T21:02:59Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "c8d31c41b3aadd07214efddc3749798d3d92650e54664c8fb4e47ba6c1557547",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-25",
+      "text": "Run the command to approve `RULE-1` as `jane@acme.com` with signing configured, then count the approval against that list and against `someone@else.com`; verify the first counts and the second is refused with a reason naming the approver list",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/approvals/20260916T210253Z-dc36ae3-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-20",
+  "rule_hash": "2dcccdacc0e6c6c8e9558087f87870f2814866ad1f38d9341ddd4b589e40e755",
+  "rule_text": "An approval counts only when the commit that added it is signed and its author is on the approver list",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "3c0e9a49998a87a307f377955e8e9a16cf70ff3869c847537ffb33ad7860418d",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_counted_approval_needs_the_signature_and_the_list(\n            self, proved):\n        signing_key(proved.root)\n        approve_module.main(['login', 'RULE-1', '--project-root', proved.root])\n        loaded = purlin_approvals.load_approvals(\n            proved.root, purlin_specs.scan_specs(proved.root))\n        approval = loaded[('login', 'RULE-1')][0]\n        counted, reason = purlin_approvals.counts(\n            proved.root, approval, ['jane@acme.com'])\n        assert counted, reason\n        counted, reason = purlin_approvals.counts(\n            proved.root, approval, ['someone@else.com'])\n        assert not counted and 'approver list' in reason",
+      "file": "dev/test_approvals.py",
+      "findings": [],
+      "name": "test_the_counted_approval_needs_the_signature_and_the_list",
+      "proof": "PROOF-25",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "76558600a59455140e5c10544f67c36b6ed15c9ea244d5857c6d5863eee63bec",
+  "verdict": "ready"
+}

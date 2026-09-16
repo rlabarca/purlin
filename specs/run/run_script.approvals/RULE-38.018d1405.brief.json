@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "run_script",
-  "generated_at": "2026-09-15T20:20:57Z",
+  "generated_at": "2026-09-16T21:03:12Z",
   "layers": [
     "proof text",
     "test body",
@@ -29,7 +29,7 @@
     }
   ],
   "reasons": [],
-  "record": ".purlin/records/run_script/20260915T202037Z-6883ed3-ci-linux.json",
+  "record": ".purlin/records/run_script/20260916T210253Z-dc36ae3-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-38",
   "rule_hash": "d29196696b264422c5c5e3988cb17304140af3b0c3e8dbdeb72ffe2e11461cbe",
@@ -41,7 +41,7 @@
   "test_strength": null,
   "tests": [
     {
-      "body": "def test_shell_proof_not_written_before_finish(tmp_path):\n    \"\"\"`purlin_proof` buffers; only `purlin_proof_finish` writes.\"\"\"\n    root = _project(tmp_path)\n    script = textwrap.dedent(\"\"\"\\\n        #!/usr/bin/env bash\n        set -euo pipefail\n        source %s\n        purlin_proof \"feat\" \"PROOF-1\" \"RULE-1\" pass \"a\"\n    \"\"\") % SHELL_HARNESS\n    (root / \"buffered.sh\").write_text(script, encoding=\"utf-8\")\n    subprocess.run([BASH, bash_path(root / \"buffered.sh\")], cwd=str(root),\n                   capture_output=True, text=True)\n    assert _proof_files(root) == []",
+      "body": "def test_shell_entries_cleared_after_finish(tmp_path):\n    \"\"\"A second finish with nothing buffered rewrites nothing.\"\"\"\n    root = _project(tmp_path)\n    script = textwrap.dedent(\"\"\"\\\n        #!/usr/bin/env bash\n        set -euo pipefail\n        source %s\n        purlin_proof \"feat\" \"PROOF-1\" \"RULE-1\" pass \"a\"\n        purlin_proof_finish\n        purlin_proof \"feat\" \"PROOF-2\" \"RULE-2\" pass \"b\"\n        purlin_proof_finish\n    \"\"\") % SHELL_HARNESS\n    (root / \"twice.sh\").write_text(script, encoding=\"utf-8\")\n    subprocess.run([BASH, bash_path(root / \"twice.sh\")], cwd=str(root),\n                   capture_output=True, text=True)\n    # The second finish carried only PROOF-2, which replaced the first write\n    # for the same (feature, tier, test_file): the buffer was cleared, so\n    # PROOF-1 was not written a second time.\n    ids = [e[\"id\"] for e in _proofs(root, \"feat\")[\"proofs\"]]\n    assert ids == [\"PROOF-2\"]",
       "file": "dev/test_proof_plugins_missing.py",
       "findings": [],
       "name": "test_shell_entries_cleared_after_finish",
@@ -49,7 +49,7 @@
       "reasons": []
     },
     {
-      "body": "def test_shell_proof_not_written_before_finish(tmp_path):\n    \"\"\"`purlin_proof` buffers; only `purlin_proof_finish` writes.\"\"\"\n    root = _project(tmp_path)\n    script = textwrap.dedent(\"\"\"\\\n        #!/usr/bin/env bash\n        set -euo pipefail\n        source %s\n        purlin_proof \"feat\" \"PROOF-1\" \"RULE-1\" pass \"a\"\n    \"\"\") % SHELL_HARNESS\n    (root / \"buffered.sh\").write_text(script, encoding=\"utf-8\")\n    subprocess.run([BASH, bash_path(root / \"buffered.sh\")], cwd=str(root),\n                   capture_output=True, text=True)\n    assert _proof_files(root) == []",
+      "body": "def test_shell_finish_with_nothing_buffered_writes_nothing(tmp_path):\n    root = _project(tmp_path)\n    _run_shell_proof(root, \"feat\", [])\n    assert _proof_files(root) == []",
       "file": "dev/test_proof_plugins_missing.py",
       "findings": [],
       "name": "test_shell_finish_with_nothing_buffered_writes_nothing",

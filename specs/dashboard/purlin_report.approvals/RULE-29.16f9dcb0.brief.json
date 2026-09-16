@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-16T21:03:07Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "6818d654565586db3f15ca843284ca47f24d2eff1a0c139a5748d2ca687b9e34",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-29",
+      "text": "Open the regulated fixture stamped 30 seconds before a fixed page clock; verify the top bar reads `Data: less than a minute old`, advance that clock by 90000 milliseconds, and verify the top bar reads `Data: 2 minutes old`, with zero reads of the data file in between",
+      "tier": "e2e"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/purlin_report/20260916T210253Z-dc36ae3-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-29",
+  "rule_hash": "75ed1727536134c80dfeca47f0a0347db3e51a86e31ac3cde3b3a94acfb6da64",
+  "rule_text": "The age in the top bar recomputes every 60 seconds from the stamp the payload already carries, reading the data file zero further times",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "28716e3380754c02406f95aeb6b9d24b69ac280703645372e120217bf819601e",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_age_recomputes_every_minute_from_the_same_payload(browser,\n                                                               tmp_path):\n    \"\"\"The stamp does not move; the clock does, and the top bar follows.\"\"\"\n    when = datetime.datetime(2026, 1, 1, 12, 0, 0,\n                             tzinfo=datetime.timezone.utc)\n    payload = payload_named('regulated')\n    payload['generated_at'] = (\n        when - datetime.timedelta(seconds=30)).strftime('%Y-%m-%dT%H:%M:%SZ')\n    page = open_board(browser, tmp_path, payload, clock_at=when)\n    assert 'Data: less than a minute old' in page.inner_text('.topbar .fresh')\n    page.clock.run_for(90000)\n    assert 'Data: 2 minutes old' in page.inner_text('.topbar .fresh')\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_the_age_recomputes_every_minute_from_the_same_payload",
+      "proof": "PROOF-29",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "16f9dcb04751cf443ceacae468ee5189135cab330a5d9125936c811e36cd4fe0",
+  "verdict": "ready"
+}

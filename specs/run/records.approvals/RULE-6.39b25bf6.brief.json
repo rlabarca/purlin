@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "records",
-  "generated_at": "2026-09-15T20:34:16Z",
+  "generated_at": "2026-09-16T21:03:09Z",
   "layers": [
     "proof text",
     "test body",
@@ -22,7 +22,7 @@
     }
   ],
   "reasons": [],
-  "record": ".purlin/records/records/20260915T203332Z-6883ed3-ci-windows.json",
+  "record": ".purlin/records/records/20260916T210253Z-dc36ae3-ci-linux.json",
   "risk": "medium",
   "rule": "RULE-6",
   "rule_hash": "5347dd3ea195783d78c5bf39ffc88b9bbd642aada66c793d33abc62d7a1105d9",
@@ -34,7 +34,7 @@
   "test_strength": null,
   "tests": [
     {
-      "body": "def test_the_ref_update_is_retried_when_the_branch_moved(project, github_env,\n                                                         monkeypatch):\n    host = FakeHost(fail_patch=1)\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    sha = records_module.commit_records(project, [path], 'ci',\n                                        'purlin: record')\n\n    assert sha == 'c' * 40\n    assert host.patched == 2, 'the refused update was not retried'\n    heads = [url for url in host.urls('GET') if '/git/ref/heads/' in url]\n    assert len(heads) == 2, 'the retry did not re-read the branch head'",
+      "body": "def test_a_refusal_that_is_not_a_moved_branch_is_raised_at_once(\n        project, github_env, monkeypatch):\n    class Refusing(FakeHost):\n        def _answer(self, method, url, body):\n            if '/git/refs/heads/' in url and method == 'PATCH':\n                self.patched += 1\n                raise urllib.error.HTTPError(url, 403, 'Forbidden', {}, None)\n            return FakeHost._answer(self, method, url, body)\n\n    host = Refusing()\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    with pytest.raises(urllib.error.HTTPError) as raised:\n        records_module.commit_records(project, [path], 'ci', 'purlin: record')\n\n    assert raised.value.code == 403\n    assert host.patched == 1, 'a refusal that is not a race was retried'",
       "file": "dev/test_records.py",
       "findings": [],
       "name": "test_a_refusal_that_is_not_a_moved_branch_is_raised_at_once",
@@ -50,7 +50,7 @@
       "reasons": []
     },
     {
-      "body": "def test_the_ref_update_is_retried_when_the_branch_moved(project, github_env,\n                                                         monkeypatch):\n    host = FakeHost(fail_patch=1)\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    sha = records_module.commit_records(project, [path], 'ci',\n                                        'purlin: record')\n\n    assert sha == 'c' * 40\n    assert host.patched == 2, 'the refused update was not retried'\n    heads = [url for url in host.urls('GET') if '/git/ref/heads/' in url]\n    assert len(heads) == 2, 'the retry did not re-read the branch head'",
+      "body": "def test_the_retry_gives_up_and_raises(project, github_env, monkeypatch):\n    host = FakeHost(fail_patch=99)\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    with pytest.raises(urllib.error.HTTPError) as raised:\n        records_module.commit_records(project, [path], 'ci', 'purlin: record')\n\n    assert raised.value.code == 422\n    assert host.patched == records_module.REF_RETRIES",
       "file": "dev/test_records.py",
       "findings": [],
       "name": "test_the_retry_gives_up_and_raises",

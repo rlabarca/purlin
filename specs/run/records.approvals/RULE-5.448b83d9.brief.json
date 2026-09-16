@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "records",
-  "generated_at": "2026-09-15T20:34:15Z",
+  "generated_at": "2026-09-16T21:03:09Z",
   "layers": [
     "proof text",
     "test body",
@@ -27,7 +27,7 @@
   "reasons": [
     "PROOF-5 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
   ],
-  "record": ".purlin/records/records/20260915T203332Z-6883ed3-ci-windows.json",
+  "record": ".purlin/records/records/20260916T210253Z-dc36ae3-ci-linux.json",
   "risk": "high",
   "rule": "RULE-5",
   "rule_hash": "753bd6c8db8b6c82697b40cf7828bfd0e64ca2030c788af85a09b19f347e86fd",
@@ -39,7 +39,7 @@
   "test_strength": null,
   "tests": [
     {
-      "body": "def test_the_ci_commit_is_one_tree_then_commit_then_ref(project, github_env,\n                                                        monkeypatch):\n    \"\"\"The file's text travels in the tree request, so it costs no request.\n\n    A run that writes a record, its auto-approvals and several hundred briefs\n    would otherwise make one content-creating request per file, which is what\n    the git host's limit on those counts.\n    \"\"\"\n    host = FakeHost()\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci', 'linux')\n\n    sha = records_module.commit_records(project, [path], 'ci',\n                                        'purlin: record for 4f1c2ab')\n\n    assert sha == 'c' * 40\n    order = [url.rsplit('/git/', 1)[-1].split('?')[0] for url in host.urls()]\n    assert order == ['ref/heads/main', 'commits/' + '1' * 40,\n                     'trees', 'commits', 'refs/heads/main']\n    assert [url for url in host.urls() if url.endswith('/blobs')] == []",
+      "body": "def test_a_file_that_is_not_text_gets_a_blob_of_its_own(project, github_env,\n                                                        monkeypatch):\n    \"\"\"Bytes that are not UTF-8 cannot travel inline, so they go as a blob.\n\n    Nothing a verify run writes is such a file, but the tree request would\n    be refused rather than carry one, so the branch has to exist.\n    \"\"\"\n    host = FakeHost()\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n    capture = '.purlin/runtime/attachments/greeting/PROOF-1.png'\n    os.makedirs(os.path.join(project, '.purlin', 'runtime', 'attachments',\n                             'greeting'))\n    with open(os.path.join(project, *capture.split('/')), 'wb') as handle:\n        handle.write(b'\\x89PNG\\r\\n\\x1a\\n\\xff\\xfe')\n\n    records_module.commit_records(project, [path, capture], 'ci',\n                                  'purlin: record for 4f1c2ab')\n\n    blobs = [body for _verb, url, body in host.calls if url.endswith('/blobs')]\n    assert len(blobs) == 1, 'only the file that is not text needs a blob'\n    assert blobs[0]['encoding'] == 'base64'\n    assert base64.b64decode(blobs[0]['content']) == b'\\x89PNG\\r\\n\\x1a\\n\\xff\\xfe'\n    tree = host.body_for('/git/trees', method='POST')\n    assert 'content' in tree['tree'][0] and 'sha' not in tree['tree'][0]\n    assert tree['tree'][1]['sha'] == 'b' * 40\n    assert 'content' not in tree['tree'][1]",
       "file": "dev/test_records.py",
       "findings": [],
       "name": "test_a_file_that_is_not_text_gets_a_blob_of_its_own",
@@ -47,7 +47,7 @@
       "reasons": []
     },
     {
-      "body": "def test_the_ci_commit_is_one_tree_then_commit_then_ref(project, github_env,\n                                                        monkeypatch):\n    \"\"\"The file's text travels in the tree request, so it costs no request.\n\n    A run that writes a record, its auto-approvals and several hundred briefs\n    would otherwise make one content-creating request per file, which is what\n    the git host's limit on those counts.\n    \"\"\"\n    host = FakeHost()\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci', 'linux')\n\n    sha = records_module.commit_records(project, [path], 'ci',\n                                        'purlin: record for 4f1c2ab')\n\n    assert sha == 'c' * 40\n    order = [url.rsplit('/git/', 1)[-1].split('?')[0] for url in host.urls()]\n    assert order == ['ref/heads/main', 'commits/' + '1' * 40,\n                     'trees', 'commits', 'refs/heads/main']\n    assert [url for url in host.urls() if url.endswith('/blobs')] == []",
+      "body": "def test_the_ci_commit_carries_a_path_outside_the_records_directory(\n        project, github_env, monkeypatch):\n    \"\"\"A CI run's approvals and briefs ride in the same commit as the record.\n\n    An approval that stayed on the runner is evidence nobody can read, so the\n    tree the commit names holds every path the run handed over and not only\n    the ones under `.purlin/records/`.\n    \"\"\"\n    host = FakeHost()\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n    approval = 'specs/core/greeting.approvals/RULE-1.1a2b3c4d.ci.json'\n    brief = 'specs/core/greeting.approvals/RULE-2.5e6f7a8b.brief.json'\n    directory = os.path.join(project, 'specs', 'core', 'greeting.approvals')\n    os.makedirs(directory)\n    for rel, text in ((approval, '{\"rule\": \"RULE-1\", \"approver\": \"ci\"}\\n'),\n                      (brief, '{\"rule\": \"RULE-2\", \"verdict\": \"ready\"}\\n')):\n        with open(os.path.join(project, *rel.split('/')), 'w',\n                  encoding='utf-8') as handle:\n            handle.write(text)\n\n    records_module.commit_records(project, [path, approval, brief], 'ci',\n                                  'purlin: record for 4f1c2ab')\n\n    tree = host.body_for('/git/trees', method='POST')\n    paths = [entry['path'] for entry in tree['tree']]\n    assert paths == [path, approval, brief]\n    beside_the_spec = [name for name in paths\n                       if not name.startswith('.purlin/records/')]\n    assert beside_the_spec == [approval, brief]\n    assert json.loads(tree['tree'][1]['content'])['approver'] == 'ci'\n    assert json.loads(tree['tree'][2]['content'])['verdict'] == 'ready'\n    assert [url for url in host.urls() if url.endswith('/blobs')] == [], \\\n        'three files that are all text asked for three blobs'",
       "file": "dev/test_records.py",
       "findings": [],
       "name": "test_the_ci_commit_carries_a_path_outside_the_records_directory",
@@ -63,7 +63,7 @@
       "reasons": []
     },
     {
-      "body": "def test_the_ci_commit_is_one_tree_then_commit_then_ref(project, github_env,\n                                                        monkeypatch):\n    \"\"\"The file's text travels in the tree request, so it costs no request.\n\n    A run that writes a record, its auto-approvals and several hundred briefs\n    would otherwise make one content-creating request per file, which is what\n    the git host's limit on those counts.\n    \"\"\"\n    host = FakeHost()\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci', 'linux')\n\n    sha = records_module.commit_records(project, [path], 'ci',\n                                        'purlin: record for 4f1c2ab')\n\n    assert sha == 'c' * 40\n    order = [url.rsplit('/git/', 1)[-1].split('?')[0] for url in host.urls()]\n    assert order == ['ref/heads/main', 'commits/' + '1' * 40,\n                     'trees', 'commits', 'refs/heads/main']\n    assert [url for url in host.urls() if url.endswith('/blobs')] == []",
+      "body": "def test_the_ci_commit_sends_no_author_and_no_committer(project, github_env,\n                                                        monkeypatch):\n    \"\"\"The commit is the git host's, so the git host signs it.\n\n    Sending either field makes GitHub attribute the commit to that person and\n    leave it unsigned, which is exactly the record that must not count.\n    \"\"\"\n    host = FakeHost()\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    records_module.commit_records(project, [path], 'ci', 'purlin: record')\n\n    body = host.body_for('/git/commits', method='POST')\n    assert set(body) == {'message', 'tree', 'parents'}\n    assert 'author' not in body and 'committer' not in body",
       "file": "dev/test_records.py",
       "findings": [],
       "name": "test_the_ci_commit_sends_no_author_and_no_committer",
@@ -71,7 +71,7 @@
       "reasons": []
     },
     {
-      "body": "def test_the_ci_commit_is_one_tree_then_commit_then_ref(project, github_env,\n                                                        monkeypatch):\n    \"\"\"The file's text travels in the tree request, so it costs no request.\n\n    A run that writes a record, its auto-approvals and several hundred briefs\n    would otherwise make one content-creating request per file, which is what\n    the git host's limit on those counts.\n    \"\"\"\n    host = FakeHost()\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci', 'linux')\n\n    sha = records_module.commit_records(project, [path], 'ci',\n                                        'purlin: record for 4f1c2ab')\n\n    assert sha == 'c' * 40\n    order = [url.rsplit('/git/', 1)[-1].split('?')[0] for url in host.urls()]\n    assert order == ['ref/heads/main', 'commits/' + '1' * 40,\n                     'trees', 'commits', 'refs/heads/main']\n    assert [url for url in host.urls() if url.endswith('/blobs')] == []",
+      "body": "def test_the_tree_entry_carries_the_file_and_its_permission(project,\n                                                            github_env,\n                                                            monkeypatch):\n    host = FakeHost()\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    records_module.commit_records(project, [path], 'ci', 'purlin: record')\n\n    tree = host.body_for('/git/trees', method='POST')\n    entry = tree['tree'][0]\n    assert entry['path'] == path\n    assert entry['type'] == 'blob'\n    assert 'sha' not in entry, 'a text file asked for a blob of its own'\n    assert entry[records_module._PERM_KEY] == records_module._FILE_PERM\n    assert json.loads(entry['content'])['feature'] == 'greeting'",
       "file": "dev/test_records.py",
       "findings": [],
       "name": "test_the_tree_entry_carries_the_file_and_its_permission",

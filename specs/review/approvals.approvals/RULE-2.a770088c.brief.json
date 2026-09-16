@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "approvals",
+  "generated_at": "2026-09-16T21:02:57Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "f9640ddfba0e1eff412fe867dfbe79f52aa1398e05608350d58a45fd8aaa044d",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-2",
+      "text": "Read the hashes of `login RULE-99`, which the spec does not declare; verify all five values are `none`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/approvals/20260916T210253Z-dc36ae3-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-2",
+  "rule_hash": "43f91eda587237da3a44284858778aa4dc26d86b60637e5ecaa1a2a4c658d6eb",
+  "rule_text": "A rule the project does not declare has no hashes at all",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "e543d44a4bfad7b8e91132cf95acc3b7f6dc1da0e37b2dc30c935ad816cd7e8d",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_rule_that_is_not_there_has_no_hashes(self, proved):\n        assert approve_module.rule_proof_test_hashes(\n            proved.root, 'login', 'RULE-99') == (None, None, None, None, None)",
+      "file": "dev/test_approvals.py",
+      "findings": [],
+      "name": "test_a_rule_that_is_not_there_has_no_hashes",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a770088c10be8090d9fa47159256c4d33d90e37e917612c26bd1bc077e2a6ecd",
+  "verdict": "ready"
+}

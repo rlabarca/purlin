@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "approvals",
+  "generated_at": "2026-09-16T21:02:59Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "adbd17e229be9f2e6a807f173201b08e94dd4a9604ee68e3cc1ad5334e308f6c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-62",
+      "text": "Write a hold on the low-risk `RULE-1` for its current text and run the auto-approval; verify nothing is written. Add the comment `# the fixture's password` above the test's assertion, commit, record again and run it again; verify exactly 1 file is written and it names `RULE-1`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-62 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/approvals/20260916T210253Z-dc36ae3-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-41",
+  "rule_hash": "1771ea56196d1e011e3dd972c89f3d363e8cb1dafb341a728204b4ae530ac46c",
+  "rule_text": "CI never auto-approves a rule a current hold names, and a hold whose rule, proof or test has since changed no longer stops it",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "f4203bd74141346a28b173635d6f321fd221b517d273bd44771961421ea7d5ef",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_current_hold_stops_it_and_a_stale_one_does_not(self, proved):\n        assert approve_module.write_hold(proved.root, 'login', 'RULE-1',\n                                         'jane@acme.com', CASE)\n        assert approve_module.auto_approve(proved.root) == []\n        proved.edit_test(TEST_FILE.replace(\n            '    ' + ASSERTION, \"    # the fixture's password\\n    \" + ASSERTION))\n        proved.record(stamp='20260913T130000Z')\n        written = approve_module.auto_approve(proved.root)\n        assert _rule_one_written(written), written",
+      "file": "dev/test_holds.py",
+      "findings": [],
+      "name": "test_a_current_hold_stops_it_and_a_stale_one_does_not",
+      "proof": "PROOF-62",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "4995ced9ea67778688093da70d4ffede12f4465781b3f779f83376229252c2a5",
+  "verdict": "add a case"
+}

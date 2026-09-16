@@ -1,0 +1,62 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "approvals",
+  "generated_at": "2026-09-16T21:02:59Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "466753da0e578631aa793ec0ce14e8a2ff411a719fcee94da388ec3958e96ea5",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-26",
+      "text": "Set the approver list to `someone@else.com` and run the command; verify it exits 1 and prints `not on the approver list`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-27",
+      "text": "Run the command in a recorded project at gate `approved` with no approver list; verify it exits 1 and prints `approver list missing: run purlin:init --gate approved`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/approvals/20260916T210253Z-dc36ae3-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-21",
+  "rule_hash": "7f8029ecfbad43e3957b71c96db01f37a46bac68f8b95b05bdd785f2d523b26e",
+  "rule_text": "Someone off the approver list is refused by name, and at gate `approved` with no list at all the command names `purlin:init --gate approved` and exits 1",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "abd6f409e2ccbc26c91dec350ba020a0276ab5d0c7fe06532cc44b558eeb0aff",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_approver_list_bounds_who_may_run_it(self, proved, capsys):\n        proved.config(approvers=['someone@else.com'])\n        code = approve_module.main(['login', '--project-root', proved.root])\n        output = capsys.readouterr().out\n        assert code == 1\n        assert 'not on the approver list' in output",
+      "file": "dev/test_approvals.py",
+      "findings": [],
+      "name": "test_the_approver_list_bounds_who_may_run_it",
+      "proof": "PROOF-26",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_approved_gate_with_no_list_names_the_command(self, capsys):\n        made = Project(gate='approved')\n        try:\n            made.proofs()\n            made.record()\n            code = approve_module.main(['login', '--project-root', made.root])\n            output = capsys.readouterr().out\n            assert code == 1\n            assert 'approver list missing: run purlin:init --gate approved' \\\n                in output\n        finally:\n            made.close()",
+      "file": "dev/test_approvals.py",
+      "findings": [],
+      "name": "test_the_approved_gate_with_no_list_names_the_command",
+      "proof": "PROOF-27",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "019818af5dda9b88cadfb24ade0aace313f67e20ba942db5f4fc2954ec35e95f",
+  "verdict": "ready"
+}

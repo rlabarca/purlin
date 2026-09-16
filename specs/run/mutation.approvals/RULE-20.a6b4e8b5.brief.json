@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "mutation",
-  "generated_at": "2026-09-15T20:34:06Z",
+  "generated_at": "2026-09-16T21:03:02Z",
   "layers": [
     "proof text",
     "test body",
@@ -23,7 +23,7 @@
     }
   ],
   "reasons": [],
-  "record": ".purlin/records/mutation/20260915T203331Z-6883ed3-ci-windows.json",
+  "record": ".purlin/records/mutation/20260916T210253Z-dc36ae3-ci-linux.json",
   "risk": "high",
   "rule": "RULE-20",
   "rule_hash": "c718d422bf3d1c83bd58bee7c728e271cde7613955aaa569ef780ba1ce8d3423",
@@ -35,7 +35,7 @@
   "test_strength": null,
   "tests": [
     {
-      "body": "def test_run_breaks_answers_one_shape_for_no_engine():\n    scope = {'deploy': ['deploy.sh']}\n    tests = {('deploy', 'RULE-1'): []}\n    answer = mutation.run_breaks('/project', 'none', scope, tests, None)\n    assert_answer_shape(answer, scope, tests)\n    assert answer['engine'] == 'none'",
+      "body": "def test_a_feature_an_engine_never_reached_is_still_listed():\n    answer = mutation.normalise(\n        {'engine': 'mutmut', 'available': True, 'features': {}},\n        {'login': ['src/login/session.py'], 'reports': []},\n        {('login', 'RULE-1'): []})\n    assert sorted(answer['features']) == ['login', 'reports']\n    assert answer['features']['login']['rules']['RULE-1']['killed'] == 0",
       "file": "dev/test_mutation_adapters.py",
       "findings": [],
       "name": "test_a_feature_an_engine_never_reached_is_still_listed",
@@ -43,7 +43,7 @@
       "reasons": []
     },
     {
-      "body": "def test_run_breaks_answers_one_shape_for_no_engine():\n    scope = {'deploy': ['deploy.sh']}\n    tests = {('deploy', 'RULE-1'): []}\n    answer = mutation.run_breaks('/project', 'none', scope, tests, None)\n    assert_answer_shape(answer, scope, tests)\n    assert answer['engine'] == 'none'",
+      "body": "def test_a_rule_an_engine_forgot_is_filled_in():\n    answer = mutation.normalise(\n        {'engine': 'stryker', 'available': True, 'reason': '',\n         'features': {'calc': {'scope_score': mutation.scope_entry(3, 1),\n                               'rules': {}}},\n         'log': ''},\n        {'calc': ['src/calc.js']},\n        {('calc', 'RULE-1'): [], ('calc', 'RULE-2'): []})\n    assert answer['features']['calc']['rules']['RULE-1']['score'] is None\n    assert answer['features']['calc']['rules']['RULE-1'][\n        'attribution'] == 'unavailable'\n    assert answer['features']['calc']['scope_score']['score'] == 75",
       "file": "dev/test_mutation_adapters.py",
       "findings": [],
       "name": "test_a_rule_an_engine_forgot_is_filled_in",
@@ -51,7 +51,7 @@
       "reasons": []
     },
     {
-      "body": "def test_run_breaks_answers_one_shape_for_no_engine():\n    scope = {'deploy': ['deploy.sh']}\n    tests = {('deploy', 'RULE-1'): []}\n    answer = mutation.run_breaks('/project', 'none', scope, tests, None)\n    assert_answer_shape(answer, scope, tests)\n    assert answer['engine'] == 'none'",
+      "body": "def test_an_engine_nobody_ships_is_not_run():\n    scope = {'login': ['src/login/session.py']}\n    tests = {('login', 'RULE-1'): []}\n    answer = mutation.run_breaks('/project', 'cosmic-ray', scope, tests, None)\n    assert_answer_shape(answer, scope, tests)\n    assert answer['engine'] == 'none'\n    assert 'unknown engine' in answer['reason']",
       "file": "dev/test_mutation_adapters.py",
       "findings": [],
       "name": "test_an_engine_nobody_ships_is_not_run",
@@ -59,7 +59,7 @@
       "reasons": []
     },
     {
-      "body": "def test_run_breaks_answers_one_shape_for_no_engine():\n    scope = {'deploy': ['deploy.sh']}\n    tests = {('deploy', 'RULE-1'): []}\n    answer = mutation.run_breaks('/project', 'none', scope, tests, None)\n    assert_answer_shape(answer, scope, tests)\n    assert answer['engine'] == 'none'",
+      "body": "def test_run_breaks_answers_one_shape_for_a_real_engine(tmp_path, monkeypatch):\n    (tmp_path / 'pyproject.toml').write_text(\n        '[project]\\n' + mutmut.mutmut_config_block(['src'], ['tests']),\n        encoding='utf-8')\n    monkeypatch.setattr(mutmut, 'binary', lambda root=None: '/usr/bin/mutmut')\n    monkeypatch.setattr(\n        mutmut, 'execute',\n        lambda command, cwd, report_path=None: (\n            0, read_fixture('mutmut_results.txt') if command[1] == 'results'\n            else 'done'))\n    scope = {'login': ['src/login/session.py']}\n    tests = {('login', 'RULE-1'): [], ('login', 'RULE-2'): []}\n    answer = mutation.run_breaks(str(tmp_path), 'mutmut', scope, tests, 'unit')\n    assert_answer_shape(answer, scope, tests)\n    assert answer['features']['login']['rules']['RULE-1']['score'] == 67",
       "file": "dev/test_mutation_adapters.py",
       "findings": [],
       "name": "test_run_breaks_answers_one_shape_for_a_real_engine",

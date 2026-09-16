@@ -1,0 +1,48 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "approvals",
+  "generated_at": "2026-09-16T21:02:58Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "ade481a57039436d18c30fdb8c324dda4bd00901c97589d744dbce92eafb82d2",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-18",
+      "text": "Record `PROOF-1` as failing and run the auto-approval; verify nothing is written",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/approvals/20260916T210253Z-dc36ae3-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-14",
+  "rule_hash": "a158e264418a750ae8422c5dd879b74dd70edbfed09b63cad8423acc343fb769",
+  "rule_text": "CI never auto-approves a rule whose record carries a failing proof",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "fefde583b1d5458d21c8b388940f8b5972ffafad316793a6fe65d4627597d4af",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_failing_record_is_not_auto_approved(self):\n        made = Project()\n        try:\n            made.proofs({'PROOF-1': 'fail', 'PROOF-2': 'pass'})\n            made.record({'PROOF-1': 'fail', 'PROOF-2': 'pass'})\n            assert approve_module.auto_approve(made.root) == []\n        finally:\n            made.close()",
+      "file": "dev/test_approvals.py",
+      "findings": [],
+      "name": "test_a_failing_record_is_not_auto_approved",
+      "proof": "PROOF-18",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "18c6c3baae7e8bb55ecea99d62556754570c970a5f3a500a8c11eabd4934cb89",
+  "verdict": "ready"
+}

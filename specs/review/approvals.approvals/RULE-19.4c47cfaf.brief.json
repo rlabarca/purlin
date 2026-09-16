@@ -1,0 +1,50 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "approvals",
+  "generated_at": "2026-09-16T21:02:59Z",
+  "layers": [
+    "proof text",
+    "test body"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "01f563eab9743b99d1753ae5830d602924d36f2ad26a7d99e0df7e9e9b944e5a",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-24",
+      "text": "Build the subject for `login RULE-1` with `login RULE-2`, then for `login RULE-1` with `billing RULE-3`; verify they read `approve(login): RULE-1 RULE-2` and `approve(batch): login RULE-1, billing RULE-3`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-24 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/approvals/20260916T210253Z-dc36ae3-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-19",
+  "rule_hash": "63f6468b000f98cf2b8c7b352f70d0ad41ab3a8822866100f43e66d331013ddd",
+  "rule_text": "A batch spanning more than one feature names each feature with its own rules in the subject",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "067ba33c6ddfa0c841c29f29b1024b71af58c63bed5bcabc3b548f61dcc4ab9c",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_batch_across_features_names_each_one(self):\n        assert approve_module.commit_message(\n            [('login', 'RULE-1'), ('login', 'RULE-2')]) == (\n            'approve(login): RULE-1 RULE-2')\n        assert approve_module.commit_message(\n            [('login', 'RULE-1'), ('billing', 'RULE-3')]) == (\n            'approve(batch): login RULE-1, billing RULE-3')",
+      "file": "dev/test_approvals.py",
+      "findings": [],
+      "name": "test_a_batch_across_features_names_each_one",
+      "proof": "PROOF-24",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "4c47cfaf9a4485706bc41a95680d631fa0804da4e6418f5fb014002023ea4042",
+  "verdict": "add a case"
+}

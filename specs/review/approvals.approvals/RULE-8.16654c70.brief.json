@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "approvals",
+  "generated_at": "2026-09-16T21:02:58Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "92641054ee0298583de9934bc5dfd558dfc82989f825824bea9bcf08cdf7cb25",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-12",
+      "text": "Write an approval for the address `Rich.LaBarca+purlin@example.com`; verify the only file in the approvals directory is named `RULE-1.<hash8>.rich-labarca-purlin.json` for that rule's triple",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-12 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/approvals/20260916T210253Z-dc36ae3-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-8",
+  "rule_hash": "1b806fa351614c983678c7d516ba310c62e1d8f7d91c461738765c8ec2ba421a",
+  "rule_text": "An approval file is named for the rule, the first eight characters of the triple and the approver's slug, the email local part lowercased with every character that is not a letter or a digit replaced by a hyphen",
+  "schema": "purlin-brief/1",
+  "state": "Stale",
+  "test_hash": "7f3ddaa75c88e930e80077e3412a7f98a2877570887a8dc3dfaba4d0f7d42f58",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_name_carries_the_rule_the_triple_and_the_slug(self, proved):\n        entry = proved.rule('RULE-1')\n        triple = approve_module.triple_for(entry)\n        approve_module.write_approval(\n            proved.root, 'login', 'RULE-1', 'Rich.LaBarca+purlin@example.com',\n            None, None, 'tested', 'low', entry=entry)\n        assert proved.approvals() == [\n            'RULE-1.%s.rich-labarca-purlin.json' % triple[:8]]",
+      "file": "dev/test_approvals.py",
+      "findings": [],
+      "name": "test_the_name_carries_the_rule_the_triple_and_the_slug",
+      "proof": "PROOF-12",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "16654c702c5300a43e93de03ec798af017f853e552023179fa8d4b0fd494c55d",
+  "verdict": "add a case"
+}
