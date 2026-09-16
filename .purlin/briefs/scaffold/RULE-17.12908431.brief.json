@@ -1,0 +1,56 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T22:35:35Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "ab6eeee30f480de593182d6d252cc31c87673e4c340b138352c2d82261fe3dd7",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-17",
+      "text": "Run `--gate recorded` and verify the output contains `.purlin/records/**`, `specs/**/*.approvals/*.ci.json` and `force push`; run `--gate tested` and verify it contains `force push` and not `.purlin/records/**`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-17",
+  "rule_hash": "565eea138babcfc37979826eb53cb948cbc2be035976f54e40e74d0e6a489fe9",
+  "rule_text": "The branch rules the git host has to enforce are printed: under `tested` the force-push and deletion rule alone, and above it the restrictions on `.purlin/records/**` and the CI approval files as well",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "758016206f1213d9f33f0a89ad58ae52c025f954a2c41e1c917fe6036578a2f9",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_tested_prints_only_the_force_push_rule(self, project):\n        output = project.run('--gate', 'tested')\n        assert 'force push' in output.lower()\n        assert '.purlin/records/**' not in output",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_tested_prints_only_the_force_push_rule",
+      "proof": "PROOF-17",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_branch_rules_are_printed(self, project):\n        output = project.run('--gate', 'recorded')\n        assert '.purlin/records/**' in output\n        assert 'specs/**/*.approvals/*.ci.json' in output\n        assert 'force push' in output.lower()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_branch_rules_are_printed",
+      "proof": "PROOF-17",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "1290843168adc5fceae8474b320c64c9b4b4f006b670dc52ea84a6f4fd6be1ba"
+}

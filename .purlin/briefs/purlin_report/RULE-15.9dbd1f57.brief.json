@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-16T22:35:25Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "539c7ac85ab69467aa673ab0cc3339a289aad82e20d3d1e5cf837bda1d828d59",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-15",
+      "text": "Open the board with the regulated fixture, open the login row and then `RULE-1`; verify the heading names `RULE-1`, that the screen carries the rule text `A person signs in with an email address and a password.`, the proof id `PROOF-1`, the test `tests/test_login.py :: test_sign_in`, the cell words `PASSED`, `STRONG` and `SIGNED`, the brief line `Test strength 86%, against a minimum of 80%.` and the sentence `The model review settled the question.`; open `RULE-3`, which a person holds, and verify its screen reads `held by sam@acme.com: the lock expiry is never read` and names `PROOF-3` beside the sentence `No proof of this rule names a rejection, an error or a boundary.`",
+      "tier": "e2e"
+    }
+  ],
+  "record": ".purlin/records/purlin_report/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-15",
+  "rule_hash": "67f96976c13f8ed917acb5d0fea8d5571c1230c1762097fec500253fe2ded2e5",
+  "rule_text": "The rule screen states the rule text, the spec status, one row per cell the gate reaches carrying that cell's word and its reasons, and each proof with its tier and the test file and test name that carry the proof marker; at `strong` and above a Brief panel gives the test strength beside the minimum, each free-check finding in one sentence naming the proofs that carry it, what the model review observed, and whether it settled",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "9ca22e7394fd4afc94e66bcb04bed4045181a1116d6d47653deebb8a8a00b8ff",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_rule_screen_shows_proof_test_and_evidence(browser, tmp_path):\n    page = open_board(browser, tmp_path, payload_named('regulated'))\n    page.click('[data-act=\"feature\"][data-feature=\"login\"]')\n    page.click('.rule[data-rule=\"RULE-1\"]')\n    body = page.inner_text('.wrap')\n    assert 'RULE-1' in page.inner_text('h1')\n    assert 'A person signs in with an email address and a password.' in body\n    assert 'PROOF-1' in body\n    assert 'tests/test_login.py :: test_sign_in' in body\n    assert 'PASSED' in body and 'STRONG' in body and 'SIGNED' in body\n    assert 'Test strength 86%, against a minimum of 80%.' in body\n    assert 'The model review settled the question.' in body\n    page.click('[data-act=\"close\"]')\n    page.click('.rule[data-rule=\"RULE-3\"]')\n    held = page.inner_text('.wrap')\n    assert 'PROOF-3' in held\n    assert 'held by sam@acme.com: the lock expiry is never read' in held\n    assert 'No proof of this rule names a rejection, an error or a boundary.' \\\n        in held\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_the_rule_screen_shows_proof_test_and_evidence",
+      "proof": "PROOF-15",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "9dbd1f57c2a6325d5db6ca63d3437017db95b75610e4b343b777a3ad3dfe8613"
+}

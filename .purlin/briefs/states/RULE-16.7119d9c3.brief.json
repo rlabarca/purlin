@@ -1,0 +1,56 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T22:35:43Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "5b97735335308574b90a713d42f9cb83ead266b25ffa852173634d6e5701ee0e",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-19",
+      "text": "Build the strong cell of a rule whose only proof is tagged `@manual`; verify the cell reads `needs a person` with the reason `manual proof`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/states/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-16",
+  "rule_hash": "77c2ca68361e31d6e5b9bae2f17b82d56d8cf255ecceb0199946249aa15933a6",
+  "rule_text": "A rule proved by a `@manual` proof reads `needs a person` with the reason `manual proof`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "24f4aa1d907373e0017ff4c7d81928fa0497925129e518322f3281ba5d5b5dcd",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_manual_proof_needs_a_person(self):\n        cell = _strong(risk='low', proofs=[\n            {'id': 'PROOF-1', 'tier': 'manual', 'env': None, 'text': 'x',\n             'findings': [], 'tests': []}])\n        assert cell['word'] == 'needs a person'\n        assert cell['reasons'] == ['manual proof'], cell",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_a_manual_proof_needs_a_person",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_manual_proof_needs_a_person(self):\n        cell = _strong(risk='low', proofs=[\n            {'id': 'PROOF-1', 'tier': 'manual', 'env': None, 'text': 'x',\n             'findings': [], 'tests': []}])\n        assert cell['word'] == 'needs a person'\n        assert cell['reasons'] == ['manual proof'], cell",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_the_data_file_is_a_const_assignment_and_round_trips",
+      "proof": "PROOF-19",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "7119d9c3f2c4c885cc624d4df6013bb7bce7ecc5881be3ae87e8c6cfb92641e5"
+}

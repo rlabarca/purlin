@@ -1,0 +1,1547 @@
+{
+  "commit": "e8bd239e429ff40ff6d8acc5fb93205717fec556",
+  "dirty": true,
+  "environment": {
+    "engines": [],
+    "host": "GitHub Actions 1000000181",
+    "id": "linux-x86_64",
+    "job": "verify",
+    "kind": "ci",
+    "os": "linux"
+  },
+  "feature": "update",
+  "features": {
+    "update": {
+      "rules": {
+        "RULE-1": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-1"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_json_lists_the_same_migrations",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_pending_is_empty_for_a_root_without_purlin",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-10": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-10"
+          ],
+          "result": "fail",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_retired_keys_are_gone[upgrade-0.10-dev]",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_retired_keys_are_gone[upgrade-0.9.5]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_the_config_is_the_gate_shape[upgrade-0.10-dev]",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_the_config_is_the_gate_shape[upgrade-0.9.5]",
+              "plugin": "",
+              "status": "fail"
+            }
+          ]
+        },
+        "RULE-11": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-11"
+          ],
+          "result": "fail",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_no_key_nothing_reads_is_written_back[upgrade-0.10-dev]",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_no_key_nothing_reads_is_written_back[upgrade-0.9.5]",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-12": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-12"
+          ],
+          "result": "fail",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_an_answer_that_is_not_a_gate_leaves_the_default",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_the_gate_defaults_to_recorded_when_the_hook_was_strict",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_the_gate_defaults_to_tested",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_the_gate_question_takes_the_answer_you_type",
+              "plugin": "",
+              "status": "fail"
+            }
+          ]
+        },
+        "RULE-13": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-13"
+          ],
+          "result": "fail",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_a_confirmed_scope_becomes_env",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_a_declined_scope_drops_the_tag",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_a_scope_naming_no_operating_system_is_dropped",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_no_spec_carries_the_retired_scope_afterwards[upgrade-0.10-dev]",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_no_spec_carries_the_retired_scope_afterwards[upgrade-0.9.5]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_prose_that_is_not_a_tag_is_left_alone",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_the_retired_tier_tag_becomes_unit_and_env",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-14": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-14"
+          ],
+          "result": "fail",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_a_design_source_becomes_a_designs_path",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_the_design_migration_is_not_pending_afterwards",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_the_visual_fields_are_dropped",
+              "plugin": "",
+              "status": "fail"
+            }
+          ]
+        },
+        "RULE-15": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-15"
+          ],
+          "result": "fail",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_declining_the_workflow_leaves_it_unwritten",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_purlin_yml_carries_the_matrix_the_tags_name",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_the_retired_workflows_are_removed[upgrade-0.10-dev]",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_the_retired_workflows_are_removed[upgrade-0.9.5]",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-16": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-16"
+          ],
+          "result": "fail",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_a_copy_the_plugin_does_not_ship_is_left_alone",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_every_copy_matches_the_plugin_afterwards[upgrade-0.10-dev]",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_every_copy_matches_the_plugin_afterwards[upgrade-0.9.5]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_the_renamed_shell_plugin_keeps_its_name",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-17": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-17"
+          ],
+          "result": "fail",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_the_records_folder_and_its_readme_are_created[upgrade-0.10-dev]",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_the_records_folder_and_its_readme_are_created[upgrade-0.9.5]",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-18": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-18"
+          ],
+          "result": "fail",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_a_run_that_applies_nothing_writes_no_commit",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_nothing_is_left_uncommitted_but_the_backups[upgrade-0.10-dev]",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_nothing_is_left_uncommitted_but_the_backups[upgrade-0.9.5]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_one_commit_carries_every_migration_id[upgrade-0.10-dev]",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_one_commit_carries_every_migration_id[upgrade-0.9.5]",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-19": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-19"
+          ],
+          "result": "fail",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_status_says_it_even_when_the_config_is_already_clean",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_status_says_it_for_a_project_that_has_not_updated",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_status_says_run_the_update_while_something_is_pending",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_status_stops_saying_it_once_nothing_is_pending",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_status_stops_saying_it_once_the_old_project_has_updated",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-2": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-2"
+          ],
+          "result": "fail",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_a_project_with_no_hooks_needs_no_hook_migration",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_the_010_layout_needs_its_hooks_migrated_too",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_the_v095_layout_needs_the_migrations_that_layout_left",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-20": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-20"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_a_run_that_leaves_work_names_it",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_the_run_ends_by_naming_the_next_step",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_what_the_update_prints_carries_no_emoji",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-21": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-21"
+          ],
+          "result": "fail",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_a_framework_the_tree_cannot_run_is_dropped",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_a_framework_the_tree_carries_is_kept",
+              "plugin": "",
+              "status": "fail"
+            }
+          ]
+        },
+        "RULE-22": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-22"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_brief_files.py",
+              "name": "test_the_update_adds_the_rendering_to_gitignore",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-3": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-3"
+          ],
+          "result": "fail",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_check_exits_1_while_anything_is_pending",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_check_on_the_v095_layout_names_every_migration",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_check_writes_nothing",
+              "plugin": "",
+              "status": "fail"
+            }
+          ]
+        },
+        "RULE-4": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-4"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_a_root_without_purlin_exits_2",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-5": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-5"
+          ],
+          "result": "fail",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_running_yes_twice_changes_nothing_the_second_time[upgrade-0.10-dev]",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_running_yes_twice_changes_nothing_the_second_time[upgrade-0.9.5]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_yes_applies_every_migration[upgrade-0.10-dev]",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_yes_applies_every_migration[upgrade-0.9.5]",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-6": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-6"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_a_declined_migration_is_left_pending",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_one_declined_migration_does_not_stop_the_others",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-7": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-7"
+          ],
+          "result": "fail",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_a_backup_holds_what_the_file_said_before",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_a_backup_is_not_written_twice",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_every_rewritten_file_leaves_its_previous_bytes[upgrade-0.10-dev]",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_every_rewritten_file_leaves_its_previous_bytes[upgrade-0.9.5]",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-8": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-8"
+          ],
+          "result": "fail",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_a_committed_cache_is_untracked_and_left_on_disk",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_no_proof_or_verification_file_remains_on_disk[upgrade-0.10-dev]",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_no_proof_or_verification_file_remains_on_disk[upgrade-0.9.5]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_no_proof_or_verification_file_remains_tracked[upgrade-0.10-dev]",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_no_proof_or_verification_file_remains_tracked[upgrade-0.9.5]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_the_dashboard_data_is_untracked_and_ignored[upgrade-0.10-dev]",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_the_dashboard_data_is_untracked_and_ignored[upgrade-0.9.5]",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-9": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-9"
+          ],
+          "result": "fail",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_a_foreign_delegator_is_left_alone",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_a_shim_already_pointing_here_is_left_alone",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_the_delegator_git_runs_goes_too",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_the_pre_commit_shim_goes",
+              "plugin": "",
+              "status": "fail"
+            },
+            {
+              "file": "dev/test_init_update.py",
+              "name": "test_the_pre_push_shim_is_repointed",
+              "plugin": "",
+              "status": "fail"
+            }
+          ]
+        }
+      },
+      "scope_score": null,
+      "spec": "specs/init/update.md"
+    }
+  },
+  "gate": "passed",
+  "log": {
+    "path": ".purlin/runtime/run.log",
+    "sha256": "c6af6659f022c9b603ed84ff7f29efff3c5bd41c129c6d4bbff3d2c10de0f54f"
+  },
+  "missing": [],
+  "os": "linux",
+  "plugins": [
+    "pytest",
+    "shell"
+  ],
+  "proofs": [
+    {
+      "env": null,
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_json_lists_the_same_migrations",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_pending_is_empty_for_a_root_without_purlin",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_project_with_no_hooks_needs_no_hook_migration",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_010_layout_needs_its_hooks_migrated_too",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_v095_layout_needs_the_migrations_that_layout_left",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_check_exits_1_while_anything_is_pending",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_check_on_the_v095_layout_names_every_migration",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_check_writes_nothing",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_root_without_purlin_exits_2",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_running_yes_twice_changes_nothing_the_second_time[upgrade-0.10-dev]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_running_yes_twice_changes_nothing_the_second_time[upgrade-0.9.5]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_yes_applies_every_migration[upgrade-0.10-dev]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_yes_applies_every_migration[upgrade-0.9.5]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_declined_migration_is_left_pending",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_one_declined_migration_does_not_stop_the_others",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_backup_holds_what_the_file_said_before",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_backup_is_not_written_twice",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_every_rewritten_file_leaves_its_previous_bytes[upgrade-0.10-dev]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_every_rewritten_file_leaves_its_previous_bytes[upgrade-0.9.5]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_committed_cache_is_untracked_and_left_on_disk",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_no_proof_or_verification_file_remains_on_disk[upgrade-0.10-dev]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_no_proof_or_verification_file_remains_on_disk[upgrade-0.9.5]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_no_proof_or_verification_file_remains_tracked[upgrade-0.10-dev]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_no_proof_or_verification_file_remains_tracked[upgrade-0.9.5]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_dashboard_data_is_untracked_and_ignored[upgrade-0.10-dev]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_dashboard_data_is_untracked_and_ignored[upgrade-0.9.5]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_foreign_delegator_is_left_alone",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_shim_already_pointing_here_is_left_alone",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_delegator_git_runs_goes_too",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_pre_commit_shim_goes",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_pre_push_shim_is_repointed",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_retired_keys_are_gone[upgrade-0.10-dev]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_retired_keys_are_gone[upgrade-0.9.5]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_config_is_the_gate_shape[upgrade-0.10-dev]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_config_is_the_gate_shape[upgrade-0.9.5]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_no_key_nothing_reads_is_written_back[upgrade-0.10-dev]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_no_key_nothing_reads_is_written_back[upgrade-0.9.5]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_an_answer_that_is_not_a_gate_leaves_the_default",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_gate_defaults_to_recorded_when_the_hook_was_strict",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_gate_defaults_to_tested",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_gate_question_takes_the_answer_you_type",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_confirmed_scope_becomes_env",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_declined_scope_drops_the_tag",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_scope_naming_no_operating_system_is_dropped",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_no_spec_carries_the_retired_scope_afterwards[upgrade-0.10-dev]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_no_spec_carries_the_retired_scope_afterwards[upgrade-0.9.5]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_prose_that_is_not_a_tag_is_left_alone",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_retired_tier_tag_becomes_unit_and_env",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_design_source_becomes_a_designs_path",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_design_migration_is_not_pending_afterwards",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_visual_fields_are_dropped",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_declining_the_workflow_leaves_it_unwritten",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_purlin_yml_carries_the_matrix_the_tags_name",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_retired_workflows_are_removed[upgrade-0.10-dev]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_retired_workflows_are_removed[upgrade-0.9.5]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_copy_the_plugin_does_not_ship_is_left_alone",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_every_copy_matches_the_plugin_afterwards[upgrade-0.10-dev]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_every_copy_matches_the_plugin_afterwards[upgrade-0.9.5]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_renamed_shell_plugin_keeps_its_name",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-17",
+      "rule": "RULE-17",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_records_folder_and_its_readme_are_created[upgrade-0.10-dev]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-17",
+      "rule": "RULE-17",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_records_folder_and_its_readme_are_created[upgrade-0.9.5]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-18",
+      "rule": "RULE-18",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_run_that_applies_nothing_writes_no_commit",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-18",
+      "rule": "RULE-18",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_nothing_is_left_uncommitted_but_the_backups[upgrade-0.10-dev]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-18",
+      "rule": "RULE-18",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_nothing_is_left_uncommitted_but_the_backups[upgrade-0.9.5]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-18",
+      "rule": "RULE-18",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_one_commit_carries_every_migration_id[upgrade-0.10-dev]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-18",
+      "rule": "RULE-18",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_one_commit_carries_every_migration_id[upgrade-0.9.5]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_status_says_it_even_when_the_config_is_already_clean",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_status_says_it_for_a_project_that_has_not_updated",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_status_says_run_the_update_while_something_is_pending",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_status_stops_saying_it_once_nothing_is_pending",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_status_stops_saying_it_once_the_old_project_has_updated",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-20",
+      "rule": "RULE-20",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_run_that_leaves_work_names_it",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-20",
+      "rule": "RULE-20",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_the_run_ends_by_naming_the_next_step",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-20",
+      "rule": "RULE-20",
+      "status": "pass",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_what_the_update_prints_carries_no_emoji",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-21",
+      "rule": "RULE-21",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_framework_the_tree_cannot_run_is_dropped",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-21",
+      "rule": "RULE-21",
+      "status": "fail",
+      "test_file": "dev/test_init_update.py",
+      "test_name": "test_a_framework_the_tree_carries_is_kept",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-22",
+      "rule": "RULE-22",
+      "status": "pass",
+      "test_file": "dev/test_brief_files.py",
+      "test_name": "test_the_update_adds_the_rendering_to_gitignore",
+      "tier": "unit"
+    }
+  ],
+  "runner": "ci",
+  "schema": "purlin-record/2",
+  "schema_version": 2,
+  "scope_tree": "be32d7dcde05c5f8faac16f1415161d3ecd9e68802b90a31adc784367eb7508b",
+  "test_strength": null,
+  "timestamp": "2026-09-16T22:35:16Z"
+}

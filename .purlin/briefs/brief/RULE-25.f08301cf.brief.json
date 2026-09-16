@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "brief",
+  "generated_at": "2026-09-16T22:35:19Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "b087459080214f0d2a91bcf26bbbcb2e459e3ebfa546f18364e8a7cc0dd5af10",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-37",
+      "text": "Write a proof reading `POST /login, then read specs/_anchors/policy.md and https://dev.azure.com/acme/_git/policies; verify 200`, build the brief and verify its findings carry no `implementation_coupling`; rewrite it to call a function whose name opens with an underscore and verify 200, and verify `implementation_coupling` is present",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/brief/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-25",
+  "rule_hash": "0fe98b3485646de7db7f61bf66dee10b9b307915ee1ac32306d0fc3a1c0a0d69",
+  "rule_text": "A name that opens with an underscore reaches the brief as `implementation_coupling` unless it follows a `/`, so a path or URL segment such as `specs/_anchors/` or `/_git/` is not read as a private symbol",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "fe499aca08f9b5ca7cb16d2b66a76cf28c375433bba9f93543e94926375dd8f6",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_path_segment_is_not_a_private_symbol(self):\n        original = ('POST /login with the password \"secret\"; verify 200 and '\n                    'a token @integration')\n        cases = (\n            ('POST /login, then read specs/_anchors/policy.md and '\n             'https://dev.azure.com/acme/_git/policies; verify 200 '\n             '@integration', False),\n            ('Call _resolve_token and verify 200 @integration', True),\n        )\n        for text, coupled in cases:\n            made = Project(spec=SPEC.replace(original, text))\n            try:\n                made.proofs()\n                found = build(made, 'RULE-1')['proofs'][0]['findings']\n                assert ('implementation_coupling' in found) is coupled, (\n                    text, found)\n            finally:\n                made.close()",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_a_path_segment_is_not_a_private_symbol",
+      "proof": "PROOF-37",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "f08301cf16f358f7d3de6a15f420abd7f9d932e031781f757b78b3b07f230e02"
+}

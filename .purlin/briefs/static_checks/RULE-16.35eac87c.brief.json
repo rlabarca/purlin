@@ -1,0 +1,65 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-16T22:35:49Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "40dad15d26a7260972d1e49247746ec5d29949a220aa29c70c6296d9a06c7b51",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-11",
+      "text": "Run the command with `--json` over a file carrying one clean and one always-true marked test; verify 2 proofs come back and each names a proof id, a rule id, a test name, a status and a reason",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-35",
+      "text": "Read those same three results; verify each carries a proof id, a rule id, a test name, a status and a reason, that the first names `RULE-1`, and that the third's test name opens `real assertion`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/static_checks/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-16",
+  "rule_hash": "c40e25e00d9c7aa365866048a7af30fa5df8bbf054d0de935e01076e001ad9c2",
+  "rule_text": "Every result carries the proof id, the rule id, the test name, the status and the reason, whichever checker produced it",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "4af4f774c2b6bdf7d6bb5297af1cd76085f99a4137b5f8fc5ca305855a202bd4",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_json_has_required_fields(self):\n        path = _write_tmp('''\nimport pytest\n\n@pytest.mark.proof(\"testfeat\", \"PROOF-1\", \"RULE-1\")\ndef test_good():\n    assert 1 == 1\n\n@pytest.mark.proof(\"testfeat\", \"PROOF-2\", \"RULE-2\")\ndef test_bad():\n    assert True\n''')\n        try:\n            result = subprocess.run(\n                [sys.executable, STATIC_CHECKS_PY, path, \"testfeat\", \"--json\"],\n                capture_output=True, text=True\n            )\n            data = json.loads(result.stdout)\n            assert 'proofs' in data\n            assert isinstance(data['proofs'], list)\n            assert len(data['proofs']) == 2\n            for proof in data['proofs']:\n                assert 'proof_id' in proof\n                assert 'rule_id' in proof\n                assert 'test_name' in proof\n                assert 'status' in proof\n                assert 'reason' in proof\n        finally:\n            os.unlink(path)",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_json_has_required_fields",
+      "proof": "PROOF-11",
+      "reasons": []
+    },
+    {
+      "body": "def test_check_js_assertion_detection(self):\n        \"\"\"tautology and no_assertion are detected in JS/TS bodies; clean tests pass.\"\"\"\n        proofs = self._run('''\nimport { it, expect } from \"vitest\";\n\nit(\"tautological [proof:jsfeat:PROOF-1:RULE-1]\", () => {\n  expect(true).toBe(true);\n});\n\nit(\"empty body [proof:jsfeat:PROOF-2:RULE-2]\", () => {\n  const x = 5;\n});\n\nit(\"real assertion [proof:jsfeat:PROOF-3:RULE-3]\", () => {\n  expect(2 + 2).toBe(4);\n});\n''', \"jsfeat\")\n\n        assert proofs[\"PROOF-1\"][\"status\"] == \"fail\"\n        assert proofs[\"PROOF-1\"][\"check\"] == \"tautology\"\n        assert proofs[\"PROOF-2\"][\"status\"] == \"fail\"\n        assert proofs[\"PROOF-2\"][\"check\"] == \"no_assertion\"\n        assert proofs[\"PROOF-3\"][\"status\"] == \"pass\"\n\n        # RULE-27: check_js returns the same JSON shape as check_python \u2014\n        # every proof dict carries proof_id, rule_id, test_name, status, reason.\n        for pid in (\"PROOF-1\", \"PROOF-2\", \"PROOF-3\"):\n            entry = proofs[pid]\n            for field in (\"proof_id\", \"rule_id\", \"test_name\", \"status\", \"reason\"):\n                assert field in entry, f\"{pid} missing '{field}' (shape must match check_python): {entry}\"\n        assert proofs[\"PROOF-1\"][\"rule_id\"] == \"RULE-1\"\n        assert proofs[\"PROOF-3\"][\"test_name\"].startswith(\"real assertion\")",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_check_js_assertion_detection",
+      "proof": "PROOF-35",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "35eac87c2c205ea0fd8e4d5a8efe07bb40634e3b33bafe0e649d7418f8bbac8e"
+}

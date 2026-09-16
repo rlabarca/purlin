@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_build",
+  "generated_at": "2026-09-16T22:35:39Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "3c486e8a15389f20263ff7eeb95554cfa6554196cc13b8529effde1af6bdf6d9",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-5",
+      "text": "Run `bash dev/test_e2e_build_changeset.sh` from the repository root; verify it exits 0 and prints a line beginning `ok:`. The suite writes a fixture commit whose body follows the contract, reads the message back out of git and checks it, then rejects three fixtures that each break the contract in one way, and it asserts that `skills/build/SKILL.md` still names Changeset, Decisions, Review, `RULE-N \u2192 file:line`, `feat(<name>):` and `references/commit_conventions.md`. Dropping the Changeset section from the skill fails the suite with a non-zero exit",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/skill_build/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-5",
+  "rule_hash": "96383bb3412d8131053f72b3a7ca45eaf665f7eead1b22bc4c527ac23de6273d",
+  "rule_text": "The commit the skill makes carries the `feat(<name>):` subject prefix and a body whose Changeset section maps every rule the build addressed as `RULE-N \u2192 file:line`, with Decisions and Review omitted when they are empty and Changeset never omitted, as `references/commit_conventions.md` renders it",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "1b5dc23efa9b0346f975bc1140533f732c8dc35c0f52aab7577451d511959866",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_commit_body_contract_holds(self):\n        result = subprocess.run(\n            [BASH, 'dev/test_e2e_build_changeset.sh'], cwd=str(ROOT),\n            capture_output=True, text=True)\n        assert (result.returncode, '  ok:' in result.stdout) == (0, True), \\\n            result.stdout + result.stderr",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_the_commit_body_contract_holds",
+      "proof": "PROOF-5",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a1992443280ded70dda626a99d756bc00f6150d0637f4aea7b8f42fb01d7c7e8"
+}

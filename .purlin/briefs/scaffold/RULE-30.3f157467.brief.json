@@ -1,0 +1,54 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T22:35:36Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "b576a1e5f30206ad18dda8e1c86a064ff23313f1a6ad06d18047bbb513929931",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-30",
+      "text": "Run `--gate recorded --dry-run` on a git project and verify the summary names `.purlin/config.json` while `.purlin` was not created and no workflow was written; run the same in a directory that is not a git repository and verify exit 0, the framework question asked, the summary printed, the last line starting with the arrow and the directory still empty",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-30",
+  "rule_hash": "abf6c3c25958a952d3635cde4d537c289126bdc7018329d2ad0b99f56f6f9a77",
+  "rule_text": "`--dry-run` prints the plan and writes nothing, inside a git repository or outside one",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "d158a2077ef71e38f2284a171f8c1312830f18a03661e578d0cd16a20d99873e",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_dry_run_outside_a_repository_still_prints_the_plan(self):\n        directory = tempfile.mkdtemp(prefix='purlin-nogit-')\n        try:\n            done = subprocess.run(\n                [sys.executable, SCAFFOLD, '--project-root', directory,\n                 '--gate', 'recorded', '--yes', '--dry-run'],\n                capture_output=True, encoding='utf-8', timeout=300,\n                stdin=subprocess.DEVNULL)\n            assert done.returncode == 0, done.stdout + done.stderr\n            assert scaffold_module.LANGUAGE_QUESTION in done.stdout\n            assert '[shell]: shell' in done.stdout\n            assert '.purlin/config.json' in summary_paths(done.stdout)\n            assert done.stdout.strip().splitlines()[-1].startswith('\u2192')\n            assert os.listdir(directory) == []\n        finally:\n            shutil.rmtree(directory, ignore_errors=True)",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_dry_run_outside_a_repository_still_prints_the_plan",
+      "proof": "PROOF-30",
+      "reasons": []
+    },
+    {
+      "body": "def test_dry_run_writes_nothing_and_prints_the_plan(self):\n        made = Project('pytest')\n        try:\n            output = made.run('--gate', 'recorded', '--dry-run')\n            assert '.purlin/config.json' in summary_paths(output)\n            assert not made.has('.purlin')\n            assert not made.has('conftest.py') or read(\n                made.path('conftest.py')) == ''\n            assert not made.has('.github/workflows/purlin.yml')\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_dry_run_writes_nothing_and_prints_the_plan",
+      "proof": "PROOF-30",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "3f15746760ef46e298ccc844034f2d0dd9a52e795e9aa13c03d61ec88b17c255"
+}

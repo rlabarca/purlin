@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "specs",
+  "generated_at": "2026-09-16T22:35:40Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "1b68930e161559ea79fb7d1b9d912f5e625122357e83138e146b16537e209458",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-3",
+      "text": "Parse a rule line carrying no tag; verify its metadata is exactly `{\"risk\": \"low\", \"origin\": \"eng\"}` and that no `criterion` key is present",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/specs/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-2",
+  "rule_hash": "af98e4e730aa71c6c2c6cccc382a961afad40c9c4102ed78dc67943fe26fa3d6",
+  "rule_text": "A rule naming no tag takes `risk` `low` and `origin` `eng`, and carries no `criterion` key at all",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "b87e632ad8d8f8fa6a2aad15c1360a62c0f268a65a887a26e549e97a8e5f0d7c",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_rule_tags_are_read_off_the_end_and_stripped(self, project):\n        info = purlin_specs.scan_specs(project.root)['login']\n        assert info['rules']['RULE-1'] == (\n            'Valid credentials return 200 with a session token'), info['rules']\n        assert info['rule_meta']['RULE-1'] == {\n            'risk': 'high', 'origin': 'pm', 'criterion': 'US-12'}\n        # The defaults, for a rule that names none of them.\n        assert info['rule_meta']['RULE-2'] == {'risk': 'low', 'origin': 'eng'}",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_rule_tags_are_read_off_the_end_and_stripped",
+      "proof": "PROOF-3",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "c9fdae18749d691430d14b64471ca8387e0278143c16a69fbb99e909fc828a7b"
+}
