@@ -48,6 +48,6 @@ For anyone looking for the guide that fits their role. Every entry is one sittin
 | [Glossary](../references/glossary.md) | The word this project uses for each concept, and the retired spellings |
 | [Spec format](../references/formats/spec_format.md) | The 2-section spec, field by field |
 | [Record format](../references/formats/record_format.md) | The record a verify run writes |
-| [Approval format](../references/formats/approval_format.md) | The approval file and what it binds |
+| [Signature format](../references/formats/signature_format.md) | The signature file and what it binds |
 | [Spec quality](../references/spec_quality_guide.md) | Writing a rule worth having, and diagnosing a failure |
 | [Supported frameworks](../references/supported_frameworks.md) | How each test framework is detected and wired |

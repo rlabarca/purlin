@@ -46,9 +46,10 @@ for _path in (_MCP_DIR, _HERE):
         sys.path.insert(0, _path)
 
 import static_checks                                          # noqa: E402
-from purlin import (approvals as approvals_module, checks,     # noqa: E402
+from purlin import (checks,                                    # noqa: E402
                     console as console_module,
                     gate as gate_module, payload as payload_module,
+                    signatures as signatures_module,
                     specs as specs_module)
 
 import approve as approve_module                              # noqa: E402
@@ -378,7 +379,7 @@ def verdict_for(brief):
 def brief_paths(project_root, feature, rule, triple):
     """`(json_path, text_path)` for one brief, or `(None, None)`."""
     info = specs_module.scan_specs(project_root).get(feature)
-    directory = approvals_module.approvals_dir(project_root, info or {})
+    directory = signatures_module.signatures_dir(project_root, info or {})
     if not directory:
         return None, None
     stem = os.path.join(directory, '%s.%s.brief' % (rule, str(triple)[:8]))

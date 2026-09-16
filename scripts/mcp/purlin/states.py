@@ -154,16 +154,16 @@ def _result(state, flags, missing_env, reasons):
 
 
 def _approval_current(approval, inp):
-    from purlin import approvals as approvals_module
-    return approvals_module.is_current(
+    from purlin import signatures as signatures_module
+    return signatures_module.is_current(
         approval, inp.get('rule_hash'), inp.get('proof_hash'),
         inp.get('test_hash'), inp.get('risk') or 'low',
         inp.get('design_hash'))
 
 
 def _brief_matches(brief, inp):
-    from purlin import approvals as approvals_module
-    expected = approvals_module.triple_hash(
+    from purlin import signatures as signatures_module
+    expected = signatures_module.triple_hash(
         inp.get('rule_hash'), inp.get('proof_hash'), inp.get('test_hash'))
     return brief.get('triple_hash') == expected
 
