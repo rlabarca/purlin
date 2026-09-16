@@ -1,0 +1,170 @@
+{
+  "commit": "01ce69872d897bbfe94251cd4764738a50f567bb",
+  "dirty": true,
+  "environment": {
+    "engines": [
+      "none"
+    ],
+    "host": "GitHub Actions 1000000154",
+    "id": "linux-x86_64",
+    "job": "verify",
+    "kind": "ci",
+    "os": "linux"
+  },
+  "feature": "skill_status",
+  "features": {
+    "skill_status": {
+      "rules": {
+        "RULE-1": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-1"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_skills.py",
+              "name": "test_the_frontmatter_names_the_skill",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-2": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-2"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_skills.py",
+              "name": "test_it_prints_the_numbers_the_tool_returned",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-3": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-3"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_skills.py",
+              "name": "test_it_closes_by_naming_the_next_step",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-4": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-4"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_skills.py",
+              "name": "test_it_stays_under_its_ceiling",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        }
+      },
+      "scope_score": {
+        "killed": 0,
+        "score": null,
+        "survived": 0
+      },
+      "spec": "specs/skills/skill_status.md"
+    }
+  },
+  "gate": "passed",
+  "log": {
+    "path": ".purlin/runtime/run.log",
+    "sha256": "6769cd82751fcb73dc782e5f91212cfbb8f55bc07a4ab7093a2735a1eeadc103"
+  },
+  "missing": [],
+  "os": "linux",
+  "plugins": [
+    "pytest",
+    "shell"
+  ],
+  "proofs": [
+    {
+      "env": null,
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "test_file": "dev/test_skills.py",
+      "test_name": "test_the_frontmatter_names_the_skill",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass",
+      "test_file": "dev/test_skills.py",
+      "test_name": "test_it_prints_the_numbers_the_tool_returned",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass",
+      "test_file": "dev/test_skills.py",
+      "test_name": "test_it_closes_by_naming_the_next_step",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass",
+      "test_file": "dev/test_skills.py",
+      "test_name": "test_it_stays_under_its_ceiling",
+      "tier": "unit"
+    }
+  ],
+  "runner": "ci",
+  "schema": "purlin-record/1",
+  "schema_version": 1,
+  "scope_tree": "f0098b351fe02cd1debccefb3281f25a0c2518ed8b3d1223c958c632744e6aa5",
+  "test_strength": null,
+  "timestamp": "2026-09-16T22:05:06Z"
+}
