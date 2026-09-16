@@ -1,0 +1,48 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T21:13:36Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "6f5256e86ae82d59e605693739fd35d5b36d6d60bb9b027374e037ccc912d266",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-3",
+      "text": "Write one passing runtime proof entry for `PROOF-2` and verify RULE-2 is `Tested`; rewrite the same entry with status `fail` and verify the rule falls back to `Proof ready`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/states/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-3",
+  "rule_hash": "e72ffacfae05270b442157246ba91f124bc199728a85cf428c008196dc2555f1",
+  "rule_text": "A rule is Tested when every one of its proofs passed in the last local test run; one failing entry holds it back",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "5db490a171b78a43e99ef9281fde05c9d86909785ddf55b3f61340a78c3c27ed",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_tested_when_the_tagged_test_passes_locally(self, project):\n        project.proofs([_entry('PROOF-2', 'RULE-2')])\n        assert project.rule('RULE-2')['state'] == 'Tested'\n        # A failing entry is not Tested.\n        project.proofs([_entry('PROOF-2', 'RULE-2', status='fail')])\n        assert project.rule('RULE-2')['state'] == 'Proof ready'",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_tested_when_the_tagged_test_passes_locally",
+      "proof": "PROOF-3",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "3eaa1a45f1a3bec68d1d9cc19c59d2f87bef16f0485fb5856ed9d7e41e139a21",
+  "verdict": "ready"
+}

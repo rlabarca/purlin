@@ -1,0 +1,71 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-16T21:13:49Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "9a41ee1ab786a390eb6310510aaa58e9863abc7d7910fc493188d9f8a4947a94",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-15",
+      "text": "Apply everything on each fixture and verify the only workflow left under `.github/workflows/` is `purlin.yml`; verify it carries `windows-latest` and `v` followed by the `VERSION` file's contents. Decline the workflow question and verify the file is absent, the output says to run `purlin:init --ci` later, and `workflows` is no longer pending",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/update/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-15",
+  "rule_hash": "bb6cd22dfb4cfead0310328fe6dc628485a0f18e6bc00af90033af8b09c86df8",
+  "rule_text": "The workflows this release replaced are removed and one `purlin.yml` is offered in their place, carrying the matrix the `@env` tags name and the pinned release; declining it leaves the file unwritten and names `purlin:init --ci`",
+  "schema": "purlin-brief/1",
+  "state": "Proof ready",
+  "test_hash": "f28aaeccf7a0e7d6f60c20fd9cc851b87ebb5fa1976bc36a1a3d1efc1294eeab",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_declining_the_workflow_leaves_it_unwritten(tmp_path, capsys,\n                                                    monkeypatch):\n    root = _project(tmp_path, V095)\n    _answers(monkeypatch, [('Write .github/workflows/purlin.yml', 'n')])\n    _apply(root, argv=())\n    printed = capsys.readouterr().out\n    assert not os.path.exists(\n        os.path.join(root, '.github', 'workflows', 'purlin.yml'))\n    assert 'run purlin:init --ci to add it later' in printed\n    assert 'workflows' not in _ids(root)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_declining_the_workflow_leaves_it_unwritten",
+      "proof": "PROOF-15",
+      "reasons": []
+    },
+    {
+      "body": "def test_purlin_yml_carries_the_matrix_the_tags_name(tmp_path):\n    root = _project(tmp_path, V095)\n    _apply(root)\n    text = _read(root, '.github/workflows/purlin.yml')\n    assert 'windows-latest' in text\n    assert 'v%s' % VERSION in text",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_purlin_yml_carries_the_matrix_the_tags_name",
+      "proof": "PROOF-15",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_retired_workflows_are_removed(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    before = _walk(root, ('*.yml',))\n    assert any(rel.startswith('.github/workflows/') for rel in before)\n    _apply(root)\n    after = [rel for rel in _walk(root, ('*.yml',))\n             if rel.startswith('.github/workflows/')]\n    assert after == ['.github/workflows/purlin.yml']",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_retired_workflows_are_removed[upgrade-0.10-dev]",
+      "proof": "PROOF-15",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_retired_workflows_are_removed(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    before = _walk(root, ('*.yml',))\n    assert any(rel.startswith('.github/workflows/') for rel in before)\n    _apply(root)\n    after = [rel for rel in _walk(root, ('*.yml',))\n             if rel.startswith('.github/workflows/')]\n    assert after == ['.github/workflows/purlin.yml']",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_retired_workflows_are_removed[upgrade-0.9.5]",
+      "proof": "PROOF-15",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "726e02be0995ec69d9a19bc1987726e4aa9eaa4c26e5c753f2a0437052ed2a3d",
+  "verdict": "ready"
+}

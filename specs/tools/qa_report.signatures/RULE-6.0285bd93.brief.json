@@ -1,0 +1,48 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "qa_report",
+  "generated_at": "2026-09-16T21:13:16Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "0f8a2632a6f37f8a0817c51bab32a06062c0bf323d507727fe3b463a481da250",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-6",
+      "text": "Open `tools/QA/purlin-qa-report.skill` as a zip; verify its namelist is exactly `['purlin-qa-report/SKILL.md']` and that the bytes of that entry equal the bytes of `tools/QA/purlin-qa-report.md`. Appending one byte to the `.md` without running `dev/pack_tools.sh` fails on the byte comparison",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/qa_report/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-6",
+  "rule_hash": "4d7fa063724b9182cec6f84f5ed6bf6f2c887856ee7d22ba88e61535405ababc",
+  "rule_text": "`tools/QA/purlin-qa-report.skill` holds exactly one entry, `purlin-qa-report/SKILL.md`, whose bytes equal the sibling `.md`",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "5de60e3917997cc045c12315235068ea81c41681e1b6d5dd2fa20a65ce9d17e8",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_archive_holds_the_markdown(self):\n        assert archive_problems(QA_SKILL, QA_MD) == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_the_archive_holds_the_markdown",
+      "proof": "PROOF-6",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "0285bd936f6dcbe2f179ee6b6a2d1f65602a27f5ad24d322fbfde063d1c7de68",
+  "verdict": "ready"
+}

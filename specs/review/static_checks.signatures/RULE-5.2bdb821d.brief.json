@@ -1,0 +1,48 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-16T21:13:40Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "b1869dbbe8b357abde68115c49fc565a37386b37b399819960a26ae4f091a385",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-7",
+      "text": "Run the Python checker over a marked test that computes both the expected value and the result with `hash_func`; verify its status is `fail` and its check is `logic_mirroring`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/static_checks/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-5",
+  "rule_hash": "5bc7851d49fbe288ca7225f3d4e56f114e36b262092aa36bf7bf75eb2288cf45",
+  "rule_text": "A marked Python test whose expected value comes from the same call as the result is reported `logic_mirroring`",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "04969734597728fbfccc1703a2026c05bdccdd2d18a1dcf793a99eef34e1e2e8",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_detects_logic_mirroring(self):\n        path = _write_tmp('''\nimport pytest\n@pytest.mark.proof(\"testfeat\", \"PROOF-1\", \"RULE-1\")\ndef test_bad():\n    expected = hash_func(input_val)\n    result = hash_func(input_val)\n    assert result == expected\n''')\n        try:\n            results = check_python(path, \"testfeat\")\n            assert len(results) == 1\n            assert results[0]['status'] == 'fail'\n            assert results[0]['check'] == 'logic_mirroring'\n        finally:\n            os.unlink(path)",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_detects_logic_mirroring",
+      "proof": "PROOF-7",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "2bdb821d4c656e35357ed1fcb2bf26fd106ccb589e06b9b6835dfe9fc13d7410",
+  "verdict": "ready"
+}

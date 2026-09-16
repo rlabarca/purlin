@@ -1,0 +1,95 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-16T21:13:19Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "c6260e7b53c7b5eb3d44530b9cade63b36626857ff02a886617c4be9b2dadf2a",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-20",
+      "text": "Walk `dev/fixtures/consumer-ci/`; verify the set of files is exactly the 9 the spec names and that `git ls-files --error-unmatch` lists every one. Read its `.purlin/config.json`; verify `gate` is `recorded`, `test_framework` is `pytest`, `version` equals the `VERSION` file, and none of the retired keys is present. Compare `.purlin/plugins/pytest_purlin.py` with `scripts/proof/pytest_purlin.py` byte for byte. Read `specs/core/greeting.md`; verify it holds `@env(linux)` and no retired tag. Call `greet(\"Ada\")` and `greet(\"\")` from the fixture's own module; verify `Hello, Ada!` and `Hello, world!`. Build the payload over the fixture; verify no warnings, features `[\"greeting\"]`, rules `[\"RULE-1\", \"RULE-2\"]`, proof environments `{\"PROOF-1\": None, \"PROOF-2\": \"linux\"}`, gate `recorded` with `min_strength` 70, and no records. Read `dev/consumer_ci_dryrun.sh`; verify it names the workflow file and `purlin_run.py` and makes no `gh` call",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/records/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-20",
+  "rule_hash": "6c124ecf6dc83f4d302ca02b10336b8b93d143d95022314d4c4b5557ef0555c1",
+  "rule_text": "A consumer project carries no Purlin `scripts/` and no `dev/`: the fixture is its own project of 9 tracked files, its config is the shape this release reads, its plugin is a byte-identical copy of `scripts/proof/pytest_purlin.py`, its spec carries `@env(linux)` and no retired tag, its own tests pass against its own module, and Purlin reads it as one feature with 2 rules",
+  "schema": "purlin-brief/1",
+  "state": "Proof ready",
+  "test_hash": "0f89ee10f3ecd6702d9dab3646b8d1ba8a6c1f2065030a92f583a8121dff321c",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_purlin_reads_the_fixture_as_one_feature_with_a_linux_proof():\n    data = payload_module.build_payload(FIXTURE, generated_by='test')\n    assert data['warnings'] == []\n    assert [f['name'] for f in data['features']] == ['greeting']\n    greeting = data['features'][0]\n    assert [r['id'] for r in greeting['rules']] == ['RULE-1', 'RULE-2']\n\n    envs = {proof['id']: proof['env']\n            for rule in greeting['rules'] for proof in rule['proofs']}\n    assert envs == {'PROOF-1': None, 'PROOF-2': 'linux'}\n    assert data['gate']['gate'] == 'recorded'\n    assert data['gate']['min_strength'] == 70\n    assert data['records'] == {}, 'no run has happened in the fixture'",
+      "file": "dev/test_consumer_ci.py",
+      "findings": [],
+      "name": "test_purlin_reads_the_fixture_as_one_feature_with_a_linux_proof",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_config_is_the_shape_this_release_reads():\n    config = json.loads(read('.purlin/config.json'))\n    assert config['gate'] == 'recorded'\n    assert config['test_framework'] == 'pytest'\n    assert config['version'] == PURLIN_REF[1:]\n    retired = {'remote_verification', 'mutation_checks', 'quality_gate',\n               'spec_dir', 'digest', 'report', 'pre_push'}\n    assert not retired & set(config), (\n        'the config still carries %s' % sorted(retired & set(config)))",
+      "file": "dev/test_consumer_ci.py",
+      "findings": [],
+      "name": "test_the_config_is_the_shape_this_release_reads",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_dry_run_walks_the_committed_workflow():\n    script = read(os.path.join('dev', 'consumer_ci_dryrun.sh'), root=ROOT)\n    assert WORKFLOW_REL in script\n    assert 'purlin_run.py' in script\n    assert 'gh ' not in script, 'the dry run must touch no account'",
+      "file": "dev/test_consumer_ci.py",
+      "findings": [],
+      "name": "test_the_dry_run_walks_the_committed_workflow",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_fixture_is_complete_and_every_file_is_tracked():\n    on_disk = set()\n    for folder, dirnames, filenames in os.walk(FIXTURE):\n        dirnames[:] = [d for d in dirnames if d != '__pycache__']\n        for name in filenames:\n            rel = os.path.relpath(os.path.join(folder, name), FIXTURE)\n            on_disk.add(rel.replace(os.sep, '/'))\n\n    assert on_disk == set(FIXTURE_FILES), (\n        'the fixture holds %s and is missing %s'\n        % (sorted(on_disk - set(FIXTURE_FILES)),\n           sorted(set(FIXTURE_FILES) - on_disk)))\n    for rel in FIXTURE_FILES:\n        assert tracked(FIXTURE_REL + '/' + rel), (\n            '%s/%s is on disk but not tracked, so a clone of this repository '\n            'would not carry it' % (FIXTURE_REL, rel))",
+      "file": "dev/test_consumer_ci.py",
+      "findings": [],
+      "name": "test_the_fixture_is_complete_and_every_file_is_tracked",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_fixtures_tests_pass_against_its_own_module():\n    sys.path.insert(0, FIXTURE)\n    try:\n        import greeting\n    finally:\n        sys.path.remove(FIXTURE)\n    assert greeting.greet('Ada') == 'Hello, Ada!'\n    assert greeting.greet('') == 'Hello, world!'\n    assert isinstance(greeting.os_tag(), str)",
+      "file": "dev/test_consumer_ci.py",
+      "findings": [],
+      "name": "test_the_fixtures_tests_pass_against_its_own_module",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_plugin_copy_is_the_plugin():\n    with open(os.path.join(FIXTURE, '.purlin/plugins/pytest_purlin.py'),\n              'rb') as handle:\n        copied = handle.read()\n    with open(os.path.join(ROOT, 'scripts/proof/pytest_purlin.py'),\n              'rb') as handle:\n        source = handle.read()\n    assert copied == source, (\n        '.purlin/plugins/pytest_purlin.py is not a byte-identical copy of '\n        'scripts/proof/pytest_purlin.py')",
+      "file": "dev/test_consumer_ci.py",
+      "findings": [],
+      "name": "test_the_plugin_copy_is_the_plugin",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_spec_carries_no_tag_this_release_retired():\n    spec = read('specs/core/greeting.md')\n    assert '@env(linux)' in spec\n    assert RETIRED_TAG not in spec\n    assert RETIRED_KEYWORD not in read('tests/test_greeting.py')",
+      "file": "dev/test_consumer_ci.py",
+      "findings": [],
+      "name": "test_the_spec_carries_no_tag_this_release_retired",
+      "proof": "PROOF-20",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "e7526c3122a0eafd904d68458e380fadb89b415f48a0e2ce0e7e33b0043a9d5e",
+  "verdict": "ready"
+}

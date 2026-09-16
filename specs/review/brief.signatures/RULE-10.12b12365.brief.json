@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "brief",
+  "generated_at": "2026-09-16T21:13:06Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "385729d9a3986aa814c33cefdeb9fe3edb6efc99190a8b696c830c31b989d74a",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-12",
+      "text": "Build the brief for a rule whose proof text names no value; verify the verdict is `rewrite the proof` and a reason names `no_expected_value`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-12 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/brief/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-10",
+  "rule_hash": "c8d61fcd18d1d27233bb30d3b93bc32a0a4e75e447be8f949c08014dc526a1e6",
+  "rule_text": "A blocking finding on the proof text makes the verdict `rewrite the proof` and names the finding among the reasons",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "25ef1d4a231492401f04e413c9bb81f9582cdb9b5ff21315971c1c0d57e0bbc4",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_blocking_proof_finding_is_rewrite_the_proof(self):\n        made = Project(spec=SPEC.replace(\n            'POST /login with the password \"secret\"; verify 200 and a token '\n            '@integration',\n            'The login works correctly @integration'))\n        try:\n            made.proofs()\n            built = build(made, 'RULE-1')\n            assert built['verdict'] == 'rewrite the proof'\n            assert any('no_expected_value' in reason\n                       for reason in built['reasons'])\n        finally:\n            made.close()",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_a_blocking_proof_finding_is_rewrite_the_proof",
+      "proof": "PROOF-12",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "12b123659f2f376f49f6d953c3256dfdff605da0f22625ef6ee4c2231e4bb5d4",
+  "verdict": "add a case"
+}

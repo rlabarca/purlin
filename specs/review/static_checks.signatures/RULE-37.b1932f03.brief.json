@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-16T21:13:46Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "ab3db93aba4b10c321d065cdf0949a5c10381ece15539886d6fef3de31cd4b42",
+  "proofs": [
+    {
+      "env": "windows",
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-33",
+      "text": "Take the exclusive lock on a file on Windows, then run a second process that tries `msvcrt.locking` without blocking; verify it prints `held`, then release the lock and verify a second run prints `free`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-33 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/static_checks/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-37",
+  "rule_hash": "955cad9489db3e5adadd15df1beefc18e722b67a750f7717c6b60c24b06f2ad0",
+  "rule_text": "On Windows the exclusive lock is taken through msvcrt on one byte, and a second process cannot take it until it is released",
+  "schema": "purlin-brief/1",
+  "state": "Proof ready",
+  "test_hash": "fa590cdcf6ea101243491158c6e296caf7d94ab82b39b382c0241e34386e32fd",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_windows_lock_is_held_until_it_is_released(self, tmp_path):\n        \"\"\"The msvcrt branch for real: one byte locked, and a second process\n        cannot take it until unlock releases it.\n\n        The probe runs in a second process because a lock is held per open\n        file, and a second lock inside this one would succeed either way.\n        \"\"\"\n        lock_path = tmp_path / 'records.lock'\n        probe = (\n            'import msvcrt\\n'\n            'f = open(%r, \"a+\", encoding=\"utf-8\")\\n'\n            'f.write(\"\\\\0\")\\n'\n            'f.flush()\\n'\n            'f.seek(0)\\n'\n            'try:\\n'\n            '    msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)\\n'\n            '    print(\"free\")\\n'\n            'except OSError:\\n'\n            '    print(\"held\")\\n'\n        ) % str(lock_path)\n\n        assert not static_checks._HAS_FCNTL, \\\n            \"fcntl exists here, so this is not the Windows lock branch\"\n        handle = static_checks.lock_exclusive(str(lock_path))\n        try:\n            busy = subprocess.run([sys.executable, '-c', probe],\n                                  capture_output=True, text=True)\n            assert busy.stdout.strip() == 'held', (\n                f\"another process took the lock while it was held: \"\n                f\"{busy.stdout!r}\")\n        finally:\n            static_checks.unlock(handle)\n\n        free = subprocess.run([sys.executable, '-c', probe],\n                              capture_output=True, text=True)\n        assert free.stdout.strip() == 'free', (\n            f\"unlock did not release the lock: {free.stdout!r}\")\n        assert handle.closed, \"unlock left the handle open\"",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_the_windows_lock_is_held_until_it_is_released",
+      "proof": "PROOF-33",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "b1932f03dad695a2c4a615ee7b218b95336fe7d283a4b42c449cac999b714b80",
+  "verdict": "add a case"
+}

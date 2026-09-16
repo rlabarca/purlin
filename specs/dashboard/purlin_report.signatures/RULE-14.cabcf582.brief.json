@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-16T21:13:15Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "f64332cc3a002974249fb04e9b1b7797dae4e42135cb202f9b9913ec17785f14",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-14",
+      "text": "Open the board with the regulated fixture, set `stale` and `low-strength` together, and verify no spec row remains and the page reads `No rule matches every filter you set.`; unset both and verify 3 spec rows come back",
+      "tier": "e2e"
+    }
+  ],
+  "reasons": [
+    "PROOF-14 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/purlin_report/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-14",
+  "rule_hash": "b985be8799e64ac506a04c38c3201e1f1ee151286437575998e1cacee8f90904",
+  "rule_text": "Filters compose: a rule shows only where every set filter accepts it, a combination nothing matches says so in place of the table, and unsetting them restores every row",
+  "schema": "purlin-brief/1",
+  "state": "Proof ready",
+  "test_hash": "9998c92ee4009726de6ceb4bbc35664720bb545e8dc2c4cb79cfae59d382186c",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_filters_compose_and_clear(browser, tmp_path):\n    page = open_board(browser, tmp_path, payload_named('regulated'))\n    page.click('[data-filter=\"stale\"]')\n    page.click('[data-filter=\"low-strength\"]')\n    assert feature_names(page) == []\n    assert 'No rule matches every filter you set.' in page.inner_text('.empty')\n    page.click('[data-filter=\"stale\"]')\n    page.click('[data-filter=\"low-strength\"]')\n    assert len(feature_names(page)) == 3\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_filters_compose_and_clear",
+      "proof": "PROOF-14",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "cabcf582161fbf9ae159f2d76a7f27d5b0a864b2c368659c239e0920f8537f93",
+  "verdict": "add a case"
+}

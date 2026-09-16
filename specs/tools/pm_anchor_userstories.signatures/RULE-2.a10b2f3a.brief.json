@@ -1,0 +1,48 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "pm_anchor_userstories",
+  "generated_at": "2026-09-16T21:13:12Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "99477ececd46a1caa0c43bd4808a549e542b00adff18a244f299f3bef9079c7a",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-2",
+      "text": "Read `tools/PM/purlin-anchor-userstories.md`; verify it carries the sentence `Never commit to the default branch.`, that `specs/<category>/<name>.md`, `specs/_anchors/<name>.md` and `designs/<feature>/` each appear, and that the sentence `Create no other folder.` appears, one assertion per literal so the failure names the missing one. Deleting `Create no other folder.` fails naming it",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/pm_anchor_userstories/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-2",
+  "rule_hash": "ef7381eb42ee7a5b83426fdc7a7f3dfd1cd9141b8197a9a617e0e6f046fce6b2",
+  "rule_text": "Every change the skill makes reaches the repository as a pull request and never as a commit to the default branch, and the only paths it writes are `specs/<category>/<name>.md`, `specs/_anchors/<name>.md` and `designs/<feature>/`",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "7a318f36a14ac6d134106b3513f3ef8df9bc2ca3c79122d45c57b4544f6c09c4",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_every_change_lands_as_a_pull_request(self):\n        assert carries(PM_MD, [\n            'Never commit to the default branch.',\n            'specs/<category>/<name>.md', 'specs/_anchors/<name>.md',\n            'designs/<feature>/', 'Create no other folder.']) == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_every_change_lands_as_a_pull_request",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a10b2f3a4cd9285671231d8dce1311ecfb1e3d76c70cc69db67a7f814d364d0b",
+  "verdict": "ready"
+}

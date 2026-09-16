@@ -1,0 +1,67 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "mutation",
+  "generated_at": "2026-09-16T21:13:10Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "ad542284cb015c3dd4b6021eb2e546dac687bbda51a6396edd18f7782f74f84c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-11",
+      "text": "Parse a report where no break carries `killedBy`; verify every rule carries the feature's scope number with `attribution: \"per_scope\"`. Parse one where a break names its killer; verify `attribution: \"per_test\"`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-11 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/mutation/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-11",
+  "rule_hash": "38ad7e0f3596349ac98f0180653dac8cd77d7ca904596e2108d4744be42afb4e",
+  "rule_text": "Attribution is `per_test` when any break names the test that caught it and `per_scope` when none does, and every rule then carries the feature's scope number",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "4716739fbe9d9f9f9467c4d69320160725b3d0c8c5effc8165d8e91563e717ae",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_dotnet_run_reports_per_scope_when_no_killer_is_named(monkeypatch):\n    def execute(command, cwd, report_path=None):\n        output_dir = command[command.index('--output') + 1]\n        reports = os.path.join(output_dir, 'reports')\n        os.makedirs(reports)\n        with open(os.path.join(reports, 'mutation-report.json'), 'w',\n                  encoding='utf-8') as handle:\n            json.dump(read_fixture('stryker_net_report.json'), handle)\n        return 0, ''\n\n    monkeypatch.setattr(stryker_net, 'available', lambda root: (True, ''))\n    monkeypatch.setattr(stryker_net, 'binary', lambda root=None: ['dotnet', 'stryker'])\n    monkeypatch.setattr(stryker_net, 'execute', execute)\n    answer = stryker_net.run('/project', {'login': ['src/Login/Session.cs']},\n                             {('login', 'RULE-1'): SESSION_TESTS['RULE-1'],\n                              ('login', 'RULE-2'): SESSION_TESTS['RULE-2']},\n                             'unit')\n    assert answer['engine'] == 'stryker_net'\n    assert answer['features']['login']['scope_score']['score'] == 60\n    rules = answer['features']['login']['rules']\n    assert rules['RULE-1']['attribution'] == 'per_scope'\n    assert rules['RULE-2']['score'] == 60\n    assert 'attribution per_scope' in answer['log']",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_a_dotnet_run_reports_per_scope_when_no_killer_is_named",
+      "proof": "PROOF-11",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_named_killer_gives_stryker_net_per_test_attribution():\n    entry = stryker.parse_report(read_fixture('stryker_report.json'),\n                                 CALC_TESTS, engine='stryker_net')\n    assert entry['rules']['RULE-1']['attribution'] == 'per_test'\n    assert entry['rules']['RULE-1']['engine'] == 'stryker_net'",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_a_named_killer_gives_stryker_net_per_test_attribution",
+      "proof": "PROOF-11",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_report_that_names_no_killer_falls_back_to_the_scope_number():\n    entry = stryker.parse_report(read_fixture('stryker_net_report.json'),\n                                 SESSION_TESTS, engine='stryker_net')\n    assert entry['scope_score'] == {'score': 60, 'killed': 3, 'survived': 2}\n    for rule in ('RULE-1', 'RULE-2'):\n        assert entry['rules'][rule] == {\n            'engine': 'stryker_net', 'score': 60, 'killed': 3, 'survived': 2,\n            'attribution': 'per_scope'}",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_a_report_that_names_no_killer_falls_back_to_the_scope_number",
+      "proof": "PROOF-11",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "06fa6da5a20c7a179d84828a439a5c1c7812db2e00a92d2fc0fa9be47999b75f",
+  "verdict": "add a case"
+}

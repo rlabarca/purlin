@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "schema_proof_format",
+  "generated_at": "2026-09-16T21:13:28Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "d536af5b2cc8cfbd1888d3e463332649cd09cf6940fe5867ebc05152e76b185a",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-6",
+      "text": "Call the file-name parser with `login.unit.json` and `login.integration.json` and verify each returns the feature `login` with that tier; call it with `login.md` and with `login.json` and verify each returns none",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/schema_proof_format/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-6",
+  "rule_hash": "3edef7b95d28682963fcfef96cc8a832d27fc9ee405d39c206b89e6ec24c83e9",
+  "rule_text": "A proof file name names the feature and the tier, the tier being the last dotted segment before `.json`, so a feature name carrying dots still parses; a name with no tier segment, and a name that is not a proof file at all, name nothing readable",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "f36dc9fe13ce4b3acd8363965c83eac83b0311f6b9da063fe18e2600505966a5",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_filename_names_the_feature_and_the_tier(self):\n        assert purlin_proofs.proof_file_parts('login.unit.json') == ('login',\n                                                                    'unit')\n        assert purlin_proofs.proof_file_parts(\n            'login.integration.json') == ('login', 'integration')\n        assert purlin_proofs.proof_file_parts('login.md') is None\n        # A file with no tier segment names nothing readable.\n        assert purlin_proofs.proof_file_parts('login.json') is None",
+      "file": "dev/test_schema_proof_format.py",
+      "findings": [],
+      "name": "test_the_filename_names_the_feature_and_the_tier",
+      "proof": "PROOF-6",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "2feebf139610ca8e5c8ad0558bf14c21db4c24702022bdd833a6a5039f506918",
+  "verdict": "ready"
+}

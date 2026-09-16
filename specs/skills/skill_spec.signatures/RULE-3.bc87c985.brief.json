@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_spec",
+  "generated_at": "2026-09-16T21:13:34Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "aa6f28fb6a0cb8b0471a411cdba8dba2c58265e553bd9d000b031b3b319dd1c0",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-3",
+      "text": "Read `skills/spec/SKILL.md` and split it on its `## ` headings; verify the last heading matches `next step` or `when you are done` case-insensitively and that the text under it carries the line `Spec created: <name>. Build it now?` on its own, inside a fenced block. Rewording the offer to `Spec written. Shall I build it?` fails, printing the closing section it read",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/skill_spec/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-3",
+  "rule_hash": "ecdbfdc7aebd5ebd028d68d2f87df112e6d2703622811d448ec1fb2a39e76d37",
+  "rule_text": "The skill closes by offering the build in one fixed sentence, `Spec created: <name>. Build it now?`, with nothing printed after it",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "2b597d2e05e4a272dc322e35bfcd4d44e416cd5ed8690dca5047927fa96ba05d",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_closes_with_the_offer_to_build(self):\n        assert spec_offer_problems() == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_it_closes_with_the_offer_to_build",
+      "proof": "PROOF-3",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "bc87c985e048e6c264b277ac0aeecd06f1bc3335167f3c51d6d7e51bcc095f0d",
+  "verdict": "ready"
+}

@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-16T21:13:42Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "3503520525a9b145d77dc86246ac33d8016fdec34b995c4bce3a5491c9a18d37",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-48",
+      "text": "Run the SQL checker over a file whose fourth block belongs to another feature; verify the results are exactly `PROOF-1`, `PROOF-2` and `PROOF-3`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-48 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/static_checks/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-15",
+  "rule_hash": "20a16d75b26d1025fa9680a8d88a521613a24f54398acb2b5756578831d46ae2",
+  "rule_text": "A SQL proof block runs from its marker to the next marker, so a block another feature owns never enters this feature's results",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "1cdfa09bb68d34d2872f6fa7060c682bc240899c29784f92116fbc53444feeb9",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_predicates_that_read_the_database_pass(self):\n        \"\"\"A predicate naming a column, a function or a subquery decides something;\n        a block ends at the next marker rather than running on into it; and a\n        trailing `--` comment is not read as SQL the block runs.\"\"\"\n        path = _write_tmp(\"\"\"-- @purlin sqlfeat PROOF-1 RULE-1 unit\n-- Test: subquery\nSELECT CASE WHEN (SELECT count(*) FROM users) = 1 THEN 'PASS' ELSE 'FAIL' END;\n\n-- @purlin sqlfeat PROOF-2 RULE-2 unit\n-- Test: function\nSELECT CASE WHEN changes() = 1 THEN 'PASS' ELSE 'FAIL' END;\n\n-- @purlin sqlfeat PROOF-3 RULE-3 unit\n-- Test: column\nSELECT CASE WHEN email IS NOT NULL THEN 'PASS' ELSE 'FAIL' END FROM users; -- not SELECT 'PASS'\n\n-- @purlin otherfeat PROOF-9 RULE-9 unit\n-- Test: not this feature\nSELECT 'PASS';\n\"\"\", suffix='.sql')\n        try:\n            results = check_sql(path, \"sqlfeat\")\n            assert [r['proof_id'] for r in results] == ['PROOF-1', 'PROOF-2', 'PROOF-3'], \\\n                f\"another feature's block leaked in \u2014 {results}\"\n            for r in results:\n                assert r['status'] == 'pass', f\"a real predicate was flagged \u2014 {r}\"\n        finally:\n            os.unlink(path)",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_predicates_that_read_the_database_pass",
+      "proof": "PROOF-48",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "8dffbb1b5ff66f6ee40dd15cfb22558b405d79abe29bd49998eef1f6c18b2a83",
+  "verdict": "add a case"
+}

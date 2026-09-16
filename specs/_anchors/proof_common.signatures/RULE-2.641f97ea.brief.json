@@ -1,0 +1,67 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "proof_common",
+  "generated_at": "2026-09-16T21:13:12Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "684040711e4a7c9b23e787abad6b9d3a364d74ec7782763a8d56043fdbbd1827",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-2",
+      "text": "Build a project holding `specs/`, `.purlin/` and a subdirectory, run a plugin from that subdirectory, and verify the evidence landed in the root's `.purlin/runtime/proofs/` with zero second `specs/` or `.purlin/` directories created beside the run; a plugin that rooted its write at the working directory fails naming itself, in `dev/test_multilang_proof_plugins.py`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-2 tautology",
+    "PROOF-2 tautology"
+  ],
+  "record": ".purlin/records/proof_common/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-2",
+  "rule_hash": "a9d6ff24e9335660bad6dae2f8bd101bd7f12610231c757e5c25a519bac70b95",
+  "rule_text": "A plugin resolves the project root by walking up from the directory its run lives in, that directory included, to the nearest ancestor holding `specs/` or `.purlin/`, and takes the starting directory itself when no ancestor holds either; every path it reads or writes is resolved from there rather than from the working directory a framework happened to pick",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "a961d6a5701b08ed75152f1ca765b89ab86d7d0d2e8d1dd6865bc36bb6df032b",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_pytest_from_a_subdirectory(self, tmp_path):\n        root = _purlin_project(tmp_path)\n        (root / 'service' / 'tests').mkdir(parents=True)\n        (root / 'service' / 'tests' / 'test_feat.py').write_text(\n            'import pytest\\n\\n'\n            '@pytest.mark.proof(\"feat\", \"PROOF-1\", \"RULE-1\")\\n'\n            'def test_ok():\\n    assert True\\n', encoding='utf-8')\n        (root / 'service' / 'conftest.py').write_text(\n            'import sys\\n'\n            'sys.path.insert(0, %r)\\n'\n            'from pytest_purlin import pytest_configure  # noqa: F401\\n'\n            % PROOF_SCRIPTS, encoding='utf-8')\n        subprocess.run([sys.executable, '-m', 'pytest', '-q',\n                        '-p', 'no:cacheprovider'],\n                       cwd=str(root / 'service'), capture_output=True,\n                       text=True)\n        assert not (root / 'service' / '.purlin').exists()\n        data = _read_proofs(root, 'feat')\n        assert data is not None\n        assert data['proofs'][0]['test_file'] == 'service/tests/test_feat.py'",
+      "file": "dev/test_multilang_proof_plugins.py",
+      "findings": [
+        "tautology"
+      ],
+      "name": "test_pytest_from_a_subdirectory",
+      "proof": "PROOF-2",
+      "reasons": [
+        "tautological assertion (assert True or equivalent)"
+      ]
+    },
+    {
+      "body": "def test_shell_from_a_subdirectory(self, tmp_path):\n        root = _purlin_project(tmp_path)\n        (root / 'service').mkdir()\n        script = root / 'service' / 'feat.test.sh'\n        script.write_text(\n            'source %s\\n'\n            'purlin_proof \"feat\" \"PROOF-1\" \"RULE-1\" pass \"sub case\"\\n'\n            'purlin_proof_finish\\n'\n            % SHELL_HARNESS,\n            encoding='utf-8')\n        subprocess.run([BASH, 'feat.test.sh'], cwd=str(root / 'service'),\n                       capture_output=True, text=True)\n        data = _read_proofs(root, 'feat')\n        assert data is not None\n        assert data['proofs'][0]['test_file'] == 'service/feat.test.sh'",
+      "file": "dev/test_multilang_proof_plugins.py",
+      "findings": [
+        "tautology"
+      ],
+      "name": "test_shell_from_a_subdirectory",
+      "proof": "PROOF-2",
+      "reasons": [
+        "tautological assertion (assert True or equivalent)"
+      ]
+    }
+  ],
+  "triple_hash": "641f97ea6278a9eb31718c2ecd4f28aebd61dc68a1aea167f1e1176e6618fef0",
+  "verdict": "needs a human"
+}

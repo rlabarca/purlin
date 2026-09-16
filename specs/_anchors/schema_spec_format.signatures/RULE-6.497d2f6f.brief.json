@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "schema_spec_format",
+  "generated_at": "2026-09-16T21:13:28Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "619b4b45ef1aaadce7d44ed4f5ed9e723b6ed285ad44c2d91ce2876d085f4871",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-6",
+      "text": "Write a spec carrying `> Scope: scripts/mcp/purlin/specs.py, src/app.py`, scan the specs, and verify the parsed scope equals the two-item list in that order; run `sync_status` and verify it names both that spec and an anchor whose scope overlaps it",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-6 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/schema_spec_format/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-6",
+  "rule_hash": "24bcf661652864867f2138c0a9ef99cfa45352e1b240ec34186b00b9f62f3303",
+  "rule_text": "`> Scope:` is a comma-separated list of file paths, parsed into a list in the order written, because a record hashes exactly those files to tell a code change from a rule change",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "521e0848a8058faffb1df5f4fe6a605d627232d19f6ed35512ccd61852fe55f3",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_scope_metadata_parsed(self):\n        # Create a feature with Scope and an anchor with overlapping scope\n        # so sync_status exercises the scope in its overlap suggestion\n        self._write_spec('test_feat', (\n            '# Feature: test_feat\\n\\n'\n            '> Scope: scripts/mcp/purlin/specs.py, src/app.py\\n\\n'\n            '## What it does\\nTesting.\\n\\n'\n            '## Rules\\n- RULE-1: Must work\\n\\n'\n            '## Proof\\n- PROOF-1 (RULE-1): Test\\n'\n        ))\n        self._write_spec('api_conv', (\n            '# Anchor: api_conv\\n\\n'\n            '> Scope: scripts/\\n\\n'\n            '## What it does\\nConventions.\\n\\n'\n            '## Rules\\n- RULE-1: Conv\\n\\n'\n            '## Proof\\n- PROOF-1 (RULE-1): Check\\n'\n        ), )\n        # Verify the scope was correctly parsed as a comma-separated list\n        features = purlin_specs.scan_specs(self.project_root)\n        assert 'test_feat' in features\n        scope = features['test_feat']['scope']\n        assert scope == ['scripts/mcp/purlin/specs.py', 'src/app.py'], \\\n            f\"Scope should be parsed as comma-separated list, got: {scope}\"\n        result = purlin_status.sync_status(self.project_root)\n        assert 'test_feat' in result, \"Feature should appear in sync_status output\"\n        assert 'api_conv' in result, \"The anchor should appear too\"",
+      "file": "dev/test_schema_spec_format.py",
+      "findings": [],
+      "name": "test_scope_metadata_parsed",
+      "proof": "PROOF-6",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "497d2f6f0c3ce59867534df2d6e96eff9a9587ac1c54a78920c8729a09f67dc2",
+  "verdict": "add a case"
+}

@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_spec_from_code",
+  "generated_at": "2026-09-16T21:13:34Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "fbcfec685488a5f44303d8cb412c85e29c83c8cd4246426519a7953ce16b1856",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-1",
+      "text": "Read `skills/spec-from-code/SKILL.md`; verify the file opens with `---`, that the frontmatter carries `name: spec-from-code` and a `description:` whose value is one non-empty line, and that `references/purlin_commands.md` contains the literal `purlin:spec-from-code`. Deleting the `name:` line fails naming the file",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/skill_spec_from_code/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-1",
+  "rule_hash": "01653f515c663b8af93309edc9a1ccdf40adba358cec7aa267397b2aff23d578",
+  "rule_text": "`skills/spec-from-code/SKILL.md` opens with a frontmatter block whose `name` is `spec-from-code` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:spec-from-code`",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "6c1237a279f1acab7dbeac48815d28d72f87bb91a694a302e1facf286432bc03",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_frontmatter_names_the_skill(self):\n        assert frontmatter_problems('spec-from-code') == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_the_frontmatter_names_the_skill",
+      "proof": "PROOF-1",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "18688e6a24fc87ad9a3a7194e83dbb832f2e28131c89449a13b4605db1481601",
+  "verdict": "ready"
+}

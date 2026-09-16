@@ -1,0 +1,48 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "security_no_dangerous_patterns",
+  "generated_at": "2026-09-16T21:13:29Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "97148a02f30477a95089c3c5c94be626f5c39beb7a48c61f35335702cc452aac",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-4",
+      "text": "Over the same file list, skipping files whose name begins `test_` and dropping whole-line comments, grep `(password|secret|api_key|token)\\s*=\\s*[\"'][^\"']+[\"']` without regard to case; verify zero matches, naming the file and what matched on failure",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/security_no_dangerous_patterns/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-4",
+  "rule_hash": "05349e82c63c13993d2c3234f14c4db8e237ccd82586436c628f42c3acaa393b",
+  "rule_text": "No file under `scripts/` assigns a credential literal: no quoted value assigned to a name containing `password`, `secret`, `api_key` or `token`, in any casing, outside a test file",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "24a25c7771eeb0efb2edef283e0178660a1f772abd5eb654f97edef1f64b3eeb",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_no_hardcoded_credentials(self):\n        cred_pattern = re.compile(\n            r'(password|secret|api_key|token)\\s*=\\s*[\"\\'][^\"\\']+[\"\\']',\n            re.IGNORECASE\n        )\n        for path in _all_script_files():\n            basename = os.path.basename(path)\n            if basename.startswith('test_'):\n                continue\n            content = _strip_comments(_read(path), _ext(path))\n            matches = cred_pattern.findall(content)\n            assert not matches, \\\n                f\"Found hardcoded credential in {path}: {matches}\"",
+      "file": "dev/test_security.py",
+      "findings": [],
+      "name": "test_no_hardcoded_credentials",
+      "proof": "PROOF-4",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a2adaa3c2c3e8e657e0cd8e322dfc4a50d0efab1c5344b1ad511803eeafe6f0d",
+  "verdict": "ready"
+}

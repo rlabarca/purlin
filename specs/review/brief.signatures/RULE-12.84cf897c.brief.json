@@ -1,0 +1,69 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "brief",
+  "generated_at": "2026-09-16T21:13:06Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "ce716b2dc23804cc2ccb9ca67feb0ee522a6a345fccf131eaf3401bde8f05ad4",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-15",
+      "text": "Build the brief for a rule proved only in the accepting direction; verify `happy_path_only` is among its findings and the verdict is `add a case`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-16",
+      "text": "Set the minimum test strength to 70, record 40, and build the brief; verify the verdict is `add a case` and a reason reads `40 percent`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-15 happy_path_only: No proof of this rule names a rejection, an error or a boundary.",
+    "PROOF-16 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/brief/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-12",
+  "rule_hash": "9c0af78417f3b2d924f7ecb686f420991d8462e7d36e761f0ebc7a790a25914a",
+  "rule_text": "An advisory `happy_path_only`, or a test strength below the minimum, makes the verdict `add a case`",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "3a3ffad21dcfcdc905abae1b762c59e9304b54879a57f8b3c6e5ae7164addf2f",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_only_a_happy_path_is_add_a_case(self, proved):\n        built = build(proved, 'RULE-1')\n        assert 'happy_path_only' in built['proofs'][0]['findings']\n        assert built['verdict'] == 'add a case'",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_only_a_happy_path_is_add_a_case",
+      "proof": "PROOF-15",
+      "reasons": []
+    },
+    {
+      "body": "def test_strength_below_the_minimum_is_add_a_case(self):\n        made = Project(config={'min_strength': 70})\n        try:\n            made.proofs()\n            made.record(strength=40)\n            built = build(made, 'RULE-2')\n            assert built['verdict'] == 'add a case'\n            assert any('40 percent' in reason for reason in built['reasons'])\n        finally:\n            made.close()",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_strength_below_the_minimum_is_add_a_case",
+      "proof": "PROOF-16",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "84cf897c532ef3c2865be2392b4d31d04f7568a7c15bde23d24138d6677da296",
+  "verdict": "add a case"
+}

@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "pm_anchor_userstories",
+  "generated_at": "2026-09-16T21:13:12Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "8303b6b3b3aaf05ba75a98ff4f063a3b1c6df66cc7e7fd5a33092edb1ae546d2",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-1",
+      "text": "Read `tools/PM/purlin-anchor-userstories.md`; verify it opens with `---`, that the frontmatter carries `name: purlin-anchor-userstories` and a non-empty `description`, and that the description names `spec`, `anchor` and `acceptance criteria`, one assertion per word. Deleting `acceptance criteria` from the description fails naming it",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/pm_anchor_userstories/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-1",
+  "rule_hash": "6bf03414c7bffc114da8f35caf498e78dc9de9a3203f9db525e54b65a609d551",
+  "rule_text": "The skill opens with a frontmatter block carrying `name: purlin-anchor-userstories` and a `description` that names the words a request reaches it by, among them `spec`, `anchor` and `acceptance criteria`",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "2a6414c645ed3336827d2247d5d209f267a051fd8236c1a9077ad0c6b4c8edf2",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_frontmatter_names_the_tool(self):\n        assert tool_frontmatter_problems(\n            PM_MD, 'purlin-anchor-userstories',\n            ['spec', 'anchor', 'acceptance criteria']) == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_the_frontmatter_names_the_tool",
+      "proof": "PROOF-1",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "d15cab8498a6df3e4996e4b3f226a42dcbd51b4170109448eb70bba8e339a55b",
+  "verdict": "ready"
+}

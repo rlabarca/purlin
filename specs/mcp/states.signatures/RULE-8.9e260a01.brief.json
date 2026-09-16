@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T21:13:37Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "45335c04305bf69549afac32d8ac4a0846e14f94ddc388df3bbdb6b158fd0406",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-8",
+      "text": "Commit a passing record and write an approval binding the rule's current hashes; verify the rule is `Approved`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-8 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/states/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-8",
+  "rule_hash": "524fe0c349a33e572b0e4222701de56363329d70594a8685765535c920f3d05a",
+  "rule_text": "A rule is Approved when a current approval meets a record that passes",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "de06484011934d211ceffbfb6f51b45d8c0de89c0882fefe8c3a5a8aba95bafa",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_approved_when_a_current_approval_meets_a_passing_record(self,\n                                                                    project):\n        project.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'}])\n        project.approval('RULE-1', _approval_payload(project))\n        assert project.rule('RULE-1')['state'] == 'Approved'",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_approved_when_a_current_approval_meets_a_passing_record",
+      "proof": "PROOF-8",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "9e260a01784df347f5f687d9fa6482f53ae0b6d831b136d5f526c851d9d25b6c",
+  "verdict": "add a case"
+}

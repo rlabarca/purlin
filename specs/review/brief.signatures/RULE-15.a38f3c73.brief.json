@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "brief",
+  "generated_at": "2026-09-16T21:13:06Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "2c0a51d22feee5d40540519c41ec1cd83bd29219915e7d12c9ca53f76e958a5c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-19",
+      "text": "Build the model prompt for a high-risk rule; verify it opens with `references/review_criteria.md` byte for byte and then names `RULE-2`, the rule text, the test `test_a_bad_password_is_denied` and `Test strength: 90 percent (minimum 70)`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-19 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/brief/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-15",
+  "rule_hash": "ddfa7f24b9bc6e1e97f15b9c8fed6ceae6a5cdd3cab1a28ba0ce7580fc11303d",
+  "rule_text": "The model prompt is `references/review_criteria.md` verbatim, followed by this rule's rule text, proof text, test bodies and test strength",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "60dd0b4729021eea2bf7dac4b8bd389119dda0856a97d40b3be8d7e64fe33ff9",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_prompt_is_the_criteria_file_verbatim(self, reviewed):\n        built = build(reviewed, 'RULE-2')\n        prompt = brief_module.model_prompt(reviewed.root, built)\n        with open(CRITERIA, encoding='utf-8') as handle:\n            criteria = handle.read()\n        assert prompt.startswith(criteria)\n        assert 'RULE-2' in prompt\n        assert 'Invalid credentials return 401' in prompt\n        assert 'test_a_bad_password_is_denied' in prompt\n        assert 'Test strength: 90 percent (minimum 70)' in prompt",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_the_prompt_is_the_criteria_file_verbatim",
+      "proof": "PROOF-19",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a38f3c73da1dc5d25c25d9de057a6fcb3584e0316f9e3fa4399c60052e0b4ba3",
+  "verdict": "add a case"
+}

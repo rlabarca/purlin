@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-16T21:13:15Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "5b8518453b03d39dd45d1f8d440e6d07eb14d98d08ba5c72e739c5035180da32",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-34",
+      "text": "Open the board with the regulated fixture after setting its failing count to 3; verify the `Failing` card reads 3 in the fail tone's colour, 7 `.tile` elements remain, and the heading carries `3 failing`; open it with a failing count of 0 and verify the card reads 0 without the fail tone",
+      "tier": "e2e"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/purlin_report/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-32",
+  "rule_hash": "119e4a2578d66e69bcbc3e24e829a941a409db9f1267fbf50e0bf155414eff72",
+  "rule_text": "Beside the seven state tiles the board shows a `Failing` card carrying the project rollup's failing count, in the fail tone when it is above zero, and the heading line names the same count as `<N> failing`",
+  "schema": "purlin-brief/1",
+  "state": "Proof ready",
+  "test_hash": "b3a6ce7f90ce5f623ebe5680bff57740c60357557dfda0083da3c411a23cd521",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_failing_card_carries_the_count(browser, tmp_path):  # noqa: F811\n    payload = payload_named('regulated')\n    payload['project_rollup']['failing'] = 3\n    page = open_board(browser, tmp_path / 'three', payload)\n    assert page.inner_text('.failing-v').strip() == '3'\n    assert 'on' in page.get_attribute('.failing', 'class')\n    fail = page.evaluate(\n        \"getComputedStyle(document.documentElement)\"\n        \".getPropertyValue('--state-fail').trim()\")\n    colour = page.eval_on_selector('.failing-v', 'el => getComputedStyle(el).color')\n    probe = page.evaluate(\n        \"c => { const s = document.createElement('span'); s.style.color = c;\"\n        \" document.body.appendChild(s); const v = getComputedStyle(s).color;\"\n        \" s.remove(); return v; }\", fail)\n    assert colour == probe, (colour, probe)\n    assert len(page.query_selector_all('.tile')) == 7\n    assert '3 failing' in page.inner_text('h1')\n    page.close()\n\n    payload['project_rollup']['failing'] = 0\n    page = open_board(browser, tmp_path / 'none', payload)\n    assert page.inner_text('.failing-v').strip() == '0'\n    assert 'on' not in page.get_attribute('.failing', 'class').split()\n    page.close()",
+      "file": "dev/test_purlin_report_board_layout.py",
+      "findings": [],
+      "name": "test_the_failing_card_carries_the_count",
+      "proof": "PROOF-34",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "681e0938044b20ac5c008f5fad076fdc8dbaf39e1b0856b9cdcd2a77a75634de",
+  "verdict": "ready"
+}

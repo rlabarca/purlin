@@ -1,0 +1,62 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-16T21:13:32Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "b89ddbab2218d662fb951b7be9904e412518b5878201e88ea53d48db9f9d1ae6",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-52",
+      "text": "Run the gate with `--json` over a project with no record; verify the JSON reads gate `tested`, verdict `fail`, exit 1, 2 rules, 0 met and 2 entries under the state list",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-53",
+      "text": "Run the gate with `--json` over a passing project; verify the verdict is `pass`, that met equals 2 of 2 rules and the state list is empty",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/signatures/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-35",
+  "rule_hash": "589fc2c095554fe82531c9f97ee2e3501a553fb985dad75702b58436659f3056",
+  "rule_text": "`--json` prints the gate, the verdict, the exit code, the rule counts and every rule that fell short",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "329d24a61c353f5e8ad84773c12f3a1dadd716e108bbbf6a3f216a2882c1ea4a",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_carries_the_verdict_and_every_rule_that_fell_short(self):\n        made = Project(gate='tested')\n        try:\n            code, output = run(made, as_json=True)\n            assert code == 1\n            data = json.loads(output[output.index('{'):])\n            assert data['gate'] == 'tested'\n            assert data['verdict'] == 'fail'\n            assert data['exit'] == 1\n            assert data['rules'] == 2 and data['met'] == 0\n            assert len(data['below_state']) == 2\n        finally:\n            made.close()",
+      "file": "dev/test_verify_gate.py",
+      "findings": [],
+      "name": "test_it_carries_the_verdict_and_every_rule_that_fell_short",
+      "proof": "PROOF-52",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_passing_project_says_pass(self):\n        made = project_at('tested', by_ci=False)\n        try:\n            code, output = run(made, as_json=True)\n            data = json.loads(output[output.index('{'):])\n            assert code == 0 and data['verdict'] == 'pass'\n            assert data['met'] == data['rules'] == 2\n            assert data['below_state'] == []\n        finally:\n            made.close()",
+      "file": "dev/test_verify_gate.py",
+      "findings": [],
+      "name": "test_a_passing_project_says_pass",
+      "proof": "PROOF-53",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "7d9d96168996236bfa5250bf6fbad5ba69aa6ca3c8a54ccd6e8cadb438c82473",
+  "verdict": "ready"
+}

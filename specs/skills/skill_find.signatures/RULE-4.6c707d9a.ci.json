@@ -1,0 +1,18 @@
+{
+  "brief": null,
+  "design_hash": null,
+  "feature": "skill_find",
+  "gate": "approved",
+  "note": null,
+  "proof_hash": "9a4c7e1f6b288d92568617b20a6ae24c610280e3be80c1b5a808fd6b3dc601a3",
+  "record": ".purlin/records/skill_find/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "low",
+  "rule": "RULE-4",
+  "rule_hash": "5c1a3ccfe9833afb9c68ad2508aecd1b085620a978ab601fe7bdbe5b577d4ae2",
+  "schema": "purlin-signature/1",
+  "signer": "ci",
+  "test_hash": "3e3817c641ca65a9973494c820a14f601991a8bd306c4c6c48f2ffb289655497",
+  "test_hash_kind": "file",
+  "timestamp": "2026-09-16T21:13:03Z",
+  "triple": "6c707d9a5256740c"
+}

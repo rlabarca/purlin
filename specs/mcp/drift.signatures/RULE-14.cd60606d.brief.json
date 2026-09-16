@@ -1,0 +1,48 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "drift",
+  "generated_at": "2026-09-16T21:13:08Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "86bed1bd1245fda254a332f63c1a1e981377dd226b04c7d15b6d869e1c6ef301",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-16",
+      "text": "Commit a change to a scoped source file and run drift with `since` `1`; verify the roles are exactly `design`, `eng`, `pm` and `qa`, that the engineer's files touched carry `src/login.py` and that its missing tests read `login/RULE-1` and `login/RULE-2`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/drift/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-14",
+  "rule_hash": "da3cad1228db36ea95f5d363aa7f0759b4b84f6f2551c0ca090ae6975bade98d",
+  "rule_text": "The four role views `pm`, `design`, `qa` and `eng` are present on every report, each carrying its own keys: criteria without rules, pm-owned rules changed, engineer-added rules and pins behind for the PM; designs changed and design rules stale for the designer; approvals stale, the length of the review list and rules with no negative case for QA; files touched, rules affected, tests missing, tags missing, pins behind and re-verify pending for the engineer",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "cc933ee46072fa75642b3e7b917534ada51d4cee6ff3fb046ba9b20f390ec9c6",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_four_role_views_are_present(self, project):\n        _write(os.path.join(project.root, 'src', 'login.py'),\n               'def login():\\n    return 401\\n')\n        _git(project.root, 'add', '-A')\n        _git(project.root, 'commit', '-q', '-m', 'fix: login')\n        report = json.loads(purlin_drift.drift(project.root, since='1'))\n        assert sorted(report['roles']) == ['design', 'eng', 'pm', 'qa']\n        assert 'src/login.py' in report['roles']['eng']['files_touched']\n        assert report['roles']['eng']['tests_missing'] == [\n            'login/RULE-1', 'login/RULE-2']",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_the_four_role_views_are_present",
+      "proof": "PROOF-16",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "cd60606d325fb215c97ad4fda58c22696fb75374e7ce6d07726a120914419f9a",
+  "verdict": "ready"
+}

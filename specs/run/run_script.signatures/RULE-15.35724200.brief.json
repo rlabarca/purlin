@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-16T21:13:21Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "01ab5c5c95e5a0e4214c5f391d542ac01541283f402a746a186587b178ad88b6",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-15",
+      "text": "Run `--all --record`; verify the record's `log.path` is `.purlin/runtime/run.log`, that `log.sha256` is 64 characters and that the file exists on disk",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-15 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/run_script/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-15",
+  "rule_hash": "eab6a1e40137291fd57e23b0850f076e64cca310e009dd05f1e83f6158e8331c",
+  "rule_text": "The run's console log is written to `.purlin/runtime/run.log` and the record carries that path with the log's sha256",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "7bfa3e85fff2493cf3b3e356b6e7c258dcf5f44995647b191eb54bc3d3fa2f4d",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_log_is_written_and_hashed(self, tmp_path, record_run, capsys):\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat')\n        _code, calls = record_run(root, '--all')\n        capsys.readouterr()\n        log = calls['write'][0][0]['log']\n        assert log['path'] == '.purlin/runtime/run.log'\n        assert len(log['sha256']) == 64\n        assert (root / '.purlin' / 'runtime' / 'run.log').exists()",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_the_log_is_written_and_hashed",
+      "proof": "PROOF-15",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "35724200b8d0c09a4f7766fd2cfcd7fbfa201ed82b093bd63728fc9b426e89ba",
+  "verdict": "add a case"
+}

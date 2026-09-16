@@ -1,0 +1,48 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_init",
+  "generated_at": "2026-09-16T21:13:33Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "f428ea160d32309791316737201c4d53112c02e3e1327d331d78f9872054a7d8",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-5",
+      "text": "Read `skills/init/SKILL.md` with its line wrapping collapsed; verify it carries `what must be true before CI lets a change merge` and each of the three gate names `tested`, `recorded` and `approved`, and that the section whose heading names the exceptions carries `empty repository` and `approver emails` and holds exactly two numbered items. Adding a third numbered question to that section fails, reporting three where two were expected",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/skill_init/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-5",
+  "rule_hash": "787b5b0ed5863098a95859c47134ba1cccdb8f73f596a4dd56eab0e14ad175cd",
+  "rule_text": "The skill asks one question, what must be true before CI lets a change merge, and names exactly three answers, `tested`, `recorded` and `approved`, with what CI requires under each; the only two further questions are the language of an empty repository and the approver emails under `approved`",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "ba2e5788b03d0e5df868fc849410aca0a83a4cd2c8f52ffd1907fb9c5819b929",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_asks_one_question_and_names_two_exceptions(self):\n        assert init_question_problems() == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_it_asks_one_question_and_names_two_exceptions",
+      "proof": "PROOF-5",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "c87bda3c7623518f8719c5991786ded46e095980af43aa85501f921da17d0a11",
+  "verdict": "ready"
+}

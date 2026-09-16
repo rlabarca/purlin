@@ -1,0 +1,51 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T21:13:38Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "b54097830f3d44d63a16a692906b7425f51bedc9e22acc90626ab682a664a432",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-18",
+      "text": "Build the payload at gate `recorded` for a feature holding one high-risk rule; verify the review list is exactly one entry naming that rule with risk `high` and a reason carrying `risk high`",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-18 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/states/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-18",
+  "rule_hash": "fc6fed30e3ec39896c84ef7a3da8b4c2f3d952b1e7699626c242a00975b1681f",
+  "rule_text": "The review list names the feature, the rule, the rule's risk and why it is on the list",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "30f3f815259312776cfb30ffb43ab3a4d778f4381088d79ee68ee317f5883b7c",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_review_list_names_the_rule_and_why(self):\n        made = Project(gate='recorded')\n        try:\n            entries = made.payload()['review_list']\n            assert [(e['rule'], e['risk']) for e in entries] == [\n                ('RULE-1', 'high')], entries\n            assert 'risk high' in entries[0]['reason']\n        finally:\n            made.close()",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_the_review_list_names_the_rule_and_why",
+      "proof": "PROOF-18",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "e5ce33f1f13a418503710fad72156312d0716a2349625c2721eb1c40d2483401",
+  "verdict": "add a case"
+}

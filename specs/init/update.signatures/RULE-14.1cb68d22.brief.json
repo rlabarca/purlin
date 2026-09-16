@@ -1,0 +1,67 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-16T21:13:48Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "3efaf65281a2228ad19e498ebee7e3e8165fdd2a59e5e72c76649f81f1dfafd7",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-14",
+      "text": "Write an anchor whose source names a design tool and which carries the retired visual fields with a continuation line; verify `design-sources` is pending, apply, and verify the source reads `> Source: designs/checkout_design/`, the design-tool scheme and both visual fields are gone with the continuation line, `> Pinned: 0f1e2d3c` and the rule text survive, and the migration is no longer pending",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [
+    "PROOF-14 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/update/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-14",
+  "rule_hash": "dad96fe0d45a48ef9f89c84fee7e76d2acc8546fc4771111b0a067c7ef3947d6",
+  "rule_text": "A design source that named a design tool becomes `designs/<feature>/`, the retired visual fields and their continuation lines are dropped, and the rest of the spec is untouched",
+  "schema": "purlin-brief/1",
+  "state": "Proof ready",
+  "test_hash": "314b5ffc721c39c4073347da3b715d88d32ec043335d659f08b85fb0ab9fba14",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_design_source_becomes_a_designs_path(tmp_path):\n    root = _with_design(tmp_path, V095)\n    assert 'design-sources' in _ids(root)\n    _apply(root)\n    text = _read(root, 'specs/_anchors/checkout_design.md')\n    assert '> Source: designs/checkout_design/' in text\n    assert 'figma://' not in text",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_a_design_source_becomes_a_designs_path",
+      "proof": "PROOF-14",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_design_migration_is_not_pending_afterwards(tmp_path):\n    root = _with_design(tmp_path, V010)\n    _apply(root)\n    assert 'design-sources' not in _ids(root)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_design_migration_is_not_pending_afterwards",
+      "proof": "PROOF-14",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_visual_fields_are_dropped(tmp_path):\n    root = _with_design(tmp_path, V010)\n    _apply(root)\n    text = _read(root, 'specs/_anchors/checkout_design.md')\n    assert 'Visual-Reference' not in text\n    assert 'Visual-Hash' not in text\n    assert 'the second line of the reference' not in text\n    assert '> Pinned: 0f1e2d3c' in text\n    assert 'RULE-1: The checkout page' in text",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_visual_fields_are_dropped",
+      "proof": "PROOF-14",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "1cb68d22e3c1ca06e83c02774289e375a65d21aec16682090bc4983e38e81948",
+  "verdict": "add a case"
+}

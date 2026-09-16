@@ -1,0 +1,47 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_rename",
+  "generated_at": "2026-09-16T21:13:34Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "e80e519f8e58efd965f3467a5c2e141a59b4670f41e2120cc3eb6074ec95f9b0",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-2",
+      "text": "Read `skills/rename/SKILL.md`; verify the numbered steps carry `git mv` and `sync_status` in that order, comparing their offsets, and that the `sync_status` step names an unresolved reference as a miss. Reordering the two steps fails on the offset comparison",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/skill_rename/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-2",
+  "rule_hash": "1d8d6b8f8dd2647217f7b6a92fa664279263ce6e92443313022288355ca79d35",
+  "rule_text": "The skill moves the files with `git mv` so history follows them, and calls `sync_status` afterwards, treating any unresolved reference it reports as a miss to fix before the commit",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "9aaee3bca9362c1180f338dd0baa6942399ccc102b6c602b67fff2c4db50ea80",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_moves_with_git_mv_then_checks_what_it_missed(self):\n        rel = skill_path('rename')\n        assert (in_order(rel, ['git mv', 'sync_status'])\n                + carries(rel, ['Any unresolved reference it reports is a '\n                                'miss'])) == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_it_moves_with_git_mv_then_checks_what_it_missed",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "ced5313bc6417a06c3de35291a27225b91881e4b948ad5e84c56dd1e2af8a353",
+  "verdict": "ready"
+}

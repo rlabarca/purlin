@@ -1,0 +1,112 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T21:13:27Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "e070e284291abcbba9d07bd8deb445fa2a27b9ae19c45320c891714d1695c77b",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-27",
+      "text": "Read `scripts/hooks/pre-push.sh` and verify it names `purlin_run.py` with `--all --quick` and names no runner of its own. Set up a project with one tagged test through init, run the shim as git runs it and verify exit 0 with `the tagged tests passed`. Break the test and verify exit 0 with `a tagged test failed` and `not blocked`; set `pre_push` to `on` and verify exit 1 with `this push is blocked` and `purlin:test`; set it to `true` and verify exit 1; restore the test with `on` still set and verify exit 0. Write `not json at all` over the config and verify exit 0 with `not blocked`, and verify a passing run prints exactly one `purlin:` line. With `pre_push` still `on`, point the hook at a run script that exits 2, the code for a command line it could not read, and verify exit 0 with `not blocked` and `exited 2`: no test ran, so none failed",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/scaffold/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-27",
+  "rule_hash": "53e9ffea343f86008edb1f7f18c11718177ef85615e6ef0a5eda38002a59c1a4",
+  "rule_text": "The hook runs `purlin_run.py --all --quick` and no test runner of its own, and blocks a push only when `pre_push` is `on` and a tagged test failed; every other outcome exits 0 and prints one line saying why",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "7bf0a99d3a71821b11c11b79b01502f9c4d463041b14d2edaf40bfcc0483f3cb",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_failure_with_the_setting_off_is_reported_and_not_blocked(\n            self, failing):\n        done = failing.push()\n        assert done.returncode == 0, done.stdout + done.stderr\n        assert 'a tagged test failed' in done.stdout\n        assert 'not blocked' in done.stdout",
+      "file": "dev/test_pre_push_hook.py",
+      "findings": [],
+      "name": "test_a_failure_with_the_setting_off_is_reported_and_not_blocked",
+      "proof": "PROOF-27",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_failure_with_the_setting_on_blocks(self, failing):\n        failing.setting('on')\n        done = failing.push()\n        assert done.returncode == 1\n        assert 'this push is blocked' in done.stdout\n        assert 'purlin:test' in done.stdout",
+      "file": "dev/test_pre_push_hook.py",
+      "findings": [],
+      "name": "test_a_failure_with_the_setting_on_blocks",
+      "proof": "PROOF-27",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_pass_with_the_setting_on_still_goes_through(self, passing):\n        passing.setting('on')\n        done = passing.push()\n        assert done.returncode == 0, done.stdout + done.stderr\n        assert 'the tagged tests passed' in done.stdout",
+      "file": "dev/test_pre_push_hook.py",
+      "findings": [],
+      "name": "test_a_pass_with_the_setting_on_still_goes_through",
+      "proof": "PROOF-27",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_passing_suite_says_so_and_lets_the_push_through(self, passing):\n        done = passing.push()\n        assert done.returncode == 0, done.stdout + done.stderr\n        assert 'the tagged tests passed' in done.stdout",
+      "file": "dev/test_pre_push_hook.py",
+      "findings": [],
+      "name": "test_a_passing_suite_says_so_and_lets_the_push_through",
+      "proof": "PROOF-27",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_run_that_reached_no_test_never_blocks(self, passing):\n        \"\"\"Exit 2 is the run script saying it could not read its command line.\n\n        No test ran, so none failed, and the setting has nothing to act on.\n        The hook is pointed at a plugin whose run script is that one answer.\n        \"\"\"\n        passing.setting('on')\n        stub = os.path.realpath(tempfile.mkdtemp(prefix='purlin-stub-'))\n        try:\n            for rel in ('scripts/hooks/pre-push.sh', 'scripts/purlin_python.sh'):\n                write(os.path.join(stub, rel), read(os.path.join(ROOT, rel)))\n            write(os.path.join(stub, 'scripts/run/purlin_run.py'),\n                  'import sys\\n\\nsys.exit(2)\\n')\n            done = subprocess.run(\n                [SH, os.path.join(stub, 'scripts', 'hooks', 'pre-push.sh')],\n                cwd=passing.root, capture_output=True, text=True, timeout=300,\n                stdin=subprocess.DEVNULL)\n            assert done.returncode == 0, done.stdout + done.stderr\n            assert 'not blocked' in done.stdout\n            assert 'exited 2' in done.stdout\n        finally:\n            shutil.rmtree(stub, ignore_errors=True)",
+      "file": "dev/test_pre_push_hook.py",
+      "findings": [],
+      "name": "test_a_run_that_reached_no_test_never_blocks",
+      "proof": "PROOF-27",
+      "reasons": []
+    },
+    {
+      "body": "def test_an_unreadable_setting_never_blocks(self, failing):\n        write(failing.path('.purlin/config.json'), 'not json at all')\n        done = failing.push()\n        assert done.returncode == 0, done.stdout + done.stderr\n        assert 'not blocked' in done.stdout",
+      "file": "dev/test_pre_push_hook.py",
+      "findings": [],
+      "name": "test_an_unreadable_setting_never_blocks",
+      "proof": "PROOF-27",
+      "reasons": []
+    },
+    {
+      "body": "def test_one_line_either_way(self, passing):\n        lines = [line for line in passing.push().stdout.splitlines()\n                 if line.startswith('purlin:')]\n        assert len(lines) == 1",
+      "file": "dev/test_pre_push_hook.py",
+      "findings": [],
+      "name": "test_one_line_either_way",
+      "proof": "PROOF-27",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_script_runs_the_quick_pass_and_nothing_else(self):\n        text = read(HOOK_SCRIPT)\n        assert '--all --quick' in text\n        assert 'purlin_run.py' in text\n        assert 'pytest' not in text\n        assert 'npx' not in text",
+      "file": "dev/test_pre_push_hook.py",
+      "findings": [],
+      "name": "test_the_script_runs_the_quick_pass_and_nothing_else",
+      "proof": "PROOF-27",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_setting_true_counts_as_on(self, failing):\n        failing.setting(True)\n        assert failing.push().returncode == 1",
+      "file": "dev/test_pre_push_hook.py",
+      "findings": [],
+      "name": "test_the_setting_true_counts_as_on",
+      "proof": "PROOF-27",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "9fdeeb9da93abe71225a643f2240eff4fe76d678a5706e0308526dfc8be27218",
+  "verdict": "ready"
+}

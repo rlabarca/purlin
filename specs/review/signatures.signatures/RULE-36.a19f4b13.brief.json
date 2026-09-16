@@ -1,0 +1,52 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-16T21:13:32Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "5639e6a619f79500e75a761d53ca55936114398eeefb1ecb116d8c4fbfdf6df9",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-55",
+      "text": "Snapshot every file of a project, run the gate at `tested`, `recorded` and `approved`, and snapshot again; verify the two snapshots are equal and `git status --porcelain` prints nothing",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-55 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/signatures/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-36",
+  "rule_hash": "55b137cc1023ce564164f6fcf7f163157433a245dc53a3fedea4103c3846c22f",
+  "rule_text": "The gate creates and changes no file at any gate level",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "74a1f79c950a01c2a5dc5b08aeec2d2c3388c4eebd9271de3536c8a450297f48",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_no_file_is_created_or_changed_at_any_level(self):\n        for gate in ('tested', 'recorded', 'approved'):\n            made = project_at(gate, config={'approvers': ['jane@acme.com']})\n            try:\n                before = _tree(made.root)\n                run(made)\n                assert _tree(made.root) == before, (\n                    'a gate that can edit the evidence it grades is not a gate')\n                status = git(made.root, 'status', '--porcelain').stdout\n                assert status.strip() == '', status\n            finally:\n                made.close()",
+      "file": "dev/test_verify_gate.py",
+      "findings": [],
+      "name": "test_no_file_is_created_or_changed_at_any_level",
+      "proof": "PROOF-55",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a19f4b1324411afe882c2be6b4707c13081561c662d16143edc10198d9ffc87d",
+  "verdict": "add a case"
+}

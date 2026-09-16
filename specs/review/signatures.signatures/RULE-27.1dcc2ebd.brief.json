@@ -1,0 +1,70 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-16T21:13:32Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "45db968f84fe59e466d03374ca46715bcde68ed92570775ca9bac6f0a01092f5",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-36",
+      "text": "Run the gate at gate `recorded` with a minimum of 70 over a record measuring 40; verify it exits 1, opens `Below the minimum test strength (2):` and reads `test strength 40 percent, below 70`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-37",
+      "text": "Run the gate at gate `recorded` with a minimum of 70 over a record with no test strength; verify it exits 0 and prints no line about the minimum",
+      "tier": "integration"
+    }
+  ],
+  "reasons": [
+    "PROOF-36 happy_path_only: No proof of this rule names a rejection, an error or a boundary.",
+    "PROOF-37 happy_path_only: No proof of this rule names a rejection, an error or a boundary."
+  ],
+  "record": ".purlin/records/signatures/20260916T211257Z-7adb04a-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-27",
+  "rule_hash": "b092e30ab751f8a5a4968344223d758cd4ccbbb37aa78344ba6d9f9bdeac4771",
+  "rule_text": "At gate `recorded` a test strength below the minimum fails and names both numbers, while no engine at all leaves the rule alone",
+  "schema": "purlin-brief/1",
+  "state": "Tested",
+  "test_hash": "44d6920741366039d174ebf8af17a6bfdc600b282aa0ec6594964a968557740a",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_below_the_minimum_test_strength_fails(self):\n        made = project_at('recorded', strength=40, config={'min_strength': 70})\n        try:\n            code, output = run(made)\n            assert code == 1\n            assert 'Below the minimum test strength (2):' in output\n            assert 'test strength 40 percent, below 70' in output\n        finally:\n            made.close()",
+      "file": "dev/test_verify_gate.py",
+      "findings": [],
+      "name": "test_below_the_minimum_test_strength_fails",
+      "proof": "PROOF-36",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_engine_leaves_the_strength_alone(self):\n        made = project_at('recorded', strength=None,\n                          config={'min_strength': 70})\n        try:\n            code, output = run(made)\n            assert code == 0, output\n            assert 'Below the minimum test strength' not in output\n        finally:\n            made.close()",
+      "file": "dev/test_verify_gate.py",
+      "findings": [],
+      "name": "test_no_engine_leaves_the_strength_alone",
+      "proof": "PROOF-37",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "1dcc2ebd0b6435b98197cb446b7f659506d07c172ab6f808a447ef9872bac3c6",
+  "verdict": "add a case"
+}
