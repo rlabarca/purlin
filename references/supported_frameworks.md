@@ -24,8 +24,8 @@ of a copy it has to refresh, so neither script holds the fact and the two cannot
 the name a project's file has.
 
 The **Runner setup** column is what the workflow `purlin:init` writes reads: it becomes the
-per-framework install step of the job that runs `purlin:verify --ci`. Every listed framework
-carries a cell, because a framework with no recorded setup is one a scaffolded workflow cannot
+per-framework install step of the job that runs `purlin:audit --ci`. Every listed framework
+carries a cell, because a framework whose setup is unlisted is one a scaffolded workflow cannot
 run.
 
 Two languages were dropped in 0.10.0: C and PHP. Their plugins, their detection entries and
@@ -89,7 +89,7 @@ specific runner's API.
   `PURLIN_PROOF_TIER=e2e` set.
 
 A test that captures a screenshot writes it to
-`.purlin/runtime/attachments/<feature>/<PROOF-N>.png`; `purlin:verify` hashes it into the record
+`.purlin/runtime/attachments/<feature>/<PROOF-N>.png`; `purlin:audit` hashes it into the record
 and CI keeps it as an artifact.
 
 A project whose specs carry `@e2e` proofs but has no e2e-capable runner installed cannot record

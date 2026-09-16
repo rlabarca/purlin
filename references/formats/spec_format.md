@@ -83,22 +83,25 @@ versioned file under `designs/`, pinned by an anchor's `> Source:` and
 Rule ids are assigned in increasing order and never reused. A retired rule
 leaves its number vacant and the rules that remain keep the numbers they had,
 so a gap in the sequence is legal and the parser reports nothing for it.
-Renumbering would silently repoint every test marker and every approval that
+Renumbering would silently repoint every test marker and every signature that
 already names the old id. Unnumbered lines under `## Rules` are reported.
 
 ### Rule tags
 
 Tags sit at the end of the line and are read off it, so the text that remains
-is the claim alone. Re-tagging a rule never stales the approval that binds it.
+is the claim alone: reflowing the whitespace or changing the `origin` or
+`criterion` tag leaves the rule text hash the same. The risk tag is the
+exception, because it decides who has to look at the rule: it is bound into a
+signature, so a risk re-tag stales that signature.
 
 | Tag | Values | Default | Meaning |
 |-----|--------|---------|---------|
-| `[risk: ...]` | `high`, `medium`, `low` | `low` | How much a wrong answer costs. Under the `approved` gate, `high` and `medium` need a current human approval and `low` is auto-approved by CI |
+| `[risk: ...]` | `high`, `medium`, `low` | `low` | How much a wrong answer costs. Read at the `strong` gate and above. It decides at which risk the model review runs (`ai_review_at`) and at which risk a signature is required (`sign_at`, `medium` by default under the `signed` gate) |
 | `[origin: ...]` | `pm`, `design`, `qa`, `eng` | `eng` | Who owns the rule. Drift routes a change by origin |
 | `[criterion: ...]` | any id | none | The upstream acceptance criterion the rule came from |
 
-Under the `approved` gate, risk and origin are required and a rule without
-them is reported.
+Under the `signed` gate, risk and origin are required and a rule without them
+is reported.
 
 Tags are read from the end with `\s*\[(risk|origin|criterion):\s*([^\]]+)\]\s*$`,
 one at a time, in any order.
@@ -142,7 +145,7 @@ Append a tier tag to a proof that is not a unit test:
 | (none) | Pure logic, in memory, or a grep over local files |
 | `@integration` | Needs a database, the network, the filesystem or an external service |
 | `@e2e` | Needs a browser, the full stack or a rendered interface |
-| `@manual` | Needs human judgment. No test; the evidence is an approval with a one-line note, always human, never auto-approved |
+| `@manual` | Needs a person's judgment. No test, so the rule's strong cell reads `needs a person`; the evidence is a signature file carrying a one-line note, always written by a person |
 
 Any `@<name>` other than `@env` is read as a tier, and its results are read
 from `.purlin/runtime/proofs/<feature>.<name>.json`. The four above are the
@@ -160,20 +163,20 @@ it must be proved on:
 
 At most one `@env` per proof, and the values are `windows`, `macos` and
 `linux`: those three are the whole vocabulary. A proof with no `@env` is
-satisfied by a record from any operating system. A proof with `@env` is
-Recorded only when a counting record from that operating system passes it; a
-rule with proofs on two systems needs both, and the status line says
-`windows: no record yet` rather than adding a state.
+satisfied by a record from any operating system. A proof with `@env` meets the
+passed cell only when a counting record from that operating system passes it; a
+rule with proofs on two systems needs both, and the cell reads `not run` with
+the reason `windows: no record yet` rather than adding a word.
 
 On a machine that is not the named one, the plugin skips the test and the
 status says so.
 
 ### Retired tags
 
-`@on(<id>)`, a bare `@windows` tier and a stamped
+`@on(<id>)`, a bare `@windows` tier and a stamped                    <!-- retired -->
 `@manual(<email>, <date>, <sha>)` are retired. A spec that still carries one
 parses; the tag is ignored and the file is named once in the run's warnings.
-Rewrite `@on(windows)` as `@env(windows)`.
+Rewrite `@on(windows)` as `@env(windows)`.                          <!-- retired -->
 
 A tag is recognised only when it does not follow a list connector (`,`, `and`,
 `or`), so a description whose prose ends in `@unit, @integration and @e2e` has

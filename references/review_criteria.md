@@ -1,21 +1,21 @@
 # Review criteria
 
-What a reviewer checks on one rule, and what the review brief checks on your behalf
-before you read it. The brief runs these layers cheapest first and stops when it has
-enough for the rule's risk: the free checks on the proof text, the free checks on the
-test body, the test strength from the latest record, then a model review when the rule
-needs one. The brief builds that model prompt from this file verbatim, so every
-sentence here is written to be read by a person and by a model.
+What the brief checks on one rule before a person reads it, and what a person checks after.
+The brief runs these layers cheapest first and stops when it has enough for the rule's risk:
+the free checks on the proof text, the free checks on the test body, the test strength from
+the latest record, then a model review when the rule needs one. The brief builds that model
+prompt from this file verbatim, so every sentence here is written to be read by a person and
+by a model.
 
-The names below are the only names a finding ever carries. The brief prints them, the
-status line prints them, and this file explains them. Nothing else is a finding.
+The names below are the only names a finding ever carries. The brief prints them, the strong
+cell carries them as its reasons, and this file explains them. Nothing else is a finding.
 
 ## Free checks on the proof text
 
 Six findings, decided from the proof description and its tier tag alone. No test code
 is read and nothing runs, so they apply to a spec written before any code exists.
-`no_expected_value`, `vague_verb`, `missing_trigger` and `tier_mismatch` keep a rule
-out of Proof ready. `implementation_coupling` and `happy_path_only` are advisory: a
+`no_expected_value`, `vague_verb`, `missing_trigger` and `tier_mismatch` keep a rule's
+spec status at `drafted`. `implementation_coupling` and `happy_path_only` are advisory: a
 rule can be legitimately positive-only, and a grep proof legitimately names a path.
 
 **`no_expected_value`.** The description names no literal, number, quoted string,
@@ -89,42 +89,59 @@ Read it beside the findings above, never instead of them.
 
 ## The three risk levels
 
-**`low`.** The free checks and a passing record are enough. CI auto-approves a low-risk
-rule under the conditions `references/hard_gates.md` lists, which include a clear test body
-and no hold. A person only looks when a finding fires, and a person who finds the test does
-not prove the proof holds the rule rather than leaving CI's approval standing.
+Risk is read at `strong` and above. Under `passed` it is never asked for, never shown and
+never required, and a rule's risk tag changes nothing.
 
-**`medium`.** A person reads the brief before the rule is approved. Every blocking
-finding on the proof text must be clear and the test body must carry no finding. The
-model review runs when `ai_review_at` is `medium`.
+**`low`.** The free checks and a passing CI record are enough for the strong cell. Nobody has
+to look unless a finding fires. Under `signed` with the default `sign_at: medium` a low-risk
+rule's signed cell reads `not required`, so the rule meets the gate at strong.
 
-**`high`.** A person reads the brief, and the model review always runs. On top of the
-medium requirements, the rule needs at least one proof that names a rejection, an error
-or a boundary, so `happy_path_only` is blocking rather than advisory here.
+**`medium`.** The model review runs when `ai_review_at` is `medium`, which is the derived
+default under `signed`. Every blocking finding on the proof text must be clear and the test
+body must carry no finding. Under `signed` with the default `sign_at: medium` the rule needs
+a current signature from someone on the signer list.
 
-Under the `approved` gate, `high` and `medium` need a current human approval committed
-by someone on the approver list; `low` is auto-approved by CI. Risk defaults to `low`
-when the rule carries no `[risk: ...]` tag.
+**`high`.** The model review always runs, at every gate above `passed`. On top of the medium
+requirements, the rule needs at least one proof that names a rejection, an error or a
+boundary, so `happy_path_only` is blocking rather than advisory here.
+
+Risk defaults to `low` when the rule carries no `[risk: ...]` tag. `ai_review_at` says the
+risk at which the model review runs; `sign_at` says the risk at which a signature is required.
 
 ## Design rules
 
-A rule tagged `[origin: design]` is reviewed as a pair: the pinned mock from
-`designs/<feature>/` beside the screenshot the test wrote to
-`.purlin/runtime/attachments/<feature>/<PROOF-N>.png`. The brief shows both and runs a
-model pre-compare that names what differs. Judge what a person would see: the text, the
-order, the states present. A proof for a design rule that names a selector, a class or
-a pixel value is `implementation_coupling`, and a new export of the mock stales the
-approvals of that anchor's rules.
+A rule tagged `[origin: design]` is read as a pair: the pinned mock from `designs/<feature>/`
+beside the screenshot the test wrote to
+`.purlin/runtime/attachments/<feature>/<PROOF-N>.png`. The brief shows both and runs a model
+pre-compare that names what differs. Judge what a person would see: the text, the order, the
+states present. A proof for a design rule that names a selector, a class or a pixel value is
+`implementation_coupling`, and a new export of the mock stales the signatures of that anchor's
+rules.
 
-## Verdicts
+## What the brief reports
 
-The brief writes exactly one of four words, and a reviewer uses the same four:
+The brief reports. It recommends nothing, and it never names a next action. Four things:
 
-- **`ready`**: every free check is clear, the test strength is at or above
-  `min_strength` or no engine ran, and the test proves what the proof text claims.
-- **`add a case`**: what the test proves is right as far as it goes and a case is
-  missing, usually the rejection behind `happy_path_only`. The proof text stays.
-- **`rewrite the proof`**: the proof text is the problem, so no test written against it
-  could prove the rule. Every blocking finding on the proof text lands here.
-- **`needs a human`**: the checks disagree, the rule is `@manual`, or the evidence is a
-  screenshot a model should not settle. Nothing is auto-approved from this verdict.
+- **The strength, beside the minimum.** `71% against a minimum of 80%`, or `n/a` when no break
+  engine ran.
+- **The findings**, by the names above: the ones on the proof text, then the ones on the test
+  body, each in one sentence naming the proofs it concerns.
+- **The observations.** What the model review saw the test observe, against what the proof
+  names, one sentence each. The model is asked to state what it saw and to say when it cannot
+  tell. It is never asked what to do.
+- **Whether it settled.** `settled` is true when the model could tell, false when it could
+  not, and absent when no model review ran. An unsettled review makes the strong cell read
+  `needs a person`.
+
+A `@manual` proof has no test, so no free check on a test body runs and no model review is
+asked for. Its strong cell reads `needs a person` and its brief says so.
+
+What a person does with the brief is one of four things, and `purlin:sign` takes each:
+
+- **Sign it.** The test proves the proof. `purlin:sign <feature> RULE-N`.
+- **Add a case.** The test is right as far as it goes and a case is missing, usually the
+  rejection behind `happy_path_only`. Write the proof line; the next `purlin:build` writes the
+  test for it.
+- **Hold it.** No test written against this proof text could prove the rule, or this one does
+  not. `purlin:sign <feature> RULE-N --hold "<the missing case>"` names what is missing.
+- **Skip it.** Come back to it later. Nothing is written.

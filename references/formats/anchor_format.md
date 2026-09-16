@@ -115,8 +115,8 @@ A design anchor pins files in the project instead of a repo:
 ```
 
 `> Pinned:` is the hash of the named files. A new export changes it, which
-stales the approvals of that anchor's rules, and the review brief shows the
-mock beside the screenshot the test captured. A proof for a design rule is an
+stales the signatures of that anchor's rules, and the brief shows the mock
+beside the screenshot the test captured. A proof for a design rule is an
 end-to-end observable (a route, a state, visible text, presence), never a
 selector.
 
@@ -172,7 +172,7 @@ the label `global`.
 ## Retired
 
 `figma://` sources, `> Visual-Reference:`, `> Visual-Hash:` and the visual
-hash comparison are retired. A design is a versioned file, reviewed by pull
-request, never a live tool connection. An anchor that still carries one of
+hash comparison are retired. A design is a versioned file, read and merged by
+pull request, never a live tool connection. An anchor that still carries one of
 those fields parses; the field is ignored and the file is named once in the
 run's warnings.

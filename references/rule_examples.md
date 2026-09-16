@@ -86,7 +86,7 @@ Why:  Tab visibility and cleanup behavior prevent resource leaks and stale data.
 
 ## Access Contracts
 
-Rules about who can see or do what: permissions, flags, modes.
+Rules about who can see or do what: permissions, flags, views.
 
 ### tca-frontend: Report Access (2026-04)
 
@@ -95,8 +95,8 @@ Bad:  "Checks user permissions"
 Good: "Password-gated reports show password form; authenticated reports show content directly. Password validated against GET /ValidatePassword endpoint."
 Why:  The gate type (password vs auth) and validation endpoint are both behavioral.
 
-Bad:  "Has loan officer mode"
-Good: "Loan officer mode (activated by lo=true URL hash param OR lo cookie) shows editable benefit fields and save button; merges LO overrides with base report data"
+Bad:  "Has a loan officer view"
+Good: "The loan officer view (activated by the lo=true URL hash param OR the lo cookie) shows editable benefit fields and a save button; it merges the loan officer overrides with the base report data"
 Why:  Activation mechanism (hash + cookie) and data merging are both things a rebuild would get wrong.
 
 Bad:  "Uses feature flags"

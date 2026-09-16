@@ -3,7 +3,7 @@
 # Proof File Format
 
 Proof files are JSON files the proof plugins write while the tests run. They are runtime, not
-evidence: the record `purlin:verify` writes is what says a run happened, on which commit, on
+evidence: the record `purlin:audit` writes is what says a run happened, on which commit, on
 which machine, and that is the file that gets committed.
 
 ## Location
@@ -327,16 +327,18 @@ Setup: vstest only discovers loggers from assemblies whose filename ends with
 `TestLogger.dll`. Compile `scripts/proof/xunit_purlin.cs` into an assembly named
 `Purlin.TestLogger` and reference that project from the test project so the DLL lands in the test
 output directory; then `--logger purlin` discovers it by FriendlyName.
-`CollectSourceInformation=true` populates `TestCase.CodeFilePath` so `test_file` is recorded.
+`CollectSourceInformation=true` populates `TestCase.CodeFilePath`, which is where `test_file`
+comes from.
 
 Plugin: `scripts/proof/xunit_purlin.cs`: a custom `ITestLoggerWithParameters` that collects
 results in-process, with no `.trx` post-parse.
 
 ## Manual proofs
 
-A rule that cannot be tested carries `@manual` on its proof line. No test is written and no proof
-entry is ever produced for it. The evidence is an approval file with a one-line note, always
-written by a person and never auto-approved.
+A rule that no test can settle carries `@manual` on its proof line. No test is written and no proof
+entry is ever produced for it, so the rule's strong cell reads `needs a person`. The evidence is
+a signature file carrying a one-line note, always written by a person. CI writes no signature
+file, at any risk level and under any gate.
 
 ## Proof quality guidance
 

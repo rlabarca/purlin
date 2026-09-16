@@ -82,16 +82,19 @@ dependency fails.
 Three tags go at the end of a rule line: `[risk: high|medium|low]`,
 `[origin: pm|design|qa|eng]` and `[criterion: <id>]`.
 
-- **`risk`** says how much a wrong answer costs. It defaults to `low`. Under the
-  `approved` gate, `high` and `medium` need a current human approval and `low` is
-  auto-approved by CI, so the tag decides who has to look at the rule.
+- **`risk`** says how much a wrong answer costs. It defaults to `low`, and it is read at
+  the `strong` gate and above: under `passed` it is never asked for and changes nothing.
+  It decides two things. `ai_review_at` says the risk at which the model review runs, and
+  `sign_at` says the risk at which the signed cell needs a signature, so the tag decides
+  who has to look at the rule.
 - **`origin`** says who owns the rule. It defaults to `eng`. Drift routes a change by
   origin, so a PM sees their own rules move and an engineer sees theirs.
 - **`criterion`** links the rule to an upstream acceptance criterion id. It has no
   default and nothing requires it; it exists so a PM can find the rule from the ticket.
 
-Under the `approved` gate, `risk` and `origin` are required on every rule. Tag rules as
-you write them: retagging a spec later is a separate pass over every line.
+Under the `signed` gate, `risk` and `origin` are required on every rule. Tag rules as
+you write them: retagging a spec later is a separate pass over every line, and a risk
+re-tag stales the rule's signature.
 
 ## Writing proofs
 
@@ -139,9 +142,9 @@ Include setup when the architecture matters:
 Describe what a person would see, never the DOM. The agent picks the tool.
 
 Bad: "Count the table rows with class `fr`; verify the count is 8." Good: "Load the
-dashboard with 3 features (3 of 3 recorded, 2 of 6 partial, 0 of 4 untested); verify
-the table shows 3 rows, the coverage bars are filled proportionally, and the badges
-read Recorded, Partial and Untested; take a screenshot @e2e".
+dashboard with 3 features (3 of 3 strong, 2 of 6 passed, 0 of 4 untested); verify the
+table shows 3 rows, the strength bars are filled proportionally, and the pills read
+Strong, Passed and Untested; take a screenshot @e2e".
 
 No selectors, no class names, no `querySelector`. The proof says what is on screen, so
 it survives a refactor of the markup.
@@ -212,28 +215,34 @@ automated.
 
 ### `@manual`
 
-`@manual` means there is no test. The evidence is an approval file carrying a one-line
-note from the person who looked. It is always human and never auto-approved, at any
-risk level and under any gate. Use it where judgment is the only instrument, and keep
-the rule's `> Scope:` tight: when a scope file changes, the approval goes stale and
-someone must look again.
+`@manual` means there is no test, so nothing can run and no free check on a test body
+applies. The rule's strong cell reads `needs a person` with the reason `manual proof`.
+A signature file carrying a one-line note clears it, written by a person:
+`purlin:sign <feature> RULE-N --note "<what you saw>"`. CI never writes that file, at
+any risk level and under any gate. Use `@manual` where judgment is the only instrument,
+and keep the rule's `> Scope:` tight: when a scope file changes, the signature goes
+stale and someone must look again.
 
 ## When a rule is stuck
 
-Find the rule's state in the status table, then read the row.
+Find the rule in the status table, read the cell that blocks it, then read the row. The
+gate decides how many cells exist: under `passed` only the first two, under `strong` the
+first three, under `signed` all four.
 
-| Symptom | Likely cause | Fix |
-|---|---|---|
-| Drafted | The rule has no proof at all. | Write a proof under `## Proof` naming the rule. |
-| Proof ready, never Tested | No test carries the proof marker, or the test fails. | Run `purlin:build` to write the test, then `purlin:test`. |
-| Proof ready, and it will not leave | A blocking free check fires on the proof text: `no_expected_value`, `vague_verb`, `missing_trigger` or `tier_mismatch`. | Rewrite the proof text so it names a trigger and an expected value at a tier it can reach. |
-| Tested, never Recorded | No record that counts under the gate exists at this commit. Under `recorded` and `approved`, only CI's record counts. | Push and let CI run, or run `purlin:verify --remote`. |
-| Tested, and the status says `windows: no record yet` | A proof carries `@env` and no record from that operating system has passed it. | Let the CI matrix run that job, or drop the `@env` tag if any host could prove it. |
-| Recorded, test strength below `min_strength` | The tests did not notice when the behaviour was broken. | Add the case that tells the correct behaviour from the broken one, then verify again. |
-| Recorded, never Reviewed | No brief exists for the current hashes. | Run `purlin:review`; CI writes briefs for the review list. |
-| Reviewed, never Approved | No current approval, or the approval commit is unsigned or from someone off the approver list. | Run `purlin:approve` as a signed commit from a listed approver. |
-| Approved, then Stale | The rule text, the proof text or the test body changed after the approval. | Read what changed, then approve again or fix what broke. |
-| Approved, and `re-verify pending` | Only the code changed. The approval stands. | Nothing. CI clears the flag on the next run. |
+| Cell | Word | What it means | What moves it |
+|---|---|---|---|
+| spec | `drafted` | No proof line names the rule, or a blocking free check fires on the proof text: `no_expected_value`, `vague_verb`, `missing_trigger` or `tier_mismatch`. | Write or rewrite the proof under `## Proof` so it names a trigger and an expected value at a tier it can reach. `purlin:spec`. |
+| passed | `no test` | The spec status is `ready` and no test carries the proof marker. | `purlin:build` writes the test, then `purlin:test`. |
+| passed | `failed` | A test for the rule failed. The reason names the file and the test. | Fix the code, or the test. See the next section. |
+| passed | `not run` | No record that counts under the gate exists, or the only record is a `developer` or `local` one and the gate is `strong` or above. The reason says which. | Push and let CI run, or `purlin:audit --remote`. |
+| passed | `not run`, with `<os>: no record yet` | A proof carries `@env` and no record from that operating system has passed it. | Let the CI matrix run that job, or drop the `@env` tag if any host could prove it. |
+| passed | `code changed` | A CI pass exists but the code moved since. | Nothing. CI clears it on the next run. |
+| strong | `weak`, `strength N% under M%` | The tests did not notice when the behaviour was broken. | Add the case that tells the correct behaviour from the broken one. `purlin:build`, then `purlin:audit`. |
+| strong | `weak`, with a finding name | A free check fired on the proof text or on the test body. `references/review_criteria.md` names each. | Rewrite the proof text, or the test body, whichever the finding concerns. |
+| strong | `needs a person` | The proof is `@manual`, the model review could not settle, or a person holds the rule. The reason says which. | `purlin:sign` and answer the brief. |
+| signed | `unsigned` | No signature file for the current hashes, and the risk is at or above `sign_at`. | `purlin:sign <feature> RULE-N` as a signed commit from someone on the signer list. |
+| signed | `stale` | The rule text, the proof text or the test body changed after the signature. | Read what changed, then sign again or fix what broke. |
+| signed | `held` | A person committed a hold naming the missing case. | Add the case, then sign. A signature for the current hashes outranks the hold. |
 
 ## When a test fails, fix the code
 

@@ -10,9 +10,10 @@ Every commit Purlin makes, or asks you to make, uses one of these. There is no o
 | `feat(<name>):` | Implementing a feature, with the changeset in the body | `purlin:build` |
 | `fix(<name>):` | Fixing a bug | `purlin:build` |
 | `test(<name>):` | Writing or changing tests without changing behaviour | `purlin:build` |
-| `purlin: record for <commit7>` | The record of one verify run, and on CI the approvals and briefs that run wrote | `purlin:verify`, or CI |
-| `approve(<name>): RULE-N ...` | Approvals, signed | `purlin:approve` |
-| `hold(<name>): RULE-N ...` | Holds on rules whose test does not prove the proof, signed | `purlin:approve --hold` |
+| `purlin: record for <commit7>` | The record of one audit, and on CI the briefs that run wrote | `purlin:audit`, or CI |
+| `sign(<name>): RULE-N ...` | Signatures, signed | `purlin:sign` |
+| `sign(batch): <feature> RULE-N, ...` | One signed commit covering more than one feature | `purlin:sign --batch` |
+| `hold(<name>): RULE-N ...` | Holds on rules whose test does not prove the proof, signed | `purlin:sign --hold` |
 | `anchor(<name>): create` | A new local anchor | `purlin:anchor create` |
 | `anchor(<name>): sync (<sha>)` | Advancing a pin to that commit | `purlin:anchor sync` |
 | `anchor(<name>): propose` | The branch that becomes the pull request upstream | `purlin:anchor propose` |
@@ -28,7 +29,8 @@ feat(auth_login): implement the redirect and the callback
 test(auth_login): a negative case for an expired token
 fix(auth_login): reject a token whose issuer moved
 purlin: record for a1b2c3d
-approve(auth_login): RULE-3 RULE-4 RULE-7
+sign(auth_login): RULE-3 RULE-4 RULE-7
+sign(batch): auth_login RULE-9, checkout RULE-2
 anchor(design_tokens): sync (abc1234)
 chore(update): migrate to 0.10.0 (legacy-proof-file, legacy-marker)
 chore: rename login to authentication
@@ -36,7 +38,7 @@ chore: rename login to authentication
 
 ## The record commit
 
-One verify run writes one record and commits it as:
+One audit writes one record and commits it as:
 
 ```
 purlin: record for <commit7>
@@ -44,25 +46,29 @@ purlin: record for <commit7>
 
 `<commit7>` is the first seven characters of the commit the tests ran against, not of the record
 commit itself. The message is the same whether a developer or CI wrote it: what separates them
-is who committed, which is what the label is read from. Under the `tested` gate you commit your
-own records; under `recorded` and `approved` only the commit CI made through the git host's API
-counts, and yours is a preflight.
+is who committed, which is what the source is read from. Under the `passed` gate you commit your
+own records; under `strong` and `signed` only the commit CI made through the git host's API
+counts, and yours is a preview.
 
-A record commit carries the record file and, on a CI run, the approvals CI wrote for low-risk
-rules and the briefs it wrote for the review list. It carries nothing else: never fold a record
-into a `feat(...)` commit, because the record must be able to say which commit the tests ran
-against.
+A record commit carries the record file and, on a CI run, the briefs that run wrote under
+`.purlin/briefs/<feature>/`. It carries nothing else: never fold a record into a `feat(...)`
+commit, because the record must be able to say which commit the tests ran against. CI writes no
+signature file, so a record commit never carries one.
 
-## The approval commit
+## The signature commit
 
 ```
-approve(<feature>): RULE-N RULE-M ...
+sign(<feature>): RULE-N RULE-M ...
+sign(batch): <feature> RULE-N, <feature> RULE-M ...
+hold(<feature>): RULE-N ...
 ```
 
-Signed, always. `purlin:approve` makes it with your git identity, and the gate counts it only
-when the signature verifies, the author's email is on the approver list as of that commit, and
-that author is not the author of the commit that last touched the test. One commit may carry a
-batch; the rule ids are all listed in the subject, in order.
+Signed, always. `purlin:sign` makes the commit with your git identity, and the gate counts the
+signature only when the commit signature verifies, the author's email is on `signers` as of that
+commit, that author is not the author of the commit that last touched the test, and, under the
+`signed` gate, the commit is on the protected branch. One commit may carry a batch; the rule ids
+are all listed in the subject, in order. A hold is committed the same way and carries the
+missing case in the file, not in the subject.
 
 ## The build commit body
 
@@ -96,8 +102,8 @@ Review:
 |----------|--------------|-----|
 | The spec is agreed | The spec file | It is the contract the build reads |
 | The build is stable | Code, tests, and the changeset in the body | Half a feature is not a milestone |
-| A verify run finished | The record, alone | It names the commit the tests ran against |
-| A review ended | The approvals, signed, in one commit | The batch is one attestation |
+| An audit finished | The record, alone | It names the commit the tests ran against |
+| A walk of the review list ended | The signatures, signed, in one commit | The batch is one attestation |
 | A pin advanced | The anchor spec and any designs it pulled in | Staleness is read from the committed pin |
 
 Do not commit after each failed test iteration, do not batch two skills' output into one commit,
