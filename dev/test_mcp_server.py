@@ -1,13 +1,14 @@
 """Tests for the core package `scripts/mcp/purlin/`.
 
 Six areas, in the order a project meets them: what a spec parses to, what a
-test run leaves behind, how ids are allocated, what state each rule is in,
-what the payload and the status table say about it, and what the MCP
+test run leaves behind, how ids are allocated, what the cells of each rule
+read, what the payload and the status table say about it, and what the MCP
 transport answers.
 
 Every fixture is written by the test: a spec, a runtime proof file, a record
-under `.purlin/records/`, an approval beside the spec. Nothing here reads the
-repository's own specs except where a test says so.
+under `.purlin/records/`, a brief under `.purlin/briefs/`, a signature beside
+the spec. Nothing here reads the repository's own specs except where a test
+says so.
 """
 
 import contextlib
@@ -45,9 +46,16 @@ SERVER_PY = os.path.join(PROJECT_ROOT, 'scripts', 'mcp', 'purlin', 'server.py')
 # Fixtures
 # ---------------------------------------------------------------------------
 
-def _git(root, *args):
+def _git(root, *args, **kwargs):
     return subprocess.run(['git'] + list(args), cwd=root, capture_output=True,
-                          text=True)
+                          text=True, env=kwargs.get('env'))
+
+
+# What a commit Azure DevOps made looks like. `records.record_label` reads the
+# committer, so a record written under this identity carries the label `ci`
+# without a signature this checkout would have to hold a key for.
+CI_COMMITTER = {'GIT_COMMITTER_NAME': 'Project Collection Build Service',
+                'GIT_COMMITTER_EMAIL': 'build@azure.local'}
 
 
 def _write(path, text):
@@ -75,7 +83,7 @@ SPEC = (
 class Project(object):
     """A throwaway project root with git, a config and one spec."""
 
-    def __init__(self, spec=SPEC, gate='tested', extra_config=None):
+    def __init__(self, spec=SPEC, gate='passed', extra_config=None):
         self.root = tempfile.mkdtemp()
         config = {'gate': gate, 'project_name': 'proj'}
         config.update(extra_config or {})
@@ -106,7 +114,8 @@ class Project(object):
                json.dumps({'tier': tier, 'proofs': entries}))
 
     def record(self, proofs, feature='login', runner='ci', os_name=None,
-               commit=None, scope_tree=None, strength=90, commit_it=True):
+               commit=None, scope_tree=None, strength=90, commit_it=True,
+               ci=False):
         stamp = '20260913T120000Z'
         name = '%s-%s-%s%s.json' % (stamp, (commit or self.head())[:7], runner,
                                     '-' + os_name if os_name else '')
@@ -123,17 +132,90 @@ class Project(object):
             'proofs': proofs,
         }))
         if commit_it:
+            env = None
+            if ci:
+                env = dict(os.environ)
+                env.update(CI_COMMITTER)
             _git(self.root, 'add', '-A')
-            _git(self.root, 'commit', '-q', '-m', 'purlin: record')
+            _git(self.root, 'commit', '-q', '-m', 'purlin: record', env=env)
         return os.path.relpath(path, self.root).replace(os.sep, '/')
 
-    def approval(self, rule_id, data, feature='login', category='auth',
-                 slug='jane'):
+    def signature(self, rule_id, feature='login', category='auth',
+                  signer='jane@acme.com', commit_it=True, **overrides):
+        """Write one signature file for a rule's current hashes."""
+        return self._attestation(rule_id, feature, category, signer, '',
+                                 commit_it, overrides)
+
+    def hold(self, rule_id, reason, feature='login', category='auth',
+             signer='jane@acme.com', commit_it=True, **overrides):
+        """Write one hold file naming the case the test does not prove."""
+        overrides = dict(overrides)
+        overrides['reason'] = reason
+        return self._attestation(rule_id, feature, category, signer, '.hold',
+                                 commit_it, overrides)
+
+    def _attestation(self, rule_id, feature, category, signer, suffix,
+                     commit_it, overrides):
+        rule = self.rule(rule_id, feature)
+        data = {
+            'schema': 'purlin-signature/1', 'feature': feature,
+            'rule': rule_id, 'risk': rule['risk'], 'signer': signer,
+            'note': None, 'timestamp': '2026-09-13T12:00:00Z',
+            'rule_hash': rule['rule_hash'], 'proof_hash': rule['proof_hash'],
+            'test_hash': rule['test_hash'],
+            'test_hash_kind': rule['test_hash_kind'],
+            'design_hash': rule['design_hash'],
+        }
+        data.update(overrides)
+        data['triple'] = purlin_signatures.triple_hash(
+            data['rule_hash'], data['proof_hash'], data['test_hash'])[:16]
+        slug = purlin_signatures.signer_slug(signer)
+        hash8 = purlin_signatures.triple_hash(
+            rule['rule_hash'], rule['proof_hash'], rule['test_hash'])[:8]
         directory = os.path.join(self.root, 'specs', category,
                                  feature + '.signatures')
-        name = '%s.%s.%s.json' % (rule_id, data['rule_hash'][:8], slug)
+        name = '%s.%s.%s%s.json' % (rule_id, hash8, slug, suffix)
         _write(os.path.join(directory, name), json.dumps(data))
+        if commit_it:
+            _git(self.root, 'add', '-A')
+            _git(self.root, 'commit', '-q', '-m', 'sign(%s): %s'
+                 % (feature, rule_id))
         return os.path.join(directory, name)
+
+    def brief(self, rule_id, feature='login', settled=True, observations=(),
+              tests=()):
+        """Write the brief CI would have written for a rule's current hashes."""
+        rule = self.rule(rule_id, feature)
+        triple = purlin_signatures.triple_hash(
+            rule['rule_hash'], rule['proof_hash'], rule['test_hash'])
+        path = os.path.join(self.root, '.purlin', 'briefs', feature,
+                            '%s.%s.brief.json' % (rule_id, triple[:8]))
+        _write(path, json.dumps({
+            'schema': 'purlin-brief/2', 'feature': feature, 'rule': rule_id,
+            'triple_hash': triple, 'settled': settled,
+            'observations': list(observations), 'tests': list(tests)}))
+        return os.path.relpath(path, self.root).replace(os.sep, '/')
+
+    def sign_commits(self, email='jane@acme.com'):
+        """Configure a throwaway ssh signing key, so a commit verifies here.
+
+        `dev/test_signatures.py` proves the reader that judges a signature;
+        this only has to make one signed commit exist so the payload can read
+        a signature that counts.
+        """
+        key = os.path.join(self.root, '.git', 'signing-key')
+        subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '', '-C',
+                        email, '-f', key], check=True)
+        with open(key + '.pub', encoding='utf-8') as handle:
+            public = handle.read().strip()
+        allowed = os.path.join(self.root, '.git', 'allowed-signers')
+        _write(allowed, '%s %s\n' % (email, public))
+        for name, value in (('user.email', email), ('user.name', 'Jane'),
+                            ('gpg.format', 'ssh'),
+                            ('user.signingkey', key + '.pub'),
+                            ('commit.gpgsign', 'true'),
+                            ('gpg.ssh.allowedSignersFile', allowed)):
+            _git(self.root, 'config', name, value)
 
     def payload(self):
         return purlin_payload.build_payload(self.root)
@@ -142,6 +224,16 @@ class Project(object):
         data = self.payload()
         entry = next(f for f in data['features'] if f['name'] == feature)
         return next(r for r in entry['rules'] if r['id'] == rule_id)
+
+    def cell(self, rule_id, name, feature='login'):
+        return self.rule(rule_id, feature)['cells'][name]
+
+    def config_value(self, key, value):
+        path = os.path.join(self.root, '.purlin', 'config.json')
+        with open(path, encoding='utf-8') as handle:
+            settings = json.load(handle)
+        settings[key] = value
+        _write(path, json.dumps(settings))
 
 
 @pytest.fixture
@@ -190,7 +282,7 @@ class TestSpecParsing:
         tagged, _meta = purlin_specs.split_rule_tags(
             'Tokens  expire   after 24 hours [risk: high]')
         assert purlin_specs.rule_text_hash(tagged) == plain, (
-            're-tagging or reflowing a rule must not stale its approval')
+            're-tagging or reflowing a rule must not stale its signature')
 
     @pytest.mark.proof("specs", "PROOF-5", "RULE-4", tier="integration")
     @pytest.mark.proof("specs", "PROOF-6", "RULE-5", tier="integration")
@@ -227,7 +319,7 @@ class TestSpecParsing:
             '# Feature: login\n\n## Rules\n\n- RULE-1: Files lock\n\n'
             '## Proof\n\n'
             '- PROOF-1 (RULE-1): Lock a file; verify 1 open fails '
-            '@unit @on(windows-2022)\n')
+            '@unit @on(windows-2022)\n')  # retired
         project.spec(
             '# Feature: legacy\n\n> Visual-Reference: ./designs/a.png\n\n'
             '## Rules\n\n- RULE-1: It renders\n\n'
@@ -235,7 +327,7 @@ class TestSpecParsing:
             '2026-03-31, abc1234)\n', name='legacy')
         features = purlin_specs.scan_specs(project.root)
         assert features['login']['proofs']['PROOF-1']['env'] is None
-        assert features['login']['unknown_tags'] == ['@on(windows-2022)']
+        assert features['login']['unknown_tags'] == ['@on(windows-2022)']  # retired
         assert features['legacy']['proofs']['PROOF-1']['tier'] == 'manual'
         assert set(features['legacy']['unknown_tags']) == {
             '@manual(...)', '> Visual-Reference:'}
@@ -373,10 +465,10 @@ class TestChecks:
             'POST /login with a bad password; verify 401 and the body '
             '"denied"') == []
 
-    def test_only_the_blocking_findings_hold_a_rule_out_of_proof_ready(self):
-        assert purlin_checks.blocks_proof_ready(['no_expected_value'])
-        assert not purlin_checks.blocks_proof_ready(['happy_path_only'])
-        assert not purlin_checks.blocks_proof_ready(['implementation_coupling'])
+    def test_only_the_blocking_findings_hold_a_spec_status_at_drafted(self):
+        assert purlin_checks.blocks_ready(['no_expected_value'])
+        assert not purlin_checks.blocks_ready(['happy_path_only'])
+        assert not purlin_checks.blocks_ready(['implementation_coupling'])
 
 
 # ---------------------------------------------------------------------------
@@ -478,14 +570,12 @@ class TestIds:
         found = purlin_ids.duplicate_ids(project.root, 'specs/auth/login.md')
         assert found == {'rules': {'RULE-1': 2}, 'proofs': {'PROOF-1': 2}}
 
-    def test_renumber_rewrites_the_spec_the_markers_and_the_approvals(self,
-                                                                     project):
+    def test_renumber_rewrites_the_spec_the_markers_and_the_signatures(self,
+                                                                      project):
         _write(os.path.join(project.root, 'tests', 'test_login.py'),
                '@pytest.mark.proof("login", "PROOF-2", "RULE-2")\n'
                'def test_denied():\n    assert True\n')
-        project.approval('RULE-2', {'rule': 'RULE-2', 'rule_hash': 'a' * 64,
-                                    'proof_hash': 'b' * 64,
-                                    'test_hash': 'c' * 64, 'risk': 'low'})
+        project.signature('RULE-2', commit_it=False)
         changed = purlin_ids.renumber(
             project.root, 'specs/auth/login.md',
             {'RULE-2': 'RULE-14', 'PROOF-2': 'PROOF-14'},
@@ -578,27 +668,41 @@ class TestFrameworks:
 class TestGate:
 
     def test_each_gate_derives_its_own_defaults(self):
-        for gate, review, strength, tags in (
-                ('tested', 'never', 50, False),
-                ('recorded', 'high', 70, False),
-                ('approved', 'medium', 80, True)):
+        for gate, review, strength, sign_at, breaks in (
+                ('passed', 'never', None, None, False),
+                ('strong', 'high', 70, None, True),
+                ('signed', 'medium', 80, 'medium', True)):
             cfg = purlin_gate.resolve_gate({'gate': gate})
-            assert (cfg.gate, cfg.ai_review_at, cfg.min_strength,
-                    cfg.tags_required) == (gate, review, strength, tags)
+            assert (cfg.gate, cfg.ai_review_at, cfg.min_strength, cfg.sign_at,
+                    cfg.breaks) == (gate, review, strength, sign_at, breaks)
+
+    def test_the_settings_written_out_are_the_ones_a_project_can_name(self):
+        written = purlin_gate.resolve_gate({'gate': 'signed'}).as_dict()
+        assert sorted(written) == [
+            'ai_review_at', 'ci', 'gate', 'min_strength', 'mutation_engine',
+            'pre_push', 'sign_at', 'signers', 'sql_engine', 'test_framework']
 
     def test_a_named_key_overrides_the_derived_default(self):
-        cfg = purlin_gate.resolve_gate({'gate': 'recorded', 'min_strength': 95,
+        cfg = purlin_gate.resolve_gate({'gate': 'strong', 'min_strength': 95,
                                         'ai_review_at': 'low'})
         assert cfg.min_strength == 95 and cfg.ai_review_at == 'low'
 
     def test_an_unreadable_gate_falls_back_loudly(self):
-        cfg = purlin_gate.resolve_gate({'gate': 'reccorded'})
-        assert cfg.gate == 'tested'
-        assert any('reccorded' in w for w in cfg.warnings), cfg.warnings
+        cfg = purlin_gate.resolve_gate({'gate': 'stronng'})
+        assert cfg.gate == 'passed'
+        assert any('stronng' in w for w in cfg.warnings), cfg.warnings
+
+    def test_the_signer_list_is_lowercased_and_a_bad_one_is_read_as_empty(self):
+        cfg = purlin_gate.resolve_gate({'gate': 'signed',
+                                        'signers': ['Jane@Acme.com', ' ']})
+        assert cfg.signers == ['jane@acme.com']
+        empty = purlin_gate.resolve_gate({'gate': 'signed', 'signers': 'jane'})
+        assert empty.signers == [] and any('not a list' in w
+                                           for w in empty.warnings)
 
     def test_retired_keys_are_ignored_with_one_directive(self):
         cfg = purlin_gate.resolve_gate({
-            'gate': 'tested', 'remote_verification': 'optional',
+            'gate': 'passed', 'remote_verification': 'optional',
             'mutation_checks': True, 'quality_gate': 'deterministic',
             'platforms': {}, 'spec_dir': 'elsewhere'})
         retired = [w for w in cfg.warnings if 'purlin:init --update' in w]
@@ -649,14 +753,14 @@ class TestRecords:
         loaded = purlin_records.load_records(project.root)
         assert loaded['login'][None]['label'] == 'local', path
 
+    @pytest.mark.proof("states", "PROOF-5", "RULE-4")
     def test_what_counts_under_each_gate(self):
-        assert purlin_records.counts_under('tested', 'developer')
-        assert purlin_records.counts_under('tested', 'ci')
-        assert not purlin_records.counts_under('tested', 'local')
-        assert not purlin_records.counts_under('recorded', 'developer')
-        assert purlin_records.counts_under('recorded', 'ci')
-        assert not purlin_records.counts_under('approved', 'developer')
-        assert purlin_records.counts_under('approved', 'ci')
+        for label in ('ci', 'developer', 'local'):
+            assert purlin_records.counts_under('passed', label), label
+        for gate in ('strong', 'signed'):
+            assert purlin_records.counts_under(gate, 'ci'), gate
+            assert not purlin_records.counts_under(gate, 'developer'), gate
+            assert not purlin_records.counts_under(gate, 'local'), gate
 
     def test_the_latest_record_per_feature_per_os(self, project):
         project.record([_entry('PROOF-1', 'RULE-1')], os_name='linux')
@@ -671,132 +775,102 @@ class TestRecords:
 
 
 # ---------------------------------------------------------------------------
-# Approvals
+# The cells
 # ---------------------------------------------------------------------------
 
-def _approval_payload(project, rule_id='RULE-1', risk='high', **overrides):
-    rule = project.rule(rule_id)
-    data = {
-        'feature': 'login', 'rule': rule_id, 'risk': risk,
-        'approver': 'jane@acme.com', 'approved_at': '2026-09-13T12:00:00Z',
-        'rule_hash': rule['rule_hash'], 'proof_hash': rule['proof_hash'],
-        'test_hash': rule['test_hash'], 'design_hash': None,
-        'brief_hash': 'd' * 64, 'record': None,
-    }
-    data['triple_hash'] = purlin_signatures.triple_hash(
-        data['rule_hash'], data['proof_hash'], data['test_hash'])
-    data.update(overrides)
-    return data
+STRONG_INPUT = {
+    'proofs': [{'id': 'PROOF-1', 'tier': 'unit', 'env': None, 'text': 'x',
+                'findings': [], 'tests': [{'file': 'tests/t.py',
+                                           'name': 'test_x'}]}],
+    'records': {None: {'commit': 'a' * 40, 'label': 'ci', 'scope_tree': None,
+                       'proofs': [{'id': 'PROOF-1', 'rule': 'RULE-1',
+                                   'status': 'pass'}]}},
+    'head': 'a' * 40,
+    'test_strength': 90,
+    'risk': 'high',
+}
 
 
-class TestApprovals:
-
-    def test_an_approval_is_one_file_named_for_its_rule_and_hash(self, project):
-        data = _approval_payload(project)
-        project.approval('RULE-1', data)
-        loaded = purlin_signatures.load_signatures(
-            project.root, purlin_specs.scan_specs(project.root))
-        assert list(loaded) == [('login', 'RULE-1')]
-        approval = loaded[('login', 'RULE-1')][0]
-        assert approval['is_ci'] is False
-        assert approval['path'].endswith('.jane.json')
-
-    def test_a_ci_auto_approval_is_named_ci(self, project):
-        data = _approval_payload(project, risk='low')
-        project.approval('RULE-1', data, slug='ci')
-        loaded = purlin_signatures.load_signatures(
-            project.root, purlin_specs.scan_specs(project.root))
-        assert loaded[('login', 'RULE-1')][0]['is_ci'] is True
-
-    def test_current_means_the_triple_and_the_risk_still_match(self, project):
-        data = _approval_payload(project)
-        assert purlin_signatures.is_current(
-            data, data['rule_hash'], data['proof_hash'], data['test_hash'],
-            'high')
-        # Any one of the three, or the risk, and it is not current.
-        assert not purlin_signatures.is_current(
-            data, 'x' * 64, data['proof_hash'], data['test_hash'], 'high')
-        assert not purlin_signatures.is_current(
-            data, data['rule_hash'], 'x' * 64, data['test_hash'], 'high')
-        assert not purlin_signatures.is_current(
-            data, data['rule_hash'], data['proof_hash'], 'x' * 64, 'high')
-        assert not purlin_signatures.is_current(
-            data, data['rule_hash'], data['proof_hash'], data['test_hash'],
-            'medium')
-
-    def test_an_unsigned_approval_does_not_count(self, project):
-        data = _approval_payload(project)
-        path = project.approval('RULE-1', data)
-        _git(project.root, 'add', '-A')
-        _git(project.root, 'commit', '-q', '-m', 'chore: approve')
-        rel = os.path.relpath(path, project.root).replace(os.sep, '/')
-        loaded = purlin_signatures.load_signatures(
-            project.root, purlin_specs.scan_specs(project.root))
-        approval = loaded[('login', 'RULE-1')][0]
-        counted, reason = purlin_signatures.counts(
-            project.root, approval, ['jane@acme.com'])
-        assert counted is False and 'not signed' in reason, (reason, rel)
-
-    def test_a_ci_approval_needs_no_signature_of_its_own(self, project):
-        data = _approval_payload(project, risk='low')
-        project.approval('RULE-1', data, slug='ci')
-        loaded = purlin_signatures.load_signatures(
-            project.root, purlin_specs.scan_specs(project.root))
-        counted, reason = purlin_signatures.counts(
-            project.root, loaded[('login', 'RULE-1')][0], ['jane@acme.com'])
-        assert counted is True, reason
+def _strong(cfg=None, **overrides):
+    """One rule's strong cell, built straight from its evidence."""
+    inp = dict(STRONG_INPUT)
+    inp.update(overrides)
+    cfg = cfg or purlin_gate.resolve_gate({'gate': 'strong'})
+    return purlin_states.rule_cells(inp, cfg)['cells']['strong']
 
 
-# ---------------------------------------------------------------------------
-# The seven states
-# ---------------------------------------------------------------------------
-
-class TestStates:
-    """Every one of the seven, and the three flags."""
+class TestTheSpecStatus:
 
     @pytest.mark.proof("states", "PROOF-1", "RULE-1", tier="integration")
     def test_drafted_when_there_is_no_proof(self, project):
         project.spec('# Feature: login\n\n## Rules\n\n- RULE-1: It works\n\n'
                      '## Proof\n')
-        assert project.rule('RULE-1')['state'] == 'Drafted'
+        rule = project.rule('RULE-1')
+        assert rule['spec'] == 'drafted'
+        assert rule['proofs'] == []
 
     @pytest.mark.proof("states", "PROOF-2", "RULE-2", tier="integration")
-    def test_drafted_when_the_free_checks_fail(self, project):
+    def test_a_blocking_finding_holds_the_spec_status_at_drafted(self, project):
         project.spec('# Feature: login\n\n## Rules\n\n- RULE-1: It works\n\n'
                      '## Proof\n\n- PROOF-1 (RULE-1): Call login and verify it '
                      'works correctly\n')
         rule = project.rule('RULE-1')
-        assert rule['state'] == 'Drafted'
+        assert rule['spec'] == 'drafted'
         assert 'vague_verb' in rule['proofs'][0]['findings']
 
     @pytest.mark.proof("states", "PROOF-2", "RULE-2", tier="integration")
-    def test_proof_ready_when_the_free_checks_pass(self, project):
-        assert project.rule('RULE-2')['state'] == 'Proof ready'
+    def test_ready_when_the_free_checks_pass(self, project):
+        assert project.rule('RULE-2')['spec'] == 'ready'
+
+
+class TestThePassedCell:
 
     @pytest.mark.proof("states", "PROOF-3", "RULE-3", tier="integration")
-    def test_tested_when_the_tagged_test_passes_locally(self, project):
+    def test_a_local_run_meets_level_one_under_the_passed_gate(self, project):
         project.proofs([_entry('PROOF-2', 'RULE-2')])
-        assert project.rule('RULE-2')['state'] == 'Tested'
-        # A failing entry is not Tested.
-        project.proofs([_entry('PROOF-2', 'RULE-2', status='fail')])
-        assert project.rule('RULE-2')['state'] == 'Proof ready'
+        cell = project.cell('RULE-2', 'passed')
+        assert cell['word'] == 'passed'
+        assert (cell['source'], cell['current'], cell['counts']) == (
+            'local', True, True)
 
-    @pytest.mark.proof("states", "PROOF-4", "RULE-4", tier="integration")
-    def test_recorded_when_a_counting_record_at_head_passes(self, project):
-        project.record([{'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}])
-        assert project.rule('RULE-2')['state'] == 'Recorded'
+    @pytest.mark.proof("states", "PROOF-4", "RULE-3", tier="integration")
+    def test_a_ci_record_at_head_meets_level_one(self, project):
+        project.record([{'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}],
+                       ci=True)
+        cell = project.cell('RULE-2', 'passed')
+        assert cell['word'] == 'passed'
+        assert cell['source'] == 'ci'
 
-    @pytest.mark.proof("states", "PROOF-5", "RULE-5", tier="integration")
-    def test_a_developer_record_does_not_count_under_recorded(self):
-        made = Project(gate='recorded')
+    @pytest.mark.proof("states", "PROOF-6", "RULE-5", tier="integration")
+    def test_a_developer_record_does_not_count_under_strong(self):
+        made = Project(gate='strong')
         try:
-            made.record([{'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}])
-            assert made.rule('RULE-2')['state'] != 'Recorded', (
-                'under the recorded gate only a record CI wrote counts')
+            made.record([{'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}],
+                        runner='dev')
+            cell = made.cell('RULE-2', 'passed')
+            assert cell['word'] == 'not run'
+            assert cell['source'] == 'developer'
+            assert cell['counts'] is False
+            assert cell['reasons'] == [
+                'developer record does not count under strong'], cell
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-6", "RULE-6", tier="integration")
+    @pytest.mark.proof("states", "PROOF-7", "RULE-5", tier="integration")
+    def test_a_local_run_does_not_count_under_strong(self):
+        made = Project(gate='strong')
+        try:
+            made.proofs([_entry('PROOF-2', 'RULE-2')])
+            cell = made.cell('RULE-2', 'passed')
+            assert cell['word'] == 'not run'
+            assert cell['source'] == 'local'
+            assert cell['counts'] is False
+            assert cell['reasons'] == [
+                'local run does not count under strong'], cell
+        finally:
+            made.close()
+
+    @pytest.mark.proof("states", "PROOF-8", "RULE-6", tier="integration")
     def test_an_env_proof_needs_a_record_from_that_operating_system(self,
                                                                    project):
         project.spec(
@@ -805,135 +879,315 @@ class TestStates:
             'returns 0 handles @env(windows)\n')
         project.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'}],
                        os_name='linux')
-        rule = project.rule('RULE-1')
-        assert rule['state'] != 'Recorded'
-        assert rule['missing_env'] == ['windows'], rule
-        assert 'windows: no record yet' in rule['reasons'], rule
+        cell = project.cell('RULE-1', 'passed')
+        assert cell['word'] == 'not run'
+        assert cell['missing_env'] == ['windows'], cell
+        assert 'windows: no record yet' in cell['reasons'], cell
         project.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'}],
                        os_name='windows')
-        assert project.rule('RULE-1')['state'] == 'Recorded'
+        assert project.cell('RULE-1', 'passed')['word'] == 'passed'
 
-    @pytest.mark.proof("states", "PROOF-7", "RULE-7", tier="integration")
-    def test_reviewed_when_a_brief_matches_the_triple(self, project):
-        rule = project.rule('RULE-2')
-        expected = purlin_signatures.triple_hash(
-            rule['rule_hash'], rule['proof_hash'], rule['test_hash'])
-        result = purlin_states.rule_state({
-            'proofs': [{'id': 'PROOF-2', 'tier': 'unit', 'env': None,
-                        'text': 'x', 'findings': []}],
-            'brief': {'triple_hash': expected},
-            'rule_hash': rule['rule_hash'], 'proof_hash': rule['proof_hash'],
-            'test_hash': rule['test_hash'], 'risk': 'low',
-        }, purlin_gate.resolve_gate({}))
-        assert result['state'] == 'Reviewed'
-        # A brief for other text is no brief at all.
-        stale = purlin_states.rule_state({
-            'proofs': [{'id': 'PROOF-2', 'tier': 'unit', 'env': None,
-                        'text': 'x', 'findings': []}],
-            'brief': {'triple_hash': 'f' * 64},
-            'rule_hash': rule['rule_hash'], 'proof_hash': rule['proof_hash'],
-            'test_hash': rule['test_hash'], 'risk': 'low',
-        }, purlin_gate.resolve_gate({}))
-        assert stale['state'] == 'Proof ready'
-
-    @pytest.mark.proof("states", "PROOF-8", "RULE-8", tier="integration")
-    def test_approved_when_a_current_approval_meets_a_passing_record(self,
-                                                                    project):
-        project.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'}])
-        project.approval('RULE-1', _approval_payload(project))
-        assert project.rule('RULE-1')['state'] == 'Approved'
-
-    @pytest.mark.proof("states", "PROOF-9", "RULE-9", tier="integration")
-    def test_stale_when_the_rule_text_changed_after_the_approval(self, project):
-        project.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'}])
-        project.approval('RULE-1', _approval_payload(project))
-        assert project.rule('RULE-1')['state'] == 'Approved'
-        project.spec(SPEC.replace('return 200 with a session token',
-                                  'return 201 with a session token'))
-        assert project.rule('RULE-1')['state'] == 'Stale'
-
-    @pytest.mark.proof("states", "PROOF-10", "RULE-10", tier="integration")
-    def test_re_verify_pending_when_only_the_code_changed(self, project):
+    @pytest.mark.proof("states", "PROOF-9", "RULE-7", tier="integration")
+    def test_code_changed_when_only_the_code_moved(self, project):
         tree = purlin_specs.scope_tree(project.root, ['src/login.py'])
         project.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'}],
                        scope_tree=tree)
-        project.approval('RULE-1', _approval_payload(project))
-        assert project.rule('RULE-1')['flags']['re_verify_pending'] is False
+        assert project.cell('RULE-1', 'passed')['word'] == 'passed'
         _write(os.path.join(project.root, 'src', 'login.py'),
                'def login():\n    return 200  # rewritten\n')
         _git(project.root, 'add', '-A')
         _git(project.root, 'commit', '-q', '-m', 'refactor: login')
         rule = project.rule('RULE-1')
-        assert rule['state'] == 'Approved', (
-            'the approval stands: only the code moved')
-        assert rule['flags']['re_verify_pending'] is True, rule
+        cell = rule['cells']['passed']
+        assert cell['word'] == 'code changed', cell
+        assert cell['reasons'][0].startswith('code changed since '), cell
+        assert rule['flags']['code_changed'] is True
 
-    @pytest.mark.proof("states", "PROOF-11", "RULE-11", tier="integration")
-    def test_auto_approvable_is_low_risk_with_a_strong_enough_record(self,
-                                                                    project):
-        project.record([{'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}],
-                       strength=90)
-        assert project.rule('RULE-2')['flags']['auto_approvable'] is True
-        # High risk is never auto-approvable.
-        assert project.rule('RULE-1')['flags']['auto_approvable'] is False
+    @pytest.mark.proof("states", "PROOF-10", "RULE-8", tier="integration")
+    def test_a_rule_no_test_backs_reads_no_test(self, project):
+        cell = project.cell('RULE-2', 'passed')
+        assert cell['word'] == 'no test'
+        assert (cell['source'], cell['current'], cell['counts']) == (
+            None, False, False)
 
-    @pytest.mark.proof("states", "PROOF-27", "RULE-11", tier="integration")
-    def test_with_no_engine_the_free_checks_stand_in_for_a_strength(self):
-        # A record with no measured strength: the free checks decide instead.
-        made = Project()
+
+class TestTheStrongCell:
+
+    @pytest.mark.proof("states", "PROOF-12", "RULE-10", tier="integration")
+    def test_a_cell_above_the_gate_is_absent(self):
+        expected = {'passed': ['passed'],
+                    'strong': ['passed', 'strong'],
+                    'signed': ['passed', 'strong', 'signed']}
+        for gate, names in expected.items():
+            made = Project(gate=gate)
+            try:
+                rule = made.rule('RULE-1')
+                assert sorted(rule['cells']) == sorted(names), (gate, rule)
+            finally:
+                made.close()
+
+    @pytest.mark.proof("states", "PROOF-13", "RULE-11", tier="integration")
+    def test_a_rule_that_did_not_pass_is_weak_for_that_one_reason(self):
+        made = Project(gate='strong')
+        try:
+            made.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'}],
+                        ci=True, strength=48)
+            cell = made.cell('RULE-2', 'strong')
+            assert cell['word'] == 'weak'
+            assert cell['reasons'] == ['not passed'], cell
+            assert cell['strength'] == 48, cell
+        finally:
+            made.close()
+
+    @pytest.mark.proof("states", "PROOF-14", "RULE-12", tier="integration")
+    def test_a_strength_under_the_minimum_is_weak_and_names_the_findings(self):
+        made = Project(gate='strong', extra_config={'ai_review_at': 'never'})
+        try:
+            made.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'},
+                         {'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}],
+                        ci=True, strength=48)
+            cell = made.cell('RULE-1', 'strong')
+            assert cell['word'] == 'weak'
+            assert cell['reasons'] == ['strength 48% under 70%',
+                                       'happy_path_only'], cell
+        finally:
+            made.close()
+
+    @pytest.mark.proof("states", "PROOF-15", "RULE-13", tier="integration")
+    def test_with_no_engine_the_free_checks_are_the_whole_of_level_two(self):
+        made = Project(gate='strong')
         try:
             made.record([{'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}],
-                        strength=None)
-            assert made.rule('RULE-2')['flags']['auto_approvable'] is True
+                        ci=True, strength=None)
+            cell = made.cell('RULE-2', 'strong')
+            assert cell['word'] == 'strong', cell
+            assert cell['reasons'] == ['no engine: free checks only'], cell
             made.spec(SPEC.replace(
                 'POST /login with a bad password; verify 401 and the '
                 'body "denied"', 'Check that the login handles it properly'))
             blocked = made.rule('RULE-2')
-            assert 'vague_verb' in blocked['proofs'][0]['findings'], blocked
-            assert blocked['flags']['auto_approvable'] is False
+            assert blocked['spec'] == 'drafted', blocked
+            assert blocked['cells']['strong']['word'] == 'weak', blocked
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-12", "RULE-12")
-    def test_needs_ai_review_at_or_above_the_threshold(self):
-        cfg = purlin_gate.resolve_gate({'gate': 'recorded'})
-        base = {'proofs': [{'id': 'PROOF-1', 'tier': 'unit', 'env': None,
-                            'text': 'x', 'findings': []}]}
-        high = dict(base, risk='high')
-        low = dict(base, risk='low')
-        assert purlin_states.rule_state(high, cfg)['flags']['needs_ai_review']
-        assert not purlin_states.rule_state(low, cfg)['flags']['needs_ai_review']
-        # With no engine the net widens by one level.
-        medium = dict(base, risk='medium', mutation_engine_available=False)
-        assert purlin_states.rule_state(medium, cfg)['flags']['needs_ai_review']
-        # A strength under the minimum puts a rule on the list whatever its risk.
-        weak = dict(base, risk='low', test_strength=10)
-        assert purlin_states.rule_state(weak, cfg)['flags']['needs_ai_review']
-        # So does an approval that no longer binds the current text.
-        stale = dict(base, risk='low',
-                     approvals=[{'risk': 'low', 'rule_hash': 'gone'}])
-        assert purlin_states.rule_state(stale, cfg)['flags']['needs_ai_review']
+    @pytest.mark.proof("states", "PROOF-16", "RULE-14")
+    def test_a_finding_against_the_test_body_is_weak(self):
+        cell = _strong(risk='low', brief={
+            'settled': True, 'observations': [],
+            'tests': [{'proof': 'PROOF-1', 'findings': ['asserts_nothing']}]})
+        assert cell['word'] == 'weak', cell
+        assert 'asserts_nothing' in cell['findings'], cell
+        assert 'asserts_nothing' in cell['reasons'], cell
 
-    @pytest.mark.proof("states", "PROOF-14", "RULE-14", tier="integration")
-    def test_the_rollups_count_states_and_name_the_lowest(self, project):
-        project.proofs([_entry('PROOF-2', 'RULE-2')])
-        data = project.payload()
-        feature = next(f for f in data['features'] if f['name'] == 'login')
-        rollup = feature['rollup']
-        assert rollup['rules'] == 2
-        assert rollup['counts'] == {'Proof ready': 1, 'Tested': 1}, rollup
-        assert rollup['lowest_state'] == 'Proof ready'
-        assert (rollup['stale'], rollup['re_verify_pending'],
-                rollup['needs_review']) == (0, 0, 0), rollup
-        assert data['project_rollup']['features'] == 1
-        assert data['states'] == {'Proof ready': 1, 'Tested': 1}
+    @pytest.mark.proof("states", "PROOF-17", "RULE-15")
+    def test_the_brief_settles_level_two_where_the_risk_asks_for_one(self):
+        assert _strong()['word'] == 'needs a person'
+        assert _strong()['reasons'] == ['no brief for the current hashes']
+        unsettled = _strong(brief={'settled': False, 'observations': []})
+        assert unsettled['reasons'] == ['review not settled'], unsettled
+        observed = _strong(brief={
+            'settled': True,
+            'observations': ['The test reads the status code alone.']})
+        assert observed['word'] == 'needs a person'
+        assert observed['reasons'] == [
+            'The test reads the status code alone.'], observed
+        settled = _strong(brief={'settled': True, 'observations': []})
+        assert settled['word'] == 'strong', settled
 
-    @pytest.mark.proof("states", "PROOF-13", "RULE-13")
-    def test_the_state_order_puts_stale_first_and_approved_last(self):
-        assert purlin_states.STATE_ORDER[0] == 'Stale'
-        assert purlin_states.STATE_ORDER[-1] == 'Approved'
-        assert len(purlin_states.STATE_ORDER) == 7
-        assert purlin_states.lowest(['Approved', 'Tested']) == 'Tested'
+    @pytest.mark.proof("states", "PROOF-18", "RULE-15")
+    def test_with_no_break_engine_the_threshold_drops_one_level(self):
+        assert _strong(risk='medium')['word'] == 'strong'
+        widened = _strong(risk='medium', mutation_engine_available=False)
+        assert widened['word'] == 'needs a person', widened
+
+    @pytest.mark.proof("states", "PROOF-19", "RULE-16")
+    def test_a_manual_proof_needs_a_person(self):
+        cell = _strong(risk='low', proofs=[
+            {'id': 'PROOF-1', 'tier': 'manual', 'env': None, 'text': 'x',
+             'findings': [], 'tests': []}])
+        assert cell['word'] == 'needs a person'
+        assert cell['reasons'] == ['manual proof'], cell
+
+    @pytest.mark.proof("states", "PROOF-23", "RULE-19", tier="integration")
+    def test_a_strong_cell_with_an_engine_carries_no_reasons(self):
+        made = Project(gate='strong')
+        try:
+            made.record([{'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}],
+                        ci=True, strength=90)
+            cell = made.cell('RULE-2', 'strong')
+            assert cell['word'] == 'strong'
+            assert cell['reasons'] == [], cell
+        finally:
+            made.close()
+
+
+class TestHoldsAndSignatures:
+    """What a person's committed attestation does to the top two cells."""
+
+    @staticmethod
+    def _signed_project():
+        made = Project(gate='signed',
+                       extra_config={'signers': ['jane@acme.com'],
+                                     'ai_review_at': 'never'})
+        made.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'},
+                     {'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}],
+                    ci=True, strength=90)
+        return made
+
+    @pytest.mark.proof("states", "PROOF-20", "RULE-17", tier="integration")
+    def test_a_current_hold_puts_the_rule_in_front_of_a_person(self):
+        made = self._signed_project()
+        try:
+            made.hold('RULE-2', 'no case for an expired token')
+            rule = made.rule('RULE-2')
+            assert rule['cells']['strong']['word'] == 'needs a person'
+            assert rule['cells']['strong']['reasons'] == [
+                'held by jane@acme.com: no case for an expired token'], rule
+            assert rule['cells']['signed']['word'] == 'held'
+            assert rule['flags']['held'] is True
+            assert rule['flags']['needs_person'] is False
+        finally:
+            made.close()
+
+    @pytest.mark.proof("states", "PROOF-21", "RULE-17", tier="integration")
+    def test_a_hold_bound_to_other_hashes_does_nothing(self):
+        made = self._signed_project()
+        try:
+            made.hold('RULE-2', 'no case for an expired token',
+                      test_hash='0' * 64)
+            rule = made.rule('RULE-2')
+            assert rule['cells']['strong']['word'] == 'strong', rule
+            assert rule['flags']['held'] is False
+            assert not any('held by' in reason for reason
+                           in rule['cells']['strong']['reasons'])
+        finally:
+            made.close()
+
+    @pytest.mark.proof("states", "PROOF-22", "RULE-18", tier="integration")
+    def test_a_signature_for_the_same_hashes_outranks_the_hold(self):
+        made = self._signed_project()
+        try:
+            made.hold('RULE-2', 'no case for an expired token')
+            made.sign_commits()
+            made.signature('RULE-2')
+            rule = made.rule('RULE-2')
+            assert rule['cells']['strong']['word'] == 'strong', rule
+            assert rule['cells']['signed']['word'] == 'signed', rule
+        finally:
+            made.close()
+
+    @pytest.mark.proof("states", "PROOF-24", "RULE-20", tier="integration")
+    def test_a_signature_is_read_until_the_hashes_move_under_it(self):
+        made = self._signed_project()
+        try:
+            made.sign_commits()
+            made.signature('RULE-1')
+            cell = made.cell('RULE-1', 'signed')
+            assert cell['word'] == 'signed', cell
+            assert cell['reasons'] == ['by jane@acme.com'], cell
+            made.spec(SPEC.replace('return 200 with a session token',
+                                   'return 201 with a session token'))
+            rule = made.rule('RULE-1')
+            assert rule['cells']['signed']['word'] == 'stale'
+            assert rule['cells']['signed']['reasons'] == [
+                'hashes changed after the signature'], rule
+            assert rule['flags']['stale'] is True
+        finally:
+            made.close()
+
+    @pytest.mark.proof("states", "PROOF-25", "RULE-21", tier="integration")
+    def test_a_signature_is_required_only_at_or_above_sign_at(self):
+        made = self._signed_project()
+        try:
+            low = made.cell('RULE-2', 'signed')
+            assert (low['word'], low['required']) == ('not required', False)
+            assert purlin_states.cell_is_met('signed', low)
+            high = made.cell('RULE-1', 'signed')
+            assert (high['word'], high['required']) == ('unsigned', True)
+        finally:
+            made.close()
+
+    @pytest.mark.proof("states", "PROOF-26", "RULE-22", tier="integration")
+    def test_an_unsigned_signing_commit_leaves_the_rule_unsigned(self):
+        made = self._signed_project()
+        try:
+            made.signature('RULE-1')
+            cell = made.cell('RULE-1', 'signed')
+            assert cell['word'] == 'unsigned', cell
+            assert cell['reasons'] == [
+                'the signing commit is not signed'], cell
+        finally:
+            made.close()
+
+
+# One project holding one rule at each of the five buckets, so the bucket, the
+# gate and the review list are all read off the same evidence.
+FIVE = (
+    '# Feature: ledger\n\n'
+    '> Description: Five rules, one per bucket.\n'
+    '> Scope: src/login.py\n\n'
+    '## Rules\n\n'
+    '- RULE-1: A drafted rule names no proof [risk: low]\n'
+    '- RULE-2: A failing rule has a test that fails [risk: low]\n'
+    '- RULE-3: A passed rule is held by a person [risk: low]\n'
+    '- RULE-4: A strong rule has no signature yet [risk: high]\n'
+    '- RULE-5: A signed rule carries one [risk: high]\n\n'
+    '## Proof\n\n'
+    '- PROOF-2 (RULE-2): POST /session with the password "wrong"; verify 401\n'
+    '- PROOF-3 (RULE-3): POST /session with the password "secret"; verify 200 '
+    'and a rejected second attempt\n'
+    '- PROOF-4 (RULE-4): POST /session 5 times with a wrong password; verify '
+    '423 and an error body\n'
+    '- PROOF-5 (RULE-5): POST /session with no body at all; verify 400 and an '
+    'error body\n'
+)
+
+
+def _five_bucket_project():
+    """A `signed` project with one rule in each of the five buckets."""
+    made = Project(gate='signed', spec=None,
+                   extra_config={'signers': ['jane@acme.com'],
+                                 'ai_review_at': 'never'})
+    made.spec(FIVE, name='ledger', category='core')
+    _git(made.root, 'add', '-A')
+    _git(made.root, 'commit', '-q', '-m', 'docs: the spec under test')
+    made.record([{'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'fail'},
+                 {'id': 'PROOF-3', 'rule': 'RULE-3', 'status': 'pass'},
+                 {'id': 'PROOF-4', 'rule': 'RULE-4', 'status': 'pass'},
+                 {'id': 'PROOF-5', 'rule': 'RULE-5', 'status': 'pass'}],
+                feature='ledger', ci=True, strength=90)
+    made.hold('RULE-3', 'the lock expiry is never read', feature='ledger',
+              category='core')
+    made.sign_commits()
+    made.signature('RULE-5', feature='ledger', category='core')
+    return made
+
+
+class TestBucketsAndTheGate:
+
+    @pytest.mark.proof("states", "PROOF-27", "RULE-23", tier="integration")
+    def test_one_rule_in_each_of_the_five_buckets(self):
+        made = _five_bucket_project()
+        try:
+            buckets = [made.rule('RULE-%d' % n, 'ledger')['bucket']
+                       for n in range(1, 6)]
+            assert buckets == ['untested', 'failing', 'passed', 'strong',
+                               'signed'], buckets
+        finally:
+            made.close()
+
+    @pytest.mark.proof("states", "PROOF-28", "RULE-24", tier="integration")
+    def test_the_gate_is_met_by_one_of_them_and_blocked_by_name(self):
+        made = _five_bucket_project()
+        try:
+            rules = [made.rule('RULE-%d' % n, 'ledger') for n in range(1, 6)]
+            assert [r['meets_gate'] for r in rules] == [
+                False, False, False, False, True]
+            assert [r['blocked_by'] for r in rules] == [
+                'spec', 'passed', 'strong', 'signed', None]
+        finally:
+            made.close()
 
 
 # ---------------------------------------------------------------------------
@@ -942,59 +1196,60 @@ class TestStates:
 
 class TestPayload:
 
-    @pytest.mark.proof("states", "PROOF-16", "RULE-16", tier="integration")
-    def test_schema_four_carries_the_documented_top_level(self, project):
+    @pytest.mark.proof("states", "PROOF-31", "RULE-27", tier="integration")
+    def test_schema_five_carries_the_documented_top_level(self, project):
         data = project.payload()
-        assert data['schema_version'] == 4
+        assert data['schema_version'] == 5
         for key in ('generated_at', 'generated_by', 'project', 'version',
-                    'commit', 'dirty', 'gate', 'states', 'features',
+                    'commit', 'dirty', 'gate', 'summary', 'features',
                     'review_list', 'records', 'warnings'):
             assert key in data, key
-        assert data['gate']['gate'] == 'tested'
+        assert data['gate']['gate'] == 'passed'
         assert data['generated_at'].endswith('Z')
 
-    @pytest.mark.proof("states", "PROOF-17", "RULE-17", tier="integration")
+    @pytest.mark.proof("states", "PROOF-32", "RULE-28", tier="integration")
     def test_a_feature_carries_its_rules_with_their_tags_and_proofs(self,
                                                                    project):
         feature = next(f for f in project.payload()['features']
                        if f['name'] == 'login')
         assert feature['spec_path'] == 'specs/auth/login.md'
         assert feature['category'] == 'auth'
+        assert feature['signatures'] == []
         rule = next(r for r in feature['rules'] if r['id'] == 'RULE-1')
         assert (rule['risk'], rule['origin'], rule['criterion']) == (
             'high', 'pm', 'US-12')
         assert rule['proofs'][0]['tier'] == 'integration'
         assert rule['proofs'][0]['env'] is None
 
-    @pytest.mark.proof("states", "PROOF-18", "RULE-18", tier="integration")
-    def test_the_review_list_names_the_rule_and_why(self):
-        made = Project(gate='recorded')
-        try:
-            entries = made.payload()['review_list']
-            assert [(e['rule'], e['risk']) for e in entries] == [
-                ('RULE-1', 'high')], entries
-            assert 'risk high' in entries[0]['reason']
-        finally:
-            made.close()
+    @pytest.mark.proof("states", "PROOF-29", "RULE-25", tier="integration")
+    def test_the_rollup_counts_the_buckets_the_gate_reaches(self, project):
+        project.proofs([_entry('PROOF-2', 'RULE-2')])
+        data = project.payload()
+        feature = next(f for f in data['features'] if f['name'] == 'login')
+        rollup = feature['rollup']
+        assert sorted(rollup) == sorted([
+            'rules', 'met', 'untested', 'failing', 'passed', 'stale', 'held',
+            'needs_person', 'test_strength', 'latest_record']), rollup
+        assert (rollup['rules'], rollup['met']) == (2, 1)
+        assert (rollup['passed'], rollup['untested']) == (1, 1), rollup
+        assert data['summary']['features'] == 1
 
-    @pytest.mark.proof("states", "PROOF-28", "RULE-26", tier="integration")
-    def test_a_review_entry_lists_its_reasons_and_joins_them(self):
-        """Two rules on one list, each saying why it is there and no more."""
-        made = Project(gate='recorded')
-        try:
-            made.record([{'id': 'PROOF-1', 'status': 'pass'},
-                         {'id': 'PROOF-2', 'status': 'pass'}], strength=40)
-            entries = {e['rule']: e for e in made.payload()['review_list']}
-            assert entries['RULE-1']['reasons'] == [
-                'risk high', 'strength 40% under 70%', 'happy_path_only']
-            assert entries['RULE-1']['reason'] == (
-                'risk high; strength 40% under 70%; happy_path_only')
-            assert entries['RULE-2']['reasons'] == [
-                'strength 40% under 70%']
-        finally:
-            made.close()
+    @pytest.mark.proof("states", "PROOF-30", "RULE-26", tier="integration")
+    def test_global_anchor_rules_are_counted_once_in_the_summary(self, project):
+        project.spec(
+            '# Anchor: security\n\n> Global: true\n\n'
+            '## Rules\n\n- RULE-1: No eval anywhere\n\n'
+            '## Proof\n\n- PROOF-1 (RULE-1): Grep for eval(; verify 0 matches\n',
+            name='security', category='_anchors')
+        data = project.payload()
+        assert data['summary']['rules'] == 3, (
+            'two own rules plus the anchor\'s one, counted once')
+        assert data['summary']['features'] == 2
+        login = next(f for f in data['features'] if f['name'] == 'login')
+        assert login['rollup']['rules'] == 3, (
+            'the feature must prove the global anchor\'s rule too')
 
-    @pytest.mark.proof("states", "PROOF-29", "RULE-27", tier="integration")
+    @pytest.mark.proof("states", "PROOF-39", "RULE-34", tier="integration")
     def test_a_record_carries_the_result_of_the_run_it_names(self, project):
         """Two operating systems, one run each: one failed, one passed."""
         project.record([{'id': 'PROOF-1', 'status': 'pass'},
@@ -1008,7 +1263,7 @@ class TestPayload:
         assert records['linux']['label'] == 'developer'
         assert records['windows']['label'] == 'developer'
 
-    @pytest.mark.proof("states", "PROOF-19", "RULE-19", tier="integration")
+    @pytest.mark.proof("states", "PROOF-37", "RULE-32", tier="integration")
     def test_the_data_file_is_a_const_assignment_and_round_trips(self, project):
         data = project.payload()
         path = purlin_payload.write_report_data(project.root, data)
@@ -1018,7 +1273,7 @@ class TestPayload:
         assert purlin_payload.read_report_payload(project.root)['commit'] == (
             data['commit'])
 
-    @pytest.mark.proof("states", "PROOF-20", "RULE-20", tier="integration")
+    @pytest.mark.proof("states", "PROOF-38", "RULE-33", tier="integration")
     def test_an_unchanged_payload_is_touched_rather_than_rewritten(self,
                                                                   project):
         purlin_payload.write_report_data(project.root, project.payload())
@@ -1030,39 +1285,59 @@ class TestPayload:
         assert open(path, 'rb').read() == before
         assert os.stat(path).st_mtime > 0
 
-    @pytest.mark.proof("states", "PROOF-15", "RULE-15", tier="integration")
-    def test_global_anchor_rules_are_counted_once_in_the_project_rollup(self,
-                                                                       project):
-        project.spec(
-            '# Anchor: security\n\n> Global: true\n\n'
-            '## Rules\n\n- RULE-1: No eval anywhere\n\n'
-            '## Proof\n\n- PROOF-1 (RULE-1): Grep for eval(; verify 0 matches\n',
-            name='security', category='_anchors')
-        data = project.payload()
-        assert data['project_rollup']['rules'] == 3, (
-            'two own rules plus the anchor\'s one, counted once')
-        login = next(f for f in data['features'] if f['name'] == 'login')
-        assert login['rollup']['rules'] == 3, (
-            'the feature must prove the global anchor\'s rule too')
 
-    @pytest.mark.proof("states", "PROOF-30", "RULE-28", tier="integration")
-    def test_the_review_list_names_a_global_anchor_rule_once(self):
-        made = Project(gate='recorded')
-        try:
-            made.spec(
-                '# Anchor: security\n\n> Global: true\n\n'
-                '## Rules\n\n- RULE-1: No eval anywhere [risk: high]\n\n'
-                '## Proof\n\n'
-                '- PROOF-1 (RULE-1): Grep for eval(; verify 0 matches\n',
-                name='security', category='_anchors')
-            data = made.payload()
-            entries = [(e['feature'], e['rule']) for e in data['review_list']]
-            assert sorted(entries) == [('login', 'RULE-1'),
-                                       ('security', 'RULE-1')], entries
-            assert data['project_rollup']['needs_review'] == 2, (
-                data['project_rollup'])
-        finally:
-            made.close()
+class TestTheFixturesAreTheContract:
+    """The dashboard's fixtures and the builder's output are one shape.
+
+    `dev/fixtures/report/{solo,team,regulated}.json` are written by hand from
+    the plan, and the dashboard is built against them. A key the builder adds
+    and the fixtures do not carry would render nowhere, so the two are
+    compared key by key here rather than by eye.
+    """
+
+    FIXTURES = os.path.join(PROJECT_ROOT, 'dev', 'fixtures', 'report')
+
+    @staticmethod
+    def _fixture(name):
+        with open(os.path.join(TestTheFixturesAreTheContract.FIXTURES,
+                               name + '.json'), encoding='utf-8') as handle:
+            return json.load(handle)
+
+    @pytest.mark.proof("states", "PROOF-31", "RULE-27", tier="integration")
+    @pytest.mark.proof("states", "PROOF-29", "RULE-25", tier="integration")
+    def test_every_fixture_has_the_key_set_the_builder_writes(self):
+        for name, gate in (('solo', 'passed'), ('team', 'strong'),
+                           ('regulated', 'signed')):
+            fixture = self._fixture(name)
+            assert fixture['schema_version'] == purlin_payload.SCHEMA_VERSION
+            assert fixture['gate']['gate'] == gate
+            made = Project(gate=gate, extra_config={'signers': []})
+            try:
+                built = made.payload()
+            finally:
+                made.close()
+            assert sorted(fixture['gate']) == sorted(built['gate']), name
+            assert sorted(fixture['summary']) == sorted(built['summary']), name
+            feature = fixture['features'][0]
+            assert sorted(feature) == sorted(built['features'][0]), name
+            assert sorted(feature['rollup']) == sorted(
+                built['features'][0]['rollup']), name
+            rule = feature['rules'][0]
+            assert sorted(rule) == sorted(built['features'][0]['rules'][0]), name
+            assert sorted(rule['cells']) == sorted(purlin_states.cells_for(gate))
+            for cell_name, cell in rule['cells'].items():
+                built_cell = built['features'][0]['rules'][0]['cells'][cell_name]
+                assert sorted(cell) == sorted(built_cell), (name, cell_name)
+            assert sorted(rule['flags']) == sorted(purlin_states.FLAGS), name
+
+    @pytest.mark.proof("states", "PROOF-34", "RULE-30", tier="integration")
+    def test_every_fixture_review_row_uses_the_closed_set(self):
+        allowed = {'unsigned', 'stale', 'held', 'needs a person', 'manual'}
+        for name in ('solo', 'team', 'regulated'):
+            for row in self._fixture(name)['review_list']:
+                assert sorted(row) == ['cell', 'feature', 'owner', 'risk',
+                                       'rule', 'why'], row
+                assert set(row['why']) <= allowed, row
 
 
 # ---------------------------------------------------------------------------
@@ -1071,21 +1346,46 @@ class TestPayload:
 
 class TestStatusTable:
 
-    @pytest.mark.proof("states", "PROOF-21", "RULE-21", tier="integration")
-    def test_one_row_per_feature_with_the_seven_state_columns(self, project):
+    @pytest.mark.proof("states", "PROOF-43", "RULE-36", tier="integration")
+    def test_the_columns_scale_with_the_gate(self, project):
         project.proofs([_entry('PROOF-2', 'RULE-2')])
         text = purlin_status.sync_status(project.root)
         header = next(line for line in text.splitlines()
                       if line.startswith('Feature'))
-        for column in ('Rules', 'Lowest state', 'States', 'Strength', 'Record',
-                       'Approvals', 'Re-verify'):
+        for column in ('Rules', 'Spec', 'Tests', 'Run'):
             assert column in header, (column, header)
+        assert 'Strength' not in header and 'Signed' not in header, header
         row = next(line for line in text.splitlines()
                    if line.startswith('login '))
-        assert 'Proof ready' in row and 'Tested 1' in row, row
-        assert 'n/a' in row, 'no record, so no test strength'
+        assert '1 passed' in row, row
 
-    @pytest.mark.proof("states", "PROOF-23", "RULE-22", tier="integration")
+        for gate, expected in (('strong', ('Strength', 'Strong')),
+                               ('signed', ('Strength', 'Strong', 'Signed'))):
+            made = Project(gate=gate)
+            try:
+                text = purlin_status.sync_status(made.root)
+                header = next(line for line in text.splitlines()
+                              if line.startswith('Feature'))
+                for column in expected:
+                    assert column in header, (gate, header)
+                row = next(line for line in text.splitlines()
+                           if line.startswith('login '))
+                assert 'n/a' in row, 'no record, so no test strength'
+            finally:
+                made.close()
+
+    @pytest.mark.proof("states", "PROOF-44", "RULE-37", tier="integration")
+    def test_the_summary_counts_the_rules_that_meet_the_gate(self, project):
+        project.proofs([_entry('PROOF-2', 'RULE-2')])
+        text = purlin_status.sync_status(project.root)
+        line = next(line for line in text.splitlines()
+                    if 'meet the gate' in line)
+        assert line == '1 of 2 rules meet the gate passed.', line
+        second = text.splitlines()[text.splitlines().index(line) + 1]
+        assert 'test strength' not in second, second
+        assert 'risk' not in second, second
+
+    @pytest.mark.proof("states", "PROOF-45", "RULE-38", tier="integration")
     def test_the_table_ends_with_one_next_step(self, project):
         text = purlin_status.sync_status(project.root)
         directives = [line for line in text.splitlines()
@@ -1093,7 +1393,7 @@ class TestStatusTable:
         assert len(directives) == 1, text
         assert 'purlin:build' in directives[0], directives[0]
 
-    @pytest.mark.proof("states", "PROOF-26", "RULE-25", tier="integration")
+    @pytest.mark.proof("states", "PROOF-48", "RULE-41", tier="integration")
     def test_retired_config_keys_print_the_update_directive(self):
         made = Project(extra_config={'remote_verification': 'optional'})
         try:
@@ -1102,7 +1402,7 @@ class TestStatusTable:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-24", "RULE-23", tier="integration")
+    @pytest.mark.proof("states", "PROOF-46", "RULE-39", tier="integration")
     def test_an_empty_project_says_what_to_run(self):
         made = Project(spec=None)
         try:
@@ -1111,18 +1411,20 @@ class TestStatusTable:
         finally:
             made.close()
 
-    @pytest.mark.proof("states", "PROOF-25", "RULE-24", tier="integration")
-    def test_no_emoji_and_only_the_three_glyphs(self, project):
+    @pytest.mark.proof("states", "PROOF-47", "RULE-40", tier="integration")
+    def test_no_emoji_and_only_the_four_glyphs(self, project):
         text = purlin_status.sync_status(project.root)
         allowed = set('→▶▼─')
         for char in text:
             assert ord(char) < 0x2000 or char in allowed, repr(char)
 
-    @pytest.mark.proof("states", "PROOF-22", "RULE-21", tier="integration")
-    def test_the_repository_own_specs_print_the_seven_state_table(self):
+    @pytest.mark.proof("states", "PROOF-49", "RULE-36", tier="integration")
+    def test_the_repository_own_specs_print_the_table(self):
         text = purlin_status.sync_status(PROJECT_ROOT)
-        assert 'Lowest state' in text
-        assert any(state in text for state in purlin_states.STATE_ORDER), text
+        header = next(line for line in text.splitlines()
+                      if line.startswith('Feature'))
+        assert 'Spec' in header and 'Tests' in header, header
+        assert any('ready' in line for line in text.splitlines()), text
         assert text.rstrip().splitlines()[-1].startswith('→'), text
 
 
@@ -1150,8 +1452,8 @@ class TestDriftRoles:
                                                role='qa'))
         assert report['role'] == 'qa'
         assert sorted(report['view']) == [
-            'approvals_stale', 'review_list_size',
-            'rules_without_a_negative_case']
+            'needs_person', 'review_list_size',
+            'rules_without_a_negative_case', 'signatures_stale']
 
     @pytest.mark.proof("drift", "PROOF-2", "RULE-1", tier="integration")
     def test_a_hostile_since_never_reaches_git(self, project):
@@ -1253,7 +1555,7 @@ class TestTransport:
             'jsonrpc': '2.0', 'id': 2, 'method': 'tools/call',
             'params': {'name': 'sync_status', 'arguments': {}}})
         text = responses[0]['result']['content'][0]['text']
-        assert 'Lowest state' in text and 'login' in text
+        assert 'Spec' in text and 'Tests' in text and 'login' in text
 
     @pytest.mark.proof("server", "PROOF-9", "RULE-9", tier="integration")
     def test_purlin_config_reads_and_writes(self, project):
@@ -1265,18 +1567,18 @@ class TestTransport:
             {'jsonrpc': '2.0', 'id': 2, 'method': 'tools/call',
              'params': {'name': 'purlin_config',
                         'arguments': {'action': 'write', 'key': 'gate',
-                                      'value': 'recorded'}}},
+                                      'value': 'strong'}}},
             {'jsonrpc': '2.0', 'id': 3, 'method': 'tools/call',
              'params': {'name': 'purlin_config',
                         'arguments': {'action': 'read', 'key': 'gate'}}})
         assert json.loads(responses[0]['result']['content'][0]['text']) == {
-            'gate': 'tested'}
+            'gate': 'passed'}
         assert json.loads(responses[2]['result']['content'][0]['text']) == {
-            'gate': 'recorded'}
+            'gate': 'strong'}
         # The write goes to the local overlay, never to the committed file.
         with open(os.path.join(project.root, '.purlin', 'config.json'),
                   encoding='utf-8') as handle:
-            assert json.load(handle)['gate'] == 'tested'
+            assert json.load(handle)['gate'] == 'passed'
 
     def test_drift_answers_json(self, project):
         responses, _stderr = _rpc(project.root, {
@@ -1344,7 +1646,7 @@ class TestTransport:
         # The session is still usable: the next call answers normally.
         again = purlin_srv.handle_request(
             request, project.root)['result']['content'][0]['text']
-        assert 'Lowest state' in again, again
+        assert 'Tests' in again, again
 
     @pytest.mark.proof("server", "PROOF-10", "RULE-10", tier="integration")
     def test_a_write_with_no_key_and_an_unknown_action_are_refused(self,
@@ -1369,7 +1671,7 @@ class TestDigest:
         assert path and os.path.isfile(path)
         data = purlin_payload.read_report_payload(project.root)
         assert data['generated_by'] == 'hook'
-        assert data['schema_version'] == 4
+        assert data['schema_version'] == 5
 
     @pytest.mark.proof("server", "PROOF-12", "RULE-12", tier="integration")
     def test_a_project_with_no_config_writes_nothing(self, tmp_path):

@@ -9,7 +9,7 @@ fetch brings back.
 What the groups prove:
 
 *fetch*     only `specs/` and `.purlin/` arrive; the project's code does not
-*rollup*    the seven states are counted and named, and the gate is printed
+*rollup*    every bucket is counted and named, and the gate is printed
 *distance*  how far the scanned ref has moved past the newest record
 *ref*       `--ref` reads the branch or tag it names, not the default one
 """
@@ -45,7 +45,7 @@ SPEC = """# Feature: greeting
 - PROOF-2 (RULE-2): Call `os_tag()` and verify `linux` @unit @env(linux)
 """
 
-CONFIG = {'version': '0.10.0', 'gate': 'recorded', 'test_framework': 'pytest'}
+CONFIG = {'version': '0.10.0', 'gate': 'strong', 'test_framework': 'pytest'}
 
 
 def git(cwd, *args, **kwargs):
@@ -84,7 +84,7 @@ def make_project(path):
 def add_record(path, commit, timestamp='20260913T120000Z', status='pass'):
     """Commit one record naming the commit it observed."""
     body = {'schema_version': 1, 'feature': 'greeting', 'commit': commit,
-            'gate': 'recorded', 'test_strength': 71, 'scope_tree': 'a' * 40,
+            'gate': 'strong', 'test_strength': 71, 'scope_tree': 'a' * 40,
             'proofs': [{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': status,
                         'tier': 'unit', 'env': None,
                         'test_file': 'tests/test_greeting.py',
@@ -145,13 +145,13 @@ def test_a_ref_that_does_not_exist_is_refused_by_name(remote, tmp_path):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.proof("records", "PROOF-14", "RULE-14")
-def test_the_rollup_names_the_project_the_gate_and_the_states(remote):
+def test_the_rollup_names_the_project_the_gate_and_the_buckets(remote):
     bare, _source = remote
     text = scan_module.scan(bare, 'main')
 
-    assert 'gate recorded' in text
+    assert 'gate strong' in text
     assert '1 features, 2 rules.' in text
-    assert 'Proof ready' in text, 'no state was counted'
+    assert 'untested' in text, 'no bucket was counted'
     assert 'No record has been committed yet.' in text
 
 
@@ -170,18 +170,19 @@ def test_the_rollup_names_the_newest_record_and_its_label(remote):
 
 
 @pytest.mark.proof("records", "PROOF-14", "RULE-14")
-def test_every_state_the_package_names_can_be_printed():
+def test_every_bucket_the_package_names_can_be_printed():
     from purlin import states
-    payload = {'project': 'x', 'gate': {'gate': 'tested'},
-               'project_rollup': {'features': 1, 'rules': len(states.STATE_ORDER),
-                                  'counts': {s: 1 for s in states.STATE_ORDER},
-                                  'stale': 1, 're_verify_pending': 2},
-               'records': {}}
+    buckets = states.bucket_keys('signed')
+    summary = {'features': 1, 'rules': len(buckets), 'met': 1,
+               'stale': 1, 'held': 1, 'needs_person': 2}
+    summary.update({bucket: 1 for bucket in buckets})
+    payload = {'project': 'x', 'gate': {'gate': 'signed'},
+               'summary': summary, 'records': {}}
     text = scan_module.rollup_text('.', payload)
-    for state in states.STATE_ORDER:
-        assert state in text, '%s was not printed' % state
-    assert '1 rules are Stale' in text
-    assert '2 rules are re-verify pending' in text
+    for bucket in buckets:
+        assert bucket in text, '%s was not printed' % bucket
+    assert '1 signatures stale' in text
+    assert '2 rules need a person' in text
 
 
 # ---------------------------------------------------------------------------
@@ -249,7 +250,7 @@ def test_a_tag_is_read_rather_than_the_default_branch(remote):
 def test_the_command_prints_the_rollup(remote, capsys):
     bare, _source = remote
     assert scan_module.main(['--repo', bare, '--ref', 'main']) == 0
-    assert 'gate recorded' in capsys.readouterr().out
+    assert 'gate strong' in capsys.readouterr().out
 
 
 @pytest.mark.proof("records", "PROOF-16", "RULE-16")

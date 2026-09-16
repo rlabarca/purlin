@@ -139,7 +139,7 @@ class TestSpecFormatEnforcement:
             f"{[r['id'] for r in feature['rules']]}")
 
     @pytest.mark.proof("schema_spec_format", "PROOF-4", "RULE-4")
-    def test_rule_without_proof_shows_uncovered(self):
+    def test_a_rule_with_no_proof_line_is_drafted(self):
         self._write_spec('test_feat', (
             '# Feature: test_feat\n\n'
             '## What it does\nTesting.\n\n'
@@ -150,8 +150,8 @@ class TestSpecFormatEnforcement:
         feature = next(f for f in data['features'] if f['name'] == 'test_feat')
         rule = next(r for r in feature['rules'] if r['id'] == 'RULE-1')
         assert rule['proofs'] == [], f"RULE-1 has no proof line: {rule}"
-        assert rule['state'] == 'Drafted', (
-            f"a rule with no proof is Drafted, got {rule['state']!r}")
+        assert rule['spec'] == 'drafted', (
+            f"a rule with no proof is drafted, got {rule['spec']!r}")
 
     @pytest.mark.proof("schema_spec_format", "PROOF-5", "RULE-5")
     def test_requires_includes_referenced_rules(self):
@@ -347,9 +347,9 @@ class TestTagParsing:
             assert unknown == ['@env(%s)' % bad], unknown
             assert (clean, tier) == ('Lock the file', 'unit')
         # A retired tag is ignored and named, never read.
-        clean, tier, env, unknown = split('Lock the file @unit @on(windows-2022)')
+        clean, tier, env, unknown = split('Lock the file @unit @on(windows-2022)')  # retired
         assert (clean, tier, env) == ('Lock the file', 'unit', None)
-        assert unknown == ['@on(windows-2022)'], unknown
+        assert unknown == ['@on(windows-2022)'], unknown  # retired
 
     @pytest.mark.proof("schema_spec_format", "PROOF-9", "RULE-9")
     def test_real_spec_is_parsed_correctly(self):

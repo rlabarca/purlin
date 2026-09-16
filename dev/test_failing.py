@@ -1,7 +1,8 @@
-"""Tests for the `failing` flag: where a test backing a rule last failed.
+"""Tests for the `failed` word: where a test backing a rule last failed.
 
-A failing test only holds a rule in a lower state, so the state alone cannot
-say a test is failing. The throwaway project is `dev/test_signatures.py`'s.
+A word like `no test` would hide a failing test, so the passed cell names the
+failure and where it happened. The throwaway project is
+`dev/test_signatures.py`'s.
 """
 
 import os
@@ -24,18 +25,20 @@ def project():
     made.close()
 
 
-@pytest.mark.proof("states", "PROOF-38", "RULE-32", tier="integration")
+@pytest.mark.proof("states", "PROOF-11", "RULE-9", tier="integration")
 def test_a_failing_test_is_named_where_it_failed(project):
     project.proofs()
     project.record({'PROOF-1': 'fail', 'PROOF-2': 'pass'})
     one, two = project.rule('RULE-1'), project.rule('RULE-2')
+    assert one['cells']['passed']['word'] == 'failed', one
     assert one['flags']['failing'] is True
-    assert 'failing: the record' in one['reasons'], one['reasons']
+    assert 'failing: the record' in one['cells']['passed']['reasons'], one
     assert two['flags']['failing'] is False
-    assert project.payload()['project_rollup']['failing'] == 1
+    assert one['bucket'] == 'failing', one
+    assert project.payload()['summary']['failing'] == 1
 
     project.proofs({'PROOF-1': 'pass', 'PROOF-2': 'fail'})
     two = project.rule('RULE-2')
     assert two['flags']['failing'] is True
-    assert 'failing: this checkout' in two['reasons'], two['reasons']
-    assert project.payload()['project_rollup']['failing'] == 2
+    assert 'failing: this checkout' in two['cells']['passed']['reasons'], two
+    assert project.payload()['summary']['failing'] == 2

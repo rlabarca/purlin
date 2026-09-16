@@ -546,7 +546,7 @@ def _proof_file(root, feature, rule_ids):
 
 
 class TestDriftRuleDetails:
-    """drift RULE-16: one verdict behind the counts, and one stable order."""
+    """drift RULE-16: one payload behind the counts, and one stable order."""
 
     def _repo(self, root):
         os.makedirs(os.path.join(root, '.purlin'))
@@ -562,8 +562,8 @@ class TestDriftRuleDetails:
                '- RULE-3: Rounding is half up, applied once, at the boundary\n\n'
                '## Proof\n\n'
                '- PROOF-1 (RULE-1): Post 0.1 plus 0.2 and verify 30 cents\n'
-               '- PROOF-2 (RULE-2): Post without a code and verify the refusal\n'
-               '- PROOF-3 (RULE-3): Split 10 cents three ways and verify 4/3/3\n')
+               '- PROOF-2 (RULE-2): Post without a code and verify 422\n'
+               '- PROOF-3 (RULE-3): Post 10 cents split 3 ways and verify 4/3/3\n')
         _proof_file(root, 'money_anchor', ['RULE-1', 'RULE-2', 'RULE-3'])
 
         # `ledger`: 4 own rules, 3 of them proved, requiring the anchor.
@@ -578,9 +578,9 @@ class TestDriftRuleDetails:
                '- RULE-3: The journal file is appended, never rewritten\n'
                '- RULE-4: %s\n\n'
                '## Proof\n\n'
-               '- PROOF-1 (RULE-1): Post once and verify two rows\n'
-               '- PROOF-2 (RULE-2): Post twice and verify two identifiers\n'
-               '- PROOF-3 (RULE-3): Post twice and verify the first bytes hold\n'
+               '- PROOF-1 (RULE-1): Post once and verify 2 rows\n'
+               '- PROOF-2 (RULE-2): Post twice and verify 2 identifiers\n'
+               '- PROOF-3 (RULE-3): Post twice and verify the first 8 bytes hold\n'
                '- PROOF-4 (RULE-4): Post an unbalanced entry and verify refusal\n'
                % _LEDGER_LONG_RULE)
         _proof_file(root, 'ledger', ['RULE-1', 'RULE-2', 'RULE-3'])
@@ -596,7 +596,7 @@ class TestDriftRuleDetails:
                    '## Rules\n\n'
                    '- RULE-1: Returns the settled balance\n\n'
                    '## Proof\n\n'
-                   '- PROOF-1 (RULE-1): Call it and verify the balance\n'
+                   '- PROOF-1 (RULE-1): Call it and verify the balance 0\n'
                    % (name, name, src))
             _proof_file(root, name, ['RULE-1'])
 
@@ -646,15 +646,17 @@ class TestDriftRuleDetails:
         assert 'ledger' in details, sorted(details)
         ledger = details['ledger']
 
-        # Both counts come from the one verdict, so they count the same rules:
+        # Both counts come from the one payload, so they count the same rules:
         # 4 own plus the anchor's 3, of which 3 own and all 3 anchor rules pass.
         assert ledger['total_rules'] == 7, (
             "total_rules counted %s, not the 4 own plus 3 inherited rules the "
             "one payload counts" % ledger['total_rules'])
 
         # One id per rule worth naming, and nothing for the other six.
+        # `RULE-4` is the one rule whose proof text raises a blocking free
+        # check, so it is the one rule whose spec status reads `drafted`.
         assert ledger['unproved'] == ['RULE-4'], ledger['unproved']
-        assert ledger['lowest_state'] == 'Drafted', ledger['lowest_state']
+        assert ledger['met'] == ledger['total_rules'] - 1, ledger['met']
         assert ledger['spec_path'] == 'specs/ledger/ledger.md', ledger['spec_path']
 
         # Own rules, in RULE number order, id and description and nothing else.
@@ -662,7 +664,7 @@ class TestDriftRuleDetails:
             'RULE-1', 'RULE-2', 'RULE-3', 'RULE-4'], ledger['rules']
         assert len(ledger['rules']) == 4, ledger['rules']
         for rule in ledger['rules']:
-            assert set(rule) == {'rule_id', 'description', 'state', 'risk',
+            assert set(rule) == {'rule_id', 'description', 'bucket', 'risk',
                                  'origin'}, sorted(rule)
 
         # The long description is cut on a word boundary and says it was cut;
@@ -861,7 +863,7 @@ class TestDriftReportShape:
         data = json.loads(purlin_drift.drift(root, since='1'))
         assert sorted(data) == sorted([
             'since', 'commits', 'files', 'spec_changes', 'broken_scopes',
-            'pins', 'rule_details', 'states', 'review_list',
+            'pins', 'rule_details', 'summary', 'review_list',
             'roles']), sorted(data)
         assert data['broken_scopes'] == [
             {'spec': 'thing', 'missing_paths': ['src/gone.py']}], \

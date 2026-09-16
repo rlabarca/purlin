@@ -43,16 +43,6 @@ EXCLUDED = (
 # the lane that owns them. A lane deletes its entries in the commit that
 # rewrites the files; the tuple is empty at closeout.
 PENDING_REWRITE = (
-    # lane 1A: states and payload
-    "scripts/mcp/purlin/gate.py", "scripts/mcp/purlin/states.py",
-    "scripts/mcp/purlin/payload.py", "scripts/mcp/purlin/records.py",
-    "scripts/mcp/purlin/checks.py", "scripts/mcp/purlin/status.py",
-    "scripts/mcp/purlin/drift.py", "scripts/mcp/purlin/ids.py",
-    "scripts/mcp/purlin/specs.py", "scripts/mcp/purlin/frameworks.py",
-    "dev/test_mcp_server.py", "dev/test_review_list.py", "dev/test_backing_tests.py",
-    "dev/test_drift.py", "dev/test_schema_spec_format.py", "dev/test_schema_proof_format.py",
-    "specs/mcp/states.md", "specs/mcp/drift.md", "specs/mcp/server.md",
-    "specs/_anchors/schema_proof_format.md", "specs/_anchors/schema_spec_format.md",
     # lane 1B: signatures
     "specs/review/signatures.md",
     # lane 2A: sign, brief, gate
@@ -116,6 +106,7 @@ SKIP = EXCLUDED + PENDING_REWRITE
 # files. Everything else in the file is held to the vocabulary.
 MARKED = {
     "scripts/init/update.py": "# retired",
+    "scripts/mcp/purlin/gate.py": "# retired",
     "scripts/mcp/purlin/specs.py": "# retired",
     "references/formats/spec_format.md": "<!-- retired -->",
     "dev/test_mcp_server.py": "# retired",

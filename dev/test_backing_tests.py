@@ -1,6 +1,6 @@
 """Tests for which tests a rule's test hash binds.
 
-The test hash is part of what an approval binds, so it must read the same in
+The test hash is part of what a signature binds, so it must read the same in
 every checkout and in CI. The committed records name the tests; this checkout's
 runtime proofs speak only for a proof no record has observed. The throwaway
 project is `dev/test_signatures.py`'s.
@@ -61,7 +61,7 @@ def _os_record(project, os_name, stamp, proof_one_names):
                                              stamp[9:11], stamp[11:13],
                                              stamp[13:15]),
         'runner': 'ci-' + os_name, 'os': os_name,
-        'gate': 'tested', 'test_strength': 90,
+        'gate': 'passed', 'test_strength': 90,
         'scope_tree': purlin_specs.scope_tree(project.root, ['src/login.py']),
         'proofs': proofs}))
     git(project.root, 'add', '-A')
@@ -70,7 +70,7 @@ def _os_record(project, os_name, stamp, proof_one_names):
 
 class TestTheRecordsNameTheTests:
 
-    @pytest.mark.proof("states", "PROOF-34", "RULE-30", tier="integration")
+    @pytest.mark.proof("states", "PROOF-40", "RULE-35", tier="integration")
     def test_what_this_checkout_ran_does_not_move_the_hash(self, project):
         project.proofs()
         project.record()
@@ -82,14 +82,14 @@ class TestTheRecordsNameTheTests:
         assert project.rule('RULE-1')['test_hash'] == first, \
             'a test this checkout could not run moved the hash'
 
-    @pytest.mark.proof("states", "PROOF-35", "RULE-30", tier="integration")
+    @pytest.mark.proof("states", "PROOF-41", "RULE-35", tier="integration")
     def test_with_no_record_the_runtime_names_the_tests(self, project):
         project.proofs()
         before = project.rule('RULE-1')['test_hash']
         _runtime(project, [TEST_NAMES['PROOF-1'], EXTRA])
         assert project.rule('RULE-1')['test_hash'] != before
 
-    @pytest.mark.proof("states", "PROOF-36", "RULE-30", tier="integration")
+    @pytest.mark.proof("states", "PROOF-42", "RULE-35", tier="integration")
     def test_every_operating_system_s_record_counts(self, project):
         project.proofs()
         _os_record(project, 'linux', '20260913T120000Z',

@@ -46,10 +46,12 @@ class TestProofFormatEnforcement:
             json.dump({'tier': tier, 'proofs': entries}, handle)
         return path
 
-    def _state(self, feature, rule_id):
+    def _word(self, feature, rule_id):
+        """The word one rule's passed cell reads."""
         data = purlin_payload.build_payload(self.project_root)
         entry = next(f for f in data['features'] if f['name'] == feature)
-        return next(r for r in entry['rules'] if r['id'] == rule_id)['state']
+        rule = next(r for r in entry['rules'] if r['id'] == rule_id)
+        return rule['cells']['passed']['word']
 
     @pytest.mark.proof("schema_proof_format", "PROOF-1", "RULE-1")
     def test_a_runtime_proof_file_is_read(self):
@@ -58,15 +60,15 @@ class TestProofFormatEnforcement:
             '## Rules\n- RULE-1: The parser returns 200 for a valid body\n\n'
             '## Proof\n- PROOF-1 (RULE-1): POST a valid body; verify 200\n'
         ))
-        assert self._state('foo', 'RULE-1') == 'Proof ready', \
-            'with no proof file the rule is at most Proof ready'
+        assert self._word('foo', 'RULE-1') == 'no test', \
+            'with no proof file nothing backs the rule'
         self._write_proofs('foo', [
             {'feature': 'foo', 'id': 'PROOF-1', 'rule': 'RULE-1',
              'test_file': 'tests/test_foo.py', 'test_name': 'test_it',
              'status': 'pass', 'tier': 'unit'},
         ])
-        assert self._state('foo', 'RULE-1') == 'Tested', \
-            'a passing entry in .purlin/runtime/proofs/ makes the rule Tested'
+        assert self._word('foo', 'RULE-1') == 'passed', \
+            'a passing entry in .purlin/runtime/proofs/ meets level 1'
 
     @pytest.mark.proof("schema_proof_format", "PROOF-2", "RULE-2")
     def test_every_entry_carries_the_seven_fields(self):
@@ -106,9 +108,9 @@ class TestProofFormatEnforcement:
                  'test_file': 't.py', 'test_name': 't2', 'status': 'pass',
                  'tier': 'unit'},
             ])
-            assert self._state('bar', 'RULE-1') != 'Tested', (
+            assert self._word('bar', 'RULE-1') != 'passed', (
                 'status %r must not count as proved' % bad)
-            assert self._state('bar', 'RULE-2') == 'Tested', (
+            assert self._word('bar', 'RULE-2') == 'passed', (
                 "the passing rule beside a %r one still counts" % bad)
 
     @pytest.mark.proof("schema_proof_format", "PROOF-4", "RULE-4")
@@ -126,7 +128,7 @@ class TestProofFormatEnforcement:
              'test_file': 'b.py', 'test_name': 'broken', 'status': 'fail',
              'tier': 'unit'},
         ])
-        assert self._state('baz', 'RULE-1') != 'Tested', (
+        assert self._word('baz', 'RULE-1') != 'passed', (
             'a proof that failed in any test claiming it is not proved')
 
     @pytest.mark.proof("schema_proof_format", "PROOF-5", "RULE-5")
@@ -166,5 +168,5 @@ class TestProofFormatConventions:
             fmt = handle.read()
         for tag in ('@integration', '@e2e', '@manual', '@env('):
             assert tag in fmt, '%s is not documented' % tag
-        assert '@on(' not in fmt.split('### Retired tags')[0], (
-            'the retired platform tag must appear only under Retired tags')
+        assert '@on(' not in fmt.split('### Retired tags')[0], (  # retired
+            'the retired scope tag must appear only under Retired tags')
