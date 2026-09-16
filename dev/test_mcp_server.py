@@ -282,7 +282,7 @@ class TestSpecParsing:
         tagged, _meta = purlin_specs.split_rule_tags(
             'Tokens  expire   after 24 hours [risk: high]')
         assert purlin_specs.rule_text_hash(tagged) == plain, (
-            're-tagging or reflowing a rule must not stale its signature')
+            're-tagging or reflowing a rule must not change its rule text hash')
 
     @pytest.mark.proof("specs", "PROOF-5", "RULE-4", tier="integration")
     @pytest.mark.proof("specs", "PROOF-6", "RULE-5", tier="integration")

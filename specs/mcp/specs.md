@@ -2,8 +2,8 @@
 
 > Description: One walk of `specs/` turns every spec file into a feature
 >   dictionary. This is where the rule tags, the proof tiers, the `@env`
->   operating system, the anchor source and pin, the two text hashes an
->   approval binds and the scope tree a record carries are all read. Every
+>   operating system, the anchor source and pin, the two text hashes a
+>   signature binds and the scope tree a record carries are all read. Every
 >   other surface reads what this module returns rather than the markdown.
 > Scope: scripts/mcp/purlin/specs.py
 > Stack: python/stdlib, re, hashlib, subprocess (list-only)
@@ -30,7 +30,7 @@
 - PROOF-1 (RULE-1): Parse a spec whose RULE-1 line ends `[risk: high] [origin: pm] [criterion: US-12]`; verify the parsed text is exactly `Valid credentials return 200 with a session token` with no bracket left in it, and that the rule's metadata is exactly `{"risk": "high", "origin": "pm", "criterion": "US-12"}` @integration
 - PROOF-2 (RULE-1): Call the rule tag splitter on `Tokens expire [origin: qa] [risk: medium]` and `Tokens expire [risk: medium] [origin: qa]`; verify both return the text `Tokens expire` and the same metadata, so the order the tags are written in changes nothing
 - PROOF-3 (RULE-2): Parse a rule line carrying no tag; verify its metadata is exactly `{"risk": "low", "origin": "eng"}` and that no `criterion` key is present @integration
-- PROOF-4 (RULE-3): Call the rule text hash on `Tokens expire after 24 hours`, then call it on the text left by splitting `Tokens  expire   after 24 hours [risk: high]`; verify the two hashes are equal, so neither a doubled space nor a tag stales the approval that binds the rule
+- PROOF-4 (RULE-3): Call the rule text hash on `Tokens expire after 24 hours`, then call it on the text left by splitting `Tokens  expire   after 24 hours [risk: high]`; verify the two hashes are equal, so neither a doubled space nor a tag changes the rule text hash a signature binds
 - PROOF-5 (RULE-4): Parse a proof line ending `@unit @env(windows)`; verify the tier is `unit` and the operating system is `windows`, and that a proof line with no tag at all comes back at tier `unit` @integration
 - PROOF-6 (RULE-5): Call the proof tag splitter on `x @env(windows)`, `x @env(macos)` and `x @env(linux)` and verify each returns its own value; then call it on `x @env(bsd)` and verify the operating system is none and the unknown tags are exactly `["@env(bsd)"]` @integration
 - PROOF-7 (RULE-6): Split `Lock it @env(macos) @env(windows)`; verify the operating system read is `windows` and the unknown tags are exactly `["@env(macos)"]`, so the second tag is refused rather than merged

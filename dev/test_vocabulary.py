@@ -44,7 +44,7 @@ EXCLUDED = (
 # rewrites the files; the tuple is empty at closeout.
 PENDING_REWRITE = (
     # lane 1B: signatures
-    "specs/review/signatures.md",
+    "specs/review/signatures.md", "references/formats/signature_format.md",
     # lane 2A: sign, brief, gate
     "scripts/review/approve.py", "scripts/review/brief.py", "scripts/review/static_checks.py",
     "scripts/ci/verify_gate.py", "dev/test_verify_gate.py", "dev/test_brief.py",
@@ -59,6 +59,7 @@ PENDING_REWRITE = (
     "dev/test_run_script.py", "dev/test_records.py", "dev/test_scan_review_list.py",
     "dev/test_scan.py", "dev/test_consumer_ci.py",
     "specs/run/records.md", "specs/run/run_script.md", "specs/run/mutation.md",
+    "references/formats/record_format.md",
     # lane 3: init and update
     "scripts/init/scaffold.py", "scripts/init/update.py", "templates/config.json",
     "dev/test_init_scaffold.py", "dev/test_init_update.py", "dev/test_init_e2e.sh",
@@ -73,10 +74,6 @@ PENDING_REWRITE = (
     "specs/skills/skill_review.md", "specs/skills/skill_sign.md",
     "specs/skills/skill_audit.md", "specs/skills/skill_init.md", "specs/skills/skill_find.md",
     "specs/instructions/purlin_agent.md",
-    # lane 5B: references, formats, tools, root
-    "references/", "CLAUDE.md", "README.md", "tools/",
-    "specs/tools/qa_report.md", "specs/tools/pm_anchor_userstories.md",
-    "specs/mcp/specs.md", "specs/anchor/upstream.md", "dev/test_upstream.py",
     # lane 5C: word swaps
     "skills/build/", "skills/spec-from-code/", "skills/anchor/", "skills/rename/",
     "specs/skills/skill_rename.md", "specs/skills/skill_drift.md",

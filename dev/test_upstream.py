@@ -150,7 +150,7 @@ def workspace(tmp_path):
 
     project_bare = _bare(os.path.join(base, 'project.git'))
     root = _clone(project_bare, os.path.join(base, 'project'))
-    _write(os.path.join(root, '.purlin', 'config.json'), '{"gate": "tested"}\n')
+    _write(os.path.join(root, '.purlin', 'config.json'), '{"gate": "passed"}\n')
     os.makedirs(os.path.join(root, 'specs', '_anchors'), exist_ok=True)
     _publish(root, 'set the project up')
 
@@ -292,11 +292,11 @@ def test_add_refuses_an_ext_transport(workspace):
 @pytest.mark.proof("upstream", "PROOF-7", "RULE-7", tier="integration")
 def test_add_of_free_text_writes_a_note_and_no_rules(workspace):
     source = os.path.join(workspace.root, 'policy.txt')
-    _write(source, 'Every refund is approved by a second person.\n')
+    _write(source, 'Every refund is countersigned by a second person.\n')
     result = upstream.add(workspace.root, source, name='refunds')
     assert result['status'] == 'drafted'
     text = _copy_text(workspace, 'refunds')
-    assert 'Every refund is approved by a second person.' in text
+    assert 'Every refund is countersigned by a second person.' in text
     assert upstream.FREE_TEXT_NOTE in text
     assert '## Rules' in text and '## Proof' in text
     assert 'RULE-' not in text
@@ -480,7 +480,7 @@ def test_sync_all_covers_every_git_sourced_anchor_and_no_others(workspace):
     upstream.add(workspace.root, workspace.anchor_repo,
                  path='specs/no_secrets.md')
     free = os.path.join(workspace.root, 'policy.txt')
-    _write(free, 'Every refund is approved by a second person.\n')
+    _write(free, 'Every refund is countersigned by a second person.\n')
     upstream.add(workspace.root, free, name='refunds')
 
     result = upstream.sync(workspace.root)
