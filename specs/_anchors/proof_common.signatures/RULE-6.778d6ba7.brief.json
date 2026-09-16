@@ -1,0 +1,88 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "proof_common",
+  "generated_at": "2026-09-16T21:22:36Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "origin": "eng",
+  "proof_hash": "981598f6d6c5e8baf413e3a63064fbcf02b57346f13de0d6ec4837f3c164df16",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-6",
+      "text": "Seed a proof file with one entry for another feature, one for this feature from a test file the run will not execute, one whose test file has been deleted, and one for a marked test the run will skip; run the plugin over a different test file of this feature and verify the first two and the skipped one survive unchanged, the deleted file's entry is absent, and the executed test's entry is replaced, in `dev/test_multilang_proof_plugins.py`",
+      "tier": "unit"
+    }
+  ],
+  "reasons": [],
+  "record": ".purlin/records/proof_common/20260916T212159Z-23127b4-ci-windows.json",
+  "risk": "high",
+  "rule": "RULE-6",
+  "rule_hash": "b5054de9754dba786b372533776fb15c5cc928a7d7b61515990a7bde7388fbe7",
+  "rule_text": "A write merges on the key `(feature, tier, test_file)`: another feature's entries survive untouched, this feature's entries from test files the run did not execute survive, an entry whose test file no longer exists is dropped, and an entry belonging to a marked test this run skipped survives with the status it had unless this run wrote that entry afresh",
+  "schema": "purlin-brief/1",
+  "state": "Recorded",
+  "test_hash": "4c8a7bbb46c782420972502c94e118327bf12fbae73736161fd93d0af68e98ca",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": null,
+      "file": "dev/test_proof_plugins.sh",
+      "findings": [],
+      "name": "an entry whose test file is gone is reaped",
+      "proof": "PROOF-6",
+      "reasons": []
+    },
+    {
+      "body": null,
+      "file": "dev/test_proof_plugins.sh",
+      "findings": [],
+      "name": "the merge keeps other features and other test files",
+      "proof": "PROOF-6",
+      "reasons": []
+    },
+    {
+      "body": "def test_pytest(self, tmp_path):\n        root = _purlin_project(tmp_path)\n        (root / 'tests').mkdir()\n        (root / 'tests' / 'test_feat.py').write_text(\n            'import pytest\\n\\n'\n            '@pytest.mark.proof(\"feat\", \"PROOF-1\", \"RULE-1\")\\n'\n            'def test_ok():\\n    assert True\\n\\n'\n            '@pytest.mark.proof(\"feat\", \"PROOF-2\", \"RULE-2\")\\n'\n            '@pytest.mark.skip(reason=\"no tool\")\\n'\n            'def test_skipped():\\n    assert True\\n', encoding='utf-8')\n        _write_proofs(root, 'feat', 'unit', [\n            _entry(proof_id='PROOF-2', rule='RULE-2',\n                   test_file='tests/test_feat.py', test_name='test_skipped')])\n        _run_pytest(root)\n        by_id = {e['id']: e for e in _read_proofs(root, 'feat')['proofs']}\n        assert by_id['PROOF-2']['status'] == 'pass'\n        assert by_id['PROOF-2']['test_name'] == 'test_skipped'\n        assert by_id['PROOF-1']['test_name'] == 'test_ok'",
+      "file": "dev/test_multilang_proof_plugins.py",
+      "findings": [],
+      "name": "test_pytest",
+      "proof": "PROOF-6",
+      "reasons": []
+    },
+    {
+      "body": "def test_removed_test_entry_purged_on_rerun(tmp_path):\n    \"\"\"A marker taken out of a file that runs again is reaped on that run.\"\"\"\n    root = _project(tmp_path)\n    _run_pytest_with_plugin(root, \"\"\"\n        import pytest\n\n        @pytest.mark.proof(\"feat\", \"PROOF-1\", \"RULE-1\")\n        def test_one():\n            assert True\n\n        @pytest.mark.proof(\"feat\", \"PROOF-2\", \"RULE-2\")\n        def test_two():\n            assert True\n    \"\"\")\n    assert {e[\"id\"] for e in _proofs(root, \"feat\")[\"proofs\"]} == {\"PROOF-1\",\n                                                                 \"PROOF-2\"}\n    _run_pytest_with_plugin(root, \"\"\"\n        import pytest\n\n        @pytest.mark.proof(\"feat\", \"PROOF-1\", \"RULE-1\")\n        def test_one():\n            assert True\n    \"\"\")\n    assert {e[\"id\"] for e in _proofs(root, \"feat\")[\"proofs\"]} == {\"PROOF-1\"}",
+      "file": "dev/test_proof_plugins_missing.py",
+      "findings": [],
+      "name": "test_removed_test_entry_purged_on_rerun",
+      "proof": "PROOF-6",
+      "reasons": []
+    },
+    {
+      "body": "def test_an_entry_whose_test_file_is_gone_is_reaped(self, tmp_path):\n        root = _project(tmp_path)\n        _seed(root, 'alpha', 'unit', [\n            _entry('alpha', 'PROOF-9', 'RULE-9',\n                   test_file='tests/deleted.test.sh')])\n        _shell_run(root, 'tests/alpha.test.sh', 'alpha',\n                   [('PROOF-1', 'RULE-1', 'pass', 'fresh')])\n        assert {e['id'] for e in _read(root)['alpha']} == {'PROOF-1'}",
+      "file": "dev/test_proof_stress.py",
+      "findings": [],
+      "name": "test_an_entry_whose_test_file_is_gone_is_reaped",
+      "proof": "PROOF-6",
+      "reasons": []
+    },
+    {
+      "body": "def test_three_features_keep_their_own_files(self, tmp_path):\n        root = _project(tmp_path)\n        for index, feature in enumerate(('alpha', 'beta', 'gamma'), start=1):\n            _shell_run(root, 'tests/%s.test.sh' % feature, feature,\n                       [('PROOF-%d' % index, 'RULE-1', 'pass', feature)])\n        loaded = _read(root)\n        assert sorted(loaded) == ['alpha', 'beta', 'gamma']\n        for feature in loaded:\n            assert len(loaded[feature]) == 1",
+      "file": "dev/test_proof_stress.py",
+      "findings": [],
+      "name": "test_three_features_keep_their_own_files",
+      "proof": "PROOF-6",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "778d6ba73eeade4bcb4bcf6e6f4b68c6e64d89b0d04f1cd53b482d8c3fccb084",
+  "verdict": "ready"
+}

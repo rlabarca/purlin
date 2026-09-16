@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "mutation",
-  "generated_at": "2026-09-16T21:13:10Z",
+  "generated_at": "2026-09-16T21:22:33Z",
   "layers": [
     "proof text",
     "test body",
@@ -23,7 +23,7 @@
     }
   ],
   "reasons": [],
-  "record": ".purlin/records/mutation/20260916T211257Z-7adb04a-ci-linux.json",
+  "record": ".purlin/records/mutation/20260916T212159Z-23127b4-ci-windows.json",
   "risk": "high",
   "rule": "RULE-9",
   "rule_hash": "a71c5bc38772b3c421787caa2df4649afafe0c799c14da16c559b7ae56d016d4",

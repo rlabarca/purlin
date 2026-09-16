@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "signatures",
-  "generated_at": "2026-09-16T21:13:31Z",
+  "generated_at": "2026-09-16T21:22:59Z",
   "layers": [
     "proof text",
     "test body",
@@ -28,7 +28,7 @@
   "reasons": [
     "PROOF-29 missing_trigger: Nothing runs before the assertion, so the proof reads an artifact that exists whether or not the code is right."
   ],
-  "record": ".purlin/records/signatures/20260916T211257Z-7adb04a-ci-linux.json",
+  "record": ".purlin/records/signatures/20260916T212201Z-23127b4-ci-windows.json",
   "risk": "high",
   "rule": "RULE-23",
   "rule_hash": "3d31e2eea983384d634b5ae5d22965e27315135de65ab37d75d1bdceea09253e",
