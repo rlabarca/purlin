@@ -10,7 +10,7 @@ evidence levels, moves the evidence into the repository, and gives each level on
 Nothing in it needs a new service or a hosted anything: the evidence is files in git, and the
 enforcement is a CI job and a branch rule.
 
-Tests at this commit: 986 passed, 6 skipped.
+Tests at this commit: 1093 passed, 6 skipped.
 
 ### What a 0.9.5 user does
 
