@@ -115,6 +115,22 @@ is what the run could not finish, found and left, or left to a person.
     `approve.py records RULE-12 --hold "PROOF-12 names run_remote() with an Azure DevOps origin; the tests call _azure and _host apart"`
     and `approve.py static_checks RULE-39 --hold "no test shows a sweep never prints an unmeasurable row"`.
 
+25. **The sweep ran a hand-kept list of test files**, so the 11 files this round added were
+    left out of `dev/run_tests.sh`; it now globs `dev/test_*.py`, with the browser suites
+    `dev/test_purlin_report*.py` still held out by `--fast`. Fixed.
+26. **`dev/test_e2e_external_refs.sh` check 11 expects `- RULE-1: FORBIDDEN`**, wording the
+    anchor dropped at `4fcc16ab`. It fails only where `dev/setup-external-refs.sh` has run.
+    Fixing it edits that test file, which stales the approvals it backs.
+27. **The `open` filter on the board still counts approved rules** that need a model review,
+    while the review list no longer does. `purlin_report` PROOF-13 pins the current meaning, so
+    matching them changes that proof.
+28. **Proposal: rename the state Recorded to Passed.** Touches `scripts/mcp/purlin/states.py`,
+    `references/glossary.md`, the dashboard labels, `specs/mcp/states.md`,
+    `specs/dashboard/purlin_report.md`, the skills and the docs. The gate value `recorded` is a
+    separate word. Every approval whose rule text names the state goes Stale.
+29. **The counts line in `RELEASE_NOTES.md` reads 986 passed**; the sweep now collects 1,083
+    tests. `purlin_version` RULE-9 fails locally until the release sweep sets the line (item 3).
+
 ## Housekeeping
 
 16. `.purlin/records/` now holds three records per feature per runner plus the developer's;

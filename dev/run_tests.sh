@@ -187,28 +187,23 @@ fi
 # ── All pytest tests in a single session ─────────────────────────────
 # One session for speed. Correctness does not depend on it: the merge key
 # includes test_file, so these files can coexist in one proof file.
-PYTEST_FILES=(
-  "$SCRIPT_DIR/test_config_engine.py" "$SCRIPT_DIR/test_mcp_server.py" \
-  "$SCRIPT_DIR/test_plugin_contract.py" "$SCRIPT_DIR/test_schema_spec_format.py" \
-  "$SCRIPT_DIR/test_schema_proof_format.py" "$SCRIPT_DIR/test_security.py" \
-  "$SCRIPT_DIR/test_static_checks.py" "$SCRIPT_DIR/test_multilang_proof_plugins.py" \
-  "$SCRIPT_DIR/test_proof_plugins_missing.py" "$SCRIPT_DIR/test_proof_stress.py" \
-  "$SCRIPT_DIR/test_purlin_version.py" "$SCRIPT_DIR/test_init_update.py" \
-  "$SCRIPT_DIR/test_init_scaffold.py" "$SCRIPT_DIR/test_verify_gate.py" \
-  "$SCRIPT_DIR/test_consumer_ci.py" "$SCRIPT_DIR/test_drift.py" \
-  "$SCRIPT_DIR/test_refresh_digest_hook.py" "$SCRIPT_DIR/test_pre_push_hook.py" \
-  "$SCRIPT_DIR/test_vocabulary.py" "$SCRIPT_DIR/test_mutation_adapters.py" \
-  "$SCRIPT_DIR/test_records.py" "$SCRIPT_DIR/test_run_script.py" \
-  "$SCRIPT_DIR/test_scan.py" "$SCRIPT_DIR/test_upstream.py" \
-  "$SCRIPT_DIR/test_brief.py" "$SCRIPT_DIR/test_approvals.py" \
-  "$SCRIPT_DIR/test_skills.py"
-)
+# Every dev/test_*.py, found rather than listed: a hand-kept list left new test
+# files out of the sweep. The browser suites (test_purlin_report*.py) join below.
+PYTEST_FILES=()
+for test_file in "$SCRIPT_DIR"/test_*.py; do
+  case "$(basename "$test_file")" in
+    test_purlin_report*.py) ;;
+    *) PYTEST_FILES+=("$test_file") ;;
+  esac
+done
 # test_purlin_report.py drives a headless browser and adds roughly 80s. It is
 # in the default run; only --fast holds it out, and then no marker is written.
 if [[ $FAST -eq 0 ]]; then
-  PYTEST_FILES+=("$SCRIPT_DIR/test_purlin_report.py")
+  for test_file in "$SCRIPT_DIR"/test_purlin_report*.py; do
+    PYTEST_FILES+=("$test_file")
+  done
 else
-  echo "--fast: skipping the browser suite (dev/test_purlin_report.py)"
+  echo "--fast: skipping the browser suites (dev/test_purlin_report*.py)"
 fi
 run_suite "All Pytest Tests" run_pytest "${PYTEST_FILES[@]}" -v
 
