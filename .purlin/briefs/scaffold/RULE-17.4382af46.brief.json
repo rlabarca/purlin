@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "scaffold",
-  "generated_at": "2026-09-16T22:36:38Z",
+  "generated_at": "2026-09-16T22:50:51Z",
   "layers": [
     "proof text",
     "test body",
@@ -24,7 +24,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/scaffold/20260916T223615Z-3aa5d77-ci-linux.json",
+  "record": ".purlin/records/scaffold/20260916T225002Z-3aa5d77-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-17",
   "rule_hash": "651fc3bf907a1d702d7fb606531f4dffb345af84686da85dd279c8aebb714db5",
@@ -36,10 +36,10 @@
   "test_strength": null,
   "tests": [
     {
-      "body": "def test_passed_prints_only_the_force_push_rule(self, project):\n        output = project.run('--gate', 'passed')\n        assert 'force push' in output.lower()\n        assert '.purlin/records/**' not in output",
+      "body": null,
       "file": "dev/test_init_scaffold.py",
       "findings": [],
-      "name": "test_passed_prints_only_the_force_push_rule",
+      "name": "test_tested_prints_only_the_force_push_rule",
       "proof": "PROOF-17",
       "reasons": []
     },
@@ -52,10 +52,10 @@
       "reasons": []
     },
     {
-      "body": null,
+      "body": "def test_passed_prints_only_the_force_push_rule(self, project):\n        output = project.run('--gate', 'passed')\n        assert 'force push' in output.lower()\n        assert '.purlin/records/**' not in output",
       "file": "dev/test_init_scaffold.py",
       "findings": [],
-      "name": "test_tested_prints_only_the_force_push_rule",
+      "name": "test_passed_prints_only_the_force_push_rule",
       "proof": "PROOF-17",
       "reasons": []
     }

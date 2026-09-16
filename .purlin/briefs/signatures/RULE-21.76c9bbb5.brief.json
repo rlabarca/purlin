@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "signatures",
-  "generated_at": "2026-09-16T22:36:43Z",
+  "generated_at": "2026-09-16T22:50:57Z",
   "layers": [
     "proof text",
     "test body",
@@ -29,7 +29,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/signatures/20260916T223615Z-3aa5d77-ci-linux.json",
+  "record": ".purlin/records/signatures/20260916T225002Z-3aa5d77-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-21",
   "rule_hash": "67df208c0ac661063918ea170b4e8b547b5b069db0a24e5b3a549c7e011419e2",
@@ -44,7 +44,7 @@
       "body": "def test_the_signer_list_bounds_who_may_run_it(self, at_strong, capsys):\n        at_strong.config(signers=['someone@else.com'])\n        code = sign_module.main(['login', '--project-root', at_strong.root])\n        output = capsys.readouterr().out\n        assert code == 1\n        assert 'not on the signer list' in output",
       "file": "dev/test_signatures.py",
       "findings": [],
-      "name": "test_the_signer_list_bounds_who_may_run_it",
+      "name": "test_the_approver_list_bounds_who_may_run_it",
       "proof": "PROOF-26",
       "reasons": []
     },
@@ -52,7 +52,7 @@
       "body": "def test_the_signer_list_bounds_who_may_run_it(self, at_strong, capsys):\n        at_strong.config(signers=['someone@else.com'])\n        code = sign_module.main(['login', '--project-root', at_strong.root])\n        output = capsys.readouterr().out\n        assert code == 1\n        assert 'not on the signer list' in output",
       "file": "dev/test_signatures.py",
       "findings": [],
-      "name": "test_the_approver_list_bounds_who_may_run_it",
+      "name": "test_the_signer_list_bounds_who_may_run_it",
       "proof": "PROOF-26",
       "reasons": []
     },
@@ -60,7 +60,7 @@
       "body": "def test_the_signing_gate_with_no_list_names_the_command(self, capsys):\n        made = Project(gate=SIGNING_GATE)\n        try:\n            made.proofs()\n            made.record()\n            code = sign_module.main(['login', '--project-root', made.root])\n            output = capsys.readouterr().out\n            assert code == 1\n            assert 'signer list missing: run purlin:init --gate signed' \\\n                in output\n        finally:\n            made.close()",
       "file": "dev/test_signatures.py",
       "findings": [],
-      "name": "test_the_signing_gate_with_no_list_names_the_command",
+      "name": "test_the_approved_gate_with_no_list_names_the_command",
       "proof": "PROOF-27",
       "reasons": []
     },
@@ -68,7 +68,7 @@
       "body": "def test_the_signing_gate_with_no_list_names_the_command(self, capsys):\n        made = Project(gate=SIGNING_GATE)\n        try:\n            made.proofs()\n            made.record()\n            code = sign_module.main(['login', '--project-root', made.root])\n            output = capsys.readouterr().out\n            assert code == 1\n            assert 'signer list missing: run purlin:init --gate signed' \\\n                in output\n        finally:\n            made.close()",
       "file": "dev/test_signatures.py",
       "findings": [],
-      "name": "test_the_approved_gate_with_no_list_names_the_command",
+      "name": "test_the_signing_gate_with_no_list_names_the_command",
       "proof": "PROOF-27",
       "reasons": []
     }

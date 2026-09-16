@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "update",
-  "generated_at": "2026-09-16T22:37:02Z",
+  "generated_at": "2026-09-16T22:51:23Z",
   "layers": [
     "proof text",
     "test body",
@@ -22,7 +22,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/update/20260916T223615Z-3aa5d77-ci-linux.json",
+  "record": ".purlin/records/update/20260916T225004Z-3aa5d77-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-15",
   "rule_hash": "bb6cd22dfb4cfead0310328fe6dc628485a0f18e6bc00af90033af8b09c86df8",
@@ -33,14 +33,6 @@
   "test_hash_kind": "file",
   "test_strength": null,
   "tests": [
-    {
-      "body": "def test_a_workflow_named_for_the_retired_gate_check_is_removed(tmp_path):\n    root = _project(tmp_path, V095)\n    rel = '%s/%s' % (update.WORKFLOW_DIR, update.WORKFLOW_NAMES[0])\n    _write(root, rel, 'name: gate\\non: push\\njobs: {}\\n')\n    _git(root, 'add', '-A')\n    _git(root, 'commit', '-qm', 'the workflow that release wrote')\n    assert rel in [item['files'] for item in update.pending(root)\n                   if item['id'] == 'workflows'][0]\n    _apply(root)\n    assert not os.path.exists(os.path.join(root, rel))",
-      "file": "dev/test_init_update.py",
-      "findings": [],
-      "name": "test_a_workflow_named_for_the_retired_gate_check_is_removed",
-      "proof": "PROOF-15",
-      "reasons": []
-    },
     {
       "body": "def test_declining_the_workflow_leaves_it_unwritten(tmp_path, capsys,\n                                                    monkeypatch):\n    root = _project(tmp_path, V095)\n    _answers(monkeypatch, [('Write .github/workflows/purlin.yml', 'n')])\n    _apply(root, argv=())\n    printed = capsys.readouterr().out\n    assert not os.path.exists(\n        os.path.join(root, '.github', 'workflows', 'purlin.yml'))\n    assert 'run purlin:init --ci to add it later' in printed\n    assert 'workflows' not in _ids(root)",
       "file": "dev/test_init_update.py",
@@ -61,7 +53,7 @@
       "body": "def test_the_retired_workflows_are_removed(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    before = _walk(root, ('*.yml',))\n    assert any(rel.startswith('.github/workflows/') for rel in before)\n    _apply(root)\n    after = [rel for rel in _walk(root, ('*.yml',))\n             if rel.startswith('.github/workflows/')]\n    assert after == ['.github/workflows/purlin.yml']",
       "file": "dev/test_init_update.py",
       "findings": [],
-      "name": "test_the_retired_workflows_are_removed[upgrade-0.9.5]",
+      "name": "test_the_retired_workflows_are_removed[upgrade-0.10-dev]",
       "proof": "PROOF-15",
       "reasons": []
     },
@@ -69,7 +61,15 @@
       "body": "def test_the_retired_workflows_are_removed(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    before = _walk(root, ('*.yml',))\n    assert any(rel.startswith('.github/workflows/') for rel in before)\n    _apply(root)\n    after = [rel for rel in _walk(root, ('*.yml',))\n             if rel.startswith('.github/workflows/')]\n    assert after == ['.github/workflows/purlin.yml']",
       "file": "dev/test_init_update.py",
       "findings": [],
-      "name": "test_the_retired_workflows_are_removed[upgrade-0.10-dev]",
+      "name": "test_the_retired_workflows_are_removed[upgrade-0.9.5]",
+      "proof": "PROOF-15",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_workflow_named_for_the_retired_gate_check_is_removed(tmp_path):\n    root = _project(tmp_path, V095)\n    rel = '%s/%s' % (update.WORKFLOW_DIR, update.WORKFLOW_NAMES[0])\n    _write(root, rel, 'name: gate\\non: push\\njobs: {}\\n')\n    _git(root, 'add', '-A')\n    _git(root, 'commit', '-qm', 'the workflow that release wrote')\n    assert rel in [item['files'] for item in update.pending(root)\n                   if item['id'] == 'workflows'][0]\n    _apply(root)\n    assert not os.path.exists(os.path.join(root, rel))",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_a_workflow_named_for_the_retired_gate_check_is_removed",
       "proof": "PROOF-15",
       "reasons": []
     }

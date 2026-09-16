@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-16T22:36:47Z",
+  "generated_at": "2026-09-16T22:51:03Z",
   "layers": [
     "proof text",
     "test body",
@@ -25,7 +25,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/states/20260916T223615Z-3aa5d77-ci-linux.json",
+  "record": ".purlin/records/states/20260916T225004Z-3aa5d77-ci-windows.json",
   "risk": "high",
   "rule": "RULE-6",
   "rule_hash": "4812480876f8250216c6d8c6370263185ca5e1ab960e393a20baeb082df6723c",
@@ -40,7 +40,7 @@
       "body": "def test_an_env_proof_needs_a_record_from_that_operating_system(self,\n                                                                   project):\n        project.spec(\n            '# Feature: login\\n\\n## Rules\\n\\n- RULE-1: Files lock\\n\\n'\n            '## Proof\\n\\n- PROOF-1 (RULE-1): Lock a file; verify a second open '\n            'returns 0 handles @env(windows)\\n')\n        project.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'}],\n                       os_name='linux')\n        cell = project.cell('RULE-1', 'passed')\n        assert cell['word'] == 'not run'\n        assert cell['missing_env'] == ['windows'], cell\n        assert 'windows: no record yet' in cell['reasons'], cell\n        project.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'}],\n                       os_name='windows')\n        assert project.cell('RULE-1', 'passed')['word'] == 'passed'",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_an_env_proof_needs_a_record_from_that_operating_system",
+      "name": "test_approved_when_a_current_approval_meets_a_passing_record",
       "proof": "PROOF-8",
       "reasons": []
     },
@@ -48,7 +48,7 @@
       "body": "def test_an_env_proof_needs_a_record_from_that_operating_system(self,\n                                                                   project):\n        project.spec(\n            '# Feature: login\\n\\n## Rules\\n\\n- RULE-1: Files lock\\n\\n'\n            '## Proof\\n\\n- PROOF-1 (RULE-1): Lock a file; verify a second open '\n            'returns 0 handles @env(windows)\\n')\n        project.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'}],\n                       os_name='linux')\n        cell = project.cell('RULE-1', 'passed')\n        assert cell['word'] == 'not run'\n        assert cell['missing_env'] == ['windows'], cell\n        assert 'windows: no record yet' in cell['reasons'], cell\n        project.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'}],\n                       os_name='windows')\n        assert project.cell('RULE-1', 'passed')['word'] == 'passed'",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_approved_when_a_current_approval_meets_a_passing_record",
+      "name": "test_an_env_proof_needs_a_record_from_that_operating_system",
       "proof": "PROOF-8",
       "reasons": []
     }

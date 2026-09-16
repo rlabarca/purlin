@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "brief",
-  "generated_at": "2026-09-16T22:36:18Z",
+  "generated_at": "2026-09-16T22:50:24Z",
   "layers": [
     "proof text",
     "test body",
@@ -29,7 +29,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/brief/20260916T223615Z-3aa5d77-ci-linux.json",
+  "record": ".purlin/records/brief/20260916T224959Z-3aa5d77-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-18",
   "rule_hash": "578b16c46544564ee30feb18f8424692ee488df4c2075d908fb379e9718c12c5",
@@ -52,7 +52,7 @@
       "body": "def test_a_glob_that_matches_nothing_is_shown_as_the_glob(self):\n        made = Project(spec=DESIGN_SPEC)\n        try:\n            built = brief_module.build_brief(made.root, None, 'login', 'RULE-1')\n            assert built['design']['mock'] == ['designs/login/*.png']\n            assert built['design']['screenshot'] == []\n        finally:\n            made.close()",
       "file": "dev/test_brief.py",
       "findings": [],
-      "name": "test_a_glob_that_matches_nothing_is_shown_as_the_glob",
+      "name": "test_a_design_rule_with_no_screenshot_needs_a_human",
       "proof": "PROOF-26",
       "reasons": []
     },
@@ -60,7 +60,7 @@
       "body": "def test_a_glob_that_matches_nothing_is_shown_as_the_glob(self):\n        made = Project(spec=DESIGN_SPEC)\n        try:\n            built = brief_module.build_brief(made.root, None, 'login', 'RULE-1')\n            assert built['design']['mock'] == ['designs/login/*.png']\n            assert built['design']['screenshot'] == []\n        finally:\n            made.close()",
       "file": "dev/test_brief.py",
       "findings": [],
-      "name": "test_a_design_rule_with_no_screenshot_needs_a_human",
+      "name": "test_a_glob_that_matches_nothing_is_shown_as_the_glob",
       "proof": "PROOF-26",
       "reasons": []
     }

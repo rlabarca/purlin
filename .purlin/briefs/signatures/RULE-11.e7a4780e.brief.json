@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "signatures",
-  "generated_at": "2026-09-16T22:36:42Z",
+  "generated_at": "2026-09-16T22:50:56Z",
   "layers": [
     "proof text",
     "test body",
@@ -37,7 +37,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/signatures/20260916T223615Z-3aa5d77-ci-linux.json",
+  "record": ".purlin/records/signatures/20260916T225002Z-3aa5d77-ci-windows.json",
   "risk": "high",
   "rule": "RULE-11",
   "rule_hash": "c635caee352f7c6e2f860a5dabeecd4cf07624a45a06d843c308358a6e2749fa",
@@ -48,6 +48,14 @@
   "test_hash_kind": "file",
   "test_strength": null,
   "tests": [
+    {
+      "body": null,
+      "file": "dev/test_verify_gate.py",
+      "findings": [],
+      "name": "test_the_test_strength_is_not_read_at_tested",
+      "proof": "PROOF-31",
+      "reasons": []
+    },
     {
       "body": "def test_the_four_answers_each_do_their_own_thing(self, capsys):\n        made = signing_project(sign_at='low')\n        try:\n            answers = {'RULE-2': ('hold', 'no case for an expired token'),\n                       'RULE-1': 'sign'}\n            given = sign_module.walk(\n                made.root, answer=lambda entry, _text: answers[entry['id']])\n            capsys.readouterr()\n            assert given['signed'] == [('login', 'RULE-1')]\n            assert given['held'] == [('login', 'RULE-2')]\n            assert len(given['commits']) == 2, given\n            names = made.signatures()\n            assert any(name.startswith('RULE-1.') and not\n                       name.endswith('.hold.json') for name in names), names\n            assert any(name.endswith('.hold.json') for name in names), names\n        finally:\n            made.close()",
       "file": "dev/test_signatures.py",
@@ -60,8 +68,8 @@
       "body": null,
       "file": "dev/test_verify_gate.py",
       "findings": [],
-      "name": "test_the_test_strength_is_not_read_at_tested",
-      "proof": "PROOF-31",
+      "name": "test_a_rule_with_no_record_fails_and_is_named",
+      "proof": "PROOF-32",
       "reasons": []
     },
     {
@@ -76,8 +84,8 @@
       "body": null,
       "file": "dev/test_verify_gate.py",
       "findings": [],
-      "name": "test_a_rule_with_no_record_fails_and_is_named",
-      "proof": "PROOF-32",
+      "name": "test_a_failing_proof_fails_the_gate",
+      "proof": "PROOF-33",
       "reasons": []
     },
     {
@@ -85,14 +93,6 @@
       "file": "dev/test_signatures.py",
       "findings": [],
       "name": "test_a_case_is_carried_to_the_close_and_written_nowhere",
-      "proof": "PROOF-33",
-      "reasons": []
-    },
-    {
-      "body": null,
-      "file": "dev/test_verify_gate.py",
-      "findings": [],
-      "name": "test_a_failing_proof_fails_the_gate",
       "proof": "PROOF-33",
       "reasons": []
     }

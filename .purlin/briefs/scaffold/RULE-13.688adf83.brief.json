@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "scaffold",
-  "generated_at": "2026-09-16T22:36:37Z",
+  "generated_at": "2026-09-16T22:50:50Z",
   "layers": [
     "proof text",
     "test body",
@@ -22,7 +22,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/scaffold/20260916T223615Z-3aa5d77-ci-linux.json",
+  "record": ".purlin/records/scaffold/20260916T225002Z-3aa5d77-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-13",
   "rule_hash": "b8f593438a1df4713d589d87389fe66e97ff676bbf527a630120051148ae910a",
@@ -33,22 +33,6 @@
   "test_hash_kind": "file",
   "test_strength": null,
   "tests": [
-    {
-      "body": "def test_ci_under_passed_writes_it_anyway(self, project):\n        project.run('--gate', 'passed', '--ci', 'github')\n        assert project.has('.github/workflows/purlin.yml')",
-      "file": "dev/test_init_scaffold.py",
-      "findings": [],
-      "name": "test_ci_under_passed_writes_it_anyway",
-      "proof": "PROOF-13",
-      "reasons": []
-    },
-    {
-      "body": "def test_passed_writes_no_workflow(self, project):\n        output = project.run('--gate', 'passed')\n        assert not project.has('.github/workflows/purlin.yml')\n        assert 'pass --ci to write it anyway' in output",
-      "file": "dev/test_init_scaffold.py",
-      "findings": [],
-      "name": "test_passed_writes_no_workflow",
-      "proof": "PROOF-13",
-      "reasons": []
-    },
     {
       "body": null,
       "file": "dev/test_init_scaffold.py",
@@ -62,6 +46,22 @@
       "file": "dev/test_init_scaffold.py",
       "findings": [],
       "name": "test_tested_writes_no_workflow",
+      "proof": "PROOF-13",
+      "reasons": []
+    },
+    {
+      "body": "def test_ci_under_passed_writes_it_anyway(self, project):\n        project.run('--gate', 'passed', '--ci', 'github')\n        assert project.has('.github/workflows/purlin.yml')",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_ci_under_passed_writes_it_anyway",
+      "proof": "PROOF-13",
+      "reasons": []
+    },
+    {
+      "body": "def test_passed_writes_no_workflow(self, project):\n        output = project.run('--gate', 'passed')\n        assert not project.has('.github/workflows/purlin.yml')\n        assert 'pass --ci to write it anyway' in output",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_passed_writes_no_workflow",
       "proof": "PROOF-13",
       "reasons": []
     }

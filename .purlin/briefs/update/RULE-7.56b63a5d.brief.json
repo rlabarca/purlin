@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "update",
-  "generated_at": "2026-09-16T22:37:01Z",
+  "generated_at": "2026-09-16T22:51:21Z",
   "layers": [
     "proof text",
     "test body",
@@ -25,7 +25,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/update/20260916T223615Z-3aa5d77-ci-linux.json",
+  "record": ".purlin/records/update/20260916T225004Z-3aa5d77-ci-windows.json",
   "risk": "high",
   "rule": "RULE-7",
   "rule_hash": "fa429f1f7300f872443baf03bf6a174ee226e7aa7f529b3c87fee9e182380da9",
@@ -64,7 +64,7 @@
       "body": "def test_every_rewritten_file_leaves_its_previous_bytes(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    _apply(root)\n    backups = _walk(root, ('*.bak',), skip_backups=False)\n    names = ' '.join(backups)\n    assert '.purlin/config.json.local-' in names\n    assert '.gitignore.local-' in names\n    assert any(rel.startswith('.purlin/plugins/') for rel in backups)\n    assert any(rel.startswith('specs/') for rel in backups)",
       "file": "dev/test_init_update.py",
       "findings": [],
-      "name": "test_every_rewritten_file_leaves_its_previous_bytes[upgrade-0.9.5]",
+      "name": "test_every_rewritten_file_leaves_its_previous_bytes[upgrade-0.10-dev]",
       "proof": "PROOF-7",
       "reasons": []
     },
@@ -72,7 +72,7 @@
       "body": "def test_every_rewritten_file_leaves_its_previous_bytes(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    _apply(root)\n    backups = _walk(root, ('*.bak',), skip_backups=False)\n    names = ' '.join(backups)\n    assert '.purlin/config.json.local-' in names\n    assert '.gitignore.local-' in names\n    assert any(rel.startswith('.purlin/plugins/') for rel in backups)\n    assert any(rel.startswith('specs/') for rel in backups)",
       "file": "dev/test_init_update.py",
       "findings": [],
-      "name": "test_every_rewritten_file_leaves_its_previous_bytes[upgrade-0.10-dev]",
+      "name": "test_every_rewritten_file_leaves_its_previous_bytes[upgrade-0.9.5]",
       "proof": "PROOF-7",
       "reasons": []
     }

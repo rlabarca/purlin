@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "purlin_report",
-  "generated_at": "2026-09-16T22:36:25Z",
+  "generated_at": "2026-09-16T22:50:34Z",
   "layers": [
     "proof text",
     "test body",
@@ -22,7 +22,7 @@
       "tier": "e2e"
     }
   ],
-  "record": ".purlin/records/purlin_report/20260916T223615Z-3aa5d77-ci-linux.json",
+  "record": ".purlin/records/purlin_report/20260916T225000Z-3aa5d77-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-8",
   "rule_hash": "9f9b2190e37b4b7852de224b5a47543bfdf61b8d2416b9c3c6d16fc02bbf42c2",
@@ -37,7 +37,7 @@
       "body": "def test_the_tiles_scale_with_the_gate(browser, tmp_path):\n    solo = open_board(browser, tmp_path / 'solo', payload_named('solo'))\n    assert texts(solo, '.tile-l') == ['Untested', 'Failing', 'Passed']\n    assert solo.query_selector_all('.flag') == []\n    assert solo.eval_on_selector(\n        '.tile-l', 'el => getComputedStyle(el).textTransform') == 'uppercase'\n    solo.close()\n\n    team = open_board(browser, tmp_path / 'team', payload_named('team'))\n    assert texts(team, '.tile-l') == ['Untested', 'Failing', 'Passed',\n                                      'Strong']\n    assert team.query_selector_all('.flag') == []\n    team.close()\n\n    payload = payload_named('regulated')\n    page = open_board(browser, tmp_path / 'reg', payload)\n    assert texts(page, '.tile-l') == ['Untested', 'Failing', 'Passed',\n                                      'Strong', 'Signed']\n    assert texts(page, '.tile-v') == [str(payload['summary'][name])\n                                      for name in BUCKETS]\n    assert texts(page, '.flag-l') == ['Stale']\n    assert texts(page, '.flag-v') == [str(payload['summary']['stale'])]\n    page.close()",
       "file": "dev/test_purlin_report.py",
       "findings": [],
-      "name": "test_the_tiles_scale_with_the_gate",
+      "name": "test_the_seven_states_each_have_a_tile",
       "proof": "PROOF-8",
       "reasons": []
     },
@@ -45,7 +45,7 @@
       "body": "def test_the_tiles_scale_with_the_gate(browser, tmp_path):\n    solo = open_board(browser, tmp_path / 'solo', payload_named('solo'))\n    assert texts(solo, '.tile-l') == ['Untested', 'Failing', 'Passed']\n    assert solo.query_selector_all('.flag') == []\n    assert solo.eval_on_selector(\n        '.tile-l', 'el => getComputedStyle(el).textTransform') == 'uppercase'\n    solo.close()\n\n    team = open_board(browser, tmp_path / 'team', payload_named('team'))\n    assert texts(team, '.tile-l') == ['Untested', 'Failing', 'Passed',\n                                      'Strong']\n    assert team.query_selector_all('.flag') == []\n    team.close()\n\n    payload = payload_named('regulated')\n    page = open_board(browser, tmp_path / 'reg', payload)\n    assert texts(page, '.tile-l') == ['Untested', 'Failing', 'Passed',\n                                      'Strong', 'Signed']\n    assert texts(page, '.tile-v') == [str(payload['summary'][name])\n                                      for name in BUCKETS]\n    assert texts(page, '.flag-l') == ['Stale']\n    assert texts(page, '.flag-v') == [str(payload['summary']['stale'])]\n    page.close()",
       "file": "dev/test_purlin_report.py",
       "findings": [],
-      "name": "test_the_seven_states_each_have_a_tile",
+      "name": "test_the_tiles_scale_with_the_gate",
       "proof": "PROOF-8",
       "reasons": []
     }

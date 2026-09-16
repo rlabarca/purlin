@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "update",
-  "generated_at": "2026-09-16T22:37:01Z",
+  "generated_at": "2026-09-16T22:51:22Z",
   "layers": [
     "proof text",
     "test body",
@@ -23,7 +23,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/update/20260916T223615Z-3aa5d77-ci-linux.json",
+  "record": ".purlin/records/update/20260916T225004Z-3aa5d77-ci-windows.json",
   "risk": "high",
   "rule": "RULE-10",
   "rule_hash": "25ccce67e0af6fc1b70a88e7c56810e7372139012fd69f2b9d7c239662873350",
@@ -38,7 +38,23 @@
       "body": "def test_retired_keys_are_gone(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    before = json.loads(_read(root, '.purlin/config.json'))\n    retired = update._gate().RETIRED_KEYS\n    assert any(key in before for key in retired), before\n    _apply(root)\n    after = json.loads(_read(root, '.purlin/config.json'))\n    assert [key for key in retired if key in after] == []",
       "file": "dev/test_init_update.py",
       "findings": [],
+      "name": "test_retired_keys_are_gone[upgrade-0.10-dev]",
+      "proof": "PROOF-10",
+      "reasons": []
+    },
+    {
+      "body": "def test_retired_keys_are_gone(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    before = json.loads(_read(root, '.purlin/config.json'))\n    retired = update._gate().RETIRED_KEYS\n    assert any(key in before for key in retired), before\n    _apply(root)\n    after = json.loads(_read(root, '.purlin/config.json'))\n    assert [key for key in retired if key in after] == []",
+      "file": "dev/test_init_update.py",
+      "findings": [],
       "name": "test_retired_keys_are_gone[upgrade-0.9.5]",
+      "proof": "PROOF-10",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_config_is_the_gate_shape(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    _apply(root)\n    config = json.loads(_read(root, '.purlin/config.json'))\n    assert config['version'] == VERSION\n    assert config['gate'] == 'passed'\n    assert config['ai_review_at'] == 'never'\n    assert config['min_strength'] is None\n    assert config['mutation_engine'] == 'auto'\n    assert config['sql_engine'] is None\n    assert config['ci'] == 'github'\n    assert config['pre_push'] in ('on', 'off')",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_config_is_the_gate_shape[upgrade-0.10-dev]",
       "proof": "PROOF-10",
       "reasons": []
     },
@@ -55,22 +71,6 @@
       "file": "dev/test_init_update.py",
       "findings": [],
       "name": "test_the_old_gate_name_and_signer_key_carry_over",
-      "proof": "PROOF-10",
-      "reasons": []
-    },
-    {
-      "body": "def test_retired_keys_are_gone(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    before = json.loads(_read(root, '.purlin/config.json'))\n    retired = update._gate().RETIRED_KEYS\n    assert any(key in before for key in retired), before\n    _apply(root)\n    after = json.loads(_read(root, '.purlin/config.json'))\n    assert [key for key in retired if key in after] == []",
-      "file": "dev/test_init_update.py",
-      "findings": [],
-      "name": "test_retired_keys_are_gone[upgrade-0.10-dev]",
-      "proof": "PROOF-10",
-      "reasons": []
-    },
-    {
-      "body": "def test_the_config_is_the_gate_shape(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    _apply(root)\n    config = json.loads(_read(root, '.purlin/config.json'))\n    assert config['version'] == VERSION\n    assert config['gate'] == 'passed'\n    assert config['ai_review_at'] == 'never'\n    assert config['min_strength'] is None\n    assert config['mutation_engine'] == 'auto'\n    assert config['sql_engine'] is None\n    assert config['ci'] == 'github'\n    assert config['pre_push'] in ('on', 'off')",
-      "file": "dev/test_init_update.py",
-      "findings": [],
-      "name": "test_the_config_is_the_gate_shape[upgrade-0.10-dev]",
       "proof": "PROOF-10",
       "reasons": []
     }

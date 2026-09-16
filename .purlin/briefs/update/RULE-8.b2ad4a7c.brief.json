@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "update",
-  "generated_at": "2026-09-16T22:37:01Z",
+  "generated_at": "2026-09-16T22:51:22Z",
   "layers": [
     "proof text",
     "test body",
@@ -23,7 +23,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/update/20260916T223615Z-3aa5d77-ci-linux.json",
+  "record": ".purlin/records/update/20260916T225004Z-3aa5d77-ci-windows.json",
   "risk": "high",
   "rule": "RULE-8",
   "rule_hash": "69871b3b43efa40ff0939ed82b6fd323514f3fb720256050ffa2a9f934183576",
@@ -46,7 +46,23 @@
       "body": "def test_no_proof_or_verification_file_remains_on_disk(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    assert _walk(root, LEFTOVER), 'the fixture should start with some'\n    _apply(root)\n    assert _walk(root, LEFTOVER) == []",
       "file": "dev/test_init_update.py",
       "findings": [],
+      "name": "test_no_proof_or_verification_file_remains_on_disk[upgrade-0.10-dev]",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_proof_or_verification_file_remains_on_disk(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    assert _walk(root, LEFTOVER), 'the fixture should start with some'\n    _apply(root)\n    assert _walk(root, LEFTOVER) == []",
+      "file": "dev/test_init_update.py",
+      "findings": [],
       "name": "test_no_proof_or_verification_file_remains_on_disk[upgrade-0.9.5]",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_proof_or_verification_file_remains_tracked(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    _apply(root)\n    left = [rel for rel in _tracked(root)\n            if any(fnmatch.fnmatch(os.path.basename(rel), p)\n                   for p in LEFTOVER)]\n    assert left == []",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_no_proof_or_verification_file_remains_tracked[upgrade-0.10-dev]",
       "proof": "PROOF-8",
       "reasons": []
     },
@@ -62,23 +78,7 @@
       "body": "def test_the_dashboard_data_is_untracked_and_ignored(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    assert '.purlin/report-data.js' in _tracked(root)\n    _apply(root)\n    assert '.purlin/report-data.js' not in _tracked(root)\n    assert os.path.isfile(os.path.join(root, '.purlin', 'report-data.js'))\n    ignored = _read(root, '.gitignore').splitlines()\n    assert '.purlin/report-data.js' in ignored\n    assert '.purlin/report-stamp.js' in ignored",
       "file": "dev/test_init_update.py",
       "findings": [],
-      "name": "test_the_dashboard_data_is_untracked_and_ignored[upgrade-0.9.5]",
-      "proof": "PROOF-8",
-      "reasons": []
-    },
-    {
-      "body": "def test_no_proof_or_verification_file_remains_on_disk(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    assert _walk(root, LEFTOVER), 'the fixture should start with some'\n    _apply(root)\n    assert _walk(root, LEFTOVER) == []",
-      "file": "dev/test_init_update.py",
-      "findings": [],
-      "name": "test_no_proof_or_verification_file_remains_on_disk[upgrade-0.10-dev]",
-      "proof": "PROOF-8",
-      "reasons": []
-    },
-    {
-      "body": "def test_no_proof_or_verification_file_remains_tracked(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    _apply(root)\n    left = [rel for rel in _tracked(root)\n            if any(fnmatch.fnmatch(os.path.basename(rel), p)\n                   for p in LEFTOVER)]\n    assert left == []",
-      "file": "dev/test_init_update.py",
-      "findings": [],
-      "name": "test_no_proof_or_verification_file_remains_tracked[upgrade-0.10-dev]",
+      "name": "test_the_dashboard_data_is_untracked_and_ignored[upgrade-0.10-dev]",
       "proof": "PROOF-8",
       "reasons": []
     },
@@ -86,7 +86,7 @@
       "body": "def test_the_dashboard_data_is_untracked_and_ignored(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    assert '.purlin/report-data.js' in _tracked(root)\n    _apply(root)\n    assert '.purlin/report-data.js' not in _tracked(root)\n    assert os.path.isfile(os.path.join(root, '.purlin', 'report-data.js'))\n    ignored = _read(root, '.gitignore').splitlines()\n    assert '.purlin/report-data.js' in ignored\n    assert '.purlin/report-stamp.js' in ignored",
       "file": "dev/test_init_update.py",
       "findings": [],
-      "name": "test_the_dashboard_data_is_untracked_and_ignored[upgrade-0.10-dev]",
+      "name": "test_the_dashboard_data_is_untracked_and_ignored[upgrade-0.9.5]",
       "proof": "PROOF-8",
       "reasons": []
     }

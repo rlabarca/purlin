@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-16T22:36:47Z",
+  "generated_at": "2026-09-16T22:51:04Z",
   "layers": [
     "proof text",
     "test body",
@@ -23,7 +23,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/states/20260916T223615Z-3aa5d77-ci-linux.json",
+  "record": ".purlin/records/states/20260916T225004Z-3aa5d77-ci-windows.json",
   "risk": "high",
   "rule": "RULE-12",
   "rule_hash": "ed3e391ed2fe5104be793eba9dfe91b7a54fa0b1541fefa6bf410f1f4495254e",
@@ -38,7 +38,7 @@
       "body": "def test_a_strength_under_the_minimum_is_weak_and_names_the_findings(self):\n        made = Project(gate='strong', extra_config={'ai_review_at': 'never'})\n        try:\n            made.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'},\n                         {'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}],\n                        ci=True, strength=48)\n            cell = made.cell('RULE-1', 'strong')\n            assert cell['word'] == 'weak'\n            assert cell['reasons'] == ['strength 48% under 70%',\n                                       'happy_path_only'], cell\n        finally:\n            made.close()",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_a_strength_under_the_minimum_is_weak_and_names_the_findings",
+      "name": "test_the_rollups_count_states_and_name_the_lowest",
       "proof": "PROOF-14",
       "reasons": []
     },
@@ -46,7 +46,7 @@
       "body": "def test_a_strength_under_the_minimum_is_weak_and_names_the_findings(self):\n        made = Project(gate='strong', extra_config={'ai_review_at': 'never'})\n        try:\n            made.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'},\n                         {'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}],\n                        ci=True, strength=48)\n            cell = made.cell('RULE-1', 'strong')\n            assert cell['word'] == 'weak'\n            assert cell['reasons'] == ['strength 48% under 70%',\n                                       'happy_path_only'], cell\n        finally:\n            made.close()",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_the_rollups_count_states_and_name_the_lowest",
+      "name": "test_a_strength_under_the_minimum_is_weak_and_names_the_findings",
       "proof": "PROOF-14",
       "reasons": []
     }

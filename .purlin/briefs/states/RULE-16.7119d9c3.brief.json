@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-16T22:36:48Z",
+  "generated_at": "2026-09-16T22:51:05Z",
   "layers": [
     "proof text",
     "test body",
@@ -24,7 +24,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/states/20260916T223615Z-3aa5d77-ci-linux.json",
+  "record": ".purlin/records/states/20260916T225004Z-3aa5d77-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-16",
   "rule_hash": "77c2ca68361e31d6e5b9bae2f17b82d56d8cf255ecceb0199946249aa15933a6",
@@ -39,7 +39,7 @@
       "body": "def test_a_manual_proof_needs_a_person(self):\n        cell = _strong(risk='low', proofs=[\n            {'id': 'PROOF-1', 'tier': 'manual', 'env': None, 'text': 'x',\n             'findings': [], 'tests': []}])\n        assert cell['word'] == 'needs a person'\n        assert cell['reasons'] == ['manual proof'], cell",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_a_manual_proof_needs_a_person",
+      "name": "test_the_data_file_is_a_const_assignment_and_round_trips",
       "proof": "PROOF-19",
       "reasons": []
     },
@@ -47,7 +47,7 @@
       "body": "def test_a_manual_proof_needs_a_person(self):\n        cell = _strong(risk='low', proofs=[\n            {'id': 'PROOF-1', 'tier': 'manual', 'env': None, 'text': 'x',\n             'findings': [], 'tests': []}])\n        assert cell['word'] == 'needs a person'\n        assert cell['reasons'] == ['manual proof'], cell",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_the_data_file_is_a_const_assignment_and_round_trips",
+      "name": "test_a_manual_proof_needs_a_person",
       "proof": "PROOF-19",
       "reasons": []
     }

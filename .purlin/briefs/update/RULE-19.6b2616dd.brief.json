@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "update",
-  "generated_at": "2026-09-16T22:37:03Z",
+  "generated_at": "2026-09-16T22:51:24Z",
   "layers": [
     "proof text",
     "test body",
@@ -25,7 +25,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/update/20260916T223615Z-3aa5d77-ci-linux.json",
+  "record": ".purlin/records/update/20260916T225004Z-3aa5d77-ci-windows.json",
   "risk": "high",
   "rule": "RULE-19",
   "rule_hash": "3d5cf1d8d1f02784d72001d9f056d672e0c6cb930f293d5a9552bd16c51a7666",
@@ -53,6 +53,22 @@
       "reasons": []
     },
     {
+      "body": null,
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_status_says_run_the_update_while_something_is_pending",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": null,
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_status_stops_saying_it_once_nothing_is_pending",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
       "body": "def test_status_stops_saying_it_once_the_old_project_has_updated(tmp_path):\n    root = _project(tmp_path, V095)\n    _apply(root)\n    assert 'Run: purlin:init --update' not in status_module.sync_status(root)",
       "file": "dev/test_init_update.py",
       "findings": [],
@@ -73,22 +89,6 @@
       "file": "dev/test_init_update.py",
       "findings": [],
       "name": "test_pending_is_true_for_a_project_that_has_not_updated",
-      "proof": "PROOF-19",
-      "reasons": []
-    },
-    {
-      "body": null,
-      "file": "dev/test_init_update.py",
-      "findings": [],
-      "name": "test_status_says_run_the_update_while_something_is_pending",
-      "proof": "PROOF-19",
-      "reasons": []
-    },
-    {
-      "body": null,
-      "file": "dev/test_init_update.py",
-      "findings": [],
-      "name": "test_status_stops_saying_it_once_nothing_is_pending",
       "proof": "PROOF-19",
       "reasons": []
     }

@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "brief",
-  "generated_at": "2026-09-16T22:36:18Z",
+  "generated_at": "2026-09-16T22:50:24Z",
   "layers": [
     "proof text",
     "test body",
@@ -23,7 +23,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/brief/20260916T223615Z-3aa5d77-ci-linux.json",
+  "record": ".purlin/records/brief/20260916T224959Z-3aa5d77-ci-windows.json",
   "risk": "high",
   "rule": "RULE-17",
   "rule_hash": "baa2ef8a1f34209856394106bd9ade6db74843cccbaf4efc9fbb902117f87e15",
@@ -38,7 +38,7 @@
       "body": "def test_an_answer_in_no_shape_at_all_observes_nothing(self):\n        assert brief_module.model_observations('It looks fine to me.') == (\n            [], None)\n        assert brief_module.model_observations('not available') == ([], None)\n        assert brief_module.model_observations('') == ([], None)",
       "file": "dev/test_brief.py",
       "findings": [],
-      "name": "test_an_answer_in_no_shape_at_all_observes_nothing",
+      "name": "test_an_answer_that_names_no_verdict_decides_nothing",
       "proof": "PROOF-24",
       "reasons": []
     },
@@ -46,7 +46,7 @@
       "body": "def test_an_answer_in_no_shape_at_all_observes_nothing(self):\n        assert brief_module.model_observations('It looks fine to me.') == (\n            [], None)\n        assert brief_module.model_observations('not available') == ([], None)\n        assert brief_module.model_observations('') == ([], None)",
       "file": "dev/test_brief.py",
       "findings": [],
-      "name": "test_an_answer_that_names_no_verdict_decides_nothing",
+      "name": "test_an_answer_in_no_shape_at_all_observes_nothing",
       "proof": "PROOF-24",
       "reasons": []
     }

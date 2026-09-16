@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "signatures",
-  "generated_at": "2026-09-16T22:36:43Z",
+  "generated_at": "2026-09-16T22:50:58Z",
   "layers": [
     "proof text",
     "test body",
@@ -25,7 +25,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/signatures/20260916T223615Z-3aa5d77-ci-linux.json",
+  "record": ".purlin/records/signatures/20260916T225002Z-3aa5d77-ci-windows.json",
   "risk": "high",
   "rule": "RULE-23",
   "rule_hash": "3d31e2eea983384d634b5ae5d22965e27315135de65ab37d75d1bdceea09253e",
@@ -40,7 +40,7 @@
       "body": "def test_a_signature_on_a_side_branch_is_not_on_the_protected_branch(\n            self, at_strong):\n        signing_key(at_strong.root)\n        git(at_strong.root, 'checkout', '-q', '-b', 'side')\n        sign_module.main(['login', 'RULE-1', '--project-root', at_strong.root])\n        path = at_strong.load()[('login', 'RULE-1')][0]['path']\n        assert not purlin_signatures.is_ancestor(at_strong.root, path, 'main')\n        git(at_strong.root, 'checkout', '-q', 'main')\n        git(at_strong.root, 'merge', '-q', '--ff-only', 'side')\n        assert purlin_signatures.is_ancestor(at_strong.root, path, 'main')",
       "file": "dev/test_signatures.py",
       "findings": [],
-      "name": "test_a_signature_on_a_side_branch_is_not_on_the_protected_branch",
+      "name": "test_an_approval_on_a_side_branch_is_not_on_the_protected_branch",
       "proof": "PROOF-29",
       "reasons": []
     },
@@ -48,7 +48,7 @@
       "body": "def test_a_signature_on_a_side_branch_is_not_on_the_protected_branch(\n            self, at_strong):\n        signing_key(at_strong.root)\n        git(at_strong.root, 'checkout', '-q', '-b', 'side')\n        sign_module.main(['login', 'RULE-1', '--project-root', at_strong.root])\n        path = at_strong.load()[('login', 'RULE-1')][0]['path']\n        assert not purlin_signatures.is_ancestor(at_strong.root, path, 'main')\n        git(at_strong.root, 'checkout', '-q', 'main')\n        git(at_strong.root, 'merge', '-q', '--ff-only', 'side')\n        assert purlin_signatures.is_ancestor(at_strong.root, path, 'main')",
       "file": "dev/test_signatures.py",
       "findings": [],
-      "name": "test_an_approval_on_a_side_branch_is_not_on_the_protected_branch",
+      "name": "test_a_signature_on_a_side_branch_is_not_on_the_protected_branch",
       "proof": "PROOF-29",
       "reasons": []
     }

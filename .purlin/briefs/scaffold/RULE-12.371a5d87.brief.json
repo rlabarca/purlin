@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "scaffold",
-  "generated_at": "2026-09-16T22:36:37Z",
+  "generated_at": "2026-09-16T22:50:50Z",
   "layers": [
     "proof text",
     "test body",
@@ -25,7 +25,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/scaffold/20260916T223615Z-3aa5d77-ci-linux.json",
+  "record": ".purlin/records/scaffold/20260916T225002Z-3aa5d77-ci-windows.json",
   "risk": "high",
   "rule": "RULE-12",
   "rule_hash": "cdb65fa992f2b2a576ddd5a1e8bfedfe9381d6c3a766b4cc3fa36d310f3110ed",
@@ -37,42 +37,6 @@
   "test_strength": null,
   "tests": [
     {
-      "body": "def test_lowering_from_signed_keeps_the_signer_list(self, project):\n        project.run('--gate', 'signed')\n        config = project.config()\n        config['signers'] = ['jane@acme.com']\n        write(project.path('.purlin/config.json'),\n              json.dumps(config, indent=2) + '\\n')\n        project.run('--gate', 'strong')\n        assert project.config()['signers'] == ['jane@acme.com']",
-      "file": "dev/test_init_scaffold.py",
-      "findings": [],
-      "name": "test_lowering_from_signed_keeps_the_signer_list",
-      "proof": "PROOF-12",
-      "reasons": []
-    },
-    {
-      "body": "def test_lowering_writes_the_setting_and_deletes_nothing(self, project):\n        project.run('--gate', 'signed')\n        project.run('--gate', 'passed')\n        assert project.config()['gate'] == 'passed'\n        assert project.config()['min_strength'] is None\n        assert project.has('.github/workflows/purlin.yml')",
-      "file": "dev/test_init_scaffold.py",
-      "findings": [],
-      "name": "test_lowering_writes_the_setting_and_deletes_nothing",
-      "proof": "PROOF-12",
-      "reasons": []
-    },
-    {
-      "body": "def test_raising_to_signed_keeps_what_strong_wrote(self, project):\n        project.run('--gate', 'strong')\n        before = read(project.path('.github/workflows/purlin.yml'))\n        output = project.run('--gate', 'signed')\n        assert read(project.path('.github/workflows/purlin.yml')) == before\n        assert summary_paths(output)['.github/workflows/purlin.yml'] == 'kept'",
-      "file": "dev/test_init_scaffold.py",
-      "findings": [
-        "logic_mirroring"
-      ],
-      "name": "test_raising_to_signed_keeps_what_strong_wrote",
-      "proof": "PROOF-12",
-      "reasons": [
-        "expected value computed by same function as SUT"
-      ]
-    },
-    {
-      "body": "def test_raising_to_strong_adds_the_workflow(self, project):\n        project.run('--gate', 'passed')\n        assert not project.has('.github/workflows/purlin.yml')\n        project.run('--gate', 'strong')\n        assert project.has('.github/workflows/purlin.yml')\n        assert project.config()['gate'] == 'strong'",
-      "file": "dev/test_init_scaffold.py",
-      "findings": [],
-      "name": "test_raising_to_strong_adds_the_workflow",
-      "proof": "PROOF-12",
-      "reasons": []
-    },
-    {
       "body": null,
       "file": "dev/test_init_scaffold.py",
       "findings": [
@@ -83,6 +47,14 @@
       "reasons": [
         "expected value computed by same function as SUT"
       ]
+    },
+    {
+      "body": "def test_lowering_writes_the_setting_and_deletes_nothing(self, project):\n        project.run('--gate', 'signed')\n        project.run('--gate', 'passed')\n        assert project.config()['gate'] == 'passed'\n        assert project.config()['min_strength'] is None\n        assert project.has('.github/workflows/purlin.yml')",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_lowering_writes_the_setting_and_deletes_nothing",
+      "proof": "PROOF-12",
+      "reasons": []
     },
     {
       "body": null,
@@ -107,6 +79,34 @@
       "reasons": [
         "expected value computed by same function as SUT"
       ]
+    },
+    {
+      "body": "def test_lowering_from_signed_keeps_the_signer_list(self, project):\n        project.run('--gate', 'signed')\n        config = project.config()\n        config['signers'] = ['jane@acme.com']\n        write(project.path('.purlin/config.json'),\n              json.dumps(config, indent=2) + '\\n')\n        project.run('--gate', 'strong')\n        assert project.config()['signers'] == ['jane@acme.com']",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_lowering_from_signed_keeps_the_signer_list",
+      "proof": "PROOF-12",
+      "reasons": []
+    },
+    {
+      "body": "def test_raising_to_signed_keeps_what_strong_wrote(self, project):\n        project.run('--gate', 'strong')\n        before = read(project.path('.github/workflows/purlin.yml'))\n        output = project.run('--gate', 'signed')\n        assert read(project.path('.github/workflows/purlin.yml')) == before\n        assert summary_paths(output)['.github/workflows/purlin.yml'] == 'kept'",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_raising_to_signed_keeps_what_strong_wrote",
+      "proof": "PROOF-12",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_raising_to_strong_adds_the_workflow(self, project):\n        project.run('--gate', 'passed')\n        assert not project.has('.github/workflows/purlin.yml')\n        project.run('--gate', 'strong')\n        assert project.has('.github/workflows/purlin.yml')\n        assert project.config()['gate'] == 'strong'",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_raising_to_strong_adds_the_workflow",
+      "proof": "PROOF-12",
+      "reasons": []
     }
   ],
   "triple_hash": "371a5d871fb1b55f6420de9594e30ac1194c653684adfbed944593ccdafdff50"

@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "gate_check",
-  "generated_at": "2026-09-16T22:36:20Z",
+  "generated_at": "2026-09-16T22:50:27Z",
   "layers": [
     "proof text",
     "test body",
@@ -30,7 +30,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/gate_check/20260916T223615Z-3aa5d77-ci-linux.json",
+  "record": ".purlin/records/gate_check/20260916T224959Z-3aa5d77-ci-windows.json",
   "risk": "high",
   "rule": "RULE-8",
   "rule_hash": "66ea7b9bce8bbe0037e05a5ac87e2c19722c9bd6f28472431fb6a9363cf8c6ca",

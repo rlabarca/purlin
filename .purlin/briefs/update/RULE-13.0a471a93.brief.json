@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "update",
-  "generated_at": "2026-09-16T22:37:02Z",
+  "generated_at": "2026-09-16T22:51:23Z",
   "layers": [
     "proof text",
     "test body",
@@ -25,7 +25,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/update/20260916T223615Z-3aa5d77-ci-linux.json",
+  "record": ".purlin/records/update/20260916T225004Z-3aa5d77-ci-windows.json",
   "risk": "high",
   "rule": "RULE-13",
   "rule_hash": "0d4d5f49a272f67f140d25ed8c3e416d1ba2a75f84150a5f9a49fb20b85a1df5",
@@ -64,6 +64,14 @@
       "body": "def test_no_spec_carries_the_retired_scope_afterwards(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    _apply(root)\n    for rel in _walk(root, ('*.md',)):\n        if rel.startswith('specs/'):\n            assert '%swindows-2022)' % SCOPE not in _read(root, rel)\n            assert '%sfigma-mcp)' % SCOPE not in _read(root, rel)",
       "file": "dev/test_init_update.py",
       "findings": [],
+      "name": "test_no_spec_carries_the_retired_scope_afterwards[upgrade-0.10-dev]",
+      "proof": "PROOF-13",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_spec_carries_the_retired_scope_afterwards(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    _apply(root)\n    for rel in _walk(root, ('*.md',)):\n        if rel.startswith('specs/'):\n            assert '%swindows-2022)' % SCOPE not in _read(root, rel)\n            assert '%sfigma-mcp)' % SCOPE not in _read(root, rel)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
       "name": "test_no_spec_carries_the_retired_scope_afterwards[upgrade-0.9.5]",
       "proof": "PROOF-13",
       "reasons": []
@@ -81,14 +89,6 @@
       "file": "dev/test_init_update.py",
       "findings": [],
       "name": "test_the_retired_tier_tag_becomes_unit_and_env",
-      "proof": "PROOF-13",
-      "reasons": []
-    },
-    {
-      "body": "def test_no_spec_carries_the_retired_scope_afterwards(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    _apply(root)\n    for rel in _walk(root, ('*.md',)):\n        if rel.startswith('specs/'):\n            assert '%swindows-2022)' % SCOPE not in _read(root, rel)\n            assert '%sfigma-mcp)' % SCOPE not in _read(root, rel)",
-      "file": "dev/test_init_update.py",
-      "findings": [],
-      "name": "test_no_spec_carries_the_retired_scope_afterwards[upgrade-0.10-dev]",
       "proof": "PROOF-13",
       "reasons": []
     }

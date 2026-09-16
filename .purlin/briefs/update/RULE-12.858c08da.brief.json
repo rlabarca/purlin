@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "update",
-  "generated_at": "2026-09-16T22:37:02Z",
+  "generated_at": "2026-09-16T22:51:22Z",
   "layers": [
     "proof text",
     "test body",
@@ -23,7 +23,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/update/20260916T223615Z-3aa5d77-ci-linux.json",
+  "record": ".purlin/records/update/20260916T225004Z-3aa5d77-ci-windows.json",
   "risk": "high",
   "rule": "RULE-12",
   "rule_hash": "682a8f7fd2185b04375883b4d2c45223777b994b9e9df1a1d6d4ee938dd25c78",
@@ -43,30 +43,6 @@
       "reasons": []
     },
     {
-      "body": "def test_the_gate_defaults_to_passed(tmp_path):\n    root = _project(tmp_path, V095)\n    _apply(root)\n    assert json.loads(_read(root, '.purlin/config.json'))['gate'] == 'passed'",
-      "file": "dev/test_init_update.py",
-      "findings": [],
-      "name": "test_the_gate_defaults_to_passed",
-      "proof": "PROOF-12",
-      "reasons": []
-    },
-    {
-      "body": "def test_the_gate_defaults_to_strong_when_the_hook_was_strict(tmp_path):\n    root = _project(tmp_path, V095)\n    config = json.loads(_read(root, '.purlin/config.json'))\n    config['pre_push'] = 'strict'\n    _write(root, '.purlin/config.json', json.dumps(config, indent=2))\n    _apply(root)\n    written = json.loads(_read(root, '.purlin/config.json'))\n    assert written['gate'] == 'strong'\n    assert written['min_strength'] == 70\n    assert written['ai_review_at'] == 'high'",
-      "file": "dev/test_init_update.py",
-      "findings": [],
-      "name": "test_the_gate_defaults_to_strong_when_the_hook_was_strict",
-      "proof": "PROOF-12",
-      "reasons": []
-    },
-    {
-      "body": "def test_the_gate_question_takes_the_answer_you_type(tmp_path, capsys,\n                                                     monkeypatch):\n    root = _project(tmp_path, V095)\n    asked = _answers(monkeypatch, [('Gate [', 'signed')])\n    _apply(root, argv=())\n    capsys.readouterr()\n    assert any('Gate [' in prompt for prompt in asked)\n    written = json.loads(_read(root, '.purlin/config.json'))\n    assert written['gate'] == 'signed'\n    assert written['signers'] == []",
-      "file": "dev/test_init_update.py",
-      "findings": [],
-      "name": "test_the_gate_question_takes_the_answer_you_type",
-      "proof": "PROOF-12",
-      "reasons": []
-    },
-    {
       "body": null,
       "file": "dev/test_init_update.py",
       "findings": [],
@@ -79,6 +55,30 @@
       "file": "dev/test_init_update.py",
       "findings": [],
       "name": "test_the_gate_defaults_to_tested",
+      "proof": "PROOF-12",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_gate_question_takes_the_answer_you_type(tmp_path, capsys,\n                                                     monkeypatch):\n    root = _project(tmp_path, V095)\n    asked = _answers(monkeypatch, [('Gate [', 'signed')])\n    _apply(root, argv=())\n    capsys.readouterr()\n    assert any('Gate [' in prompt for prompt in asked)\n    written = json.loads(_read(root, '.purlin/config.json'))\n    assert written['gate'] == 'signed'\n    assert written['signers'] == []",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_gate_question_takes_the_answer_you_type",
+      "proof": "PROOF-12",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_gate_defaults_to_passed(tmp_path):\n    root = _project(tmp_path, V095)\n    _apply(root)\n    assert json.loads(_read(root, '.purlin/config.json'))['gate'] == 'passed'",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_gate_defaults_to_passed",
+      "proof": "PROOF-12",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_gate_defaults_to_strong_when_the_hook_was_strict(tmp_path):\n    root = _project(tmp_path, V095)\n    config = json.loads(_read(root, '.purlin/config.json'))\n    config['pre_push'] = 'strict'\n    _write(root, '.purlin/config.json', json.dumps(config, indent=2))\n    _apply(root)\n    written = json.loads(_read(root, '.purlin/config.json'))\n    assert written['gate'] == 'strong'\n    assert written['min_strength'] == 70\n    assert written['ai_review_at'] == 'high'",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_gate_defaults_to_strong_when_the_hook_was_strict",
       "proof": "PROOF-12",
       "reasons": []
     }

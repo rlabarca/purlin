@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-16T22:36:50Z",
+  "generated_at": "2026-09-16T22:51:07Z",
   "layers": [
     "proof text",
     "test body",
@@ -25,7 +25,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/states/20260916T223615Z-3aa5d77-ci-linux.json",
+  "record": ".purlin/records/states/20260916T225004Z-3aa5d77-ci-windows.json",
   "risk": "high",
   "rule": "RULE-26",
   "rule_hash": "ad06bed20ebfa0b96000b25b0f6179e171d459706b29671f39c10d92264901a3",
@@ -40,7 +40,7 @@
       "body": "def test_global_anchor_rules_are_counted_once_in_the_summary(self, project):\n        project.spec(\n            '# Anchor: security\\n\\n> Global: true\\n\\n'\n            '## Rules\\n\\n- RULE-1: No eval anywhere\\n\\n'\n            '## Proof\\n\\n- PROOF-1 (RULE-1): Grep for eval(; verify 0 matches\\n',\n            name='security', category='_anchors')\n        data = project.payload()\n        assert data['summary']['rules'] == 3, (\n            'two own rules plus the anchor\\'s one, counted once')\n        assert data['summary']['features'] == 2\n        login = next(f for f in data['features'] if f['name'] == 'login')\n        assert login['rollup']['rules'] == 3, (\n            'the feature must prove the global anchor\\'s rule too')",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_global_anchor_rules_are_counted_once_in_the_summary",
+      "name": "test_the_review_list_names_a_global_anchor_rule_once",
       "proof": "PROOF-30",
       "reasons": []
     },
@@ -48,7 +48,7 @@
       "body": "def test_global_anchor_rules_are_counted_once_in_the_summary(self, project):\n        project.spec(\n            '# Anchor: security\\n\\n> Global: true\\n\\n'\n            '## Rules\\n\\n- RULE-1: No eval anywhere\\n\\n'\n            '## Proof\\n\\n- PROOF-1 (RULE-1): Grep for eval(; verify 0 matches\\n',\n            name='security', category='_anchors')\n        data = project.payload()\n        assert data['summary']['rules'] == 3, (\n            'two own rules plus the anchor\\'s one, counted once')\n        assert data['summary']['features'] == 2\n        login = next(f for f in data['features'] if f['name'] == 'login')\n        assert login['rollup']['rules'] == 3, (\n            'the feature must prove the global anchor\\'s rule too')",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_the_review_list_names_a_global_anchor_rule_once",
+      "name": "test_global_anchor_rules_are_counted_once_in_the_summary",
       "proof": "PROOF-30",
       "reasons": []
     }

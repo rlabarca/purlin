@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "update",
-  "generated_at": "2026-09-16T22:37:00Z",
+  "generated_at": "2026-09-16T22:51:20Z",
   "layers": [
     "proof text",
     "test body",
@@ -25,7 +25,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/update/20260916T223615Z-3aa5d77-ci-linux.json",
+  "record": ".purlin/records/update/20260916T225004Z-3aa5d77-ci-windows.json",
   "risk": "high",
   "rule": "RULE-2",
   "rule_hash": "e96f2e4c63974d8dca49aa112b4ce81de3d174f89c6598d8b4c6799a3045f049",
@@ -45,10 +45,10 @@
       "reasons": []
     },
     {
-      "body": "def test_a_retired_hook_adds_the_hook_migration(tmp_path):\n    root = _project(tmp_path, V095)\n    _write(root, '.purlin/hooks/pre-commit', OLD_PRE_COMMIT)\n    found = _ids(root)\n    assert 'hooks' in found, found\n    for expected in ('os-tags', 'untracked-files', 'config', 'workflows',\n                     'plugin-copies', 'records'):\n        assert expected in found, found",
+      "body": null,
       "file": "dev/test_init_update.py",
       "findings": [],
-      "name": "test_a_retired_hook_adds_the_hook_migration",
+      "name": "test_the_010_layout_needs_its_hooks_migrated_too",
       "proof": "PROOF-2",
       "reasons": []
     },
@@ -61,10 +61,10 @@
       "reasons": []
     },
     {
-      "body": null,
+      "body": "def test_a_retired_hook_adds_the_hook_migration(tmp_path):\n    root = _project(tmp_path, V095)\n    _write(root, '.purlin/hooks/pre-commit', OLD_PRE_COMMIT)\n    found = _ids(root)\n    assert 'hooks' in found, found\n    for expected in ('os-tags', 'untracked-files', 'config', 'workflows',\n                     'plugin-copies', 'records'):\n        assert expected in found, found",
       "file": "dev/test_init_update.py",
       "findings": [],
-      "name": "test_the_010_layout_needs_its_hooks_migrated_too",
+      "name": "test_a_retired_hook_adds_the_hook_migration",
       "proof": "PROOF-2",
       "reasons": []
     }

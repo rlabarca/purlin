@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "brief",
-  "generated_at": "2026-09-16T22:36:18Z",
+  "generated_at": "2026-09-16T22:50:24Z",
   "layers": [
     "proof text",
     "test body",
@@ -33,7 +33,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/brief/20260916T223615Z-3aa5d77-ci-linux.json",
+  "record": ".purlin/records/brief/20260916T224959Z-3aa5d77-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-19",
   "rule_hash": "f814b761de5aaaa551231fd1a02883d55f4343182faa0029295be539cd376a2f",
@@ -48,7 +48,7 @@
       "body": "def test_the_brief_lands_beside_the_records_named_for_the_triple(\n            self, proved):\n        built = build(proved, 'RULE-1')\n        path = brief_module.write_brief(proved.root, built)\n        assert path == ('.purlin/briefs/login/RULE-1.%s.brief.json'\n                        % built['triple_hash'][:8])\n        text = os.path.join(proved.root, *(path[:-5] + '.txt').split('/'))\n        assert os.path.isfile(text)\n        with open(os.path.join(proved.root, *path.split('/')),\n                  encoding='utf-8') as handle:\n            assert json.load(handle)['schema'] == 'purlin-brief/2'",
       "file": "dev/test_brief.py",
       "findings": [],
-      "name": "test_the_brief_lands_beside_the_records_named_for_the_triple",
+      "name": "test_the_brief_lands_beside_the_approval_named_for_the_triple",
       "proof": "PROOF-27",
       "reasons": []
     },
@@ -56,7 +56,7 @@
       "body": "def test_the_brief_lands_beside_the_records_named_for_the_triple(\n            self, proved):\n        built = build(proved, 'RULE-1')\n        path = brief_module.write_brief(proved.root, built)\n        assert path == ('.purlin/briefs/login/RULE-1.%s.brief.json'\n                        % built['triple_hash'][:8])\n        text = os.path.join(proved.root, *(path[:-5] + '.txt').split('/'))\n        assert os.path.isfile(text)\n        with open(os.path.join(proved.root, *path.split('/')),\n                  encoding='utf-8') as handle:\n            assert json.load(handle)['schema'] == 'purlin-brief/2'",
       "file": "dev/test_brief.py",
       "findings": [],
-      "name": "test_the_brief_lands_beside_the_approval_named_for_the_triple",
+      "name": "test_the_brief_lands_beside_the_records_named_for_the_triple",
       "proof": "PROOF-27",
       "reasons": []
     },
@@ -64,7 +64,7 @@
       "body": "def test_a_brief_is_found_again_only_while_the_text_stands(self, proved):\n        built = build(proved, 'RULE-1')\n        brief_module.write_brief(proved.root, built)\n        first = brief_module.brief_paths(\n            proved.root, 'login', 'RULE-1', built['triple_hash'])[0]\n        assert os.path.isfile(first)\n        proved.spec(SPEC.replace('return 200 with a session token',\n                                 'return 200 with a short session token'))\n        again = build(proved, 'RULE-1')\n        assert again['triple_hash'] != built['triple_hash'], (\n            'a brief for text that has since changed is not a brief for it')",
       "file": "dev/test_brief.py",
       "findings": [],
-      "name": "test_a_brief_is_found_again_only_while_the_text_stands",
+      "name": "test_a_brief_for_the_current_text_makes_the_rule_reviewed",
       "proof": "PROOF-28",
       "reasons": []
     },
@@ -72,7 +72,7 @@
       "body": "def test_a_brief_is_found_again_only_while_the_text_stands(self, proved):\n        built = build(proved, 'RULE-1')\n        brief_module.write_brief(proved.root, built)\n        first = brief_module.brief_paths(\n            proved.root, 'login', 'RULE-1', built['triple_hash'])[0]\n        assert os.path.isfile(first)\n        proved.spec(SPEC.replace('return 200 with a session token',\n                                 'return 200 with a short session token'))\n        again = build(proved, 'RULE-1')\n        assert again['triple_hash'] != built['triple_hash'], (\n            'a brief for text that has since changed is not a brief for it')",
       "file": "dev/test_brief.py",
       "findings": [],
-      "name": "test_a_brief_for_the_current_text_makes_the_rule_reviewed",
+      "name": "test_a_brief_is_found_again_only_while_the_text_stands",
       "proof": "PROOF-28",
       "reasons": []
     }

@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "update",
-  "generated_at": "2026-09-16T22:37:02Z",
+  "generated_at": "2026-09-16T22:51:24Z",
   "layers": [
     "proof text",
     "test body",
@@ -24,7 +24,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/update/20260916T223615Z-3aa5d77-ci-linux.json",
+  "record": ".purlin/records/update/20260916T225004Z-3aa5d77-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-16",
   "rule_hash": "687febb6887213c6d332d9d9b0c89df94926d29b676e81e4aebb7c67ad972160",
@@ -47,6 +47,14 @@
       "body": "def test_every_copy_matches_the_plugin_afterwards(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    assert 'plugin-copies' in _ids(root)\n    _apply(root)\n    assert 'plugin-copies' not in _ids(root)",
       "file": "dev/test_init_update.py",
       "findings": [],
+      "name": "test_every_copy_matches_the_plugin_afterwards[upgrade-0.10-dev]",
+      "proof": "PROOF-16",
+      "reasons": []
+    },
+    {
+      "body": "def test_every_copy_matches_the_plugin_afterwards(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    assert 'plugin-copies' in _ids(root)\n    _apply(root)\n    assert 'plugin-copies' not in _ids(root)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
       "name": "test_every_copy_matches_the_plugin_afterwards[upgrade-0.9.5]",
       "proof": "PROOF-16",
       "reasons": []
@@ -62,14 +70,6 @@
       "reasons": [
         "expected value computed by same function as SUT"
       ]
-    },
-    {
-      "body": "def test_every_copy_matches_the_plugin_afterwards(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    assert 'plugin-copies' in _ids(root)\n    _apply(root)\n    assert 'plugin-copies' not in _ids(root)",
-      "file": "dev/test_init_update.py",
-      "findings": [],
-      "name": "test_every_copy_matches_the_plugin_afterwards[upgrade-0.10-dev]",
-      "proof": "PROOF-16",
-      "reasons": []
     }
   ],
   "triple_hash": "45ff638bd445cbcd0cf963f436489808608c1ff574d1ba52ad2b17fad2f43729"

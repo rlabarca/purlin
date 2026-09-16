@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "scaffold",
-  "generated_at": "2026-09-16T22:36:36Z",
+  "generated_at": "2026-09-16T22:50:49Z",
   "layers": [
     "proof text",
     "test body",
@@ -23,7 +23,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/scaffold/20260916T223615Z-3aa5d77-ci-linux.json",
+  "record": ".purlin/records/scaffold/20260916T225002Z-3aa5d77-ci-windows.json",
   "risk": "high",
   "rule": "RULE-10",
   "rule_hash": "5ceb30f599f0a66d57a819ee0c98b41011a22112caf0825cab7f3f7de401b406",
@@ -35,10 +35,10 @@
   "test_strength": null,
   "tests": [
     {
-      "body": "def test_only_signed_is_asked(self, project):\n        assert scaffold_module.SIGNER_QUESTION not in project.run(\n            '--gate', 'strong')",
+      "body": null,
       "file": "dev/test_init_scaffold.py",
       "findings": [],
-      "name": "test_only_signed_is_asked",
+      "name": "test_only_approved_is_asked",
       "proof": "PROOF-10",
       "reasons": []
     },
@@ -51,10 +51,10 @@
       "reasons": []
     },
     {
-      "body": null,
+      "body": "def test_only_signed_is_asked(self, project):\n        assert scaffold_module.SIGNER_QUESTION not in project.run(\n            '--gate', 'strong')",
       "file": "dev/test_init_scaffold.py",
       "findings": [],
-      "name": "test_only_approved_is_asked",
+      "name": "test_only_signed_is_asked",
       "proof": "PROOF-10",
       "reasons": []
     }
