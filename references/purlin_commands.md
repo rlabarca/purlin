@@ -59,6 +59,7 @@ Purlin
   purlin:review [feature] [RULE-N]  Walk the review list
   purlin:approve <feature> [RULE-N ...]  Approve, as a signed commit
   purlin:approve --batch          Approve everything currently approvable
+  purlin:approve <feature> RULE-N --hold "<case>"  Hold a rule CI must not approve
 
   Reporting
   ──────
@@ -91,7 +92,7 @@ Purlin
 | `purlin:test` | `.purlin/runtime/proofs/` only, which is not committed |
 | `purlin:verify` | `.purlin/records/<feature>/<timestamp>-<commit7>-<runner>.json`, and the tag under `--tag` |
 | `purlin:review` | Proof lines in a spec when a case is added; approval files through `purlin:approve` |
-| `purlin:approve` | `specs/<category>/<feature>.approvals/<RULE-N>.<hash8>.<slug>.json`, in a signed commit |
+| `purlin:approve` | `specs/<category>/<feature>.approvals/<RULE-N>.<hash8>.<slug>.json`, or `<slug>.hold.json` under `--hold`, in a signed commit |
 | `purlin:init` | `.purlin/`, `specs/`, the test wiring, and the workflow when the gate needs one |
 | `purlin:anchor` | `specs/_anchors/<name>.md`, and `designs/<anchor>/` on a sync |
 | `purlin:rename` | Specs, markers, approval directories, record directories |

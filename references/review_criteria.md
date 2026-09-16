@@ -90,8 +90,9 @@ Read it beside the findings above, never instead of them.
 ## The three risk levels
 
 **`low`.** The free checks and a passing record are enough. CI auto-approves a low-risk
-rule when its test passes and test strength is at or above `min_strength`, or when no
-engine ran and every free check is clear. A person only looks when a finding fires.
+rule under the conditions `references/hard_gates.md` lists, which include a clear test body
+and no hold. A person only looks when a finding fires, and a person who finds the test does
+not prove the proof holds the rule rather than leaving CI's approval standing.
 
 **`medium`.** A person reads the brief before the rule is approved. Every blocking
 finding on the proof text must be clear and the test body must carry no finding. The

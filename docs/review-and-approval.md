@@ -105,7 +105,7 @@ beside the screenshot the test captured under `.purlin/runtime/attachments/`. Ju
 person would see: the text, the order, the states present. See
 [design-in-specs.md](design-in-specs.md).
 
-## The three answers
+## The four answers
 
 **Approve.** The rule, the proof and the test belong together. The walk writes the approval
 file and makes the signed commit. Collect several and commit them together at the end.
@@ -113,6 +113,12 @@ file and makes the signed commit. Collect several and commit them together at th
 **Add a case.** Say in plain language what is missing - "it should also reject an expired
 token" - and the walk writes a new proof line into the spec with the next free proof id. The
 test is left for the next `purlin:build`. Review writes specs and approvals, never code.
+
+**Hold.** The test does not prove the proof as written - it calls two helpers apart where the
+proof names the function that joins them - and a new proof line would not fix that. Name the
+missing case and the walk commits a hold with `purlin:approve <feature> RULE-N --hold "<case>"`.
+CI cannot see that gap, so the hold is what stops it approving a low-risk rule on the free
+checks alone; changing the test ends the hold.
 
 **Skip.** Move on and leave the state alone. A skipped rule is on the list again next time,
 which is the intended behaviour: nothing is marked as seen by being seen.

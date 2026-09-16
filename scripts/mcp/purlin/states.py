@@ -16,7 +16,7 @@ returns a dict:
 
     {'state': 'Recorded',
      'flags': {'re_verify_pending': False, 'auto_approvable': True,
-               'needs_ai_review': False},
+               'held': False, 'needs_ai_review': False},
      'missing_env': ['windows'],
      'reasons': ['windows: no record yet']}
 
@@ -67,6 +67,7 @@ def rule_state(inp, cfg):
     `head`          the sha the working tree is on
     `scope_tree`    the current scope tree of the rule's spec
     `approvals`     every approval file for this rule
+    `holds`         every hold a person committed for this rule
     `rule_hash`, `proof_hash`, `test_hash`, `design_hash`, `risk`
     `brief`         the review brief for this rule, or None
     `test_strength` an integer percent, or None when nothing measured it
@@ -79,6 +80,15 @@ def rule_state(inp, cfg):
     reasons = []
 
     current_approvals = [a for a in approvals if _approval_current(a, inp)]
+    # A person's hold on the current text outranks CI's approval of it: CI
+    # reads the free checks, the hold says the test does not prove the proof.
+    current_holds = [h for h in inp.get('holds') or ()
+                     if _approval_current(h, inp)]
+    standing = [a for a in current_approvals
+                if not (current_holds and a.get('is_ci'))]
+    for hold in current_holds:
+        reasons.append('held by %s: %s' % (hold.get('holder') or 'a person',
+                                            hold.get('reason') or ''))
 
     passes, missing_env, at_head, scope_matches = _record_verdict(
         proofs, records, head, inp.get('scope_tree'))
@@ -91,11 +101,13 @@ def rule_state(inp, cfg):
     # own on top of the one it observed, so a record is almost never at the
     # literal HEAD and the scope tree is the honest comparison.
     current = at_head or scope_matches
-    re_verify_pending = bool(passes and current_approvals and not current)
+    re_verify_pending = bool(passes and standing and not current)
 
     flags = {
         're_verify_pending': re_verify_pending,
-        'auto_approvable': _auto_approvable(inp, cfg, passes, proofs),
+        'auto_approvable': (not current_holds
+                            and _auto_approvable(inp, cfg, passes, proofs)),
+        'held': bool(current_holds),
         'needs_ai_review': _needs_ai_review(inp, cfg, approvals,
                                             current_approvals),
     }
@@ -103,7 +115,7 @@ def rule_state(inp, cfg):
     if approvals and not current_approvals:
         return _result(STALE, flags, missing_env, reasons)
 
-    if current_approvals and passes:
+    if standing and passes:
         return _result(APPROVED, flags, missing_env, reasons)
 
     brief = inp.get('brief')

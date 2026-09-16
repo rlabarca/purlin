@@ -2,6 +2,7 @@
 """Write the approvals a person or CI attests, and commit a person's signed.
 
     approve.py <feature> [RULE-N ...] [--batch] [--project-root DIR]
+    approve.py <feature> RULE-N [RULE-N ...] --hold "<the missing case>"
 
 An approval is one named person's attestation that a rule, its proof and its
 test belong together. It is one file, so two approvals never conflict:
@@ -13,6 +14,12 @@ test belong together. It is one file, so two approvals never conflict:
 slug is the approver's email local part, lowercased, with every non-alphanumeric
 character replaced by `-`. CI writes the `.ci.json` form for low-risk rules and
 nothing else.
+
+`--hold` writes the opposite: `<RULE-N>.<hash8>.<holder-slug>.hold.json`, a
+person's statement that the test does not prove the proof as written, with the
+missing case as its reason. CI never approves a rule a current hold names, and
+a CI approval for it does not stand. A hold only ever withholds, so the holder
+need not be on the approver list; it is committed signed like an approval.
 
 `references/formats/approval_format.md` holds the file shape field by field.
 The three hashes come from the payload, which is the one place they are
@@ -38,8 +45,9 @@ from purlin import (approvals as approvals_module,             # noqa: E402
                     payload as payload_module, specs as specs_module)
 
 SCHEMA = 'purlin-approval/1'
+HOLD_SCHEMA = 'purlin-hold/1'
 USAGE = ('Usage: approve.py <feature> [RULE-N ...] [--batch] '
-         '[--project-root DIR]')
+         '[--hold REASON] [--project-root DIR]')
 
 EXIT_OK = 0
 EXIT_NOTHING = 1
@@ -166,6 +174,52 @@ def brief_for(project_root, feature, rule, triple):
     return None
 
 
+def hold_path(project_root, feature, rule, triple, holder_slug):
+    """Where a hold on one rule goes, beside the approvals."""
+    path = approval_path(project_root, feature, rule, triple, holder_slug)
+    return path[:-len('.json')] + '.hold.json' if path else None
+
+
+def write_hold(project_root, feature, rule, holder_email, reason, payload=None,
+               entry=None):
+    """Write one hold and return its project-relative path, or None.
+
+    A hold binds the same hashes an approval does, so it stops standing the
+    moment the rule, the proof or the test changes.
+    """
+    entry = entry or rule_entry(load_payload(project_root, payload), feature, rule)
+    if entry is None or not str(reason or '').strip():
+        return None
+    triple = triple_for(entry)
+    path = hold_path(project_root, feature, rule, triple,
+                     approvals_module.approver_slug(holder_email))
+    if not path:
+        return None
+    body = {
+        'schema': HOLD_SCHEMA,
+        'feature': feature,
+        'rule': rule,
+        'triple': triple[:16],
+        'rule_hash': entry.get('rule_hash'),
+        'proof_hash': entry.get('proof_hash'),
+        'test_hash': entry.get('test_hash'),
+        'test_hash_kind': entry.get('test_hash_kind'),
+        'design_hash': entry.get('design_hash'),
+        'risk': entry.get('risk'),
+        'holder': str(holder_email),
+        'reason': str(reason).strip(),
+        'timestamp': payload_module.now_iso(),
+        'brief': brief_for(project_root, feature, rule, triple),
+    }
+    directory = os.path.dirname(path)
+    if not os.path.isdir(directory):
+        os.makedirs(directory)
+    with open(path, 'w', encoding='utf-8') as handle:
+        json.dump(body, handle, indent=2, sort_keys=True)
+        handle.write('\n')
+    return os.path.relpath(path, project_root).replace(os.sep, '/')
+
+
 # ---------------------------------------------------------------------------
 # CI auto-approval
 # ---------------------------------------------------------------------------
@@ -173,13 +227,25 @@ def brief_for(project_root, feature, rule, triple):
 def auto_approve(project_root, payload=None, record_path=None):
     """Write the `.ci.json` approvals a CI run may write. Returns their paths.
 
-    Low risk only, and only with a passing record and test strength at or above
-    `min_strength` (or with no engine to measure it and every free check on the
-    proof text clear). A `@manual` proof is never auto-approved: its evidence
-    is a person's note, which is the one thing CI cannot write. A rule that
-    already carries a current approval is left alone.
+    CI approves alone only what the free checks can settle, because it cannot
+    read whether a test proves its proof text. Every one of these holds:
+
+    - the risk is low
+    - the record passes, and test strength is at or above `min_strength`, or no
+      engine measured one and no blocking finding stands on the proof text
+    - no free check found anything in the body of any test backing the rule
+    - no proof is `@manual`, whose evidence is a person's note
+    - no person holds the rule for its current text
+
+    A rule that already carries a current approval is left alone.
     """
-    payload = load_payload(project_root, payload)
+    import static_checks  # one parse per test file across every rule
+    with static_checks.run_scope():
+        return _auto_approve(project_root, load_payload(project_root, payload),
+                             record_path)
+
+
+def _auto_approve(project_root, payload, record_path):
     gate = (payload.get('gate') or {}).get('gate') or gate_module.DEFAULT_GATE
     written = []
     for feature_entry in payload.get('features') or ():
@@ -188,6 +254,8 @@ def auto_approve(project_root, payload=None, record_path=None):
             if entry.get('feature') != feature_entry.get('name'):
                 continue
             if not _may_auto_approve(entry):
+                continue
+            if test_body_findings(project_root, entry):
                 continue
             triple = triple_for(entry)
             path = write_approval(
@@ -200,12 +268,24 @@ def auto_approve(project_root, payload=None, record_path=None):
     return written
 
 
+def test_body_findings(project_root, entry):
+    """Every free-check finding in the bodies of the tests backing one rule."""
+    import brief as brief_module  # brief imports this module
+    findings = []
+    for test in brief_module._test_layer(project_root, entry.get('feature'),
+                                         entry):
+        findings.extend(finding for finding in test.get('findings') or ()
+                        if finding != 'manual')
+    return findings
+
+
 def _may_auto_approve(entry):
     if (entry.get('risk') or 'low') != 'low':
         return False
     if entry.get('state') == 'Approved':
         return False
-    if not (entry.get('flags') or {}).get('auto_approvable'):
+    flags = entry.get('flags') or {}
+    if flags.get('held') or not flags.get('auto_approvable'):
         return False
     for proof in entry.get('proofs') or ():
         if proof.get('tier') == 'manual':
@@ -319,12 +399,14 @@ def _commit(project_root, paths, message):
 class _Args(object):
     """One parsed invocation, or the reason it could not be parsed."""
 
-    __slots__ = ('feature', 'rules', 'batch', 'project_root', 'error', 'help')
+    __slots__ = ('feature', 'rules', 'batch', 'hold', 'project_root', 'error',
+                 'help')
 
     def __init__(self):
         self.feature = None
         self.rules = []
         self.batch = False
+        self.hold = None
         self.project_root = '.'
         self.error = None
         self.help = False
@@ -341,6 +423,11 @@ def _parse(argv):
             return args
         if item == '--batch':
             args.batch = True
+        elif item == '--hold':
+            if not rest or not rest[0].strip() or rest[0].startswith('--'):
+                args.error = '--hold needs the missing case, in words.'
+                return args
+            args.hold = rest.pop(0)
         elif item == '--project-root':
             if not rest:
                 args.error = '--project-root needs a directory.'
@@ -358,7 +445,39 @@ def _parse(argv):
             return args
     if args.feature is None and not args.batch:
         args.error = 'name a feature, or pass --batch.'
+    elif args.hold is not None and (args.batch or not args.rules):
+        args.error = '--hold names a feature and the rules it holds.'
     return args
+
+
+def _hold_main(project_root, payload, args):
+    """Write and commit the holds one invocation names."""
+    email = _config(project_root, 'user.email').lower()
+    targets = [(args.feature, rule) for rule in args.rules
+               if rule_entry(payload, args.feature, rule) is not None]
+    if not targets:
+        print('approve: no rule named is in %s.' % args.feature)
+        return EXIT_NOTHING
+    if not signing_configured(project_root):
+        for line in signing_help():
+            print(line)
+        return EXIT_NOTHING
+    paths = [write_hold(project_root, feature, rule, email, args.hold,
+                        payload=payload)
+             for feature, rule in targets]
+    sha = _commit(project_root, [path for path in paths if path],
+                  'hold(%s): %s' % (args.feature,
+                                    ' '.join(rule for _f, rule in targets)))
+    if not sha:
+        print('approve: the hold commit was not made. Check that signing '
+              'works and that the files are not already committed.')
+        return EXIT_NOTHING
+    print('Held %d rule%s in %s: %s'
+          % (len(targets), '' if len(targets) == 1 else 's', sha[:7],
+             args.hold.strip()))
+    for name, rule in targets:
+        print('  %s %s' % (name, rule))
+    return EXIT_OK
 
 
 def approvable(payload, feature=None, rules=None):
@@ -397,6 +516,8 @@ def main(argv=None):
         return EXIT_BAD_INVOCATION
 
     payload = load_payload(project_root)
+    if args.hold is not None:
+        return _hold_main(project_root, payload, args)
     resolved = gate_module.resolve_gate(
         {'gate': (payload.get('gate') or {}).get('gate')})
     email = _config(project_root, 'user.email').lower()

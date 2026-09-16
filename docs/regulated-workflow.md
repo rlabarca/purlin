@@ -79,7 +79,9 @@ carries neither tag when you raise the gate, and `purlin:spec <feature>` tags th
 CI writes its own approval file, `<RULE-N>.<hash8>.ci.json`, for a rule that is low risk, has a
 passing record, and has test strength at or above `min_strength`. A project with no break
 engine installed has no strength to compare, so the free checks on the proof text stand in for
-it: every check clear, or CI writes nothing.
+it: every check clear, or CI writes nothing. The free checks on every backing test body must be
+clear too, and no person may hold the rule. CI cannot read whether a test proves its proof, so a
+person who finds it does not commits a hold, and CI's approval gives way to it.
 
 High and medium are never auto-approved. A proof tagged `@manual` is never auto-approved at any
 risk. A CI approval is exempt from the signature, the list and the author check, because no

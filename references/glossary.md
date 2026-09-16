@@ -10,6 +10,8 @@ in the shipped prose where a retired spelling may still be written.
   claim is observed. **test**: the executable form of a proof, tagged with its rule.
   **record**: one verify run's observations, a committed file. **approval**: a named
   person's attestation that a rule, proof and test belong together, a committed file.
+  **hold**: a person's committed statement that a rule's test does not prove its proof, with
+  the missing case; CI does not approve a held rule.
 - **anchor**: a spec for something shared across features. **local anchor**: in the project.
   **anchor repo**: an optional separate repository holding anchors and designs for one or more
   projects. **pinned anchor**: the project's local copy of an anchor from an anchor repo,

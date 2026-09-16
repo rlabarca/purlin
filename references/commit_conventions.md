@@ -12,6 +12,7 @@ Every commit Purlin makes, or asks you to make, uses one of these. There is no o
 | `test(<name>):` | Writing or changing tests without changing behaviour | `purlin:build` |
 | `purlin: record for <commit7>` | The record of one verify run, and on CI the approvals and briefs that run wrote | `purlin:verify`, or CI |
 | `approve(<name>): RULE-N ...` | Approvals, signed | `purlin:approve` |
+| `hold(<name>): RULE-N ...` | Holds on rules whose test does not prove the proof, signed | `purlin:approve --hold` |
 | `anchor(<name>): create` | A new local anchor | `purlin:anchor create` |
 | `anchor(<name>): sync (<sha>)` | Advancing a pin to that commit | `purlin:anchor sync` |
 | `anchor(<name>): propose` | The branch that becomes the pull request upstream | `purlin:anchor propose` |

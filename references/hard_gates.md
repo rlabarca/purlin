@@ -82,11 +82,23 @@ host has to be configured for.
 
 ## Auto-approval
 
-CI approves a rule on its own only when every one of these holds: the risk is low, the test
-passes, and the test strength is at or above `min_strength` (or no break engine is installed and
-the free checks pass). High and medium risk are never auto-approved. A proof marked `@manual`
-is never auto-approved either: its evidence is an approval file with a one-line note, written by
-a person.
+CI cannot read whether a test proves its proof text, so it approves alone only what the free
+checks can settle. It approves a rule only when every one of these holds:
+
+- the risk is low
+- the record passes, and the test strength is at or above `min_strength`, or no break engine is
+  installed and no blocking finding stands on the proof text
+- no free check found anything in the body of any test backing the rule
+- no proof is marked `@manual`, whose evidence is an approval file with a one-line note, written
+  by a person
+- no person holds the rule for its current text
+
+High and medium risk are never auto-approved. A **hold** is how a person who read the brief says
+the test does not prove the proof as written: `purlin:approve <feature> RULE-N --hold "<the
+missing case>"` commits one file bound to the rule's hashes. While the hold is current CI writes
+no approval for the rule, and a CI approval already written for the same text does not make it
+Approved. A person's approval still does. Changing the rule, the proof or the test ends the hold,
+as it stales an approval.
 
 ## What is not a gate
 

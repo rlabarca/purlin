@@ -89,6 +89,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     runtime_proofs = proofs_module.load_proofs(project_root)
     all_records = records_module.load_records(project_root)
     all_approvals = approvals_module.load_approvals(project_root, features)
+    all_holds = approvals_module.load_holds(project_root, features)
     head = records_module.head_sha(project_root)
 
     blob_cache = {}
@@ -107,7 +108,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
         entry, rollup = _feature_entry(
             project_root, name, info, features, runtime_proofs, all_records,
             all_approvals, cfg, head, blob_cache, scope_cache, review_list,
-            own_results)
+            own_results, all_holds)
         feature_entries.append(entry)
         rollups[name] = rollup
 
@@ -139,7 +140,7 @@ def build_payload(project_root, generated_by='sync_status', config=None):
 
 def _feature_entry(project_root, name, info, features, runtime_proofs,
                    all_records, all_approvals, cfg, head, blob_cache,
-                   scope_cache, review_list, own_results=None):
+                   scope_cache, review_list, own_results=None, all_holds=None):
     counting = {os_name: record
                 for os_name, record in (all_records.get(name) or {}).items()
                 if records_module.counts_under(cfg.gate, record.get('label'))}
@@ -155,7 +156,7 @@ def _feature_entry(project_root, name, info, features, runtime_proofs,
         result = _rule_entry(
             project_root, name, owner, owner_info, rule_id, label,
             runtime_proofs, counting, all_approvals, cfg, head,
-            blob_cache, scope_cache, test_strength)
+            blob_cache, scope_cache, test_strength, all_holds)
         rule_entries.append(result)
         summary = {'state': result['state'], 'flags': result['flags'],
                    'risk': result['risk'],
@@ -242,7 +243,7 @@ def _review_reasons(rule, cfg):
 
 def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
                 runtime_proofs, counting, all_approvals, cfg, head,
-                blob_cache, scope_cache, test_strength=None):
+                blob_cache, scope_cache, test_strength=None, all_holds=None):
     text = owner_info['rules'].get(rule_id, '')
     meta = owner_info.get('rule_meta', {}).get(rule_id, {})
     proof_ids = owner_info.get('proofs_by_rule', {}).get(rule_id, [])
@@ -290,6 +291,7 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
         'head': head,
         'scope_tree': scope_cache[scope_key],
         'approvals': all_approvals.get((owner, rule_id), []),
+        'holds': (all_holds or {}).get((owner, rule_id), []),
         'rule_hash': rule_hash,
         'proof_hash': proof_hash,
         'test_hash': test_hash,

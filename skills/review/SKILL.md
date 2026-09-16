@@ -71,10 +71,10 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/brief.py" --feature <feature> --ru
 
 The brief holds the rule text, the proof text, the test body, the record that last covered it,
 the test strength, and for an `origin: design` rule the pinned mock beside the screenshot the
-test captured. Show it, then ask for one of three answers. Judge it against
+test captured. Show it, then ask for one of four answers. Judge it against
 `references/review_criteria.md`, which is the one place the criteria live.
 
-## Step 4: the three answers
+## Step 4: the four answers
 
 **Approve.** The rule, the proof and the test belong together.
 
@@ -90,6 +90,13 @@ the end. `purlin:approve` is the same script outside the walk.
 expired token". Write the new proof line into the spec with the next free proof id, leave the
 test for the next `purlin:build`, and move on. Do not write the test here: this skill writes
 specs and approvals, never code.
+
+**Hold.** The test does not prove the proof as written, and no new proof line would fix it.
+Name the missing case in words and commit it, so CI does not approve the rule in the meantime:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/approve.py" <feature> RULE-N --hold "<the missing case>"
+```
 
 **Skip.** Move to the next rule and leave the state alone. A skipped rule is on the list again
 next time, which is the intended behaviour: nothing is marked as seen by being seen.

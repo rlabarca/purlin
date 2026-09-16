@@ -1,4 +1,4 @@
-> Format-Version: 1
+> Format-Version: 2
 
 # Approval Format
 
@@ -11,6 +11,7 @@ in git history. CI writes the same file for a low-risk rule it auto-approves.
 ```
 specs/<category>/<feature>.approvals/<RULE-N>.<hash8>.<approver-slug>.json
 specs/<category>/<feature>.approvals/<RULE-N>.<hash8>.ci.json
+specs/<category>/<feature>.approvals/<RULE-N>.<hash8>.<holder-slug>.hold.json
 ```
 
 | Part | What it is |
@@ -119,15 +120,53 @@ side branch does not let a change merge.
 
 ## CI auto-approval
 
-CI writes `<RULE-N>.<hash8>.ci.json` for a rule that is low risk, has a passing
-record, and has test strength at or above `min_strength`. A project with no
-break engine has no strength to compare, so the free checks on the proof text
-stand in for it: every check clear, or nothing is written.
+CI writes `<RULE-N>.<hash8>.ci.json` for a low-risk rule under the conditions
+`references/hard_gates.md` lists: a passing record, enough test strength or a
+clear proof text where no engine ran, a clear test body, no `@manual` proof and
+no current hold.
 
 A CI auto-approval is exempt from the signature, the approver list and the
 author check, because no person made it. What bounds it is the rule above:
 `high` and `medium` are never auto-approved, and a `@manual` proof is never
 auto-approved at any risk, because its evidence is a person's note.
+
+## Holds
+
+A hold is a person's statement that the test does not prove the proof as
+written. `approve.py <feature> RULE-N --hold "<the missing case>"` writes it
+and commits it signed as `hold(<feature>): RULE-N`. It is named and bound like
+an approval, with a fourth part in the name:
+
+```json
+{
+  "schema": "purlin-hold/1",
+  "feature": "records",
+  "rule": "RULE-12",
+  "triple": "9f2c7a1e5b8d4c6f",
+  "rule_hash": "4b1f...",
+  "proof_hash": "c07a...",
+  "test_hash": "1d93...",
+  "test_hash_kind": "file",
+  "design_hash": null,
+  "risk": "low",
+  "holder": "jane@acme.com",
+  "reason": "the tests call _azure and _host apart; none calls run_remote()",
+  "timestamp": "2026-09-16T12:00:00Z",
+  "brief": "specs/run/records.approvals/RULE-12.9f2c7a1e.brief.json"
+}
+```
+
+REQUIRED: `schema`, `feature`, `rule`, `triple`, `rule_hash`, `proof_hash`,
+`test_hash`, `risk`, `holder`, `reason`, `timestamp`. The hashes, `risk` and
+`brief` mean what they mean in an approval; `holder` is the person's email and
+`reason` the missing case, in words.
+
+A hold is current under the same test as an approval. While it is current, CI
+writes no approval for the rule, a `.ci.json` approval for the same text does
+not make the rule Approved, and the rule's reasons read
+`held by <holder>: <reason>`. A person's current approval still makes it
+Approved. A hold only ever withholds, so the holder need not be on the approver
+list, and the gate reads no hold.
 
 The run writes these files before it commits, and they travel in the same
 commit as the record they rest on, `purlin: record for <commit7>`. The briefs

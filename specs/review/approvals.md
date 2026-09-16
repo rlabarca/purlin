@@ -51,6 +51,9 @@
 - RULE-36: The gate creates and changes no file at any gate level [risk: high] [origin: eng]
 - RULE-37: The gate reads the structured payload and never a rendered table, and a caller may hand it a payload it already built [risk: medium] [origin: eng]
 - RULE-38: Every line the gate prints either carries the `verify-gate:` prefix or is an indented finding under a section heading [risk: low] [origin: eng]
+- RULE-39: CI never auto-approves a low-risk rule when a free check found anything in the body of a test backing it [risk: high] [origin: eng]
+- RULE-40: `approve.py <feature> RULE-N --hold "<the missing case>"` writes `<RULE-N>.<hash8>.<holder-slug>.hold.json` binding the rule's hashes, with schema `purlin-hold/1`, the holder's email and the missing case as `reason`, and commits it signed as `hold(<feature>): RULE-N`; `--hold` with no reason, or with no rule named, exits 2 and writes nothing [risk: medium] [origin: eng]
+- RULE-41: CI never auto-approves a rule a current hold names, and a hold whose rule, proof or test has since changed no longer stops it [risk: high] [origin: eng]
 
 ## Proof
 
@@ -112,3 +115,7 @@
 - PROOF-56 (RULE-37): Read the gate's own source; verify it builds the payload and that none of the box-drawing glyphs a rendered table uses appears in it
 - PROOF-57 (RULE-37): Build the payload, hand it to the gate and run it; verify it exits 0 and prints `PASS` @integration
 - PROOF-58 (RULE-38): Run the gate over a project with no record; verify every line that is not indented either opens with `verify-gate:` or ends with a colon @integration
+- PROOF-59 (RULE-39): Edit the low-risk rule's test to call `login("ada", "secret")` and assert nothing, record the project and run the auto-approval; verify nothing is written. Restore `assert login("ada", "secret") == 200`, record again, run it again and verify exactly 1 file is written and it names `RULE-1` @integration
+- PROOF-60 (RULE-40): In a checkout signing as `jane@acme.com`, run `login RULE-1 --hold "no case for an expired token"`; verify it exits 0, the last commit is signed `G` with the subject `hold(login): RULE-1`, and it adds `specs/auth/login.approvals/RULE-1.<hash8>.jane.hold.json` for the rule's own triple, whose schema is `purlin-hold/1`, holder `jane@acme.com` and reason `no case for an expired token` @integration
+- PROOF-61 (RULE-40): Run `login RULE-1 --hold` with no reason, `login RULE-1 --hold --batch`, and `login --hold "a case"` with no rule; verify each exits 2 and no `.hold.json` exists @integration
+- PROOF-62 (RULE-41): Write a hold on the low-risk `RULE-1` for its current text and run the auto-approval; verify nothing is written. Add the comment `# the fixture's password` above the test's assertion, commit, record again and run it again; verify exactly 1 file is written and it names `RULE-1` @integration

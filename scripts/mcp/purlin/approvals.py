@@ -38,6 +38,14 @@ files for a rule whose origin is `design`.
 An approval **counts** when its commit is signed (`%G?` is `G`), its author
 email is on the approver list as of that commit, and that author differs from
 the author of the commit that last touched the test.
+
+A **hold** is the opposite attestation, from a person who read the brief and
+found the test does not prove the proof as written:
+
+    specs/<category>/<feature>.approvals/<RULE-N>.<hash8>.<holder-slug>.hold.json
+
+It binds the same hashes and carries the missing case as `reason`. While it is
+current, CI does not approve the rule and a CI approval for it does not stand.
 """
 
 import hashlib
@@ -56,6 +64,10 @@ _APPROVAL_NAME_RE = re.compile(r'^(RULE-\d+)\.([0-9a-f]{8})\.([a-z0-9-]+)\.json$
 # The review brief sits in the same directory under the same first two parts,
 # so the name alone would read it as an approval by someone called `brief`.
 _BRIEF_SLUG = 'brief'
+
+# A hold carries a fourth part, so the approval pattern never reads one.
+_HOLD_NAME_RE = re.compile(
+    r'^(RULE-\d+)\.([0-9a-f]{8})\.([a-z0-9-]+)\.hold\.json$')
 
 # What the T of the triple was taken from, in the order one wins over another.
 TEST_HASH_KINDS = ('file', 'manual', 'none')
@@ -123,14 +135,23 @@ def load_approvals(project_root, features):
     Each approval dict carries the file's keys plus `path` (project-relative)
     and `is_ci` (the file's slug was `ci`).
     """
+    return _load_named(project_root, features, _APPROVAL_NAME_RE, _BRIEF_SLUG)
+
+
+def load_holds(project_root, features):
+    """`{(feature, rule_id): [hold, ...]}` for every spec, shaped as approvals."""
+    return _load_named(project_root, features, _HOLD_NAME_RE, None)
+
+
+def _load_named(project_root, features, name_re, skip_slug):
     found = {}
     for name, info in (features or {}).items():
         directory = approvals_dir(project_root, info)
         if not directory or not os.path.isdir(directory):
             continue
         for basename in sorted(os.listdir(directory)):
-            m = _APPROVAL_NAME_RE.match(basename)
-            if not m or m.group(3) == _BRIEF_SLUG:
+            m = name_re.match(basename)
+            if not m or m.group(3) == skip_slug:
                 continue
             path = os.path.join(directory, basename)
             try:
