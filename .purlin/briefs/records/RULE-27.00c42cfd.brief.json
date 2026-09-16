@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-16T23:19:29Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "a84b57b4b51acd0f674fb5eb85cbbdd1ad5694900f501c5dea20835cd8464928",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-32",
+      "text": "With `GITHUB_REPOSITORY`, `GITHUB_TOKEN` and `GITHUB_WORKSPACE` naming another directory, call `commit_records(identity=\"ci\")` with `urlopen` standing in; verify it returns `''`, makes no API call, and prints `no record was committed`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/records/20260916T231922Z-611267b-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-27",
+  "rule_hash": "e5fa73e3456bd163c56ba113a9fbe3b26c62cceaa5fa66645346a85b45a46720",
+  "rule_text": "A CI commit through the git host's API is refused the same way when the project root is not the job's workspace, so a fixture project a test suite drives cannot land its records on the branch under review",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "056142ae3950e946f6a1178fed86b1f18fa47dc37c84fb804f578a618e92e99c",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_project_that_is_not_the_workspace_commits_nothing(\n        project, github_env, monkeypatch, tmp_path, capsys):\n    \"\"\"The API commit names the real repository, never the fixture's.\n\n    A fixture project that reached it would land its own records on the\n    branch the job is reviewing.\n    \"\"\"\n    monkeypatch.setenv('GITHUB_WORKSPACE', str(tmp_path / 'the-checkout'))\n    host = FakeHost()\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    assert records_module.commit_records(project, [path], 'ci',\n                                         'purlin: record for 4f1c2ab') == ''\n    assert host.urls() == []\n    assert 'no record was committed' in capsys.readouterr().out",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_project_that_is_not_the_workspace_commits_nothing",
+      "proof": "PROOF-32",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "00c42cfd7d3ff7e62f7adf74e30410189726c33ade0bf7e040eaca5f665a65ed"
+}

@@ -1,0 +1,60 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-16T23:19:28Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "0e53b8f6c005f4bbdabe3cc39a1bf85248f890251075f624bcf5f37eb727ac56",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-17",
+      "text": "Call `render_workflow(\"github\", [\"linux\"], \"v<VERSION>\")` and compare it with `dev/fixtures/consumer-ci/.github/workflows/purlin.yml` line by line; verify they are identical and report the first differing line when they are not. Verify `templates/purlin.yml` still holds both `<<MATRIX>>` and `<<PURLIN_REF>>`, so a substitution that has become a no-op cannot pass by comparing a file with itself",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/records/20260916T231922Z-611267b-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-17",
+  "rule_hash": "a30b7799ddbf32441dbf40ab420bdad8f4da752d4214a33f7878b7d5a2b055b9",
+  "rule_text": "The workflow a consumer project runs is rendered from `templates/purlin.yml`, which carries a `<<MATRIX>>` and a `<<PURLIN_REF>>` placeholder for the two things a project decides",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "c752ee05f0c87620eded38ad037073abb1ea3d25705b15d00e577808e5ff4e8d",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_fixture_workflow_is_what_the_template_renders():\n    rendered = workflow_module.render_workflow('github', ['linux'], PURLIN_REF)\n    committed = read(WORKFLOW_REL)\n    if rendered != committed:\n        expected = rendered.splitlines()\n        actual = committed.splitlines()\n        for index in range(max(len(expected), len(actual))):\n            left = expected[index] if index < len(expected) else '<end of file>'\n            right = actual[index] if index < len(actual) else '<end of file>'\n            if left != right:\n                raise AssertionError(\n                    '%s/%s differs from the rendered template at line %d:\\n'\n                    '  template renders: %r\\n'\n                    '  fixture carries:  %r'\n                    % (FIXTURE_REL, WORKFLOW_REL, index + 1, left, right))\n        raise AssertionError('the two texts differ only in trailing bytes')",
+      "file": "dev/test_consumer_ci.py",
+      "findings": [
+        "no_assertion"
+      ],
+      "name": "test_the_fixture_workflow_is_what_the_template_renders",
+      "proof": "PROOF-17",
+      "reasons": [
+        "test function has no assertion statements"
+      ]
+    },
+    {
+      "body": "def test_the_template_still_carries_the_placeholders():\n    \"\"\"A substitution that has become a no-op proves nothing.\"\"\"\n    template = read(os.path.join('templates', 'purlin.yml'), root=ROOT)\n    assert '<<MATRIX>>' in template\n    assert '<<PURLIN_REF>>' in template",
+      "file": "dev/test_consumer_ci.py",
+      "findings": [],
+      "name": "test_the_template_still_carries_the_placeholders",
+      "proof": "PROOF-17",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "66fa49c110f5ed9b43fdd52e6ab7a527e3bfd4c1992e8523092147c06aeb6500"
+}

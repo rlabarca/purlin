@@ -1,0 +1,82 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-16T23:19:29Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "c1d5c976c1b7d436e651da3a9ea6ce1e666738539972e7780099c22eef15ec66",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-30",
+      "text": "With `GITHUB_REPOSITORY`, `GITHUB_TOKEN` and a pull request event set, and `GITHUB_WORKSPACE` naming a directory that is not the project, call `post_pr_comment()`; verify it returns False, sends nothing, and prints `is not the workspace this job checked out`. With `RUNNER_TEMP` set to `/tmp/rt` as well, verify `publish_dir()` is `.purlin/runtime/report` inside that project rather than `/tmp/rt/purlin-dashboard`. Call `is_the_workspace()` with no workspace variable set at all; verify True for any directory",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-31",
+      "text": "With the same variables and `GITHUB_WORKSPACE` equal to the project root by a path that resolves to it through a symbolic link, call `post_pr_comment()` with `urlopen` standing in; verify exactly one POST to `/repos/<repo>/issues/<number>/comments` and that it returns True, and verify `publish_dir()` is `/tmp/rt/purlin-dashboard`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/records/20260916T231922Z-611267b-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-26",
+  "rule_hash": "2e3689e7aa585fc5827748313aa4edac42b29887beb5fa4b1314f2be6a86d590",
+  "rule_text": "A run whose project root is not the directory the job checked out, named by `GITHUB_WORKSPACE` or `BUILD_SOURCESDIRECTORY`, posts no pull request comment and publishes its dashboard into its own project rather than the runner's temporary directory, printing one line naming the project either way; with neither variable set every project is its own and nothing changes",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "549b498e246d780eeae6e10b48e4bc22a70308592a557db10493f09ab5cdabc1",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_project_that_is_not_the_workspace_posts_nothing(\n        project, github_env, pull_request_event, monkeypatch, tmp_path,\n        capsys):\n    \"\"\"A test suite driving an audit over a fixture must not speak for the job.\n\n    The fixture inherits the runner's token, repository and pull request, so\n    without this check every fixture project posts its own table to the pull\n    request the job is reviewing.\n    \"\"\"\n    monkeypatch.setenv('GITHUB_WORKSPACE', str(tmp_path / 'the-checkout'))\n\n    def urlopen(request, timeout=None):\n        raise AssertionError('a fixture project reached the git host')\n\n    monkeypatch.setattr(urllib.request, 'urlopen', urlopen)\n\n    assert ci_module.post_pr_comment(project, 'anything') is False\n    assert 'is not the workspace this job checked out' in capsys.readouterr().out",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_project_that_is_not_the_workspace_posts_nothing",
+      "proof": "PROOF-30",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_project_that_is_not_the_workspace_publishes_into_itself(\n        project, github_env, monkeypatch, tmp_path):\n    monkeypatch.setenv('GITHUB_WORKSPACE', str(tmp_path / 'the-checkout'))\n    monkeypatch.setenv('RUNNER_TEMP', '/tmp/rt')\n\n    assert ci_module.publish_dir(project) == os.path.join(\n        project, '.purlin', 'runtime', 'report')",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_project_that_is_not_the_workspace_publishes_into_itself",
+      "proof": "PROOF-30",
+      "reasons": []
+    },
+    {
+      "body": "def test_with_no_workspace_variable_every_project_is_its_own(monkeypatch):\n    for variable in ('GITHUB_WORKSPACE', 'BUILD_SOURCESDIRECTORY'):\n        monkeypatch.delenv(variable, raising=False)\n    assert ci_module.is_the_workspace('/anywhere/at/all') is True",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_with_no_workspace_variable_every_project_is_its_own",
+      "proof": "PROOF-30",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_workspace_itself_still_posts_and_publishes(\n        project, github_env, pull_request_event, monkeypatch, tmp_path):\n    \"\"\"The comparison is between real paths, not between the strings.\n\n    A runner hands over a path that reaches the checkout through a symbolic\n    link often enough that comparing the strings would refuse the job's own\n    project.\n    \"\"\"\n    linked = tmp_path / 'workspace-link'\n    os.symlink(project, str(linked))\n    monkeypatch.setenv('GITHUB_WORKSPACE', str(linked))\n    monkeypatch.setenv('RUNNER_TEMP', '/tmp/rt')\n    sent = []\n\n    def urlopen(request, timeout=None):\n        sent.append(request.full_url)\n        return Response({})\n\n    monkeypatch.setattr(urllib.request, 'urlopen', urlopen)\n\n    assert ci_module.post_pr_comment(project, 'the table') is True\n    assert len(sent) == 1\n    assert sent[0].endswith('/repos/acme/widgets/issues/12/comments')\n    assert ci_module.publish_dir(project) == '/tmp/rt/purlin-dashboard'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_workspace_itself_still_posts_and_publishes",
+      "proof": "PROOF-31",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "e7a4d26204d69654f7a31b24d8a2d3d49d68fa585d1c50405f182dea4469d751"
+}
