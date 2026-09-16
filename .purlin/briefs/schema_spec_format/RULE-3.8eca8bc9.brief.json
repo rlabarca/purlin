@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "schema_spec_format",
+  "generated_at": "2026-09-16T22:34:54Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "cad4ace79d44fc1e7d7de0380eb91748f61e1f0879269cc6a4fe09c096060940",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-3",
+      "text": "Read every file under `specs/` and, for each line under its `## Proof` heading that starts a list item, verify it matches `PROOF-\\d+ \\(RULE-\\d+\\)`; a line that does not fails naming the file and the line",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/schema_spec_format/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-3",
+  "rule_hash": "f0de3cf7a47409e0b6d0f7b8c0e95d65591f2ec1a9cadd1dba7b3f4a63d05041",
+  "rule_text": "A proof line reads `PROOF-N (RULE-N)`, and names several rules as `PROOF-N (RULE-A, RULE-B)` when one flow drives all of them",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "35e609e264338a6620c6d496506786fea91bf650658d85a7fd9d7eba6e7c37e7",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_all_proof_lines_match_pattern(self):\n        spec_files = glob.glob(os.path.join(PROJECT_ROOT, 'specs', '**', '*.md'),\n                               recursive=True)\n        pattern = re.compile(r'^-\\s+PROOF-\\d+\\s+\\(RULE-\\d+\\)')\n        for path in spec_files:\n            with open(path, encoding='utf-8') as f:\n                content = f.read()\n            proof_section = re.search(\n                r'^## Proof\\s*\\n(.*?)(?=^## |\\Z)', content,\n                re.MULTILINE | re.DOTALL\n            )\n            if not proof_section:\n                continue\n            for line in proof_section.group(1).strip().splitlines():\n                line = line.strip()\n                if line.startswith('- '):\n                    assert pattern.match(line), \\\n                        f\"Bad proof line in {path}: {line}\"",
+      "file": "dev/test_schema_spec_format.py",
+      "findings": [],
+      "name": "test_all_proof_lines_match_pattern",
+      "proof": "PROOF-3",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "8eca8bc9e30a42aa3524dc4c77954f74679b3ee17cbd8823db044f8fcc525e67"
+}

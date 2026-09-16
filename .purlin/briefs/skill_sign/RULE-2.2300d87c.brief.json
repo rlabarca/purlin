@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_sign",
+  "generated_at": "2026-09-16T22:34:58Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "0bcdc206cc014287834f9dda98b28870f16dc67389db6ce43dedebb08cf7d2c4",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-2",
+      "text": "Read `skills/sign/SKILL.md`; verify it carries `payload.review_list`, and that the literal `\"${CLAUDE_PLUGIN_ROOT}/scripts/review/brief.py\"` appears at a smaller offset than the literal `\"${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py\"`. Swapping the two steps fails on the offset comparison",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/skill_sign/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-2",
+  "rule_hash": "271687d5c794d60495f0c3724bab61250bcf71b6a14de443534e0e73b079338a",
+  "rule_text": "The skill reads the review list from `sync_status` as `payload.review_list`, shows the brief with `scripts/review/brief.py` before it writes anything, and writes the signature with `scripts/review/sign.py`, both scripts inside `${CLAUDE_PLUGIN_ROOT}`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "84faf6837df9d22b3585ec773cde260f83e0a7df2907ca403ecf2a56c09ec211",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_shows_the_brief_before_it_writes_the_signature(self):\n        rel = skill_path('sign')\n        assert (carries(rel, ['payload.review_list'])\n                + in_order(rel, [\n                    '\"${CLAUDE_PLUGIN_ROOT}/scripts/review/brief.py\"',\n                    '\"${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py\"'])) == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_it_shows_the_brief_before_it_writes_the_signature",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "2300d87c2a689c4e2820afa151ad22e2139c6be84da30b2279e97ef03a8d6d19"
+}

@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_init",
+  "generated_at": "2026-09-16T22:34:58Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "796a8d2669514138888985cc16d80112d88c7dd5fb1147789c4376ca4e5a59fb",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-2",
+      "text": "Read `skills/init/SKILL.md`; verify it carries the literal `\"${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py\"` and each of `--project-root`, `--gate`, `--update`, `--ci`, `--add` and `--dry-run`, one assertion per literal so the failure names the missing one. Dropping the `--dry-run` row fails naming `--dry-run`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/skill_init/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-2",
+  "rule_hash": "48433422ed4d2293ad3fc1637a8dd7787a4318694b7715e5958d21116c86781e",
+  "rule_text": "The skill runs `scripts/init/scaffold.py` inside `${CLAUDE_PLUGIN_ROOT}`, passing `--project-root` and `--gate`, and names the `--update`, `--ci`, `--add` and `--dry-run` forms",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "be13cab59baa43cc19de7ff870f269084e51610aa2511c7a3f53840759d6a8ff",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_runs_the_scaffold_script(self):\n        assert carries(skill_path('init'), [\n            '\"${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py\"',\n            '--project-root', '--gate', '--update', '--ci', '--add',\n            '--dry-run']) == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_it_runs_the_scaffold_script",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "162ea8ac2279e651f5267bb52795802d4d76cc895fa1790209cd4416b031f331"
+}

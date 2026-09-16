@@ -1,0 +1,123 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-16T22:35:12Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "01c900b2d0db02efd07f7227ad4984e12aedbe64dc656ad324a1f6086881e948",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-27",
+      "text": "Write a spec declaring three rules and a record naming `RULE-99`, for each of the five languages; verify exactly 1 orphan comes back naming `RULE-99`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-28",
+      "text": "Write a record whose every rule is declared by the spec; verify zero orphans come back",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-29",
+      "text": "Write a record naming `security_policy/RULE-1`, a rule an anchor owns; verify zero orphans come back",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-30",
+      "text": "Run the record check with no spec named over a record naming `RULE-99`; verify zero orphans come back",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/static_checks/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-20",
+  "rule_hash": "df748a4ac76983cbee5b4aa77e90b060f3ff5549cdd7b90328fdd9098042bb73",
+  "rule_text": "A proof naming a rule the spec does not declare is reported `proof_rule_orphan`, a rule an anchor owns is not, and with no spec named the check does not run at all",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "a24425fd81b06eea02bfc78fca06c9f1a371271a908156c2ed3a9915d036536d",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_detects_orphan_per_language(self, tmp_path, lang, factory):\n        \"\"\"Proof targeting RULE-99 which doesn't exist \u2014 detected regardless of language.\"\"\"\n        spec_path = _write_spec_file(tmp_path, \"login\", {\n            \"RULE-1\": \"Validates credentials\",\n            \"RULE-2\": \"Returns JWT on success\",\n            \"RULE-3\": \"Rejects expired tokens\",\n        })\n        proofs = [\n            factory(\"login\", \"PROOF-1\", \"RULE-1\"),\n            factory(\"login\", \"PROOF-99\", \"RULE-99\"),  # orphan\n        ]\n        proof_path = _write_proof_json(tmp_path, \"login\", \"unit\", proofs)\n        findings = check_proof_file(proof_path, spec_path=spec_path)\n        orphans = [f for f in findings if f['check'] == 'proof_rule_orphan']\n        assert len(orphans) == 1, f\"Expected 1 orphan for {lang}, got {len(orphans)}\"\n        assert orphans[0]['rule'] == 'RULE-99'",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_detects_orphan_per_language[javascript-_jest_proof]",
+      "proof": "PROOF-27",
+      "reasons": []
+    },
+    {
+      "body": "def test_detects_orphan_per_language(self, tmp_path, lang, factory):\n        \"\"\"Proof targeting RULE-99 which doesn't exist \u2014 detected regardless of language.\"\"\"\n        spec_path = _write_spec_file(tmp_path, \"login\", {\n            \"RULE-1\": \"Validates credentials\",\n            \"RULE-2\": \"Returns JWT on success\",\n            \"RULE-3\": \"Rejects expired tokens\",\n        })\n        proofs = [\n            factory(\"login\", \"PROOF-1\", \"RULE-1\"),\n            factory(\"login\", \"PROOF-99\", \"RULE-99\"),  # orphan\n        ]\n        proof_path = _write_proof_json(tmp_path, \"login\", \"unit\", proofs)\n        findings = check_proof_file(proof_path, spec_path=spec_path)\n        orphans = [f for f in findings if f['check'] == 'proof_rule_orphan']\n        assert len(orphans) == 1, f\"Expected 1 orphan for {lang}, got {len(orphans)}\"\n        assert orphans[0]['rule'] == 'RULE-99'",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_detects_orphan_per_language[python-_python_proof]",
+      "proof": "PROOF-27",
+      "reasons": []
+    },
+    {
+      "body": "def test_detects_orphan_per_language(self, tmp_path, lang, factory):\n        \"\"\"Proof targeting RULE-99 which doesn't exist \u2014 detected regardless of language.\"\"\"\n        spec_path = _write_spec_file(tmp_path, \"login\", {\n            \"RULE-1\": \"Validates credentials\",\n            \"RULE-2\": \"Returns JWT on success\",\n            \"RULE-3\": \"Rejects expired tokens\",\n        })\n        proofs = [\n            factory(\"login\", \"PROOF-1\", \"RULE-1\"),\n            factory(\"login\", \"PROOF-99\", \"RULE-99\"),  # orphan\n        ]\n        proof_path = _write_proof_json(tmp_path, \"login\", \"unit\", proofs)\n        findings = check_proof_file(proof_path, spec_path=spec_path)\n        orphans = [f for f in findings if f['check'] == 'proof_rule_orphan']\n        assert len(orphans) == 1, f\"Expected 1 orphan for {lang}, got {len(orphans)}\"\n        assert orphans[0]['rule'] == 'RULE-99'",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_detects_orphan_per_language[shell-_shell_proof]",
+      "proof": "PROOF-27",
+      "reasons": []
+    },
+    {
+      "body": "def test_detects_orphan_per_language(self, tmp_path, lang, factory):\n        \"\"\"Proof targeting RULE-99 which doesn't exist \u2014 detected regardless of language.\"\"\"\n        spec_path = _write_spec_file(tmp_path, \"login\", {\n            \"RULE-1\": \"Validates credentials\",\n            \"RULE-2\": \"Returns JWT on success\",\n            \"RULE-3\": \"Rejects expired tokens\",\n        })\n        proofs = [\n            factory(\"login\", \"PROOF-1\", \"RULE-1\"),\n            factory(\"login\", \"PROOF-99\", \"RULE-99\"),  # orphan\n        ]\n        proof_path = _write_proof_json(tmp_path, \"login\", \"unit\", proofs)\n        findings = check_proof_file(proof_path, spec_path=spec_path)\n        orphans = [f for f in findings if f['check'] == 'proof_rule_orphan']\n        assert len(orphans) == 1, f\"Expected 1 orphan for {lang}, got {len(orphans)}\"\n        assert orphans[0]['rule'] == 'RULE-99'",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_detects_orphan_per_language[sql-_sql_proof]",
+      "proof": "PROOF-27",
+      "reasons": []
+    },
+    {
+      "body": "def test_detects_orphan_per_language(self, tmp_path, lang, factory):\n        \"\"\"Proof targeting RULE-99 which doesn't exist \u2014 detected regardless of language.\"\"\"\n        spec_path = _write_spec_file(tmp_path, \"login\", {\n            \"RULE-1\": \"Validates credentials\",\n            \"RULE-2\": \"Returns JWT on success\",\n            \"RULE-3\": \"Rejects expired tokens\",\n        })\n        proofs = [\n            factory(\"login\", \"PROOF-1\", \"RULE-1\"),\n            factory(\"login\", \"PROOF-99\", \"RULE-99\"),  # orphan\n        ]\n        proof_path = _write_proof_json(tmp_path, \"login\", \"unit\", proofs)\n        findings = check_proof_file(proof_path, spec_path=spec_path)\n        orphans = [f for f in findings if f['check'] == 'proof_rule_orphan']\n        assert len(orphans) == 1, f\"Expected 1 orphan for {lang}, got {len(orphans)}\"\n        assert orphans[0]['rule'] == 'RULE-99'",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_detects_orphan_per_language[typescript-_typescript_proof]",
+      "proof": "PROOF-27",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_orphan_when_all_rules_exist(self, tmp_path):\n        \"\"\"All proofs target existing rules \u2014 zero orphans.\"\"\"\n        spec_path = _write_spec_file(tmp_path, \"login\", {\n            \"RULE-1\": \"Validates credentials\",\n            \"RULE-2\": \"Returns JWT on success\",\n        })\n        proofs = [\n            _python_proof(\"login\", \"PROOF-1\", \"RULE-1\"),\n            _shell_proof(\"login\", \"PROOF-2\", \"RULE-2\"),\n        ]\n        proof_path = _write_proof_json(tmp_path, \"login\", \"unit\", proofs)\n        findings = check_proof_file(proof_path, spec_path=spec_path)\n        orphans = [f for f in findings if f['check'] == 'proof_rule_orphan']\n        assert len(orphans) == 0, f\"Expected no orphans, got {orphans}\"",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_no_orphan_when_all_rules_exist",
+      "proof": "PROOF-28",
+      "reasons": []
+    },
+    {
+      "body": "def test_required_anchor_rules_not_flagged(self, tmp_path):\n        \"\"\"Rules with '/' (from required anchors) should NOT be flagged as orphans.\"\"\"\n        spec_path = _write_spec_file(tmp_path, \"login\", {\n            \"RULE-1\": \"Validates credentials\",\n        })\n        proofs = [\n            _python_proof(\"login\", \"PROOF-1\", \"RULE-1\"),\n            # This targets an anchor rule \u2014 should not be flagged\n            {\n                \"feature\": \"login\", \"id\": \"PROOF-10\", \"rule\": \"security_policy/RULE-1\",\n                \"test_file\": \"tests/test_security.py\",\n                \"test_name\": \"test_no_eval\",\n                \"status\": \"pass\", \"tier\": \"unit\",\n            },\n        ]\n        proof_path = _write_proof_json(tmp_path, \"login\", \"unit\", proofs)\n        findings = check_proof_file(proof_path, spec_path=spec_path)\n        orphans = [f for f in findings if f['check'] == 'proof_rule_orphan']\n        assert len(orphans) == 0, f\"Anchor rules should not be flagged as orphans: {orphans}\"",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_required_anchor_rules_not_flagged",
+      "proof": "PROOF-29",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_orphan_check_without_spec(self, tmp_path):\n        \"\"\"Without spec_path, orphan check is skipped \u2014 only collision check runs.\"\"\"\n        proofs = [\n            _python_proof(\"login\", \"PROOF-1\", \"RULE-1\"),\n            _python_proof(\"login\", \"PROOF-99\", \"RULE-99\"),\n        ]\n        proof_path = _write_proof_json(tmp_path, \"login\", \"unit\", proofs)\n        findings = check_proof_file(proof_path)  # no spec_path\n        orphans = [f for f in findings if f['check'] == 'proof_rule_orphan']\n        assert len(orphans) == 0, \"Should not check orphans without spec_path\"",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_no_orphan_check_without_spec",
+      "proof": "PROOF-30",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "fa310d5fd2b23f806f149033d2a77d3686176009100753e0e37ad1988b51f617"
+}

@@ -1,0 +1,55 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "upstream",
+  "generated_at": "2026-09-16T22:35:17Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "0fb057d00745836edbc423ffe07fce1db83a6881653bd31d438c656ceda31725",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-6",
+      "text": "Run `add` with the source `--upload-pack=/bin/echo` and again with the source `ext::sh -c touch`; verify the first is refused with a message containing `begins with \"-\"`, the second with a message naming the `ext:: transport`, and that no anchor file was written either time",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/upstream/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-6",
+  "rule_hash": "321d9662fc4a82a4b00404256aa3349b6d4fab2cf0b673050614dbbcd4b4ce8a",
+  "rule_text": "A source that begins with `-`, or that names the `ext::` transport, is refused before any process starts and nothing is written",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "ead86399c8fc5a8fd971aee636c9dcb3154c207086f8ec86c70e9e1d1007afbe",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_add_refuses_a_source_that_begins_with_a_dash(workspace):\n    result = upstream.add(workspace.root, '--upload-pack=/bin/echo',\n                          path='a.md', name='hostile')\n    assert result['status'] == 'error'\n    assert 'begins with \"-\"' in result['error']\n    assert not os.path.isfile(upstream.anchor_path(workspace.root, 'hostile'))",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_add_refuses_a_source_that_begins_with_a_dash",
+      "proof": "PROOF-6",
+      "reasons": []
+    },
+    {
+      "body": "def test_add_refuses_an_ext_transport(workspace):\n    result = upstream.add(workspace.root, 'ext::sh -c touch', path='a.md',\n                          name='hostile')\n    assert result['status'] == 'error'\n    assert 'ext:: transport' in result['error']",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_add_refuses_an_ext_transport",
+      "proof": "PROOF-6",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "b39cdc1a268ff51c3723c4fee81cc4b8dc93bd8252737153f1017e9846a428e9"
+}

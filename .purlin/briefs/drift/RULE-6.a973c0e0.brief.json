@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "drift",
+  "generated_at": "2026-09-16T22:34:34Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "f7450851d5fd06728c4ba40d22df44608c8ed46c7af278d0af21a29024b9c9a1",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-7",
+      "text": "Commit 12 files of differing length in one commit, then run drift with `since` `1` while `subprocess.run` is wrapped by a capturing spy; verify exactly 1 captured call carries the numbered-stat flag, that all 12 file entries carry a line count matching `^\\+\\d+ -\\d+$`, and that each value equals the numbered stat taken for that path on its own",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/drift/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-6",
+  "rule_hash": "9e4bb9f91f544508cfe5068f3cf573034896c8817fafd9ccb905c030965ddab7",
+  "rule_text": "Every changed file's line count is read from a single numbered-stat diff taken over the whole range, so the number of git calls does not grow with the number of files",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "aa4597bd4906993ed388de2316d8771fbd6e4623b660dd5d85e721888c42cfa3",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_one_numstat_call_covers_every_changed_file(self, tmp_path):\n        root = str(tmp_path / 'proj')\n        os.makedirs(root)\n        self._repo(root)\n\n        calls = []\n        real_run = subprocess.run\n\n        def spy(args, *rest, **kwargs):\n            calls.append(list(args) if isinstance(args, (list, tuple)) else [args])\n            return real_run(args, *rest, **kwargs)\n\n        purlin_drift.subprocess.run = spy\n        try:\n            data = json.loads(purlin_drift.drift(root, since='1'))\n        finally:\n            purlin_drift.subprocess.run = real_run\n\n        numstat_calls = [c for c in calls if '--numstat' in c]\n        assert len(numstat_calls) == 1, (\n            f\"expected exactly 1 numstat subprocess for {self.FILE_COUNT} files, \"\n            f\"got {len(numstat_calls)}: {numstat_calls}\")\n\n        entries = {e['path']: e['diff_stat'] for e in data['files']\n                   if e['path'].startswith('src/mod')}\n        assert len(entries) == self.FILE_COUNT, entries\n        for path, stat in entries.items():\n            assert re.match(r'^\\+\\d+ -\\d+$', stat), (path, stat)\n\n        # Every value equals what a per-file numstat reports for that path.\n        for path, stat in entries.items():\n            r = real_run(['git', 'diff', '--numstat', 'HEAD~1..HEAD', '--', path],\n                         cwd=root, capture_output=True, text=True)\n            parts = r.stdout.strip().split('\\t')\n            assert stat == f'+{parts[0]} -{parts[1]}', (path, stat, r.stdout)",
+      "file": "dev/test_drift.py",
+      "findings": [],
+      "name": "test_one_numstat_call_covers_every_changed_file",
+      "proof": "PROOF-7",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a973c0e0a1bac7471cc0b0f948136f1941d0b2a89b12664d5fb6de3fe04f7e9e"
+}

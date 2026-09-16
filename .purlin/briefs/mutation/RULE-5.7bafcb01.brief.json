@@ -1,0 +1,57 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "mutation",
+  "generated_at": "2026-09-16T22:34:36Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "8f54c8bb45ec6aab70013bf20bd33e730e9082719d84e42c531004f2419af7a7",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-5",
+      "text": "Call `build_config([\"src/login.js\"], \"jest\", \"/tmp/r.json\")`; verify `mutate` is exactly `[\"src/login.js\"]`, `coverageAnalysis` is `perTest`, `disableBail` is true, `reporters` is `[\"json\"]` and `jsonReporter.fileName` is the report path. Run the engine with the binary standing in; verify the config file it wrote holds those values and that the report it read is the one the config named",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/mutation/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-5",
+  "rule_hash": "13c3957a48c12c8e0f6d9e52cd981d81c1665dec4667ad44c10a41e7a1b12511",
+  "rule_text": "Stryker runs once per feature against that feature's scope files alone, under a generated config naming `coverageAnalysis: \"perTest\"`, `disableBail: true`, the `json` reporter and the report path",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "3a2efa51441ea77513438808c69739b0be7b95ddc8b9754ddd052335fcb84680",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_run_writes_the_scoped_config_and_reads_the_report(monkeypatch):\n    execute, seen = fake_stryker_run('stryker_report.json')\n    monkeypatch.setattr(stryker, 'binary', lambda root: ['stryker'])\n    monkeypatch.setattr(stryker, 'test_runner', lambda root: 'jest')\n    monkeypatch.setattr(stryker, 'execute', execute)\n    answer = stryker.run('/project', {'calc': ['src/calc.js']},\n                         {('calc', 'RULE-1'): CALC_TESTS['RULE-1'],\n                          ('calc', 'RULE-2'): CALC_TESTS['RULE-2']}, 'unit')\n    assert seen['config']['mutate'] == ['src/calc.js']\n    assert seen['config']['coverageAnalysis'] == 'perTest'\n    assert seen['config']['disableBail'] is True\n    assert seen['config']['reporters'] == ['json']\n    assert seen['command'][:2] == ['stryker', 'run']\n    assert answer['engine'] == 'stryker'\n    assert answer['available'] is True\n    assert answer['features']['calc']['scope_score']['score'] == 64\n    assert answer['features']['calc']['rules']['RULE-2']['score'] == 71\n    assert 'calc' in answer['log']",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_a_run_writes_the_scoped_config_and_reads_the_report",
+      "proof": "PROOF-5",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_generated_config_scopes_the_run_to_the_spec_files():\n    config = stryker.build_config(['src/calc.js', 'src/util.js'], 'jest',\n                                  '/tmp/report.json')\n    assert config == {\n        'mutate': ['src/calc.js', 'src/util.js'],\n        'coverageAnalysis': 'perTest',\n        'disableBail': True,\n        'reporters': ['json'],\n        'testRunner': 'jest',\n        'jsonReporter': {'fileName': '/tmp/report.json'},\n    }",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_the_generated_config_scopes_the_run_to_the_spec_files",
+      "proof": "PROOF-5",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "7bafcb0130ea964a8b0102997a5997cd358f1fb18c03943558eaaa9169f681b5"
+}

@@ -1,0 +1,56 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "mutation",
+  "generated_at": "2026-09-16T22:34:36Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "13895a93a5540c98f6e3a19d6118a8b592459c1c67183e76358a29100a7a6fc6",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-6",
+      "text": "Call `test_runner()` on a project whose `package.json` lists vitest under `devDependencies`; verify `vitest`. Call it on a project with no `package.json` and on one listing jest; verify `jest` both times",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/mutation/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-6",
+  "rule_hash": "0b289dc66b1674584a9f040cc0ef12d24f336b27860523a7a7e292ef962060b8",
+  "rule_text": "The Stryker test runner is `vitest` when the project's `package.json` declares vitest as a dependency, and `jest` otherwise",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "7bd3af677f19be293421714ffa284184f139b4a15b15d6fa0a5f1aa2dd7e0d7a",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_runner_is_jest_for_everything_else(tmp_path):\n    manifest = {'devDependencies': {'jest': '^30.0.0'}}\n    (tmp_path / 'package.json').write_text(json.dumps(manifest),\n                                           encoding='utf-8')\n    assert stryker.test_runner(str(tmp_path)) == 'jest'\n    assert stryker.test_runner(str(tmp_path / 'nothing-here')) == 'jest'",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_the_runner_is_jest_for_everything_else",
+      "proof": "PROOF-6",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_runner_is_vitest_when_the_project_declares_vitest(tmp_path):\n    manifest = {'devDependencies': {'vitest': '^2.0.0'}}\n    (tmp_path / 'package.json').write_text(json.dumps(manifest),\n                                           encoding='utf-8')\n    assert stryker.test_runner(str(tmp_path)) == 'vitest'",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_the_runner_is_vitest_when_the_project_declares_vitest",
+      "proof": "PROOF-6",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "40917db60d482bcfd9b0cbba37b08c8f82a6c5e6737573ce81c8beaacdcfe2bb"
+}

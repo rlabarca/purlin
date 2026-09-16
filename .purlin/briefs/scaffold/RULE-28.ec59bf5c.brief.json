@@ -1,0 +1,70 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T22:34:53Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "06d8c7cc654337332752f916a643997af8d0d8bbcb3a516070b482c4d9d5acac",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-28",
+      "text": "Set a project up through init with no spec written and verify the shim exits 0 printing no `purlin:` line; delete `.purlin/` and run `scripts/hooks/pre-push.sh` directly, verifying exit 0 with empty stdout; run the same script in a directory that is not a git repository, with the repository search stopped above it, and verify exit 0 with empty stdout. Run every one of these through the plainest POSIX shell the host has, dash where there is one, since `sh` is bash under another name on some hosts and takes extensions dash rejects; and verify the script's first line asks for `/bin/sh` and its only `set` line is `set -u`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-28",
+  "rule_hash": "146b6e7c0f33410230e9d31d55a4119f7cf9d764f9a14a4ed77448d7335a4aff",
+  "rule_text": "The hook exits 0 and prints nothing when there is no project to check: no specs, no `.purlin/`, or no git repository",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "31f3bf42f7953e74fccfe3a9a5cbb0948db55a858c930ba3b42086f600c1f448",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_project_that_is_not_a_purlin_project_exits_zero(self, passing):\n        shutil.rmtree(passing.path('.purlin'), ignore_errors=True)\n        done = subprocess.run([SH, HOOK_SCRIPT], cwd=passing.root,\n                              capture_output=True, text=True, timeout=300,\n                              stdin=subprocess.DEVNULL)\n        assert done.returncode == 0, done.stdout + done.stderr\n        assert done.stdout == ''",
+      "file": "dev/test_pre_push_hook.py",
+      "findings": [],
+      "name": "test_a_project_that_is_not_a_purlin_project_exits_zero",
+      "proof": "PROOF-28",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_project_with_no_specs_exits_zero(self):\n        made = Project(specs=False)\n        try:\n            done = made.push()\n            assert done.returncode == 0, done.stdout + done.stderr\n            assert 'purlin:' not in done.stdout\n        finally:\n            made.close()",
+      "file": "dev/test_pre_push_hook.py",
+      "findings": [],
+      "name": "test_a_project_with_no_specs_exits_zero",
+      "proof": "PROOF-28",
+      "reasons": []
+    },
+    {
+      "body": "def test_outside_a_repository_it_exits_zero(self):\n        directory = tempfile.mkdtemp(prefix='purlin-norepo-')\n        env = dict(os.environ)\n        env.update(OUTSIDE)\n        try:\n            done = subprocess.run([SH, HOOK_SCRIPT], cwd=directory, env=env,\n                                  capture_output=True, text=True, timeout=300,\n                                  stdin=subprocess.DEVNULL)\n            assert done.returncode == 0, done.stdout + done.stderr\n            assert done.stdout == ''\n        finally:\n            shutil.rmtree(directory, ignore_errors=True)",
+      "file": "dev/test_pre_push_hook.py",
+      "findings": [],
+      "name": "test_outside_a_repository_it_exits_zero",
+      "proof": "PROOF-28",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_script_asks_for_sh_and_sets_no_option_outside_posix(self):\n        \"\"\"The one line that decides which shell reads the rest of the file.\n\n        A host whose `sh` is dash has no `pipefail`, and `set -o pipefail`\n        there exits 2 before line 2 of the script, which is a block.\n        \"\"\"\n        lines = read(HOOK_SCRIPT).splitlines()\n        assert lines[0] == '#!/bin/sh'\n        options = [line for line in lines if line.startswith('set ')]\n        assert options == ['set -u'], options",
+      "file": "dev/test_pre_push_hook.py",
+      "findings": [],
+      "name": "test_the_script_asks_for_sh_and_sets_no_option_outside_posix",
+      "proof": "PROOF-28",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "ec59bf5c6a28c3789ac914c4731186439b98b2c1d99fbef04e6999fb71aa94f3"
+}

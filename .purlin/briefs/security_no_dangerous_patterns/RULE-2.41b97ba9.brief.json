@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "security_no_dangerous_patterns",
+  "generated_at": "2026-09-16T22:34:54Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "2633f7d5946da7b5a44a83a60558b871037b2cee23752fd7e20ff8f12d6a79e6",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-2",
+      "text": "Over the same file list, grep each language's opt-in to a shell (`shell\\s*=\\s*True`, `shell\\s*:\\s*true`, `UseShellExecute\\s*=\\s*true`); verify zero matches, naming the file on failure",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/security_no_dangerous_patterns/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-2",
+  "rule_hash": "379b01850ca40136c342be1432ad0305fde4aa244318b404f09957e25142596e",
+  "rule_text": "No file under `scripts/` opts a subprocess into a shell: no `shell=True` in Python, no `shell: true` in JS or TS, no `UseShellExecute = true` in C#",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "a3ae9fc51652fb80c3ad2b21318a560596489bd68a84fd7d0648a11b7bd27452",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_no_shell_true(self):\n        for path in _all_script_files():\n            ext = _ext(path)\n            content = _read(path)\n            for pattern in _SHELL_FLAG_BY_EXT.get(ext, []):\n                assert not re.search(pattern, content), \\\n                    f\"Found shell opt-in {pattern!r} in {path}\"",
+      "file": "dev/test_security.py",
+      "findings": [],
+      "name": "test_no_shell_true",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "41b97ba96bb0f19da0c77a2a633a637b2322b7787ced3bb8ddad28e4702fbd51"
+}

@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "drift",
+  "generated_at": "2026-09-16T22:34:34Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "444bfc2b2cd33a631ddcd8d40ef374fa7f1d2161a198c905ad0b28f74ddb80c0",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-8",
+      "text": "Run drift over a committed change and verify the parsed report carries all 10 named keys",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/drift/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-7",
+  "rule_hash": "1a6f79ad418f1e712dd2c43b5e266c15d902a7e4e0dcac9c7044573c3d3f1fe6",
+  "rule_text": "The report carries `since`, `commits`, `files`, `spec_changes`, `broken_scopes`, `pins`, `rule_details`, `summary`, `review_list` and `roles`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "4daa20b5503874c6191e3d41cdf55e31c879e7febdefbacba83264eab01e14ab",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_report_names_its_keys_and_the_scope_paths_that_are_gone(\n            self, tmp_path):\n        root = _new_repo(str(tmp_path / 'proj'))\n        _write(os.path.join(root, 'specs', 'mcp', 'thing.md'),\n               '# Feature: thing\\n\\n> Scope: src/thing.py, src/gone.py\\n\\n'\n               '## Rules\\n\\n- RULE-1: Does the thing\\n\\n'\n               '## Proof\\n\\n- PROOF-1 (RULE-1): Call it and verify 1\\n')\n        _write(os.path.join(root, 'src', 'thing.py'),\n               'def thing():\\n    return 1\\n')\n        _commit(root, 'chore: the project under test')\n        _write(os.path.join(root, 'src', 'thing.py'),\n               'def thing():\\n    return 2\\n')\n        _commit(root, 'fix: thing')\n\n        data = json.loads(purlin_drift.drift(root, since='1'))\n        assert sorted(data) == sorted([\n            'since', 'commits', 'files', 'spec_changes', 'broken_scopes',\n            'pins', 'rule_details', 'summary', 'review_list',\n            'roles']), sorted(data)\n        assert data['broken_scopes'] == [\n            {'spec': 'thing', 'missing_paths': ['src/gone.py']}], \\\n            data['broken_scopes']",
+      "file": "dev/test_drift.py",
+      "findings": [],
+      "name": "test_the_report_names_its_keys_and_the_scope_paths_that_are_gone",
+      "proof": "PROOF-8",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "993f46c8bd69c425c2af507f9bce8c7b1497859ac7a5e3d81cea80af08576b71"
+}

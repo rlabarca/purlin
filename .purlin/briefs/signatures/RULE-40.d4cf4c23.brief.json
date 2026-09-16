@@ -1,0 +1,61 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-16T22:34:57Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "2ab25155f275ba2287dc2e5d38f03acbcf98dbf8af43eb44137698ae083e2f70",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-60",
+      "text": "In a checkout signing as `jane@acme.com`, run `login RULE-1 --hold \"no case for an expired token\"`; verify it exits 0, the last commit is signed `G` with the subject `hold(login): RULE-1`, and it adds `specs/auth/login.signatures/RULE-1.<hash8>.jane.hold.json` for the rule's own triple, whose schema is `purlin-hold/1`, holder `jane@acme.com` and reason `no case for an expired token`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-61",
+      "text": "Run `login RULE-1 --hold` with no reason, `login RULE-1 --hold --batch`, and `login --hold \"a case\"` with no rule; verify each exits 2 and no `.hold.json` exists",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/signatures/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-40",
+  "rule_hash": "ee9f7ca617d28dbc44f5827293b696e4b62b7e33cf59dda79e88f46091ac5f4c",
+  "rule_text": "`<feature> RULE-N --hold \"<the missing case>\"` writes `<RULE-N>.<hash8>.<holder-slug>.hold.json` binding the rule's hashes, with schema `purlin-hold/1`, the holder's email and the missing case as `reason`, and commits it signed as `hold(<feature>): RULE-N`; `--hold` with no reason, or with no rule named, exits 2 and writes nothing",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "a3a8162a00c357b0c6b7ca1b76bfa7fae3374fa892c4c8944d66cf4b1a6bbdbb",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_hold_is_one_signed_file_with_the_case(self, proved, capsys):\n        signing_key(proved.root)\n        code = sign_module.main(['login', 'RULE-1', '--hold', CASE,\n                                 '--project-root', proved.root])\n        capsys.readouterr()\n        assert code == 0\n        signature, subject = git(proved.root, 'log', '-1',\n                                 '--format=%G?%n%s').stdout.strip().splitlines()\n        assert signature == 'G'\n        assert subject == 'hold(login): RULE-1'\n        triple = sign_module.triple_for(proved.rule('RULE-1'))\n        name = 'RULE-1.%s.jane.hold.json' % triple[:8]\n        assert _holds(proved) == [name]\n        added = git(proved.root, 'show', '--name-only', '--format=',\n                    'HEAD').stdout.split()\n        assert added == ['specs/auth/login.signatures/' + name], added\n        with open(os.path.join(proved.root, 'specs', 'auth',\n                               'login.signatures', name),\n                  encoding='utf-8') as handle:\n            data = json.load(handle)\n        assert data['schema'] == 'purlin-hold/1'\n        assert data['holder'] == 'jane@acme.com'\n        assert data['reason'] == CASE\n        assert data['triple'] == triple[:16]",
+      "file": "dev/test_holds.py",
+      "findings": [],
+      "name": "test_a_hold_is_one_signed_file_with_the_case",
+      "proof": "PROOF-60",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_hold_needs_a_case_and_a_rule(self, proved, capsys):\n        for argv in (['login', 'RULE-1', '--hold'],\n                     ['login', 'RULE-1', '--hold', '--batch'],\n                     ['login', '--hold', 'a case']):\n            assert sign_module.main(\n                argv + ['--project-root', proved.root]) == 2, argv\n        capsys.readouterr()\n        assert _holds(proved) == []",
+      "file": "dev/test_holds.py",
+      "findings": [],
+      "name": "test_a_hold_needs_a_case_and_a_rule",
+      "proof": "PROOF-61",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "d4cf4c234b9646198405772c8c86ffb15a43cc366ffdaa35e73a69ada089b19a"
+}

@@ -1,0 +1,55 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "brief",
+  "generated_at": "2026-09-16T22:34:32Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "6b9a64750fe304355307147d861d9782b7fd12f32099e58d20f327e58acde248",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-12",
+      "text": "Build the brief for a low-risk rule a record covers; verify its field names are exactly the 23 the module writes, its schema is `purlin-brief/2` and its observations list is empty",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/brief/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-10",
+  "rule_hash": "90806f50a734395926a8f90cca8124f86d4be9f6a3a6243be1d79bf43c6fe4c9",
+  "rule_text": "The brief carries no recommendation, no grade and no state: its fields are the evidence, the observations and the numbers, and nothing else",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "641adf8623107f47765730fd0924dcb3616c68d479f7e60712a993055126bece",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_brief_carries_no_recommendation_and_no_grade(self, proved):\n        built = build(proved, 'RULE-1')\n        assert set(built) == {\n            'schema', 'feature', 'rule', 'risk', 'origin', 'rule_text',\n            'proofs', 'rule_hash', 'proof_hash', 'test_hash', 'test_hash_kind',\n            'design_hash', 'triple_hash', 'layers', 'tests', 'test_strength',\n            'min_strength', 'record', 'design', 'ai_review', 'observations',\n            'settled', 'generated_at'}, sorted(built)\n        assert built['schema'] == 'purlin-brief/2'\n        assert built['observations'] == []",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_the_brief_carries_no_recommendation_and_no_grade",
+      "proof": "PROOF-12",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_brief_carries_no_recommendation_and_no_grade(self, proved):\n        built = build(proved, 'RULE-1')\n        assert set(built) == {\n            'schema', 'feature', 'rule', 'risk', 'origin', 'rule_text',\n            'proofs', 'rule_hash', 'proof_hash', 'test_hash', 'test_hash_kind',\n            'design_hash', 'triple_hash', 'layers', 'tests', 'test_strength',\n            'min_strength', 'record', 'design', 'ai_review', 'observations',\n            'settled', 'generated_at'}, sorted(built)\n        assert built['schema'] == 'purlin-brief/2'\n        assert built['observations'] == []",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_a_blocking_proof_finding_is_rewrite_the_proof",
+      "proof": "PROOF-12",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "49214aa5bbfb2113bccb185a6726397a009f956d8461353a927f25725e914aff"
+}

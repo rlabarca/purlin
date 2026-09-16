@@ -1,0 +1,54 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T22:34:54Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "3df2d14c899afa278ab755e4e564b1290499a45461bda01e156af8162481f8fe",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-31",
+      "text": "Run `--gate tested --yes` in a directory that is not a git repository and verify exit 2, `git init` on stderr and the directory still empty; run with `--project-root /no/such/dir` and verify exit 2",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-31",
+  "rule_hash": "7ed7327dc9ad50319f9e3e83949a3fbf6958f7ac5e899b7a3ef14d95a5b79e9b",
+  "rule_text": "A real run outside a git repository exits 2 saying to run git init and leaves the directory empty, and a project root that does not exist exits 2",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "5d86a32c6833581a57804389bdb0faa984de20bf66229d1280f294a8f7069398",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_missing_project_root_is_a_bad_invocation(self):\n        done = subprocess.run(\n            [sys.executable, SCAFFOLD, '--project-root', '/no/such/dir',\n             '--gate', 'tested', '--yes'], capture_output=True, encoding='utf-8',\n            timeout=300)\n        assert done.returncode == 2",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_a_missing_project_root_is_a_bad_invocation",
+      "proof": "PROOF-31",
+      "reasons": []
+    },
+    {
+      "body": "def test_outside_a_repository_a_real_run_refuses(self):\n        directory = tempfile.mkdtemp(prefix='purlin-nogit-')\n        try:\n            done = subprocess.run(\n                [sys.executable, SCAFFOLD, '--project-root', directory,\n                 '--gate', 'tested', '--yes'], capture_output=True, encoding='utf-8',\n                timeout=300, stdin=subprocess.DEVNULL)\n            assert done.returncode == 2\n            assert 'git init' in done.stderr\n            assert os.listdir(directory) == []\n        finally:\n            shutil.rmtree(directory, ignore_errors=True)",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_outside_a_repository_a_real_run_refuses",
+      "proof": "PROOF-31",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "4fd27beb24ae36c91cc9a042229c0348c07697e54cd0e555afb68b3de3717dd1"
+}

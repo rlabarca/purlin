@@ -1,0 +1,85 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-16T22:35:06Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "85356d2383d2a50becf75f7dcca7d66b6253b2bb8ded593b68934613d5f42a6d",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-1",
+      "text": "Run the Python checker over a marked test whose body is `assert True`; verify exactly 1 result comes back, its status is `fail` and its check is `assert_true_literal`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-21",
+      "text": "Run the Python checker over a marked test whose body is `assert True`; verify the check is named `assert_true_literal` and not the broader name",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-65",
+      "text": "Run the Python checker over a marked test asserting `r or True` after calling the code; verify its status is `fail` and its check is `assert_true_literal`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/static_checks/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-1",
+  "rule_hash": "135c1788594d6797da187fd24c0def3c1bde5591cf46ec7514540e1b730e8a4a",
+  "rule_text": "A marked Python test whose assertion is a literal true is reported `assert_true_literal`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "55e30af207573ca0a29e735cf39d18adf56fb76ac6d0a4e00504b5cde03c0bb7",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_detects_assert_true(self):\n        path = _write_tmp('''\nimport pytest\n@pytest.mark.proof(\"testfeat\", \"PROOF-1\", \"RULE-1\")\ndef test_bad():\n    assert True\n''')\n        try:\n            results = check_python(path, \"testfeat\")\n            assert len(results) == 1\n            assert results[0]['status'] == 'fail'\n            assert results[0]['check'] == 'assert_true_literal'\n        finally:\n            os.unlink(path)",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_detects_assert_true",
+      "proof": "PROOF-1",
+      "reasons": []
+    },
+    {
+      "body": "def test_an_assertion_with_a_true_branch_is_caught(self, tmp_path):\n        \"\"\"`assert result > 0 or True` asserts nothing.\"\"\"\n        path = tmp_path / 'test_cheat.py'\n        path.write_text(\n            'import pytest\\n\\n\\n'\n            '@pytest.mark.proof(\"login\", \"PROOF-1\", \"RULE-1\")\\n'\n            'def test_tautological_or():\\n'\n            '    result = some_function()\\n'\n            '    assert result > 0 or True\\n', encoding='utf-8')\n        results = check_python(str(path), 'login')\n        assert len(results) == 1\n        assert results[0]['status'] == 'fail'\n        assert results[0]['check'].startswith('assert_true')",
+      "file": "dev/test_proof_stress.py",
+      "findings": [],
+      "name": "test_an_assertion_with_a_true_branch_is_caught",
+      "proof": "PROOF-1",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_literal_assert_true_is_named_assert_true_literal(self):\n        path = _write_tmp('''\nimport pytest\n@pytest.mark.proof(\"testfeat\", \"PROOF-1\", \"RULE-1\")\ndef test_bad():\n    assert True\n''')\n        try:\n            results = check_python(path, \"testfeat\")\n            assert len(results) == 1\n            assert results[0]['status'] == 'fail'\n            assert results[0]['check'] == 'assert_true_literal', results[0]\n        finally:\n            os.unlink(path)",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_a_literal_assert_true_is_named_assert_true_literal",
+      "proof": "PROOF-21",
+      "reasons": []
+    },
+    {
+      "body": "def test_python_tautological(self, tmp_path):\n        \"\"\"Python `assert result or True`, caught by the Pass 1 static checks.\"\"\"\n        test_file = tmp_path / 'test_cheat.py'\n        test_file.write_text('''\\\nimport pytest\ndef validate(x): return x > 0\n@pytest.mark.proof(\"feat\", \"PROOF-1\", \"RULE-1\")\ndef test_validates_input():\n    r = validate(-1)\n    assert r or True\n''')\n        results = check_python(str(test_file), 'feat')\n        assert results[0]['status'] == 'fail', \"Python `or True` caught by the checks\"\n        assert results[0]['check'] == 'assert_true_literal'",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_python_tautological",
+      "proof": "PROOF-65",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "1f1b2d334bc1f691cc4bb78294a34613ad94637ce495adaf59012828c5d1ef5d"
+}

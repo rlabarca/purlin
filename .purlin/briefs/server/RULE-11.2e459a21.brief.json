@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "server",
+  "generated_at": "2026-09-16T22:34:55Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "9e3459342d722ce50c2de0cda8581387d010fc443aea602c2fa4a25a14a8db02",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-11",
+      "text": "Call `generate_digest` with the producer `hook` and the network off; verify the file it names exists, that the payload read back carries `generated_by` `hook` and that its schema version is exactly 4",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/server/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-11",
+  "rule_hash": "3b3cd3521d1126c5b57568752f163799b408cabb9aa72f00a64c16568aa9361e",
+  "rule_text": "`generate_digest` writes the dashboard's data file at schema version 4, naming the producer it was given",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "e3e5371de47a3b5b78a34cc26bcefafc6dc0356e9bb039af4b54fd0f91b36a9a",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_generate_digest_writes_the_data_file(self, project):\n        path = purlin_srv.generate_digest(project.root,\n                                             generated_by='hook',\n                                             network=False)\n        assert path and os.path.isfile(path)\n        data = purlin_payload.read_report_payload(project.root)\n        assert data['generated_by'] == 'hook'\n        assert data['schema_version'] == 5",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_generate_digest_writes_the_data_file",
+      "proof": "PROOF-11",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "2e459a21fc222c41c02e27111f3dfdab1d3cc802905359b7b18a2ca9af1588d9"
+}

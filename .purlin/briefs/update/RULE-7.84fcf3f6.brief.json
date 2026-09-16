@@ -1,0 +1,81 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-16T22:35:15Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "c3f1603068cf559b6e75e607352cd4e1079a9b9d1de02262a03d95d4b5279d7f",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-7",
+      "text": "Apply everything on each fixture and verify the `.bak` files include `.purlin/config.json.local-`, `.gitignore.local-`, one under `.purlin/plugins/` and one under `specs/`; verify the config backup holds exactly the bytes the config had before the run, and that a second run leaves the set of `.bak` files unchanged",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/update/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-7",
+  "rule_hash": "fa429f1f7300f872443baf03bf6a174ee226e7aa7f529b3c87fee9e182380da9",
+  "rule_text": "Every file a migration rewrites is copied beside itself as `<name>.local-<sha8>.bak` holding the bytes it had before, and a second run does not write the copy again",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "6020175837091310a5d82b1b97c1d2820295b8ce99a30a905136fab76300cfc3",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_backup_holds_what_the_file_said_before(tmp_path):\n    root = _project(tmp_path, V095)\n    before = _read(root, '.purlin/config.json')\n    _apply(root)\n    backups = [rel for rel in _walk(root, ('config.json.local-*.bak',),\n                                    skip_backups=False)]\n    assert len(backups) == 1\n    assert _read(root, backups[0]) == before",
+      "file": "dev/test_init_update.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_a_backup_holds_what_the_file_said_before",
+      "proof": "PROOF-7",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_a_backup_is_not_written_twice(tmp_path):\n    root = _project(tmp_path, V095)\n    _apply(root)\n    first = _walk(root, ('*.bak',), skip_backups=False)\n    _apply(root)\n    assert _walk(root, ('*.bak',), skip_backups=False) == first",
+      "file": "dev/test_init_update.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_a_backup_is_not_written_twice",
+      "proof": "PROOF-7",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_every_rewritten_file_leaves_its_previous_bytes(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    _apply(root)\n    backups = _walk(root, ('*.bak',), skip_backups=False)\n    names = ' '.join(backups)\n    assert '.purlin/config.json.local-' in names\n    assert '.gitignore.local-' in names\n    assert any(rel.startswith('.purlin/plugins/') for rel in backups)\n    assert any(rel.startswith('specs/') for rel in backups)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_every_rewritten_file_leaves_its_previous_bytes[upgrade-0.10-dev]",
+      "proof": "PROOF-7",
+      "reasons": []
+    },
+    {
+      "body": "def test_every_rewritten_file_leaves_its_previous_bytes(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    _apply(root)\n    backups = _walk(root, ('*.bak',), skip_backups=False)\n    names = ' '.join(backups)\n    assert '.purlin/config.json.local-' in names\n    assert '.gitignore.local-' in names\n    assert any(rel.startswith('.purlin/plugins/') for rel in backups)\n    assert any(rel.startswith('specs/') for rel in backups)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_every_rewritten_file_leaves_its_previous_bytes[upgrade-0.9.5]",
+      "proof": "PROOF-7",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "84fcf3f6d469713d086aefaf6cd940ee15c758fa4424c3a379170f08b153954c"
+}

@@ -1,0 +1,65 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T22:34:49Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "449eb265119a7d81867f87b01bf33d395c7795e9ba691b85b938bce43a85f85d",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-2",
+      "text": "Run with `--gate tested`, `--gate recorded` and `--gate approved` in turn and verify the config reads `min_strength` 50, 70, 80 and `ai_review_at` `never`, `high`, `medium` respectively",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-2",
+  "rule_hash": "e057bd2a90ad48ba92bbc3e3ff64519f83da2a4279a7ec5e086b7b783bfa94c8",
+  "rule_text": "Each gate answer derives its own settings, and the three pairs are `tested` 50 and never, `recorded` 70 and high, `approved` 80 and medium",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "11c679ca85d7caa1428b907e051485547de3b9ae5c8d8e206f7f6ea69d445c8a",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_each_answer_derives_its_own_settings(self, project, gate,\n                                                  strength, review):\n        project.run('--gate', gate)\n        config = project.config()\n        assert config['gate'] == gate\n        assert config['min_strength'] == strength\n        assert config['ai_review_at'] == review",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_each_answer_derives_its_own_settings[approved-80-medium]",
+      "proof": "PROOF-2",
+      "reasons": []
+    },
+    {
+      "body": "def test_each_answer_derives_its_own_settings(self, project, gate,\n                                                  strength, review):\n        project.run('--gate', gate)\n        config = project.config()\n        assert config['gate'] == gate\n        assert config['min_strength'] == strength\n        assert config['ai_review_at'] == review",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_each_answer_derives_its_own_settings[recorded-70-high]",
+      "proof": "PROOF-2",
+      "reasons": []
+    },
+    {
+      "body": "def test_each_answer_derives_its_own_settings(self, project, gate,\n                                                  strength, review):\n        project.run('--gate', gate)\n        config = project.config()\n        assert config['gate'] == gate\n        assert config['min_strength'] == strength\n        assert config['ai_review_at'] == review",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_each_answer_derives_its_own_settings[tested-50-never]",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "dbb440b6ca0448ec0d894c06933340cd0ac9c9a6a2f0b4b69a74df9776b0e9b8"
+}

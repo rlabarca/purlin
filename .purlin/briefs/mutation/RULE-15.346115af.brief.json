@@ -1,0 +1,89 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "mutation",
+  "generated_at": "2026-09-16T22:34:38Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "f853fe565e537cb56d378c6a8c4aa1f552b94205244c6c87eb341e14f795dba0",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-15",
+      "text": "Call `mutmut_config_block([\"src\"], [\"tests\"], \"toml\")`; verify it opens `[tool.mutmut]` and holds `source_paths = [\"src\"]`. Call it with `\"cfg\"`; verify it opens `[mutmut]` and lists each value on its own indented line. Call `config_target()` on a project with `pyproject.toml` and on one without; verify `pyproject.toml` then `setup.cfg`. Run the engine on a project with mutmut installed and no block; verify no breaks were made and the reason names the block and the file",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/mutation/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-15",
+  "rule_hash": "33f9f7aa38af5fac5defea04bbed40f5ef521396b5058edad440ab4ced973055",
+  "rule_text": "mutmut needs a config block naming the source paths and the test selection, written to `pyproject.toml` as `[tool.mutmut]` when that file exists and to `setup.cfg` as `[mutmut]` with one value a line otherwise; without the block no breaks are made and the reason names the block and the file",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "bf5059238751e0c75c41e54ff29244bb11c73e1f03a3b138e54646610dfd1127",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_project_with_no_config_block_is_not_broken(tmp_path, monkeypatch):\n    (tmp_path / 'pyproject.toml').write_text('[project]\\n', encoding='utf-8')\n    monkeypatch.setattr(mutmut, 'binary', lambda root=None: '/usr/bin/mutmut')\n    called = []\n    monkeypatch.setattr(mutmut, 'execute',\n                        lambda *args, **kwargs: called.append(args) or (0, ''))\n    answer = mutmut.run(str(tmp_path), {'login': ['src/login/session.py']},\n                        {('login', 'RULE-1'): []}, None)\n    assert called == []\n    assert answer['engine'] == 'none'\n    assert '[tool.mutmut]' in answer['reason']\n    assert 'pyproject.toml' in answer['reason']",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_a_project_with_no_config_block_is_not_broken",
+      "proof": "PROOF-15",
+      "reasons": []
+    },
+    {
+      "body": "def test_pyproject_holds_the_block_when_it_exists(tmp_path):\n    (tmp_path / 'pyproject.toml').write_text('[project]\\n', encoding='utf-8')\n    assert mutmut.config_target(str(tmp_path)) == (\n        'pyproject.toml', 'toml', '[tool.mutmut]')",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_pyproject_holds_the_block_when_it_exists",
+      "proof": "PROOF-15",
+      "reasons": []
+    },
+    {
+      "body": "def test_setup_cfg_holds_the_block_when_there_is_no_pyproject(tmp_path):\n    assert mutmut.config_target(str(tmp_path)) == (\n        'setup.cfg', 'cfg', '[mutmut]')",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_setup_cfg_holds_the_block_when_there_is_no_pyproject",
+      "proof": "PROOF-15",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_block_is_found_once_it_is_written(tmp_path):\n    path = tmp_path / 'pyproject.toml'\n    path.write_text('[project]\\nname = \"demo\"\\n', encoding='utf-8')\n    assert mutmut.has_config(str(tmp_path)) is False\n    path.write_text('[project]\\nname = \"demo\"\\n\\n'\n                    + mutmut.mutmut_config_block(['src'], ['tests']),\n                    encoding='utf-8')\n    assert mutmut.has_config(str(tmp_path)) is True",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_the_block_is_found_once_it_is_written",
+      "proof": "PROOF-15",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_config_block_for_pyproject_is_toml():\n    block = mutmut.mutmut_config_block(['src'], ['tests'])\n    assert block == ('[tool.mutmut]\\n'\n                     'source_paths = [\"src\"]\\n'\n                     'pytest_add_cli_args_test_selection = [\"tests\"]\\n')",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_the_config_block_for_pyproject_is_toml",
+      "proof": "PROOF-15",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_config_block_for_setup_cfg_is_one_value_a_line():\n    block = mutmut.mutmut_config_block(['src', 'lib'], ['tests', '-q'],\n                                       style='cfg')\n    assert block == ('[mutmut]\\n'\n                     'source_paths =\\n'\n                     '    src\\n'\n                     '    lib\\n'\n                     'pytest_add_cli_args_test_selection =\\n'\n                     '    tests\\n'\n                     '    -q\\n')",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_the_config_block_for_setup_cfg_is_one_value_a_line",
+      "proof": "PROOF-15",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "346115afc28f2549247ef46e4c8f52daa90f961c0a06f75431e86524c78805da"
+}

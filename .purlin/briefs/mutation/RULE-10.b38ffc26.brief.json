@@ -1,0 +1,57 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "mutation",
+  "generated_at": "2026-09-16T22:34:37Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "3589bd6b67e065928a133291934171eaba506f4d06acfe6b6dc54e65aa5010a5",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-10",
+      "text": "Parse a report holding the test names `login [proof:auth:PROOF-1:RULE-1]` and `login extra [proof:auth:PROOF-2:RULE-2]`; verify each rule claims only its own marker's breaks. Parse a report where the same test name appears in `test/other.js`; verify the rule's entry ignores it",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/mutation/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-10",
+  "rule_hash": "a9b25adaa99082a11cbd1439d83a59536a23ac43bbbc59d358b6bc064812bf33",
+  "rule_text": "A test in the report is matched to a rule's test by the proof marker in its name when both names carry one, and never across two files of the same name",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "d4a4514126177ca946a4a22ed6776267addfa4196db1478c9b6ec7616a2b54aa",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_test_in_another_file_of_the_same_name_is_not_this_rules_test():\n    report = {\n        'files': {'src/a.js': {'mutants': [\n            {'id': '1', 'status': 'Killed', 'coveredBy': ['0'],\n             'killedBy': ['0']}]}},\n        'testFiles': {'test/other.test.js': {'tests': [\n            {'id': '0', 'name': 'locks the account'}]}},\n    }\n    tests = {'RULE-1': [{'file': 'test/login.test.js',\n                         'name': 'locks the account', 'plugin': 'jest'}]}\n    entry = stryker.parse_report(report, tests)\n    assert entry['rules']['RULE-1']['killed'] == 0",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_a_test_in_another_file_of_the_same_name_is_not_this_rules_test",
+      "proof": "PROOF-10",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_proof_marker_keeps_two_similar_test_names_apart():\n    report = {\n        'files': {'src/a.js': {'mutants': [\n            {'id': '1', 'status': 'Killed', 'coveredBy': ['0'],\n             'killedBy': ['0']},\n            {'id': '2', 'status': 'Survived', 'coveredBy': ['1'],\n             'killedBy': []},\n        ]}},\n        'testFiles': {'test/a.test.js': {'tests': [\n            {'id': '0', 'name': 'locks [proof:login:PROOF-1:RULE-1]'},\n            {'id': '1', 'name': 'locks after five [proof:login:PROOF-2:RULE-2]'},\n        ]}},\n    }\n    tests = {\n        'RULE-1': [{'file': 'test/a.test.js',\n                    'name': 'locks [proof:login:PROOF-1:RULE-1]',\n                    'plugin': 'jest'}],\n        'RULE-2': [{'file': 'test/a.test.js',\n                    'name': 'locks after five [proof:login:PROOF-2:RULE-2]',\n                    'plugin': 'jest'}],\n    }\n    entry = stryker.parse_report(report, tests)\n    assert entry['rules']['RULE-1']['killed'] == 1\n    assert entry['rules']['RULE-1']['survived'] == 0\n    assert entry['rules']['RULE-2']['killed'] == 0\n    assert entry['rules']['RULE-2']['survived'] == 1",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_the_proof_marker_keeps_two_similar_test_names_apart",
+      "proof": "PROOF-10",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "b38ffc26b878d4e9ec08b0e0b4e558a1737a4b36e6a74b192c26aa20ae7f6d71"
+}

@@ -1,0 +1,56 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-16T22:34:47Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "e3a82749e59feacb67ca90cd0c8479a7c2602071cb39a2046d5a209bfe4a5906",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-2",
+      "text": "Run `--feature nosuch --quick` against a project holding only `feat`; verify exit 2 and `no spec named nosuch`. Run `--all --quick --project-root <a path that does not exist>`; verify exit 2 and `is not a directory`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/run_script/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-2",
+  "rule_hash": "ebfe77da5c2fedbb9c676267468830e157b3600b640f07abdc62decd0e70ae31",
+  "rule_text": "A `--feature` name with no spec under `specs/` exits 2 naming it, and a `--project-root` that is not a directory exits 2 saying so",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "eb60ec2ad4ca40ed83d289809694db482e77b02bae14c7389836178c4ce8d162",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_missing_project_root_exits_two(self, tmp_path):\n        code, output = _run(tmp_path / 'nowhere', '--all', '--quick')\n        assert code == 2\n        assert 'is not a directory' in output",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_a_missing_project_root_exits_two",
+      "proof": "PROOF-2",
+      "reasons": []
+    },
+    {
+      "body": "def test_an_unknown_feature_exits_two(self, tmp_path):\n        root = _project(tmp_path)\n        _spec(root, 'feat')\n        code, output = _run(root, '--feature', 'nosuch', '--quick')\n        assert code == 2\n        assert 'no spec named nosuch' in output",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_an_unknown_feature_exits_two",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a597ad2e1e64fcdf4fd76d93a559451e3f810daad754a27177fcdd7a33070b97"
+}

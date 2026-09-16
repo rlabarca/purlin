@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "server",
+  "generated_at": "2026-09-16T22:34:56Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "d3515b5aa867200726028944009223c1e9c56211141ac73c2a8ae1ef2ed28bf7",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-19",
+      "text": "Read `templates/config.json`, the file `purlin:init` stamps into a new project, and verify it carries neither a `digest` nor a `report` key; run the hook in a project configured with exactly that file and verify the data file is written and reports the 1 proof the project has",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/server/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-19",
+  "rule_hash": "0d1bae9d9cab78f11ed6167189e7a2e5a0735eb1d41b5507d978442508bff33b",
+  "rule_text": "Those are the only conditions that stop a refresh: the config `purlin:init` stamps into a new project names neither `digest` nor `report`, and a project holding exactly that config refreshes",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "d8e3dfc7ba123ea2a5f5f148a89e8a054a5a78737ba686cbbc336efeb7fdf3c1",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_config_in_the_template_shape_refreshes(self, tmp_path):\n        \"\"\"The skip conditions are the only skip conditions.\n\n        `templates/config.json` is what `purlin:init` stamps into a new\n        project. It carries none of the keys above, so a hook that needed one\n        of them to be present would leave every freshly initialized project\n        with an empty dashboard and nothing saying why.\n        \"\"\"\n        with open(os.path.join(PROJECT_ROOT, 'templates', 'config.json'),\n                  encoding='utf-8') as f:\n            stamped = json.load(f)\n        assert 'digest' not in stamped and 'report' not in stamped, (\n            'the template gained a key this test assumes is absent: %s'\n            % sorted(stamped))\n\n        project = _project(str(tmp_path / 'stamped'), config=stamped)\n        _assert_silent_zero(_run(project), 'template config')\n        assert os.path.isfile(_digest_path(project)), (\n            'a project initialized from templates/config.json never refreshes '\n            'its dashboard data')\n        assert _passing(_read_digest(project)) == 1",
+      "file": "dev/test_refresh_digest_hook.py",
+      "findings": [],
+      "name": "test_a_config_in_the_template_shape_refreshes",
+      "proof": "PROOF-19",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "1ec577907fe295a84a039f2506f948c464bdbce04c1513d920ad8325155ea22a"
+}

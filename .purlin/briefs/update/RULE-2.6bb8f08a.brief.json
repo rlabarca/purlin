@@ -1,0 +1,65 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-16T22:35:14Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "438899e1e60fd04f77ff936ea7fb00367dd42fff4580c89b7fb1b03c6b4be3ba",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-2",
+      "text": "Call `pending()` on the v0.9.5 fixture and verify it reports `os-tags`, `untracked-files`, `config`, `workflows`, `plugin-copies` and `records` and does not report `hooks`; verify the 0.10 development fixture reports those six and `hooks` as well",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/update/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-2",
+  "rule_hash": "e01f97f0755898fb0781f245b83dfe14d48918f1badff1af6dd9e964baef6f0d",
+  "rule_text": "The detectors read both older layouts, the one v0.9.5 left and the one the 0.10 development branch left, and each layout's own leftovers are what it reports",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "844ce2bbf4b2dedc3e5f75253721031edd14887da496422836ce7409e691c498",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_project_with_no_hooks_needs_no_hook_migration(tmp_path):\n    root = _project(tmp_path, V095)\n    assert 'hooks' not in _ids(root)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_a_project_with_no_hooks_needs_no_hook_migration",
+      "proof": "PROOF-2",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_010_layout_needs_its_hooks_migrated_too(tmp_path):\n    root = _project(tmp_path, V010)\n    found = _ids(root)\n    assert 'hooks' in found, found\n    for expected in ('os-tags', 'untracked-files', 'config', 'workflows',\n                     'plugin-copies', 'records'):\n        assert expected in found, found",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_010_layout_needs_its_hooks_migrated_too",
+      "proof": "PROOF-2",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_v095_layout_needs_the_migrations_that_layout_left(tmp_path):\n    root = _project(tmp_path, V095)\n    found = _ids(root)\n    for expected in ('os-tags', 'untracked-files', 'config', 'workflows',\n                     'plugin-copies', 'records'):\n        assert expected in found, found",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_v095_layout_needs_the_migrations_that_layout_left",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "6bb8f08ace32a1e7e959df8e4b8a4483b2dc7fece4600295c3d3fc0091180ff9"
+}

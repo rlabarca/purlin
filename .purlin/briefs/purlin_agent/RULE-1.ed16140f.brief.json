@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_agent",
+  "generated_at": "2026-09-16T22:34:40Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "2dd0ae4ca8491cd53fd26febb5f8136ba9fb447ac846f1881e328dcccdfebac7",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-1",
+      "text": "Read `agents/purlin.md`; verify the file opens with `---`, and that the frontmatter carries `name: purlin`, a `description:` whose value is not empty, and an `effort:` line. Deleting the `effort:` line fails naming the field",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/purlin_agent/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-1",
+  "rule_hash": "1654e05144f3b82aaf6522865a083ba7bc44d0eb8d52f669c11703618d95b655",
+  "rule_text": "`agents/purlin.md` opens with a frontmatter block carrying `name: purlin`, a non-empty `description` and an `effort` value",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "6e61c8284203e34b63a5559dc7fb566aa9438c80194df06c72e5f74c59050790",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_frontmatter_names_the_agent(self):\n        assert agent_frontmatter_problems() == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_the_frontmatter_names_the_agent",
+      "proof": "PROOF-1",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "ed16140f07d69366d7f64287e8172967b357ce40b71f3f559636a43a6925b5fa"
+}

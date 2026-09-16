@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "config_engine",
+  "generated_at": "2026-09-16T22:34:33Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "80292c834733b4d82df186f2c7a16e8131a260c5ba4a7387481e213b840e24e5",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-7",
+      "text": "Call the config resolver in a directory holding neither file; verify the result is exactly `{}`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/config_engine/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-7",
+  "rule_hash": "7491b921a88b3178698c5b6ee715a702eee8ebe6d9f4adee3627815523047d0f",
+  "rule_text": "With neither file on disk the merged config is empty",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "80069516b51ed58fd70c13accbc940be7e4cff499978277f97ea015fd96dcb56",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_no_configs_returns_empty(self):\n        result = resolve_config(self.project_root)\n        assert result == {}",
+      "file": "dev/test_config_engine.py",
+      "findings": [],
+      "name": "test_no_configs_returns_empty",
+      "proof": "PROOF-7",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "cfefb865d5ac7d013db7f6e34dda69289dde0dd2c79ca6a313ea322471d471db"
+}

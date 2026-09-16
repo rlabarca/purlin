@@ -1,0 +1,56 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "upstream",
+  "generated_at": "2026-09-16T22:35:18Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "a29ca73d0db6a44685098cbdfdce8210f951ae30d1cb207366c851329d8f30e8",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-13",
+      "text": "Publish a version whose text names `designs/checkout/cart.png`, run `sync no_eval`, and verify the row lists `designs/no_eval/cart.png` and that the file at that path in the project holds the source file's bytes. Publish a version naming no design, sync again, and verify the row lists no design and that no `designs` directory exists in the project",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/upstream/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-13",
+  "rule_hash": "e4af6257041eebefebafcc082c936aae18e62939ec5fe446ea251fde3a4fee6e",
+  "rule_text": "A sync copies every design file the source's text names into `designs/<anchor>/`, and creates no directory when the source names none",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "eaaa41f601af2754e86f3c1015ff574bb257b67b0d8788de8996b4725950ec09",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_sync_copies_the_designs_the_source_names(workspace):\n    _add(workspace)\n    _advance(workspace)\n    row = upstream.sync(workspace.root, names=['no_eval'])['anchors'][0]\n    assert row['designs'] == ['designs/no_eval/cart.png']\n    copied = os.path.join(workspace.root, 'designs', 'no_eval', 'cart.png')\n    with open(copied, 'r', encoding='utf-8') as handle:\n        assert handle.read() == 'png'",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_sync_copies_the_designs_the_source_names",
+      "proof": "PROOF-13",
+      "reasons": []
+    },
+    {
+      "body": "def test_sync_leaves_designs_alone_when_the_source_names_none(workspace):\n    _add(workspace)\n    _advance(workspace, ANCHOR_V2.replace(\n        'The mocks this anchor pins are designs/checkout/cart.png.\\n', ''))\n    row = upstream.sync(workspace.root, names=['no_eval'])['anchors'][0]\n    assert row['designs'] == []\n    assert not os.path.isdir(os.path.join(workspace.root, 'designs'))",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_sync_leaves_designs_alone_when_the_source_names_none",
+      "proof": "PROOF-13",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "540fea2ca6af0665a1806d231bdf15ffc9979b2d611e91fbc125e878a42c95cc"
+}

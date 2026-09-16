@@ -1,0 +1,86 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-16T22:34:46Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "f4901b4122f78c8ed853fb999d28a7161b3deae3c517b8a3783b8982bee3f925",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-22",
+      "text": "Make the fake host refuse the first tree request with HTTP 403 and the header `Retry-After: 1`; verify the wait taken is 1 second, that the line `The git host asked for a pause of 1 s.` is printed, that the tree request is sent a second time and the commit sha comes back. Repeat with `x-ratelimit-reset` set 30 seconds ahead and no `Retry-After`; verify the wait is between 25 and 30 seconds. Repeat with `Retry-After: 900`; verify the wait is exactly 120 seconds. Repeat with HTTP 429 and `Retry-After: 2`; verify the wait is 2 seconds and the commit sha comes back. Refuse every tree request with `Retry-After: 1`; verify 4 tree requests were made, 3 waits were taken, and `HTTPError` is raised with code 403 and `403` in its message. Refuse every tree request with no header at all; verify one tree request, no wait, and the refusal raised",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/records/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-22",
+  "rule_hash": "e530920c003a6d7b492b4df2b9fc792e54389b418a11b150c6e364171b0b218c",
+  "rule_text": "A REST call the git host refuses with 403 or 429 while naming how long to wait, in `Retry-After` seconds or the `x-ratelimit-reset` epoch, waits that long, no longer than 120 seconds, prints one line saying so and is sent again, up to 3 times before the refusal is raised; a refusal naming no wait is raised on the first answer",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "029c24bfa4979aeabc921f41800a14d728f99e29ed5e76c6f9ad255a924c45c3",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_429_asking_for_a_pause_is_waited_out_too(project, github_env,\n                                                    monkeypatch, slept):\n    host = FakeHost(refuse_trees=1, refuse_status=429,\n                    refuse_headers={'Retry-After': '2'})\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    sha = records_module.commit_records(project, [path], 'ci',\n                                        'purlin: record')\n\n    assert sha == 'c' * 40\n    assert slept == [2.0]",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_429_asking_for_a_pause_is_waited_out_too",
+      "proof": "PROOF-22",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_fourth_refusal_is_raised_with_its_status(project, github_env,\n                                                    monkeypatch, slept):\n    host = FakeHost(refuse_trees=99, refuse_headers={'Retry-After': '1'})\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    with pytest.raises(urllib.error.HTTPError) as raised:\n        records_module.commit_records(project, [path], 'ci', 'purlin: record')\n\n    assert raised.value.code == 403\n    assert '403' in str(raised.value)\n    assert host.trees == records_module.PAUSE_RETRIES + 1\n    assert len(slept) == records_module.PAUSE_RETRIES",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_fourth_refusal_is_raised_with_its_status",
+      "proof": "PROOF-22",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_pause_longer_than_the_cap_is_shortened_to_it(\n        project, github_env, monkeypatch, slept):\n    host = FakeHost(refuse_trees=1, refuse_headers={'Retry-After': '900'})\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    records_module.commit_records(project, [path], 'ci', 'purlin: record')\n\n    assert slept == [float(records_module.PAUSE_CAP_SECONDS)]\n    assert records_module.PAUSE_CAP_SECONDS == 120",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_pause_longer_than_the_cap_is_shortened_to_it",
+      "proof": "PROOF-22",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_refusal_that_asks_for_a_pause_is_waited_out_and_retried(\n        project, github_env, monkeypatch, slept, capsys):\n    host = FakeHost(refuse_trees=1, refuse_headers={'Retry-After': '1'})\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    sha = records_module.commit_records(project, [path], 'ci',\n                                        'purlin: record')\n\n    assert sha == 'c' * 40\n    assert host.trees == 2, 'the refused tree request was not sent again'\n    assert slept == [1.0]\n    assert 'git host asked for a pause of 1 s' in capsys.readouterr().out",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_refusal_that_asks_for_a_pause_is_waited_out_and_retried",
+      "proof": "PROOF-22",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_refusal_that_asks_for_no_pause_is_raised_at_once(\n        project, github_env, monkeypatch, slept):\n    \"\"\"A 403 with no header saying how long to wait is a real refusal.\"\"\"\n    host = FakeHost(refuse_trees=99)\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    with pytest.raises(urllib.error.HTTPError) as raised:\n        records_module.commit_records(project, [path], 'ci', 'purlin: record')\n\n    assert raised.value.code == 403\n    assert host.trees == 1, 'a refusal that asked for no pause was retried'\n    assert slept == []",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_refusal_that_asks_for_no_pause_is_raised_at_once",
+      "proof": "PROOF-22",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_reset_time_is_read_when_there_is_no_retry_after(\n        project, github_env, monkeypatch, slept):\n    reset = str(int(time.time()) + 30)\n    host = FakeHost(refuse_trees=1,\n                    refuse_headers={'x-ratelimit-reset': reset})\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    records_module.commit_records(project, [path], 'ci', 'purlin: record')\n\n    assert len(slept) == 1\n    assert 25 <= slept[0] <= 30, slept",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_reset_time_is_read_when_there_is_no_retry_after",
+      "proof": "PROOF-22",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "1ff7f262e5f1aad2adac0cf22ec455da17eca60409f34164a2bcc3c46fef7b05"
+}

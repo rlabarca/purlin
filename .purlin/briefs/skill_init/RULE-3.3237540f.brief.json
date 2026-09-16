@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_init",
+  "generated_at": "2026-09-16T22:34:58Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "4229ec7736da7f7e7e8a1be00d389e69bac65bd97b456d2264c79b27f10785ec",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-3",
+      "text": "Read `skills/init/SKILL.md` and split it on its `## ` headings; verify the last heading matches `next step` or `when you are done` case-insensitively, that the text under it names at least two outcomes as list items or table rows, and that at least one of its lines carries `\u2192`. Deleting the closing section fails naming the heading it found instead",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/skill_init/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-3",
+  "rule_hash": "c46c97e5b6db654f4d657019b8c33edee573c8be86f9480eeb5991b827480ee6",
+  "rule_text": "The last section of `skills/init/SKILL.md` names the next step and computes it from the state the skill found, giving a `\u2192` directive for each outcome",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "a7c2e827a9126c8ee36e0d682626a7041df8235751ac048a15b9494da27611e1",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_closes_by_naming_the_next_step(self):\n        assert next_step_problems('init') == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_it_closes_by_naming_the_next_step",
+      "proof": "PROOF-3",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "3237540fab6f6288ec9125bd96cff2891aa17076a8509f20116887d05c4b15a2"
+}

@@ -1,0 +1,78 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T22:35:03Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "13052988fcc0b98107b106e6e6995c3a80731bcea8411f6159ffd2fe900c675e",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-20",
+      "text": "At the gate `signed`, write a hold by `jane@acme.com` reading `no case for an expired token` for a low-risk rule's current text; verify the strong cell reads `needs a person` with the reason `held by jane@acme.com: no case for an expired token`, the signed cell reads `held`, the `held` flag is true and `needs_person` is false",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-21",
+      "text": "Write the same hold with a `test_hash` of 64 zeros; verify the strong cell reads `strong`, the `held` flag is false and no reason names a hold",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-17",
+  "rule_hash": "b37991d63053f00c7fd0905d31614d3e9dbc6619f80bd2f2af7b1bb37e5ee878",
+  "rule_text": "A current hold makes the strong cell read `needs a person` with the reason `held by <email>: <case>` whatever the rule's risk, makes the signed cell read `held`, raises the `held` flag and leaves `needs_person` false; a hold bound to other hashes does nothing",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "1aac6f58d537aad3eb1b5de4a4338d9cf5ea708053e0c53149f2f31ce71bd8f5",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_current_hold_puts_the_rule_in_front_of_a_person(self):\n        made = self._signed_project()\n        try:\n            made.hold('RULE-2', 'no case for an expired token')\n            rule = made.rule('RULE-2')\n            assert rule['cells']['strong']['word'] == 'needs a person'\n            assert rule['cells']['strong']['reasons'] == [\n                'held by jane@acme.com: no case for an expired token'], rule\n            assert rule['cells']['signed']['word'] == 'held'\n            assert rule['flags']['held'] is True\n            assert rule['flags']['needs_person'] is False\n        finally:\n            made.close()",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_a_current_hold_puts_the_rule_in_front_of_a_person",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_current_hold_puts_the_rule_in_front_of_a_person(self):\n        made = self._signed_project()\n        try:\n            made.hold('RULE-2', 'no case for an expired token')\n            rule = made.rule('RULE-2')\n            assert rule['cells']['strong']['word'] == 'needs a person'\n            assert rule['cells']['strong']['reasons'] == [\n                'held by jane@acme.com: no case for an expired token'], rule\n            assert rule['cells']['signed']['word'] == 'held'\n            assert rule['flags']['held'] is True\n            assert rule['flags']['needs_person'] is False\n        finally:\n            made.close()",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_an_unchanged_payload_is_touched_rather_than_rewritten",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_hold_bound_to_other_hashes_does_nothing(self):\n        made = self._signed_project()\n        try:\n            made.hold('RULE-2', 'no case for an expired token',\n                      test_hash='0' * 64)\n            rule = made.rule('RULE-2')\n            assert rule['cells']['strong']['word'] == 'strong', rule\n            assert rule['flags']['held'] is False\n            assert not any('held by' in reason for reason\n                           in rule['cells']['strong']['reasons'])\n        finally:\n            made.close()",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_a_hold_bound_to_other_hashes_does_nothing",
+      "proof": "PROOF-21",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_hold_bound_to_other_hashes_does_nothing(self):\n        made = self._signed_project()\n        try:\n            made.hold('RULE-2', 'no case for an expired token',\n                      test_hash='0' * 64)\n            rule = made.rule('RULE-2')\n            assert rule['cells']['strong']['word'] == 'strong', rule\n            assert rule['flags']['held'] is False\n            assert not any('held by' in reason for reason\n                           in rule['cells']['strong']['reasons'])\n        finally:\n            made.close()",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_one_row_per_feature_with_the_seven_state_columns",
+      "proof": "PROOF-21",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "99e390b61728cbdbf536d0c9b84ac0bd83cc988c7ef09b0cacf9c7c57d1ea78f"
+}

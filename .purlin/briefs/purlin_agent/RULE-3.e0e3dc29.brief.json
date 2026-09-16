@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_agent",
+  "generated_at": "2026-09-16T22:34:40Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "68865a74876d2ff7156d111f88a77e7ac26835123625f1ce70492f6f72794119",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-3",
+      "text": "Read the `## Five NEVERs` section of `agents/purlin.md`; verify it holds exactly five items numbered `1.` to `5.`, and that between them they name `origin`, `proof file`, `record`, `signature`, `sign a rule whose test you wrote`, `purlin:audit`, `strong`, `signed` and `retired term`, one assertion per token so the failure names the missing one. Deleting the fifth item fails on the count, reporting four",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/purlin_agent/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-3",
+  "rule_hash": "95a5f96846ed789e97cb505ad9a59e6bdc064a5b9901dc79a437c38f4f96c8dd",
+  "rule_text": "The agent carries five numbered NEVERs, and they are: a rule owned by another origin is never edited silently, a proof file, a record or a signature is never written by hand, a rule whose test you wrote is never signed, a push never skips `purlin:audit` under `strong` or `signed`, and a retired term is never used",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "f8818d2574941c5287ba9d22632f8df623aa87bbb387842d38f4e7285ef1f81c",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_there_are_five_nevers(self):\n        assert never_problems() == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_there_are_five_nevers",
+      "proof": "PROOF-3",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "e0e3dc2981650b35d55a906abf068880beb7de273338fcc009d1820b75a482e2"
+}

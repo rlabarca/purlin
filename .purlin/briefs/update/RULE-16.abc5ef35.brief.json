@@ -1,0 +1,76 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-16T22:35:17Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "7635f9a8363c6fb93238f360f13a8729762a2339762767e0e3ef5b42c9eca29f",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-16",
+      "text": "Verify `plugin-copies` is pending on each fixture and not pending after the run; verify the renamed shell plugin copy keeps the name the project gave it and its bytes equal `scripts/proof/shell_purlin.sh`; write a reporter the plugin does not ship into `.purlin/plugins/`, apply, and verify its text is unchanged",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/update/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-16",
+  "rule_hash": "687febb6887213c6d332d9d9b0c89df94926d29b676e81e4aebb7c67ad972160",
+  "rule_text": "Every copy under `.purlin/plugins/` matches the plugin this release ships again, keeping the file name the project gave it, and a copy this release does not ship is left alone",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "539a452aff86b9cdbc7e7f58dc82029860299605aae59645643741f0b6a94c08",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_copy_the_plugin_does_not_ship_is_left_alone(tmp_path):\n    root = _project(tmp_path, V095)\n    _write(root, '.purlin/plugins/house_purlin.rb', '# our own reporter\\n')\n    _apply(root)\n    assert _read(root, '.purlin/plugins/house_purlin.rb') == (\n        '# our own reporter\\n')",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_a_copy_the_plugin_does_not_ship_is_left_alone",
+      "proof": "PROOF-16",
+      "reasons": []
+    },
+    {
+      "body": "def test_every_copy_matches_the_plugin_afterwards(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    assert 'plugin-copies' in _ids(root)\n    _apply(root)\n    assert 'plugin-copies' not in _ids(root)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_every_copy_matches_the_plugin_afterwards[upgrade-0.10-dev]",
+      "proof": "PROOF-16",
+      "reasons": []
+    },
+    {
+      "body": "def test_every_copy_matches_the_plugin_afterwards(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    assert 'plugin-copies' in _ids(root)\n    _apply(root)\n    assert 'plugin-copies' not in _ids(root)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_every_copy_matches_the_plugin_afterwards[upgrade-0.9.5]",
+      "proof": "PROOF-16",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_renamed_shell_plugin_keeps_its_name(tmp_path):\n    root = _project(tmp_path, V095)\n    _apply(root)\n    copied = os.path.join(root, '.purlin', 'plugins', 'purlin-proof.sh')\n    assert os.path.isfile(copied)\n    source = os.path.join(ROOT, 'scripts', 'proof', 'shell_purlin.sh')\n    with open(copied, 'rb') as one, open(source, 'rb') as two:\n        assert one.read() == two.read()",
+      "file": "dev/test_init_update.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_the_renamed_shell_plugin_keeps_its_name",
+      "proof": "PROOF-16",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "abc5ef35101b8617b483d9b829f6d92fd31b840e25bce8bfa00e410e935051dd"
+}

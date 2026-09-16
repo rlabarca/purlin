@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_spec",
+  "generated_at": "2026-09-16T22:34:58Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "8d999fbe722401a4f6dc004d9238bc90a7783d54e13a3f88a505ee2b2ac1d885",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-1",
+      "text": "Read `skills/spec/SKILL.md`; verify the file opens with `---`, that the frontmatter carries `name: spec` and a `description:` whose value is one non-empty line, and that `references/purlin_commands.md` contains the literal `purlin:spec`. Deleting the `name:` line fails naming the file",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/skill_spec/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-1",
+  "rule_hash": "c1d5d8fb672b2609acb474369ae1f77c9d3ff76be1fc6aff36bd843c720ae32d",
+  "rule_text": "`skills/spec/SKILL.md` opens with a frontmatter block whose `name` is `spec` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:spec`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "488e697f7cc37f144c085bd5974272133211ae5c1f051a4f48362c23aa3a05f8",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_frontmatter_names_the_skill(self):\n        assert frontmatter_problems('spec') == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_the_frontmatter_names_the_skill",
+      "proof": "PROOF-1",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "47e60b91e8b80112f5e6382687949b5edb5ec5bc3794d36cf369f90f1e5e5038"
+}

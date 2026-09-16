@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "proof_common",
+  "generated_at": "2026-09-16T22:34:39Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "d6db77482eb1312b2698d6230c22b6ed20764c6ab2bfb561ce3151c6b7d19b17",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-3",
+      "text": "Run a plugin from a subdirectory and hand another an absolute test path; verify each written `test_file` equals the fixture's path relative to the project root, is not absolute and carries zero backslashes, in `dev/test_multilang_proof_plugins.py`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/proof_common/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-3",
+  "rule_hash": "513d2fba7942e21dd20f18751ffeb7814c88d729e2ed1ca813fabb670de456ff",
+  "rule_text": "`test_file` is written relative to the project root with `/` separators on every operating system, so a backslash never reaches a proof file and the same test run from a subdirectory and from the root reads the same value",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "170d9376586db482c5b225ee7cbe601c52933efe810db4afc480ef0583c4455e",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_shell_records_the_same_path_either_way(self, tmp_path):\n        root = _purlin_project(tmp_path)\n        (root / 'tests').mkdir()\n        script = root / 'tests' / 'feat.test.sh'\n        script.write_text(\n            'source %s\\n'\n            'purlin_proof \"feat\" \"PROOF-1\" \"RULE-1\" pass \"case\"\\n'\n            'purlin_proof_finish\\n'\n            % SHELL_HARNESS,\n            encoding='utf-8')\n        subprocess.run([BASH, 'tests/feat.test.sh'], cwd=str(root),\n                       capture_output=True, text=True)\n        relative = _read_proofs(root, 'feat')['proofs'][0]['test_file']\n        subprocess.run([BASH, bash_path(script)], cwd=str(root),\n                       capture_output=True, text=True)\n        entries = _read_proofs(root, 'feat')['proofs']\n        assert len(entries) == 1, entries\n        assert entries[0]['test_file'] == relative == 'tests/feat.test.sh'",
+      "file": "dev/test_multilang_proof_plugins.py",
+      "findings": [],
+      "name": "test_shell_records_the_same_path_either_way",
+      "proof": "PROOF-3",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "dabb4591940ad69c6fcb07eab05e6d0a2517e2108b333f279a8e1e92629abf10"
+}

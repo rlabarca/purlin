@@ -1,0 +1,57 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T22:35:03Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "59baf761f9d7dc7d45895caee7f0074a02fdc19b53d9f1e71babcc7e4514590f",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-25",
+      "text": "At the gate `signed`, whose `sign_at` is `medium`, build the payload with no signature at all; verify the low-risk rule's signed cell reads `not required` with `required` false and meets its level, and that the high-risk rule's reads `unsigned` with `required` true",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-21",
+  "rule_hash": "12720a564984ec89cd45201f0b58522c969f34548c54a3e106b8bc7c3ffc22b1",
+  "rule_text": "The signed cell's `required` is true when the rule's risk is at or above `sign_at`; below it the cell reads `not required` and meets its level with no signature at all",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "67d39e5ec4cbf2efd3d723c8dda16cd8ed190a4120305c089085459ab1077d17",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_signature_is_required_only_at_or_above_sign_at(self):\n        made = self._signed_project()\n        try:\n            low = made.cell('RULE-2', 'signed')\n            assert (low['word'], low['required']) == ('not required', False)\n            assert purlin_states.cell_is_met('signed', low)\n            high = made.cell('RULE-1', 'signed')\n            assert (high['word'], high['required']) == ('unsigned', True)\n        finally:\n            made.close()",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_a_signature_is_required_only_at_or_above_sign_at",
+      "proof": "PROOF-25",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_signature_is_required_only_at_or_above_sign_at(self):\n        made = self._signed_project()\n        try:\n            low = made.cell('RULE-2', 'signed')\n            assert (low['word'], low['required']) == ('not required', False)\n            assert purlin_states.cell_is_met('signed', low)\n            high = made.cell('RULE-1', 'signed')\n            assert (high['word'], high['required']) == ('unsigned', True)\n        finally:\n            made.close()",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_no_emoji_and_only_the_three_glyphs",
+      "proof": "PROOF-25",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "b3a39c7de6908bff4101e1242447c86f7e47832161b33679d0107273482aba2c"
+}

@@ -1,0 +1,57 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-16T22:34:47Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "db2adb6093b0a692c0fcbaf4e219919eca3fec9306d2f3824564add7a0012514",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-8",
+      "text": "Run `--all --quick` over one marked passing test and one marked skipped test; verify exit 1, that the output names `feat PROOF-2` and does not name `feat PROOF-1`. Repeat with 8 skipped marked tests; verify `8 marker(s) produced no proof entry` and `and 3 more`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/run_script/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-8",
+  "rule_hash": "75373322c9d73984f031c01cdf717163e803b3b0f035555e56a4135bf841a61b",
+  "rule_text": "A marker in a test source that produced no proof entry in this run exits the run 1 and is named; at most 5 are listed and the rest are counted",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "ed38dba4097506c7200e1768937ed8c06f4c7294680bcc9d42df80c46a988916",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_marker_with_no_entry_is_named(self, tmp_path):\n        root = _pytest_project(tmp_path, body=(\n            'import pytest\\n\\n'\n            '@pytest.mark.proof(\"feat\", \"PROOF-1\", \"RULE-1\")\\n'\n            'def test_ok():\\n'\n            '    assert True\\n\\n'\n            '@pytest.mark.proof(\"feat\", \"PROOF-2\", \"RULE-1\")\\n'\n            '@pytest.mark.skip(reason=\"no tool here\")\\n'\n            'def test_skipped():\\n'\n            '    assert True\\n'))\n        _spec(root, 'feat', proofs=(('PROOF-1', 'RULE-1', ''),\n                                    ('PROOF-2', 'RULE-1', '')))\n        code, output = _run(root, '--all', '--quick')\n        assert code == 1, output\n        assert 'produced no proof entry' in output\n        assert 'feat PROOF-2' in output\n        assert 'feat PROOF-1' not in output",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_a_marker_with_no_entry_is_named",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_list_is_bounded_and_counted(self, tmp_path):\n        body = ['import pytest\\n']\n        for index in range(1, 9):\n            body.append(\n                '@pytest.mark.proof(\"feat\", \"PROOF-%d\", \"RULE-1\")\\n'\n                '@pytest.mark.skip(reason=\"no tool here\")\\n'\n                'def test_skipped_%d():\\n'\n                '    assert True\\n' % (index, index))\n        root = _pytest_project(tmp_path, body='\\n'.join(body))\n        _spec(root, 'feat',\n              proofs=tuple(('PROOF-%d' % i, 'RULE-1', '') for i in range(1, 9)))\n        code, output = _run(root, '--all', '--quick')\n        assert code == 1\n        assert '8 marker(s) produced no proof entry' in output\n        assert 'and 3 more' in output",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_the_list_is_bounded_and_counted",
+      "proof": "PROOF-8",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "132b3e5cbc581236e182ddaee04e9201b2a612e7aab3b703f5e2c2c0e117b3c2"
+}

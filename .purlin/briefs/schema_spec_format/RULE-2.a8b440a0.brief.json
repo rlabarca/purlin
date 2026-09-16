@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "schema_spec_format",
+  "generated_at": "2026-09-16T22:34:54Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "512aaaf221a2476c2fa1fab47627bdc07ef0ce89331aabbb28324ff7e388b24d",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-2",
+      "text": "Write a spec whose `## Rules` holds the line `- some constraint without RULE-N prefix` beside `RULE-1`, run `sync_status`, and verify the report carries `WARNING` and the words `not numbered`; then write a second spec whose rules are `RULE-1`, `RULE-3` and `RULE-20`, each with a proof, and verify the report carries zero warnings and the payload lists exactly those three ids in that order",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/schema_spec_format/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-2",
+  "rule_hash": "ad19338838753d2283f60ee99ec540acc6b616f7987dd92c8289dbd922053e53",
+  "rule_text": "Rule ids read `RULE-N`, are assigned in increasing order and are never reused, so a retired rule leaves its number vacant and a gap in the sequence is reported as nothing; a line under `## Rules` carrying no id is reported as a warning saying it is not numbered",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "a83918e1fd3c8c96688c2803a42b1104ea5379ab71326ef3a3bbabeb8ccbb7b0",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_unnumbered_rule_triggers_warning(self):\n        self._write_spec('test_feat', (\n            '# Feature: test_feat\\n\\n'\n            '## What it does\\nTesting.\\n\\n'\n            '## Rules\\n'\n            '- some constraint without RULE-N prefix\\n'\n            '- RULE-1: A proper rule\\n\\n'\n            '## Proof\\n- PROOF-1 (RULE-1): Test\\n'\n        ))\n        result = purlin_status.sync_status(self.project_root)\n        assert 'WARNING' in result\n        assert 'not numbered' in result, \\\n            f\"WARNING doesn't mention unnumbered rules: {result}\"\n\n        # A retired rule leaves its number vacant, so a gapped spec is legal:\n        # RULE-2 and RULE-4..19 are absent and nothing is reported.\n        self._write_spec('gapped_feat', (\n            '# Feature: gapped_feat\\n\\n'\n            '## What it does\\nTesting.\\n\\n'\n            '## Rules\\n'\n            '- RULE-1: The first rule\\n'\n            '- RULE-3: The rule that outlived RULE-2\\n'\n            '- RULE-20: The rule numbered after sixteen retirements\\n\\n'\n            '## Proof\\n'\n            '- PROOF-1 (RULE-1): Test one\\n'\n            '- PROOF-3 (RULE-3): Test three\\n'\n            '- PROOF-20 (RULE-20): Test twenty\\n'\n        ))\n        os.remove(os.path.join(self.spec_dir, 'test_feat.md'))\n        gapped = purlin_status.sync_status(self.project_root)\n        assert 'WARNING' not in gapped, (\n            \"a gap in the rule numbers is legal: a retired rule leaves its \"\n            f\"number vacant and the rest are never renumbered:\\n{gapped}\")\n        data = purlin_payload.build_payload(self.project_root)\n        feature = next(f for f in data['features'] if f['name'] == 'gapped_feat')\n        assert [r['id'] for r in feature['rules']] == ['RULE-1', 'RULE-3',\n                                                       'RULE-20'], (\n            \"the gapped spec was not parsed as written: \"\n            f\"{[r['id'] for r in feature['rules']]}\")",
+      "file": "dev/test_schema_spec_format.py",
+      "findings": [],
+      "name": "test_unnumbered_rule_triggers_warning",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a8b440a03e37a5d9e42fef4c81129b395e44f5c18eacc9fbd7ef45bca9fc5395"
+}

@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_test",
+  "generated_at": "2026-09-16T22:34:58Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "279b0a6894907ea303597388726b88b37be707f3eda0e4e997c7260e8e475bdb",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-2",
+      "text": "Read `skills/test/SKILL.md`; verify it carries the literal `\"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py\"` followed by `--quick` on the same line, and that one line names all three exit codes `0`, `1` and `2`. Deleting the exit-code line fails naming it",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/skill_test/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-2",
+  "rule_hash": "d04f3488d1e14af7dd65b64d550c62003e63b3e9081a60d264dc1b939cee163c",
+  "rule_text": "The skill runs `scripts/run/purlin_run.py` inside `${CLAUDE_PLUGIN_ROOT}` with `--quick`, and states its three exit codes: 0 everything passed, 1 a test failed, 2 the invocation was wrong",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "7c5bc001e2149161e039acc8faa45c80e8925f8d8be61df1dfcad81d7c84d88f",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_runs_the_run_script_and_names_its_exit_codes(self):\n        rel = skill_path('test')\n        assert (same_line(rel, [\n            '\"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py\"', '--quick'])\n            + same_line(rel, ['Exit codes:', '`0`', '`1`', '`2`'])) == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_it_runs_the_run_script_and_names_its_exit_codes",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a356ff6cf591bffb6c2cb4a6776afc94083e3ad82ec47b823fc22be4faa2a823"
+}

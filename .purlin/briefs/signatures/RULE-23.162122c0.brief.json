@@ -1,0 +1,57 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-16T22:34:57Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "8d4978ce67277f9200da617bc961a7da53f319553cda87fbb3416e85a2279169",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-29",
+      "text": "Run the command to sign `RULE-1` on a branch called `side`; verify the signature is not an ancestor of `main`, then fast-forward `main` onto `side` and verify it is",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/signatures/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-23",
+  "rule_hash": "3d31e2eea983384d634b5ae5d22965e27315135de65ab37d75d1bdceea09253e",
+  "rule_text": "A signature committed on a side branch is not on the protected branch until that branch merges",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "f913321f756d00380e30d2532e5f2c2c302fe00901a622bad3ba16a910e8d029",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_signature_on_a_side_branch_is_not_on_the_protected_branch(\n            self, at_strong):\n        signing_key(at_strong.root)\n        git(at_strong.root, 'checkout', '-q', '-b', 'side')\n        sign_module.main(['login', 'RULE-1', '--project-root', at_strong.root])\n        path = at_strong.load()[('login', 'RULE-1')][0]['path']\n        assert not purlin_signatures.is_ancestor(at_strong.root, path, 'main')\n        git(at_strong.root, 'checkout', '-q', 'main')\n        git(at_strong.root, 'merge', '-q', '--ff-only', 'side')\n        assert purlin_signatures.is_ancestor(at_strong.root, path, 'main')",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_a_signature_on_a_side_branch_is_not_on_the_protected_branch",
+      "proof": "PROOF-29",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_signature_on_a_side_branch_is_not_on_the_protected_branch(\n            self, at_strong):\n        signing_key(at_strong.root)\n        git(at_strong.root, 'checkout', '-q', '-b', 'side')\n        sign_module.main(['login', 'RULE-1', '--project-root', at_strong.root])\n        path = at_strong.load()[('login', 'RULE-1')][0]['path']\n        assert not purlin_signatures.is_ancestor(at_strong.root, path, 'main')\n        git(at_strong.root, 'checkout', '-q', 'main')\n        git(at_strong.root, 'merge', '-q', '--ff-only', 'side')\n        assert purlin_signatures.is_ancestor(at_strong.root, path, 'main')",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_an_approval_on_a_side_branch_is_not_on_the_protected_branch",
+      "proof": "PROOF-29",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "162122c052d3a22c8f0af0493d4eb498858605fdf3fff46812a2152e762bcbf9"
+}

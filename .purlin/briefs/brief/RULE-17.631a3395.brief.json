@@ -1,0 +1,55 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "brief",
+  "generated_at": "2026-09-16T22:34:33Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "41c4358e65d4d51956b9014fc2cdccfe2af37e40c149dbb378b6b48a2a14084c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-24",
+      "text": "Read the observations out of `It looks fine to me.`, `not available` and an empty answer; verify each observes nothing and leaves the question not answered",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/brief/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-17",
+  "rule_hash": "baa2ef8a1f34209856394106bd9ade6db74843cccbaf4efc9fbb902117f87e15",
+  "rule_text": "An answer in no shape the brief can read observes nothing and leaves the question not answered",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "6027c2d79dd446f7aab5759d4060ffd75cf3c43b6b057d8fcd73de5a602266b9",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_an_answer_in_no_shape_at_all_observes_nothing(self):\n        assert brief_module.model_observations('It looks fine to me.') == (\n            [], None)\n        assert brief_module.model_observations('not available') == ([], None)\n        assert brief_module.model_observations('') == ([], None)",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_an_answer_in_no_shape_at_all_observes_nothing",
+      "proof": "PROOF-24",
+      "reasons": []
+    },
+    {
+      "body": "def test_an_answer_in_no_shape_at_all_observes_nothing(self):\n        assert brief_module.model_observations('It looks fine to me.') == (\n            [], None)\n        assert brief_module.model_observations('not available') == ([], None)\n        assert brief_module.model_observations('') == ([], None)",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_an_answer_that_names_no_verdict_decides_nothing",
+      "proof": "PROOF-24",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "631a3395ea013b864b723da63cb12307ddc344d61e286ebdc136610261d36694"
+}

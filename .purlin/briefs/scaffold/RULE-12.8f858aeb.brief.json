@@ -1,0 +1,77 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T22:34:51Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "b269c1cda0a8d65b4f6f0098d1aeedb0b09b86142eae4d1927c59344b30d815b",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-12",
+      "text": "Run `--gate tested` and verify no workflow; run `--gate recorded` and verify `.github/workflows/purlin.yml` exists; run `--gate approved` and verify the workflow's bytes are unchanged and the summary reports it as kept; run `--gate tested` again and verify the config reads `tested` with `min_strength` 50 while the workflow is still there; set `approvers` to `[\"jane@acme.com\"]`, run `--gate recorded` and verify the list survives",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-12",
+  "rule_hash": "2919071bb3706eb66f4f846c20ad9f524e911f002be11b4d9018e961619bb3c1",
+  "rule_text": "Raising the gate adds what the higher level needs and keeps every file an earlier run wrote; lowering it writes the setting and deletes nothing, the approver list included",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "8978336a845ca3db610c7cb4583f8eb8c03869a8984596d6379682191d8a7e7f",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_lowering_from_approved_keeps_the_approver_list(self, project):\n        project.run('--gate', 'approved')\n        config = project.config()\n        config['approvers'] = ['jane@acme.com']\n        write(project.path('.purlin/config.json'),\n              json.dumps(config, indent=2) + '\\n')\n        project.run('--gate', 'recorded')\n        assert project.config()['approvers'] == ['jane@acme.com']",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_lowering_from_approved_keeps_the_approver_list",
+      "proof": "PROOF-12",
+      "reasons": []
+    },
+    {
+      "body": "def test_lowering_writes_the_setting_and_deletes_nothing(self, project):\n        project.run('--gate', 'approved')\n        project.run('--gate', 'tested')\n        assert project.config()['gate'] == 'tested'\n        assert project.config()['min_strength'] == 50\n        assert project.has('.github/workflows/purlin.yml')",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_lowering_writes_the_setting_and_deletes_nothing",
+      "proof": "PROOF-12",
+      "reasons": []
+    },
+    {
+      "body": "def test_raising_to_approved_keeps_what_recorded_wrote(self, project):\n        project.run('--gate', 'recorded')\n        before = read(project.path('.github/workflows/purlin.yml'))\n        output = project.run('--gate', 'approved')\n        assert read(project.path('.github/workflows/purlin.yml')) == before\n        assert summary_paths(output)['.github/workflows/purlin.yml'] == 'kept'",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_raising_to_approved_keeps_what_recorded_wrote",
+      "proof": "PROOF-12",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_raising_to_recorded_adds_the_workflow(self, project):\n        project.run('--gate', 'tested')\n        assert not project.has('.github/workflows/purlin.yml')\n        project.run('--gate', 'recorded')\n        assert project.has('.github/workflows/purlin.yml')\n        assert project.config()['gate'] == 'recorded'",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_raising_to_recorded_adds_the_workflow",
+      "proof": "PROOF-12",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "8f858aebcc277c26ab11f70f6c13274de1bdb04f3f82efc1adbba8fafa130e35"
+}

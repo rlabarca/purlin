@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T22:34:54Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "aeb478692792ac1e5b20656b266c68f4161edd4082a78494423a79883eedf685",
+  "proofs": [
+    {
+      "env": "linux",
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-37",
+      "text": "Run init at `tested` on a python fixture and verify the config, the pytest plugin copy and `conftest.py` exist with no workflow; on a typescript fixture verify the vitest plugin copy and `vitest.config.ts`; on an xunit fixture verify the logger copy and the two wiring lines in the summary. Then run a marketplace copy's own script against a fresh project and verify `.purlin/config.json` exists, `.purlin/plugin-root` holds the install path, and no other file in the project names it",
+      "tier": "e2e"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-37",
+  "rule_hash": "52ce899379cebd7ba9837b9dd18de14fe5962e0427e8467aa1115a6251668032",
+  "rule_text": "Each language init supports is wired the same way in a real project, and an install from the marketplace leaves `.purlin/plugin-root` as the only file naming the install",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "7129779298c9caa9f2fa7ff5132f24dc4ba2bf5b34311f028e0e7421d92145a3",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": null,
+      "file": "dev/test_init_e2e.sh",
+      "findings": [],
+      "name": "each language wired, and the marketplace install",
+      "proof": "PROOF-37",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "666f6cb1df2092b5267e01095d20c695f995d60fb409e3f737727cd1d4ebfcc7"
+}

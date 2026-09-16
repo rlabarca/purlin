@@ -1,0 +1,95 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-16T22:34:41Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "5436d8f04f74f3261b63772c874d77b59d90ee96408d788f2cfaebea6b591197",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "no_expected_value"
+      ],
+      "id": "PROOF-12",
+      "text": "Open the board with the solo, team and regulated fixture in turn and verify it starts on the dark theme; read the ground and the ink, click the theme button, and verify the theme reads light, that both the ground and the ink differ from the dark ones, that the mark address changed, and that the gate's tile count is still on screen; click it again and verify the theme reads dark",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-30",
+      "text": "Run the build and open the board: verify the text `data-surface` appears zero times in the page, that the root element carries no `data-surface` attribute, and that the body's computed ground is the colour `--purlin-navy-800` resolves to",
+      "tier": "e2e"
+    }
+  ],
+  "record": ".purlin/records/purlin_report/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-12",
+  "rule_hash": "2362482bc3c75c039d79d503528d3c023fb1b0f1a6c62e15b13fa06a15fa6938",
+  "rule_text": "Both themes ship in the page. It sets no surface override, so it opens dark on the brand navy ground, and the toggle swaps the ground, the ink and the mark to the other theme, and swaps back",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "2f87b555bff4ac7aa1ca6a68c1c21a2988196fc53321f955fc3d22df46962ec8",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_both_themes_render_through_the_tokens(browser, tmp_path, process):\n    page = open_board(browser, tmp_path, payload_named(process))\n    dark = page.evaluate(\n        'getComputedStyle(document.body).backgroundColor')\n    dark_ink = page.evaluate('getComputedStyle(document.body).color')\n    dark_logo = page.get_attribute('#brand-mark', 'src')\n    assert page.get_attribute('html', 'data-theme') == 'dark'\n\n    page.click('[data-act=\"theme\"]')\n    assert page.get_attribute('html', 'data-theme') == 'light'\n    light = page.evaluate('getComputedStyle(document.body).backgroundColor')\n    light_ink = page.evaluate('getComputedStyle(document.body).color')\n    assert light != dark and light_ink != dark_ink\n    assert page.get_attribute('#brand-mark', 'src') != dark_logo\n    assert len(page.query_selector_all('.tile')) == TILES[process]\n\n    page.click('[data-act=\"theme\"]')\n    assert page.get_attribute('html', 'data-theme') == 'dark'\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_both_themes_render_through_the_tokens[regulated]",
+      "proof": "PROOF-12",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_both_themes_render_through_the_tokens(browser, tmp_path, process):\n    page = open_board(browser, tmp_path, payload_named(process))\n    dark = page.evaluate(\n        'getComputedStyle(document.body).backgroundColor')\n    dark_ink = page.evaluate('getComputedStyle(document.body).color')\n    dark_logo = page.get_attribute('#brand-mark', 'src')\n    assert page.get_attribute('html', 'data-theme') == 'dark'\n\n    page.click('[data-act=\"theme\"]')\n    assert page.get_attribute('html', 'data-theme') == 'light'\n    light = page.evaluate('getComputedStyle(document.body).backgroundColor')\n    light_ink = page.evaluate('getComputedStyle(document.body).color')\n    assert light != dark and light_ink != dark_ink\n    assert page.get_attribute('#brand-mark', 'src') != dark_logo\n    assert len(page.query_selector_all('.tile')) == TILES[process]\n\n    page.click('[data-act=\"theme\"]')\n    assert page.get_attribute('html', 'data-theme') == 'dark'\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_both_themes_render_through_the_tokens[solo]",
+      "proof": "PROOF-12",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_both_themes_render_through_the_tokens(browser, tmp_path, process):\n    page = open_board(browser, tmp_path, payload_named(process))\n    dark = page.evaluate(\n        'getComputedStyle(document.body).backgroundColor')\n    dark_ink = page.evaluate('getComputedStyle(document.body).color')\n    dark_logo = page.get_attribute('#brand-mark', 'src')\n    assert page.get_attribute('html', 'data-theme') == 'dark'\n\n    page.click('[data-act=\"theme\"]')\n    assert page.get_attribute('html', 'data-theme') == 'light'\n    light = page.evaluate('getComputedStyle(document.body).backgroundColor')\n    light_ink = page.evaluate('getComputedStyle(document.body).color')\n    assert light != dark and light_ink != dark_ink\n    assert page.get_attribute('#brand-mark', 'src') != dark_logo\n    assert len(page.query_selector_all('.tile')) == TILES[process]\n\n    page.click('[data-act=\"theme\"]')\n    assert page.get_attribute('html', 'data-theme') == 'dark'\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_both_themes_render_through_the_tokens[team]",
+      "proof": "PROOF-12",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_the_board_sits_on_the_brand_navy(browser, tmp_path, page_text):\n    \"\"\"No surface override, so the ground is the brand's own navy.\"\"\"\n    assert 'data-surface' not in page_text\n    page = open_board(browser, tmp_path, payload_named('regulated'))\n    assert page.get_attribute('html', 'data-surface') is None\n    ground = page.evaluate('getComputedStyle(document.body).backgroundColor')\n    assert ground == page.evaluate(RESOLVE_TOKEN, '--purlin-navy-800')\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_the_board_sits_on_the_brand_navy",
+      "proof": "PROOF-30",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "7cd811d4359a7bd8739cb40f2b87ceb3f6ba0dac9ea6c493144ed1f2671e716a"
+}

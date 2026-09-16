@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_version",
+  "generated_at": "2026-09-16T22:34:41Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "06efc7f2ec114ca4819ff4048999395b7fb3534c4ffa7a3d91889a63a0cb26fb",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-1",
+      "text": "Read the `VERSION` file; verify it exists, is not empty, and that its stripped content matches `^\\d+\\.\\d+\\.\\d+$`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/purlin_version/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-1",
+  "rule_hash": "4c459eb9778ffca941022c74b71922a240214a133bc83f127172d7b5ecd8d00e",
+  "rule_text": "A `VERSION` file at the project root holds one semver string and nothing else",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "3307f249681d963a575c7de032aa02e65e47b5480079c3cf3ad53935201cf104",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_version_file_exists_and_is_valid_semver(self):\n        \"\"\"VERSION file must exist and contain a valid semver string (X.Y.Z).\"\"\"\n        assert os.path.isfile(VERSION_FILE), \\\n            f\"VERSION file not found at {VERSION_FILE}\"\n        with open(VERSION_FILE) as f:\n            content = f.read().strip()\n        assert content, \"VERSION file is empty\"\n        semver_pattern = re.compile(r'^\\d+\\.\\d+\\.\\d+$')\n        assert semver_pattern.match(content), \\\n            f\"VERSION file contains '{content}', expected a semver string like '1.2.3'\"",
+      "file": "dev/test_purlin_version.py",
+      "findings": [],
+      "name": "test_version_file_exists_and_is_valid_semver",
+      "proof": "PROOF-1",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "ae3c2423921cdcf3c9ac9597f5c7097d1c35763146582990f7d6e65a2d2b909e"
+}

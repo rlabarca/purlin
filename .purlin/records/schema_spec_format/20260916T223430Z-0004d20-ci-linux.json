@@ -1,0 +1,396 @@
+{
+  "commit": "0004d20042fa08eeb29fe58a0e55b40f2e3d0dd6",
+  "dirty": true,
+  "environment": {
+    "engines": [],
+    "host": "GitHub Actions 1000000178",
+    "id": "linux-x86_64",
+    "job": "verify",
+    "kind": "ci",
+    "os": "linux"
+  },
+  "feature": "schema_spec_format",
+  "features": {
+    "schema_spec_format": {
+      "rules": {
+        "RULE-1": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-1"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_schema_spec_format.py",
+              "name": "test_format_documents_two_sections",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-10": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-10"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_schema_spec_format.py",
+              "name": "test_env_takes_three_values_and_nothing_else",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-11": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-11"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_schema_spec_format.py",
+              "name": "test_note_field_is_ignored_by_the_parser",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-2": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-2"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_schema_spec_format.py",
+              "name": "test_unnumbered_rule_triggers_warning",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-3": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-3"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_schema_spec_format.py",
+              "name": "test_all_proof_lines_match_pattern",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-4": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-4"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_schema_spec_format.py",
+              "name": "test_a_rule_with_no_proof_line_is_drafted",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-5": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-5"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_schema_spec_format.py",
+              "name": "test_requires_includes_referenced_rules",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-6": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-6"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_schema_spec_format.py",
+              "name": "test_scope_metadata_parsed",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-7": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-7"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_schema_spec_format.py",
+              "name": "test_spec_headings_use_correct_prefix",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-8": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-8"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_schema_spec_format.py",
+              "name": "test_multiline_description_continuation",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-9": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-9"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_schema_spec_format.py",
+              "name": "test_prose_ending_in_an_at_word_is_not_a_tag",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_schema_spec_format.py",
+              "name": "test_real_spec_is_parsed_correctly",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        }
+      },
+      "scope_score": null,
+      "spec": "specs/_anchors/schema_spec_format.md"
+    }
+  },
+  "gate": "passed",
+  "log": {
+    "path": ".purlin/runtime/run.log",
+    "sha256": "2df25252722cfc54b3a1cb572364bf464173e5848b2ac3f10002275694ffc4c6"
+  },
+  "missing": [],
+  "os": "linux",
+  "plugins": [
+    "pytest",
+    "shell"
+  ],
+  "proofs": [
+    {
+      "env": null,
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_format_documents_two_sections",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_unnumbered_rule_triggers_warning",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_all_proof_lines_match_pattern",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_a_rule_with_no_proof_line_is_drafted",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_requires_includes_referenced_rules",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "status": "pass",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_scope_metadata_parsed",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_spec_headings_use_correct_prefix",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "status": "pass",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_multiline_description_continuation",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "status": "pass",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_prose_ending_in_an_at_word_is_not_a_tag",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "status": "pass",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_real_spec_is_parsed_correctly",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "status": "pass",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_env_takes_three_values_and_nothing_else",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "status": "pass",
+      "test_file": "dev/test_schema_spec_format.py",
+      "test_name": "test_note_field_is_ignored_by_the_parser",
+      "tier": "integration"
+    }
+  ],
+  "runner": "ci",
+  "schema": "purlin-record/2",
+  "schema_version": 2,
+  "scope_tree": "69f4cb310a49553c7159bd37223fdf0ad050f1c3ea64bebb7ad663011da7b57a",
+  "test_strength": null,
+  "timestamp": "2026-09-16T22:34:30Z"
+}

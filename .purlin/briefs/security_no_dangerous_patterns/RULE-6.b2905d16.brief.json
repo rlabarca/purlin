@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "security_no_dangerous_patterns",
+  "generated_at": "2026-09-16T22:34:55Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "9aed58b810c38773fbbc8f8ae1c4d96f63d2940f7f79a3079dbaf19e97ea77bc",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-6",
+      "text": "In a temporary project holding four anchors whose sources are `--upload-pack=/bin/echo`, an `ext::` command, `fd::7` and a real local bare repository, call `sync_status` with the subprocess runner wrapped by a recording spy. Verify none of the three refused values appears in any captured argument vector, so each was refused before a subprocess started; that at least one `git ls-remote` was captured and every one carries `--end-of-options` immediately before the bare repository url; that at least one captured git vector carries a path operand under `specs/` and every such vector carries `--` immediately before its first path operand; and that the status text names all three refusals",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/security_no_dangerous_patterns/20260916T223430Z-0004d20-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-6",
+  "rule_hash": "bc401530546355bbcedc0cee04bf87083811c9efad88565d5197ed2ea35fc39c",
+  "rule_text": "No repository-supplied string reaches git in option position: `--end-of-options` precedes every revision argument, `--` precedes every path argument, and a `> Source:` value that begins with `-` or names an `ext::` or `fd::` transport is refused before any subprocess starts, with the status line saying which",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "95d0e10bbfd33d1f9e09d13049793d9d751a76ca382149da7eff7385a218a4df",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_source_url_never_reaches_git_in_option_position(self, tmp_path,\n                                                             monkeypatch):\n        project = tmp_path / 'project'\n        purlin_dir = project / '.purlin'\n        purlin_dir.mkdir(parents=True)\n        (purlin_dir / 'config.json').write_text(\n            json.dumps({'version': '1.0.0', 'project_name': 'spy'}))\n        anchors = project / 'specs' / '_anchors'\n        anchors.mkdir(parents=True)\n\n        # A reachable source, so a legitimate ls-remote really happens. Without\n        # it the positive control below would pass vacuously.\n        bare = str(tmp_path / 'good-policy.git')\n        good_sha = _make_bare_repo(bare, str(tmp_path / 'good-work'))\n        _write_anchor(str(anchors), 'good_policy', bare, good_sha)\n        _write_anchor(str(anchors), 'evil_policy', EVIL_SOURCE,\n                      '1234567890abcdef1234567890abcdef12345678')\n        _write_anchor(str(anchors), 'ext_policy', EXT_SOURCE,\n                      '1234567890abcdef1234567890abcdef12345678')\n        _write_anchor(str(anchors), 'fd_policy', FD_SOURCE,\n                      '1234567890abcdef1234567890abcdef12345678')\n\n        _git(['-c', 'init.defaultBranch=main', 'init', '-q'], cwd=str(project))\n        _git(['config', 'user.email', 'test@test.com'], cwd=str(project))\n        _git(['config', 'user.name', 'Test'], cwd=str(project))\n        _git(['add', '-A'], cwd=str(project))\n        _git(['commit', '-q', '-m', 'chore: project under test'], cwd=str(project))\n\n        calls = []\n        real_run = subprocess.run\n\n        def spy(args, *rest, **kwargs):\n            calls.append(list(args) if isinstance(args, (list, tuple)) else [args])\n            return real_run(args, *rest, **kwargs)\n\n        monkeypatch.setattr(purlin_drift.subprocess, 'run', spy)\n        text = purlin_status.sync_status(str(project))\n        monkeypatch.undo()\n\n        assert calls, \"no subprocess calls captured\"\n\n        # Each rejected Source never reaches git at all, and certainly never\n        # ahead of an end-of-options separator.\n        for rejected in (EVIL_SOURCE, EXT_SOURCE, FD_SOURCE):\n            for argv in calls:\n                assert rejected not in argv, (\n                    f\"{rejected!r} reached git; RULE-6 rejects it before any \"\n                    f\"subprocess starts: {argv}\")\n\n        # Positive control: the safe url did reach ls-remote, and\n        # --end-of-options sits immediately in front of it every time.\n        ls_remotes = [a for a in calls\n                      if len(a) >= 2 and a[0] == 'git' and a[1] == 'ls-remote']\n        assert ls_remotes, \\\n            \"no git ls-remote captured; the positive control would be vacuous\"\n        for argv in ls_remotes:\n            assert bare in argv, f\"expected the safe url in {argv}\"\n            url_idx = argv.index(bare)\n            assert url_idx > 0 and argv[url_idx - 1] == '--end-of-options', \\\n                f\"--end-of-options does not precede the url: {argv}\"\n\n        # `--` precedes every path argument. The path operands the server hands\n        # git here are repository-relative: `specs/` and spec paths under it.\n        def _is_path_operand(arg):\n            return arg == 'specs/' or arg.startswith('specs/') or arg.endswith('.md')\n\n        carried_a_path = []\n        for argv in calls:\n            if not argv or argv[0] != 'git':\n                continue\n            operands = [i for i, a in enumerate(argv) if _is_path_operand(a)]\n            if not operands:\n                continue\n            carried_a_path.append(argv)\n            first = min(operands)\n            assert first > 0 and argv[first - 1] == '--', (\n                f\"a path argument reaches git with no -- immediately before \"\n                f\"it, so a path beginning with '-' would be read as an \"\n                f\"option: {argv}\")\n        assert carried_a_path, (\n            \"no captured git argv carried a path operand, so the -- check \"\n            \"would pass by matching nothing\")\n\n        for reason in ('(source rejected: begins with \"-\")',\n                       '(source rejected: names an ext:: transport)',\n                       '(source rejected: names an fd:: transport)'):\n            assert reason in text, (\n                f\"status text does not name the rejection {reason!r}:\\n{text}\")",
+      "file": "dev/test_security.py",
+      "findings": [],
+      "name": "test_source_url_never_reaches_git_in_option_position",
+      "proof": "PROOF-6",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "b2905d1693a18e0132b1fe872f6461caed07c21209eff45cb032ba274c1e61d1"
+}
