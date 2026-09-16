@@ -10,13 +10,19 @@ function ownRules(feature) {
   });
 }
 
+/* One tile per state, then the rules a test is failing for. A failing test
+   only holds a rule in a lower state, so without its own tile a failure reads
+   as a rule that has not got far yet. */
 function statStrip() {
   var counts = DATA.states || {};
-  return '<div class="tiles">' + STATES.map(function (state) {
+  var failing = (DATA.project_rollup || {}).failing || 0;
+  return '<div class="strip"><div class="tiles">' + STATES.map(function (state) {
     return '<div class="tile"><div class="tile-v" style="color:var(--state-'
       + tone(state) + ')">' + (counts[state] || 0) + '</div>'
       + '<div class="tile-l">' + esc(state) + '</div></div>';
-  }).join('') + '</div>';
+  }).join('') + '</div><div class="failing' + (failing ? ' on' : '') + '">'
+    + '<div class="failing-v">' + failing + '</div>'
+    + '<div class="failing-l">Failing</div></div></div>';
 }
 
 function riskGrid() {
@@ -147,13 +153,17 @@ function renderBoard() {
     + (rollup.features || 0) + '</b> specs'
     + '<span class="sep">·</span>lowest state <b>'
     + esc(rollup.lowest_state || 'Drafted') + '</b>'
+    + '<span class="sep">·</span><b>' + (rollup.failing || 0) + '</b> failing'
     + '<span class="sep">·</span><b>' + (rollup.stale || 0) + '</b> stale'
     + '<span class="sep">·</span><b>' + (rollup.needs_review || 0)
     + '</b> on the review list</h1></section><section>' + statStrip()
     + '</section>';
   var table = order.length
     ? '<div class="tbl" style="--cols:' + columns.map(function (c) {
-        return c.width;
+        /* minmax(0, ...) sizes every track from the widths alone. A bare fr
+           track grows to fit its widest cell, and the header and each row are
+           separate grids, so their columns drifted apart. */
+        return 'minmax(0,' + c.width + ')';
       }).join(' ') + '"><div class="th">' + columns.map(function (c) {
         return '<div>' + esc(c.label) + '</div>';
       }).join('') + '</div>' + order.map(function (name) {

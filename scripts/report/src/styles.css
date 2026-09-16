@@ -55,7 +55,12 @@ h2{font-size:var(--ui-lg);font-weight:var(--weight-bold);margin:0 0 var(--space-
 pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-height:1.55;color:var(--text-primary);padding:var(--space-5);background:var(--surface-sunken);border:1px solid var(--border-default);border-radius:var(--radius-sm);overflow-x:auto;white-space:pre-wrap}
 
 /* --- stat strip and risk grid ---------------------------------------- */
+.strip{display:grid;grid-template-columns:7fr 1fr;gap:var(--space-4)}
 .tiles{display:grid;grid-template-columns:repeat(7,1fr);gap:var(--space-4)}
+.failing{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-md);text-align:center;padding:var(--space-6) var(--space-3);color:var(--state-idle)}
+.failing.on{border-color:var(--state-fail);color:var(--state-fail)}
+.failing-v{font-size:var(--ui-metric);font-weight:var(--weight-bold);line-height:1}
+.failing-l{margin-top:var(--space-3);font-size:var(--ui-xs);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}
 .tile{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-md);text-align:center;padding:var(--space-6) var(--space-3)}
 .tile-v{font-size:var(--ui-metric);font-weight:var(--weight-bold);line-height:1}
 .tile-l{margin-top:var(--space-3);font-size:var(--ui-xs);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}
@@ -73,6 +78,9 @@ table.grid{border-collapse:collapse;width:100%}
 .chip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
 .tbl{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-sm);overflow:hidden}
 .th,.tr{display:grid;grid-template-columns:var(--cols);gap:var(--space-4);align-items:center;padding:var(--space-4) var(--space-6);border-bottom:1px solid var(--border-hairline)}
+.th>div,.tr>div{min-width:0}
+.tr>div .cov{max-width:100%}
+.tr>div .cov i{flex:0 1 96px;min-width:24px}
 .th{font-size:var(--ui-xs);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-muted)}
 .tr{cursor:pointer;transition:background var(--duration-fast) var(--ease-standard)}
 .tr:hover{background:var(--hover-tint)}
