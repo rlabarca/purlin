@@ -1,8 +1,8 @@
 # Feature: skill_rename
 
 > Description: What `skills/rename/SKILL.md` must say. Rename moves a feature name everywhere Purlin
->   wrote it, in one commit, because a name left behind points a live test, an
->   approval or a record at a spec that no longer exists.
+>   wrote it, in one commit, because a name left behind points a live test, a
+>   signature or a record at a spec that no longer exists.
 > Scope: skills/rename/SKILL.md
 > Stack: markdown, Claude Code skill definition
 

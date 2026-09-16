@@ -54,14 +54,14 @@ no marker proves nothing as far as Purlin is concerned, however good it is.
 
 A test asserts the observable the proof names, against the real behaviour. A test that asserts
 a stub returns what the stub was told to return is worse than no test: it reports a rule as
-proved when nothing was proved. When a rule genuinely cannot be tested as written, do not
+proved when nothing was proved. When a rule genuinely cannot be proved as written, do not
 weaken the test. Stop and fix the rule.
 
 ## When a rule is wrong
 
 A rule that contradicts another, or that no test could settle as written, is a spec problem
 and not a build problem. Call `purlin:spec <name>`, fix the rule text in place, keep the id,
-and come back. Changing rule text stales any approval bound to that rule, which is correct: a
+and come back. Changing rule text stales any signature bound to that rule, which is correct: a
 person has to look again.
 
 A rule tagged `[origin: pm]`, `[origin: design]` or `[origin: qa]` is not yours to change.
@@ -79,8 +79,8 @@ rule the feature owns has a passing test. A proof tagged `@env` for an operating
 is not this one is skipped and listed as `needs <os>`; that is expected locally and CI proves
 it on the matching runner.
 
-Never write a proof file, a record or an approval by hand. Tests write proof files,
-`purlin:verify` writes records, `purlin:approve` writes approvals.
+Never write a proof file, a record or a signature by hand. Tests write proof files,
+`purlin:audit` writes records, `purlin:sign` writes signatures.
 
 ## Committing
 
@@ -99,9 +99,9 @@ never enter a commit.
 
 Print the state table from `sync_status` for the feature, then name the next step:
 
-- Every rule has a passing test: `→ Next: purlin:verify`, which breaks the code on purpose,
+- Every rule has a passing test: `→ Next: purlin:audit`, which breaks the code on purpose,
   measures the test strength and writes the record.
 - Some rules still have no test: name them and say what is missing.
-- A rule has a `@manual` proof: say that its evidence is an approval with a one-line note, and
-  point at `purlin:review`.
-- A proof needs another operating system: say which, and point at `purlin:verify --remote`.
+- A rule has a `@manual` proof: say that its evidence is a signature with a one-line note, and
+  point at `purlin:sign`.
+- A proof needs another operating system: say which, and point at `purlin:audit --remote`.

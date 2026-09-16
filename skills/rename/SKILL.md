@@ -1,10 +1,10 @@
 ---
 name: rename
-description: Rename a feature across specs, tests, approvals and records
+description: Rename a feature across specs, tests, signatures and records
 ---
 
 Rename a feature everywhere Purlin wrote its name, in one commit. A name left behind points a
-live test, an approval or a record at a spec that no longer exists.
+live test, a signature or a record at a spec that no longer exists.
 
 **Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
 is relative to the plugin root; see `references/purlin_commands.md#path-resolution`.
@@ -24,15 +24,15 @@ Plain language reaches it too: "rename login to authentication".
 | `specs/<category>/<old>.md` | The file name, and `# Feature: <old>` inside it |
 | `> Requires:` in other specs | The old entry, matched whole between commas |
 | Proof markers in test code | Every marker form in `references/formats/proofs_format.md#feature-name-token` |
-| `specs/<category>/<old>.approvals/` | The directory name; the files inside are unchanged |
+| `specs/<category>/<old>.signatures/` | The directory name; the files inside are unchanged |
 | `.purlin/records/<old>/` | The directory name; the records inside are unchanged |
 | `designs/<old>/` | The directory name, and the `> Source:` line of any anchor naming it |
 
 Proof files are runtime (`.purlin/runtime/proofs/`) and the next run regenerates them, so they
 are not renamed. Nothing outside these places is touched: a test function called
-`test_login_valid` keeps its name, and so does every comment. An approval binds the hashes of
+`test_login_valid` keeps its name, and so does every comment. A signature binds the hashes of
 the rule text, the proof text and the test body, none of which a rename changes, and a record
-names the feature in its path only, so approvals and records both survive it.
+names the feature in its path only, so signatures and records both survive it.
 
 ## Steps
 
@@ -44,7 +44,7 @@ names the feature in its path only, so approvals and records both survive it.
 ```
 rename: login → authentication
   specs/auth/login.md            → specs/auth/authentication.md
-  specs/auth/login.approvals/    → specs/auth/authentication.approvals/  (6 files)
+  specs/auth/login.signatures/   → specs/auth/authentication.signatures/  (6 files)
   .purlin/records/login/         → .purlin/records/authentication/       (3 records)
   tests/test_login.py            5 markers
   specs/auth/session.md          1 requires line
@@ -67,4 +67,4 @@ rename: login → authentication
 |-----------------------------------|-------------------|
 | Everything resolved | `→ Run: purlin:test <new-name>` |
 | A marker still names the old feature | `→ Fix the marker in <file>, then re-run.` |
-| A record or approval was left behind | `→ Move it by hand, then re-run.` |
+| A record or signature was left behind | `→ Move it by hand, then re-run.` |

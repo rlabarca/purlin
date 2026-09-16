@@ -65,7 +65,7 @@ Every rule this skill writes carries `[origin: eng]` and `[risk: low]`:
 `eng` is correct because you derived the rule, not a PM: `purlin:drift pm` then shows these as
 engineer-added rules rather than as requirements nobody asked for. `low` is correct because
 nobody has judged the cost of getting it wrong yet. Both are re-tagged later, in one pass, and
-re-tagging never stales an approval.
+re-tagging never stales a signature.
 
 For the rule and proof grammar read `references/formats/spec_format.md`; for what makes a rule
 worth keeping read `references/spec_quality_guide.md`.
@@ -93,15 +93,15 @@ and note the behaviour in `> Description:`.
   the software's behaviour; "rejects the 61st request in a minute" is.
 - Do not tag anything `[origin: pm]`. No PM said any of this.
 - Do not add risk tags above `low`. That judgment belongs to the people who own the product.
-- Do not write approvals or records. Those come from `purlin:verify` and `purlin:approve`.
+- Do not write signatures or records. Those come from `purlin:audit` and `purlin:sign`.
 
 ## When you are done
 
 Report the counts, then name the next step from the state:
 
-- Rules whose behaviour is already tested: `→ Next: purlin:test`, which tags the existing
-  tests and shows what passes.
+- Rules whose behaviour a test already exercises: `→ Next: purlin:test`, which tags the
+  existing tests and shows what passes.
 - Rules with no test at all: `→ Next: purlin:build <name>` on the feature with the most of
   them.
 - Everything drafted and the team wants the paper trail:
-  `→ Next: purlin:init --gate recorded`.
+  `→ Next: purlin:init --gate strong`.

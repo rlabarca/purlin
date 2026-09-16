@@ -1,7 +1,7 @@
 # Feature: skill_drift
 
 > Description: What `skills/drift/SKILL.md` must say. Drift reports what the specs, the tests and
->   the approvals have not caught up with, in one view per role, and it writes
+>   the signatures have not caught up with, in one view per role, and it writes
 >   nothing.
 > Scope: skills/drift/SKILL.md
 > Stack: markdown, Claude Code skill definition

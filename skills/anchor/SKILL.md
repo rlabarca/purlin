@@ -67,9 +67,9 @@ per run, so an engineer sees a stale pin at the start of a session without askin
 
 Without `--check`, sync shows the delta, updates the local copy, copies any design files the
 anchor references into `designs/<anchor>/`, and advances the pin. All of that lands in one
-commit with the `anchor(<name>):` prefix, so the diff shows exactly which rules moved. Under
-the `approved` gate that commit reaches the default branch by pull request like any other
-change, and a rule whose text moved stales its approval.
+commit with the `anchor(<name>):` prefix, so the diff shows exactly which rules moved. At
+`strong` and above that commit reaches the default branch by pull request like any other
+change, and a rule whose text moved stales its signature.
 
 ## propose
 
@@ -86,8 +86,8 @@ anchor that says `> Requires: <the pinned one>`, and leave the pinned copy untou
 
 ## Design anchors
 
-A design is a versioned file reviewed by pull request, never a live connection to a design
-tool. Exports go in `designs/<feature>/` as PNG, PDF, SVG or an HTML prototype, and a design
+A design is a versioned file that goes through a pull request like any other change, never a
+live connection to a design tool. Exports go in `designs/<feature>/` as PNG, PDF, SVG or an HTML prototype, and a design
 anchor pins the files themselves:
 
 ```markdown
@@ -108,7 +108,7 @@ anchor pins the files themselves:
 ```
 
 `> Pinned:` is the hash of the named files, so a new export changes it and stales the
-approvals of that anchor's rules. That is the intended effect: a screen that changed is a
+signatures of that anchor's rules. That is the intended effect: a screen that changed is a
 screen someone has to look at again. The review brief puts the export beside the screenshot
 the test captured.
 
@@ -130,6 +130,6 @@ Name the next step from the state:
 
 - Anchor created, no feature requires it yet: name the features that should and offer to add
   `> Requires:` to each.
-- Anchor added or synced, rules changed: `→ Next: purlin:verify`, then `purlin:review` for the
-  approvals the change staled.
+- Anchor added or synced, rules changed: `→ Next: purlin:audit`, then `purlin:sign` for the
+  signatures the change staled.
 - Pin current and nothing moved: say so in one line and stop.
