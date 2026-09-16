@@ -5,7 +5,7 @@
   "gate": "approved",
   "note": null,
   "proof_hash": "3bd98e8e01585626c7178972dc1bc4f6fe856c817efb0d62ae5a4f1fcef05d12",
-  "record": ".purlin/records/records/20260916T210854Z-4f36835-ci-linux.json",
+  "record": ".purlin/records/records/20260916T211921Z-4f36835-ci-windows.json",
   "risk": "low",
   "rule": "RULE-12",
   "rule_hash": "9cd1ca9200ef96bf26177d4c2fe54ec2d9c1309857c87a40f983b0fb8197bb3b",
@@ -13,6 +13,6 @@
   "signer": "ci",
   "test_hash": "7e45fb2467e08c7d9d9c6f279e92c1196ce57811c2613bc22c56047646d5d810",
   "test_hash_kind": "file",
-  "timestamp": "2026-09-16T21:09:00Z",
+  "timestamp": "2026-09-16T21:19:47Z",
   "triple": "fb97ed87f1c0ac2a"
 }

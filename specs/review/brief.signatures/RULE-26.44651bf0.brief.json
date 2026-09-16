@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "brief",
-  "generated_at": "2026-09-16T21:09:07Z",
+  "generated_at": "2026-09-16T21:19:56Z",
   "layers": [
     "proof text",
     "test body",
@@ -54,7 +54,7 @@
     "PROOF-40 missing_trigger: Nothing runs before the assertion, so the proof reads an artifact that exists whether or not the code is right.",
     "PROOF-41 missing_trigger: Nothing runs before the assertion, so the proof reads an artifact that exists whether or not the code is right."
   ],
-  "record": ".purlin/records/brief/20260916T210854Z-4f36835-ci-linux.json",
+  "record": ".purlin/records/brief/20260916T211920Z-4f36835-ci-windows.json",
   "risk": "high",
   "rule": "RULE-26",
   "rule_hash": "4794c13e7bc9eac2e50543b38c4959b556828a8b5284563dff8310963c5ff7ba",

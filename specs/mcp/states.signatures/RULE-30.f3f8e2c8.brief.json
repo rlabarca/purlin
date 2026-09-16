@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-16T21:09:52Z",
+  "generated_at": "2026-09-16T21:20:54Z",
   "layers": [
     "proof text",
     "test body",
@@ -46,7 +46,7 @@
   "reasons": [
     "PROOF-36 missing_trigger: Nothing runs before the assertion, so the proof reads an artifact that exists whether or not the code is right."
   ],
-  "record": ".purlin/records/states/20260916T210854Z-4f36835-ci-linux.json",
+  "record": ".purlin/records/states/20260916T211924Z-4f36835-ci-windows.json",
   "risk": "high",
   "rule": "RULE-30",
   "rule_hash": "72cad8ae550fd1733deafe182f324c24250e2cfda72f1e950da54aa96039e78d",
