@@ -1,28 +1,21 @@
-# Purlin 0.10.0: outstanding after the unattended run (2026-09-14, closed at `2ca875e5`; updated 2026-09-15)
+# Purlin 0.10.0: outstanding after the unattended run (2026-09-14, closed at `2ca875e5`; updated 2026-09-15; restated 2026-09-16 for the three-level model)
 
-Everything below is open. The refactor's lanes have all landed on `evidence-workflow`; this
+Everything below is open. The refactor's lanes have all landed on `three-levels`; this
 is what the run could not finish, found and left, or left to a person.
 
 ## For the user, in order
 
-1. **Approve the rest.** 329 of 437 high and medium rules are approved, in the signed commits
-   `72c4f1f4` and `6883ed3f`, each after a review read its test against its proof. 108 are held
-   with the missing case named in `dev/plans/held-rules-0.10.0.md`; the 13 `skill_*` RULE-3 holds
-   are one weakness in the shared next-step check. Six `schema_proof_format` approvals (RULE-1,
-   2, 3, 4, 6, 7) do not count: the approver authored `d1006609`, the last commit to
-   `dev/test_schema_proof_format.py`, so another approver signs those, or the approver signs
-   again after someone else's next real change to that file. A change to a test file stales
-   every approval that file backs. The public key still has to be uploaded to GitHub for the
-   host to show Verified, and `verify_gate.py --check` counts an approval only once its commit
-   is on `origin/main`.
+1. **Sign the review list.** Every old signature file, and every file CI wrote for one, was
+   dropped rather than migrated (decision 10 of the plan), so nothing is signed. Run
+   `purlin:sign` to walk the review list; 432 rules are on it.
 2. **Apply the three GitHub rulesets** init printed (require a pull request and the `purlin`
    check with the Actions app as the only bypass; restrict `.purlin/records/**` and
-   `specs/**/*.approvals/*.ci.json` to the Actions app; block force pushes and deletions).
-3. **Release.** One more green sweep to set the `Tests at this commit` line, `purlin:verify
-   --tag 0.10.0` for the validation tag, a pull request from `evidence-workflow` to `main`,
-   the `v0.10.0` tag (`VERSION` already reads 0.10.0; `dev/bump_version.sh --check` guards
-   the derived copies).
-4. **`purlin:verify --remote`** from this Mac has not been exercised (C4 item 4); the GitHub
+   `.purlin/briefs/**` to the Actions app; block force pushes and deletions).
+3. **Release.** One more green sweep to set the `Tests at this commit` line, `purlin:audit
+   --tag 0.10.0` to write the `record/0.10.0` tag, a pull request from `three-levels` to
+   `main`, the `v0.10.0` tag (`VERSION` already reads 0.10.0; `dev/bump_version.sh --check`
+   guards the derived copies).
+4. **`purlin:audit --remote`** from this Mac has not been exercised (C4 item 4); the GitHub
    branch of `scripts/run/remote.py` is untested against a live host. The Azure DevOps
    branch prints the pipeline URL and carries `TODO(ado-remote)` for the work machine.
 
@@ -55,7 +48,7 @@ is what the run could not finish, found and left, or left to a person.
 7. **Fixed: `scan.py` prints the review list.** After the rollup it prints one line per rule on
    the list: risk, feature and rule id, state and why it is listed, high risk and Stale first
    (`records` RULE-25). The QA tool reads it from there. The list is the payload's review list,
-   so it still holds approved rules until the review-list defect found on the dashboard is fixed.
+   so it still holds signed rules until the review-list defect found on the dashboard is fixed.
 8. **Fixed: the shell arm runs `*.test.sh` in subdirectories.** It walks the project, skipping
    hidden directories, `node_modules`, `bin`, `obj` and `mutants/`, and runs each from the root in
    sorted order (`run_script` RULE-44). This repository's own suites under `dev/` are named
@@ -82,10 +75,10 @@ is what the run could not finish, found and left, or left to a person.
     once more with your own data before release.
 20. **Fixed: a brief shows each test's own body.** `brief.py` printed the first test's body
     under every test name when one proof had several tests (seen on 14 `run_script` rules). The
-    body and the free findings are now looked up by the recorded test name, and a name the file
-    no longer holds shows no body rather than another test's (`brief` RULE-26).
+    body and the free findings are now looked up by the test name the record holds, and a name
+    the file no longer holds shows no body rather than another test's (`brief` RULE-26).
 21. **Fixed: reading a brief no longer dirties the tree.** The brief JSON is evidence and stays
-    committed: CI commits it, Reviewed reads it and an approval names it. Writing a brief again
+    committed: CI commits it, a signer reads it and a signature names it. Writing a brief again
     for the same triple leaves the JSON untouched unless its evidence changed (`brief` RULE-27).
     The `.brief.txt` beside it is a local view: `*.brief.txt` is in this repository's
     `.gitignore`, in the block init writes (`scaffold` RULE-41), and the update adds it to an
@@ -95,45 +88,38 @@ is what the run could not finish, found and left, or left to a person.
     past `--arm-timeout` now measures nothing and prints why (`mutation` RULE-22). mutmut
     loses every feature's number because it runs the whole project at once; Stryker and
     Stryker.NET lose only the feature that timed out.
-23. **Fixed: an approval's test hash no longer depends on which tests ran on the machine.**
+23. **Fixed: a signature's test hash no longer depends on which tests ran on the machine.**
     T now binds the tests the feature's latest counting records observed, every operating system
     together; a checkout's own runtime proofs speak only for a proof no record has observed
-    (`states` RULE-30). Moving to it staled two approvals whose T had bound a machine's own run:
-    `purlin_version` RULE-9 (its approval bound `test_unreleased_counts_match_the_sweep_record`,
-    which CI never runs) and `static_checks` RULE-37 (its approval bound no test for PROOF-33,
+    (`states` RULE-30). Moving to it staled two signatures whose T had bound a machine's own run:
+    `purlin_version` RULE-9 (its signature bound `test_unreleased_counts_match_the_sweep_record`,
+    which CI never runs) and `static_checks` RULE-37 (its signature bound no test for PROOF-33,
     whose one test runs on Windows only). The fixture `Project.record` in
-    `dev/test_approvals.py` wrote test names its runtime proofs did not use; fixing it stales the
-    approvals that file backs.
+    `dev/test_signatures.py` wrote test names its runtime proofs did not use; fixing it stales
+    the signatures that file backs.
 
-24. **Fixed: CI approves alone only what the free checks can settle, and gives way to a hold.**
-    CI cannot read whether a test proves its proof text. It now also needs a clear body on every
-    backing test (`approvals` RULE-39), and a person who finds the test does not prove the proof
-    commits a hold with `approve.py <feature> RULE-N --hold "<case>"` (`approvals` RULE-40,
-    `approval_format.md` Format-Version 2). CI never approves a held rule and its `.ci.json`
-    gives way to a current hold (`approvals` RULE-41, `states` RULE-29). The two rules this item
-    names still carry CI approvals until someone holds them:
-    `approve.py records RULE-12 --hold "PROOF-12 names run_remote() with an Azure DevOps origin; the tests call _azure and _host apart"`
-    and `approve.py static_checks RULE-39 --hold "no test shows a sweep never prints an unmeasurable row"`.
+24. **CI never writes a signature; a hold is written with `purlin:sign <feature> RULE-N --hold
+    "<case>"`**, for example
+    `purlin:sign records RULE-12 --hold "PROOF-12 names run_remote() with an Azure DevOps origin; the tests call _azure and _host apart"`
+    and `purlin:sign static_checks RULE-39 --hold "no test shows a sweep never prints an unmeasurable row"`.
 
 25. **The sweep ran a hand-kept list of test files**, so the 11 files this round added were
     left out of `dev/run_tests.sh`; it now globs `dev/test_*.py`, with the browser suites
     `dev/test_purlin_report*.py` still held out by `--fast`. Fixed.
 26. **`dev/test_e2e_external_refs.sh` check 11 expects `- RULE-1: FORBIDDEN`**, wording the
     anchor dropped at `4fcc16ab`. It fails only where `dev/setup-external-refs.sh` has run.
-    Fixing it edits that test file, which stales the approvals it backs.
-27. **The `open` filter on the board still counts approved rules** that need a model review,
-    while the review list no longer does. `purlin_report` PROOF-13 pins the current meaning, so
-    matching them changes that proof.
-28. **Proposal: rename the state Recorded to Passed.** Touches `scripts/mcp/purlin/states.py`,
-    `references/glossary.md`, the dashboard labels, `specs/mcp/states.md`,
-    `specs/dashboard/purlin_report.md`, the skills and the docs. The gate value `recorded` is a
-    separate word. Every approval whose rule text names the state goes Stale.
+    Fixing it edits that test file, which stales the signatures it backs.
+27. **The `open` filter is gone with the state filters.** The board's filters are now
+    `Untested`, `Failing`, `Weak`, `Unsigned`, `Stale or held`.
+28. **Done by this release.** The three-level model gives level 1 the word `passed` and retires
+    the old level-2 gate word for `strong`.
 29. **The counts line in `RELEASE_NOTES.md` reads 986 passed**; the sweep now collects 1,083
-    tests. `purlin_version` RULE-9 fails locally until the release sweep sets the line (item 3).
+    tests. `purlin_version` RULE-9 fails locally until the orchestrator sets the line after the
+    closing sweep (item 3).
 
 ## Housekeeping
 
 16. `.purlin/records/` now holds three records per feature per runner plus the developer's;
-    retention is working. The first `validated/*` tag will pin the ones that matter.
+    retention is working. The first `record/*` tag will pin the ones that matter.
 17. The design system copy under `design/` leaves out the PNG renders (gitignored `*.png`),
     the deck templates, slides and the reference dashboard kit, per A11.

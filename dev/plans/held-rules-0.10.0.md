@@ -1,6 +1,9 @@
 # Held rules, 0.10.0 review
 
-437 high and medium rules; 329 approved, 108 held. Each line names the case a test is missing.
+These are the cases a reviewer named as missing during the 0.10.0 review, before the
+three-level model. The signatures and holds of that review were dropped with the old layout, so
+none of these is a current hold. Each line still names the case a test is missing, and a signer
+who agrees writes it again with `purlin:sign <feature> RULE-N --hold "<case>"`.
 
 ## proof_common (10)
 
@@ -23,9 +26,9 @@
 - `RULE-6` [high]: no later call showing the per-call root does not persist
 - `RULE-7` [high]: root/how-chosen not checked
 - `RULE-9` [high]: merged config / config.local.json not read
-- `RULE-11` [high]: only producer hook tested
+- `RULE-11` [high]: only producer hook exercised
 - `RULE-12` [medium]: no data file written not asserted
-- `RULE-14` [high]: spec/record input triggers not tested
+- `RULE-14` [high]: spec/record input triggers not exercised
 - `RULE-15` [medium]: behavioural half touches a proof file, not specs/
 
 ## mutation (9)
@@ -34,7 +37,7 @@
 - `RULE-5` [high]: only one feature is run, so nothing shows one run per feature over its own scope files
 - `RULE-7` [medium]: never asserts the reason names @stryker-mutator/core
 - `RULE-9` [high]: "counts missed for this one" is never exercised
-- `RULE-13` [medium]: find_report is tested one directory down, not two as the proof says
+- `RULE-13` [medium]: find_report is exercised one directory down, not two as the proof says
 - `RULE-18` [medium]: available False not asserted
 - `RULE-19` [medium]: one rule not two; score None not asserted
 - `RULE-20` [high]: unknown engine: no-import and the reason naming the engine are not checked
@@ -53,9 +56,9 @@
 
 ## scaffold (7)
 
-- `RULE-11` [high]: command writing approver list not asserted
+- `RULE-11` [high]: command writing signer list not asserted
 - `RULE-26` [medium]: hook-manager line to add not asserted
-- `RULE-29` [high]: root precedence chain partially tested
+- `RULE-29` [high]: root precedence chain partially exercised
 - `RULE-33` [medium]: dry-run accepts 0/1/3, nothing-applied unchecked
 - `RULE-36` [high]: typescript walk passes when npm/vitest missing
 - `RULE-37` [high]: ts/xunit pass when tools missing; jest/sql/shell not wired
@@ -65,7 +68,7 @@
 
 - `RULE-1` [high]: stress test body `or True`
 - `RULE-2` [high]: stress test asserts pass, opposite of proof; no two-constants python case
-- `RULE-8` [high]: PROOF-20 asserts only the result count, so the condition deciding the verdict is untested
+- `RULE-8` [high]: PROOF-20 asserts only the result count, so the condition deciding the result is untested
 - `RULE-16` [medium]: shell/C# result shape not checked
 - `RULE-21` [high]: .py .sh .js .ts extensions not in loop
 - `RULE-31` [medium]: js/ts/cs/sql bodies unchecked
@@ -83,7 +86,7 @@
 - `RULE-1` [medium]: --ci/--tag without --record not covered
 - `RULE-13` [high]: no record case with a failing proof → result fail
 - `RULE-18` [medium]: record still written is not checked
-- `RULE-19` [medium]: only node_modules skipped is tested
+- `RULE-19` [medium]: only node_modules skipped is exercised
 - `RULE-38` [medium]: double purlin_proof / one finish writing both entries untested
 
 ## specs (5)
@@ -97,8 +100,8 @@
 ## states (5)
 
 - `RULE-4` [high]: record at another commit and scope-tree match untested
-- `RULE-5` [high]: approved gate and ci-labelled record not exercised
-- `RULE-8` [high]: current approval with failing/absent record untested
+- `RULE-5` [high]: signed gate and ci-labelled record not exercised
+- `RULE-8` [high]: current signature with failing/absent record untested
 - `RULE-11` [high]: low-risk under minimum and medium not shown
 - `RULE-15` [high]: one feature only, so a double count cannot occur; needs two features proving the global anchor
 
@@ -107,17 +110,17 @@
 - `RULE-5` [high]: only 2 of 5 proof-text checks exercised
 - `RULE-6` [high]: only no_assertion of the test-body checks exercised
 - `RULE-9` [medium]: one record only; latest-of-several unproved
-- `RULE-20` [high]: only rule-text edit tested, not proof text or test body
+- `RULE-20` [high]: only rule-text edit exercised, not proof text or test body
 
-## approvals (3)
+## signatures (3)
 
 - `RULE-9` [medium]: proof says 16 fields, format and test have 15
-- `RULE-12` [high]: medium-risk never-auto-approved case missing
+- `RULE-12` [high]: medium-risk never-auto-signed case missing
 - `RULE-31` [high]: proof literal `is not on main yet`, test asserts `is not on origin/main yet`
 
 ## purlin_report (3)
 
-- `RULE-9` [medium]: solo leg never checks STRENGTH and RE-VERIFY absent
+- `RULE-9` [medium]: solo leg never checks STRENGTH and CODE CHANGED absent
 - `RULE-17` [high]: no case where the OS has a record and the notice is absent
 - `RULE-18` [high]: one-line cut and state pill not proved
 
@@ -143,10 +146,10 @@
 - `RULE-2` [high]: no assertion that the skill says changes land as a pull request
 - `RULE-3` [high]: never checks for "pull request comment"
 
-## skill_approve (2)
+## skill_sign (2)
 
 - `RULE-3` [medium]: → one line only
-- `RULE-5` [high]: nothing checks that the skill says the approval commit is signed
+- `RULE-5` [high]: nothing checks that the skill says the signature commit is signed
 
 ## skill_init (2)
 
@@ -160,7 +163,7 @@
 
 ## proofs (1)
 
-- `RULE-6` [high]: only pass-then-fail order tested
+- `RULE-6` [high]: only pass-then-fail order exercised
 
 ## skill_anchor (1)
 
@@ -184,7 +187,7 @@
 
 ## skill_review (1)
 
-- `RULE-3` [medium]: → one line only
+The spec was deleted.
 
 ## skill_spec (1)
 
@@ -202,6 +205,6 @@
 
 - `RULE-3` [medium]: → one line only
 
-## skill_verify (1)
+## skill_audit (1)
 
 - `RULE-3` [medium]: → one line only
