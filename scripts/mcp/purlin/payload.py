@@ -53,9 +53,11 @@ if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
 from config_engine import resolve_config
-from purlin import (PURLIN_VERSION, approvals as approvals_module, checks,
+from purlin import (PURLIN_VERSION, checks,
                     gate as gate_module, proofs as proofs_module,
-                    records as records_module, specs as specs_module, states)
+                    records as records_module,
+                    signatures as signatures_module,
+                    specs as specs_module, states)
 
 SCHEMA_VERSION = 4
 REPORT_DATA_PATH = os.path.join('.purlin', 'report-data.js')
@@ -88,8 +90,8 @@ def build_payload(project_root, generated_by='sync_status', config=None):
 
     runtime_proofs = proofs_module.load_proofs(project_root)
     all_records = records_module.load_records(project_root)
-    all_approvals = approvals_module.load_approvals(project_root, features)
-    all_holds = approvals_module.load_holds(project_root, features)
+    all_approvals = signatures_module.load_signatures(project_root, features)
+    all_holds = signatures_module.load_holds(project_root, features)
     head = records_module.head_sha(project_root)
 
     blob_cache = {}
@@ -276,8 +278,8 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
     proof_hash = specs_module.proof_text_hash(
         '\n'.join('%s %s' % (p['id'], p['text']) for p in proof_dicts))
     test_hash = _test_hash(project_root, proof_dicts, blob_cache)
-    test_hash_kind = approvals_module.test_hash_kind(proof_dicts)
-    design_hash = approvals_module.design_hash(
+    test_hash_kind = signatures_module.test_hash_kind(proof_dicts)
+    design_hash = signatures_module.design_hash(
         owner_info, meta.get('origin', specs_module.DEFAULT_ORIGIN))
     scope_key = owner
     if scope_key not in scope_cache:
@@ -360,7 +362,7 @@ def _test_hash(project_root, proof_dicts, blob_cache):
     Reading the file's blob id rather than one function's body is coarse on
     purpose: a test file is the unit version control tracks, and a hash over it
     stales an approval whenever the test that backs a rule changes, which is
-    the behaviour the approval is meant to have. `approvals.test_hash_kind`
+    the behaviour the approval is meant to have. `signatures.test_hash_kind`
     names what was read beside the hash, so an approval says so on its face.
     Which tests back each proof is `_backing_tests`'s answer, read from the
     records so it does not depend on the machine.
@@ -385,10 +387,10 @@ def _read_brief(project_root, owner_info, rule_id, rule_hash, proof_hash,
     was built from, so a brief for text that has since changed is simply not
     found: that is what keeps Reviewed honest.
     """
-    directory = approvals_module.approvals_dir(project_root, owner_info)
+    directory = signatures_module.signatures_dir(project_root, owner_info)
     if not directory:
         return None
-    triple = approvals_module.triple_hash(rule_hash, proof_hash, test_hash)
+    triple = signatures_module.triple_hash(rule_hash, proof_hash, test_hash)
     path = os.path.join(directory, '%s.%s.brief.json' % (rule_id, triple[:8]))
     try:
         with open(path, 'r', encoding='utf-8') as handle:

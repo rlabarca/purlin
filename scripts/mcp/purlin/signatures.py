@@ -1,51 +1,54 @@
-"""Read the approvals a person or CI committed.
+"""Read the signatures and the holds a person committed.
 
-One approval is one file, so two approvals never conflict:
+One signature is one file, so two signatures never conflict:
 
-    specs/<category>/<feature>.approvals/<RULE-N>.<hash8>.<approver-slug>.json
-    specs/<category>/<feature>.approvals/<RULE-N>.<hash8>.ci.json
+    specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json
 
-`hash8` is the first eight characters of the triple hash the approval binds,
-and the slug is the approver's email local part, lowercased, with every
-non-alphanumeric character replaced by `-`. A CI auto-approval takes `ci` in
-place of a slug.
+`hash8` is the first eight characters of the triple hash the signature binds,
+and the slug is the signer's email local part, lowercased, with every
+non-alphanumeric character replaced by `-`. Every file in the directory was
+written by a person: CI writes no signature, ever.
 
-The file, field by field in `references/formats/approval_format.md`:
+The file, field by field in `references/formats/signature_format.md`:
 
     {
-      "schema": "purlin-approval/1",
+      "schema": "purlin-signature/1",
       "feature": "login",
       "rule": "RULE-3",
       "triple": "<the first 16 characters of the triple hash>",
       "rule_hash": "<sha256 of the rule text>",
       "proof_hash": "<sha256 of the proof text>",
       "test_hash": "<sha256 of the test bodies>",
-      "test_hash_kind": "body",
+      "test_hash_kind": "file",
       "design_hash": null,
       "risk": "high",
-      "approver": "jane@acme.com",
+      "signer": "jane@acme.com",
+      "note": null,
       "timestamp": "2026-09-13T12:00:00Z",
-      "gate": "approved",
-      "brief": "specs/auth/login.approvals/RULE-3.1a2b3c4d.brief.json",
+      "gate": "signed",
+      "brief": ".purlin/briefs/login/RULE-3.1a2b3c4d.brief.json",
       "record": ".purlin/records/login/20260913T120000Z-abc1234-ci.json"
     }
 
-An approval is **current** when the three hashes it binds still equal the
+A signature is **current** when the three hashes it binds still equal the
 recomputed ones and the risk it names still matches the rule's. Anything else
-is Stale, and a person has to look. `design_hash` binds the pinned design
-files for a rule whose origin is `design`.
+is a signature stale, and a person has to look. `design_hash` binds the pinned
+design files for a rule whose origin is `design`.
 
-An approval **counts** when its commit is signed (`%G?` is `G`), its author
-email is on the approver list as of that commit, and that author differs from
-the author of the commit that last touched the test.
+A signature **counts** under the `signed` gate when the commit that added it
+is signed (`%G?` is `G`), its author email is on the signer list as of that
+commit, and that author differs from the author of the commit that last
+touched the test. Under `strong` a signature from anyone counts, because what
+it clears there is a question the machine could not settle.
 
 A **hold** is the opposite attestation, from a person who read the brief and
 found the test does not prove the proof as written:
 
-    specs/<category>/<feature>.approvals/<RULE-N>.<hash8>.<holder-slug>.hold.json
+    specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<holder-slug>.hold.json
 
 It binds the same hashes and carries the missing case as `reason`. While it is
-current, CI does not approve the rule and a CI approval for it does not stand.
+current the rule needs a person, and a signature for the same hashes outranks
+it.
 """
 
 import hashlib
@@ -59,29 +62,29 @@ _MCP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _MCP_DIR not in sys.path:
     sys.path.insert(0, _MCP_DIR)
 
-_APPROVAL_NAME_RE = re.compile(r'^(RULE-\d+)\.([0-9a-f]{8})\.([a-z0-9-]+)\.json$')
+SIGNATURE_NAME_RE = re.compile(r'^(RULE-\d+)\.([0-9a-f]{8})\.([a-z0-9-]+)\.json$')
 
-# The review brief sits in the same directory under the same first two parts,
-# so the name alone would read it as an approval by someone called `brief`.
+# A brief written under the same first two parts would read as a signature by
+# someone called `brief`, so the reader steps over that one slug.
 _BRIEF_SLUG = 'brief'
 
-# A hold carries a fourth part, so the approval pattern never reads one.
-_HOLD_NAME_RE = re.compile(
+# A hold carries a fourth part, so the signature pattern never reads one.
+HOLD_NAME_RE = re.compile(
     r'^(RULE-\d+)\.([0-9a-f]{8})\.([a-z0-9-]+)\.hold\.json$')
 
 # What the T of the triple was taken from, in the order one wins over another.
 TEST_HASH_KINDS = ('file', 'manual', 'none')
 
 
-def approver_slug(email):
-    """The slug an approval file takes for an email address."""
+def signer_slug(email):
+    """The slug a signature file takes for an email address."""
     local = str(email or '').split('@')[0].lower()
     slug = re.sub(r'[^a-z0-9]+', '-', local).strip('-')
     return slug or 'unknown'
 
 
 def triple_hash(rule_hash, proof_hash, test_hash):
-    """The one hash an approval binds: rule text, proof text and test body."""
+    """The one hash a signature binds: rule text, proof text and test body."""
     digest = hashlib.sha256()
     digest.update(('%s\n%s\n%s' % (rule_hash or '', proof_hash or '',
                                    test_hash or '')).encode('utf-8'))
@@ -89,11 +92,11 @@ def triple_hash(rule_hash, proof_hash, test_hash):
 
 
 def test_hash_kind(proofs):
-    """What the T of the triple was taken from, for the approval to record.
+    """What the T of the triple was taken from, for the signature to record.
 
     `file` is a test file git tracks, which is what a hash over the tests
     reads. `manual` is a proof with no test at all: the evidence is the
-    approver's note. `none` is a rule with nothing behind it yet.
+    signer's note. `none` is a rule with nothing behind it yet.
     """
     kinds = set()
     for proof in proofs or ():
@@ -111,7 +114,7 @@ def test_hash_kind(proofs):
 def design_hash(owner_info, origin):
     """The D of the triple: the design a `origin: design` rule rests on.
 
-    A design is a versioned file, so what binds the approval is the spec's
+    A design is a versioned file, so what binds the signature is the spec's
     `> Pinned:` hash of the exported files. A rule from any other origin binds
     no design and this is None.
     """
@@ -120,33 +123,32 @@ def design_hash(owner_info, origin):
     return (owner_info or {}).get('pinned') or None
 
 
-def approvals_dir(project_root, info):
-    """The `<feature>.approvals/` directory beside a spec."""
+def signatures_dir(project_root, info):
+    """The `<feature>.signatures/` directory beside a spec."""
     spec_path = info.get('spec_path', '')
     if not spec_path:
         return None
     base = os.path.join(project_root, os.path.dirname(spec_path))
-    return os.path.join(base, os.path.basename(spec_path)[:-3] + '.approvals')
+    return os.path.join(base, os.path.basename(spec_path)[:-3] + '.signatures')
 
 
-def load_approvals(project_root, features):
-    """`{(feature, rule_id): [approval, ...]}` for every spec.
+def load_signatures(project_root, features):
+    """`{(feature, rule_id): [signature, ...]}` for every spec.
 
-    Each approval dict carries the file's keys plus `path` (project-relative)
-    and `is_ci` (the file's slug was `ci`).
+    Each signature dict carries the file's keys plus `path`, project-relative.
     """
-    return _load_named(project_root, features, _APPROVAL_NAME_RE, _BRIEF_SLUG)
+    return _load_named(project_root, features, SIGNATURE_NAME_RE, _BRIEF_SLUG)
 
 
 def load_holds(project_root, features):
-    """`{(feature, rule_id): [hold, ...]}` for every spec, shaped as approvals."""
-    return _load_named(project_root, features, _HOLD_NAME_RE, None)
+    """`{(feature, rule_id): [hold, ...]}` for every spec, shaped the same way."""
+    return _load_named(project_root, features, HOLD_NAME_RE, None)
 
 
 def _load_named(project_root, features, name_re, skip_slug):
     found = {}
     for name, info in (features or {}).items():
-        directory = approvals_dir(project_root, info)
+        directory = signatures_dir(project_root, info)
         if not directory or not os.path.isdir(directory):
             continue
         for basename in sorted(os.listdir(directory)):
@@ -163,32 +165,31 @@ def _load_named(project_root, features, name_re, skip_slug):
                 continue
             data = dict(data)
             data['path'] = os.path.relpath(path, project_root).replace(os.sep, '/')
-            data['is_ci'] = m.group(3) == 'ci'
             data.setdefault('feature', name)
             data.setdefault('rule', m.group(1))
             found.setdefault((name, m.group(1)), []).append(data)
     return found
 
 
-def is_current(approval, rule_hash, proof_hash, test_hash, risk,
+def is_current(signature, rule_hash, proof_hash, test_hash, risk,
                design_hash=None):
-    """True when an approval still binds the text and the risk it was given for.
+    """True when a signature still binds the text and the risk it was given for.
 
     Every part of the triple is compared, so changing a rule, rewording a
-    proof or editing a test all stale the approval; the risk is compared too,
-    because raising a rule from low to high is a change in what approving it
+    proof or editing a test all stale the signature; the risk is compared too,
+    because raising a rule from low to high is a change in what signing it
     meant.
     """
-    if not approval:
+    if not signature:
         return False
-    if str(approval.get('risk', '')) != str(risk):
+    if str(signature.get('risk', '')) != str(risk):
         return False
     for key, value in (('rule_hash', rule_hash), ('proof_hash', proof_hash),
                        ('test_hash', test_hash)):
-        if approval.get(key) != value:
+        if signature.get(key) != value:
             return False
-    if approval.get('design_hash') or design_hash:
-        if approval.get('design_hash') != design_hash:
+    if signature.get('design_hash') or design_hash:
+        if signature.get('design_hash') != design_hash:
             return False
     return True
 
@@ -217,38 +218,41 @@ def commit_author(project_root, rel_path):
     return result.stdout.strip().lower()
 
 
-def counts(project_root, approval, approvers, test_paths=()):
-    """`(True, '')` when an approval counts, or `(False, reason)`.
+def counts(project_root, signature, signers, test_paths=(), gate='signed'):
+    """`(True, '')` when a signature counts under the gate, or `(False, reason)`.
 
-    Three conditions, each with its own reason so the status line can say
-    which one failed: the commit is signed, the author is on the approver
-    list, and the author is not the person who last touched the test.
-    A CI auto-approval is exempt from all three; what bounds it is the
-    auto-approval rule in `states.py`.
+    Whether the hashes still match is `is_current`; this answers who wrote the
+    file and how. Under `passed` and `strong` a signature from anyone counts,
+    because what it clears there is a question the machine could not settle.
+    Under `signed` three conditions hold, each with its own reason so the
+    status line can say which one failed: the signing commit is signed, its
+    author is on the signer list, and that author is not the person who last
+    touched the test. The fourth condition of the `signed` gate, that the
+    signing commit is on the protected branch, is `is_ancestor`.
     """
-    if not approval:
-        return False, 'no approval'
-    if approval.get('is_ci'):
-        return True, ''
-    path = approval.get('path')
+    if not signature:
+        return False, 'no signature'
+    path = signature.get('path')
     if not path:
-        return False, 'approval is not committed'
+        return False, 'the signature is not committed'
+    if gate != 'signed':
+        return True, ''
     if not commit_is_signed(project_root, path):
-        return False, 'the approval commit is not signed'
+        return False, 'the signing commit is not signed'
     author = commit_author(project_root, path)
-    if approvers and author not in approvers:
-        return False, 'the approval author is not on the approver list'
+    if signers and author not in signers:
+        return False, 'the signer is not on the list'
     for test_path in test_paths or ():
         if commit_author(project_root, test_path) == author:
-            return False, 'the approver last touched the test'
+            return False, 'the signer last touched the test'
     return True, ''
 
 
 def is_ancestor(project_root, rel_path, branch):
     """True when the commit that added a path is an ancestor of `branch`.
 
-    Under `approved` the gate checks this, so an approval that only exists on
-    a side branch does not let a change merge.
+    Under `signed` the gate checks this, so a signature that only exists on a
+    side branch does not let a change merge.
     """
     try:
         commit = subprocess.run(

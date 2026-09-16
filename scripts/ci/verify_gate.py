@@ -72,10 +72,10 @@ _REQUIRED_STATE = {
 def _package():
     """The reader package, or None when this is not a Purlin checkout."""
     try:
-        from purlin import (approvals, gate, payload, records, specs, states)
+        from purlin import (gate, payload, records, signatures, specs, states)
     except ImportError:
         return None
-    return {'approvals': approvals, 'gate': gate, 'payload': payload,
+    return {'signatures': signatures, 'gate': gate, 'payload': payload,
             'records': records, 'specs': specs, 'states': states}
 
 
@@ -169,7 +169,7 @@ def _collect(project_root, package, payload, gate, min_strength, approvers,
     all_approvals = None
     branch = None
     if gate == 'approved':
-        all_approvals = package['approvals'].load_approvals(
+        all_approvals = package['signatures'].load_signatures(
             project_root, package['specs'].scan_specs(project_root))
         branch = _protected_branch(project_root, package)
 
@@ -228,7 +228,7 @@ def _approval_gap(project_root, package, entry, all_approvals, approvers,
     risk = entry.get('risk') or 'low'
     if risk == 'low':
         return ''
-    approvals_module = package['approvals']
+    signatures_module = package['signatures']
     found = all_approvals.get((entry['feature'], entry['id'])) or []
     reasons = []
     for approval in found:
@@ -236,17 +236,17 @@ def _approval_gap(project_root, package, entry, all_approvals, approvers,
             reasons.append('the only approval is a CI auto-approval, which '
                            'does not count for %s risk' % risk)
             continue
-        if not approvals_module.is_current(
+        if not signatures_module.is_current(
                 approval, entry.get('rule_hash'), entry.get('proof_hash'),
                 entry.get('test_hash'), risk, entry.get('design_hash')):
             reasons.append('the approval is stale')
             continue
-        counted, reason = approvals_module.counts(
+        counted, reason = signatures_module.counts(
             project_root, approval, approvers, _test_paths(entry))
         if not counted:
             reasons.append(reason)
             continue
-        if branch and not approvals_module.is_ancestor(
+        if branch and not signatures_module.is_ancestor(
                 project_root, approval['path'], branch):
             reasons.append('the approval commit is not on %s yet' % branch)
             continue

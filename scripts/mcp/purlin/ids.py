@@ -136,11 +136,11 @@ def _count_ids(section, pattern):
 
 
 def renumber(project_root, spec_path, mapping, extra_paths=()):
-    """Rewrite ids across the spec, its test markers and its approvals.
+    """Rewrite ids across the spec, its test markers and its signatures.
 
     `mapping` is `{'RULE-9': 'RULE-14', 'PROOF-9': 'PROOF-14'}`. Every file
-    that names an old id is rewritten in one pass, and an approval file whose
-    name carries the old id is renamed with it: an approval that still points
+    that names an old id is rewritten in one pass, and a signature file whose
+    name carries the old id is renamed with it: a signature that still points
     at a number the spec no longer uses binds nothing.
 
     Returns the list of project-relative paths that changed.
@@ -150,7 +150,7 @@ def renumber(project_root, spec_path, mapping, extra_paths=()):
     changed = []
     targets = [spec_path]
     targets.extend(extra_paths or ())
-    targets.extend(_approval_paths(project_root, spec_path))
+    targets.extend(_signature_paths(project_root, spec_path))
 
     for rel_path in targets:
         full = os.path.join(project_root, rel_path)
@@ -171,7 +171,7 @@ def renumber(project_root, spec_path, mapping, extra_paths=()):
             continue
         changed.append(rel_path)
 
-    for rel_path in _approval_paths(project_root, spec_path):
+    for rel_path in _signature_paths(project_root, spec_path):
         basename = os.path.basename(rel_path)
         old_id = basename.split('.')[0]
         new_id = mapping.get(old_id)
@@ -194,10 +194,12 @@ def _apply(text, mapping):
     return text
 
 
-def _approval_paths(project_root, spec_path):
-    directory = os.path.join(
-        project_root, os.path.dirname(spec_path),
-        os.path.basename(spec_path)[:-3] + '.approvals')
+def _signature_paths(project_root, spec_path):
+    from purlin import signatures as signatures_module
+    directory = signatures_module.signatures_dir(
+        project_root, {'spec_path': spec_path})
+    if not directory:
+        return []
     if not os.path.isdir(directory):
         return []
     return [os.path.relpath(os.path.join(directory, name), project_root)

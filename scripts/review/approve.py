@@ -21,7 +21,7 @@ missing case as its reason. CI never approves a rule a current hold names, and
 a CI approval for it does not stand. A hold only ever withholds, so the holder
 need not be on the approver list; it is committed signed like an approval.
 
-`references/formats/approval_format.md` holds the file shape field by field.
+`references/formats/signature_format.md` holds the file shape field by field.
 The three hashes come from the payload, which is the one place they are
 computed, so an approval this script writes is current the moment it lands.
 
@@ -40,9 +40,11 @@ for _path in (_MCP_DIR, _HERE):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
-from purlin import (approvals as approvals_module,             # noqa: E402
-                    console as console_module, gate as gate_module,
-                    payload as payload_module, specs as specs_module)
+from purlin import (console as console_module,                 # noqa: E402
+                    gate as gate_module,
+                    payload as payload_module,
+                    signatures as signatures_module,
+                    specs as specs_module)
 
 SCHEMA = 'purlin-approval/1'
 HOLD_SCHEMA = 'purlin-hold/1'
@@ -105,7 +107,7 @@ def rule_proof_test_hashes(project_root, feature, rule, payload=None):
 
 def triple_for(entry):
     """The triple hash of one rule entry."""
-    return approvals_module.triple_hash(
+    return signatures_module.triple_hash(
         entry.get('rule_hash'), entry.get('proof_hash'), entry.get('test_hash'))
 
 
@@ -116,7 +118,7 @@ def triple_for(entry):
 def approval_path(project_root, feature, rule, triple, approver_slug):
     """Where the approval for one rule goes, beside the spec that holds it."""
     info = specs_module.scan_specs(project_root).get(feature)
-    directory = approvals_module.approvals_dir(project_root, info or {})
+    directory = signatures_module.signatures_dir(project_root, info or {})
     if not directory:
         return None
     return os.path.join(directory,
@@ -134,7 +136,7 @@ def write_approval(project_root, feature, rule, approver_email, brief_path,
     if entry is None:
         return None
     is_ci = str(approver_email).lower() == 'ci'
-    slug = 'ci' if is_ci else approvals_module.approver_slug(approver_email)
+    slug = 'ci' if is_ci else signatures_module.signer_slug(approver_email)
     triple = triple_for(entry)
     path = approval_path(project_root, feature, rule, triple, slug)
     if not path:
@@ -192,7 +194,7 @@ def write_hold(project_root, feature, rule, holder_email, reason, payload=None,
         return None
     triple = triple_for(entry)
     path = hold_path(project_root, feature, rule, triple,
-                     approvals_module.approver_slug(holder_email))
+                     signatures_module.signer_slug(holder_email))
     if not path:
         return None
     body = {
