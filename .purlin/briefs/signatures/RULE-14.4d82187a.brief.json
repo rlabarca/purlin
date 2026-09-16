@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "signatures",
-  "generated_at": "2026-09-16T22:26:06Z",
+  "generated_at": "2026-09-16T22:37:54Z",
   "layers": [
     "proof text",
     "test body",
@@ -23,7 +23,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/signatures/20260916T222539Z-73fdd7a-ci-linux.json",
+  "record": ".purlin/records/signatures/20260916T223726Z-73fdd7a-ci-windows.json",
   "risk": "high",
   "rule": "RULE-14",
   "rule_hash": "fcc8bef8d693480da81e9b3e2b6723cb9f7a69b93c8e8462bdbb0eafa77cdb75",
@@ -38,7 +38,7 @@
       "body": "def test_under_the_first_gate_it_writes_nothing_and_exits_two(\n            self, proved, capsys):\n        signing_key(proved.root)\n        code = sign_module.main(['login', 'RULE-1', '--project-root',\n                                 proved.root])\n        output = capsys.readouterr().out\n        assert code == 2\n        assert 'the gate is passed, which asks for no signature.' in output\n        assert 'purlin:init --gate strong' in output\n        assert proved.signatures() == []",
       "file": "dev/test_signatures.py",
       "findings": [],
-      "name": "test_under_the_first_gate_it_writes_nothing_and_exits_two",
+      "name": "test_a_failing_record_is_not_auto_approved",
       "proof": "PROOF-18",
       "reasons": []
     },
@@ -46,7 +46,7 @@
       "body": "def test_under_the_first_gate_it_writes_nothing_and_exits_two(\n            self, proved, capsys):\n        signing_key(proved.root)\n        code = sign_module.main(['login', 'RULE-1', '--project-root',\n                                 proved.root])\n        output = capsys.readouterr().out\n        assert code == 2\n        assert 'the gate is passed, which asks for no signature.' in output\n        assert 'purlin:init --gate strong' in output\n        assert proved.signatures() == []",
       "file": "dev/test_signatures.py",
       "findings": [],
-      "name": "test_a_failing_record_is_not_auto_approved",
+      "name": "test_under_the_first_gate_it_writes_nothing_and_exits_two",
       "proof": "PROOF-18",
       "reasons": []
     }

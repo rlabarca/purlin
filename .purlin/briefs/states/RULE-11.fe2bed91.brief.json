@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-16T22:26:11Z",
+  "generated_at": "2026-09-16T22:37:57Z",
   "layers": [
     "proof text",
     "test body",
@@ -25,7 +25,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/states/20260916T222539Z-73fdd7a-ci-linux.json",
+  "record": ".purlin/records/states/20260916T223727Z-73fdd7a-ci-windows.json",
   "risk": "high",
   "rule": "RULE-11",
   "rule_hash": "8edeb6ab7344a121acd755897c29fc52b4949a29840a04db9f0d3519a3eac0ec",
@@ -40,7 +40,7 @@
       "body": "def test_a_rule_that_did_not_pass_is_weak_for_that_one_reason(self):\n        made = Project(gate='strong')\n        try:\n            made.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'}],\n                        ci=True, strength=48)\n            cell = made.cell('RULE-2', 'strong')\n            assert cell['word'] == 'weak'\n            assert cell['reasons'] == ['not passed'], cell\n            assert cell['strength'] == 48, cell\n        finally:\n            made.close()",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_a_rule_that_did_not_pass_is_weak_for_that_one_reason",
+      "name": "test_the_state_order_puts_stale_first_and_approved_last",
       "proof": "PROOF-13",
       "reasons": []
     },
@@ -48,7 +48,7 @@
       "body": "def test_a_rule_that_did_not_pass_is_weak_for_that_one_reason(self):\n        made = Project(gate='strong')\n        try:\n            made.record([{'id': 'PROOF-1', 'rule': 'RULE-1', 'status': 'pass'}],\n                        ci=True, strength=48)\n            cell = made.cell('RULE-2', 'strong')\n            assert cell['word'] == 'weak'\n            assert cell['reasons'] == ['not passed'], cell\n            assert cell['strength'] == 48, cell\n        finally:\n            made.close()",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_the_state_order_puts_stale_first_and_approved_last",
+      "name": "test_a_rule_that_did_not_pass_is_weak_for_that_one_reason",
       "proof": "PROOF-13",
       "reasons": []
     }

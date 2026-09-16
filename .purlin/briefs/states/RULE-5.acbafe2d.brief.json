@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-16T22:26:10Z",
+  "generated_at": "2026-09-16T22:37:56Z",
   "layers": [
     "proof text",
     "test body",
@@ -34,7 +34,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/states/20260916T222539Z-73fdd7a-ci-linux.json",
+  "record": ".purlin/records/states/20260916T223727Z-73fdd7a-ci-windows.json",
   "risk": "high",
   "rule": "RULE-5",
   "rule_hash": "e2a4c218499aab4352c8d299a398743d142a1166ce651d7fab0b5621dbe014f6",
@@ -49,7 +49,7 @@
       "body": "def test_a_developer_record_does_not_count_under_strong(self):\n        made = Project(gate='strong')\n        try:\n            made.record([{'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}],\n                        runner='dev')\n            cell = made.cell('RULE-2', 'passed')\n            assert cell['word'] == 'not run'\n            assert cell['source'] == 'developer'\n            assert cell['counts'] is False\n            assert cell['reasons'] == [\n                'developer record does not count under strong'], cell\n        finally:\n            made.close()",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_a_developer_record_does_not_count_under_strong",
+      "name": "test_an_env_proof_needs_a_record_from_that_operating_system",
       "proof": "PROOF-6",
       "reasons": []
     },
@@ -57,7 +57,7 @@
       "body": "def test_a_developer_record_does_not_count_under_strong(self):\n        made = Project(gate='strong')\n        try:\n            made.record([{'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}],\n                        runner='dev')\n            cell = made.cell('RULE-2', 'passed')\n            assert cell['word'] == 'not run'\n            assert cell['source'] == 'developer'\n            assert cell['counts'] is False\n            assert cell['reasons'] == [\n                'developer record does not count under strong'], cell\n        finally:\n            made.close()",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_an_env_proof_needs_a_record_from_that_operating_system",
+      "name": "test_a_developer_record_does_not_count_under_strong",
       "proof": "PROOF-6",
       "reasons": []
     },
@@ -65,7 +65,7 @@
       "body": "def test_a_local_run_does_not_count_under_strong(self):\n        made = Project(gate='strong')\n        try:\n            made.proofs([_entry('PROOF-2', 'RULE-2')])\n            cell = made.cell('RULE-2', 'passed')\n            assert cell['word'] == 'not run'\n            assert cell['source'] == 'local'\n            assert cell['counts'] is False\n            assert cell['reasons'] == [\n                'local run does not count under strong'], cell\n        finally:\n            made.close()",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_a_local_run_does_not_count_under_strong",
+      "name": "test_reviewed_when_a_brief_matches_the_triple",
       "proof": "PROOF-7",
       "reasons": []
     },
@@ -73,7 +73,7 @@
       "body": "def test_a_local_run_does_not_count_under_strong(self):\n        made = Project(gate='strong')\n        try:\n            made.proofs([_entry('PROOF-2', 'RULE-2')])\n            cell = made.cell('RULE-2', 'passed')\n            assert cell['word'] == 'not run'\n            assert cell['source'] == 'local'\n            assert cell['counts'] is False\n            assert cell['reasons'] == [\n                'local run does not count under strong'], cell\n        finally:\n            made.close()",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_reviewed_when_a_brief_matches_the_triple",
+      "name": "test_a_local_run_does_not_count_under_strong",
       "proof": "PROOF-7",
       "reasons": []
     }

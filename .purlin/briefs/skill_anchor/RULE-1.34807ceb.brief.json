@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "skill_anchor",
-  "generated_at": "2026-09-16T22:26:06Z",
+  "generated_at": "2026-09-16T22:37:54Z",
   "layers": [
     "proof text",
     "test body",
@@ -22,7 +22,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/skill_anchor/20260916T222539Z-73fdd7a-ci-linux.json",
+  "record": ".purlin/records/skill_anchor/20260916T223726Z-73fdd7a-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-1",
   "rule_hash": "c58a7f959301984449920c6dd89c3d7d99f8abc0fffc1a12607aa5e883b8c423",

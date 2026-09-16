@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-16T22:26:12Z",
+  "generated_at": "2026-09-16T22:37:57Z",
   "layers": [
     "proof text",
     "test body",
@@ -30,7 +30,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/states/20260916T222539Z-73fdd7a-ci-linux.json",
+  "record": ".purlin/records/states/20260916T223727Z-73fdd7a-ci-windows.json",
   "risk": "high",
   "rule": "RULE-17",
   "rule_hash": "b37991d63053f00c7fd0905d31614d3e9dbc6619f80bd2f2af7b1bb37e5ee878",
@@ -45,7 +45,7 @@
       "body": "def test_a_current_hold_puts_the_rule_in_front_of_a_person(self):\n        made = self._signed_project()\n        try:\n            made.hold('RULE-2', 'no case for an expired token')\n            rule = made.rule('RULE-2')\n            assert rule['cells']['strong']['word'] == 'needs a person'\n            assert rule['cells']['strong']['reasons'] == [\n                'held by jane@acme.com: no case for an expired token'], rule\n            assert rule['cells']['signed']['word'] == 'held'\n            assert rule['flags']['held'] is True\n            assert rule['flags']['needs_person'] is False\n        finally:\n            made.close()",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_a_current_hold_puts_the_rule_in_front_of_a_person",
+      "name": "test_an_unchanged_payload_is_touched_rather_than_rewritten",
       "proof": "PROOF-20",
       "reasons": []
     },
@@ -53,7 +53,7 @@
       "body": "def test_a_current_hold_puts_the_rule_in_front_of_a_person(self):\n        made = self._signed_project()\n        try:\n            made.hold('RULE-2', 'no case for an expired token')\n            rule = made.rule('RULE-2')\n            assert rule['cells']['strong']['word'] == 'needs a person'\n            assert rule['cells']['strong']['reasons'] == [\n                'held by jane@acme.com: no case for an expired token'], rule\n            assert rule['cells']['signed']['word'] == 'held'\n            assert rule['flags']['held'] is True\n            assert rule['flags']['needs_person'] is False\n        finally:\n            made.close()",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_an_unchanged_payload_is_touched_rather_than_rewritten",
+      "name": "test_a_current_hold_puts_the_rule_in_front_of_a_person",
       "proof": "PROOF-20",
       "reasons": []
     },
@@ -61,7 +61,7 @@
       "body": "def test_a_hold_bound_to_other_hashes_does_nothing(self):\n        made = self._signed_project()\n        try:\n            made.hold('RULE-2', 'no case for an expired token',\n                      test_hash='0' * 64)\n            rule = made.rule('RULE-2')\n            assert rule['cells']['strong']['word'] == 'strong', rule\n            assert rule['flags']['held'] is False\n            assert not any('held by' in reason for reason\n                           in rule['cells']['strong']['reasons'])\n        finally:\n            made.close()",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_a_hold_bound_to_other_hashes_does_nothing",
+      "name": "test_one_row_per_feature_with_the_seven_state_columns",
       "proof": "PROOF-21",
       "reasons": []
     },
@@ -69,7 +69,7 @@
       "body": "def test_a_hold_bound_to_other_hashes_does_nothing(self):\n        made = self._signed_project()\n        try:\n            made.hold('RULE-2', 'no case for an expired token',\n                      test_hash='0' * 64)\n            rule = made.rule('RULE-2')\n            assert rule['cells']['strong']['word'] == 'strong', rule\n            assert rule['flags']['held'] is False\n            assert not any('held by' in reason for reason\n                           in rule['cells']['strong']['reasons'])\n        finally:\n            made.close()",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_one_row_per_feature_with_the_seven_state_columns",
+      "name": "test_a_hold_bound_to_other_hashes_does_nothing",
       "proof": "PROOF-21",
       "reasons": []
     }

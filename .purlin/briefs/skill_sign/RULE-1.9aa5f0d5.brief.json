@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "skill_sign",
-  "generated_at": "2026-09-16T22:26:07Z",
+  "generated_at": "2026-09-16T22:37:55Z",
   "layers": [
     "proof text",
     "test body",
@@ -22,7 +22,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/skill_sign/20260916T222539Z-73fdd7a-ci-linux.json",
+  "record": ".purlin/records/skill_sign/20260916T223727Z-73fdd7a-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-1",
   "rule_hash": "fcd620a6d029a14f5aff80ef9c532acd6bf68ce79cd358f9c82697bf8798fd70",

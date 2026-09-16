@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "signatures",
-  "generated_at": "2026-09-16T22:26:06Z",
+  "generated_at": "2026-09-16T22:37:54Z",
   "layers": [
     "proof text",
     "test body",
@@ -25,7 +25,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/signatures/20260916T222539Z-73fdd7a-ci-linux.json",
+  "record": ".purlin/records/signatures/20260916T223726Z-73fdd7a-ci-windows.json",
   "risk": "high",
   "rule": "RULE-18",
   "rule_hash": "79cf6fa0a25e1297ad78faa52bc36b1e9e1ec3f0644d5923e393b395aed7db74",

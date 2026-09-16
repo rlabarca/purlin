@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-16T22:26:13Z",
+  "generated_at": "2026-09-16T22:37:58Z",
   "layers": [
     "proof text",
     "test body",
@@ -25,7 +25,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/states/20260916T222539Z-73fdd7a-ci-linux.json",
+  "record": ".purlin/records/states/20260916T223727Z-73fdd7a-ci-windows.json",
   "risk": "high",
   "rule": "RULE-24",
   "rule_hash": "938624e6b9e5d5a46d8ec1ed06c73b69253c06b7c99198e87c8afb260c7dd03b",
@@ -40,7 +40,7 @@
       "body": "def test_the_gate_is_met_by_one_of_them_and_blocked_by_name(self):\n        made = _five_bucket_project()\n        try:\n            rules = [made.rule('RULE-%d' % n, 'ledger') for n in range(1, 6)]\n            assert [r['meets_gate'] for r in rules] == [\n                False, False, False, False, True]\n            assert [r['blocked_by'] for r in rules] == [\n                'spec', 'passed', 'strong', 'signed', None]\n        finally:\n            made.close()",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_the_gate_is_met_by_one_of_them_and_blocked_by_name",
+      "name": "test_a_review_entry_lists_its_reasons_and_joins_them",
       "proof": "PROOF-28",
       "reasons": []
     },
@@ -48,7 +48,7 @@
       "body": "def test_the_gate_is_met_by_one_of_them_and_blocked_by_name(self):\n        made = _five_bucket_project()\n        try:\n            rules = [made.rule('RULE-%d' % n, 'ledger') for n in range(1, 6)]\n            assert [r['meets_gate'] for r in rules] == [\n                False, False, False, False, True]\n            assert [r['blocked_by'] for r in rules] == [\n                'spec', 'passed', 'strong', 'signed', None]\n        finally:\n            made.close()",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_a_review_entry_lists_its_reasons_and_joins_them",
+      "name": "test_the_gate_is_met_by_one_of_them_and_blocked_by_name",
       "proof": "PROOF-28",
       "reasons": []
     }

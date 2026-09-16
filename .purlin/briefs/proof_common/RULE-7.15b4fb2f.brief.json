@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "proof_common",
-  "generated_at": "2026-09-16T22:25:48Z",
+  "generated_at": "2026-09-16T22:37:43Z",
   "layers": [
     "proof text",
     "test body",
@@ -22,7 +22,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/proof_common/20260916T222538Z-73fdd7a-ci-linux.json",
+  "record": ".purlin/records/proof_common/20260916T223725Z-73fdd7a-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-7",
   "rule_hash": "8fb65fffab21c8f84b3415e571e389ceeaa1a36809a322a5ba0589d59f9dbc3f",
@@ -34,18 +34,18 @@
   "test_strength": null,
   "tests": [
     {
-      "body": "def test_pytest(self, tmp_path):\n        root = _purlin_project(tmp_path)\n        (root / 'tests').mkdir()\n        (root / 'tests' / 'test_kept.py').write_text('# kept\\n',\n                                                     encoding='utf-8')\n        _write_proofs(root, 'feat', 'unit', [\n            _entry(proof_id='PROOF-2', test_file='tests/test_kept.py',\n                   test_name='kept')])\n        (root / 'tests' / 'test_feat.py').write_text(\n            'import pytest\\n\\n'\n            '@pytest.mark.proof(\"feat\", \"PROOF-10\", \"RULE-1\")\\n'\n            'def test_ten():\\n    assert True\\n\\n'\n            '@pytest.mark.proof(\"feat\", \"PROOF-1\", \"RULE-1\")\\n'\n            'def test_one():\\n    assert True\\n', encoding='utf-8')\n        _run_pytest(root)\n        ids = [e['id'] for e in _read_proofs(root, 'feat')['proofs']]\n        assert ids == ['PROOF-1', 'PROOF-10', 'PROOF-2']",
-      "file": "dev/test_multilang_proof_plugins.py",
-      "findings": [],
-      "name": "test_pytest",
-      "proof": "PROOF-7",
-      "reasons": []
-    },
-    {
       "body": null,
       "file": "dev/test_proof_plugins.sh",
       "findings": [],
       "name": "entries are written in ordinal order whatever the call order",
+      "proof": "PROOF-7",
+      "reasons": []
+    },
+    {
+      "body": "def test_pytest(self, tmp_path):\n        root = _purlin_project(tmp_path)\n        (root / 'tests').mkdir()\n        (root / 'tests' / 'test_kept.py').write_text('# kept\\n',\n                                                     encoding='utf-8')\n        _write_proofs(root, 'feat', 'unit', [\n            _entry(proof_id='PROOF-2', test_file='tests/test_kept.py',\n                   test_name='kept')])\n        (root / 'tests' / 'test_feat.py').write_text(\n            'import pytest\\n\\n'\n            '@pytest.mark.proof(\"feat\", \"PROOF-10\", \"RULE-1\")\\n'\n            'def test_ten():\\n    assert True\\n\\n'\n            '@pytest.mark.proof(\"feat\", \"PROOF-1\", \"RULE-1\")\\n'\n            'def test_one():\\n    assert True\\n', encoding='utf-8')\n        _run_pytest(root)\n        ids = [e['id'] for e in _read_proofs(root, 'feat')['proofs']]\n        assert ids == ['PROOF-1', 'PROOF-10', 'PROOF-2']",
+      "file": "dev/test_multilang_proof_plugins.py",
+      "findings": [],
+      "name": "test_pytest",
       "proof": "PROOF-7",
       "reasons": []
     }

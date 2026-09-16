@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "signatures",
-  "generated_at": "2026-09-16T22:26:06Z",
+  "generated_at": "2026-09-16T22:37:54Z",
   "layers": [
     "proof text",
     "test body",
@@ -24,7 +24,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/signatures/20260916T222539Z-73fdd7a-ci-linux.json",
+  "record": ".purlin/records/signatures/20260916T223726Z-73fdd7a-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-12",
   "rule_hash": "62d37d84e277cfb6219df4738d59da84783e545cbdbc8e804f2c5b71f2722ffc",
@@ -41,7 +41,7 @@
       "findings": [
         "logic_mirroring"
       ],
-      "name": "test_a_batch_signs_everything_signable",
+      "name": "test_low_risk_with_a_passing_record_and_enough_strength",
       "proof": "PROOF-15",
       "reasons": [
         "expected value computed by same function as SUT"
@@ -53,7 +53,7 @@
       "findings": [
         "logic_mirroring"
       ],
-      "name": "test_low_risk_with_a_passing_record_and_enough_strength",
+      "name": "test_a_batch_signs_everything_signable",
       "proof": "PROOF-15",
       "reasons": [
         "expected value computed by same function as SUT"

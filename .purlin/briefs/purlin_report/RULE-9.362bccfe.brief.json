@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "purlin_report",
-  "generated_at": "2026-09-16T22:25:49Z",
+  "generated_at": "2026-09-16T22:37:44Z",
   "layers": [
     "proof text",
     "test body",
@@ -24,7 +24,7 @@
       "tier": "e2e"
     }
   ],
-  "record": ".purlin/records/purlin_report/20260916T222538Z-73fdd7a-ci-linux.json",
+  "record": ".purlin/records/purlin_report/20260916T223725Z-73fdd7a-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-9",
   "rule_hash": "a4d607e756128657d4a9c88e985ca69a34f55d621aa45852536e097101ffcec5",
@@ -39,7 +39,7 @@
       "body": "def test_the_columns_scale_with_the_gate(browser, tmp_path):\n    \"\"\"A gate asks for what it asks for, and the board asks no more.\"\"\"\n    solo = open_board(browser, tmp_path / 'solo', payload_named('solo'))\n    assert head_labels(solo) == BASE_COLUMNS\n    assert solo.query_selector_all('table.grid') == []\n    solo.close()\n\n    team = open_board(browser, tmp_path / 'team', payload_named('team'))\n    assert head_labels(team) == BASE_COLUMNS + ['Strength', 'Strong']\n    team.close()\n\n    reg = open_board(browser, tmp_path / 'reg', payload_named('regulated'))\n    assert head_labels(reg) == BASE_COLUMNS + ['Strength', 'Strong', 'Signed']\n    assert 'Risk' not in head_labels(reg)\n    reg.close()",
       "file": "dev/test_purlin_report.py",
       "findings": [],
-      "name": "test_the_columns_scale_with_the_gate",
+      "name": "test_columns_appear_only_where_their_artifacts_do",
       "proof": "PROOF-9",
       "reasons": []
     },
@@ -47,7 +47,7 @@
       "body": "def test_the_columns_scale_with_the_gate(browser, tmp_path):\n    \"\"\"A gate asks for what it asks for, and the board asks no more.\"\"\"\n    solo = open_board(browser, tmp_path / 'solo', payload_named('solo'))\n    assert head_labels(solo) == BASE_COLUMNS\n    assert solo.query_selector_all('table.grid') == []\n    solo.close()\n\n    team = open_board(browser, tmp_path / 'team', payload_named('team'))\n    assert head_labels(team) == BASE_COLUMNS + ['Strength', 'Strong']\n    team.close()\n\n    reg = open_board(browser, tmp_path / 'reg', payload_named('regulated'))\n    assert head_labels(reg) == BASE_COLUMNS + ['Strength', 'Strong', 'Signed']\n    assert 'Risk' not in head_labels(reg)\n    reg.close()",
       "file": "dev/test_purlin_report.py",
       "findings": [],
-      "name": "test_columns_appear_only_where_their_artifacts_do",
+      "name": "test_the_columns_scale_with_the_gate",
       "proof": "PROOF-9",
       "reasons": []
     }
