@@ -19,13 +19,13 @@ the first few rows, then starts the walk.
 ```
 3 rules need a person
 
-  high     0 unsigned   0 stale   0 held   0 need a person
-  medium   1 unsigned   1 stale   0 held   1 needs a person
-  low      0 unsigned   0 stale   1 held   0 need a person
+  high     0 unsigned   0 stale   0 held   0 needs a person
+  medium   0 unsigned   1 stale   0 held   1 needs a person
+  low      0 unsigned   0 stale   1 held   0 needs a person
 
-  login             RULE-2   medium   stale      hashes changed after the signature
-  checkout_design   RULE-1   medium   unsigned   review not settled
-  login             RULE-3   low      held       held by sam@acme.com: the lock expiry is never read
+  login             RULE-2   medium   stale            hashes changed after the signature
+  checkout_design   RULE-1   medium   needs a person   review not settled
+  login             RULE-3   low      held             held by sam@acme.com: the lock expiry is never read
 ```
 
 A rule is on the list when the cell that blocks it is one only a person can answer:
