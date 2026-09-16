@@ -34,6 +34,7 @@
 - RULE-20: An anchor that names a source and carries no pin cannot be proposed: the run reports the missing pin and exits 2 [risk: medium] [origin: eng]
 - RULE-21: `--help` names `add`, `sync` and `propose`, and a call with no arguments exits 2 naming `--project-root` [risk: low] [origin: eng]
 - RULE-22: Every file the module writes lies under the project root it was given [risk: high] [origin: eng]
+- RULE-23: A sync keeps every `> Note:` line the local copy carried, in order, beside the tracking fields it rewrites, because a note is the consumer's own text [risk: low] [origin: eng]
 
 ## Proof
 
@@ -59,3 +60,4 @@
 - PROOF-20 (RULE-20): Write an anchor carrying a `> Source:` line and no `> Pinned:` line, run `propose` on it, and verify the result is an error whose text contains `no pin` and whose exit code is 2 @integration
 - PROOF-21 (RULE-21): Run the module with `--help` and verify exit 0 with `add`, `sync` and `propose` in the output; run it with no arguments at all and verify exit 2 with `--project-root` in the output @integration
 - PROOF-22 (RULE-22): Run `add` and then `sync` against a project directory, and verify the parent directory of that project still holds exactly the four entries it held before: the two bare repositories, the anchor checkout and the project @integration
+- PROOF-23 (RULE-23): Add an anchor, write the notes `run the setup script first` and `the pin moves on each release` under its tracking fields, advance the source and sync; verify the copy carries the new pin and both notes, each once and in that order @integration

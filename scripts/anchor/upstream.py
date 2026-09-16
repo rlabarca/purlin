@@ -204,12 +204,30 @@ def strip_tracking(content):
     return re.sub(r'\n{3,}', '\n\n', _TRACKING_RE.sub('', content or ''))
 
 
+_NOTE_RE = re.compile(r'^>[ \t]*Note:[ \t]*(.*)$', re.MULTILINE)
+
+
+def local_notes(project_root, name):
+    """The `> Note:` lines the local copy carries, in order.
+
+    A note is the consumer's own free text, so a sync keeps it beside the
+    tracking fields it rewrites.
+    """
+    try:
+        with open(anchor_path(project_root, name), 'r', encoding='utf-8') as handle:
+            return [text.strip() for text in _NOTE_RE.findall(handle.read())
+                    if text.strip()]
+    except (IOError, OSError, UnicodeDecodeError):
+        return []
+
+
 def compose_copy(content, source_line, pinned, note=None):
     """The local copy: the author's body with the tracking fields after its title."""
     body = strip_tracking(content or '').lstrip('\n')
     fields = ['> Source: %s' % source_line, '> Pinned: %s' % pinned]
-    if note:
-        fields.append('> Note: %s' % note)
+    for text in ([note] if isinstance(note, str) else list(note or ())):
+        if text and '> Note: %s' % text not in body:
+            fields.append('> Note: %s' % text)
     heading = _HEADING_RE.search(body)
     if not heading:
         return '\n'.join(fields) + '\n\n' + body
@@ -425,7 +443,8 @@ def _sync_one(project_root, name, info, cache, check):
     diff = rule_diff(info['rules'], parse_rules(name, content))
     source_line = '%s %s' % (info['source'], info.get('source_path') or '')
     _write(anchor_path(project_root, name),
-           compose_copy(content, source_line.strip(), head))
+           compose_copy(content, source_line.strip(), head,
+                        note=local_notes(project_root, name)))
     row.update({'status': 'synced', 'pinned': head, 'previous': pinned,
                 'rule_changes': diff, 'summary': format_rule_diff(diff),
                 'designs': copy_designs(project_root, name, checkout, content)})
