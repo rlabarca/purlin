@@ -101,7 +101,8 @@ default under `signed`. Every blocking finding on the proof text must be clear a
 body must carry no finding. Under `signed` with the default `sign_at: medium` the rule needs
 a current signature from someone on the signer list.
 
-**`high`.** The model review always runs, at every gate above `passed`. On top of the medium
+**`high`.** The model review runs whenever `ai_review_at` is `high` or `medium`, which is
+every derived default above `passed`. On top of the medium
 requirements, the rule needs at least one proof that names a rejection, an error or a
 boundary, so `happy_path_only` is blocking rather than advisory here.
 
@@ -117,6 +118,20 @@ pre-compare that names what differs. Judge what a person would see: the text, th
 states present. A proof for a design rule that names a selector, a class or a pixel value is
 `implementation_coupling`, and a new export of the mock stales the signatures of that anchor's
 rules.
+
+## Who is on the review list
+
+The review list holds the rules whose next step is a person, and nothing else. It exists at
+`strong` and above; under `passed` it is empty. A rule is on it when the lowest cell that
+blocks the gate is one of these:
+
+- the strong cell reads `needs a person`: a `@manual` proof, a model review that could not
+  settle, or a current hold;
+- the signed cell reads `unsigned`, `stale` or `held`.
+
+A rule blocked at its spec status or at its passed cell is not on the list: it is build work
+and it stays on the board. A weak rule is build work too. Rows are grouped by risk, `high`
+first, and within a group stale and held come before the rest.
 
 ## What the brief reports
 

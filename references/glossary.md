@@ -80,7 +80,7 @@ A rule's **bucket** is the one tile it is counted in: `untested`, `failing`, `pa
 | signature, hold, note | `references/formats/signature_format.md` |
 | the gate, which records count, the signer list | `references/hard_gates.md` |
 | drift, the four role views, config field ownership | `references/drift_criteria.md` |
-| the review list, the brief's layers, what the brief reports | `references/review_criteria.md` |
+| the free checks, the review list, the brief's layers, what the brief reports | `references/review_criteria.md` |
 | every command's syntax and one-liner | `references/purlin_commands.md` |
 | every commit message shape | `references/commit_conventions.md` |
 
