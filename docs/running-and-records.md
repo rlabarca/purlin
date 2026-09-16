@@ -27,16 +27,16 @@ that rule's passed cell: `passed`, `failed`, `no test` or `not run`. That direct
 and never committed, so two test runs never conflict with each other.
 
 A proof tagged `@env(windows)`, `@env(macos)` or `@env(linux)` runs only on that operating
-system. On a host that does not match, the run skips the test and lists the rule as
-`needs windows` rather than as a pass or a failure. Those three tags are the whole vocabulary;
-a proof with no `@env` is satisfied by a run on any operating system.
+system. On a host that does not match, the run skips the test and lists the proof as
+`login PROOF-4: needs windows` rather than as a pass or a failure, and the rule's passed cell
+reads `not run`. Those three tags are the whole vocabulary; a proof with no `@env` is satisfied
+by a run on any operating system.
 
 ## purlin:audit
 
 ```
 purlin:audit                    The tests, the breaks, and a record
 purlin:audit <feature> [...]    One feature, or several
-purlin:audit --commit           Commit the record under your own git identity
 purlin:audit --remote           Push, wait for CI, pull the records CI wrote
 purlin:audit --tag <name>       Pin this state as record/<name>
 ```
@@ -176,21 +176,25 @@ and one matrix job never overwrites another's observations.
 
 ### What is in it
 
+Seven fields are required, and every other one is optional:
+
 | Field | What it holds |
 |---|---|
+| `schema_version` | `2` for this format |
 | `feature` | the spec this run observed |
 | `commit` | the full sha of the commit the run observed |
-| `dirty` | whether the working tree had uncommitted changes |
 | `timestamp` | ISO 8601 UTC, matching the file name |
 | `runner` | `ci` or the developer's slug, matching the file name |
 | `gate` | the gate in force when the run happened: `passed`, `strong` or `signed` |
-| `environment` | the operating system, the machine's shape, the CI job and the engines used |
-| `rules` | per rule: its proofs, the tests that ran them, `pass`, `fail` or `missing`, and its test strength |
-| `attachments` | per capture a test wrote under `.purlin/runtime/attachments/`, its sha256 |
+| `proofs` | one entry per proof: its rule, `pass`, `fail` or `skip`, its tier, its `@env`, and the test that ran it |
+| `os` | the operating system of this matrix job, or null |
+| `test_strength` | the percentage of the deliberate breaks the tests caught, or null |
 | `scope_tree` | the git tree hash of the spec's `> Scope:` files |
-| `log` | the sha256 of the run's console log |
+| `environment` | the operating system, the machine's shape, the CI job and the engines used |
 
-Under the `passed` gate no breaks run, so every rule's test strength is `n/a`.
+Under the `passed` gate no breaks run, so `test_strength` is null on every record it writes.
+An audit also writes the detail it gathered on the way - `features`, `plugins`, `missing`,
+`log` and `dirty` - and no reader depends on any of it.
 
 `scope_tree` is what separates two kinds of change. The code changed and the rule, proof and
 test text did not: the signature stands and the passed cell reads `code changed` until CI runs

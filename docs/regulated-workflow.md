@@ -58,9 +58,10 @@ inside the hashes a signature binds.
 | The signing commit signed by someone on the signer list | `signers` in `.purlin/config.json` |
 | The signing commit an ancestor of the protected branch head | it merges by pull request like any change |
 
-`purlin:status` and the CI gate check each condition on its own line, so a rule that fails one
-of them says which one. The check prints three sections, `Not passed (n)`, `Weak (n)` and `Not
-signed (n)`, each rule under the cell that blocks it.
+The CI check, `scripts/ci/gate_check.py --check`, prints three sections, `Not passed (n)`,
+`Weak (n)` and `Not signed (n)`, with each rule under the cell that blocks it and the reason
+that cell carries. Every line it prints opens with `gate:`. `purlin:status` reads the same
+cells and ends with one `→ Next:` line naming the step that clears the most rules.
 
 ## The signer list
 

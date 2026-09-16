@@ -55,8 +55,9 @@ one job for each other operating system named. With no such tag there is one Lin
 The breaks turn on with this raise, locally and in CI, and `min_strength` becomes 70. Below it
 `purlin:audit` runs the tests alone and every record's strength reads `n/a`.
 
-**To `signed`.** On top of that: the signer emails, which init asks for and writes to `signers`
-in `.purlin/config.json`; the commit-signing setup printed once per signer; and a list of every
+**To `signed`.** On top of that: the signer emails, which init asks for with `Who may sign a
+rule?` and writes to `signers` in `.purlin/config.json`; the commit-signing setup printed once
+per signer; and a list of every
 rule that still carries no risk or origin tag, which `purlin:spec <feature>` tags in one pass.
 The derived defaults move too: `min_strength` becomes 80, the model review runs at medium risk
 as well as high, and `sign_at` becomes `medium`, so a low-risk rule's signed cell reads `not
@@ -132,7 +133,7 @@ mapped them is dropped and before the workflow matrix is rendered from them:
 | `config` | writes `.purlin/config.json` at the current shape and sets the gate |
 | `workflows` | replaces the retired workflows with `purlin.yml` |
 | `plugin-copies` | refreshes the proof plugin copies under `.purlin/plugins/` |
-| `records` | creates `.purlin/records/`, where the audit commits one file per run |
+| `records` | creates `.purlin/records/` for the records CI commits |
 
 An operating-system tag is rewritten only where the intended system is unambiguous; anything
 else is left for you to decide. The gate question is asked once, during the `config` migration,
@@ -140,9 +141,9 @@ with the same three answers a new project is asked:
 
 ```
 What must be true before CI lets a change merge?
-  passed  every rule has a passing tagged test
-  strong  CI's audit proves the tests worth trusting, at or above the minimum strength
-  signed  strong, plus a signature from a named person on every rule at or above sign_at
+  passed  every rule has a passing tagged test, from any source
+  strong  CI writes a record at this commit, at or above the minimum strength
+  signed  strong, plus a signature on every rule at or above medium risk
 ```
 
 The `config` migration also drops the settings that named the old gate values and the old list

@@ -54,27 +54,30 @@ columns are `Spec`, `Rules`, `Spec status`, `Tests` and `Last run`.
 
 | Column | What it reads |
 |---|---|
-| `Spec` | the feature name, with its category above the group |
+| `Spec` | the feature name, under the band that names its category |
 | `Rules` | how many rules the spec holds |
 | `Spec status` | `ready · drafted`, the two counts of what the spec says |
 | `Tests` | `passed · failing · no test`, each count in its own tone |
-| `Last run` | the source of the newest record, the operating system where the run was one job of a matrix, and its age |
+| `Last run` | one box per operating system, `linux`, `mac` and `win`, each in the tone of what that system's newest record found, then the newest record's source and age, or the source alone before any record exists |
 
 ![The Board at the strong gate: a Strong tile beside the first three, and the Strength and Strong columns](images/dashboard-team.png)
 
 At `strong` each rule gains a strong cell, so a `Strong` tile joins the three and two columns
 join the five: `Strength`, the test strength of the newest counting record, and `Strong`, `n of
-m` with a bar. The `Last run` column names the source of that record. Only a record CI wrote
-counts at this gate, so a record a person committed reads `developer` and the rules it covers
-read `not run`.
+m` with a bar. Only a record CI wrote counts at this gate, so a record a person committed reads
+`developer` in `Last run` and the rules it covers read `not run`.
 
 ![The Board at the signed gate: a Signed tile and a Stale flag card, and the Signed column](images/dashboard-regulated.png)
 
 At `signed` each rule gains a signed cell. A `Signed` tile joins the four, a `Stale` flag card
-sits beside the tiles, and a `Signed` column joins the seven, reading `n of m` with the stale
-count in the fail tone. The flag card is counted beside the tiles and never instead of them: a
-stale rule is still in whichever tile its cells put it. Warnings sit above the table: an
-uncommitted working tree, or a spec line the parser could not read as a rule.
+sits beside the tiles, and a `Signed` column joins the seven, reading `1 of 4 · 1 stale` with
+the stale count in the fail tone. The flag card is counted beside the tiles and never instead
+of them: a stale rule is still in whichever tile its cells put it. Warnings sit above the
+headline, one per line: an uncommitted working tree, or a spec line the parser could not read
+as a rule.
+
+Specs are grouped by category. The band above each group carries the category, how many specs
+are in it, and how many of their rules meet the gate as `n of m` with a bar.
 
 **A column exists only where its cell does.** A project at `passed` is not shown two empty
 evidence columns, and nothing has to be configured to get the rest: `purlin:init --gate strong`
@@ -96,7 +99,7 @@ nothing.
 | Filter | What it selects | Exists at |
 |---|---|---|
 | `Untested` | rules in the untested tile: drafted, or ready with no test or no current counting run | every gate |
-| `Failing` | rules whose counting run failed | every gate |
+| `Failing` | rules in the failing tile: a counting run failed | every gate |
 | `Weak` | rules whose strong cell reads `weak` | `strong` and above |
 | `Unsigned` | rules whose signed cell reads `unsigned` | `signed` |
 | `Stale or held` | rules flagged stale, held, or both | `signed` |
@@ -105,24 +108,28 @@ nothing.
 
 Pressing a rule opens it.
 
-![The rule screen for login RULE-1: the spec status, the passed, strong and signed cell rows, the proofs, the brief panel and the sign panel](images/dashboard-rule.png)
+![The rule screen for login RULE-1: the spec status and the three cell rows with the risk, origin, spec, last run and signature file, then the brief panel, the sign panel and the proofs](images/dashboard-rule.png)
 
-The screen opens with the spec status, `ready` or `drafted`, then one row per cell that exists.
-Each row carries the cell's word and the reasons it carries: `failing: tests/test_login.py`,
-`windows: no record yet`, `code changed since 9f8e7d6`, `strength 64% under 80%`, `manual
-proof`, `held by sam@acme.com: the lock expiry is never read`, `by jane@acme.com`. A cell with
-nothing to add carries no reason. Under the rows sit the Proofs, each with its tier and the
-tests that ran it.
+The screen opens with the feature, the rule id and the rule's text, then one panel of facts:
+the spec status, `ready` or `drafted`, then one row per cell that exists, then the risk at
+`strong` and above, the origin, the spec's path, the last run and the signature files that bind
+the rule. Each cell row carries the cell's word as a pill and the reasons it carries:
+`failing: tests/test_login.py`, `windows: no record yet`, `code changed since 9f8e7d6`,
+`strength 64% under 80%`, `manual proof`, `held by sam@acme.com: the lock expiry is never
+read`, `by jane@acme.com`. A cell with nothing to add carries no reason.
 
 At `strong` and above the **Brief panel** follows: the test strength beside `min_strength`, the
-free-check findings on the proof text and the test body, and what the model review observed,
-each in one sentence naming the proofs it concerns. The brief reports and recommends nothing,
-so what you read here is what was seen, not what to do about it.
+free-check findings on the proof text and the test body, what the model review observed, each
+in one sentence naming the proofs it concerns, whether the review settled the question, and a
+link to the brief file. The brief reports and recommends nothing, so what you read here is what
+was seen, not what to do about it.
 
-At `signed` the **Sign panel** is last. A rule that is not signed names the command that signs
-it, `purlin:sign <feature> <RULE-N>`, to run in Claude Code: a signature is a signed commit by
-someone on the signer list, so this page can only read one back once it is on the branch. A
-rule that is signed reads `Signed by <email>` instead.
+At `signed` the **Sign panel** comes next. A rule that is not signed is headed `To sign` and
+names the command, `purlin:sign <feature> <RULE-N>`, to run in Claude Code: a signature is a
+signed commit by someone on the signer list, so this page can only read one back once it is on
+the branch. A rule that is signed is headed `Signed` and names who signed it.
+
+The **Proofs** are last, each with its tier, its findings and the tests that ran it.
 
 `← Review list` at the top closes the rule and returns to the list it was opened from; from the
 board the same link reads `← Board`.
@@ -135,10 +142,11 @@ because below that there is no cell a person answers.
 ![The review list: the header, the risk summary, and three rows grouped by risk, each with its feature, rule id, text, risk tag, cell word and reasons](images/dashboard-review-list.png)
 
 The header says `<n> rules need a person`. Under it the risk summary prints one line per risk
-with the counts of unsigned, stale, held and needs-a-person rules in that risk. Then the rows,
-grouped by risk with high first, and within a group the stale and held rules before the rest.
-A row carries the feature, the rule id, the rule's text cut to one line, its risk tag, the word
-of the cell that blocks it, and that cell's reasons.
+that has rows, with the counts of unsigned, stale, held and needs-a-person rules in that risk;
+a risk with nothing on the list gets no line. Then the rows, grouped by risk with high first,
+and within a group the stale and held rules before the rest. A row carries the feature, the
+rule id, the rule's text cut to one line, its risk tag, the word of the cell that blocks it,
+and that cell's reasons.
 
 A rule is on the list when its blocking cell is the strong cell reading `needs a person`, or
 the signed cell reading `unsigned`, `stale` or `held`. Nothing else is: a rule with no test, a
@@ -162,11 +170,12 @@ Anyone with a repository URL can print the same rollup without cloning the repos
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/report/scan.py" --repo <url> [--ref <branch-or-tag>]
 ```
 
-It reads `specs/` and `.purlin/records/` by sparse fetch and prints one line per bucket, noting
-how many commits behind the newest record the ref is, then the review list, one line per rule
-with its risk, the word of its blocking cell and why it is listed. `--repo` also takes a local
-path. CI posts the same rollup as a pull request comment, so a reviewer reads one answer
-whether they are on the pull request, in a checkout, or looking at the page.
+It reads `specs/` and `.purlin/records/` by sparse fetch and prints the headline, one line per
+bucket, and the flags beside them, then how far the ref has moved past the newest record, then
+the review list, one line per rule with its risk, the rule, the cell that blocks it and why a
+person is needed. `--repo` also takes a local path. CI posts the same rollup as a pull request
+comment, so a reviewer reads one answer whether they are on the pull request, in a checkout, or
+looking at the page.
 
 ## Next
 
