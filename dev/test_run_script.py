@@ -54,11 +54,17 @@ def _project(tmp_path, frameworks='pytest', gate='passed'):
     return root
 
 
-def _spec(root, feature, proofs=(('PROOF-1', 'RULE-1', ''),), rules=1):
-    """A two-section spec. Each proof is `(id, rule, tag_suffix)`."""
+def _spec(root, feature, proofs=(('PROOF-1', 'RULE-1', ''),), rules=1,
+          risk=None):
+    """A two-section spec. Each proof is `(id, rule, tag_suffix)`.
+
+    `risk` tags every rule, which is what decides whether a brief is owed.
+    """
     lines = ['# %s' % feature, '', '> Scope: src/', '', '## Rules', '']
+    tag = ' [risk: %s]' % risk if risk else ''
     for index in range(1, rules + 1):
-        lines.append('- RULE-%d: the software does thing %d' % (index, index))
+        lines.append('- RULE-%d: the software does thing %d%s'
+                     % (index, index, tag))
     lines.extend(['', '## Proof', ''])
     for proof_id, rule_id, suffix in proofs:
         lines.append('- %s (%s): observe thing%s'
@@ -494,8 +500,10 @@ def _fake_briefs(monkeypatch, order, briefs):
         order.append('write_briefs')
         return list(briefs)
 
-    monkeypatch.setitem(sys.modules, 'brief',
-                        _FakeModule(write_briefs=write_briefs))
+    monkeypatch.setitem(sys.modules, 'brief', _FakeModule(
+        write_briefs=write_briefs,
+        rule_entry=lambda payload, feature, rule: {'risk': 'high'},
+        asks_for_a_review=lambda payload, entry: True))
 
     records = sys.modules['records']
     committed = records.commit_records
@@ -744,17 +752,25 @@ class TestRecordCommitsAndTags:
         written = '.purlin/briefs/feat/RULE-1.1a2b3c4d.brief.json'
         order = []
 
+        named = []
+
         def write_briefs(project_root, payload=None, rules=None, ai=False):
             order.append('write_briefs')
+            named.extend(rules or ())
             return [written]
 
-        monkeypatch.setitem(sys.modules, 'brief',
-                            _FakeModule(write_briefs=write_briefs))
+        monkeypatch.setitem(sys.modules, 'brief', _FakeModule(
+            write_briefs=write_briefs,
+            rule_entry=lambda payload, feature, rule: {'risk': 'high'},
+            asks_for_a_review=lambda payload, entry: True))
 
         root = _pytest_project(tmp_path)
-        _spec(root, 'feat')
+        _spec(root, 'feat', risk='high')
         purlin_run = _load_run_script()
-        assert purlin_run._ci_review(str(root)) == [written]
+        assert purlin_run._ci_review(str(root), [('feat', 'RULE-1')]) == [
+            written]
+        assert named == [('feat', 'RULE-1')], (
+            'the brief writer chose the rules instead of being handed them')
         assert order == ['write_briefs']
         assert '1 brief written.' in capsys.readouterr().out
 
@@ -766,6 +782,50 @@ class TestRecordCommitsAndTags:
         _code, calls = record_run(root, '--all')
         capsys.readouterr()
         assert calls['commit'] == []
+
+
+class TestTheBriefsACiRunCommits:
+    """The brief writer is handed the rules; it does not choose them.
+
+    Left to choose, it reads each rule's passed cell, and while the briefs
+    are being written the record this run wrote is still uncommitted: its
+    source is `local`, which `strong` and `signed` do not count. Every brief
+    would be skipped and the review list would carry rules with nothing for
+    anyone to read.
+    """
+
+    @pytest.mark.proof("run_script", "PROOF-67", "RULE-46")
+    def test_a_high_risk_rule_that_passed_gets_its_brief_in_the_commit(
+            self, tmp_path, record_run, capsys):
+        root = _pytest_project(tmp_path, gate='strong')
+        _spec(root, 'feat', risk='high')
+        _code, calls = record_run(root, '--all', '--ci')
+        output = capsys.readouterr().out
+
+        briefs = sorted(
+            path.name for path in
+            (root / '.purlin' / 'briefs' / 'feat').glob('*.brief.json'))
+        assert len(briefs) == 1, output
+        assert briefs[0].startswith('RULE-1.'), briefs
+        assert '1 brief written.' in output, output
+
+        paths, identity, _message = calls['commit'][0]
+        assert identity == 'ci'
+        assert paths == [os.path.join('.purlin', 'records', 'feat', 'r.json'),
+                         '.purlin/briefs/feat/%s' % briefs[0]]
+
+    @pytest.mark.proof("run_script", "PROOF-67", "RULE-46")
+    def test_a_rule_below_the_review_level_gets_no_brief(
+            self, tmp_path, record_run, capsys):
+        root = _pytest_project(tmp_path, gate='strong')
+        _spec(root, 'feat', risk='low')
+        _code, calls = record_run(root, '--all', '--ci')
+        output = capsys.readouterr().out
+
+        assert not (root / '.purlin' / 'briefs').exists(), output
+        assert '0 briefs written.' in output, output
+        paths, _identity, _message = calls['commit'][0]
+        assert paths == [os.path.join('.purlin', 'records', 'feat', 'r.json')]
 
 
 class TestTheGateDecidesTheBreaks:

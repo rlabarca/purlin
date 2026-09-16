@@ -912,7 +912,8 @@ def _record(project_root, args, features, selected, index, plugins, log,
     # The briefs are written before the commit, because the commit is what
     # carries them: a brief that exists only on the runner is evidence
     # nobody can read.
-    brief_paths = _ci_review(project_root) if args.ci else []
+    brief_paths = (_ci_review(project_root, _passed_here(written))
+                   if args.ci else [])
 
     if args.commit or args.ci:
         identity = 'ci' if args.ci else 'developer'
@@ -984,7 +985,27 @@ def _run_breaks(project_root, args, features, selected, index):
     return answer
 
 
-def _ci_review(project_root):
+def _passed_here(records):
+    """`[(feature, rule)]` whose every tagged test passed in this run.
+
+    Read off the records this run just built rather than off a rule's passed
+    cell. The cell cannot answer yet: the record is on disk and nobody has
+    committed it, so its source reads `local`, which counts under no gate
+    above `passed`. The run is the one thing that knows what it observed.
+    """
+    passed = []
+    for record in records or ():
+        for feature, entry in (record.get('features') or {}).items():
+            for rule_id, rule in (entry.get('rules') or {}).items():
+                if rule.get('result') != 'pass':
+                    continue
+                pair = (feature, rule_id)
+                if pair not in passed:
+                    passed.append(pair)
+    return sorted(passed)
+
+
+def _ci_review(project_root, passed_here=()):
     """The briefs this run wrote, as file paths. CI writes nothing else.
 
     The paths go back to the caller so the one commit that carries the record
@@ -992,16 +1013,28 @@ def _ci_review(project_root):
     reads it out of the branch rather than off the runner. No signature file
     is ever written here, by CI or by anyone else: a signature is a named
     person's attestation and a runner is nobody.
+
+    The rules are named rather than left to the brief writer to choose. Left
+    to choose, it reads each rule's passed cell, and at this point in the run
+    no cell can read `passed`: the record this run wrote is still uncommitted,
+    so its source is `local` and `strong` and `signed` count only `ci`. Every
+    brief would then be skipped, and the rules that need a person would reach
+    the review list with nothing for anyone to read.
     """
     try:
-        from brief import write_briefs
+        from brief import asks_for_a_review, rule_entry, write_briefs
     except ImportError:
         print('purlin: the brief writer is not available; no brief was '
               'written.')
         return []
     payload = payload_module.build_payload(project_root,
                                            generated_by='audit')
-    briefs = write_briefs(project_root, payload)
+    wanted = []
+    for feature, rule_id in passed_here or ():
+        entry = rule_entry(payload, feature, rule_id)
+        if entry is not None and asks_for_a_review(payload, entry):
+            wanted.append((feature, rule_id))
+    briefs = write_briefs(project_root, payload, rules=wanted)
     print('%d brief%s written.'
           % (len(briefs), '' if len(briefs) == 1 else 's'))
     return [path for path in briefs if path]
