@@ -54,10 +54,11 @@ is what the run could not finish, found and left, or left to a person.
    the list: risk, feature and rule id, state and why it is listed, high risk and Stale first
    (`records` RULE-25). The QA tool reads it from there. The list is the payload's review list,
    so it still holds approved rules until the review-list defect found on the dashboard is fixed.
-8. **The shell arm runs only `*.test.sh` at the project root.** Shell suites under `dev/`
-   prove nothing unless a root wrapper calls them (`init_e2e.test.sh`,
-   `proof_plugins.test.sh` exist); three proofs carry `@env(linux)` because the wrappers skip
-   on Windows. A consumer with shell tests under a subdirectory meets the same limit.
+8. **Fixed: the shell arm runs `*.test.sh` in subdirectories.** It walks the project, skipping
+   hidden directories, `node_modules`, `bin`, `obj` and `mutants/`, and runs each from the root in
+   sorted order (`run_script` RULE-44). This repository's own suites under `dev/` are named
+   `test_*.sh`, not `*.test.sh`, so the root wrappers and the three `@env(linux)` proofs stay as
+   they are; renaming the suites is a separate change.
 9. **Fixed: a Windows developer's record commit stages its records.** `scripts/run/records.py`
    `deleted_records` and `_commit_as_developer` now hand git `.purlin/records` with `/` on every
    operating system (`records` RULE-24).

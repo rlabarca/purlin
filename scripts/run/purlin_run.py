@@ -242,7 +242,9 @@ _MARKER_PATTERNS = {
         r'^--\s*@purlin\s+(\w+)\s+(PROOF-\d+)\b', re.MULTILINE)),
 }
 
-_SKIP_DIRS = ('node_modules', 'bin', 'obj')
+# `mutants/` is mutmut's copy of the project, tests included: running or
+# scanning it would run every test and read every marker twice.
+_SKIP_DIRS = ('node_modules', 'bin', 'obj', 'mutants')
 
 
 def _source_files(project_root, extensions):
@@ -252,6 +254,13 @@ def _source_files(project_root, extensions):
         for name in sorted(filenames):
             if name.endswith(extensions):
                 yield os.path.join(dirpath, name)
+
+
+def shell_tests(project_root):
+    """Every `*.test.sh` under the project, as sorted `/` relative paths."""
+    return sorted(
+        os.path.relpath(path, project_root).replace(os.sep, '/')
+        for path in _source_files(project_root, ('.test.sh',)))
 
 
 def scan_markers(project_root, framework):
@@ -428,11 +437,11 @@ def run_framework(project_root, framework, tier, config, log,
         return _run(['dotnet', 'test', '--logger', 'purlin'], project_root,
                     log, timeout)
     if framework == 'shell':
+        # Every `*.test.sh` in the project, the root and each subdirectory
+        # alike, run from the root by its relative path in sorted order.
         code = 0
-        for name in sorted(os.listdir(project_root)):
-            if not name.endswith('.test.sh'):
-                continue
-            code = _run([bash_command(), name], project_root, log, timeout)
+        for path in shell_tests(project_root):
+            code = _run([bash_command(), path], project_root, log, timeout)
             if code != 0:
                 break
         return code

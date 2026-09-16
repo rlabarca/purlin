@@ -68,7 +68,7 @@ suite is invoked:
 | jest | `npx jest --passWithNoTests`, with `--testPathPattern=unit` at `--tier unit` |
 | vitest | `npx vitest run --passWithNoTests` |
 | xunit | `dotnet test --logger purlin` |
-| shell | `bash <name>` for each `*.test.sh` at the project root, stopping at the first failure |
+| shell | `bash <path>` for each `*.test.sh` in the project, the root and every subdirectory but hidden ones, `node_modules`, `bin`, `obj` and `mutants/`, in sorted order from the root, stopping at the first failure |
 | sql | `bash sql_purlin.sh tests/<name>.sql` for each `.sql` file in `tests/`, against `sql_engine` |
 
 ## End-to-end (browser) proofs
