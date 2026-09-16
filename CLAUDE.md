@@ -30,7 +30,7 @@ file for the current number. **Bump it** when a required field is added or remov
 structure changes, or when an optional field is added, because a consumer may need to handle it.
 Do not bump for clarified wording, a new example or a typo.
 
-**When you change spec, proof, anchor, record or approval parsing or emission:**
+**When you change spec, proof, anchor, record or signature parsing or emission:**
 
 1. Make the code change, in `scripts/mcp/purlin/`, `scripts/proof/`, `scripts/review/`,
    `scripts/run/` or a skill definition.
@@ -45,14 +45,14 @@ Do not bump for clarified wording, a new example or a typo.
 | `spec_format.md` | The 2-section spec, parsed by `sync_status` |
 | `anchor_format.md` | The anchor, local and pinned, parsed by `sync_status` and `purlin:anchor sync` |
 | `proofs_format.md` | The proof files the test plugins emit, read by `sync_status` |
-| `record_format.md` | The record `purlin:verify` writes, read by `sync_status` and the gate check |
-| `approval_format.md` | The approval `purlin:approve` writes, read by `sync_status` and the gate check |
+| `record_format.md` | The record `purlin:audit` writes, read by `sync_status` and `scripts/ci/gate_check.py` |
+| `signature_format.md` | The signature and the hold `purlin:sign` writes, read by `sync_status` and `scripts/ci/gate_check.py` |
 
 ## Skill and reference deduplication
 
 **Never duplicate logic across skills or agent instructions.** When the same concept appears in
 two places, it lives in one reference file and both point at it. Skills that need the same
-behaviour call each other rather than reimplement it: `purlin:build` and `purlin:verify` delegate
+behaviour call each other rather than reimplement it: `purlin:build` and `purlin:audit` delegate
 test execution to `scripts/run/purlin_run.py`, which `purlin:test` owns.
 
 Before adding instructions to a skill, check whether another skill already has the logic, whether
@@ -62,11 +62,11 @@ concept and consolidate any duplicate in the same commit.
 
 | Reference | What it is the one home of |
 |-----------|---------------------------|
-| `references/glossary.md` | The word this project uses for each concept, and every retired spelling |
+| `references/glossary.md` | The word this project uses for each concept, the chain, and every retired spelling |
 | `references/purlin_commands.md` | Every command's syntax, its one purpose sentence, and what it writes |
-| `references/hard_gates.md` | The gate, which records count, the branch rules, the approver list |
-| `references/review_criteria.md` | The review list, the brief's layers, the four verdicts |
-| `references/spec_quality_guide.md` | Writing a rule, assigning a tier, diagnosing a failure |
+| `references/hard_gates.md` | The gate, the three levels, which records count, the branch rules, the signer list |
+| `references/review_criteria.md` | The free checks, the brief's layers, what the brief reports |
+| `references/spec_quality_guide.md` | Writing a rule, assigning a tier, reading the cell that blocks it |
 | `references/drift_criteria.md` | File classification, config field ownership, drift by role |
 | `references/commit_conventions.md` | Every commit message prefix and shape |
 | `references/supported_frameworks.md` | Test framework detection |
