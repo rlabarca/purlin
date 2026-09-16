@@ -9,6 +9,12 @@ repository access opens it from the run and nothing has to be provisioned.
 
 Both return False, or an empty path, with a printed reason when the run is not
 on a git host: a developer running an audit locally is not an error.
+
+Both also refuse a project that is not the workspace the job checked out. A
+test suite that drives an audit over a fixture project inherits the runner's
+whole environment, token and pull request included, so without that check
+every fixture posts its own table to the real pull request and overwrites the
+job's artifact directory. `is_the_workspace` is the one question both ask.
 """
 
 import json
@@ -29,13 +35,43 @@ ARTIFACT_NAME = 'purlin-dashboard'
 
 _GITHUB_API = 'https://api.github.com'
 
+# What each git host calls the directory the job checked the repository out
+# into. A run against any other directory is a run against something else.
+_WORKSPACE_VARIABLES = ('GITHUB_WORKSPACE', 'BUILD_SOURCESDIRECTORY')
+
+
+def is_the_workspace(project_root):
+    """True when `project_root` is the directory this job checked out.
+
+    Off a runner no workspace variable is set and every project is its own,
+    so the answer is True and nothing changes for a person running an audit
+    on their own machine. On a runner the answer is False for a temporary
+    fixture project, which is what stops a test suite from speaking for the
+    job it happens to be running inside.
+    """
+    for variable in _WORKSPACE_VARIABLES:
+        workspace = (os.environ.get(variable) or '').strip()
+        if not workspace:
+            continue
+        try:
+            return (os.path.realpath(project_root)
+                    == os.path.realpath(workspace))
+        except (OSError, ValueError):
+            return False
+    return True
+
 
 def post_pr_comment(project_root, text):
     """Post `text` as a comment on the pull request this run belongs to.
 
     True when the comment was posted. False, with a printed reason, when the
-    run is not a pull request, the token is missing, or the git host refused.
+    project is not the job's workspace, the run is not a pull request, the
+    token is missing, or the git host refused.
     """
+    if not is_the_workspace(project_root):
+        print('%s is not the workspace this job checked out, so no comment '
+              'was posted.' % project_root)
+        return False
     host = _host()
     if host == 'azure':
         return _post_azure(text)
@@ -130,10 +166,16 @@ def publish_dir(project_root):
     purlin-dashboard` on Azure DevOps. Off a runner neither variable is set
     and the dashboard goes to `.purlin/runtime/report` in the project, where
     nothing uploads it and it is read from disk.
+
+    A project that is not the job's workspace goes to its own project
+    directory too, whatever the runner's variables say. A fixture project
+    that wrote to the runner's directory would replace the job's own page and
+    logs with its own, and the artifact the job uploads would describe a
+    temporary project nobody has.
     """
     for variable in ('RUNNER_TEMP', 'AGENT_TEMPDIRECTORY'):
         temp = os.environ.get(variable)
-        if temp:
+        if temp and is_the_workspace(project_root):
             # The workflow names this directory with a forward slash, and the
             # upload step has to read the directory the run wrote to. On a
             # Windows runner the variable holds a backslash path, so joining
