@@ -17,7 +17,7 @@
 - RULE-2: Each gate answer derives its own settings, and the three pairs are `passed` no minimum and never, `strong` 70 and high, `signed` 80 and medium [risk: high] [origin: eng]
 - RULE-3: `--gate` answers the question without asking it, and a later run with no flag keeps the gate the config already names [risk: medium] [origin: eng]
 - RULE-4: An answer that is not one of the three gates is read as `passed` and the fallback is printed, so a typo lowers what CI enforces loudly rather than raising it silently [risk: high] [origin: eng]
-- RULE-5: The config init writes carries exactly `ai_review_at`, `ci`, `gate`, `min_strength`, `mutation_engine`, `sql_engine`, `test_framework` and `version`, and no key this release stopped reading; `templates/config.json` carries the same eight keys [risk: medium] [origin: eng]
+- RULE-5: The config init writes carries exactly `ai_review_at`, `ci`, `gate`, `min_strength`, `mutation_engine`, `sql_engine`, `test_framework` and `version`, plus `signers` under `signed`, and no key this release stopped reading; `templates/config.json` carries the same eight keys [risk: medium] [origin: eng]
 - RULE-6: A tree with nothing to detect is asked which framework its tests use, that answer is the one installed, and a name this release ships no plugin for is reported and read as `shell` [risk: medium] [origin: eng]
 - RULE-7: The framework detected in the tree gets its proof plugin copied into `.purlin/plugins/` byte for byte, under the file name the framework registry gives it [risk: high] [origin: eng]
 - RULE-8: The test runner's own configuration is written for pytest, jest and vitest, naming that framework's plugin, and a configuration the project wrote itself is kept rather than replaced [risk: high] [origin: eng]
