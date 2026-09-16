@@ -42,14 +42,7 @@ EXCLUDED = (
 # Paths a later phase of dev/plans/three-levels.md still rewrites, grouped by
 # the lane that owns them. A lane deletes its entries in the commit that
 # rewrites the files; the tuple is empty at closeout.
-PENDING_REWRITE = (
-
-    # lane 6A: docs rewrites
-    "docs/dashboard.md", "docs/regulated-workflow.md", "docs/review-and-approval.md",
-    "docs/review-and-signing.md", "docs/running-and-records.md", "docs/team-workflow.md",
-    "docs/getting-started.md", "docs/raising-the-gate-and-upgrading.md",
-    "docs/working-together.md",
-)
+PENDING_REWRITE = ()
 
 # Phase 7 deletes every signature directory of the old layout; until then the
 # files inside carry the old words.

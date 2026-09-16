@@ -1,6 +1,6 @@
 {
   "version": "0.10.0",
-  "gate": "approved",
+  "gate": "signed",
   "ai_review_at": "medium",
   "min_strength": 80,
   "mutation_engine": "auto",
@@ -9,7 +9,7 @@
   "test_framework": "pytest,shell",
   "digest": "auto",
   "pre_push": "off",
-  "approvers": [
+  "signers": [
     "rich.labarca@gmail.com"
   ]
 }
