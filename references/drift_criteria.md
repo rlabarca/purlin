@@ -13,17 +13,17 @@ The tool classifies each changed file in this order. The first match wins.
 | Order | Category | Match |
 |-------|----------|-------|
 | 1 | CHANGED_SPECS | The path starts with `specs/` and ends with `.md` |
-| 2 | CHANGED_DESIGNS | The path starts with `designs/` |
-| 3 | TESTS_ADDED | The path matches a test pattern, below |
+| 2 | CHANGED_DESIGNS | The path holds `designs/` anywhere in it |
+| 3 | TESTS_CHANGED | The path matches a test pattern, below |
 | 4 | CHANGED_BEHAVIOR | The path is in some spec's `> Scope:`, exactly or by prefix |
 | 5 | NO_IMPACT | The path matches a documentation or config pattern and is not in a behavioural directory |
 | 6 | NEW_BEHAVIOR | Everything else: code with no spec behind it |
 
-**Test patterns.** The path contains any of `test_`, `_test.`, `.test.`, `tests/`.
+**Test patterns.** The path contains any of `test_`, `_test.`, `.test.`, `tests/`, `dev/test_`.
 
 **No-impact patterns.** `docs/`, `assets/`, `templates/`, `references/`, `.gitignore`,
-`LICENSE`, `README.md`, `RELEASE_NOTES.md`, `.mcp.json`, `settings.json`, and any `.md` file
-outside a behavioural directory.
+`LICENSE`, `CLAUDE.md`, `README.md`, `RELEASE_NOTES.md`, `.mcp.json`, `settings.json`, and any
+`.md` file outside a behavioural directory.
 
 **Behavioural directories**, excluded from that `.md` catch-all because what they hold decides
 what the agent does: `skills/`, `agents/`, `.claude/agents/`. A file there that no spec scopes
@@ -48,12 +48,13 @@ The category is where the skill starts. The diff decides what it means.
 A file the tool calls CHANGED_BEHAVIOR may be structural, and a config file may be operational.
 Read the diff before you report.
 
-## Behavioural gap
+## Rules with nothing behind them
 
-A feature whose files changed and whose rules have no passing test has nothing standing behind
-the change. The tool precomputes this: each CHANGED_BEHAVIOR entry carries `behavioral_gap`,
-true when the spec has rules and no rule's passed cell is met. The top-level `drift_flags` array
-lists every such feature, and the skill surfaces those first.
+A feature whose files changed and whose rules are not met has nothing standing behind the
+change. The tool precomputes this per feature in `rule_details`: `met` is how many of the
+feature's rules meet the gate, `total_rules` is how many there are, and `unproved` lists the
+rules whose spec status is `drafted`, which have no proof at all. The skill surfaces a feature
+whose `met` is below its `total_rules` first.
 
 ## Broken scope
 
@@ -65,8 +66,9 @@ sides; if it was deleted on purpose, `purlin:spec` updates the spec.
 
 ## Rules behind the change
 
-For every spec with changed behaviour files, the tool returns `rule_details`: the rule list,
-each rule's cells, the changed files, and the counts. The skill reads the diff against those
+For every spec with changed behaviour files, the tool returns `rule_details`: `spec_path`,
+`changed_files`, `total_rules`, `met`, `unproved`, and one entry per own rule carrying
+`rule_id`, `description`, `bucket`, `risk` and `origin`. The skill reads the diff against those
 rule descriptions and sorts each rule into one of four:
 
 - **Covered**: the rule describes behaviour that did not change, or changed compatibly.
@@ -74,7 +76,7 @@ rule descriptions and sorts each rule into one of four:
 - **No test**: the rule has no passing test, whatever changed.
 - **Missing**: the diff shows behaviour no rule describes.
 
-The cells in `rule_details` describe the rule before this change was measured. A feature
+The `bucket` in `rule_details` describes the rule before this change was measured. A feature
 reading "6 of 6 strong" after behavioural code changed still needs a look: those records were
 taken against the old behaviour.
 
@@ -99,12 +101,12 @@ Each view is a filter over the same data, not a different computation.
 
 | Role | What it reports | Signal |
 |------|-----------------|--------|
-| `pm` | Criteria with no rule carrying them, rules tagged `origin: pm` whose text changed, rules an engineer added, pins behind | `unproved`, which is a rule whose spec status is `drafted` |
-| `design` | Design files that changed, and rules tagged `origin: design` whose signed cell went `stale` because a mock was re-exported | `design.design_rules_stale` |
-| `qa` | Signatures gone stale, how long the review list is, how many rules need a person, rules whose every proof asserts a success path | `qa.signatures_stale`, `qa.review_list_size`, `qa.needs_person` |
-| `eng` | Files touched and the rules behind them, rules with no test, risk or origin tags the gate requires and the spec lacks, pins behind, rules whose passed cell reads `code changed` | `eng.code_changed` |
+| `pm` | Criteria with no rule carrying them, rules tagged `origin: pm` whose text changed, rules an engineer added, pins behind | `criteria_without_rules`, `pm_rules_changed`, `engineer_added_rules`, `pins_behind` |
+| `design` | Design files that changed, and rules tagged `origin: design` whose signed cell reads `stale` because a mock was re-exported | `designs_changed`, `design_rules_stale` |
+| `qa` | Signatures gone stale, how long the review list is, which rules need a person, rules whose every proof asserts a success path | `signatures_stale`, `review_list_size`, `needs_person`, `rules_without_a_negative_case` |
+| `eng` | Files touched and the rules behind them, rules with no test, risk or origin tags the gate requires and the spec lacks, pins behind, rules whose passed cell reads `code changed` | `files_touched`, `rules_affected`, `tests_missing`, `tags_missing`, `pins_behind`, `code_changed` |
 
-`eng.code_changed` appears in the `eng` view as information and never in the `qa` view: only the
+`code_changed` appears in the `eng` view as information and never in the `qa` view: only the
 code changed, the signature stands, and CI clears it on the next run.
 
 The `qa` view exists at `strong` and above. Under `passed` there is no review list, no strength
@@ -119,13 +121,14 @@ and no signature, so `purlin:drift qa` says the gate is `passed` and names what
 |-------|-----------|---------|---------|
 | `version` | `purlin:init` | The dashboard header | From the `VERSION` file |
 | `gate` | `purlin:init`, `purlin:init --gate` | `sync_status`, `scripts/ci/gate_check.py`, every skill that names a next step | `passed` |
-| `min_strength` | `purlin:init` | `purlin:audit`, `scripts/ci/gate_check.py` | Unused, 70 or 80, from the gate |
-| `signers` | By pull request, hand-edited | `scripts/review/sign.py`, `sync_status`, `scripts/ci/gate_check.py` | Not set; required under `signed` |
+| `min_strength` | `purlin:init` | `purlin:audit`, `scripts/ci/gate_check.py` | `null` under `passed`, 70 under `strong`, 80 under `signed` |
+| `signers` | `purlin:init --gate signed`, then by pull request | `scripts/review/sign.py`, `sync_status`, `scripts/ci/gate_check.py` | Not set; required under `signed` |
 | `ai_review_at` | `purlin:init` | `purlin:audit`, which writes the briefs | never, high or medium, from the gate |
-| `sign_at` | `purlin:init` | `sync_status`, `scripts/review/sign.py`, `scripts/ci/gate_check.py` | Not set below `signed`; `medium` under `signed` |
+| `sign_at` | By pull request, hand-edited | `sync_status`, `scripts/ci/gate_check.py` | Not written; `medium` derived under `signed` |
 | `test_framework` | `purlin:init` | `scripts/run/purlin_run.py` | `auto` |
 | `mutation_engine` | `purlin:init` | `scripts/run/purlin_run.py` | Not set; test strength reads `n/a` without one |
-| `git_host` | `purlin:init`, from the remote URL | `purlin:audit --remote`, `purlin:init --ci` | Detected |
+| `ci` | `purlin:init`, from the remote URL | `purlin:audit --remote`, `purlin:init --ci` | Detected: `github` or `azure` |
+| `pre_push` | `purlin:init` | The pre-push hook | `off`; the only other value is `on` |
 | `sql_engine` | `purlin:init` | The SQL proof plugin | Not set |
 
 `purlin:init` is the only command that writes config unprompted. Every other command reads. A

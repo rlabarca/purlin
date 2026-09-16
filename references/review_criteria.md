@@ -137,16 +137,17 @@ first, and within a group stale and held come before the rest.
 
 The brief reports. It recommends nothing, and it never names a next action. Four things:
 
-- **The strength, beside the minimum.** `71% against a minimum of 80%`, or `n/a` when no break
-  engine ran.
+- **The strength, beside the minimum.** `Test strength: 71 percent (minimum 80)`, or
+  `Test strength: n/a (minimum 80)` when no break engine ran.
 - **The findings**, by the names above: the ones on the proof text, then the ones on the test
   body, each in one sentence naming the proofs it concerns.
 - **The observations.** What the model review saw the test observe, against what the proof
   names, one sentence each. The model is asked to state what it saw and to say when it cannot
   tell. It is never asked what to do.
-- **Whether it settled.** `settled` is true when the model could tell, false when it could
-  not, and absent when no model review ran. An unsettled review makes the strong cell read
-  `needs a person`.
+- **Whether it settled.** `Settled: yes` when the model could tell, `no` when it could not,
+  and `not answered` when no model review ran. Anything but `yes` makes the strong cell read
+  `needs a person`, and so does an observation: a review that settled and still observed
+  something puts each observation sentence in the strong cell's reasons.
 
 A `@manual` proof has no test, so no free check on a test body runs and no model review is
 asked for. Its strong cell reads `needs a person` and its brief says so.

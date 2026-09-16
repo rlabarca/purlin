@@ -43,8 +43,6 @@ EXCLUDED = (
 # the lane that owns them. A lane deletes its entries in the commit that
 # rewrites the files; the tuple is empty at closeout.
 PENDING_REWRITE = (
-    # lane 1B: signatures
-    "references/formats/signature_format.md",
     # lane 3: init and update
     "scripts/init/scaffold.py", "scripts/init/update.py", "templates/config.json",
     "dev/test_init_scaffold.py", "dev/test_init_update.py", "dev/test_init_e2e.sh",

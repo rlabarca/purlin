@@ -63,7 +63,7 @@ For one rule, top to bottom. Each row is a cell; the gate decides how many rows 
 |-------|----------|-------------------------|
 | spec | the proof text clears the blocking free checks | `drafted`, `ready` |
 | passed | every proof has a passing test from a counting source, and a CI pass is current | `passed`, `failed`, `no test`, `not run`, `code changed` |
-| strong | passed from `ci`, the strength at or above `min_strength`, no finding, the model review settled where risk asks, no hold | `strong`, `weak`, `needs a person` |
+| strong | passed from `ci`, the strength at or above `min_strength`, no finding, and where risk asks a brief for the current triple that observed nothing and settled, no hold | `strong`, `weak`, `needs a person` |
 | signed | a counting signature for the current hashes, when risk is at or above `sign_at` | `signed`, `unsigned`, `stale`, `held`, `not required` |
 
 A rule's **bucket** is the one tile it is counted in: `untested`, `failing`, `passed`, `strong`,
