@@ -11,7 +11,8 @@ by naming the next step, computed from the cells it found.
 
 Three commands carry the three evidence levels: `purlin:test` runs level 1, `purlin:audit` runs
 level 2 and writes the record, and `purlin:sign` is level 3. `references/hard_gates.md` says
-which levels a project asks for.
+which levels a project asks for. CI runs the same `purlin:audit` with `--ci`, which also writes
+the briefs; you never pass `--ci` by hand.
 
 ## Core
 
@@ -57,7 +58,6 @@ Purlin
   Proving
   ──────
   purlin:audit [feature ...]      Tests, breaks, and a record
-  purlin:audit --ci               The CI run: the record and the briefs
   purlin:audit --remote           Push, wait for CI, pull the records it wrote
   purlin:audit --tag <name>       Pin this state as record/<name>
   purlin:sign                     Walk the review list one brief at a time

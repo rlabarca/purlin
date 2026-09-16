@@ -239,7 +239,7 @@ first three, under `signed` all four.
 | passed | `code changed` | A CI pass exists but the code moved since. | Nothing. CI clears it on the next run. |
 | strong | `weak`, `strength N% under M%` | The tests did not notice when the behaviour was broken. | Add the case that tells the correct behaviour from the broken one. `purlin:build`, then `purlin:audit`. |
 | strong | `weak`, with a finding name | A free check fired on the proof text or on the test body. `references/review_criteria.md` names each. | Rewrite the proof text, or the test body, whichever the finding concerns. |
-| strong | `needs a person` | The proof is `@manual`, the model review could not settle, or a person holds the rule. The reason says which. | `purlin:sign` and answer the brief. |
+| strong | `needs a person` | The proof is `@manual`, no brief exists for the current hashes, the model review could not settle, the model observed something, or a person holds the rule. The reason says which. | `purlin:sign` and answer the brief. A signature for the current hashes clears it. |
 | signed | `unsigned` | No signature file for the current hashes, and the risk is at or above `sign_at`. | `purlin:sign <feature> RULE-N` as a signed commit from someone on the signer list. |
 | signed | `stale` | The rule text, the proof text or the test body changed after the signature. | Read what changed, then sign again or fix what broke. |
 | signed | `held` | A person committed a hold naming the missing case. | Add the case, then sign. A signature for the current hashes outranks the hold. |

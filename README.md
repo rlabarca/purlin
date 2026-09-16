@@ -93,7 +93,7 @@ purlin:audit
 ```
 
 The audit runs the tests, breaks the code on purpose to measure how much the tests catch, writes
-`.purlin/records/login/<timestamp>-<commit7>-developer.json`, commits it, and prints the test
+`.purlin/records/login/<timestamp>-<commit7>-<runner>.json`, commits it, and prints the test
 strength. Then push.
 
 Every command ends by naming the next step, computed from the cells it found.

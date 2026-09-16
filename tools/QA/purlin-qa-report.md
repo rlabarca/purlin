@@ -43,10 +43,14 @@ into the process table. Hand it to `gh auth login` or to a credential helper ins
 
 ## Step 2: read the rollup
 
-`scan.py` prints the project name, its gate, the count of features and rules, how many rules sit
-in each bucket, and how many commits the branch has moved past the newest record. A rule sits in
-exactly one bucket, `untested`, `failing`, `passed`, `strong` or `signed`, and two flags are
-counted beside them, `stale` and `held`. Read three things off the rollup:
+`scan.py` prints the project name, its gate, `<met> of <rules> rules meet the gate <gate>`, the
+count of features and rules, how many rules sit in each bucket one line at a time, and the
+newest record with a line reading
+`N commits behind the latest record.`, which is how many commits the branch has moved past the
+newest record. A rule sits in exactly one bucket: `untested`, `failing` and `passed` at every
+gate, `strong` from the `strong` gate up, `signed` at `signed`. Three flags are counted beside
+the buckets and never instead of them, and each prints only when it stands: signatures stale,
+rules held, rules that need a person. Read three things off the rollup:
 
 - **Stale and held rules.** A signature goes stale when the rule, its proof or its test changed
   after it was written; a hold is a person saying the test does not prove the proof. A person has
@@ -62,9 +66,11 @@ section: the rest of this skill has nothing to report at that gate.
 ## Step 3: print the review list
 
 Work from the review list `scan.py` printed; it is already ordered by risk, `high` first, then
-`medium`, then `low`, and inside each group stale and held first. Keep that order. For every
-entry give the feature, the rule id, the risk, the blocking cell's word and its reasons, then
-one of the four answers a person gives:
+`medium`, then `low`, and inside each group stale and held first, then by feature and rule
+number. Keep that order. Each line carries the risk, the feature, the rule id, the blocking
+cell's word and the `why` tokens, which are the closed set `unsigned`, `stale`, `held`,
+`needs a person` and `manual`. For every entry give those, then one of the four answers a person
+gives:
 
 - **`sign`**: the test proves the proof. It becomes `purlin:sign <feature> RULE-N` in a checkout.
 - **`add a case`**: the test is right as far as it goes and a case is missing, usually the
