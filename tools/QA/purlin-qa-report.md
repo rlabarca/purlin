@@ -45,7 +45,8 @@ into the process table. Hand it to `gh auth login` or to a credential helper ins
 
 `scan.py` prints the project name, its gate, the count of features and rules, how many rules
 sit in each of the seven states, and how many commits the branch has moved past the newest
-record. Read three things off it:
+record. After that it prints the review list, one line per rule: the risk, the feature and rule
+id, the state, and why the rule is on the list. Read three things off the rollup:
 
 - **Stale rules.** The rule, its proof or its test changed after it was approved. A person has
   to look at every one.
@@ -56,8 +57,8 @@ record. Read three things off it:
 
 ## Step 3: print the review list
 
-Order the report by risk, `high` first, then `medium`, then `low`, and inside each by state,
-Stale first. For every entry give the feature, the rule id, the risk, why it is on the list,
+Work from the review list `scan.py` printed; it is already ordered by risk, `high` first, then
+`medium`, then `low`, and inside each Stale first. Keep that order. For every entry give the feature, the rule id, the risk, why it is on the list,
 and one of the four verdicts a review ends with:
 
 - **`ready`**: every check is clear and the test proves what the proof text claims.

@@ -7,7 +7,9 @@ QA and a PM want the rollup without a checkout and without a build. This
 fetches `specs/` and `.purlin/records/` alone, reads them with the same
 package every other surface reads, and prints the seven-state rollup and how
 far the working branch has moved past the newest record. CI prints the same
-text as a pull request comment, so one rollup is read everywhere.
+text as a pull request comment, so one rollup is read everywhere. The review
+list follows, one line per rule, so a reader without a checkout can work it:
+the risk, the rule, its state, and why it is on the list.
 
 Nothing is written outside the temporary directory, and the directory is
 removed before the command returns.
@@ -31,6 +33,9 @@ from purlin import console as console_module                  # noqa: E402
 # Only these two trees are fetched. A repository's code is not read here.
 SPARSE = ('specs', '.purlin')
 RECORDS_DIR = '.purlin/records'
+# The order a person reads the review list in.
+RISK_ORDER = ('high', 'medium', 'low')
+
 # How much history is fetched. Enough to count the commits since the newest
 # record on any branch anyone reviews; a deeper count says so instead.
 DEPTH = 200
@@ -133,6 +138,38 @@ def rollup_text(project_root, payload):
     return '\n'.join(lines)
 
 
+def review_list_text(payload):
+    """The review list, one line per rule: risk, rule, state and reasons.
+
+    High risk first, then medium, then low; inside a level a Stale rule first,
+    then by feature and rule number.
+    """
+    states_by_rule = {}
+    for feature in payload.get('features') or ():
+        for rule in feature.get('rules') or ():
+            if rule.get('feature') == feature.get('name'):
+                states_by_rule[(rule['feature'], rule['id'])] = rule.get('state')
+    entries = []
+    for item in payload.get('review_list') or ():
+        owner = item.get('owner') or item.get('feature')
+        state = states_by_rule.get((owner, item.get('rule'))) or 'unknown'
+        risk = item.get('risk') or 'low'
+        number = str(item.get('rule') or '').rpartition('-')[2]
+        entries.append((RISK_ORDER.index(risk) if risk in RISK_ORDER else 3,
+                        state != 'Stale', owner or '',
+                        int(number) if number.isdigit() else 0,
+                        '  %-6s  %s %s  %s  %s' % (
+                            risk, owner, item.get('rule'), state,
+                            item.get('reason') or '; '.join(
+                                item.get('reasons') or ()))))
+    if not entries:
+        return 'Review list: no rule needs a person.'
+    lines = ['Review list: %d rule%s.'
+             % (len(entries), '' if len(entries) == 1 else 's')]
+    lines.extend(line.rstrip() for *_key, line in sorted(entries))
+    return '\n'.join(lines)
+
+
 def scan(url, ref=None):
     """Fetch, read and render one repository's rollup as text."""
     into = tempfile.mkdtemp(prefix='purlin-scan-')
@@ -140,7 +177,7 @@ def scan(url, ref=None):
         fetch(url, ref, into)
         from purlin import payload as payload_module
         payload = payload_module.build_payload(into, generated_by='scan')
-        return rollup_text(into, payload)
+        return rollup_text(into, payload) + '\n\n' + review_list_text(payload)
     finally:
         shutil.rmtree(into, ignore_errors=True)
 

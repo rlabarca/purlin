@@ -131,7 +131,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/report/scan.py" --repo <url> [--ref <bran
 ```
 
 It reads `specs/` and `.purlin/records/` by sparse fetch and prints the seven-state rollup,
-noting how many commits behind the latest record the ref is. `--repo` also takes a local path.
+noting how many commits behind the latest record the ref is, then the review list, one line per
+rule with its risk, its state and why it is listed. `--repo` also takes a local path.
 CI posts the same rollup as a pull request comment, so a reviewer reads one answer whether they
 are on the pull request, in a checkout, or looking at the page.
 

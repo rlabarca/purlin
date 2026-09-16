@@ -50,8 +50,10 @@ is what the run could not finish, found and left, or left to a person.
    different sha on each fresh setup, so `specs/_anchors/security_no_dangerous_patterns.md`'s
    pin (`379a046`) reads as behind on every other machine. The script now fixes the commit
    dates; confirm the sha is stable across two fresh setups, or pin after each setup.
-7. **`scan.py` prints counts only**, so the QA tool in Claude Desktop cannot produce a
-   per-rule review list from it; it reports an empty list plus the Drafted count.
+7. **Fixed: `scan.py` prints the review list.** After the rollup it prints one line per rule on
+   the list: risk, feature and rule id, state and why it is listed, high risk and Stale first
+   (`records` RULE-25). The QA tool reads it from there. The list is the payload's review list,
+   so it still holds approved rules until the review-list defect found on the dashboard is fixed.
 8. **The shell arm runs only `*.test.sh` at the project root.** Shell suites under `dev/`
    prove nothing unless a root wrapper calls them (`init_e2e.test.sh`,
    `proof_plugins.test.sh` exist); three proofs carry `@env(linux)` because the wrappers skip
