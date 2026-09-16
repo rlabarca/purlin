@@ -32,7 +32,7 @@ stateDiagram-v2
     Ready --> Passed: a tagged test passes from a counting source
     Passed --> Strong: CI's audit measures the tests and nothing blocks
     Strong --> Signed: a person signs the rule, proof and test hashes
-    Signed --> Stale: the rule, proof, test or risk text changed
+    Signed --> Stale: the rule, proof or test text changed, or the risk was re-tagged
     Stale --> Signed: a person reads the brief and signs again
     Passed --> Changed: only the code under the spec's scope changed
     Changed --> Passed: CI runs again
