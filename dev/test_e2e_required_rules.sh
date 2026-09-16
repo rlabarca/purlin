@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # End to end: a feature counts its own rules, the rules it requires and the
-# rules of every global anchor, and each one reaches its own state.
+# rules of every global anchor, and every one of them reaches its own cell.
 #
 # A real temp git repository, the real package, the real status table. Exits
 # non-zero on the first failed check and says what it wanted.
@@ -34,7 +34,7 @@ mkdir -p "$TMPDIR_E2E/.purlin" "$TMPDIR_E2E/specs/schema" \
          "$TMPDIR_E2E/specs/_anchors" "$TMPDIR_E2E/specs/auth" \
          "$TMPDIR_E2E/src/auth"
 
-echo '{"gate":"tested","test_framework":"shell","project_name":"e2e"}' \
+echo '{"gate":"passed","test_framework":"shell","project_name":"e2e"}' \
   > "$TMPDIR_E2E/.purlin/config.json"
 echo '.purlin/runtime/' > "$TMPDIR_E2E/.gitignore"
 
@@ -113,8 +113,12 @@ def own(rule_id):
     return [r for r in rules if r['id'] == rule_id and r['label'] == 'own'][0]
 
 
-def count(state):
-    return len([r for r in rules if r['state'] == state])
+def spec(status):
+    return len([r for r in rules if r['spec'] == status])
+
+
+def count(word):
+    return len([r for r in rules if r['cells']['passed']['word'] == word])
 
 
 exec(sys.argv[3])
@@ -162,23 +166,25 @@ check "the tags are stripped from the text" "Valid credentials return 200 with a
 
 # ── phase C: nothing proved yet ───────────────────────────────────────
 echo "  --- phase C: with no test run ---"
-check "every rule is Proof ready" "5" "$(query "print(count('Proof ready'))")"
-check "the feature's lowest state is Proof ready" "Proof ready" \
-  "$(query "print(feature['rollup']['lowest_state'])")"
+check "every rule's spec status is ready" "5" "$(query "print(spec('ready'))")"
+check "every rule's passed cell reads no test" "5" \
+  "$(query "print(count('no test'))")"
+check "the feature counts five untested rules" "5" \
+  "$(query "print(feature['rollup']['untested'])")"
 
 # ── phase D: partial, then complete ───────────────────────────────────
 echo "  --- phase D: the feature's own tests run ---"
 write_proofs login PROOF-1:RULE-1 PROOF-2:RULE-2
-check "two rules are Tested" "2" "$(query "print(count('Tested'))")"
-check "the lowest state is still Proof ready" "Proof ready" \
-  "$(query "print(feature['rollup']['lowest_state'])")"
+check "two rules passed" "2" "$(query "print(count('passed'))")"
+check "three rules are still untested" "3" \
+  "$(query "print(feature['rollup']['untested'])")"
 
 echo "  --- phase E: the required and global tests run too ---"
 write_proofs api_conventions PROOF-1:RULE-1 PROOF-2:RULE-2
 write_proofs security_no_eval PROOF-1:RULE-1
-check "all five rules are Tested" "5" "$(query "print(count('Tested'))")"
-check "the lowest state is Tested" "Tested" \
-  "$(query "print(feature['rollup']['lowest_state'])")"
+check "all five rules passed" "5" "$(query "print(count('passed'))")"
+check "all five meet the gate" "5" \
+  "$(query "print(feature['rollup']['met'])")"
 
 # ── phase F: the status table ─────────────────────────────────────────
 echo "  --- phase F: the table ---"
@@ -190,7 +196,8 @@ print(status.sync_status('$TMPDIR_E2E'))
 ")"
 
 for wanted in 'login' 'api_conventions (anchor)' 'security_no_eval (anchor)' \
-              'Lowest state' 'Tested 5'; do
+              '5 ready · 0 drafted' '5 passed · 0 failing · 0 no test' \
+              '5 of 5 rules meet the gate passed'; do
   if printf '%s' "$STATUS" | grep -qF -- "$wanted"; then
     echo "    ok: the table shows '$wanted'"
   else
