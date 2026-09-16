@@ -670,17 +670,9 @@ def _existing_config(root):
 
 
 def signing_setup():
-    """The one-time commit-signing setup, from the module that owns signing.
-
-    The fallback reaches the module under the name it carried before this
-    release renamed it, so a plugin copy that predates the rename still
-    prints the setup rather than failing here.
-    """
-    try:
-        import sign as module                                  # noqa: PLC0415
-    except ImportError:
-        import approve as module        # noqa: PLC0415        # retired
-    return module.SIGNING_SETUP
+    """The one-time commit-signing setup, from the module that owns signing."""
+    import sign as sign_module                                 # noqa: PLC0415
+    return sign_module.SIGNING_SETUP
 
 
 def print_signed(root, signers):

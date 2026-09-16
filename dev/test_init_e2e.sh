@@ -211,11 +211,12 @@ spec_file() {  # dir feature scope
 # Feature: $2
 
 > Scope: $3
-> Description: One rule, tagged high risk so the signed gate needs a person.
+> Description: One rule, tagged medium risk: the machine settles it at strong,
+>   and the signed gate asks a person because sign_at is medium.
 
 ## Rules
 
-- RULE-1: \`greet(name)\` returns \`Hello, <name>!\` [risk: high] [origin: eng]
+- RULE-1: \`greet(name)\` returns \`Hello, <name>!\` [risk: medium] [origin: eng]
 
 ## Proof
 
@@ -279,7 +280,7 @@ gate_walk() {  # dir language
 
   set_signers "$dir" jane@acme.com
   commit_all "$dir" "name the signers"
-  expect_exit "$language: signed refuses a high-risk rule with no signature" 1 \
+  expect_exit "$language: signed refuses a rule at sign_at with no signature" 1 \
     python3 "$GATE" --check --project-root "$dir"
 
   signing_key "$dir" jane@acme.com
