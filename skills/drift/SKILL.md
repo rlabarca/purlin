@@ -20,7 +20,7 @@ purlin:drift                    The view for your role, inferred from what you t
 purlin:drift eng                Files touched, tests missing, tags missing, pins, code changed
 purlin:drift pm                 Criteria, pm-owned rules, rules engineers added, pins
 purlin:drift design             Mocks changed, design rules gone stale
-purlin:drift qa                 Signatures stale, how long the review list is, missing cases
+purlin:drift qa                 Signatures stale, the review list's length, rules needing a person
 purlin:drift --since <N>        The last N commits instead of since the last record
 purlin:drift --since <date>     Since a date, YYYY-MM-DD
 ```
@@ -106,8 +106,8 @@ drift design: 2 things to look at
 drift qa: review list is 12 rules (3 high, 6 medium, 3 low)
 
   login RULE-3               signature stale: the rule text changed after it
-  billing RULE-2             unsigned
-  export RULE-1              needs a person: every proof asserts a success path
+  billing RULE-2             needs a person: the model review did not settle
+  export RULE-1              no negative case: every proof asserts a success path
 ```
 
 ## Step 4: what drift never does

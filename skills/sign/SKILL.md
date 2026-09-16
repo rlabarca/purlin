@@ -5,8 +5,8 @@ description: Walk the review list, or sign a rule, a feature or a batch as a sig
 
 Attest that a rule, its proof and its test belong together. The attestation is a file, and the
 commit that adds it is signed, so who signed what and when is in git history. With no argument
-this skill finds the review list and walks it one brief at a time; with a feature or a rule it
-goes straight there.
+this skill walks the review list one brief at a time; with a feature or a rule it goes straight
+there.
 
 **Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
 is relative to the plugin root; see `references/purlin_commands.md#path-resolution`.
@@ -31,11 +31,11 @@ login rule 3". A narrowing argument never adds a rule the full walk would skip.
 
 | Gate | What this skill does |
 |------|----------------------|
-| `passed` | Says the gate is `passed`, names what `purlin:init --gate strong` would add — the breaks, test strength, the review list and the brief — and stops without writing anything |
-| `strong` | The walk, `--note` and `--hold` work. A bare signature says a signature is required only under `signed`, then writes it anyway when you ask |
+| `passed` | Prints that the gate asks for no signature, names what `purlin:init --gate strong` adds — the test strength, the free checks on the test body, the model review and the review list — and stops without writing anything |
+| `strong` | The walk, `--note` and `--hold` work. A bare signature says a signature is required only under the gate `signed`, then writes it anyway |
 | `signed` | Every form works, and every rule whose risk is at or above `sign_at` needs a signature before it meets the gate |
 
-## Step 1: get the list
+## Step 1: the list, and the brief behind each rule
 
 ```
 sync_status()
@@ -45,34 +45,30 @@ sync_status()
 stale and the held before the rest. A rule reaches it when its `strong` cell reads `needs a
 person`, or its `signed` cell reads `unsigned`, `stale` or `held`. A rule blocked lower down —
 no test, a failing test, a weak one — is build work, so it stays on the board and never on
-this list.
+this list. Print the count by risk and the first five rows.
 
-Print the count by risk, then the first five rows, then start. Do not print the whole list
-when it runs past a screen: the point is the walk, not the inventory.
-
-```
-Review list: 12 rules need a person, across 4 features
-  high 3   medium 6   low 3
-
-  login       RULE-3   high     stale: the rule text changed after the signature
-  login       RULE-7   high     needs a person: the model review did not settle
-  billing     RULE-2   high     unsigned
-```
-
-## Step 2: read the brief before you sign
-
-For every rule, show the brief first:
+Read the brief for a rule before anything is written:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/brief.py" --feature <feature> --rule RULE-N
 ```
 
-The brief carries the rule text, the proof text, the test body, the test strength beside
+It carries the rule text, the proof text, the test body, the test strength beside
 `min_strength`, the free-check findings, what the model review observed and whether it
 settled, and for an `[origin: design]` rule the pinned mock beside the capture the test took.
 It reports; it recommends nothing, so the judgment is yours. Judge it against
 `references/review_criteria.md`, which is the one place the criteria live. Signing a rule you
 have not read is the one thing this skill must not help with.
+
+## Step 2: walk it
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py"
+```
+
+With no argument the script does the walk: it renders each brief in turn and asks for one
+answer, `sign / case / hold / skip`. It writes nothing until the walk closes; then one signed
+commit carries the signatures and one more per feature carries the holds.
 
 ## Step 3: the four answers
 
@@ -92,7 +88,7 @@ never code.
 
 **Hold.** The test does not prove the proof as written, and no new proof line would fix it.
 Name the missing case in words and commit it, so the rule cannot reach `strong` or `signed`
-while the hold stands:
+while the hold stands. A holder need not be on the signer list:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/sign.py" <feature> RULE-N --hold "<the missing case>"
@@ -121,20 +117,20 @@ end of the name. The commit subjects come from `references/commit_conventions.md
 | The bound rule, proof, test and risk hashes still match | `hashes changed after the signature` |
 | Under `signed`, the commit is on the protected branch | `the signing commit is not on <branch>` |
 
-Read the `signers` list before you start: when the gate is `signed` and it is absent, print
-`→ signer list missing: run purlin:init --gate signed` and stop. When your `git config
-user.email` is not on it, print `→ <your email> is not on the signer list. Add it by pull
-request, or ask someone on it.` and stop. `references/hard_gates.md` defines the three gates
-once; do not restate them elsewhere.
+The script checks the list itself and stops before writing. Under `signed` with no list it
+prints `sign: signer list missing: run purlin:init --gate signed`; with an email that is not
+on it, `sign: <email> is not on the signer list. Add it by pull request, or ask someone on
+it.` Read both back as they came. `references/hard_gates.md` defines the three gates once; do
+not restate them elsewhere.
 
 ## Step 5: close the walk and name the next step
 
-Print what happened and what is left, then name the next step:
+The walk closes with what happened and the commits it made:
 
 ```
-Signed 12 rules: 8 signed, 1 case added, 3 skipped.
-Signatures committed: 8 (signed, 1 commit)
-Left on the list: 4
+Walked 12 rules: 8 signed, 1 case added, 0 held, 3 skipped.
+  billing RULE-2   add this proof line: reject an expired token
+Commits: a1b2c3d
 ```
 
 | What you left | The line to print |

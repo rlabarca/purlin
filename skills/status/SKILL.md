@@ -25,46 +25,50 @@ sync_status()
 
 ## Step 2: print the table
 
-Every feature and every anchor gets a row, sorted attention first: the most rules needing work
-at the top. Anchors carry `(anchor)` after the name. Columns exist only when the gate creates
-the cell behind them, so a project at `passed` has no strength and no signature column.
+The tool opens with `Purlin status: <project>, plugin <version>, gate <gate>`, then the table.
+Every feature and every anchor gets a row, sorted attention first: the most rules short of the
+gate at the top. Anchors carry `(anchor)` after the name. Columns exist only when the gate
+creates the cell behind them, so a project at `passed` has no strength and no signature column.
 
 ```
-  Feature                    Rules   Spec             Tests                 Run
-  ──────────────────────────────────────────────────────────────────────────────────
-  billing                       14   12 ready         9 passed · 5 no test  ci · linux · 2h
-  login (anchor)                 8   8 ready          8 passed             ci · linux · 2h
-  export                         5   5 drafted        no test               none
+  Feature      Rules  Spec                   Tests                            Run
+  ────────────────────────────────────────────────────────────────────────────────────
+  billing         14  12 ready · 2 drafted   9 passed · 0 failing · 5 no test  ci linux
+  login (anchor)   8  8 ready · 0 drafted    8 passed · 0 failing · 0 no test  ci linux
+  export           5  0 ready · 5 drafted    0 passed · 0 failing · 5 no test  none
 ```
 
 Under `strong` two columns follow `Run`: `Strength`, the test strength as an integer percent
-or `n/a` when no break engine is installed, and `Strong`, the rules whose strong cell is met
-out of the rules total. Under `signed` a `Signed` column follows those two, with the stale
-count beside it.
+or `n/a` when no break engine is installed, and `Strong`, `<n> of <m>` rules whose strong cell
+is met. Under `signed` a `Signed` column follows those two, in the same `<n> of <m>` form.
 
 Print the numbers `sync_status` returned. Never recount them: the command line and the
 dashboard must show one answer from one computation.
 
-## Step 3: print the summary line and the operating systems
+## Step 3: print the summary line and what stands in the way
 
-Print the summary line exactly as the tool returned it, with its denominators intact:
-`<met> of <rules> meet the gate <gate>`. A percentage without the count it was taken over is
-the thing to avoid.
+The summary is two lines. The first is `<met> of <rules> rules meet the gate <gate>.` The
+second carries the feature count and, as the gate creates them, the failing count, the minimum
+test strength, the risk the model review starts at, how many rules need a person, how many are
+held, the risk a signature starts at, and how many signatures are stale. Print both with their
+denominators intact: a percentage without the count it was taken over is the thing to avoid.
 
-When some proof carries `@env`, one line follows it naming each operating system and what it
-still owes, for example `windows: no record yet`. Print it verbatim, or nothing when the tool
-returned nothing: a project that scopes no proof has no such standing to report.
+Anything the tool prints after the table and before the directives is its own: an anchor whose
+pin is behind, uncommitted spec changes, and its warnings. Print them verbatim, or nothing
+when the tool returned nothing.
 
 ## Step 4: name the next step
 
-Print the `→ Next:` directive the tool returned, then one closing line for the project as a
-whole. The directive comes from the lowest cell a rule is blocked at:
+Print the `→` lines the tool returned and add none of your own. There is one `→ Next:` line,
+computed from the lowest cell that blocks the gate, and one more line when the review list is
+not empty:
 
-| What blocks the gate | The line to print |
-|----------------------|-------------------|
-| A rule's spec status is `drafted` | `→ Next: purlin:spec <feature>` |
-| A rule has no test, or a test failed | `→ Next: purlin:build <feature>` |
-| A rule is weak | `→ Next: purlin:build <feature>` (the brief names what the break escaped) |
-| A rule reads `code changed`, or its record is not from `ci` under `strong` or above | `→ Next: push; CI writes the record.` |
-| A rule needs a person, is unsigned, stale or held | `→ Next: purlin:sign` |
-| Every rule meets the gate | `→ Nothing is outstanding at gate <gate>.` |
+| What blocks the gate | The line the tool prints |
+|----------------------|--------------------------|
+| A rule's spec status is `drafted` | `→ Next: run purlin:spec.` with the count |
+| A rule has a failing test, or no test | `→ Next: run purlin:build.` with the count |
+| A rule is waiting for the record that counts | `→ Next: push the branch.` under `strong` and above, `→ Next: run purlin:test.` under `passed` |
+| A rule is weak | `→ Next: run purlin:build.` naming what each one is short of |
+| A rule needs a person, is unsigned, stale or held | `→ Next: run purlin:sign.` with the count |
+| Every rule meets the gate | `→ Next: nothing is outstanding at gate <gate>.` |
+| The review list is not empty | `→ Review list: <n> rules need a person. Run purlin:sign.` |

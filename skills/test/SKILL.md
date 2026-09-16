@@ -38,18 +38,21 @@ Exit codes: `0` everything ran and passed, `1` a test failed, `2` the invocation
 
 ## Step 2: read the table
 
-The script prints the spec status of each rule, `drafted` or `ready`, and the word its passed
-cell reads:
+The run prints `Ran <framework> on <n> feature(s) at tier <tier>.`, then the status table
+`purlin:status` builds, so the counts come from one computation. The `Tests` column of that
+table counts the words a passed cell can read:
 
 | Word | What it means |
 |------|---------------|
 | `passed` | A test tagged with the rule's proof ran here and passed |
 | `failed` | A tagged test ran and failed; the script names the test and the assertion |
 | `no test` | The proof is written and no test carries its marker |
-| `not run` | A test carries the marker and this run did not reach it |
+| `not run` | A test carries the marker and no counting run reached it |
 | `code changed` | The last counting run covered a different tree |
 
 A rule whose spec status is `drafted` has no proof text yet, so it has no passed cell to read.
+Loud failures come first when they happen: `Evidence is missing: <what>.` means an arm ran and
+wrote no proof entry, or a marker in the tree produced none. Read those before the table.
 
 ## Step 3: what the gate changes
 
@@ -63,9 +66,9 @@ gates once.
 ## Step 4: operating systems
 
 A proof tagged `@env(windows)`, `@env(macos)` or `@env(linux)` runs only on that operating
-system. On a host that does not match, the script skips the test and reads the rule as
-`not run` with `needs windows` beside it rather than as a pass or a failure. An untagged proof
-runs anywhere. Those three tags are the whole vocabulary.
+system. On a host that does not match, the run lists it under `Proofs another operating system
+owns:` as `<feature> <PROOF-N>: needs <os>` rather than as a pass or a failure. An untagged
+proof runs anywhere. Those three tags are the whole vocabulary.
 
 ## Step 5: name the next step
 
@@ -78,7 +81,7 @@ End with one line, computed from the table:
 | A rule's spec status is `drafted` | `→ Run: purlin:spec <feature>` |
 | Every rule reads `passed`, gate `passed` | `→ Push.` |
 | Every rule reads `passed`, gate `strong` or `signed` | `→ Run: purlin:audit` |
-| Only `needs <os>` rules remain | `→ Run: purlin:audit --remote` |
+| Only `needs <os>` proofs remain | `→ Run: purlin:audit --remote` |
 
 Diagnose a failure before changing anything: `references/spec_quality_guide.md` says which of
 the rule, the proof and the code is usually at fault.

@@ -68,18 +68,18 @@ engine, and records both in `.purlin/config.json`. One `purlin:audit` then runs 
 
 ## What init writes
 
-It writes `.purlin/config.json` with the gate, the language, the git host, the test framework
-and the derived defaults; `specs/` for the two-section specs; and `.purlin/records/` with a
-README saying that `purlin:audit` writes the files in it and that nobody edits them by hand.
+It writes `.purlin/config.json` with the gate, the git host, the test framework, the breaks
+engine and the derived defaults; `specs/` for the two-section specs; and `.purlin/records/`
+with a README saying that `purlin:audit` writes the files in it and nobody edits them by hand.
 It installs the proof plugin for the detected framework and the breaks engine for the
 language, writing `[tool.mutmut]` into `pyproject.toml` when that file exists and `[mutmut]`
 into `setup.cfg` otherwise. It adds a `.gitignore` block for `.purlin/runtime/`, which is
 where test runs put their proof files, and copies the dashboard page so it opens from disk. It
 offers a `pre-push` hook that runs `purlin:test --quick`, and installs the Claude Code hook
 that refreshes the local dashboard data. It creates `designs/` with a README when the gate is
-`strong` or `signed`. Under those two gates it also writes the CI workflow and
-`.purlin/briefs/` for the briefs CI writes. It ends by printing every file it wrote or edited,
-one per line.
+`strong` or `signed`. Under those two gates it also writes the CI workflow, and it ignores
+`.purlin/briefs/**/*.brief.txt`, the local rendering beside the brief JSON that CI commits. It
+ends by printing every file it wrote or edited, one per line.
 
 The config it writes looks like this, and every key after `gate` has a default the gate
 implies:
@@ -88,15 +88,17 @@ implies:
 {
   "version": "0.10.0",
   "gate": "strong",
-  "language": "python",
-  "test_framework": "pytest",
-  "git_host": "github",
-  "min_strength": 70,
   "ai_review_at": "high",
+  "min_strength": 70,
   "mutation_engine": "mutmut",
-  "signers": []
+  "sql_engine": null,
+  "ci": "github",
+  "test_framework": "pytest"
 }
 ```
+
+`signers` joins it under `signed` and nowhere else. `sign_at` is derived from the gate, so it
+appears only when you set it yourself.
 
 Read and change it with the `purlin_config` tool rather than editing the file, so a key that
 the installed Purlin no longer reads is reported instead of silently kept.
@@ -124,9 +126,9 @@ record. When no proof names Windows or macOS, there is one Linux job.
 
 Under `signed`, init asks for the signer emails, writes them to `signers` in
 `.purlin/config.json`, prints the commit-signing setup, and lists every rule that still has no
-risk or origin tag so `purlin:spec <name>` can tag them in one pass. Without a signer list, the
-gate cannot be met: `sync_status` prints `→ signer list missing: run purlin:init --gate signed`
-and the CI gate exits 1.
+risk or origin tag so `purlin:spec <name>` can tag them in one pass. Without a signer list the
+gate cannot be met: the CI gate prints `→ signer list missing: run purlin:init --gate signed`
+and exits 1, and `purlin:sign` says the same and writes nothing.
 
 Anchor pins, the upstream-check job and the dashboard artifact are added on demand, never by
 default. When a piece is missing later, the tool that needs it says so: `purlin:drift` reports
@@ -148,8 +150,9 @@ Init prints these; the git host enforces them. Purlin never changes a repository
 
 Under `passed`, print only the third.
 
-**Azure DevOps**: give the build service alone Contribute on those same two paths through
-branch security, and turn off force push and delete.
+**Azure DevOps**, the same three: require a pull request with the purlin pipeline as a build
+validation policy; grant Contribute on those same two paths to the build service alone; deny
+Force Push and Delete branch for everyone.
 
 ## Commit signing under `signed`
 
@@ -193,8 +196,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/init/scaffold.py" --update --project-root
 `--update` detects the older layout and offers each change separately. It untracks and deletes
 the proof files and the evidence files that used to be committed, untracks the committed
 dashboard data, rewrites the hooks, retires the config keys that no longer exist, asks the gate
-question once, and rewrites an operating-system tag to `@env(...)` only where the intended
-system is unambiguous. Every write asks first and every file it replaces is backed up next to
+question once with the three answers above, and rewrites an operating-system tag to `@env(...)`
+only where the intended system is unambiguous. Every write asks first and every file it replaces is backed up next to
 the original. While the update is pending, `sync_status` opens with
 `→ Run: purlin:init --update`.
 

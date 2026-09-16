@@ -31,10 +31,11 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --all --record --commi
 ```
 
 `--record` runs the tests, then the breaks, then writes
-`.purlin/records/<feature>/<timestamp>-<commit7>-<runner>.json`. `--commit` commits it under
-your own git identity, which is what the `passed` gate expects. Drop `--commit` to leave the
-record uncommitted and read it yourself. Exit codes: `0` ok, `1` a test failed or the evidence
-is missing, `2` the invocation was wrong.
+`.purlin/records/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json` and prints
+`Record written: <path>`. `--commit` commits it under your own git identity, which is what the
+`passed` gate reads, and prints `Record committed as developer.` Drop `--commit` to leave the
+record uncommitted and read it yourself. Exit codes: `0` everything asked for happened, `1` a
+test failed or evidence is missing, `2` the command line was wrong.
 
 The run script owns test execution for the whole plugin: `purlin:test` and `purlin:build` call
 it too, so there is one answer to how a test is run. CI runs the same script with `--ci`, which
@@ -42,8 +43,8 @@ also writes the briefs under `.purlin/briefs/<feature>/`. You never pass `--ci` 
 
 ## Step 2: read what came back
 
-The script prints, per feature: each rule's cells, the test strength as an integer percent,
-and the record path it wrote.
+The run prints what it ran, then each record path, then the status table `purlin:status`
+builds, so the cells and the counts come from one computation.
 
 Test strength is the share of the deliberate breaks the tests caught. `min_strength` in
 `.purlin/config.json` is the floor the gate holds you to: 70 under `strong`, 80 under `signed`,
@@ -53,8 +54,8 @@ each overridable.
 
 | Gate | What this run does |
 |------|--------------------|
-| `passed` | Runs the tests only. No breaks, no risk, no brief, and the record carries test strength `n/a` |
-| `strong` | Runs the breaks too. Your local run is a preview: it says in one line that it does not count and that CI writes the record that does |
+| `passed` | Runs the tests only. No breaks, no risk, no brief; the record carries `null` for test strength and the run says `Strength n/a: the gate is passed.` |
+| `strong` | Runs the breaks too. Your local run is a preview: it prints `Preview: <feature> test strength <n>%.` and then `This record does not count under strong: only a CI record counts.` |
 | `signed` | The same as `strong`, and the record is what the review list and the signatures rest on |
 
 Raising the gate to `strong` turns the breaks on, locally and in CI.
@@ -81,8 +82,8 @@ prints the pipeline URL and returns. Use it when a proof is tagged `@env` for an
 system this host is not.
 
 `--tag <name>` writes an annotated tag `record/<name>` whose message lists the records it
-vouches for. This skill keeps the newest three records per feature per operating system and
-prunes the rest; a record a tag names is kept for ever.
+vouches for, and prints `Record tag written: record/<name>`. A feature keeps the newest three
+records per operating system and the rest are pruned; a record a tag names is kept for ever.
 
 A forked pull request never gets a record commit. The run still happens and the comment still
 posts; the job says in one line that no record was written.
