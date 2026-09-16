@@ -269,7 +269,20 @@ def _push(project_root):
 
 
 def _commit_through_api(project_root, paths, message):
-    """One commit carrying `paths`, made through the git host's REST API."""
+    """One commit carrying `paths`, made through the git host's REST API.
+
+    A project that is not the workspace the job checked out commits nothing.
+    A test suite driving an audit over a fixture project inherits the
+    runner's token and repository name, and the API commit those name is the
+    real repository's, not the fixture's: the fixture's records would land on
+    the branch under review.
+    """
+    from ci import is_the_workspace
+
+    if not is_the_workspace(project_root):
+        print('%s is not the workspace this job checked out, so no record '
+              'was committed.' % project_root)
+        return ''
     host = detect_host()
     if host == 'azure':
         return _commit_azure(project_root, paths, message)

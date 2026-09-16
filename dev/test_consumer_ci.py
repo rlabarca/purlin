@@ -185,6 +185,10 @@ def test_the_upload_path_is_the_directory_the_run_publishes_to(monkeypatch):
     """
     monkeypatch.delenv('AGENT_TEMPDIRECTORY', raising=False)
     monkeypatch.setenv('RUNNER_TEMP', '${{ runner.temp }}')
+    # On the runner the project being audited is the checkout, which is what
+    # sends the dashboard to the runner's own directory; the fixture stands in
+    # for that checkout here.
+    monkeypatch.setenv('GITHUB_WORKSPACE', FIXTURE)
     published = ci_module.publish_dir(FIXTURE)
 
     jobs = '\n'.join(parse_blocks(read(WORKFLOW_REL))['jobs'])

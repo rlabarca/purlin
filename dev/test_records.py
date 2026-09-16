@@ -49,6 +49,18 @@ import records as records_module  # noqa: E402
 import remote as remote_module  # noqa: E402
 from purlin import records as reader  # noqa: E402
 
+def _no_workspace(monkeypatch):
+    """Take the job's own workspace out of a test's environment.
+
+    Every fixture project here is a temporary directory, so on a runner it is
+    never the workspace and the git host arms would refuse it, which is the
+    behaviour RULE-26 and RULE-27 ask for and the wrong starting point for
+    every other test in this file.
+    """
+    for variable in ('GITHUB_WORKSPACE', 'BUILD_SOURCESDIRECTORY'):
+        monkeypatch.delenv(variable, raising=False)
+
+
 ACTIONS_BOT = 'github-actions[bot]'
 WEB_FLOW_EMAIL = 'noreply@github.com'
 AZURE_BUILD = 'Project Collection Build Service'
@@ -222,6 +234,7 @@ def github_env(monkeypatch):
     monkeypatch.delenv('GITHUB_HEAD_REF', raising=False)
     monkeypatch.delenv('GITHUB_EVENT_PATH', raising=False)
     monkeypatch.delenv('SYSTEM_TEAMFOUNDATIONCOLLECTIONURI', raising=False)
+    _no_workspace(monkeypatch)
 
 
 @pytest.fixture
@@ -231,6 +244,7 @@ def azure_env(monkeypatch):
     monkeypatch.setenv('SYSTEM_ACCESSTOKEN', 'a-token')
     monkeypatch.setenv('SYSTEM_TEAMPROJECT', 'widgets')
     monkeypatch.setenv('BUILD_REPOSITORY_ID', 'repo-id')
+    _no_workspace(monkeypatch)
     monkeypatch.setenv('BUILD_SOURCEBRANCHNAME', 'main')
     # An Azure build reads no GitHub variable. The run this suite runs inside
     # may itself be a GitHub Actions job, whose GITHUB_REF_NAME would
@@ -781,6 +795,7 @@ def test_no_token_writes_no_commit(project, monkeypatch, capsys):
     monkeypatch.setenv('GITHUB_REPOSITORY', 'acme/widgets')
     monkeypatch.delenv('GITHUB_TOKEN', raising=False)
     monkeypatch.delenv('SYSTEM_TEAMFOUNDATIONCOLLECTIONURI', raising=False)
+    _no_workspace(monkeypatch)
     path = records_module.write_record(project, record(), 'ci')
 
     assert records_module.commit_records(project, [path], 'ci', 'x') == ''
@@ -1135,6 +1150,7 @@ def test_a_local_run_posts_nothing_and_is_not_an_error(project, monkeypatch,
                                                        capsys):
     monkeypatch.delenv('GITHUB_REPOSITORY', raising=False)
     monkeypatch.delenv('SYSTEM_TEAMFOUNDATIONCOLLECTIONURI', raising=False)
+    _no_workspace(monkeypatch)
     assert ci_module.post_pr_comment(project, 'anything') is False
     assert 'Not running on a git host' in capsys.readouterr().out
 
@@ -1155,6 +1171,105 @@ def test_a_refused_comment_is_reported_rather_than_raised(project, github_env,
     monkeypatch.setattr(urllib.request, 'urlopen', refuse)
     assert ci_module.post_pr_comment(project, 'anything') is False
     assert 'The comment was not posted' in capsys.readouterr().out
+
+
+# ---------------------------------------------------------------------------
+# The workspace check
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def pull_request_event(monkeypatch, tmp_path):
+    """A pull request event on disk, so the run reads itself as number 12."""
+    event = tmp_path / 'event.json'
+    with open(str(event), 'w', encoding='utf-8') as handle:
+        json.dump({'pull_request': {'number': 12,
+                                    'head': {'repo': {'fork': False}}}}, handle)
+    monkeypatch.setenv('GITHUB_EVENT_PATH', str(event))
+    return str(event)
+
+
+@pytest.mark.proof("records", "PROOF-30", "RULE-26")
+def test_a_project_that_is_not_the_workspace_posts_nothing(
+        project, github_env, pull_request_event, monkeypatch, tmp_path,
+        capsys):
+    """A test suite driving an audit over a fixture must not speak for the job.
+
+    The fixture inherits the runner's token, repository and pull request, so
+    without this check every fixture project posts its own table to the pull
+    request the job is reviewing.
+    """
+    monkeypatch.setenv('GITHUB_WORKSPACE', str(tmp_path / 'the-checkout'))
+
+    def urlopen(request, timeout=None):
+        raise AssertionError('a fixture project reached the git host')
+
+    monkeypatch.setattr(urllib.request, 'urlopen', urlopen)
+
+    assert ci_module.post_pr_comment(project, 'anything') is False
+    assert 'is not the workspace this job checked out' in capsys.readouterr().out
+
+
+@pytest.mark.proof("records", "PROOF-30", "RULE-26")
+def test_a_project_that_is_not_the_workspace_publishes_into_itself(
+        project, github_env, monkeypatch, tmp_path):
+    monkeypatch.setenv('GITHUB_WORKSPACE', str(tmp_path / 'the-checkout'))
+    monkeypatch.setenv('RUNNER_TEMP', '/tmp/rt')
+
+    assert ci_module.publish_dir(project) == os.path.join(
+        project, '.purlin', 'runtime', 'report')
+
+
+@pytest.mark.proof("records", "PROOF-30", "RULE-26")
+def test_with_no_workspace_variable_every_project_is_its_own(monkeypatch):
+    for variable in ('GITHUB_WORKSPACE', 'BUILD_SOURCESDIRECTORY'):
+        monkeypatch.delenv(variable, raising=False)
+    assert ci_module.is_the_workspace('/anywhere/at/all') is True
+
+
+@pytest.mark.proof("records", "PROOF-31", "RULE-26")
+def test_the_workspace_itself_still_posts_and_publishes(
+        project, github_env, pull_request_event, monkeypatch, tmp_path):
+    """The comparison is between real paths, not between the strings.
+
+    A runner hands over a path that reaches the checkout through a symbolic
+    link often enough that comparing the strings would refuse the job's own
+    project.
+    """
+    linked = tmp_path / 'workspace-link'
+    os.symlink(project, str(linked))
+    monkeypatch.setenv('GITHUB_WORKSPACE', str(linked))
+    monkeypatch.setenv('RUNNER_TEMP', '/tmp/rt')
+    sent = []
+
+    def urlopen(request, timeout=None):
+        sent.append(request.full_url)
+        return Response({})
+
+    monkeypatch.setattr(urllib.request, 'urlopen', urlopen)
+
+    assert ci_module.post_pr_comment(project, 'the table') is True
+    assert len(sent) == 1
+    assert sent[0].endswith('/repos/acme/widgets/issues/12/comments')
+    assert ci_module.publish_dir(project) == '/tmp/rt/purlin-dashboard'
+
+
+@pytest.mark.proof("records", "PROOF-32", "RULE-27")
+def test_a_project_that_is_not_the_workspace_commits_nothing(
+        project, github_env, monkeypatch, tmp_path, capsys):
+    """The API commit names the real repository, never the fixture's.
+
+    A fixture project that reached it would land its own records on the
+    branch the job is reviewing.
+    """
+    monkeypatch.setenv('GITHUB_WORKSPACE', str(tmp_path / 'the-checkout'))
+    host = FakeHost()
+    monkeypatch.setattr(urllib.request, 'urlopen', host)
+    path = records_module.write_record(project, record(), 'ci')
+
+    assert records_module.commit_records(project, [path], 'ci',
+                                         'purlin: record for 4f1c2ab') == ''
+    assert host.urls() == []
+    assert 'no record was committed' in capsys.readouterr().out
 
 
 AZURE_THREADS = ('https://dev.azure.com/acme/widgets/_apis/git/repositories/'
@@ -1254,6 +1369,9 @@ def test_the_artifact_says_when_there_is_no_data_to_carry(project, tmp_path,
 def _no_runner_temp(monkeypatch):
     monkeypatch.delenv('RUNNER_TEMP', raising=False)
     monkeypatch.delenv('AGENT_TEMPDIRECTORY', raising=False)
+    # The fixture project stands in for the job's own checkout here, so the
+    # workspace check has to read it as one rather than as a stranger.
+    _no_workspace(monkeypatch)
 
 
 @pytest.mark.proof("records", "PROOF-11", "RULE-11")

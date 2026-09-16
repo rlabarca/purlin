@@ -6,8 +6,9 @@
 >   This feature covers the file's name and retention, the `record/<name>` tag that keeps a
 >   record for ever, the two identities that commit one, the source git gives it, the
 >   workflow the git host runs, the pull request comment and the dashboard artifact a CI
->   run publishes, the `--remote` round trip, and the scan that reads another repository's
->   rollup without cloning it whole.
+>   run publishes, the workspace check that keeps a fixture project from speaking for the
+>   job it runs inside, the `--remote` round trip, and the scan that reads another
+>   repository's rollup without cloning it whole.
 > Scope: scripts/run/records.py, scripts/run/ci.py, scripts/run/remote.py, scripts/run/workflow.py, scripts/report/scan.py, templates/purlin.yml, templates/purlin.azure-pipelines.yml, dev/fixtures/consumer-ci
 > Stack: python/stdlib (json, subprocess, urllib), git, GitHub and Azure DevOps REST APIs
 
@@ -38,6 +39,8 @@
 - RULE-23: Records read at a ref come out of git at that commit rather than off the disk, each labelled from git; a ref git cannot read gives no records, and a file under `.purlin/records/` that is not a JSON object is skipped [risk: medium] [origin: eng]
 - RULE-24: A developer's record commit hands git the pathspec `.purlin/records` with `/` on every operating system, both to find the records retention deleted and to stage the records, so a record commit made on Windows stages the new record and the deletions [risk: medium] [origin: eng]
 - RULE-25: `scan.py` prints the review list after the rollup, one line per rule naming its risk, its feature and rule id, the cell that blocks it and the `why` tokens that put it there, high risk first and a stale or held rule first within a risk, and says so in one line when no rule needs a person [risk: medium] [origin: eng]
+- RULE-26: A run whose project root is not the directory the job checked out, named by `GITHUB_WORKSPACE` or `BUILD_SOURCESDIRECTORY`, posts no pull request comment and publishes its dashboard into its own project rather than the runner's temporary directory, printing one line naming the project either way; with neither variable set every project is its own and nothing changes [risk: high] [origin: eng]
+- RULE-27: A CI commit through the git host's API is refused the same way when the project root is not the job's workspace, so a fixture project a test suite drives cannot land its records on the branch under review [risk: high] [origin: eng]
 
 ## Proof
 
@@ -69,4 +72,7 @@
 - PROOF-26 (RULE-24): With the records directory spelled `.purlin\records` as Windows joins it and git replaced by a recorder, call `deleted_records()` and `commit_records(identity="developer")`; verify every argument after `--` in the `ls-files` and `add` calls is free of `\` and the records pathspec reads `.purlin/records` @unit
 - PROOF-27 (RULE-24): In a repository with two committed records, delete one on disk, write a new one and call `commit_records(identity="developer")` with the new path; verify `deleted_records()` named the deleted file before the commit and that the commit carries the new record added and the old one deleted @integration
 - PROOF-28 (RULE-25): Render the review list of a payload listing `billing RULE-2` low unsigned, `login RULE-10` high needing a person, `login RULE-3` high stale and `auth RULE-1` medium unsigned; verify the header reads `Review list: 4 rules need a person.` and the lines follow in the order `login RULE-3`, `login RULE-10`, `auth RULE-1`, `billing RULE-2`, each carrying its risk, its blocking cell and its `why` tokens. Render a payload with an empty list and verify it reads `Review list: no rule needs a person.` @unit
+- PROOF-30 (RULE-26): With `GITHUB_REPOSITORY`, `GITHUB_TOKEN` and a pull request event set, and `GITHUB_WORKSPACE` naming a directory that is not the project, call `post_pr_comment()`; verify it returns False, sends nothing, and prints `is not the workspace this job checked out`. With `RUNNER_TEMP` set to `/tmp/rt` as well, verify `publish_dir()` is `.purlin/runtime/report` inside that project rather than `/tmp/rt/purlin-dashboard`. Call `is_the_workspace()` with no workspace variable set at all; verify True for any directory @unit
+- PROOF-31 (RULE-26): With the same variables and `GITHUB_WORKSPACE` equal to the project root by a path that resolves to it through a symbolic link, call `post_pr_comment()` with `urlopen` standing in; verify exactly one POST to `/repos/<repo>/issues/<number>/comments` and that it returns True, and verify `publish_dir()` is `/tmp/rt/purlin-dashboard` @unit
+- PROOF-32 (RULE-27): With `GITHUB_REPOSITORY`, `GITHUB_TOKEN` and `GITHUB_WORKSPACE` naming another directory, call `commit_records(identity="ci")` with `urlopen` standing in; verify it returns `''`, makes no API call, and prints `no record was committed` @unit
 - PROOF-29 (RULE-25): Scan a local repository at the gate `strong` whose `RULE-1` is tagged `[risk: high]` and whose only proof is `@manual`, so no machine can settle it; verify the output carries a `Review list:` line after the rollup and a line naming `high`, `greeting RULE-1`, the cell `strong` and the token `manual` @integration
