@@ -1,0 +1,69 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-16T23:04:13Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "37c016d482fbfeadfa945228bba91191f6f39618367bb3043cc6a385fab5cacf",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-47",
+      "text": "Call `purlin_proof` twice without calling `purlin_proof_finish`; verify no proof file exists yet, then call `purlin_proof_finish` and verify the file holds both entries. Verify the buffer is empty afterwards and that a second `purlin_proof_finish` writes nothing and exits 0",
+      "tier": "unit"
+    },
+    {
+      "env": "linux",
+      "findings": [],
+      "id": "PROOF-56",
+      "text": "Run `bash dev/test_proof_shell.sh` from the project root; it sources the harness in temporary projects and reads back what `purlin_proof_finish` wrote; verify every case prints `PASS`, including `purlin_proof_finish with nothing buffered writes nothing`, and the suite exits 0",
+      "tier": "e2e"
+    }
+  ],
+  "record": ".purlin/records/run_script/20260916T230349Z-f601203-ci-windows.json",
+  "risk": "medium",
+  "rule": "RULE-38",
+  "rule_hash": "d29196696b264422c5c5e3988cb17304140af3b0c3e8dbdeb72ffe2e11461cbe",
+  "rule_text": "The shell harness buffers what `purlin_proof` records and writes it when `purlin_proof_finish` runs, which clears the buffer, so a second finish with nothing buffered writes nothing",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "71be790ef5f175001060a0571f03581581029139479cf4d6e77e6af33fb7a6f2",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_shell_entries_cleared_after_finish(tmp_path):\n    \"\"\"A second finish with nothing buffered rewrites nothing.\"\"\"\n    root = _project(tmp_path)\n    script = textwrap.dedent(\"\"\"\\\n        #!/usr/bin/env bash\n        set -euo pipefail\n        source %s\n        purlin_proof \"feat\" \"PROOF-1\" \"RULE-1\" pass \"a\"\n        purlin_proof_finish\n        purlin_proof \"feat\" \"PROOF-2\" \"RULE-2\" pass \"b\"\n        purlin_proof_finish\n    \"\"\") % SHELL_HARNESS\n    (root / \"twice.sh\").write_text(script, encoding=\"utf-8\")\n    subprocess.run([BASH, bash_path(root / \"twice.sh\")], cwd=str(root),\n                   capture_output=True, text=True)\n    # The second finish carried only PROOF-2, which replaced the first write\n    # for the same (feature, tier, test_file): the buffer was cleared, so\n    # PROOF-1 was not written a second time.\n    ids = [e[\"id\"] for e in _proofs(root, \"feat\")[\"proofs\"]]\n    assert ids == [\"PROOF-2\"]",
+      "file": "dev/test_proof_plugins_missing.py",
+      "findings": [],
+      "name": "test_shell_entries_cleared_after_finish",
+      "proof": "PROOF-47",
+      "reasons": []
+    },
+    {
+      "body": "def test_shell_finish_with_nothing_buffered_writes_nothing(tmp_path):\n    root = _project(tmp_path)\n    _run_shell_proof(root, \"feat\", [])\n    assert _proof_files(root) == []",
+      "file": "dev/test_proof_plugins_missing.py",
+      "findings": [],
+      "name": "test_shell_finish_with_nothing_buffered_writes_nothing",
+      "proof": "PROOF-47",
+      "reasons": []
+    },
+    {
+      "body": "def test_shell_proof_not_written_before_finish(tmp_path):\n    \"\"\"`purlin_proof` buffers; only `purlin_proof_finish` writes.\"\"\"\n    root = _project(tmp_path)\n    script = textwrap.dedent(\"\"\"\\\n        #!/usr/bin/env bash\n        set -euo pipefail\n        source %s\n        purlin_proof \"feat\" \"PROOF-1\" \"RULE-1\" pass \"a\"\n    \"\"\") % SHELL_HARNESS\n    (root / \"buffered.sh\").write_text(script, encoding=\"utf-8\")\n    subprocess.run([BASH, bash_path(root / \"buffered.sh\")], cwd=str(root),\n                   capture_output=True, text=True)\n    assert _proof_files(root) == []",
+      "file": "dev/test_proof_plugins_missing.py",
+      "findings": [],
+      "name": "test_shell_proof_not_written_before_finish",
+      "proof": "PROOF-47",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "caaa9e377f15d8ceafc77d7fce2e6214644497ea67f3308431d230c1bd24da6e"
+}

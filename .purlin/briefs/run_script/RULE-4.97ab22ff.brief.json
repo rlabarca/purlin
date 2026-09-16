@@ -1,0 +1,52 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-16T23:04:13Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "01ab66b09056cd065558b773b87e7764ee856aa76bf91d5a6e6c983f6b7f8b90",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-4",
+      "text": "Write `feat.test.sh` at the project root recording one proof and run `--all --quick` with the shell framework; verify the entry's `test_name` is `shell case`. Write `tests/test_feat.sql` carrying `-- @purlin feat PROOF-1 RULE-1 unit` and a block selecting `'PASS'`, run `--all --quick` with the sql framework; verify the entry's `status` is `pass`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/run_script/20260916T230349Z-f601203-ci-windows.json",
+  "risk": "medium",
+  "rule": "RULE-4",
+  "rule_hash": "ae8df491a1c69b050f0cdff5ac773348b12abe8b956387e9eccc81b0ab06562e",
+  "rule_text": "The shell arm runs each `*.test.sh` at the project root, and the sql arm runs each `.sql` file under `tests/` through the sql harness with the engine `sql_engine` names, defaulting to `sqlite3`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "4a83bfd0b4054ecde84d879b2fe664ae9f4b9f89a5dc9cd7e784b2699bd3adac",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_shell_arm_runs_the_root_test_scripts(self, tmp_path):\n        root = _project(tmp_path, frameworks='shell')\n        _spec(root, 'feat')\n        (root / 'feat.test.sh').write_text(\n            'source %s\\n'\n            'purlin_proof \"feat\" \"PROOF-1\" \"RULE-1\" pass \"shell case\"\\n'\n            'purlin_proof_finish\\n'\n            % SHELL_HARNESS, encoding='utf-8')\n        code, output = _run(root, '--all', '--quick')\n        data = _proofs(root, 'feat')\n        assert data is not None, output\n        assert data['proofs'][0]['test_name'] == 'shell case'\n        assert code == 0, output",
+      "file": "dev/test_run_script.py",
+      "findings": [
+        "tautology"
+      ],
+      "name": "test_shell_arm_runs_the_root_test_scripts",
+      "proof": "PROOF-4",
+      "reasons": [
+        "tautological assertion (assert True or equivalent)"
+      ]
+    }
+  ],
+  "triple_hash": "97ab22ffa1867f40927f7ddcde4749bb077e272ccfe1424e2712d3ae8a946dca"
+}
