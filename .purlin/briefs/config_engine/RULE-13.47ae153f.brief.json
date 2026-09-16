@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "config_engine",
+  "generated_at": "2026-09-16T22:35:19Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "4fc7e7f5f13ab389fb453bd70d4a80b0e64a5f0d9e188ecbe32946b84044b45c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-15",
+      "text": "In a temporary tree holding `<tmp>/project/.purlin/` and `<tmp>/project/src/`, with `PURLIN_PROJECT_ROOT` unset, resolve the root from `<tmp>/project/src` and verify the pair is exactly `<tmp>/project` with the name `climb`. Set the variable to `<tmp>/elsewhere`, created and holding no marker, and verify the same call returns `<tmp>/elsewhere` named `env`. Point the variable at a path that is never created and verify the answer is the climb answer again. Unset it and resolve from a created directory with no marker in it or above it; verify the name is `cwd`, the root is the absolute working directory, that the sentence for `cwd` carries the words `working directory` and `marker`, and that the three names are exactly `climb`, `cwd` and `env` with every sentence a non-empty string. For each of those four cases verify the root-only entry point returns the same root",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/config_engine/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-13",
+  "rule_hash": "0ce575acfde3dfcc9075b7d5d9577a04a6921ddde32a50f7a37d98c38879a79a",
+  "rule_text": "`resolve_project_root` returns the root together with the name of how it was found, and is the one implementation of the precedence RULE-1 to RULE-3 describe: the three names are `env`, `climb` and `cwd`, each mapped to the sentence a report prints for it, so the last case is named as the guess it is rather than handed back as a path indistinguishable from a marker that was found. `find_project_root` is the same answer with the name dropped, and nothing recomputes the precedence for itself",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "b52db8052013b6f918f2c54dffcef2d65111123191bbddad1e0a40b5c745fe5a",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_resolve_project_root_names_how_it_resolved(self):\n        project = os.path.join(self.tmpdir, 'project')\n        deep = os.path.join(project, 'src')\n        os.makedirs(os.path.join(project, '.purlin'))\n        os.makedirs(deep)\n\n        # 1. The climb, with nothing in the environment to beat it.\n        assert resolve_project_root(start_dir=deep) == (project, 'climb')\n\n        # 2. The environment wins over the marker the climb would have found.\n        elsewhere = os.path.join(self.tmpdir, 'elsewhere')\n        os.makedirs(elsewhere)\n        os.environ['PURLIN_PROJECT_ROOT'] = elsewhere\n        assert resolve_project_root(start_dir=deep) == (elsewhere, 'env')\n\n        # 3. A root that does not exist does not win; the climb answers again.\n        gone = os.path.join(self.tmpdir, 'gone')\n        assert not os.path.isdir(gone)\n        os.environ['PURLIN_PROJECT_ROOT'] = gone\n        assert resolve_project_root(start_dir=deep) == (project, 'climb')\n\n        # 4. No marker anywhere above: cwd, and said to be cwd.\n        os.environ.pop('PURLIN_PROJECT_ROOT', None)\n        bare = os.path.join(self.tmpdir, 'bare')\n        os.makedirs(bare)\n        root, source = resolve_project_root(start_dir=bare)\n        assert source == 'cwd', source\n        assert root == os.path.abspath(os.getcwd())\n\n        # The fallback is named, not silent, and so is every other case.\n        assert sorted(PROJECT_ROOT_SOURCES) == ['climb', 'cwd', 'env']\n        assert all(isinstance(v, str) and v.strip()\n                   for v in PROJECT_ROOT_SOURCES.values()), PROJECT_ROOT_SOURCES\n        cwd_text = PROJECT_ROOT_SOURCES['cwd']\n        assert 'working directory' in cwd_text and 'marker' in cwd_text, cwd_text\n\n        # The two entry points cannot answer differently.\n        for start, env in ((deep, None), (deep, elsewhere), (deep, gone),\n                           (bare, None)):\n            if env is None:\n                os.environ.pop('PURLIN_PROJECT_ROOT', None)\n            else:\n                os.environ['PURLIN_PROJECT_ROOT'] = env\n            assert (find_project_root(start_dir=start)\n                    == resolve_project_root(start_dir=start)[0])",
+      "file": "dev/test_config_engine.py",
+      "findings": [],
+      "name": "test_resolve_project_root_names_how_it_resolved",
+      "proof": "PROOF-15",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "47ae153f32d95b0f29d18261cbd72c423458509979451294e1fa2a70d9f8b2c7"
+}

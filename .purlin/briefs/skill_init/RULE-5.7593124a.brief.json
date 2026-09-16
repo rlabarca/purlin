@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_init",
+  "generated_at": "2026-09-16T22:35:39Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "5e05682ec4dabfd510a4981df84438b8e6852a1f86f0e0fa1b63a614b33a9609",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-5",
+      "text": "Read `skills/init/SKILL.md` with its line wrapping collapsed; verify it carries `what must be true before CI lets a change merge` and each of the three gate names `passed`, `strong` and `signed`, and that the section whose heading names the exceptions carries `empty repository` and `signer emails` and holds exactly two numbered items. Adding a third numbered question to that section fails, reporting three where two were expected",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/skill_init/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-5",
+  "rule_hash": "3ba68cab379e03a3de0dc5a43cc4a33f948168669bc34401632444340855c361",
+  "rule_text": "The skill asks one question, what must be true before CI lets a change merge, and names exactly three answers, `passed`, `strong` and `signed`, with what CI requires under each; the only two further questions are the language of an empty repository and the signer emails under `signed`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "5864d7a68d34fff2003b772b078e0c244a9c5eb9b241036edcd7eff511e28ffe",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_asks_one_question_and_names_two_exceptions(self):\n        assert init_question_problems() == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_it_asks_one_question_and_names_two_exceptions",
+      "proof": "PROOF-5",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "7593124aa35e9d1455e66311915be135d817e6bc2f715553115d048e49a22796"
+}

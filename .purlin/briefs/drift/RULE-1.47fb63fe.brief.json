@@ -1,0 +1,62 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "drift",
+  "generated_at": "2026-09-16T22:35:19Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "1b1d6a6f627d03847876cbeca1f46e2b3ca521327c241afddd33ed74a0ae6c42",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-1",
+      "text": "Call drift with `since` set to `--output=/tmp/x` while `subprocess.run` is wrapped by a capturing spy; verify the returned JSON carries `error` `rejected since`, that the reason names both a commit count and a `YYYY-MM-DD` date, and that the spy captured zero calls. As a control, call it with `since` `2` and verify a `commits` list comes back and the spy did capture calls",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-2",
+      "text": "Call drift over a temporary project with `since` set to `--output=/tmp/x`; verify the parsed report's `error` reads exactly `rejected since`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/drift/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-1",
+  "rule_hash": "651118fc6c70a8419d090af964b884a6f1bb4f36cc7f7b3f32042987c5a9c2a5",
+  "rule_text": "A `since` argument is accepted only as a commit count of digits or a `YYYY-MM-DD` date; any other value is refused with the error `rejected since` and a reason naming both accepted forms, and no subprocess starts",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "cf5cc1d831eb7df499b1c289c45d392e54741852b8cf33e1f69d2ba6bf1c1437",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_hostile_since_is_refused_before_any_subprocess(self, tmp_path):\n        root = str(tmp_path / 'proj')\n        os.makedirs(root)\n        self._repo(root)\n\n        calls = []\n        real_run = subprocess.run\n\n        def spy(args, *rest, **kwargs):\n            calls.append(list(args) if isinstance(args, (list, tuple)) else [args])\n            return real_run(args, *rest, **kwargs)\n\n        purlin_drift.subprocess.run = spy\n        try:\n            refused = json.loads(purlin_drift.drift(root, since='--output=/tmp/x'))\n            refused_calls = list(calls)\n            calls.clear()\n            allowed = json.loads(purlin_drift.drift(root, since='2'))\n            allowed_calls = list(calls)\n        finally:\n            purlin_drift.subprocess.run = real_run\n\n        assert refused.get('error') == 'rejected since', refused\n        reason = refused.get('reason', '')\n        assert 'digits only' in reason and 'YYYY-MM-DD' in reason, reason\n        assert refused_calls == [], (\n            f\"a refused since still reached a subprocess: {refused_calls}\")\n\n        # Control: a valid since does resolve, and does run git.\n        assert 'commits' in allowed, allowed\n        assert allowed_calls, \"the control call ran no subprocess at all\"",
+      "file": "dev/test_drift.py",
+      "findings": [],
+      "name": "test_hostile_since_is_refused_before_any_subprocess",
+      "proof": "PROOF-1",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_hostile_since_never_reaches_git(self, project):\n        report = json.loads(purlin_drift.drift(project.root,\n                                               since='--output=/tmp/x'))\n        assert report['error'] == 'rejected since'",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_a_hostile_since_never_reaches_git",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "47fb63fe6ef15f2c92a5d99535a86fe0a282b111f17d101719a4f5630c05223a"
+}

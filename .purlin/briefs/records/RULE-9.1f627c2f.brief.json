@@ -1,0 +1,121 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-16T22:35:29Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "50ea902403f7a17fb848e76c6ba9c1ae2d1e86b75c2ee370c08db981d30655cd",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-9",
+      "text": "Call `record_label()` on a record that is not committed; verify `local`. Commit it as a person; verify `developer`. Commit it with the committer `GitHub <noreply@github.com>`, the author `github-actions[bot]` and a good signature; verify `ci`. Commit the same identities unsigned with no gpg on the machine; verify `ci`. Commit them unsigned with gpg present; verify `developer`. Commit them signed with a key this checkout has no allowed-signers file for, so `%G?` reads `N`, with gpg present; verify `ci`. Commit it as the Azure DevOps build service with no signature; verify `ci`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/records/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-9",
+  "rule_hash": "e9151404c5e1d8e3e614deba9ba337c1637ef8e14067f99ea3f6ae2eb3e71222",
+  "rule_text": "A record's source is read from the last commit that touched it: `ci` when the git host made it, which on GitHub is the committer email `noreply@github.com` with the author `github-actions[bot]` and on Azure DevOps the build service, and only when the signature does not contradict that identity; `developer` when a person did; `local` when it is not committed at all",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "78c4877ed8273c777073ca90daeb87be62e765624223fa33d6829b0b6140c979",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_file_that_is_not_committed_is_local(project):\n    path = records_module.write_record(project, record(), 'ada@example.com')\n    assert records_module.record_label(project, path) == 'local'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_file_that_is_not_committed_is_local",
+      "proof": "PROOF-9",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_matrix_keeps_one_latest_record_per_operating_system(project):\n    for name in ('linux', 'windows'):\n        records_module.write_record(project, record(), 'ci', name)\n    loaded = records_module.load_records(project)['greeting']\n    assert sorted(k for k in loaded) == ['linux', 'windows']",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_matrix_keeps_one_latest_record_per_operating_system",
+      "proof": "PROOF-9",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_persons_commit_is_developer(project):\n    path = records_module.write_record(project, record(), 'ada@example.com')\n    records_module.commit_records(project, [path], 'developer',\n                                  'purlin: record')\n    assert records_module.record_label(project, path) == 'developer'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_persons_commit_is_developer",
+      "proof": "PROOF-9",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_signature_this_checkout_cannot_check_is_still_ci(project, tmp_path,\n                                                            monkeypatch):\n    \"\"\"`N` on a commit that carries a signature is a reader that cannot check.\n\n    git prints `N` both for a commit with no signature and for one whose\n    signature it could not even try to check, which an ssh signature is in\n    any checkout with no allowed-signers file: a project CI writes records to\n    has no reason to hold one. Reading that `N` as an unsigned commit throws\n    away every record CI wrote on every machine that has gpg, so the commit\n    object is asked whether a signature is there at all.\n    \"\"\"\n    monkeypatch.setattr(reader.shutil, 'which',\n                        lambda name: '/usr/bin/gpg' if name == 'gpg' else None)\n    key = str(tmp_path / 'signing')\n    made = subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '',\n                           '-C', ACTIONS_BOT, '-f', key],\n                          capture_output=True, text=True)\n    if made.returncode != 0:\n        pytest.skip('ssh-keygen is not available: %s' % made.stderr.strip())\n\n    path = records_module.write_record(project, record(), 'ci')\n    git(project, 'add', '-A')\n    signed = subprocess.run(\n        ['git', '-c', 'gpg.format=ssh',\n         '-c', 'user.signingkey=' + key + '.pub',\n         '-c', 'user.name=' + ACTIONS_BOT, '-c', 'user.email=bot@example.com',\n         'commit', '--quiet', '-S', '-m', 'purlin: record for 4f1c2ab'],\n        cwd=project, capture_output=True, text=True)\n    if signed.returncode != 0:\n        pytest.skip('this git cannot sign with ssh: %s' % signed.stderr.strip())\n\n    # No allowed-signers file is configured here, which is the ordinary state\n    # of a checkout, so this is what any reader of this commit sees.\n    assert git(project, 'log', '-1', '--format=%G?').stdout.strip() in ('N', '')\n    assert records_module.record_label(project, path) == 'ci'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_signature_this_checkout_cannot_check_is_still_ci",
+      "proof": "PROOF-9",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_signed_actions_commit_is_ci(project, tmp_path):\n    \"\"\"A signed commit by the git host's build identity is what counts.\n\n    The signature is made with an ssh key generated here and trusted through\n    an allowed-signers file, so `git log --format=%G?` prints `G` exactly as\n    it does for a commit GitHub made through its API.\n    \"\"\"\n    key = str(tmp_path / 'signing')\n    made = subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '',\n                           '-C', ACTIONS_BOT, '-f', key],\n                          capture_output=True, text=True)\n    if made.returncode != 0:\n        pytest.skip('ssh-keygen is not available: %s' % made.stderr.strip())\n\n    with open(key + '.pub', encoding='utf-8') as handle:\n        public = handle.read().strip()\n    allowed = str(tmp_path / 'allowed_signers')\n    with open(allowed, 'w', encoding='utf-8') as handle:\n        handle.write('bot@example.com %s\\n' % ' '.join(public.split()[:2]))\n\n    path = records_module.write_record(project, record(), 'ci')\n    git(project, 'add', '-A')\n    signed = subprocess.run(\n        ['git', '-c', 'gpg.format=ssh', '-c', 'user.signingkey=' + key + '.pub',\n         '-c', 'gpg.ssh.allowedSignersFile=' + allowed,\n         '-c', 'user.name=' + ACTIONS_BOT, '-c', 'user.email=bot@example.com',\n         'commit', '--quiet', '-S', '-m', 'purlin: record for 4f1c2ab'],\n        cwd=project, capture_output=True, text=True)\n    if signed.returncode != 0:\n        pytest.skip('this git cannot sign with ssh: %s' % signed.stderr.strip())\n\n    shown = subprocess.run(\n        ['git', '-c', 'gpg.format=ssh',\n         '-c', 'gpg.ssh.allowedSignersFile=' + allowed,\n         'log', '-1', '--format=%G?\\t%cn'],\n        cwd=project, capture_output=True, text=True).stdout.strip()\n    assert shown.startswith('G\\t'), shown\n    assert shown.endswith(ACTIONS_BOT)\n    assert records_module.record_label(project, path) == 'ci'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_signed_actions_commit_is_ci",
+      "proof": "PROOF-9",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_azure_build_service_is_ci_without_a_signature(project):\n    path = records_module.write_record(project, record(), 'ci')\n    git(project, 'add', '-A')\n    git(project, '-c', 'user.name=' + AZURE_BUILD,\n        '-c', 'user.email=build@example.com',\n        'commit', '--quiet', '-m', 'purlin: record for 4f1c2ab')\n    assert git(project, 'log', '-1', '--format=%G?').stdout.strip() in ('N', '')\n    assert records_module.record_label(project, path) == 'ci'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_azure_build_service_is_ci_without_a_signature",
+      "proof": "PROOF-9",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_reader_is_reachable_through_this_module(project):\n    path = records_module.write_record(project, record(), 'ada@example.com')\n    records_module.commit_records(project, [path], 'developer', 'purlin: r')\n    loaded = records_module.load_records(project)\n    assert list(loaded) == ['greeting']\n    entry = loaded['greeting'][None]\n    assert entry['path'] == path\n    assert entry['label'] == 'developer'\n    assert entry['commit7'] == '4f1c2ab'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_reader_is_reachable_through_this_module",
+      "proof": "PROOF-9",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_web_flow_committer_is_ci_when_the_machine_has_no_gpg(project,\n                                                                  monkeypatch):\n    \"\"\"git prints `N` when it cannot run gpg, which is not an unsigned commit.\n\n    A checkout without gpg reports no signature for every commit, the git\n    host's included. The commit is still the git host's, so the identity\n    decides and the missing checker says nothing against it.\n    \"\"\"\n    monkeypatch.setattr(reader.shutil, 'which', lambda name: None)\n    path = records_module.write_record(project, record(), 'ci')\n    assert _web_flow_commit(project).returncode == 0\n    assert git(project, 'log', '-1', '--format=%G?').stdout.strip() in ('N', '')\n    assert records_module.record_label(project, path) == 'ci'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_web_flow_committer_is_ci_when_the_machine_has_no_gpg",
+      "proof": "PROOF-9",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_web_flow_committer_with_a_good_signature_is_ci(project, tmp_path):\n    \"\"\"The identity GitHub's API actually writes, signed, is a CI record.\n\n    The committer is `GitHub <noreply@github.com>`, not the Actions bot, so a\n    reader that looks only at the committer name calls this a person's commit\n    and nothing CI wrote counts under `strong` or `signed`.\n    \"\"\"\n    key = str(tmp_path / 'signing')\n    made = subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '',\n                           '-C', ACTIONS_BOT, '-f', key],\n                          capture_output=True, text=True)\n    if made.returncode != 0:\n        pytest.skip('ssh-keygen is not available: %s' % made.stderr.strip())\n    with open(key + '.pub', encoding='utf-8') as handle:\n        public = handle.read().strip()\n    allowed = str(tmp_path / 'allowed_signers')\n    with open(allowed, 'w', encoding='utf-8') as handle:\n        handle.write('%s %s\\n' % (WEB_FLOW_EMAIL,\n                                  ' '.join(public.split()[:2])))\n\n    path = records_module.write_record(project, record(), 'ci')\n    signed = _web_flow_commit(project, key + '.pub', allowed)\n    if signed.returncode != 0:\n        pytest.skip('this git cannot sign with ssh: %s' % signed.stderr.strip())\n\n    shown = subprocess.run(\n        ['git', '-c', 'gpg.format=ssh',\n         '-c', 'gpg.ssh.allowedSignersFile=' + allowed,\n         'log', '-1', '--format=%G?\\t%cn\\t%ce\\t%an'],\n        cwd=project, capture_output=True, text=True).stdout.strip()\n    assert shown.startswith('G\\t'), shown\n    assert shown.endswith('\\t%s\\t%s' % (WEB_FLOW_EMAIL, ACTIONS_BOT)), shown\n    assert records_module.record_label(project, path) == 'ci'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_web_flow_committer_with_a_good_signature_is_ci",
+      "proof": "PROOF-9",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_web_flow_committer_with_no_signature_and_gpg_is_a_person(\n        project, monkeypatch):\n    \"\"\"With gpg installed, `N` means the commit really carries no signature.\n\n    Anyone can set those two names on a commit they make by hand. On a machine\n    that can check, an unsigned commit claiming the git host's identity is read\n    as a person's, so it never counts under `strong` or `signed`.\n    \"\"\"\n    monkeypatch.setattr(reader.shutil, 'which',\n                        lambda name: '/usr/bin/gpg' if name == 'gpg' else None)\n    path = records_module.write_record(project, record(), 'ci')\n    assert _web_flow_commit(project).returncode == 0\n    assert git(project, 'log', '-1', '--format=%G?').stdout.strip() in ('N', '')\n    assert records_module.record_label(project, path) == 'developer'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_web_flow_committer_with_no_signature_and_gpg_is_a_person",
+      "proof": "PROOF-9",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "1f627c2fcb8418280bd84e5ae5e475d5277c2218e2c955f22c523ef7b37edb9d"
+}

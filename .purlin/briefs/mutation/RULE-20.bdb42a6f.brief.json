@@ -1,0 +1,79 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "mutation",
+  "generated_at": "2026-09-16T22:35:23Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "6a65caa2b3481b7d5520fc3172d1ad4331296741494765865c7db32eacc4d969",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-20",
+      "text": "Call `run_breaks()` with the engine `none` and with a real engine standing in; verify both answers carry `engine`, `available`, `reason`, `features` and `log`. Call it with the engine `nosuchengine`; verify no engine module was imported and the reason names it. Have an engine report one rule of two; verify the other is filled in with `attribution: \"unavailable\"`, and have it report no feature at all; verify every feature the caller named is still listed",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/mutation/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-20",
+  "rule_hash": "c718d422bf3d1c83bd58bee7c728e271cde7613955aaa569ef780ba1ce8d3423",
+  "rule_text": "Every engine answers the same shape, so a caller reads one: an engine name outside the four is not run, a rule the engine never reported is filled in with `attribution: \"unavailable\"`, and a feature the engine never reached is still listed",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "90c578a5a9bea86bda25828640231cd29fb52c36622a190affb0e5416e3c8de5",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_feature_an_engine_never_reached_is_still_listed():\n    answer = mutation.normalise(\n        {'engine': 'mutmut', 'available': True, 'features': {}},\n        {'login': ['src/login/session.py'], 'reports': []},\n        {('login', 'RULE-1'): []})\n    assert sorted(answer['features']) == ['login', 'reports']\n    assert answer['features']['login']['rules']['RULE-1']['killed'] == 0",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_a_feature_an_engine_never_reached_is_still_listed",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_rule_an_engine_forgot_is_filled_in():\n    answer = mutation.normalise(\n        {'engine': 'stryker', 'available': True, 'reason': '',\n         'features': {'calc': {'scope_score': mutation.scope_entry(3, 1),\n                               'rules': {}}},\n         'log': ''},\n        {'calc': ['src/calc.js']},\n        {('calc', 'RULE-1'): [], ('calc', 'RULE-2'): []})\n    assert answer['features']['calc']['rules']['RULE-1']['score'] is None\n    assert answer['features']['calc']['rules']['RULE-1'][\n        'attribution'] == 'unavailable'\n    assert answer['features']['calc']['scope_score']['score'] == 75",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_a_rule_an_engine_forgot_is_filled_in",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": "def test_an_engine_nobody_ships_is_not_run():\n    scope = {'login': ['src/login/session.py']}\n    tests = {('login', 'RULE-1'): []}\n    answer = mutation.run_breaks('/project', 'cosmic-ray', scope, tests, None)\n    assert_answer_shape(answer, scope, tests)\n    assert answer['engine'] == 'none'\n    assert 'unknown engine' in answer['reason']",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_an_engine_nobody_ships_is_not_run",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": "def test_run_breaks_answers_one_shape_for_a_real_engine(tmp_path, monkeypatch):\n    (tmp_path / 'pyproject.toml').write_text(\n        '[project]\\n' + mutmut.mutmut_config_block(['src'], ['tests']),\n        encoding='utf-8')\n    monkeypatch.setattr(mutmut, 'binary', lambda root=None: '/usr/bin/mutmut')\n    monkeypatch.setattr(\n        mutmut, 'execute',\n        lambda command, cwd, report_path=None: (\n            0, read_fixture('mutmut_results.txt') if command[1] == 'results'\n            else 'done'))\n    scope = {'login': ['src/login/session.py']}\n    tests = {('login', 'RULE-1'): [], ('login', 'RULE-2'): []}\n    answer = mutation.run_breaks(str(tmp_path), 'mutmut', scope, tests, 'unit')\n    assert_answer_shape(answer, scope, tests)\n    assert answer['features']['login']['rules']['RULE-1']['score'] == 67",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_run_breaks_answers_one_shape_for_a_real_engine",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": "def test_run_breaks_answers_one_shape_for_no_engine():\n    scope = {'deploy': ['deploy.sh']}\n    tests = {('deploy', 'RULE-1'): []}\n    answer = mutation.run_breaks('/project', 'none', scope, tests, None)\n    assert_answer_shape(answer, scope, tests)\n    assert answer['engine'] == 'none'",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_run_breaks_answers_one_shape_for_no_engine",
+      "proof": "PROOF-20",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "bdb42a6fe6a6698894421dfe1d8270cd1b7f9a41f2a30b0ce0e6c0002e5df021"
+}

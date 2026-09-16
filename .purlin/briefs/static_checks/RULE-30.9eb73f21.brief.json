@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-16T22:35:52Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "107b394fc20a802cd9e66e37331f138931013ca9d14a98198698121089622adf",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-62",
+      "text": "Parse and split a source carrying carriage returns, a form feed and non-ASCII characters; verify the split equals the standard library's and that the sliced source of all 5 functions and decorators equals what the standard library returns",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/static_checks/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-30",
+  "rule_hash": "fb71634d075a7a4291606d15e82823d222c3268ba21015eefe1d5af23fd3928d",
+  "rule_text": "A function's source is sliced from one line split that matches the standard library byte for byte",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "5536489e87581956ccae1369b735357e9cbdfe6e3bcac0d4392ce35eaafaa938",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_segment_matches_the_stdlib_byte_for_byte(self):\n        source = (\n            \"import pytest\\r\\n\"\n            \"\\x0c\\n\"\n            \"@pytest.mark.proof(\\n\"\n            \"    'feat', 'PROOF-1',\\n\"\n            \"    'RULE-1')\\r\"\n            \"def test_a():\\n\"\n            \"    value = '\u00e9'  # \\x0c form feed and '\u00fc' on a def line\\r\\n\"\n            \"    assert value == '\u00e9'\\n\"\n            \"@pytest.mark.proof('feat', 'PROOF-2', 'RULE-2')\\n\"\n            \"def test_b(): assert '\u00fc' == '\u00fc'\\n\"\n            \"def helper(): return '\u00f1'\"\n        )\n        tree = ast.parse(source)\n        lines = static_checks._split_source_lines(source)\n        assert lines == ast._splitlines_no_ff(source), \\\n            \"the line split must match the stdlib's, or every offset is off\"\n        checked = 0\n        for node in ast.walk(tree):\n            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):\n                continue\n            for target in [node] + list(node.decorator_list):\n                expected = ast.get_source_segment(source, target)\n                assert static_checks._segment(lines, target) == expected, \\\n                    f\"segment for {type(target).__name__} at line {target.lineno} differs\"\n                checked += 1\n        assert checked == 5\n        entries, _ = static_checks._python_proof_functions(source)\n        assert [(f, p) for f, p, *_ in entries] == [('feat', 'PROOF-1'), ('feat', 'PROOF-2')]",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_segment_matches_the_stdlib_byte_for_byte",
+      "proof": "PROOF-62",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "9eb73f211755a0e86d1368e385ea5af0513e4af745f791ecbf063d6979583c35"
+}

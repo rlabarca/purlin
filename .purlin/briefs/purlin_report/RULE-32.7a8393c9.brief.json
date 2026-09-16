@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-16T22:35:26Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "7f764f21e4381062e6b11e15cfd9390885ea508afc05c9bac1dbe25ae1297c76",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-34",
+      "text": "Open the board with the regulated fixture after setting its stale count to 3 and its failing count to 2; verify the `Stale` card reads 3 in the fail tone's colour, 5 tiles remain, and the heading carries `2 failing`; open it with a stale count of 0 and verify the card reads 0 without the fail tone",
+      "tier": "e2e"
+    }
+  ],
+  "record": ".purlin/records/purlin_report/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-32",
+  "rule_hash": "23ea0d908897e3e34a1c55a44f967510ab735e9c70cb51bd0645e440612df960",
+  "rule_text": "At the `signed` gate the board shows a `Stale` flag card beside the tiles carrying the summary's stale count, in the fail tone when it is above zero, and the heading line names the summary's failing count as `<N> failing`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "fa0bd2010f3b87db95a4587a8228c3701962b4b841b0a3d7f3e121737ca92a20",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_stale_card_carries_the_count(browser, tmp_path):  # noqa: F811\n    payload = payload_named('regulated')\n    payload['summary']['stale'] = 3\n    payload['summary']['failing'] = 2\n    page = open_board(browser, tmp_path / 'three', payload)\n    assert page.inner_text('.flag-v').strip() == '3'\n    assert 'on' in page.get_attribute('.flag', 'class')\n    fail = page.evaluate(\n        \"getComputedStyle(document.documentElement)\"\n        \".getPropertyValue('--state-fail').trim()\")\n    colour = page.eval_on_selector('.flag-v', 'el => getComputedStyle(el).color')\n    probe = page.evaluate(\n        \"c => { const s = document.createElement('span'); s.style.color = c;\"\n        \" document.body.appendChild(s); const v = getComputedStyle(s).color;\"\n        \" s.remove(); return v; }\", fail)\n    assert colour == probe, (colour, probe)\n    assert len(page.query_selector_all('.tile')) == 5\n    assert '2 failing' in page.inner_text('h1')\n    page.close()\n\n    payload['summary']['stale'] = 0\n    page = open_board(browser, tmp_path / 'none', payload)\n    assert page.inner_text('.flag-v').strip() == '0'\n    assert 'on' not in page.get_attribute('.flag', 'class').split()\n    page.close()",
+      "file": "dev/test_purlin_report_board_layout.py",
+      "findings": [],
+      "name": "test_the_stale_card_carries_the_count",
+      "proof": "PROOF-34",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "7a8393c96f68347107933127d7946cc4f53ce24303252ff21771d7599253a00c"
+}

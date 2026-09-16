@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_status",
+  "generated_at": "2026-09-16T22:35:40Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "33cb102aa7dc32d3577021b911076669c1e74686896aa7dbf283fccda2dd9db4",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-2",
+      "text": "Read `skills/status/SKILL.md`; verify it names `sync_status`, carries the sentence `Never recount them` and the phrase `one answer from one computation`. Deleting the never-recount sentence fails naming it",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/skill_status/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-2",
+  "rule_hash": "0f1043d26c425a713a02dac3280fdead5a1837578634e92867723041c2b6e19b",
+  "rule_text": "The skill prints the numbers `sync_status` returned and never recounts them, so the command line and the dashboard cannot disagree",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "07c478c77caa2f1f0ca083986e1e14d6ac901a658e47b63ed5a3e06877e32f9b",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_prints_the_numbers_the_tool_returned(self):\n        assert carries(skill_path('status'), [\n            'sync_status', 'Never recount them',\n            'one answer from one computation']) == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_it_prints_the_numbers_the_tool_returned",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "95b4a05adb6b9a8bba320c8e159319b71aee78e90dd9976f4bc9305b7123fabd"
+}

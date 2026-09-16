@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "schema_proof_format",
+  "generated_at": "2026-09-16T22:35:36Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "3ba375b38987a2f3444732a0acfb54d77300b3532980701d87d6f62d33bfde27",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-4",
+      "text": "Write a spec holding `RULE-1` and `PROOF-1`, then a proof file holding two entries for `PROOF-1` from two different test files, one `pass` and one `fail`; build the payload and verify `RULE-1`'s passed cell does not read `passed`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/schema_proof_format/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-4",
+  "rule_hash": "db78274ca77fb1f2d563a842a3008c256caa35f757593a8d5269805bd30eefaa",
+  "rule_text": "A proof claimed by two entries is proved only when both passed, so one failing test naming a proof id holds that rule's passed cell back even though another test naming the same id passed",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "2b290bdc7df6e6f944c47d88cf06a71661cd413fdf57b65962c9701031cfc9f2",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_fail_beats_a_pass_for_the_same_proof(self):\n        self._write_spec('baz', (\n            '# Feature: baz\\n\\n'\n            '## Rules\\n- RULE-1: The parser returns 200 for a valid body\\n\\n'\n            '## Proof\\n- PROOF-1 (RULE-1): POST a valid body; verify 200\\n'\n        ))\n        self._write_proofs('baz', [\n            {'feature': 'baz', 'id': 'PROOF-1', 'rule': 'RULE-1',\n             'test_file': 'a.py', 'test_name': 'ok', 'status': 'pass',\n             'tier': 'unit'},\n            {'feature': 'baz', 'id': 'PROOF-1', 'rule': 'RULE-1',\n             'test_file': 'b.py', 'test_name': 'broken', 'status': 'fail',\n             'tier': 'unit'},\n        ])\n        assert self._word('baz', 'RULE-1') != 'passed', (\n            'a proof that failed in any test claiming it is not proved')",
+      "file": "dev/test_schema_proof_format.py",
+      "findings": [],
+      "name": "test_a_fail_beats_a_pass_for_the_same_proof",
+      "proof": "PROOF-4",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "437bdee53ef5b24b3b866639bd72cd9e222c886439736ea07f0c1ea28ec12737"
+}

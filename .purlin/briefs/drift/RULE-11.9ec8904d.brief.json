@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "drift",
+  "generated_at": "2026-09-16T22:35:20Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "e53998f1d1c54f2066a75dee8468812947543df0e358dda991de36e12ba000c2",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-13",
+      "text": "Run the source check over the values `--upload-pack=/bin/echo`, `ext::sh -c id` and `fd::7`; verify each is refused with the reason `begins with \"-\"`, `names an ext:: transport` and `names an fd:: transport`, and that `https://github.com/acme/p.git` is accepted with an empty reason",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/drift/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-11",
+  "rule_hash": "0b1de64efc9714e09d7d620b338b799deb1f6ddaf2277442102c51d8a86fc91a",
+  "rule_text": "A `> Source:` value is refused before any process starts when it begins with `-`, names an `ext::` or an `fd::` transport, or carries a NUL byte or a newline, and the refusal names which of those it was",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "314a7434e4c6ae0ae874a6f4de5a461a04a59d75b7f378fe2f6a6f143277a052",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_source_that_is_not_safe_is_refused_before_any_process(self):\n        for value, reason in (('--upload-pack=/bin/echo', 'begins with \"-\"'),\n                              ('ext::sh -c id', 'names an ext:: transport'),\n                              ('fd::7', 'names an fd:: transport')):\n            safe, got = purlin_drift.source_url_is_safe(value)\n            assert safe is False and got == reason, (value, got)\n        assert purlin_drift.source_url_is_safe(\n            'https://github.com/acme/p.git') == (True, '')",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_a_source_that_is_not_safe_is_refused_before_any_process",
+      "proof": "PROOF-13",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "9ec8904dd3688b9ce9b49f20931b6d43c797dd5c3a45e43bbf0a48b8fa54614b"
+}

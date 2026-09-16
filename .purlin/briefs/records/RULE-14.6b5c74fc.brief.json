@@ -1,0 +1,88 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-16T22:35:29Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "fc49c6660e8bc43acfecf147f0b19f1b298b617f33e9056ded07c654e0f982e1",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-14",
+      "text": "Run `scan()` against a repository with one feature and one passing record; verify the text opens `Purlin: <project>, gate strong`, counts `1 features, 2 rules.`, carries a line per bucket the gate reaches, and names the newest record with its path, the source `developer` and its timestamp. Run it against a repository with no record; verify the line `No record has been committed yet.`. Render a rollup whose summary counts one rule in every bucket plus 1 stale, 1 held and 2 needing a person; verify every bucket name is printed with `1 signatures stale` and `2 rules need a person`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/records/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-14",
+  "rule_hash": "52f98d40fb5fa29cc7bf13014bfc301bca9af5a97d2db89dd1caa59012cc66d6",
+  "rule_text": "The rollup names the project, the gate, how many of the rules meet it beside how many are failing, and one line per bucket the gate reaches, then the newest record with its path, source and timestamp, or says no record has been committed yet",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "89be67e41968c9cd3e9d42f29d8365c424d7444f11d1bbe81a1b4adba3d769cb",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_every_bucket_the_package_names_can_be_printed():\n    from purlin import states\n    buckets = states.bucket_keys('signed')\n    summary = {'features': 1, 'rules': len(buckets), 'met': 1,\n               'stale': 1, 'held': 1, 'needs_person': 2}\n    summary.update({bucket: 1 for bucket in buckets})\n    payload = {'project': 'x', 'gate': {'gate': 'signed'},\n               'summary': summary, 'records': {}}\n    text = scan_module.rollup_text('.', payload)\n    for bucket in buckets:\n        assert bucket in text, '%s was not printed' % bucket\n    assert '1 signatures stale' in text\n    assert '2 rules need a person' in text",
+      "file": "dev/test_scan.py",
+      "findings": [],
+      "name": "test_every_bucket_the_package_names_can_be_printed",
+      "proof": "PROOF-14",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_newest_record_is_the_one_with_the_latest_timestamp():\n    older = {'timestamp': '2026-09-13T12:00:00Z', 'path': 'a'}\n    newer = {'timestamp': '2026-09-14T12:00:00Z', 'path': 'b'}\n    payload = {'records': {'greeting': {'': older},\n                           'login': {'linux': newer}}}\n    assert scan_module.newest_record(payload) is newer\n    assert scan_module.newest_record({'records': {}}) is None",
+      "file": "dev/test_scan.py",
+      "findings": [],
+      "name": "test_the_newest_record_is_the_one_with_the_latest_timestamp",
+      "proof": "PROOF-14",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_rollup_names_the_newest_record_and_its_label(remote):\n    bare, source = remote\n    head = git(source, 'rev-parse', 'HEAD').stdout.strip()\n    rel = add_record(source, head)\n    git(source, 'push', '--quiet')\n\n    text = scan_module.scan(bare, 'main')\n\n    assert rel in text\n    assert 'developer' in text, 'the label a person\\'s commit earns'\n    assert '0 commits behind the latest record.' in text",
+      "file": "dev/test_scan.py",
+      "findings": [],
+      "name": "test_the_rollup_names_the_newest_record_and_its_label",
+      "proof": "PROOF-14",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_rollup_names_the_project_the_gate_and_the_buckets(remote):\n    bare, _source = remote\n    text = scan_module.scan(bare, 'main')\n\n    assert 'gate strong' in text\n    assert '1 features, 2 rules.' in text\n    assert 'untested' in text, 'no bucket was counted'\n    assert 'No record has been committed yet.' in text",
+      "file": "dev/test_scan.py",
+      "findings": [],
+      "name": "test_the_rollup_names_the_project_the_gate_and_the_buckets",
+      "proof": "PROOF-14",
+      "reasons": []
+    },
+    {
+      "body": null,
+      "file": "dev/test_scan.py",
+      "findings": [],
+      "name": "test_every_state_the_package_names_can_be_printed",
+      "proof": "PROOF-14",
+      "reasons": []
+    },
+    {
+      "body": null,
+      "file": "dev/test_scan.py",
+      "findings": [],
+      "name": "test_the_rollup_names_the_project_the_gate_and_the_states",
+      "proof": "PROOF-14",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "6b5c74fc3cd466ab7a69826809242ea753f71c53878cd999a3548bf30b33756d"
+}

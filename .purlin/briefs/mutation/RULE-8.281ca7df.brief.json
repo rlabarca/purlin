@@ -1,0 +1,55 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "mutation",
+  "generated_at": "2026-09-16T22:35:22Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "dd695694db2cd60e0103d2564305433dcbf21b81d64a2576200ada30851bee4b",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-8",
+      "text": "Parse a report holding one `Killed`, one `Timeout`, one `Survived`, one `NoCoverage` and one `CompileError` break; verify the scope score counts 2 caught and 2 missed and that the compile error changed neither count",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/mutation/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-8",
+  "rule_hash": "ebfbfe589fcfae465b987bf3b87083c34cffb89f394ca6b8cf3b1c1766b51a8b",
+  "rule_text": "A break whose status is `killed` or `timeout` counts caught, one whose status is `survived` or `nocoverage` counts missed, and a break that never reached a test counts for neither",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "0de02a8e83d0ce2a1790503e1ca25cebe80819df92a8c12447ad476dd508728f",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_break_that_never_reached_a_test_counts_for_neither():\n    report = read_fixture('stryker_report.json')\n    statuses = [m['status'] for m in report['files']['src/calc.js']['mutants']]\n    assert 'CompileError' in statuses and len(statuses) == 12\n    entry = stryker.parse_report(report, CALC_TESTS)\n    counted = entry['scope_score']['killed'] + entry['scope_score']['survived']\n    assert counted == 11",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_a_break_that_never_reached_a_test_counts_for_neither",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_scope_score_counts_timeouts_killed_and_uncovered_survived():\n    entry = stryker.parse_report(read_fixture('stryker_report.json'),\n                                 CALC_TESTS)\n    assert entry['scope_score'] == {'score': 64, 'killed': 7, 'survived': 4}",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_the_scope_score_counts_timeouts_killed_and_uncovered_survived",
+      "proof": "PROOF-8",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "281ca7df7cfd11a30cd568ab7940e9abe68a956e0d5a5a50bd696369b3872877"
+}

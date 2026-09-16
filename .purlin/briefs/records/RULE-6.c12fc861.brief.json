@@ -1,0 +1,62 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-16T22:35:28Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "bcc4584d8527375cc9cdd5833a571f8d2a299896f0962b11be64e9d653950d7a",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-6",
+      "text": "Make the fake host refuse the first PATCH with HTTP 422; verify the run reads the ref again and succeeds. Refuse all 3 attempts; verify `HTTPError` is raised. Refuse once with HTTP 404; verify it is raised on the first attempt with no second GET of the ref",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/records/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-6",
+  "rule_hash": "5347dd3ea195783d78c5bf39ffc88b9bbd642aada66c793d33abc62d7a1105d9",
+  "rule_text": "A ref update refused because the branch moved is retried 3 times and then raised; a refusal that is not a moved branch is raised at once without a retry",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "010e8c217d188c6ef81b8bdff9bb2a84f8e3c7631b2a595477257236353f31fc",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_refusal_that_is_not_a_moved_branch_is_raised_at_once(\n        project, github_env, monkeypatch):\n    class Refusing(FakeHost):\n        def _answer(self, method, url, body):\n            if '/git/refs/heads/' in url and method == 'PATCH':\n                self.patched += 1\n                raise urllib.error.HTTPError(url, 403, 'Forbidden', {}, None)\n            return FakeHost._answer(self, method, url, body)\n\n    host = Refusing()\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    with pytest.raises(urllib.error.HTTPError) as raised:\n        records_module.commit_records(project, [path], 'ci', 'purlin: record')\n\n    assert raised.value.code == 403\n    assert host.patched == 1, 'a refusal that is not a race was retried'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_refusal_that_is_not_a_moved_branch_is_raised_at_once",
+      "proof": "PROOF-6",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_ref_update_is_retried_when_the_branch_moved(project, github_env,\n                                                         monkeypatch):\n    host = FakeHost(fail_patch=1)\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    sha = records_module.commit_records(project, [path], 'ci',\n                                        'purlin: record')\n\n    assert sha == 'c' * 40\n    assert host.patched == 2, 'the refused update was not retried'\n    heads = [url for url in host.urls('GET') if '/git/ref/heads/' in url]\n    assert len(heads) == 2, 'the retry did not re-read the branch head'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_ref_update_is_retried_when_the_branch_moved",
+      "proof": "PROOF-6",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_retry_gives_up_and_raises(project, github_env, monkeypatch):\n    host = FakeHost(fail_patch=99)\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    with pytest.raises(urllib.error.HTTPError) as raised:\n        records_module.commit_records(project, [path], 'ci', 'purlin: record')\n\n    assert raised.value.code == 422\n    assert host.patched == records_module.REF_RETRIES",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_retry_gives_up_and_raises",
+      "proof": "PROOF-6",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "c12fc8615fc4ad10e8df7ce57aff9aab0947532ff20b793825ed73141992f6a4"
+}

@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T22:35:35Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "a5bff3fdfae8cdaf173be767c1674bd926db041d12c828a60972ea6a93516074",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-23",
+      "text": "Run `--gate recorded` and read every readable file in the project; verify none contains `/dev/` once `/dev/null` is discounted",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-23",
+  "rule_hash": "9adbbdf8d50a7f9fa6fe429355fe5c35ca3284e580991126d29440aac79e00a3",
+  "rule_text": "No file init writes into a project points at this repository's own development folder, which a consumer's checkout does not carry",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "9685006dd7e73c60bc56bb4eb5cf2db6b2fb50cb66ee64b56b9abc6262b6c717",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_no_project_file_points_at_the_repository_s_own_dev_folder(self):\n        made = Project('pytest')\n        try:\n            made.run('--gate', 'recorded')\n            for base, _dirs, names in os.walk(made.root):\n                if '.git' in base.split(os.sep):\n                    continue\n                for name in names:\n                    path = os.path.join(base, name)\n                    try:\n                        text = read(path)\n                    except (UnicodeDecodeError, OSError):\n                        continue\n                    assert '/dev/' not in text.replace('/dev/null', ''), path\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_no_project_file_points_at_the_repository_s_own_dev_folder",
+      "proof": "PROOF-23",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "6323cc0e61c145169be4892571f5e4e85387173c46036721092cdf13e6fda10c"
+}

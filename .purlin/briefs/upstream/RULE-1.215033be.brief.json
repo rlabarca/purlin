@@ -1,0 +1,57 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "upstream",
+  "generated_at": "2026-09-16T22:35:55Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "41564eb3bff4a92d489ff8993d2018bbf684fbd96df86a81835c9a941597c521",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-1",
+      "text": "Publish `# Anchor: no_eval` with two rules to a bare repository, then run `add` against a fresh project with `--path specs/no_eval.md --name no_eval`; verify the copy at `specs/_anchors/no_eval.md` begins `# Anchor: no_eval`, holds `> Source: <the repository> specs/no_eval.md` and `> Pinned: <the published sha>`, and still carries the line `- RULE-1: No eval() in source files [risk: high]` exactly as the author wrote it",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/upstream/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-1",
+  "rule_hash": "3422ee27a18075363e94d6373133ccb5d5bcd85a1bf68c708a1d76597fa1a431",
+  "rule_text": "`add <source> --path <file>` writes the anchor to `specs/_anchors/<name>.md` with the author's body unchanged under its title, and adds `> Source: <source> <file>` and `> Pinned: <sha>`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "b1df6e239abf6f2e8e36a2492200380d06bd22b9eb8cceba93fb319ee00e0a3f",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_add_from_the_command_line_writes_the_copy(workspace):\n    code, out = _cli(workspace, ['add', workspace.anchor_repo, '--path',\n                                 'specs/no_eval.md', '--name', 'no_eval'])\n    assert code == 0\n    assert 'specs/_anchors/no_eval.md' in out\n    assert '> Pinned: %s' % workspace.first_sha in _copy_text(workspace)",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_add_from_the_command_line_writes_the_copy",
+      "proof": "PROOF-1",
+      "reasons": []
+    },
+    {
+      "body": "def test_add_writes_the_copy_with_source_and_pin(workspace):\n    result = _add(workspace)\n    assert result['status'] == 'added'\n    assert result['pinned'] == workspace.first_sha\n    text = _copy_text(workspace)\n    assert '> Source: %s specs/no_eval.md' % workspace.anchor_repo in text\n    assert '> Pinned: %s' % workspace.first_sha in text\n    # The author's body survives whole, and the tracking fields sit under the\n    # title rather than replacing anything the author wrote.\n    assert '- RULE-1: No eval() in source files [risk: high]' in text\n    assert text.startswith('# Anchor: no_eval\\n')\n    assert result['rules'] == ['RULE-1', 'RULE-2']",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_add_writes_the_copy_with_source_and_pin",
+      "proof": "PROOF-1",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "215033befcc9bfb368709b7275ac1fa7aa3dce8d0d711dbb764b76a8ee164a3b"
+}
