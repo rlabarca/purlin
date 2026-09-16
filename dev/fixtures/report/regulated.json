@@ -3,9 +3,6 @@
   "dirty": true,
   "features": [
     {
-      "approvals": [
-        "specs/auth/login.approvals/RULE-1.1a2b3c4d.jane-doe.json"
-      ],
       "category": "auth",
       "description": null,
       "is_anchor": false,
@@ -22,24 +19,8 @@
       "pinned": null,
       "requires": [],
       "rollup": {
-        "by_risk": {
-          "high": {
-            "Approved": 1,
-            "Tested": 1
-          },
-          "low": {
-            "Recorded": 1
-          },
-          "medium": {
-            "Stale": 1
-          }
-        },
-        "counts": {
-          "Approved": 1,
-          "Recorded": 1,
-          "Stale": 1,
-          "Tested": 1
-        },
+        "failing": 0,
+        "held": 1,
         "latest_record": {
           "commit": "a1b2c3d",
           "label": "ci",
@@ -48,29 +29,61 @@
           "test_strength": 86,
           "timestamp": "2026-09-12T09:14:02Z"
         },
-        "lowest_state": "Stale",
-        "missing_env": [
-          "windows"
-        ],
-        "needs_review": 3,
-        "proved": 3,
-        "re_verify_pending": 1,
+        "met": 1,
+        "needs_person": 0,
+        "passed": 1,
         "rules": 4,
+        "signed": 1,
         "stale": 1,
-        "test_strength": 86
+        "strong": 1,
+        "test_strength": 86,
+        "untested": 1
       },
       "rules": [
         {
+          "blocked_by": null,
+          "bucket": "signed",
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": true,
+              "missing_env": [],
+              "reasons": [],
+              "source": "ci",
+              "word": "passed"
+            },
+            "signed": {
+              "path": "specs/auth/login.signatures/RULE-1.1a2b3c4d.jane-doe.json",
+              "reasons": [
+                "by jane@acme.com"
+              ],
+              "required": true,
+              "signer": "jane@acme.com",
+              "word": "signed"
+            },
+            "strong": {
+              "brief": ".purlin/briefs/login/RULE-1.1a2b3c4d.brief.json",
+              "findings": [],
+              "observations": [],
+              "reasons": [],
+              "settled": true,
+              "strength": 86,
+              "word": "strong"
+            }
+          },
           "criterion": null,
+          "design_hash": null,
           "feature": "login",
           "flags": {
-            "auto_approvable": false,
-            "needs_ai_review": true,
-            "re_verify_pending": false
+            "code_changed": false,
+            "failing": false,
+            "held": false,
+            "needs_person": false,
+            "stale": false
           },
           "id": "RULE-1",
           "label": "own",
-          "missing_env": [],
+          "meets_gate": true,
           "origin": "pm",
           "proof_hash": "prule1log",
           "proofs": [
@@ -88,25 +101,57 @@
               "tier": "unit"
             }
           ],
-          "reasons": [],
           "risk": "high",
           "rule_hash": "rrule1log",
-          "state": "Approved",
+          "spec": "ready",
           "test_hash": "trule1log",
-          "test_strength": 86,
+          "test_hash_kind": "file",
           "text": "A person signs in with an email address and a password."
         },
         {
+          "blocked_by": "signed",
+          "bucket": "strong",
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": true,
+              "missing_env": [],
+              "reasons": [],
+              "source": "ci",
+              "word": "passed"
+            },
+            "signed": {
+              "path": "specs/auth/login.signatures/RULE-2.5e6f7a8b.sam-acme.json",
+              "reasons": [
+                "hashes changed after the signature"
+              ],
+              "required": true,
+              "signer": "sam@acme.com",
+              "word": "stale"
+            },
+            "strong": {
+              "brief": ".purlin/briefs/login/RULE-2.6f7a8b9c.brief.json",
+              "findings": [],
+              "observations": [],
+              "reasons": [],
+              "settled": true,
+              "strength": 86,
+              "word": "strong"
+            }
+          },
           "criterion": null,
+          "design_hash": null,
           "feature": "login",
           "flags": {
-            "auto_approvable": false,
-            "needs_ai_review": true,
-            "re_verify_pending": false
+            "code_changed": false,
+            "failing": false,
+            "held": false,
+            "needs_person": false,
+            "stale": true
           },
           "id": "RULE-2",
           "label": "own",
-          "missing_env": [],
+          "meets_gate": false,
           "origin": "qa",
           "proof_hash": "prule2log",
           "proofs": [
@@ -124,25 +169,59 @@
               "tier": "unit"
             }
           ],
-          "reasons": [],
           "risk": "medium",
           "rule_hash": "rrule2log",
-          "state": "Stale",
+          "spec": "ready",
           "test_hash": "trule2log",
-          "test_strength": 86,
+          "test_hash_kind": "file",
           "text": "Five failed attempts lock the account for fifteen minutes."
         },
         {
+          "blocked_by": "strong",
+          "bucket": "passed",
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": true,
+              "missing_env": [],
+              "reasons": [],
+              "source": "ci",
+              "word": "passed"
+            },
+            "signed": {
+              "path": "specs/auth/login.signatures/RULE-3.9c0d1e2f.sam-acme.hold.json",
+              "reasons": [
+                "held by sam@acme.com: the lock expiry is never read"
+              ],
+              "required": false,
+              "signer": null,
+              "word": "held"
+            },
+            "strong": {
+              "brief": null,
+              "findings": [],
+              "observations": [],
+              "reasons": [
+                "held by sam@acme.com: the lock expiry is never read"
+              ],
+              "settled": null,
+              "strength": 86,
+              "word": "needs a person"
+            }
+          },
           "criterion": null,
+          "design_hash": null,
           "feature": "login",
           "flags": {
-            "auto_approvable": false,
-            "needs_ai_review": false,
-            "re_verify_pending": true
+            "code_changed": false,
+            "failing": false,
+            "held": true,
+            "needs_person": false,
+            "stale": false
           },
           "id": "RULE-3",
           "label": "own",
-          "missing_env": [],
+          "meets_gate": false,
           "origin": "eng",
           "proof_hash": "prule3log",
           "proofs": [
@@ -162,27 +241,61 @@
               "tier": "unit"
             }
           ],
-          "reasons": [],
           "risk": "low",
           "rule_hash": "rrule3log",
-          "state": "Recorded",
+          "spec": "ready",
           "test_hash": "trule3log",
-          "test_strength": 86,
+          "test_hash_kind": "file",
           "text": "A locked account sends one notification email."
         },
         {
+          "blocked_by": "passed",
+          "bucket": "untested",
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": true,
+              "missing_env": [
+                "windows"
+              ],
+              "reasons": [
+                "windows: no record yet"
+              ],
+              "source": "ci",
+              "word": "not run"
+            },
+            "signed": {
+              "path": null,
+              "reasons": [],
+              "required": true,
+              "signer": null,
+              "word": "unsigned"
+            },
+            "strong": {
+              "brief": null,
+              "findings": [],
+              "observations": [],
+              "reasons": [
+                "not passed"
+              ],
+              "settled": null,
+              "strength": 86,
+              "word": "weak"
+            }
+          },
           "criterion": null,
+          "design_hash": null,
           "feature": "login",
           "flags": {
-            "auto_approvable": false,
-            "needs_ai_review": true,
-            "re_verify_pending": false
+            "code_changed": false,
+            "failing": false,
+            "held": false,
+            "needs_person": false,
+            "stale": false
           },
           "id": "RULE-4",
           "label": "own",
-          "missing_env": [
-            "windows"
-          ],
+          "meets_gate": false,
           "origin": "eng",
           "proof_hash": "prule4log",
           "proofs": [
@@ -200,18 +313,20 @@
               "tier": "e2e"
             }
           ],
-          "reasons": [
-            "windows: no record yet"
-          ],
           "risk": "high",
           "rule_hash": "rrule4log",
-          "state": "Tested",
+          "spec": "ready",
           "test_hash": "trule4log",
-          "test_strength": 86,
+          "test_hash_kind": "file",
           "text": "The session cookie is refused over an unencrypted connection."
         }
       ],
       "scope": [],
+      "signatures": [
+        "specs/auth/login.signatures/RULE-1.1a2b3c4d.jane-doe.json",
+        "specs/auth/login.signatures/RULE-2.5e6f7a8b.sam-acme.json",
+        "specs/auth/login.signatures/RULE-3.9c0d1e2f.sam-acme.hold.json"
+      ],
       "source": null,
       "source_globs": [],
       "source_path": null,
@@ -219,9 +334,6 @@
       "test_strength": 86
     },
     {
-      "approvals": [
-        "specs/billing/invoice.approvals/RULE-1.9f8e7d6c.ci.json"
-      ],
       "category": "billing",
       "description": null,
       "is_anchor": false,
@@ -238,16 +350,8 @@
       "pinned": null,
       "requires": [],
       "rollup": {
-        "by_risk": {
-          "low": {
-            "Approved": 1,
-            "Recorded": 1
-          }
-        },
-        "counts": {
-          "Approved": 1,
-          "Recorded": 1
-        },
+        "failing": 0,
+        "held": 0,
         "latest_record": {
           "commit": "a1b2c3d",
           "label": "ci",
@@ -256,27 +360,61 @@
           "test_strength": 64,
           "timestamp": "2026-09-12T09:14:02Z"
         },
-        "lowest_state": "Recorded",
-        "missing_env": [],
-        "needs_review": 1,
-        "proved": 2,
-        "re_verify_pending": 0,
+        "met": 0,
+        "needs_person": 0,
+        "passed": 2,
         "rules": 2,
+        "signed": 0,
         "stale": 0,
-        "test_strength": 64
+        "strong": 0,
+        "test_strength": 64,
+        "untested": 0
       },
       "rules": [
         {
+          "blocked_by": "strong",
+          "bucket": "passed",
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": true,
+              "missing_env": [],
+              "reasons": [],
+              "source": "ci",
+              "word": "passed"
+            },
+            "signed": {
+              "path": null,
+              "reasons": [],
+              "required": false,
+              "signer": null,
+              "word": "not required"
+            },
+            "strong": {
+              "brief": null,
+              "findings": [],
+              "observations": [],
+              "reasons": [
+                "strength 64% under 80%"
+              ],
+              "settled": null,
+              "strength": 64,
+              "word": "weak"
+            }
+          },
           "criterion": null,
+          "design_hash": null,
           "feature": "invoice",
           "flags": {
-            "auto_approvable": false,
-            "needs_ai_review": false,
-            "re_verify_pending": false
+            "code_changed": false,
+            "failing": false,
+            "held": false,
+            "needs_person": false,
+            "stale": false
           },
           "id": "RULE-1",
           "label": "own",
-          "missing_env": [],
+          "meets_gate": false,
           "origin": "eng",
           "proof_hash": "prule1inv",
           "proofs": [
@@ -294,25 +432,60 @@
               "tier": "unit"
             }
           ],
-          "reasons": [],
           "risk": "low",
           "rule_hash": "rrule1inv",
-          "state": "Approved",
+          "spec": "ready",
           "test_hash": "trule1inv",
-          "test_strength": 64,
+          "test_hash_kind": "file",
           "text": "An invoice totals its lines to the cent."
         },
         {
+          "blocked_by": "strong",
+          "bucket": "passed",
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": true,
+              "missing_env": [],
+              "reasons": [],
+              "source": "ci",
+              "word": "passed"
+            },
+            "signed": {
+              "path": null,
+              "reasons": [],
+              "required": false,
+              "signer": null,
+              "word": "not required"
+            },
+            "strong": {
+              "brief": null,
+              "findings": [
+                "happy_path_only"
+              ],
+              "observations": [],
+              "reasons": [
+                "strength 64% under 80%",
+                "happy_path_only"
+              ],
+              "settled": null,
+              "strength": 64,
+              "word": "weak"
+            }
+          },
           "criterion": null,
+          "design_hash": null,
           "feature": "invoice",
           "flags": {
-            "auto_approvable": false,
-            "needs_ai_review": true,
-            "re_verify_pending": false
+            "code_changed": false,
+            "failing": false,
+            "held": false,
+            "needs_person": false,
+            "stale": false
           },
           "id": "RULE-2",
           "label": "own",
-          "missing_env": [],
+          "meets_gate": false,
           "origin": "eng",
           "proof_hash": "prule2inv",
           "proofs": [
@@ -332,16 +505,16 @@
               "tier": "unit"
             }
           ],
-          "reasons": [],
           "risk": "low",
           "rule_hash": "rrule2inv",
-          "state": "Recorded",
+          "spec": "ready",
           "test_hash": "trule2inv",
-          "test_strength": 64,
+          "test_hash_kind": "file",
           "text": "An invoice with no lines totals zero."
         }
       ],
       "scope": [],
+      "signatures": [],
       "source": null,
       "source_globs": [],
       "source_path": null,
@@ -349,7 +522,6 @@
       "test_strength": 64
     },
     {
-      "approvals": [],
       "category": "_anchors",
       "description": null,
       "is_anchor": true,
@@ -366,14 +538,8 @@
       "pinned": null,
       "requires": [],
       "rollup": {
-        "by_risk": {
-          "medium": {
-            "Reviewed": 1
-          }
-        },
-        "counts": {
-          "Reviewed": 1
-        },
+        "failing": 0,
+        "held": 0,
         "latest_record": {
           "commit": "a1b2c3d",
           "label": "ci",
@@ -382,27 +548,63 @@
           "test_strength": 90,
           "timestamp": "2026-09-12T09:14:02Z"
         },
-        "lowest_state": "Reviewed",
-        "missing_env": [],
-        "needs_review": 0,
-        "proved": 1,
-        "re_verify_pending": 0,
+        "met": 0,
+        "needs_person": 1,
+        "passed": 1,
         "rules": 1,
+        "signed": 0,
         "stale": 0,
-        "test_strength": 90
+        "strong": 0,
+        "test_strength": 90,
+        "untested": 0
       },
       "rules": [
         {
+          "blocked_by": "strong",
+          "bucket": "passed",
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": true,
+              "missing_env": [],
+              "reasons": [],
+              "source": "ci",
+              "word": "passed"
+            },
+            "signed": {
+              "path": null,
+              "reasons": [],
+              "required": true,
+              "signer": null,
+              "word": "unsigned"
+            },
+            "strong": {
+              "brief": ".purlin/briefs/checkout_design/RULE-1.7b8c9d0e.brief.json",
+              "findings": [],
+              "observations": [
+                "The test reads the text \"Total\" and the button \"Pay\" on the page; the proof names their order, and no assertion compares their positions."
+              ],
+              "reasons": [
+                "review not settled"
+              ],
+              "settled": false,
+              "strength": 90,
+              "word": "needs a person"
+            }
+          },
           "criterion": "AC-14",
+          "design_hash": "drule1che",
           "feature": "checkout_design",
           "flags": {
-            "auto_approvable": false,
-            "needs_ai_review": false,
-            "re_verify_pending": false
+            "code_changed": false,
+            "failing": false,
+            "held": false,
+            "needs_person": true,
+            "stale": false
           },
           "id": "RULE-1",
           "label": "own",
-          "missing_env": [],
+          "meets_gate": false,
           "origin": "design",
           "proof_hash": "prule1che",
           "proofs": [
@@ -420,16 +622,16 @@
               "tier": "e2e"
             }
           ],
-          "reasons": [],
           "risk": "medium",
           "rule_hash": "rrule1che",
-          "state": "Reviewed",
+          "spec": "ready",
           "test_hash": "trule1che",
-          "test_strength": 90,
+          "test_hash_kind": "file",
           "text": "The cart page shows the order total above the pay button."
         }
       ],
       "scope": [],
+      "signatures": [],
       "source": null,
       "source_globs": [
         "designs/checkout/cart.png",
@@ -438,41 +640,143 @@
       "source_path": null,
       "spec_path": "specs/_anchors/checkout_design.md",
       "test_strength": 90
+    },
+    {
+      "category": "billing",
+      "description": null,
+      "is_anchor": false,
+      "is_global": false,
+      "latest_record": {
+        "commit": "9f8e7d6",
+        "label": "ci",
+        "os": null,
+        "path": ".purlin/records/export/20260910T170241Z-9f8e7d6-ci.json",
+        "test_strength": 82,
+        "timestamp": "2026-09-10T17:02:41Z"
+      },
+      "name": "export",
+      "pinned": null,
+      "requires": [],
+      "rollup": {
+        "failing": 0,
+        "held": 0,
+        "latest_record": {
+          "commit": "9f8e7d6",
+          "label": "ci",
+          "os": null,
+          "path": ".purlin/records/export/20260910T170241Z-9f8e7d6-ci.json",
+          "test_strength": 82,
+          "timestamp": "2026-09-10T17:02:41Z"
+        },
+        "met": 0,
+        "needs_person": 0,
+        "passed": 0,
+        "rules": 1,
+        "signed": 0,
+        "stale": 0,
+        "strong": 0,
+        "test_strength": 82,
+        "untested": 1
+      },
+      "rules": [
+        {
+          "blocked_by": "passed",
+          "bucket": "untested",
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": false,
+              "missing_env": [],
+              "reasons": [
+                "code changed since 9f8e7d6"
+              ],
+              "source": "ci",
+              "word": "code changed"
+            },
+            "signed": {
+              "path": null,
+              "reasons": [],
+              "required": true,
+              "signer": null,
+              "word": "unsigned"
+            },
+            "strong": {
+              "brief": null,
+              "findings": [],
+              "observations": [],
+              "reasons": [
+                "not passed"
+              ],
+              "settled": null,
+              "strength": 82,
+              "word": "weak"
+            }
+          },
+          "criterion": null,
+          "design_hash": null,
+          "feature": "export",
+          "flags": {
+            "code_changed": true,
+            "failing": false,
+            "held": false,
+            "needs_person": false,
+            "stale": false
+          },
+          "id": "RULE-1",
+          "label": "own",
+          "meets_gate": false,
+          "origin": "pm",
+          "proof_hash": "prule1exp",
+          "proofs": [
+            {
+              "env": null,
+              "findings": [],
+              "id": "PROOF-1",
+              "tests": [
+                {
+                  "file": "tests/test_export.py",
+                  "name": "test_month_order"
+                }
+              ],
+              "text": "Export September with 3 invoices dated the 3rd, the 1st and the 9th and read them in the order 1st, 3rd, 9th.",
+              "tier": "unit"
+            }
+          ],
+          "risk": "medium",
+          "rule_hash": "rrule1exp",
+          "spec": "ready",
+          "test_hash": "trule1exp",
+          "test_hash_kind": "file",
+          "text": "A statement export lists every invoice of the month in date order."
+        }
+      ],
+      "scope": [],
+      "signatures": [],
+      "source": null,
+      "source_globs": [],
+      "source_path": null,
+      "spec_path": "specs/billing/export.md",
+      "test_strength": 82
     }
   ],
   "gate": {
     "ai_review_at": "medium",
-    "approvers": [
-      "jane@acme.com",
-      "sam@acme.com"
-    ],
     "ci": "github",
-    "gate": "approved",
+    "gate": "signed",
     "min_strength": 80,
     "mutation_engine": "auto",
     "pre_push": "off",
+    "sign_at": "medium",
+    "signers": [
+      "jane@acme.com",
+      "sam@acme.com"
+    ],
     "sql_engine": null,
-    "tags_required": true,
     "test_framework": "pytest"
   },
   "generated_at": "2026-09-13T08:30:00Z",
   "generated_by": "sync_status",
   "project": "ledger",
-  "project_rollup": {
-    "counts": {
-      "Approved": 2,
-      "Recorded": 2,
-      "Reviewed": 1,
-      "Stale": 1,
-      "Tested": 1
-    },
-    "features": 3,
-    "lowest_state": "Stale",
-    "needs_review": 4,
-    "re_verify_pending": 1,
-    "rules": 7,
-    "stale": 1
-  },
   "records": {
     "checkout_design": {
       "": {
@@ -483,6 +787,17 @@
         "result": "pass",
         "test_strength": 90,
         "timestamp": "2026-09-12T09:14:02Z"
+      }
+    },
+    "export": {
+      "": {
+        "commit": "9f8e7d6",
+        "label": "ci",
+        "os": null,
+        "path": ".purlin/records/export/20260910T170241Z-9f8e7d6-ci.json",
+        "result": "pass",
+        "test_strength": 82,
+        "timestamp": "2026-09-10T17:02:41Z"
       }
     },
     "invoice": {
@@ -520,56 +835,49 @@
   "remote_url": "https://github.com/acme/ledger.git",
   "review_list": [
     {
+      "cell": "signed",
       "feature": "login",
       "owner": "login",
-      "reason": "risk high",
-      "reasons": [
-        "risk high"
-      ],
-      "risk": "high",
-      "rule": "RULE-1"
-    },
-    {
-      "feature": "login",
-      "owner": "login",
-      "reason": "risk high; windows: no record yet",
-      "reasons": [
-        "risk high",
-        "windows: no record yet"
-      ],
-      "risk": "high",
-      "rule": "RULE-4"
-    },
-    {
-      "feature": "login",
-      "owner": "login",
-      "reason": "stale; risk medium",
-      "reasons": [
-        "stale",
-        "risk medium"
-      ],
       "risk": "medium",
-      "rule": "RULE-2"
+      "rule": "RULE-2",
+      "why": [
+        "stale"
+      ]
     },
     {
-      "feature": "invoice",
-      "owner": "invoice",
-      "reason": "strength 64% under 80%; happy_path_only",
-      "reasons": [
-        "strength 64% under 80%",
-        "happy_path_only"
-      ],
+      "cell": "strong",
+      "feature": "checkout_design",
+      "owner": "checkout_design",
+      "risk": "medium",
+      "rule": "RULE-1",
+      "why": [
+        "needs a person"
+      ]
+    },
+    {
+      "cell": "strong",
+      "feature": "login",
+      "owner": "login",
       "risk": "low",
-      "rule": "RULE-2"
+      "rule": "RULE-3",
+      "why": [
+        "held"
+      ]
     }
   ],
-  "schema_version": 4,
-  "states": {
-    "Approved": 2,
-    "Recorded": 2,
-    "Reviewed": 1,
-    "Stale": 1,
-    "Tested": 1
+  "schema_version": 5,
+  "summary": {
+    "failing": 0,
+    "features": 4,
+    "held": 1,
+    "met": 1,
+    "needs_person": 1,
+    "passed": 4,
+    "rules": 8,
+    "signed": 1,
+    "stale": 1,
+    "strong": 1,
+    "untested": 2
   },
   "version": "0.10.0",
   "warnings": [

@@ -3,7 +3,6 @@
   "dirty": false,
   "features": [
     {
-      "approvals": [],
       "category": "auth",
       "description": null,
       "is_anchor": false,
@@ -13,40 +12,44 @@
       "pinned": null,
       "requires": [],
       "rollup": {
-        "by_risk": {
-          "low": {
-            "Drafted": 1,
-            "Proof ready": 1,
-            "Tested": 1
-          }
-        },
-        "counts": {
-          "Drafted": 1,
-          "Proof ready": 1,
-          "Tested": 1
-        },
+        "failing": 0,
+        "held": 0,
         "latest_record": null,
-        "lowest_state": "Drafted",
-        "missing_env": [],
-        "needs_review": 0,
-        "proved": 1,
-        "re_verify_pending": 0,
+        "met": 1,
+        "needs_person": 0,
+        "passed": 1,
         "rules": 3,
         "stale": 0,
-        "test_strength": null
+        "test_strength": null,
+        "untested": 2
       },
       "rules": [
         {
+          "blocked_by": null,
+          "bucket": "passed",
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": true,
+              "missing_env": [],
+              "reasons": [],
+              "source": "local",
+              "word": "passed"
+            }
+          },
           "criterion": null,
+          "design_hash": null,
           "feature": "login",
           "flags": {
-            "auto_approvable": false,
-            "needs_ai_review": false,
-            "re_verify_pending": false
+            "code_changed": false,
+            "failing": false,
+            "held": false,
+            "needs_person": false,
+            "stale": false
           },
           "id": "RULE-1",
           "label": "own",
-          "missing_env": [],
+          "meets_gate": true,
           "origin": "eng",
           "proof_hash": "prule1log",
           "proofs": [
@@ -64,25 +67,39 @@
               "tier": "unit"
             }
           ],
-          "reasons": [],
           "risk": "low",
           "rule_hash": "rrule1log",
-          "state": "Tested",
+          "spec": "ready",
           "test_hash": "trule1log",
-          "test_strength": null,
+          "test_hash_kind": "file",
           "text": "A person signs in with an email address and a password."
         },
         {
+          "blocked_by": "passed",
+          "bucket": "untested",
+          "cells": {
+            "passed": {
+              "counts": false,
+              "current": false,
+              "missing_env": [],
+              "reasons": [],
+              "source": null,
+              "word": "no test"
+            }
+          },
           "criterion": null,
+          "design_hash": null,
           "feature": "login",
           "flags": {
-            "auto_approvable": false,
-            "needs_ai_review": false,
-            "re_verify_pending": false
+            "code_changed": false,
+            "failing": false,
+            "held": false,
+            "needs_person": false,
+            "stale": false
           },
           "id": "RULE-2",
           "label": "own",
-          "missing_env": [],
+          "meets_gate": false,
           "origin": "eng",
           "proof_hash": "prule2log",
           "proofs": [
@@ -97,38 +114,52 @@
               "tier": "unit"
             }
           ],
-          "reasons": [],
           "risk": "low",
           "rule_hash": "rrule2log",
-          "state": "Proof ready",
+          "spec": "ready",
           "test_hash": "trule2log",
-          "test_strength": null,
+          "test_hash_kind": "none",
           "text": "Five failed attempts lock the account for fifteen minutes."
         },
         {
+          "blocked_by": "spec",
+          "bucket": "untested",
+          "cells": {
+            "passed": {
+              "counts": false,
+              "current": false,
+              "missing_env": [],
+              "reasons": [],
+              "source": null,
+              "word": "no test"
+            }
+          },
           "criterion": null,
+          "design_hash": null,
           "feature": "login",
           "flags": {
-            "auto_approvable": false,
-            "needs_ai_review": false,
-            "re_verify_pending": false
+            "code_changed": false,
+            "failing": false,
+            "held": false,
+            "needs_person": false,
+            "stale": false
           },
           "id": "RULE-3",
           "label": "own",
-          "missing_env": [],
+          "meets_gate": false,
           "origin": "eng",
           "proof_hash": "prule3log",
           "proofs": [],
-          "reasons": [],
           "risk": "low",
           "rule_hash": "rrule3log",
-          "state": "Drafted",
+          "spec": "drafted",
           "test_hash": "trule3log",
-          "test_strength": null,
+          "test_hash_kind": "none",
           "text": "A locked account sends one notification email."
         }
       ],
       "scope": [],
+      "signatures": [],
       "source": null,
       "source_globs": [],
       "source_path": null,
@@ -136,7 +167,6 @@
       "test_strength": null
     },
     {
-      "approvals": [],
       "category": "billing",
       "description": null,
       "is_anchor": false,
@@ -146,36 +176,44 @@
       "pinned": null,
       "requires": [],
       "rollup": {
-        "by_risk": {
-          "low": {
-            "Tested": 2
-          }
-        },
-        "counts": {
-          "Tested": 2
-        },
+        "failing": 0,
+        "held": 0,
         "latest_record": null,
-        "lowest_state": "Tested",
-        "missing_env": [],
-        "needs_review": 0,
-        "proved": 2,
-        "re_verify_pending": 0,
+        "met": 2,
+        "needs_person": 0,
+        "passed": 2,
         "rules": 2,
         "stale": 0,
-        "test_strength": null
+        "test_strength": null,
+        "untested": 0
       },
       "rules": [
         {
+          "blocked_by": null,
+          "bucket": "passed",
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": true,
+              "missing_env": [],
+              "reasons": [],
+              "source": "local",
+              "word": "passed"
+            }
+          },
           "criterion": null,
+          "design_hash": null,
           "feature": "invoice",
           "flags": {
-            "auto_approvable": false,
-            "needs_ai_review": false,
-            "re_verify_pending": false
+            "code_changed": false,
+            "failing": false,
+            "held": false,
+            "needs_person": false,
+            "stale": false
           },
           "id": "RULE-1",
           "label": "own",
-          "missing_env": [],
+          "meets_gate": true,
           "origin": "eng",
           "proof_hash": "prule1inv",
           "proofs": [
@@ -193,25 +231,39 @@
               "tier": "unit"
             }
           ],
-          "reasons": [],
           "risk": "low",
           "rule_hash": "rrule1inv",
-          "state": "Tested",
+          "spec": "ready",
           "test_hash": "trule1inv",
-          "test_strength": null,
+          "test_hash_kind": "file",
           "text": "An invoice totals its lines to the cent."
         },
         {
+          "blocked_by": null,
+          "bucket": "passed",
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": true,
+              "missing_env": [],
+              "reasons": [],
+              "source": "local",
+              "word": "passed"
+            }
+          },
           "criterion": null,
+          "design_hash": null,
           "feature": "invoice",
           "flags": {
-            "auto_approvable": false,
-            "needs_ai_review": false,
-            "re_verify_pending": false
+            "code_changed": false,
+            "failing": false,
+            "held": false,
+            "needs_person": false,
+            "stale": false
           },
           "id": "RULE-2",
           "label": "own",
-          "missing_env": [],
+          "meets_gate": true,
           "origin": "eng",
           "proof_hash": "prule2inv",
           "proofs": [
@@ -229,16 +281,16 @@
               "tier": "unit"
             }
           ],
-          "reasons": [],
           "risk": "low",
           "rule_hash": "rrule2inv",
-          "state": "Tested",
+          "spec": "ready",
           "test_hash": "trule2inv",
-          "test_strength": null,
+          "test_hash_kind": "file",
           "text": "An invoice with no lines totals zero."
         }
       ],
       "scope": [],
+      "signatures": [],
       "source": null,
       "source_globs": [],
       "source_path": null,
@@ -248,39 +300,32 @@
   ],
   "gate": {
     "ai_review_at": "never",
-    "approvers": [],
     "ci": "github",
-    "gate": "tested",
-    "min_strength": 50,
+    "gate": "passed",
+    "min_strength": null,
     "mutation_engine": "auto",
     "pre_push": "off",
+    "sign_at": null,
+    "signers": [],
     "sql_engine": null,
-    "tags_required": false,
     "test_framework": "pytest"
   },
   "generated_at": "2026-09-13T08:30:00Z",
   "generated_by": "sync_status",
   "project": "ledger",
-  "project_rollup": {
-    "counts": {
-      "Drafted": 1,
-      "Proof ready": 1,
-      "Tested": 3
-    },
-    "features": 2,
-    "lowest_state": "Drafted",
-    "needs_review": 0,
-    "re_verify_pending": 0,
-    "rules": 5,
-    "stale": 0
-  },
   "records": {},
   "review_list": [],
-  "schema_version": 4,
-  "states": {
-    "Drafted": 1,
-    "Proof ready": 1,
-    "Tested": 3
+  "schema_version": 5,
+  "summary": {
+    "failing": 0,
+    "features": 2,
+    "held": 0,
+    "met": 3,
+    "needs_person": 0,
+    "passed": 3,
+    "rules": 5,
+    "stale": 0,
+    "untested": 2
   },
   "version": "0.10.0",
   "warnings": []
