@@ -39,7 +39,7 @@ What a signature binds is three hashes, not the files they came from:
 | D | the pinned design a `origin: design` rule rests on, and null for every other origin |
 
 The triple hash is `sha256` over R, P and T, one per line, and the first eight
-characters of it name the file. D is recorded and compared beside the triple
+characters of it name the file. D is held and compared beside the triple
 rather than folded into it, because a rule with no design has none.
 
 `test_hash_kind` says what T was taken from: `file` for a test file version
