@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_init",
+  "generated_at": "2026-09-16T22:35:40Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "4799e0f723189494614afad66c1df6a7a47dc3d4a10fc13a47879720d88ade6b",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-1",
+      "text": "Read `skills/init/SKILL.md`; verify the file opens with `---`, that the frontmatter carries `name: init` and a `description:` whose value is one non-empty line, and that `references/purlin_commands.md` contains the literal `purlin:init`. Deleting the `name:` line fails naming the file",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/skill_init/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-1",
+  "rule_hash": "1e98e886555d340568c28969d57afb01715cc82dacc32fb0cd346764f5b4ce69",
+  "rule_text": "`skills/init/SKILL.md` opens with a frontmatter block whose `name` is `init` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:init`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "488e697f7cc37f144c085bd5974272133211ae5c1f051a4f48362c23aa3a05f8",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_frontmatter_names_the_skill(self):\n        assert frontmatter_problems('init') == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_the_frontmatter_names_the_skill",
+      "proof": "PROOF-1",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "88038cb36f8785b098245b818ec0bc88c5557a8f9c8bf899006a919e17caca0a"
+}

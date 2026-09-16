@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "upstream",
+  "generated_at": "2026-09-16T22:36:00Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "6d42618166eca1f258daa6bb4792d1a31b8190753b519a143dd1ad545426bae9",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-17",
+      "text": "Pin an anchor, add a local rule, then publish a version upstream that adds RULE-3; run `propose no_eval` and verify the patch carries `+- RULE-9: No pickle imports [risk: low]` and no occurrence of `RULE-3`, which the source already holds",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/upstream/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-17",
+  "rule_hash": "9c619797e38ce8f3a284dc17d0c04371eaf01ab470ac02ab08c4cc91c0c96c1a",
+  "rule_text": "The patch is taken against the pin rather than the source's head, so a rule the source added after the pin is never proposed back to it",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "1741a1d9d52ec46efd7a6499cba57218648ba2ef935807b53424e67f1cc0f335",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_propose_reads_the_source_at_the_pin_not_at_its_head(workspace):\n    _add(workspace)\n    _add_local_rule(workspace)\n    _advance(workspace)\n    with open(os.path.join(workspace.root, upstream.propose(\n            workspace.root, 'no_eval')['patch']), 'r', encoding='utf-8') as h:\n        patch = h.read()\n    # RULE-3 arrived after the pin, so proposing against the pin must not ask\n    # the anchor repo to add a rule it already has.\n    assert 'RULE-3' not in patch\n    assert '+- RULE-9: No pickle imports [risk: low]' in patch",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_propose_reads_the_source_at_the_pin_not_at_its_head",
+      "proof": "PROOF-17",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a6850059368141303bd4454126d6a9a8c3cbd4c539ce69a0fbad6da4de85f49a"
+}

@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_rename",
+  "generated_at": "2026-09-16T22:35:40Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "0a88150436ac789412a82ca4723fbda9c779f454951a8239d6bc42f6b0f9d525",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-1",
+      "text": "Read `skills/rename/SKILL.md`; verify the file opens with `---`, that the frontmatter carries `name: rename` and a `description:` whose value is one non-empty line, and that `references/purlin_commands.md` contains the literal `purlin:rename`. Deleting the `name:` line fails naming the file",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/skill_rename/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-1",
+  "rule_hash": "3b5ab45f1f6cfbda10ef3be93559079e99679c8499f2cd753a79563d8c807384",
+  "rule_text": "`skills/rename/SKILL.md` opens with a frontmatter block whose `name` is `rename` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:rename`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "488e697f7cc37f144c085bd5974272133211ae5c1f051a4f48362c23aa3a05f8",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_frontmatter_names_the_skill(self):\n        assert frontmatter_problems('rename') == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_the_frontmatter_names_the_skill",
+      "proof": "PROOF-1",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "539047a825ce1aaf57ab32f1b90032b775b6d1ee74bf277a3de33df2d263a0ac"
+}

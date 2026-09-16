@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_audit",
+  "generated_at": "2026-09-16T22:35:40Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "596aff474c6ce246209dcffe23d1e1b0fc93e698aea52113d08d5f1b34403501",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-7",
+      "text": "Read `skills/audit/SKILL.md` with its line wrapping collapsed; verify it carries `.purlin/briefs/` in the sentence that names `--ci`, and the literal `record/<name>` beside `--tag`. Renaming the tag prefix fails naming `record/<name>`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/skill_audit/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-7",
+  "rule_hash": "d46b3a31d940631dcec7c1166db7bf0be0b8c181dae08eb3f87d1b6d77cd5c67",
+  "rule_text": "The skill states that `--ci` also writes the briefs under `.purlin/briefs/`, and that `--tag <name>` writes the tag `record/<name>`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "fd6eabf3f50d26b50680258892bf9f111fbe6dcc59b110aa474836d8f375e1ba",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_names_the_briefs_and_the_record_tag(self):\n        assert carries(skill_path('audit'), [\n            '.purlin/briefs/',\n            '`--tag <name>` writes an annotated tag `record/<name>`']) == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_it_names_the_briefs_and_the_record_tag",
+      "proof": "PROOF-7",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "564e468708626dd00fa017f743b39dcec266cd87ba91f638e0da09b68defa869"
+}

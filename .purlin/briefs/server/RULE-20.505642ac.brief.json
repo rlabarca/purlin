@@ -1,0 +1,53 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "server",
+  "generated_at": "2026-09-16T22:35:38Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "19848397ce107ad3f1ee77908099b0886919a11c4b23cfe97060b9889ad07a0b",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-20",
+      "text": "Declare an anchor with a git source and a pin, call the hook in-process with every git call captured, and verify no captured call lists a remote and that the data file names the producer `hook` and carries the anchor's source and pin. Then set the data file's modification time into the past and call again with the inputs unchanged, verifying the bytes are identical while the modification time advanced",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/server/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-20",
+  "rule_hash": "4a95e937420b975451cec7eeaa80a8e1ab00a99faaefc8aafa9e6751a4a4458a",
+  "rule_text": "The hook generates with the producer `hook`, the network off and a write only if the payload changed, so no remote is ever listed from a background hook and an unchanged payload is touched rather than rewritten into a dirty working tree",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "544f5e88e3ed5a4dd5dae5b4a4f344223f1cb68512f4fc2460a7a4e9d3eab3fc",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_no_network_named_producer_and_touch_instead_of_rewrite(self, tmp_path, monkeypatch):\n        project = _project(str(tmp_path), anchor=True)\n        module = _load_hook_module()\n        argvs = []\n        real_run = purlin_payload.subprocess.run\n\n        def recording(argv, *a, **kw):\n            argvs.append(list(argv))\n            return real_run(argv, *a, **kw)\n\n        for watched in (purlin_payload, purlin_drift, purlin_specs):\n            monkeypatch.setattr(watched.subprocess, 'run', recording)\n        _main_in(project, module)\n        assert argvs, 'the build shells out to git, so the recorder must have seen something'\n        assert not any('ls-remote' in argv for argv in argvs), \\\n            f'a background hook must never reach the network: {[a for a in argvs if \"ls-remote\" in a]}'\n        digest = _read_digest(project)\n        assert digest['generated_by'] == 'hook'\n        anchor = next(f for f in digest['features'] if f['name'] == 'shared_rules')\n        assert anchor['source'] == 'https://github.com/example/rules.git', anchor\n        assert anchor['pinned'] == 'abc1234', anchor\n\n        # The digest is tracked in a real project; commit it so its own\n        # presence is not the thing that changes between two builds. Dating\n        # the digest into the past is what forces a build with nothing new.\n        _git(project, 'add', '-A')\n        _git(project, 'commit', '-q', '-m', 'digest')\n        path = _digest_path(project)\n        _age(path)\n        _main_in(project, module)\n        before = open(path, 'rb').read()\n        _age(path)\n        stamp = os.stat(path).st_mtime\n        _main_in(project, module)\n        assert open(path, 'rb').read() == before, \\\n            'an unchanged payload must not rewrite the file (the tree would be dirtied)'\n        assert os.stat(path).st_mtime > stamp, 'the touch is what clears the dirty check'",
+      "file": "dev/test_refresh_digest_hook.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_no_network_named_producer_and_touch_instead_of_rewrite",
+      "proof": "PROOF-20",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "505642acb302f89fe2a9bd5f931f2fae0a6c3feaaad6518aff0ecb9a6a68cea9"
+}

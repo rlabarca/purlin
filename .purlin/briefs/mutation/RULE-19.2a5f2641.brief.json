@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "mutation",
+  "generated_at": "2026-09-16T22:35:20Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "0b5a32c3ecc0c152e5294e674dcace872484e22c5fe4cb66b6a2fdbcaff30302",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-19",
+      "text": "Call the empty engine with one feature and two rules; verify the engine is `none`, `available` is False, the reason is a sentence, and every rule carries `score: None` with `attribution: \"unavailable\"`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/mutation/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-19",
+  "rule_hash": "9b79502ff01dec9cfab6aa8965e2fe6bbd2b9953b242a30fa004101af1f44cea",
+  "rule_text": "The empty engine measures nothing: every rule carries a score of None and `attribution: \"unavailable\"`, and the reason is a sentence saying why",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "53220aef5b8923d99edb392f74a353156e4c7e7436b4bfb781cd4cbaef4c7572",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_no_engine_measures_nothing_and_says_why():\n    answer = none.run('/project', {'deploy': ['deploy.sh']},\n                      {('deploy', 'RULE-1'): []})\n    assert answer['engine'] == 'none'\n    assert answer['available'] is False\n    assert 'shell or sql' in answer['reason']\n    assert answer['features']['deploy']['scope_score'] == {\n        'score': None, 'killed': 0, 'survived': 0}\n    assert answer['features']['deploy']['rules']['RULE-1'][\n        'attribution'] == 'unavailable'",
+      "file": "dev/test_mutation_adapters.py",
+      "findings": [],
+      "name": "test_no_engine_measures_nothing_and_says_why",
+      "proof": "PROOF-19",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "2a5f2641375ab17e54c85709c8a2d46fe2668a7efff4e7391ba01c2494e8501e"
+}

@@ -1,0 +1,55 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_version",
+  "generated_at": "2026-09-16T22:35:24Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "feba82e7cc9cb7c5324a9922fb2824325d6e6449483386921511ed2f606ec2a1",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-7",
+      "text": "Build a temporary project holding a `VERSION` file and all three derived JSON files at `1.2.3`, plus a copy of the script; run it with `9.8.7` and verify the `VERSION` file and each JSON file read `9.8.7`; run `--check` and verify exit 0; hand-edit `.purlin/config.json` back to `1.2.3` and verify `--check` exits 1, printing `DRIFT` and naming `.purlin/config.json` while still listing `templates/config.json` and `.claude-plugin/plugin.json`. Then run the script with `not-a-version` and verify exit 2 with the `VERSION` file still reading `1.2.3`; delete `.purlin/config.json`, verify a bump exits 0 and still writes `templates/config.json`, and that `--check` exits 0 reporting that location as `absent`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/purlin_version/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-7",
+  "rule_hash": "f750f0ddfc79e4bbd3e567c21ebb01922ef8c759acfe353da3d3aa68b1ba639f",
+  "rule_text": "`dev/bump_version.sh <semver>` is the one propagation entry point: it writes the `VERSION` file and sets the version field in every derived location, it refuses an argument that is not semver before writing anything, and `dev/bump_version.sh --check` exits non-zero naming each location that disagrees while still reporting the ones that match",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "abfde2545589ecc1c0150610de092bee1ac0a817038eeae9a8ec219b3511bc82",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_bump_propagates_everywhere_and_check_reports_drift(self, tmp_path):\n        \"\"\"bump_version.sh <semver> writes VERSION and every derived location;\n        --check exits 1 naming the drifted file, and 0 on a matching tree.\"\"\"\n        root = str(tmp_path / 'proj')\n        os.makedirs(root)\n        script = self._fake_project(root, '1.2.3')\n\n        # \u2500\u2500 Propagation \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n        bump = subprocess.run(\n            [BASH, bash_path(script), '9.8.7'],\n            capture_output=True, text=True,\n        )\n        assert bump.returncode == 0, \\\n            f\"bump exited {bump.returncode}\\nstdout:{bump.stdout}\\nstderr:{bump.stderr}\"\n\n        with open(os.path.join(root, 'VERSION'), encoding='utf-8') as f:\n            assert f.read().strip() == '9.8.7', \"VERSION file was not rewritten\"\n        for rel in self.DERIVED:\n            assert self._read(root, rel) == '9.8.7', \\\n                f\"{rel} still reports {self._read(root, rel)}, expected 9.8.7\"\n\n        # \u2500\u2500 --check passes on the propagated tree \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n        ok = subprocess.run(\n            [BASH, bash_path(script), '--check'], capture_output=True, text=True,\n        )\n        assert ok.returncode == 0, \\\n            f\"--check failed on a matching tree:\\n{ok.stdout}\\n{ok.stderr}\"\n\n        # \u2500\u2500 --check fails, naming the drifted file \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n        drifted = os.path.join(root, '.purlin', 'config.json')\n        with open(drifted, encoding='utf-8') as f:\n            data = json.load(f)\n        data['version'] = '1.2.3'\n        with open(drifted, 'w', encoding='utf-8') as f:\n            json.dump(data, f, indent=2)\n            f.write('\\n')\n\n        bad = subprocess.run(\n            [BASH, bash_path(script), '--check'], capture_output=True, text=True,\n        )\n        assert bad.returncode == 1, \\\n            f\"--check exited {bad.returncode} on a drifted tree, expected 1\"\n        assert '.purlin/config.json' in bad.stdout, \\\n            f\"--check did not name the drifted file:\\n{bad.stdout}\"\n        assert 'DRIFT' in bad.stdout, \\\n            f\"--check did not mark the drift:\\n{bad.stdout}\"\n        # The other two must still be reported as matching, so the operator can\n        # see the check is scoped rather than blanket-failing.\n        assert 'templates/config.json' in bad.stdout\n        assert '.claude-plugin/plugin.json' in bad.stdout",
+      "file": "dev/test_purlin_version.py",
+      "findings": [],
+      "name": "test_bump_propagates_everywhere_and_check_reports_drift",
+      "proof": "PROOF-7",
+      "reasons": []
+    },
+    {
+      "body": "def test_bump_rejects_non_semver_and_tolerates_absent_optional_file(self, tmp_path):\n        \"\"\"A non-semver argument is refused before anything is written, and an\n        absent .purlin/config.json is skipped rather than failing the run.\"\"\"\n        root = str(tmp_path / 'proj')\n        os.makedirs(root)\n        script = self._fake_project(root, '1.2.3')\n\n        bad = subprocess.run(\n            [BASH, bash_path(script), 'not-a-version'], capture_output=True, text=True,\n        )\n        assert bad.returncode == 2, f\"expected exit 2, got {bad.returncode}\"\n        with open(os.path.join(root, 'VERSION'), encoding='utf-8') as f:\n            assert f.read().strip() == '1.2.3', \\\n                \"VERSION was modified despite an invalid argument\"\n\n        # A consumer checkout of the framework has no .purlin/config.json.\n        os.remove(os.path.join(root, '.purlin', 'config.json'))\n        run = subprocess.run(\n            [BASH, bash_path(script), '2.0.0'], capture_output=True, text=True,\n        )\n        assert run.returncode == 0, \\\n            f\"bump failed with the optional file absent:\\n{run.stdout}\\n{run.stderr}\"\n        assert self._read(root, os.path.join('templates', 'config.json')) == '2.0.0'\n\n        check = subprocess.run(\n            [BASH, bash_path(script), '--check'], capture_output=True, text=True,\n        )\n        assert check.returncode == 0, \\\n            f\"--check failed with the optional file absent:\\n{check.stdout}\"\n        assert 'absent' in check.stdout, \\\n            f\"--check did not report the absent optional file:\\n{check.stdout}\"",
+      "file": "dev/test_purlin_version.py",
+      "findings": [],
+      "name": "test_bump_rejects_non_semver_and_tolerates_absent_optional_file",
+      "proof": "PROOF-7",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "7ad2d908e574c446565aa649406f71813daf20b3f7c3cb2663159bdda6611dec"
+}

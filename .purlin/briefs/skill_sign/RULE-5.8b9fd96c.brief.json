@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_sign",
+  "generated_at": "2026-09-16T22:35:41Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "ff0a8c5e15f10581a5a4e8672bd6c6a849b3dc6cfd61c77cb2f5b708b01e5139",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-5",
+      "text": "Read `skills/sign/SKILL.md` with its line wrapping collapsed; verify it carries the clause `That author did not author the last commit to the test file` and the clause `the commit is on the protected branch`. Dropping the negation, so that the first clause reads `That author authored the last commit to the test file`, fails naming the clause it did not find",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/skill_sign/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-5",
+  "rule_hash": "d1f38a907f45c4e6e6993e2d9771e09ec301876e117e5eb92e3f52d470858011",
+  "rule_text": "The skill states that a signature does not count when its author is the author of the commit that last touched the test, and that under the `signed` gate the signing commit is signed and reaches the protected branch",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "49d5f617a002568611f0c74f12114adf05b230740dc704283b241e1175c07f9e",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_author_of_the_test_cannot_sign_it(self):\n        assert carries(skill_path('sign'), [\n            'That author did not author the last commit to the test file',\n            'the commit is on the protected branch']) == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_the_author_of_the_test_cannot_sign_it",
+      "proof": "PROOF-5",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "8b9fd96c86c90400b927f367f8217eed3998aacf4fbbd9302ab9b2bfa2812982"
+}

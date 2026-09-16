@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-16T22:35:30Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "e2019781617c2048cc9e3bbaafa17a3a6c62eea0ff34b3d85469b6f631e63df2",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-18",
+      "text": "Take the break engines off `sys.path` and run `--all --record`; verify the output holds `test strength is not measured`, that the record was still written and that the run exits 0",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/run_script/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-18",
+  "rule_hash": "5522d59f8fba66eb613fb65fba44b05e2d9fadf83b26414656311ed090707cbc",
+  "rule_text": "A checkout whose break engines are not importable still writes its record, prints that test strength was not measured, and exits 0",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "958299068f95016735e89727dc28929a1d59d347e468c100c73bb94103ed3c77",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_missing_break_engines_are_reported_and_the_run_continues(\n            self, tmp_path, monkeypatch, capsys):\n        root = _pytest_project(tmp_path, gate='strong')\n        _spec(root, 'feat')\n\n        def write_record(project_root, record, runner, os_name=None):\n            return 'r.json'\n\n        monkeypatch.setitem(sys.modules, 'records', _FakeModule(\n            write_record=write_record,\n            commit_records=lambda *a, **k: 'developer',\n            tag_record=lambda *a, **k: None))\n        purlin_run = _load_run_script()\n        # The break engines are taken off the path, which is the state a\n        # checkout is in before they are installed: `--record` must still\n        # write its record and say what it could not measure.\n        run_dir = os.path.join(REPO, 'scripts', 'run')\n        monkeypatch.delitem(sys.modules, 'mutation', raising=False)\n        monkeypatch.setattr(\n            sys, 'path',\n            [p for p in sys.path if os.path.abspath(p or '.') != run_dir])\n        code = purlin_run.main(['--project-root', str(root), '--all',\n                                '--record'])\n        output = capsys.readouterr().out\n        assert 'test strength is not measured' in output\n        assert code == 0",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_missing_break_engines_are_reported_and_the_run_continues",
+      "proof": "PROOF-18",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "bde0126e40827195b9aebc60504b6650703a1bffe61bbb428b47d69409c7aa50"
+}

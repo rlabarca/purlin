@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T22:35:48Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "04a2c3c84c7808976a43a7c5898df797b8be302220d14c5db7273665a8fb16f4",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-45",
+      "text": "Run the status report and count the lines opening with the arrow and `Next:`; verify there is exactly 1, and that on a project whose rules have a proof and no test it names `purlin:build`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-38",
+  "rule_hash": "c8f3abba4db77f374c2b8c09118082b03c5685c1cf26eb4185ad2944cecd653a",
+  "rule_text": "The report ends with exactly one `Next:` line, computed from the lowest cell blocking the project rather than from what the caller asked for",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "88ef8d0e448a81a57f54fb7c98122caf73f252aefed8e0f18af1ed1671ae6f3f",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_table_ends_with_one_next_step(self, project):\n        text = purlin_status.sync_status(project.root)\n        directives = [line for line in text.splitlines()\n                      if line.startswith('\u2192 Next:')]\n        assert len(directives) == 1, text\n        assert 'purlin:build' in directives[0], directives[0]",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_the_table_ends_with_one_next_step",
+      "proof": "PROOF-45",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "8da8209dda1f1cf6a063dfedc34e5cbd6837b0c3b9956332c89621c6af100466"
+}

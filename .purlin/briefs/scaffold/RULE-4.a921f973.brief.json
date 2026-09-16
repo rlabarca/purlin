@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T22:35:32Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "10ab4a0d9319c8faf312d019ab1ac71a4253587899b097607c7b6ba3db79690b",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-4",
+      "text": "Run init and answer the gate question `whenever`; verify the config reads `gate` `tested` and the output contains `is not a gate`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-4",
+  "rule_hash": "374c070ed0b0126e45f0fb76994676adc00c3696e10a67397760e39d57f8de28",
+  "rule_text": "An answer that is not one of the three gates is read as `tested` and the fallback is printed, so a typo lowers what CI enforces loudly rather than raising it silently",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "bc4b94fc2c2a7ab657f667f14f486d88941434e15a713bfc232c6169093f264a",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_an_unreadable_answer_falls_back_to_tested(self):\n        made = Project('pytest')\n        try:\n            done = subprocess.run(\n                [sys.executable, SCAFFOLD, '--project-root', made.root],\n                input='whenever\\n', capture_output=True, encoding='utf-8',\n                timeout=300)\n            assert made.config()['gate'] == 'tested'\n            assert 'is not a gate' in done.stdout\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_an_unreadable_answer_falls_back_to_tested",
+      "proof": "PROOF-4",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a921f9735b36130ffd695dfc17bc88f27e594c3b2e479398143cdd37f3319e50"
+}

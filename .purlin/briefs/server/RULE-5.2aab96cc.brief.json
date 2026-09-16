@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "server",
+  "generated_at": "2026-09-16T22:35:37Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "a712dd114a7ceb3bdb704fcd458081e80fea9ffee9dd05646428cd02bca4909b",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-5",
+      "text": "Run the server over an `initialize` request and verify every line of stdout parses as JSON, while stderr carries the text `Purlin MCP server`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/server/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-5",
+  "rule_hash": "46597e2be4d3a2b3b7c7e1604a77d8f36afbfcb96250c395e6ee7297635ed43a",
+  "rule_text": "Stdout carries JSON-RPC responses and nothing else; the startup line naming the version and the root goes to stderr",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "7c3dbc64a029738d2c084cb10519f0debb7cbe06eca87251d7a6deb85c12c4d5",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_initialize_names_the_protocol_and_the_version(self, project):\n        responses, stderr = _rpc(project.root, {\n            'jsonrpc': '2.0', 'id': 1, 'method': 'initialize',\n            'params': {'protocolVersion': '2024-11-05', 'capabilities': {},\n                       'clientInfo': {'name': 't', 'version': '0'}}},\n            child=True)\n        result = responses[0]['result']\n        assert result['protocolVersion'] == '2024-11-05'\n        assert result['serverInfo']['name'] == 'purlin'\n        with open(os.path.join(PROJECT_ROOT, 'VERSION'),\n                  encoding='utf-8') as handle:\n            assert result['serverInfo']['version'] == handle.read().strip()\n        assert 'Purlin MCP server' in stderr",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_initialize_names_the_protocol_and_the_version",
+      "proof": "PROOF-5",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "2aab96cc4faa7b2328a5923e0f80a02580cf95de0a9b75cb96019a105ce77e36"
+}

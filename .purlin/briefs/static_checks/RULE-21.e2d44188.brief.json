@@ -1,0 +1,62 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-16T22:35:55Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "efbbee808695fd715c796772bbfea730fc629cabcf6376be34b0aefcef7aba53",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-42",
+      "text": "Run the dispatcher over a `.cs` file carrying `PROOF-7`; verify the result names `PROOF-7` with the check `tautology`, and run it over a `.txt` file and verify zero results come back",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-49",
+      "text": "Run the dispatcher over one always-true fixture per shipped extension; verify each yields exactly 1 result checked `tautology`, that an `.rb` file yields zero results and no body, and that the extractor set is the checker set less the shell extension",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/static_checks/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-21",
+  "rule_hash": "450db9b9336de093104bc455a2562994e9837149612ee9b29e33c902d87e3972",
+  "rule_text": "One extension table decides which checker reads a file: an extension outside it reaches no checker and yields no extracted body, and the extractor set is that table less shell",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "167c63aadbd1aaae1696eb69d175646bea4866f2f5193556ab66455311776d5e",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_dispatch_routes_cs_to_check_csharp(self):\n        \"\"\"analyze_test_file routes a .cs file to check_csharp (not the empty fallback).\"\"\"\n        path = self._cs(\"Assert.True(true);\", proof_id=\"PROOF-7\", rule_id=\"RULE-9\")\n        try:\n            results = analyze_test_file(path, \"csfeat\")\n            assert results, \".cs file produced no proofs \u2014 dispatch fell through to []\"\n            assert results[0]['proof_id'] == 'PROOF-7'\n            assert results[0]['check'] == 'tautology'\n            # A genuinely unknown extension still yields the empty fallback.\n            other = _write_tmp(\"nothing here\", suffix='.txt')\n            try:\n                assert analyze_test_file(other, \"csfeat\") == []\n            finally:\n                os.unlink(other)\n        finally:\n            os.unlink(path)",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_dispatch_routes_cs_to_check_csharp",
+      "proof": "PROOF-42",
+      "reasons": []
+    },
+    {
+      "body": "def test_every_shipped_extension_dispatches_and_nothing_else_does(self):\n        \"\"\"Each extension a shipped plugin emits reaches a checker that flags the\n        always-true fixture; an extension no checker reads yields [] and no\n        extracted body, rather than being handed to whichever checker an if-chain\n        ended on.\"\"\"\n        for ext, content in self._FIXTURES.items():\n            path = _write_tmp(content, suffix=ext)\n            try:\n                results = analyze_test_file(path, 'dfeat')\n                assert len(results) == 1, f\"{ext}: dispatch produced {results}\"\n                assert results[0]['check'] == 'tautology', f\"{ext}: {results[0]}\"\n            finally:\n                os.unlink(path)\n\n        # An unknown extension: no checker, and no extractor either. The `.rb` file\n        # carries a Jest-shaped marker, which the old silent fallback would read.\n        ruby = _write_tmp(\n            'it(\"t [proof:dfeat:PROOF-1:RULE-1]\", () => { expect(1).toBe(1); });',\n            suffix='.rb')\n        try:\n            assert analyze_test_file(ruby, 'dfeat') == [], \\\n                \".rb reached a checker \u2014 the dispatch has a fallback\"\n            assert static_checks._test_bodies(ruby, '.rb', 'dfeat') is None, \\\n                \".rb produced a body \u2014 _test_bodies still falls back to the JS extractor\"\n        finally:\n            os.unlink(ruby)\n\n        # One table: the extractor set is derived from it rather than listed again,\n        # and shell is the single checked language deliberately left out of it.\n        assert static_checks._CHECKER_EXTENSIONS == frozenset(\n            {'.py', '.sh', '.cs', '.sql'} | static_checks._JS_EXTENSIONS)\n        assert static_checks._TEST_CODE_EXTENSIONS == \\\n            static_checks._CHECKER_EXTENSIONS - {'.sh'}\n        assert {'.mjs', '.cjs'} <= static_checks._JS_EXTENSIONS",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_every_shipped_extension_dispatches_and_nothing_else_does",
+      "proof": "PROOF-49",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "e2d4418828dc899c386a8b1b910f37a5f2e58148d3c92443cbefaff51d990153"
+}

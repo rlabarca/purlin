@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_version",
+  "generated_at": "2026-09-16T22:35:24Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "32bd42d017a6c23bf346e2475264df905846231180f43803a3699088df1159c8",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-2",
+      "text": "Copy `scripts/mcp` under a temporary root whose `VERSION` file reads `9.8.7`, import the copied `purlin` package and its server in a fresh interpreter, and verify `PURLIN_VERSION` and the server's reported version both read exactly `9.8.7`; then import the package in this checkout and verify `PURLIN_VERSION` equals the stripped content of the `VERSION` file",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/purlin_version/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-2",
+  "rule_hash": "a952f42cdc6cc36aaabf559289201e34c7955cdb52969d82e530e039cb277936",
+  "rule_text": "The `purlin` package reads the version out of the `VERSION` file at import time and assigns it to `PURLIN_VERSION`, and the server reports that value rather than a literal of its own",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "2ab72acf1d92e6ef79e8677eb93b235c0770e051cb845b4ff1acfb80827494c8",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_package_reads_the_version_from_the_file(self, tmp_path):\n        \"\"\"A copy of the package beside a VERSION of 9.8.7 reports 9.8.7.\n\n        A literal in the package or in the server would still report the\n        checkout's number, so only a value read from the file passes.\n        \"\"\"\n        shutil.copytree(os.path.join(PROJECT_ROOT, 'scripts', 'mcp'),\n                        str(tmp_path / 'scripts' / 'mcp'),\n                        ignore=shutil.ignore_patterns('__pycache__'))\n        (tmp_path / 'VERSION').write_text('9.8.7\\n', encoding='utf-8')\n        probe = ('import json, sys\\n'\n                 'sys.path.insert(0, sys.argv[1])\\n'\n                 'import purlin\\n'\n                 'from purlin import server\\n'\n                 'print(json.dumps([purlin.PURLIN_VERSION,'\n                 ' server.SERVER_INFO[\"version\"]]))\\n')\n        answer = subprocess.run(\n            [sys.executable, '-c', probe,\n             str(tmp_path / 'scripts' / 'mcp')],\n            capture_output=True, text=True, cwd=str(tmp_path), timeout=60)\n        assert answer.returncode == 0, answer.stderr\n        reported = json.loads(answer.stdout.strip().splitlines()[-1])\n        assert reported == ['9.8.7', '9.8.7'], reported\n\n        # The package in this checkout reports the checkout's VERSION file\n        with open(VERSION_FILE) as f:\n            expected = f.read().strip()\n        assert purlin_package.PURLIN_VERSION == expected, \\\n            (f\"PURLIN_VERSION is '{purlin_package.PURLIN_VERSION}' at runtime \"\n             f\"but VERSION file contains '{expected}'\")",
+      "file": "dev/test_purlin_version.py",
+      "findings": [],
+      "name": "test_the_package_reads_the_version_from_the_file",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "60e00c0c30371f29bfafbd45797aae805b07f5a5cf562956a99fad37f3eb7ccd"
+}

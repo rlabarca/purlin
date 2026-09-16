@@ -1,0 +1,73 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-16T22:35:31Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "74f41fe5cd4eab369dc3fa987a255b01d3c5025729018179cc1b6e9c2c299861",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-58",
+      "text": "Run `--all --quick` over a marked pytest test asserting `1 == 2`; verify the output holds `--- pytest output (last 60 lines) ---`, that pytest's own `1 failed` line is under it, and that the heading comes before `Evidence is missing`. Run `--all --quick` over a passing test; verify no such heading is printed",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-59",
+      "text": "Run `--all --record --ci` with no runner temporary directory in the environment, over a project whose pytest test fails; verify `.purlin/runtime/report/logs/pytest.log` exists and holds the arm's own output including the command line the arm ran",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/run_script/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-40",
+  "rule_hash": "b237e804f963f612f9e903bbb1fb17d5d241c843712983f22e0801f589ecf2f9",
+  "rule_text": "An arm that exits non-zero or is killed has the last 60 lines of its own output printed to stdout under `--- <arm> output (last 60 lines) ---` before the missing-evidence lines, and under `--ci` every arm's whole output is published as `logs/<arm>.log` in the dashboard directory",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "19228c3e9a344ebe26ad704dedc5c0838a25cc688f219639a40d828fa447ffec",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_failing_arm_prints_its_tail_before_the_missing_evidence(\n            self, tmp_path):\n        root = _pytest_project(tmp_path, body=(\n            'import pytest\\n\\n'\n            '@pytest.mark.proof(\"feat\", \"PROOF-1\", \"RULE-1\")\\n'\n            'def test_bad():\\n'\n            '    assert 1 == 2\\n'))\n        _spec(root, 'feat')\n        code, output = _run(root, '--all', '--quick')\n        assert code == 1, output\n        heading = '--- pytest output (last 60 lines) ---'\n        assert heading in output, output\n        assert '1 failed' in output, output\n        assert output.index(heading) < output.index('Evidence is missing'), \\\n            output",
+      "file": "dev/test_run_script.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_a_failing_arm_prints_its_tail_before_the_missing_evidence",
+      "proof": "PROOF-58",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_an_arm_that_passed_prints_no_tail(self, tmp_path):\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat')\n        code, output = _run(root, '--all', '--quick')\n        assert code == 0, output\n        assert 'output (last 60 lines)' not in output, output",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_an_arm_that_passed_prints_no_tail",
+      "proof": "PROOF-58",
+      "reasons": []
+    },
+    {
+      "body": "def test_ci_publishes_each_arms_whole_output(\n            self, tmp_path, record_run, monkeypatch, capsys):\n        # Off a runner the dashboard goes into the project, which is where the\n        # test reads it back. On a runner both variables are set, and the\n        # published directory would be the runner's own.\n        for variable in ('RUNNER_TEMP', 'AGENT_TEMPDIRECTORY'):\n            monkeypatch.delenv(variable, raising=False)\n        root = _pytest_project(tmp_path, body=(\n            'import pytest\\n\\n'\n            '@pytest.mark.proof(\"feat\", \"PROOF-1\", \"RULE-1\")\\n'\n            'def test_bad():\\n'\n            '    assert 1 == 2\\n'))\n        _spec(root, 'feat')\n        record_run(root, '--all', '--ci')\n        capsys.readouterr()\n        published = root / '.purlin' / 'runtime' / 'report' / 'logs'\n        text = (published / 'pytest.log').read_text(encoding='utf-8')\n        assert '-m pytest' in text, text\n        assert '1 failed' in text, text",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_ci_publishes_each_arms_whole_output",
+      "proof": "PROOF-59",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "364310b003400ef0c88f10f5d4ee452007bff6d7a7aec2a6113ca1d49d54a325"
+}

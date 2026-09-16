@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T22:35:42Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "ac6d5944dfd9a2fa261f3051f15bf4bb13587e72177ced61e3a0158a81d70271",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-1",
+      "text": "Write a spec whose `## Proof` section is empty and call the payload builder; verify RULE-1 reads the spec status `drafted` and an empty proof list",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-1",
+  "rule_hash": "0058924622399709d5662092557aa2367e910b1d3a1745e302f11182d4c22052",
+  "rule_text": "A rule that no proof line names has the spec status `drafted` and an empty proof list",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "2de84dd25184e9a1b5794ea478a40e9d807d9e52ecf306589e3bb8ef37bd7c37",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_drafted_when_there_is_no_proof(self, project):\n        project.spec('# Feature: login\\n\\n## Rules\\n\\n- RULE-1: It works\\n\\n'\n                     '## Proof\\n')\n        rule = project.rule('RULE-1')\n        assert rule['spec'] == 'drafted'\n        assert rule['proofs'] == []",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_drafted_when_there_is_no_proof",
+      "proof": "PROOF-1",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "3381faa4abf70604ff81c9fdc4dcd3ff2fba328f6dfc1e2056d700e7e34096cf"
+}

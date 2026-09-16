@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "server",
+  "generated_at": "2026-09-16T22:35:37Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "d10df392b4bfbb2fca50c8089dc3b143e9ec6a5eab233d184bfc42dd543282e4",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-4",
+      "text": "Send a `tools/call` naming the tool `nope` and then the method `nope/at/all`; verify both answer error code `-32601`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/server/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-4",
+  "rule_hash": "209affff841880120bfe8821a25bb6cfb7e8e857cd239724cbbd39c8ff3ad898",
+  "rule_text": "An unknown tool name and an unknown method each answer error code `-32601`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "500905d2336264829bbd783293636103bd4437f36c5dae8ff1cb66c48226e6bc",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_an_unknown_tool_and_an_unknown_method_are_errors(self, project):\n        responses, _stderr = _rpc(\n            project.root,\n            {'jsonrpc': '2.0', 'id': 1, 'method': 'tools/call',\n             'params': {'name': 'nope', 'arguments': {}}},\n            {'jsonrpc': '2.0', 'id': 2, 'method': 'nope/at/all'})\n        assert responses[0]['error']['code'] == -32601\n        assert responses[1]['error']['code'] == -32601",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_an_unknown_tool_and_an_unknown_method_are_errors",
+      "proof": "PROOF-4",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "8164b73faa33986af1c4e416c79ffe037b3bda72ad2ec86cd1154cfd49cc563b"
+}

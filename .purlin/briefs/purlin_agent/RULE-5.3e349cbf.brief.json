@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_agent",
+  "generated_at": "2026-09-16T22:35:22Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "f668210119874acdf53787c65a86bb3fdc962c9edd8766fefc7ddee6d14bad39",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-5",
+      "text": "Read `agents/purlin.md` with its line wrapping collapsed; verify it carries the sentence \"Call `sync_status` before you answer any question about state.\" and each of the words `drafted`, `ready`, `passed`, `strong`, `signed` and `code changed` in backticks, one assertion per word. Dropping `strong` from the list fails naming `strong`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/purlin_agent/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-5",
+  "rule_hash": "34d27cee810eca068c9e0c35079cf417ee8fc2d163740eb02751e7ae5d26b7df",
+  "rule_text": "The agent says to call `sync_status` before answering any question about state, and names the two spec statuses `drafted` and `ready`, the three evidence levels `passed`, `strong` and `signed`, and the `code changed` word that means only the code moved",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "4882c1ecd194a206acf5a928ddf0f1cc396f7e14a79827d04180fae654e0fc24",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_reads_the_state_before_it_answers(self):\n        assert carries(AGENT, [\n            'Call `sync_status` before you answer any question about state.',\n            '`drafted`', '`ready`', '`passed`', '`strong`', '`signed`',\n            '`code changed`']) == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_it_reads_the_state_before_it_answers",
+      "proof": "PROOF-5",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "3e349cbfc24e682215a13a8fcc6d7235b9ad75f8fdd8708087e9853dfa180ff9"
+}

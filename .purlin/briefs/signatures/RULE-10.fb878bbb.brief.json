@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-16T22:35:39Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "df88b687ca29ff986b36f84de8f0376779c1a760756ad333e48d0b904e9dcdbc",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-14",
+      "text": "Write a signature and a brief for the same rule into one signatures directory, then load the signatures; verify exactly 1 comes back and its signer is `jane@acme.com`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/signatures/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-10",
+  "rule_hash": "004d3b600c1cfdd9ec86142a35b9bfdbc893487a2ea9636dd03bef09bf6be93c",
+  "rule_text": "The signature reader finds a signature in the `<feature>.signatures/` directory beside its spec and never reads a brief written under the same first two parts of a name",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "d5aeadcb348ae2a49a4766d8aafadbac8017e63fc35c307b908c55ab976485cd",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_reader_finds_it_and_never_reads_a_brief_as_one(self, proved):\n        triple = sign_module.triple_for(proved.rule('RULE-1'))\n        sign_one(proved)\n        write(os.path.join(proved.root, 'specs', 'auth', 'login.signatures',\n                           'RULE-1.%s.brief.json' % triple[:8]),\n              json.dumps({'schema': 'purlin-brief/1', 'rule': 'RULE-1'}))\n        loaded = proved.load()\n        assert len(loaded[('login', 'RULE-1')]) == 1\n        assert loaded[('login', 'RULE-1')][0]['signer'] == 'jane@acme.com'",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_the_reader_finds_it_and_never_reads_a_brief_as_one",
+      "proof": "PROOF-14",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "fb878bbb4b4e434c6deb8a82ef87866a7e8e47502a0cf9a2ec66b82796788127"
+}

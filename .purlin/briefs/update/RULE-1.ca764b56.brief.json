@@ -1,0 +1,55 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-16T22:35:57Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "bc3c1a9563aa5bd27ac7addaddc4bd64dc0ed9d24c25c7ad3506e43fa2dc2dba",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-1",
+      "text": "Verify `pending()` on a directory holding no `.purlin/` returns an empty list. Copy the v0.9.5 fixture into a temp repository, run `--check --json` and verify the payload's `project_root` is the absolute root, its `pending` ids equal what `pending()` returned, and every entry carries a non-empty `description` and `files`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/update/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-1",
+  "rule_hash": "fe57ec78554a61380be6c1b646ad40f2d414f7dce56ec8af25ba3bae6d540fe2",
+  "rule_text": "`pending()` returns one entry per migration a project still needs, each carrying an id, one line saying what it does and the files it touches; it returns nothing for a root with no `.purlin/`, and `--json` prints that same list",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "638c067cdc3a731d2ed137e853836661997b454cf5bc8b423969701fa79ef356",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_json_lists_the_same_migrations(tmp_path, capsys):\n    root = _project(tmp_path, V095)\n    update.main(['--check', '--json', '--project-root', root])\n    payload = json.loads(capsys.readouterr().out)\n    assert payload['project_root'] == os.path.abspath(root)\n    assert [item['id'] for item in payload['pending']] == _ids(root)\n    for item in payload['pending']:\n        assert item['description']\n        assert item['files']",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_json_lists_the_same_migrations",
+      "proof": "PROOF-1",
+      "reasons": []
+    },
+    {
+      "body": "def test_pending_is_empty_for_a_root_without_purlin(tmp_path):\n    empty = str(tmp_path / 'bare')\n    os.makedirs(empty)\n    assert update.pending(empty) == []",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_pending_is_empty_for_a_root_without_purlin",
+      "proof": "PROOF-1",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "ca764b5608bc82cc4c99617c0cb11a0aa0311907cc40468114b3a1e419f71c02"
+}

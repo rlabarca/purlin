@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "config_engine",
+  "generated_at": "2026-09-16T22:35:15Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "a8852828c23d1585436e778f50e38750ca5d578a10474697f5e1cd529a5b056b",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-3",
+      "text": "Call for the project root from a directory with no `.purlin/` marker in it or in any ancestor; verify it returns the working directory",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/config_engine/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-3",
+  "rule_hash": "f2b626981fd4d13db90a32b544f3c4a2fcbba4b43f75baa4fea372590524a015",
+  "rule_text": "Failing both, the root is the working directory",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "6fb4f6178906c0077c826c9300eee468a31af20dd322a370ff61273099148eda",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_falls_back_to_cwd(self):\n        bare = os.path.join(self.tmpdir, 'no_marker')\n        os.makedirs(bare)\n        result = find_project_root(start_dir=bare)\n        assert result == os.path.abspath(os.getcwd())",
+      "file": "dev/test_config_engine.py",
+      "findings": [],
+      "name": "test_falls_back_to_cwd",
+      "proof": "PROOF-3",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "d04228e1acf6909603c922e394613dda038f5f871677446185d276c38caa06bf"
+}

@@ -1,0 +1,56 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "upstream",
+  "generated_at": "2026-09-16T22:36:00Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "5c6465e9999f9408455126523c6bf3ccba290850cda612c20abc169484d949b1",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-7",
+      "text": "Write a text file holding the single sentence `Every refund is countersigned by a second person.` and run `add` on it with `--name refunds`; verify the result reads `drafted`, that the copy carries that sentence, the free-text note, a `## Rules` and a `## Proof` heading and no `RULE-` line at all, and that adding the same unchanged file twice returns the same pin. Hand the same absolute path and the repository path to the free-text test and verify it answers true for the file and false for the repository",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/upstream/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-7",
+  "rule_hash": "88a21ac0decd0e2ad8168acaccc3557862ff8e6822b0ff18554e962dd62e79aa",
+  "rule_text": "A source that is a readable text file rather than a repository is copied in whole as a drafted anchor carrying a note and no rules, pinned by the hash of its text, so rewording the source moves the pin",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "36adf3c86e200422bb895dadccd425943ae1d2fb315a846936b0dcf7899b0e3c",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_add_of_free_text_writes_a_note_and_no_rules(workspace):\n    source = os.path.join(workspace.root, 'policy.txt')\n    _write(source, 'Every refund is countersigned by a second person.\\n')\n    result = upstream.add(workspace.root, source, name='refunds')\n    assert result['status'] == 'drafted'\n    text = _copy_text(workspace, 'refunds')\n    assert 'Every refund is countersigned by a second person.' in text\n    assert upstream.FREE_TEXT_NOTE in text\n    assert '## Rules' in text and '## Proof' in text\n    assert 'RULE-' not in text\n    # The pin is the hash of the text, so a reworded source stales the copy.\n    assert result['pinned'] == upstream.add(\n        workspace.root, source, name='refunds')['pinned']",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_add_of_free_text_writes_a_note_and_no_rules",
+      "proof": "PROOF-7",
+      "reasons": []
+    },
+    {
+      "body": "def test_free_text_is_not_mistaken_for_a_repository(workspace):\n    \"\"\"An absolute path to a file satisfies the git-url test as well, so the\n    file has to win: a text file is not a repository.\"\"\"\n    source = os.path.join(workspace.root, 'policy.txt')\n    _write(source, 'Nothing is deleted without a record.\\n')\n    is_free, text = upstream._free_text(workspace.root, source)\n    assert is_free is True\n    assert 'Nothing is deleted' in text\n    assert upstream._free_text(workspace.root, workspace.anchor_repo)[0] is False",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_free_text_is_not_mistaken_for_a_repository",
+      "proof": "PROOF-7",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "55226d8d7b17643cbd8ae5fc412c03ba5d1c8b36ef4b95ca0a284ffee7f354f7"
+}

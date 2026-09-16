@@ -1,0 +1,115 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-16T22:35:39Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "eea7f1029e13748ace23a5b9e8ed6569a5eeca6580db746752f0518ddd104edd",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-6",
+      "text": "Write a signature, then load the signatures back; verify exactly 1 is current",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-7",
+      "text": "Write a signature, then edit the rule text; verify zero signatures are current",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-8",
+      "text": "Write a signature, then edit the proof text; verify zero signatures are current",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-9",
+      "text": "Write a signature, then edit the test so its assertion reads `== 200 or True`; verify zero signatures are current",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-10",
+      "text": "Write a signature, then raise the rule from `[risk: low]` to `[risk: high]`; verify zero signatures are current",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/signatures/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-6",
+  "rule_hash": "e2a79c10332ad4e84630b339f2cfcdfcb18ef825ca4512da70f065974ec87350",
+  "rule_text": "A signature stays current only while the rule text, the proof text, the test body and the risk still hash to what it bound, so a risk re-tag stales it",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "be98a9bcbba7569476972bfe3e879f299b3b2d8ad7db5344d457fab3a8853252",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_fresh_signature_is_current(self, proved):\n        sign_one(proved)\n        assert len(self._current(proved)) == 1",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_a_fresh_signature_is_current",
+      "proof": "PROOF-6",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_fresh_signature_is_current(self, proved):\n        sign_one(proved)\n        assert len(self._current(proved)) == 1",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_a_fresh_approval_is_current",
+      "proof": "PROOF-6",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_rule_text_changing_stales_it(self, proved):\n        sign_one(proved)\n        proved.spec(SPEC.replace('return 200 with a session token',\n                                 'return 200 with a signed session token'))\n        assert self._current(proved) == []",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_the_rule_text_changing_stales_it",
+      "proof": "PROOF-7",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_proof_text_changing_stales_it(self, proved):\n        sign_one(proved)\n        proved.spec(SPEC.replace('verify 200 and a token',\n                                 'verify 200, a token and a cookie'))\n        assert self._current(proved) == []",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_the_proof_text_changing_stales_it",
+      "proof": "PROOF-8",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_test_changing_stales_it(self, proved):\n        sign_one(proved)\n        proved.edit_test(TEST_FILE.replace('== 200', '== 200 or True'))\n        assert self._current(proved) == []",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_the_test_changing_stales_it",
+      "proof": "PROOF-9",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_risk_changing_stales_it(self, proved):\n        sign_one(proved)\n        proved.spec(SPEC.replace(\n            '- RULE-1: Valid credentials return 200 with a session token '\n            '[risk: low]',\n            '- RULE-1: Valid credentials return 200 with a session token '\n            '[risk: high]'))\n        assert self._current(proved) == [], (\n            'raising a rule from low to high changes what signing it meant')",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_the_risk_changing_stales_it",
+      "proof": "PROOF-10",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "8c07117098bca09eb582ea2f27d0812e58e4e9883ed870e5bc7c5e2eb16bfbd7"
+}

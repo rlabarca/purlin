@@ -1,0 +1,76 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "gate_check",
+  "generated_at": "2026-09-16T22:35:17Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "7d38ac07fd07247213d47cc45a1f424e2f69c472004a28998449f471ca30088d",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-25",
+      "text": "Run the gate with `--json` over a project at gate `passed` with no record; verify the JSON reads gate `passed`, result `fail`, exit 1, 2 rules, 0 met, 2 entries under `not_passed`, empty `weak` and `not_signed`, and the commit the payload named",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-26",
+      "text": "Run the gate with `--json` over a passing project; verify the result is `pass`, that met equals 2 of 2 rules and `not_passed` is empty",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-27",
+      "text": "Run the gate with `--json` at gate `strong` with a minimum of 70 over a record measuring 40; verify `weak` holds 2 entries, `not_passed` is empty and the minimum reads 70",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/gate_check/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-11",
+  "rule_hash": "1651fad59a3a06e2d23b6edb35876a3fa1abed3347fbdfada83437b5a5c392a2",
+  "rule_text": "`--json` prints the gate, the minimum, the commit, the rule counts, the three sections, the result and the exit code",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "1e466b755c3f7be93cfc97805410dba6d80136542cee1b64af21f6dc4263202e",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_carries_the_result_and_every_rule_that_fell_short(self):\n        made = Project(gate='passed')\n        try:\n            code, output = run(made, as_json=True)\n            assert code == 1\n            data = json.loads(output[output.index('{'):])\n            assert data['gate'] == 'passed'\n            assert data['result'] == 'fail'\n            assert data['exit'] == 1\n            assert data['rules'] == 2 and data['met'] == 0\n            assert len(data['not_passed']) == 2\n            assert data['weak'] == [] and data['not_signed'] == []\n            assert data['commit'] == made.head()\n        finally:\n            made.close()",
+      "file": "dev/test_gate_check.py",
+      "findings": [],
+      "name": "test_it_carries_the_result_and_every_rule_that_fell_short",
+      "proof": "PROOF-25",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_passing_project_says_pass(self):\n        made = project_at('passed', by_ci=False, briefs=())\n        try:\n            code, output = run(made, as_json=True)\n            data = json.loads(output[output.index('{'):])\n            assert code == 0 and data['result'] == 'pass'\n            assert data['met'] == data['rules'] == 2\n            assert data['not_passed'] == []\n        finally:\n            made.close()",
+      "file": "dev/test_gate_check.py",
+      "findings": [],
+      "name": "test_a_passing_project_says_pass",
+      "proof": "PROOF-26",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_weak_rule_lands_in_the_weak_list(self):\n        made = project_at('strong', strength=40, config={'min_strength': 70})\n        try:\n            code, output = run(made, as_json=True)\n            data = json.loads(output[output.index('{'):])\n            assert code == 1\n            assert len(data['weak']) == 2 and data['not_passed'] == []\n            assert data['min_strength'] == 70\n        finally:\n            made.close()",
+      "file": "dev/test_gate_check.py",
+      "findings": [],
+      "name": "test_a_weak_rule_lands_in_the_weak_list",
+      "proof": "PROOF-27",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "72d422c1e89c59103b82ae99b5f858deabfb0675dc09b81b03e3af899df852b1"
+}

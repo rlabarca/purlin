@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "brief",
+  "generated_at": "2026-09-16T22:35:15Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "e1c19fa5346e2a7664d3965eb9231e8c64f560455a08cde7b4b89a145d55e4aa",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-6",
+      "text": "Write a proof reading `The login works correctly`, then build the brief; verify its findings carry both `no_expected_value` and `vague_verb`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/brief/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-5",
+  "rule_hash": "1c438635942357171211719baa1178d876eb29e2dc26a3fccc962c3806b88c7e",
+  "rule_text": "Every free check on the proof text reaches the brief under the name `references/review_criteria.md` gives it",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "a2c524a430db341e0fed4d4780e0119780ff3ab5bb1ed16e86cdec0138f96358",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_proof_text_findings_reach_the_brief(self):\n        made = Project(spec=SPEC.replace(\n            'POST /login with the password \"secret\"; verify 200 and a token '\n            '@integration',\n            'The login works correctly @integration'))\n        try:\n            made.proofs()\n            found = build(made, 'RULE-1')['proofs'][0]['findings']\n            assert 'no_expected_value' in found\n            assert 'vague_verb' in found\n        finally:\n            made.close()",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_the_proof_text_findings_reach_the_brief",
+      "proof": "PROOF-6",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "e9fe340869831e9bb1cc689e20ac14de97dadb9b864fa5c5b4a0e6899a0258cb"
+}

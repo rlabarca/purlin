@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "server",
+  "generated_at": "2026-09-16T22:35:38Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "4770531c59ddef7cb82fc3069c9c7c16bd9da747821ded3dc96d83c0281a0ac7",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-18",
+      "text": "Run the hook in a dirty temporary git project under each of: no `.purlin/config.json`; a config whose `digest` reads `off`; the skip variable set to `1`; and an index lock present in the git directory. Verify no data file is written in any of them and every run exits 0 in silence; then remove the index lock and verify the data file is written",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/server/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-18",
+  "rule_hash": "aa8393b17f3a0ad6fde8713962d3ff571826acbe3d086349a5a4995612868f8c",
+  "rule_text": "The hook leaves without generating when `.purlin/config.json` is missing or unreadable, when its `digest` reads `off`, when `PURLIN_SKIP_DIGEST` is `1`, or when the repository holds an index lock, because a commit is in flight and the pre-commit hook owns that regeneration",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "e2034fccd6cc1591f971bb74c9031d7458aacad3009ab9248d337392584a6697",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_each_skip_condition_writes_nothing(self, tmp_path):\n        no_config = _project(str(tmp_path / 'no-config'))\n        os.remove(os.path.join(no_config, '.purlin', 'config.json'))\n        _assert_silent_zero(_run(no_config), 'no config')\n        assert not os.path.exists(_digest_path(no_config))\n\n        digest_off = _project(str(tmp_path / 'digest-off'), digest='off')\n        _assert_silent_zero(_run(digest_off), 'digest off')\n        assert not os.path.exists(_digest_path(digest_off))\n\n        skip = _project(str(tmp_path / 'skip'))\n        _assert_silent_zero(_run(skip, env={'PURLIN_SKIP_DIGEST': '1'}), 'skip env')\n        assert not os.path.exists(_digest_path(skip))\n\n        committing = _project(str(tmp_path / 'committing'))\n        git_dir = _git(committing, 'rev-parse', '--absolute-git-dir').stdout.strip()\n        index_lock = os.path.join(git_dir, 'index.lock')\n        with open(index_lock, 'w') as f:\n            f.write('')\n        _assert_silent_zero(_run(committing, child=True), 'index.lock present')\n        _assert_silent_zero(_run(committing), 'index.lock present, in process')\n        assert not os.path.exists(_digest_path(committing)), \\\n            'a commit in flight belongs to the pre-commit hook'\n        os.remove(index_lock)\n        _assert_silent_zero(_run(committing), 'index.lock gone')\n        assert os.path.isfile(_digest_path(committing))",
+      "file": "dev/test_refresh_digest_hook.py",
+      "findings": [],
+      "name": "test_each_skip_condition_writes_nothing",
+      "proof": "PROOF-18",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "d8d933f7919786287e07a76af86cafc309110c42be40deacef96789263658d2a"
+}

@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "gate_check",
+  "generated_at": "2026-09-16T22:35:17Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "4c769eb7a268b7150146277c53b92dac7340a3ce1c365a3adfe936abb2c7b0a3",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-29",
+      "text": "Snapshot every file of a project, run the gate at `passed`, `strong` and `signed`, and snapshot again; verify the two snapshots are equal and `git status --porcelain` prints nothing",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/gate_check/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-12",
+  "rule_hash": "bc4dec3f416ee2f7ebd1f0a0fd3f6603ddb29fa3d69d529a2fdeb01a16d239fd",
+  "rule_text": "The gate creates and changes no file at any gate value",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "4616e379dc82f88dd65e8a9e4ac0f7a9227f415ee50d875230b01c41a593a8e4",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_no_file_is_created_or_changed_at_any_level(self):\n        for gate in ('passed', 'strong', 'signed'):\n            made = project_at(gate, config={'signers': ['jane@acme.com']})\n            try:\n                before = _tree(made.root)\n                run(made)\n                assert _tree(made.root) == before, (\n                    'a gate that can edit the evidence it grades is not a gate')\n                status = git(made.root, 'status', '--porcelain').stdout\n                assert status.strip() == '', status\n            finally:\n                made.close()",
+      "file": "dev/test_gate_check.py",
+      "findings": [],
+      "name": "test_no_file_is_created_or_changed_at_any_level",
+      "proof": "PROOF-29",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "2e370e0e093b692ff1fdace73bd9042135b512f595ca8a977db821d46573d287"
+}

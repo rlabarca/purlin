@@ -1,0 +1,79 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T22:35:36Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "94ee1c0f1d2f2dd6332d3e9695ac1cfb33fa511b1949ab8f39569471b6cd782a",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-29",
+      "text": "With only `.purlin/plugin-root` pointing at this checkout, run the shim and verify exit 0 with `the tagged tests passed`; delete that file, set `CLAUDE_PLUGIN_ROOT` instead and verify the same; delete it again and copy the plugin under `$HOME/.claude/plugins/cache/purlin/purlin/0.10.0/` and verify the same; with none of the four present verify exit 0 with `the plugin was not found` and `PURLIN_PLUGIN_ROOT` in the output; write `/no/such/plugin` into `.purlin/plugin-root` with `PURLIN_PLUGIN_ROOT` at this checkout and verify the checkout wins",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-29",
+  "rule_hash": "409242f2ef9a944e12157581d91a77f20a33494aecb78d9ee6223bc00d8f1775",
+  "rule_text": "The shim takes the first plugin root that carries `scripts/hooks/pre-push.sh` out of `PURLIN_PLUGIN_ROOT`, `.purlin/plugin-root`, `CLAUDE_PLUGIN_ROOT` and a marketplace copy under the home directory, in that order, and warns and exits 0 when none of them does",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "552d0ff85e63c9b166e0e0dd4c47cae60acbeac838c3c8f982c67ee9af4e4772",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_marketplace_copy_under_home_is_found(self, passing):\n        installed = os.path.join(passing.home, '.claude', 'plugins', 'cache',\n                                 'purlin', 'purlin', '0.10.0')\n        os.makedirs(os.path.dirname(installed), exist_ok=True)\n        shutil.copytree(ROOT, installed,\n                        ignore=shutil.ignore_patterns('.git', 'design',\n                                                      'docs', '__pycache__'))\n        os.remove(passing.path('.purlin/plugin-root'))\n        done = passing.push(plugin_root=None)\n        assert done.returncode == 0, done.stdout + done.stderr\n        assert 'the tagged tests passed' in done.stdout",
+      "file": "dev/test_pre_push_hook.py",
+      "findings": [],
+      "name": "test_a_marketplace_copy_under_home_is_found",
+      "proof": "PROOF-29",
+      "reasons": []
+    },
+    {
+      "body": "def test_an_environment_root_wins_over_the_pinned_one(self, passing):\n        write(passing.path('.purlin/plugin-root'), '/no/such/plugin\\n')\n        done = passing.push()\n        assert done.returncode == 0, done.stdout + done.stderr\n        assert 'the tagged tests passed' in done.stdout",
+      "file": "dev/test_pre_push_hook.py",
+      "findings": [],
+      "name": "test_an_environment_root_wins_over_the_pinned_one",
+      "proof": "PROOF-29",
+      "reasons": []
+    },
+    {
+      "body": "def test_claude_plugin_root_is_enough(self, passing):\n        os.remove(passing.path('.purlin/plugin-root'))\n        done = passing.push(plugin_root=None,\n                            env={'CLAUDE_PLUGIN_ROOT': ROOT})\n        assert done.returncode == 0, done.stdout + done.stderr\n        assert 'the tagged tests passed' in done.stdout",
+      "file": "dev/test_pre_push_hook.py",
+      "findings": [],
+      "name": "test_claude_plugin_root_is_enough",
+      "proof": "PROOF-29",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_plugin_anywhere_warns_and_never_blocks(self, passing):\n        os.remove(passing.path('.purlin/plugin-root'))\n        done = passing.push(plugin_root=None)\n        assert done.returncode == 0, done.stdout + done.stderr\n        assert 'the plugin was not found' in done.stdout\n        assert 'PURLIN_PLUGIN_ROOT' in done.stdout",
+      "file": "dev/test_pre_push_hook.py",
+      "findings": [],
+      "name": "test_no_plugin_anywhere_warns_and_never_blocks",
+      "proof": "PROOF-29",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_pinned_plugin_root_is_enough(self, passing):\n        done = passing.push(plugin_root=None)\n        assert done.returncode == 0, done.stdout + done.stderr\n        assert 'the tagged tests passed' in done.stdout\n        assert read(passing.path('.purlin/plugin-root')).strip() == ROOT",
+      "file": "dev/test_pre_push_hook.py",
+      "findings": [],
+      "name": "test_the_pinned_plugin_root_is_enough",
+      "proof": "PROOF-29",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "9f1370c93f8d3a015977a53c6fe9da2cfd6adda13f1bc6b07c2b0a1100816ff2"
+}

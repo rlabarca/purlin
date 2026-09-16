@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "security_no_dangerous_patterns",
+  "generated_at": "2026-09-16T22:35:37Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "41adb65d57b8d44f8a533573363423537406e92b709d2a0169fd2b6aabc870f7",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-3",
+      "text": "Over the same file list, grep `os\\.system\\s*\\(` in Python and `system\\s*\\(` and `passthru\\s*\\(` in PHP; verify zero matches, naming the file on failure",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/security_no_dangerous_patterns/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-3",
+  "rule_hash": "9beccd58827b99e9e1f17cd308e2045d23a914a9bf9e68a20f95fcf08cc9d1e4",
+  "rule_text": "No file under `scripts/` calls the builtin that hands a whole command line to the operating system shell: no `os.system(` in Python, no `system(` or `passthru(` in PHP",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "ae53d55c498c84d9d2826c068ef0b281f87fa4c8a3ff8efecc37cae3adea5e04",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_no_os_system(self):\n        for path in _all_script_files():\n            ext = _ext(path)\n            content = _strip_comments(_read(path), ext)\n            for pattern in _SYSTEM_CALL_BY_EXT.get(ext, []):\n                assert not re.search(pattern, content), \\\n                    f\"Found shell-command builtin {pattern!r} in {path}\"",
+      "file": "dev/test_security.py",
+      "findings": [],
+      "name": "test_no_os_system",
+      "proof": "PROOF-3",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "8a2d85ee98752ed0da3329e9db0cf2a263603a14c816eef0d671c6b26dc01041"
+}

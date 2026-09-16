@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_agent",
+  "generated_at": "2026-09-16T22:35:22Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "2978c3538114e7aa897cf63291fc89b1afe205222c1833417bcdc0b23515c756",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-4",
+      "text": "Parse the routing table of `agents/purlin.md`; verify its first column carries at least one row each for `PM`, `Designer`, `Engineer` and `QA`, and that every `purlin:<name>` the table names is one of the twelve command names. Changing a row to route to `purlin:release`, which is not one of them, fails naming `purlin:release`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/purlin_agent/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-4",
+  "rule_hash": "95c1eeaa76e875989f7fcf070fdaa015dc624f9c8796e677c763e0f3a6bdcec3",
+  "rule_text": "The routing table gives at least one row for each of the four roles PM, Designer, Engineer and QA, and every `purlin:` command it names is one of the twelve `references/purlin_commands.md` lists",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "6c68c2c9e4219fb65fffdc05cfbc0f5a2259d05dff9c55c896474cd6be018d5b",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_routing_table_covers_the_four_roles(self):\n        assert routing_problems() == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_the_routing_table_covers_the_four_roles",
+      "proof": "PROOF-4",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "b1a9014d0f29913f3fdd7f5a935b9eca06e6d707c43bd53cece416072781d731"
+}

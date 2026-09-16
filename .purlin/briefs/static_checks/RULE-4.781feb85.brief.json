@@ -1,0 +1,62 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "static_checks",
+  "generated_at": "2026-09-16T22:35:49Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "e0e3be4542dd1bd90b23beaf4e973d162a0c40279aa50d1a50bdc51c6f6ae635",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-5",
+      "text": "Run the Python checker over a marked test wrapping the call in `except Exception: pass`; verify its status is `fail` and its check is `bare_except`",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-6",
+      "text": "Run the Python checker over a marked test wrapping the call in a bare `except: pass`; verify its status is `fail` and its check is `bare_except`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/static_checks/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-4",
+  "rule_hash": "4dc032248c667bfbf7ed9bba81579ec42d49064d218b8cc3537271f811ec1220",
+  "rule_text": "A marked Python test that wraps the code under test in an except clause whose whole body is a pass is reported `bare_except`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "1a2786f4537f7f2f509ef1c14b49701b3e6f825d039dd952fc60a239c31d875e",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_detects_bare_except_pass(self):\n        path = _write_tmp('''\nimport pytest\n@pytest.mark.proof(\"testfeat\", \"PROOF-1\", \"RULE-1\")\ndef test_bad():\n    try:\n        result = do_something()\n    except Exception:\n        pass\n    assert result == \"ok\"\n''')\n        try:\n            results = check_python(path, \"testfeat\")\n            assert len(results) == 1\n            assert results[0]['status'] == 'fail'\n            assert results[0]['check'] == 'bare_except'\n        finally:\n            os.unlink(path)",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_detects_bare_except_pass",
+      "proof": "PROOF-5",
+      "reasons": []
+    },
+    {
+      "body": "def test_detects_bare_except_no_type(self):\n        path = _write_tmp('''\nimport pytest\n@pytest.mark.proof(\"testfeat\", \"PROOF-1\", \"RULE-1\")\ndef test_bad():\n    try:\n        result = do_something()\n    except:\n        pass\n    assert result == \"ok\"\n''')\n        try:\n            results = check_python(path, \"testfeat\")\n            assert len(results) == 1\n            assert results[0]['status'] == 'fail'\n            assert results[0]['check'] == 'bare_except'\n        finally:\n            os.unlink(path)",
+      "file": "dev/test_static_checks.py",
+      "findings": [],
+      "name": "test_detects_bare_except_no_type",
+      "proof": "PROOF-6",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "781feb856ac5c9b66b64a7096beeacc90e56e52dbc1cca2a32d44ad90aadae37"
+}

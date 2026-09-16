@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "proofs",
+  "generated_at": "2026-09-16T22:35:22Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "3e373133829ff5cab1ea2253edff2bdf0b965fa3a1e4bb7ad724cf211430d716",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-1",
+      "text": "Read the module's proof directory constant with the separators normalised to `/`; verify it is exactly `.purlin/runtime/proofs`, then write `login.unit.json` there and verify the load returns the entry it holds",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/proofs/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-1",
+  "rule_hash": "2f00b89bd87b3934c7200cac0fd8187bae15f7ae2213f04e4b7353910ab95090",
+  "rule_text": "The proof files a test run writes live under `.purlin/runtime/proofs/`, one per feature per tier, named `<feature>.<tier>.json`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "5dae3606e3f9be64cdc5a70632e6391c234f8c503ccf271b64f73c5608179a85",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_proofs_are_read_from_the_runtime_directory(self, project):\n        assert purlin_proofs.load_proofs(project.root) == {}\n        project.proofs([_entry('PROOF-1', 'RULE-1')])\n        loaded = purlin_proofs.load_proofs(project.root)\n        assert [e['id'] for e in loaded['login']] == ['PROOF-1']\n        assert purlin_proofs.PROOF_DIR.replace(os.sep, '/') == (\n            '.purlin/runtime/proofs')\n        # Entries are grouped by the feature each one names, not by the file.\n        project.proofs([_entry('PROOF-1', 'RULE-1'),\n                        _entry('PROOF-1', 'RULE-1', feature='signup')],\n                       feature='login')\n        both = purlin_proofs.load_proofs(project.root)\n        assert sorted(both) == ['login', 'signup'], sorted(both)\n        assert [e['feature'] for e in both['signup']] == ['signup']",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_proofs_are_read_from_the_runtime_directory",
+      "proof": "PROOF-1",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "e06b52a29e2f153c29555e400323e780c4b7b23934833fad7ba67a88cb833462"
+}

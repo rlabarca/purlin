@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-16T22:35:39Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "03554958e02238638f58c9afff4b9b90dd8bf3ebd9a1285df9cc69ef06695dcf",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-13",
+      "text": "Write a signature naming a brief and a record; verify its schema is `purlin-signature/1`, its field names are exactly the 16 the format lists, its triple is the first 16 characters of the rule's triple, its `note` is null and its timestamp ends `Z`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/signatures/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-9",
+  "rule_hash": "a3549350956b44dc79f80ce3b93a4cfcdf1a2171c739172c3e319c0a1d4c50ae",
+  "rule_text": "A signature carries schema `purlin-signature/1` and exactly the fields the format names: the triple, the three hashes and their kind, the design hash, the risk, the signer, the note, the timestamp, the gate, the brief and the record",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "50241b82c482fbf1088dea60775f73cd3cb2281377b9c8c6bfcbb9090696ec4e",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_fields_are_the_ones_the_format_names(self, proved):\n        record = proved.record()\n        path = sign_one(\n            proved, brief='.purlin/briefs/login/RULE-1.brief.json',\n            record=record, gate='strong')\n        with open(os.path.join(proved.root, path), encoding='utf-8') as handle:\n            data = json.load(handle)\n        assert data['schema'] == 'purlin-signature/1'\n        assert set(data) == {\n            'schema', 'feature', 'rule', 'triple', 'rule_hash', 'proof_hash',\n            'test_hash', 'test_hash_kind', 'design_hash', 'risk', 'signer',\n            'note', 'timestamp', 'gate', 'brief', 'record'}\n        assert data['feature'] == 'login' and data['rule'] == 'RULE-1'\n        assert data['triple'] == sign_module.triple_for(\n            proved.rule('RULE-1'))[:16]\n        assert data['signer'] == 'jane@acme.com'\n        assert data['note'] is None\n        assert data['risk'] == 'low'\n        assert data['record'] == record\n        assert data['timestamp'].endswith('Z')",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_the_fields_are_the_ones_the_format_names",
+      "proof": "PROOF-13",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "11758fa344bf54e613b77695eb1b581287a47cbc41263b2293f1e4a587542444"
+}

@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T22:35:47Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "6041f7ca23ad9bb38d7173b5459a6b4e5d502dc1a0e78237c04550fad0e2405f",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-37",
+      "text": "Write the data file and read the bytes back; verify the text starts `const PURLIN_DATA = ` and ends `;` followed by a newline, and that reading the payload back returns the same commit sha the payload was built with",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-32",
+  "rule_hash": "1f6e20c41ff70288056bd34d16ba429ec3e860d34dc99f6d9dfddfe5d8b26527",
+  "rule_text": "The dashboard's data file is written as `const PURLIN_DATA = ` followed by the payload and a trailing semicolon, and reads back as the payload that was written",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "c96b2c50e2de6625158589992a4be38a557d7a062b014fcc92e5d5688a3dc60c",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_data_file_is_a_const_assignment_and_round_trips(self, project):\n        data = project.payload()\n        path = purlin_payload.write_report_data(project.root, data)\n        with open(path, encoding='utf-8') as handle:\n            text = handle.read()\n        assert text.startswith('const PURLIN_DATA = ') and text.endswith(';\\n')\n        assert purlin_payload.read_report_payload(project.root)['commit'] == (\n            data['commit'])",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_the_data_file_is_a_const_assignment_and_round_trips",
+      "proof": "PROOF-37",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "b70f8614ba61b3ba8bb7d9a49f08baa12635087d81ede76b0e8b0676fa3d1151"
+}

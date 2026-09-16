@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-16T22:35:31Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "ab7cbd14163861599d34d8ecb5ee84a68c62834680ebc73ce157c4e237777e7a",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-60",
+      "text": "Run `--all --quick --project-root \"\"` from a directory holding a project; verify exit 2, that the message names `--project-root`, and that no proof file was written under that directory",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/run_script/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-41",
+  "rule_hash": "b11fd0ec3b851ee808b105d1418854288320f2cfbcdb8cefc98282e294b16b48",
+  "rule_text": "`--project-root` with an empty value exits 2 naming the flag, rather than resolving to the working directory and running there",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "374bb80ff4a3dbdf2c406e592e6d16e7db07a6f1eb0ecd5dfc5bc8adddbfcfee",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_an_empty_project_root_exits_2_and_runs_nothing(self, tmp_path):\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat')\n        result = subprocess.run(\n            [sys.executable, RUN_SCRIPT, '--all', '--quick',\n             '--project-root', ''],\n            capture_output=True, encoding='utf-8', cwd=str(root))\n        output = result.stdout + result.stderr\n        assert result.returncode == 2, output\n        assert '--project-root' in output, output\n        assert not (root / PROOF_REL).exists(), output",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_an_empty_project_root_exits_2_and_runs_nothing",
+      "proof": "PROOF-60",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "7031c1f6dfb66c8ff36cac4d67573eca637ae9a76f97d37726bc3a23a8cbb997"
+}

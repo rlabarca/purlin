@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T22:35:48Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "aa43df2122817ebd84822817581585d285d1f85cfdd5b3a611175273f92ac058",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-48",
+      "text": "Set a config key this release no longer reads and run the status report; verify the output carries the line `Run: purlin:init --update`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-41",
+  "rule_hash": "f764d03e76b46b0e8f5246ceabdb757220446643d5062cd650ce8e0d99ee94c3",
+  "rule_text": "A config carrying a key this release no longer reads prints the line `Run: purlin:init --update` above the next step",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "5b80924eb7de339cc00015fd53bf1d8726c14dff14afea795e71dbf49be2c4c4",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_retired_config_keys_print_the_update_directive(self):\n        made = Project(extra_config={'remote_verification': 'optional'})\n        try:\n            text = purlin_status.sync_status(made.root)\n            assert '\u2192 Run: purlin:init --update' in text, text\n        finally:\n            made.close()",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_retired_config_keys_print_the_update_directive",
+      "proof": "PROOF-48",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "667a521c89546601f55c0d828412e8fe59494c290918e4bb342f24386430fd3d"
+}

@@ -1,0 +1,53 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "upstream",
+  "generated_at": "2026-09-16T22:36:00Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "e8268977f0ce522f8560ad2a29250dc72c760b38ddffb5a8df193f81cdc28f93",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-8",
+      "text": "Pin an anchor, publish a new version of it, read the copy's bytes, then run `sync --check`; verify the row reads `behind`, that its `pinned` is the first sha and its `remote_sha` the new one, that `behind` counts 1, and that the copy's bytes are unchanged",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/upstream/20260916T223512Z-06a3ac6-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-8",
+  "rule_hash": "d6394c9e57d1fa52c3d892a8bfc434a576d9884e50d37e3bc0695146cb63df84",
+  "rule_text": "`sync --check` writes no file: it reports each anchor as current or behind and carries both the pinned sha and the source's head sha",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "f64ec83611dd8f543a85c6851ac2bfad5eab4c087760b3ba801f5fc4e4dea701",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_check_when_behind_reports_and_changes_nothing(workspace):\n    _add(workspace)\n    before = _copy_text(workspace)\n    new_sha = _advance(workspace)\n\n    result = upstream.sync(workspace.root, check=True)\n    row = result['anchors'][0]\n    assert row['status'] == 'behind'\n    assert row['pinned'] == workspace.first_sha\n    assert row['remote_sha'] == new_sha\n    assert result['behind'] == 1\n    assert upstream._exit_code(result) == 1\n    assert _copy_text(workspace) == before",
+      "file": "dev/test_upstream.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_check_when_behind_reports_and_changes_nothing",
+      "proof": "PROOF-8",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "4adac44645679b8d61d3a49cd6ba233818f18df7bdea1b074628f0fa82173f8e"
+}
