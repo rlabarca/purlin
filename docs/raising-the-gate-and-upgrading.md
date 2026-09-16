@@ -40,8 +40,8 @@ check without the requirement.
 **To `recorded`.** On top of that: the CI workflow at `.github/workflows/purlin.yml`, because
 the gate cannot be met without a run that writes records. `designs/` with a README, if it is
 missing. The branch rules printed for you to apply on the git host. If any proof in `specs/`
-carries `@env(windows)`, `@env(macos)` or `@env(linux)`, the workflow gets a matrix with one
-job per operating system named; with no such tag there is one job.
+carries `@env(windows)` or `@env(macos)`, the workflow gets a matrix: a Linux job always, plus
+one job for each other operating system named. With no such tag there is one Linux job.
 
 **To `approved`.** On top of that: the approver emails, which init asks for and writes to
 `approvers` in `.purlin/config.json`; the commit-signing setup printed once per approver; and a

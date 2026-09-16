@@ -117,9 +117,9 @@ the records folder again if it is ever missing, so a project that skipped it is 
 
 Under `recorded` and `approved`, init also writes `designs/` and the CI workflow
 (`purlin.yml`), because the gate cannot be met without a CI run that writes records. When
-`specs/` carries `@env(windows)`, `@env(macos)` or `@env(linux)` proofs, the workflow gets a
-matrix with one job per operating system named, each running the same verify and writing its
-own record. When no proof carries a tag, there is one job.
+`specs/` carries `@env(windows)` or `@env(macos)` proofs, the workflow gets a matrix: a Linux
+job always, plus one job for each other operating system named, each running the same verify
+and writing its own record. When no proof names Windows or macOS, there is one Linux job.
 
 Under `approved`, init asks for the approver emails, writes them to `approvers` in
 `.purlin/config.json`, prints the commit-signing setup, and lists every rule that still has no

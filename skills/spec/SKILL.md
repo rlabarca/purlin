@@ -37,12 +37,12 @@ read `references/spec_quality_guide.md`. Neither is restated here.
 Ask at most one round of questions, and only where a claim cannot be tested as written. "Fast"
 and "secure" always need a number; most other gaps can wait for the build.
 
-One sentence in, three rules out:
+One sentence in, at least three rules out:
 
 > "Users sign in with email and password. After five failed attempts the account is locked for
 > fifteen minutes."
 
-becomes a rule for the success path, a rule for the wrong password, and a rule for the
+becomes at least a rule for the success path, a rule for the wrong password, and a rule for the
 lockout, because each of the three can fail on its own and each needs its own test. A single
 rule covering all three would pass while two thirds of the behaviour was missing.
 

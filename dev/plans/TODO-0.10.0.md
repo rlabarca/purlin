@@ -62,11 +62,10 @@ is what the run could not finish, found and left, or left to a person.
 9. **Fixed: a Windows developer's record commit stages its records.** `scripts/run/records.py`
    `deleted_records` and `_commit_as_developer` now hand git `.purlin/records` with `/` on every
    operating system (`records` RULE-24).
-10. **Two stale sentences** still say the matrix is "one job per operating system named":
-    `skills/init/SKILL.md` around line 121 and `docs/raising-the-gate-and-upgrading.md`
-    around line 44. Linux is always in the matrix now.
-11. **The spec skill's "one sentence in, three rules out"** reads as a target count; the
-    real model writes five or six defensible rules (lane 9H's finding). Say "at least three".
+10. **Fixed: the matrix sentences say Linux is always present.** `skills/init/SKILL.md` and
+    `docs/raising-the-gate-and-upgrading.md` now say a Linux job always runs, plus one job for
+    each other operating system an `@env` tag names.
+11. **Fixed: the spec skill says "one sentence in, at least three rules out".**
 12. **`dev/manual/` checks** drive the nested CLI with permissions skipped; fine for a
     throwaway project, worth knowing before running them elsewhere.
 13. **The Windows job takes 15 to 18 minutes** (playwright plus the whole suite); the Linux
