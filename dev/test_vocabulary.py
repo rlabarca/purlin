@@ -77,7 +77,6 @@ PENDING_REWRITE = (
     "dev/test_proof_plugins_missing.py", "dev/test_proof_stress.py",
     "specs/mcp/config_engine.md", "specs/_anchors/proof_common.md",
     # lane 6A: docs rewrites
-    "docs/regulated-workflow.md",
     "docs/running-and-records.md", "docs/team-workflow.md",
     "docs/getting-started.md", "docs/raising-the-gate-and-upgrading.md",
     "docs/working-together.md",
