@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "brief",
-  "generated_at": "2026-09-16T22:34:33Z",
+  "generated_at": "2026-09-16T22:45:10Z",
   "layers": [
     "proof text",
     "test body",
@@ -25,7 +25,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/brief/20260916T223430Z-0004d20-ci-linux.json",
+  "record": ".purlin/records/brief/20260916T224448Z-0004d20-ci-windows.json",
   "risk": "high",
   "rule": "RULE-13",
   "rule_hash": "6f347d46313b3ac76ae98aeee2b85c307800c2fb6c526e8a8b522d8c270cf849",
@@ -40,7 +40,7 @@
       "body": "def test_settled_reads_yes_no_or_nothing_at_all(self):\n        assert brief_module.model_observations(\n            'settled: yes\\n') == ([], True)\n        assert brief_module.model_observations(\n            'settled: no\\n- PROOF-1 never runs the code.') == (\n            ['PROOF-1 never runs the code.'], False)",
       "file": "dev/test_brief.py",
       "findings": [],
-      "name": "test_settled_reads_yes_no_or_nothing_at_all",
+      "name": "test_a_clean_rule_is_ready",
       "proof": "PROOF-17",
       "reasons": []
     },
@@ -48,7 +48,7 @@
       "body": "def test_settled_reads_yes_no_or_nothing_at_all(self):\n        assert brief_module.model_observations(\n            'settled: yes\\n') == ([], True)\n        assert brief_module.model_observations(\n            'settled: no\\n- PROOF-1 never runs the code.') == (\n            ['PROOF-1 never runs the code.'], False)",
       "file": "dev/test_brief.py",
       "findings": [],
-      "name": "test_a_clean_rule_is_ready",
+      "name": "test_settled_reads_yes_no_or_nothing_at_all",
       "proof": "PROOF-17",
       "reasons": []
     }

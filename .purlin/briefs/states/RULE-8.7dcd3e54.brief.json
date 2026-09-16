@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-16T22:35:01Z",
+  "generated_at": "2026-09-16T22:45:44Z",
   "layers": [
     "proof text",
     "test body",
@@ -24,7 +24,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/states/20260916T223430Z-0004d20-ci-linux.json",
+  "record": ".purlin/records/states/20260916T224452Z-0004d20-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-8",
   "rule_hash": "75d2b65c7b369105f729984bcb114d4c0795bad764a18ae232d313740871f73c",
@@ -39,7 +39,7 @@
       "body": "def test_a_rule_no_test_backs_reads_no_test(self, project):\n        cell = project.cell('RULE-2', 'passed')\n        assert cell['word'] == 'no test'\n        assert (cell['source'], cell['current'], cell['counts']) == (\n            None, False, False)",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_a_rule_no_test_backs_reads_no_test",
+      "name": "test_re_verify_pending_when_only_the_code_changed",
       "proof": "PROOF-10",
       "reasons": []
     },
@@ -47,7 +47,7 @@
       "body": "def test_a_rule_no_test_backs_reads_no_test(self, project):\n        cell = project.cell('RULE-2', 'passed')\n        assert cell['word'] == 'no test'\n        assert (cell['source'], cell['current'], cell['counts']) == (\n            None, False, False)",
       "file": "dev/test_mcp_server.py",
       "findings": [],
-      "name": "test_re_verify_pending_when_only_the_code_changed",
+      "name": "test_a_rule_no_test_backs_reads_no_test",
       "proof": "PROOF-10",
       "reasons": []
     }

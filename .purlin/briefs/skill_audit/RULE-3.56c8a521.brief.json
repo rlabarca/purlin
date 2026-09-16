@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "skill_audit",
-  "generated_at": "2026-09-16T22:34:57Z",
+  "generated_at": "2026-09-16T22:45:40Z",
   "layers": [
     "proof text",
     "test body",
@@ -22,7 +22,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/skill_audit/20260916T223430Z-0004d20-ci-linux.json",
+  "record": ".purlin/records/skill_audit/20260916T224451Z-0004d20-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-3",
   "rule_hash": "611429e6c8934cf3d7d414cee6c9ad2b34b071703dd5e83c2a2961b55d7257cd",

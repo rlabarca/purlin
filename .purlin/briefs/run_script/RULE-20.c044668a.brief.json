@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "run_script",
-  "generated_at": "2026-09-16T22:34:48Z",
+  "generated_at": "2026-09-16T22:45:29Z",
   "layers": [
     "proof text",
     "test body",
@@ -25,7 +25,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/run_script/20260916T223430Z-0004d20-ci-linux.json",
+  "record": ".purlin/records/run_script/20260916T224450Z-0004d20-ci-windows.json",
   "risk": "high",
   "rule": "RULE-20",
   "rule_hash": "7cd210e25b8983f41d4808c1954ca8db3f539b92a9c7034989cb8960e4225be8",
@@ -36,22 +36,6 @@
   "test_hash_kind": "file",
   "test_strength": null,
   "tests": [
-    {
-      "body": "def test_a_committed_record_makes_the_passed_cell_read_passed(\n            self, tmp_path):\n        root = _pytest_project(tmp_path)\n        (root / 'src').mkdir()\n        (root / 'src' / 'feat.py').write_text('VALUE = 2\\n', encoding='utf-8')\n        _spec(root, 'feat')\n        _git_repo(root)\n\n        assert _rule(root, 'feat', 'RULE-1')['spec'] == 'drafted'\n\n        code, out = _run(root, '--all', '--record', '--commit')\n        assert code == 0, out\n        assert 'Record committed as developer.' in out, out\n\n        record = _newest_record(root, 'feat')\n        assert isinstance(record['scope_tree'], str), record['scope_tree']\n        assert record['proofs'][0]['id'] == 'PROOF-1'\n        assert record['proofs'][0]['status'] == 'pass'\n        assert record['feature'] == 'feat'\n        assert record['gate'] == 'passed'\n\n        # The record is one commit behind HEAD, which is the case the scope\n        # tree exists to cover.\n        assert record['commit'] != _head(root)\n        assert _passed_word(root, 'feat', 'RULE-1') == 'passed'",
-      "file": "dev/test_run_script.py",
-      "findings": [],
-      "name": "test_a_committed_record_makes_the_passed_cell_read_passed",
-      "proof": "PROOF-20",
-      "reasons": []
-    },
-    {
-      "body": "def test_the_cell_reads_code_changed_when_the_scope_changed(self, tmp_path):\n        root = _pytest_project(tmp_path)\n        (root / 'src').mkdir()\n        (root / 'src' / 'feat.py').write_text('VALUE = 2\\n', encoding='utf-8')\n        _spec(root, 'feat')\n        _git_repo(root)\n        code, out = _run(root, '--all', '--record', '--commit')\n        assert code == 0, out\n        assert _passed_word(root, 'feat', 'RULE-1') == 'passed'\n\n        (root / 'src' / 'feat.py').write_text('VALUE = 3\\n', encoding='utf-8')\n        _git(root, 'add', '-A')\n        _git(root, 'commit', '-q', '-m', 'change the scoped code')\n        assert _passed_word(root, 'feat', 'RULE-1') == 'code changed'",
-      "file": "dev/test_run_script.py",
-      "findings": [],
-      "name": "test_the_cell_reads_code_changed_when_the_scope_changed",
-      "proof": "PROOF-20",
-      "reasons": []
-    },
     {
       "body": null,
       "file": "dev/test_run_script.py",
@@ -65,6 +49,22 @@
       "file": "dev/test_run_script.py",
       "findings": [],
       "name": "test_verify_then_sync_status_shows_the_rule_recorded",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_committed_record_makes_the_passed_cell_read_passed(\n            self, tmp_path):\n        root = _pytest_project(tmp_path)\n        (root / 'src').mkdir()\n        (root / 'src' / 'feat.py').write_text('VALUE = 2\\n', encoding='utf-8')\n        _spec(root, 'feat')\n        _git_repo(root)\n\n        assert _rule(root, 'feat', 'RULE-1')['spec'] == 'drafted'\n\n        code, out = _run(root, '--all', '--record', '--commit')\n        assert code == 0, out\n        assert 'Record committed as developer.' in out, out\n\n        record = _newest_record(root, 'feat')\n        assert isinstance(record['scope_tree'], str), record['scope_tree']\n        assert record['proofs'][0]['id'] == 'PROOF-1'\n        assert record['proofs'][0]['status'] == 'pass'\n        assert record['feature'] == 'feat'\n        assert record['gate'] == 'passed'\n\n        # The record is one commit behind HEAD, which is the case the scope\n        # tree exists to cover.\n        assert record['commit'] != _head(root)\n        assert _passed_word(root, 'feat', 'RULE-1') == 'passed'",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_a_committed_record_makes_the_passed_cell_read_passed",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_cell_reads_code_changed_when_the_scope_changed(self, tmp_path):\n        root = _pytest_project(tmp_path)\n        (root / 'src').mkdir()\n        (root / 'src' / 'feat.py').write_text('VALUE = 2\\n', encoding='utf-8')\n        _spec(root, 'feat')\n        _git_repo(root)\n        code, out = _run(root, '--all', '--record', '--commit')\n        assert code == 0, out\n        assert _passed_word(root, 'feat', 'RULE-1') == 'passed'\n\n        (root / 'src' / 'feat.py').write_text('VALUE = 3\\n', encoding='utf-8')\n        _git(root, 'add', '-A')\n        _git(root, 'commit', '-q', '-m', 'change the scoped code')\n        assert _passed_word(root, 'feat', 'RULE-1') == 'code changed'",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_the_cell_reads_code_changed_when_the_scope_changed",
       "proof": "PROOF-20",
       "reasons": []
     }

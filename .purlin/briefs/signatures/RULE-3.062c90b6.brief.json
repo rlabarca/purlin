@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "signatures",
-  "generated_at": "2026-09-16T22:34:56Z",
+  "generated_at": "2026-09-16T22:45:38Z",
   "layers": [
     "proof text",
     "test body",
@@ -25,7 +25,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/signatures/20260916T223430Z-0004d20-ci-linux.json",
+  "record": ".purlin/records/signatures/20260916T224450Z-0004d20-ci-windows.json",
   "risk": "high",
   "rule": "RULE-3",
   "rule_hash": "4c00ec58b979b2419a34807be6896158ce0655b5b6c11cd20569af9631072c28",
@@ -42,7 +42,7 @@
       "findings": [
         "logic_mirroring"
       ],
-      "name": "test_reflowing_a_rule_and_adding_a_tag_keep_the_triple",
+      "name": "test_reflowing_a_rule_and_re_tagging_it_keep_the_triple",
       "proof": "PROOF-3",
       "reasons": [
         "expected value computed by same function as SUT"
@@ -54,7 +54,7 @@
       "findings": [
         "logic_mirroring"
       ],
-      "name": "test_reflowing_a_rule_and_re_tagging_it_keep_the_triple",
+      "name": "test_reflowing_a_rule_and_adding_a_tag_keep_the_triple",
       "proof": "PROOF-3",
       "reasons": [
         "expected value computed by same function as SUT"

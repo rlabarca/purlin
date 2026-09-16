@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "brief",
-  "generated_at": "2026-09-16T22:34:33Z",
+  "generated_at": "2026-09-16T22:45:10Z",
   "layers": [
     "proof text",
     "test body",
@@ -36,7 +36,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/brief/20260916T223430Z-0004d20-ci-linux.json",
+  "record": ".purlin/records/brief/20260916T224448Z-0004d20-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-16",
   "rule_hash": "d0a94a81ae4488fe3e81b4a6acd7b528c39ca726f249de97a0b59b86880f5655",
@@ -67,7 +67,7 @@
       "body": "def test_a_rule_below_the_review_level_never_calls_a_model(\n            self, at_strong, monkeypatch):\n        def fail(*args, **kwargs):\n            raise AssertionError('a low-risk rule must not call a model')\n\n        monkeypatch.setattr(brief_module.shutil, 'which', fail)\n        built = build(at_strong, 'RULE-1', ai=True)\n        assert built['ai_review'] is None\n        assert 'Observations' not in brief_module.render_brief(built)",
       "file": "dev/test_brief.py",
       "findings": [],
-      "name": "test_a_rule_below_the_review_level_never_calls_a_model",
+      "name": "test_a_low_risk_rule_never_calls_a_model",
       "proof": "PROOF-22",
       "reasons": []
     },
@@ -75,7 +75,7 @@
       "body": "def test_a_rule_below_the_review_level_never_calls_a_model(\n            self, at_strong, monkeypatch):\n        def fail(*args, **kwargs):\n            raise AssertionError('a low-risk rule must not call a model')\n\n        monkeypatch.setattr(brief_module.shutil, 'which', fail)\n        built = build(at_strong, 'RULE-1', ai=True)\n        assert built['ai_review'] is None\n        assert 'Observations' not in brief_module.render_brief(built)",
       "file": "dev/test_brief.py",
       "findings": [],
-      "name": "test_a_low_risk_rule_never_calls_a_model",
+      "name": "test_a_rule_below_the_review_level_never_calls_a_model",
       "proof": "PROOF-22",
       "reasons": []
     }

@@ -1,0 +1,1294 @@
+{
+  "commit": "0004d20042fa08eeb29fe58a0e55b40f2e3d0dd6",
+  "dirty": true,
+  "environment": {
+    "engines": [],
+    "host": "GitHub Actions 1000000177",
+    "id": "windows",
+    "job": "verify",
+    "kind": "ci",
+    "os": "windows"
+  },
+  "feature": "purlin_report",
+  "features": {
+    "purlin_report": {
+      "rules": {
+        "RULE-1": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-1"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_the_build_is_reproducible",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-10": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-10"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_a_feature_row_expands_to_its_rules",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-11": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-11"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_a_design_anchor_row_shows_its_thumbnail",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-12": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-12",
+            "PROOF-30"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_both_themes_render_through_the_tokens[regulated]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_both_themes_render_through_the_tokens[solo]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_both_themes_render_through_the_tokens[team]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_the_board_sits_on_the_brand_navy",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-13": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-13",
+            "PROOF-35"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_each_filter_narrows_the_board[failing-features1-login_rules1]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_each_filter_narrows_the_board[stale-or-held-features4-login_rules4]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_each_filter_narrows_the_board[unsigned-features3-login_rules3]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_each_filter_narrows_the_board[untested-features0-login_rules0]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_each_filter_narrows_the_board[weak-features2-login_rules2]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_a_filter_above_the_gate_is_not_offered",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-14": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-14"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_filters_compose_and_clear",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-15": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-15"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_the_rule_screen_shows_proof_test_and_evidence",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-16": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-16"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_a_rule_with_no_remote_has_no_links",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_the_rule_screen_links_to_the_git_host",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-17": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-17"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_a_rule_waiting_on_an_operating_system_says_so",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-18": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-18",
+            "PROOF-36",
+            "PROOF-37"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_the_review_list_is_ordered_by_risk",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_the_review_list_counts_what_each_risk_is_waiting_for",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_the_review_list_is_absent_under_the_passed_gate",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-19": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-19"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_an_empty_review_list_says_what_puts_a_rule_on_it",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-2": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-2"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_the_page_is_one_file_under_the_line_budget",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-20": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-20"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_an_older_payload_shows_one_notice_and_nothing_else",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-21": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-21"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_no_data_at_all_names_the_command_that_writes_it",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-22": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-22"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_the_working_tree_notice_only_shows_on_the_board",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-23": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-23"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_the_docs_screenshots_come_from_the_fixtures",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-24": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-24"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_the_open_rule_is_the_last_tab",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-25": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-25"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_the_link_back_closes_the_rule_where_it_was_opened",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-26": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-26",
+            "PROOF-39"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_the_rule_screen_names_the_sign_command",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_the_sign_panel_is_absent_below_the_signed_gate",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-27": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-27"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_coming_back_to_an_old_tab_reloads_it",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-28": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-28"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_the_freshness_line_is_a_button_that_reloads",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-29": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-29"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_the_age_recomputes_every_minute_from_the_same_payload",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-3": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-3"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_every_colour_is_a_token",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-30": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-31",
+            "PROOF-38"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_a_review_row_states_the_blocking_cell_and_its_reasons",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_a_row_with_no_reason_of_its_own_reads_its_why_as_a_sentence",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-31": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-32"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_the_last_run_column_says_what_each_operating_system_found",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-32": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-34"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report_board_layout.py",
+              "name": "test_the_stale_card_carries_the_count",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-33": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-33"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report_board_layout.py",
+              "name": "test_every_heading_starts_where_its_cells_start",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-4": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-4"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_no_shadow_no_gradient_no_emoji_and_no_outside_request",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-5": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-5"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_no_shadow_no_gradient_no_emoji_and_no_outside_request",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-6": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-6"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_affordances_are_unicode_glyphs_not_an_icon_set",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-7": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-7"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_the_board_renders_for_each_process[regulated]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_the_board_renders_for_each_process[solo]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_the_board_renders_for_each_process[team]",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-8": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-8"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_the_tiles_scale_with_the_gate",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-9": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-9"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_purlin_report.py",
+              "name": "test_the_columns_scale_with_the_gate",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        }
+      },
+      "scope_score": null,
+      "spec": "specs/dashboard/purlin_report.md"
+    }
+  },
+  "gate": "passed",
+  "log": {
+    "path": ".purlin/runtime/run.log",
+    "sha256": "6d36eb81da027a86fc758704d29e5672d4580af33f073a400976bad583f8b4ea"
+  },
+  "missing": [],
+  "os": "windows",
+  "plugins": [
+    "pytest",
+    "shell"
+  ],
+  "proofs": [
+    {
+      "env": null,
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_the_build_is_reproducible",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_the_page_is_one_file_under_the_line_budget",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_every_colour_is_a_token",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_no_shadow_no_gradient_no_emoji_and_no_outside_request",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_no_shadow_no_gradient_no_emoji_and_no_outside_request",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_affordances_are_unicode_glyphs_not_an_icon_set",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_the_board_renders_for_each_process[regulated]",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_the_board_renders_for_each_process[solo]",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_the_board_renders_for_each_process[team]",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_the_tiles_scale_with_the_gate",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_the_columns_scale_with_the_gate",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_a_feature_row_expands_to_its_rules",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_a_design_anchor_row_shows_its_thumbnail",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_both_themes_render_through_the_tokens[regulated]",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_both_themes_render_through_the_tokens[solo]",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_both_themes_render_through_the_tokens[team]",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-30",
+      "rule": "RULE-12",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_the_board_sits_on_the_brand_navy",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_each_filter_narrows_the_board[failing-features1-login_rules1]",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_each_filter_narrows_the_board[stale-or-held-features4-login_rules4]",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_each_filter_narrows_the_board[unsigned-features3-login_rules3]",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_each_filter_narrows_the_board[untested-features0-login_rules0]",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_each_filter_narrows_the_board[weak-features2-login_rules2]",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-35",
+      "rule": "RULE-13",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_a_filter_above_the_gate_is_not_offered",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_filters_compose_and_clear",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_the_rule_screen_shows_proof_test_and_evidence",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_a_rule_with_no_remote_has_no_links",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_the_rule_screen_links_to_the_git_host",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-17",
+      "rule": "RULE-17",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_a_rule_waiting_on_an_operating_system_says_so",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-18",
+      "rule": "RULE-18",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_the_review_list_is_ordered_by_risk",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-36",
+      "rule": "RULE-18",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_the_review_list_counts_what_each_risk_is_waiting_for",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-37",
+      "rule": "RULE-18",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_the_review_list_is_absent_under_the_passed_gate",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_an_empty_review_list_says_what_puts_a_rule_on_it",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-20",
+      "rule": "RULE-20",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_an_older_payload_shows_one_notice_and_nothing_else",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-21",
+      "rule": "RULE-21",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_no_data_at_all_names_the_command_that_writes_it",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-22",
+      "rule": "RULE-22",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_the_working_tree_notice_only_shows_on_the_board",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-23",
+      "rule": "RULE-23",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_the_docs_screenshots_come_from_the_fixtures",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-24",
+      "rule": "RULE-24",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_the_open_rule_is_the_last_tab",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-25",
+      "rule": "RULE-25",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_the_link_back_closes_the_rule_where_it_was_opened",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-26",
+      "rule": "RULE-26",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_the_rule_screen_names_the_sign_command",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-39",
+      "rule": "RULE-26",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_the_sign_panel_is_absent_below_the_signed_gate",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-27",
+      "rule": "RULE-27",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_coming_back_to_an_old_tab_reloads_it",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-28",
+      "rule": "RULE-28",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_the_freshness_line_is_a_button_that_reloads",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-29",
+      "rule": "RULE-29",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_the_age_recomputes_every_minute_from_the_same_payload",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-31",
+      "rule": "RULE-30",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_a_review_row_states_the_blocking_cell_and_its_reasons",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-38",
+      "rule": "RULE-30",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_a_row_with_no_reason_of_its_own_reads_its_why_as_a_sentence",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-32",
+      "rule": "RULE-31",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report.py",
+      "test_name": "test_the_last_run_column_says_what_each_operating_system_found",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-34",
+      "rule": "RULE-32",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report_board_layout.py",
+      "test_name": "test_the_stale_card_carries_the_count",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-33",
+      "rule": "RULE-33",
+      "status": "pass",
+      "test_file": "dev/test_purlin_report_board_layout.py",
+      "test_name": "test_every_heading_starts_where_its_cells_start",
+      "tier": "e2e"
+    }
+  ],
+  "runner": "ci",
+  "schema": "purlin-record/2",
+  "schema_version": 2,
+  "scope_tree": "d563ed030c35c91fdc315fddb1a24867265c8af3c3ac8ef41a9de2c940d66dc6",
+  "test_strength": null,
+  "timestamp": "2026-09-16T22:44:49Z"
+}

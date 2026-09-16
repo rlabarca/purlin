@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-16T22:35:00Z",
+  "generated_at": "2026-09-16T22:45:43Z",
   "layers": [
     "proof text",
     "test body",
@@ -23,7 +23,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/states/20260916T223430Z-0004d20-ci-linux.json",
+  "record": ".purlin/records/states/20260916T224452Z-0004d20-ci-windows.json",
   "risk": "high",
   "rule": "RULE-2",
   "rule_hash": "757950206fc93f3dd1d518dad12bbdfc532926c815c580d4ff54f119758894aa",
@@ -34,22 +34,6 @@
   "test_hash_kind": "file",
   "test_strength": null,
   "tests": [
-    {
-      "body": "def test_a_blocking_finding_holds_the_spec_status_at_drafted(self, project):\n        project.spec('# Feature: login\\n\\n## Rules\\n\\n- RULE-1: It works\\n\\n'\n                     '## Proof\\n\\n- PROOF-1 (RULE-1): Call login and verify it '\n                     'works correctly\\n')\n        rule = project.rule('RULE-1')\n        assert rule['spec'] == 'drafted'\n        assert 'vague_verb' in rule['proofs'][0]['findings']",
-      "file": "dev/test_mcp_server.py",
-      "findings": [],
-      "name": "test_a_blocking_finding_holds_the_spec_status_at_drafted",
-      "proof": "PROOF-2",
-      "reasons": []
-    },
-    {
-      "body": "def test_ready_when_the_free_checks_pass(self, project):\n        assert project.rule('RULE-2')['spec'] == 'ready'",
-      "file": "dev/test_mcp_server.py",
-      "findings": [],
-      "name": "test_ready_when_the_free_checks_pass",
-      "proof": "PROOF-2",
-      "reasons": []
-    },
     {
       "body": null,
       "file": "dev/test_mcp_server.py",
@@ -63,6 +47,22 @@
       "file": "dev/test_mcp_server.py",
       "findings": [],
       "name": "test_proof_ready_when_the_free_checks_pass",
+      "proof": "PROOF-2",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_blocking_finding_holds_the_spec_status_at_drafted(self, project):\n        project.spec('# Feature: login\\n\\n## Rules\\n\\n- RULE-1: It works\\n\\n'\n                     '## Proof\\n\\n- PROOF-1 (RULE-1): Call login and verify it '\n                     'works correctly\\n')\n        rule = project.rule('RULE-1')\n        assert rule['spec'] == 'drafted'\n        assert 'vague_verb' in rule['proofs'][0]['findings']",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_a_blocking_finding_holds_the_spec_status_at_drafted",
+      "proof": "PROOF-2",
+      "reasons": []
+    },
+    {
+      "body": "def test_ready_when_the_free_checks_pass(self, project):\n        assert project.rule('RULE-2')['spec'] == 'ready'",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_ready_when_the_free_checks_pass",
       "proof": "PROOF-2",
       "reasons": []
     }

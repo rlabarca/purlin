@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "qa_report",
-  "generated_at": "2026-09-16T22:34:42Z",
+  "generated_at": "2026-09-16T22:45:21Z",
   "layers": [
     "proof text",
     "test body",
@@ -22,7 +22,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/qa_report/20260916T223430Z-0004d20-ci-linux.json",
+  "record": ".purlin/records/qa_report/20260916T224449Z-0004d20-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-4",
   "rule_hash": "e192e04ad204e6309d70bee615bc5e7270a8e3dd777fb7a38ab4901b678e8b6d",
@@ -37,7 +37,7 @@
       "body": "def test_every_entry_ends_with_one_of_four_answers(self):\n        assert re.findall(r'^- \\*\\*`([^`]+)`\\*\\*', read(QA_MD), re.M) == [\n            'sign', 'add a case', 'hold', 'skip']",
       "file": "dev/test_skills.py",
       "findings": [],
-      "name": "test_every_entry_ends_with_one_of_four_answers",
+      "name": "test_every_entry_ends_with_one_of_four_verdicts",
       "proof": "PROOF-4",
       "reasons": []
     },
@@ -45,7 +45,7 @@
       "body": "def test_every_entry_ends_with_one_of_four_answers(self):\n        assert re.findall(r'^- \\*\\*`([^`]+)`\\*\\*', read(QA_MD), re.M) == [\n            'sign', 'add a case', 'hold', 'skip']",
       "file": "dev/test_skills.py",
       "findings": [],
-      "name": "test_every_entry_ends_with_one_of_four_verdicts",
+      "name": "test_every_entry_ends_with_one_of_four_answers",
       "proof": "PROOF-4",
       "reasons": []
     }

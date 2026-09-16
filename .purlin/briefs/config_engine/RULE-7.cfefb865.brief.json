@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "config_engine",
-  "generated_at": "2026-09-16T22:34:33Z",
+  "generated_at": "2026-09-16T22:45:11Z",
   "layers": [
     "proof text",
     "test body",
@@ -24,7 +24,7 @@
       "tier": "unit"
     }
   ],
-  "record": ".purlin/records/config_engine/20260916T223430Z-0004d20-ci-linux.json",
+  "record": ".purlin/records/config_engine/20260916T224448Z-0004d20-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-7",
   "rule_hash": "7491b921a88b3178698c5b6ee715a702eee8ebe6d9f4adee3627815523047d0f",

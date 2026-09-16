@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "signatures",
-  "generated_at": "2026-09-16T22:34:57Z",
+  "generated_at": "2026-09-16T22:45:39Z",
   "layers": [
     "proof text",
     "test body",
@@ -23,7 +23,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/signatures/20260916T223430Z-0004d20-ci-linux.json",
+  "record": ".purlin/records/signatures/20260916T224450Z-0004d20-ci-windows.json",
   "risk": "high",
   "rule": "RULE-20",
   "rule_hash": "dc50f92360ce85ca08f2bacb23d6167cdb2aa0d58b656ea55c032039ac20d939",
@@ -38,7 +38,7 @@
       "body": "def test_what_a_counting_signature_is_at_each_gate(self, at_strong):\n        signing_key(at_strong.root)\n        sign_module.main(['login', 'RULE-1', '--project-root', at_strong.root])\n        found = at_strong.load()[('login', 'RULE-1')][0]\n\n        counted, reason = purlin_signatures.counts(\n            at_strong.root, found, ['jane@acme.com'], gate='signed')\n        assert counted, reason\n\n        counted, reason = purlin_signatures.counts(\n            at_strong.root, found, ['someone@else.com'], gate='signed')\n        assert not counted and 'signer is not on the list' in reason\n\n        counted, reason = purlin_signatures.counts(\n            at_strong.root, found, ['someone@else.com'], gate='strong')\n        assert counted, (\n            'under strong a signature from anyone settles what the machine '\n            'could not: %s' % reason)",
       "file": "dev/test_signatures.py",
       "findings": [],
-      "name": "test_what_a_counting_signature_is_at_each_gate",
+      "name": "test_the_counted_approval_needs_the_signature_and_the_list",
       "proof": "PROOF-25",
       "reasons": []
     },
@@ -46,7 +46,7 @@
       "body": "def test_what_a_counting_signature_is_at_each_gate(self, at_strong):\n        signing_key(at_strong.root)\n        sign_module.main(['login', 'RULE-1', '--project-root', at_strong.root])\n        found = at_strong.load()[('login', 'RULE-1')][0]\n\n        counted, reason = purlin_signatures.counts(\n            at_strong.root, found, ['jane@acme.com'], gate='signed')\n        assert counted, reason\n\n        counted, reason = purlin_signatures.counts(\n            at_strong.root, found, ['someone@else.com'], gate='signed')\n        assert not counted and 'signer is not on the list' in reason\n\n        counted, reason = purlin_signatures.counts(\n            at_strong.root, found, ['someone@else.com'], gate='strong')\n        assert counted, (\n            'under strong a signature from anyone settles what the machine '\n            'could not: %s' % reason)",
       "file": "dev/test_signatures.py",
       "findings": [],
-      "name": "test_the_counted_approval_needs_the_signature_and_the_list",
+      "name": "test_what_a_counting_signature_is_at_each_gate",
       "proof": "PROOF-25",
       "reasons": []
     }
