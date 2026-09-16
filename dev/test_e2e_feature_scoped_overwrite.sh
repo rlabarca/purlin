@@ -34,7 +34,7 @@ make_repo() {
   dir="$(mktemp -d)"
   ALL_TMPDIRS="$ALL_TMPDIRS $dir"
   mkdir -p "$dir/.purlin" "$dir/specs/auth" "$dir/tests"
-  printf '{"gate":"tested","test_framework":"shell"}\n' > "$dir/.purlin/config.json"
+  printf '{"gate":"passed","test_framework":"shell"}\n' > "$dir/.purlin/config.json"
 
   cat > "$dir/specs/auth/login.md" <<'SPEC'
 # login

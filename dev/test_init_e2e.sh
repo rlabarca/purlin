@@ -4,20 +4,20 @@
 #
 # The walk is the one the plan traces. On each fixture:
 #
-#   1. purlin:init at gate tested
+#   1. purlin:init at gate passed
 #   2. a hand-written spec and one tagged test
-#   3. purlin_run.py --quick          the tests, in seconds
+#   3. purlin_run.py --quick            the tests, in seconds
 #   4. purlin_run.py --record --commit  the record a developer commits
-#   5. verify_gate.py --check         exits 0 under tested
-#   6. purlin:init --gate recorded    raises the gate
-#   7. verify_gate.py --check         exits 1: a developer record does not count
-#   8. a record committed under the git host's build identity, labelled ci
-#   9. verify_gate.py --check         exits 0: recorded is met by that record
-#  10. purlin:init --gate approved    raises again
-#  11. verify_gate.py --check         exits 1: no approver list
-#  12. the approver list, then verify_gate exits 1 with no approval
-#  13. approve.py, signed by a throwaway key that exists only in the temp repo
-#  14. verify_gate.py --check         exits 0
+#   5. gate_check.py --check            exits 0 under passed
+#   6. purlin:init --gate strong        raises the gate
+#   7. gate_check.py --check            exits 1: a developer record does not count
+#   8. a record and its briefs from --ci, committed under the build identity
+#   9. gate_check.py --check            exits 0: strong is met by that record
+#  10. purlin:init --gate signed        raises again
+#  11. gate_check.py --check            exits 1: no signer list
+#  12. the signer list, then the gate check exits 1 with no signature
+#  13. sign.py, signed by a throwaway key that exists only in the temp repo
+#  14. gate_check.py --check            exits 0
 #
 # Nothing here reaches a git host. The CI identity is a GIT_COMMITTER_NAME and
 # a signature on a local commit, which is what `record_label` reads, and both
@@ -33,7 +33,7 @@ ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SCAFFOLD="$ROOT/scripts/init/scaffold.py"
 RUN="$ROOT/scripts/run/purlin_run.py"
 GATE="$ROOT/scripts/ci/gate_check.py"
-APPROVE="$ROOT/scripts/review/sign.py"
+SIGN="$ROOT/scripts/review/sign.py"
 export PURLIN_ROOT="$ROOT"
 
 CI_NAME='github-actions[bot]'
@@ -166,14 +166,14 @@ signing_key() {  # dir email
   printf '%s %s\n' "$email" "$(cat "$dir/.git/signing-key.pub")" \
     > "$dir/.git/allowed-signers"
   git -C "$dir" config user.email "$email"
-  git -C "$dir" config user.name Approver
+  git -C "$dir" config user.name Signer
   git -C "$dir" config gpg.format ssh
   git -C "$dir" config user.signingkey "$dir/.git/signing-key.pub"
   git -C "$dir" config commit.gpgsign true
   git -C "$dir" config gpg.ssh.allowedSignersFile "$dir/.git/allowed-signers"
 }
 
-set_approvers() {  # dir email
+set_signers() {  # dir email
   python3 - "$1" "$2" <<'PY'
 import json
 import os
@@ -181,7 +181,7 @@ import sys
 path = os.path.join(sys.argv[1], '.purlin', 'config.json')
 with open(path, encoding='utf-8') as handle:
     config = json.load(handle)
-config['approvers'] = [sys.argv[2]]
+config['signers'] = [sys.argv[2]]
 with open(path, 'w', encoding='utf-8') as handle:
     json.dump(config, handle, indent=2)
     handle.write('\n')
@@ -211,7 +211,7 @@ spec_file() {  # dir feature scope
 # Feature: $2
 
 > Scope: $3
-> Description: One rule, tagged high risk so the approved gate needs a person.
+> Description: One rule, tagged high risk so the signed gate needs a person.
 
 ## Rules
 
@@ -233,25 +233,29 @@ gate_walk() {  # dir language
 
   expect_exit "$language: quick run passes" 0 \
     python3 "$RUN" --all --quick --project-root "$dir"
-  expect_exit "$language: verify writes and commits the record" 0 \
+  expect_exit "$language: the audit writes and commits the record" 0 \
     python3 "$RUN" --all --record --commit --project-root "$dir"
   expect_file "$language: the record is in the tree" \
     "$(ls -d "$dir"/.purlin/records/greeting 2>/dev/null)"
-  expect_exit "$language: tested is met by the developer's record" 0 \
+  expect_exit "$language: passed is met by the developer's record" 0 \
     python3 "$GATE" --check --project-root "$dir"
 
-  init_at "$dir" recorded
-  expect_in "$language: raising to recorded writes the workflow" \
+  init_at "$dir" strong
+  expect_in "$language: raising to strong writes the workflow" \
     'wrote .github/workflows/purlin.yml' "$dir/.purlin-init.log"
-  expect_exit "$language: recorded refuses a developer record" 1 \
+  expect_exit "$language: strong refuses a developer record" 1 \
     python3 "$GATE" --check --project-root "$dir"
 
   # A record's file name carries the second it was written, and the reader
   # keeps the newest per operating system. Two records in the same second
   # leave which one is newest to the file name, so the walk waits a second to
-  # make CI's record unambiguously the later one.
+  # make CI's record unambiguously the later one. `--ci` is what writes the
+  # briefs beside the record; the commit it would make goes through the git
+  # host's API, which no temp repository has, so the walk commits them here
+  # under the build identity instead.
   sleep 1
-  python3 "$RUN" --all --record --project-root "$dir" > "$dir/.purlin-ci.log" 2>&1
+  python3 "$RUN" --all --record --ci --project-root "$dir" \
+    > "$dir/.purlin-ci.log" 2>&1
   commit_as_ci "$dir"
   if [ "$(record_label "$dir")" = "ci" ]; then
     pass "$language: a record the build identity committed is labelled ci"
@@ -261,33 +265,33 @@ gate_walk() {  # dir language
   fi
   # CI commits its record on top of the commit it observed, so the record is
   # never at HEAD. What makes it count is its `scope_tree`: the scoped files
-  # still hash to what the run recorded, so the rule is Recorded.
-  expect_exit "$language: recorded is met by a record CI committed" 0 \
+  # still hash to what the run wrote down, so the strong cell is met.
+  expect_exit "$language: strong is met by a record CI committed" 0 \
     python3 "$GATE" --check --project-root "$dir"
 
-  init_at "$dir" approved
-  commit_all "$dir" "raise the gate to approved"
-  expect_exit "$language: approved refuses an empty approver list" 1 \
+  init_at "$dir" signed
+  commit_all "$dir" "raise the gate to signed"
+  expect_exit "$language: signed refuses an empty signer list" 1 \
     python3 "$GATE" --check --project-root "$dir"
   python3 "$GATE" --check --project-root "$dir" > "$dir/.purlin-gate.log" 2>&1
   expect_in "$language: it says which command writes the list" \
-    'purlin:init --gate approved' "$dir/.purlin-gate.log"
+    'purlin:init --gate signed' "$dir/.purlin-gate.log"
 
-  set_approvers "$dir" jane@acme.com
-  commit_all "$dir" "name the approvers"
-  expect_exit "$language: approved refuses a high-risk rule with no approval" 1 \
+  set_signers "$dir" jane@acme.com
+  commit_all "$dir" "name the signers"
+  expect_exit "$language: signed refuses a high-risk rule with no signature" 1 \
     python3 "$GATE" --check --project-root "$dir"
 
   signing_key "$dir" jane@acme.com
-  expect_exit "$language: the approval is written and signed" 0 \
-    python3 "$APPROVE" greeting RULE-1 --project-root "$dir"
+  expect_exit "$language: the signature is written in a signed commit" 0 \
+    python3 "$SIGN" greeting RULE-1 --project-root "$dir"
   if [ "$(git -C "$dir" log -1 --format=%G\?)" = "G" ]; then
-    pass "$language: the approval commit is signed"
+    pass "$language: the signing commit is signed"
   else
-    bad "$language: the approval commit is signed" \
+    bad "$language: the signing commit is signed" \
       "$(git -C "$dir" log -1 --format='%G? %an')"
   fi
-  expect_exit "$language: approved is met" 0 \
+  expect_exit "$language: signed is met" 0 \
     python3 "$GATE" --check --project-root "$dir"
 }
 
@@ -302,13 +306,13 @@ walk_python() {
   printf '[tool.pytest.ini_options]\n' > "$dir/pyproject.toml"
   printf 'def greet(name):\n    return "Hello, %%s!" %% name\n' > "$dir/greeting.py"
 
-  init_at "$dir" tested
+  init_at "$dir" passed
   mark
   expect_file "python: the config is written" "$dir/.purlin/config.json"
   expect_file "python: the plugin is copied" \
     "$dir/.purlin/plugins/pytest_purlin.py"
   expect_file "python: the runner is wired" "$dir/conftest.py"
-  expect_absent "python: no workflow under tested" \
+  expect_absent "python: no workflow under passed" \
     "$dir/.github/workflows/purlin.yml"
   wire_since_mark
 
@@ -355,7 +359,7 @@ walk_typescript() {
     return 0
   fi
 
-  init_at "$dir" tested
+  init_at "$dir" passed
   mark
   expect_file "typescript: the plugin is copied" \
     "$dir/.purlin/plugins/vitest_purlin.ts"
@@ -400,7 +404,7 @@ walk_xunit() {
   </ItemGroup>
 </Project>
 EOF
-  init_at "$dir" tested
+  init_at "$dir" passed
   mark
   expect_file "xunit: the logger is copied" \
     "$dir/.purlin/plugins/xunit_purlin.cs"
@@ -430,7 +434,7 @@ walk_marketplace() {
   printf 'def greet(name):\n    return "Hello, %%s!" %% name\n' > "$dir/greeting.py"
   mark
   CLAUDE_PLUGIN_ROOT="$installed" python3 "$installed/scripts/init/scaffold.py" \
-    --project-root "$dir" --gate tested --yes > "$dir/.purlin-init.log" 2>&1
+    --project-root "$dir" --gate passed --yes > "$dir/.purlin-init.log" 2>&1
   expect_file "marketplace: the config is written" "$dir/.purlin/config.json"
   expect_in "marketplace: the pinned root is the install" \
     "$installed" "$dir/.purlin/plugin-root"

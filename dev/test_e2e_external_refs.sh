@@ -112,7 +112,7 @@ advance_anchor_repo() {
 init_project() {
   local tmpdir="$1"
   mkdir -p "$tmpdir/.purlin" "$tmpdir/specs/_anchors"
-  printf '{"gate": "tested"}\n' > "$tmpdir/.purlin/config.json"
+  printf '{"gate": "passed"}\n' > "$tmpdir/.purlin/config.json"
   printf '.purlin/runtime/\n' > "$tmpdir/.gitignore"
   (
     cd "$tmpdir"
