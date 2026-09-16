@@ -54,12 +54,13 @@ PENDING_REWRITE = (
     "specs/mcp/states.md", "specs/mcp/drift.md", "specs/mcp/server.md",
     "specs/_anchors/schema_proof_format.md", "specs/_anchors/schema_spec_format.md",
     # lane 1B: signatures
-    "scripts/mcp/purlin/approvals.py", "dev/test_approvals.py", "dev/test_holds.py",
-    "specs/review/approvals.md", "specs/review/signatures.md",
+    "specs/review/signatures.md",
     # lane 2A: sign, brief, gate
     "scripts/review/approve.py", "scripts/review/brief.py", "scripts/review/static_checks.py",
     "scripts/ci/verify_gate.py", "dev/test_verify_gate.py", "dev/test_brief.py",
     "dev/test_brief_files.py", "dev/test_brief_tests_named.py", "dev/test_static_checks.py",
+    # these two name the command that writes a signature, which is renamed with it
+    "dev/test_signatures.py", "dev/test_holds.py",
     "specs/review/brief.md", "specs/review/static_checks.md",
     # lane 2B: run and scan
     "scripts/run/purlin_run.py", "scripts/run/records.py", "scripts/run/remote.py",

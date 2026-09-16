@@ -2,7 +2,7 @@
 
 The review list is what still needs a person. A rule's risk may call for a
 model review for good, but a current approval takes it off the list until that
-approval goes stale. The throwaway project is `dev/test_approvals.py`'s:
+approval goes stale. The throwaway project is `dev/test_signatures.py`'s:
 `RULE-1` is low risk, `RULE-2` high.
 """
 
@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 
 import approve as approve_module  # noqa: E402
-from test_approvals import SPEC, Project  # noqa: E402
+from test_signatures import SPEC, Project  # noqa: E402
 
 
 @pytest.fixture

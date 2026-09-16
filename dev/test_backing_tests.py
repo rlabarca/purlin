@@ -3,7 +3,7 @@
 The test hash is part of what an approval binds, so it must read the same in
 every checkout and in CI. The committed records name the tests; this checkout's
 runtime proofs speak only for a proof no record has observed. The throwaway
-project is `dev/test_approvals.py`'s.
+project is `dev/test_signatures.py`'s.
 """
 
 import json
@@ -18,7 +18,7 @@ sys.path.insert(0, DEV)
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 
 from purlin import specs as purlin_specs  # noqa: E402
-from test_approvals import TEST_NAMES, Project, git, write  # noqa: E402
+from test_signatures import TEST_NAMES, Project, git, write  # noqa: E402
 
 EXTRA = 'test_only_this_machine_runs'
 

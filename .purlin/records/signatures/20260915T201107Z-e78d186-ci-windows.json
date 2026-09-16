@@ -1,19 +1,19 @@
 {
-  "commit": "04c92e266e8a2659416b0e4074f72e86271cd202",
+  "commit": "e78d18680bc5e8f932010edc081cab5f2876a992",
   "dirty": true,
   "environment": {
     "engines": [
       "none"
     ],
-    "host": "GitHub Actions 1000000113",
+    "host": "GitHub Actions 1000000116",
     "id": "windows",
     "job": "verify",
     "kind": "ci",
     "os": "windows"
   },
-  "feature": "approvals",
+  "feature": "signatures",
   "features": {
-    "approvals": {
+    "signatures": {
       "rules": {
         "RULE-1": {
           "attachments": [],
@@ -30,7 +30,7 @@
           },
           "tests": [
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_the_three_hashes_come_back_with_their_kind",
               "plugin": "",
               "status": "pass"
@@ -52,7 +52,7 @@
           },
           "tests": [
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_the_reader_finds_it_and_never_reads_a_brief_as_one",
               "plugin": "",
               "status": "pass"
@@ -74,7 +74,7 @@
           },
           "tests": [
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_low_risk_with_a_passing_record_and_enough_strength",
               "plugin": "",
               "status": "pass"
@@ -96,7 +96,7 @@
           },
           "tests": [
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_high_risk_is_never_auto_approved",
               "plugin": "",
               "status": "pass"
@@ -118,7 +118,7 @@
           },
           "tests": [
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_below_the_minimum_strength_nothing_is_written",
               "plugin": "",
               "status": "pass"
@@ -140,7 +140,7 @@
           },
           "tests": [
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_a_failing_record_is_not_auto_approved",
               "plugin": "",
               "status": "pass"
@@ -162,7 +162,7 @@
           },
           "tests": [
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_a_manual_proof_is_never_auto_approved",
               "plugin": "",
               "status": "pass"
@@ -184,7 +184,7 @@
           },
           "tests": [
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_a_rule_already_approved_is_left_alone",
               "plugin": "",
               "status": "pass"
@@ -207,13 +207,13 @@
           },
           "tests": [
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_without_signing_the_setup_is_printed_and_nothing_is_written",
               "plugin": "",
               "status": "pass"
             },
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_the_script_runs_as_a_command",
               "plugin": "",
               "status": "pass"
@@ -235,7 +235,7 @@
           },
           "tests": [
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_one_signed_commit_carries_the_batch",
               "plugin": "",
               "status": "pass"
@@ -257,7 +257,7 @@
           },
           "tests": [
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_a_batch_across_features_names_each_one",
               "plugin": "",
               "status": "pass"
@@ -279,7 +279,7 @@
           },
           "tests": [
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_a_rule_that_is_not_there_has_no_hashes",
               "plugin": "",
               "status": "pass"
@@ -301,7 +301,7 @@
           },
           "tests": [
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_the_counted_approval_needs_the_signature_and_the_list",
               "plugin": "",
               "status": "pass"
@@ -324,13 +324,13 @@
           },
           "tests": [
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_the_approver_list_bounds_who_may_run_it",
               "plugin": "",
               "status": "pass"
             },
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_the_approved_gate_with_no_list_names_the_command",
               "plugin": "",
               "status": "pass"
@@ -352,7 +352,7 @@
           },
           "tests": [
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_help_exits_zero_and_a_bad_option_exits_two",
               "plugin": "",
               "status": "pass"
@@ -374,7 +374,7 @@
           },
           "tests": [
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_an_approval_on_a_side_branch_is_not_on_the_protected_branch",
               "plugin": "",
               "status": "pass"
@@ -563,7 +563,7 @@
           },
           "tests": [
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_reflowing_a_rule_and_re_tagging_it_keep_the_triple",
               "plugin": "",
               "status": "pass"
@@ -846,7 +846,7 @@
           },
           "tests": [
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_editing_the_rule_the_proof_or_the_test_moves_the_triple",
               "plugin": "",
               "status": "pass"
@@ -868,7 +868,7 @@
           },
           "tests": [
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_a_manual_proof_says_so_instead_of_naming_a_file",
               "plugin": "",
               "status": "pass"
@@ -894,31 +894,31 @@
           },
           "tests": [
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_a_fresh_approval_is_current",
               "plugin": "",
               "status": "pass"
             },
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_the_rule_text_changing_stales_it",
               "plugin": "",
               "status": "pass"
             },
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_the_proof_text_changing_stales_it",
               "plugin": "",
               "status": "pass"
             },
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_the_test_changing_stales_it",
               "plugin": "",
               "status": "pass"
             },
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_the_risk_changing_stales_it",
               "plugin": "",
               "status": "pass"
@@ -940,7 +940,7 @@
           },
           "tests": [
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_a_stale_approval_puts_the_rule_in_stale",
               "plugin": "",
               "status": "pass"
@@ -962,7 +962,7 @@
           },
           "tests": [
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_the_name_carries_the_rule_the_triple_and_the_slug",
               "plugin": "",
               "status": "pass"
@@ -984,7 +984,7 @@
           },
           "tests": [
             {
-              "file": "dev/test_approvals.py",
+              "file": "dev/test_signatures.py",
               "name": "test_the_fields_are_the_ones_the_format_names",
               "plugin": "",
               "status": "pass"
@@ -997,13 +997,13 @@
         "score": null,
         "survived": 0
       },
-      "spec": "specs/review/approvals.md"
+      "spec": "specs/review/signatures.md"
     }
   },
   "gate": "approved",
   "log": {
     "path": ".purlin/runtime/run.log",
-    "sha256": "9dfd9436ab087dc684403314da409294bcca73fa8e79c71350e9b7e636344ac9"
+    "sha256": "e15b43a4719c936286a572b7d1e935ad153fc74b1046af1e66baf9655aaafdcb"
   },
   "missing": [],
   "os": "windows",
@@ -1017,7 +1017,7 @@
       "id": "PROOF-1",
       "rule": "RULE-1",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_the_three_hashes_come_back_with_their_kind",
       "tier": "integration"
     },
@@ -1026,7 +1026,7 @@
       "id": "PROOF-2",
       "rule": "RULE-2",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_a_rule_that_is_not_there_has_no_hashes",
       "tier": "integration"
     },
@@ -1035,7 +1035,7 @@
       "id": "PROOF-3",
       "rule": "RULE-3",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_reflowing_a_rule_and_re_tagging_it_keep_the_triple",
       "tier": "integration"
     },
@@ -1044,7 +1044,7 @@
       "id": "PROOF-4",
       "rule": "RULE-4",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_editing_the_rule_the_proof_or_the_test_moves_the_triple",
       "tier": "integration"
     },
@@ -1053,7 +1053,7 @@
       "id": "PROOF-5",
       "rule": "RULE-5",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_a_manual_proof_says_so_instead_of_naming_a_file",
       "tier": "integration"
     },
@@ -1062,7 +1062,7 @@
       "id": "PROOF-6",
       "rule": "RULE-6",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_a_fresh_approval_is_current",
       "tier": "integration"
     },
@@ -1071,7 +1071,7 @@
       "id": "PROOF-7",
       "rule": "RULE-6",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_the_rule_text_changing_stales_it",
       "tier": "integration"
     },
@@ -1080,7 +1080,7 @@
       "id": "PROOF-8",
       "rule": "RULE-6",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_the_proof_text_changing_stales_it",
       "tier": "integration"
     },
@@ -1089,7 +1089,7 @@
       "id": "PROOF-9",
       "rule": "RULE-6",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_the_test_changing_stales_it",
       "tier": "integration"
     },
@@ -1098,7 +1098,7 @@
       "id": "PROOF-10",
       "rule": "RULE-6",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_the_risk_changing_stales_it",
       "tier": "integration"
     },
@@ -1107,7 +1107,7 @@
       "id": "PROOF-11",
       "rule": "RULE-7",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_a_stale_approval_puts_the_rule_in_stale",
       "tier": "integration"
     },
@@ -1116,7 +1116,7 @@
       "id": "PROOF-12",
       "rule": "RULE-8",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_the_name_carries_the_rule_the_triple_and_the_slug",
       "tier": "integration"
     },
@@ -1125,7 +1125,7 @@
       "id": "PROOF-13",
       "rule": "RULE-9",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_the_fields_are_the_ones_the_format_names",
       "tier": "integration"
     },
@@ -1134,7 +1134,7 @@
       "id": "PROOF-14",
       "rule": "RULE-10",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_the_reader_finds_it_and_never_reads_a_brief_as_one",
       "tier": "integration"
     },
@@ -1143,7 +1143,7 @@
       "id": "PROOF-15",
       "rule": "RULE-11",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_low_risk_with_a_passing_record_and_enough_strength",
       "tier": "integration"
     },
@@ -1152,7 +1152,7 @@
       "id": "PROOF-16",
       "rule": "RULE-12",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_high_risk_is_never_auto_approved",
       "tier": "integration"
     },
@@ -1161,7 +1161,7 @@
       "id": "PROOF-17",
       "rule": "RULE-13",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_below_the_minimum_strength_nothing_is_written",
       "tier": "integration"
     },
@@ -1170,7 +1170,7 @@
       "id": "PROOF-18",
       "rule": "RULE-14",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_a_failing_record_is_not_auto_approved",
       "tier": "integration"
     },
@@ -1179,7 +1179,7 @@
       "id": "PROOF-19",
       "rule": "RULE-15",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_a_manual_proof_is_never_auto_approved",
       "tier": "integration"
     },
@@ -1188,7 +1188,7 @@
       "id": "PROOF-20",
       "rule": "RULE-16",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_a_rule_already_approved_is_left_alone",
       "tier": "integration"
     },
@@ -1197,7 +1197,7 @@
       "id": "PROOF-21",
       "rule": "RULE-17",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_without_signing_the_setup_is_printed_and_nothing_is_written",
       "tier": "integration"
     },
@@ -1206,7 +1206,7 @@
       "id": "PROOF-22",
       "rule": "RULE-17",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_the_script_runs_as_a_command",
       "tier": "integration"
     },
@@ -1215,7 +1215,7 @@
       "id": "PROOF-23",
       "rule": "RULE-18",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_one_signed_commit_carries_the_batch",
       "tier": "integration"
     },
@@ -1224,7 +1224,7 @@
       "id": "PROOF-24",
       "rule": "RULE-19",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_a_batch_across_features_names_each_one",
       "tier": "unit"
     },
@@ -1233,7 +1233,7 @@
       "id": "PROOF-25",
       "rule": "RULE-20",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_the_counted_approval_needs_the_signature_and_the_list",
       "tier": "integration"
     },
@@ -1242,7 +1242,7 @@
       "id": "PROOF-26",
       "rule": "RULE-21",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_the_approver_list_bounds_who_may_run_it",
       "tier": "integration"
     },
@@ -1251,7 +1251,7 @@
       "id": "PROOF-27",
       "rule": "RULE-21",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_the_approved_gate_with_no_list_names_the_command",
       "tier": "integration"
     },
@@ -1260,7 +1260,7 @@
       "id": "PROOF-28",
       "rule": "RULE-22",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_help_exits_zero_and_a_bad_option_exits_two",
       "tier": "unit"
     },
@@ -1269,7 +1269,7 @@
       "id": "PROOF-29",
       "rule": "RULE-23",
       "status": "pass",
-      "test_file": "dev/test_approvals.py",
+      "test_file": "dev/test_signatures.py",
       "test_name": "test_an_approval_on_a_side_branch_is_not_on_the_protected_branch",
       "tier": "integration"
     },
@@ -1540,5 +1540,5 @@
   "schema_version": 1,
   "scope_tree": "cc52369b0847a492cea931a2a6266f14cd55b77c2c38723d69e64d50fddf5619",
   "test_strength": null,
-  "timestamp": "2026-09-15T19:37:48Z"
+  "timestamp": "2026-09-15T20:11:07Z"
 }

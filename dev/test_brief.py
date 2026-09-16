@@ -1,6 +1,6 @@
 """Tests for `scripts/review/brief.py`: the layers, the verdict, the file.
 
-The throwaway project is `dev/test_approvals.py`'s, so a spec, a test file, a
+The throwaway project is `dev/test_signatures.py`'s, so a spec, a test file, a
 runtime proof file and a record are written by the test and nothing reads this
 repository's own specs. No model is ever called: the one test that exercises
 the model review replaces the process launch, so nothing here spends money or
@@ -35,7 +35,7 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 
 import brief as brief_module  # noqa: E402
-from test_approvals import SPEC, TEST_FILE, Project, git, write  # noqa: E402
+from test_signatures import SPEC, TEST_FILE, Project, git, write  # noqa: E402
 
 BRIEF_PY = os.path.join(ROOT, 'scripts', 'review', 'brief.py')
 CRITERIA = os.path.join(ROOT, 'references', 'review_criteria.md')
@@ -392,7 +392,7 @@ class TestWriting:
             self, proved):
         built = build(proved, 'RULE-1')
         path = brief_module.write_brief(proved.root, built)
-        assert path == ('specs/auth/login.approvals/RULE-1.%s.brief.json'
+        assert path == ('specs/auth/login.signatures/RULE-1.%s.brief.json'
                         % built['triple_hash'][:8])
         text = os.path.join(proved.root, path[:-5] + '.txt')
         assert os.path.isfile(text)
@@ -453,7 +453,7 @@ class TestTheCommandLine:
         assert 'login RULE-1' in output
         assert 'Verdict:' in output
         assert os.path.isdir(os.path.join(proved.root, 'specs', 'auth',
-                                          'login.approvals'))
+                                          'login.signatures'))
 
     @pytest.mark.proof("brief", "PROOF-35", "RULE-24", tier="integration")
     def test_a_feature_with_no_rule_named_covers_every_rule(self, proved,
