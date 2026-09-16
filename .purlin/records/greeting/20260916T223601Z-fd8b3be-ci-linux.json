@@ -1,0 +1,76 @@
+{
+  "commit": "fd8b3be3eb205c4682226b89af4a08ed62f85a69",
+  "dirty": true,
+  "environment": {
+    "engines": [
+      "none"
+    ],
+    "host": "GitHub Actions 1000000189",
+    "id": "linux-x86_64",
+    "job": "verify",
+    "kind": "ci",
+    "os": "linux"
+  },
+  "feature": "greeting",
+  "features": {
+    "greeting": {
+      "rules": {
+        "RULE-1": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-1"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "tests/test_greeting.py",
+              "name": "test_greet",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        }
+      },
+      "scope_score": {
+        "killed": 0,
+        "score": null,
+        "survived": 0
+      },
+      "spec": "specs/core/greeting.md"
+    }
+  },
+  "gate": "strong",
+  "log": {
+    "path": ".purlin/runtime/run.log",
+    "sha256": "42680164415c65dca468ed8a35c1dcf49d7bf7cee75c69897498283bb001aa5a"
+  },
+  "missing": [],
+  "os": "linux",
+  "plugins": [
+    "pytest"
+  ],
+  "proofs": [
+    {
+      "env": null,
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "test_file": "tests/test_greeting.py",
+      "test_name": "test_greet",
+      "tier": "unit"
+    }
+  ],
+  "runner": "ci",
+  "schema": "purlin-record/2",
+  "schema_version": 2,
+  "scope_tree": "6f4ba7fc3a806cef1761406dc4d6f36242782081b773697e4fb1a279af4888bf",
+  "test_strength": null,
+  "timestamp": "2026-09-16T22:36:01Z"
+}
