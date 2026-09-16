@@ -32,23 +32,20 @@ ROOT = os.path.dirname(DEV)
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 
-import approve as sign_module  # noqa: E402
+import sign as sign_module  # noqa: E402
 from purlin import gate as purlin_gate  # noqa: E402
 from purlin import payload as purlin_payload  # noqa: E402
 from purlin import signatures as purlin_signatures  # noqa: E402
 from purlin import specs as purlin_specs  # noqa: E402
 
-SIGN_PY = os.path.join(ROOT, 'scripts', 'review', 'approve.py')
+SIGN_PY = os.path.join(ROOT, 'scripts', 'review', 'sign.py')
 
-# The gate the project sits at by default, and the one that asks for a
-# signature: the bottom and the top of the three the resolver reads.
+# The three gates by position: the one a project sits at by default, the one
+# that turns the breaks and the review list on, and the one that asks for a
+# signature.
 FIRST_GATE = purlin_gate.GATES[0]
+REVIEW_GATE = purlin_gate.GATES[1]
 SIGNING_GATE = purlin_gate.GATES[-1]
-
-# The config key the resolver reads for the signer list.
-SIGNER_KEY = ('signers' if 'signers' in purlin_gate.GateConfig.__slots__
-              else 'approvers')
-
 
 # ---------------------------------------------------------------------------
 # The throwaway project
@@ -194,6 +191,23 @@ class Project(object):
             git(self.root, 'commit', '-q', '-m', 'purlin: record for abc1234')
         return rel
 
+    def brief(self, rule, observations=(), settled=True):
+        """Write the brief CI would commit for a rule's current triple.
+
+        A brief is named for the triple it was built from, so it is found
+        again only while the rule, the proof and the test all stand as they
+        were when the model read them.
+        """
+        entry = self.rule(rule)
+        triple = purlin_signatures.triple_hash(
+            entry['rule_hash'], entry['proof_hash'], entry['test_hash'])
+        rel = '.purlin/briefs/login/%s.%s.brief.json' % (rule, triple[:8])
+        write(os.path.join(self.root, *rel.split('/')), json.dumps({
+            'schema': 'purlin-brief/2', 'feature': 'login', 'rule': rule,
+            'risk': entry['risk'], 'observations': list(observations),
+            'settled': settled, 'tests': []}))
+        return rel
+
     def payload(self):
         return purlin_payload.build_payload(self.root)
 
@@ -242,13 +256,67 @@ def signing_key(root, email='jane@acme.com'):
     return key + '.pub'
 
 
+# What the git host's build identity looks like on GitHub.
+CI_COMMITTER = 'github-actions[bot]'
+CI_EMAIL = '41898282+github-actions[bot]@users.noreply.github.com'
+
+
+def ci_signing_key(root):
+    """A throwaway ssh key this project trusts, for the CI commit to sign with.
+
+    The key and the allowed-signers file live inside the project's own `.git`
+    and nowhere else. `None` when the machine has no `ssh-keygen`, and then
+    the commit is made unsigned.
+    """
+    key = os.path.join(root, '.git', 'ci-signing-key')
+    if not os.path.exists(key + '.pub'):
+        made = subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '',
+                               '-C', CI_EMAIL, '-f', key],
+                              capture_output=True, text=True)
+        if made.returncode != 0:
+            return None
+    with open(key + '.pub', encoding='utf-8') as handle:
+        public = handle.read().strip()
+    allowed = os.path.join(root, '.git', 'ci-allowed-signers')
+    write(allowed, '%s %s\n' % (CI_EMAIL, ' '.join(public.split()[:2])))
+    git(root, 'config', 'gpg.ssh.allowedSignersFile', allowed)
+    return key + '.pub'
+
+
+def commit_as_ci(root, message='purlin: record for abc1234'):
+    """Commit everything staged under the build identity, as CI does.
+
+    CI writes through the git host's API, which signs the commit: the reader
+    reads an unsigned commit claiming that identity as a person's, so a
+    fixture that leaves the signature out is not what CI writes and a record
+    it wrote would be read as a developer's on any machine that can check
+    signatures. The signature here is a throwaway ssh key the project itself
+    trusts. Call it before `signing_key`, which points the allowed-signers
+    file back at the person.
+    """
+    environment = dict(os.environ,
+                       GIT_COMMITTER_NAME=CI_COMMITTER,
+                       GIT_COMMITTER_EMAIL=CI_EMAIL)
+    key = ci_signing_key(root)
+    subprocess.run(['git', 'add', '-A'], cwd=root, capture_output=True,
+                   text=True)
+    command = ['git']
+    if key:
+        command += ['-c', 'gpg.format=ssh', '-c', 'user.signingkey=' + key]
+    command += ['commit', '-q', '-m', message]
+    if key:
+        command.append('-S')
+    subprocess.run(command, cwd=root, env=environment, capture_output=True,
+                   text=True)
+
+
 def sign_one(project, rule='RULE-1', email='jane@acme.com', brief=None,
-             record=None, gate='passed', risk=None):
+             record=None, gate='passed', risk=None, note=None):
     """Write one signature for a rule and return its project-relative path."""
     entry = project.rule(rule)
-    return sign_module.write_approval(
+    return sign_module.write_signature(
         project.root, 'login', rule, email, brief, record, gate,
-        entry['risk'] if risk is None else risk, entry=entry)
+        entry['risk'] if risk is None else risk, entry=entry, note=note)
 
 
 # ---------------------------------------------------------------------------
@@ -426,51 +494,82 @@ class TestTheFile:
         assert loaded[('login', 'RULE-1')][0]['signer'] == 'jane@acme.com'
 
 
+
+
 # ---------------------------------------------------------------------------
 # The signed commit
 # ---------------------------------------------------------------------------
+
+@pytest.fixture
+def at_strong():
+    """The same project at the gate that turns the review list on."""
+    made = Project(gate=REVIEW_GATE)
+    made.proofs()
+    made.record()
+    yield made
+    made.close()
+
+
+def signing_project(sign_at='low', signer='jane@acme.com'):
+    """A project at the signing gate whose rules are waiting to be signed.
+
+    The record is CI's, because only a CI record counts at this gate, and the
+    person's signing key is configured last so the allowed-signers file names
+    the person rather than the build identity.
+    """
+    made = Project(gate=SIGNING_GATE,
+                   config={'signers': [signer], 'sign_at': sign_at})
+    made.proofs()
+    made.record(runner='ci', commit_it=False)
+    commit_as_ci(made.root)
+    signing_key(made.root, signer)
+    return made
+
 
 class TestTheSignedCommit:
 
     @pytest.mark.proof("signatures", "PROOF-21", "RULE-17", tier="integration")
     def test_without_signing_the_setup_is_printed_and_nothing_is_written(
-            self, proved, capsys):
-        code = sign_module.main(['login', '--project-root', proved.root])
+            self, at_strong, capsys):
+        code = sign_module.main(['login', '--project-root', at_strong.root])
         output = capsys.readouterr().out
         assert code == 1
         assert 'git config gpg.format ssh' in output
         assert 'git config user.signingkey ~/.ssh/id_ed25519.pub' in output
         assert 'git config commit.gpgsign true' in output
-        assert proved.signatures() == []
+        assert at_strong.signatures() == []
 
     @pytest.mark.proof("signatures", "PROOF-23", "RULE-18", tier="integration")
-    def test_one_signed_commit_carries_the_batch(self, proved, capsys):
-        signing_key(proved.root)
-        code = sign_module.main(['login', '--project-root', proved.root])
-        capsys.readouterr()
-        assert code == 0
-        assert len(proved.signatures()) == 2
-        log = git(proved.root, 'log', '-1', '--format=%G?%n%s').stdout
-        signature, subject = log.strip().splitlines()
-        assert signature == 'G', log
-        assert subject == 'sign(login): RULE-2 RULE-1', subject
+    def test_one_signed_commit_carries_the_batch(self, capsys):
+        made = signing_project()
+        try:
+            code = sign_module.main(['login', '--project-root', made.root])
+            capsys.readouterr()
+            assert code == 0
+            assert len(made.signatures()) == 2
+            log = git(made.root, 'log', '-1', '--format=%G?%n%s').stdout
+            signature, subject = log.strip().splitlines()
+            assert signature == 'G', log
+            assert subject == 'sign(login): RULE-2 RULE-1', subject
+        finally:
+            made.close()
 
     @pytest.mark.proof("signatures", "PROOF-25", "RULE-20", tier="integration")
-    def test_what_a_counting_signature_is_at_each_gate(self, proved):
-        signing_key(proved.root)
-        sign_module.main(['login', 'RULE-1', '--project-root', proved.root])
-        found = proved.load()[('login', 'RULE-1')][0]
+    def test_what_a_counting_signature_is_at_each_gate(self, at_strong):
+        signing_key(at_strong.root)
+        sign_module.main(['login', 'RULE-1', '--project-root', at_strong.root])
+        found = at_strong.load()[('login', 'RULE-1')][0]
 
         counted, reason = purlin_signatures.counts(
-            proved.root, found, ['jane@acme.com'], gate='signed')
+            at_strong.root, found, ['jane@acme.com'], gate='signed')
         assert counted, reason
 
         counted, reason = purlin_signatures.counts(
-            proved.root, found, ['someone@else.com'], gate='signed')
+            at_strong.root, found, ['someone@else.com'], gate='signed')
         assert not counted and 'signer is not on the list' in reason
 
         counted, reason = purlin_signatures.counts(
-            proved.root, found, ['someone@else.com'], gate='strong')
+            at_strong.root, found, ['someone@else.com'], gate='strong')
         assert counted, (
             'under strong a signature from anyone settles what the machine '
             'could not: %s' % reason)
@@ -485,9 +584,9 @@ class TestTheSignedCommit:
             'sign(batch): login RULE-1, billing RULE-3')
 
     @pytest.mark.proof("signatures", "PROOF-26", "RULE-21", tier="integration")
-    def test_the_signer_list_bounds_who_may_run_it(self, proved, capsys):
-        proved.config(**{SIGNER_KEY: ['someone@else.com']})
-        code = sign_module.main(['login', '--project-root', proved.root])
+    def test_the_signer_list_bounds_who_may_run_it(self, at_strong, capsys):
+        at_strong.config(signers=['someone@else.com'])
+        code = sign_module.main(['login', '--project-root', at_strong.root])
         output = capsys.readouterr().out
         assert code == 1
         assert 'not on the signer list' in output
@@ -506,6 +605,166 @@ class TestTheSignedCommit:
         finally:
             made.close()
 
+    @pytest.mark.proof("signatures", "PROOF-15", "RULE-12", tier="integration")
+    def test_a_batch_signs_everything_signable(self, capsys):
+        made = signing_project(sign_at='medium')
+        try:
+            code = sign_module.main(['--batch', '--project-root', made.root])
+            output = capsys.readouterr().out
+            assert code == 0, output
+            assert made.signatures() == [
+                name for name in made.signatures() if name.startswith('RULE-2.')
+            ], made.signatures()
+            assert 'Signed 1 rule in' in output, output
+        finally:
+            made.close()
+
+    @pytest.mark.proof("signatures", "PROOF-16", "RULE-13", tier="integration")
+    def test_a_note_records_what_the_signer_checked(self, capsys):
+        made = signing_project()
+        try:
+            code = sign_module.main(
+                ['login', 'RULE-2', '--note', 'I ran the lockout by hand.',
+                 '--project-root', made.root])
+            capsys.readouterr()
+            assert code == 0
+            path = made.load()[('login', 'RULE-2')][0]['path']
+            with open(os.path.join(made.root, path), encoding='utf-8') as f:
+                assert json.load(f)['note'] == 'I ran the lockout by hand.'
+        finally:
+            made.close()
+
+    @pytest.mark.proof("signatures", "PROOF-17", "RULE-13")
+    def test_a_note_needs_a_rule_and_a_line(self):
+        for argv in (['login', 'RULE-1', '--note'],
+                     ['login', '--note', 'a line'],
+                     ['--batch', '--note', 'a line']):
+            assert sign_module.main(argv + ['--project-root', '.']) == 2, argv
+
+
+# ---------------------------------------------------------------------------
+# What the gate lets the command do
+# ---------------------------------------------------------------------------
+
+class TestTheGateScales:
+
+    @pytest.mark.proof("signatures", "PROOF-18", "RULE-14", tier="integration")
+    def test_under_the_first_gate_it_writes_nothing_and_exits_two(
+            self, proved, capsys):
+        signing_key(proved.root)
+        code = sign_module.main(['login', 'RULE-1', '--project-root',
+                                 proved.root])
+        output = capsys.readouterr().out
+        assert code == 2
+        assert 'the gate is passed, which asks for no signature.' in output
+        assert 'purlin:init --gate strong' in output
+        assert proved.signatures() == []
+
+    @pytest.mark.proof("signatures", "PROOF-19", "RULE-15", tier="integration")
+    def test_under_the_review_gate_a_bare_signature_says_so_and_is_written(
+            self, at_strong, capsys):
+        signing_key(at_strong.root)
+        code = sign_module.main(['login', 'RULE-1', '--project-root',
+                                 at_strong.root])
+        output = capsys.readouterr().out
+        assert code == 0, output
+        assert 'required only under the gate signed' in output
+        assert len(at_strong.signatures()) == 1
+
+
+# ---------------------------------------------------------------------------
+# What a person may sign now
+# ---------------------------------------------------------------------------
+
+class TestWhatIsSignable:
+
+    @pytest.mark.proof("signatures", "PROOF-20", "RULE-16", tier="integration")
+    def test_it_is_the_unsigned_the_stale_and_the_ones_needing_a_person(self):
+        made = signing_project(sign_at='medium')
+        try:
+            assert sign_module.signable(made.payload()) == [
+                ('login', 'RULE-2')], (
+                'only the high-risk rule is at or above sign_at')
+            sign_module.main(['login', 'RULE-2', '--project-root', made.root])
+            assert sign_module.signable(made.payload()) == []
+            made.spec(SPEC.replace('return 401 and the body "denied"',
+                                   'return 403 and the body "denied"'))
+            assert sign_module.signable(made.payload()) == [
+                ('login', 'RULE-2')], 'a stale signature is signable again'
+        finally:
+            made.close()
+
+    @pytest.mark.proof("signatures", "PROOF-30", "RULE-16", tier="integration")
+    def test_a_rule_needing_a_person_is_signable_under_the_review_gate(self):
+        made = Project(gate=REVIEW_GATE, config={'min_strength': 50})
+        try:
+            made.proofs()
+            made.record(runner='ci', commit_it=False)
+            commit_as_ci(made.root)
+            assert sign_module.signable(made.payload()) == [
+                ('login', 'RULE-2')], (
+                'the high-risk rule has no brief, so it needs a person')
+        finally:
+            made.close()
+
+
+# ---------------------------------------------------------------------------
+# The walk
+# ---------------------------------------------------------------------------
+
+class TestTheWalk:
+
+    @pytest.mark.proof("signatures", "PROOF-31", "RULE-11", tier="integration")
+    def test_the_four_answers_each_do_their_own_thing(self, capsys):
+        made = signing_project(sign_at='low')
+        try:
+            answers = {'RULE-2': ('hold', 'no case for an expired token'),
+                       'RULE-1': 'sign'}
+            given = sign_module.walk(
+                made.root, answer=lambda entry, _text: answers[entry['id']])
+            capsys.readouterr()
+            assert given['signed'] == [('login', 'RULE-1')]
+            assert given['held'] == [('login', 'RULE-2')]
+            assert len(given['commits']) == 2, given
+            names = made.signatures()
+            assert any(name.startswith('RULE-1.') and not
+                       name.endswith('.hold.json') for name in names), names
+            assert any(name.endswith('.hold.json') for name in names), names
+        finally:
+            made.close()
+
+    @pytest.mark.proof("signatures", "PROOF-32", "RULE-11", tier="integration")
+    def test_a_skipped_rule_is_written_nothing_and_stays_on_the_list(
+            self, capsys):
+        made = signing_project(sign_at='low')
+        try:
+            given = sign_module.walk(made.root,
+                                     answer=lambda _entry, _text: 'skip')
+            output = capsys.readouterr().out
+            assert given['signed'] == [] and given['held'] == []
+            assert len(given['skipped']) == 2
+            assert made.signatures() == []
+            assert 'Run: purlin:sign' in output, output
+        finally:
+            made.close()
+
+    @pytest.mark.proof("signatures", "PROOF-33", "RULE-11", tier="integration")
+    def test_a_case_is_carried_to_the_close_and_written_nowhere(self, capsys):
+        made = signing_project(sign_at='low')
+        try:
+            given = sign_module.walk(
+                made.root,
+                answer=lambda _entry, _text: ('case', 'it should also reject '
+                                              'an expired token'))
+            output = capsys.readouterr().out
+            assert len(given['cases']) == 2
+            assert made.signatures() == []
+            assert 'it should also reject an expired token' in output
+            assert 'Run: purlin:build' in output, output
+        finally:
+            made.close()
+
+
 # ---------------------------------------------------------------------------
 # The ancestor check
 # ---------------------------------------------------------------------------
@@ -514,15 +773,15 @@ class TestTheAncestorCheck:
 
     @pytest.mark.proof("signatures", "PROOF-29", "RULE-23", tier="integration")
     def test_a_signature_on_a_side_branch_is_not_on_the_protected_branch(
-            self, proved):
-        signing_key(proved.root)
-        git(proved.root, 'checkout', '-q', '-b', 'side')
-        sign_module.main(['login', 'RULE-1', '--project-root', proved.root])
-        path = proved.load()[('login', 'RULE-1')][0]['path']
-        assert not purlin_signatures.is_ancestor(proved.root, path, 'main')
-        git(proved.root, 'checkout', '-q', 'main')
-        git(proved.root, 'merge', '-q', '--ff-only', 'side')
-        assert purlin_signatures.is_ancestor(proved.root, path, 'main')
+            self, at_strong):
+        signing_key(at_strong.root)
+        git(at_strong.root, 'checkout', '-q', '-b', 'side')
+        sign_module.main(['login', 'RULE-1', '--project-root', at_strong.root])
+        path = at_strong.load()[('login', 'RULE-1')][0]['path']
+        assert not purlin_signatures.is_ancestor(at_strong.root, path, 'main')
+        git(at_strong.root, 'checkout', '-q', 'main')
+        git(at_strong.root, 'merge', '-q', '--ff-only', 'side')
+        assert purlin_signatures.is_ancestor(at_strong.root, path, 'main')
 
 
 # ---------------------------------------------------------------------------
@@ -535,12 +794,12 @@ class TestTheCommandLine:
     def test_help_exits_zero_and_a_bad_option_exits_two(self):
         assert sign_module.main(['--help']) == 0
         assert sign_module.main(['login', '--nope']) == 2
-        assert sign_module.main([]) == 2
+        assert sign_module.main(['--nope']) == 2
 
     @pytest.mark.proof("signatures", "PROOF-22", "RULE-17", tier="integration")
-    def test_the_script_runs_as_a_command(self, proved):
+    def test_the_script_runs_as_a_command(self, at_strong):
         result = subprocess.run(
             [sys.executable, SIGN_PY, 'login', '--project-root',
-             proved.root], capture_output=True, text=True, timeout=120)
+             at_strong.root], capture_output=True, text=True, timeout=120)
         assert result.returncode == 1, result.stdout + result.stderr
         assert 'git config gpg.format ssh' in result.stdout

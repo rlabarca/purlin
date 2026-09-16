@@ -1,13 +1,15 @@
 # Feature: signatures
 
 > Description: The attestation that a rule, its proof and its test belong
->   together, and the gate that reads it. One signature is one file, so two
+>   together, and the command that writes one. One signature is one file, so two
 >   signatures never conflict, and it binds the hashes of the rule text, the
 >   proof text and the test body, plus the pinned design a design rule rests
 >   on. A person writes every one of them, as one signed commit; CI writes
->   none. The gate check reads the structured payload and decides whether the
->   branch may merge under the project's gate: `passed`, `strong` or `signed`.
-> Scope: scripts/mcp/purlin/signatures.py, scripts/review/approve.py, scripts/ci/verify_gate.py
+>   none. With no argument the command walks the review list one brief at a
+>   time, and what it may do at all scales with the project's gate: nothing
+>   under `passed`, the walk and a hold under `strong`, a counting signature
+>   under `signed`.
+> Scope: scripts/mcp/purlin/signatures.py, scripts/review/sign.py
 > Stack: python/stdlib (argparse, json, subprocess), git signed commits
 
 ## Rules
@@ -22,28 +24,19 @@
 - RULE-8: A signature file is named for the rule, the first eight characters of the triple and the signer's slug, the email local part lowercased with every character that is not a letter or a digit replaced by a hyphen [risk: medium] [origin: eng]
 - RULE-9: A signature carries schema `purlin-signature/1` and exactly the fields the format names: the triple, the three hashes and their kind, the design hash, the risk, the signer, the note, the timestamp, the gate, the brief and the record [risk: medium] [origin: eng]
 - RULE-10: The signature reader finds a signature in the `<feature>.signatures/` directory beside its spec and never reads a brief written under the same first two parts of a name [risk: high] [origin: eng]
+- RULE-11: With no feature named the command walks the review list one brief at a time, taking one of the four answers sign, case, hold or skip at each stop, and writes nothing until the walk closes [risk: high] [origin: eng]
+- RULE-12: `--batch` signs every rule that is signable now, in one signed commit [risk: medium] [origin: eng]
+- RULE-13: `--note` puts one line on the signature, for a `@manual` proof or a review the model could not settle; `--note` with no rule named, or with no line, exits 2 [risk: medium] [origin: eng]
+- RULE-14: Under `passed` the command writes no signature, names what `purlin:init --gate strong` would add and exits 2 [risk: high] [origin: eng]
+- RULE-15: Under `strong` a signature on a rule that needs none says a signature is required only under `signed`, and writes it anyway [risk: medium] [origin: eng]
+- RULE-16: A rule is signable when its signed cell reads `unsigned` or `stale`, or when its strong cell reads `needs a person`, and in no other case [risk: high] [origin: eng]
 - RULE-17: With no signing configured the command writes no signature, exits 1 and prints the three git config commands that set signing up [risk: medium] [origin: eng]
 - RULE-18: One invocation is one signed commit, whatever number of rules it carries, and its subject names the feature and every rule signed [risk: high] [origin: eng]
 - RULE-19: A batch spanning more than one feature names each feature with its own rules in the subject [risk: low] [origin: eng]
 - RULE-20: Under `signed` a signature counts only when the commit that added it is signed, its author is on the signer list and that author did not last touch the test; under `strong` a committed signature from anyone counts [risk: high] [origin: eng]
 - RULE-21: Someone off the signer list is refused by name, and at gate `signed` with no list at all the command names `purlin:init --gate signed` and exits 1 [risk: medium] [origin: eng]
-- RULE-22: The command exits 0 for `--help`, and an unknown option or no feature at all exits 2 [risk: low] [origin: eng]
+- RULE-22: The command exits 0 for `--help`, and an unknown option exits 2 whether or not a feature is named [risk: low] [origin: eng]
 - RULE-23: A signature committed on a side branch is not on the protected branch until that branch merges [risk: high] [origin: eng]
-- RULE-24: At gate `tested` a record a person committed counts and the test strength is never read [risk: medium] [origin: eng]
-- RULE-25: At gate `tested` a rule with no record, and a rule whose record carries a failing proof, fail the gate and are named [risk: high] [origin: eng]
-- RULE-26: At gate `recorded` only a record CI committed counts, and a record a person committed is reported as no record at all [risk: high] [origin: eng]
-- RULE-27: At gate `recorded` a test strength below the minimum fails and names both numbers, while no engine at all leaves the rule alone [risk: high] [origin: eng]
-- RULE-28: A report section names at most 20 rules and counts the rest, pointing at `--json` for every one [risk: low] [origin: eng]
-- RULE-29: At gate `approved` a current approval signed by someone on the approver list passes its rule, and a low-risk rule needs no human approval at all [risk: high] [origin: eng]
-- RULE-30: At gate `approved` a high-risk rule fails when it has no approval, when its only approval is a CI auto-approval, when the approval commit is unsigned, or when the approver last touched the test, and the report says which [risk: high] [origin: eng]
-- RULE-31: At gate `approved` a stale approval fails as Stale, and an approval that has not reached the protected branch fails naming that branch [risk: high] [origin: eng]
-- RULE-32: At gate `approved` with no approver list the gate prints the missing-list directive and fails without grading a rule [risk: high] [origin: eng]
-- RULE-33: The gate exits 0 when it is met, 1 when it is not, and 2 when it cannot read the evidence, so an unreadable project never passes [risk: high] [origin: eng]
-- RULE-34: `verify_gate.py` needs `--check` and a directory that exists; either missing exits 2 [risk: low] [origin: eng]
-- RULE-35: `--json` prints the gate, the verdict, the exit code, the rule counts and every rule that fell short [risk: medium] [origin: eng]
-- RULE-36: The gate creates and changes no file at any gate level [risk: high] [origin: eng]
-- RULE-37: The gate reads the structured payload and never a rendered table, and a caller may hand it a payload it already built [risk: medium] [origin: eng]
-- RULE-38: Every line the gate prints either carries the `verify-gate:` prefix or is an indented finding under a section heading [risk: low] [origin: eng]
 - RULE-40: `<feature> RULE-N --hold "<the missing case>"` writes `<RULE-N>.<hash8>.<holder-slug>.hold.json` binding the rule's hashes, with schema `purlin-hold/1`, the holder's email and the missing case as `reason`, and commits it signed as `hold(<feature>): RULE-N`; `--hold` with no reason, or with no rule named, exits 2 and writes nothing [risk: medium] [origin: eng]
 
 ## Proof
@@ -62,43 +55,24 @@
 - PROOF-12 (RULE-8): Write a signature for the address `Rich.LaBarca+purlin@example.com`; verify the only file in the signatures directory is named `RULE-1.<hash8>.rich-labarca-purlin.json` for that rule's triple @integration
 - PROOF-13 (RULE-9): Write a signature naming a brief and a record; verify its schema is `purlin-signature/1`, its field names are exactly the 16 the format lists, its triple is the first 16 characters of the rule's triple, its `note` is null and its timestamp ends `Z` @integration
 - PROOF-14 (RULE-10): Write a signature and a brief for the same rule into one signatures directory, then load the signatures; verify exactly 1 comes back and its signer is `jane@acme.com` @integration
+- PROOF-15 (RULE-12): Run `--batch` in a project at gate `signed` whose `sign_at` is `medium`; verify it exits 0, prints `Signed 1 rule in` and writes a signature for `RULE-2` alone @integration
+- PROOF-16 (RULE-13): Run `login RULE-2 --note "I ran the lockout by hand."`; verify it exits 0 and the signature's `note` reads `I ran the lockout by hand.` @integration
+- PROOF-17 (RULE-13): Run `login RULE-1 --note` with no line, `login --note "a line"` with no rule, and `--batch --note "a line"`; verify each exits 2
+- PROOF-18 (RULE-14): Run `login RULE-1` in a project at gate `passed` with signing configured; verify it exits 2, prints `the gate is passed, which asks for no signature.` and `purlin:init --gate strong`, and that the signatures directory is empty @integration
+- PROOF-19 (RULE-15): Run `login RULE-1` in a project at gate `strong` whose passed cell is not met; verify it exits 0, prints `required only under the gate signed` and writes exactly 1 signature @integration
+- PROOF-20 (RULE-16): Read what is signable at gate `signed` with `sign_at` at `medium`; verify it is `login RULE-2` alone, that signing it leaves nothing signable, and that changing `401` to `403` in the rule makes it signable again @integration
 - PROOF-21 (RULE-17): Run the command in a checkout with no signing key; verify it exits 1, prints `git config gpg.format ssh`, `git config user.signingkey ~/.ssh/id_ed25519.pub` and `git config commit.gpgsign true`, and that the signatures directory is empty @integration
 - PROOF-22 (RULE-17): Run the command in a separate process against a checkout with no signing key; verify it exits 1 and prints `git config gpg.format ssh` @integration
 - PROOF-23 (RULE-18): Configure a throwaway signing key and run the command for the whole feature; verify it exits 0, writes 2 signatures, and that the one commit it made reports signature `G` with the subject `sign(login): RULE-2 RULE-1` @integration
 - PROOF-24 (RULE-19): Build the subject for `login RULE-1` with `login RULE-2`, then for `login RULE-1` with `billing RULE-3`; verify they read `sign(login): RULE-1 RULE-2` and `sign(batch): login RULE-1, billing RULE-3`
-- PROOF-25 (RULE-20): Sign `RULE-1` as `jane@acme.com` with signing configured, then count the signature at gate `signed` against that list and against `someone@else.com`, and at gate `strong` against the second list; verify the first counts, the second is refused with a reason naming the signer list, and the third counts @integration
+- PROOF-25 (RULE-20): Run the command to sign `RULE-1` as `jane@acme.com` with signing configured, then count the signature at gate `signed` against that list and against `someone@else.com`, and at gate `strong` against the second list; verify the first counts, the second is refused with a reason naming the signer list, and the third counts @integration
 - PROOF-26 (RULE-21): Set the signer list to `someone@else.com` and run the command; verify it exits 1 and prints `not on the signer list` @integration
 - PROOF-27 (RULE-21): Run the command at the gate that requires a signature, with no signer list; verify it exits 1 and prints `signer list missing: run purlin:init --gate signed` @integration
 - PROOF-28 (RULE-22): Run the command with `--help`, with `login --nope` and with no argument; verify the exit codes are 0, 2 and 2
-- PROOF-29 (RULE-23): Sign `RULE-1` on a branch called `side`; verify the signature is not an ancestor of `main`, then fast-forward `main` onto `side` and verify it is @integration
-- PROOF-30 (RULE-24): Run the gate over a project at gate `tested` whose record a person committed; verify it exits 0 and prints `gate = tested` and `PASS. Every rule meets tested.` @integration
-- PROOF-31 (RULE-24): Run the gate at gate `tested` with a minimum of 80 over a record measuring 10; verify it exits 0 and prints no line about the minimum test strength @integration
-- PROOF-32 (RULE-25): Run the gate over a project at gate `tested` with no record at all; verify it exits 1, opens a section `Not tested (2):`, names `login RULE-1` and `login RULE-2`, and closes with `FAIL. 2 of 2 rules do not meet tested.` @integration
-- PROOF-33 (RULE-25): Record `PROOF-1` as failing and run the gate at gate `tested`; verify it exits 1 and names `login RULE-1` @integration
-- PROOF-34 (RULE-26): Run the gate at gate `recorded` over a record committed under the build identity; verify it exits 0 and prints `gate = recorded` @integration
-- PROOF-35 (RULE-26): Run the gate at gate `recorded` over a record a person committed; verify it exits 1, opens `Not recorded (2):` and gives the reason `no record CI wrote covers this commit` @integration
-- PROOF-36 (RULE-27): Run the gate at gate `recorded` with a minimum of 70 over a record measuring 40; verify it exits 1, opens `Below the minimum test strength (2):` and reads `test strength 40 percent, below 70` @integration
-- PROOF-37 (RULE-27): Run the gate at gate `recorded` with a minimum of 70 over a record with no test strength; verify it exits 0 and prints no line about the minimum @integration
-- PROOF-38 (RULE-28): Run the gate over a spec carrying 30 rules and no record; verify it opens `Not recorded (30):` and closes the section with `and 10 more; --json prints every one.` @integration
-- PROOF-39 (RULE-29): Run the command to approve the high-risk rule with a signed commit by the listed approver, then run the gate at gate `approved`; verify it exits 0 and prints `gate = approved` @integration
-- PROOF-40 (RULE-29): Run the command to approve only the high-risk rule, then run the gate at gate `approved`; verify it exits 0 and never names `login RULE-1`, the low-risk rule CI auto-approves @integration
-- PROOF-41 (RULE-30): Run the gate at gate `approved` with no approval written; verify it exits 1, opens `Not approved (1):` and reads `login RULE-2: no approval` @integration
-- PROOF-42 (RULE-30): Write a CI auto-approval for the high-risk rule and run the gate at gate `approved`; verify it exits 1 and the reason names the CI auto-approval @integration
-- PROOF-43 (RULE-30): Write an approval and commit it without a signature, then run the gate at gate `approved`; verify it exits 1 and reads `the approval commit is not signed` @integration
-- PROOF-44 (RULE-30): Put the author of the test on the approver list, approve with that identity and run the gate at gate `approved`; verify it exits 1 and reads `the approver last touched the test` @integration
-- PROOF-45 (RULE-31): Run the command to approve the high-risk rule, then change `401` to `403` in it and run the gate at gate `approved`; verify it exits 1 and the report says Stale @integration
-- PROOF-46 (RULE-31): Run the command to approve the high-risk rule on a branch called `side`, then run the gate at gate `approved`; verify it exits 1 and reads `is not on main yet` @integration
-- PROOF-47 (RULE-32): Run the gate at gate `approved` over a project with no approver list; verify it exits 1, prints `approver list missing: run purlin:init --gate approved` and never prints `PASS` @integration
-- PROOF-48 (RULE-33): Run the gate over a passing project, then a failing one, then a directory holding no project; verify the exit codes are 0, 1 and 2 and that the last prints `failing closed` @integration
-- PROOF-49 (RULE-33): Run the gate over a directory that does not exist; verify it exits 2 and prints `cannot read a Purlin project` @integration
-- PROOF-50 (RULE-34): Run the gate with no argument, and with `--check --project-root /no/such/directory`; verify both exit 2
-- PROOF-51 (RULE-38): Run `verify_gate.py` as a command in a separate process over a passing project; verify it exits 0 and its output opens `verify-gate: gate = tested` @integration
-- PROOF-52 (RULE-35): Run the gate with `--json` over a project with no record; verify the JSON reads gate `tested`, verdict `fail`, exit 1, 2 rules, 0 met and 2 entries under the state list @integration
-- PROOF-53 (RULE-35): Run the gate with `--json` over a passing project; verify the verdict is `pass`, that met equals 2 of 2 rules and the state list is empty @integration
-- PROOF-54 (RULE-32): Run the gate with `--json` at gate `approved` with no approver list; verify it exits 1 and the JSON reports the approver list `missing` @integration
-- PROOF-55 (RULE-36): Snapshot every file of a project, run the gate at `tested`, `recorded` and `approved`, and snapshot again; verify the two snapshots are equal and `git status --porcelain` prints nothing @integration
-- PROOF-56 (RULE-37): Read the gate's own source; verify it builds the payload and that none of the box-drawing glyphs a rendered table uses appears in it
-- PROOF-57 (RULE-37): Build the payload, hand it to the gate and run it; verify it exits 0 and prints `PASS` @integration
-- PROOF-58 (RULE-38): Run the gate over a project with no record; verify every line that is not indented either opens with `verify-gate:` or ends with a colon @integration
+- PROOF-29 (RULE-23): Run the command to sign `RULE-1` on a branch called `side`; verify the signature is not an ancestor of `main`, then fast-forward `main` onto `side` and verify it is @integration
+- PROOF-30 (RULE-16): Write a CI record in a project at gate `strong` and read what is signable; verify it is `login RULE-2` alone, the high-risk rule with no brief for its current hashes @integration
+- PROOF-31 (RULE-11): Run the walk over a project at gate `signed`, answering `hold` with a case for `RULE-2` and `sign` for `RULE-1`; verify 2 commits are made, a signature file names `RULE-1` and a `.hold.json` file stands beside it @integration
+- PROOF-32 (RULE-11): Run the walk over the same project, answering `skip` at every stop; verify 2 rules are skipped, the signatures directory is empty and the close prints `Run: purlin:sign` @integration
+- PROOF-33 (RULE-11): Run the walk over the same project, answering `case` with `it should also reject an expired token` at every stop; verify 2 cases come back, the signatures directory is empty, the close prints that sentence and it prints `Run: purlin:build` @integration
 - PROOF-60 (RULE-40): In a checkout signing as `jane@acme.com`, run `login RULE-1 --hold "no case for an expired token"`; verify it exits 0, the last commit is signed `G` with the subject `hold(login): RULE-1`, and it adds `specs/auth/login.signatures/RULE-1.<hash8>.jane.hold.json` for the rule's own triple, whose schema is `purlin-hold/1`, holder `jane@acme.com` and reason `no case for an expired token` @integration
 - PROOF-61 (RULE-40): Run `login RULE-1 --hold` with no reason, `login RULE-1 --hold --batch`, and `login --hold "a case"` with no rule; verify each exits 2 and no `.hold.json` exists @integration

@@ -44,13 +44,11 @@ EXCLUDED = (
 # rewrites the files; the tuple is empty at closeout.
 PENDING_REWRITE = (
     # lane 1B: signatures
-    "specs/review/signatures.md", "references/formats/signature_format.md",
+    "references/formats/signature_format.md",
     # lane 2A: sign, brief, gate
-    "scripts/review/approve.py", "scripts/review/brief.py", "scripts/review/static_checks.py",
+    "scripts/review/brief.py", "scripts/review/static_checks.py",
     "dev/test_brief.py",
     "dev/test_brief_files.py", "dev/test_brief_tests_named.py", "dev/test_static_checks.py",
-    # these two name the command that writes a signature, which is renamed with it
-    "dev/test_signatures.py", "dev/test_holds.py",
     "specs/review/brief.md", "specs/review/static_checks.md",
     # lane 3: init and update
     "scripts/init/scaffold.py", "scripts/init/update.py", "templates/config.json",

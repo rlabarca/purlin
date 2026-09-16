@@ -3,8 +3,8 @@
 The machine reads whether the tests pass and how strong they are. It cannot
 read whether a test proves the proof text, so a person who finds that it does
 not commits a hold, and the rule needs a person until the text moves or a
-signature outranks it. The throwaway project is `dev/test_signatures.py`'s:
-`RULE-1` is low risk, `RULE-2` high.
+signature outranks it. The throwaway project is `dev/test_signatures.py`'s, at
+the gate that turns the review list on: `RULE-1` is low risk, `RULE-2` high.
 """
 
 import json
@@ -19,15 +19,15 @@ sys.path.insert(0, DEV)
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 
-import approve as sign_module  # noqa: E402
-from test_signatures import Project, git, signing_key  # noqa: E402
+import sign as sign_module  # noqa: E402
+from test_signatures import REVIEW_GATE, Project, git, signing_key  # noqa: E402
 
 CASE = 'no case for an expired token'
 
 
 @pytest.fixture
 def proved():
-    made = Project()
+    made = Project(gate=REVIEW_GATE)
     made.proofs()
     made.record()
     yield made

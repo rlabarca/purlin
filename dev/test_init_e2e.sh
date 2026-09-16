@@ -32,8 +32,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SCAFFOLD="$ROOT/scripts/init/scaffold.py"
 RUN="$ROOT/scripts/run/purlin_run.py"
-GATE="$ROOT/scripts/ci/verify_gate.py"
-APPROVE="$ROOT/scripts/review/approve.py"
+GATE="$ROOT/scripts/ci/gate_check.py"
+APPROVE="$ROOT/scripts/review/sign.py"
 export PURLIN_ROOT="$ROOT"
 
 CI_NAME='github-actions[bot]'
