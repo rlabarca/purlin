@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "purlin_report",
-  "generated_at": "2026-09-16T21:03:05Z",
+  "generated_at": "2026-09-16T21:12:32Z",
   "layers": [
     "proof text",
     "test body",
@@ -33,7 +33,7 @@
   "reasons": [
     "PROOF-12 no_expected_value: Names no literal, number, quoted string or named constant, so almost any assertion would satisfy it."
   ],
-  "record": ".purlin/records/purlin_report/20260916T210253Z-dc36ae3-ci-linux.json",
+  "record": ".purlin/records/purlin_report/20260916T211204Z-dc36ae3-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-12",
   "rule_hash": "2362482bc3c75c039d79d503528d3c023fb1b0f1a6c62e15b13fa06a15fa6938",
