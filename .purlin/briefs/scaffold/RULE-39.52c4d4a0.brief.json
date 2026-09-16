@@ -1,0 +1,72 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T22:53:32Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "7d2b5970a29ad9bf2a9fbbe46c2da88e427a25ae4c44d1b6d67db8dbf1adb08c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-39",
+      "text": "Write `scripts/run/job.py`, `dev/test_job.py`, `dev/build.py` and `docs/guide.md` and verify the paths are `([\"scripts\"], [\"dev\"])`; write `src/app.py`, `tools/helper.py`, `tests/test_app.py` and `dev/test_extra.py` into another project and verify `([\"src\"], [\"tests\"])`; on a project whose one file is `docs/guide.md` verify the source is `[\".\"]`; on a project holding `greeting.py`, `conftest.py` and `test_greeting.py` at its root verify the source is exactly `[\"greeting.py\"]`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T225315Z-ca1f4b5-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-39",
+  "rule_hash": "8fb5a52494f8cb9af3d79fc38dc559ae4d37ab6a745f2a4a634ac8ff803ae2a3",
+  "rule_text": "The mutmut block names as source every top-level directory holding a `.py` file at any depth and no test file at its top level, and names as the test selection the directories that do hold one, with `src`, `lib` and `app` preferred as source and `tests` and `test` as the selection; a project with no such directory names each non-test `.py` module at its root, and names `.` only when there is none",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "c4dba7a831d6562a2c4172c179c787a5c20397bedb7f8b70e30c02c324fb9bd9",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_modules_at_the_root_are_named_one_by_one(self, project):\n        write(project.path('greeting.py'), 'def greet(name):\\n    return name\\n')\n        write(project.path('conftest.py'), '')\n        write(project.path('test_greeting.py'), 'def test_greet():\\n    pass\\n')\n        sources, _tests = scaffold_module.mutmut_paths(project.root)\n        assert sources == ['greeting.py']",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_modules_at_the_root_are_named_one_by_one",
+      "proof": "PROOF-39",
+      "reasons": []
+    },
+    {
+      "body": "def test_nested_code_is_source_and_a_test_directory_is_the_selection(\n            self, project):\n        shutil.rmtree(project.path('tests'), ignore_errors=True)\n        write(project.path('scripts/run/job.py'), 'def go():\\n    return 1\\n')\n        write(project.path('dev/test_job.py'), 'def test_go():\\n    pass\\n')\n        write(project.path('dev/build.py'), '')\n        write(project.path('docs/guide.md'), '# Guide\\n')\n        assert scaffold_module.mutmut_paths(project.root) == (['scripts'],\n                                                              ['dev'])",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_nested_code_is_source_and_a_test_directory_is_the_selection",
+      "proof": "PROOF-39",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_python_anywhere_falls_back_to_the_root(self, project):\n        write(project.path('docs/guide.md'), '# Guide\\n')\n        sources, _tests = scaffold_module.mutmut_paths(project.root)\n        assert sources == ['.']",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_no_python_anywhere_falls_back_to_the_root",
+      "proof": "PROOF-39",
+      "reasons": []
+    },
+    {
+      "body": "def test_src_and_tests_still_win_over_other_directories(self, project):\n        write(project.path('src/app.py'), '')\n        write(project.path('tools/helper.py'), '')\n        write(project.path('tests/test_app.py'), '')\n        write(project.path('dev/test_extra.py'), '')\n        assert scaffold_module.mutmut_paths(project.root) == (['src'],\n                                                              ['tests'])",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_src_and_tests_still_win_over_other_directories",
+      "proof": "PROOF-39",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "52c4d4a0cce0d49312724fdda9e8e7a2bf2fea549d68aa39e0d1e73b8c97f439"
+}

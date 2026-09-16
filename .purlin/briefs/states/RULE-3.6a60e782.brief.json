@@ -1,0 +1,66 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T22:53:39Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "49f5f6b67569aebde7c5df9521d4ad88e46cf3f15bc0bc4bac52f2a678c31535",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-3",
+      "text": "Write one passing runtime proof entry for `PROOF-2` in a project at the gate `passed` and verify its passed cell reads `passed` with source `local`, `current` true and `counts` true",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-4",
+      "text": "Write and commit a record whose runner is `ci` in which `PROOF-2` passes at the head commit; verify the passed cell reads `passed` with source `ci`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260916T225315Z-ca1f4b5-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-3",
+  "rule_hash": "d46d5b0589c4d28c09a77e6ea027525b01ef6d88d81cac066afd4f97a84c80f7",
+  "rule_text": "The passed cell reads `passed` when every proof of the rule has a passing test from a source that counts under the gate and that pass describes the current checkout, and it carries the source, whether the pass is current and whether it counts",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "544058fc81206e82a9962eb63b4b0c44be836aeabfba0313ccf048ae5cb94511",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_local_run_meets_level_one_under_the_passed_gate(self, project):\n        project.proofs([_entry('PROOF-2', 'RULE-2')])\n        cell = project.cell('RULE-2', 'passed')\n        assert cell['word'] == 'passed'\n        assert (cell['source'], cell['current'], cell['counts']) == (\n            'local', True, True)",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_a_local_run_meets_level_one_under_the_passed_gate",
+      "proof": "PROOF-3",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_ci_record_at_head_meets_level_one(self, project):\n        project.record([{'id': 'PROOF-2', 'rule': 'RULE-2', 'status': 'pass'}],\n                       ci=True)\n        cell = project.cell('RULE-2', 'passed')\n        assert cell['word'] == 'passed'\n        assert cell['source'] == 'ci'",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_a_ci_record_at_head_meets_level_one",
+      "proof": "PROOF-4",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "6a60e78264db710c06547a2e488e482948a155f30eb13769fe1e302b71afd203"
+}

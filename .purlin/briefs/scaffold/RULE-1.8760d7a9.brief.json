@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T22:53:30Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "fd8a381a83e025f67376e433e85c87d42428e96cfbf9a20cf052040ecbd852ef",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-1",
+      "text": "Run the script against a temp git project holding `conftest.py` and one test file, answering `strong` on stdin; verify the gate question is on stdout, the framework question and the signer question are not, and the config reads `gate` `strong`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T225315Z-ca1f4b5-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-1",
+  "rule_hash": "d0b245a6185a1694f97007f6d5df4980b525b306b589e6e750b44f18133cdbc2",
+  "rule_text": "A project with code to detect is asked the gate question and no other question",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "50bb46ffaace9c4e65d8eadd5d623a02a60b2a53134673d734e0661f9544c31a",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_project_with_code_is_asked_the_gate_and_nothing_else(self):\n        \"\"\"The gate question is the only prompt a detectable project sees.\"\"\"\n        made = Project('pytest')\n        try:\n            done = subprocess.run(\n                [sys.executable, SCAFFOLD, '--project-root', made.root],\n                input='strong\\n', capture_output=True, encoding='utf-8',\n                timeout=300)\n            assert done.returncode == 0, done.stdout + done.stderr\n            assert scaffold_module.GATE_QUESTION in done.stdout\n            assert scaffold_module.LANGUAGE_QUESTION not in done.stdout\n            assert scaffold_module.SIGNER_QUESTION not in done.stdout\n            assert made.config()['gate'] == 'strong'\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_a_project_with_code_is_asked_the_gate_and_nothing_else",
+      "proof": "PROOF-1",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "8760d7a9da234bcee24f25686ed3c7ebdd2afd46fec9f4ef2d2a84d8b153492f"
+}

@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T22:53:38Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "df20daf4aa90a969df21c1ecac22d62f0275a993c8aad68f1a97f75336040363",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-16",
+      "text": "Build the strong cell with a brief whose `tests` entry carries the finding `asserts_nothing`; verify the cell reads `weak` and that `asserts_nothing` is among its findings and its reasons",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/states/20260916T225315Z-ca1f4b5-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-14",
+  "rule_hash": "a7cba16685b533e7ddc7a45d9389840d3e85cbbfa99dc04e3736ec6e7964b1a5",
+  "rule_text": "A finding the brief raised against a test body makes the strong cell read `weak` and is named among its findings",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "3e3611ea58efeaf8d6232d6722bd85e2b45d0baa9124251182099d41659e8595",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_finding_against_the_test_body_is_weak(self):\n        cell = _strong(risk='low', brief={\n            'settled': True, 'observations': [],\n            'tests': [{'proof': 'PROOF-1', 'findings': ['asserts_nothing']}]})\n        assert cell['word'] == 'weak', cell\n        assert 'asserts_nothing' in cell['findings'], cell\n        assert 'asserts_nothing' in cell['reasons'], cell",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_a_finding_against_the_test_body_is_weak",
+      "proof": "PROOF-16",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "358f2c34711a3be3e619e94e19892c8267a573267dc2ccadc1f8e533c740f091"
+}

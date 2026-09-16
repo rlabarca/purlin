@@ -1,0 +1,57 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-16T22:53:29Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "c906dd1e0dc5d74404e343b737d0404dbf6bcbb94180ac91d7203bbb8d023ccd",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-67",
+      "text": "Run `--all --record --ci` at the gate `strong` over a spec whose `RULE-1` is tagged `[risk: high]` and whose tagged test passes; verify `.purlin/briefs/feat/RULE-1.<hash8>.brief.json` was written, that the run prints `1 brief written.`, and that the commit call carries that path after the record path. Run it again with the rule tagged `[risk: low]`; verify no file under `.purlin/briefs/` was written, the run prints `0 briefs written.` and the commit call carries the record path alone",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/run_script/20260916T225315Z-ca1f4b5-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-46",
+  "rule_hash": "f8215ad69b4cd38acdf6747d4d93c0b8a08f3e4172438dc9f197c7996358ace6",
+  "rule_text": "The briefs a `--ci` run writes are for the rules whose risk is at or above `ai_review_at` and whose every tagged test passed in this run, named from the records the run just built rather than left to the brief writer to read off a passed cell, because the record is still uncommitted while the briefs are written and its source reads `local`, which `strong` and `signed` do not count",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "355b046c677e6b1fa5d11f9b5670b36b7184c90bd71e99e0efbc0f475cd1ca7b",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_high_risk_rule_that_passed_gets_its_brief_in_the_commit(\n            self, tmp_path, record_run, capsys):\n        root = _pytest_project(tmp_path, gate='strong')\n        _spec(root, 'feat', risk='high')\n        _code, calls = record_run(root, '--all', '--ci')\n        output = capsys.readouterr().out\n\n        briefs = sorted(\n            path.name for path in\n            (root / '.purlin' / 'briefs' / 'feat').glob('*.brief.json'))\n        assert len(briefs) == 1, output\n        assert briefs[0].startswith('RULE-1.'), briefs\n        assert '1 brief written.' in output, output\n\n        paths, identity, _message = calls['commit'][0]\n        assert identity == 'ci'\n        assert paths == [os.path.join('.purlin', 'records', 'feat', 'r.json'),\n                         '.purlin/briefs/feat/%s' % briefs[0]]",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_a_high_risk_rule_that_passed_gets_its_brief_in_the_commit",
+      "proof": "PROOF-67",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_rule_below_the_review_level_gets_no_brief(\n            self, tmp_path, record_run, capsys):\n        root = _pytest_project(tmp_path, gate='strong')\n        _spec(root, 'feat', risk='low')\n        _code, calls = record_run(root, '--all', '--ci')\n        output = capsys.readouterr().out\n\n        assert not (root / '.purlin' / 'briefs').exists(), output\n        assert '0 briefs written.' in output, output\n        paths, _identity, _message = calls['commit'][0]\n        assert paths == [os.path.join('.purlin', 'records', 'feat', 'r.json')]",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_a_rule_below_the_review_level_gets_no_brief",
+      "proof": "PROOF-67",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "0726a2cb51aea21128bbdd20627641d7673b37a9fed8a3c771ef086f34feb62b"
+}

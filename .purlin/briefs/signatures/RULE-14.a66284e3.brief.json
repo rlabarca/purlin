@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-16T22:53:35Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "14b319507eb80d3dc00bd702e81eac1440d230abd2b4bdafa3a52dde923fc6c8",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-18",
+      "text": "Run `login RULE-1` in a project at gate `passed` with signing configured; verify it exits 2, prints `the gate is passed, which asks for no signature.` and `purlin:init --gate strong`, and that the signatures directory is empty",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/signatures/20260916T225315Z-ca1f4b5-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-14",
+  "rule_hash": "fcc8bef8d693480da81e9b3e2b6723cb9f7a69b93c8e8462bdbb0eafa77cdb75",
+  "rule_text": "Under `passed` the command writes no signature, names what `purlin:init --gate strong` would add and exits 2",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "ba1453840e13423dc618e688f34f635cc33c256410ac87dff0ac0d6c1d4c3f8c",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_under_the_first_gate_it_writes_nothing_and_exits_two(\n            self, proved, capsys):\n        signing_key(proved.root)\n        code = sign_module.main(['login', 'RULE-1', '--project-root',\n                                 proved.root])\n        output = capsys.readouterr().out\n        assert code == 2\n        assert 'the gate is passed, which asks for no signature.' in output\n        assert 'purlin:init --gate strong' in output\n        assert proved.signatures() == []",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_under_the_first_gate_it_writes_nothing_and_exits_two",
+      "proof": "PROOF-18",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a66284e31f684c579b12c26a00f5e76d03909b63a38652c0a15f5382fa2e90e5"
+}

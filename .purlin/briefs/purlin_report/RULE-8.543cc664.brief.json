@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-16T22:53:23Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "de8ce67ee055d377f9e229d5856a33e7e303799fa3a762a9785f2f2ad93763e0",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-8",
+      "text": "Open the board with the solo fixture and verify the tile labels read `Untested`, `Failing`, `Passed` in that order, that they are set in capitals, and that 0 flag cards are on screen; open the team fixture and verify they read `Untested`, `Failing`, `Passed`, `Strong` with 0 flag cards; open the regulated fixture and verify they read `Untested`, `Failing`, `Passed`, `Strong`, `Signed`, that each tile shows that bucket's count from the payload's summary, and that the flag card reads `Stale` with the summary's stale count",
+      "tier": "e2e"
+    }
+  ],
+  "record": ".purlin/records/purlin_report/20260916T225315Z-ca1f4b5-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-8",
+  "rule_hash": "9f9b2190e37b4b7852de224b5a47543bfdf61b8d2416b9c3c6d16fc02bbf42c2",
+  "rule_text": "The strip above the table carries one tile per bucket the gate reaches, `Untested`, `Failing` and `Passed` at every gate, `Strong` at `strong` and `Signed` at `signed`, each showing that bucket's count from the payload's summary with its label set in capitals, and at `signed` a `Stale` flag card beside them",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "5a527da47bff735c81e68612386d6a06029af52de9edee5865b1a9121781ee4c",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_tiles_scale_with_the_gate(browser, tmp_path):\n    solo = open_board(browser, tmp_path / 'solo', payload_named('solo'))\n    assert texts(solo, '.tile-l') == ['Untested', 'Failing', 'Passed']\n    assert solo.query_selector_all('.flag') == []\n    assert solo.eval_on_selector(\n        '.tile-l', 'el => getComputedStyle(el).textTransform') == 'uppercase'\n    solo.close()\n\n    team = open_board(browser, tmp_path / 'team', payload_named('team'))\n    assert texts(team, '.tile-l') == ['Untested', 'Failing', 'Passed',\n                                      'Strong']\n    assert team.query_selector_all('.flag') == []\n    team.close()\n\n    payload = payload_named('regulated')\n    page = open_board(browser, tmp_path / 'reg', payload)\n    assert texts(page, '.tile-l') == ['Untested', 'Failing', 'Passed',\n                                      'Strong', 'Signed']\n    assert texts(page, '.tile-v') == [str(payload['summary'][name])\n                                      for name in BUCKETS]\n    assert texts(page, '.flag-l') == ['Stale']\n    assert texts(page, '.flag-v') == [str(payload['summary']['stale'])]\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_the_tiles_scale_with_the_gate",
+      "proof": "PROOF-8",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "543cc6640052c8382d35a9980567768454ab1b0729d7b184efe3d89eb0e221ea"
+}

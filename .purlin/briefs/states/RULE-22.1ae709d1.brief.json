@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T22:53:39Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "4efed81bc6b388797670b6aa3c61f6387069765a15091ffe5169622b82358820",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-26",
+      "text": "At the gate `signed`, commit a signature whose commit carries no signature of its own; build the payload and verify the signed cell reads `unsigned` with the reason `the signing commit is not signed`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260916T225315Z-ca1f4b5-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-22",
+  "rule_hash": "ac77d5da0c1ec2103393a233e83b377eb74498b7ab5460e9b380f5d20ff78031",
+  "rule_text": "A signature the gate refuses leaves the signed cell at `unsigned` carrying the reason the check gave, one of `the signing commit is not signed`, `the signer is not on the list`, `the signer last touched the test` and `the signing commit is not on <branch>`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "78bf8eaf69c7e25087b59ee5438a8494fdcc2a57c38c48b53dff0b6e2332854f",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_an_unsigned_signing_commit_leaves_the_rule_unsigned(self):\n        made = self._signed_project()\n        try:\n            made.signature('RULE-1')\n            cell = made.cell('RULE-1', 'signed')\n            assert cell['word'] == 'unsigned', cell\n            assert cell['reasons'] == [\n                'the signing commit is not signed'], cell\n        finally:\n            made.close()",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_an_unsigned_signing_commit_leaves_the_rule_unsigned",
+      "proof": "PROOF-26",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "1ae709d1e41c0f007d618d4cec13a2b9ea187c1f70b14481bc8dc4cf7cdc6dc7"
+}

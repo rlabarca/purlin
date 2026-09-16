@@ -1,0 +1,68 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T22:53:33Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "7bd412d77cca9eba60e7a3e18245d37c31d85c8e768a4e0190af54fc5dc8c4ae",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-5",
+      "text": "Run with `--gate strong` and verify `sorted(config)` equals the eight keys and `version` equals the `VERSION` file; read `templates/config.json` and verify its keys and version match the same two",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T225315Z-ca1f4b5-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-5",
+  "rule_hash": "027d4ea63e3cef93e7e63f61ae709fd07ad7eaf89dfb5f91d94c4fd8d03cd6d0",
+  "rule_text": "The config init writes carries exactly `ai_review_at`, `ci`, `gate`, `min_strength`, `mutation_engine`, `sql_engine`, `test_framework` and `version`, plus `signers` under `signed`, and no key this release stopped reading; `templates/config.json` carries the same eight keys",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "d968369453e5e25ae6330398c8f1c937950c68cb3877448806a232c84e1a0e7c",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_child_run_and_an_in_process_run_agree(self):\n        \"\"\"The command line and `main()` write the same config and summary.\"\"\"\n        child, inline = Project(), Project()\n        try:\n            child_out = child.run('--gate', 'strong', subprocess=True)\n            inline_out = inline.run('--gate', 'strong')\n            assert sorted(child.config()) == ['ai_review_at', 'ci', 'gate',\n                                              'min_strength',\n                                              'mutation_engine', 'sql_engine',\n                                              'test_framework', 'version']\n            assert child.config() == inline.config()\n            assert summary_paths(child_out) == summary_paths(inline_out)\n            assert (child_out.replace(child.root, '<root>')\n                    == inline_out.replace(inline.root, '<root>'))\n        finally:\n            child.close()\n            inline.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_a_child_run_and_an_in_process_run_agree",
+      "proof": "PROOF-5",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_the_config_holds_the_shape_and_no_retired_key(self, project):\n        project.run('--gate', 'strong')\n        config = project.config()\n        assert sorted(config) == ['ai_review_at', 'ci', 'gate',\n                                  'min_strength', 'mutation_engine',\n                                  'sql_engine', 'test_framework', 'version']\n        assert config['version'] == read(os.path.join(ROOT, 'VERSION')).strip()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_config_holds_the_shape_and_no_retired_key",
+      "proof": "PROOF-5",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_template_carries_the_same_shape(self):\n        template = json.loads(read(TEMPLATE_CONFIG))\n        assert sorted(template) == ['ai_review_at', 'ci', 'gate',\n                                    'min_strength', 'mutation_engine',\n                                    'sql_engine', 'test_framework', 'version']\n        assert template['version'] == read(\n            os.path.join(ROOT, 'VERSION')).strip()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_template_carries_the_same_shape",
+      "proof": "PROOF-5",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "515b99fa1e2521acc34ff75d61bddd21d7bf6f35db1668b6919b7ad8e7ebe66c"
+}

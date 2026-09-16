@@ -1,0 +1,71 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-16T22:53:48Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "382bfc5b74b1fce4866dc292ac5615bf414b60aac6121cb30eabf11642431ae0",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-12",
+      "text": "Apply the v0.9.5 fixture with `--yes` and verify the gate is `passed`; set the old pre-push setting to the blocking value, apply, and verify the gate is `strong` with `min_strength` 70 and `ai_review_at` `high`; answer the gate question `signed` and verify the gate is `signed` with `signers` empty and that a prompt starting `Gate [` was asked; answer `whenever` and verify the gate is `passed`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/update/20260916T225315Z-ca1f4b5-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-12",
+  "rule_hash": "682a8f7fd2185b04375883b4d2c45223777b994b9e9df1a1d6d4ee938dd25c78",
+  "rule_text": "The gate question is asked once more on an update, defaulting to the gate the project already named read in this release's words, then to `strong` when the old pre-push setting was the blocking one and to `passed` otherwise, taking the answer typed when it is one of the three gates and leaving the default when it is not",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "275e54314a91966620131575f0335f5d79201993aeee966db1aa9eba21be8980",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_an_answer_that_is_not_a_gate_leaves_the_default(tmp_path, capsys,\n                                                         monkeypatch):\n    root = _project(tmp_path, V095)\n    _answers(monkeypatch, [('Gate [', 'whenever')])\n    _apply(root, argv=())\n    capsys.readouterr()\n    assert json.loads(_read(root, '.purlin/config.json'))['gate'] == 'passed'",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_an_answer_that_is_not_a_gate_leaves_the_default",
+      "proof": "PROOF-12",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_gate_defaults_to_passed(tmp_path):\n    root = _project(tmp_path, V095)\n    _apply(root)\n    assert json.loads(_read(root, '.purlin/config.json'))['gate'] == 'passed'",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_gate_defaults_to_passed",
+      "proof": "PROOF-12",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_gate_defaults_to_strong_when_the_hook_was_strict(tmp_path):\n    root = _project(tmp_path, V095)\n    config = json.loads(_read(root, '.purlin/config.json'))\n    config['pre_push'] = 'strict'\n    _write(root, '.purlin/config.json', json.dumps(config, indent=2))\n    _apply(root)\n    written = json.loads(_read(root, '.purlin/config.json'))\n    assert written['gate'] == 'strong'\n    assert written['min_strength'] == 70\n    assert written['ai_review_at'] == 'high'",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_gate_defaults_to_strong_when_the_hook_was_strict",
+      "proof": "PROOF-12",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_gate_question_takes_the_answer_you_type(tmp_path, capsys,\n                                                     monkeypatch):\n    root = _project(tmp_path, V095)\n    asked = _answers(monkeypatch, [('Gate [', 'signed')])\n    _apply(root, argv=())\n    capsys.readouterr()\n    assert any('Gate [' in prompt for prompt in asked)\n    written = json.loads(_read(root, '.purlin/config.json'))\n    assert written['gate'] == 'signed'\n    assert written['signers'] == []",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_gate_question_takes_the_answer_you_type",
+      "proof": "PROOF-12",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "cc6fb486ebd515c41bd7fe351596145e19d5ba92d83f91bfa394865331c9d7bf"
+}

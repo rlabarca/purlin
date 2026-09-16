@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "schema_spec_format",
+  "generated_at": "2026-09-16T22:53:34Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "c2d9e0c1f8082e5ae9df8dbf32bd91c79a5af6b813e2f8548b84de097ff7e021",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-4",
+      "text": "Write a spec holding `RULE-1` and an empty `## Proof` section, build the payload, and verify `RULE-1` reads an empty proof list and the spec status `drafted`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/schema_spec_format/20260916T225315Z-ca1f4b5-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-4",
+  "rule_hash": "3fbadf5d964ad32ade4753003611c8935dc37cf0ebf55916b34759e5245b4034",
+  "rule_text": "A rule that no proof line names has the spec status `drafted` and carries an empty proof list, so a spec cannot claim evidence it does not have",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "57930bab61db449be9dac9c257fd684f0ac6807b772bbcad5baafd088728a34c",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_rule_with_no_proof_line_is_drafted(self):\n        self._write_spec('test_feat', (\n            '# Feature: test_feat\\n\\n'\n            '## What it does\\nTesting.\\n\\n'\n            '## Rules\\n- RULE-1: Must work\\n\\n'\n            '## Proof\\n'\n        ))\n        data = purlin_payload.build_payload(self.project_root)\n        feature = next(f for f in data['features'] if f['name'] == 'test_feat')\n        rule = next(r for r in feature['rules'] if r['id'] == 'RULE-1')\n        assert rule['proofs'] == [], f\"RULE-1 has no proof line: {rule}\"\n        assert rule['spec'] == 'drafted', (\n            f\"a rule with no proof is drafted, got {rule['spec']!r}\")",
+      "file": "dev/test_schema_spec_format.py",
+      "findings": [],
+      "name": "test_a_rule_with_no_proof_line_is_drafted",
+      "proof": "PROOF-4",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "3961f4de3d6637da6575d7bf3c14c88eed1e8e0bb7265c774a46e16409e300c5"
+}

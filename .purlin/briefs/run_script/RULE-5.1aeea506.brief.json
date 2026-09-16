@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-16T22:53:29Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "1539f7aa6a9d904beb7ff239ef34b86ab6e88c92c9b9c57a46d622a6c357a27f",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-5",
+      "text": "Run `--all --quick` over a marked pytest test asserting `1 == 2`; verify exit 1, that the output holds `the pytest runner exited`, and that the proof entry's `status` is `fail`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/run_script/20260916T225315Z-ca1f4b5-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-5",
+  "rule_hash": "0772489cadca7368f18decb91edad8d70c8c1fb52d48a28dc8c1c1d71d1f9039",
+  "rule_text": "A test that fails exits the run 1, names the runner that exited non-zero, and its proof entry carries `status: \"fail\"`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "5536046ad73fffa9868aa9d90cde5bb7305d7fce814187bf4b593192046e71d5",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_failing_test_exits_one_and_records_the_failure(self, tmp_path):\n        root = _pytest_project(tmp_path, body=(\n            'import pytest\\n\\n'\n            '@pytest.mark.proof(\"feat\", \"PROOF-1\", \"RULE-1\")\\n'\n            'def test_no():\\n'\n            '    assert 1 == 2\\n'))\n        _spec(root, 'feat')\n        code, output = _run(root, '--all', '--quick')\n        assert code == 1, output\n        assert 'the pytest runner exited' in output\n        assert _proofs(root, 'feat')['proofs'][0]['status'] == 'fail'",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_a_failing_test_exits_one_and_records_the_failure",
+      "proof": "PROOF-5",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "1aeea506f5ba753313e11ef77a9cec0a9dc6c9e18b1b214ec861cb0f94ccc4d3"
+}

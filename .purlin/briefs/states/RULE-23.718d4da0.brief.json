@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T22:53:39Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "115a68d87c00937abb58e08f1833afe403cc384d074726c6e15a4bbf1103036f",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-27",
+      "text": "At the gate `signed`, build a project holding one drafted rule, one failing rule, one rule that only passed, one that is strong and one that is signed; verify their buckets are exactly `untested`, `failing`, `passed`, `strong` and `signed`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260916T225315Z-ca1f4b5-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-23",
+  "rule_hash": "959a091ba7b221e6e67c1157e2706402c612e809d52e77e239dcb17d90fb7070",
+  "rule_text": "A rule's bucket is exactly one of `untested`, `failing`, `passed`, `strong` and `signed`: `untested` while the spec status is `drafted` or no counting run reads as passed, `failing` where one failed, and otherwise the deepest level the rule met up to the gate",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "a252643802157dc64157d63224582c33ba99b76953281a36273132edb67d65c9",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_one_rule_in_each_of_the_five_buckets(self):\n        made = _five_bucket_project()\n        try:\n            buckets = [made.rule('RULE-%d' % n, 'ledger')['bucket']\n                       for n in range(1, 6)]\n            assert buckets == ['untested', 'failing', 'passed', 'strong',\n                               'signed'], buckets\n        finally:\n            made.close()",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_one_rule_in_each_of_the_five_buckets",
+      "proof": "PROOF-27",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "718d4da0fdaec22a5770a61de88c3494b00a718f02a6876d713045249fe10d0c"
+}

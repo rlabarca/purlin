@@ -1,0 +1,63 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-16T22:53:48Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "748992407a74599440dddb3381c71b25798326f96e1bc0f11700921fae7acb11",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-10",
+      "text": "Run the update with `--yes` on the v0.9.5 fixture and verify the config reads `version` equal to the `VERSION` file, `gate` `passed`, `ai_review_at` `never`, `min_strength` null, `mutation_engine` `auto`, `sql_engine` null, `ci` `github` and `pre_push` either `on` or `off`; verify the fixture carried at least one retired key before and that none is present after. Set the old signer key and the old gate name in the config, apply, and verify the gate reads `signed` and `signers` carries the same email under its new key",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/update/20260916T225315Z-ca1f4b5-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-10",
+  "rule_hash": "25ccce67e0af6fc1b70a88e7c56810e7372139012fd69f2b9d7c239662873350",
+  "rule_text": "The config the run leaves is the gate and what the gate derives, carrying `version`, `gate`, `ai_review_at`, `ci`, `min_strength`, `sql_engine`, `mutation_engine`, `test_framework`, `digest` and `pre_push`, plus `signers` under `signed`, and none of the keys this release stopped reading",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "cfbeccabc75a79f471aac43cd510c48383ad23d6fdb9117a32684e519fda28e7",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_retired_keys_are_gone(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    before = json.loads(_read(root, '.purlin/config.json'))\n    retired = update._gate().RETIRED_KEYS\n    assert any(key in before for key in retired), before\n    _apply(root)\n    after = json.loads(_read(root, '.purlin/config.json'))\n    assert [key for key in retired if key in after] == []",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_retired_keys_are_gone[upgrade-0.9.5]",
+      "proof": "PROOF-10",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_config_is_the_gate_shape(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    _apply(root)\n    config = json.loads(_read(root, '.purlin/config.json'))\n    assert config['version'] == VERSION\n    assert config['gate'] == 'passed'\n    assert config['ai_review_at'] == 'never'\n    assert config['min_strength'] is None\n    assert config['mutation_engine'] == 'auto'\n    assert config['sql_engine'] is None\n    assert config['ci'] == 'github'\n    assert config['pre_push'] in ('on', 'off')",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_config_is_the_gate_shape[upgrade-0.9.5]",
+      "proof": "PROOF-10",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_old_gate_name_and_signer_key_carry_over(tmp_path):\n    \"\"\"An older release named the top gate and its people by other words.\"\"\"\n    root = _project(tmp_path, V095)\n    was = [name for name, now in update.GATE_RENAMES.items() if now == 'signed']\n    config = json.loads(_read(root, '.purlin/config.json'))\n    config.update({'gate': was[0],\n                   update.SIGNER_KEY_WAS: ['Jane@Acme.com']})\n    _write(root, '.purlin/config.json', json.dumps(config, indent=2))\n    _apply(root)\n    written = json.loads(_read(root, '.purlin/config.json'))\n    assert written['gate'] == 'signed'\n    assert written['signers'] == ['jane@acme.com']\n    assert update.SIGNER_KEY_WAS not in written",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_old_gate_name_and_signer_key_carry_over",
+      "proof": "PROOF-10",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "c3df1dfdc729d795b01f58fe7343d1139ae6c484b81ce11c1c216d891584ea8e"
+}

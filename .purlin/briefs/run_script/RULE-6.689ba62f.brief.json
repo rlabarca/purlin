@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-16T22:53:29Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "596bb823c7db1c0b0a5c65d658cfc83122aaeb9f6bfa7cc9f7c5fe9cf916eb55",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-6",
+      "text": "Seed `.purlin/runtime/proofs/ghost.unit.json` naming a test file that no longer exists, then run `--all --quick`; verify the file is gone afterwards",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/run_script/20260916T225315Z-ca1f4b5-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-6",
+  "rule_hash": "bf5b2b0017b832a5869949af983481125c869b85f0fee1a54b14d81ec7eee526",
+  "rule_text": "The runtime proof directory is emptied before the arms run, so a file from an earlier run is never read as this run's evidence",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "a62a6065a43cbbaa435b9ee6cdc0207d158717a092ec428b18a5850e7a3e6f8a",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_run_starts_from_an_empty_proof_directory(self, tmp_path):\n        \"\"\"A file from an earlier run never survives into this run's reading.\"\"\"\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat')\n        stale_dir = root / PROOF_REL\n        stale_dir.mkdir(parents=True)\n        (stale_dir / 'ghost.unit.json').write_text(\n            json.dumps({'tier': 'unit', 'proofs': [\n                {'feature': 'ghost', 'id': 'PROOF-1', 'rule': 'RULE-1',\n                 'test_file': 'gone.py', 'test_name': 't', 'status': 'pass',\n                 'tier': 'unit'}]}), encoding='utf-8')\n        _run(root, '--all', '--quick')\n        assert not (stale_dir / 'ghost.unit.json').exists()",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_the_run_starts_from_an_empty_proof_directory",
+      "proof": "PROOF-6",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "689ba62fe39b7d070df6b844315507b1069e928b2d114a8ed7271685c4132a5e"
+}

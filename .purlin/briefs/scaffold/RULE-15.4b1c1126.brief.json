@@ -1,0 +1,64 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T22:53:31Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "28efa1b7ba3b0a84f13b9649c736846911017aa611d12559ee56a0ef8ae2c858",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-15",
+      "text": "Write a spec whose proof carries `@env(windows)`, run `--gate strong` and verify `windows-latest` is in the workflow and in the output; write a spec with no such tag and verify the workflow carries `ubuntu-latest` and not `windows-latest`; verify the workflow contains `v` followed by the `VERSION` file's contents",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T225315Z-ca1f4b5-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-15",
+  "rule_hash": "be48e9c2e2b4a0510a3a6ef27ebf03428cdb92b33468ba23df8e5c907d67fb26",
+  "rule_text": "The workflow carries one job per operating system the `@env` tags in `specs/` name, one linux job when they name none, and the Purlin release pinned as `v<version>`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "45814cedfb032005d0b8392c548f9da72d24edceee61b2c5a8d0f219ceb7b27c",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_no_env_tag_means_one_linux_job(self, project):\n        project.spec()\n        project.run('--gate', 'strong')\n        workflow = read(project.path('.github/workflows/purlin.yml'))\n        assert 'ubuntu-latest' in workflow\n        assert 'windows-latest' not in workflow",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_no_env_tag_means_one_linux_job",
+      "proof": "PROOF-15",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_matrix_is_rendered_from_the_env_tags(self, project):\n        write(project.path('specs/core/login.md'),\n              SPEC.replace('@unit', '@unit @env(windows)'))\n        output = project.run('--gate', 'strong')\n        workflow = read(project.path('.github/workflows/purlin.yml'))\n        assert 'windows-latest' in workflow\n        assert 'windows-latest' in output",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_matrix_is_rendered_from_the_env_tags",
+      "proof": "PROOF-15",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_purlin_release_is_pinned(self, project):\n        project.run('--gate', 'strong')\n        version = read(os.path.join(ROOT, 'VERSION')).strip()\n        assert 'v%s' % version in read(\n            project.path('.github/workflows/purlin.yml'))",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_purlin_release_is_pinned",
+      "proof": "PROOF-15",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "4b1c1126f1579bc92951c0d868d08aa4ebbec45bc6dbdb577fdcd288ef8d8aea"
+}

@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-16T22:53:38Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "063ff65821ab1faad146388806dae5591fd47b17ca94acf44d00904f0abae7ab",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-12",
+      "text": "Build the payload for the same project at each of the three gates; verify the cell names are exactly `[\"passed\"]`, `[\"passed\", \"strong\"]` and `[\"passed\", \"strong\", \"signed\"]`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260916T225315Z-ca1f4b5-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-10",
+  "rule_hash": "8d5fb12b1e2f79654388560b6988eb989432a4b0122a2d16a86e1cd5edd3aeb2",
+  "rule_text": "The strong cell exists only at the gate `strong` and above and the signed cell only at `signed`; a cell above the gate is absent from `cells` rather than present and empty",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "25e8df5cb4cb0edf5b7a7a05d25de297055d6c4afb9bfd7b4dcce6ba4c63c174",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_cell_above_the_gate_is_absent(self):\n        expected = {'passed': ['passed'],\n                    'strong': ['passed', 'strong'],\n                    'signed': ['passed', 'strong', 'signed']}\n        for gate, names in expected.items():\n            made = Project(gate=gate)\n            try:\n                rule = made.rule('RULE-1')\n                assert sorted(rule['cells']) == sorted(names), (gate, rule)\n            finally:\n                made.close()",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_a_cell_above_the_gate_is_absent",
+      "proof": "PROOF-12",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "386e9036c1ded6560e51c38b5037daf4c8d57c3f63ff0e6bd606e27fd28eb011"
+}

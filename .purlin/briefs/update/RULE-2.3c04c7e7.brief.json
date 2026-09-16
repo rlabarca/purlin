@@ -1,0 +1,65 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-16T22:53:49Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "5fc922b0df6e433b5d2b94a3ea1df7b2b5f06aa0de2c3c3940190f03af66561c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-2",
+      "text": "Call `pending()` on the v0.9.5 fixture and verify it reports `os-tags`, `untracked-files`, `config`, `workflows`, `plugin-copies` and `records` and does not report `hooks`; write a retired pre-commit shim into a copy of it and verify `hooks` is reported as well",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/update/20260916T225315Z-ca1f4b5-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-2",
+  "rule_hash": "e96f2e4c63974d8dca49aa112b4ce81de3d174f89c6598d8b4c6799a3045f049",
+  "rule_text": "The detectors read the layout v0.9.5 left, and what that layout leaves behind is what they report; a project that carries a retired hook has the hook migration reported too",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "cc38e2b1783340469e846a1dcaa680957a69679bced83f8669dd67e7d6a19610",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_project_with_no_hooks_needs_no_hook_migration(tmp_path):\n    root = _project(tmp_path, V095)\n    assert 'hooks' not in _ids(root)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_a_project_with_no_hooks_needs_no_hook_migration",
+      "proof": "PROOF-2",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_retired_hook_adds_the_hook_migration(tmp_path):\n    root = _project(tmp_path, V095)\n    _write(root, '.purlin/hooks/pre-commit', OLD_PRE_COMMIT)\n    found = _ids(root)\n    assert 'hooks' in found, found\n    for expected in ('os-tags', 'untracked-files', 'config', 'workflows',\n                     'plugin-copies', 'records'):\n        assert expected in found, found",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_a_retired_hook_adds_the_hook_migration",
+      "proof": "PROOF-2",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_v095_layout_needs_the_migrations_that_layout_left(tmp_path):\n    root = _project(tmp_path, V095)\n    found = _ids(root)\n    for expected in ('os-tags', 'untracked-files', 'config', 'workflows',\n                     'plugin-copies', 'records'):\n        assert expected in found, found",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_v095_layout_needs_the_migrations_that_layout_left",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "3c04c7e793c3775f40044d6665456ceb3b0d53a2246c8723a7f648cd45b7c323"
+}

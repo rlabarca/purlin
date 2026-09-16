@@ -1,0 +1,70 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-16T22:53:48Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "591443938653203ba1eda9ff7b26ea6bc4f160dfd7f7ada6fb8e299a9e2117a1",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-15",
+      "text": "Apply everything on the v0.9.5 fixture and verify the only workflow left under `.github/workflows/` is `purlin.yml`; verify it carries `windows-latest` and `v` followed by the `VERSION` file's contents. Write a workflow under the retired gate check's file name and verify it is listed and removed. Decline the workflow question and verify the file is absent, the output says to run `purlin:init --ci` later, and `workflows` is no longer pending",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/update/20260916T225315Z-ca1f4b5-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-15",
+  "rule_hash": "bb6cd22dfb4cfead0310328fe6dc628485a0f18e6bc00af90033af8b09c86df8",
+  "rule_text": "The workflows this release replaced are removed and one `purlin.yml` is offered in their place, carrying the matrix the `@env` tags name and the pinned release; declining it leaves the file unwritten and names `purlin:init --ci`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "d4545ffff7fbeeb94dc0eb4a3e678c223057412485794555dfdbb001137f4bba",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_workflow_named_for_the_retired_gate_check_is_removed(tmp_path):\n    root = _project(tmp_path, V095)\n    rel = '%s/%s' % (update.WORKFLOW_DIR, update.WORKFLOW_NAMES[0])\n    _write(root, rel, 'name: gate\\non: push\\njobs: {}\\n')\n    _git(root, 'add', '-A')\n    _git(root, 'commit', '-qm', 'the workflow that release wrote')\n    assert rel in [item['files'] for item in update.pending(root)\n                   if item['id'] == 'workflows'][0]\n    _apply(root)\n    assert not os.path.exists(os.path.join(root, rel))",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_a_workflow_named_for_the_retired_gate_check_is_removed",
+      "proof": "PROOF-15",
+      "reasons": []
+    },
+    {
+      "body": "def test_declining_the_workflow_leaves_it_unwritten(tmp_path, capsys,\n                                                    monkeypatch):\n    root = _project(tmp_path, V095)\n    _answers(monkeypatch, [('Write .github/workflows/purlin.yml', 'n')])\n    _apply(root, argv=())\n    printed = capsys.readouterr().out\n    assert not os.path.exists(\n        os.path.join(root, '.github', 'workflows', 'purlin.yml'))\n    assert 'run purlin:init --ci to add it later' in printed\n    assert 'workflows' not in _ids(root)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_declining_the_workflow_leaves_it_unwritten",
+      "proof": "PROOF-15",
+      "reasons": []
+    },
+    {
+      "body": "def test_purlin_yml_carries_the_matrix_the_tags_name(tmp_path):\n    root = _project(tmp_path, V095)\n    _apply(root)\n    text = _read(root, '.github/workflows/purlin.yml')\n    assert 'windows-latest' in text\n    assert 'v%s' % VERSION in text",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_purlin_yml_carries_the_matrix_the_tags_name",
+      "proof": "PROOF-15",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_retired_workflows_are_removed(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    before = _walk(root, ('*.yml',))\n    assert any(rel.startswith('.github/workflows/') for rel in before)\n    _apply(root)\n    after = [rel for rel in _walk(root, ('*.yml',))\n             if rel.startswith('.github/workflows/')]\n    assert after == ['.github/workflows/purlin.yml']",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_retired_workflows_are_removed[upgrade-0.9.5]",
+      "proof": "PROOF-15",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "451881bdb80432f0406d89f1b5c3eb0ab3249c2ebd147ac656834a9b729653ce"
+}

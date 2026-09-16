@@ -1,0 +1,81 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-16T22:53:26Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "cf068aad1441edd9f3211f8d9139948ff5776b838c73e31d09d59d64285debea",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-5",
+      "text": "With `GITHUB_REPOSITORY` and `GITHUB_TOKEN` set and `urlopen` standing in for the API, call `commit_records(identity=\"ci\")`; verify the calls are GET ref, GET commit, POST trees, POST commits, PATCH refs in that order with no POST to the blob endpoint at all, that the commit body carries neither `author` nor `committer`, and that the tree entry carries the record path, the file permission `100644` and the record's own text rather than a blob id. Call it again with a record path and two `.brief.json` briefs under `.purlin/briefs/`; verify the tree lists all three in the order they were handed over, that the two outside `.purlin/records/` are exactly the two briefs, that each entry carries its own text, and that still no blob request was made. Call it once more with a file holding the bytes `89 50 4e 47 0d 0a 1a 0a ff fe`; verify exactly one blob request, that its `encoding` is `base64` and its content decodes to those bytes, and that its tree entry carries that blob's id and no text",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/records/20260916T225315Z-ca1f4b5-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-5",
+  "rule_hash": "313f1fbe2462d5835b11b67110263f4782abd91058c91bd43c5d64ce4a87bc60",
+  "rule_text": "A CI commit on GitHub is made through the git host's REST API as one tree request, then commit, then ref update, where the single tree carries the text of every path the run handed over including the briefs under `.purlin/briefs/`, only a path whose bytes are not UTF-8 costs a blob request of its own, and no `author` and no `committer` field is sent, so the git host signs the commit with its own key",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "480d6c2366e23525b8a3acc712b00af7440b54edcd6a12399e2f644c121197ef",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_file_that_is_not_text_gets_a_blob_of_its_own(project, github_env,\n                                                        monkeypatch):\n    \"\"\"Bytes that are not UTF-8 cannot travel inline, so they go as a blob.\n\n    Nothing an audit run writes is such a file, but the tree request would\n    be refused rather than carry one, so the branch has to exist.\n    \"\"\"\n    host = FakeHost()\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n    capture = '.purlin/runtime/attachments/greeting/PROOF-1.png'\n    os.makedirs(os.path.join(project, '.purlin', 'runtime', 'attachments',\n                             'greeting'))\n    with open(os.path.join(project, *capture.split('/')), 'wb') as handle:\n        handle.write(b'\\x89PNG\\r\\n\\x1a\\n\\xff\\xfe')\n\n    records_module.commit_records(project, [path, capture], 'ci',\n                                  'purlin: record for 4f1c2ab')\n\n    blobs = [body for _verb, url, body in host.calls if url.endswith('/blobs')]\n    assert len(blobs) == 1, 'only the file that is not text needs a blob'\n    assert blobs[0]['encoding'] == 'base64'\n    assert base64.b64decode(blobs[0]['content']) == b'\\x89PNG\\r\\n\\x1a\\n\\xff\\xfe'\n    tree = host.body_for('/git/trees', method='POST')\n    assert 'content' in tree['tree'][0] and 'sha' not in tree['tree'][0]\n    assert tree['tree'][1]['sha'] == 'b' * 40\n    assert 'content' not in tree['tree'][1]",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_a_file_that_is_not_text_gets_a_blob_of_its_own",
+      "proof": "PROOF-5",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_ci_commit_carries_a_path_outside_the_records_directory(\n        project, github_env, monkeypatch):\n    \"\"\"A CI run's briefs ride in the same commit as the record.\n\n    A brief that stayed on the runner is evidence nobody can read, so the\n    tree the commit names holds every path the run handed over and not only\n    the ones under `.purlin/records/`.\n    \"\"\"\n    host = FakeHost()\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n    first = '.purlin/briefs/greeting/RULE-1.1a2b3c4d.brief.json'\n    second = '.purlin/briefs/greeting/RULE-2.5e6f7a8b.brief.json'\n    directory = os.path.join(project, '.purlin', 'briefs', 'greeting')\n    os.makedirs(directory)\n    for rel, text in ((first, '{\"rule\": \"RULE-1\", \"settled\": true}\\n'),\n                      (second, '{\"rule\": \"RULE-2\", \"settled\": false}\\n')):\n        with open(os.path.join(project, *rel.split('/')), 'w',\n                  encoding='utf-8') as handle:\n            handle.write(text)\n\n    records_module.commit_records(project, [path, first, second], 'ci',\n                                  'purlin: record for 4f1c2ab')\n\n    tree = host.body_for('/git/trees', method='POST')\n    paths = [entry['path'] for entry in tree['tree']]\n    assert paths == [path, first, second]\n    outside_the_records = [name for name in paths\n                           if not name.startswith('.purlin/records/')]\n    assert outside_the_records == [first, second]\n    assert json.loads(tree['tree'][1]['content'])['settled'] is True\n    assert json.loads(tree['tree'][2]['content'])['settled'] is False\n    assert [url for url in host.urls() if url.endswith('/blobs')] == [], \\\n        'three files that are all text asked for three blobs'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_ci_commit_carries_a_path_outside_the_records_directory",
+      "proof": "PROOF-5",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_ci_commit_is_one_tree_then_commit_then_ref(project, github_env,\n                                                        monkeypatch):\n    \"\"\"The file's text travels in the tree request, so it costs no request.\n\n    A run that writes a record and several hundred briefs would otherwise\n    make one content-creating request per file, which is what the git host's\n    limit on those counts.\n    \"\"\"\n    host = FakeHost()\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci', 'linux')\n\n    sha = records_module.commit_records(project, [path], 'ci',\n                                        'purlin: record for 4f1c2ab')\n\n    assert sha == 'c' * 40\n    order = [url.rsplit('/git/', 1)[-1].split('?')[0] for url in host.urls()]\n    assert order == ['ref/heads/main', 'commits/' + '1' * 40,\n                     'trees', 'commits', 'refs/heads/main']\n    assert [url for url in host.urls() if url.endswith('/blobs')] == []",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_ci_commit_is_one_tree_then_commit_then_ref",
+      "proof": "PROOF-5",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_ci_commit_sends_no_author_and_no_committer(project, github_env,\n                                                        monkeypatch):\n    \"\"\"The commit is the git host's, so the git host signs it.\n\n    Sending either field makes GitHub attribute the commit to that person and\n    leave it unsigned, which is exactly the record that must not count.\n    \"\"\"\n    host = FakeHost()\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    records_module.commit_records(project, [path], 'ci', 'purlin: record')\n\n    body = host.body_for('/git/commits', method='POST')\n    assert set(body) == {'message', 'tree', 'parents'}\n    assert 'author' not in body and 'committer' not in body",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_ci_commit_sends_no_author_and_no_committer",
+      "proof": "PROOF-5",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_tree_entry_carries_the_file_and_its_permission(project,\n                                                            github_env,\n                                                            monkeypatch):\n    host = FakeHost()\n    monkeypatch.setattr(urllib.request, 'urlopen', host)\n    path = records_module.write_record(project, record(), 'ci')\n\n    records_module.commit_records(project, [path], 'ci', 'purlin: record')\n\n    tree = host.body_for('/git/trees', method='POST')\n    entry = tree['tree'][0]\n    assert entry['path'] == path\n    assert entry['type'] == 'blob'\n    assert 'sha' not in entry, 'a text file asked for a blob of its own'\n    assert entry[records_module._PERM_KEY] == records_module._FILE_PERM\n    assert json.loads(entry['content'])['feature'] == 'greeting'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_tree_entry_carries_the_file_and_its_permission",
+      "proof": "PROOF-5",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "9433d15fce00004086889259235d62756010c3947c3a36c1295ba7c8f829fa21"
+}
