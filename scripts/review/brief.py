@@ -173,7 +173,7 @@ def _one_test(project_root, feature, proof_id, test, proof_ids):
     if path:
         try:
             body = static_checks._extract_test_code(
-                project_root, feature, proof_id, path)
+                project_root, feature, proof_id, path, test.get('name'))
         except (OSError, UnicodeDecodeError, ValueError):
             body = None
     findings = []
@@ -184,8 +184,15 @@ def _one_test(project_root, feature, proof_id, test, proof_ids):
             results = static_checks.analyze_test_file(full, feature)
         except (OSError, UnicodeDecodeError, ValueError, SyntaxError):
             results = []
-        for result in results:
-            if result.get('proof_id') != proof_id:
+        results = [result for result in results
+                   if result.get('proof_id') == proof_id]
+        # Several tests may back one proof: a finding belongs to the test it
+        # was found in. A name the checks cannot place keeps every finding for
+        # the proof, so nothing found is ever hidden.
+        named = static_checks.test_name_matches(
+            test.get('name'), [result.get('test_name') for result in results])
+        for index, result in enumerate(results):
+            if named and index not in named:
                 continue
             if result.get('status') != 'fail':
                 continue

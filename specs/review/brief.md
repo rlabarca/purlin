@@ -38,6 +38,7 @@
 - RULE-23: `brief.py --help` exits 0, an unknown option or a missing `--feature` exits 2, and a feature with no rule in the project exits 1 [risk: low] [origin: eng]
 - RULE-24: `brief.py --feature <name>` with no `--rule` builds, prints and writes a brief for every rule of that feature [risk: low] [origin: eng]
 - RULE-25: A name that opens with an underscore reaches the brief as `implementation_coupling` unless it follows a `/`, so a path or URL segment such as `specs/_anchors/` or `/_git/` is not read as a private symbol [risk: medium] [origin: eng]
+- RULE-26: When several tests back one proof, each test in the brief shows its own source and its own findings; a test whose source cannot be found shows none rather than another test's [risk: high] [origin: eng]
 
 ## Proof
 
@@ -78,3 +79,7 @@
 - PROOF-35 (RULE-24): Run the command for `--feature login` with no rule named; verify it exits 0 and prints both `login RULE-1` and `login RULE-2` @integration
 - PROOF-36 (RULE-23): Run `brief.py` as a command in a separate process against a recorded project; verify it exits 0 and its output carries a `Verdict:` line @integration
 - PROOF-37 (RULE-25): Write a proof reading `POST /login, then read specs/_anchors/policy.md and https://dev.azure.com/acme/_git/policies; verify 200`, build the brief and verify its findings carry no `implementation_coupling`; rewrite it to call a function whose name opens with an underscore and verify 200, and verify `implementation_coupling` is present @integration
+- PROOF-38 (RULE-26): Mark `test_valid_credentials_return_200` and a second test `test_a_token_comes_back` with `PROOF-1`, record both, and build the brief; verify the first entry's body holds `def test_valid_credentials_return_200` and `== 200` and not `def test_a_token_comes_back`, and the second entry's body holds `def test_a_token_comes_back` and `token` and not `def test_valid_credentials_return_200` @integration
+- PROOF-39 (RULE-26): Make the second test assert nothing; verify `no_assertion` is among the second entry's findings and not among the first's @integration
+- PROOF-40 (RULE-26): Record a third name `test_renamed_away` for `PROOF-1` that the file no longer holds; verify its body is empty while the other two still show their own source @integration
+- PROOF-41 (RULE-26): Match the recorded names `Acme.LoginTests.Denied(user: "x")`, `test_found[jest-[proof:f:PROOF-1:RULE-1]]`, `TestLogin::test_found` and `works [proof:login:PROOF-1:RULE-1]` against the source names `Allowed`, `Denied`, `test_found` and `works [proof:login:PROOF-1:RULE-1]`; verify each finds its own source name and nothing else, and `test_gone` finds none

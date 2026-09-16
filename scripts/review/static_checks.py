@@ -902,7 +902,11 @@ def _proof_backings(project_root, feature):
     return backings
 
 def _test_bodies(path, ext, feature):
-    """{proof_id: source} for `feature`'s marked tests in the file at `path`."""
+    """{proof_id: [(test name, source), ...]} for `feature`'s marked tests at `path`.
+
+    Every marked test is kept, in file order, because one proof may be backed by
+    several tests and each of them has its own source.
+    """
     cache = _RUN_CACHE
     memo_key = (path, feature)
     if cache is not None and memo_key in cache.test_bodies:
@@ -918,23 +922,66 @@ def _test_bodies(path, ext, feature):
         except SyntaxError:
             entries = ()
         bodies = {}
-        for feat, pid, _rid, _name, node in entries:
+        for feat, pid, _rid, name, node in sorted(
+                entries, key=lambda entry: entry[4].lineno):
             if feat == feature:
-                bodies.setdefault(pid, _segment(lines, node))
+                bodies.setdefault(pid, []).append((name, _segment(lines, node)))
     elif content:
         iterator = {'.cs': _iter_csharp_proof_bodies,
                     '.sql': _iter_sql_proof_blocks}.get(
                         ext, _iter_js_proof_bodies if ext in _JS_EXTENSIONS else None)
         if iterator is not None:
             bodies = {}
-            for pid, _rid, _name, body in iterator(content, feature):
-                bodies.setdefault(pid, body)
+            for pid, _rid, name, body in iterator(content, feature):
+                bodies.setdefault(pid, []).append((name, body))
     if cache is not None:
         cache.test_bodies[memo_key] = bodies
     return bodies
 
-def _extract_test_code(project_root, feature, proof_id, test_file):
-    """The source of the test backing `proof_id`, or None."""
+# A recorded name carries what the runner added to the name in the source: a
+# pytest parameter id, an xUnit theory's arguments, a class or namespace prefix,
+# and in JS the proof marker the title holds.
+_NAME_ARGS_RE = re.compile(r'(?:\[.*\]|\(.*\))\s*$')
+_NAME_MARKER_RE = re.compile(r'\[proof:[^\]]*\]')
+
+def _test_name_key(name):
+    return ' '.join(_NAME_MARKER_RE.sub(' ', name or '').split())
+
+def test_name_matches(test_name, names):
+    """The indexes in `names` that are the test a proof file recorded as `test_name`.
+
+    An exact name wins, then the name without its arguments, then a name the
+    recorded one ends with after a class, namespace or describe prefix. Empty
+    when none is that test.
+    """
+    wanted = _test_name_key(test_name)
+    bare = _NAME_ARGS_RE.sub('', wanted).strip()
+    keys = [_test_name_key(name) for name in names]
+    for key in (wanted, bare):
+        found = [i for i, name in enumerate(keys) if key and name == key]
+        if found:
+            return found
+    return [i for i, name in enumerate(keys)
+            if name and any(bare.endswith(sep + name) for sep in ('::', '.', ' '))]
+
+def _pick_test_body(candidates, test_name):
+    """The source in `candidates` whose name is `test_name`, or None.
+
+    With no name asked for, the first. A name that matches nothing still finds
+    the one test when the proof has only one in the file; among several it finds
+    none, because showing another test's source under this name misleads.
+    """
+    if not candidates:
+        return None
+    if test_name is None:
+        return candidates[0][1]
+    found = test_name_matches(test_name, [name for name, _body in candidates])
+    if found:
+        return candidates[found[0]][1]
+    return candidates[0][1] if len(candidates) == 1 else None
+
+def _extract_test_code(project_root, feature, proof_id, test_file, test_name=None):
+    """The source of the test named `test_name` backing `proof_id`, or None."""
     ext = os.path.splitext(test_file or '')[1].lower()
     if not test_file or ext not in _TEST_CODE_EXTENSIONS:
         return None
@@ -942,7 +989,7 @@ def _extract_test_code(project_root, feature, proof_id, test_file):
     if not os.path.isfile(path):
         return None
     bodies = _test_bodies(path, ext, feature)
-    return bodies.get(proof_id) if bodies else None
+    return _pick_test_body((bodies or {}).get(proof_id), test_name)
 
 
 # --- The whole-project sweep -----------------------------------------------

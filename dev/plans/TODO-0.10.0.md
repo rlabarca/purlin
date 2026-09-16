@@ -76,9 +76,10 @@ is what the run could not finish, found and left, or left to a person.
 19. **The dashboard changed after run 9** (brand navy, the record boxes, the risk tints, the
     one-line ledger, the shorter bar); CI is green on it from `ed20c8b3`. Look at the board
     once more with your own data before release.
-20. **A brief shows the wrong test body** when one proof has several tests: `brief.py` prints
-    the first test's body under every test name (seen on 14 `run_script` rules). A person
-    approving from the brief alone reads code that is not the test named.
+20. **Fixed: a brief shows each test's own body.** `brief.py` printed the first test's body
+    under every test name when one proof had several tests (seen on 14 `run_script` rules). The
+    body and the free findings are now looked up by the recorded test name, and a name the file
+    no longer holds shows no body rather than another test's (`brief` RULE-26).
 21. **Reading a brief dirties the tree.** Every `brief.py` run rewrites the tracked
     `<RULE-N>.<hash8>.brief.json` beside the approvals and writes an untracked `.brief.txt`
     that `.gitignore` does not cover, so a local review leaves hundreds of changed files.
