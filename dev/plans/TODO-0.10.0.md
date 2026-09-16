@@ -46,10 +46,12 @@ is what the run could not finish, found and left, or left to a person.
    approvals 57, server 53, brief 51, proof_common 46, scaffold 43, run_script 36, drift 28,
    with only 142 breaks left uncovered across `scripts/`. `security_no_dangerous_patterns` scopes `scripts/**/*.py`, so its number is all of
    `scripts/`; nine tests that read git state or source text are deselected under mutmut.
-6. **The local anchor repository is not reproducible.** `dev/setup-external-refs.sh` yields a
-   different sha on each fresh setup, so `specs/_anchors/security_no_dangerous_patterns.md`'s
-   pin (`379a046`) reads as behind on every other machine. The script now fixes the commit
-   dates; confirm the sha is stable across two fresh setups, or pin after each setup.
+6. **Fixed: the local anchor repository is reproducible, and the pin is current.** Two fresh
+   runs of `dev/setup-external-refs.sh` published the same sha, `62a2091`, the head this
+   checkout's own copy already had; the old pin `379a046` was simply behind. The script now also
+   turns commit signing off, since a signature carries its own time and a machine that signs by
+   default would publish another sha. The pin advanced with `upstream.py sync`, which kept the
+   note once `upstream` RULE-23 fixed a sync dropping it.
 7. **Fixed: `scan.py` prints the review list.** After the rollup it prints one line per rule on
    the list: risk, feature and rule id, state and why it is listed, high risk and Stale first
    (`records` RULE-25). The QA tool reads it from there. The list is the payload's review list,

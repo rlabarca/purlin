@@ -68,6 +68,9 @@ PY
   cd "$WORK"
   git config user.email "dev@purlin.local"
   git config user.name "Purlin Dev"
+  # A signature carries its own time, so a machine that signs by default would
+  # publish a different sha. The dates above and no signature keep it fixed.
+  git config commit.gpgsign false
   git add -A
   GIT_AUTHOR_DATE="2026-01-01T00:00:00+0000" \
     GIT_COMMITTER_DATE="2026-01-01T00:00:00+0000" \
