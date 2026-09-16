@@ -334,7 +334,7 @@ class TestTheCheatsOnlyAPersonCatches:
                        capture_output=True, text=True, cwd=str(root))
         entries = _read(root)['data_integrity']
         assert entries[0]['status'] == 'pass', (
-            'it never tested the constraint and it passed')
+            'it never exercised the constraint and it passed')
         proof_file = root / PROOF_REL / 'data_integrity.unit.json'
         findings = check_proof_file(str(proof_file), spec_path=str(spec))
         assert findings == [], (

@@ -6,13 +6,13 @@ and the per-scope fallback), the Stryker.NET command and report hunt, the
 mutmut config block and results parser, the missing-binary and missing-config
 paths, and the one shape `run_breaks` answers in.
 
-The fixtures under `dev/fixtures/mutation/` are recorded output, not invented:
+The fixtures under `dev/fixtures/mutation/` are captured output, not invented:
 `stryker_report.json` is what StrykerJS 10 with the jest runner wrote for a
 two-test project, with one `Timeout` and one `CompileError` mutant added by
 hand so both statuses are covered; `mutmut_results_smoke.txt` is what
 `mutmut results --all true` printed for a mutmut 3.8 run; `mutmut_results.txt`
 is the same grammar over a project laid out under `src/`. No engine binary is
-installed for these tests: every run is a stand-in that returns a recorded
+installed for these tests: every run is a stand-in that returns a captured
 report.
 """
 

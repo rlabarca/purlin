@@ -303,7 +303,7 @@ class TestTheFrameworkReferenceMatchesTheDetectors:
         for row in body:
             cells = [c.strip() for c in row.strip().strip('|').split('|')]
             assert cells[-1], (
-                'a framework with no recorded setup is one a scaffolded '
+                'a framework with no setup cell filled in is one a scaffolded '
                 'workflow cannot run: %s' % row)
 
 

@@ -292,9 +292,9 @@ def test_pytest_test_file_is_relative(tmp_path):
         def test_one():
             assert True
     """)
-    recorded = _proofs(root, "feat")["proofs"][0]["test_file"]
-    assert recorded == "test_s.py"
-    assert not os.path.isabs(recorded)
+    written = _proofs(root, "feat")["proofs"][0]["test_file"]
+    assert written == "test_s.py"
+    assert not os.path.isabs(written)
 
 
 def test_pytest_registers_the_proof_marker_and_the_tier_markers(tmp_path):

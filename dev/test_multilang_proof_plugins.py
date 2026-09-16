@@ -8,7 +8,7 @@ other five.
 The behaviour under test is section A of `references/proof_plugin_contract.md`:
 the proof file's location and its seven fields, the write-scoped merge and
 orphan reaping, ordinal ordering after the merge, the project root found by
-walking up, `test_file` recorded relative to it, a skipped test keeping its
+walking up, `test_file` written relative to it, a skipped test keeping its
 entry, a plugin that saw markers and wrote nothing failing loudly, a retired
 marker keyword refused by name, atomic writes, and no third-party import.
 
@@ -478,7 +478,7 @@ class TestProjectRootFoundByWalking:
 
 
 class TestTestFileIsProjectRelative:
-    """Whatever shape the framework handed over, one value is recorded."""
+    """Whatever shape the framework handed over, one value is written."""
 
     @pytest.mark.proof("proof_common", "PROOF-3", "RULE-3")
     def test_shell_records_the_same_path_either_way(self, tmp_path):

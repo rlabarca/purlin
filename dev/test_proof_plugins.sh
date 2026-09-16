@@ -30,7 +30,7 @@ command -v node >/dev/null 2>&1 && NODE_READY=1 || \
   echo "  note: node is not installed, so the jest arm did not run."
 
 # Each case proves a rule of the anchor every proof plugin keeps, so the result
-# is recorded against that anchor's proof.
+# is written against that anchor's proof.
 record() {
   local feature="$1" proof_id="$2" rule_id="$3" name="$4" status="$5"
   echo "  $([[ "$status" == "pass" ]] && echo PASS || echo FAIL): $name"
