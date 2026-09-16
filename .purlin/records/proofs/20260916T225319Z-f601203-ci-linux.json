@@ -1,0 +1,263 @@
+{
+  "commit": "f6012036a3a2bcea333a7ab52f0071c7fb38c4df",
+  "dirty": true,
+  "environment": {
+    "engines": [
+      "none"
+    ],
+    "host": "GitHub Actions 1000000202",
+    "id": "linux-x86_64",
+    "job": "verify",
+    "kind": "ci",
+    "os": "linux"
+  },
+  "feature": "proofs",
+  "features": {
+    "proofs": {
+      "rules": {
+        "RULE-1": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-1"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_mcp_server.py",
+              "name": "test_proofs_are_read_from_the_runtime_directory",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-2": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-2"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_mcp_server.py",
+              "name": "test_the_file_name_decides_the_tier_and_a_bad_file_is_skipped",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-3": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-3"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_mcp_server.py",
+              "name": "test_proofs_are_read_from_the_runtime_directory",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-4": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-4"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_mcp_server.py",
+              "name": "test_the_file_name_decides_the_tier_and_a_bad_file_is_skipped",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-5": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-5"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_mcp_server.py",
+              "name": "test_the_file_name_decides_the_tier_and_a_bad_file_is_skipped",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-6": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-6"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_mcp_server.py",
+              "name": "test_a_fail_beats_a_pass_for_the_same_proof",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-7": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-7"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_mcp_server.py",
+              "name": "test_the_tests_backing_a_proof_are_named_once_each",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        }
+      },
+      "scope_score": {
+        "killed": 0,
+        "score": null,
+        "survived": 0
+      },
+      "spec": "specs/mcp/proofs.md"
+    }
+  },
+  "gate": "signed",
+  "log": {
+    "path": ".purlin/runtime/run.log",
+    "sha256": "d000aebec434a40ac06113c783047b04f292723c10d80e0f17178bb87a502d8b"
+  },
+  "missing": [],
+  "os": "linux",
+  "plugins": [
+    "pytest",
+    "shell"
+  ],
+  "proofs": [
+    {
+      "env": null,
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_proofs_are_read_from_the_runtime_directory",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_the_file_name_decides_the_tier_and_a_bad_file_is_skipped",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_proofs_are_read_from_the_runtime_directory",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_the_file_name_decides_the_tier_and_a_bad_file_is_skipped",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_the_file_name_decides_the_tier_and_a_bad_file_is_skipped",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "status": "pass",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_a_fail_beats_a_pass_for_the_same_proof",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "test_file": "dev/test_mcp_server.py",
+      "test_name": "test_the_tests_backing_a_proof_are_named_once_each",
+      "tier": "integration"
+    }
+  ],
+  "runner": "ci",
+  "schema": "purlin-record/2",
+  "schema_version": 2,
+  "scope_tree": "0f27c3ac5298c50f4ebb3ce298013b32c207e213c44ecafe6d390c8d6d5078ea",
+  "test_strength": null,
+  "timestamp": "2026-09-16T22:53:19Z"
+}
