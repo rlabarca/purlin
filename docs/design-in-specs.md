@@ -2,9 +2,9 @@
 
 For designers, and for the engineers who build from their mocks.
 
-A design in Purlin is a versioned file, reviewed by pull request. It is never a live
+A design in Purlin is a versioned file, checked by pull request. It is never a live
 connection to a design tool. That is the whole idea: a screen someone signed off on is a file
-at a commit, so the screen a rule was approved against can be fetched again a year later.
+at a commit, so the screen a rule was signed against can be fetched again a year later.
 
 ## Where designs live
 
@@ -69,7 +69,7 @@ element present. Never a selector, never a class name, never a pixel value.
 
 A proof that names a selector, a class or a pixel value is reported as
 `implementation_coupling`: a refactor would break it without the screen changing. A rule that
-genuinely needs a person's eye is `@manual`, and its evidence is an approval with a one-line
+genuinely needs a person's eye is `@manual`, and its evidence is a signature with a one-line
 note rather than a test.
 
 ## Screenshots as evidence
@@ -80,26 +80,26 @@ A test that captures a screenshot writes it to:
 .purlin/runtime/attachments/<feature>/<PROOF-N>.png
 ```
 
-That directory is runtime, so it is not committed. `purlin:verify` hashes each capture into
+That directory is runtime, so it is not committed. `purlin:audit` hashes each capture into
 the record, and CI keeps the images as a build artifact. The record is what carries the claim;
 the image is what a person looks at.
 
-The review brief puts the pinned mock beside the screenshot the test captured, so approving a
+The review brief puts the pinned mock beside the screenshot the test captured, so signing a
 design rule means reading the two images side by side and deciding whether the software shows
-what the design shows. The walk is in [review-and-approval.md](review-and-approval.md).
+what the design shows. The walk is in [review-and-signing.md](review-and-signing.md).
 
-## A new export stales the approvals
+## A new export stales the signatures
 
 Re-exporting a screen changes the files, which changes the anchor's `> Pinned:` hash, which
-stales every approval bound to that anchor's rules. That is the intended effect: a screen that
-changed is a screen someone has to look at again.
+stales every signature bound to that anchor's rules. That is the intended effect: a screen
+that changed is a screen someone has to look at again.
 
 The change surfaces in three places, in this order:
 
-- `purlin:drift design` names the files that moved and the `origin: design` rules that went
-  Stale.
-- `purlin:status` shows those rules as Stale.
-- `purlin:review` puts them on the review list, ordered by risk.
+- `purlin:drift design` names the files that moved and the `origin: design` rules whose
+  signatures went stale.
+- `purlin:status` shows those rules' signed cell as `stale`.
+- `purlin:sign` puts them on the review list, ordered by risk.
 
 Advance the pin with `purlin:anchor sync <name>` when the anchor lives in another repository,
 or commit the new hash with the exports when the anchor is local.

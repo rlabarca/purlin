@@ -102,10 +102,8 @@ PENDING_REWRITE = (
     "docs/review-and-signing.md", "docs/running-and-records.md", "docs/team-workflow.md",
     "docs/getting-started.md", "docs/raising-the-gate-and-upgrading.md",
     "docs/working-together.md",
-    # lane 6B: docs word swaps and design
-    "docs/solo-workflow.md", "docs/specs-and-anchors.md", "docs/design-in-specs.md",
-    "docs/spec-from-code.md", "docs/index.md", "design/readme.md", "design/components/",
-    "design/guidelines/",
+    # lane 6B: design
+    "design/readme.md", "design/components/", "design/guidelines/",
 )
 
 # Phase 7 deletes every signature directory of the old layout; until then the

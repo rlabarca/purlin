@@ -58,9 +58,9 @@ Every metadata line starts with `>` and every one is optional.
 
 `> Scope:` earns its place. A record carries the git tree hash of those files, and that hash
 is what tells a code change from a rule change. Code changed and the rule, proof and test
-text did not: the approval stands and the rule is flagged `re-verify pending` until CI runs
-again. Rule, proof or test text changed: the rule goes Stale and a person looks. A spec with
-no `> Scope:` cannot make that distinction.
+text did not: the signature stands and the rule's passed cell reads `code changed` until CI
+runs again. Rule, proof or test text changed: the signature goes stale and a person looks. A
+spec with no `> Scope:` cannot make that distinction.
 
 A path with a trailing slash scopes the directory beneath it, so `> Scope: src/api/` covers
 every file under `src/api/` without listing them.
@@ -74,19 +74,19 @@ One claim per line, in the present tense, saying what the software does rather t
 ```
 
 Tags sit at the end of the line and are read off it, so the text that remains is the claim
-alone. Re-tagging a rule never stales an approval, so add a missing tag freely.
+alone. Re-tagging a rule never stales a signature, so add a missing tag freely.
 
 | Tag | Values | Default | What it decides |
 |-----|--------|---------|-----------------|
-| `[risk: ...]` | `high`, `medium`, `low` | `low` | Under the `approved` gate, high and medium need a human approval and low is auto-approved by CI |
+| `[risk: ...]` | `high`, `medium`, `low` | `low` | Under the `signed` gate, risk at or above `sign_at` (default `medium`) needs a person's signature; below it, meeting `strong` is enough |
 | `[origin: ...]` | `pm`, `design`, `qa`, `eng` | `eng` | Who owns the rule. `purlin:drift` routes a change by it |
 | `[criterion: ...]` | any id | none | The upstream acceptance criterion the rule came from |
 
-Under the `approved` gate, risk and origin are required and an untagged rule is reported.
+Under the `signed` gate, risk and origin are required and an untagged rule is reported.
 
 Ids are assigned in increasing order and never reused. A retired rule leaves its number
 vacant and every other rule keeps the number it had; a gap in the sequence is legal and
-nothing reports it. Renumbering would silently repoint every test marker and every approval
+nothing reports it. Renumbering would silently repoint every test marker and every signature
 that already names the old id.
 
 A rule about what the software must never do is an ordinary rule whose proof asserts absence.
@@ -120,8 +120,8 @@ A tier tag says what kind of test the proof is. A proof with no tag is a plain u
 | `@e2e` | Needs a browser, the full stack or a rendered interface |
 | `@manual` | Needs human judgment |
 
-A `@manual` proof has no test. Its evidence is an approval carrying a one-line note, always
-written by a person and never auto-approved.
+A `@manual` proof has no test. Its evidence is a signature carrying a one-line note, always
+written by a person, never by CI.
 
 ### Operating systems
 
@@ -133,8 +133,8 @@ written by a person and never auto-approved.
 ```
 
 At most one `@env` per proof. A proof with no `@env` is satisfied by a record from any system.
-A proof with one reaches Recorded only when a record from that system passes it, and a rule
-with proofs on two systems needs both. `purlin:init` reads the tags in `specs/` and writes one
+A proof with one is passed only when a record from that system passes it, and a rule with
+proofs on two systems needs both. `purlin:init` reads the tags in `specs/` and writes one
 CI job per system named. On a machine that is not the named one the test is skipped and the
 status line says `windows: no record yet`.
 
@@ -151,8 +151,8 @@ purlin:spec <name> --resolve
 ```
 
 It keeps both rules, renumbers the incoming one, and rewrites its test markers and its
-approval filenames to match. When the conflict is two different texts on the same line, it
-shows both versions, asks which survives, and says which approvals that answer stales. Two
+signature filenames to match. When the conflict is two different texts on the same line, it
+shows both versions, asks which survives, and says which signatures that answer stales. Two
 branches that advanced the same anchor pin resolve to the newer sha.
 
 ## Anchors
@@ -204,7 +204,7 @@ under a project with no diff to read is exactly what pinning exists to prevent.
 
 **sync** shows the delta, updates the local copy, copies any design files the anchor
 references into `designs/<anchor>/`, and advances the pin, all in one commit. A rule whose
-text moved stales its approval. `purlin:anchor sync --check` reports without writing:
+text moved stales its signature. `purlin:anchor sync --check` reports without writing:
 `anchor security_baseline is 4 commits behind its pin: RULE-3 changed, RULE-6 added`.
 `purlin:drift` runs that same check, one cached lookup per pin per run, so a pin that has
 fallen behind shows at the start of a session without anyone asking for it.

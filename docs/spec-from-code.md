@@ -31,7 +31,7 @@ skill says so when it hands the result over.
    This is the only step worth a conversation; everything after it is mechanical.
 4. **One spec at a time**, shared and lower-level features first so a later spec can say
    `> Requires: <name>` instead of repeating their rules. Each is committed on its own. The
-   position is recorded under `.purlin/runtime/`, so a session that ends halfway resumes at
+   position is written under `.purlin/runtime/`, so a session that ends halfway resumes at
    the next feature instead of starting over.
 5. **A report**: how many features, how many rules, and how many of those rules already have
    a passing test.
@@ -60,7 +60,7 @@ Every rule carries `[origin: eng]` and `[risk: low]`:
 `eng` is correct because an engineer derived the rule and no PM asked for it: `purlin:drift
 pm` then shows these as engineer-added rather than as requirements out of nowhere. `low` is
 correct because nobody has judged the cost of getting it wrong yet. Both are re-tagged later,
-in one pass, and re-tagging never stales an approval.
+in one pass, and re-tagging never stales a signature.
 
 Where a test already exercises the behaviour, the proof says so, and `purlin:build` adds the
 marker to that test instead of writing a new one:
@@ -79,7 +79,7 @@ and `purlin:build` writes the test on the next pass.
   behaviour; "rejects the 61st request in a minute" is.
 - Nothing tagged `[origin: pm]`. No PM said any of this.
 - No risk above `low`. That judgment belongs to the people who own the product.
-- No records and no approvals. Those come from `purlin:verify` and `purlin:approve`.
+- No records and no signatures. Those come from `purlin:audit` and `purlin:sign`.
 - No rule for behaviour that could not be stated as an observable. The behaviour is noted in
   `> Description:` and the rule is dropped.
 
@@ -89,9 +89,9 @@ The skill names the next step from what it found:
 
 | What it left | What to run |
 |--------------|-------------|
-| Rules whose behaviour is already tested | `purlin:test`, which tags those tests and shows what passes |
+| Rules a test already exercises | `purlin:test`, which tags those tests and shows what passes |
 | Rules with no test at all | `purlin:build <name>` on the feature with the most of them |
-| Everything drafted, and the team wants the paper trail | `purlin:init --gate recorded` |
+| Everything drafted, and the team wants the paper trail | `purlin:init --gate strong` |
 
 Then read the drafts. Retag the risk and the origin of anything a PM or a designer actually
 owns, and delete the rules that turned out to describe a bug.
