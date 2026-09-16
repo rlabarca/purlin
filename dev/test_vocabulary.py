@@ -66,16 +66,11 @@ PENDING_REWRITE = (
     "dev/test_e2e_required_rules.sh", "dev/test_e2e_anchor_authority.sh",
     "dev/test_e2e_external_refs.sh", "dev/test_e2e_feature_scoped_overwrite.sh",
     "specs/init/scaffold.md", "specs/init/update.md",
-    # lane 5C: word swaps
-    "skills/build/", "skills/spec-from-code/", "skills/anchor/", "skills/rename/",
-    "specs/skills/skill_rename.md", "specs/skills/skill_drift.md",
-    "scripts/proof/", "scripts/purlin_python.sh",
-    "dev/fixtures/consumer-ci/.purlin/plugins/", "dev/fixtures/consumer-ci/.purlin/records/",
-    "dev/fixtures/consumer-ci/specs/", "dev/fixtures/consumer-ci/tests/",
-    "dev/test_multilang_proof_plugins.py", "dev/test_mutation_adapters.py",
-    "dev/test_plugin_contract.py", "dev/test_pre_push_hook.py", "dev/test_proof_plugins.sh",
-    "dev/test_proof_plugins_missing.py", "dev/test_proof_stress.py",
-    "specs/mcp/config_engine.md", "specs/_anchors/proof_common.md",
+    # lane 6A: docs rewrites
+    "docs/dashboard.md", "docs/regulated-workflow.md", "docs/review-and-approval.md",
+    "docs/review-and-signing.md", "docs/running-and-records.md", "docs/team-workflow.md",
+    "docs/getting-started.md", "docs/raising-the-gate-and-upgrading.md",
+    "docs/working-together.md",
 )
 
 # Phase 7 deletes every signature directory of the old layout; until then the
