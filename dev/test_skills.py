@@ -819,7 +819,7 @@ class TestPmAnchorUserstories:
         assert carries(PM_MD, [
             '[risk:', '[origin:', '[criterion:', '`[risk: high]`',
             '`[risk: medium]`', '`[risk: low]`',
-            'Under the `approved` gate risk and origin are both required',
+            'Under the `signed` gate risk and origin are both required',
             '@integration', '@e2e', '@manual',
             '@env(windows)', '@env(macos)', '@env(linux)']) == []
 
@@ -862,13 +862,13 @@ class TestQaReport:
     def test_it_scans_the_project_and_reads_the_rollup(self):
         assert (same_line(QA_MD, ['scripts/report/scan.py', '--repo'])
                 + carries(QA_MD, [
-                    'seven states', 'The gate.',
+                    'each bucket', 'The gate.',
                     'commits the branch has moved past the newest record'])) == []
 
     @pytest.mark.proof("qa_report", "PROOF-4", "RULE-4")
-    def test_every_entry_ends_with_one_of_four_verdicts(self):
+    def test_every_entry_ends_with_one_of_four_answers(self):
         assert re.findall(r'^- \*\*`([^`]+)`\*\*', read(QA_MD), re.M) == [
-            'ready', 'add a case', 'rewrite the proof', 'needs a human']
+            'sign', 'add a case', 'hold', 'skip']
 
     @pytest.mark.proof("qa_report", "PROOF-5", "RULE-5")
     def test_it_states_its_limits(self):
