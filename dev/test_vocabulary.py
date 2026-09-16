@@ -44,11 +44,9 @@ EXCLUDED = (
 # rewrites the files; the tuple is empty at closeout.
 PENDING_REWRITE = (
     # lane 3: init and update
-    "scripts/init/update.py",
-    "dev/test_init_update.py", "dev/test_init_e2e.sh",
+    "dev/test_init_e2e.sh",
     "dev/test_e2e_required_rules.sh", "dev/test_e2e_anchor_authority.sh",
     "dev/test_e2e_external_refs.sh", "dev/test_e2e_feature_scoped_overwrite.sh",
-    "specs/init/update.md",
     # lane 6A: docs rewrites
     "docs/dashboard.md", "docs/regulated-workflow.md", "docs/review-and-approval.md",
     "docs/review-and-signing.md", "docs/running-and-records.md", "docs/team-workflow.md",
