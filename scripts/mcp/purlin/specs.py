@@ -11,7 +11,7 @@ Rule lines carry their tags at the end:
     - RULE-3: Expired tokens are rejected with 401 [risk: high] [origin: pm] [criterion: US-12]
 
 The tags are read off the end and stripped, so `rule_text_hash` sees the claim
-alone and re-tagging a rule never stales an approval.
+alone and re-tagging a rule never stales a signature.
 
 Proof lines carry a tier and at most one operating system:
 
@@ -20,7 +20,7 @@ Proof lines carry a tier and at most one operating system:
 `@env` takes `windows`, `macos` or `linux` and nothing else. A proof with no
 `@env` is satisfied by a run on any operating system.
 
-Tags this release does not know (`@on(...)`, a bare `@windows`, a stamped
+Tags this release does not know (`@on(...)`, a bare `@windows`, a stamped  # retired
 `@manual(...)`) are ignored, and the file that carried one is named once in
 the run's warnings.
 """
@@ -131,7 +131,7 @@ def split_proof_tags(desc):
                 unknown.append('@env(%s)' % value)
         elif name == 'on':
             # Retired in 0.10.0: `@env(<os>)` replaced it.
-            unknown.append('@on(%s)' % (args or ''))
+            unknown.append('@on(%s)' % (args or ''))  # retired
         elif name == 'windows':
             unknown.append('@windows')
         elif args:
@@ -157,7 +157,7 @@ def _normalise(text):
 
 
 def rule_text_hash(text):
-    """The R of the rule/proof/test triple an approval binds.
+    """The R of the rule/proof/test triple a signature binds.
 
     The tags are already off the text by the time a caller holds it, and
     whitespace is normalised here, so reflowing a long rule line does not
@@ -183,7 +183,7 @@ def scope_tree(project_root, scope):
 
     The record writer reuses this: a record carries the scope tree of each
     spec it covers, and a record whose scope tree differs from the working
-    tree's is what puts a rule at `re-verify pending`.
+    tree's is what makes a rule's passed cell read `code changed`.
     """
     entries = []
     paths = []

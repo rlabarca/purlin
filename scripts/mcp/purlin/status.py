@@ -1,9 +1,10 @@
-"""The status table: one row per feature, one state per rule.
+"""The status table: one row per feature, one cell per evidence level.
 
-The table is the seven states and nothing else. A row says how many rules the
-feature has, the lowest state any of them reached, the count in each state
-that is not zero, the test strength, the label on the latest record, how many
-approvals the feature carries and how many rules are waiting on CI to re-run.
+A row says how many rules the feature has, what its specs say about them, how
+many rules pass their tests, and what the latest record was. At `strong` the
+row adds the test strength and how many rules are strong; at `signed` it adds
+how many are signed. The table scales with the gate: a `passed` project is
+never shown a strength, a risk or a signature it did not ask for.
 
 Copy follows `design/readme.md`: sentence case, second person for what you
 do, third person for what Purlin does, exact numbers, and the only glyphs are
@@ -22,12 +23,25 @@ from purlin import (drift as drift_module, payload as payload_module,
                     specs as specs_module, states)
 
 ARROW = '→'
-COLUMNS = ('Feature', 'Rules', 'Lowest state', 'States', 'Strength', 'Record',
-           'Approvals', 'Re-verify')
+DOT = ' · '
+
+BASE_COLUMNS = ('Feature', 'Rules', 'Spec', 'Tests', 'Run')
+STRONG_COLUMNS = ('Strength', 'Strong')
+SIGNED_COLUMNS = ('Signed',)
 
 NO_SPECS = ('No specs found under specs/.\n'
             '%s Run: purlin:init to set this project up, or purlin:spec to '
             'write the first one.' % ARROW)
+
+
+def columns_for(gate):
+    """The table's columns under `gate`, left to right."""
+    columns = list(BASE_COLUMNS)
+    if gate in ('strong', 'signed'):
+        columns.extend(STRONG_COLUMNS)
+    if gate == 'signed':
+        columns.extend(SIGNED_COLUMNS)
+    return tuple(columns)
 
 
 def sync_status(project_root):
@@ -85,48 +99,78 @@ def _update_pending(project_root):
 # The table
 # ---------------------------------------------------------------------------
 
-def _row(feature):
+def _cell_words(feature, name):
+    """`{word: count}` over one cell of every rule the feature must prove."""
+    counts = {}
+    for rule in feature.get('rules') or ():
+        cell = (rule.get('cells') or {}).get(name)
+        if not cell:
+            continue
+        word = cell.get('word')
+        counts[word] = counts.get(word, 0) + 1
+    return counts
+
+
+def _met_count(feature, name):
+    """How many of a feature's rules meet one cell."""
+    return sum(1 for rule in feature.get('rules') or ()
+               if states.cell_is_met(name, (rule.get('cells') or {}).get(name)))
+
+
+def _row(feature, gate):
     rollup = feature['rollup']
     name = feature['name'] + (' (anchor)' if feature['is_anchor'] else '')
-    strength = rollup.get('test_strength')
-    record = feature.get('latest_record')
-    return (
-        name,
-        str(rollup['rules']),
-        rollup['lowest_state'],
-        _breakdown(rollup['counts']),
-        'n/a' if strength is None else '%d%%' % int(strength),
-        (record or {}).get('label') or 'none',
-        str(len(feature['approvals'])),
-        str(rollup['re_verify_pending']),
-    )
+    total = rollup['rules']
 
+    drafted = sum(1 for rule in feature.get('rules') or ()
+                  if rule.get('spec') == states.DRAFTED)
+    spec_cell = '%d ready%s%d drafted' % (total - drafted, DOT, drafted)
 
-def _breakdown(counts):
-    """The non-zero state counts, lowest state first."""
-    parts = ['%s %d' % (state, counts[state])
-             for state in states.STATE_ORDER if counts.get(state)]
-    return ', '.join(parts) or '-'
+    words = _cell_words(feature, 'passed')
+    tests_cell = '%d passed%s%d failing%s%d no test' % (
+        words.get('passed', 0), DOT, words.get('failed', 0), DOT,
+        total - words.get('passed', 0) - words.get('failed', 0))
+
+    record = feature.get('latest_record') or {}
+    run_cell = record.get('label') or 'none'
+    if record.get('os'):
+        run_cell = '%s %s' % (run_cell, record['os'])
+
+    cells = [name, str(total), spec_cell, tests_cell, run_cell]
+    if gate in ('strong', 'signed'):
+        strength = rollup.get('test_strength')
+        cells.append('n/a' if strength is None else '%d%%' % int(strength))
+        cells.append('%d of %d' % (_met_count(feature, 'strong'), total))
+    if gate == 'signed':
+        cells.append('%d of %d' % (_met_count(feature, 'signed'), total))
+    return tuple(cells)
 
 
 def _table(data):
-    rows = [_row(feature) for feature in
-            sorted(data['features'],
-                   key=lambda f: (states.STATE_ORDER.index(
-                       f['rollup']['lowest_state']), f['name']))]
-    widths = [max(len(COLUMNS[i]), max((len(r[i]) for r in rows), default=0))
-              for i in range(len(COLUMNS))]
+    gate = data['gate']['gate']
+    columns = columns_for(gate)
+    # The feature with the most rules short of the gate reads first: the table
+    # opens on the work rather than on the alphabet.
+    features = sorted(data['features'],
+                      key=lambda f: (f['rollup']['met'] - f['rollup']['rules'],
+                                     f['name']))
+    rows = [_row(feature, gate) for feature in features]
+    widths = [max(len(columns[i]), max((len(r[i]) for r in rows), default=0))
+              for i in range(len(columns))]
     rule = '─' * (sum(widths) + 2 * (len(widths) - 1))
-    lines = [_line(COLUMNS, widths), rule]
-    lines.extend(_line(row, widths) for row in rows)
+    lines = [_line(columns, widths, columns), rule]
+    lines.extend(_line(row, widths, columns) for row in rows)
     lines.append(rule)
     return lines
 
 
-def _line(cells, widths):
+def _line(cells, widths, columns):
+    """One table line; the counted columns are right aligned, the rest left."""
+    right = {index for index, name in enumerate(columns)
+             if name in ('Rules', 'Strength')}
     out = []
     for index, cell in enumerate(cells):
-        if index in (1, 4):
+        if index in right:
             out.append(cell.rjust(widths[index]))
         else:
             out.append(cell.ljust(widths[index]))
@@ -134,66 +178,106 @@ def _line(cells, widths):
 
 
 # ---------------------------------------------------------------------------
-# The rollup and the directives
+# The summary and the directives
 # ---------------------------------------------------------------------------
 
 def _summary(data):
-    rollup = data['project_rollup']
+    summary = data['summary']
     cfg = data['gate']
-    lines = ['%d features, %d rules. %s.'
-             % (rollup['features'], rollup['rules'],
-                _breakdown(rollup['counts']))]
-    second = ['gate %s' % cfg['gate'],
-              'minimum test strength %d%%' % cfg['min_strength']]
-    if cfg['ai_review_at'] != 'never':
-        second.append('review at risk %s and above' % cfg['ai_review_at'])
-    if rollup['stale']:
-        second.append('%d approvals stale' % rollup['stale'])
-    if rollup['re_verify_pending']:
-        second.append('%d rules waiting on CI' % rollup['re_verify_pending'])
+    gate = cfg['gate']
+    lines = ['%d of %d rules meet the gate %s.'
+             % (summary['met'], summary['rules'], gate)]
+    second = ['%d features' % summary['features']]
+    if summary.get('failing'):
+        second.append('%d failing' % summary['failing'])
+    if gate != 'passed':
+        if cfg.get('min_strength') is not None:
+            second.append('minimum test strength %d%%' % cfg['min_strength'])
+        if cfg['ai_review_at'] != 'never':
+            second.append('review at risk %s and above' % cfg['ai_review_at'])
+        if summary.get('needs_person'):
+            second.append('%d rules need a person' % summary['needs_person'])
+        if summary.get('held'):
+            second.append('%d rules held' % summary['held'])
+    if gate == 'signed':
+        if cfg.get('sign_at'):
+            second.append('a signature at risk %s and above' % cfg['sign_at'])
+        if summary.get('stale'):
+            second.append('%d signatures stale' % summary['stale'])
     lines.append(', '.join(second) + '.')
     return lines
 
 
+def _blocking(data):
+    """`{cell_name: {word: count}}` over the rules that do not meet the gate.
+
+    Only a rule's own entry is counted, so a global anchor's rule is counted
+    once however many features have to prove it.
+    """
+    found = {'spec': 0}
+    for name in states.CELLS:
+        found[name] = {}
+    for feature in data['features']:
+        for rule in feature.get('rules') or ():
+            if rule.get('label') != 'own' or rule.get('meets_gate'):
+                continue
+            blocked = rule.get('blocked_by')
+            if blocked == 'spec':
+                found['spec'] += 1
+            elif blocked in found:
+                word = ((rule.get('cells') or {}).get(blocked) or {}).get('word')
+                found[blocked][word] = found[blocked].get(word, 0) + 1
+    return found
+
+
 def _directives(data, project_root):
-    """The next step, computed from the state, plus anything to fix first."""
+    """The next step, computed from the blocking cell, plus anything to fix first."""
     lines = []
     if (any('purlin:init --update' in warning for warning in data['warnings'])
             or _update_pending(project_root)):
         lines.append('%s Run: purlin:init --update' % ARROW)
 
-    counts = data['states']
     gate = data['gate']['gate']
-    rollup = data['project_rollup']
+    blocked = _blocking(data)
+    passed = blocked['passed']
+    strong = blocked['strong']
+    signed = blocked['signed']
 
-    if rollup['stale']:
-        lines.append('%s Next: run purlin:review. %d rules changed after they '
-                     'were approved, so a person has to look at them.'
-                     % (ARROW, rollup['stale']))
-    elif counts.get(states.DRAFTED):
+    no_test = passed.get('no test', 0)
+    failing = passed.get('failed', 0)
+    waiting = passed.get('not run', 0) + passed.get('code changed', 0)
+    weak = strong.get('weak', 0)
+    person = (strong.get('needs a person', 0) + signed.get('unsigned', 0)
+              + signed.get('stale', 0) + signed.get('held', 0))
+
+    if blocked['spec']:
         lines.append('%s Next: run purlin:spec. %d rules have no proof that '
-                     'passes the free checks.' % (ARROW, counts[states.DRAFTED]))
-    elif counts.get(states.PROOF_READY):
+                     'clears the free checks.' % (ARROW, blocked['spec']))
+    elif failing:
+        lines.append('%s Next: run purlin:build. %d rules have a failing test.'
+                     % (ARROW, failing))
+    elif no_test:
         lines.append('%s Next: run purlin:build. %d rules have a proof and no '
-                     'passing test.' % (ARROW, counts[states.PROOF_READY]))
-    elif counts.get(states.TESTED) and gate != 'tested':
-        lines.append('%s Next: run purlin:verify. %d rules pass locally and have '
-                     'no record at this commit.' % (ARROW, counts[states.TESTED]))
-    elif counts.get(states.TESTED):
-        lines.append('%s Next: run purlin:verify to write the record for %d '
-                     'tested rules.' % (ARROW, counts[states.TESTED]))
-    elif gate == 'approved' and (counts.get(states.RECORDED)
-                                 or counts.get(states.REVIEWED)):
-        outstanding = (counts.get(states.RECORDED, 0)
-                       + counts.get(states.REVIEWED, 0))
-        lines.append('%s Next: run purlin:approve. %d rules are recorded and not '
-                     'approved.' % (ARROW, outstanding))
+                     'passing test.' % (ARROW, no_test))
+    elif waiting and gate != 'passed':
+        lines.append('%s Next: push the branch. %d rules are waiting for CI to '
+                     'write the record that counts under %s.'
+                     % (ARROW, waiting, gate))
+    elif waiting:
+        lines.append('%s Next: run purlin:test. %d rules have no run to read.'
+                     % (ARROW, waiting))
+    elif weak:
+        lines.append('%s Next: run purlin:build. %d rules are weak; the strong '
+                     'cell names what each one is short of.' % (ARROW, weak))
+    elif person:
+        lines.append('%s Next: run purlin:sign. %d rules are waiting for a '
+                     'person.' % (ARROW, person))
     else:
         lines.append('%s Next: nothing is outstanding at gate %s.' % (ARROW, gate))
 
     if data['review_list']:
-        lines.append('%s Review list: %d rules are waiting for a look. Run '
-                     'purlin:review.' % (ARROW, len(data['review_list'])))
+        lines.append('%s Review list: %d rules need a person. Run purlin:sign.'
+                     % (ARROW, len(data['review_list'])))
     return lines
 
 

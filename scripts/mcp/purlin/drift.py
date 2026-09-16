@@ -1,20 +1,22 @@
-"""What changed since the last verification, and what it means per role.
+"""What changed since the evidence was last written, and what it means per role.
 
 Drift answers one question: since the evidence was last written, what moved?
 It reads git for the commits and the changed files, classifies each file
 against the specs' `> Scope:` lines, and adds what the payload already knows
-about states, approvals and pins.
+about the cells, the signatures and the pins.
 
 Four role views come out of the same data, because four people ask different
 questions of it:
 
 `pm`      acceptance criteria with no rule, pm-owned rules that changed,
           rules an engineer added, pins behind their source
-`design`  design files that changed, design-owned rules gone stale
-`qa`      approvals gone stale, how long the review list is, rules no proof
-          of which names a rejection or a boundary
+`design`  design files that changed, design-owned rules whose signature went
+          stale
+`qa`      signatures gone stale, how long the review list is, how many rules
+          need a person, rules no proof of which names a rejection or a
+          boundary
 `eng`     files touched and the rules they affect, rules with no test, rules
-          with no risk or origin tag, pins behind, re-verify pending
+          with no risk or origin tag, pins behind, rules whose code changed
 """
 
 import json
@@ -203,8 +205,8 @@ def resolve_since(project_root, since_arg=None):
 
     Without an argument the anchor is the most recent record CI or a
     developer committed, then the most recent tag, then the commit that added
-    `.purlin/config.json`. A project with no verification history and a long
-    history gets a recommendation rather than a diff of everything.
+    `.purlin/config.json`. A project with no record and a long history gets a
+    recommendation rather than a diff of everything.
     """
     if since_arg is not None and str(since_arg).strip() != '':
         since_arg = str(since_arg).strip()
@@ -250,10 +252,10 @@ def resolve_since(project_root, since_arg=None):
             return init_sha, 'since purlin:init (%d commits)' % count
         return None, json.dumps({
             'recommendation': 'spec-from-code',
-            'reason': ('No verification history and %d commits since Purlin was '
-                       'set up. Drift measures between verifications; for the '
-                       'first specs of an existing codebase run '
-                       'purlin:spec-from-code.' % count),
+            'reason': ('No record and %d commits since Purlin was set up. '
+                       'Drift measures between runs; for the first specs of '
+                       'an existing codebase run purlin:spec-from-code.'
+                       % count),
             'commits_since_init': count,
         })
 
@@ -268,9 +270,9 @@ def resolve_since(project_root, since_arg=None):
                                     % window)
     return None, json.dumps({
         'recommendation': 'spec-from-code',
-        'reason': ('No verification history and %d commits exist. Drift measures '
-                   'between verifications; for the first specs of an existing '
-                   'codebase run purlin:spec-from-code.' % count),
+        'reason': ('No record and %d commits exist. Drift measures between '
+                   'runs; for the first specs of an existing codebase run '
+                   'purlin:spec-from-code.' % count),
         'commits_since_init': count,
     })
 
@@ -413,11 +415,11 @@ def compute_drift(project_root, since=None, network=True, data=None):
                               if e.get('spec') == name
                               and e['category'] == 'CHANGED_BEHAVIOR'],
             'total_rules': len(feature['rules']),
-            'lowest_state': feature['rollup']['lowest_state'],
+            'met': feature['rollup']['met'],
             'unproved': [r['id'] for r in feature['rules']
-                         if r['state'] in (states.DRAFTED, states.PROOF_READY)],
+                         if r['spec'] == states.DRAFTED],
             'rules': [{'rule_id': r['id'], 'description': _cap(r['text']),
-                       'state': r['state'], 'risk': r['risk'],
+                       'bucket': r['bucket'], 'risk': r['risk'],
                        'origin': r['origin']}
                       for r in feature['rules'] if r['label'] == 'own'],
         }
@@ -430,7 +432,7 @@ def compute_drift(project_root, since=None, network=True, data=None):
         'broken_scopes': broken_scopes,
         'pins': pins,
         'rule_details': rule_details,
-        'states': data.get('states', {}),
+        'summary': data.get('summary', {}),
         'review_list': data.get('review_list', []),
     }
     report['roles'] = _role_views(report, data, file_entries)
@@ -465,16 +467,20 @@ def _role_views(report, data, file_entries):
     }
     design = {
         'designs_changed': design_changed,
-        'design_rules_stale': ['%s/%s' % (feature['name'], rule['id'])
-                               for feature, rule in rules
-                               if rule['origin'] == 'design'
-                               and rule['state'] == states.STALE],
+        'design_rules_stale': [
+            '%s/%s' % (feature['name'], rule['id'])
+            for feature, rule in rules
+            if rule['origin'] == 'design'
+            and _cell_word(rule, 'signed') == 'stale'],
     }
     qa = {
-        'approvals_stale': ['%s/%s' % (feature['name'], rule['id'])
-                            for feature, rule in rules
-                            if rule['state'] == states.STALE],
+        'signatures_stale': ['%s/%s' % (feature['name'], rule['id'])
+                             for feature, rule in rules
+                             if rule['flags'].get('stale')],
         'review_list_size': len(data.get('review_list', [])),
+        'needs_person': ['%s/%s' % (feature['name'], rule['id'])
+                         for feature, rule in rules
+                         if rule['flags'].get('needs_person')],
         'rules_without_a_negative_case': [
             '%s/%s' % (feature['name'], rule['id'])
             for feature, rule in rules
@@ -494,11 +500,16 @@ def _role_views(report, data, file_entries):
                          if rule['risk'] == specs_module.DEFAULT_RISK
                          and rule['origin'] == specs_module.DEFAULT_ORIGIN],
         'pins_behind': pins_behind,
-        're_verify_pending': ['%s/%s' % (feature['name'], rule['id'])
-                              for feature, rule in rules
-                              if rule['flags'].get('re_verify_pending')],
+        'code_changed': ['%s/%s' % (feature['name'], rule['id'])
+                         for feature, rule in rules
+                         if rule['flags'].get('code_changed')],
     }
     return {'pm': pm, 'design': design, 'qa': qa, 'eng': eng}
+
+
+def _cell_word(rule, name):
+    """The word one cell of a rule reads, or None where that cell is absent."""
+    return ((rule.get('cells') or {}).get(name) or {}).get('word')
 
 
 def drift(project_root, since=None, role=None):

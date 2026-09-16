@@ -9,8 +9,8 @@ for a person goes to stderr. Claude Code starts it when the plugin is enabled.
 
 Three tools, each taking the same optional `project_root`:
 
-`sync_status`   the seven-state table for the workspace
-`drift`         what changed since the last verification, as JSON
+`sync_status`   the spec status and the cells of every rule, as a table
+`drift`         what changed since the evidence was last written, as JSON
 `purlin_config` read or write `.purlin/config.json`
 """
 
@@ -48,9 +48,9 @@ TOOLS = [
     {
         "name": "sync_status",
         "description": (
-            "Show the state of every rule per feature. Reads specs/, the "
-            "runtime proof files and .purlin/records/, and returns the "
-            "seven-state table with the next step."),
+            "Show the spec status and the cells of every rule per feature. "
+            "Reads specs/, the runtime proof files and .purlin/records/, and "
+            "returns the table with the next step."),
         "inputSchema": {
             "type": "object",
             "properties": {"project_root": _PROJECT_ROOT_PROPERTY},

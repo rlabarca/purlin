@@ -8,7 +8,7 @@ the same number only when neither has fetched, which is what
 
 Ids are never reused. A retired rule leaves its number vacant and the rules
 that remain keep the numbers they had: renumbering silently repoints every
-test marker and every approval that already names the old id.
+test marker and every signature that already names the old id.
 """
 
 import os
@@ -104,7 +104,7 @@ def duplicate_ids(project_root, spec_path):
     """`{'rules': {id: count}, 'proofs': {id: count}}` for ids written twice.
 
     A merge that took both sides of a spec leaves two RULE-9 lines. Nothing
-    downstream can tell which test or which approval means which, so the
+    downstream can tell which test or which signature means which, so the
     duplicate is reported rather than guessed at.
     """
     full = os.path.join(project_root, spec_path)

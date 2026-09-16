@@ -10,7 +10,7 @@ in the tree and committed:
 the slug `ci` or the developer's git email local part (lowercased, every
 non-alphanumeric character replaced by `-`), and `os` the operating system
 when the run was one job of a matrix. Adding files never conflicts, so two
-runs never collide and the log of what was verified is the git history of the
+runs never collide and the log of every run is the git history of the
 folder.
 
 The file:
@@ -22,7 +22,7 @@ The file:
       "timestamp": "2026-09-13T12:00:00Z",
       "runner": "ci",
       "os": "linux",
-      "gate": "recorded",
+      "gate": "strong",
       "test_strength": 71,
       "scope_tree": "<sha256 from specs.scope_tree>",
       "proofs": [
@@ -41,9 +41,10 @@ The last commit touching a record is what decides whether it counts:
 `developer`  a person committed it
 `local`      it is not committed at all
 
-Under `tested` a record counts whether ci or developer wrote it. Under
-`recorded` and `approved` only a ci record counts, which is what the git
-host's file-path rule enforces on the other side.
+Under `passed` a record counts whatever wrote it, because the question there
+is only whether the tests pass. Under `strong` and `signed` only a ci record
+counts, which is what the git host's file-path rule enforces on the other
+side.
 """
 
 import json
@@ -196,14 +197,11 @@ def record_label(project_root, rel_path):
 def counts_under(gate, label):
     """True when a record with `label` counts under `gate`.
 
-    `tested` counts a ci or a developer record, because under `tested` the
-    developer's own verify is the evidence. `recorded` and `approved` count a
-    ci record only.
+    `passed` counts every label, because the developer's own run is the
+    evidence there. `strong` and `signed` count a ci record only.
     """
-    if label == 'local':
-        return False
-    if gate == 'tested':
-        return label in ('ci', 'developer')
+    if gate == 'passed':
+        return label in ('ci', 'developer', 'local')
     return label == 'ci'
 
 
@@ -337,7 +335,7 @@ def default_branch(project_root):
     one whose `origin/HEAD` was never set, has only its own branch to go on,
     and `main` is a guess that is wrong for every repository made by a git
     still configured for `master`: the gate would then tell a developer their
-    approval is not on the branch when it is the only branch there is.
+    signature is not on the branch when it is the only branch there is.
     """
     try:
         # The whole ref comes back here, and the branch is its last part.

@@ -123,7 +123,7 @@ def detect_frameworks(project_root):
 
 
 # What a tree must carry for a framework to be runnable at all, checked when a
-# recorded `test_framework` names something detection did not find. Detection
+# named `test_framework` names something detection did not find. Detection
 # is the stricter question (jest is detected only when `package.json` declares
 # it); this is the looser one, so a project that wires a runner in a way
 # detection does not recognise keeps it.
@@ -163,7 +163,7 @@ def carries_wiring(project_root, name):
 
 
 def prune_unwired(project_root, names):
-    """`(kept, dropped)` from a recorded `test_framework` list.
+    """`(kept, dropped)` from a configured `test_framework` list.
 
     A name detection does not find and the tree carries no wiring for is
     dropped: running it prints a runner that exited non-zero on every run and

@@ -1,42 +1,49 @@
-"""The structured project payload, schema 4.
+"""The structured project payload, schema 5.
 
-One reader assembles specs, runtime proofs, records and approvals into the
-state of every rule, and every surface renders that: the status table, the
-dashboard, the gates and the drift report. A surface that parsed the rendered
-table would be coupled to a layout; this is the shape they all read instead.
+One reader assembles specs, runtime proofs, records and signatures into the
+spec status and the cells of every rule, and every surface renders that: the
+status table, the dashboard, the gate check and the drift report. A surface
+that parsed the rendered table would be coupled to a layout; this is the shape
+they all read instead.
 
     {
-      "schema_version": 4,
+      "schema_version": 5,
       "generated_at": "2026-09-13T12:00:00Z",
       "generated_by": "sync_status",
       "project": "purlin",
       "version": "<the VERSION file>",
       "commit": "<sha>",
       "dirty": false,
-      "gate": {"gate": "recorded", "min_strength": 70, ...},
-      "states": {"Drafted": 12, "Recorded": 214, ...},
+      "gate": {"gate": "strong", "min_strength": 70, "sign_at": null, ...},
+      "summary": {"rules": 8, "features": 4, "met": 1, "failing": 0,
+                  "untested": 2, "passed": 4, "strong": 1, "signed": 1,
+                  "stale": 1, "held": 1, "needs_person": 1},
       "features": [
         {"name": "login", "category": "auth", "spec_path": "specs/auth/login.md",
          "is_anchor": false, "requires": [], "source": null, "pinned": null,
-         "rollup": {...}, "test_strength": 71,
+         "rollup": {...}, "test_strength": 86,
          "latest_record": {"path": ..., "label": "ci", "timestamp": ..., "os": null},
-         "approvals": [...],
+         "signatures": [...],
          "rules": [
            {"id": "RULE-1", "feature": "login", "label": "own",
             "text": "...", "risk": "low", "origin": "eng", "criterion": null,
-            "state": "Recorded", "flags": {...}, "missing_env": [],
+            "spec": "ready", "bucket": "signed", "meets_gate": true,
+            "blocked_by": null, "flags": {...},
+            "cells": {"passed": {...}, "strong": {...}, "signed": {...}},
             "proofs": [{"id": "PROOF-1", "tier": "unit", "env": null,
                         "text": "...", "findings": [], "tests": [...]}]}
          ]}
       ],
-      "review_list": [{"feature": ..., "rule": ..., "risk": ...,
-                       "reasons": ["stale", "risk medium"],
-                       "reason": "stale; risk medium"}],
+      "review_list": [{"feature": ..., "owner": ..., "rule": ..., "risk": ...,
+                       "cell": "signed", "why": ["stale"]}],
       "records": {"login": {"": {..., "label": "ci", "result": "pass"}}},
       "warnings": ["..."]
     }
 
-`write_report_data` writes it to `.purlin/report-data.js` as
+A cell above the project's gate is absent, not empty: a `passed` project
+carries one cell per rule, a `signed` project carries three.
+
+`write_report_data` writes the payload to `.purlin/report-data.js` as
 `const PURLIN_DATA = {...};`, which is gitignored and is what the local
 dashboard page loads.
 """
@@ -59,8 +66,9 @@ from purlin import (PURLIN_VERSION, checks,
                     signatures as signatures_module,
                     specs as specs_module, states)
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 REPORT_DATA_PATH = os.path.join('.purlin', 'report-data.js')
+BRIEFS_DIR = os.path.join('.purlin', 'briefs')
 _PREFIX = 'const PURLIN_DATA = '
 
 
@@ -90,16 +98,19 @@ def build_payload(project_root, generated_by='sync_status', config=None):
 
     runtime_proofs = proofs_module.load_proofs(project_root)
     all_records = records_module.load_records(project_root)
-    all_approvals = signatures_module.load_signatures(project_root, features)
+    all_signatures = signatures_module.load_signatures(project_root, features)
     all_holds = signatures_module.load_holds(project_root, features)
     head = records_module.head_sha(project_root)
 
     blob_cache = {}
     scope_cache = {}
+    counted_cache = {}
+    branch = (records_module.default_branch(project_root)
+              if cfg.gate == 'signed' and all_signatures else None)
     feature_entries = []
     review_list = []
     rollups = {}
-    # The project rollup counts each rule once, under the feature that owns
+    # The project summary counts each rule once, under the feature that owns
     # it. A feature's own rollup counts what that feature must prove, which
     # includes the rules it requires and the global anchors', so summing the
     # feature rollups would count a global anchor's rules once per feature.
@@ -109,14 +120,14 @@ def build_payload(project_root, generated_by='sync_status', config=None):
         info = features[name]
         entry, rollup = _feature_entry(
             project_root, name, info, features, runtime_proofs, all_records,
-            all_approvals, cfg, head, blob_cache, scope_cache, review_list,
-            own_results, all_holds)
+            all_signatures, cfg, head, blob_cache, scope_cache, review_list,
+            own_results, all_holds, counted_cache, branch)
         feature_entries.append(entry)
         rollups[name] = rollup
 
-    project_rollup = states.project_rollup({'': states.feature_rollup(own_results)})
-    project_rollup['features'] = len(features)
-    state_counts = dict(project_rollup['counts'])
+    summary = states.project_rollup(
+        {'': states.feature_rollup(own_results, cfg.gate)}, cfg.gate)
+    summary['features'] = len(features)
 
     payload = {
         'schema_version': SCHEMA_VERSION,
@@ -128,10 +139,9 @@ def build_payload(project_root, generated_by='sync_status', config=None):
         'commit': head,
         'dirty': _is_dirty(project_root),
         'gate': cfg.as_dict(),
-        'states': state_counts,
-        'project_rollup': project_rollup,
+        'summary': summary,
         'features': feature_entries,
-        'review_list': review_list,
+        'review_list': _sorted_review_list(review_list),
         'records': {feature: {(os_name or ''): _with_result(record)
                               for os_name, record in by_os.items()}
                     for feature, by_os in all_records.items()},
@@ -140,9 +150,28 @@ def build_payload(project_root, generated_by='sync_status', config=None):
     return payload
 
 
+# The one order the review list is read in: the highest risk first, and within
+# one risk the rules a person already wrote something about before the rest.
+_RISK_ORDER = {'high': 0, 'medium': 1, 'low': 2}
+
+
+def _sorted_review_list(entries):
+    def key(entry):
+        first = 0 if set(entry['why']) & {'stale', 'held'} else 1
+        return (_RISK_ORDER.get(entry['risk'], 3), first, entry['owner'],
+                _rule_number(entry['rule']))
+    return sorted(entries, key=key)
+
+
+def _rule_number(rule_id):
+    digits = str(rule_id).rsplit('-', 1)[-1]
+    return int(digits) if digits.isdigit() else 0
+
+
 def _feature_entry(project_root, name, info, features, runtime_proofs,
-                   all_records, all_approvals, cfg, head, blob_cache,
-                   scope_cache, review_list, own_results=None, all_holds=None):
+                   all_records, all_signatures, cfg, head, blob_cache,
+                   scope_cache, review_list, own_results=None, all_holds=None,
+                   counted_cache=None, branch=None):
     counting = _counting(all_records, name, cfg)
     latest = _latest(all_records.get(name) or {})
     test_strength = latest.get('test_strength') if latest else None
@@ -155,30 +184,26 @@ def _feature_entry(project_root, name, info, features, runtime_proofs,
             continue
         result = _rule_entry(
             project_root, name, owner, owner_info, rule_id, label,
-            runtime_proofs, counting, all_approvals, cfg, head,
+            runtime_proofs, counting, all_signatures, cfg, head,
             blob_cache, scope_cache, test_strength, all_holds,
-            _counting(all_records, owner, cfg))
+            _counting(all_records, owner, cfg),
+            _uncounted(all_records, owner, cfg), counted_cache, branch)
         rule_entries.append(result)
-        summary = {'state': result['state'], 'flags': result['flags'],
-                   'risk': result['risk'],
-                   'missing_env': result['missing_env']}
+        summary = {'bucket': result['bucket'], 'flags': result['flags'],
+                   'meets_gate': result['meets_gate'],
+                   'risk': result['risk']}
         rule_results[(owner, rule_id)] = summary
         if label == 'own' and own_results is not None:
             own_results[(owner, rule_id)] = summary
         # The review list names each rule once, under its owner, as the
-        # project rollup counts it; a required or global rule is reviewed
-        # where it is written, not once per feature that proves it.
-        if label == 'own' and result['flags'].get('on_review_list'):
-            reasons = _review_reasons(result, cfg)
-            review_list.append({
-                'feature': name, 'owner': owner, 'rule': rule_id,
-                'risk': result['risk'],
-                'reasons': reasons,
-                'reason': '; '.join(reasons),
-            })
+        # summary counts it; a required or global rule is read where it is
+        # written, not once per feature that proves it.
+        entry = _review_entry(name, owner, result, cfg)
+        if label == 'own' and entry is not None:
+            review_list.append(entry)
 
     rollup = states.feature_rollup(
-        rule_results,
+        rule_results, cfg.gate,
         latest_record=_record_summary(latest),
         test_strength=test_strength)
 
@@ -198,53 +223,54 @@ def _feature_entry(project_root, name, info, features, runtime_proofs,
         'rollup': rollup,
         'test_strength': test_strength,
         'latest_record': _record_summary(latest),
-        'approvals': sorted(
-            approval['path']
-            for key, entries in all_approvals.items() if key[0] == name
-            for approval in entries),
+        'signatures': sorted(
+            signature['path']
+            for key, entries in all_signatures.items() if key[0] == name
+            for signature in entries),
         'rules': rule_entries,
     }
     return entry, rollup
 
 
-def _review_reasons(rule, cfg):
-    """Why one rule is on the review list, one short code or text each.
+# The words a review row carries, one per thing that put the rule in front of
+# a person. `manual` replaces `needs a person` when a `@manual` proof is why.
+_WHY_BY_WORD = {'unsigned': 'unsigned', 'stale': 'stale', 'held': 'held',
+                'needs a person': 'needs a person'}
 
-    A row on the board groups rules by risk, so the risk is the one reason a
-    reader already has before opening the row; it is still named here, first
-    among equals, because a caller reading the list without the grouping has
-    no other way to learn it. Everything after it says something the group
-    header cannot: an approval that went stale, a strength under the minimum,
-    an operating system with no record, code that moved under an approval, and
-    each free check the proofs raised, by its own name.
+
+def _review_entry(feature, owner, rule, cfg):
+    """One review row for a rule whose next step is a person, or None.
+
+    The list holds exactly the rules blocked at the strong cell by a question
+    the machine could not settle, and the rules blocked at the signed cell. A
+    rule blocked at `spec` or `passed` is build work and stays on the board.
     """
-    reasons = []
-    if rule['state'] == states.STALE:
-        reasons.append('stale')
-    if gate_module.risk_at_or_above(
-            rule['risk'],
-            states.review_threshold(
-                cfg, cfg.mutation_engine not in (None, 'none'))):
-        reasons.append('risk %s' % rule['risk'])
-    strength = rule.get('test_strength')
-    if strength is not None and strength < cfg.min_strength:
-        reasons.append('strength %d%% under %d%%'
-                       % (round(strength), cfg.min_strength))
-    for reason in rule.get('reasons') or ():
-        reasons.append(reason)
-    if (rule.get('flags') or {}).get('re_verify_pending'):
-        reasons.append('re-verify pending')
-    for proof in rule.get('proofs') or ():
-        for finding in proof.get('findings') or ():
-            if finding not in reasons:
-                reasons.append(finding)
-    return reasons
+    if cfg.gate == 'passed':
+        return None
+    blocked = rule.get('blocked_by')
+    if blocked not in ('strong', 'signed'):
+        return None
+    cell = (rule.get('cells') or {}).get(blocked) or {}
+    word = cell.get('word')
+    if word not in _WHY_BY_WORD:
+        return None
+    if blocked == 'strong' and word != 'needs a person':
+        return None
+    why = _WHY_BY_WORD[word]
+    if why == 'needs a person':
+        if (rule.get('flags') or {}).get('held'):
+            why = 'held'
+        elif 'manual proof' in (cell.get('reasons') or ()):
+            why = 'manual'
+    return {'feature': feature, 'owner': owner, 'rule': rule['id'],
+            'risk': rule['risk'], 'cell': blocked, 'why': [why]}
 
 
 def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
-                runtime_proofs, counting, all_approvals, cfg, head,
+                runtime_proofs, counting, all_signatures, cfg, head,
                 blob_cache, scope_cache, test_strength=None, all_holds=None,
-                owner_counting=None):
+                owner_counting=None, uncounted=None, counted_cache=None,
+                branch=None):
     text = owner_info['rules'].get(rule_id, '')
     meta = owner_info.get('rule_meta', {}).get(rule_id, {})
     proof_ids = owner_info.get('proofs_by_rule', {}).get(rule_id, [])
@@ -279,6 +305,7 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
         '\n'.join('%s %s' % (p['id'], p['text']) for p in proof_dicts))
     test_hash = _test_hash(project_root, proof_dicts, blob_cache)
     test_hash_kind = signatures_module.test_hash_kind(proof_dicts)
+    risk = meta.get('risk', specs_module.DEFAULT_RISK)
     design_hash = signatures_module.design_hash(
         owner_info, meta.get('origin', specs_module.DEFAULT_ORIGIN))
     scope_key = owner
@@ -286,24 +313,33 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
         scope_cache[scope_key] = specs_module.scope_tree(
             project_root, owner_info.get('scope', []))
 
-    result = states.rule_state({
+    test_paths = sorted({test['file'] for proof in proof_dicts
+                         for test in proof['tests'] if test.get('file')})
+    signatures = [_counted(project_root, signature, cfg, test_paths,
+                           counted_cache, branch)
+                  for signature in all_signatures.get((owner, rule_id), [])]
+
+    brief, brief_path = _read_brief(project_root, owner, rule_id, rule_hash,
+                                    proof_hash, test_hash)
+    result = states.rule_cells({
         'proofs': proof_dicts,
         'local_status': local_status,
         'records': counting,
+        'uncounted': uncounted or {},
         'head': head,
         'scope_tree': scope_cache[scope_key],
-        'approvals': all_approvals.get((owner, rule_id), []),
+        'signatures': signatures,
         'holds': (all_holds or {}).get((owner, rule_id), []),
         'rule_hash': rule_hash,
         'proof_hash': proof_hash,
         'test_hash': test_hash,
         'design_hash': design_hash,
-        'risk': meta.get('risk', specs_module.DEFAULT_RISK),
-        'brief': _read_brief(project_root, owner_info, rule_id,
-                             rule_hash, proof_hash, test_hash),
+        'risk': risk,
+        'brief': brief,
+        'brief_path': brief_path,
         # The feature's strength stands for every rule in it: a break engine
-        # measures a scope, not one rule, and auto-approval compares what was
-        # measured rather than assuming nothing was.
+        # measures a scope, not one rule, and the strong cell compares what
+        # was measured rather than assuming nothing was.
         'test_strength': test_strength,
         'mutation_engine_available': cfg.mutation_engine not in (None, 'none'),
     }, cfg)
@@ -313,7 +349,7 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
         'feature': owner,
         'label': label,
         'text': text,
-        'risk': meta.get('risk', specs_module.DEFAULT_RISK),
+        'risk': risk,
         'origin': meta.get('origin', specs_module.DEFAULT_ORIGIN),
         'criterion': meta.get('criterion'),
         'rule_hash': rule_hash,
@@ -321,13 +357,39 @@ def _rule_entry(project_root, feature, owner, owner_info, rule_id, label,
         'test_hash': test_hash,
         'test_hash_kind': test_hash_kind,
         'design_hash': design_hash,
-        'state': result['state'],
+        'spec': result['spec'],
+        'cells': result['cells'],
+        'bucket': result['bucket'],
+        'meets_gate': result['meets_gate'],
+        'blocked_by': result['blocked_by'],
         'flags': result['flags'],
-        'test_strength': test_strength,
-        'missing_env': result['missing_env'],
-        'reasons': result['reasons'],
         'proofs': proof_dicts,
     }
+
+
+def _counted(project_root, signature, cfg, test_paths, cache, branch):
+    """One signature plus whether it counts under the gate, and why not.
+
+    Reading git for each signature is the expensive part, and the answer is a
+    property of the committed file rather than of the rule asking, so it is
+    cached on the path and the tests it is compared against.
+    """
+    cache = cache if cache is not None else {}
+    key = (signature.get('path'), cfg.gate, tuple(test_paths))
+    if key not in cache:
+        ok, reason = signatures_module.counts(
+            project_root, signature, cfg.signers or [], test_paths, cfg.gate)
+        if ok and cfg.gate == 'signed' and branch:
+            if not signatures_module.is_ancestor(
+                    project_root, signature.get('path'), branch):
+                ok = False
+                reason = 'the signing commit is not on %s' % branch
+        cache[key] = (ok, reason)
+    ok, reason = cache[key]
+    entry = dict(signature)
+    entry['counts'] = ok
+    entry['count_reason'] = reason
+    return entry
 
 
 def _counting(all_records, feature, cfg):
@@ -335,6 +397,18 @@ def _counting(all_records, feature, cfg):
     return {os_name: record
             for os_name, record in (all_records.get(feature) or {}).items()
             if records_module.counts_under(cfg.gate, record.get('label'))}
+
+
+def _uncounted(all_records, feature, cfg):
+    """`{os: record}`, the latest records the gate does not read.
+
+    The passed cell names them anyway. A developer's record under `strong` is
+    not evidence, but "no test" would be a different and wrong answer, so the
+    cell says whose record it found and why it does not count.
+    """
+    return {os_name: record
+            for os_name, record in (all_records.get(feature) or {}).items()
+            if not records_module.counts_under(cfg.gate, record.get('label'))}
 
 
 def _backing_tests(runtime_entries, records, proof_id):
@@ -345,15 +419,15 @@ def _backing_tests(runtime_entries, records, proof_id):
     every checkout reads alike. This machine's runtime proofs answer only for a
     proof no record has observed yet. Reading the runtime first made T depend on
     which tests this machine could run: a checkout with no `dotnet` ran no xUnit
-    test, listed fewer tests, and read a current approval as Stale.
+    test, listed fewer tests, and read a current signature as stale.
     """
-    recorded = []
+    observed = []
     for os_name in sorted(records or {}, key=lambda name: name or ''):
         for pair in proofs_module.tests_for(
                 (records[os_name] or {}).get('proofs'), proof_id):
-            if pair not in recorded:
-                recorded.append(pair)
-    return recorded or proofs_module.tests_for(runtime_entries, proof_id)
+            if pair not in observed:
+                observed.append(pair)
+    return observed or proofs_module.tests_for(runtime_entries, proof_id)
 
 
 def _test_hash(project_root, proof_dicts, blob_cache):
@@ -361,9 +435,9 @@ def _test_hash(project_root, proof_dicts, blob_cache):
 
     Reading the file's blob id rather than one function's body is coarse on
     purpose: a test file is the unit version control tracks, and a hash over it
-    stales an approval whenever the test that backs a rule changes, which is
-    the behaviour the approval is meant to have. `signatures.test_hash_kind`
-    names what was read beside the hash, so an approval says so on its face.
+    stales a signature whenever the test that backs a rule changes, which is
+    the behaviour the signature is meant to have. `signatures.test_hash_kind`
+    names what was read beside the hash, so a signature says so on its face.
     Which tests back each proof is `_backing_tests`'s answer, read from the
     records so it does not depend on the machine.
     """
@@ -379,25 +453,28 @@ def _test_hash(project_root, proof_dicts, blob_cache):
     return digest.hexdigest()
 
 
-def _read_brief(project_root, owner_info, rule_id, rule_hash, proof_hash,
+def _read_brief(project_root, feature, rule_id, rule_hash, proof_hash,
                 test_hash):
-    """The review brief written for a rule's current text, or None.
+    """`(brief, path)` for a rule's current text, or `(None, None)`.
 
-    A brief sits beside the approval it informs and is named for the triple it
-    was built from, so a brief for text that has since changed is simply not
-    found: that is what keeps Reviewed honest.
+    A brief is named for the triple it was built from, so a brief for text
+    that has since changed is simply not found: that is what keeps the strong
+    cell honest. CI commits them under `.purlin/briefs/<feature>/`, beside the
+    records and under the same branch rule.
     """
-    directory = signatures_module.signatures_dir(project_root, owner_info)
-    if not directory:
-        return None
     triple = signatures_module.triple_hash(rule_hash, proof_hash, test_hash)
-    path = os.path.join(directory, '%s.%s.brief.json' % (rule_id, triple[:8]))
+    rel = '%s/%s/%s.%s.brief.json' % (
+        BRIEFS_DIR.replace(os.sep, '/'), feature, rule_id, triple[:8])
+    path = os.path.join(project_root, BRIEFS_DIR, feature,
+                        '%s.%s.brief.json' % (rule_id, triple[:8]))
     try:
         with open(path, 'r', encoding='utf-8') as handle:
             brief = json.load(handle)
     except (json.JSONDecodeError, IOError, OSError, UnicodeDecodeError):
-        return None
-    return brief if isinstance(brief, dict) else None
+        return None, None
+    if not isinstance(brief, dict):
+        return None, None
+    return brief, rel
 
 
 def _with_result(record):

@@ -1,8 +1,8 @@
 """The free checks on proof text.
 
 Free because they need nothing but the spec: no test code, no run, no model
-call. `states.py` uses them to decide whether a rule is Proof ready, and the
-review brief prints them beside the proof they name.
+call. `states.py` uses them to decide whether a rule's spec status is `ready`,
+and the brief prints them beside the proof they name.
 
 Every check is a pure function of the text (and, for one of them, the tier),
 and every finding is one of six names:
@@ -19,8 +19,9 @@ and every finding is one of six names:
 `happy_path_only`     a rule whose proofs never name a rejection, an error or
                       a boundary
 
-The first four block Proof ready. The last two are advisory: a rule can be
-legitimately positive-only, and a grep proof legitimately names a path.
+The first four block the spec status `ready`. The last two are advisory: a
+rule can be legitimately positive-only, and a grep proof legitimately names a
+path.
 """
 
 import re
@@ -101,8 +102,8 @@ def rule_findings(proof_texts):
     return ['happy_path_only']
 
 
-def blocks_proof_ready(findings):
-    """True when a finding in `findings` keeps a rule out of Proof ready."""
+def blocks_ready(findings):
+    """True when a finding in `findings` holds a rule's spec status at `drafted`."""
     return any(name in BLOCKING for name in findings)
 
 
