@@ -45,11 +45,6 @@ EXCLUDED = (
 PENDING_REWRITE = (
     # lane 1B: signatures
     "references/formats/signature_format.md",
-    # lane 2A: sign, brief, gate
-    "scripts/review/brief.py", "scripts/review/static_checks.py",
-    "dev/test_brief.py",
-    "dev/test_brief_files.py", "dev/test_brief_tests_named.py", "dev/test_static_checks.py",
-    "specs/review/brief.md", "specs/review/static_checks.md",
     # lane 3: init and update
     "scripts/init/scaffold.py", "scripts/init/update.py", "templates/config.json",
     "dev/test_init_scaffold.py", "dev/test_init_update.py", "dev/test_init_e2e.sh",

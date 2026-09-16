@@ -20,8 +20,8 @@ venv/
 .purlin/report-stamp.js
 .purlin/report-data.js
 
-# The text rendering of a review brief, a local view of the committed JSON
-*.brief.txt
+# The text rendering of a brief, a local view of the committed JSON beside it
+.purlin/briefs/**/*.brief.txt
 
 # Plugin data (persists across updates)
 .claude-plugin-data/

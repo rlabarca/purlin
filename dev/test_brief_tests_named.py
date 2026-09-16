@@ -1,6 +1,6 @@
 """Tests for `scripts/review/brief.py`: several tests behind one proof.
 
-A proof may be backed by more than one test, and a person approving from the
+A proof may be backed by more than one test, and a person signing from the
 brief reads the source shown under each test's name. These tests hold that the
 source and the findings under a name are that test's own. The throwaway project
 is `dev/test_signatures.py`'s, with a second test marked for the same proof.
@@ -106,7 +106,7 @@ class TestEachTestShowsItsOwnSource:
             tests['test_a_token_comes_back']['body']
 
 
-class TestARecordedNameFindsItsSource:
+class TestANameFromARecordFindsItsSource:
 
     @pytest.mark.proof("brief", "PROOF-41", "RULE-26")
     def test_each_runner_name_form_finds_its_own_test(self):
@@ -119,6 +119,6 @@ class TestARecordedNameFindsItsSource:
             'works [proof:login:PROOF-1:RULE-1]': [3],
             'test_gone': [],
         }
-        for recorded, indexes in expected.items():
-            assert static_checks.test_name_matches(recorded, names) == indexes, \
-                recorded
+        for written, indexes in expected.items():
+            assert static_checks.test_name_matches(written, names) == indexes, \
+                written

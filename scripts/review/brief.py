@@ -1,31 +1,32 @@
 #!/usr/bin/env python3
-"""Build the review brief a person reads before approving one rule.
+"""Build the brief the machine writes about one rule.
 
     brief.py --feature <f> [--rule RULE-N] [--ai] [--project-root DIR]
 
-The brief answers one question: does this test prove this rule? It gathers the
-evidence in layers, cheapest first, and stops when it has enough for the rule's
-risk:
+The brief reports; it recommends nothing. It gathers the evidence in layers,
+cheapest first, and stops when it has enough for the rule's risk:
 
     low     the free checks on the proof text and on the test body
     medium  plus the test strength from the latest record
     high    plus the model review
 
-The criteria are `references/review_criteria.md` and nothing else: the free
-checks below are named there, the four verdicts are named there, and the model
-prompt is that file verbatim followed by this rule's evidence. Nothing here
-grades a rule on its own account.
+What it ends with is four things and no judgment: the test strength beside the
+project minimum, the free-check findings under the names
+`references/review_criteria.md` gives them, the model review's observations one
+sentence at a time, and whether the review settled the question. A rule whose
+brief settled with nothing observed is one the machine could read; anything
+else needs a person.
 
-The brief is written beside the approval it informs, as
-`specs/<category>/<feature>.approvals/<RULE-N>.<hash8>.brief.json` with a text
-rendering beside it. A brief is named for the triple it was built from, so a
-brief for text that has since changed is simply not found again.
+The brief lands beside the records, as
+`.purlin/briefs/<feature>/<RULE-N>.<hash8>.brief.json`, with a text rendering
+beside it. A brief is named for the triple it was built from, so a brief for
+text that has since changed is simply not found again.
 
-The JSON is evidence: CI commits it with the record, the rule reads Reviewed
-because it exists, and an approval names it. Building a brief again for the same
-triple leaves that file untouched unless the evidence in it changed, so reading
-a brief does not dirty the tree. The `.brief.txt` beside it is a local view,
-named in `.gitignore` and never committed.
+The JSON is evidence: CI commits it with the record and a signature names it.
+Building a brief again for the same triple leaves that file untouched unless
+the evidence in it changed, so reading a brief does not dirty the tree. The
+`.brief.txt` beside it is a local view, named in `.gitignore` and never
+committed.
 
 Exit codes: 0 a brief was built, 1 the rule is not in the project, 2 the
 command line was wrong.
@@ -34,6 +35,7 @@ command line was wrong.
 import glob
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -49,12 +51,9 @@ import static_checks                                          # noqa: E402
 from purlin import (checks,                                    # noqa: E402
                     console as console_module,
                     gate as gate_module, payload as payload_module,
-                    signatures as signatures_module,
-                    specs as specs_module)
+                    signatures as signatures_module, states)
 
-import approve as approve_module                              # noqa: E402
-
-SCHEMA = 'purlin-brief/1'
+SCHEMA = 'purlin-brief/2'
 USAGE = ('Usage: brief.py --feature <f> [--rule RULE-N] [--ai] '
          '[--project-root DIR]')
 
@@ -64,12 +63,9 @@ EXIT_BAD_INVOCATION = 2
 
 CRITERIA = os.path.join('references', 'review_criteria.md')
 
-# The four words a brief writes, and the only four a reviewer uses.
-READY = 'ready'
-ADD_A_CASE = 'add a case'
-REWRITE = 'rewrite the proof'
-NEEDS_A_HUMAN = 'needs a human'
-VERDICTS = (READY, ADD_A_CASE, REWRITE, NEEDS_A_HUMAN)
+# Where CI commits the briefs, beside the records and under the same branch
+# rule.
+BRIEFS_DIR = os.path.join('.purlin', 'briefs')
 
 # The layers, cheapest first, and the lowest risk each one is built for.
 LAYERS = ('proof text', 'test body', 'test strength', 'model review')
@@ -81,15 +77,43 @@ _LAYERS_BY_RISK = {
 
 ATTACHMENTS = os.path.join('.purlin', 'runtime', 'attachments')
 
+NOT_AVAILABLE = 'not available'
+
 
 # ---------------------------------------------------------------------------
 # One brief
 # ---------------------------------------------------------------------------
 
+def load_payload(project_root, payload=None):
+    """The payload to read, built when the caller did not hand one over."""
+    if payload is not None:
+        return payload
+    return payload_module.build_payload(project_root, generated_by='brief')
+
+
+def rule_entry(payload, feature, rule):
+    """The rule dict for `<feature> <rule>`, or None.
+
+    A required rule belongs to the feature its own `feature` field names, so a
+    brief is built where the rule lives and not once per consumer.
+    """
+    for entry in (payload or {}).get('features') or ():
+        for item in entry.get('rules') or ():
+            if item.get('feature') == feature and item.get('id') == rule:
+                return item
+    return None
+
+
+def triple_for(entry):
+    """The triple hash of one rule entry."""
+    return signatures_module.triple_hash(
+        entry.get('rule_hash'), entry.get('proof_hash'), entry.get('test_hash'))
+
+
 def build_brief(project_root, payload, feature, rule, ai=False):
     """The brief for one rule, as a dict. None when the rule is not there."""
-    payload = approve_module.load_payload(project_root, payload)
-    entry = approve_module.rule_entry(payload, feature, rule)
+    payload = load_payload(project_root, payload)
+    entry = rule_entry(payload, feature, rule)
     if entry is None:
         return None
 
@@ -110,7 +134,6 @@ def build_brief(project_root, payload, feature, rule, ai=False):
         'rule': rule,
         'risk': risk,
         'origin': entry.get('origin'),
-        'state': entry.get('state'),
         'rule_text': entry.get('text'),
         'proofs': proofs,
         'rule_hash': entry.get('rule_hash'),
@@ -118,7 +141,7 @@ def build_brief(project_root, payload, feature, rule, ai=False):
         'test_hash': entry.get('test_hash'),
         'test_hash_kind': entry.get('test_hash_kind'),
         'design_hash': entry.get('design_hash'),
-        'triple_hash': approve_module.triple_for(entry),
+        'triple_hash': triple_for(entry),
         'layers': list(layers),
         'tests': _test_layer(project_root, feature, entry),
         'test_strength': None,
@@ -126,19 +149,33 @@ def build_brief(project_root, payload, feature, rule, ai=False):
         'record': (feature_entry.get('latest_record') or {}).get('path'),
         'design': _design_layer(project_root, payload, feature, entry),
         'ai_review': None,
+        'observations': [],
+        'settled': None,
         'generated_at': payload_module.now_iso(),
     }
 
     if 'test strength' in layers:
         brief['test_strength'] = feature_entry.get('test_strength')
 
-    if 'model review' in layers and (entry.get('flags') or {}).get(
-            'needs_ai_review'):
+    if 'model review' in layers and asks_for_a_review(payload, entry):
         brief['ai_review'] = (_model_review(project_root, brief) if ai
-                              else 'not available')
+                              else NOT_AVAILABLE)
+        brief['observations'], brief['settled'] = model_observations(
+            brief['ai_review'])
 
-    brief['verdict'], brief['reasons'] = verdict_for(brief)
     return brief
+
+
+def asks_for_a_review(payload, entry):
+    """True when a rule's own risk is at or above the project's review level.
+
+    The strong cell asks the same question when it decides whether a brief was
+    owed, so the answer is computed from the one place that knows it.
+    """
+    cfg = gate_module.resolve_gate(payload.get('gate') or {})
+    threshold = states.review_threshold(
+        cfg, cfg.mutation_engine not in (None, 'none'))
+    return gate_module.risk_at_or_above(entry.get('risk') or 'low', threshold)
 
 
 def _feature_entry(payload, feature):
@@ -162,7 +199,7 @@ def _test_layer(project_root, feature, entry):
             tests.append({'proof': proof.get('id'), 'file': None, 'name': None,
                           'body': None, 'findings': ['manual'],
                           'reasons': ['The evidence for a manual proof is the '
-                                      'approver\'s note, not a test.']})
+                                      "signer's note, not a test."]})
             continue
         for test in proof.get('tests') or ():
             key = (proof.get('id'), test.get('file'), test.get('name'))
@@ -251,20 +288,37 @@ def criteria_text(project_root):
     return ''
 
 
+# What the model is asked for: what the test observes set against what the
+# proof names, one sentence at a time, and a plain statement when it cannot
+# tell. Never a recommendation and never a grade: the brief reports, and the
+# person reading it decides.
+INSTRUCTION = (
+    'Read one rule against the criteria above and report what you see. Answer '
+    'in this shape and nothing else:',
+    '',
+    '    settled: yes',
+    '    - <one sentence, naming the proof it concerns>',
+    '',
+    'Write `settled: yes` when you could tell what each test observes against '
+    'what its proof names, and `settled: no` when you could not.',
+    'Write one line per observation, each opening with `- `, each one sentence '
+    'long, and each naming the proof it concerns. Write no line at all when '
+    'you observed nothing.',
+    'Do not recommend a change, do not grade the rule and do not score it. A '
+    'person reads what you write and decides.',
+)
+
+
 def model_prompt(project_root, brief):
     """The criteria verbatim, then this rule's rule, proof, test and numbers."""
-    parts = [criteria_text(project_root),
-             '',
-             '---',
-             '',
-             'Review one rule against the criteria above. Answer with one of '
-             'the four verdicts on the first line and at most five sentences '
-             'after it.',
-             '',
-             '%s %s (risk %s, origin %s)'
-             % (brief.get('feature'), brief.get('rule'), brief.get('risk'),
-                brief.get('origin')),
-             'Rule: %s' % (brief.get('rule_text') or '')]
+    parts = [criteria_text(project_root), '', '---', '']
+    parts.extend(INSTRUCTION)
+    parts.extend([
+        '',
+        '%s %s (risk %s, origin %s)'
+        % (brief.get('feature'), brief.get('rule'), brief.get('risk'),
+           brief.get('origin')),
+        'Rule: %s' % (brief.get('rule_text') or '')])
     for proof in brief.get('proofs') or ():
         parts.append('%s (@%s): %s' % (proof.get('id'), proof.get('tier'),
                                        proof.get('text')))
@@ -289,87 +343,42 @@ def model_prompt(project_root, brief):
 def _model_review(project_root, brief):
     """The model's answer, or `not available` when no model can be reached."""
     if not shutil.which('claude'):
-        return 'not available'
+        return NOT_AVAILABLE
     try:
         result = subprocess.run(
             ['claude', '-p', model_prompt(project_root, brief)],
             capture_output=True, text=True, cwd=project_root, timeout=300)
     except (subprocess.SubprocessError, OSError):
-        return 'not available'
+        return NOT_AVAILABLE
     if result.returncode != 0 or not result.stdout.strip():
-        return 'not available'
+        return NOT_AVAILABLE
     return result.stdout.strip()
 
 
-def model_verdict(answer):
-    """The verdict a model answer opens with, or None."""
-    if not answer or answer == 'not available':
-        return None
-    first = answer.strip().splitlines()[0].strip().strip('.').lower()
-    for word in VERDICTS:
-        if first.startswith(word):
-            return word
-    return None
+_SETTLED_RE = re.compile(r'^\s*settled\s*:\s*(yes|no|true|false)\s*$', re.I)
+_OBSERVATION_RE = re.compile(r'^\s*[-*]\s+(.*\S)\s*$')
 
 
-# ---------------------------------------------------------------------------
-# The verdict
-# ---------------------------------------------------------------------------
+def model_observations(answer):
+    """`(observations, settled)` read out of one model answer.
 
-def verdict_for(brief):
-    """`(verdict, reasons)` from the layers the brief actually ran."""
-    reasons = []
-    blocking = []
-    advisory = []
-    for proof in brief.get('proofs') or ():
-        for finding in proof.get('findings') or ():
-            (blocking if finding in checks.BLOCKING else advisory).append(
-                '%s %s: %s' % (proof.get('id'), finding,
-                               checks.describe(finding)))
-    test_findings = []
-    manual = False
-    for test in brief.get('tests') or ():
-        for finding in test.get('findings') or ():
-            if finding == 'manual':
-                manual = True
-                continue
-            test_findings.append('%s %s' % (test.get('proof'), finding))
-    reasons.extend(blocking)
-
-    if blocking:
-        return REWRITE, reasons
-
-    reasons.extend(test_findings)
-    if test_findings:
-        return NEEDS_A_HUMAN, reasons
-
-    if manual:
-        reasons.append('A manual proof is always read by a person.')
-        return NEEDS_A_HUMAN, reasons
-
-    design = brief.get('design')
-    if design is not None and not design.get('screenshot'):
-        reasons.append('A design rule needs the screenshot the test captured '
-                       'beside the mock, and none was found.')
-        return NEEDS_A_HUMAN, reasons
-
-    from_model = model_verdict(brief.get('ai_review'))
-    if from_model:
-        reasons.append('The model review answered %s.' % from_model)
-        return from_model, reasons
-
-    reasons.extend(advisory)
-    if any('happy_path_only' in reason for reason in advisory):
-        return ADD_A_CASE, reasons
-
-    strength = brief.get('test_strength')
-    minimum = brief.get('min_strength') or 0
-    if strength is not None and strength < minimum:
-        reasons.append('Test strength is %d percent, below the minimum of %d.'
-                       % (strength, minimum))
-        return ADD_A_CASE, reasons
-
-    return READY, reasons
+    An answer nobody could get, or one that never says whether it settled,
+    leaves `settled` None: the strong cell reads that as a question still
+    open, which is the honest reading of an answer that is not there.
+    """
+    if not answer or answer == NOT_AVAILABLE:
+        return [], None
+    settled = None
+    observations = []
+    for line in str(answer).splitlines():
+        found = _SETTLED_RE.match(line)
+        if found:
+            settled = found.group(1).lower() in ('yes', 'true')
+            continue
+        found = _OBSERVATION_RE.match(line)
+        if found:
+            observations.append(found.group(1))
+    return observations, settled
 
 
 # ---------------------------------------------------------------------------
@@ -377,18 +386,15 @@ def verdict_for(brief):
 # ---------------------------------------------------------------------------
 
 def brief_paths(project_root, feature, rule, triple):
-    """`(json_path, text_path)` for one brief, or `(None, None)`."""
-    info = specs_module.scan_specs(project_root).get(feature)
-    directory = signatures_module.signatures_dir(project_root, info or {})
-    if not directory:
-        return None, None
-    stem = os.path.join(directory, '%s.%s.brief' % (rule, str(triple)[:8]))
+    """`(json_path, text_path)` for one brief, beside the records."""
+    stem = os.path.join(project_root, BRIEFS_DIR, feature,
+                        '%s.%s.brief' % (rule, str(triple)[:8]))
     return stem + '.json', stem + '.txt'
 
 
 # What says when and where a brief was built, not what it found. A brief that
 # differs from the one on disk only here is the same evidence.
-_WHEN_BUILT = ('generated_at', 'state', 'record')
+_WHEN_BUILT = ('generated_at', 'record')
 
 
 def same_evidence(one, other):
@@ -431,22 +437,40 @@ def write_brief(project_root, brief):
 
 
 def write_briefs(project_root, payload=None, rules=None, ai=False):
-    """Write a brief for every rule on the review list. Returns their paths.
+    """Write a brief for every rule a review is owed for. Returns their paths.
+
+    A review is owed when the rule's risk is at or above `ai_review_at` and its
+    passed cell counts: below that risk nothing asks the model a question, and
+    with no counting pass there is no test result to set the proof against.
 
     `rules` narrows the list: each entry is `(feature, rule)` or a dict with
-    `feature` and `rule`. Without it the review list the payload computed is
-    the list, which is what CI writes so a reviewer opens a brief rather than
-    waiting for one.
+    `feature` and `rule`. CI writes these with the record, so a person opens a
+    brief rather than waiting for one.
     """
-    payload = approve_module.load_payload(project_root, payload)
+    payload = load_payload(project_root, payload)
     targets = []
-    for item in (rules if rules is not None else payload.get('review_list') or ()):
-        if isinstance(item, dict):
-            pair = (item.get('owner') or item.get('feature'), item.get('rule'))
-        else:
-            pair = tuple(item)
-        if pair[0] and pair[1] and pair not in targets:
-            targets.append(pair)
+    if rules is not None:
+        for item in rules:
+            if isinstance(item, dict):
+                pair = (item.get('owner') or item.get('feature'),
+                        item.get('rule'))
+            else:
+                pair = tuple(item)
+            if pair[0] and pair[1] and pair not in targets:
+                targets.append(pair)
+    else:
+        for feature_entry in payload.get('features') or ():
+            for entry in feature_entry.get('rules') or ():
+                if entry.get('feature') != feature_entry.get('name'):
+                    continue
+                if not asks_for_a_review(payload, entry):
+                    continue
+                if not ((entry.get('cells') or {}).get('passed')
+                        or {}).get('counts'):
+                    continue
+                pair = (entry['feature'], entry['id'])
+                if pair not in targets:
+                    targets.append(pair)
 
     written = []
     for feature, rule in targets:
@@ -464,13 +488,11 @@ def write_briefs(project_root, payload=None, rules=None, ai=False):
 # ---------------------------------------------------------------------------
 
 def render_brief(brief):
-    """The brief as text: the rule, the proof, the test, and what was found."""
+    """The brief as text: the rule, the proof, the test, and what it found."""
     lines = []
     lines.append('%s %s   risk %s   origin %s'
                  % (brief.get('feature'), brief.get('rule'),
                     brief.get('risk'), brief.get('origin')))
-    lines.append('state %s   verdict %s'
-                 % (brief.get('state'), brief.get('verdict')))
     lines.append('')
     lines.append('Rule')
     lines.append('  %s' % (brief.get('rule_text') or ''))
@@ -511,17 +533,33 @@ def render_brief(brief):
                                    or 'none pinned'))
         lines.append('Screenshot: %s'
                      % (', '.join(design.get('screenshot') or ()) or 'none'))
-    if brief.get('ai_review'):
+    # The model review is printed only where one was asked for, so a brief
+    # for a rule whose risk never reaches `ai_review_at` says nothing about a
+    # review that was never owed.
+    if brief.get('ai_review') is not None:
+        if brief['ai_review'] != NOT_AVAILABLE:
+            lines.append('')
+            lines.append('Model review')
+            for line in str(brief['ai_review']).splitlines():
+                lines.append('  %s' % line)
         lines.append('')
-        lines.append('Model review')
-        for line in str(brief['ai_review']).splitlines():
-            lines.append('  %s' % line)
-    lines.append('')
-    lines.append('Verdict: %s' % brief.get('verdict'))
-    for reason in brief.get('reasons') or ():
-        lines.append('  %s' % reason)
+        lines.append('Observations')
+        for observation in brief.get('observations') or ():
+            lines.append('  %s' % observation)
+        if not brief.get('observations'):
+            lines.append('  None.')
+        lines.append('Settled: %s' % _settled_word(brief.get('settled')))
     lines.append('')
     return '\n'.join(lines)
+
+
+def _settled_word(settled):
+    """`yes`, `no` or `not answered`, the three states of a model review."""
+    if settled is True:
+        return 'yes'
+    if settled is False:
+        return 'no'
+    return 'not answered'
 
 
 # ---------------------------------------------------------------------------
@@ -581,7 +619,7 @@ def main(argv=None):
               file=sys.stderr)
         return EXIT_BAD_INVOCATION
 
-    payload = approve_module.load_payload(args.project_root)
+    payload = load_payload(args.project_root)
     rules = ([args.rule] if args.rule
              else _rules_of(payload, args.feature))
     if not rules:

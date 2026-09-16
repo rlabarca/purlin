@@ -21,7 +21,7 @@
 - RULE-5: A marked Python test whose expected value comes from the same call as the result is reported `logic_mirroring` [risk: high] [origin: eng]
 - RULE-6: A marked Python test whose patch target names a word the rule text uses is reported `mock_of_target` [risk: high] [origin: eng]
 - RULE-7: A marked Python test that asserts a literal value passes the structural checks, whatever a reader would still want to ask about it [risk: medium] [origin: eng]
-- RULE-8: A shell proof recorded once with no test logic before it is reported `tautology`, and an if/else pair recording one proof both ways is one result judged by the condition above it [risk: high] [origin: eng]
+- RULE-8: A shell proof emitted once with no test logic before it is reported `tautology`, and an if/else pair emitting one proof both ways is one result judged by the condition above it [risk: high] [origin: eng]
 - RULE-9: A JavaScript or TypeScript body asserting `expect(true).toBe(true)` is reported `tautology`, a body with no `expect(` call is reported `no_assertion`, and a body with a real assertion passes [risk: high] [origin: eng]
 - RULE-10: The JavaScript reader bounds a test body by balancing braces, so a nested options object does not truncate it and an apostrophe inside a title does not drop the test [risk: high] [origin: eng]
 - RULE-11: A C# body asserting `Assert.True(true)` is reported `tautology` and one with no assertion is reported `no_assertion`; xUnit, NUnit, MSTest, FluentAssertions and a Playwright matcher chain each count as an assertion, while a bare `Expect(x)` with no matcher does not [risk: high] [origin: eng]

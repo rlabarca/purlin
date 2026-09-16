@@ -517,10 +517,10 @@ class TestShellIfElsePair:
         path = _write_tmp('''#!/usr/bin/env bash
 source shell_purlin.sh
 output=$(some_command)
-if echo "$output" | grep -q "VERIFIED"; then
-  purlin_proof "testfeat" "PROOF-1" "RULE-1" pass "checks VERIFIED"
+if echo "$output" | grep -q "CONFIRMED"; then
+  purlin_proof "testfeat" "PROOF-1" "RULE-1" pass "checks CONFIRMED"
 else
-  purlin_proof "testfeat" "PROOF-1" "RULE-1" fail "checks VERIFIED"
+  purlin_proof "testfeat" "PROOF-1" "RULE-1" fail "checks CONFIRMED"
 fi
 ''', suffix='.sh')
         try:
@@ -1531,7 +1531,7 @@ namespace Demo {
 
         # Two backings, one failing and one in a language no checker reads: the
         # failure wins, because a defect outranks a measurement gap. The `.rb`
-        # file sorts first, so the ranking has to override a verdict already in
+        # file sorts first, so the ranking has to override an answer already in
         # hand rather than merely keep the first one it met.
         _scaffold_proof(root, 'worst', 'PROOF-1', 'RULE-1',
                         test_file='tests/test_worst_bad.py', test_name='test_bad',
@@ -1700,7 +1700,7 @@ class TestCliSelfDocumentation:
              if isinstance(n, ast.FunctionDef) and n.name == 'main'), None)
         assert main_fn is not None, "static_checks.py has no main()"
 
-        # Every string literal tested against sys.argv is a dispatch flag.
+        # Every string literal compared against sys.argv is a dispatch flag.
         dispatched = set()
         for node in ast.walk(main_fn):
             if isinstance(node, ast.Compare) and isinstance(node.ops[0], ast.In):
@@ -2261,7 +2261,7 @@ def _assert_proof_passes(data, msg=""):
 
 
 def _assert_pass1_catches(results, check, msg=""):
-    """Assert Pass 1 flags the cheat the runtime plugin happily recorded as pass.
+    """Assert Pass 1 flags the cheat the runtime plugin happily wrote as pass.
 
     The runtime assertion beside each of these says the cheat survives the test
     run; this one says the deterministic checker catches it anyway, which is what

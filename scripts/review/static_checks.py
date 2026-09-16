@@ -938,7 +938,7 @@ def _test_bodies(path, ext, feature):
         cache.test_bodies[memo_key] = bodies
     return bodies
 
-# A recorded name carries what the runner added to the name in the source: a
+# A name a record carries holds what the runner added to the name in the source: a
 # pytest parameter id, an xUnit theory's arguments, a class or namespace prefix,
 # and in JS the proof marker the title holds.
 _NAME_ARGS_RE = re.compile(r'(?:\[.*\]|\(.*\))\s*$')
@@ -948,10 +948,10 @@ def _test_name_key(name):
     return ' '.join(_NAME_MARKER_RE.sub(' ', name or '').split())
 
 def test_name_matches(test_name, names):
-    """The indexes in `names` that are the test a proof file recorded as `test_name`.
+    """The indexes in `names` that are the test a proof file names as `test_name`.
 
     An exact name wins, then the name without its arguments, then a name the
-    recorded one ends with after a class, namespace or describe prefix. Empty
+    written one ends with after a class, namespace or describe prefix. Empty
     when none is that test.
     """
     wanted = _test_name_key(test_name)
@@ -1040,9 +1040,9 @@ def _sweep_unmeasurable_reason(check, test_file, feature):
         return (f'{test_file} is named by the proof record but is not on disk, so '
                 'there is no source to read.')
     return (f'{test_file} carries no {feature} marker for this proof, so the '
-            'executed test could not be located in the file that recorded it.')
+            'executed test could not be located in the file that names it.')
 
-def _sweep_file_verdicts(project_root, feature, test_file, rule_descs):
+def _sweep_file_results(project_root, feature, test_file, rule_descs):
     """({proof_id: result}, blanket) for one of `feature`'s test files."""
     if not test_file:
         return {}, 'missing_file'
@@ -1058,7 +1058,7 @@ def _sweep_file_verdicts(project_root, feature, test_file, rule_descs):
     return results, None
 
 def _sweep_feature(project_root, feature, rule_descs):
-    """({proof_id: verdict}, {proof_id: backing count}) for one feature."""
+    """({proof_id: result}, {proof_id: backing count}) for one feature."""
     by_file = {}
     for proof_id, entries in _proof_backings(project_root, feature).items():
         for test_file, test_name in entries:
@@ -1068,27 +1068,27 @@ def _sweep_feature(project_root, feature, rule_descs):
             by_file.setdefault(resolved or '', []).append((proof_id, test_name))
     best, counted = {}, {}
     for test_file in sorted(by_file):
-        results, blanket = _sweep_file_verdicts(
+        results, blanket = _sweep_file_results(
             project_root, feature, test_file, rule_descs)
         for proof_id, test_name in sorted(by_file[test_file]):
             counted[proof_id] = counted.get(proof_id, 0) + 1
             result = results.get(proof_id)
             if blanket is not None or result is None:
                 check = blanket or 'marker_not_found'
-                verdict = {'status': 'unmeasurable', 'check': check,
+                outcome = {'status': 'unmeasurable', 'check': check,
                            'reason': _sweep_unmeasurable_reason(
                                check, test_file, feature),
                            'test_file': test_file, 'test_name': test_name or ''}
             else:
-                verdict = {
+                outcome = {
                     'status': 'fail' if result['status'] == 'fail' else 'pass',
                     'check': result.get('check', 'none'),
                     'reason': result.get('reason', ''), 'test_file': test_file,
                     'test_name': result.get('test_name') or test_name or ''}
             current = best.get(proof_id)
-            if current is None or (_SWEEP_STATUS_RANK[verdict['status']]
+            if current is None or (_SWEEP_STATUS_RANK[outcome['status']]
                                    > _SWEEP_STATUS_RANK[current['status']]):
-                best[proof_id] = verdict
+                best[proof_id] = outcome
     return best, counted
 
 def deterministic_sweep(project_root):
@@ -1108,14 +1108,14 @@ def deterministic_sweep(project_root):
                 project_root, feature, _read_rule_descriptions(spec_path))
             proofs = {}
             for proof_id in sorted(best):
-                verdict = best[proof_id]
+                outcome = best[proof_id]
                 backing_total += counted[proof_id]
-                proofs[proof_id] = dict(verdict, rule_id=first_rule.get(proof_id, ''),
+                proofs[proof_id] = dict(outcome, rule_id=first_rule.get(proof_id, ''),
                                         backings=counted[proof_id])
                 row = {'feature': feature, 'proof_id': proof_id, **proofs[proof_id]}
-                if verdict['status'] == 'fail':
+                if outcome['status'] == 'fail':
                     failing.append(row)
-                elif verdict['status'] == 'unmeasurable':
+                elif outcome['status'] == 'unmeasurable':
                     unmeasurable.append(row)
                 else:
                     passing += 1

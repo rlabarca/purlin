@@ -1,9 +1,9 @@
-"""Tests for the files a review brief leaves in a project.
+"""Tests for the files a brief leaves in a project.
 
-The brief's JSON is evidence: CI commits it, the rule reads Reviewed because it
-exists, and an approval names it. Reading a brief a second time must not rewrite
-it, and the text rendering written beside it is a local view that `.gitignore`
-keeps out of every commit, in a new project and in one the update migrates.
+The brief's JSON is evidence: CI commits it beside the record and a signature
+names it. Reading a brief a second time must not rewrite it, and the text
+rendering written beside it is a local view that `.gitignore` keeps out of
+every commit, in a new project and in one the update migrates.
 """
 
 import copy
@@ -24,7 +24,7 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'init'))
 import brief as brief_module  # noqa: E402
 import update  # noqa: E402
 from test_signatures import Project, git, write  # noqa: E402
-from test_init_update import LAYOUTS, _project, _read  # noqa: E402
+from test_init_update import V095, _project, _read  # noqa: E402
 
 TEMPLATE = os.path.join(ROOT, 'templates', 'gitignore.purlin')
 
@@ -39,7 +39,7 @@ def proved():
 
 
 def _bytes(root, rel):
-    with open(os.path.join(root, rel), 'rb') as handle:
+    with open(os.path.join(root, *rel.split('/')), 'rb') as handle:
         return handle.read()
 
 
@@ -52,21 +52,23 @@ class TestASecondWrite:
         first = _bytes(proved.root, path)
         again = copy.deepcopy(built)
         again['generated_at'] = '2031-01-01T00:00:00Z'
-        again['state'] = 'Reviewed'
         again['record'] = '.purlin/records/login/20310101T000000Z-abc1234-ci.json'
         assert brief_module.write_brief(proved.root, again) == path
         assert _bytes(proved.root, path) == first, \
             'a brief with the same evidence rewrote the committed file'
 
     @pytest.mark.proof("brief", "PROOF-43", "RULE-27", tier="integration")
-    def test_a_changed_verdict_is_written(self, proved):
+    def test_a_changed_observation_is_written(self, proved):
         built = brief_module.build_brief(proved.root, None, 'login', 'RULE-1')
         path = brief_module.write_brief(proved.root, built)
-        assert json.loads(_bytes(proved.root, path))['verdict'] != 'rewrite the proof'
+        assert json.loads(_bytes(proved.root, path))['observations'] == []
         changed = copy.deepcopy(built)
-        changed['verdict'] = 'rewrite the proof'
+        changed['observations'] = ['PROOF-1 never names the token.']
+        changed['settled'] = True
         brief_module.write_brief(proved.root, changed)
-        assert json.loads(_bytes(proved.root, path))['verdict'] == 'rewrite the proof'
+        written = json.loads(_bytes(proved.root, path))
+        assert written['observations'] == ['PROOF-1 never names the token.']
+        assert written['settled'] is True
 
 
 class TestTheTextRenderingIsIgnored:
@@ -77,21 +79,20 @@ class TestTheTextRenderingIsIgnored:
         git(root, 'init', '-q')
         with open(TEMPLATE, encoding='utf-8') as handle:
             write(os.path.join(root, '.gitignore'), handle.read())
-        stem = os.path.join(root, 'specs', 'auth', 'login.signatures',
+        stem = os.path.join(root, '.purlin', 'briefs', 'login',
                             'RULE-1.0123abcd.brief')
         write(stem + '.json', '{}\n')
         write(stem + '.txt', 'login RULE-1\n')
         status = subprocess.run(
             ['git', 'status', '--porcelain', '--untracked-files=all'],
             cwd=root, capture_output=True, text=True).stdout
-        assert 'specs/auth/login.signatures/RULE-1.0123abcd.brief.json' in status
+        assert '.purlin/briefs/login/RULE-1.0123abcd.brief.json' in status
         assert '.brief.txt' not in status, status
 
 
-@pytest.mark.parametrize('layout', LAYOUTS)
 @pytest.mark.proof("update", "PROOF-22", "RULE-22")
-def test_the_update_adds_the_rendering_to_gitignore(tmp_path, layout):
-    root = _project(tmp_path, layout)
+def test_the_update_adds_the_rendering_to_gitignore(tmp_path):
+    root = _project(tmp_path, V095)
     write(os.path.join(root, '.gitignore'),
           '.purlin/runtime/\n.purlin/report-data.js\n.purlin/report-stamp.js\n')
     assert 'untracked-files' in [item['id'] for item in update.pending(root)]

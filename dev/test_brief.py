@@ -1,4 +1,4 @@
-"""Tests for `scripts/review/brief.py`: the layers, the verdict, the file.
+"""Tests for `scripts/review/brief.py`: the layers, the report, the file.
 
 The throwaway project is `dev/test_signatures.py`'s, so a spec, a test file, a
 runtime proof file and a record are written by the test and nothing reads this
@@ -8,17 +8,19 @@ reaches a service.
 
 What each group holds:
 
-*layers*    which layers run at which risk, cheapest first
-*findings*  the free checks on the proof text and on the test body reach the
-            brief under the names `references/review_criteria.md` gives them
-*strength*  the test strength comes off the latest record, and reads `n/a`
-            when no engine measured one
-*verdict*   the four words, and which evidence produces each
-*model*     the prompt is the criteria file verbatim, the review runs only for
-            a rule that needs one and only with `--ai`
-*design*    a design rule shows the mock beside the screenshot
-*writing*   the brief is written beside the approval it informs, named for the
-            triple, with a text rendering beside it
+*layers*        which layers run at which risk, cheapest first
+*findings*      the free checks on the proof text and on the test body reach
+                the brief under the names `references/review_criteria.md`
+                gives them
+*strength*      the test strength comes off the latest record, and reads `n/a`
+                when no engine measured one
+*model*         the prompt is the criteria file verbatim, the review runs only
+                for a rule whose risk asks for one and only with `--ai`
+*observations*  the answer becomes one observation per sentence, and whether
+                it settled stands beside them
+*design*        a design rule shows the mock beside the screenshot
+*writing*       the brief is written beside the records, named for the triple,
+                with a text rendering beside it
 """
 
 import json
@@ -35,10 +37,16 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'mcp'))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'review'))
 
 import brief as brief_module  # noqa: E402
-from test_signatures import SPEC, TEST_FILE, Project, git, write  # noqa: E402
+from test_signatures import (REVIEW_GATE, SPEC, TEST_FILE,  # noqa: E402
+                             Project, commit_as_ci, write)
 
 BRIEF_PY = os.path.join(ROOT, 'scripts', 'review', 'brief.py')
 CRITERIA = os.path.join(ROOT, 'references', 'review_criteria.md')
+
+# A model answer in the shape the prompt asks for: whether it settled, then
+# one line per observation.
+ANSWER = ('settled: no\n'
+          '- PROOF-2 asserts the status but never the body the rule names.\n')
 
 
 @pytest.fixture
@@ -51,9 +59,9 @@ def proved():
 
 
 @pytest.fixture
-def reviewed():
-    """The same project at gate `recorded`, where a high-risk rule needs a model."""
-    made = Project(gate='recorded')
+def at_strong():
+    """The same project at `strong`, where a high-risk rule asks for a model."""
+    made = Project(gate=REVIEW_GATE)
     made.proofs()
     made.record()
     yield made
@@ -162,6 +170,18 @@ class TestTheFindings:
         finally:
             made.close()
 
+    @pytest.mark.proof("brief", "PROOF-12", "RULE-10", tier="integration")
+    def test_the_brief_carries_no_recommendation_and_no_grade(self, proved):
+        built = build(proved, 'RULE-1')
+        assert set(built) == {
+            'schema', 'feature', 'rule', 'risk', 'origin', 'rule_text',
+            'proofs', 'rule_hash', 'proof_hash', 'test_hash', 'test_hash_kind',
+            'design_hash', 'triple_hash', 'layers', 'tests', 'test_strength',
+            'min_strength', 'record', 'design', 'ai_review', 'observations',
+            'settled', 'generated_at'}, sorted(built)
+        assert built['schema'] == 'purlin-brief/2'
+        assert built['observations'] == []
+
 
 # ---------------------------------------------------------------------------
 # The test strength
@@ -170,9 +190,9 @@ class TestTheFindings:
 class TestTheTestStrength:
 
     @pytest.mark.proof("brief", "PROOF-10", "RULE-9", tier="integration")
-    def test_it_comes_off_the_latest_record(self, proved):
-        assert build(proved, 'RULE-2')['test_strength'] == 90
-        assert build(proved, 'RULE-2')['min_strength'] == 50
+    def test_it_comes_off_the_latest_record(self, at_strong):
+        assert build(at_strong, 'RULE-2')['test_strength'] == 90
+        assert build(at_strong, 'RULE-2')['min_strength'] == 70
 
     @pytest.mark.proof("brief", "PROOF-2", "RULE-1", tier="integration")
     def test_a_low_risk_rule_never_asks_for_it(self, proved):
@@ -192,85 +212,15 @@ class TestTheTestStrength:
 
 
 # ---------------------------------------------------------------------------
-# The verdict
-# ---------------------------------------------------------------------------
-
-class TestTheVerdict:
-
-    @pytest.mark.proof("brief", "PROOF-17", "RULE-13", tier="integration")
-    def test_a_clean_rule_is_ready(self, proved):
-        assert build(proved, 'RULE-2')['verdict'] == 'ready'
-
-    @pytest.mark.proof("brief", "PROOF-12", "RULE-10", tier="integration")
-    def test_a_blocking_proof_finding_is_rewrite_the_proof(self):
-        made = Project(spec=SPEC.replace(
-            'POST /login with the password "secret"; verify 200 and a token '
-            '@integration',
-            'The login works correctly @integration'))
-        try:
-            made.proofs()
-            built = build(made, 'RULE-1')
-            assert built['verdict'] == 'rewrite the proof'
-            assert any('no_expected_value' in reason
-                       for reason in built['reasons'])
-        finally:
-            made.close()
-
-    @pytest.mark.proof("brief", "PROOF-13", "RULE-11", tier="integration")
-    def test_a_test_body_finding_needs_a_human(self, proved):
-        proved.edit_test(TEST_FILE.replace(
-            'assert login("ada", "secret") == 200', 'assert True'))
-        built = build(proved, 'RULE-1')
-        assert built['verdict'] == 'needs a human'
-        assert any('assert_true_literal' in reason or 'tautology' in reason
-                   for reason in built['reasons']), built['reasons']
-
-    @pytest.mark.proof("brief", "PROOF-14", "RULE-11", tier="integration")
-    def test_a_manual_proof_needs_a_human(self):
-        made = Project(spec=SPEC.replace(
-            'verify 200 and a token @integration',
-            'verify 200 and a token @manual'))
-        try:
-            made.proofs()
-            assert build(made, 'RULE-1')['verdict'] == 'needs a human'
-        finally:
-            made.close()
-
-    @pytest.mark.proof("brief", "PROOF-15", "RULE-12", tier="integration")
-    def test_only_a_happy_path_is_add_a_case(self, proved):
-        built = build(proved, 'RULE-1')
-        assert 'happy_path_only' in built['proofs'][0]['findings']
-        assert built['verdict'] == 'add a case'
-
-    @pytest.mark.proof("brief", "PROOF-16", "RULE-12", tier="integration")
-    def test_strength_below_the_minimum_is_add_a_case(self):
-        made = Project(config={'min_strength': 70})
-        try:
-            made.proofs()
-            made.record(strength=40)
-            built = build(made, 'RULE-2')
-            assert built['verdict'] == 'add a case'
-            assert any('40 percent' in reason for reason in built['reasons'])
-        finally:
-            made.close()
-
-    @pytest.mark.proof("brief", "PROOF-18", "RULE-14", tier="integration")
-    def test_the_four_words_are_the_only_four(self, proved):
-        assert brief_module.VERDICTS == (
-            'ready', 'add a case', 'rewrite the proof', 'needs a human')
-        assert build(proved, 'RULE-1')['verdict'] in brief_module.VERDICTS
-
-
-# ---------------------------------------------------------------------------
 # The model review
 # ---------------------------------------------------------------------------
 
 class TestTheModelReview:
 
     @pytest.mark.proof("brief", "PROOF-19", "RULE-15", tier="integration")
-    def test_the_prompt_is_the_criteria_file_verbatim(self, reviewed):
-        built = build(reviewed, 'RULE-2')
-        prompt = brief_module.model_prompt(reviewed.root, built)
+    def test_the_prompt_is_the_criteria_file_verbatim(self, at_strong):
+        built = build(at_strong, 'RULE-2')
+        prompt = brief_module.model_prompt(at_strong.root, built)
         with open(CRITERIA, encoding='utf-8') as handle:
             criteria = handle.read()
         assert prompt.startswith(criteria)
@@ -279,27 +229,57 @@ class TestTheModelReview:
         assert 'test_a_bad_password_is_denied' in prompt
         assert 'Test strength: 90 percent (minimum 70)' in prompt
 
+    @pytest.mark.proof("brief", "PROOF-44", "RULE-15", tier="integration")
+    def test_the_prompt_asks_for_observations_and_bars_a_recommendation(
+            self, at_strong):
+        prompt = brief_module.model_prompt(at_strong.root,
+                                           build(at_strong, 'RULE-2'))
+        assert 'settled: yes' in prompt
+        assert 'one line per observation' in prompt
+        assert 'Do not recommend a change' in prompt
+        assert 'do not grade the rule' in prompt
+
     @pytest.mark.proof("brief", "PROOF-20", "RULE-16", tier="integration")
-    def test_without_ai_the_brief_says_not_available(self, reviewed):
-        built = build(reviewed, 'RULE-2')
+    def test_without_ai_the_brief_says_not_available(self, at_strong):
+        built = build(at_strong, 'RULE-2')
         assert built['ai_review'] == 'not available'
-        assert 'Model review' in brief_module.render_brief(built)
+        assert built['observations'] == [] and built['settled'] is None
+        assert 'Settled: not answered' in brief_module.render_brief(built)
 
     @pytest.mark.proof("brief", "PROOF-21", "RULE-16", tier="integration")
     def test_with_no_claude_on_the_path_it_says_not_available(
-            self, reviewed, monkeypatch):
+            self, at_strong, monkeypatch):
         monkeypatch.setattr(brief_module.shutil, 'which', lambda name: None)
-        assert build(reviewed, 'RULE-2', ai=True)['ai_review'] == (
+        assert build(at_strong, 'RULE-2', ai=True)['ai_review'] == (
             'not available')
 
-    @pytest.mark.proof("brief", "PROOF-23", "RULE-17", tier="integration")
-    def test_the_model_answer_decides_the_verdict(self, reviewed, monkeypatch):
+    @pytest.mark.proof("brief", "PROOF-22", "RULE-16", tier="integration")
+    def test_a_rule_below_the_review_level_never_calls_a_model(
+            self, at_strong, monkeypatch):
+        def fail(*args, **kwargs):
+            raise AssertionError('a low-risk rule must not call a model')
+
+        monkeypatch.setattr(brief_module.shutil, 'which', fail)
+        built = build(at_strong, 'RULE-1', ai=True)
+        assert built['ai_review'] is None
+        assert 'Observations' not in brief_module.render_brief(built)
+
+
+# ---------------------------------------------------------------------------
+# The observations
+# ---------------------------------------------------------------------------
+
+class TestTheObservations:
+
+    @pytest.mark.proof("brief", "PROOF-23", "RULE-12", tier="integration")
+    def test_the_answer_becomes_one_observation_per_sentence(
+            self, at_strong, monkeypatch):
         calls = []
         real_run = brief_module.subprocess.run
 
         class Result(object):
             returncode = 0
-            stdout = 'add a case\nNothing proves the lockout boundary.\n'
+            stdout = ANSWER
 
         def fake_run(command, **kwargs):
             if command and command[0] == 'claude':
@@ -310,24 +290,26 @@ class TestTheModelReview:
         monkeypatch.setattr(brief_module.shutil, 'which',
                             lambda name: '/usr/local/bin/claude')
         monkeypatch.setattr(brief_module.subprocess, 'run', fake_run)
-        built = build(reviewed, 'RULE-2', ai=True)
+        built = build(at_strong, 'RULE-2', ai=True)
         assert len(calls) == 1 and calls[0][:2] == ['claude', '-p']
-        assert built['ai_review'].startswith('add a case')
-        assert built['verdict'] == 'add a case'
+        assert built['observations'] == [
+            'PROOF-2 asserts the status but never the body the rule names.']
+        assert built['settled'] is False
 
-    @pytest.mark.proof("brief", "PROOF-22", "RULE-16", tier="integration")
-    def test_a_low_risk_rule_never_calls_a_model(self, proved, monkeypatch):
-        def fail(*args, **kwargs):
-            raise AssertionError('a low-risk rule must not call a model')
-
-        monkeypatch.setattr(brief_module.shutil, 'which', fail)
-        assert build(proved, 'RULE-1', ai=True)['ai_review'] is None
+    @pytest.mark.proof("brief", "PROOF-17", "RULE-13")
+    def test_settled_reads_yes_no_or_nothing_at_all(self):
+        assert brief_module.model_observations(
+            'settled: yes\n') == ([], True)
+        assert brief_module.model_observations(
+            'settled: no\n- PROOF-1 never runs the code.') == (
+            ['PROOF-1 never runs the code.'], False)
 
     @pytest.mark.proof("brief", "PROOF-24", "RULE-17")
-    def test_an_answer_that_names_no_verdict_decides_nothing(self):
-        assert brief_module.model_verdict('It looks fine to me.') is None
-        assert brief_module.model_verdict('not available') is None
-        assert brief_module.model_verdict('Ready.') == 'ready'
+    def test_an_answer_in_no_shape_at_all_observes_nothing(self):
+        assert brief_module.model_observations('It looks fine to me.') == (
+            [], None)
+        assert brief_module.model_observations('not available') == ([], None)
+        assert brief_module.model_observations('') == ([], None)
 
 
 # ---------------------------------------------------------------------------
@@ -369,14 +351,12 @@ class TestDesignRules:
             made.close()
 
     @pytest.mark.proof("brief", "PROOF-26", "RULE-18", tier="integration")
-    def test_a_design_rule_with_no_screenshot_needs_a_human(self):
+    def test_a_glob_that_matches_nothing_is_shown_as_the_glob(self):
         made = Project(spec=DESIGN_SPEC)
         try:
             built = brief_module.build_brief(made.root, None, 'login', 'RULE-1')
-            assert built['design']['mock'] == ['designs/login/*.png'], (
-                'a glob that matches nothing is shown as the glob')
+            assert built['design']['mock'] == ['designs/login/*.png']
             assert built['design']['screenshot'] == []
-            assert built['verdict'] == 'needs a human'
         finally:
             made.close()
 
@@ -388,32 +368,51 @@ class TestDesignRules:
 class TestWriting:
 
     @pytest.mark.proof("brief", "PROOF-27", "RULE-19", tier="integration")
-    def test_the_brief_lands_beside_the_approval_named_for_the_triple(
+    def test_the_brief_lands_beside_the_records_named_for_the_triple(
             self, proved):
         built = build(proved, 'RULE-1')
         path = brief_module.write_brief(proved.root, built)
-        assert path == ('specs/auth/login.signatures/RULE-1.%s.brief.json'
+        assert path == ('.purlin/briefs/login/RULE-1.%s.brief.json'
                         % built['triple_hash'][:8])
-        text = os.path.join(proved.root, path[:-5] + '.txt')
+        text = os.path.join(proved.root, *(path[:-5] + '.txt').split('/'))
         assert os.path.isfile(text)
-        with open(os.path.join(proved.root, path), encoding='utf-8') as handle:
-            assert json.load(handle)['schema'] == 'purlin-brief/1'
+        with open(os.path.join(proved.root, *path.split('/')),
+                  encoding='utf-8') as handle:
+            assert json.load(handle)['schema'] == 'purlin-brief/2'
 
-    @pytest.mark.proof("brief", "PROOF-28", "RULE-20", tier="integration")
-    def test_a_brief_for_the_current_text_makes_the_rule_reviewed(self, proved):
-        brief_module.write_brief(proved.root, build(proved, 'RULE-1'))
-        assert proved.rule('RULE-1')['state'] == 'Reviewed'
+    @pytest.mark.proof("brief", "PROOF-28", "RULE-19", tier="integration")
+    def test_a_brief_is_found_again_only_while_the_text_stands(self, proved):
+        built = build(proved, 'RULE-1')
+        brief_module.write_brief(proved.root, built)
+        first = brief_module.brief_paths(
+            proved.root, 'login', 'RULE-1', built['triple_hash'])[0]
+        assert os.path.isfile(first)
         proved.spec(SPEC.replace('return 200 with a session token',
                                  'return 200 with a short session token'))
-        assert proved.rule('RULE-1')['state'] != 'Reviewed', (
+        again = build(proved, 'RULE-1')
+        assert again['triple_hash'] != built['triple_hash'], (
             'a brief for text that has since changed is not a brief for it')
 
     @pytest.mark.proof("brief", "PROOF-29", "RULE-21", tier="integration")
-    def test_write_briefs_covers_the_review_list(self, reviewed):
-        written = brief_module.write_briefs(reviewed.root)
-        assert written, 'the review list holds the high-risk rule'
-        assert all(path.endswith('.brief.json') for path in written)
-        assert any('RULE-2' in path for path in written)
+    def test_write_briefs_covers_the_rules_a_review_is_owed_for(self):
+        made = Project(gate=REVIEW_GATE, config={'min_strength': 50})
+        try:
+            made.proofs()
+            made.record(runner='ci', commit_it=False)
+            commit_as_ci(made.root)
+            written = brief_module.write_briefs(made.root)
+            assert [path.rsplit('/', 1)[1].split('.')[0] for path in written] \
+                == ['RULE-2'], written
+            assert all(path.startswith('.purlin/briefs/login/')
+                       for path in written)
+        finally:
+            made.close()
+
+    @pytest.mark.proof("brief", "PROOF-45", "RULE-21", tier="integration")
+    def test_a_rule_with_no_counting_pass_gets_no_brief(self, at_strong):
+        assert brief_module.write_briefs(at_strong.root) == [], (
+            'a developer record does not count under strong, so there is no '
+            'test result to set the proof against')
 
     @pytest.mark.proof("brief", "PROOF-30", "RULE-21", tier="integration")
     def test_write_briefs_takes_a_narrower_list(self, proved):
@@ -422,13 +421,14 @@ class TestWriting:
         assert len(written) == 1 and 'RULE-1' in written[0]
 
     @pytest.mark.proof("brief", "PROOF-31", "RULE-22", tier="integration")
-    def test_the_rendering_names_the_rule_the_proof_and_the_verdict(
-            self, proved):
-        rendered = brief_module.render_brief(build(proved, 'RULE-2'))
+    def test_the_rendering_names_the_rule_the_proof_and_what_was_found(
+            self, at_strong):
+        rendered = brief_module.render_brief(build(at_strong, 'RULE-2'))
         assert 'login RULE-2' in rendered
         assert 'Invalid credentials return 401' in rendered
         assert 'PROOF-2' in rendered
-        assert 'Verdict: ready' in rendered
+        assert 'Test strength: 90 percent   minimum 70' in rendered
+        assert 'Observations' in rendered and 'Settled:' in rendered
         assert '✓' not in rendered and ':)' not in rendered
 
 
@@ -451,9 +451,8 @@ class TestTheCommandLine:
         output = capsys.readouterr().out
         assert code == 0
         assert 'login RULE-1' in output
-        assert 'Verdict:' in output
-        assert os.path.isdir(os.path.join(proved.root, 'specs', 'auth',
-                                          'login.signatures'))
+        assert os.path.isdir(os.path.join(proved.root, '.purlin', 'briefs',
+                                          'login'))
 
     @pytest.mark.proof("brief", "PROOF-35", "RULE-24", tier="integration")
     def test_a_feature_with_no_rule_named_covers_every_rule(self, proved,
@@ -478,4 +477,4 @@ class TestTheCommandLine:
              'RULE-1', '--project-root', proved.root],
             capture_output=True, text=True, timeout=120)
         assert result.returncode == 0, result.stdout + result.stderr
-        assert 'Verdict:' in result.stdout
+        assert 'login RULE-1' in result.stdout
