@@ -1,5 +1,5 @@
-/* The Board: where every rule stands, and which specs hold the rules that
-   have not got there yet. */
+/* The Board: where every rule stands against the gate, and which specs hold
+   the rules that have not got there yet. */
 
 /* A rule the payload lists under the feature that owns it. An anchor's rule
    appears under every feature that requires it, so counting every entry would
@@ -10,75 +10,81 @@ function ownRules(feature) {
   });
 }
 
-/* One tile per state, then the rules a test is failing for. A failing test
-   only holds a rule in a lower state, so without its own tile a failure reads
-   as a rule that has not got far yet. */
+/* One tile per bucket the gate reaches, and at `signed` a flag card beside
+   them for the signatures that no longer match. A flag is counted beside the
+   buckets, never instead of one, so it never shares their row. */
 function statStrip() {
-  var counts = DATA.states || {};
-  var failing = (DATA.project_rollup || {}).failing || 0;
-  return '<div class="strip"><div class="tiles">' + STATES.map(function (state) {
+  var summary = DATA.summary || {};
+  var shown = BUCKETS.filter(function (bucket) {
+    return bucket === 'untested' || bucket === 'failing' || level(bucket);
+  });
+  var tiles = shown.map(function (bucket) {
     return '<div class="tile"><div class="tile-v" style="color:var(--state-'
-      + tone(state) + ')">' + (counts[state] || 0) + '</div>'
-      + '<div class="tile-l">' + esc(state) + '</div></div>';
-  }).join('') + '</div><div class="failing' + (failing ? ' on' : '') + '">'
-    + '<div class="failing-v">' + failing + '</div>'
-    + '<div class="failing-l">Failing</div></div></div>';
-}
-
-function riskGrid() {
-  var table = {};
-  RISKS.forEach(function (risk) { table[risk] = {}; });
-  eachRule(function (rule, feature) {
-    if (rule.label !== 'own') { return; }
-    var risk = rule.risk || 'low';
-    if (!table[risk]) { table[risk] = {}; }
-    table[risk][rule.state] = (table[risk][rule.state] || 0) + 1;
-  });
-  var rows = RISKS.filter(function (risk) {
-    return Object.keys(table[risk]).length > 0;
-  });
-  var head = '<tr><th>Risk</th>' + STATES.map(function (state) {
-    return '<th>' + esc(state) + '</th>';
-  }).join('') + '<th>Rules</th></tr>';
-  var body = rows.map(function (risk) {
-    var total = 0;
-    var cells = STATES.map(function (state) {
-      var n = table[risk][state] || 0;
-      total += n;
-      return '<td class="n' + (n ? '' : ' zero') + '">' + n + '</td>';
-    }).join('');
-    return '<tr><td>' + riskTag(risk) + '</td>' + cells
-      + '<td class="n">' + total + '</td></tr>';
+      + bucketTone(bucket) + ')">' + (summary[bucket] || 0) + '</div>'
+      + '<div class="tile-l">' + esc(BUCKET_LABELS[bucket]) + '</div></div>';
   }).join('');
-  return '<section><p class="eyebrow">Risk by state</p>'
-    + '<div class="panel"><table class="grid">' + head + body
-    + '</table></div></section>';
+  var stale = summary.stale || 0;
+  var flag = level('signed')
+    ? '<div class="flag' + (stale ? ' on' : '') + '">'
+      + '<div class="flag-v">' + stale + '</div>'
+      + '<div class="flag-l">Stale</div></div>'
+    : '';
+  return '<div class="strip' + (flag ? ' flagged' : '') + '">'
+    + '<div class="tiles">' + tiles + '</div>' + flag + '</div>';
 }
 
-/* The columns exist only where their artifacts do. */
+/* The columns the gate reaches, and no others. */
 function boardColumns() {
-  var columns = [{label: 'Spec', width: '2.4fr'}];
-  if (hasRisks()) { columns.push({label: 'Risk', width: '0.7fr'}); }
-  columns.push({label: 'Coverage', width: '1.4fr'});
-  columns.push({label: 'State', width: '1.1fr'});
-  if (hasRecords()) {
-    columns.push({label: 'Strength', width: '0.8fr'});
-    columns.push({label: 'Latest record', width: '1.3fr'});
-    columns.push({label: 'Re-verify', width: '0.9fr'});
+  var columns = [{label: 'Spec', width: '2fr'},
+                 {label: 'Rules', width: '0.4fr'},
+                 {label: 'Spec status', width: '0.8fr'},
+                 {label: 'Tests', width: '0.9fr'},
+                 {label: 'Last run', width: '2.6fr'}];
+  if (level('strong')) {
+    columns.push({label: 'Strength', width: '0.6fr'});
+    columns.push({label: 'Strong', width: '1.2fr'});
   }
-  if (hasApprovals()) {
-    columns.push({label: 'Approvals', width: '0.9fr'});
+  if (level('signed')) {
+    columns.push({label: 'Signed', width: '1.1fr'});
   }
   return columns;
 }
 
-function highestRisk(feature) {
-  var found = 'low';
+/* How many of this spec's own rules the spec itself has finished: a rule no
+   proof line names is drafted, and no test can be written for it. */
+function specStatusCell(feature) {
+  var ready = 0;
+  var drafted = 0;
   ownRules(feature).forEach(function (rule) {
-    var risk = rule.risk || 'low';
-    if (RISKS.indexOf(risk) < RISKS.indexOf(found)) { found = risk; }
+    if (rule.spec === 'drafted') { drafted += 1; } else { ready += 1; }
   });
-  return found;
+  return counts([[ready, 'ready', 'pass'], [drafted, 'drafted', 'idle']]);
+}
+
+/* What the tagged tests found, as the passed cells read it. A rule waiting on
+   an operating system or sitting behind changed code is in none of the three:
+   the Last run column and the rule's own row say which. */
+function testsCell(feature) {
+  var passed = 0;
+  var failing = 0;
+  var none = 0;
+  ownRules(feature).forEach(function (rule) {
+    var word = cellWord(rule, 'passed');
+    if (word === 'passed') { passed += 1; }
+    else if (word === 'failed') { failing += 1; }
+    else if (word === 'no test') { none += 1; }
+  });
+  return counts([[passed, 'passed', 'pass'], [failing, 'failing', 'fail'],
+                 [none, 'no test', 'warn']]);
+}
+
+function signedCell(feature) {
+  var rollup = feature.rollup || {};
+  var stale = rollup.stale || 0;
+  return '<span class="trio"><b>' + (rollup.signed || 0) + ' of '
+    + (rollup.rules || 0) + '</b>'
+    + (stale ? '<i>·</i><b style="color:var(--state-fail)">' + stale
+        + ' stale</b>' : '') + '</span>';
 }
 
 function featureRow(feature, columns) {
@@ -87,21 +93,16 @@ function featureRow(feature, columns) {
   var cells = ['<span class="name"><span class="caret">'
     + (open ? '▼' : '▶') + '</span>' + designThumb(feature)
     + '<span class="n">' + esc(feature.name) + '</span></span>'];
-  if (hasRisks()) { cells.push(riskTag(highestRisk(feature))); }
-  cells.push(coverage(rollup.proved || 0, rollup.rules || 0));
-  cells.push(pill(rollup.lowest_state || 'Drafted'));
-  if (hasRecords()) {
-    cells.push(strength(feature.test_strength));
-    cells.push(recordCell(feature));
-    cells.push(rollup.re_verify_pending
-      ? '<span class="mono" style="color:var(--state-warn)">'
-        + rollup.re_verify_pending + ' pending</span>'
-      : '<span class="mono muted">—</span>');
+  cells.push('<span class="mono">' + (rollup.rules || 0) + '</span>');
+  cells.push(specStatusCell(feature));
+  cells.push(testsCell(feature));
+  cells.push(lastRun(feature));
+  if (level('strong')) {
+    cells.push(strength(rollup.test_strength == null
+      ? feature.test_strength : rollup.test_strength));
+    cells.push(ratio(rollup.strong || 0, rollup.rules || 0));
   }
-  if (hasApprovals()) {
-    cells.push('<span class="mono">' + (feature.approvals || []).length
-      + '</span>');
-  }
+  if (level('signed')) { cells.push(signedCell(feature)); }
   var row = '<div class="tr" data-act="feature" data-feature="'
     + esc(feature.name) + '">' + cells.map(function (cell) {
       return '<div>' + cell + '</div>';
@@ -112,24 +113,26 @@ function featureRow(feature, columns) {
       + esc(feature.name) + '" data-rule="' + esc(rule.id) + '">'
       + '<span class="rid">' + esc(rule.id) + '</span>'
       + '<span class="rt">' + esc(rule.text) + '</span>'
-      + tag(rule.origin + ' · ' + rule.risk, true) + pill(rule.state)
-      + '</div>';
+      + '<span class="rp">' + GATE_LEVELS.map(function (name) {
+        var cell = cellOf(rule, name);
+        return cell ? pill(cell.word) : '';
+      }).join('') + '</span></div>';
   }).join('');
 }
 
 function groupBand(name, features, columns) {
   var open = VIEW.groups[name] !== false;
-  var proved = 0;
+  var met = 0;
   var total = 0;
   features.forEach(function (feature) {
-    proved += (feature.rollup || {}).proved || 0;
+    met += (feature.rollup || {}).met || 0;
     total += (feature.rollup || {}).rules || 0;
   });
   return '<div class="group" data-act="group" data-group="' + esc(name) + '">'
     + '<span class="caret">' + (open ? '▼' : '▶') + '</span>'
     + '<span class="gt">' + esc(name) + '</span>'
     + '<span class="muted">(' + features.length + ')</span>'
-    + coverage(proved, total) + '</div>'
+    + ratio(met, total) + '</div>'
     + (open ? features.map(function (feature) {
       return featureRow(feature, columns);
     }).join('') : '');
@@ -147,17 +150,12 @@ function renderBoard() {
     if (!groups[name]) { groups[name] = []; order.push(name); }
     groups[name].push(feature);
   });
-  var rollup = DATA.project_rollup || {};
+  var summary = DATA.summary || {};
   var head = '<section class="ledger"><h1 class="line">'
-    + '<b>' + (rollup.rules || 0) + '</b> rules across <b>'
-    + (rollup.features || 0) + '</b> specs'
-    + '<span class="sep">·</span>lowest state <b>'
-    + esc(rollup.lowest_state || 'Drafted') + '</b>'
-    + '<span class="sep">·</span><b>' + (rollup.failing || 0) + '</b> failing'
-    + '<span class="sep">·</span><b>' + (rollup.stale || 0) + '</b> stale'
-    + '<span class="sep">·</span><b>' + (rollup.needs_review || 0)
-    + '</b> on the review list</h1></section><section>' + statStrip()
-    + '</section>';
+    + '<b>' + (summary.met || 0) + '</b> of <b>' + (summary.rules || 0)
+    + '</b> rules meet the gate <b>' + esc(gateName()) + '</b>'
+    + '<span class="sep">·</span><b>' + (summary.failing || 0)
+    + '</b> failing</h1></section><section>' + statStrip() + '</section>';
   var table = order.length
     ? '<div class="tbl" style="--cols:' + columns.map(function (c) {
         /* minmax(0, ...) sizes every track from the widths alone. A bare fr
@@ -170,7 +168,6 @@ function renderBoard() {
         return groupBand(name, groups[name], columns);
       }).join('') + '</div>'
     : '<div class="panel empty">No rule matches every filter you set.</div>';
-  return head + (hasRisks() ? riskGrid() : '')
-    + '<section><p class="eyebrow">Specs</p>' + filtersMarkup() + table
-    + '</section>';
+  return head + '<section><p class="eyebrow">Specs</p>' + filtersMarkup()
+    + table + '</section>';
 }

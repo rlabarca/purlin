@@ -74,10 +74,6 @@ PENDING_REWRITE = (
     "dev/test_e2e_required_rules.sh", "dev/test_e2e_anchor_authority.sh",
     "dev/test_e2e_external_refs.sh", "dev/test_e2e_feature_scoped_overwrite.sh",
     "specs/init/scaffold.md", "specs/init/update.md",
-    # lane 4: dashboard
-    "scripts/report/src/", "scripts/report/purlin-report.html",
-    "dev/capture_doc_screenshots.py", "dev/test_purlin_report.py",
-    "dev/test_purlin_report_board_layout.py", "specs/dashboard/purlin_report.md",
     # lane 5A: skills and agent
     "skills/approve/", "skills/verify/", "skills/review/", "skills/sign/", "skills/audit/",
     "skills/status/", "skills/init/", "skills/find/", "skills/test/", "skills/spec/",

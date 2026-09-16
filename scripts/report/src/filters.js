@@ -1,28 +1,21 @@
-/* The five filters the board offers. Each one answers a question a person
-   arrives with, and they compose: a rule shows when every active filter
-   accepts it, and a feature shows when one of its rules does. */
+/* The filters the board offers. Each one answers a question a person arrives
+   with, and they compose: a rule shows when every set filter accepts it, and
+   a spec shows when one of its rules does. A filter that asks about a level
+   the gate does not reach is not offered at all. */
 
 var FILTERS = [
-  {id: 'high-open', label: 'High risk not approved',
-   test: function (rule) {
-     return rule.risk === 'high' && rule.state !== 'Approved';
-   }},
-  {id: 'stale', label: 'Stale',
-   test: function (rule) { return rule.state === 'Stale'; }},
-  {id: 'no-negative', label: 'No negative case',
-   test: function (rule) {
-     return findingsOf(rule).indexOf('happy_path_only') >= 0;
-   }},
-  {id: 'low-strength', label: 'Low test strength',
-   test: function (rule, feature) {
-     return feature.test_strength != null
-       && feature.test_strength < minStrength();
-   }},
-  {id: 'open', label: 'Open items',
+  {id: 'untested', label: 'Untested', level: 'passed',
+   test: function (rule) { return rule.bucket === 'untested'; }},
+  {id: 'failing', label: 'Failing', level: 'passed',
+   test: function (rule) { return rule.bucket === 'failing'; }},
+  {id: 'weak', label: 'Weak', level: 'strong',
+   test: function (rule) { return cellWord(rule, 'strong') === 'weak'; }},
+  {id: 'unsigned', label: 'Unsigned', level: 'signed',
+   test: function (rule) { return cellWord(rule, 'signed') === 'unsigned'; }},
+  {id: 'stale-or-held', label: 'Stale or held', level: 'signed',
    test: function (rule) {
      var flags = rule.flags || {};
-     return rule.state === 'Drafted' || rule.state === 'Stale'
-       || !!flags.needs_ai_review || !!flags.re_verify_pending;
+     return !!flags.stale || !!flags.held;
    }}
 ];
 
@@ -37,15 +30,15 @@ function findingsOf(rule) {
   return found;
 }
 
-function minStrength() {
-  return (DATA.gate && DATA.gate.min_strength) || 0;
+function offeredFilters() {
+  return FILTERS.filter(function (f) { return level(f.level); });
 }
 
 function activeFilters() {
-  return FILTERS.filter(function (f) { return VIEW.filters[f.id]; });
+  return offeredFilters().filter(function (f) { return VIEW.filters[f.id]; });
 }
 
-/* The rules of one feature that every active filter accepts. */
+/* The rules of one feature that every set filter accepts. */
 function visibleRules(feature) {
   var active = activeFilters();
   if (!active.length) { return feature.rules || []; }
@@ -55,7 +48,7 @@ function visibleRules(feature) {
 }
 
 function filtersMarkup() {
-  return '<div class="filters">' + FILTERS.map(function (f) {
+  return '<div class="filters">' + offeredFilters().map(function (f) {
     return '<button class="chip" data-act="filter" data-filter="' + f.id
       + '" aria-pressed="' + (VIEW.filters[f.id] ? 'true' : 'false') + '">'
       + esc(f.label) + '</button>';

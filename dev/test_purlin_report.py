@@ -6,10 +6,10 @@ gradient, no emoji, no request to anything outside the file. The second opens
 it in a headless browser over `file://` with a fixture payload beside it, one
 fixture per process, and reads what a person would see.
 
-The fixtures under `dev/fixtures/report/` are payloads at schema 4, one for
-each of the three processes: solo at the `tested` gate with nothing recorded,
-team at `recorded`, regulated at `approved` with approvals, a stale rule and a
-design anchor.
+The fixtures under `dev/fixtures/report/` are payloads at schema 5, one for
+each of the three processes: solo at the `passed` gate with no record at all,
+team at `strong` with strength and one unsettled review, regulated at `signed`
+with signatures, a stale rule, a held rule and a design anchor.
 
     python3 -m pytest dev/test_purlin_report.py -q
 """
@@ -122,25 +122,35 @@ def feature_names(page):
     return texts(page, '.tr .name .n')
 
 
+def head_labels(page):
+    """The spec table's column headings, in the order they are drawn."""
+    return texts(page, '.th > div')
+
+
+# How many tiles the strip carries at each gate: three buckets always, the
+# strong bucket at `strong`, the signed bucket at `signed`.
+TILES = {'solo': 3, 'team': 4, 'regulated': 5}
+
+
 def rule_ids(page):
     return texts(page, '.rule .rid')
 
 
 def review_cells(page):
-    """Each review row as its five cells: feature, id, text, state, reason."""
+    """Each review row as its six cells: feature, id, text, risk, word, why."""
     return page.eval_on_selector_all(
         '.rev',
         'els => els.map(e => Array.from(e.children)'
         '.map(c => c.textContent.trim()))')
 
 
-# The latest record cell of every spec row, found by the heading rather than
-# by a fixed position, so the columns a payload does not carry cannot shift
-# the read onto another cell.
+# The last run cell of every spec row, found by the heading rather than by a
+# fixed position, so the columns a payload does not carry cannot shift the
+# read onto another cell.
 RECORD_CELLS = """els => {
   const head = Array.from(document.querySelectorAll('.th > div'))
     .map(d => d.textContent.trim().toLowerCase());
-  const at = head.indexOf('latest record');
+  const at = head.indexOf('last run');
   return els.map(e => {
     const cell = e.children[at];
     return {
@@ -159,7 +169,7 @@ RECORD_CELLS = """els => {
 
 
 def record_cells(page):
-    """The latest record cell of each spec row, keyed by the spec name."""
+    """The last run cell of each spec row, keyed by the spec name."""
     return {row['name']: row
             for row in page.eval_on_selector_all('.tr', RECORD_CELLS)}
 
@@ -226,11 +236,13 @@ def test_affordances_are_unicode_glyphs_not_an_icon_set(page_text):
 @pytest.mark.proof("purlin_report", "PROOF-7", "RULE-7", tier="e2e")
 def test_the_board_renders_for_each_process(browser, tmp_path, process):
     payload = payload_named(process)
+    summary = payload['summary']
     page = open_board(browser, tmp_path, payload)
     heading = page.inner_text('h1')
-    assert str(payload['project_rollup']['rules']) in heading
-    assert str(payload['project_rollup']['features']) in heading
-    assert len(page.query_selector_all('.tile')) == 7
+    assert '%d of %d rules meet the gate %s' % (
+        summary['met'], summary['rules'], payload['gate']['gate']) in heading
+    assert '%d failing' % summary['failing'] in heading
+    assert len(page.query_selector_all('.tile')) == TILES[process]
     assert 'gate: ' + payload['gate']['gate'] in page.inner_text('.topbar')
     assert 'Data:' in page.inner_text('.topbar')
     assert set(feature_names(page)) == set(
@@ -238,33 +250,30 @@ def test_the_board_renders_for_each_process(browser, tmp_path, process):
     page.close()
 
 
+BASE_COLUMNS = ['Spec', 'Rules', 'Spec status', 'Tests', 'Last run']
+
+
 @pytest.mark.proof("purlin_report", "PROOF-9", "RULE-9", tier="e2e")
-def test_columns_appear_only_where_their_artifacts_do(browser, tmp_path):
-    """A project that has never recorded shows no record column."""
+def test_the_columns_scale_with_the_gate(browser, tmp_path):
+    """A gate asks for what it asks for, and the board asks no more."""
     solo = open_board(browser, tmp_path / 'solo', payload_named('solo'))
-    head = solo.inner_text('.th')
-    assert 'LATEST RECORD' not in head
-    assert 'APPROVALS' not in head
-    assert 'RISK' not in head
+    assert head_labels(solo) == BASE_COLUMNS
     assert solo.query_selector_all('table.grid') == []
     solo.close()
 
     team = open_board(browser, tmp_path / 'team', payload_named('team'))
-    head = team.inner_text('.th')
-    assert 'LATEST RECORD' in head and 'STRENGTH' in head
-    assert 'RE-VERIFY' in head and 'RISK' in head
-    assert 'APPROVALS' not in head
-    assert len(team.query_selector_all('table.grid')) == 1
+    assert head_labels(team) == BASE_COLUMNS + ['Strength', 'Strong']
     team.close()
 
     reg = open_board(browser, tmp_path / 'reg', payload_named('regulated'))
-    assert 'APPROVALS' in reg.inner_text('.th')
+    assert head_labels(reg) == BASE_COLUMNS + ['Strength', 'Strong', 'Signed']
+    assert 'Risk' not in head_labels(reg)
     reg.close()
 
 
 @pytest.mark.proof("purlin_report", "PROOF-32", "RULE-31", tier="e2e")
-def test_the_record_column_says_what_each_operating_system_found(browser,
-                                                                 tmp_path):
+def test_the_last_run_column_says_what_each_operating_system_found(browser,
+                                                                   tmp_path):
     """A record's existence is not its result, and two jobs disagree.
 
     The newest record alone read `ci linux` whether that run passed every
@@ -325,7 +334,7 @@ def test_both_themes_render_through_the_tokens(browser, tmp_path, process):
     light_ink = page.evaluate('getComputedStyle(document.body).color')
     assert light != dark and light_ink != dark_ink
     assert page.get_attribute('#brand-mark', 'src') != dark_logo
-    assert len(page.query_selector_all('.tile')) == 7
+    assert len(page.query_selector_all('.tile')) == TILES[process]
 
     page.click('[data-act="theme"]')
     assert page.get_attribute('html', 'data-theme') == 'dark'
@@ -356,18 +365,32 @@ def test_the_board_sits_on_the_brand_navy(browser, tmp_path, page_text):
     page.close()
 
 
+BUCKETS = ('untested', 'failing', 'passed', 'strong', 'signed')
+
+
 @pytest.mark.proof("purlin_report", "PROOF-8", "RULE-8", tier="e2e")
-def test_the_seven_states_each_have_a_tile(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    labels = texts(page, '.tile-l')
-    assert labels == ['Drafted', 'Proof ready', 'Tested', 'Recorded',
-                      'Reviewed', 'Approved', 'Stale']
-    assert page.eval_on_selector(
+def test_the_tiles_scale_with_the_gate(browser, tmp_path):
+    solo = open_board(browser, tmp_path / 'solo', payload_named('solo'))
+    assert texts(solo, '.tile-l') == ['Untested', 'Failing', 'Passed']
+    assert solo.query_selector_all('.flag') == []
+    assert solo.eval_on_selector(
         '.tile-l', 'el => getComputedStyle(el).textTransform') == 'uppercase'
-    counts = payload_named('regulated')['states']
-    values = texts(page, '.tile-v')
-    assert values[6] == str(counts['Stale'])
-    assert values[5] == str(counts['Approved'])
+    solo.close()
+
+    team = open_board(browser, tmp_path / 'team', payload_named('team'))
+    assert texts(team, '.tile-l') == ['Untested', 'Failing', 'Passed',
+                                      'Strong']
+    assert team.query_selector_all('.flag') == []
+    team.close()
+
+    payload = payload_named('regulated')
+    page = open_board(browser, tmp_path / 'reg', payload)
+    assert texts(page, '.tile-l') == ['Untested', 'Failing', 'Passed',
+                                      'Strong', 'Signed']
+    assert texts(page, '.tile-v') == [str(payload['summary'][name])
+                                      for name in BUCKETS]
+    assert texts(page, '.flag-l') == ['Stale']
+    assert texts(page, '.flag-v') == [str(payload['summary']['stale'])]
     page.close()
 
 
@@ -377,7 +400,7 @@ def test_a_feature_row_expands_to_its_rules(browser, tmp_path):
     assert rule_ids(page) == []
     page.click('[data-act="feature"][data-feature="login"]')
     assert rule_ids(page) == ['RULE-1', 'RULE-2', 'RULE-3', 'RULE-4']
-    assert 'APPROVED' in page.inner_text('.rule')
+    assert 'SIGNED' in page.inner_text('.rule')
     page.click('[data-act="feature"][data-feature="login"]')
     assert rule_ids(page) == []
     page.close()
@@ -395,12 +418,11 @@ def test_a_design_anchor_row_shows_its_thumbnail(browser, tmp_path):
 
 
 FILTER_CASES = [
-    ('high-open', ['login'], ['RULE-4']),
-    ('stale', ['login'], ['RULE-2']),
-    ('no-negative', ['login', 'invoice'], ['RULE-3']),
-    ('low-strength', ['invoice'], []),
-    ('open', ['login', 'invoice'],
-     ['RULE-1', 'RULE-2', 'RULE-3', 'RULE-4']),
+    ('untested', ['login', 'export'], ['RULE-4']),
+    ('failing', [], []),
+    ('weak', ['login', 'invoice', 'export'], ['RULE-4']),
+    ('unsigned', ['login', 'checkout_design', 'export'], ['RULE-4']),
+    ('stale-or-held', ['login'], ['RULE-2', 'RULE-3']),
 ]
 
 
@@ -422,14 +444,31 @@ def test_each_filter_narrows_the_board(browser, tmp_path, filter_id,
 @pytest.mark.proof("purlin_report", "PROOF-14", "RULE-14", tier="e2e")
 def test_filters_compose_and_clear(browser, tmp_path):
     page = open_board(browser, tmp_path, payload_named('regulated'))
-    page.click('[data-filter="stale"]')
-    page.click('[data-filter="low-strength"]')
+    page.click('[data-filter="stale-or-held"]')
+    page.click('[data-filter="untested"]')
     assert feature_names(page) == []
     assert 'No rule matches every filter you set.' in page.inner_text('.empty')
-    page.click('[data-filter="stale"]')
-    page.click('[data-filter="low-strength"]')
-    assert len(feature_names(page)) == 3
+    page.click('[data-filter="stale-or-held"]')
+    page.click('[data-filter="untested"]')
+    assert len(feature_names(page)) == 4
     page.close()
+
+
+@pytest.mark.proof("purlin_report", "PROOF-35", "RULE-13", tier="e2e")
+def test_a_filter_above_the_gate_is_not_offered(browser, tmp_path):
+    """A project at `passed` is never asked about strength or signatures."""
+    solo = open_board(browser, tmp_path / 'solo', payload_named('solo'))
+    assert texts(solo, '.chip') == ['Untested', 'Failing']
+    solo.close()
+
+    team = open_board(browser, tmp_path / 'team', payload_named('team'))
+    assert texts(team, '.chip') == ['Untested', 'Failing', 'Weak']
+    team.close()
+
+    reg = open_board(browser, tmp_path / 'reg', payload_named('regulated'))
+    assert texts(reg, '.chip') == ['Untested', 'Failing', 'Weak', 'Unsigned',
+                                   'Stale or held']
+    reg.close()
 
 
 @pytest.mark.proof("purlin_report", "PROOF-15", "RULE-15", tier="e2e")
@@ -442,17 +481,16 @@ def test_the_rule_screen_shows_proof_test_and_evidence(browser, tmp_path):
     assert 'A person signs in with an email address and a password.' in body
     assert 'PROOF-1' in body
     assert 'tests/test_login.py :: test_sign_in' in body
-    assert 'APPROVED' in body
-    assert '86%' in body
-    assert 'Its risk is high, so a person looks before it can be approved.' \
-        in body
-    assert 'risk high' not in body
+    assert 'PASSED' in body and 'STRONG' in body and 'SIGNED' in body
+    assert 'Test strength 86%, against a minimum of 80%.' in body
+    assert 'The model review settled the question.' in body
     page.click('[data-act="close"]')
     page.click('.rule[data-rule="RULE-3"]')
-    review = page.inner_text('.wrap')
-    assert 'PROOF-3' in review
+    held = page.inner_text('.wrap')
+    assert 'PROOF-3' in held
+    assert 'held by sam@acme.com: the lock expiry is never read' in held
     assert 'No proof of this rule names a rejection, an error or a boundary.' \
-        in review
+        in held
     page.close()
 
 
@@ -492,52 +530,84 @@ def test_a_rule_waiting_on_an_operating_system_says_so(browser, tmp_path):
 @pytest.mark.proof("purlin_report", "PROOF-18", "RULE-18", tier="e2e")
 def test_the_review_list_is_ordered_by_risk(browser, tmp_path):
     page = open_board(browser, tmp_path, payload_named('regulated'))
-    assert 'Review list (4)' in page.inner_text('.tabs')
+    assert 'Review list (3)' in page.inner_text('.tabs')
     page.click('[data-screen="review"]')
-    assert '4 rules need a look' in page.inner_text('h1')
-    assert texts(page, '.group .gt') == ['high risk', 'medium risk',
-                                         'low risk']
-    assert texts(page, '.group .muted') == ['(2)', '(1)', '(1)']
-    rows = texts(page, '.rev')
-    assert len(rows) == 4
-    first = review_cells(page)[0]
-    assert first[0] == 'login'
-    assert first[1] == 'RULE-1'
-    assert first[2] == 'A person signs in with an email address and a password.'
-    assert first[3] == 'APPROVED'
-    page.click('.rev')
-    assert 'RULE-1' in page.inner_text('h1')
-    page.close()
-
-
-@pytest.mark.proof("purlin_report", "PROOF-31", "RULE-30", tier="e2e")
-def test_a_row_whose_only_reason_is_its_risk_states_none(browser, tmp_path):
-    """The group header already said `high risk`; the row adds nothing."""
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    page.click('[data-screen="review"]')
-    assert review_cells(page)[0][4] == ''
-    assert page.query_selector_all('.rev .tag') == []
-    page.close()
-
-
-@pytest.mark.proof("purlin_report", "PROOF-31", "RULE-30", tier="e2e")
-def test_a_row_states_every_reason_the_group_does_not(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('regulated'))
-    page.click('[data-screen="review"]')
+    assert '3 rules need a person' in page.inner_text('h1')
+    assert texts(page, '.group .gt') == ['medium risk', 'low risk']
+    assert texts(page, '.group .muted') == ['(2)', '(1)']
     cells = review_cells(page)
-    reasons = {(row[0], row[1]): row[4] for row in cells}
-    assert reasons[('login', 'RULE-4')] == 'windows: no record yet'
-    assert reasons[('login', 'RULE-2')] == 'stale'
-    assert reasons[('invoice', 'RULE-2')] == (
-        'strength 64% under 80%; no negative case')
+    assert len(cells) == 3
+    # Stale first inside the medium group, whatever order the payload holds.
+    assert [(row[0], row[1]) for row in cells] == [
+        ('login', 'RULE-2'), ('checkout_design', 'RULE-1'),
+        ('login', 'RULE-3')]
+    assert cells[0][2] == (
+        'Five failed attempts lock the account for fifteen minutes.')
+    assert cells[0][3] == 'medium'
+    assert cells[0][4] == 'STALE'
+    page.click('.rev')
+    assert 'RULE-2' in page.inner_text('h1')
+    page.close()
+
+
+@pytest.mark.proof("purlin_report", "PROOF-36", "RULE-18", tier="e2e")
+def test_the_review_list_counts_what_each_risk_is_waiting_for(browser,
+                                                              tmp_path):
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    page.click('[data-screen="review"]')
+    lines = texts(page, '.rsum')
+    assert lines == ['medium0 unsigned·1 stale·0 held·1 needs a person',
+                     'low0 unsigned·0 stale·1 held·0 needs a person']
+    page.close()
+
+
+@pytest.mark.proof("purlin_report", "PROOF-37", "RULE-18", tier="e2e")
+def test_the_review_list_is_absent_under_the_passed_gate(browser, tmp_path):
+    """Nothing asks a person under `passed`, so nothing offers the tab."""
+    page = open_board(browser, tmp_path, payload_named('solo'))
+    assert texts(page, '.tabs button') == ['Board']
+    page.close()
+
+
+@pytest.mark.proof("purlin_report", "PROOF-31", "RULE-30", tier="e2e")
+def test_a_review_row_states_the_blocking_cell_and_its_reasons(browser,
+                                                               tmp_path):
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    page.click('[data-screen="review"]')
+    rows = {(row[0], row[1]): row for row in review_cells(page)}
+    assert rows[('login', 'RULE-2')][5] == 'hashes changed after the signature'
+    assert rows[('checkout_design', 'RULE-1')][4] == 'NEEDS A PERSON'
+    assert rows[('checkout_design', 'RULE-1')][5] == 'review not settled'
+    assert rows[('login', 'RULE-3')][5] == (
+        'held by sam@acme.com: the lock expiry is never read')
+    page.close()
+
+
+@pytest.mark.proof("purlin_report", "PROOF-38", "RULE-30", tier="e2e")
+def test_a_row_with_no_reason_of_its_own_reads_its_why_as_a_sentence(
+        browser, tmp_path):
+    """The payload's token is a word; a person reads a sentence."""
+    payload = payload_named('regulated')
+    for feature in payload['features']:
+        for rule in feature['rules']:
+            if feature['name'] == 'login' and rule['id'] == 'RULE-2':
+                rule['cells']['signed']['reasons'] = []
+    page = open_board(browser, tmp_path, payload)
+    page.click('[data-screen="review"]')
+    rows = {(row[0], row[1]): row for row in review_cells(page)}
+    assert rows[('login', 'RULE-2')][5] == (
+        'Its signature no longer matches the rule, proof and test it was '
+        'written against.')
     page.close()
 
 
 @pytest.mark.proof("purlin_report", "PROOF-19", "RULE-19", tier="e2e")
 def test_an_empty_review_list_says_what_puts_a_rule_on_it(browser, tmp_path):
-    page = open_board(browser, tmp_path, payload_named('solo'))
+    payload = payload_named('team')
+    payload['review_list'] = []
+    page = open_board(browser, tmp_path, payload)
     page.click('[data-screen="review"]')
-    assert 'Nothing is waiting for a look' in page.inner_text('.empty')
+    assert 'No rule is waiting for a person' in page.inner_text('.empty')
     page.close()
 
 
@@ -579,10 +649,10 @@ def test_the_working_tree_notice_only_shows_on_the_board(browser, tmp_path):
 @pytest.mark.proof("purlin_report", "PROOF-24", "RULE-24", tier="e2e")
 def test_the_open_rule_is_the_last_tab(browser, tmp_path):
     page = open_board(browser, tmp_path, payload_named('regulated'))
-    assert texts(page, '.tabs button') == ['Board', 'Review list (4)']
+    assert texts(page, '.tabs button') == ['Board', 'Review list (3)']
     page.click('[data-act="feature"][data-feature="login"]')
     page.click('.rule[data-rule="RULE-1"]')
-    assert texts(page, '.tabs button') == ['Board', 'Review list (4)',
+    assert texts(page, '.tabs button') == ['Board', 'Review list (3)',
                                            'login RULE-1']
     page.click('.tabs button:last-child')
     assert 'RULE-1' in page.inner_text('h1')
@@ -598,35 +668,48 @@ def test_the_link_back_closes_the_rule_where_it_was_opened(browser, tmp_path):
     page.click('.rev')
     assert page.inner_text('[data-act="close"]') == u'\u2190 Review list'
     page.click('[data-act="close"]')
-    assert '4 rules need a look' in page.inner_text('h1')
-    assert texts(page, '.tabs button') == ['Board', 'Review list (4)']
+    assert '3 rules need a person' in page.inner_text('h1')
+    assert texts(page, '.tabs button') == ['Board', 'Review list (3)']
 
     page.click('[data-screen="board"]')
     page.click('[data-act="feature"][data-feature="login"]')
     page.click('.rule[data-rule="RULE-1"]')
     assert page.inner_text('[data-act="close"]') == u'\u2190 Board'
     page.click('[data-act="close"]')
-    assert len(feature_names(page)) == 3
+    assert len(feature_names(page)) == 4
     page.close()
 
 
 @pytest.mark.proof("purlin_report", "PROOF-26", "RULE-26", tier="e2e")
-def test_the_rule_screen_names_the_approve_command(browser, tmp_path):
+def test_the_rule_screen_names_the_sign_command(browser, tmp_path):
     """The page cannot sign a commit, so it names the command that does."""
     page = open_board(browser, tmp_path, payload_named('regulated'))
     page.click('[data-act="feature"][data-feature="login"]')
     page.click('.rule[data-rule="RULE-2"]')
     body = page.inner_text('.wrap')
-    assert 'purlin:approve login RULE-2' in body
-    assert 'signed commit by someone on the approver list' in body
+    assert 'purlin:sign login RULE-2' in body
+    assert 'signed commit by someone on the signer list' in body
     assert 'courier' in page.eval_on_selector(
         '.cmd', 'el => getComputedStyle(el).fontFamily').lower()
 
     page.click('[data-act="close"]')
     page.click('.rule[data-rule="RULE-1"]')
-    approved = page.inner_text('.wrap')
-    assert 'Approved by jane-doe' in approved
-    assert 'purlin:approve' not in approved
+    signed = page.inner_text('.wrap')
+    assert 'Signed by jane@acme.com' in signed
+    assert 'purlin:sign' not in signed
+    page.close()
+
+
+@pytest.mark.proof("purlin_report", "PROOF-39", "RULE-26", tier="e2e")
+def test_the_sign_panel_is_absent_below_the_signed_gate(browser, tmp_path):
+    """Under `strong` no signature is read, so none is asked for."""
+    page = open_board(browser, tmp_path, payload_named('team'))
+    page.click('[data-act="feature"][data-feature="login"]')
+    page.click('.rule[data-rule="RULE-1"]')
+    body = page.inner_text('.wrap')
+    assert 'purlin:sign' not in body
+    assert 'Brief' in body
+    assert 'could not settle' in body
     page.close()
 
 

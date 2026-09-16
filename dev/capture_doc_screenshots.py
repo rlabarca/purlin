@@ -7,11 +7,11 @@ and shows one project's names to every reader.
 
     python3 dev/build_report.py && python3 dev/capture_doc_screenshots.py
 
-    dashboard-solo.png         the board at the tested gate, nothing recorded
-    dashboard-team.png         the board at recorded, with records and risk
-    dashboard-regulated.png    the board at approved, with approvals
-    dashboard-rule.png         one rule, its proof, its test, its evidence
-    dashboard-review-list.png  what CI put in front of a person
+    dashboard-solo.png         the board at the passed gate, three tiles
+    dashboard-team.png         the board at strong, with strength and briefs
+    dashboard-regulated.png    the board at signed, with signatures and flags
+    dashboard-rule.png         one rule, its cells, its brief, its proofs
+    dashboard-review-list.png  the rules whose next step is a person
 
 Each is the dark theme at 1440 wide, captured at 2x so the type stays crisp.
 Uses dev/browser_launch.py, so it drives an installed Google Chrome when the

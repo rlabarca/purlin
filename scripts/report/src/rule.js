@@ -1,5 +1,5 @@
-/* The Rule screen: one rule, the proofs that stand for it, the tests that run
-   them, and the evidence that has accumulated. */
+/* The Rule screen: one rule, the spec status and the cells the gate reaches,
+   the brief the machine wrote, and the proofs that stand for it. */
 
 var FINDING_LABELS = {
   'no_expected_value': 'no expected value',
@@ -36,95 +36,101 @@ function ruleInView() {
   return found ? {feature: feature, rule: found} : null;
 }
 
-function reviewReasons(featureName, ruleId) {
-  var reasons = [];
-  (DATA.review_list || []).forEach(function (entry) {
-    if (entry.feature === featureName && entry.rule === ruleId) {
-      reasons = entry.reasons || (entry.reason ? [entry.reason] : []);
-    }
-  });
-  return reasons;
+/* One row per cell the gate reaches: the word it reads, then the reasons it
+   carries, each already a sentence fragment the payload wrote. */
+function cellRow(rule, name) {
+  var cell = cellOf(rule, name);
+  if (!cell) { return ''; }
+  var reasons = (cell.reasons || []).join('; ');
+  return '<dt>' + esc(CELL_LABELS[name]) + '</dt><dd>' + pill(cell.word)
+    + (reasons ? ' <span class="sec">' + esc(reasons) + '</span>' : '')
+    + '</dd>';
 }
 
-/* Why a person has to look, in words rather than in the payload's shorthand.
-   A reason this page does not recognise is still read out, so a new one added
-   upstream reaches the reader unchanged. */
-function reviewReasonSentence(reason) {
-  var risk = /^risk (high|medium|low)$/.exec(reason || '');
-  if (risk) {
-    return 'Its risk is ' + risk[1]
-      + ', so a person looks before it can be approved.';
-  }
-  if (reason === 'stale') {
-    return 'Its approval is stale, so a person looks at it again before it '
-      + 'counts.';
-  }
-  return 'It is on the review list because ' + reason + '.';
-}
-
-/* Why it is listed, then one sentence per finding naming the proofs that
-   carry it. A finding the checks raise against the rule as a whole lands on
-   every proof, so grouping by finding states it once. */
-function reviewPanel(rule, reasons) {
-  var lines = [];
+/* The findings the free checks raised, grouped by finding and named against
+   the proofs that carry them: a finding raised on the rule as a whole lands
+   on every proof, so grouping states it once. A finding the strong cell
+   carries without a proof beside it is still read out. */
+function findingLines(rule, cell) {
   var order = [];
   var ids = {};
-  (reasons || []).forEach(function (reason) {
-    /* A free check is named below against the proofs that carry it, so the
-       reason list does not say it a second time without them. */
-    if (FINDING_TEXT[reason]) { return; }
-    lines.push('<p class="sec">' + esc(reviewReasonSentence(reason)) + '</p>');
-  });
   (rule.proofs || []).forEach(function (proof) {
     (proof.findings || []).forEach(function (name) {
       if (!ids[name]) { ids[name] = []; order.push(name); }
       if (ids[name].indexOf(proof.id) < 0) { ids[name].push(proof.id); }
     });
   });
-  order.forEach(function (name) {
-    lines.push('<p class="sec"><span class="mono">' + esc(ids[name].join(', '))
-      + '</span>: ' + esc(findingText(name)) + '</p>');
+  ((cell && cell.findings) || []).forEach(function (name) {
+    if (!ids[name]) { ids[name] = []; order.push(name); }
   });
-  if (!lines.length) {
-    lines.push('<p class="sec">This rule is not on the review list, and the '
-      + 'free checks found nothing to raise.</p>');
-  }
-  return '<div class="panel"><h2>Review</h2>' + lines.join('') + '</div>';
+  return order.map(function (name) {
+    var where = ids[name].length
+      ? '<span class="mono">' + esc(ids[name].join(', ')) + '</span>: ' : '';
+    return '<p class="sec">' + where + esc(findingText(name)) + '</p>';
+  });
 }
 
-/* The approval files that bind this rule. One is named
-   <RULE-N>.<hash8>.<approver>.json, so the third part names who. */
-function approvalsFor(feature, rule) {
-  return (feature.approvals || []).filter(function (path) {
+/* What the audit found, and nothing about what to do with it: the strength
+   beside the minimum this gate asks for, the free checks, what the model
+   review observed, and whether it could settle the question. */
+function briefPanel(feature, rule) {
+  var cell = cellOf(rule, 'strong');
+  if (!cell) { return ''; }
+  var lines = [];
+  lines.push('<p class="sec">' + (cell.strength == null
+    ? 'Test strength is n/a: nothing measured it.'
+    : esc('Test strength ' + Math.round(cell.strength) + '%, against a '
+        + 'minimum of ' + minStrength() + '%.')) + '</p>');
+  findingLines(rule, cell).forEach(function (line) { lines.push(line); });
+  (cell.observations || []).forEach(function (text) {
+    lines.push('<p class="sec">' + esc(text) + '</p>');
+  });
+  if (cell.settled === true) {
+    lines.push('<p class="sec">The model review settled the question.</p>');
+  } else if (cell.settled === false) {
+    lines.push('<p class="sec">The model review could not settle the '
+      + 'question, so a person states what they see.</p>');
+  }
+  if (cell.brief) {
+    lines.push('<p class="sec">' + hostLink(cell.brief, cell.brief) + '</p>');
+  }
+  return '<div class="panel"><h2>Brief</h2>' + lines.join('') + '</div>';
+}
+
+/* The signature files that bind this rule. One is named
+   <RULE-N>.<hash8>.<signer-slug>.json, so the third part names who. */
+function signaturesFor(feature, rule) {
+  return (feature.signatures || []).filter(function (path) {
     return path.split('/').pop().indexOf(rule.id + '.') === 0;
   });
 }
 
-function approverOf(path) {
+function signerOf(path) {
   var parts = path.split('/').pop().split('.');
-  var slug = parts.length > 2 ? parts[2] : '';
-  return slug === 'ci' ? 'CI' : slug;
+  return parts.length > 2 ? parts[2] : '';
 }
 
-/* An approval is a signed commit, so this page cannot make one: it names the
-   command that does, and reads back the approvals already on the branch. */
-function approvePanel(feature, rule) {
-  var approvals = approvalsFor(feature, rule);
-  if (rule.state === 'Approved' && approvals.length) {
-    var who = approvals.map(approverOf).filter(function (name) {
-      return !!name;
-    }).join(', ');
-    return '<div class="panel"><h2>Approved</h2><p class="sec">'
-      + esc('Approved by ' + (who || 'someone on the approver list')
+/* A signature is a signed commit, so this page cannot write one: it names the
+   command that does, and reads back the signatures already on the branch. */
+function signPanel(feature, rule) {
+  var cell = cellOf(rule, 'signed');
+  if (!cell) { return ''; }
+  if (cell.word === 'signed') {
+    var who = cell.signer || (cell.path ? signerOf(cell.path) : '');
+    return '<div class="panel"><h2>Signed</h2><p class="sec">'
+      + esc('Signed by ' + (who || 'someone on the signer list')
         + ' against the rule, proof and test text this screen shows. The '
-        + 'approval file beside the spec carries the commit that signed it.')
+        + 'signature file beside the spec carries the commit that signed it.')
       + '</p></div>';
   }
-  return '<div class="panel"><h2>To approve</h2>'
-    + '<p><span class="cmd">purlin:approve ' + esc(feature.name) + ' '
+  return '<div class="panel"><h2>To sign</h2>'
+    + '<p><span class="cmd">purlin:sign ' + esc(feature.name) + ' '
     + esc(rule.id) + '</span> <span class="sec">from Claude Code</span></p>'
-    + '<p class="sec">An approval is a signed commit by someone on the '
-    + 'approver list; the page shows it once it is on the branch.</p></div>';
+    + '<p class="sec">' + (cell.word === 'not required'
+      ? 'No signature is required at this rule’s risk; one written '
+        + 'anyway still counts.'
+      : 'A signature is a signed commit by someone on the signer list; the '
+        + 'page shows it once it is on the branch.') + '</p></div>';
 }
 
 function proofPanel(proof) {
@@ -146,7 +152,7 @@ function proofPanel(proof) {
 /* The link back closes the rule rather than leaving it open behind another
    screen, and it returns to the screen the rule was opened from. */
 function backLink() {
-  var from = VIEW.from === 'review' ? 'review' : 'board';
+  var from = VIEW.from === 'review' && level('strong') ? 'review' : 'board';
   return '<button class="btn" data-act="close" data-screen="' + from + '">'
     + (from === 'review' ? '← Review list' : '← Board') + '</button>';
 }
@@ -159,35 +165,24 @@ function renderRule() {
   }
   var feature = found.feature;
   var rule = found.rule;
-  var record = feature.latest_record;
-  var reasons = reviewReasons(feature.name, rule.id);
-  var rows = [
-    ['State', pill(rule.state)],
-    ['Risk', riskTag(rule.risk)],
-    ['Origin', tag(rule.origin, true)],
-    ['Spec', hostLink(feature.spec_path, feature.spec_path)]
-  ];
+  var rows = ['<dt>Spec status</dt><dd>' + pill(rule.spec || 'drafted')
+    + '</dd>'];
+  GATE_LEVELS.forEach(function (name) { rows.push(cellRow(rule, name)); });
+  if (level('strong')) {
+    rows.push('<dt>Risk</dt><dd>' + riskTag(rule.risk) + '</dd>');
+  }
+  rows.push('<dt>Origin</dt><dd>' + tag(rule.origin, true) + '</dd>');
   if (rule.criterion) {
-    rows.splice(3, 0, ['Criterion', tag(rule.criterion, true)]);
+    rows.push('<dt>Criterion</dt><dd>' + tag(rule.criterion, true) + '</dd>');
   }
-  if (feature.test_strength != null || record) {
-    rows.push(['Test strength', strength(feature.test_strength)]);
-    rows.push(['Latest record', recordLine(feature)]);
-  }
-  var approvals = approvalsFor(feature, rule);
-  if (approvals.length) {
-    rows.push(['Approvals', approvals.map(function (path) {
+  rows.push('<dt>Spec</dt><dd>'
+    + hostLink(feature.spec_path, feature.spec_path) + '</dd>');
+  rows.push('<dt>Last run</dt><dd>' + recordLine(feature) + '</dd>');
+  var signatures = level('signed') ? signaturesFor(feature, rule) : [];
+  if (signatures.length) {
+    rows.push('<dt>Signatures</dt><dd>' + signatures.map(function (path) {
       return hostLink(path, path.split('/').pop());
-    }).join('<br>')]);
-  }
-  if ((rule.missing_env || []).length) {
-    rows.push(['Waiting on', '<span class="mono" '
-      + 'style="color:var(--state-warn)">'
-      + esc(rule.missing_env.join(', ')) + ': no record yet</span>']);
-  }
-  if ((rule.flags || {}).re_verify_pending) {
-    rows.push(['Re-verify', '<span class="mono" '
-      + 'style="color:var(--state-warn)">pending</span>']);
+    }).join('<br>') + '</dd>');
   }
   return backLink()
     + '<section style="margin-top:var(--space-6)">'
@@ -195,11 +190,8 @@ function renderRule() {
     + '<h1>' + esc(rule.id) + '</h1>'
     + '<p class="sec">' + esc(rule.text) + '</p></section>'
     + '<section class="stack"><div class="panel"><dl class="kv">'
-    + rows.map(function (row) {
-      return '<dt>' + esc(row[0]) + '</dt><dd>' + row[1] + '</dd>';
-    }).join('') + '</dl></div>'
-    + reviewPanel(rule, reasons)
-    + approvePanel(feature, rule) + '</section>'
+    + rows.join('') + '</dl></div>'
+    + briefPanel(feature, rule) + signPanel(feature, rule) + '</section>'
     + '<section><p class="eyebrow">Proofs</p><div class="stack">'
     + ((rule.proofs || []).length
       ? rule.proofs.map(proofPanel).join('')

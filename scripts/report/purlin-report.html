@@ -244,27 +244,20 @@ h2{font-size:var(--ui-lg);font-weight:var(--weight-bold);margin:0 0 var(--space-
 .pill.solid{background:currentColor}
 .pill b{font-weight:var(--weight-bold)}
 .pill.solid b{color:var(--canvas-deep)}
-.cov{display:inline-flex;align-items:center;gap:var(--space-4)}
-.cov b{font-family:var(--font-mono);font-size:var(--ui-sm);font-weight:var(--weight-regular);color:var(--text-primary)}
+.cov{display:inline-flex;align-items:center;gap:var(--space-4);max-width:100%;min-width:0}
+.cov b{font-family:var(--font-mono);font-size:var(--ui-sm);font-weight:var(--weight-regular);color:var(--text-primary);white-space:nowrap}
 .cov i{width:96px;height:5px;background:var(--border-hairline);border-radius:var(--radius-pill);overflow:hidden;display:inline-block}
 .cov i>span{display:block;height:100%;background:currentColor;transition:width var(--duration-slow) var(--ease-out)}
 .thumb{display:block;width:60px;height:38px;object-fit:cover;border:1px solid var(--border-hairline);border-radius:var(--radius-sm)}
 pre.code{margin:0;font-family:var(--font-mono);font-size:var(--ui-sm);line-height:1.55;color:var(--text-primary);padding:var(--space-5);background:var(--surface-sunken);border:1px solid var(--border-default);border-radius:var(--radius-sm);overflow-x:auto;white-space:pre-wrap}
-.strip{display:grid;grid-template-columns:7fr 1fr;gap:var(--space-4)}
-.tiles{display:grid;grid-template-columns:repeat(7,1fr);gap:var(--space-4)}
-.failing{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-md);text-align:center;padding:var(--space-6) var(--space-3);color:var(--state-idle)}
-.failing.on{border-color:var(--state-fail);color:var(--state-fail)}
-.failing-v{font-size:var(--ui-metric);font-weight:var(--weight-bold);line-height:1}
-.failing-l{margin-top:var(--space-3);font-size:var(--ui-xs);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}
-.tile{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-md);text-align:center;padding:var(--space-6) var(--space-3)}
-.tile-v{font-size:var(--ui-metric);font-weight:var(--weight-bold);line-height:1}
-.tile-l{margin-top:var(--space-3);font-size:var(--ui-xs);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}
-table.grid{border-collapse:collapse;width:100%}
-.grid th,.grid td{padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-hairline);text-align:right;font-size:var(--ui-base)}
-.grid th:first-child,.grid td:first-child{text-align:left}
-.grid th{font-size:var(--ui-xs);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-muted);font-weight:var(--weight-regular)}
-.grid td.n{font-family:var(--font-mono);color:var(--text-primary)}
-.grid td.n.zero{color:var(--text-muted)}
+.strip{display:grid;grid-template-columns:1fr;gap:var(--space-4)}
+.strip.flagged{grid-template-columns:5fr 1fr}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:var(--space-4)}
+.tile,.flag{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-md);text-align:center;padding:var(--space-6) var(--space-3)}
+.tile-v,.flag-v{font-size:var(--ui-metric);font-weight:var(--weight-bold);line-height:1}
+.tile-l,.flag-l{margin-top:var(--space-3);font-size:var(--ui-xs);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}
+.flag{color:var(--state-idle)}
+.flag.on{border-color:var(--state-fail);color:var(--state-fail)}
 .filters{display:flex;flex-wrap:wrap;gap:var(--space-3);margin-bottom:var(--space-5)}
 .chip{font-size:var(--ui-sm);padding:5px 14px;border-radius:var(--radius-pill);border:1.5px solid var(--border-default);background:transparent;color:var(--text-secondary);cursor:pointer;transition:background var(--duration-fast) var(--ease-standard),color var(--duration-fast) var(--ease-standard)}
 .chip:hover{background:var(--hover-tint)}
@@ -273,6 +266,11 @@ table.grid{border-collapse:collapse;width:100%}
 .th,.tr{display:grid;grid-template-columns:var(--cols);gap:var(--space-4);align-items:center;padding:var(--space-4) var(--space-6);border-bottom:1px solid var(--border-hairline)}
 .th>div,.tr>div{min-width:0}
 .tr>div .cov{max-width:100%}
+.trio{display:inline-flex;align-items:center;gap:var(--space-2);font-family:var(--font-mono);font-size:var(--ui-sm);white-space:nowrap}
+.trio b{font-weight:var(--weight-regular)}
+.trio i,.rsum i{color:var(--text-muted);font-style:normal}
+.run{display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-2) var(--space-3);min-width:0}
+.run .mono{font-size:var(--ui-sm);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tr>div .cov i{flex:0 1 96px;min-width:24px}
 .th{font-size:var(--ui-xs);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-muted)}
 .tr{cursor:pointer;transition:background var(--duration-fast) var(--ease-standard)}
@@ -283,10 +281,11 @@ table.grid{border-collapse:collapse;width:100%}
 .caret{color:var(--text-muted);font-size:10px;flex:none}
 .name{display:inline-flex;align-items:center;gap:var(--space-4);min-width:0}
 .name .n{font-size:var(--ui-base);color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rule{display:grid;grid-template-columns:96px 1fr auto auto;gap:var(--space-4);align-items:start;padding:var(--space-3) var(--space-6) var(--space-3) var(--space-12);border-bottom:1px solid var(--border-hairline);background:var(--surface-sunken);cursor:pointer;font-size:var(--ui-sm)}
+.rule{display:grid;grid-template-columns:96px 1fr auto;gap:var(--space-4);align-items:start;padding:var(--space-3) var(--space-6) var(--space-3) var(--space-12);border-bottom:1px solid var(--border-hairline);background:var(--surface-sunken);cursor:pointer;font-size:var(--ui-sm)}
 .rule:hover{background:var(--hover-tint)}
 .rule .rid{font-family:var(--font-mono);color:var(--text-primary)}
 .rule .rt{color:var(--text-secondary)}
+.rule .rp{display:inline-flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;justify-content:flex-end}
 .right{text-align:right}
 .empty{padding:var(--space-12);text-align:center;color:var(--text-secondary);font-size:var(--ui-lg)}
 .kv{display:grid;grid-template-columns:170px 1fr;gap:var(--space-3) var(--space-6);margin:0;font-size:var(--ui-base)}
@@ -297,9 +296,11 @@ table.grid{border-collapse:collapse;width:100%}
 .cmd{font-family:var(--font-mono);font-size:var(--ui-base);color:var(--text-secondary);white-space:nowrap}
 .panel p{margin:0 0 var(--space-3)}
 .panel p:last-child{margin-bottom:0}
-.rev{display:grid;grid-template-columns:0.8fr 0.5fr 2.2fr 0.7fr 1.6fr;gap:var(--space-4);align-items:center;padding:var(--space-4) var(--space-6);border-bottom:1px solid var(--border-hairline);cursor:pointer}
+.rev{display:grid;grid-template-columns:0.8fr 0.5fr 2.2fr 0.5fr 1fr 1.8fr;gap:var(--space-4);align-items:center;padding:var(--space-4) var(--space-6);border-bottom:1px solid var(--border-hairline);cursor:pointer}
 .rev:hover{background:var(--hover-tint)}
-.rev>.pill{justify-self:start}
+.rev>.pill,.rev>.tag{justify-self:start}
+.rsum{display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-3);font-size:var(--ui-base)}
+.rsum b{font-family:var(--font-mono);font-weight:var(--weight-bold);color:var(--text-primary)}
 </style>
 </head>
 <body>
@@ -334,26 +335,18 @@ function themeButton() {
     + '" aria-label="' + next + '">\u25d0</button>';
 }
 var FILTERS = [
-  {id: 'high-open', label: 'High risk not approved',
-   test: function (rule) {
-     return rule.risk === 'high' && rule.state !== 'Approved';
-   }},
-  {id: 'stale', label: 'Stale',
-   test: function (rule) { return rule.state === 'Stale'; }},
-  {id: 'no-negative', label: 'No negative case',
-   test: function (rule) {
-     return findingsOf(rule).indexOf('happy_path_only') >= 0;
-   }},
-  {id: 'low-strength', label: 'Low test strength',
-   test: function (rule, feature) {
-     return feature.test_strength != null
-       && feature.test_strength < minStrength();
-   }},
-  {id: 'open', label: 'Open items',
+  {id: 'untested', label: 'Untested', level: 'passed',
+   test: function (rule) { return rule.bucket === 'untested'; }},
+  {id: 'failing', label: 'Failing', level: 'passed',
+   test: function (rule) { return rule.bucket === 'failing'; }},
+  {id: 'weak', label: 'Weak', level: 'strong',
+   test: function (rule) { return cellWord(rule, 'strong') === 'weak'; }},
+  {id: 'unsigned', label: 'Unsigned', level: 'signed',
+   test: function (rule) { return cellWord(rule, 'signed') === 'unsigned'; }},
+  {id: 'stale-or-held', label: 'Stale or held', level: 'signed',
    test: function (rule) {
      var flags = rule.flags || {};
-     return rule.state === 'Drafted' || rule.state === 'Stale'
-       || !!flags.needs_ai_review || !!flags.re_verify_pending;
+     return !!flags.stale || !!flags.held;
    }}
 ];
 function findingsOf(rule) {
@@ -365,11 +358,11 @@ function findingsOf(rule) {
   });
   return found;
 }
-function minStrength() {
-  return (DATA.gate && DATA.gate.min_strength) || 0;
+function offeredFilters() {
+  return FILTERS.filter(function (f) { return level(f.level); });
 }
 function activeFilters() {
-  return FILTERS.filter(function (f) { return VIEW.filters[f.id]; });
+  return offeredFilters().filter(function (f) { return VIEW.filters[f.id]; });
 }
 function visibleRules(feature) {
   var active = activeFilters();
@@ -379,7 +372,7 @@ function visibleRules(feature) {
   });
 }
 function filtersMarkup() {
-  return '<div class="filters">' + FILTERS.map(function (f) {
+  return '<div class="filters">' + offeredFilters().map(function (f) {
     return '<button class="chip" data-act="filter" data-filter="' + f.id
       + '" aria-pressed="' + (VIEW.filters[f.id] ? 'true' : 'false') + '">'
       + esc(f.label) + '</button>';
@@ -391,67 +384,67 @@ function ownRules(feature) {
   });
 }
 function statStrip() {
-  var counts = DATA.states || {};
-  var failing = (DATA.project_rollup || {}).failing || 0;
-  return '<div class="strip"><div class="tiles">' + STATES.map(function (state) {
+  var summary = DATA.summary || {};
+  var shown = BUCKETS.filter(function (bucket) {
+    return bucket === 'untested' || bucket === 'failing' || level(bucket);
+  });
+  var tiles = shown.map(function (bucket) {
     return '<div class="tile"><div class="tile-v" style="color:var(--state-'
-      + tone(state) + ')">' + (counts[state] || 0) + '</div>'
-      + '<div class="tile-l">' + esc(state) + '</div></div>';
-  }).join('') + '</div><div class="failing' + (failing ? ' on' : '') + '">'
-    + '<div class="failing-v">' + failing + '</div>'
-    + '<div class="failing-l">Failing</div></div></div>';
-}
-function riskGrid() {
-  var table = {};
-  RISKS.forEach(function (risk) { table[risk] = {}; });
-  eachRule(function (rule, feature) {
-    if (rule.label !== 'own') { return; }
-    var risk = rule.risk || 'low';
-    if (!table[risk]) { table[risk] = {}; }
-    table[risk][rule.state] = (table[risk][rule.state] || 0) + 1;
-  });
-  var rows = RISKS.filter(function (risk) {
-    return Object.keys(table[risk]).length > 0;
-  });
-  var head = '<tr><th>Risk</th>' + STATES.map(function (state) {
-    return '<th>' + esc(state) + '</th>';
-  }).join('') + '<th>Rules</th></tr>';
-  var body = rows.map(function (risk) {
-    var total = 0;
-    var cells = STATES.map(function (state) {
-      var n = table[risk][state] || 0;
-      total += n;
-      return '<td class="n' + (n ? '' : ' zero') + '">' + n + '</td>';
-    }).join('');
-    return '<tr><td>' + riskTag(risk) + '</td>' + cells
-      + '<td class="n">' + total + '</td></tr>';
+      + bucketTone(bucket) + ')">' + (summary[bucket] || 0) + '</div>'
+      + '<div class="tile-l">' + esc(BUCKET_LABELS[bucket]) + '</div></div>';
   }).join('');
-  return '<section><p class="eyebrow">Risk by state</p>'
-    + '<div class="panel"><table class="grid">' + head + body
-    + '</table></div></section>';
+  var stale = summary.stale || 0;
+  var flag = level('signed')
+    ? '<div class="flag' + (stale ? ' on' : '') + '">'
+      + '<div class="flag-v">' + stale + '</div>'
+      + '<div class="flag-l">Stale</div></div>'
+    : '';
+  return '<div class="strip' + (flag ? ' flagged' : '') + '">'
+    + '<div class="tiles">' + tiles + '</div>' + flag + '</div>';
 }
 function boardColumns() {
-  var columns = [{label: 'Spec', width: '2.4fr'}];
-  if (hasRisks()) { columns.push({label: 'Risk', width: '0.7fr'}); }
-  columns.push({label: 'Coverage', width: '1.4fr'});
-  columns.push({label: 'State', width: '1.1fr'});
-  if (hasRecords()) {
-    columns.push({label: 'Strength', width: '0.8fr'});
-    columns.push({label: 'Latest record', width: '1.3fr'});
-    columns.push({label: 'Re-verify', width: '0.9fr'});
+  var columns = [{label: 'Spec', width: '2fr'},
+                 {label: 'Rules', width: '0.4fr'},
+                 {label: 'Spec status', width: '0.8fr'},
+                 {label: 'Tests', width: '0.9fr'},
+                 {label: 'Last run', width: '2.6fr'}];
+  if (level('strong')) {
+    columns.push({label: 'Strength', width: '0.6fr'});
+    columns.push({label: 'Strong', width: '1.2fr'});
   }
-  if (hasApprovals()) {
-    columns.push({label: 'Approvals', width: '0.9fr'});
+  if (level('signed')) {
+    columns.push({label: 'Signed', width: '1.1fr'});
   }
   return columns;
 }
-function highestRisk(feature) {
-  var found = 'low';
+function specStatusCell(feature) {
+  var ready = 0;
+  var drafted = 0;
   ownRules(feature).forEach(function (rule) {
-    var risk = rule.risk || 'low';
-    if (RISKS.indexOf(risk) < RISKS.indexOf(found)) { found = risk; }
+    if (rule.spec === 'drafted') { drafted += 1; } else { ready += 1; }
   });
-  return found;
+  return counts([[ready, 'ready', 'pass'], [drafted, 'drafted', 'idle']]);
+}
+function testsCell(feature) {
+  var passed = 0;
+  var failing = 0;
+  var none = 0;
+  ownRules(feature).forEach(function (rule) {
+    var word = cellWord(rule, 'passed');
+    if (word === 'passed') { passed += 1; }
+    else if (word === 'failed') { failing += 1; }
+    else if (word === 'no test') { none += 1; }
+  });
+  return counts([[passed, 'passed', 'pass'], [failing, 'failing', 'fail'],
+                 [none, 'no test', 'warn']]);
+}
+function signedCell(feature) {
+  var rollup = feature.rollup || {};
+  var stale = rollup.stale || 0;
+  return '<span class="trio"><b>' + (rollup.signed || 0) + ' of '
+    + (rollup.rules || 0) + '</b>'
+    + (stale ? '<i>·</i><b style="color:var(--state-fail)">' + stale
+        + ' stale</b>' : '') + '</span>';
 }
 function featureRow(feature, columns) {
   var rollup = feature.rollup || {};
@@ -459,21 +452,16 @@ function featureRow(feature, columns) {
   var cells = ['<span class="name"><span class="caret">'
     + (open ? '▼' : '▶') + '</span>' + designThumb(feature)
     + '<span class="n">' + esc(feature.name) + '</span></span>'];
-  if (hasRisks()) { cells.push(riskTag(highestRisk(feature))); }
-  cells.push(coverage(rollup.proved || 0, rollup.rules || 0));
-  cells.push(pill(rollup.lowest_state || 'Drafted'));
-  if (hasRecords()) {
-    cells.push(strength(feature.test_strength));
-    cells.push(recordCell(feature));
-    cells.push(rollup.re_verify_pending
-      ? '<span class="mono" style="color:var(--state-warn)">'
-        + rollup.re_verify_pending + ' pending</span>'
-      : '<span class="mono muted">—</span>');
+  cells.push('<span class="mono">' + (rollup.rules || 0) + '</span>');
+  cells.push(specStatusCell(feature));
+  cells.push(testsCell(feature));
+  cells.push(lastRun(feature));
+  if (level('strong')) {
+    cells.push(strength(rollup.test_strength == null
+      ? feature.test_strength : rollup.test_strength));
+    cells.push(ratio(rollup.strong || 0, rollup.rules || 0));
   }
-  if (hasApprovals()) {
-    cells.push('<span class="mono">' + (feature.approvals || []).length
-      + '</span>');
-  }
+  if (level('signed')) { cells.push(signedCell(feature)); }
   var row = '<div class="tr" data-act="feature" data-feature="'
     + esc(feature.name) + '">' + cells.map(function (cell) {
       return '<div>' + cell + '</div>';
@@ -484,23 +472,25 @@ function featureRow(feature, columns) {
       + esc(feature.name) + '" data-rule="' + esc(rule.id) + '">'
       + '<span class="rid">' + esc(rule.id) + '</span>'
       + '<span class="rt">' + esc(rule.text) + '</span>'
-      + tag(rule.origin + ' · ' + rule.risk, true) + pill(rule.state)
-      + '</div>';
+      + '<span class="rp">' + GATE_LEVELS.map(function (name) {
+        var cell = cellOf(rule, name);
+        return cell ? pill(cell.word) : '';
+      }).join('') + '</span></div>';
   }).join('');
 }
 function groupBand(name, features, columns) {
   var open = VIEW.groups[name] !== false;
-  var proved = 0;
+  var met = 0;
   var total = 0;
   features.forEach(function (feature) {
-    proved += (feature.rollup || {}).proved || 0;
+    met += (feature.rollup || {}).met || 0;
     total += (feature.rollup || {}).rules || 0;
   });
   return '<div class="group" data-act="group" data-group="' + esc(name) + '">'
     + '<span class="caret">' + (open ? '▼' : '▶') + '</span>'
     + '<span class="gt">' + esc(name) + '</span>'
     + '<span class="muted">(' + features.length + ')</span>'
-    + coverage(proved, total) + '</div>'
+    + ratio(met, total) + '</div>'
     + (open ? features.map(function (feature) {
       return featureRow(feature, columns);
     }).join('') : '');
@@ -517,17 +507,12 @@ function renderBoard() {
     if (!groups[name]) { groups[name] = []; order.push(name); }
     groups[name].push(feature);
   });
-  var rollup = DATA.project_rollup || {};
+  var summary = DATA.summary || {};
   var head = '<section class="ledger"><h1 class="line">'
-    + '<b>' + (rollup.rules || 0) + '</b> rules across <b>'
-    + (rollup.features || 0) + '</b> specs'
-    + '<span class="sep">·</span>lowest state <b>'
-    + esc(rollup.lowest_state || 'Drafted') + '</b>'
-    + '<span class="sep">·</span><b>' + (rollup.failing || 0) + '</b> failing'
-    + '<span class="sep">·</span><b>' + (rollup.stale || 0) + '</b> stale'
-    + '<span class="sep">·</span><b>' + (rollup.needs_review || 0)
-    + '</b> on the review list</h1></section><section>' + statStrip()
-    + '</section>';
+    + '<b>' + (summary.met || 0) + '</b> of <b>' + (summary.rules || 0)
+    + '</b> rules meet the gate <b>' + esc(gateName()) + '</b>'
+    + '<span class="sep">·</span><b>' + (summary.failing || 0)
+    + '</b> failing</h1></section><section>' + statStrip() + '</section>';
   var table = order.length
     ? '<div class="tbl" style="--cols:' + columns.map(function (c) {
         return 'minmax(0,' + c.width + ')';
@@ -537,9 +522,8 @@ function renderBoard() {
         return groupBand(name, groups[name], columns);
       }).join('') + '</div>'
     : '<div class="panel empty">No rule matches every filter you set.</div>';
-  return head + (hasRisks() ? riskGrid() : '')
-    + '<section><p class="eyebrow">Specs</p>' + filtersMarkup() + table
-    + '</section>';
+  return head + '<section><p class="eyebrow">Specs</p>' + filtersMarkup()
+    + table + '</section>';
 }
 var FINDING_LABELS = {
   'no_expected_value': 'no expected value',
@@ -568,78 +552,83 @@ function ruleInView() {
   });
   return found ? {feature: feature, rule: found} : null;
 }
-function reviewReasons(featureName, ruleId) {
-  var reasons = [];
-  (DATA.review_list || []).forEach(function (entry) {
-    if (entry.feature === featureName && entry.rule === ruleId) {
-      reasons = entry.reasons || (entry.reason ? [entry.reason] : []);
-    }
-  });
-  return reasons;
+function cellRow(rule, name) {
+  var cell = cellOf(rule, name);
+  if (!cell) { return ''; }
+  var reasons = (cell.reasons || []).join('; ');
+  return '<dt>' + esc(CELL_LABELS[name]) + '</dt><dd>' + pill(cell.word)
+    + (reasons ? ' <span class="sec">' + esc(reasons) + '</span>' : '')
+    + '</dd>';
 }
-function reviewReasonSentence(reason) {
-  var risk = /^risk (high|medium|low)$/.exec(reason || '');
-  if (risk) {
-    return 'Its risk is ' + risk[1]
-      + ', so a person looks before it can be approved.';
-  }
-  if (reason === 'stale') {
-    return 'Its approval is stale, so a person looks at it again before it '
-      + 'counts.';
-  }
-  return 'It is on the review list because ' + reason + '.';
-}
-function reviewPanel(rule, reasons) {
-  var lines = [];
+function findingLines(rule, cell) {
   var order = [];
   var ids = {};
-  (reasons || []).forEach(function (reason) {
-    if (FINDING_TEXT[reason]) { return; }
-    lines.push('<p class="sec">' + esc(reviewReasonSentence(reason)) + '</p>');
-  });
   (rule.proofs || []).forEach(function (proof) {
     (proof.findings || []).forEach(function (name) {
       if (!ids[name]) { ids[name] = []; order.push(name); }
       if (ids[name].indexOf(proof.id) < 0) { ids[name].push(proof.id); }
     });
   });
-  order.forEach(function (name) {
-    lines.push('<p class="sec"><span class="mono">' + esc(ids[name].join(', '))
-      + '</span>: ' + esc(findingText(name)) + '</p>');
+  ((cell && cell.findings) || []).forEach(function (name) {
+    if (!ids[name]) { ids[name] = []; order.push(name); }
   });
-  if (!lines.length) {
-    lines.push('<p class="sec">This rule is not on the review list, and the '
-      + 'free checks found nothing to raise.</p>');
-  }
-  return '<div class="panel"><h2>Review</h2>' + lines.join('') + '</div>';
+  return order.map(function (name) {
+    var where = ids[name].length
+      ? '<span class="mono">' + esc(ids[name].join(', ')) + '</span>: ' : '';
+    return '<p class="sec">' + where + esc(findingText(name)) + '</p>';
+  });
 }
-function approvalsFor(feature, rule) {
-  return (feature.approvals || []).filter(function (path) {
+function briefPanel(feature, rule) {
+  var cell = cellOf(rule, 'strong');
+  if (!cell) { return ''; }
+  var lines = [];
+  lines.push('<p class="sec">' + (cell.strength == null
+    ? 'Test strength is n/a: nothing measured it.'
+    : esc('Test strength ' + Math.round(cell.strength) + '%, against a '
+        + 'minimum of ' + minStrength() + '%.')) + '</p>');
+  findingLines(rule, cell).forEach(function (line) { lines.push(line); });
+  (cell.observations || []).forEach(function (text) {
+    lines.push('<p class="sec">' + esc(text) + '</p>');
+  });
+  if (cell.settled === true) {
+    lines.push('<p class="sec">The model review settled the question.</p>');
+  } else if (cell.settled === false) {
+    lines.push('<p class="sec">The model review could not settle the '
+      + 'question, so a person states what they see.</p>');
+  }
+  if (cell.brief) {
+    lines.push('<p class="sec">' + hostLink(cell.brief, cell.brief) + '</p>');
+  }
+  return '<div class="panel"><h2>Brief</h2>' + lines.join('') + '</div>';
+}
+function signaturesFor(feature, rule) {
+  return (feature.signatures || []).filter(function (path) {
     return path.split('/').pop().indexOf(rule.id + '.') === 0;
   });
 }
-function approverOf(path) {
+function signerOf(path) {
   var parts = path.split('/').pop().split('.');
-  var slug = parts.length > 2 ? parts[2] : '';
-  return slug === 'ci' ? 'CI' : slug;
+  return parts.length > 2 ? parts[2] : '';
 }
-function approvePanel(feature, rule) {
-  var approvals = approvalsFor(feature, rule);
-  if (rule.state === 'Approved' && approvals.length) {
-    var who = approvals.map(approverOf).filter(function (name) {
-      return !!name;
-    }).join(', ');
-    return '<div class="panel"><h2>Approved</h2><p class="sec">'
-      + esc('Approved by ' + (who || 'someone on the approver list')
+function signPanel(feature, rule) {
+  var cell = cellOf(rule, 'signed');
+  if (!cell) { return ''; }
+  if (cell.word === 'signed') {
+    var who = cell.signer || (cell.path ? signerOf(cell.path) : '');
+    return '<div class="panel"><h2>Signed</h2><p class="sec">'
+      + esc('Signed by ' + (who || 'someone on the signer list')
         + ' against the rule, proof and test text this screen shows. The '
-        + 'approval file beside the spec carries the commit that signed it.')
+        + 'signature file beside the spec carries the commit that signed it.')
       + '</p></div>';
   }
-  return '<div class="panel"><h2>To approve</h2>'
-    + '<p><span class="cmd">purlin:approve ' + esc(feature.name) + ' '
+  return '<div class="panel"><h2>To sign</h2>'
+    + '<p><span class="cmd">purlin:sign ' + esc(feature.name) + ' '
     + esc(rule.id) + '</span> <span class="sec">from Claude Code</span></p>'
-    + '<p class="sec">An approval is a signed commit by someone on the '
-    + 'approver list; the page shows it once it is on the branch.</p></div>';
+    + '<p class="sec">' + (cell.word === 'not required'
+      ? 'No signature is required at this rule’s risk; one written '
+        + 'anyway still counts.'
+      : 'A signature is a signed commit by someone on the signer list; the '
+        + 'page shows it once it is on the branch.') + '</p></div>';
 }
 function proofPanel(proof) {
   var tests = (proof.tests || []).map(function (test) {
@@ -657,7 +646,7 @@ function proofPanel(proof) {
     + '</dl></div>';
 }
 function backLink() {
-  var from = VIEW.from === 'review' ? 'review' : 'board';
+  var from = VIEW.from === 'review' && level('strong') ? 'review' : 'board';
   return '<button class="btn" data-act="close" data-screen="' + from + '">'
     + (from === 'review' ? '← Review list' : '← Board') + '</button>';
 }
@@ -669,35 +658,24 @@ function renderRule() {
   }
   var feature = found.feature;
   var rule = found.rule;
-  var record = feature.latest_record;
-  var reasons = reviewReasons(feature.name, rule.id);
-  var rows = [
-    ['State', pill(rule.state)],
-    ['Risk', riskTag(rule.risk)],
-    ['Origin', tag(rule.origin, true)],
-    ['Spec', hostLink(feature.spec_path, feature.spec_path)]
-  ];
+  var rows = ['<dt>Spec status</dt><dd>' + pill(rule.spec || 'drafted')
+    + '</dd>'];
+  GATE_LEVELS.forEach(function (name) { rows.push(cellRow(rule, name)); });
+  if (level('strong')) {
+    rows.push('<dt>Risk</dt><dd>' + riskTag(rule.risk) + '</dd>');
+  }
+  rows.push('<dt>Origin</dt><dd>' + tag(rule.origin, true) + '</dd>');
   if (rule.criterion) {
-    rows.splice(3, 0, ['Criterion', tag(rule.criterion, true)]);
+    rows.push('<dt>Criterion</dt><dd>' + tag(rule.criterion, true) + '</dd>');
   }
-  if (feature.test_strength != null || record) {
-    rows.push(['Test strength', strength(feature.test_strength)]);
-    rows.push(['Latest record', recordLine(feature)]);
-  }
-  var approvals = approvalsFor(feature, rule);
-  if (approvals.length) {
-    rows.push(['Approvals', approvals.map(function (path) {
+  rows.push('<dt>Spec</dt><dd>'
+    + hostLink(feature.spec_path, feature.spec_path) + '</dd>');
+  rows.push('<dt>Last run</dt><dd>' + recordLine(feature) + '</dd>');
+  var signatures = level('signed') ? signaturesFor(feature, rule) : [];
+  if (signatures.length) {
+    rows.push('<dt>Signatures</dt><dd>' + signatures.map(function (path) {
       return hostLink(path, path.split('/').pop());
-    }).join('<br>')]);
-  }
-  if ((rule.missing_env || []).length) {
-    rows.push(['Waiting on', '<span class="mono" '
-      + 'style="color:var(--state-warn)">'
-      + esc(rule.missing_env.join(', ')) + ': no record yet</span>']);
-  }
-  if ((rule.flags || {}).re_verify_pending) {
-    rows.push(['Re-verify', '<span class="mono" '
-      + 'style="color:var(--state-warn)">pending</span>']);
+    }).join('<br>') + '</dd>');
   }
   return backLink()
     + '<section style="margin-top:var(--space-6)">'
@@ -705,11 +683,8 @@ function renderRule() {
     + '<h1>' + esc(rule.id) + '</h1>'
     + '<p class="sec">' + esc(rule.text) + '</p></section>'
     + '<section class="stack"><div class="panel"><dl class="kv">'
-    + rows.map(function (row) {
-      return '<dt>' + esc(row[0]) + '</dt><dd>' + row[1] + '</dd>';
-    }).join('') + '</dl></div>'
-    + reviewPanel(rule, reasons)
-    + approvePanel(feature, rule) + '</section>'
+    + rows.join('') + '</dl></div>'
+    + briefPanel(feature, rule) + signPanel(feature, rule) + '</section>'
     + '<section><p class="eyebrow">Proofs</p><div class="stack">'
     + ((rule.proofs || []).length
       ? rule.proofs.map(proofPanel).join('')
@@ -717,6 +692,17 @@ function renderRule() {
     + '</div></section>';
 }
 var RULE_TEXT_MAX = 90;
+var WHY_SENTENCES = {
+  'unsigned': 'Nobody has signed it.',
+  'stale': 'Its signature no longer matches the rule, proof and test it was '
+    + 'written against.',
+  'held': 'A person holds it: the test does not prove the proof.',
+  'needs a person': 'The machine could not settle it.',
+  'manual': 'Its proof is @manual, so a person states what they saw.'
+};
+var WHY_COUNTS = [['unsigned', 'unsigned'], ['stale', 'stale'],
+                  ['held', 'held'], ['needs a person', 'needs a person'],
+                  ['manual', 'needs a person']];
 function shortText(text) {
   var value = String(text == null ? '' : text);
   if (value.length <= RULE_TEXT_MAX) { return value; }
@@ -732,37 +718,78 @@ function reviewRule(entry) {
   }
   return found;
 }
-function reviewRowReasons(entry) {
-  var reasons = [];
-  (entry.reasons || []).forEach(function (reason) {
-    if (/^risk (high|medium|low)$/.test(reason)) { return; }
-    reasons.push(findingLabel(reason));
-  });
-  return reasons;
+function whySentence(token) {
+  return WHY_SENTENCES[token] || 'It is on the review list because ' + token
+    + '.';
+}
+function reviewRowReasons(entry, rule) {
+  var cell = rule ? cellOf(rule, entry.cell) : null;
+  var reasons = (cell && cell.reasons) || [];
+  if (reasons.length) { return reasons.join('; '); }
+  return (entry.why || []).map(whySentence).join(' ');
 }
 function reviewRow(entry) {
   var rule = reviewRule(entry);
+  var cell = rule ? cellOf(rule, entry.cell) : null;
   return '<div class="rev" data-act="rule" data-feature="'
     + esc(entry.feature) + '" data-rule="' + esc(entry.rule) + '">'
     + '<span>' + esc(entry.feature) + '</span>'
     + '<span class="mono">' + esc(entry.rule) + '</span>'
     + '<span>' + esc(rule ? shortText(rule.text) : '') + '</span>'
-    + (rule ? pill(rule.state) : '<span></span>')
-    + '<span class="sec">' + esc(reviewRowReasons(entry).join('; '))
-    + '</span></div>';
+    + riskTag(entry.risk)
+    + (cell ? pill(cell.word) : '<span></span>')
+    + '<span class="sec">' + esc(reviewRowReasons(entry, rule)) + '</span>'
+    + '</div>';
+}
+function reviewOrder(entries) {
+  var first = [];
+  var rest = [];
+  entries.forEach(function (entry) {
+    var why = entry.why || [];
+    if (why.indexOf('stale') >= 0 || why.indexOf('held') >= 0) {
+      first.push(entry);
+    } else { rest.push(entry); }
+  });
+  return first.concat(rest);
+}
+function riskSummary(entries) {
+  var lines = RISKS.map(function (risk) {
+    var group = entries.filter(function (entry) {
+      return (entry.risk || 'low') === risk;
+    });
+    if (!group.length) { return ''; }
+    var totals = {};
+    group.forEach(function (entry) {
+      (entry.why || []).forEach(function (token) {
+        WHY_COUNTS.forEach(function (pair) {
+          if (pair[0] === token) {
+            totals[pair[1]] = (totals[pair[1]] || 0) + 1;
+          }
+        });
+      });
+    });
+    return '<p class="rsum">' + riskTag(risk)
+      + ['unsigned', 'stale', 'held', 'needs a person'].map(function (name) {
+        var n = totals[name] || 0;
+        return '<span class="' + (n ? 'sec' : 'muted') + '"><b>' + n
+          + '</b> ' + esc(name) + '</span>';
+      }).join('<i>·</i>') + '</p>';
+  }).join('');
+  return lines ? '<div class="panel">' + lines + '</div>' : '';
 }
 function renderReview() {
   var entries = DATA.review_list || [];
   if (!entries.length) {
     return '<section><p class="eyebrow">Review list</p>'
-      + '<div class="panel empty">Nothing is waiting for a look. CI adds a '
-      + 'rule here when its risk asks for one, when an approval goes stale, '
-      + 'or when the test strength falls below the minimum.</div></section>';
+      + '<div class="panel empty">No rule is waiting for a person. A rule '
+      + 'arrives here when the machine cannot settle it, when a signature '
+      + 'stops matching, when someone holds it, or when it is unsigned at or '
+      + 'above the risk this project signs from.</div></section>';
   }
   var head = '<section><p class="eyebrow">Review list</p><h1>'
-    + entries.length + ' rules need a look</h1>'
-    + '<p class="sec">Ordered by risk. Open a rule to read its proof, then '
-    + 'approve it, add a case, or skip it.</p></section>';
+    + entries.length + (entries.length === 1 ? ' rule needs' : ' rules need')
+    + ' a person</h1>'
+    + riskSummary(entries) + '</section>';
   var body = RISKS.map(function (risk) {
     var group = entries.filter(function (entry) {
       return (entry.risk || 'low') === risk;
@@ -770,20 +797,26 @@ function renderReview() {
     if (!group.length) { return ''; }
     return '<div class="group"><span class="gt">' + esc(risk)
       + ' risk</span><span class="muted">(' + group.length + ')</span></div>'
-      + group.map(reviewRow).join('');
+      + reviewOrder(group).map(reviewRow).join('');
   }).join('');
   return head + '<section><div class="tbl">' + body + '</div></section>';
 }
 var DATA = null;
 var VIEW = {screen: 'board', feature: null, rule: null, from: 'board',
             features: {}, groups: {}, filters: {}};
-var SCHEMA = 4;
+var SCHEMA = 5;
 var REFRESH_AFTER = 60;
-var STATES = ['Drafted', 'Proof ready', 'Tested', 'Recorded', 'Reviewed',
-              'Approved', 'Stale'];
-var TONES = {'Drafted': 'idle', 'Proof ready': 'warn', 'Tested': 'warn',
-             'Recorded': 'neutral', 'Reviewed': 'neutral',
-             'Approved': 'pass', 'Stale': 'fail'};
+var GATE_LEVELS = ['passed', 'strong', 'signed'];
+var BUCKETS = ['untested', 'failing', 'passed', 'strong', 'signed'];
+var BUCKET_LABELS = {untested: 'Untested', failing: 'Failing',
+                     passed: 'Passed', strong: 'Strong', signed: 'Signed'};
+var CELL_TONES = {'ready': 'pass', 'drafted': 'idle',
+                  'passed': 'pass', 'failed': 'fail', 'no test': 'warn',
+                  'not run': 'warn', 'code changed': 'warn',
+                  'strong': 'pass', 'weak': 'warn', 'needs a person': 'warn',
+                  'signed': 'pass', 'unsigned': 'warn', 'stale': 'fail',
+                  'held': 'warn', 'not required': 'idle'};
+var CELL_LABELS = {passed: 'Passed', strong: 'Strong', signed: 'Signed'};
 var RISKS = ['high', 'medium', 'low'];
 function loadData(callback) {
   var frame = document.createElement('iframe');
@@ -810,38 +843,61 @@ function loadData(callback) {
   document.body.appendChild(frame);
   setTimeout(function () { finish(null); }, 3000);
 }
+function gateName() {
+  var gate = DATA && DATA.gate ? DATA.gate.gate : null;
+  return GATE_LEVELS.indexOf(gate) >= 0 ? gate : 'passed';
+}
+function level(name) {
+  return GATE_LEVELS.indexOf(gateName()) >= GATE_LEVELS.indexOf(name);
+}
+function minStrength() {
+  return (DATA.gate && DATA.gate.min_strength) || 0;
+}
 function esc(value) {
   return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
     return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;',
             "'": '&#39;'}[c];
   });
 }
-function tone(state) { return TONES[state] || 'idle'; }
-function pill(state) {
-  var solid = state === 'Approved' ? ' solid' : '';
+function tone(word) { return CELL_TONES[word] || 'idle'; }
+function pill(word) {
+  var solid = word === 'signed' ? ' solid' : '';
   return '<span class="pill' + solid + '" style="color:var(--state-'
-    + tone(state) + ')"><b>' + esc(String(state).toUpperCase())
+    + tone(word) + ')"><b>' + esc(String(word).toUpperCase())
     + '</b></span>';
+}
+function bucketTone(bucket) {
+  if (bucket === 'untested') { return 'idle'; }
+  if (bucket === 'failing') { return 'fail'; }
+  return bucket === gateName() ? 'pass' : 'warn';
 }
 function tag(text, plain) {
   return '<span class="tag' + (plain ? ' plain' : '') + '">' + esc(text)
     + '</span>';
 }
 function riskTag(risk) {
-  var level = risk === 'high' || risk === 'medium' ? risk : 'low';
-  return '<span class="tag risk-' + level + '">' + esc(risk || 'low')
+  var band = risk === 'high' || risk === 'medium' ? risk : 'low';
+  return '<span class="tag risk-' + band + '">' + esc(risk || 'low')
     + '</span>';
 }
-function coverage(covered, total) {
-  var pct = total ? Math.round((covered / total) * 100) : 0;
-  var hue = pct === 100 ? 'pass' : pct >= 60 ? 'warn' : 'fail';
+function ratio(count, total) {
+  var pct = total ? Math.round((count / total) * 100) : 0;
+  var hue = total && count === total ? 'pass' : count ? 'warn' : 'idle';
   return '<span class="cov" style="color:var(--state-' + hue + ')"><b>'
-    + covered + '/' + total + '</b><i><span style="width:' + pct
+    + count + ' of ' + total + '</b><i><span style="width:' + pct
     + '%"></span></i></span>';
+}
+function counts(items) {
+  return '<span class="trio" title="' + esc(items.map(function (item) {
+    return item[1];
+  }).join(' · ')) + '">' + items.map(function (item) {
+    return '<b style="color:var(--state-' + (item[0] ? item[2] : 'idle')
+      + ')">' + item[0] + '</b>';
+  }).join('<i>·</i>') + '</span>';
 }
 function strength(value) {
   if (value == null) { return '<span class="mono muted">n/a</span>'; }
-  var hue = value >= 80 ? 'pass' : value >= 50 ? 'warn' : 'fail';
+  var hue = value >= minStrength() ? 'pass' : 'fail';
   return '<span class="mono" style="color:var(--state-' + hue + ')">'
     + Math.round(value) + '%</span>';
 }
@@ -865,10 +921,10 @@ function osBox(os, short, record) {
     return '<span class="os none" title="' + esc(os) + ': no record">'
       + esc(short) + '</span>';
   }
-  var tone = record.result === 'fail' ? 'fail' : 'pass';
+  var hue = record.result === 'fail' ? 'fail' : 'pass';
   var who = record.label || 'local';
-  return '<span class="os ' + tone + '" title="' + esc(os + ': ' + who + ' '
-    + (tone === 'fail' ? 'failed' : 'passed') + ' at ' + (record.timestamp || '')
+  return '<span class="os ' + hue + '" title="' + esc(os + ': ' + who + ' '
+    + (hue === 'fail' ? 'failed' : 'passed') + ' at ' + (record.timestamp || '')
     + ' · ' + (record.path || '')) + '">' + esc(short) + '</span>';
 }
 function recordCell(feature) {
@@ -877,16 +933,42 @@ function recordCell(feature) {
     return osBox(pair[0], pair[1], byOs[pair[0]]);
   }).join('');
 }
+function sourceOf(feature) {
+  var found = null;
+  (feature.rules || []).forEach(function (rule) {
+    var cell = (rule.cells || {}).passed || {};
+    if (!found && cell.source) { found = cell.source; }
+  });
+  return found;
+}
+function lastRun(feature) {
+  var record = (feature.rollup || {}).latest_record || feature.latest_record;
+  var text;
+  if (record) {
+    text = '<span class="mono sec">' + esc((record.label || 'local') + ' · '
+      + ageText(record.timestamp).text) + '</span>';
+  } else if (sourceOf(feature)) {
+    text = '<span class="mono sec">' + esc(sourceOf(feature)) + '</span>';
+  } else {
+    text = '<span class="mono muted">—</span>';
+  }
+  return '<span class="run">' + recordCell(feature) + text + '</span>';
+}
 function recordLine(feature) {
   var byOs = newestByOs(feature);
-  var any = false;
-  var out = OS_BOXES.map(function (pair) {
-    var record = byOs[pair[0]];
-    if (record) { any = true; }
-    return osBox(pair[0], pair[1], record)
-      + (record ? ' ' + hostLink(record.path, record.timestamp || record.path) : '');
+  var record = (feature.rollup || {}).latest_record || feature.latest_record;
+  if (!record && !sourceOf(feature)) {
+    return '<span class="mono muted">—</span>';
+  }
+  var boxes = OS_BOXES.map(function (pair) {
+    var found = byOs[pair[0]];
+    return osBox(pair[0], pair[1], found)
+      + (found ? ' ' + hostLink(found.path, found.timestamp || found.path) : '');
   }).join(' ');
-  return any ? out : '<span class="mono muted">none</span>';
+  return boxes + ' ' + (record
+    ? hostLink(record.path, (record.label || 'local') + ' · '
+        + ageText(record.timestamp).text)
+    : '<span class="mono sec">' + esc(sourceOf(feature)) + '</span>');
 }
 function hostLink(path, text) {
   var base = webRemote();
@@ -933,20 +1015,12 @@ function eachRule(visit) {
     (feature.rules || []).forEach(function (rule) { visit(rule, feature); });
   });
 }
-function hasRisks() {
-  var tagged = false;
-  eachRule(function (rule) {
-    if ((rule.risk || 'low') !== 'low') { tagged = true; }
-  });
-  return tagged;
+function cellOf(rule, name) {
+  return (rule.cells || {})[name] || null;
 }
-function hasRecords() {
-  return (DATA.features || []).some(function (f) { return !!f.latest_record; });
-}
-function hasApprovals() {
-  return (DATA.features || []).some(function (f) {
-    return (f.approvals || []).length > 0;
-  });
+function cellWord(rule, name) {
+  var cell = cellOf(rule, name);
+  return cell ? cell.word : null;
 }
 function featureNamed(name) {
   var found = null;
@@ -979,9 +1053,11 @@ function topBar() {
 }
 function tabs() {
   var open = VIEW.screen;
-  var items = [
-    ['board', 'Board'],
-    ['review', 'Review list (' + (DATA.review_list || []).length + ')']];
+  var items = [['board', 'Board']];
+  if (level('strong')) {
+    items.push(['review',
+                'Review list (' + (DATA.review_list || []).length + ')']);
+  }
   if (VIEW.rule) { items.push(['rule', VIEW.feature + ' ' + VIEW.rule]); }
   return '<nav class="tabs">' + items.map(function (item) {
     return '<button data-act="nav" data-screen="' + item[0] + '"'
@@ -1016,6 +1092,7 @@ function render() {
         + '. Run purlin:status to write it again.') + '</div></div>';
     return;
   }
+  if (VIEW.screen === 'review' && !level('strong')) { VIEW.screen = 'board'; }
   var body = VIEW.screen === 'rule' ? renderRule()
     : VIEW.screen === 'review' ? renderReview()
     : notices() + renderBoard();
