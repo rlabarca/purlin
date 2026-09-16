@@ -16,7 +16,8 @@ returns a dict:
 
     {'state': 'Recorded',
      'flags': {'re_verify_pending': False, 'auto_approvable': True,
-               'held': False, 'needs_ai_review': False},
+               'held': False, 'needs_ai_review': False, 'failing': False,
+               'on_review_list': False},
      'missing_env': ['windows'],
      'reasons': ['windows: no record yet']}
 
@@ -103,7 +104,12 @@ def rule_state(inp, cfg):
     current = at_head or scope_matches
     re_verify_pending = bool(passes and standing and not current)
 
+    failing = _failing_where(proofs, records, inp.get('local_status') or {})
+    for where in failing:
+        reasons.append('failing: %s' % where)
+
     flags = {
+        'failing': bool(failing),
         're_verify_pending': re_verify_pending,
         'auto_approvable': (not current_holds
                             and _auto_approvable(inp, cfg, passes, proofs)),
@@ -136,6 +142,13 @@ def rule_state(inp, cfg):
 
 
 def _result(state, flags, missing_env, reasons):
+    # The review list is what still needs a person: a rule that needs a look
+    # and has no approval standing, or one whose approval went stale. Needing
+    # a model review is about the rule's risk and stays true once a person has
+    # approved it; being on the list does not.
+    flags = dict(flags)
+    flags['on_review_list'] = state != APPROVED and bool(
+        state == STALE or flags.get('needs_ai_review'))
     return {'state': state, 'flags': flags,
             'missing_env': list(missing_env), 'reasons': reasons}
 
@@ -153,6 +166,29 @@ def _brief_matches(brief, inp):
     expected = approvals_module.triple_hash(
         inp.get('rule_hash'), inp.get('proof_hash'), inp.get('test_hash'))
     return brief.get('triple_hash') == expected
+
+
+def _failing_where(proofs, records, local_status):
+    """Where a test backing the rule last failed: each record, then this checkout.
+
+    A state says how far a rule got, and a failing test only holds it lower, so
+    the failure itself is named here. A proof tagged `@env` is read only from
+    that operating system's record.
+    """
+    from purlin import records as records_module
+
+    where = []
+    for os_name in sorted(records or {}, key=lambda name: name or ''):
+        statuses = records_module.proof_statuses(records[os_name])
+        for proof in proofs or ():
+            if proof.get('env') and proof.get('env') != os_name:
+                continue
+            if statuses.get(proof.get('id')) == 'fail':
+                where.append('%s record' % (os_name or 'the'))
+                break
+    if any(local_status.get(proof.get('id')) == 'fail' for proof in proofs or ()):
+        where.append('this checkout')
+    return where
 
 
 def _record_verdict(proofs, records, head, scope_tree):
@@ -267,6 +303,7 @@ def feature_rollup(rule_results, latest_record=None, test_strength=None):
     by_risk = {}
     stale = 0
     pending = 0
+    failing = 0
     review_needed = 0
     missing_env = set()
     for result in rule_results.values():
@@ -280,7 +317,9 @@ def feature_rollup(rule_results, latest_record=None, test_strength=None):
         flags = result.get('flags') or {}
         if flags.get('re_verify_pending'):
             pending += 1
-        if flags.get('needs_ai_review'):
+        if flags.get('failing'):
+            failing += 1
+        if flags.get('on_review_list'):
             review_needed += 1
         missing_env.update(result.get('missing_env') or ())
     total = len(rule_results)
@@ -298,6 +337,7 @@ def feature_rollup(rule_results, latest_record=None, test_strength=None):
         'lowest_state': lowest or DRAFTED,
         'stale': stale,
         're_verify_pending': pending,
+        'failing': failing,
         'needs_review': review_needed,
         'by_risk': by_risk,
         'missing_env': sorted(missing_env),
@@ -312,11 +352,13 @@ def project_rollup(feature_rollups):
     rules = 0
     stale = 0
     pending = 0
+    failing = 0
     review_needed = 0
     for rollup in feature_rollups.values():
         rules += rollup.get('rules', 0)
         stale += rollup.get('stale', 0)
         pending += rollup.get('re_verify_pending', 0)
+        failing += rollup.get('failing', 0)
         review_needed += rollup.get('needs_review', 0)
         for state, count in (rollup.get('counts') or {}).items():
             counts[state] = counts.get(state, 0) + count
@@ -332,6 +374,7 @@ def project_rollup(feature_rollups):
         'lowest_state': lowest or DRAFTED,
         'stale': stale,
         're_verify_pending': pending,
+        'failing': failing,
         'needs_review': review_needed,
     }
 

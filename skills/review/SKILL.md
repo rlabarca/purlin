@@ -42,7 +42,8 @@ sync_status()
 | No negative case | Every proof for the rule asserts a success path |
 
 Rules with only `re-verify pending` are **not** on the list: the code changed, the approval
-stands, and CI clears it on the next run. Never ask a person to look at one.
+stands, and CI clears it on the next run. Never ask a person to look at one. A rule whose
+approval is current is not on the list either, whatever its risk, until that approval goes stale.
 
 ## Step 2: show the list before walking it
 

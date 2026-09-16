@@ -38,7 +38,8 @@ High risk first, then medium, then low; within a level, the oldest record first.
 `approved`, low risk is auto-approved by CI and appears only when auto-approval declined.
 
 A rule flagged `re-verify pending` is never on the list. Only the code changed, the approval
-stands, and CI clears it on the next run. Nobody is asked to look at one.
+stands, and CI clears it on the next run. Nobody is asked to look at one. A rule whose approval
+is current is off the list too, whatever its risk, until that approval goes stale.
 
 Arguments narrow the walk and never widen it: `purlin:review <feature>`,
 `purlin:review <feature> RULE-N`, `purlin:review --risk high`, `purlin:review --origin design`.
