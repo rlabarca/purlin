@@ -109,7 +109,7 @@ class Project(object):
         write(self.path('greeting.py'), SOURCE)
         done = subprocess.run(
             [sys.executable, SCAFFOLD, '--project-root', self.root,
-             '--gate', 'tested', '--yes'], capture_output=True, text=True,
+             '--gate', 'passed', '--yes'], capture_output=True, text=True,
             timeout=300, stdin=subprocess.DEVNULL)
         assert done.returncode == 0, done.stdout + done.stderr
         if specs:

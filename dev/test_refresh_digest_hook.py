@@ -81,9 +81,11 @@ def _write_proofs(tmp, proofs):
         json.dump({'tier': 'unit', 'proofs': proofs}, f)
 
 
-def _proved(digest):
+def _passing(digest):
+    """How many of the feature's rules have a passed cell that reads `passed`."""
     feature = next(f for f in digest['features'] if f['name'] == 'login')
-    return feature['rollup']['proved']
+    return sum(1 for rule in feature['rules']
+               if rule['cells']['passed']['word'] == 'passed')
 
 
 def _digest_path(tmp):
@@ -231,10 +233,10 @@ class TestDirtyCheck:
         assert open(digest, 'rb').read() == first_bytes
         assert os.stat(digest).st_mtime == stamp, '.purlin/runtime/ is not an input'
 
-        assert _proved(_read_digest(project)) == 1
+        assert _passing(_read_digest(project)) == 1
         _write_proofs(project, [_entry('PROOF-1', 'RULE-1'), _entry('PROOF-2', 'RULE-2')])
         _assert_silent_zero(_run(project), 'proof file newer')
-        assert _proved(_read_digest(project)) == 2, \
+        assert _passing(_read_digest(project)) == 2, \
             'a newer proof file must regenerate the digest'
 
         stamp = os.stat(digest).st_mtime
@@ -260,7 +262,7 @@ class TestDirtyCheck:
         time.sleep(0.01)
         _write_proofs(project, [_entry('PROOF-1', 'RULE-1')])
         _assert_silent_zero(_run(project), 'spec_dir in the config is ignored')
-        assert _proved(_read_digest(project)) == 1, \
+        assert _passing(_read_digest(project)) == 1, \
             "a stray spec_dir in the config redirected the dirty check"
         assert os.stat(digest).st_mtime > stamp
 
@@ -305,7 +307,7 @@ class TestRecheckAfterWriting:
         monkeypatch.setattr(purlin_srv, 'generate_digest', once)
         _main_in(project, module)
         assert len(calls) == 2, f'expected a second generation for the write that landed, got {len(calls)}'
-        assert _proved(_read_digest(project)) == 2
+        assert _passing(_read_digest(project)) == 2
         assert all(kw == {'generated_by': 'hook', 'network': False, 'only_if_changed': True}
                    for kw in calls), calls
 
@@ -378,7 +380,7 @@ class TestSkipConditions:
         assert os.path.isfile(_digest_path(project)), (
             'a project initialized from templates/config.json never refreshes '
             'its dashboard data')
-        assert _proved(_read_digest(project)) == 1
+        assert _passing(_read_digest(project)) == 1
 
 
 class TestGenerationContract:
