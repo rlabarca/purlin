@@ -87,6 +87,12 @@ left to a lane's judgment except wording.
     `Passing`, then `Strong` (strong cell met, signed rules included), then `Signed` and the
     `Stale` flag card. The group band reads `<name> · <n> specs · <passing> of <rules> pass`.
     The gate and the signed layer stay in their own columns. Lane 7A.
+25. **Nothing pushes on its own except `purlin:audit --remote`** (added 2026-09-17). A local
+    `purlin:audit --commit` commits the record and prints `Run: git push`; it never pushes.
+    `--remote` keeps its push, because the remote runner is the point of it. CI's record commit
+    through the git host's API stays: it is the remote runner writing its own evidence, not a
+    push from a person's machine. `purlin:sign` and `--tag` already push nothing. Lane 7B.
+
 
 
 ---
