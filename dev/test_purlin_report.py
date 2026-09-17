@@ -65,6 +65,21 @@ def payload_named(name):
     return json.loads(read(os.path.join(FIXTURES, name + '.json')))
 
 
+# The levels the board's tiles count, lowest first. A payload counts a rule
+# once, in the highest bucket it reached; a tile asks how many rules got at
+# least that far, so it adds that bucket to every bucket above it.
+LEVELS = ('passed', 'strong', 'signed')
+
+
+def reached(counted, name):
+    """How many rules a payload's counts put at this level or above it."""
+    key = 'passed' if name == 'passing' else name
+    if key not in LEVELS:
+        return counted.get(name, 0)
+    return sum(counted.get(above, 0)
+               for above in LEVELS[LEVELS.index(key):])
+
+
 @pytest.fixture(scope='module')
 def page_text():
     return build_page()
@@ -239,9 +254,13 @@ def test_the_board_renders_for_each_process(browser, tmp_path, process):
     summary = payload['summary']
     page = open_board(browser, tmp_path, payload)
     heading = page.inner_text('h1')
-    assert '%d of %d rules meet the gate %s' % (
-        summary['met'], summary['rules'], payload['gate']['gate']) in heading
+    assert '%d of %d rules pass their tests' % (
+        reached(summary, 'passing'), summary['rules']) in heading
     assert '%d failing' % summary['failing'] in heading
+    assert '%d untested' % summary['untested'] in heading
+    assert '%d of %d meet the gate %s' % (
+        summary['met'], summary['rules'],
+        payload['gate']['gate']) in page.inner_text('.ledger')
     assert len(page.query_selector_all('.tile')) == TILES[process]
     assert 'gate: ' + payload['gate']['gate'] in page.inner_text('.topbar')
     assert 'Data:' in page.inner_text('.topbar')
@@ -365,32 +384,82 @@ def test_the_board_sits_on_the_brand_navy(browser, tmp_path, page_text):
     page.close()
 
 
-BUCKETS = ('untested', 'failing', 'passed', 'strong', 'signed')
+BUCKETS = ('untested', 'failing', 'passing', 'strong', 'signed')
 
 
 @pytest.mark.proof("purlin_report", "PROOF-8", "RULE-8", tier="e2e")
 def test_the_tiles_scale_with_the_gate(browser, tmp_path):
     solo = open_board(browser, tmp_path / 'solo', payload_named('solo'))
-    assert texts(solo, '.tile-l') == ['Untested', 'Failing', 'Passed']
+    assert texts(solo, '.tile-l') == ['Untested', 'Failing', 'Passing']
     assert solo.query_selector_all('.flag') == []
     assert solo.eval_on_selector(
         '.tile-l', 'el => getComputedStyle(el).textTransform') == 'uppercase'
     solo.close()
 
     team = open_board(browser, tmp_path / 'team', payload_named('team'))
-    assert texts(team, '.tile-l') == ['Untested', 'Failing', 'Passed',
+    assert texts(team, '.tile-l') == ['Untested', 'Failing', 'Passing',
                                       'Strong']
     assert team.query_selector_all('.flag') == []
     team.close()
 
     payload = payload_named('regulated')
     page = open_board(browser, tmp_path / 'reg', payload)
-    assert texts(page, '.tile-l') == ['Untested', 'Failing', 'Passed',
+    assert texts(page, '.tile-l') == ['Untested', 'Failing', 'Passing',
                                       'Strong', 'Signed']
-    assert texts(page, '.tile-v') == [str(payload['summary'][name])
+    # The tiles are cumulative: the regulated fixture's one signed rule is
+    # counted again under `Strong` and again under `Passing`.
+    assert texts(page, '.tile-v') == [str(reached(payload['summary'], name))
                                       for name in BUCKETS]
+    assert texts(page, '.tile-v') == ['2', '0', '6', '2', '1']
     assert texts(page, '.flag-l') == ['Stale']
     assert texts(page, '.flag-v') == [str(payload['summary']['stale'])]
+    page.close()
+
+
+# Every count cell of every spec row, keyed by the spec name, as the text a
+# person reads rather than the markup under it.
+COUNT_CELLS = r"""els => {
+  const head = Array.from(document.querySelectorAll('.th > div'))
+    .map(d => d.textContent.trim());
+  return els.map(e => {
+    const at = name => e.children[head.indexOf(name)].innerText
+      .trim().replace(/\s+/g, ' ');
+    return {name: e.querySelector('.name .n').textContent.trim(),
+            spec: at('Spec status'), tests: at('Tests'),
+            signed: at('Signed')};
+  });
+}"""
+
+
+@pytest.mark.proof("purlin_report", "PROOF-40", "RULE-9", tier="e2e")
+def test_every_count_carries_the_word_it_counts(browser, tmp_path):
+    """`24 \u00b7 0 \u00b7 0` left the reader to work out which number was which."""
+    payload = payload_named('regulated')
+    payload['features'][0]['rules'][1]['cells']['passed']['word'] = 'failed'
+    page = open_board(browser, tmp_path / 'reg', payload)
+    cells = {row['name']: row
+             for row in page.eval_on_selector_all('.tr', COUNT_CELLS)}
+    # The first part is drawn even at zero, and a later part only above it.
+    assert cells['login']['tests'] == '2 passed \u00b7 1 failing'
+    assert cells['export']['tests'] == '0 passed'
+    assert cells['login']['spec'] == '4 ready'
+    assert cells['login']['signed'] == '1 of 4 \u00b7 1 stale'
+    assert cells['invoice']['signed'] == '0 of 2'
+    page.close()
+
+
+# The band over each category: its name, how many specs it holds, and how many
+# of their rules pass their tests.
+@pytest.mark.proof("purlin_report", "PROOF-43", "RULE-36", tier="e2e")
+def test_the_group_band_says_what_its_numbers_are(browser, tmp_path):
+    """`AUTH (1) 3 of 4` named neither number."""
+    page = open_board(browser, tmp_path, payload_named('regulated'))
+    bands = page.eval_on_selector_all(
+        '.group',
+        r'els => els.map(e => e.innerText.replace(/\s+/g, " ").trim())')
+    assert bands == ['\u25bc AUTH \u00b7 1 spec \u00b7 3 of 4 pass',
+                     '\u25bc BILLING \u00b7 2 specs \u00b7 2 of 3 pass',
+                     '\u25bc _ANCHORS \u00b7 1 spec \u00b7 1 of 1 pass']
     page.close()
 
 
