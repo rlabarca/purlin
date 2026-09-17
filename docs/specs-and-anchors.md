@@ -78,7 +78,7 @@ alone. Re-tagging a rule never stales a signature, so add a missing tag freely.
 
 | Tag | Values | Default | What it decides |
 |-----|--------|---------|-----------------|
-| `[risk: ...]` | `high`, `medium`, `low` | `low` | Under the `signed` gate, risk at or above `sign_at` (default `medium`) needs a person's signature; below it, meeting `strong` is enough |
+| `[risk: ...]` | `high`, `medium`, `low` | `low` | Under the `signed` gate, risk at or above `sign_at` (default `medium`) asks for a person's signature; below it, meeting `strong` is enough |
 | `[origin: ...]` | `pm`, `design`, `qa`, `eng` | `eng` | Who owns the rule. `purlin:drift` routes a change by it |
 | `[criterion: ...]` | any id | none | The upstream acceptance criterion the rule came from |
 

@@ -125,8 +125,8 @@ The review list holds the rules whose next step is a person, and nothing else. I
 `strong` and above; under `passed` it is empty. A rule is on it when the lowest cell that
 blocks the gate is one of these:
 
-- the strong cell reads `needs a person`: a `@manual` proof, a model review that could not
-  settle, or a current hold;
+- the strong cell reads `manual test` (the proofs are `@manual`), `manual audit` (the model
+  review could not settle, or there is no brief for the current hashes) or `held`;
 - the signed cell reads `unsigned`, `stale` or `held`.
 
 A rule blocked at its spec status or at its passed cell is not on the list: it is build work
@@ -146,11 +146,12 @@ The brief reports. It recommends nothing, and it never names a next action. Four
   tell. It is never asked what to do.
 - **Whether it settled.** `Settled: yes` when the model could tell, `no` when it could not,
   and `not answered` when no model review ran. Anything but `yes` makes the strong cell read
-  `needs a person`, and so does an observation: a review that settled and still observed
-  something puts each observation sentence in the strong cell's reasons.
+  `manual audit`. A review that settled and still observed something is a different answer: the
+  model could tell, and what it saw is build work, so the cell reads `weak` with each
+  observation sentence among its reasons.
 
 A `@manual` proof has no test, so no free check on a test body runs and no model review is
-asked for. Its strong cell reads `needs a person` and its brief says so.
+asked for. Its strong cell reads `manual test` and its brief says so.
 
 What a person does with the brief is one of four things, and `purlin:sign` takes each:
 

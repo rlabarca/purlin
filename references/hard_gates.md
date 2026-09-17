@@ -121,9 +121,9 @@ A **hold** is how a person who read the brief says the test does not prove the p
 purlin:sign <feature> RULE-N --hold "<the missing case>"
 ```
 
-That commits one file bound to the rule's hashes. While the hold is current the strong cell
-reads `needs a person` and the signed cell reads `held`, whatever the risk, so the rule does not
-meet the gate at `strong` or `signed`. A signature by a person for the current hashes outranks
+That commits one file bound to the rule's hashes. While the hold is current both the strong
+cell and the signed cell read `held`, whatever the risk, so the rule does not meet the gate at
+`strong` or `signed`. A signature by a person for the current hashes outranks
 the hold. Changing the rule, the proof or the test ends the hold, as it stales a signature.
 
 ## What is not a gate

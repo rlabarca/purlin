@@ -41,7 +41,7 @@ names the rule, `ready` when one does and no blocking free check fires on the pr
 | Level | The question | Words the cell can read |
 |-------|--------------|-------------------------|
 | passed | did every tagged test for this rule pass? | `passed`, `failed`, `no test`, `not run`, `code changed` |
-| strong | are those tests worth trusting? | `strong`, `weak`, `needs a person` |
+| strong | are those tests worth trusting? | `strong`, `weak`, `manual test`, `manual audit`, `held` |
 | signed | did a person say the rule, the proof and the test belong together? | `signed`, `unsigned`, `stale`, `held`, `not required` |
 
 A cell exists only at or below the project's gate. Above the gate it is absent, not empty, which
@@ -88,18 +88,19 @@ never conflict either. It binds the hashes of the rule text, the proof text and 
 plus the rule's risk, so a risk re-tag stales it like any other change. The people who may sign
 are `signers` in `.purlin/config.json`, changed by pull request, so git history records who
 could sign and when. A hold is a person's committed statement that the test does not prove the
-proof, with the missing case named; while it is current the strong cell reads `needs a person`
-and the signed cell reads `held`. A `--note` is the one line a signer writes for a `@manual`
-proof or a review the model could not settle.
+proof, with the missing case named; while it is current both the strong cell and the signed
+cell read `held`. A `--note` is the one line a signer writes for a rule reading `manual test`
+or `manual audit`.
 
 **CI writes no signature file, ever.** The auto-approval of low-risk rules is gone with the
 `.ci.json` file it wrote. A signature directory holds only files a person wrote; CI's one commit,
 `purlin: record for <commit7>`, carries the records and the briefs and nothing else. The CI-only
 branch ruleset now covers `.purlin/records/**` and `.purlin/briefs/**`.
 
-**The review list** holds only what needs a person: a strong cell reading `needs a person`, or a
-signed cell reading `unsigned`, `stale` or `held`. A weak rule is build work and stays on the
-board.
+**The review list** holds only what a person answers: a strong cell reading `manual test`,
+`manual audit` or `held`, or a signed cell reading `unsigned`, `stale` or `held`. A weak rule is
+build work and stays on the board. Each word names the work: a person runs the test, a person
+audits the proof against the test, or a person already said the test does not prove the proof.
 
 **The gate check.** `scripts/ci/verify_gate.py` becomes `scripts/ci/gate_check.py`, its log
 prefix `gate:`, its sections `Not passed (n)`, `Weak (n)` and `Not signed (n)`, and its JSON key
@@ -173,7 +174,7 @@ state under `.purlin/runtime/` and are not committed at all; the committed dashb
 build artifact; the design-tool importer, the visual hash and the live design-tool connection,
 replaced by exported files under `designs/` reviewed by pull request; and C and PHP support, so
 a project that used either keeps its proofs only by writing a custom proof plugin. Several flags
-went with them. A `@manual` proof stays: it has no test, its strong cell reads `needs a person`,
+went with them. A `@manual` proof stays: it has no test, its strong cell reads `manual test`,
 and its evidence is a signature carrying a one-line note.
 
 ### The 0.10.0 line that never shipped

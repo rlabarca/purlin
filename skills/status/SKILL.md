@@ -69,6 +69,6 @@ not empty:
 | A rule has a failing test, or no test | `→ Next: run purlin:build.` with the count |
 | A rule is waiting for the record that counts | `→ Next: push the branch.` under `strong` and above, `→ Next: run purlin:test.` under `passed` |
 | A rule is weak | `→ Next: run purlin:build.` naming what each one is short of |
-| A rule needs a person, is unsigned, stale or held | `→ Next: run purlin:sign.` with the count |
+| A rule reads `manual test`, `manual audit` or `held`, or is unsigned or stale | `→ Next: run purlin:sign.` with the count |
 | Every rule meets the gate | `→ Next: nothing is outstanding at gate <gate>.` |
 | The review list is not empty | `→ Review list: <n> rules need a person. Run purlin:sign.` |

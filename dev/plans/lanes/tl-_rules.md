@@ -29,7 +29,11 @@ one. Nothing in the plan is left to a lane's judgment except wording.
   `review queue`; the names `purlin:verify`, `purlin:review`, `purlin:approve`, `verify_gate`,
   `verify-gate:`, `validated/`. Plain English uses are rewritten too ("the run recorded a
   pass" becomes "the run wrote a pass"; "a reviewed rule" becomes what the cell says). `verify`
-  as a verb stays legal. `audit` is legal and means the level 2 run only. `Stale` survives only
+  as a verb stays legal. Retired by decision 23: `needs a person`, `needs_person` and
+  `needs-a-person`, any casing, as a cell word, a flag, a key, a `why` token, a filter, a tile,
+  a message and in prose. The strong cell's words are `strong`, `weak`, `manual test`,
+  `manual audit` and `held`; the only surviving use of the phrase is the review list's header,
+  `<n> rules need a person`. `audit` is legal and means the level 2 run only. `Stale` survives only
   as `signature stale` and as the adjective. `record` and `review list` survive. The older
   retired words stay retired: gauge, HOLLOW, PROVABLE, receipt, platform, `@on(`, mode (in
   prose), mutation score, caught score, records branch, Pages, forge, queue, CODEOWNERS,
@@ -60,13 +64,17 @@ Where the plan is silent, the fixtures decide, and they encode these orchestrato
 3. **The signed cell is computed from the signature files regardless of the cells below it**:
    `signed`, `unsigned`, `stale`, `held`, or `not required` when risk is below `sign_at` and
    no hold is current. A signature is a fact about files.
-4. **A current hold** makes the strong cell read `needs a person` with the reason
-   `held by <email>: <case>` and the signed cell read `held` with the same reason, whatever
-   the risk. `flags.held` is true. A signature by a person for the current hashes outranks
-   the hold.
-5. **`needs a person` for a `@manual` proof or an unsettled review** sets `flags.needs_person`
-   and the strong reason `manual proof` or `review not settled`. A held rule does not set
-   `needs_person`; `held` and `needs_person` are counted apart in every rollup.
+4. **A current hold** makes both the strong cell and the signed cell read `held`, each with
+   the reason `held by <email>: <case>`, whatever the risk. `flags.held` is true. A signature
+   by a person for the current hashes outranks the hold.
+5. **The strong cell's words for work only a person can do** are `manual test`, `manual audit`
+   and `held`. A rule whose proofs are `@manual` reads `manual test` with the reason
+   `manual proof` and sets `flags.manual`. A rule with no brief for the current hashes where
+   its risk asks for one, or whose review did not settle, reads `manual audit` with the reason
+   `no brief for the current hashes` or `review not settled` and sets `flags.audit`. A held
+   rule sets neither: `held`, `manual` and `audit` are counted apart in every rollup. A review
+   that settled and still observed something reads `weak`, with each observation sentence
+   among the cell's reasons: the model could tell, and what it saw is build work.
 6. **`bucket`**: `untested` is drafted, or ready with no test, or ready with no current
    counting run (`not run` and `code changed` both land here); `failing` when any counting
    run failed; `passed` when level 1 is met and either the gate is `passed` or level 2 is not
@@ -76,21 +84,22 @@ Where the plan is silent, the fixtures decide, and they encode these orchestrato
 7. **`blocked_by`** is the lowest unmet cell in the order `spec`, `passed`, `strong`, `signed`,
    or null when the rule meets the gate. `spec` blocks while the spec status is `drafted`.
 8. **The review list** holds exactly the rules whose `blocked_by` is `strong` with the word
-   `needs a person`, or `signed` with the word `unsigned`, `stale` or `held`. A rule blocked at
-   `spec` or `passed` is never on it. It is `[]` under `passed`. Rows are grouped by risk high
-   first, then within a group stale and held before the rest, then feature and rule id.
-   `why` tokens are the closed set `unsigned`, `stale`, `held`, `needs a person`, `manual`
-   (`manual` replaces `needs a person` when a `@manual` proof is the cause).
+   `manual test`, `manual audit` or `held`, or `signed` with the word `unsigned`, `stale` or
+   `held`. A rule blocked at `spec` or `passed` is never on it. It is `[]` under `passed`. Rows
+   are grouped by risk high first, then within a group stale and held before the rest, then
+   feature and rule id. A row's `why` token is the blocking cell's own word, from the closed
+   set `unsigned`, `stale`, `held`, `manual test`, `manual audit`. The list's header is the one
+   sentence that may still say a person is needed: `<n> rules need a person`.
 9. **A passed cell with no source** (`no test`, or `not run` with nothing to read) has
    `source` null, `current` false, `counts` false. `not run` for a missing `@env` has the
    record's source, `current` true, `counts` true and `missing_env` naming the environment.
 10. **The passed cell's word for a record that does not count** under the gate (a `developer`
     or `local` source at `strong` and above) is `not run` with the reason
     `<source> record does not count under <gate>`.
-11. **Rollup and summary keys**: `rules, met, failing, untested, passed, stale, held,
-    needs_person`, plus `strong` at `strong` and above, plus `signed` at `signed`; the rollup
-    adds `test_strength` and `latest_record`; the summary adds `features`. `met` counts rules
-    with `meets_gate` true.
+11. **Rollup and summary keys**: `rules, met, failing, untested, passed, stale, held, manual,
+    audit`, plus `strong` at `strong` and above, plus `signed` at `signed`; the rollup adds
+    `test_strength` and `latest_record`; the summary adds `features`. `met` counts rules with
+    `meets_gate` true.
 12. **`test_hash_kind`** is `file`, `manual` or `none`, as `signatures.test_hash_kind` returns.
 13. `records`, `latest_record`, `warnings`, `remote_url` and the feature fields not named in
     Part B1 keep their schema 4 shape and names (`label` stays `label` on a record entry; the

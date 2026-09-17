@@ -66,8 +66,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/report/scan.py" --repo <url> [--ref <bran
 ```
 
 **What you work.** The review list, never the whole rule list. A rule reaches it only when the
-cell that blocks it is one a person answers: a strong cell reading `needs a person`, or a signed
-cell reading `unsigned`, `stale` or `held`. A rule with no test, a failing rule and a weak rule
+cell that blocks it is one a person answers: a strong cell reading `manual test`,
+`manual audit` or `held`, or a signed cell reading `unsigned`, `stale` or `held`. A rule with no test, a failing rule and a weak rule
 are build work and stay on the board. A rule whose passed cell reads `code changed` is not on
 the list either: only the code moved, the signature stands, and CI clears it on the next run.
 

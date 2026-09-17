@@ -26,8 +26,8 @@ A gate is three things, and all three have to exist:
 `strong` derives three defaults, each of which you can change: `min_strength` 70,
 `ai_review_at` high, and risk and origin tags optional. Signatures are advisory at this gate:
 nothing blocks a merge for the want of one, and no rule has a signed cell. What a signature
-still does here is clear a strong cell reading `needs a person`, from anyone, because the signer
-list is not read below `signed`.
+still does here is clear a strong cell reading `manual test`, `manual audit` or `held`, from
+anyone, because the signer list is not read below `signed`.
 
 ## CI writes the record that counts
 
@@ -115,8 +115,8 @@ without anyone being asked.
 
 **QA looks at what is left.** `purlin:sign` finds every rule whose next step is a person, orders
 it by risk, and walks it one brief at a time. At this gate that is the rules whose strong cell
-reads `needs a person`: a `@manual` proof, a model review that could not settle, or a rule
-someone holds. At each stop QA signs, adds a case in plain language, holds or skips. Adding a
+reads `manual test`, `manual audit` or `held`: a `@manual` proof, a model review that could not
+settle, or a rule someone holds. At each stop QA signs, adds a case in plain language, holds or skips. Adding a
 case writes a new proof line into the spec and leaves the test for the next `purlin:build`,
 which is how QA's judgment reaches the code without QA writing it.
 [review-and-signing.md](review-and-signing.md) is the whole of that loop.

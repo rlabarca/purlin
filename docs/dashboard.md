@@ -86,8 +86,8 @@ is the whole of it.
 Pressing a spec expands its rules. Each row carries the rule id, the rule text, and one pill per
 cell that exists, so a rule at `signed` shows three pills and the same rule at `passed` shows
 one. A pill reads the cell's word: `passed`, `failed`, `no test`, `not run` or `code changed` at
-level 1; `strong`, `weak` or `needs a person` at level 2; `signed`, `unsigned`, `stale`, `held`
-or `not required` at level 3.
+level 1; `strong`, `weak`, `manual test`, `manual audit` or `held` at level 2; `signed`,
+`unsigned`, `stale`, `held` or `not required` at level 3.
 
 ## Filters
 
@@ -142,14 +142,14 @@ because below that there is no cell a person answers.
 ![The review list: the header, the risk summary, and three rows grouped by risk, each with its feature, rule id, text, risk tag, cell word and reasons](images/dashboard-review-list.png)
 
 The header says `<n> rules need a person`. Under it the risk summary prints one line per risk
-that has rows, with the counts of unsigned, stale, held and needs-a-person rules in that risk;
-a risk with nothing on the list gets no line. Then the rows, grouped by risk with high first,
-and within a group the stale and held rules before the rest. A row carries the feature, the
-rule id, the rule's text cut to one line, its risk tag, the word of the cell that blocks it,
-and that cell's reasons.
+that has rows, with the counts of unsigned, stale, held, manual test and manual audit rules in
+that risk; a risk with nothing on the list gets no line. Then the rows, grouped by risk with
+high first, and within a group the stale and held rules before the rest. A row carries the
+feature, the rule id, the rule's text cut to one line, its risk tag, the word of the cell that
+blocks it, and that cell's reasons.
 
-A rule is on the list when its blocking cell is the strong cell reading `needs a person`, or
-the signed cell reading `unsigned`, `stale` or `held`. Nothing else is: a rule with no test, a
+A rule is on the list when its blocking cell is the strong cell reading `manual test`,
+`manual audit` or `held`, or the signed cell reading `unsigned`, `stale` or `held`. Nothing else is: a rule with no test, a
 failing rule and a weak rule are all build work, and they stay on the board. When nothing is
 waiting the tab reads `Review list (0)` and the screen says so.
 

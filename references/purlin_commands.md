@@ -6,7 +6,7 @@ README table and the `agents/purlin.md` table all carry the sentence in the Purp
 below, and nothing repeats it in its own words.
 
 Plain language reaches every command. The syntax here is canonical, never required: "run the
-tests" reaches `purlin:test` and "what needs a person" reaches `purlin:sign`. Every command ends
+tests" reaches `purlin:test` and "what is waiting on a person" reaches `purlin:sign`. Every command ends
 by naming the next step, computed from the cells it found.
 
 Three commands carry the three evidence levels: `purlin:test` runs level 1, `purlin:audit` runs

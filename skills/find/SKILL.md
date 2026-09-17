@@ -66,6 +66,6 @@ End with one line, for the spec you showed or for the weakest one you listed:
 | A rule reads `no test` | `→ Run: purlin:build <feature>` |
 | A rule reads `passed` with no record under `strong` or above | `→ Run: purlin:audit <feature>` |
 | A rule is weak | `→ Run: purlin:build <feature>` |
-| A rule needs a person, is unsigned or is stale | `→ Run: purlin:sign <feature>` |
+| A rule reads `manual test`, `manual audit` or `held`, or is unsigned or stale | `→ Run: purlin:sign <feature>` |
 | An anchor pin is behind | `→ Run: purlin:anchor sync <name>` |
 | Nothing outstanding | `→ Nothing to do here.` |

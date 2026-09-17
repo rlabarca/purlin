@@ -37,7 +37,12 @@ in the shipped prose where a retired spelling may still be written.
   committed file. **signer list**: `signers` in `.purlin/config.json`, changed by pull request,
   so who could sign and when is in git history. **hold**: a person's committed statement that
   the test does not prove the proof, with the missing case. **note**: the one line a signer
-  writes for a `@manual` proof or an unsettled review.
+  writes for a rule reading `manual test` or `manual audit`.
+- **manual test**: the strong cell's word for a rule whose proofs are `@manual`. No test can be
+  written, so a person runs it and a signature with a note records what they saw.
+- **manual audit**: the strong cell's word for a rule whose model review could not settle, or
+  that has no brief for the current hashes where its risk asks for one. A person judges the
+  proof against the test and signs, adds a case or holds.
 - **signature stale**: the signed cell's word when a signature exists and its hashes no longer
   match.
 - **review list**: the rules whose next step is a person. Exists only at `strong` and above.
@@ -63,7 +68,7 @@ For one rule, top to bottom. Each row is a cell; the gate decides how many rows 
 |-------|----------|-------------------------|
 | spec | the proof text clears the blocking free checks | `drafted`, `ready` |
 | passed | every proof has a passing test from a counting source, and a CI pass is current | `passed`, `failed`, `no test`, `not run`, `code changed` |
-| strong | passed from `ci`, the strength at or above `min_strength`, no finding, and where risk asks a brief for the current triple that observed nothing and settled, no hold | `strong`, `weak`, `needs a person` |
+| strong | passed from `ci`, the strength at or above `min_strength`, no finding, and where risk asks a brief for the current triple that observed nothing and settled, no hold | `strong`, `weak`, `manual test`, `manual audit`, `held` |
 | signed | a counting signature for the current hashes, when risk is at or above `sign_at` | `signed`, `unsigned`, `stale`, `held`, `not required` |
 
 A rule's **bucket** is the one tile it is counted in: `untested`, `failing`, `passed`, `strong`,
@@ -121,6 +126,7 @@ The repository's own vocabulary check enforces that, reading this table for the 
 | `verify_gate`, `scripts/ci/verify_gate.py` | `gate_check`, `scripts/ci/gate_check.py` |
 | `verify-gate:` as a log prefix | `gate:` |
 | `validated/<name>` tags | `record/<name>` tags |
+| needs a person, needs-a-person, `needs_person` | `manual test` where the proofs are `@manual`, `manual audit` where the model review could not settle, `held` where a person holds the rule. The flags and rollup keys are `manual` and `audit`. The one surviving use is the review list's header, `<n> rules need a person` |
 
 `audit` is not retired. It means one thing: the level-2 run, which proves a rule strong or weak.
 The grading scores the old `purlin:audit` printed stay retired, in the table below.

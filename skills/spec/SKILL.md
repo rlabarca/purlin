@@ -110,7 +110,7 @@ name one rule, and one proof may name several rules when it drives a flow throug
 
 Tag a proof that is not a plain unit test: `@integration` for a database, the network, the
 filesystem or an external service; `@e2e` for a browser or the full stack; `@manual` for human
-judgment. A `@manual` proof has no test: its rule reads `needs a person` until a signature
+judgment. A `@manual` proof has no test: its rule reads `manual test` until a signature
 carrying a one-line note settles it, and that note is always written by a person.
 
 Add `@env(windows)`, `@env(macos)` or `@env(linux)` when the claim can only be proved on one

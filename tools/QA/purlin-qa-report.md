@@ -3,10 +3,10 @@ name: purlin-qa-report
 description: >
   Read a Purlin project from a git repository URL and produce the QA triage report: the review
   list ordered by risk, what each rule needs, and what to do about it. Use when the user gives
-  a repository URL and asks what needs a person, what needs a test, what is stale, whether a
-  release is ready, or how a project's rules stand. Also opens pull requests carrying proof
-  edits and signature files. Mentions of "Purlin", "QA report", "review list", "test strength",
-  "what needs signing" or "evidence status" all reach this skill.
+  a repository URL and asks what is waiting on a person, what needs a test, what is stale,
+  whether a release is ready, or how a project's rules stand. Also opens pull requests
+  carrying proof edits and signature files. Mentions of "Purlin", "QA report", "review list",
+  "test strength", "what needs signing" or "evidence status" all reach this skill.
 ---
 
 # Purlin QA report
@@ -69,8 +69,8 @@ Work from the review list `scan.py` printed; it is already ordered by risk, `hig
 `medium`, then `low`, and inside each group stale and held first, then by feature and rule
 number. Keep that order. Each line carries the risk, the feature, the rule id, the blocking
 cell's word and the `why` tokens, which are the closed set `unsigned`, `stale`, `held`,
-`needs a person` and `manual`. For every entry give those, then one of the four answers a person
-gives:
+`manual test` and `manual audit`. For every entry give those, then one of the four answers a
+person gives:
 
 - **`sign`**: the test proves the proof. It becomes `purlin:sign <feature> RULE-N` in a checkout.
 - **`add a case`**: the test is right as far as it goes and a case is missing, usually the
@@ -118,7 +118,7 @@ counts.
 | Gate | What CI requires before a change can merge | Signatures |
 |---|---|---|
 | `passed` | Every rule's passed cell is met; a pass from any source counts | None |
-| `strong` | Every rule's strong cell is met: a CI record at this commit, at or above `min_strength`, no finding and no hold | Only where the strong cell reads `needs a person` |
+| `strong` | Every rule's strong cell is met: a CI record at this commit, at or above `min_strength`, no finding and no hold | Only where the strong cell reads `manual test`, `manual audit` or `held` |
 | `signed` | Every rule's signed cell is met, on every rule at or above `sign_at` | Required |
 
 Under `signed`, a signature counts only when the commit that added the file is signed, its

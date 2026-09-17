@@ -106,7 +106,7 @@ drift design: 2 things to look at
 drift qa: review list is 12 rules (3 high, 6 medium, 3 low)
 
   login RULE-3               signature stale: the rule text changed after it
-  billing RULE-2             needs a person: the model review did not settle
+  billing RULE-2             manual audit: the model review did not settle
   export RULE-1              no negative case: every proof asserts a success path
 ```
 

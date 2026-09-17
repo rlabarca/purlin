@@ -21,7 +21,7 @@ merge?** There are three answers, one per evidence level. That answer is the **g
 | Gate | Who it fits | What CI requires before merge | Signatures |
 |------|-------------|-------------------------------|------------|
 | `passed` | one developer | every rule's passed cell is met: a passing tagged test, from any source | none |
-| `strong` | a team of PM, designers, engineers and QA | every rule's strong cell is met: a CI-written record at this commit, test strength at or above `min_strength`, no finding and no hold | none required; anyone may sign to clear a rule that needs a person |
+| `strong` | a team of PM, designers, engineers and QA | every rule's strong cell is met: a CI-written record at this commit, test strength at or above `min_strength`, no finding and no hold | none required; anyone may sign to clear a rule reading `manual test`, `manual audit` or `held` |
 | `signed` | the same team under GxP or a similar obligation | everything `strong` requires, plus a current signature on every rule at or above `sign_at`, in a signed commit by someone on the signer list | required: the signer list decides who |
 
 The answer sets four defaults, each of which you can change afterwards: `min_strength` is

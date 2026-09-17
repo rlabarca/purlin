@@ -103,7 +103,7 @@ Each view is a filter over the same data, not a different computation.
 |------|-----------------|--------|
 | `pm` | Criteria with no rule carrying them, rules tagged `origin: pm` whose text changed, rules an engineer added, pins behind | `criteria_without_rules`, `pm_rules_changed`, `engineer_added_rules`, `pins_behind` |
 | `design` | Design files that changed, and rules tagged `origin: design` whose signed cell reads `stale` because a mock was re-exported | `designs_changed`, `design_rules_stale` |
-| `qa` | Signatures gone stale, how long the review list is, which rules need a person, rules whose every proof asserts a success path | `signatures_stale`, `review_list_size`, `needs_person`, `rules_without_a_negative_case` |
+| `qa` | Signatures gone stale, how long the review list is, the rules reading `manual test`, the rules reading `manual audit`, rules whose every proof asserts a success path | `signatures_stale`, `review_list_size`, `manual`, `audit`, `rules_without_a_negative_case` |
 | `eng` | Files touched and the rules behind them, rules with no test, risk or origin tags the gate requires and the spec lacks, pins behind, rules whose passed cell reads `code changed` | `files_touched`, `rules_affected`, `tests_missing`, `tags_missing`, `pins_behind`, `code_changed` |
 
 `code_changed` appears in the `eng` view as information and never in the `qa` view: only the

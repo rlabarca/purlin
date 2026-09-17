@@ -97,4 +97,4 @@ posts; the job says in one line that no record was written.
 | A rule needs another operating system | `→ Run: purlin:audit --remote` |
 | Every rule met the gate `passed` | `→ Push.` |
 | A `ci` record is missing under `strong` or `signed` | `→ Push; CI writes the record.` |
-| A rule needs a person, is unsigned or is stale | `→ Run: purlin:sign` |
+| A rule reads `manual test`, `manual audit` or `held`, or is unsigned or stale | `→ Run: purlin:sign` |

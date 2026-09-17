@@ -21,7 +21,7 @@ Review list: 12 rules need a person, across 4 features
   high 3   medium 6   low 3
 
   login       RULE-3   high     stale: the rule text changed after the signature
-  login       RULE-7   high     needs a person: the model review did not settle
+  login       RULE-7   high     manual audit: the model review did not settle
   billing     RULE-2   high     unsigned
 ```
 
@@ -29,7 +29,9 @@ A rule is on the list when the cell that blocks it is one only a person can answ
 
 | The blocking cell | The word it reads | What happened |
 |---|---|---|
-| strong | `needs a person` | a `@manual` proof, a model review that could not settle, or a current hold |
+| strong | `manual test` | every proof of the rule is `@manual`, so a person runs the test |
+| strong | `manual audit` | no brief binds the current hashes, or the model review could not settle |
+| strong | `held` | someone committed a hold saying the test does not prove the proof |
 | signed | `unsigned` | the rule is at or above `sign_at` and no signature binds its hashes |
 | signed | `stale` | a signature exists and the hashes it bound no longer match |
 | signed | `held` | someone committed a hold saying the test does not prove the proof |
@@ -41,11 +43,11 @@ and CI clears the cell on the next run.
 
 Rows are grouped by risk with high first, and within a group the stale and held rules come
 before the rest. Arguments narrow the walk and never widen it: `purlin:sign <feature>`,
-`purlin:sign <feature> RULE-N`. Plain language reaches the same place: "what needs a person",
-"show me the high risk ones".
+`purlin:sign <feature> RULE-N`. Plain language reaches the same place: "what is waiting on a
+person", "show me the high risk ones".
 
-Under the `strong` gate the list is the `needs a person` rules alone, because no rule has a
-signed cell there. Under `passed` there is no list at all: `purlin:sign` says the gate is
+Under the `strong` gate the list is the `manual test`, `manual audit` and `held` rules alone,
+because no rule has a signed cell there. Under `passed` there is no list at all: `purlin:sign` says the gate is
 `passed`, says what `purlin:init --gate strong` would add, and stops.
 
 ## The brief
@@ -102,7 +104,7 @@ at 0 percent because nothing broke. Read it beside the findings, never instead o
 `strong`, at medium and high under `signed`. It is built from the review criteria verbatim plus
 this rule's evidence, so it observes by the same sentences you read. It is asked to state what
 the test observes against what the proof names, and to say when it cannot tell. When it cannot
-tell, the strong cell reads `needs a person` with the reason `review not settled`, and the rule
+tell, the strong cell reads `manual audit` with the reason `review not settled`, and the rule
 waits for you rather than for another run.
 
 For a rule tagged `origin: design`, the brief shows the pinned mock from `designs/<feature>/`
@@ -165,7 +167,8 @@ anyone else's.
 
 `--note` is the one line a person writes where no test can speak: what they did and what they
 saw for a `@manual` proof, or the judgment the model could not settle. It is allowed on any rule
-whose strong cell reads `needs a person`, and it lands in the signature file's `note` field.
+whose strong cell reads `manual test` or `manual audit`, and it lands in the signature file's
+`note` field.
 
 If your email is not in `signers` in `.purlin/config.json`, the skill stops and says
 `sign: <email> is not on the signer list. Add it by pull request, or ask someone on it.` With no
@@ -174,8 +177,8 @@ list at all under the `signed` gate it says
 
 Under the `strong` gate a signature is not required by anything, so a bare signature says
 `sign: a signature is required only under the gate signed. Writing it anyway.` and writes it.
-The file still clears a `needs a person` cell, from anyone: at `strong` the signer list is not
-read. Under `signed` the signer rules apply in full. Under `passed` nothing is written at all:
+The file still clears a `manual test`, `manual audit` or `held` cell, from anyone: at `strong`
+the signer list is not read. Under `signed` the signer rules apply in full. Under `passed` nothing is written at all:
 the skill says the gate is `passed`, names what `purlin:init --gate strong` would add, and
 stops.
 

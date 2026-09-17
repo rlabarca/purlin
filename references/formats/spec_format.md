@@ -145,7 +145,7 @@ Append a tier tag to a proof that is not a unit test:
 | (none) | Pure logic, in memory, or a grep over local files |
 | `@integration` | Needs a database, the network, the filesystem or an external service |
 | `@e2e` | Needs a browser, the full stack or a rendered interface |
-| `@manual` | Needs a person's judgment. No test, so the rule's strong cell reads `needs a person`; the evidence is a signature file carrying a one-line note, always written by a person |
+| `@manual` | A person's judgment is the only instrument. No test, so the rule's strong cell reads `manual test`; the evidence is a signature file carrying a one-line note, always written by a person |
 
 Any `@<name>` other than `@env` is read as a tier, and its results are read
 from `.purlin/runtime/proofs/<feature>.<name>.json`. The four above are the

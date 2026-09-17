@@ -74,9 +74,10 @@ and origin are both required, so write them every time. Risk is read at the `str
 above: it decides at which risk a model review runs and at which risk a person has to sign.
 
 Tag a proof with its tier: no tag for pure logic, `@integration` when it needs a database, the
-network or the filesystem, `@e2e` when it needs a browser or the full stack, `@manual` when it
-needs a person's judgment and no test can settle it. At most one `@env(windows)`, `@env(macos)`
-or `@env(linux)` per proof, and only when the operating system is part of the claim.
+network or the filesystem, `@e2e` when it needs a browser or the full stack, `@manual` when a
+person's judgment is the only instrument and no test can settle it. At most one
+`@env(windows)`, `@env(macos)` or `@env(linux)` per proof, and only when the operating system
+is part of the claim.
 
 **The quality bar.** Before you propose a rule, check it against the four failures that keep a
 rule out of the pipeline:

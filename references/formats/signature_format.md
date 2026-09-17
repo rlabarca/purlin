@@ -164,7 +164,7 @@ REQUIRED: `schema`, `feature`, `rule`, `triple`, `rule_hash`, `proof_hash`,
 `reason` the missing case, in words.
 
 A hold is current under the same test as a signature. While it is current the
-rule's strong cell reads `needs a person` and its signed cell reads `held`,
-both with the reason `held by <holder>: <reason>`. A current signature for the
+rule's strong cell and its signed cell both read `held`, each with the reason
+`held by <holder>: <reason>`. A current signature for the
 same hashes outranks it. A hold only ever withholds, so the holder need not be
 on the signer list.

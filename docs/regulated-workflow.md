@@ -144,7 +144,7 @@ guide, a printed label read by eye, a physical step. Tag the proof `@manual`:
 - PROOF-4 (RULE-4): Read the error messages against the brand voice guide @manual
 ```
 
-There is no test and no break measurement. The strong cell reads `needs a person` with the
+There is no test and no break measurement. The strong cell reads `manual test` with the
 reason `manual proof`, and the rule waits on the list. The evidence is a signature carrying a
 one-line note saying what the person did and what they saw:
 
@@ -152,7 +152,7 @@ one-line note saying what the person did and what they saw:
 purlin:sign <feature> RULE-4 --note "read the four messages on 2026-09-16; each matches the guide"
 ```
 
-A model review that could not settle the question reads `needs a person` too, with the reason
+A model review that could not settle the question reads `manual audit`, with the reason
 `review not settled`, and the same `--note` settles it.
 
 ## Holds
@@ -165,8 +165,8 @@ purlin:sign <feature> RULE-3 --hold "the lock expiry is never read"
 ```
 
 It writes `specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<holder-slug>.hold.json` and
-commits it. While the hold is current the strong cell reads `needs a person` and the signed
-cell reads `held`, whatever the risk, so no rule slips past level 2 on the free checks alone.
+commits it. While the hold is current both the strong cell and the signed cell read `held`,
+whatever the risk, so no rule slips past level 2 on the free checks alone.
 Changing the test ends the hold, because the hashes it binds no longer match. A signature by a
 person for the current hashes outranks it.
 

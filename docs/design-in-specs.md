@@ -68,9 +68,9 @@ element present. Never a selector, never a class name, never a pixel value.
 | Load `/checkout` with an empty basket; verify the text "Your basket is empty" | Verify the empty-state component mounts |
 
 A proof that names a selector, a class or a pixel value is reported as
-`implementation_coupling`: a refactor would break it without the screen changing. A rule that
-genuinely needs a person's eye is `@manual`, and its evidence is a signature with a one-line
-note rather than a test.
+`implementation_coupling`: a refactor would break it without the screen changing. A rule only
+a person's eye can settle is `@manual`, and its evidence is a signature with a one-line note
+rather than a test.
 
 ## Screenshots as evidence
 
