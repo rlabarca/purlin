@@ -46,8 +46,8 @@
   --surface-2:var(--slate-750);
   --surface-sunken:var(--slate-900);
   --text-primary:var(--slate-200);
-  --text-secondary:var(--slate-400);
-  --text-muted:var(--slate-500);
+  --text-secondary:var(--slate-300);
+  --text-muted:var(--slate-400);
   --border-hairline:var(--slate-700);
   --border-default:var(--slate-700);
   --border-strong:var(--slate-500);
