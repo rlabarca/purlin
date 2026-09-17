@@ -63,7 +63,9 @@ test strength `n/a`:
 ```
 
 One record per audit run, per feature, committed. Adding a file never conflicts with another
-branch. The commit message is `purlin: record for a1b2c3d`.
+branch. The commit message is `purlin: record for a1b2c3d`. It is committed and not pushed:
+the run prints `Record committed. Run: git push` and the push is yours. CI publishes its own
+evidence; a person pushes theirs.
 
 The label on the end of the name is not what decides whether a record counts. The last commit
 that touched the file decides:

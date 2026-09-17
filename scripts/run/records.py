@@ -13,15 +13,17 @@ counts: `scripts/mcp/purlin/records.py` reads the source off the last commit
 touching the file. This module is the writing half.
 
 **Two identities write.** A developer's audit commits under the developer's
-own git identity and pushes, which is the source `developer` and counts under
-the `passed` gate. CI's audit commits through the git host's REST API with no
-author and no committer field, so GitHub signs the commit with its own key
-and reports `github-actions[bot]` as the committer; that is the source `ci`,
-the only one that counts under `strong` and `signed`. Azure DevOps pushes
-through its Pushes API with the build service's token and signs nothing, and
-its documentation says the committer name is the one to read. CI's commit
-carries more than the record: the briefs the same run wrote travel in it,
-because a brief that never leaves the runner is evidence nobody can read.
+own git identity and prints the push command rather than running it, which is
+the source `developer` and counts under the `passed` gate. CI publishes its
+own evidence; a person pushes theirs. CI's audit commits through the git
+host's REST API with no author and no committer field, so GitHub signs the
+commit with its own key and reports `github-actions[bot]` as the committer;
+that is the source `ci`, the only one that counts under `strong` and `signed`.
+Azure DevOps pushes through its Pushes API with the build service's token and
+signs nothing, and its documentation says the committer name is the one to
+read. CI's commit carries more than the record: the briefs the same run wrote
+travel in it, because a brief that never leaves the runner is evidence nobody
+can read.
 
 **Retention.** A feature keeps the newest three records per operating system.
 Anything an annotated `record/<name>` tag names in its message is kept for
@@ -208,9 +210,10 @@ def commit_records(project_root, paths, identity, message):
     """Commit the files at `paths` and return the commit sha.
 
     `identity` is `developer` or `ci`. A developer commit is a plain
-    `git commit` under the developer's own identity, pushed when a remote and
-    an upstream exist; anything else prints why it did not push. A ci commit
-    goes through the git host's API so the git host, not Purlin, signs it.
+    `git commit` under the developer's own identity, and it never pushes: it
+    prints the push command instead, because nothing pushes on a person's
+    behalf. A ci commit goes through the git host's API so the git host, not
+    Purlin, signs it: CI publishes its own evidence; a person pushes theirs.
 
     A developer's run hands over record paths alone. A CI run hands over the
     records plus the briefs it wrote, so one commit carries the evidence and
@@ -246,26 +249,25 @@ def _commit_as_developer(project_root, paths, message):
         return ''
     _git(project_root, ['commit', '-m', message])
     sha = (_git(project_root, ['rev-parse', 'HEAD']) or '').strip()
-    _push(project_root)
+    print(_push_line(project_root))
     return sha
 
 
-def _push(project_root):
-    """Push the branch when a remote and an upstream exist, else say why not."""
+def _push_line(project_root):
+    """What to say after a developer's record commit: the push is theirs.
+
+    Nothing here pushes. The one command that reaches a remote on its own is
+    `purlin:audit --remote`, which a person asked for by name.
+    """
     remotes = (_git(project_root, ['remote']) or '').split()
     if not remotes:
-        print('Record committed. No remote is configured, so nothing was '
-              'pushed.')
-        return False
+        return 'Record committed.'
     upstream = _git(project_root,
                     ['rev-parse', '--abbrev-ref', '--symbolic-full-name',
                      '@{u}'], check=False)
     if not (upstream or '').strip():
-        print('Record committed. This branch has no upstream, so nothing was '
-              'pushed. Run: git push -u %s HEAD' % remotes[0])
-        return False
-    _git(project_root, ['push'])
-    return True
+        return ('Record committed. Run: git push -u %s HEAD' % remotes[0])
+    return 'Record committed. Run: git push'
 
 
 def _commit_through_api(project_root, paths, message):

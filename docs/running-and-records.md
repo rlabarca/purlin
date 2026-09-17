@@ -46,7 +46,9 @@ where the risk asks for one. It ends in one record per feature, and on CI in the
 An audit proves a rule strong or weak; it never signs anything.
 
 Under the `passed` gate there is nothing to measure, so the audit runs the tests alone, the
-record carries `n/a` for strength, and a record you commit is the evidence. Raising the gate to
+record carries `n/a` for strength, and a record you commit is the evidence. A local audit
+commits and prints `Run: git push`; it never pushes. CI publishes its own evidence; a person
+pushes theirs. Raising the gate to
 `strong` turns the breaks on, locally and in CI. From `strong` upward only a record CI wrote
 counts, so your local audit is a preview: it prints the strength it measured, says that this run
 does not count, and tells you the push will pass before you spend a CI run finding out.

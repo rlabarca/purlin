@@ -75,6 +75,11 @@ not count leaves the passed cell reading `not run` with the reason naming the so
 gate. The audit keeps the newest three records per feature per operating system and prunes the
 rest; a record named in the message of an annotated `record/<name>` tag is kept for ever.
 
+**Nothing pushes on its own.** A local `purlin:audit --commit` commits the record and prints
+`Record committed. Run: git push`; it never runs the push. The one command that reaches a
+remote is `purlin:audit --remote`, which a person asked for by name. CI publishes its own
+evidence; a person pushes theirs.
+
 **Briefs.** One file per rule per set of hashes,
 `.purlin/briefs/<feature>/<RULE-N>.<hash8>.brief.json`, written by CI and committed beside the
 records. A brief reports four things: the test strength beside the minimum, the free-check

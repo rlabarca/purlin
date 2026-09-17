@@ -11,8 +11,8 @@ What each group proves:
 *retention*   three records per feature per operating system survive, another
               operating system's records are untouched, and a record an
               annotated `record/<name>` tag names is kept for ever
-*developer*   a plain commit under the developer's identity, pushed when a
-              remote and an upstream exist and explained when not
+*developer*   a plain commit under the developer's identity, which never
+              pushes and prints the push command for the person to run
 *ci*          one tree request carrying every file's text, then commit, then
               ref update, with no author and no committer field, retried
               when the branch moved and paused when the git host asks
@@ -401,7 +401,8 @@ def with_remote(tmp_path, project):
 
 
 @pytest.mark.proof("records", "PROOF-4", "RULE-4")
-def test_a_developer_commit_lands_and_pushes(project, with_remote):
+def test_a_developer_commit_lands_and_prints_the_push(project, with_remote,
+                                                      capsys):
     path = records_module.write_record(project, record(), 'ada@example.com')
     sha = records_module.commit_records(
         project, [path], 'developer', 'purlin: record for 4f1c2ab')
@@ -409,13 +410,13 @@ def test_a_developer_commit_lands_and_pushes(project, with_remote):
     assert len(sha) == 40
     subject = git(project, 'log', '-1', '--format=%s').stdout.strip()
     assert subject == 'purlin: record for 4f1c2ab'
+    assert 'Record committed. Run: git push' in capsys.readouterr().out
     listed = git(with_remote, 'ls-tree', '-r', '--name-only', 'main').stdout
-    assert path in listed, 'the record did not reach the remote'
+    assert path not in listed, 'the record was pushed without being asked'
 
 
 @pytest.mark.proof("records", "PROOF-4", "RULE-4")
-def test_a_developer_commit_carries_the_deletions_retention_made(
-        project, with_remote):
+def test_a_developer_commit_carries_the_deletions_retention_made(project):
     old = [put_record(project, 'greeting',
                       '2026091%dT120000Z-4f1c2ab-ada.json' % day)
            for day in range(5)]
@@ -424,29 +425,31 @@ def test_a_developer_commit_carries_the_deletions_retention_made(
     records_module.commit_records(project, [fresh], 'developer',
                                   'purlin: record')
 
-    listed = git(with_remote, 'ls-tree', '-r', '--name-only', 'main').stdout
+    listed = git(project, 'ls-tree', '-r', '--name-only', 'HEAD').stdout
     assert fresh in listed
-    assert old[0] not in listed, 'a pruned record stayed in the remote copy'
+    assert old[0] not in listed, 'a pruned record stayed in the commit'
 
 
 @pytest.mark.proof("records", "PROOF-4", "RULE-4")
-def test_a_developer_commit_without_an_upstream_says_so(project, capsys):
+def test_a_developer_commit_without_an_upstream_names_the_remote(project,
+                                                                 capsys):
     git(project, 'remote', 'add', 'origin', 'https://example.invalid/x.git')
     path = records_module.write_record(project, record(), 'ada@example.com')
     sha = records_module.commit_records(project, [path], 'developer',
                                         'purlin: record')
     printed = capsys.readouterr().out
     assert len(sha) == 40
-    assert 'no upstream' in printed
-    assert 'git push -u origin HEAD' in printed
+    assert 'Record committed. Run: git push -u origin HEAD' in printed
 
 
 @pytest.mark.proof("records", "PROOF-4", "RULE-4")
-def test_a_developer_commit_without_a_remote_says_so(project, capsys):
+def test_a_developer_commit_without_a_remote_asks_for_no_push(project, capsys):
     path = records_module.write_record(project, record(), 'ada@example.com')
     records_module.commit_records(project, [path], 'developer',
                                   'purlin: record')
-    assert 'No remote is configured' in capsys.readouterr().out
+    printed = capsys.readouterr().out
+    assert 'Record committed.' in printed
+    assert 'git push' not in printed
 
 
 @pytest.mark.proof("records", "PROOF-4", "RULE-4")

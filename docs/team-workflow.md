@@ -53,7 +53,8 @@ two leaves the passed cell reading `not run`, with the reason naming the source 
 Your local `purlin:audit` is still worth running. It is a preview: it prints the strength it
 measured, says that this run does not count, and tells you the push will pass before you spend a
 CI run finding out. Leave the record uncommitted at this gate, which is what the skill does when
-the gate is `strong`.
+the gate is `strong`. Nothing pushes on your behalf either way: CI publishes its own evidence;
+a person pushes theirs.
 
 CI does not need Purlin installed as a plugin. Purlin's own repository is the plugin, so the
 workflow there uses the checkout it already has. A consumer project's runner has no plugin, so

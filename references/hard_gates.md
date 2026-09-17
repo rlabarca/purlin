@@ -71,7 +71,9 @@ stays narrow:
 1. Require a pull request, and require the `purlin` status check, with the Actions app as the
    only bypass actor.
 2. Restrict file paths on `.purlin/records/**` and `.purlin/briefs/**`, with the Actions app as
-   the only bypass actor, so a person cannot push a record or a brief.
+   the only bypass actor, so a person cannot push a record or a brief. Nothing Purlin runs
+   pushes on its own except `purlin:audit --remote`: CI publishes its own evidence; a person
+   pushes theirs.
 3. Block force pushes and restrict deletions, with no bypass at all.
 
 Under `passed`, only the third is suggested.

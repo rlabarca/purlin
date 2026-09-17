@@ -33,8 +33,9 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --all --record --commi
 `--record` runs the tests, then the breaks, then writes
 `.purlin/records/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json` and prints
 `Record written: <path>`. `--commit` commits it under your own git identity, which is what the
-`passed` gate reads, and prints `Record committed as developer.` Drop `--commit` to leave the
-record uncommitted and read it yourself. Exit codes: `0` everything asked for happened, `1` a
+`passed` gate reads, and prints `Record committed. Run: git push` and
+`Record committed as developer.` It never pushes: CI publishes its own evidence; a person
+pushes theirs. Drop `--commit` to leave the record uncommitted and read it yourself. Exit codes: `0` everything asked for happened, `1` a
 test failed or evidence is missing, `2` the command line was wrong.
 
 The run script owns test execution for the whole plugin: `purlin:test` and `purlin:build` call
@@ -76,7 +77,8 @@ record. `references/hard_gates.md` defines the three gates once; do not restate 
 
 ## Step 5: `--remote` and `--tag`
 
-`--remote` pushes the current branch and waits for the workflow. On GitHub it watches the run
+`--remote` is the one thing here that reaches a remote: it pushes the current branch and
+waits for the workflow. On GitHub it watches the run
 with `gh run watch`, pulls the records CI committed, and prints the table. On Azure DevOps it
 prints the pipeline URL and returns. Use it when a proof is tagged `@env` for an operating
 system this host is not.
