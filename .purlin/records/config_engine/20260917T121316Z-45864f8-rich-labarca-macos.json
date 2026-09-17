@@ -1,0 +1,585 @@
+{
+  "commit": "45864f85c248f6f5a75a7567e07a62210fb7391f",
+  "dirty": true,
+  "environment": {
+    "engines": [
+      "mutmut"
+    ],
+    "host": "Richs-MacBook-Pro.local",
+    "id": "darwin-arm64",
+    "job": null,
+    "kind": "developer",
+    "os": "macos"
+  },
+  "feature": "config_engine",
+  "features": {
+    "config_engine": {
+      "rules": {
+        "RULE-1": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-1"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "mutmut",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_config_engine.py",
+              "name": "test_env_var_takes_precedence_only_when_the_directory_exists",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-10": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-10"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "mutmut",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_config_engine.py",
+              "name": "test_atomic_replacement",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-11": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-13"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "mutmut",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_config_engine.py",
+              "name": "test_nested_object_in_local_replaces_base_object_whole",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-13": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-15"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "mutmut",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_config_engine.py",
+              "name": "test_resolve_project_root_names_how_it_resolved",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-2": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-2"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "mutmut",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_config_engine.py",
+              "name": "test_climbs_to_purlin_marker",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-3": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-3"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "mutmut",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_config_engine.py",
+              "name": "test_falls_back_to_cwd",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-4": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-4",
+            "PROOF-11"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "mutmut",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_config_engine.py",
+              "name": "test_cli_dump",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_config_engine.py",
+              "name": "test_dump_in_process_shows_the_merged_config",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_config_engine.py",
+              "name": "test_empty_local_returns_shared",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_config_engine.py",
+              "name": "test_local_only_keys_included",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_config_engine.py",
+              "name": "test_merge_base_with_overrides",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_config_engine.py",
+              "name": "test_framework_new_key_visible_through_existing_local",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-5": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-5"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "mutmut",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_config_engine.py",
+              "name": "test_cli_key",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_config_engine.py",
+              "name": "test_key_in_process_prints_the_value",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_config_engine.py",
+              "name": "test_local_without_shared",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_config_engine.py",
+              "name": "test_shared_only_no_copy",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-6": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-6"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "mutmut",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_config_engine.py",
+              "name": "test_malformed_local_falls_back",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-7": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-7"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "mutmut",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_config_engine.py",
+              "name": "test_no_configs_returns_empty",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-8": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-8",
+            "PROOF-12"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "mutmut",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_config_engine.py",
+              "name": "test_update_creates_local_if_missing",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_config_engine.py",
+              "name": "test_writes_only_to_local",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_config_engine.py",
+              "name": "test_local_override_wins_in_merge",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-9": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-9"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "mutmut",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_config_engine.py",
+              "name": "test_preserves_existing_keys",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_config_engine.py",
+              "name": "test_update_overwrites_existing_key",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        }
+      },
+      "scope_score": {
+        "killed": 0,
+        "score": null,
+        "survived": 0
+      },
+      "spec": "specs/mcp/config_engine.md"
+    }
+  },
+  "gate": "signed",
+  "log": {
+    "path": ".purlin/runtime/run.log",
+    "sha256": "31933dd4504f575bfc46c0cefc41b7b1318784277117b1e1e7cd92de4e9a051b"
+  },
+  "missing": [],
+  "os": "macos",
+  "plugins": [
+    "pytest",
+    "shell"
+  ],
+  "proofs": [
+    {
+      "env": null,
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_env_var_takes_precedence_only_when_the_directory_exists",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_climbs_to_purlin_marker",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_falls_back_to_cwd",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_cli_dump",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_dump_in_process_shows_the_merged_config",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_empty_local_returns_shared",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_local_only_keys_included",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_merge_base_with_overrides",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-11",
+      "rule": "RULE-4",
+      "status": "pass",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_framework_new_key_visible_through_existing_local",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_cli_key",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_key_in_process_prints_the_value",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_local_without_shared",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_shared_only_no_copy",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "status": "pass",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_malformed_local_falls_back",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_no_configs_returns_empty",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "status": "pass",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_update_creates_local_if_missing",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "status": "pass",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_writes_only_to_local",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-12",
+      "rule": "RULE-8",
+      "status": "pass",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_local_override_wins_in_merge",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "status": "pass",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_preserves_existing_keys",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "status": "pass",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_update_overwrites_existing_key",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "status": "pass",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_atomic_replacement",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-13",
+      "rule": "RULE-11",
+      "status": "pass",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_nested_object_in_local_replaces_base_object_whole",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-15",
+      "rule": "RULE-13",
+      "status": "pass",
+      "test_file": "dev/test_config_engine.py",
+      "test_name": "test_resolve_project_root_names_how_it_resolved",
+      "tier": "unit"
+    }
+  ],
+  "runner": "rich-labarca",
+  "schema": "purlin-record/2",
+  "schema_version": 2,
+  "scope_tree": "8c2bf2e8f47407431ef8b90edf83942f2de2ee88f1d948c55ed40a25d09602b6",
+  "test_strength": null,
+  "timestamp": "2026-09-17T12:13:16Z"
+}
