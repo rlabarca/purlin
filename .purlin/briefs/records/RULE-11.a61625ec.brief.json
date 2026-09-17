@@ -1,0 +1,78 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-16T22:35:29Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "31a5a95cc222578280f93133d2807b0167a9364c0f17136dbb1286206dd829df",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-11",
+      "text": "Call `publish_dashboard()` with `RUNNER_TEMP=/tmp/rt`; verify the directory is `/tmp/rt/purlin-dashboard` and holds `purlin-report.html` and `.purlin/report-data.js`. Repeat with `AGENT_TEMPDIRECTORY` set instead and verify the directory is under it; with neither set, verify it is `.purlin/runtime/report` in the project. With no data file present, verify the page is still copied and a line names the missing data",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/records/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-11",
+  "rule_hash": "4ba672f986b9a2adea4545da7c300e79ddfc421c815c03ece70fa83a90846333",
+  "rule_text": "A CI run copies the dashboard page and `.purlin/report-data.js` into the directory the runner's own temporary-directory variable names, which is the directory the upload step reads; off a runner it goes to `.purlin/runtime/report` in the project",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "b01d715640ab00a33f9fe4f2e381fbe88c505b0cdf7d84f46bf594ec8c1a3c2f",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_artifact_carries_the_page_and_the_data(project, tmp_path):\n    data = os.path.join(project, ci_module.DATA_FILE)\n    os.makedirs(os.path.dirname(data))\n    with open(data, 'w', encoding='utf-8') as handle:\n        handle.write('const PURLIN_DATA = {};\\n')\n    out = str(tmp_path / 'artifact')\n\n    assert ci_module.publish_dashboard(project, out) == out\n    assert os.path.isfile(os.path.join(out, 'purlin-report.html'))\n    with open(os.path.join(out, '.purlin', 'report-data.js'),\n              encoding='utf-8') as handle:\n        assert handle.read() == 'const PURLIN_DATA = {};\\n'",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_artifact_carries_the_page_and_the_data",
+      "proof": "PROOF-11",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_artifact_goes_to_the_azure_agent_temp_directory(project,\n                                                             monkeypatch):\n    _no_runner_temp(monkeypatch)\n    monkeypatch.setenv('AGENT_TEMPDIRECTORY',\n                       os.path.join(project, 'agent-temp'))\n\n    expected = '%s/purlin-dashboard' % os.path.join(project, 'agent-temp')\n    assert ci_module.publish_dir(project) == expected\n    assert ci_module.publish_dashboard(project) == expected\n    assert os.path.isdir(expected)",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_artifact_goes_to_the_azure_agent_temp_directory",
+      "proof": "PROOF-11",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_artifact_goes_to_the_github_runner_temp_directory(project,\n                                                               monkeypatch):\n    _no_runner_temp(monkeypatch)\n    monkeypatch.setenv('RUNNER_TEMP', os.path.join(project, 'runner-temp'))\n\n    # The workflow spells this path with a forward slash and the run has to\n    # write where the upload step reads, so the separator is the one the\n    # workflow can write rather than the local one.\n    expected = '%s/purlin-dashboard' % os.path.join(project, 'runner-temp')\n    assert ci_module.publish_dir(project) == expected\n    assert ci_module.publish_dashboard(project) == expected, (\n        'the upload step names $RUNNER_TEMP/purlin-dashboard, so a run that '\n        'publishes anywhere else attaches an empty artifact')\n    assert os.path.isdir(expected)",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_artifact_goes_to_the_github_runner_temp_directory",
+      "proof": "PROOF-11",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_artifact_goes_under_the_project_when_no_runner_names_a_directory(\n        project, monkeypatch):\n    _no_runner_temp(monkeypatch)\n\n    expected = os.path.join(project, '.purlin', 'runtime', 'report')\n    assert ci_module.publish_dir(project) == expected\n    assert ci_module.publish_dashboard(project) == expected\n    assert os.path.isdir(expected)",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_artifact_goes_under_the_project_when_no_runner_names_a_directory",
+      "proof": "PROOF-11",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_artifact_says_when_there_is_no_data_to_carry(project, tmp_path,\n                                                          capsys):\n    out = str(tmp_path / 'artifact')\n    ci_module.publish_dashboard(project, out)\n    assert 'No dashboard data' in capsys.readouterr().out\n    assert os.path.isdir(out)",
+      "file": "dev/test_records.py",
+      "findings": [],
+      "name": "test_the_artifact_says_when_there_is_no_data_to_carry",
+      "proof": "PROOF-11",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "a61625ecbb1e0fb669300caadfb15ecf9abcfbbf7371fa2f0f4cc9213c31e09f"
+}

@@ -1,0 +1,74 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-16T23:04:54Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "99ef5fcd4660b227762c64da136893b94b306f33b4ce80dcf732c9608dae204f",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-65",
+      "text": "Run `--all --record` against a project whose gate is `passed`, with the break engine standing in; verify the engine was never called, that the output holds `Strength n/a: the gate is passed.`, and that the record's `test_strength` is `null` and every rule's `test_strength.score` is `null`",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-66",
+      "text": "Run `--all --record` against a project whose gate is `strong`, with the break engine standing in and returning a score of 80; verify the engine was called, that the record's `test_strength` is `80`, and that the output holds `Preview: feat test strength 80%.` and `This record does not count under strong: only a CI record counts.`. Run `--all --record --ci` on the same project; verify neither line is printed",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/run_script/20260916T230430Z-ca1f4b5-ci-windows.json",
+  "risk": "high",
+  "rule": "RULE-45",
+  "rule_hash": "772597ed33f334cee647baf8260f82e610225b72f18908645f3e2de9a31cea54",
+  "rule_text": "The gate decides the breaks: under `passed` a `--record` run makes none, prints `Strength n/a: the gate is passed.` and writes `test_strength: null`, and under `strong` and `signed` the breaks run while a run that is not `--ci` prints its strength as a preview beside the line that only a CI record counts",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "12e46db189bafa42df9301ef6b10dc51a4d66cd9b65c75c2565a23c9cf2dbb1a",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_under_passed_no_break_runs_and_the_strength_is_null(\n            self, tmp_path, record_run, capsys):\n        root = _pytest_project(tmp_path, gate='passed')\n        _spec(root, 'feat')\n        _code, calls = record_run(root, '--all')\n        output = capsys.readouterr().out\n\n        assert calls['breaks'] == [], 'the breaks ran under the passed gate'\n        assert 'Strength n/a: the gate is passed.' in output, output\n        record = calls['write'][0][0]\n        assert record['test_strength'] is None\n        rule = record['features']['feat']['rules']['RULE-1']\n        assert rule['test_strength']['score'] is None\n        assert rule['test_strength']['engine'] == 'none'",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_under_passed_no_break_runs_and_the_strength_is_null",
+      "proof": "PROOF-65",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_ci_record_prints_no_preview(\n            self, tmp_path, record_run, capsys):\n        root = _pytest_project(tmp_path, gate='strong')\n        _spec(root, 'feat')\n        record_run(root, '--all', '--ci')\n        output = capsys.readouterr().out\n\n        assert 'Preview:' not in output, output\n        assert 'does not count under' not in output, output",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_a_ci_record_prints_no_preview",
+      "proof": "PROOF-66",
+      "reasons": []
+    },
+    {
+      "body": "def test_under_strong_a_local_record_prints_a_preview_that_does_not_count(\n            self, tmp_path, record_run, capsys):\n        root = _pytest_project(tmp_path, gate='strong')\n        _spec(root, 'feat')\n        _code, calls = record_run(root, '--all')\n        output = capsys.readouterr().out\n\n        assert len(calls['breaks']) == 1, 'the breaks did not run under strong'\n        assert calls['write'][0][0]['test_strength'] == 80\n        assert 'Preview: feat test strength 80%.' in output, output\n        assert ('This record does not count under strong: only a CI record '\n                'counts.') in output, output",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_under_strong_a_local_record_prints_a_preview_that_does_not_count",
+      "proof": "PROOF-66",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "52fb21b5ee37d43174fd0398224ef4f3b26ad63e92510a47d6d347e6cb673417"
+}

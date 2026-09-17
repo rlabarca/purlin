@@ -1,0 +1,600 @@
+{
+  "commit": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",
+  "dirty": false,
+  "features": [
+    {
+      "category": "auth",
+      "description": null,
+      "is_anchor": false,
+      "is_global": false,
+      "latest_record": {
+        "commit": "a1b2c3d",
+        "label": "ci",
+        "os": null,
+        "path": ".purlin/records/login/20260912T091402Z-a1b2c3d-ci.json",
+        "test_strength": 71,
+        "timestamp": "2026-09-12T09:14:02Z"
+      },
+      "name": "login",
+      "pinned": null,
+      "requires": [],
+      "rollup": {
+        "audit": 1,
+        "failing": 0,
+        "held": 0,
+        "latest_record": {
+          "commit": "a1b2c3d",
+          "label": "ci",
+          "os": null,
+          "path": ".purlin/records/login/20260912T091402Z-a1b2c3d-ci.json",
+          "test_strength": 71,
+          "timestamp": "2026-09-12T09:14:02Z"
+        },
+        "manual": 0,
+        "met": 2,
+        "passed": 1,
+        "rules": 3,
+        "stale": 0,
+        "strong": 2,
+        "test_strength": 71,
+        "untested": 0
+      },
+      "rules": [
+        {
+          "blocked_by": "strong",
+          "bucket": "passed",
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": true,
+              "missing_env": [],
+              "reasons": [],
+              "source": "ci",
+              "word": "passed"
+            },
+            "strong": {
+              "brief": ".purlin/briefs/login/RULE-1.1a2b3c4d.brief.json",
+              "findings": [],
+              "observations": [
+                "The test reads the status code and the cookie name; the proof also names a session cookie, and no assertion reads its expiry."
+              ],
+              "reasons": [
+                "review not settled"
+              ],
+              "settled": false,
+              "strength": 71,
+              "word": "manual audit"
+            }
+          },
+          "criterion": null,
+          "design_hash": null,
+          "feature": "login",
+          "flags": {
+            "audit": true,
+            "code_changed": false,
+            "failing": false,
+            "held": false,
+            "manual": false,
+            "stale": false
+          },
+          "id": "RULE-1",
+          "label": "own",
+          "meets_gate": false,
+          "origin": "pm",
+          "proof_hash": "prule1log",
+          "proofs": [
+            {
+              "env": null,
+              "findings": [],
+              "id": "PROOF-1",
+              "tests": [
+                {
+                  "file": "tests/test_login.py",
+                  "name": "test_sign_in"
+                }
+              ],
+              "text": "POST /session with a known email and the password \"correct-horse\" returns 200 and a session cookie.",
+              "tier": "unit"
+            }
+          ],
+          "risk": "high",
+          "rule_hash": "rrule1log",
+          "spec": "ready",
+          "test_hash": "trule1log",
+          "test_hash_kind": "file",
+          "text": "A person signs in with an email address and a password."
+        },
+        {
+          "blocked_by": null,
+          "bucket": "strong",
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": true,
+              "missing_env": [],
+              "reasons": [],
+              "source": "ci",
+              "word": "passed"
+            },
+            "strong": {
+              "brief": null,
+              "findings": [],
+              "observations": [],
+              "reasons": [],
+              "settled": null,
+              "strength": 71,
+              "word": "strong"
+            }
+          },
+          "criterion": null,
+          "design_hash": null,
+          "feature": "login",
+          "flags": {
+            "audit": false,
+            "code_changed": false,
+            "failing": false,
+            "held": false,
+            "manual": false,
+            "stale": false
+          },
+          "id": "RULE-2",
+          "label": "own",
+          "meets_gate": true,
+          "origin": "qa",
+          "proof_hash": "prule2log",
+          "proofs": [
+            {
+              "env": null,
+              "findings": [],
+              "id": "PROOF-2",
+              "tests": [
+                {
+                  "file": "tests/test_login.py",
+                  "name": "test_lockout"
+                }
+              ],
+              "text": "POST /session five times with a wrong password, then once more with the right one, and read 423.",
+              "tier": "unit"
+            }
+          ],
+          "risk": "medium",
+          "rule_hash": "rrule2log",
+          "spec": "ready",
+          "test_hash": "trule2log",
+          "test_hash_kind": "file",
+          "text": "Five failed attempts lock the account for fifteen minutes."
+        },
+        {
+          "blocked_by": null,
+          "bucket": "strong",
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": true,
+              "missing_env": [],
+              "reasons": [],
+              "source": "ci",
+              "word": "passed"
+            },
+            "strong": {
+              "brief": null,
+              "findings": [],
+              "observations": [],
+              "reasons": [],
+              "settled": null,
+              "strength": 71,
+              "word": "strong"
+            }
+          },
+          "criterion": null,
+          "design_hash": null,
+          "feature": "login",
+          "flags": {
+            "audit": false,
+            "code_changed": false,
+            "failing": false,
+            "held": false,
+            "manual": false,
+            "stale": false
+          },
+          "id": "RULE-3",
+          "label": "own",
+          "meets_gate": true,
+          "origin": "eng",
+          "proof_hash": "prule3log",
+          "proofs": [
+            {
+              "env": null,
+              "findings": [
+                "happy_path_only"
+              ],
+              "id": "PROOF-3",
+              "tests": [
+                {
+                  "file": "tests/test_login.py",
+                  "name": "test_notice"
+                }
+              ],
+              "text": "Lock an account and read 1 message in the outbox.",
+              "tier": "unit"
+            }
+          ],
+          "risk": "low",
+          "rule_hash": "rrule3log",
+          "spec": "ready",
+          "test_hash": "trule3log",
+          "test_hash_kind": "file",
+          "text": "A locked account sends one notification email."
+        }
+      ],
+      "scope": [],
+      "signatures": [],
+      "source": null,
+      "source_globs": [],
+      "source_path": null,
+      "spec_path": "specs/auth/login.md",
+      "test_strength": 71
+    },
+    {
+      "category": "billing",
+      "description": null,
+      "is_anchor": false,
+      "is_global": false,
+      "latest_record": {
+        "commit": "a1b2c3d",
+        "label": "ci",
+        "os": null,
+        "path": ".purlin/records/invoice/20260912T091402Z-a1b2c3d-ci.json",
+        "test_strength": 48,
+        "timestamp": "2026-09-12T09:14:02Z"
+      },
+      "name": "invoice",
+      "pinned": null,
+      "requires": [],
+      "rollup": {
+        "audit": 0,
+        "failing": 0,
+        "held": 0,
+        "latest_record": {
+          "commit": "a1b2c3d",
+          "label": "ci",
+          "os": null,
+          "path": ".purlin/records/invoice/20260912T091402Z-a1b2c3d-ci.json",
+          "test_strength": 48,
+          "timestamp": "2026-09-12T09:14:02Z"
+        },
+        "manual": 0,
+        "met": 0,
+        "passed": 1,
+        "rules": 2,
+        "stale": 0,
+        "strong": 0,
+        "test_strength": 48,
+        "untested": 1
+      },
+      "rules": [
+        {
+          "blocked_by": "strong",
+          "bucket": "passed",
+          "cells": {
+            "passed": {
+              "counts": true,
+              "current": true,
+              "missing_env": [],
+              "reasons": [],
+              "source": "ci",
+              "word": "passed"
+            },
+            "strong": {
+              "brief": null,
+              "findings": [],
+              "observations": [],
+              "reasons": [
+                "strength 48% under 70%"
+              ],
+              "settled": null,
+              "strength": 48,
+              "word": "weak"
+            }
+          },
+          "criterion": null,
+          "design_hash": null,
+          "feature": "invoice",
+          "flags": {
+            "audit": false,
+            "code_changed": false,
+            "failing": false,
+            "held": false,
+            "manual": false,
+            "stale": false
+          },
+          "id": "RULE-1",
+          "label": "own",
+          "meets_gate": false,
+          "origin": "eng",
+          "proof_hash": "prule1inv",
+          "proofs": [
+            {
+              "env": null,
+              "findings": [],
+              "id": "PROOF-1",
+              "tests": [
+                {
+                  "file": "tests/test_invoice.py",
+                  "name": "test_total"
+                }
+              ],
+              "text": "Build an invoice of 3 lines at 19.99 and read the total 59.97.",
+              "tier": "unit"
+            }
+          ],
+          "risk": "low",
+          "rule_hash": "rrule1inv",
+          "spec": "ready",
+          "test_hash": "trule1inv",
+          "test_hash_kind": "file",
+          "text": "An invoice totals its lines to the cent."
+        },
+        {
+          "blocked_by": "passed",
+          "bucket": "untested",
+          "cells": {
+            "passed": {
+              "counts": false,
+              "current": false,
+              "missing_env": [],
+              "reasons": [],
+              "source": null,
+              "word": "no test"
+            },
+            "strong": {
+              "brief": null,
+              "findings": [],
+              "observations": [],
+              "reasons": [
+                "not passed"
+              ],
+              "settled": null,
+              "strength": 48,
+              "word": "weak"
+            }
+          },
+          "criterion": null,
+          "design_hash": null,
+          "feature": "invoice",
+          "flags": {
+            "audit": false,
+            "code_changed": false,
+            "failing": false,
+            "held": false,
+            "manual": false,
+            "stale": false
+          },
+          "id": "RULE-2",
+          "label": "own",
+          "meets_gate": false,
+          "origin": "eng",
+          "proof_hash": "prule2inv",
+          "proofs": [
+            {
+              "env": null,
+              "findings": [
+                "happy_path_only"
+              ],
+              "id": "PROOF-2",
+              "tests": [],
+              "text": "Build an invoice with zero lines and read the total 0.00.",
+              "tier": "unit"
+            }
+          ],
+          "risk": "low",
+          "rule_hash": "rrule2inv",
+          "spec": "ready",
+          "test_hash": "trule2inv",
+          "test_hash_kind": "none",
+          "text": "An invoice with no lines totals zero."
+        }
+      ],
+      "scope": [],
+      "signatures": [],
+      "source": null,
+      "source_globs": [],
+      "source_path": null,
+      "spec_path": "specs/billing/invoice.md",
+      "test_strength": 48
+    },
+    {
+      "category": "_anchors",
+      "description": null,
+      "is_anchor": true,
+      "is_global": false,
+      "latest_record": {
+        "commit": "a1b2c3d",
+        "label": "developer",
+        "os": null,
+        "path": ".purlin/records/checkout_design/20260912T091402Z-a1b2c3d-developer.json",
+        "test_strength": 90,
+        "timestamp": "2026-09-12T09:14:02Z"
+      },
+      "name": "checkout_design",
+      "pinned": null,
+      "requires": [],
+      "rollup": {
+        "audit": 0,
+        "failing": 0,
+        "held": 0,
+        "latest_record": {
+          "commit": "a1b2c3d",
+          "label": "developer",
+          "os": null,
+          "path": ".purlin/records/checkout_design/20260912T091402Z-a1b2c3d-developer.json",
+          "test_strength": 90,
+          "timestamp": "2026-09-12T09:14:02Z"
+        },
+        "manual": 0,
+        "met": 0,
+        "passed": 0,
+        "rules": 1,
+        "stale": 0,
+        "strong": 0,
+        "test_strength": 90,
+        "untested": 1
+      },
+      "rules": [
+        {
+          "blocked_by": "passed",
+          "bucket": "untested",
+          "cells": {
+            "passed": {
+              "counts": false,
+              "current": true,
+              "missing_env": [],
+              "reasons": [
+                "developer record does not count under strong"
+              ],
+              "source": "developer",
+              "word": "not run"
+            },
+            "strong": {
+              "brief": null,
+              "findings": [],
+              "observations": [],
+              "reasons": [
+                "not passed"
+              ],
+              "settled": null,
+              "strength": 90,
+              "word": "weak"
+            }
+          },
+          "criterion": "AC-14",
+          "design_hash": "drule1che",
+          "feature": "checkout_design",
+          "flags": {
+            "audit": false,
+            "code_changed": false,
+            "failing": false,
+            "held": false,
+            "manual": false,
+            "stale": false
+          },
+          "id": "RULE-1",
+          "label": "own",
+          "meets_gate": false,
+          "origin": "design",
+          "proof_hash": "prule1che",
+          "proofs": [
+            {
+              "env": null,
+              "findings": [],
+              "id": "PROOF-1",
+              "tests": [
+                {
+                  "file": "tests/test_cart.py",
+                  "name": "test_total_above"
+                }
+              ],
+              "text": "Open /cart with 2 items and read the text \"Total\" above the button labelled \"Pay\".",
+              "tier": "e2e"
+            }
+          ],
+          "risk": "medium",
+          "rule_hash": "rrule1che",
+          "spec": "ready",
+          "test_hash": "trule1che",
+          "test_hash_kind": "file",
+          "text": "The cart page shows the order total above the pay button."
+        }
+      ],
+      "scope": [],
+      "signatures": [],
+      "source": null,
+      "source_globs": [
+        "designs/checkout/cart.png",
+        "designs/checkout/pay.png"
+      ],
+      "source_path": null,
+      "spec_path": "specs/_anchors/checkout_design.md",
+      "test_strength": 90
+    }
+  ],
+  "gate": {
+    "ai_review_at": "high",
+    "ci": "github",
+    "gate": "strong",
+    "min_strength": 70,
+    "mutation_engine": "auto",
+    "pre_push": "off",
+    "sign_at": null,
+    "signers": [],
+    "sql_engine": null,
+    "test_framework": "pytest"
+  },
+  "generated_at": "2026-09-13T08:30:00Z",
+  "generated_by": "sync_status",
+  "project": "ledger",
+  "records": {
+    "checkout_design": {
+      "": {
+        "commit": "a1b2c3d",
+        "label": "developer",
+        "os": null,
+        "path": ".purlin/records/checkout_design/20260912T091402Z-a1b2c3d-developer.json",
+        "result": "pass",
+        "test_strength": 90,
+        "timestamp": "2026-09-12T09:14:02Z"
+      }
+    },
+    "invoice": {
+      "": {
+        "commit": "a1b2c3d",
+        "label": "ci",
+        "os": null,
+        "path": ".purlin/records/invoice/20260912T091402Z-a1b2c3d-ci.json",
+        "result": "pass",
+        "test_strength": 48,
+        "timestamp": "2026-09-12T09:14:02Z"
+      }
+    },
+    "login": {
+      "": {
+        "commit": "a1b2c3d",
+        "label": "ci",
+        "os": null,
+        "path": ".purlin/records/login/20260912T091402Z-a1b2c3d-ci.json",
+        "result": "pass",
+        "test_strength": 71,
+        "timestamp": "2026-09-12T09:14:02Z"
+      }
+    }
+  },
+  "remote_url": "https://github.com/acme/ledger.git",
+  "review_list": [
+    {
+      "cell": "strong",
+      "feature": "login",
+      "owner": "login",
+      "risk": "high",
+      "rule": "RULE-1",
+      "why": [
+        "manual audit"
+      ]
+    }
+  ],
+  "schema_version": 5,
+  "summary": {
+    "audit": 1,
+    "failing": 0,
+    "features": 3,
+    "held": 0,
+    "manual": 0,
+    "met": 2,
+    "passed": 2,
+    "rules": 6,
+    "stale": 0,
+    "strong": 2,
+    "untested": 2
+  },
+  "version": "0.10.0",
+  "warnings": []
+}

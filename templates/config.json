@@ -1,8 +1,10 @@
 {
-  "version": "0.9.5",
-  "test_framework": "auto",
-  "spec_dir": "specs",
-  "pre_push": "warn",
-  "report": true,
-  "digest": "auto"
+  "version": "0.10.0",
+  "gate": "passed",
+  "ai_review_at": "never",
+  "min_strength": null,
+  "mutation_engine": "auto",
+  "sql_engine": null,
+  "ci": "github",
+  "test_framework": "auto"
 }

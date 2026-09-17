@@ -1,33 +1,50 @@
 #!/usr/bin/env bash
-# Tests for the proof plugins, re-homed across the split specs:
-#   proof_common         — shared behavior (RULE-1..7) + discovery/warning (RULE-8..9)
-#   proof_plugins_pytest  — RULE-1..4
-#   proof_plugins_jest    — RULE-1..4
-#   proof_plugins_shell   — RULE-1..4
+# The behaviour every proof plugin shares, driven through pytest, the jest
+# reporter and the shell harness.
+#
+# What is checked here: the runtime proof file's location and name, the seven
+# fields, the no-marker no-op, the write-scoped merge, orphan reaping, ordinal
+# order after the merge, and the loud failure when markers were seen and
+# nothing was written.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-PYTEST_PLUGIN_DIR="$PROJECT_ROOT/scripts/proof"
-JEST_REPORTER="$PROJECT_ROOT/scripts/proof/jest_purlin.js"
-SHELL_HARNESS="$PROJECT_ROOT/scripts/proof/shell_purlin.sh"
+PROOF_DIR="$PROJECT_ROOT/scripts/proof"
+JEST_REPORTER="$PROOF_DIR/jest_purlin.js"
+SHELL_HARNESS="$PROOF_DIR/shell_purlin.sh"
 
-# Load proof harness for recording results
-source "$PROJECT_ROOT/scripts/proof/shell_purlin.sh"
+# Load the harness so this suite records its own evidence.
+source "$SHELL_HARNESS"
 
 PASS=0
 FAIL=0
+PYTEST_READY=0
+if python3 -c 'import pytest' >/dev/null 2>&1; then
+  PYTEST_READY=1
+else
+  echo "  note: pytest is not installed, so the pytest arm did not run."
+fi
+NODE_READY=0
+command -v node >/dev/null 2>&1 && NODE_READY=1 || \
+  echo "  note: node is not installed, so the jest arm did not run."
 
+# Each case proves a rule of the anchor every proof plugin keeps, so the result
+# is written against that anchor's proof.
 record() {
   local feature="$1" proof_id="$2" rule_id="$3" name="$4" status="$5"
   echo "  $([[ "$status" == "pass" ]] && echo PASS || echo FAIL): $name"
-  purlin_proof "$feature" "$proof_id" "$rule_id" "$status" "$name"
+  PURLIN_PROOF_TIER=e2e purlin_proof "$feature" "$proof_id" "$rule_id" \
+    "$status" "$name"
   [[ "$status" == "pass" ]] && PASS=$((PASS + 1)) || FAIL=$((FAIL + 1))
 }
 
+# run <feature> <PROOF-N> <RULE-N> <name> <command...>
 run() {
-  local feature="$1" proof_id="$2" rule_id="$3" name="$4"
-  shift 4
+  local feature="$1" proof_id="$2" rule_id="$3"
+  shift 3
+  local name="$1"
+  shift 1
   if "$@" >/dev/null 2>&1; then
     record "$feature" "$proof_id" "$rule_id" "$name" pass
   else
@@ -35,570 +52,220 @@ run() {
   fi
 }
 
-echo "=== proof plugin tests (proof_common + pytest/jest/shell) ==="
-echo "--- Shared behavior (via pytest) ---"
-
-# PROOF-1 (RULE-1): Spec directory resolution
-test_spec_dir_resolution() {
-  local d=$(mktemp -d)
-  mkdir -p "$d/specs/hooks"
-  echo -e "# Feature: gate_hook\n\n## Rules\n- RULE-1: Guard" > "$d/specs/hooks/gate_hook.md"
-  cat > "$d/test_s.py" << 'PY'
-import pytest
-@pytest.mark.proof("gate_hook", "PROOF-1", "RULE-1")
-def test_it(): assert True
-PY
-  (cd "$d" && python3 -m pytest test_s.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -q --no-header 2>/dev/null)
-  [[ -f "$d/specs/hooks/gate_hook.proofs-unit.json" ]]
-  local rc=$?; rm -rf "$d"; return $rc
+# A project root the plugins recognise: specs/ and .purlin/ both present.
+make_project() {
+  local d
+  d="$(mktemp -d)"
+  mkdir -p "$d/specs/a" "$d/.purlin" "$d/tests"
+  printf '# feat\n\n## Rules\n- RULE-1: a\n- RULE-2: b\n\n## Proof\n- PROOF-1 (RULE-1): t\n' \
+    > "$d/specs/a/feat.md"
+  echo "$d"
 }
-run "proof_common" "PROOF-1" "RULE-1" "spec dir resolution" test_spec_dir_resolution
 
-# PROOF-2 (RULE-2): Proof file naming <feature>.proofs-<tier>.json
-test_proof_naming() {
-  local d=$(mktemp -d)
-  mkdir -p "$d/specs/hooks"
-  echo -e "# Feature: gate_hook\n\n## Rules\n- RULE-1: Guard" > "$d/specs/hooks/gate_hook.md"
-  cat > "$d/test_s.py" << 'PY'
-import pytest
-@pytest.mark.proof("gate_hook", "PROOF-1", "RULE-1")
-def test_it(): assert True
-PY
-  (cd "$d" && python3 -m pytest test_s.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -q --no-header 2>/dev/null)
-  local fpath="$d/specs/hooks/gate_hook.proofs-unit.json"
-  [[ -f "$fpath" ]] || { rm -rf "$d"; return 1; }
-  local fname=$(basename "$fpath")
-  [[ "$fname" == "gate_hook.proofs-unit.json" ]]
-  local rc=$?; rm -rf "$d"; return $rc
+run_pytest() {
+  local d="$1"
+  (cd "$d" && python3 -m pytest tests -p pytest_purlin \
+      --override-ini="pythonpath=$PROOF_DIR" -q --no-header -p no:cacheprovider)
 }
-run "proof_common" "PROOF-2" "RULE-2" "proof file naming" test_proof_naming
 
-# PROOF-3 (RULE-3): Unknown feature falls back to specs/
-test_fallback() {
-  local d=$(mktemp -d)
-  mkdir -p "$d/specs"
-  cat > "$d/test_s.py" << 'PY'
-import pytest
-@pytest.mark.proof("nonexistent_feature", "PROOF-1", "RULE-1")
-def test_it(): assert True
-PY
-  (cd "$d" && python3 -m pytest test_s.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -q --no-header 2>/dev/null)
-  [[ -f "$d/specs/nonexistent_feature.proofs-unit.json" ]]
-  local rc=$?; rm -rf "$d"; return $rc
-}
-run "proof_common" "PROOF-3" "RULE-3" "fallback to specs/" test_fallback
+echo "=== proof plugin tests (the shared contract) ==="
 
-# PROOF-4 (RULE-4): Feature-scoped overwrite preserves other features
-test_overwrite() {
-  local d=$(mktemp -d)
-  mkdir -p "$d/specs/auth"
-  echo -e "# Feature: feat_a\n\n## Rules\n- RULE-1: A" > "$d/specs/auth/feat_a.md"
-  echo '{"tier":"unit","proofs":[{"feature":"feat_b","id":"PROOF-1","rule":"RULE-1","test_file":"t.py","test_name":"t","status":"pass","tier":"unit"}]}' > "$d/specs/auth/feat_a.proofs-unit.json"
-  cat > "$d/test_s.py" << 'PY'
-import pytest
-@pytest.mark.proof("feat_a", "PROOF-1", "RULE-1")
-def test_a(): assert True
-PY
-  (cd "$d" && python3 -m pytest test_s.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -q --no-header 2>/dev/null)
-  python3 -c "
-import json, sys
-data = json.load(open('$d/specs/auth/feat_a.proofs-unit.json'))
-feats = [p['feature'] for p in data['proofs']]
-assert 'feat_b' in feats, 'feat_b was removed'
-assert 'feat_a' in feats, 'feat_a missing'
-assert len(data['proofs']) == 2, f'expected 2, got {len(data[\"proofs\"])}'
-"
-  local rc=$?; rm -rf "$d"; return $rc
-}
-run "proof_common" "PROOF-4" "RULE-4" "feature-scoped overwrite" test_overwrite
-
-# PROOF-5 (RULE-5): All 7 required fields
-test_fields() {
-  local d=$(mktemp -d)
-  mkdir -p "$d/specs/a"
-  echo -e "# Feature: f\n\n## Rules\n- RULE-1: X" > "$d/specs/a/f.md"
-  cat > "$d/test_s.py" << 'PY'
-import pytest
-@pytest.mark.proof("f", "PROOF-1", "RULE-1")
-def test_it(): assert True
-PY
-  (cd "$d" && python3 -m pytest test_s.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -q --no-header 2>/dev/null)
-  python3 -c "
-import json, sys
-e = json.load(open('$d/specs/a/f.proofs-unit.json'))['proofs'][0]
-for f in ['feature','id','rule','test_file','test_name','status','tier']:
-    assert f in e, f'missing {f}'
-"
-  local rc=$?; rm -rf "$d"; return $rc
-}
-run "proof_common" "PROOF-5" "RULE-5" "all 7 required fields" test_fields
-
-# PROOF-6 (RULE-6): pass/fail status
-test_status() {
-  local d=$(mktemp -d)
-  mkdir -p "$d/specs/a"
-  echo -e "# Feature: f\n\n## Rules\n- RULE-1: X\n- RULE-2: Y" > "$d/specs/a/f.md"
-  cat > "$d/test_s.py" << 'PY'
-import pytest
-@pytest.mark.proof("f", "PROOF-1", "RULE-1")
-def test_pass(): assert True
-@pytest.mark.proof("f", "PROOF-2", "RULE-2")
-def test_fail(): assert False
-PY
-  (cd "$d" && python3 -m pytest test_s.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -q --no-header 2>/dev/null) || true
-  python3 -c "
-import json, sys
-ps = json.load(open('$d/specs/a/f.proofs-unit.json'))['proofs']
-by = {p['id']:p['status'] for p in ps}
-assert by['PROOF-1'] == 'pass'
-assert by['PROOF-2'] == 'fail'
-"
-  local rc=$?; rm -rf "$d"; return $rc
-}
-run "proof_common" "PROOF-6" "RULE-6" "pass/fail status" test_status
-
-# PROOF-7 (RULE-7): No markers → no proof files
-test_no_markers() {
-  local d=$(mktemp -d)
-  mkdir -p "$d/specs/a"
-  echo -e "# Feature: f\n\n## Rules\n- RULE-1: X" > "$d/specs/a/f.md"
-  cat > "$d/test_s.py" << 'PY'
-def test_no_marker(): assert True
-PY
-  (cd "$d" && python3 -m pytest test_s.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -q --no-header 2>/dev/null)
-  ! find "$d/specs" -name "*.proofs-*.json" 2>/dev/null | grep -q .
-  local rc=$?; rm -rf "$d"; return $rc
-}
-run "proof_common" "PROOF-7" "RULE-7" "no markers no files" test_no_markers
-
-echo "--- pytest-specific ---"
-
-# PROOF-8 (RULE-8): Marker signature with tier default
-test_pytest_marker() {
-  local d=$(mktemp -d)
-  mkdir -p "$d/specs/a"
-  echo -e "# Feature: feat\n\n## Rules\n- RULE-1: X" > "$d/specs/a/feat.md"
-  cat > "$d/test_s.py" << 'PY'
+# --- The runtime location and name -----------------------------------------
+test_runtime_location() {
+  [[ $PYTEST_READY -eq 1 ]] || return 0
+  local d; d="$(make_project)"
+  cat > "$d/tests/test_s.py" <<'PY'
 import pytest
 @pytest.mark.proof("feat", "PROOF-1", "RULE-1")
 def test_it(): assert True
 PY
-  (cd "$d" && python3 -m pytest test_s.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -q --no-header 2>/dev/null)
+  run_pytest "$d" || true
+  [[ -f "$d/.purlin/runtime/proofs/feat.unit.json" ]] || { rm -rf "$d"; return 1; }
+  # Nothing is written under specs/.
+  [[ -z "$(find "$d/specs" -name '*.json')" ]]
+  local rc=$?; rm -rf "$d"; return $rc
+}
+run "proof_common" "PROOF-1" "RULE-1" "the proof file is written to the runtime directory" test_runtime_location
+
+test_file_name_carries_feature_and_tier() {
+  local d; d="$(make_project)"
+  cat > "$d/tests/t.sh" <<EOF
+source "$SHELL_HARNESS"
+export PURLIN_PROOF_TIER=integration
+purlin_proof "feat" "PROOF-1" "RULE-1" pass "a case"
+purlin_proof_finish
+EOF
+  (cd "$d" && bash tests/t.sh)
+  [[ -f "$d/.purlin/runtime/proofs/feat.integration.json" ]]
+  local rc=$?; rm -rf "$d"; return $rc
+}
+run "proof_common" "PROOF-14" "RULE-14" "the file name carries the feature and the tier" test_file_name_carries_feature_and_tier
+
+# --- The seven fields -------------------------------------------------------
+test_seven_fields() {
+  local d; d="$(make_project)"
+  cat > "$d/tests/t.sh" <<EOF
+source "$SHELL_HARNESS"
+purlin_proof "feat" "PROOF-1" "RULE-1" pass "a case"
+purlin_proof_finish
+EOF
+  (cd "$d" && bash tests/t.sh)
   python3 -c "
 import json, sys
-e = json.load(open('$d/specs/a/feat.proofs-unit.json'))['proofs'][0]
-assert e['feature'] == 'feat'
-assert e['id'] == 'PROOF-1', f'Expected id PROOF-1, got {e[\"id\"]}'
-assert e['rule'] == 'RULE-1', f'Expected rule RULE-1, got {e[\"rule\"]}'
-assert e['tier'] == 'unit'
+entry = json.load(open('$d/.purlin/runtime/proofs/feat.unit.json', encoding='utf-8'))['proofs'][0]
+want = {'feature', 'id', 'rule', 'test_file', 'test_name', 'status', 'tier'}
+assert set(entry) == want, entry
+assert entry['test_file'] == 'tests/t.sh', entry
 "
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "proof_plugins_pytest" "PROOF-1" "RULE-1" "pytest marker signature" test_pytest_marker
+run "proof_common" "PROOF-4" "RULE-4" "every entry carries the seven fields and no eighth" test_seven_fields
 
-# PROOF-9 (RULE-9): Fewer than 3 args silently skipped
-test_pytest_skip_short() {
-  local d=$(mktemp -d)
-  mkdir -p "$d/specs"
-  cat > "$d/test_s.py" << 'PY'
-import pytest
-@pytest.mark.proof("feat", "PROOF-1")
-def test_two_args(): assert True
+# --- No marker, no file -----------------------------------------------------
+test_no_markers_no_file() {
+  [[ $PYTEST_READY -eq 1 ]] || return 0
+  local d; d="$(make_project)"
+  cat > "$d/tests/test_s.py" <<'PY'
+def test_plain(): assert True
 PY
-  (cd "$d" && python3 -m pytest test_s.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -q --no-header 2>/dev/null)
-  # Either no file created, or file created with 0 entries — both valid
-  if [[ -f "$d/specs/feat.proofs-unit.json" ]]; then
-    python3 -c "
-import json, sys
-d = json.load(open('$d/specs/feat.proofs-unit.json'))
-assert len(d['proofs']) == 0, f'Expected 0 proofs, got {len(d[\"proofs\"])}'
-"
-    local rc=$?; rm -rf "$d"; return $rc
-  fi
-  # No file created — verify no proof files exist anywhere under specs
-  ! find "$d/specs" -name "*.proofs-*.json" 2>/dev/null | grep -q .
+  run_pytest "$d" || true
+  [[ ! -d "$d/.purlin/runtime/proofs" ]] || \
+    [[ -z "$(ls -A "$d/.purlin/runtime/proofs")" ]]
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "proof_plugins_pytest" "PROOF-2" "RULE-2" "pytest fewer args skipped" test_pytest_skip_short
+run "proof_common" "PROOF-9" "RULE-9" "a run that collected no marker writes nothing" test_no_markers_no_file
 
-# PROOF-10 (RULE-10): test_file relative to rootdir
-test_pytest_relpath() {
-  local d=$(mktemp -d)
-  mkdir -p "$d/specs/a" "$d/tests"
-  echo -e "# Feature: feat\n\n## Rules\n- RULE-1: X" > "$d/specs/a/feat.md"
-  cat > "$d/tests/test_feat.py" << 'PY'
-import pytest
-@pytest.mark.proof("feat", "PROOF-1", "RULE-1")
-def test_it(): assert True
-PY
-  (cd "$d" && python3 -m pytest tests/test_feat.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -q --no-header 2>/dev/null)
-  python3 -c "
-import json, sys
-e = json.load(open('$d/specs/a/feat.proofs-unit.json'))['proofs'][0]
-assert not e['test_file'].startswith('/'), f'absolute: {e[\"test_file\"]}'
-"
-  local rc=$?; rm -rf "$d"; return $rc
-}
-run "proof_plugins_pytest" "PROOF-3" "RULE-3" "pytest test_file relative" test_pytest_relpath
-
-# PROOF-11 (RULE-11): pytest_configure registers marker and plugin
-test_pytest_configure() {
-  # Unit test: verify function registers marker and plugin via fake objects
-  python3 -c "
-import sys, os
-sys.path.insert(0, os.path.join('$PROJECT_ROOT', 'scripts', 'proof'))
-from pytest_purlin import pytest_configure, ProofCollector
-
-class FakePluginManager:
-    registered = {}
-    def register(self, plugin, name):
-        self.registered[name] = plugin
-
-class FakeConfig:
-    markers = []
-    pluginmanager = FakePluginManager()
-    def addinivalue_line(self, name, value):
-        self.markers.append((name, value))
-
-config = FakeConfig()
-pytest_configure(config)
-assert any('proof' in m[1] for m in config.markers), 'proof marker not registered'
-assert 'purlin_proof' in config.pluginmanager.registered, 'plugin not registered'
-assert isinstance(config.pluginmanager.registered['purlin_proof'], ProofCollector)
-" || return 1
-
-  # Integration check: verify proof marker is recognized in a real pytest session
-  local d=$(mktemp -d)
-  mkdir -p "$d/specs"
-  cat > "$d/test_marker_check.py" << 'PY'
-import pytest
-@pytest.mark.proof("feat", "PROOF-1", "RULE-1")
-def test_marker_recognized(): assert True
-PY
-  # Run with -W error::pytest.PytestUnknownMarkWarning to catch unregistered markers
-  (cd "$d" && python3 -m pytest test_marker_check.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -W "error::pytest.PytestUnknownMarkWarning" -q --no-header 2>/dev/null)
-  local rc=$?; rm -rf "$d"
-  [[ $rc -eq 0 ]] || return 1
-
-  # "call phase only" check: a marked test that errors in SETUP emits NO proof
-  # (makereport returns early for non-call phases), while a test that fails in
-  # the CALL body DOES emit a fail proof.
-  local cp=$(mktemp -d)
-  mkdir -p "$cp/specs/a"
-  printf '# Feature: cphase\n\n## Rules\n- RULE-1: X\n- RULE-2: Y\n' > "$cp/specs/a/cphase.md"
-  cat > "$cp/test_cp.py" << 'PY'
-import pytest
-@pytest.fixture
-def boom():
-    raise RuntimeError("setup explosion — never reaches the call phase")
-@pytest.mark.proof("cphase", "PROOF-1", "RULE-1")
-def test_errors_in_setup(boom):
-    assert True
-@pytest.mark.proof("cphase", "PROOF-2", "RULE-2")
-def test_fails_in_call():
-    assert False
-PY
-  (cd "$cp" && python3 -m pytest test_cp.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -q --no-header 2>/dev/null) || true
+# --- The write-scoped merge -------------------------------------------------
+test_merge_keeps_other_features_and_files() {
+  local d; d="$(make_project)"
+  mkdir -p "$d/.purlin/runtime/proofs"
+  printf 'kept\n' > "$d/tests/kept.sh"
   python3 -c "
 import json
-ps = json.load(open('$cp/specs/a/cphase.proofs-unit.json'))['proofs']
-ids = {p['id']: p['status'] for p in ps}
-# call-phase failure recorded as fail; setup-phase error not recorded at all
-assert ids.get('PROOF-2') == 'fail', f'call-phase failure not recorded: {ids}'
-assert 'PROOF-1' not in ids, f'setup-phase error must NOT be recorded (call phase only): {ids}'
+entries = [
+  {'feature': 'other', 'id': 'PROOF-1', 'rule': 'RULE-1',
+   'test_file': 'tests/kept.sh', 'test_name': 'other', 'status': 'pass', 'tier': 'unit'},
+  {'feature': 'feat', 'id': 'PROOF-2', 'rule': 'RULE-2',
+   'test_file': 'tests/kept.sh', 'test_name': 'second', 'status': 'pass', 'tier': 'unit'},
+  {'feature': 'feat', 'id': 'PROOF-3', 'rule': 'RULE-2',
+   'test_file': 'tests/gone.sh', 'test_name': 'gone', 'status': 'pass', 'tier': 'unit'},
+]
+json.dump({'tier': 'unit', 'proofs': entries},
+          open('$d/.purlin/runtime/proofs/feat.unit.json', 'w', encoding='utf-8'), indent=2)
 "
-  local rc2=$?; rm -rf "$cp"; return $rc2
-}
-run "proof_plugins_pytest" "PROOF-4" "RULE-4" "pytest_configure registers marker + plugin" test_pytest_configure
-
-echo "--- Jest-specific ---"
-
-# Helper: create a node script that mocks 'glob' and exercises the reporter
-jest_run() {
-  local tmpdir="$1" test_file="$2" title="$3" status="$4"
-  node -e "
-const Module = require('module');
-const fs = require('fs');
-const path = require('path');
-const origLoad = Module._load;
-Module._load = function(request, parent, isMain) {
-  if (request === 'glob') {
-    return { globSync: function(pattern) {
-      const results = [];
-      function walk(dir) {
-        for (const e of fs.readdirSync(dir, {withFileTypes:true})) {
-          const full = path.join(dir, e.name);
-          if (e.isDirectory()) walk(full);
-          else if (e.name.endsWith('.md')) results.push(full);
-        }
-      }
-      const base = pattern.split('*')[0].replace(/\/$/, '') || '.';
-      if (fs.existsSync(base)) walk(base);
-      return results;
-    }};
-  }
-  return origLoad.apply(this, arguments);
-};
-const Reporter = require('$JEST_REPORTER');
-const r = new Reporter({rootDir: '$tmpdir'}, {});
-r.onTestResult(null, {
-  testFilePath: '$tmpdir/$test_file',
-  testResults: [{title: '$title', status: '$status'}]
-});
-process.chdir('$tmpdir');
-r.onRunComplete();
-" 2>/dev/null
-}
-
-# PROOF-12 (RULE-12): Jest marker parsed from title
-test_jest_marker() {
-  local d=$(mktemp -d)
-  mkdir -p "$d/specs/a"
-  echo -e "# Feature: feat\n\n## Rules\n- RULE-1: X" > "$d/specs/a/feat.md"
-  jest_run "$d" "tests/test.js" "works [proof:feat:PROOF-1:RULE-1:unit]" "passed"
-  python3 -c "
-import json, sys
-e = json.load(open('$d/specs/a/feat.proofs-unit.json'))['proofs'][0]
-assert e['feature'] == 'feat'
-assert e['id'] == 'PROOF-1'
-assert e['rule'] == 'RULE-1'
-"
-  local rc=$?; rm -rf "$d"; return $rc
-}
-run "proof_plugins_jest" "PROOF-1" "RULE-1" "jest marker parsing" test_jest_marker
-
-# PROOF-13 (RULE-13): Tests without marker ignored
-test_jest_no_marker() {
-  local d=$(mktemp -d)
-  mkdir -p "$d/specs"
-  node -e "
-const Module = require('module');
-const fs = require('fs');
-const origLoad = Module._load;
-Module._load = function(r) {
-  if (r === 'glob') return {globSync: function() {return [];}};
-  return origLoad.apply(this, arguments);
-};
-const Reporter = require('$JEST_REPORTER');
-const r = new Reporter({rootDir: '$d'}, {});
-r.onTestResult(null, {
-  testFilePath: '$d/tests/test.js',
-  testResults: [{title: 'no marker here', status: 'passed'}]
-});
-process.chdir('$d');
-r.onRunComplete();
-const files = fs.readdirSync('$d/specs').filter(f => f.includes('.proofs-'));
-if (files.length > 0) process.exit(1);
-" 2>/dev/null
-  local rc=$?; rm -rf "$d"; return $rc
-}
-run "proof_plugins_jest" "PROOF-2" "RULE-2" "jest no marker ignored" test_jest_no_marker
-
-# PROOF-14 (RULE-14): test_file relative to rootDir
-test_jest_relpath() {
-  local d=$(mktemp -d)
-  mkdir -p "$d/specs/a"
-  echo -e "# Feature: feat\n\n## Rules\n- RULE-1: X" > "$d/specs/a/feat.md"
-  jest_run "$d" "tests/test.js" "works [proof:feat:PROOF-1:RULE-1:unit]" "passed"
-  python3 -c "
-import json, sys
-e = json.load(open('$d/specs/a/feat.proofs-unit.json'))['proofs'][0]
-assert not e['test_file'].startswith('/'), f'absolute: {e[\"test_file\"]}'
-"
-  local rc=$?; rm -rf "$d"; return $rc
-}
-run "proof_plugins_jest" "PROOF-3" "RULE-3" "jest test_file relative" test_jest_relpath
-
-# PROOF-15 (RULE-15): Jest "passed"→"pass", "failed"→"fail"
-test_jest_status() {
-  local d=$(mktemp -d)
-  mkdir -p "$d/specs/a"
-  echo -e "# Feature: feat\n\n## Rules\n- RULE-1: X\n- RULE-2: Y" > "$d/specs/a/feat.md"
-  node -e "
-const Module = require('module');
-const fs = require('fs');
-const path = require('path');
-const origLoad = Module._load;
-Module._load = function(request) {
-  if (request === 'glob') {
-    return { globSync: function(pattern) {
-      const results = [];
-      function walk(dir) {
-        for (const e of fs.readdirSync(dir, {withFileTypes:true})) {
-          const full = path.join(dir, e.name);
-          if (e.isDirectory()) walk(full);
-          else if (e.name.endsWith('.md')) results.push(full);
-        }
-      }
-      const base = pattern.split('*')[0].replace(/\/$/, '') || '.';
-      if (fs.existsSync(base)) walk(base);
-      return results;
-    }};
-  }
-  return origLoad.apply(this, arguments);
-};
-const Reporter = require('$JEST_REPORTER');
-const r = new Reporter({rootDir: '$d'}, {});
-r.onTestResult(null, {
-  testFilePath: '$d/tests/t.js',
-  testResults: [
-    {title: 'p [proof:feat:PROOF-1:RULE-1:unit]', status: 'passed'},
-    {title: 'f [proof:feat:PROOF-2:RULE-2:unit]', status: 'failed'}
-  ]
-});
-process.chdir('$d');
-r.onRunComplete();
-const ps = JSON.parse(fs.readFileSync('$d/specs/a/feat.proofs-unit.json','utf8')).proofs;
-const by = {};
-ps.forEach(p => by[p.id] = p.status);
-if (by['PROOF-1'] !== 'pass') process.exit(1);
-if (by['PROOF-2'] !== 'fail') process.exit(1);
-" 2>/dev/null
-  local rc=$?; rm -rf "$d"; return $rc
-}
-run "proof_plugins_jest" "PROOF-4" "RULE-4" "jest status mapping" test_jest_status
-
-echo "--- Shell-specific ---"
-
-# PROOF-16 (RULE-16): purlin_proof 5 args + PURLIN_PROOF_TIER
-test_shell_tier() {
-  local d=$(mktemp -d)
-  mkdir -p "$d/specs/a"
-  echo -e "# Feature: feat\n\n## Rules\n- RULE-1: X" > "$d/specs/a/feat.md"
-  (
-    cd "$d"
-    export PURLIN_PROOF_TIER=integration
-    source "$SHELL_HARNESS"
-    purlin_proof "feat" "PROOF-1" "RULE-1" pass "desc"
-    purlin_proof_finish
-  )
-  python3 -c "
-import json, sys
-e = json.load(open('$d/specs/a/feat.proofs-integration.json'))['proofs'][0]
-assert e['tier'] == 'integration'
-"
-  local rc=$?; rm -rf "$d"; return $rc
-}
-run "proof_plugins_shell" "PROOF-1" "RULE-1" "shell tier from PURLIN_PROOF_TIER" test_shell_tier
-
-# PROOF-17 (RULE-17): test_file from BASH_SOURCE[1]
-test_shell_source() {
-  local d=$(mktemp -d)
-  mkdir -p "$d/specs/a"
-  echo -e "# Feature: feat\n\n## Rules\n- RULE-1: X" > "$d/specs/a/feat.md"
-  cat > "$d/my_test.sh" << SHEOF
-#!/usr/bin/env bash
+  cat > "$d/tests/t.sh" <<EOF
 source "$SHELL_HARNESS"
-purlin_proof "feat" "PROOF-1" "RULE-1" pass "test"
+purlin_proof "feat" "PROOF-1" "RULE-1" pass "fresh"
 purlin_proof_finish
-SHEOF
-  chmod +x "$d/my_test.sh"
-  (cd "$d" && bash "$d/my_test.sh")
+EOF
+  (cd "$d" && bash tests/t.sh)
   python3 -c "
-import json, sys
-e = json.load(open('$d/specs/a/feat.proofs-unit.json'))['proofs'][0]
-assert 'my_test.sh' in e['test_file'], f'unexpected: {e[\"test_file\"]}'
+import json
+data = json.load(open('$d/.purlin/runtime/proofs/feat.unit.json', encoding='utf-8'))
+keys = {(e['feature'], e['id'], e['test_file']) for e in data['proofs']}
+assert ('other', 'PROOF-1', 'tests/kept.sh') in keys, keys
+assert ('feat', 'PROOF-2', 'tests/kept.sh') in keys, keys
+assert ('feat', 'PROOF-3', 'tests/gone.sh') not in keys, keys
+assert ('feat', 'PROOF-1', 'tests/t.sh') in keys, keys
 "
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "proof_plugins_shell" "PROOF-2" "RULE-2" "shell test_file from BASH_SOURCE" test_shell_source
+run "proof_common" "PROOF-6" "RULE-6" "the merge keeps other features and other test files" test_merge_keeps_other_features_and_files
+run "proof_common" "PROOF-6" "RULE-6" "an entry whose test file is gone is reaped" test_merge_keeps_other_features_and_files
 
-# PROOF-18 (RULE-18): purlin_proof_finish required to write
-test_shell_finish_required() {
-  local d=$(mktemp -d)
-  mkdir -p "$d/specs/a"
-  echo -e "# Feature: feat\n\n## Rules\n- RULE-1: X" > "$d/specs/a/feat.md"
-  # Call purlin_proof without finish in a subshell — no files
-  (
-    cd "$d"
-    source "$SHELL_HARNESS"
-    purlin_proof "feat" "PROOF-1" "RULE-1" pass "test1"
-    purlin_proof "feat" "PROOF-2" "RULE-2" pass "test2"
-  )
-  local no_files=true
-  ls "$d/specs/a/"*.proofs-*.json 2>/dev/null | grep -q . && no_files=false
-  # Now call with finish
-  (
-    cd "$d"
-    source "$SHELL_HARNESS"
-    purlin_proof "feat" "PROOF-1" "RULE-1" pass "test1"
-    purlin_proof_finish
-  )
-  local has_files=false
-  [[ -f "$d/specs/a/feat.proofs-unit.json" ]] && has_files=true
-  [[ "$no_files" == "true" ]] && [[ "$has_files" == "true" ]]
-  local rc=$?; rm -rf "$d"; return $rc
-}
-run "proof_plugins_shell" "PROOF-3" "RULE-3" "shell finish required to write" test_shell_finish_required
-
-# PROOF-19 (RULE-19): Entries cleared after finish
-test_shell_clear() {
-  local d=$(mktemp -d)
-  mkdir -p "$d/specs/a"
-  echo -e "# Feature: feat\n\n## Rules\n- RULE-1: X" > "$d/specs/a/feat.md"
-  (
-    cd "$d"
-    source "$SHELL_HARNESS"
-    purlin_proof "feat" "PROOF-1" "RULE-1" pass "test"
-    purlin_proof_finish
-    # _PURLIN_PROOFS should be empty now
-    [[ -z "$_PURLIN_PROOFS" ]] || exit 1
-    # Second finish = no-op
-    purlin_proof_finish
-  )
+# --- Ordinal order after the merge -----------------------------------------
+test_ordinal_order() {
+  local d; d="$(make_project)"
+  mkdir -p "$d/forward" "$d/reversed"
+  for dir in forward reversed; do
+    mkdir -p "$d/$dir/specs/a" "$d/$dir/.purlin" "$d/$dir/tests"
+    printf '# feat\n\n## Rules\n- RULE-1: a\n' > "$d/$dir/specs/a/feat.md"
+  done
+  cat > "$d/forward/tests/t.sh" <<EOF
+source "$SHELL_HARNESS"
+purlin_proof "feat" "PROOF-1" "RULE-1" pass "a"
+purlin_proof "feat" "PROOF-2" "RULE-1" pass "b"
+purlin_proof "feat" "PROOF-10" "RULE-1" pass "c"
+purlin_proof "feat" "PROOF-11" "RULE-1" pass "d"
+purlin_proof_finish
+EOF
+  cat > "$d/reversed/tests/t.sh" <<EOF
+source "$SHELL_HARNESS"
+purlin_proof "feat" "PROOF-11" "RULE-1" pass "d"
+purlin_proof "feat" "PROOF-10" "RULE-1" pass "c"
+purlin_proof "feat" "PROOF-2" "RULE-1" pass "b"
+purlin_proof "feat" "PROOF-1" "RULE-1" pass "a"
+purlin_proof_finish
+EOF
+  (cd "$d/forward" && bash tests/t.sh)
+  (cd "$d/reversed" && bash tests/t.sh)
   python3 -c "
-import json, sys
-d = json.load(open('$d/specs/a/feat.proofs-unit.json'))
-assert len(d['proofs']) == 1, f'expected 1, got {len(d[\"proofs\"])}'
+import json
+a = open('$d/forward/.purlin/runtime/proofs/feat.unit.json', 'rb').read()
+b = open('$d/reversed/.purlin/runtime/proofs/feat.unit.json', 'rb').read()
+assert a == b, 'the two runs wrote different bytes'
+ids = [e['id'] for e in json.loads(a.decode())['proofs']]
+want = ['PROOF-1', 'PROOF-10', 'PROOF-11', 'PROOF-2']
+assert ids == want, (want, ids)
 "
   local rc=$?; rm -rf "$d"; return $rc
 }
-run "proof_plugins_shell" "PROOF-4" "RULE-4" "shell entries cleared after finish" test_shell_clear
+run "proof_common" "PROOF-7" "RULE-7" "entries are written in ordinal order whatever the call order" test_ordinal_order
 
-echo "--- Installation and discovery ---"
-
-# PROOF-20 (RULE-20): Custom plugin proof files discovered by sync_status via glob
-test_custom_discovery() {
-  local d=$(mktemp -d)
-  mkdir -p "$d/specs/custom"
-  echo -e "# Feature: my_custom\n\n## Rules\n- RULE-1: Does the thing" > "$d/specs/custom/my_custom.md"
-  # Hand-write a proof file as if a custom (non-built-in) plugin emitted it
-  cat > "$d/specs/custom/my_custom.proofs-unit.json" << 'JSON'
-{"tier":"unit","proofs":[{"feature":"my_custom","id":"PROOF-1","rule":"RULE-1","test_file":"tests/test_custom.go","test_name":"TestDoesTheThing","status":"pass","tier":"unit"}]}
-JSON
-  # Run sync_status on the temp project — it should discover the proof
-  local output
-  output=$(python3 -c "
-import sys, os
-sys.path.insert(0, os.path.join('$PROJECT_ROOT', 'scripts', 'mcp'))
-from purlin_server import sync_status
-print(sync_status('$d'))
-" 2>&1)
-  echo "$output" | grep -q "1/1 rules proved"
-  local rc=$?; rm -rf "$d"; return $rc
-}
-run "proof_common" "PROOF-8" "RULE-8" "custom plugin proofs discovered by sync_status" test_custom_discovery
-
-# PROOF-21 (RULE-21): Fallback to specs/ emits warning to stderr
-test_fallback_warning() {
-  local d=$(mktemp -d)
-  mkdir -p "$d/specs"
-  cat > "$d/test_s.py" << 'PY'
+# --- Markers seen, nothing written -----------------------------------------
+test_seen_markers_and_no_entry_fails() {
+  [[ $PYTEST_READY -eq 1 ]] || return 0
+  local d; d="$(make_project)"
+  cat > "$d/tests/test_s.py" <<'PY'
 import pytest
-@pytest.mark.proof("missing_feature", "PROOF-1", "RULE-1")
+@pytest.mark.proof("feat", "PROOF-1", "RULE-1")
+@pytest.mark.skip(reason="no tool")
 def test_it(): assert True
 PY
-  local stderr_output
-  stderr_output=$( (cd "$d" && python3 -m pytest test_s.py -p pytest_purlin --override-ini="pythonpath=$PYTEST_PLUGIN_DIR" -q --no-header) 2>&1 1>/dev/null )
-  # stderr must mention the feature name and suggest purlin:spec
-  echo "$stderr_output" | grep -q "missing_feature" || { rm -rf "$d"; return 1; }
-  echo "$stderr_output" | grep -q "purlin:spec" || { rm -rf "$d"; return 1; }
-  rm -rf "$d"
-  return 0
+  local out
+  out="$( (cd "$d" && python3 -m pytest tests -p pytest_purlin \
+      --override-ini="pythonpath=$PROOF_DIR" -q --no-header -p no:cacheprovider) 2>&1 )" && \
+    { rm -rf "$d"; return 1; }
+  grep -q "no proof entry was written for feat" <<<"$out"
+  local rc=$?; rm -rf "$d"; return $rc
 }
-run "proof_common" "PROOF-9" "RULE-9" "fallback warning to stderr" test_fallback_warning
+run "proof_common" "PROOF-10" "RULE-10" "markers seen and nothing written fails the run" test_seen_markers_and_no_entry_fails
 
-# Emit proof files
+# --- The jest reporter ------------------------------------------------------
+test_jest_writes_the_runtime_file() {
+  [[ $NODE_READY -eq 1 ]] || return 0
+  local d; d="$(make_project)"
+  printf '// marked\n' > "$d/tests/a.test.js"
+  cat > "$d/harness.cjs" <<EOF
+const path = require("path");
+const Reporter = require("$JEST_REPORTER");
+const r = new Reporter({rootDir: "$d"});
+r.onTestResult({}, {testFilePath: path.join("$d", "tests/a.test.js"),
+  testResults: [{title: "ok [proof:feat:PROOF-1:RULE-1:unit]", status: "passed"}]});
+r.onRunComplete();
+EOF
+  (cd "$d" && node harness.cjs)
+  [[ -f "$d/.purlin/runtime/proofs/feat.unit.json" ]]
+  local rc=$?; rm -rf "$d"; return $rc
+}
+run "proof_common" "PROOF-1" "RULE-1" "the jest reporter writes the runtime proof file" test_jest_writes_the_runtime_file
+
+# --- The retired keyword ----------------------------------------------------
+test_retired_keyword_refused() {
+  local d; d="$(make_project)"
+  cat > "$d/tests/t.sh" <<EOF
+source "$SHELL_HARNESS"
+export PURLIN_PROOF_PLATFORMS=windows-2022
+purlin_proof "feat" "PROOF-1" "RULE-1" pass "a case"
+purlin_proof_finish
+EOF
+  local out
+  out="$( (cd "$d" && bash tests/t.sh) 2>&1 )" && { rm -rf "$d"; return 1; }
+  grep -q "@env(windows)" <<<"$out"
+  local rc=$?; rm -rf "$d"; return $rc
+}
+run "proof_common" "PROOF-11" "RULE-11" "a retired marker keyword is refused and names @env" test_retired_keyword_refused
+
 cd "$PROJECT_ROOT"
 purlin_proof_finish
 

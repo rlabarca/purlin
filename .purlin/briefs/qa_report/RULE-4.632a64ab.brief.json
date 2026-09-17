@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "qa_report",
+  "generated_at": "2026-09-16T23:04:46Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "c6ab2864b7e1bfbc13b0d55f208f7f8d187b3fdf654a8ea3edceb492db4ba9fe",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-4",
+      "text": "Read `tools/QA/purlin-qa-report.md`; collect the bolded backticked answer names in the section that lists them and verify the collected list is exactly `sign`, `add a case`, `hold`, `skip`, in that order. Adding a fifth answer `looks fine` fails on the comparison, printing both lists",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/qa_report/20260916T230430Z-ca1f4b5-ci-windows.json",
+  "risk": "medium",
+  "rule": "RULE-4",
+  "rule_hash": "e192e04ad204e6309d70bee615bc5e7270a8e3dd777fb7a38ab4901b678e8b6d",
+  "rule_text": "Every entry in the review list closes with exactly one of the four answers a person gives, `sign`, `add a case`, `hold` and `skip`, and the skill names no fifth",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "401e002d626a68703f5457dc582c50cb6a8cd58d9e200131155957be6079a012",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_every_entry_ends_with_one_of_four_answers(self):\n        assert re.findall(r'^- \\*\\*`([^`]+)`\\*\\*', read(QA_MD), re.M) == [\n            'sign', 'add a case', 'hold', 'skip']",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_every_entry_ends_with_one_of_four_answers",
+      "proof": "PROOF-4",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "632a64ab709a49a85383433d4422870554e7992b6a0ec0ed158c983ec28431f3"
+}

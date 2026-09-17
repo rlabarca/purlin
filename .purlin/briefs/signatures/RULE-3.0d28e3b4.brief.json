@@ -1,0 +1,53 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-17T12:54:44Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "50eb2596050a6ce0a1c30fd11ec0babcc0024bd8eef129794af498201e8dafb4",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-3",
+      "text": "Read the triple, rewrite the rule line with doubled spaces and an added `[origin: pm]` tag, and read it again; verify the two values are equal",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/signatures/20260917T125352Z-df84acf-ci-windows.json",
+  "risk": "high",
+  "rule": "RULE-3",
+  "rule_hash": "4c00ec58b979b2419a34807be6896158ce0655b5b6c11cd20569af9631072c28",
+  "rule_text": "Reflowing a rule's whitespace or adding a tag leaves the triple where it was, because the triple binds the rule text with its tags stripped",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "73ead68d05db9db3f211101c0ffa77448eeb249244272b9af16cec60cce36c54",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_reflowing_a_rule_and_adding_a_tag_keep_the_triple(self, proved):\n        before = sign_module.triple_for(proved.rule('RULE-1'))\n        proved.spec(SPEC.replace(\n            '- RULE-1: Valid credentials return 200 with a session token '\n            '[risk: low]',\n            '- RULE-1: Valid   credentials  return 200  with a session token '\n            '[origin: pm] [risk: low]'))\n        after = sign_module.triple_for(proved.rule('RULE-1'))\n        assert after == before, (\n            'the triple binds the rule text with its tags stripped')",
+      "file": "dev/test_signatures.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_reflowing_a_rule_and_adding_a_tag_keep_the_triple",
+      "proof": "PROOF-3",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "0d28e3b4a0efa1cdd04c4cbaae5bdb2ec4a7d15ce1da539d0c425dc52ecef907"
+}

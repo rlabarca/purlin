@@ -1,33 +1,45 @@
-// Purlin proof logger for .NET test projects (xUnit / NUnit / MSTest).
+// Purlin proof logger for .NET xUnit test projects.
 //
 // A custom `dotnet test` logger. Register it with:
 //
 //     dotnet test --logger purlin
 //
-// The assembly MUST be named `*.TestLogger.dll` (e.g. Purlin.TestLogger.dll) —
-// the .NET test platform only scans assemblies matching that suffix for loggers.
+// The assembly MUST be named `*.TestLogger.dll` (e.g. Purlin.TestLogger.dll):
+// vstest only scans assemblies matching that suffix for loggers.
 // Reference this logger project from the test project so the DLL lands in the
 // test output directory, where vstest discovers it by FriendlyName ("purlin").
 //
-// It collects the `PurlinProof` test trait during the run and writes
-// feature-scoped proof JSON files next to the matching spec, implementing the
-// shared proof-plugin contract (see specs/_anchors/proof_common.md):
-//   - resolve the spec directory by scanning specs/**/*.md (RULE-1)
-//   - write <feature>.proofs-<tier>.json into that directory (RULE-2)
-//   - fall back to specs/ with a stderr warning when no spec matches (RULE-3, RULE-9)
-//   - feature-scoped overwrite: keep other features, replace this one (RULE-4)
-//   - emit all 7 fields (RULE-5); status is "pass"/"fail" only (RULE-6)
-//   - no markers collected -> write nothing (RULE-7)
+// The logger collects the `PurlinProof` test trait during the run and writes
+// what it observed to `.purlin/runtime/proofs/<feature>.<tier>.json`. Proof
+// files are runtime: they are gitignored, so two runs on two branches never
+// conflict and nothing about a run is committed. The record `purlin:audit`
+// writes is what says where a run happened, and it says it once per run.
 //
-// The marker is a test trait rather than a parsed string because traits are the
-// framework-neutral metadata channel in the .NET test platform: xUnit's [Trait],
-// NUnit's [Category]/[Property], and MSTest's [TestProperty] all surface as
-// TestCase.Traits. The trait value is colon-delimited: "feature:PROOF-N:RULE-N:tier"
-// (tier optional, defaults to "unit").
+// The marker is a test trait rather than a parsed string because TestCase.Traits
+// is the metadata channel vstest hands every logger. The logger
+// reads exactly one trait name, "PurlinProof", compared ordinally: a trait named
+// "Category", "Property", "TestProperty", or "PurlinProof" spelled in any other
+// casing is not a marker and is ignored. Only xUnit is supported; NUnit and
+// MSTest support is not claimed. The trait value is colon-delimited:
+// "feature:PROOF-N:RULE-N[:tier]" (tier optional, defaults to "unit").
 //
 //     [Fact]
 //     [Trait("PurlinProof", "my_feature:PROOF-1:RULE-1:unit")]
 //     public void DoesTheThing() { Assert.Equal(200, Login("alice", "secret")); }
+//
+// The operating system a proof must be proved on is a property of the spec, not
+// of the test: write @env(windows), @env(macos) or @env(linux) on the proof line.
+// The retired `:on(...)` trait keyword is refused rather than ignored, so a
+// trait carrying one fails the run with a line saying what to write instead.
+//
+// The project root is the nearest ancestor of the working directory holding
+// `specs/` or `.purlin/`, and every `test_file` it writes is relative to it with
+// `/` separators on every operating system. The test host's working directory is
+// the test output folder, well below the root, so nothing here is resolved from
+// it.
+//
+// A run that saw traits and wrote no entry at all fails: it prints one line
+// naming the features whose evidence went missing and sets a non-zero exit code.
 
 using System;
 using System.Collections.Generic;
@@ -60,10 +72,30 @@ namespace Purlin
 
         private readonly List<Proof> _proofs = new List<Proof>();
 
-        // The project root: the nearest ancestor of the working directory that
-        // contains a `specs/` directory. vstest runs the logger with the test
-        // project directory as the CWD, which is usually nested under the repo
-        // root (e.g. tests/MyProject.Tests), so we walk up to locate specs/.
+        // SkipKey(feature, id, test_file) for every marked test this run skipped,
+        // so an existing entry for it survives the write-scoped overwrite instead
+        // of being reaped by a sibling test in the same file.
+        private readonly HashSet<string> _skipped = new HashSet<string>(StringComparer.Ordinal);
+
+        // Every feature a trait named, whether or not it produced an entry. A run
+        // that saw traits and wrote nothing is a failure, not silence.
+        private readonly SortedSet<string> _seenFeatures = new SortedSet<string>(StringComparer.Ordinal);
+
+        // Traits carrying the retired `:on(...)` keyword, named in the one line
+        // the run fails with.
+        private readonly SortedSet<string> _retired = new SortedSet<string>(StringComparer.Ordinal);
+
+        // The identity of a skipped marked test: (feature, id, test_file).
+        private static string SkipKey(string feature, string id, string testFile)
+        {
+            return feature + "\u0000" + id + "\u0000" + testFile;
+        }
+
+        // The project root: the nearest ancestor of the working directory, that
+        // directory included, holding a `specs/` or a `.purlin/` directory. vstest
+        // runs the logger with the test output folder as the CWD, well below the
+        // repo root, so every project-relative path the logger reads or writes is
+        // resolved from here instead.
         private string _root = Directory.GetCurrentDirectory();
 
         // ITestLogger
@@ -91,7 +123,7 @@ namespace Purlin
             TestResult result = e.Result;
             TestCase tc = result.TestCase;
 
-            // RULE-1 / RULE-3: only tests carrying the PurlinProof trait are collected.
+            // Only tests carrying the PurlinProof trait are collected.
             string? marker = null;
             foreach (Trait t in tc.Traits)
             {
@@ -103,24 +135,49 @@ namespace Purlin
             }
             if (marker == null) return;
 
-            // RULE-4: a skipped test is not recorded at all.
-            if (result.Outcome == TestOutcome.Skipped) return;
-
-            // RULE-1: "feature:PROOF-N:RULE-N:tier" — tier defaults to "unit".
+            // "feature:PROOF-N:RULE-N[:tier]": tier defaults to "unit".
             string[] parts = marker.Split(':');
             if (parts.Length < 3) return;
             string feature = parts[0];
             string id = parts[1];
             string rule = parts[2];
-            string tier = parts.Length >= 4 && parts[3].Length > 0 ? parts[3] : "unit";
+            string tier = "unit";
+            bool retired = false;
+            for (int i = 3; i < parts.Length; i++)
+            {
+                string part = parts[i].Trim();
+                if (part.StartsWith("on(", StringComparison.Ordinal))
+                {
+                    retired = true;
+                }
+                else if (part.Length > 0 && i == 3)
+                {
+                    tier = part;
+                }
+            }
 
-            // RULE-5: test_file relative to the project root; test_name fully-qualified.
+            _seenFeatures.Add(feature);
+            if (retired)
+            {
+                _retired.Add(feature + " " + id);
+                return;
+            }
+
+            // test_file relative to the project root; test_name fully-qualified.
             string testFile = MakeRelative(_root, tc.CodeFilePath ?? "");
             string testName = !string.IsNullOrEmpty(tc.FullyQualifiedName)
                 ? tc.FullyQualifiedName
                 : tc.DisplayName ?? "";
 
-            // RULE-4 / RULE-6: Passed -> "pass"; every other non-skipped outcome -> "fail".
+            // A skipped test writes no entry, and the entry it would have
+            // written is protected from this run's reap.
+            if (result.Outcome == TestOutcome.Skipped)
+            {
+                _skipped.Add(SkipKey(feature, id, testFile));
+                return;
+            }
+
+            // Passed -> "pass"; every other non-skipped outcome -> "fail".
             string status = result.Outcome == TestOutcome.Passed ? "pass" : "fail";
 
             _proofs.Add(new Proof
@@ -137,47 +194,71 @@ namespace Purlin
 
         private void OnTestRunComplete(object? sender, TestRunCompleteEventArgs e)
         {
-            // RULE-7: no markers collected -> write nothing.
-            if (_proofs.Count == 0) return;
-
-            string specsRoot = Path.Combine(_root, "specs");
-
-            // RULE-1: feature -> spec directory, matched by spec filename stem.
-            var specDirs = new Dictionary<string, string>(StringComparer.Ordinal);
-            if (Directory.Exists(specsRoot))
+            if (_retired.Count > 0)
             {
-                foreach (string spec in Directory.EnumerateFiles(specsRoot, "*.md", SearchOption.AllDirectories))
+                Fail("purlin: the :on(...) trait keyword is not read any more; write "
+                     + "@env(windows), @env(macos) or @env(linux) on the proof line in "
+                     + "the spec instead: " + string.Join(", ", _retired));
+                return;
+            }
+            if (_proofs.Count == 0)
+            {
+                if (_seenFeatures.Count > 0)
                 {
-                    string stem = Path.GetFileNameWithoutExtension(spec);
-                    specDirs[stem] = Path.GetDirectoryName(spec) ?? specsRoot;
+                    Fail("purlin: traits were seen and no proof entry was written for "
+                         + string.Join(", ", _seenFeatures)
+                         + "; the proof files on disk describe an earlier run.");
                 }
+                return;
             }
 
-            // Group by (feature, tier) — one file per group.
+            string directory = Path.Combine(_root, ".purlin", "runtime", "proofs");
+            Directory.CreateDirectory(directory);
+
+            // Group by (feature, tier): one file per group.
             int filesWritten = 0;
             foreach (var group in _proofs.GroupBy(p => (p.Feature, p.Tier)))
             {
                 string feature = group.Key.Feature;
                 string tier = group.Key.Tier;
+                string path = Path.Combine(directory, $"{feature}.{tier}.json");
 
-                // RULE-3 / RULE-9: fall back to specs/ with a stderr warning.
-                if (!specDirs.TryGetValue(feature, out string? specDir))
-                {
-                    Console.Error.WriteLine(
-                        $"WARNING: No spec found for feature \"{feature}\" — writing proofs to " +
-                        $"specs/{feature}.proofs-{tier}.json. Create a spec with: purlin:spec {feature}");
-                    specDir = specsRoot;
-                }
-
-                string path = Path.Combine(specDir, $"{feature}.proofs-{tier}.json");
-
-                // RULE-4: feature-scoped overwrite — keep other features, drop this one's old entries.
+                // Write-scoped overwrite keyed by (feature, tier, test_file): the
+                // file carries the tier, so within it the key is (feature,
+                // test_file). Keep other features, keep this feature's entries from
+                // test files this run did not execute, and reap entries whose test
+                // file is gone.
+                var runFiles = new HashSet<string>(group.Select(p => p.TestFile));
+                // What this run wrote, so a skipped test's protection never keeps an
+                // entry the run has just replaced: only an executed test replaces
+                // its entry.
+                var runWrote = new HashSet<string>(
+                    group.Select(p => SkipKey(p.Id, p.TestFile, p.TestName)), StringComparer.Ordinal);
                 var kept = new List<Dictionary<string, string>>();
                 if (File.Exists(path))
                 {
                     foreach (var entry in ReadProofs(path))
                     {
                         if (!entry.TryGetValue("feature", out string? f) || f != feature)
+                        {
+                            kept.Add(entry);
+                            continue;
+                        }
+                        entry.TryGetValue("test_file", out string? tf);
+                        entry.TryGetValue("id", out string? eid);
+                        entry.TryGetValue("test_name", out string? ename);
+                        // The existence check resolves each path from the project
+                        // root, the same root it was relativized against: the test
+                        // host's working directory is the test output folder, so a
+                        // cwd-relative check reaps every entry.
+                        if (string.IsNullOrEmpty(tf)
+                            || !File.Exists(Path.Combine(_root, tf))) continue;
+                        // An entry whose test this run skipped is kept with its old
+                        // status, even though a sibling test in the same file ran,
+                        // unless this run wrote that entry afresh.
+                        bool skipped = _skipped.Contains(SkipKey(feature, eid ?? "", tf))
+                            && !runWrote.Contains(SkipKey(eid ?? "", tf, ename ?? ""));
+                        if (!runFiles.Contains(tf) || skipped)
                             kept.Add(entry);
                     }
                 }
@@ -185,7 +266,6 @@ namespace Purlin
                 var ordered = new List<Dictionary<string, string>>(kept);
                 foreach (Proof p in group)
                 {
-                    // RULE-5: all 7 fields, canonical order.
                     ordered.Add(new Dictionary<string, string>
                     {
                         ["feature"] = p.Feature,
@@ -198,37 +278,75 @@ namespace Purlin
                     });
                 }
 
+                // Sorted by (id, test_file, test_name), ordinal, after the merge, so
+                // the collection order never reaches the file.
+                ordered = SortProofEntries(ordered);
+
                 string json = Serialize(tier, ordered);
 
-                // Atomic write: tmp + rename.
-                string fullDir = Path.GetDirectoryName(Path.GetFullPath(path)) ?? ".";
-                Directory.CreateDirectory(fullDir);
-                string tmp = path + ".tmp";
+                // Atomic write: tmp + rename. The temp name carries this process id,
+                // so two plugins writing the same file concurrently never share a
+                // temp path, and the overwrite is one atomic move rather than a
+                // delete followed by a move.
+                string tmp = path + "." + Environment.ProcessId + ".tmp";
                 File.WriteAllText(tmp, json);
-                if (File.Exists(path)) File.Delete(path);
-                File.Move(tmp, path);
+                File.Move(tmp, path, true);
                 filesWritten++;
             }
 
-            // Emitted during the run (TestRunComplete fires inside the test platform
-            // process) — this line is the in-process collection signal that
+            // Emitted during the run (TestRunComplete fires inside the vstest
+            // process): this line is the in-process collection signal that
             // distinguishes the logger from a post-run .trx parse.
             Console.Error.WriteLine(
                 $"[PurlinProofLogger] collected {_proofs.Count} proof(s) in-process; wrote {filesWritten} file(s).");
         }
 
-        // Walk up from `start` to the nearest ancestor containing a `specs/`
-        // directory. Falls back to `start` if none is found.
-        private static string FindRoot(string start)
+        // Print one line and make the run exit non-zero.
+        private static void Fail(string message)
+        {
+            Console.Error.WriteLine(message);
+            Environment.ExitCode = 1;
+        }
+
+        // Walk up from `start`, `start` itself included, to the nearest ancestor
+        // holding a `specs/` or a `.purlin/` directory; null when none does. A
+        // project whose specs live elsewhere still has `.purlin/`, and a fresh
+        // project has `specs/` before it has anything else, so either is enough to
+        // recognise the root.
+        private static string? FindRootOrNull(string start)
         {
             var dir = new DirectoryInfo(start);
             while (dir != null)
             {
-                if (Directory.Exists(Path.Combine(dir.FullName, "specs")))
+                if (Directory.Exists(Path.Combine(dir.FullName, "specs"))
+                    || Directory.Exists(Path.Combine(dir.FullName, ".purlin")))
                     return dir.FullName;
                 dir = dir.Parent;
             }
-            return start;
+            return null;
+        }
+
+        // The project root of `start`, falling back to `start` itself.
+        private static string FindRoot(string start)
+        {
+            return FindRootOrNull(start) ?? start;
+        }
+
+        // The roots a written path is measured from, in order: the project being
+        // written to, then the project the source file itself lives in.
+        private static IEnumerable<string> RootCandidates(string root, string abs)
+        {
+            yield return root;
+            string? own = FindRootOrNull(Path.GetDirectoryName(abs) ?? root);
+            if (own != null && !string.Equals(own, root, StringComparison.Ordinal))
+                yield return own;
+        }
+
+        // A relative path that climbs out of the base it was measured from.
+        private static bool ClimbsOut(string rel)
+        {
+            return rel.Length == 0 || Path.IsPathRooted(rel) || rel == ".."
+                || rel.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal);
         }
 
         private static List<Dictionary<string, string>> ReadProofs(string path)
@@ -251,9 +369,29 @@ namespace Purlin
             }
             catch (Exception)
             {
-                // Corrupt/unreadable file is treated as empty — the run still records fresh proofs.
+                // Corrupt or unreadable file is treated as empty: the run still
+                // records fresh proofs.
             }
             return result;
+        }
+
+        // Sort a proof file's entries by (id, test_file, test_name) under plain
+        // ordinal string comparison, applied after the merge and right before
+        // serialization, so two runs of the same tests in any collection order
+        // write byte-identical files.
+        private static List<Dictionary<string, string>> SortProofEntries(
+            List<Dictionary<string, string>> proofs)
+        {
+            return proofs
+                .OrderBy(e => Field(e, "id"), StringComparer.Ordinal)
+                .ThenBy(e => Field(e, "test_file"), StringComparer.Ordinal)
+                .ThenBy(e => Field(e, "test_name"), StringComparer.Ordinal)
+                .ToList();
+        }
+
+        private static string Field(Dictionary<string, string> entry, string name)
+        {
+            return entry.TryGetValue(name, out string? v) && v != null ? v : "";
         }
 
         private static string Serialize(string tier, List<Dictionary<string, string>> proofs)
@@ -303,17 +441,31 @@ namespace Purlin
             return sb.ToString();
         }
 
+        // `file` written relative to the project root. The path vstest
+        // hands over is absolute; a relative one is resolved against `root` first,
+        // so both spellings write the same value. A file outside `root` is
+        // measured from the nearest project root above the file itself, and left
+        // absolute when there is none, rather than rewritten with "../" segments:
+        // under the merge key a path that differs by invocation form does not
+        // collapse, it accumulates a second entry.
         private static string MakeRelative(string root, string file)
         {
             if (string.IsNullOrEmpty(file)) return file;
             try
             {
-                // Normalize separators so proof files are portable.
-                return Path.GetRelativePath(root, file).Replace('\\', '/');
+                string abs = Path.GetFullPath(file, root);
+                string chosen = abs;
+                foreach (string candidate in RootCandidates(root, abs))
+                {
+                    string rel = Path.GetRelativePath(candidate, abs);
+                    if (!ClimbsOut(rel)) { chosen = rel; break; }
+                }
+                // Forward slashes on every OS so proof files are portable.
+                return chosen.Replace('\\', '/');
             }
             catch (Exception)
             {
-                return file;
+                return file.Replace('\\', '/');
             }
         }
     }

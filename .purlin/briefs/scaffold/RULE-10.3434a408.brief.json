@@ -1,0 +1,55 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T23:04:55Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "b011e9d0837d67049f0716f27c096a1b5ee39ea63550ae52264f2972c4527c43",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-10",
+      "text": "Run with `--gate strong` and verify the signer question is absent; run with `--gate signed` answering `Jane@Acme.com, sam@acme.com` and verify `signers` reads `[\"jane@acme.com\", \"sam@acme.com\"]` and the output contains `git config gpg.format ssh` and `git config commit.gpgsign true`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T230430Z-ca1f4b5-ci-windows.json",
+  "risk": "high",
+  "rule": "RULE-10",
+  "rule_hash": "5ceb30f599f0a66d57a819ee0c98b41011a22112caf0825cab7f3f7de401b406",
+  "rule_text": "Only `signed` asks who may sign; the emails are lower-cased into `signers` and the one-time commit-signing setup is printed for each of them",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "8e568e5b48fc84d04396bafc85c81e118256512b2a631a96fa178972940a3e3f",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_only_signed_is_asked(self, project):\n        assert scaffold_module.SIGNER_QUESTION not in project.run(\n            '--gate', 'strong')",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_only_signed_is_asked",
+      "proof": "PROOF-10",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_emails_are_written_and_the_signing_setup_printed(self):\n        made = Project('pytest')\n        try:\n            done = subprocess.run(\n                [sys.executable, SCAFFOLD, '--project-root', made.root,\n                 '--gate', 'signed'],\n                input='Jane@Acme.com, sam@acme.com\\n', capture_output=True,\n                encoding='utf-8', timeout=300)\n            assert done.returncode == 0, done.stdout + done.stderr\n            assert made.config()['signers'] == ['jane@acme.com',\n                                                'sam@acme.com']\n            assert 'git config gpg.format ssh' in done.stdout\n            assert 'git config commit.gpgsign true' in done.stdout\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_emails_are_written_and_the_signing_setup_printed",
+      "proof": "PROOF-10",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "3434a40845adb637dfb577d757304d7a43a8decff0cb3c2722ce67a984114935"
+}

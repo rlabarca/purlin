@@ -1,6 +1,197 @@
 # Release Notes
 
-## v0.9.5 — Cross-platform audit Pass-1 (Windows) & C# support
+## Unreleased — 0.10.0
+
+For a project running 0.9.5. One command moves it forward, and the rest of this page says what
+that command changes.
+
+0.10.0 replaces two grading scores and one ladder of seven states with a spec status and three
+evidence levels, moves the evidence into the repository, and gives each level one command.
+Nothing in it needs a new service or a hosted anything: the evidence is files in git, and the
+enforcement is a CI job and a branch rule.
+
+Tests at this commit: 1098 passed, 6 skipped.
+
+### What a 0.9.5 user does
+
+```
+purlin:init --update
+```
+
+The update reads what the project actually contains rather than its `version` field, shows the
+delta, and asks before each write. It untracks and deletes the evidence files and the proof
+files that used to be committed, untracks the committed dashboard data, rewrites the hooks,
+retires the config keys that no longer exist, asks the gate question once, and rewrites an
+operating-system tag to `@env(...)` where the intended system is unambiguous. Every file it
+replaces is backed up beside the original. `purlin:init --update --check` prints the pending
+list and writes nothing, which is what a preflight in CI runs. Until the update runs, every
+skill opens with `→ Run: purlin:init --update`.
+
+The evidence a person wrote under 0.9.5 does not carry forward. Those files bound hashes this
+release computes differently, so the update drops them rather than converting them into
+something nobody attested to; they stay in git history, and `purlin:sign` walks the list
+afterwards.
+
+### What changed, by concept
+
+**The spec status and the three levels.** A rule has a spec status and up to three cells, each
+of which reads one word and carries its reasons. The spec status is `drafted` when no proof line
+names the rule, `ready` when one does and no blocking free check fires on the proof text. Then:
+
+| Level | The question | Words the cell can read |
+|-------|--------------|-------------------------|
+| passed | did every tagged test for this rule pass? | `passed`, `failed`, `no test`, `not run`, `code changed` |
+| strong | are those tests worth trusting? | `strong`, `weak`, `manual test`, `manual audit`, `held` |
+| signed | did a person say the rule, the proof and the test belong together? | `signed`, `unsigned`, `stale`, `held`, `not required` |
+
+A cell exists only at or below the project's gate. Above the gate it is absent, not empty, which
+is why raising the gate is what makes a column, a tile or a filter appear.
+
+**The gate.** One project setting, `gate` in `.purlin/config.json`, with three values named for
+the word the last cell reads when it is met: `passed`, `strong` and `signed`. `purlin:init` asks
+one question and derives the rest: `min_strength` unused, 70 and 80; `ai_review_at` never, high
+and medium; `sign_at` absent, absent and `medium`; the breaks off under `passed` and on above
+it. `purlin:init --gate <value>` changes it later; raising adds what is missing, lowering
+deletes nothing. A gate is three things and needs all three: a CI job, a branch rule that blocks
+a merge without it, and the setting saying what passing means.
+
+**Three commands, one per level.** `purlin:test` runs the tagged tests and prints each rule's
+passed cell. `purlin:audit` runs the tests and the breaks, then the free checks and the model
+review where the risk asks, and writes the record; on CI it writes the briefs too. `purlin:sign`
+walks the review list one brief at a time when given no rule, and signs, holds or notes a rule
+when given one. `purlin:verify`, `purlin:review` and `purlin:approve` are gone, not aliased, and
+the skill count falls from 13 to 12.
+
+**Level 2 is fully automatic.** Nobody is asked to do anything to reach `strong`. A person first
+appears at level 3.
+
+**Records.** Evidence lives in the tree, as
+`.purlin/records/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json`, one file per audit run,
+committed. Adding a file never conflicts, so two branches never fight over it. The last commit
+touching a record decides its `source`: `ci` when it was written through the git host's API by
+the CI identity, `developer` when a person committed it, `local` when it is uncommitted. Under
+`passed` every source counts; under `strong` and `signed` only `ci` does, and a record that does
+not count leaves the passed cell reading `not run` with the reason naming the source and the
+gate. The audit keeps the newest three records per feature per operating system and prunes the
+rest; a record named in the message of an annotated `record/<name>` tag is kept for ever.
+
+**Nothing pushes on its own.** A local `purlin:audit --commit` commits the record and prints
+`Record committed. Run: git push`; it never runs the push. The one command that reaches a
+remote is `purlin:audit --remote`, which a person asked for by name. CI publishes its own
+evidence; a person pushes theirs.
+
+**Briefs.** One file per rule per set of hashes,
+`.purlin/briefs/<feature>/<RULE-N>.<hash8>.brief.json`, written by CI and committed beside the
+records. A brief reports four things: the test strength beside the minimum, the free-check
+findings on the proof text, the free-check findings on the test body, and what the model review
+observed together with whether it could settle the question. **It recommends nothing.** The four
+verdict words are retired with it.
+
+**Signatures and holds.** One file per signature,
+`specs/<category>/<feature>.signatures/<RULE-N>.<hash8>.<signer-slug>.json`, so two signatures
+never conflict either. It binds the hashes of the rule text, the proof text and the test body,
+plus the rule's risk, so a risk re-tag stales it like any other change. The people who may sign
+are `signers` in `.purlin/config.json`, changed by pull request, so git history records who
+could sign and when. A hold is a person's committed statement that the test does not prove the
+proof, with the missing case named; while it is current both the strong cell and the signed
+cell read `held`. A `--note` is the one line a signer writes for a rule reading `manual test`
+or `manual audit`.
+
+**CI writes no signature file, ever.** The auto-approval of low-risk rules is gone with the
+`.ci.json` file it wrote. A signature directory holds only files a person wrote; CI's one commit,
+`purlin: record for <commit7>`, carries the records and the briefs and nothing else. The CI-only
+branch ruleset now covers `.purlin/records/**` and `.purlin/briefs/**`.
+
+**The review list** holds only what a person answers: a strong cell reading `manual test`,
+`manual audit` or `held`, or a signed cell reading `unsigned`, `stale` or `held`. A weak rule is
+build work and stays on the board. Each word names the work: a person runs the test, a person
+audits the proof against the test, or a person already said the test does not prove the proof.
+
+**The gate check.** `scripts/ci/verify_gate.py` becomes `scripts/ci/gate_check.py`, its log
+prefix `gate:`, its sections `Not passed (n)`, `Weak (n)` and `Not signed (n)`, and its JSON key
+`result` in place of `verdict`.
+
+**Breaks engines.** `purlin:audit` breaks the code on purpose at `strong` and above and reports
+the share of those breaks the tests caught as the **test strength**, an integer percent. Three
+engines ship, chosen by `mutation_engine` in the config: mutmut for Python, Stryker for
+JavaScript and TypeScript, and Stryker.NET for C#. SQL and Bash have no engine, so their
+strength reads `n/a` and the strong cell rests on the free checks.
+
+**`@env`.** A proof that can only be proved on one operating system carries `@env(windows)`,
+`@env(macos)` or `@env(linux)`. Those three are the whole vocabulary. `purlin:init` reads the
+tags in `specs/` and writes a CI matrix to match, one job per system named, each running the
+same audit and writing its own record. A proof with no tag is satisfied by a record from any
+system. On a host that does not match, the test is skipped and the passed cell reads `not run`
+with `<os>: no record yet`; `purlin:audit --remote` pushes the branch, waits for the workflow
+and pulls the records CI wrote.
+
+**The dashboard.** One HTML page on the design tokens, with no framework and no build step. Its
+tiles, columns and filters scale with the gate: three tiles and five columns at `passed`, a
+`Strong` tile and two more columns at `strong`, a `Signed` tile, a `Stale` flag card and one
+more column at `signed`. It opens from disk and is published by CI as the `purlin-dashboard`
+build artifact, linked from the pull request comment.
+`scripts/report/scan.py --repo <url>` prints the same rollup for anyone holding only a URL.
+
+**The tools.** `tools/PM/` and `tools/QA/` are Claude Desktop skills for people with no
+checkout. The PM tool drafts and edits specs and anchors and opens the pull request; the QA tool
+produces the triage report and opens pull requests with proof edits.
+
+**Formats.** spec 11, proofs 8 and anchor 7 change wording only. The record format goes to 2 for
+the gate enum, the null strength under `passed` and the source. `approval_format.md` becomes
+`signature_format.md` at version 3. The payload schema goes from 4 to 5, and
+`references/drift_criteria.md` from criteria version 3 to 4. A tool that parses any of them
+should read the version line.
+
+### The words that were retired
+
+Every one of these is gone from the code, the skills, the references, the docs and every line of
+output, in any casing:
+
+| Retired | What says it now |
+|---------|------------------|
+| `tested`, the gate value | `passed` |
+| `recorded`, the gate value | `strong` |
+| `approved`, the gate value | `signed` |
+| `approve`, `approval`, `approvals` | `sign`, `signature`, `signatures` |
+| `approver`, `approvers` | `signer`, `signers` |
+| `verified`, `verify` as a command name | the cell's own word; `purlin:audit` for the run |
+| `verdict` | what the brief reports: strength, findings, observations, settled |
+| `Reviewed`, the state | the strong cell's word |
+| `re-verify pending` | the passed cell reading `code changed` |
+| `Proof ready` | the spec status `ready` |
+| `lowest state`, `seven states` | the spec status and the three cells |
+| `auto-approval` | nothing: CI writes no signature file |
+| `review queue` | `review list` |
+| `purlin:verify`, `purlin:review`, `purlin:approve` | `purlin:audit`, `purlin:sign` |
+| `verify_gate`, `verify-gate:` | `gate_check`, `gate:` |
+| `validated/<name>` tags | `record/<name>` tags |
+
+`audit` is un-retired and means one thing: the level 2 run. An audit proves a rule strong or
+weak. The grading scores the earlier `purlin:audit` produced stay retired.
+`references/glossary.md` lists each word and the spelling it replaced.
+
+### What was removed
+
+Gone in 0.10.0: the two LLM grading scores and the skill and agent that produced them; the
+runner registry and its per-runner proof files, replaced by `@env` and the CI matrix; the
+committed evidence files, replaced by records; the committed proof files, which are now runtime
+state under `.purlin/runtime/` and are not committed at all; the committed dashboard data, now a
+build artifact; the design-tool importer, the visual hash and the live design-tool connection,
+replaced by exported files under `designs/` reviewed by pull request; and C and PHP support, so
+a project that used either keeps its proofs only by writing a custom proof plugin. Several flags
+went with them. A `@manual` proof stays: it has no test, its strong cell reads `manual test`,
+and its evidence is a signature carrying a one-line note.
+
+### The 0.10.0 line that never shipped
+
+An earlier 0.10.0 development line added two LLM grading scores, one for proof descriptions and
+one for test bodies, together with a skill and an agent to produce them. A later one added a
+seven-state ladder. Neither was released, and 0.10.0 as it ships has neither. What a person needs
+before signing a rule is a brief: the free checks, the test strength from the newest record, and
+a model review only where the risk warrants it. `references/review_criteria.md` holds those
+criteria, and they are the only names a finding ever carries.
+
+## 0.9.5 — Windows-scoped proof checks & C# support
 
 ### Fixed
 
@@ -19,7 +210,7 @@
 
 - New proofs: `static_checks` PROOF-44/45 (AST structural guards — no unconditional `fcntl` import; `encoding='utf-8'` on every text-mode `open()`), PROOF-46–49 (C# assert-true / no-assertion / multi-framework assertion recognition / `.cs` dispatch), PROOF-50 (Windows lock path driven through an injected fake `msvcrt`, `@integration`), PROOF-51 (full CLI pipeline via real subprocess, `@e2e`), PROOF-52 (the cp1252 failure reproduced by running `--load-criteria` under `PYTHONUTF8=0`/`LC_ALL=C`, `@e2e`); `skill_audit` PROOF-15. PROOF-55 covers the Playwright assertion recognition (and the bare-`Expect` negative). Windows behavior is now verified for real on a `windows-latest` GitHub Actions runner — `.github/workflows/windows-proofs.yml` runs PROOF-53 (native `msvcrt` lock path, `_HAS_FCNTL` genuinely False) and PROOF-54 (`--load-criteria` under the native console codec) in the dedicated `@windows` proof tier and commits the results back — in addition to the host simulation (fake `msvcrt`) and ASCII-locale subprocess repro. Independent audit of the new proofs: STRONG at 100% integrity, 0 WEAK/HOLLOW.
 
-## v0.9.4 — Plugin-bundled MCP server & e2e proof quality
+## 0.9.4 — Plugin-bundled MCP server & e2e proof quality
 
 ### Fixed
 
@@ -44,7 +235,7 @@
 - New proofs: `skill_spec_from_code` PROOF-42..45, `skill_spec` PROOF-9, `purlin_references` PROOF-13/14/15 (grep guards over the skill and reference text). Independent audit of the new proofs: 0 WEAK/HOLLOW (all structural documentation guards, excluded from integrity scoring); 3 advisory regex-precision findings applied before commit. Full suite 372 passed, 40/40 features VERIFIED.
 - `skill_init` PROOF-40/41 now parse `.claude-plugin/plugin.json` directly (asserting `mcpServers.purlin` uses `python3` with `${CLAUDE_PLUGIN_ROOT}` args) and PROOF-42 verifies the legacy `.mcp.json` migration instructions, replacing the old greps for project-level `.mcp.json` creation.
 
-## v0.9.3 — Dashboard visibility before tests exist
+## 0.9.3 — Dashboard visibility before tests exist
 
 Quality-of-life release fixing the "empty dashboard" experience after `purlin:spec-from-code`: a freshly specced project now shows its full rule set and coverage plan in `purlin-report.html` before a single test has run.
 
@@ -62,7 +253,7 @@ Quality-of-life release fixing the "empty dashboard" experience after `purlin:sp
 
 - New proofs: planned-proof emission and dedup against executed results including required/global anchor rules (`report_data` PROOF-22), coverage isolation (PROOF-23), greyed "not run" rendering with no audit tag (`purlin_report` PROOF-33, Playwright), and the single-spec folder ban (`skill_spec_from_code` PROOF-41). Dashboard PROOF-19/20/21 updated for the expanded-by-default behavior. Independent audit of the changed proofs: 5 STRONG, 0 WEAK/HOLLOW.
 
-## v0.9.2 — .NET test support (xUnit)
+## 0.9.2 — .NET test support (xUnit)
 
 Incremental release adding .NET to the supported test ecosystems, backed by a refactor of the proof-plugin specs.
 
@@ -90,7 +281,7 @@ Incremental release adding .NET to the supported test ecosystems, backed by a re
 - New integration proofs drive the compiled xUnit logger through a real `dotnet test` run (`dev/test_multilang_proof_plugins.py::TestXUnitProofPlugin`).
 - Strengthened existing proofs: C plugin proofs regenerated from a real `gcc` run, Vitest RULE-1 marker parse now asserted inline, pytest "call phase only" boundary proved, and three audit-pipeline proofs recorded from a full-suite run.
 
-## v0.9.1 — Vitest reporter & JS/TS audit fixes
+## 0.9.1 — Vitest reporter & JS/TS audit fixes
 
 Bug-fix release addressing two reported issues in JavaScript/TypeScript proof handling.
 
@@ -106,7 +297,7 @@ Bug-fix release addressing two reported issues in JavaScript/TypeScript proof ha
 - PROOF-29 was strengthened to actually drive the compiled reporter via a synthetic Vitest 2.x+ task tree (the old proof only ran `tsc` + `node` on hand-built JSON and never invoked the reporter). New regression proofs cover the exact issue #2 repro.
 - Docs aligned: `references/supported_frameworks.md` (Format-Version 3), `references/formats/proofs_format.md`, and `docs/testing-workflow-guide.md` now describe the native Vitest reporter and tested version range.
 
-## v0.9.0 — Rule-Proof Runtime
+## 0.9.0 — Rule-Proof Runtime
 
 Complete redesign. Purlin v0.9.0 replaces the v1 system (35 skills, 5 agents, 8 hooks, 8 MCP tools) with a minimal rule-proof runtime.
 

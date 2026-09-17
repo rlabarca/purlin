@@ -1,0 +1,90 @@
+# Purlin runs verify here, on every push and every pull request.
+#
+# purlin:init writes this file for a project whose git host is Azure DevOps.
+# The matrix always carries ubuntu-latest first, then one job per operating
+# system the `@env` tags in specs/ name; a project that tags nothing runs on
+# ubuntu-latest alone.
+#
+# The build service writes the record, so give it Contribute on
+# `.purlin/records/**` through branch security and give it nothing else.
+#
+# The artifact each job publishes carries the job name, so a matrix of two
+# operating systems leaves two artifacts rather than one.
+#
+# The verify job is capped at 90 minutes, which is longer than any suite this
+# runs and short enough to leave a log worth reading when a run stops for
+# something. The run caps each arm at an hour of its own.
+trigger:
+  branches:
+    include:
+      - '*'
+
+pr:
+  branches:
+    include:
+      - '*'
+
+jobs:
+  - job: verify
+    timeoutInMinutes: 90
+    strategy:
+      matrix:
+<<MATRIX>>
+    pool:
+      vmImage: $(imageName)
+    steps:
+      - checkout: self
+        persistCredentials: true
+        fetchDepth: 0
+
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: '3.11'
+
+      # This repository is its own plugin, so a checkout that already carries
+      # scripts/run/purlin_run.py is the Purlin to run. A consumer project
+      # installed Purlin from the marketplace and its agent has no plugin, so
+      # the job clones the release the project pins. Set the PURLIN_REF
+      # pipeline variable to move that pin without editing this file.
+      - bash: |
+          if [ -f scripts/run/purlin_run.py ]; then
+            echo "##vso[task.setvariable variable=PURLIN_ROOT]$PWD"
+          else
+            ref="$(PURLIN_REF)"
+            if [ -z "$ref" ] || [ "$ref" = "\$(PURLIN_REF)" ]; then
+              ref="<<PURLIN_REF>>"
+            fi
+            git clone --depth 1 --branch "$ref" \
+              https://github.com/rlabarca/purlin "$(Agent.TempDirectory)/purlin"
+            echo "##vso[task.setvariable variable=PURLIN_ROOT]$(Agent.TempDirectory)/purlin"
+          fi
+        displayName: Locate Purlin
+
+      # What each framework needs before its tests run. A project with none of
+      # these files installs nothing and the step is a no-op. A project whose
+      # tests drive a browser through playwright also needs the browser:
+      # `--with-deps` installs the libraries a Linux runner lacks and does
+      # nothing on Windows and macOS.
+      - bash: |
+          if [ -f requirements.txt ]; then
+            python3 -m pip install -r requirements.txt
+          fi
+          if [ -f conftest.py ] || [ -f pytest.ini ] || [ -f pyproject.toml ]; then
+            python3 -m pip install pytest
+          fi
+          if python3 -c "import playwright" 2>/dev/null; then
+            python3 -m playwright install --with-deps chromium
+          fi
+          if [ -f package.json ]; then npm ci; fi
+        displayName: Set up the test framework
+
+      - bash: python3 "$PURLIN_ROOT/scripts/run/purlin_run.py" --all --record --ci
+        displayName: Run verify and write the record
+        env:
+          SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+
+      - task: PublishPipelineArtifact@1
+        condition: always()
+        inputs:
+          artifactName: purlin-dashboard-$(Agent.JobName)
+          targetPath: $(Agent.TempDirectory)/purlin-dashboard

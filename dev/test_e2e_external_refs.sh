@@ -1,20 +1,22 @@
 #!/usr/bin/env bash
-# Tests for e2e_external_refs — 12 proofs covering 12 rules.
-# Verifies external references (> Source:, > Pinned:, > Path:) work across
-# sync_status, drift, report-data.js, coverage, and pre-push hook.
-# Uses local bare git repos as mock external sources.
+# End-to-end checks for anchors pulled from an anchor repo.
+#
+# Every source here is a local bare repository on disk, so nothing reaches a
+# network. The checks run the real `scripts/anchor/upstream.py` and the real
+# `scripts/mcp/purlin` package against temporary projects, each created with
+# --project-root, so this repository's own specs/ is never written to.
+#
+# Run it after `bash dev/setup-external-refs.sh`, which creates the dog-food
+# anchor repo the last check reads.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REAL_PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-HOOK_SCRIPT="$REAL_PROJECT_ROOT/scripts/hooks/pre-push.sh"
+UPSTREAM="$REAL_PROJECT_ROOT/scripts/anchor/upstream.py"
+MCP_DIR="$REAL_PROJECT_ROOT/scripts/mcp"
 
-# Load proof harness
-source "$REAL_PROJECT_ROOT/scripts/proof/shell_purlin.sh"
+echo "=== external refs: anchors from an anchor repo ==="
 
-echo "=== e2e_external_refs tests ==="
-
-# --- Cleanup ---
 ALL_TMPDIRS=""
 cleanup_all() { for d in $ALL_TMPDIRS; do rm -rf "$d" 2>/dev/null; done; }
 trap cleanup_all EXIT
@@ -22,824 +24,396 @@ trap cleanup_all EXIT
 PASS=0
 FAIL=0
 
-# ==========================================================================
-# Helper: create a bare git repo with a spec file
-# Args: bare_repo_path, spec_content
-# Returns: HEAD sha via stdout
-# ==========================================================================
-create_external_repo() {
-  local bare_path="$1"
-  local spec_file="$2"
-  local spec_content="$3"
-
-  git init --bare -q "$bare_path"
-
-  # Clone, add content, push
-  local work_dir="${bare_path}_work"
-  git clone -q "$bare_path" "$work_dir"
-  mkdir -p "$(dirname "$work_dir/$spec_file")"
-  echo "$spec_content" > "$work_dir/$spec_file"
-  (cd "$work_dir" && git add -A && git commit -q -m "initial spec")
-  (cd "$work_dir" && git push -q origin main 2>/dev/null || git push -q origin master 2>/dev/null)
-
-  local sha
-  sha=$(git -C "$bare_path" rev-parse HEAD)
-  rm -rf "$work_dir"
-  echo "$sha"
+record() {
+  local name="$1" ok="$2" detail="${3:-}"
+  if [[ "$ok" == "true" ]]; then
+    echo "  PASS: $name"
+    PASS=$((PASS + 1))
+  else
+    echo "  FAIL: $name"
+    [[ -n "$detail" ]] && echo "        $detail"
+    FAIL=$((FAIL + 1))
+  fi
 }
 
-# ==========================================================================
-# Helper: advance a bare repo with a new commit
-# Args: bare_repo_path, file_path, new_content
-# Returns: new HEAD sha via stdout
-# ==========================================================================
-advance_repo() {
-  local bare_path="$1"
-  local spec_file="$2"
-  local new_content="$3"
+# --------------------------------------------------------------------------
+# Fixtures
+# --------------------------------------------------------------------------
 
-  local work_dir="${bare_path}_work"
-  git clone -q "$bare_path" "$work_dir"
-  echo "$new_content" > "$work_dir/$spec_file"
-  (cd "$work_dir" && git add -A && git commit -q -m "update spec")
-  (cd "$work_dir" && git push -q 2>/dev/null)
+ANCHOR_V1='# Anchor: no_eval
 
-  local sha
-  sha=$(git -C "$bare_path" rev-parse HEAD)
-  rm -rf "$work_dir"
-  echo "$sha"
+> Description: No dynamic code execution in production code.
+> Type: security
+
+## Rules
+
+- RULE-1: No eval() in source files [risk: high]
+- RULE-2: No exec() in source files [risk: high]
+
+## Proof
+
+- PROOF-1 (RULE-1): Grep src/ for "eval("; verify zero matches
+- PROOF-2 (RULE-2): Grep src/ for "exec("; verify zero matches
+'
+
+ANCHOR_V2='# Anchor: no_eval
+
+> Description: No dynamic code execution in production code.
+> Type: security
+
+## Rules
+
+- RULE-1: No eval() in source files [risk: high]
+- RULE-2: No exec() anywhere in the tree [risk: high]
+- RULE-3: No compile() in source files [risk: medium]
+
+## Proof
+
+- PROOF-1 (RULE-1): Grep src/ for "eval("; verify zero matches
+- PROOF-2 (RULE-2): Grep src/ for "exec("; verify zero matches
+- PROOF-3 (RULE-3): Grep src/ for "compile("; verify zero matches
+'
+
+# Create a bare repository holding one anchor. Prints its head sha.
+create_anchor_repo() {
+  local bare="$1" file="$2" body="$3"
+  local work="${bare}_work"
+  git -c init.defaultBranch=main init --bare -q "$bare"
+  git clone -q "$bare" "$work" 2>/dev/null
+  mkdir -p "$(dirname "$work/$file")"
+  printf '%s' "$body" > "$work/$file"
+  (
+    cd "$work"
+    git config user.email "dev@purlin.local"
+    git config user.name "Purlin Dev"
+    git add -A
+    git commit -q -m "publish the anchor"
+    git push -q origin HEAD:refs/heads/main
+    git rev-parse HEAD
+  )
 }
 
-# ==========================================================================
-# Helper: create a Purlin project with external anchor(s)
-# Args: project_dir
-# ==========================================================================
+# Publish a new version of the anchor. Prints the new head sha.
+advance_anchor_repo() {
+  local bare="$1" file="$2" body="$3"
+  local work="${bare}_work"
+  printf '%s' "$body" > "$work/$file"
+  (
+    cd "$work"
+    git add -A
+    git commit -q -m "publish the next version"
+    git push -q origin HEAD:refs/heads/main
+    git rev-parse HEAD
+  )
+}
+
+# A temporary Purlin project. It carries no scripts/: every command is run
+# from this checkout with --project-root.
 init_project() {
   local tmpdir="$1"
-
-  mkdir -p "$tmpdir/.purlin"
-  mkdir -p "$tmpdir/specs/_anchors"
-  echo '{"version":"0.9.0","test_framework":"auto","spec_dir":"specs","pre_push":"warn","report":true}' > "$tmpdir/.purlin/config.json"
-
-  # Copy MCP server for sync_status/drift to work
-  mkdir -p "$tmpdir/scripts/mcp"
-  cp "$REAL_PROJECT_ROOT/scripts/mcp/purlin_server.py" "$tmpdir/scripts/mcp/"
-  cp "$REAL_PROJECT_ROOT/scripts/mcp/config_engine.py" "$tmpdir/scripts/mcp/"
-  cp "$REAL_PROJECT_ROOT/scripts/mcp/__init__.py" "$tmpdir/scripts/mcp/" 2>/dev/null || true
-
-  # Git init
-  (cd "$tmpdir" && git init -q && git add -A && git commit -q -m "init" --allow-empty)
+  mkdir -p "$tmpdir/.purlin" "$tmpdir/specs/_anchors"
+  printf '{"gate": "passed"}\n' > "$tmpdir/.purlin/config.json"
+  printf '.purlin/runtime/\n' > "$tmpdir/.gitignore"
+  (
+    cd "$tmpdir"
+    git init -q
+    git config user.email "dev@purlin.local"
+    git config user.name "Purlin Dev"
+    git add -A
+    git commit -q -m "set the project up"
+  )
 }
 
-# --- Helper: create an anchor spec ---
-create_anchor() {
-  local tmpdir="$1" name="$2" source_url="$3" pinned="${4:-}" source_path="${5:-}" global="${6:-false}"
-  local file="$tmpdir/specs/_anchors/$name.md"
-  {
-    echo "# Anchor: $name"
-    echo ""
-    [[ -n "$source_url" ]] && echo "> Source: $source_url"
-    [[ -n "$source_path" ]] && echo "> Path: $source_path"
-    [[ -n "$pinned" ]] && echo "> Pinned: $pinned"
-    [[ "$global" == "true" ]] && echo "> Global: true"
-    echo ""
-    echo "## What it does"
-    echo ""
-    echo "External anchor for testing."
-    echo ""
-    echo "## Rules"
-    echo ""
-    echo "- RULE-1: External constraint one"
-    echo "- RULE-2: External constraint two"
-    echo ""
-    echo "## Proof"
-    echo ""
-    echo "- PROOF-1 (RULE-1): Verify constraint one"
-    echo "- PROOF-2 (RULE-2): Verify constraint two"
-  } > "$file"
-}
-
-# --- Helper: create a feature spec ---
 create_feature() {
-  local tmpdir="$1" name="$2" subdir="$3" num_rules="${4:-2}" requires="${5:-}"
-  mkdir -p "$tmpdir/specs/$subdir"
+  local tmpdir="$1" name="$2" requires="$3"
+  mkdir -p "$tmpdir/specs/core"
   {
     echo "# Feature: $name"
     echo ""
     [[ -n "$requires" ]] && echo "> Requires: $requires"
     echo ""
-    echo "## What it does"
-    echo ""
-    echo "Test feature."
-    echo ""
     echo "## Rules"
     echo ""
-    for i in $(seq 1 "$num_rules"); do
-      echo "- RULE-$i: Feature rule $i"
-    done
+    echo "- RULE-1: The $name page loads"
     echo ""
     echo "## Proof"
     echo ""
-    for i in $(seq 1 "$num_rules"); do
-      echo "- PROOF-$i (RULE-$i): Verify feature rule $i"
-    done
-  } > "$tmpdir/specs/$subdir/$name.md"
+    echo "- PROOF-1 (RULE-1): Load the page; verify it renders @e2e"
+  } > "$tmpdir/specs/core/$name.md"
 }
 
-# --- Helper: create proof file ---
-create_proof_file() {
-  local tmpdir="$1" feature="$2" subdir="$3"
-  shift 3
-
-  local proofs="["
-  local first=true
-  for entry in "$@"; do
-    local proof_id rule_id status
-    proof_id=$(echo "$entry" | cut -d'|' -f1)
-    rule_id=$(echo "$entry" | cut -d'|' -f2)
-    status=$(echo "$entry" | cut -d'|' -f3)
-    $first || proofs="$proofs,"
-    first=false
-    proofs="$proofs{\"feature\":\"$feature\",\"id\":\"$proof_id\",\"rule\":\"$rule_id\",\"test_file\":\"test.sh\",\"test_name\":\"test\",\"status\":\"$status\",\"tier\":\"unit\"}"
-  done
-  proofs="$proofs]"
-  echo "{\"tier\":\"unit\",\"proofs\":$proofs}" > "$tmpdir/specs/$subdir/$feature.proofs-unit.json"
-}
-
-# --- Helper: run sync_status ---
-run_sync_status() {
+run_upstream() {
   local tmpdir="$1"
-  python3 -c "
-import sys, os
-sys.path.insert(0, os.path.join('$tmpdir', 'scripts', 'mcp'))
-from purlin_server import sync_status
-print(sync_status('$tmpdir'))
-" 2>/dev/null
+  shift
+  python3 "$UPSTREAM" --project-root "$tmpdir" "$@"
 }
 
-# --- Helper: run drift ---
+run_status() {
+  PURLIN_MCP_DIR="$MCP_DIR" PURLIN_ROOT="$1" python3 -c '
+import os, sys
+sys.path.insert(0, os.environ["PURLIN_MCP_DIR"])
+from purlin import status
+print(status.sync_status(os.environ["PURLIN_ROOT"]))
+'
+}
+
 run_drift() {
-  local tmpdir="$1"
-  python3 -c "
-import sys, os
-sys.path.insert(0, os.path.join('$tmpdir', 'scripts', 'mcp'))
-from purlin_server import drift
-print(drift('$tmpdir'))
-" 2>/dev/null
+  PURLIN_MCP_DIR="$MCP_DIR" PURLIN_ROOT="$1" python3 -c '
+import os, sys
+sys.path.insert(0, os.environ["PURLIN_MCP_DIR"])
+from purlin import drift
+print(drift.drift(os.environ["PURLIN_ROOT"]))
+'
 }
 
-# --- Helper: run pre-push hook ---
-run_hook() {
-  local tmpdir="$1"
-  (cd "$tmpdir" && bash "$HOOK_SCRIPT" 2>&1) || return $?
+new_tmpdir() {
+  local d
+  d=$(mktemp -d)
+  ALL_TMPDIRS="$ALL_TMPDIRS $d"
+  echo "$d"
 }
 
+# ==========================================================================
+# 1. add writes the local copy with > Source: and > Pinned:
+# ==========================================================================
+echo "--- 1: add writes the copy with its tracking fields ---"
+TMP1=$(new_tmpdir)
+BARE1="$TMP1/policies.git"
+SHA1=$(create_anchor_repo "$BARE1" "specs/no_eval.md" "$ANCHOR_V1")
+PROJECT1="$TMP1/project"
+mkdir -p "$PROJECT1"
+init_project "$PROJECT1"
+run_upstream "$PROJECT1" add "$BARE1" --path specs/no_eval.md --name no_eval >/dev/null
+
+COPY1="$PROJECT1/specs/_anchors/no_eval.md"
+ok=true
+grep -q "^> Source: $BARE1 specs/no_eval.md\$" "$COPY1" || ok=false
+grep -q "^> Pinned: $SHA1\$" "$COPY1" || ok=false
+grep -q '^- RULE-2: No exec() in source files \[risk: high\]$' "$COPY1" || ok=false
+record "add writes Source, Pinned and the author's rules" "$ok" "$(cat "$COPY1")"
 
 # ==========================================================================
-# PROOF-1 (RULE-1): _scan_specs extracts Pinned and Path
+# 2. sync --check is 0 while the pin is current and 1 once it is behind
 # ==========================================================================
-echo "--- PROOF-1: Pinned/Path extraction ---"
-TMP1=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP1"
-init_project "$TMP1"
-create_anchor "$TMP1" "api_contract" "/tmp/fake.git" "abc1234def5678" "docs/spec.md"
-(cd "$TMP1" && git add -A && git commit -q -m "add anchor")
+echo "--- 2: sync --check exit codes ---"
+ok=true
+detail=""
+if ! run_upstream "$PROJECT1" sync --check >/dev/null; then
+  ok=false
+  detail="a current pin exited non-zero"
+fi
+SHA2=$(advance_anchor_repo "$BARE1" "specs/no_eval.md" "$ANCHOR_V2")
+set +e
+run_upstream "$PROJECT1" sync --check >/dev/null
+code=$?
+set -e
+[[ $code -eq 1 ]] || { ok=false; detail="a pin behind exited $code, expected 1"; }
+record "sync --check exits 0 when current and 1 when behind" "$ok" "$detail"
 
-p1_result=$(python3 -c "
-import sys, os
-sys.path.insert(0, os.path.join('$TMP1', 'scripts', 'mcp'))
-from purlin_server import _scan_specs
-features = _scan_specs('$TMP1')
-info = features.get('api_contract', {})
-pinned = info.get('pinned', '')
-source_path = info.get('source_path', '')
-if pinned == 'abc1234def5678' and source_path == 'docs/spec.md':
-    print('pass')
+# ==========================================================================
+# 3. sync --check --json names both shas and changes nothing
+# ==========================================================================
+echo "--- 3: sync --check --json ---"
+set +e
+json=$(run_upstream "$PROJECT1" sync --check --json)
+set -e
+before=$(cat "$COPY1")
+result=$(PURLIN_JSON="$json" PURLIN_PINNED="$SHA1" PURLIN_REMOTE="$SHA2" python3 -c '
+import json, os, sys
+data = json.loads(os.environ["PURLIN_JSON"])
+row = data["anchors"][0]
+problems = []
+if data["behind"] != 1:
+    problems.append("behind=%s" % data["behind"])
+if data["checked"] is not True:
+    problems.append("checked=%s" % data["checked"])
+if row["status"] != "behind":
+    problems.append("status=%s" % row["status"])
+if row["pinned"] != os.environ["PURLIN_PINNED"]:
+    problems.append("pinned=%s" % row["pinned"])
+if row["remote_sha"] != os.environ["PURLIN_REMOTE"]:
+    problems.append("remote_sha=%s" % row["remote_sha"])
+print("ok" if not problems else ", ".join(problems))
+')
+ok=true
+[[ "$result" == "ok" ]] || ok=false
+[[ "$before" == "$(cat "$COPY1")" ]] || { ok=false; result="$result; the copy was rewritten"; }
+record "sync --check --json reports both shas and writes nothing" "$ok" "$result"
+
+# ==========================================================================
+# 4. sync advances the pin and names the rule delta
+# ==========================================================================
+echo "--- 4: sync advances the pin ---"
+sync_out=$(run_upstream "$PROJECT1" sync no_eval)
+ok=true
+echo "$sync_out" | grep -q "RULE-2 changed, RULE-3 added" || ok=false
+grep -q "^> Pinned: $SHA2\$" "$COPY1" || ok=false
+grep -q '^- RULE-3: No compile() in source files \[risk: medium\]$' "$COPY1" || ok=false
+record "sync names the delta and advances the pin" "$ok" "$sync_out"
+
+# ==========================================================================
+# 5. the status table names the anchor whose pin is behind
+# ==========================================================================
+echo "--- 5: sync_status reports a pin behind ---"
+TMP5=$(new_tmpdir)
+BARE5="$TMP5/policies.git"
+SHA5=$(create_anchor_repo "$BARE5" "specs/no_eval.md" "$ANCHOR_V1")
+PROJECT5="$TMP5/project"
+mkdir -p "$PROJECT5"
+init_project "$PROJECT5"
+run_upstream "$PROJECT5" add "$BARE5" --path specs/no_eval.md --name no_eval >/dev/null
+create_feature "$PROJECT5" "checkout" "no_eval"
+(cd "$PROJECT5" && git add -A && git commit -q -m "add the anchor and a feature")
+NEW5=$(advance_anchor_repo "$BARE5" "specs/no_eval.md" "$ANCHOR_V2")
+
+status_out=$(run_status "$PROJECT5")
+ok=true
+echo "$status_out" | grep -q "no_eval: the pin ${SHA5:0:7} is behind its source" || ok=false
+echo "$status_out" | grep -q "purlin:anchor sync no_eval" || ok=false
+record "the status table names the anchor and the command to run" "$ok" "$status_out"
+
+# ==========================================================================
+# 6. a feature that requires the anchor counts its rules
+# ==========================================================================
+echo "--- 6: required anchor rules are counted ---"
+result=$(PURLIN_MCP_DIR="$MCP_DIR" PURLIN_ROOT="$PROJECT5" python3 -c '
+import os, sys
+sys.path.insert(0, os.environ["PURLIN_MCP_DIR"])
+from purlin import payload
+data = payload.build_payload(os.environ["PURLIN_ROOT"])
+rows = {f["name"]: f for f in data["features"]}
+checkout = rows["checkout"]["rollup"]["rules"]
+labels = sorted({r["label"] for r in rows["checkout"]["rules"]})
+print("ok" if checkout == 3 and labels == ["own", "required"]
+      else "rules=%s labels=%s" % (checkout, labels))
+')
+ok=true
+[[ "$result" == "ok" ]] || ok=false
+record "one own rule plus two anchor rules is three" "$ok" "$result"
+
+# ==========================================================================
+# 7. drift carries the pin, its status and the remote sha
+# ==========================================================================
+echo "--- 7: drift reports the pin ---"
+drift_json=$(run_drift "$PROJECT5")
+result=$(PURLIN_JSON="$drift_json" PURLIN_REMOTE="$NEW5" python3 -c '
+import json, os
+data = json.loads(os.environ["PURLIN_JSON"])
+pins = data.get("pins", [])
+match = [p for p in pins if p.get("anchor") == "no_eval"]
+if not match:
+    print("no pin row: %s" % json.dumps(pins))
 else:
-    print(f'fail: pinned={pinned} source_path={source_path}')
-" 2>/dev/null)
+    row = match[0]
+    remote = os.environ["PURLIN_REMOTE"][:7]
+    print("ok" if row.get("status") == "behind" and row.get("remote_sha") == remote
+          else json.dumps(row))
+')
+ok=true
+[[ "$result" == "ok" ]] || ok=false
+record "drift names the anchor, the status behind and the remote sha" "$ok" "$result"
 
-if [[ "$p1_result" == "pass" ]]; then
-  echo "  PASS: pinned and source_path extracted"
-  purlin_proof "sync_status" "PROOF-34" "RULE-1" pass "Pinned/Path extraction correct"
-  PASS=$((PASS + 1))
+# ==========================================================================
+# 8. an anchor with a source and no pin is reported as unpinned
+# ==========================================================================
+echo "--- 8: an unpinned source ---"
+TMP8=$(new_tmpdir)
+BARE8="$TMP8/policies.git"
+create_anchor_repo "$BARE8" "specs/no_eval.md" "$ANCHOR_V1" >/dev/null
+PROJECT8="$TMP8/project"
+mkdir -p "$PROJECT8"
+init_project "$PROJECT8"
+{
+  echo "# Anchor: loose"
+  echo ""
+  echo "> Source: $BARE8 specs/no_eval.md"
+  echo ""
+  echo "## Rules"
+  echo ""
+  echo "- RULE-1: Something is constrained"
+  echo ""
+  echo "## Proof"
+  echo ""
+  echo "- PROOF-1 (RULE-1): Check it"
+} > "$PROJECT8/specs/_anchors/loose.md"
+(cd "$PROJECT8" && git add -A && git commit -q -m "add an unpinned anchor")
+
+status_out=$(run_status "$PROJECT8")
+ok=true
+echo "$status_out" | grep -q "loose: names a source and no pin" || ok=false
+record "an anchor with a source and no pin is named" "$ok" "$status_out"
+
+# ==========================================================================
+# 9. the dashboard data carries pinned and source_path
+# ==========================================================================
+echo "--- 9: the dashboard data carries the pin ---"
+result=$(PURLIN_MCP_DIR="$MCP_DIR" PURLIN_ROOT="$PROJECT5" python3 -c '
+import json, os, re, sys
+sys.path.insert(0, os.environ["PURLIN_MCP_DIR"])
+from purlin import server
+root = os.environ["PURLIN_ROOT"]
+server.generate_digest(root, network=False)
+with open(os.path.join(root, ".purlin", "report-data.js"), encoding="utf-8") as h:
+    text = h.read()
+data = json.loads(re.sub(r";\s*$", "", text.split("= ", 1)[1]))
+rows = {f["name"]: f for f in data["features"]}
+anchor = rows["no_eval"]
+feature = rows["checkout"]
+problems = []
+if not anchor.get("pinned"):
+    problems.append("anchor pinned=%r" % anchor.get("pinned"))
+if anchor.get("source_path") != "specs/no_eval.md":
+    problems.append("source_path=%r" % anchor.get("source_path"))
+if feature.get("pinned") is not None:
+    problems.append("feature pinned=%r" % feature.get("pinned"))
+print("ok" if not problems else ", ".join(problems))
+')
+ok=true
+[[ "$result" == "ok" ]] || ok=false
+record "report-data.js carries pinned and source_path, null on a feature" "$ok" "$result"
+
+# ==========================================================================
+# 10. a hostile > Source: is refused before any process starts
+# ==========================================================================
+echo "--- 10: a hostile source is refused ---"
+TMP10=$(new_tmpdir)
+PROJECT10="$TMP10/project"
+mkdir -p "$PROJECT10"
+init_project "$PROJECT10"
+set +e
+add_out=$(run_upstream "$PROJECT10" add --path a.md --name hostile -- '--upload-pack=/bin/echo' 2>&1)
+code=$?
+set -e
+ok=true
+[[ $code -eq 2 ]] || { ok=false; }
+echo "$add_out" | grep -q 'begins with "-"' || ok=false
+[[ -f "$PROJECT10/specs/_anchors/hostile.md" ]] && ok=false
+record "a source beginning with a dash is refused and nothing is written" "$ok" "$add_out"
+
+# ==========================================================================
+# 11. the dog-food anchor repo this checkout creates is readable
+# ==========================================================================
+echo "--- 11: the dog-food anchor repo ---"
+DOGFOOD="$REAL_PROJECT_ROOT/dev/external-refs/security-policy.git"
+if [[ ! -d "$DOGFOOD" ]]; then
+  echo "  SKIP: run bash dev/setup-external-refs.sh first"
 else
-  echo "  FAIL: $p1_result"
-  purlin_proof "sync_status" "PROOF-34" "RULE-1" fail "Pinned/Path extraction: $p1_result"
-  FAIL=$((FAIL + 1))
+  TMP11=$(new_tmpdir)
+  PROJECT11="$TMP11/project"
+  mkdir -p "$PROJECT11"
+  init_project "$PROJECT11"
+  run_upstream "$PROJECT11" add "$DOGFOOD" --path security_policy.md \
+    --name security_no_dangerous_patterns >/dev/null
+  COPY11="$PROJECT11/specs/_anchors/security_no_dangerous_patterns.md"
+  ok=true
+  detail=""
+  grep -q '^> Pinned: [0-9a-f]\{40\}$' "$COPY11" || { ok=false; detail="no 40-character pin"; }
+  grep -q '^- RULE-1: No file under' "$COPY11" || { ok=false; detail="$detail no RULE-1"; }
+  grep -qi '^> Visual-' "$COPY11" && { ok=false; detail="$detail a retired field survived"; }
+  run_upstream "$PROJECT11" sync --check >/dev/null || { ok=false; detail="$detail the fresh pin read as behind"; }
+  record "the dog-food repo serves a 0.10.0 anchor that pins clean" "$ok" "$detail"
 fi
-
-# ==========================================================================
-# PROOF-2 (RULE-2): sync_status shows Source/Path/Pinned
-# ==========================================================================
-echo "--- PROOF-2: sync_status pinned display ---"
-TMP2=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP2"
-init_project "$TMP2"
-create_anchor "$TMP2" "api_contract" "git@github.com:acme/api.git" "abc1234def5678" "docs/spec.md"
-create_feature "$TMP2" "login" "auth" 1 "api_contract"
-(cd "$TMP2" && git add -A && git commit -q -m "add specs")
-
-output2=$(run_sync_status "$TMP2")
-p2_source=false; p2_path=false; p2_pinned=false
-echo "$output2" | grep -q "Source: git@github.com:acme/api.git" && p2_source=true
-echo "$output2" | grep -q "Path: docs/spec.md" && p2_path=true
-echo "$output2" | grep -q "Pinned: abc1234" && p2_pinned=true
-
-if $p2_source && $p2_path && $p2_pinned; then
-  echo "  PASS: Source/Path/Pinned in sync_status"
-  purlin_proof "sync_status" "PROOF-35" "RULE-22" pass "sync_status shows pinned info"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: source=$p2_source path=$p2_path pinned=$p2_pinned"
-  purlin_proof "sync_status" "PROOF-35" "RULE-22" fail "sync_status pinned display"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-3 (RULE-3): sync_status warns on unpinned
-# ==========================================================================
-echo "--- PROOF-3: Unpinned warning ---"
-TMP3=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP3"
-init_project "$TMP3"
-create_anchor "$TMP3" "loose_ref" "git@github.com:acme/loose.git" "" ""
-(cd "$TMP3" && git add -A && git commit -q -m "add anchor")
-
-output3=$(run_sync_status "$TMP3")
-if echo "$output3" | grep -qi "unpinned"; then
-  echo "  PASS: unpinned warning shown"
-  purlin_proof "sync_status" "PROOF-36" "RULE-23" pass "unpinned warning present"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: no unpinned warning"
-  echo "  Output: $output3"
-  purlin_proof "sync_status" "PROOF-36" "RULE-23" fail "no unpinned warning"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-4 (RULE-4): report-data.js includes pinned and source_path
-# ==========================================================================
-echo "--- PROOF-4: report-data.js fields ---"
-TMP4=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP4"
-init_project "$TMP4"
-create_anchor "$TMP4" "api_contract" "git@github.com:acme/api.git" "abc1234def5678" "docs/spec.md"
-# Need purlin-report.html for report generation
-touch "$TMP4/purlin-report.html"
-(cd "$TMP4" && git add -A && git commit -q -m "add specs")
-
-run_sync_status "$TMP4" >/dev/null
-
-p4_result=$(python3 -c "
-import json, re
-with open('$TMP4/.purlin/report-data.js') as f:
-    text = f.read()
-match = re.search(r'const PURLIN_DATA = (.+);', text, re.DOTALL)
-data = json.loads(match.group(1))
-anchor = [f for f in data['features'] if f['name'] == 'api_contract'][0]
-if anchor.get('pinned') == 'abc1234def5678' and anchor.get('source_path') == 'docs/spec.md':
-    print('pass')
-else:
-    print(f'fail: pinned={anchor.get(\"pinned\")} source_path={anchor.get(\"source_path\")}')
-" 2>/dev/null)
-
-if [[ "$p4_result" == "pass" ]]; then
-  echo "  PASS: report-data.js has pinned/source_path"
-  purlin_proof "sync_status" "PROOF-37" "RULE-24" pass "report-data.js includes pinned fields"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: $p4_result"
-  purlin_proof "sync_status" "PROOF-37" "RULE-24" fail "report-data.js: $p4_result"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-5 (RULE-5): Coverage includes external anchor rules
-# ==========================================================================
-echo "--- PROOF-5: Coverage with 1 external anchor ---"
-TMP5=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP5"
-BARE5=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $BARE5"
-rm -rf "$BARE5"
-
-SHA5=$(create_external_repo "$BARE5" "spec.md" "# external spec")
-
-init_project "$TMP5"
-create_anchor "$TMP5" "ext_anchor" "$BARE5" "$SHA5" "spec.md"
-create_feature "$TMP5" "my_feature" "core" 1 "ext_anchor"
-(cd "$TMP5" && git add -A && git commit -q -m "add specs")
-
-output5=$(run_sync_status "$TMP5")
-# Feature should have 3 rules: 1 own + 2 from anchor
-if echo "$output5" | grep -q "0/3"; then
-  echo "  PASS: coverage 0/3 (1 own + 2 anchor)"
-  purlin_proof "sync_status" "PROOF-38" "RULE-4" pass "coverage includes anchor rules"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: expected 0/3 in output"
-  echo "  Output: $output5"
-  purlin_proof "sync_status" "PROOF-38" "RULE-4" fail "coverage count wrong"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-6 (RULE-6): Coverage with 2 external anchors
-# ==========================================================================
-echo "--- PROOF-6: Coverage with 2 external anchors ---"
-TMP6=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP6"
-BARE6A=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $BARE6A"; rm -rf "$BARE6A"
-BARE6B=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $BARE6B"; rm -rf "$BARE6B"
-
-SHA6A=$(create_external_repo "$BARE6A" "api.md" "# api spec")
-SHA6B=$(create_external_repo "$BARE6B" "sec.md" "# sec spec")
-
-init_project "$TMP6"
-create_anchor "$TMP6" "anchor_a" "$BARE6A" "$SHA6A" "api.md"
-# anchor_b with only 1 rule
-cat > "$TMP6/specs/_anchors/anchor_b.md" << 'EOF'
-# Anchor: anchor_b
-
-> Source: PLACEHOLDER
-> Pinned: PLACEHOLDER
-> Path: sec.md
-
-## What it does
-
-Security anchor.
-
-## Rules
-
-- RULE-1: Security constraint
-
-## Proof
-
-- PROOF-1 (RULE-1): Verify security
-EOF
-sed -i.bak "s|> Source: PLACEHOLDER|> Source: $BARE6B|" "$TMP6/specs/_anchors/anchor_b.md"
-sed -i.bak "s|> Pinned: PLACEHOLDER|> Pinned: $SHA6B|" "$TMP6/specs/_anchors/anchor_b.md"
-rm -f "$TMP6/specs/_anchors/anchor_b.md.bak"
-
-create_feature "$TMP6" "big_feature" "core" 2 "anchor_a, anchor_b"
-(cd "$TMP6" && git add -A && git commit -q -m "add specs")
-
-output6=$(run_sync_status "$TMP6")
-# 2 own + 2 anchor_a + 1 anchor_b = 5
-if echo "$output6" | grep -q "0/5"; then
-  echo "  PASS: coverage 0/5 (2 own + 2 + 1)"
-  purlin_proof "sync_status" "PROOF-39" "RULE-4" pass "2 external anchors counted"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: expected 0/5"
-  echo "  Output: $output6"
-  purlin_proof "sync_status" "PROOF-39" "RULE-4" fail "2 anchor coverage wrong"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-7 (RULE-7): External + local anchor together
-# ==========================================================================
-echo "--- PROOF-7: External + local anchor ---"
-TMP7=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP7"
-BARE7=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $BARE7"; rm -rf "$BARE7"
-SHA7=$(create_external_repo "$BARE7" "ext.md" "# ext")
-
-init_project "$TMP7"
-create_anchor "$TMP7" "ext_anchor" "$BARE7" "$SHA7" "ext.md"
-# Local anchor (no Source)
-cat > "$TMP7/specs/_anchors/local_anchor.md" << 'EOF'
-# Anchor: local_anchor
-
-## What it does
-
-Local anchor.
-
-## Rules
-
-- RULE-1: Local constraint
-
-## Proof
-
-- PROOF-1 (RULE-1): Verify local
-EOF
-
-create_feature "$TMP7" "hybrid" "core" 1 "ext_anchor, local_anchor"
-(cd "$TMP7" && git add -A && git commit -q -m "add specs")
-
-output7=$(run_sync_status "$TMP7")
-# 1 own + 2 ext_anchor + 1 local_anchor = 4
-if echo "$output7" | grep -q "0/4"; then
-  echo "  PASS: coverage 0/4 (1 own + 2 ext + 1 local)"
-  purlin_proof "sync_status" "PROOF-40" "RULE-4" pass "external + local anchor counted"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: expected 0/4"
-  echo "  Output: $output7"
-  purlin_proof "sync_status" "PROOF-40" "RULE-4" fail "hybrid anchor coverage wrong"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-8 (RULE-8): Global external anchor auto-applies
-# ==========================================================================
-echo "--- PROOF-8: Global external anchor ---"
-TMP8=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP8"
-BARE8=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $BARE8"; rm -rf "$BARE8"
-SHA8=$(create_external_repo "$BARE8" "sec.md" "# sec")
-
-init_project "$TMP8"
-create_anchor "$TMP8" "global_ext" "$BARE8" "$SHA8" "sec.md" "true"
-create_feature "$TMP8" "feature_a" "core" 1
-create_feature "$TMP8" "feature_b" "core" 1
-(cd "$TMP8" && git add -A && git commit -q -m "add specs")
-
-output8=$(run_sync_status "$TMP8")
-# Each feature: 1 own + 2 global = 3 rules
-p8_a=false; p8_b=false
-echo "$output8" | grep -A5 "feature_a" | grep -q "0/3" && p8_a=true
-echo "$output8" | grep -A5 "feature_b" | grep -q "0/3" && p8_b=true
-
-if $p8_a && $p8_b; then
-  echo "  PASS: global anchor auto-applied to both features"
-  purlin_proof "sync_status" "PROOF-41" "RULE-9" pass "global external anchor auto-applies"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: a=$p8_a b=$p8_b"
-  echo "  Output: $output8"
-  purlin_proof "sync_status" "PROOF-41" "RULE-9" fail "global anchor not auto-applied"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-9 (RULE-9): drift detects stale external anchor
-# ==========================================================================
-echo "--- PROOF-9: Drift staleness detection ---"
-TMP9=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP9"
-BARE9=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $BARE9"; rm -rf "$BARE9"
-SHA9=$(create_external_repo "$BARE9" "spec.md" "# original")
-
-init_project "$TMP9"
-create_anchor "$TMP9" "stale_anchor" "$BARE9" "$SHA9" "spec.md"
-create_feature "$TMP9" "stale_feat" "core" 1 "stale_anchor"
-(cd "$TMP9" && git add -A && git commit -q -m "add specs")
-
-# Advance the bare repo
-NEW_SHA9=$(advance_repo "$BARE9" "spec.md" "# updated spec with new rules")
-
-drift9=$(run_drift "$TMP9")
-p9_result=$(echo "$drift9" | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-drift = data.get('external_anchor_drift', [])
-for d in drift:
-    if d.get('anchor') == 'stale_anchor' and d.get('status') == 'stale' and d.get('remote_sha'):
-        print('pass')
-        sys.exit(0)
-print('fail')
-" 2>/dev/null)
-
-if [[ "$p9_result" == "pass" ]]; then
-  echo "  PASS: drift detects staleness with remote SHA"
-  purlin_proof "drift" "PROOF-17" "RULE-12" pass "drift detects stale anchor"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: no stale entry in drift output"
-  purlin_proof "drift" "PROOF-17" "RULE-12" fail "drift staleness detection failed"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-10 (RULE-10): drift detects unpinned
-# ==========================================================================
-echo "--- PROOF-10: Drift unpinned detection ---"
-TMP10=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP10"
-BARE10=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $BARE10"; rm -rf "$BARE10"
-create_external_repo "$BARE10" "spec.md" "# unpinned" >/dev/null
-
-init_project "$TMP10"
-create_anchor "$TMP10" "unpinned_anchor" "$BARE10" "" "spec.md"
-(cd "$TMP10" && git add -A && git commit -q -m "add anchor")
-
-drift10=$(run_drift "$TMP10")
-if echo "$drift10" | grep -q '"status": "unpinned"'; then
-  echo "  PASS: drift detects unpinned"
-  purlin_proof "drift" "PROOF-18" "RULE-15" pass "drift detects unpinned anchor"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: no unpinned status in drift"
-  echo "  Drift: $drift10"
-  purlin_proof "drift" "PROOF-18" "RULE-15" fail "drift unpinned detection failed"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-11 (RULE-11): Coverage progression with external anchor
-# ==========================================================================
-echo "--- PROOF-11: Coverage progression ---"
-TMP11=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP11"
-BARE11=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $BARE11"; rm -rf "$BARE11"
-SHA11=$(create_external_repo "$BARE11" "spec.md" "# ext")
-
-init_project "$TMP11"
-create_anchor "$TMP11" "ext_anchor" "$BARE11" "$SHA11" "spec.md"
-create_feature "$TMP11" "progress" "core" 1 "ext_anchor"
-(cd "$TMP11" && git add -A && git commit -q -m "add specs")
-
-# Phase A: no proofs → UNTESTED
-out11a=$(run_sync_status "$TMP11")
-phase_a=false
-echo "$out11a" | grep -q "UNTESTED" && phase_a=true
-
-# Phase B: prove own rule only → PARTIAL
-create_proof_file "$TMP11" "progress" "core" "PROOF-1|RULE-1|pass"
-(cd "$TMP11" && git add -A && git commit -q -m "own proof")
-out11b=$(run_sync_status "$TMP11")
-phase_b=false
-echo "$out11b" | grep -q "PARTIAL" && phase_b=true
-
-# Phase C: prove anchor rules too → PASSING
-create_proof_file "$TMP11" "progress" "core" \
-  "PROOF-1|RULE-1|pass" \
-  "PROOF-2|ext_anchor/RULE-1|pass" \
-  "PROOF-3|ext_anchor/RULE-2|pass"
-(cd "$TMP11" && git add -A && git commit -q -m "all proofs")
-out11c=$(run_sync_status "$TMP11")
-phase_c=false
-echo "$out11c" | grep -q "PASSING" && phase_c=true
-
-if $phase_a && $phase_b && $phase_c; then
-  echo "  PASS: UNTESTED → PARTIAL → PASSING"
-  purlin_proof "sync_status" "PROOF-42" "RULE-2" pass "coverage progression correct"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: a=$phase_a b=$phase_b c=$phase_c"
-  purlin_proof "sync_status" "PROOF-42" "RULE-2" fail "coverage progression (a=$phase_a b=$phase_b c=$phase_c)"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-12 (RULE-12): Pre-push blocks on failing anchor proof
-# ==========================================================================
-echo "--- PROOF-12: Pre-push enforces anchor rules ---"
-TMP12=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP12"
-BARE12=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $BARE12"; rm -rf "$BARE12"
-SHA12=$(create_external_repo "$BARE12" "spec.md" "# ext")
-
-init_project "$TMP12"
-create_anchor "$TMP12" "ext_anchor" "$BARE12" "$SHA12" "spec.md"
-create_feature "$TMP12" "blocked" "core" 1 "ext_anchor"
-# Anchor rule proof fails
-create_proof_file "$TMP12" "blocked" "core" \
-  "PROOF-1|RULE-1|pass" \
-  "PROOF-2|ext_anchor/RULE-1|fail" \
-  "PROOF-3|ext_anchor/RULE-2|pass"
-(cd "$TMP12" && git add -A && git commit -q -m "add failing proof")
-
-# Install hook
-cp "$HOOK_SCRIPT" "$TMP12/.git/hooks/pre-push"
-chmod +x "$TMP12/.git/hooks/pre-push"
-
-ec12=0
-output12=$(run_hook "$TMP12" 2>&1) || ec12=$?
-
-if [[ $ec12 -eq 1 ]] && echo "$output12" | grep -q "PUSH BLOCKED"; then
-  echo "  PASS: pre-push blocks on failing anchor proof"
-  purlin_proof "pre_push_hook" "PROOF-17" "RULE-1" pass "pre-push blocks on anchor fail"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: exit=$ec12"
-  echo "  Output: $output12"
-  purlin_proof "pre_push_hook" "PROOF-17" "RULE-1" fail "pre-push did not block"
-  FAIL=$((FAIL + 1))
-fi
-
-
-# ==========================================================================
-# PROOF-13 (RULE-5): Part 1-only anchor is local — no Source/Pinned
-# ==========================================================================
-echo "--- PROOF-13: Part 1-only anchor is local ---"
-TMP13=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP13"
-init_project "$TMP13"
-
-# Create anchor with EXACTLY the Part 1 authoring template — no Source/Path/Pinned
-cat > "$TMP13/specs/_anchors/local_only.md" << 'EOF'
-# Anchor: local_only
-
-> Description: A local cross-cutting constraint
-> Type: security
-
-## What it does
-
-Local security constraint with no external source.
-
-## Rules
-
-- RULE-1: No eval() in source files
-- RULE-2: No exec() in source files
-
-## Proof
-
-- PROOF-1 (RULE-1): grep -r "eval(" src/ returns zero matches
-- PROOF-2 (RULE-2): grep -r "exec(" src/ returns zero matches
-EOF
-(cd "$TMP13" && git add -A && git commit -q -m "add local anchor")
-
-# Verify _scan_specs returns source_url=None, pinned=None
-p13_scan=$(python3 -c "
-import sys, os
-sys.path.insert(0, os.path.join('$TMP13', 'scripts', 'mcp'))
-from purlin_server import _scan_specs
-features = _scan_specs('$TMP13')
-info = features.get('local_only', {})
-su = info.get('source_url')
-pi = info.get('pinned')
-sp = info.get('source_path')
-if su is None and pi is None and sp is None and info.get('is_anchor') == True:
-    print('pass')
-else:
-    print(f'fail: source_url={su} pinned={pi} source_path={sp} is_anchor={info.get(\"is_anchor\")}')
-" 2>/dev/null)
-
-# Verify sync_status output has NO Source/Pinned for this anchor
-p13_status=$(run_sync_status "$TMP13")
-p13_no_source=true; p13_no_pinned=true
-echo "$p13_status" | grep -A3 "local_only" | grep -q "Source:" && p13_no_source=false
-echo "$p13_status" | grep -A3 "local_only" | grep -q "Pinned:" && p13_no_pinned=false
-echo "$p13_status" | grep -A3 "local_only" | grep -q "Unpinned" && p13_no_pinned=false
-
-if [[ "$p13_scan" == "pass" ]] && $p13_no_source && $p13_no_pinned; then
-  echo "  PASS: Part 1-only anchor is local, no external ref lines"
-  purlin_proof "skill_anchor" "PROOF-5" "RULE-5" pass "Part 1-only anchor parsed as local"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: scan=$p13_scan no_source=$p13_no_source no_pinned=$p13_no_pinned"
-  purlin_proof "skill_anchor" "PROOF-5" "RULE-5" fail "Part 1-only anchor: scan=$p13_scan"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-14 (RULE-6): Part 2 tracking fields make anchor externally-referenced
-# ==========================================================================
-echo "--- PROOF-14: Part 2 fields make anchor external ---"
-TMP14=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP14"
-BARE14=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $BARE14"; rm -rf "$BARE14"
-SHA14=$(create_external_repo "$BARE14" "docs/constraints.md" "# security constraints")
-
-init_project "$TMP14"
-
-# Create anchor with Part 1 + Part 2 tracking fields
-cat > "$TMP14/specs/_anchors/tracked_ext.md" << EOF
-# Anchor: tracked_ext
-
-> Description: External security constraints
-> Source: $BARE14
-> Path: docs/constraints.md
-> Pinned: $SHA14
-> Type: security
-
-## What it does
-
-External security constraints sourced from a remote repo.
-
-## Rules
-
-- RULE-1: No eval() in source files
-- RULE-2: No exec() in source files
-
-## Proof
-
-- PROOF-1 (RULE-1): grep -r "eval(" src/ returns zero matches
-- PROOF-2 (RULE-2): grep -r "exec(" src/ returns zero matches
-EOF
-(cd "$TMP14" && git add -A && git commit -q -m "add external anchor")
-
-# Verify _scan_specs returns all Part 2 fields populated
-p14_scan=$(python3 -c "
-import sys, os
-sys.path.insert(0, os.path.join('$TMP14', 'scripts', 'mcp'))
-from purlin_server import _scan_specs
-features = _scan_specs('$TMP14')
-info = features.get('tracked_ext', {})
-su = info.get('source_url', '')
-pi = info.get('pinned', '')
-sp = info.get('source_path', '')
-if su == '$BARE14' and pi == '$SHA14' and sp == 'docs/constraints.md':
-    print('pass')
-else:
-    print(f'fail: source_url={su} pinned={pi} source_path={sp}')
-" 2>/dev/null)
-
-# Verify sync_status output shows Source/Path/Pinned
-p14_status=$(run_sync_status "$TMP14")
-p14_has_source=false; p14_has_path=false; p14_has_pinned=false
-echo "$p14_status" | grep -q "Source:" && p14_has_source=true
-echo "$p14_status" | grep -q "Path: docs/constraints.md" && p14_has_path=true
-echo "$p14_status" | grep -q "Pinned:" && p14_has_pinned=true
-
-if [[ "$p14_scan" == "pass" ]] && $p14_has_source && $p14_has_path && $p14_has_pinned; then
-  echo "  PASS: Part 2 fields parsed, sync_status shows external ref"
-  purlin_proof "skill_anchor" "PROOF-6" "RULE-6" pass "Part 2 tracking fields fully parsed"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: scan=$p14_scan source=$p14_has_source path=$p14_has_path pinned=$p14_has_pinned"
-  purlin_proof "skill_anchor" "PROOF-6" "RULE-6" fail "Part 2 fields: scan=$p14_scan"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-15 (RULE-7): Adding Part 2 fields transitions local → external
-# ==========================================================================
-echo "--- PROOF-15: Part 1 → Part 2 transition ---"
-TMP15=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP15"
-BARE15=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $BARE15"; rm -rf "$BARE15"
-SHA15=$(create_external_repo "$BARE15" "spec.md" "# external")
-
-init_project "$TMP15"
-
-# Phase A: Create Part 1-only anchor
-cat > "$TMP15/specs/_anchors/evolving.md" << 'EOF'
-# Anchor: evolving
-
-> Description: Starts local, becomes external
-> Type: api
-
-## What it does
-
-Constraint that starts local.
-
-## Rules
-
-- RULE-1: API responses use JSON
-- RULE-2: All endpoints require auth
-
-## Proof
-
-- PROOF-1 (RULE-1): Verify JSON content-type
-- PROOF-2 (RULE-2): Verify 401 without token
-EOF
-(cd "$TMP15" && git add -A && git commit -q -m "local anchor")
-
-# Capture Phase A state
-p15_before=$(python3 -c "
-import sys, os
-sys.path.insert(0, os.path.join('$TMP15', 'scripts', 'mcp'))
-from purlin_server import _scan_specs
-features = _scan_specs('$TMP15')
-info = features.get('evolving', {})
-print(f'{info.get(\"source_url\")},{info.get(\"pinned\")}')
-" 2>/dev/null)
-
-# Phase B: Add Part 2 tracking fields (simulating purlin:anchor sync)
-cat > "$TMP15/specs/_anchors/evolving.md" << EOF
-# Anchor: evolving
-
-> Description: Starts local, becomes external
-> Source: $BARE15
-> Path: spec.md
-> Pinned: $SHA15
-> Type: api
-
-## What it does
-
-Constraint that starts local, now tracked from external source.
-
-## Rules
-
-- RULE-1: API responses use JSON
-- RULE-2: All endpoints require auth
-
-## Proof
-
-- PROOF-1 (RULE-1): Verify JSON content-type
-- PROOF-2 (RULE-2): Verify 401 without token
-EOF
-(cd "$TMP15" && git add -A && git commit -q -m "add external tracking")
-
-# Capture Phase B state
-p15_after=$(python3 -c "
-import sys, os
-sys.path.insert(0, os.path.join('$TMP15', 'scripts', 'mcp'))
-from purlin_server import _scan_specs
-features = _scan_specs('$TMP15')
-info = features.get('evolving', {})
-print(f'{info.get(\"source_url\")},{info.get(\"pinned\")}')
-" 2>/dev/null)
-
-# Phase A should be None,None — Phase B should have values
-if [[ "$p15_before" == "None,None" ]] && [[ "$p15_after" == "$BARE15,$SHA15" ]]; then
-  echo "  PASS: Part 1 → Part 2 transition: local becomes external"
-  purlin_proof "skill_anchor" "PROOF-7" "RULE-7" pass "Part 1→2 transition changes scan results"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: before=$p15_before after=$p15_after"
-  purlin_proof "skill_anchor" "PROOF-7" "RULE-7" fail "transition: before=$p15_before after=$p15_after"
-  FAIL=$((FAIL + 1))
-fi
-
-
-# ==========================================================================
-# Emit proof files
-# ==========================================================================
-export PROJECT_ROOT="$REAL_PROJECT_ROOT"
-cd "$PROJECT_ROOT"
-purlin_proof_finish
 
 echo ""
-echo "e2e_external_refs: $PASS passed, $FAIL failed (15 proofs recorded)"
+echo "external refs: $PASS passed, $FAIL failed"
 [[ $FAIL -eq 0 ]]

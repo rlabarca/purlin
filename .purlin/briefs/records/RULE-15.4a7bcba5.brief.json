@@ -1,0 +1,56 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-17T12:54:27Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "ba7fd879bf91b80966b2072a85d06e6173155e52e321182f4b375060bc06ffbe",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-15",
+      "text": "Commit two changes after the commit a record observed, one of them touching only `.purlin/records/`, and run `scan()`; verify the rollup says `1 commits behind the latest record.`. Write a record naming a commit the fetch did not reach and run `scan()` again; verify the text says how far this ref is past that record is unknown",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/records/20260917T125351Z-df84acf-ci-windows.json",
+  "risk": "medium",
+  "rule": "RULE-15",
+  "rule_hash": "195ca701e3398bfe9e90350820bd72eb4da1bf01be236ae14dd0180d5295aedf",
+  "rule_text": "The rollup counts the commits between the commit the newest record observed and HEAD, leaving out commits that touch only `.purlin/records/`, and says the count is unknown when the fetched history stops short of that commit",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "a1f8cda6f4c3c19a735b5ba95ebd40369fbd655cc13dc4d6144e168d52bc6cef",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_commit_the_fetch_did_not_reach_is_said_to_be_unknown(remote,\n                                                                tmp_path):\n    bare, _source = remote\n    into = str(tmp_path / 'scanned')\n    os.makedirs(into)\n    scan_module.fetch(bare, 'main', into)\n    assert scan_module.commits_behind(into, 'f' * 40) is None",
+      "file": "dev/test_scan.py",
+      "findings": [],
+      "name": "test_a_commit_the_fetch_did_not_reach_is_said_to_be_unknown",
+      "proof": "PROOF-15",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_rollup_counts_the_commits_since_the_record(remote):\n    bare, source = remote\n    head = git(source, 'rev-parse', 'HEAD').stdout.strip()\n    add_record(source, head)\n    for index in range(2):\n        write(os.path.join(source, 'greeting.py'),\n              \"def greet(name):\\n    return 'Hello, %%s!' %% name  # %d\\n\" % index)\n        git(source, 'add', '-A')\n        git(source, 'commit', '--quiet', '-m', 'change %d' % index)\n    git(source, 'push', '--quiet')\n\n    text = scan_module.scan(bare, 'main')\n\n    assert '2 commits behind the latest record.' in text, (\n        'the commit carrying the record is not one the code moved by')",
+      "file": "dev/test_scan.py",
+      "findings": [],
+      "name": "test_the_rollup_counts_the_commits_since_the_record",
+      "proof": "PROOF-15",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "4a7bcba5531e95302a42a8cc2192dd2fbbb9e4732b50dce49fb2ff61a17407ff"
+}

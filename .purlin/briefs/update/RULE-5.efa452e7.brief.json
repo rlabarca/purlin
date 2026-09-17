@@ -1,0 +1,59 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-16T23:05:23Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "df3c8d279d224cbd85eca85a1d2c77fd2e70dbc5c8a9a34533d52961668507e7",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-5",
+      "text": "On the v0.9.5 fixture run with `--yes`, verify the return code is 0 and `pending()` is then empty; read `HEAD` and `git status --porcelain`, run with `--yes` again and verify both are unchanged",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/update/20260916T230432Z-ca1f4b5-ci-windows.json",
+  "risk": "high",
+  "rule": "RULE-5",
+  "rule_hash": "bf46fbcad2b4ac339f61f0d3eece1e281067a15a6eaf567ff979e4daa349f9bd",
+  "rule_text": "`--yes` answers yes to every question and applies every pending migration, and a second run finds nothing left to do and changes neither the commit nor the tree",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "5b966a950c278f5ace0f8723587eef4c0f83ac7398356c0bace14bbf8441581f",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_running_yes_twice_changes_nothing_the_second_time(tmp_path, capsys,\n                                                           layout):\n    root = _project(tmp_path, layout)\n    _apply(root)\n    head = _git(root, 'rev-parse', 'HEAD').stdout.strip()\n    tree = _git(root, 'status', '--porcelain').stdout\n    capsys.readouterr()\n    assert _apply(root) == 0\n    assert _git(root, 'rev-parse', 'HEAD').stdout.strip() == head\n    assert _git(root, 'status', '--porcelain').stdout == tree",
+      "file": "dev/test_init_update.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_running_yes_twice_changes_nothing_the_second_time[upgrade-0.9.5]",
+      "proof": "PROOF-5",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_yes_applies_every_migration(tmp_path, capsys, layout):\n    root = _project(tmp_path, layout)\n    assert _apply(root) == 0\n    capsys.readouterr()\n    assert update.pending(root) == []\n    assert update.main(['--check', '--project-root', root]) == 0\n    assert 'Nothing is pending' in capsys.readouterr().out",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_yes_applies_every_migration[upgrade-0.9.5]",
+      "proof": "PROOF-5",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "efa452e7936e70c3507816dd9f3debc56d9f2e1f80f6c67c0e7ec348a79f469f"
+}

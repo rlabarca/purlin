@@ -1,13 +1,12 @@
-"""Tests for schema_proof_format — 7 rules.
+"""Tests for schema_proof_format.
 
-Validates the proof file schema, merge behavior, tier constraints,
-git tracking, and manual stamp format.
+What a proof file holds, where it lives and how `sync_status` reads it. The
+merge behaviour a plugin implements when it writes one is proved by each
+plugin's own spec; this file proves the reader's half.
 """
 
-import glob
 import json
 import os
-import re
 import shutil
 import sys
 import tempfile
@@ -16,7 +15,11 @@ import pytest
 
 PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
 sys.path.insert(0, os.path.join(PROJECT_ROOT, 'scripts', 'mcp'))
-import purlin_server
+from purlin import payload as purlin_payload
+from purlin import proofs as purlin_proofs
+
+REQUIRED_FIELDS = {'feature', 'id', 'rule', 'test_file', 'test_name', 'status',
+                   'tier'}
 
 
 class TestProofFormatEnforcement:
@@ -29,193 +32,141 @@ class TestProofFormatEnforcement:
         shutil.rmtree(self.project_root)
 
     def _write_spec(self, name, content, subdir='test'):
-        d = os.path.join(self.project_root, 'specs', subdir)
-        os.makedirs(d, exist_ok=True)
-        with open(os.path.join(d, f'{name}.md'), 'w') as f:
-            f.write(content)
+        directory = os.path.join(self.project_root, 'specs', subdir)
+        os.makedirs(directory, exist_ok=True)
+        with open(os.path.join(directory, name + '.md'), 'w',
+                  encoding='utf-8') as handle:
+            handle.write(content)
 
-    def _write_proofs(self, name, proofs, tier='unit', subdir='test'):
-        d = os.path.join(self.project_root, 'specs', subdir)
-        os.makedirs(d, exist_ok=True)
-        with open(os.path.join(d, f'{name}.proofs-{tier}.json'), 'w') as f:
-            json.dump({"tier": tier, "proofs": proofs}, f)
+    def _write_proofs(self, name, entries, tier='unit'):
+        directory = purlin_proofs.proof_dir(self.project_root)
+        os.makedirs(directory, exist_ok=True)
+        path = os.path.join(directory, '%s.%s.json' % (name, tier))
+        with open(path, 'w', encoding='utf-8') as handle:
+            json.dump({'tier': tier, 'proofs': entries}, handle)
+        return path
+
+    def _word(self, feature, rule_id):
+        """The word one rule's passed cell reads."""
+        data = purlin_payload.build_payload(self.project_root)
+        entry = next(f for f in data['features'] if f['name'] == feature)
+        rule = next(r for r in entry['rules'] if r['id'] == rule_id)
+        return rule['cells']['passed']['word']
 
     @pytest.mark.proof("schema_proof_format", "PROOF-1", "RULE-1")
-    def test_proof_file_read_by_sync_status(self):
+    def test_a_runtime_proof_file_is_read(self):
         self._write_spec('foo', (
             '# Feature: foo\n\n'
-            '## What it does\nFoo.\n\n'
-            '## Rules\n- RULE-1: Must work\n\n'
-            '## Proof\n- PROOF-1 (RULE-1): Test\n'
+            '## Rules\n- RULE-1: The parser returns 200 for a valid body\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): POST a valid body; verify 200\n'
         ))
+        assert self._word('foo', 'RULE-1') == 'no test', \
+            'with no proof file nothing backs the rule'
         self._write_proofs('foo', [
-            {"feature": "foo", "id": "PROOF-1", "rule": "RULE-1",
-             "test_file": "tests/test_foo.py", "test_name": "test_it",
-             "status": "pass", "tier": "unit"},
+            {'feature': 'foo', 'id': 'PROOF-1', 'rule': 'RULE-1',
+             'test_file': 'tests/test_foo.py', 'test_name': 'test_it',
+             'status': 'pass', 'tier': 'unit'},
         ])
-        result = purlin_server.sync_status(self.project_root)
-        assert 'foo: PASSING' in result
+        assert self._word('foo', 'RULE-1') == 'passed', \
+            'a passing entry in .purlin/runtime/proofs/ meets level 1'
 
     @pytest.mark.proof("schema_proof_format", "PROOF-2", "RULE-2")
-    def test_proof_entry_has_all_seven_fields(self):
-        proof_files = glob.glob(os.path.join(PROJECT_ROOT, 'specs', '**',
-                                             '*.proofs-*.json'), recursive=True)
-        assert len(proof_files) > 0, "No proof files found"
-        required = {'feature', 'id', 'rule', 'test_file', 'test_name', 'status', 'tier'}
-        for path in proof_files:
-            with open(path) as f:
-                data = json.load(f)
-            assert 'proofs' in data
-            assert 'tier' in data
-            for entry in data['proofs']:
-                missing = required - set(entry.keys())
-                assert not missing, f"Missing fields {missing} in {path}"
+    def test_every_entry_carries_the_seven_fields(self):
+        path = self._write_proofs('foo', [
+            {'feature': 'foo', 'id': 'PROOF-1', 'rule': 'RULE-1',
+             'test_file': 'tests/test_foo.py', 'test_name': 'test_it',
+             'status': 'pass', 'tier': 'unit'},
+        ])
+        with open(path, encoding='utf-8') as handle:
+            data = json.load(handle)
+        assert 'tier' in data and 'proofs' in data
+        for entry in data['proofs']:
+            missing = REQUIRED_FIELDS - set(entry)
+            assert not missing, 'missing fields %s in %s' % (missing, path)
+        # No runner and no operating system on an entry: the record says where
+        # a run happened, once per run rather than once per proof.
+        for entry in data['proofs']:
+            assert 'runner' not in entry and 'os' not in entry, entry
 
     @pytest.mark.proof("schema_proof_format", "PROOF-3", "RULE-3")
-    def test_invalid_status_not_counted(self):
+    def test_only_pass_counts(self):
         self._write_spec('bar', (
             '# Feature: bar\n\n'
-            '## What it does\nBar.\n\n'
-            '## Rules\n- RULE-1: Must work\n- RULE-2: Must also work\n\n'
-            '## Proof\n- PROOF-1 (RULE-1): Test\n- PROOF-2 (RULE-2): Test\n'
+            '## Rules\n'
+            '- RULE-1: The parser returns 200 for a valid body\n'
+            '- RULE-2: The parser returns 400 for an empty body\n\n'
+            '## Proof\n'
+            '- PROOF-1 (RULE-1): POST a valid body; verify 200\n'
+            '- PROOF-2 (RULE-2): POST an empty body; verify 400\n'
         ))
-        # "error" is invalid — should not count as pass
-        self._write_proofs('bar', [
-            {"feature": "bar", "id": "PROOF-1", "rule": "RULE-1",
-             "test_file": "t.py", "test_name": "t",
-             "status": "error", "tier": "unit"},
-            {"feature": "bar", "id": "PROOF-2", "rule": "RULE-2",
-             "test_file": "t.py", "test_name": "t2",
-             "status": "pass", "tier": "unit"},
+        for bad in ('error', 'fail', 'skipped', None):
+            self._write_proofs('bar', [
+                {'feature': 'bar', 'id': 'PROOF-1', 'rule': 'RULE-1',
+                 'test_file': 't.py', 'test_name': 't', 'status': bad,
+                 'tier': 'unit'},
+                {'feature': 'bar', 'id': 'PROOF-2', 'rule': 'RULE-2',
+                 'test_file': 't.py', 'test_name': 't2', 'status': 'pass',
+                 'tier': 'unit'},
+            ])
+            assert self._word('bar', 'RULE-1') != 'passed', (
+                'status %r must not count as proved' % bad)
+            assert self._word('bar', 'RULE-2') == 'passed', (
+                "the passing rule beside a %r one still counts" % bad)
+
+    @pytest.mark.proof("schema_proof_format", "PROOF-4", "RULE-4")
+    def test_a_fail_beats_a_pass_for_the_same_proof(self):
+        self._write_spec('baz', (
+            '# Feature: baz\n\n'
+            '## Rules\n- RULE-1: The parser returns 200 for a valid body\n\n'
+            '## Proof\n- PROOF-1 (RULE-1): POST a valid body; verify 200\n'
+        ))
+        self._write_proofs('baz', [
+            {'feature': 'baz', 'id': 'PROOF-1', 'rule': 'RULE-1',
+             'test_file': 'a.py', 'test_name': 'ok', 'status': 'pass',
+             'tier': 'unit'},
+            {'feature': 'baz', 'id': 'PROOF-1', 'rule': 'RULE-1',
+             'test_file': 'b.py', 'test_name': 'broken', 'status': 'fail',
+             'tier': 'unit'},
         ])
-        result = purlin_server.sync_status(self.project_root)
-        assert 'bar: VERIFIED' not in result, "Invalid status 'error' should not yield VERIFIED"
-        assert '1/2 rules proved' in result, \
-            "'pass' should count, 'error' should not"
-        # Also verify that "fail" is a valid (non-passing) status distinct from invalid
-        self._write_proofs('bar', [
-            {"feature": "bar", "id": "PROOF-1", "rule": "RULE-1",
-             "test_file": "t.py", "test_name": "t",
-             "status": "fail", "tier": "unit"},
-            {"feature": "bar", "id": "PROOF-2", "rule": "RULE-2",
-             "test_file": "t.py", "test_name": "t2",
-             "status": "pass", "tier": "unit"},
-        ])
-        result2 = purlin_server.sync_status(self.project_root)
-        assert 'bar: VERIFIED' not in result2, "'fail' status should not yield VERIFIED"
-        assert '1/2 rules proved' in result2, \
-            "'fail' is valid but non-passing — only 'pass' should count"
+        assert self._word('baz', 'RULE-1') != 'passed', (
+            'a proof that failed in any test claiming it is not proved')
 
     @pytest.mark.proof("schema_proof_format", "PROOF-5", "RULE-5")
-    def test_feature_scoped_overwrite(self):
-        import subprocess
-        self._write_spec('feat_a', (
-            '# Feature: feat_a\n\n'
-            '## What it does\nA.\n\n'
-            '## Rules\n- RULE-1: Must work\n\n'
-            '## Proof\n- PROOF-1 (RULE-1): Test\n'
-        ))
-        # Pre-populate proof file with feat_b entries
-        self._write_proofs('feat_a', [
-            {"feature": "feat_b", "id": "PROOF-1", "rule": "RULE-1",
-             "test_file": "t.py", "test_name": "t_b",
-             "status": "pass", "tier": "unit"},
-        ])
-        # Create a test file with a proof marker for feat_a
-        test_file = os.path.join(self.project_root, 'test_feat_a.py')
-        with open(test_file, 'w') as f:
-            f.write(
-                'import pytest\n'
-                '@pytest.mark.proof("feat_a", "PROOF-1", "RULE-1")\n'
-                'def test_a():\n'
-                '    assert True\n'
-            )
-        # Create conftest that loads the real proof plugin
-        plugin_path = os.path.join(PROJECT_ROOT, 'scripts', 'proof')
-        conftest = os.path.join(self.project_root, 'conftest.py')
-        with open(conftest, 'w') as f:
-            f.write(
-                f'import sys\n'
-                f'sys.path.insert(0, r"{plugin_path}")\n'
-                f'from pytest_purlin import pytest_configure  # noqa\n'
-            )
-        # Run the real pytest plugin via subprocess
-        result = subprocess.run(
-            ['python3', '-m', 'pytest', test_file, '-q'],
-            cwd=self.project_root,
-            capture_output=True, text=True
-        )
-        # Verify feat_b preserved and feat_a added by the real plugin
-        proof_path = os.path.join(self.project_root, 'specs', 'test',
-                                  'feat_a.proofs-unit.json')
-        assert os.path.exists(proof_path), \
-            f"Proof file not written. stdout={result.stdout} stderr={result.stderr}"
-        with open(proof_path) as f:
-            data = json.load(f)
-        features = [p['feature'] for p in data['proofs']]
-        assert 'feat_b' in features, "feat_b entries were not preserved by plugin"
-        assert 'feat_a' in features, "feat_a entries were not added by plugin"
+    def test_a_missing_directory_is_an_empty_result(self):
+        assert purlin_proofs.load_proofs(self.project_root) == {}
+        os.makedirs(purlin_proofs.proof_dir(self.project_root))
+        assert purlin_proofs.load_proofs(self.project_root) == {}
+
+    @pytest.mark.proof("schema_proof_format", "PROOF-6", "RULE-6")
+    def test_the_filename_names_the_feature_and_the_tier(self):
+        assert purlin_proofs.proof_file_parts('login.unit.json') == ('login',
+                                                                    'unit')
+        assert purlin_proofs.proof_file_parts(
+            'login.integration.json') == ('login', 'integration')
+        assert purlin_proofs.proof_file_parts('login.md') is None
+        # A file with no tier segment names nothing readable.
+        assert purlin_proofs.proof_file_parts('login.json') is None
 
 
 class TestProofFormatConventions:
 
-    @pytest.mark.proof("schema_proof_format", "PROOF-4", "RULE-4")
-    def test_standard_tiers_documented(self):
-        valid_tiers = {'unit', 'integration', 'e2e', 'windows'}
-        # Verify all existing proof files only use valid tiers
-        proof_files = glob.glob(os.path.join(PROJECT_ROOT, 'specs', '**',
-                                             '*.proofs-*.json'), recursive=True)
-        assert len(proof_files) > 0, "No proof files found"
-        for path in proof_files:
-            with open(path) as f:
-                data = json.load(f)
-            file_tier = data.get('tier', '')
-            assert file_tier in valid_tiers, \
-                f"Invalid top-level tier '{file_tier}' in {path}"
-            for entry in data.get('proofs', []):
-                entry_tier = entry.get('tier', '')
-                assert entry_tier in valid_tiers, \
-                    f"Invalid entry tier '{entry_tier}' in {entry.get('id')} of {path}"
-
-        # Verify format reference documents the standard tiers + the platform-gated windows tier
-        with open(os.path.join(PROJECT_ROOT, 'references', 'formats',
-                               'spec_format.md')) as f:
-            fmt = f.read()
-        assert '@integration' in fmt
-        assert '@e2e' in fmt
-        assert '@windows' in fmt
-
-    @pytest.mark.proof("schema_proof_format", "PROOF-6", "RULE-6")
-    def test_proof_files_not_gitignored(self):
-        import subprocess
-        with open(os.path.join(PROJECT_ROOT, '.gitignore')) as f:
-            gitignore = f.read()
-        # Verify no exact pattern would exclude proof files
-        assert '*.proofs-' not in gitignore
-        assert 'proofs-*.json' not in gitignore
-        assert '.proofs' not in gitignore
-        # Verify no broad wildcards that would catch proof files
-        for line in gitignore.splitlines():
-            line = line.strip()
-            if line.startswith('#') or not line:
-                continue
-            assert line not in ('*.json', 'specs/', 'specs/**'), \
-                f"Broad gitignore pattern '{line}' would exclude proof files"
-        # Use git check-ignore to verify a proof file path is not ignored
-        result = subprocess.run(
-            ['git', 'check-ignore', '-q', 'specs/test/foo.proofs-unit.json'],
-            cwd=PROJECT_ROOT, capture_output=True
-        )
-        assert result.returncode != 0, \
-            "git check-ignore says proof files ARE ignored"
-
     @pytest.mark.proof("schema_proof_format", "PROOF-7", "RULE-7")
-    def test_manual_stamp_format_documented(self):
+    def test_the_runtime_directory_is_gitignored(self):
+        with open(os.path.join(PROJECT_ROOT, '.gitignore'),
+                  encoding='utf-8') as handle:
+            gitignore = handle.read()
+        assert '.purlin/runtime/' in gitignore, (
+            'proof files are runtime, so two runs on two branches never '
+            'conflict and nothing about a run is committed')
+        assert purlin_proofs.PROOF_DIR.replace(os.sep, '/').startswith(
+            '.purlin/runtime/')
+
+    @pytest.mark.proof("schema_proof_format", "PROOF-8", "RULE-8")
+    def test_the_spec_format_documents_the_tiers(self):
         with open(os.path.join(PROJECT_ROOT, 'references', 'formats',
-                               'proofs_format.md')) as f:
-            content = f.read()
-        assert '@manual' in content
-        # Verify format: @manual(<email>, <date>, <commit_sha>)
-        assert re.search(r'@manual\(.*email.*date.*commit', content,
-                         re.IGNORECASE | re.DOTALL), \
-            "Manual stamp format must document email, date, and commit fields"
+                               'spec_format.md'), encoding='utf-8') as handle:
+            fmt = handle.read()
+        for tag in ('@integration', '@e2e', '@manual', '@env('):
+            assert tag in fmt, '%s is not documented' % tag
+        assert '@on(' not in fmt.split('### Retired tags')[0], (  # retired
+            'the retired scope tag must appear only under Retired tags')

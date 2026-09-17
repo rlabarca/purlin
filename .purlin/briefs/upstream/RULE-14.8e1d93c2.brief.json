@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "upstream",
+  "generated_at": "2026-09-16T22:35:56Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "cecd09642cf8f57b399e1ed6c4913c847bdcb2054789105b803cb6b2d673b07d",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-14",
+      "text": "Pin two anchors from one repository, add a third from a text file, then run `sync` with no name; verify the rows name exactly the two repository-sourced anchors and not the free-text one",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/upstream/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-14",
+  "rule_hash": "23fc3dc73969462339b60fc5e65eb5f7db2df5148669a8ca9b13649d627eecf1",
+  "rule_text": "`sync` with no name covers every anchor whose source is a repository and no others, so a free-text anchor is never fetched",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "b78f960f97fa5b2ce9ae26734c14da8177d07bb25e387d676575ff4d13d22193",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_sync_all_covers_every_git_sourced_anchor_and_no_others(workspace):\n    _add(workspace)\n    upstream.add(workspace.root, workspace.anchor_repo,\n                 path='specs/no_secrets.md')\n    free = os.path.join(workspace.root, 'policy.txt')\n    _write(free, 'Every refund is countersigned by a second person.\\n')\n    upstream.add(workspace.root, free, name='refunds')\n\n    result = upstream.sync(workspace.root)\n    assert sorted(row['anchor'] for row in result['anchors']) == [\n        'no_eval', 'no_secrets']",
+      "file": "dev/test_upstream.py",
+      "findings": [],
+      "name": "test_sync_all_covers_every_git_sourced_anchor_and_no_others",
+      "proof": "PROOF-14",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "8e1d93c2cb30564a653b7d7b22fd46800ecd38db69598422605b41f2e0836405"
+}

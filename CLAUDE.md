@@ -1,64 +1,110 @@
 # Developing Purlin
 
-This repo IS the Purlin plugin framework — and it uses Purlin to develop itself. The agent definition (`agents/purlin.md`) applies here: spec-driven development, rule-proof coverage, all of it. This CLAUDE.md provides **project-specific overrides and extensions** for developing the framework.
+This repository is the Purlin plugin framework, and it uses Purlin to develop itself. The agent
+definition (`agents/purlin.md`) applies here in full; this file carries the overrides and
+extensions specific to developing the framework.
 
-## Format Reference Versioning
+## Design and copy
 
-The files in `references/formats/` are **versioned contracts**. External tools, anchor authors, and consumer projects depend on them. Each format file has a `> Format-Version: N` line at the top.
+Every visual surface and every line of prose follows `design/readme.md`, which is the authority.
+It binds the dashboard, the CLI output, the pull request comment, the docs and this file.
 
-**When to bump the version:**
-- Adding or removing a REQUIRED field → bump
-- Changing the structure (new sections, renamed sections) → bump
-- Adding an OPTIONAL field → bump (consumers may need to handle it)
-- Clarifying documentation, adding examples, fixing typos → do NOT bump
+- **Two surfaces, one system.** Warm navy, cream, blush and copper for the brand and the docs;
+  `data-surface="product"` for the dashboard. Green, amber, red and teal mean pass, warn, fail
+  and neutral on both. No other accent, no gradient, no shadow, no icon set beyond the unicode
+  glyphs `▶ ▼ ▲ →`, and no emoji anywhere, CLI output and pull request comments included.
+- **Machine text is monospace, human text is sans.** Commands, rule ids, paths, shas and gates in
+  Courier New; prose in Arial. Sentence case; command names lowercase with the colon.
+- **Tokens only.** Reference the semantic aliases in `design/tokens/theme-dark.css` and
+  `theme-light.css`, never a raw palette value. Both themes ship.
+- **Copy voice** follows "Content fundamentals": plain and declarative, second person for the
+  reader, third person for the system, exact numbers, limits stated, no superlatives.
+- Docs diagrams are mermaid with the init block from `docs/_mermaid.md`; screenshots come from
+  the rebuilt dashboard; the logo is `design/assets/logo.svg`.
 
-**Procedure when changing spec/proof/anchor parsing or emission:**
-1. Make the code change (in `scripts/mcp/purlin_server.py`, `scripts/proof/`, or skill definitions)
-2. Update the corresponding format file in `references/formats/` to match
-3. If the change is structural (new field, removed field, changed structure): bump `> Format-Version:` by 1
-4. Update `references/spec_quality_guide.md` if the change affects quality guidance
-5. Grep for references to the changed format in `docs/`, `skills/`, and `agents/purlin.md` — update any that are now stale
-6. Commit the format change in the SAME commit as the code change — never let them drift
+## Format reference versioning
 
-**Format files and what they govern:**
-- `spec_format.md` — parsed by `sync_status` (rule extraction, metadata)
-- `anchor_format.md` — anchor format (local and externally-referenced), parsed by `sync_status` + `purlin:anchor sync`
-- `proofs_format.md` — emitted by proof plugins, read by `sync_status`
+The files in `references/formats/` are versioned contracts: external tools, anchor authors and
+consumer projects depend on them. Each carries a `> Format-Version: N` line at the top; check the
+file for the current number. **Bump it** when a required field is added or removed, when the
+structure changes, or when an optional field is added, because a consumer may need to handle it.
+Do not bump for clarified wording, a new example or a typo.
 
-Each file has its own `> Format-Version: N` line — check the file directly for the current version.
+**When you change spec, proof, anchor, record or signature parsing or emission:**
 
-## Skill and Reference Deduplication (CRITICAL)
+1. Make the code change, in `scripts/mcp/purlin/`, `scripts/proof/`, `scripts/review/`,
+   `scripts/run/` or a skill definition.
+2. Update the matching file in `references/formats/`, bumping `> Format-Version:` by 1 when the
+   change is structural.
+3. Update `references/spec_quality_guide.md` when the change affects how a rule is written.
+4. Grep `docs/`, `skills/` and `agents/purlin.md` for the format and fix what is now stale.
+5. Commit the format change in the same commit as the code change. Never let the two drift.
 
-**Never duplicate logic across skills or agent instructions.** When the same concept (proof markers, commit formats, test quality rules, framework detection, failure diagnosis) appears in multiple skills, it MUST live in a single reference file in `references/` and be pointed to from each skill. Skills that need the same behavior should call each other rather than reimplement — e.g., `purlin:build` and `purlin:verify` delegate test execution to `purlin:unit-test` instead of inlining their own `pytest`/`jest`/`bash` commands.
+| File | What it governs |
+|------|-----------------|
+| `spec_format.md` | The 2-section spec, parsed by `sync_status` |
+| `anchor_format.md` | The anchor, local and pinned, parsed by `sync_status` and `purlin:anchor sync` |
+| `proofs_format.md` | The proof files the test plugins emit, read by `sync_status` |
+| `record_format.md` | The record `purlin:audit` writes, read by `sync_status` and `scripts/ci/gate_check.py` |
+| `signature_format.md` | The signature and the hold `purlin:sign` writes, read by `sync_status` and `scripts/ci/gate_check.py` |
 
-**Before adding instructions to a skill, check:**
-1. Does another skill already have this logic? → Reference it or call that skill
-2. Does a reference file already cover this? → Point to it, don't repeat it
-3. Is this reusable across 2+ skills? → Put it in `references/`, reference from each skill
+## Skill and reference deduplication
 
-**Authoritative reference files:**
-- `references/formats/proofs_format.md` — proof marker syntax (pytest, Jest, Shell)
-- `references/audit_criteria.md` — test quality rules, HOLLOW/WEAK/STRONG criteria, scoring
-- `references/commit_conventions.md` — all commit message prefixes and formats
-- `references/spec_quality_guide.md` — rule writing, tier assignment, failure diagnosis
-- `references/drift_criteria.md` — file classification, config field ownership, drift detection
-- `references/supported_frameworks.md` — test framework detection heuristics
+**Never duplicate logic across skills or agent instructions.** When the same concept appears in
+two places, it lives in one reference file and both point at it. Skills that need the same
+behaviour call each other rather than reimplement it: `purlin:build` and `purlin:audit` delegate
+test execution to `scripts/run/purlin_run.py`, which `purlin:test` owns.
 
-**When modifying a skill:** grep all other skills for the same concept. If you find duplicates, consolidate into the reference file and update all skills to point to it in the same commit.
+Before adding instructions to a skill, check whether another skill already has the logic, whether
+a reference already covers it, and whether it is reusable across two or more skills. If any answer
+is yes, point at the one home instead. When you modify a skill, grep the others for the same
+concept and consolidate any duplicate in the same commit.
 
-## Releasing a New Version
+| Reference | What it is the one home of |
+|-----------|---------------------------|
+| `references/glossary.md` | The word this project uses for each concept, the chain, and every retired spelling |
+| `references/purlin_commands.md` | Every command's syntax, its one purpose sentence, and what it writes |
+| `references/hard_gates.md` | The gate, the three levels, which records count, the branch rules, the signer list |
+| `references/review_criteria.md` | The free checks, the review list, the brief's layers, what the brief reports |
+| `references/spec_quality_guide.md` | Writing a rule, assigning a tier, reading the cell that blocks it |
+| `references/drift_criteria.md` | File classification, config field ownership, drift by role |
+| `references/commit_conventions.md` | Every commit message prefix and shape |
+| `references/supported_frameworks.md` | Test framework detection |
+| `references/proof_plugin_contract.md` | The checklist for a proof plugin and how to prove one |
+| `references/rule_examples.md` | Worked rules and proofs |
 
-The version string lives in **one file**: `VERSION` at the project root. Everything else reads from it.
+## Releasing a new version
 
-**When tagging a release or updating RELEASE_NOTES.md with a new version:**
-1. Update `VERSION` to the new semver (e.g., `echo "1.0.0" > VERSION`)
-2. Update `templates/config.json` to match (the `"version"` field)
-3. Commit both in the same commit
-4. Tag and push
+The version string lives in one file: `VERSION` at the root. Never hand-edit any other literal.
 
-`purlin_server.py` reads `VERSION` at startup — no code changes needed. The `purlin_version` structural spec (`specs/instructions/purlin_version.md`) catches drift if `VERSION` and `templates/config.json` disagree.
+1. `bash dev/bump_version.sh <semver>` writes `VERSION` and propagates it everywhere.
+2. Commit `VERSION` and every file the script touched in the same commit.
+3. Tag and push.
 
-## Tool Folder Separation
+Derived locations, with the script's header comment as the authoritative list:
+`templates/config.json` (stamped into new projects by `purlin:init`), `.claude-plugin/plugin.json`
+(what the plugin loader reports), and `.purlin/config.json` (this repository's own project stamp).
+Add a row there and `--check` guards it in the same edit. `scripts/mcp/purlin/__init__.py` reads
+`VERSION` at runtime through `_read_version()`, so it carries no literal, and docs name the
+`VERSION` file rather than restating a number (`purlin_version` RULE-8).
 
-*   **`scripts/`** — Consumer-facing framework tooling. Consumer projects depend on this directory; it is the only directory included in the distributed framework contract.
-*   **`dev/`** — Purlin-repository maintenance scripts. Scripts here are specific to developing, building, and releasing the Purlin framework itself. They are NOT designed for consumer use.
+`.github/workflows/version-check.yml` runs `bash dev/bump_version.sh --check` on every push or
+pull request touching a version-bearing file, then the `purlin_version` proofs. The job log prints
+`VERSION` beside each derived location marked `ok`, `DRIFT` or `absent`. Run the same command
+locally before committing a bump. `specs/instructions/purlin_version.md` covers all four locations
+plus the script itself.
+
+## Tool folder separation
+
+Everything here ships: `.claude-plugin/marketplace.json` declares the plugin source as `./`, so an
+install carries `scripts/`, `dev/`, `specs/`, `references/`, `docs/`, `skills/`, `agents/`,
+`tools/` and `templates/`. The line below is not what ships; it is what a consumer may depend on.
+
+- **`scripts/`** is the consumer-facing surface. A consumer project, a shipped skill, an agent
+  definition or a reference may name a path under it, and its layout is held stable across
+  releases. It is the only directory a consumer may depend on.
+- **`dev/`** holds this repository's own maintenance, build and release scripts and its proofs.
+  A path into `dev/`, or into this repository's own `specs/`, never appears in a prose line of a
+  skill, an agent definition or a reference: a consumer's checkout has neither, so such a citation
+  is an instruction that cannot be followed. `purlin_skills` and `purlin_references` hold that
+  scope.

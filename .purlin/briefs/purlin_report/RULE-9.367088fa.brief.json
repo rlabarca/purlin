@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-16T23:04:46Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "a495ac060cd28fcf421b487e28a23e17c0b8cc06e0b71ba48ab51da56b76cb01",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-9",
+      "text": "Open the board with the solo fixture and verify the column headings read `Spec`, `Rules`, `Spec status`, `Tests`, `Last run` and that 0 grids are on screen; open it with the team fixture and verify `Strength` and `Strong` follow those five; open it with the regulated fixture and verify `Signed` follows those seven and that no heading reads `Risk`",
+      "tier": "e2e"
+    }
+  ],
+  "record": ".purlin/records/purlin_report/20260916T230429Z-ca1f4b5-ci-windows.json",
+  "risk": "medium",
+  "rule": "RULE-9",
+  "rule_hash": "a4d607e756128657d4a9c88e985ca69a34f55d621aa45852536e097101ffcec5",
+  "rule_text": "A column exists only where the gate reaches it: `Spec`, `Rules`, `Spec status`, `Tests` and `Last run` at every gate, `Strength` and `Strong` at `strong`, `Signed` at `signed`. The board carries no risk column and no grid of rules by bucket at any gate",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "0e37b1a6b5f9829d2b2fe5a02290675711ce56b564fbac51a9a757e0db0732aa",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_columns_scale_with_the_gate(browser, tmp_path):\n    \"\"\"A gate asks for what it asks for, and the board asks no more.\"\"\"\n    solo = open_board(browser, tmp_path / 'solo', payload_named('solo'))\n    assert head_labels(solo) == BASE_COLUMNS\n    assert solo.query_selector_all('table.grid') == []\n    solo.close()\n\n    team = open_board(browser, tmp_path / 'team', payload_named('team'))\n    assert head_labels(team) == BASE_COLUMNS + ['Strength', 'Strong']\n    team.close()\n\n    reg = open_board(browser, tmp_path / 'reg', payload_named('regulated'))\n    assert head_labels(reg) == BASE_COLUMNS + ['Strength', 'Strong', 'Signed']\n    assert 'Risk' not in head_labels(reg)\n    reg.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_the_columns_scale_with_the_gate",
+      "proof": "PROOF-9",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "367088fa6c28b5fed3cb7df3be68bbad71c2cc8af97b4b469ad109f3a45d94df"
+}

@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "gate_check",
+  "generated_at": "2026-09-17T12:54:18Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "20a3da3dd6292f67fea0c4b1a0174be1d4ec3cdb05b9275ba5daac04e98b186b",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-5",
+      "text": "Run the gate at gate `passed` over a project naming a minimum of 80 and a record measuring 10; verify it exits 0, prints no line holding `minimum test strength`, and opens neither `Weak` nor `Not signed`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/gate_check/20260917T125350Z-df84acf-ci-windows.json",
+  "risk": "medium",
+  "rule": "RULE-6",
+  "rule_hash": "171e14bb1f5846e6f527afd7d92e2a664ab26e90986cefd7c4b2578d4b2b0303",
+  "rule_text": "Under `passed` no minimum test strength is printed and no section but `Not passed` can appear, because no cell above the first one exists",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "7b46477c2dbbf895fae5f71acc130b6605f131c61513b45d86841c136a581b6d",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_no_minimum_test_strength_is_printed_under_passed(self):\n        made = project_at('passed', strength=10, by_ci=False, briefs=(),\n                          config={'min_strength': 80})\n        try:\n            code, output = run(made)\n            assert code == 0, output\n            assert 'minimum test strength' not in output\n            assert 'Weak' not in output and 'Not signed' not in output\n        finally:\n            made.close()",
+      "file": "dev/test_gate_check.py",
+      "findings": [],
+      "name": "test_no_minimum_test_strength_is_printed_under_passed",
+      "proof": "PROOF-5",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "159b19a2a2ffc88c9b3ab554141efb1d7bd984b2ecc85d9005a8eaf54d16da87"
+}

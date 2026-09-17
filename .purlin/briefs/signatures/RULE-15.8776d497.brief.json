@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-16T23:05:03Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "24e8d65b79bfb8eec7a45d8e4b913cc847950f71ddeb87b15ac9130f1fbdb7a2",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-19",
+      "text": "Run `login RULE-1` in a project at gate `strong` whose passed cell is not met; verify it exits 0, prints `required only under the gate signed` and writes exactly 1 signature",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/signatures/20260916T230431Z-ca1f4b5-ci-windows.json",
+  "risk": "medium",
+  "rule": "RULE-15",
+  "rule_hash": "ae772fbaa1026cc88a8f44f02c3c0e02ddec5432eb096430b53075556dd718d3",
+  "rule_text": "Under `strong` a signature on a rule that needs none says a signature is required only under `signed`, and writes it anyway",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "5c104cd0dcd5622f1e4b6345cca089e3c87b3f02ecf123cb04303c89bc08fa59",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_under_the_review_gate_a_bare_signature_says_so_and_is_written(\n            self, at_strong, capsys):\n        signing_key(at_strong.root)\n        code = sign_module.main(['login', 'RULE-1', '--project-root',\n                                 at_strong.root])\n        output = capsys.readouterr().out\n        assert code == 0, output\n        assert 'required only under the gate signed' in output\n        assert len(at_strong.signatures()) == 1",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_under_the_review_gate_a_bare_signature_says_so_and_is_written",
+      "proof": "PROOF-19",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "8776d4976a20e0ba272fdeb19fef8986db53114db6b6f04b189ec4551cb67cdd"
+}

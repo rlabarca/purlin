@@ -1,348 +1,188 @@
 #!/usr/bin/env bash
-# E2E test: Build Changeset Summary + Exit Criteria
-# 4 proofs covering RULE-9 through RULE-12 — all @e2e.
-# Creates a temporary project, runs a real build session (code, tests, proofs, commit),
-# validates the changeset summary format and git commit message body.
+# Text check: the commit body purlin:build writes.
+#
+# The build skill tells the agent to commit with a `feat(<name>):` subject and a body of
+# three named sections: Changeset (a RULE-N -> file:line line for every rule addressed),
+# Decisions (omitted when every rule had one obvious implementation) and Review (omitted
+# when nothing needs a second look). `references/commit_conventions.md` carries the exact
+# rendering.
+#
+# This runs no model. It writes a fixture commit whose message follows the contract, reads
+# the message back out of git, and checks it. Three further fixtures each break the
+# contract in exactly one way and must be rejected, so every check is shown to
+# discriminate rather than to restate a fixture it wrote itself.
+#
+# Exit 0 when every check holds, 1 otherwise.
+#
+# This suite is the evidence for skill_build PROOF-5 (RULE-5). It carries no
+# purlin_proof call of its own: the shell runner arm of scripts/run/purlin_run.py
+# executes `*.test.sh` in the project root and nothing else, so a marker in this
+# directory could never produce a proof entry and every run would report the
+# evidence as missing. dev/test_skills.py runs this script from the repository
+# root under that proof marker instead, and asserts both the exit status and the
+# `ok:` line below.
+
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+BUILD_SKILL="$PROJECT_ROOT/skills/build/SKILL.md"
+CONVENTIONS="$PROJECT_ROOT/references/commit_conventions.md"
 
-# Load proof harness
-source "$PROJECT_ROOT/scripts/proof/shell_purlin.sh"
-export PURLIN_PROOF_TIER="e2e"
+TMPDIR_RUN=$(mktemp -d)
+trap 'rm -rf "$TMPDIR_RUN"' EXIT
 
-echo "=== skill_build changeset e2e tests ==="
+failures=0
+checks=0
 
-# -- Setup: temporary project with spec, code, and tests --
+fail() {
+    echo "  FAIL: $1"
+    failures=$((failures + 1))
+}
 
-TMPDIR=$(mktemp -d)
-trap "rm -rf $TMPDIR" EXIT
+counted() {
+    checks=$((checks + 1))
+}
 
-mkdir -p "$TMPDIR/specs/auth" "$TMPDIR/src" "$TMPDIR/tests" "$TMPDIR/.purlin/cache"
+# --- the contract, as one function -----------------------------------------------------
+#
+# A body satisfies the contract when the subject carries the feat(<name>): prefix, the
+# Changeset section is present, every rule named in the subject has a file:line mapping,
+# and the sections that are present are the named ones. Decisions and Review are optional
+# by the contract, so their absence is never a failure here.
 
-cat > "$TMPDIR/.purlin/config.json" << 'CONF'
-{"version": "0.9.0", "test_framework": "pytest", "spec_dir": "specs"}
-CONF
+section_present() {
+    # Matches "Changeset", "Changeset:" and a decorated "-- Changeset -----".
+    grep -qE "^([^A-Za-z]* )?$2[^A-Za-z]*\$" "$1"
+}
 
-cat > "$TMPDIR/specs/auth/login.md" << 'SPEC'
-# Feature: login
+body_ok() {
+    local file="$1"
+    head -1 "$file" | grep -qE '^feat\([a-z0-9_]+\): ' || return 1
+    section_present "$file" "Changeset" || return 1
+    grep -qE 'RULE-[0-9]+ (->|→) [^ ]+:[0-9]+' "$file" || return 1
+    local rule
+    for rule in $(head -1 "$file" | grep -oE 'RULE-[0-9]+'); do
+        grep -qE "^$rule (->|→) " "$file" || return 1
+    done
+    return 0
+}
 
-> Scope: src/login.py
+# --- the fixture commit -----------------------------------------------------------------
 
-## What it does
-User login endpoint.
+GOOD_MSG="$TMPDIR_RUN/good.txt"
+cat > "$GOOD_MSG" <<'MSG'
+feat(login): implement RULE-1, RULE-2, RULE-3
 
-## Rules
-- RULE-1: Returns 200 on valid credentials
-- RULE-2: Returns 401 on invalid credentials
-- RULE-3: Rate limits after 5 failed attempts
+Changeset
 
-## Proof
-- PROOF-1 (RULE-1): POST valid creds; verify 200
-- PROOF-2 (RULE-2): POST bad creds; verify 401
-- PROOF-3 (RULE-3): 6 bad attempts; verify 429
-SPEC
+RULE-1 → src/login.py:12   Valid credentials return 200 and a session cookie
+RULE-2 → src/login.py:18   Wrong password returns 401 and sets no cookie
+RULE-3 → src/login.py:4    Lockout counter, 5 failures, 15 minutes
+         tests/test_login.py:1   3 tests, one per proof
 
-cat > "$TMPDIR/src/__init__.py" << 'CODE'
-CODE
+Decisions
 
-cat > "$TMPDIR/src/login.py" << 'CODE'
-_fail_counts = {}
+  - In-memory counter for failures: the spec says nothing about surviving a restart
 
-def authenticate(email, password):
-    if _fail_counts.get(email, 0) >= 5:
-        return 429
-    if email == "user@test.com" and password == "secret":
-        _fail_counts.pop(email, None)
-        return 200
-    _fail_counts[email] = _fail_counts.get(email, 0) + 1
-    return 401
-CODE
+Review
 
-cat > "$TMPDIR/tests/__init__.py" << 'CODE'
-CODE
+  - src/login.py:4   The lockout is per process only, so a restart clears it
+MSG
 
-cat > "$TMPDIR/tests/test_login.py" << 'TEST'
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+REPO="$TMPDIR_RUN/repo"
+mkdir -p "$REPO/src"
+git -C "$REPO" -c init.defaultBranch=main init -q
+git -C "$REPO" config user.email "check@purlin.test"
+git -C "$REPO" config user.name "Purlin Check"
+echo "def authenticate(): return 200" > "$REPO/src/login.py"
+git -C "$REPO" add src/login.py
+git -C "$REPO" commit -q -F "$GOOD_MSG"
 
-import pytest
-from login import authenticate, _fail_counts
+ACTUAL="$TMPDIR_RUN/actual.txt"
+git -C "$REPO" log -1 --pretty=%B > "$ACTUAL"
 
-@pytest.mark.proof("login", "PROOF-1", "RULE-1")
-def test_valid_credentials():
-    _fail_counts.clear()
-    assert authenticate("user@test.com", "secret") == 200
+echo "=== purlin:build commit body ==="
 
-@pytest.mark.proof("login", "PROOF-2", "RULE-2")
-def test_invalid_credentials():
-    _fail_counts.clear()
-    assert authenticate("user@test.com", "wrong") == 401
-
-@pytest.mark.proof("login", "PROOF-3", "RULE-3")
-def test_rate_limit():
-    _fail_counts.clear()
-    for _ in range(5):
-        authenticate("rate@test.com", "wrong")
-    assert authenticate("rate@test.com", "wrong") == 429
-TEST
-
-# Copy proof plugin so pytest emits proof files in the temp project
-cp "$PROJECT_ROOT/scripts/proof/pytest_purlin.py" "$TMPDIR/conftest.py"
-
-# Git init in temp project
-(cd "$TMPDIR" && git init -q && git config user.email "test@purlin.dev" && git config user.name "Purlin Test" && git add specs .purlin && git commit -q -m "init: spec and config")
-
-# -- Run tests to produce proof files --
-
-PYTEST_OUTPUT=$(cd "$TMPDIR" && python3 -m pytest tests/test_login.py -v 2>&1) || true
-PROOFS_FILE="$TMPDIR/specs/auth/login.proofs-unit.json"
-
-TESTS_PASSED=true
-if [ ! -f "$PROOFS_FILE" ]; then
-  echo "  ERROR: Proof file not produced by pytest"
-  TESTS_PASSED=false
-else
-  ALL_PASS=$(python3 -c "import json; d=json.load(open('$PROOFS_FILE')); print(all(p['status']=='pass' for p in d['proofs']))")
-  if [ "$ALL_PASS" != "True" ]; then
-    echo "  ERROR: Not all proofs passed"
-    TESTS_PASSED=false
-  fi
+# 1. Git keeps the body intact and the body satisfies the contract.
+counted
+if ! body_ok "$ACTUAL"; then
+    fail "the fixture commit body read back from git does not satisfy the contract"
 fi
 
-# -- Write changeset summary to a temp file (avoids heredoc quoting issues) --
-
-SUMMARY_FILE="$TMPDIR/_changeset_summary.txt"
-printf '%s\n' \
-  "" \
-  "RULE-1 -> src/login.py:5           Valid credentials return 200" \
-  "RULE-2 -> src/login.py:8           Invalid credentials return 401" \
-  "RULE-3 -> src/login.py:3           Rate limit check after 5 failures" \
-  "         tests/test_login.py       3 proofs covering all rules" \
-  > "$SUMMARY_FILE"
-
-# Now build the full summary with section headers using python for reliable unicode
-python3 -c "
-sections = []
-sections.append('── Changeset ──────────────────────────────────────')
-sections.append('')
-sections.append('RULE-1 → src/login.py:5           Valid credentials return 200')
-sections.append('RULE-2 → src/login.py:8           Invalid credentials return 401')
-sections.append('RULE-3 → src/login.py:3           Rate limit check after 5 failures')
-sections.append('         tests/test_login.py       3 proofs covering all rules')
-sections.append('')
-sections.append('── Decisions ──────────────────────────────────────')
-sections.append('')
-sections.append('• In-memory dict for fail counts — spec does not require persistence')
-sections.append('')
-sections.append('── Review ─────────────────────────────────────────')
-sections.append('')
-sections.append('→ src/login.py:3   Rate limit is per-process only — no persistence across restarts')
-sections.append('→ Spec gap: RULE-3 says \"5 failed attempts\" but does not specify the cooldown period')
-print('\n'.join(sections))
-" > "$SUMMARY_FILE"
-
-CHANGESET_SUMMARY=$(cat "$SUMMARY_FILE")
-
-# ==========================================================================
-# PROOF-13 (RULE-9): Changeset summary has correct 3-section format
-# ==========================================================================
-echo "  --- PROOF-13: Changeset summary has Changeset, Decisions, Review sections ---"
-
-proof13_ok=true
-
-# Validate all 3 section headers with box-drawing characters
-if ! grep -q "── Changeset " "$SUMMARY_FILE"; then
-  echo "    FAIL: Missing Changeset section header"
-  proof13_ok=false
+# 2. The optional sections survive the round trip when they are written.
+counted
+if ! section_present "$ACTUAL" "Decisions"; then
+    fail "the Decisions section did not survive the commit"
 fi
-if ! grep -q "── Decisions " "$SUMMARY_FILE"; then
-  echo "    FAIL: Missing Decisions section header"
-  proof13_ok=false
-fi
-if ! grep -q "── Review " "$SUMMARY_FILE"; then
-  echo "    FAIL: Missing Review section header"
-  proof13_ok=false
+counted
+if ! section_present "$ACTUAL" "Review"; then
+    fail "the Review section did not survive the commit"
 fi
 
-# Validate RULE->file:line mapping format
-if ! grep -qE 'RULE-[0-9]+ → [^ ]+:[0-9]+' "$SUMMARY_FILE"; then
-  echo "    FAIL: Missing RULE-N → file:line mapping format"
-  proof13_ok=false
+# 3. A body with no Changeset section is rejected.
+NO_CHANGESET="$TMPDIR_RUN/no_changeset.txt"
+cat > "$NO_CHANGESET" <<'MSG'
+feat(login): implement RULE-1
+
+RULE-1 → src/login.py:12   Valid credentials return 200
+MSG
+counted
+if body_ok "$NO_CHANGESET"; then
+    fail "a body with no Changeset section was accepted"
 fi
 
-# Every rule from the spec must appear
-for i in 1 2 3; do
-  if ! grep -q "RULE-$i →" "$SUMMARY_FILE"; then
-    echo "    FAIL: Missing RULE-$i mapping in changeset"
-    proof13_ok=false
-  fi
+# 4. A body whose subject names a rule the Changeset never maps is rejected.
+MISSING_RULE="$TMPDIR_RUN/missing_rule.txt"
+cat > "$MISSING_RULE" <<'MSG'
+feat(login): implement RULE-1, RULE-2
+
+Changeset
+
+RULE-1 → src/login.py:12   Valid credentials return 200
+MSG
+counted
+if body_ok "$MISSING_RULE"; then
+    fail "a body that skipped RULE-2 in the Changeset was accepted"
+fi
+
+# 5. A body with no feat(<name>): prefix is rejected.
+NO_PREFIX="$TMPDIR_RUN/no_prefix.txt"
+cat > "$NO_PREFIX" <<'MSG'
+implement the login rules
+
+Changeset
+
+RULE-1 → src/login.py:12   Valid credentials return 200
+MSG
+counted
+if body_ok "$NO_PREFIX"; then
+    fail "a body with no feat(<name>): subject prefix was accepted"
+fi
+
+# --- the skill and the conventions still describe this contract --------------------------
+
+for word in Changeset Decisions Review; do
+    counted
+    grep -q "$word" "$BUILD_SKILL" || fail "skills/build/SKILL.md no longer names $word"
+    counted
+    grep -q "$word" "$CONVENTIONS" || fail "references/commit_conventions.md no longer names $word"
 done
 
-if $proof13_ok; then
-  echo "    PASS: Changeset summary has all 3 sections with correct format"
-  purlin_proof "skill_build" "PROOF-13" "RULE-9" pass "changeset summary has Changeset, Decisions, Review sections with RULE→file:line mappings"
-else
-  purlin_proof "skill_build" "PROOF-13" "RULE-9" fail "changeset summary format incorrect"
+counted
+grep -qE 'RULE-N (->|→) file:line' "$BUILD_SKILL" \
+    || fail "skills/build/SKILL.md no longer states the RULE-N -> file:line mapping"
+counted
+grep -q 'feat(<name>):' "$BUILD_SKILL" \
+    || fail "skills/build/SKILL.md no longer states the feat(<name>): subject prefix"
+counted
+grep -q 'commit_conventions.md' "$BUILD_SKILL" \
+    || fail "skills/build/SKILL.md no longer points at references/commit_conventions.md"
+
+if [ "$failures" -eq 0 ]; then
+    echo "  ok: $checks checks"
+    exit 0
 fi
 
-# ==========================================================================
-# PROOF-14 (RULE-10): Git commit body contains the changeset summary
-# ==========================================================================
-echo "  --- PROOF-14: Git commit body contains changeset summary ---"
-
-proof14_ok=true
-
-# Write commit message to a file (avoids shell quoting issues with unicode)
-COMMIT_MSG_FILE="$TMPDIR/_commit_msg.txt"
-python3 -c "
-summary = open('$SUMMARY_FILE').read()
-msg = 'feat(login): implement RULE-1, RULE-2, RULE-3\n\n' + summary
-with open('$COMMIT_MSG_FILE', 'w') as f:
-    f.write(msg)
-"
-
-# Stage and commit using the message file
-(cd "$TMPDIR" && \
-  git add src/ tests/ conftest.py specs/auth/login.proofs-unit.json && \
-  git commit -q -F "$COMMIT_MSG_FILE" 2>/dev/null)
-
-# Extract full commit message to a file for safe grepping
-ACTUAL_MSG_FILE="$TMPDIR/_actual_commit_msg.txt"
-(cd "$TMPDIR" && git log -1 --pretty=%B > "$ACTUAL_MSG_FILE")
-
-# Verify feat(<name>): prefix on subject line
-if ! head -1 "$ACTUAL_MSG_FILE" | grep -q "^feat(login):"; then
-  echo "    FAIL: Commit subject missing feat(login): prefix"
-  proof14_ok=false
-fi
-
-# Verify all 3 sections in body
-if ! grep -q "── Changeset " "$ACTUAL_MSG_FILE"; then
-  echo "    FAIL: Commit body missing Changeset section"
-  proof14_ok=false
-fi
-if ! grep -q "── Decisions " "$ACTUAL_MSG_FILE"; then
-  echo "    FAIL: Commit body missing Decisions section"
-  proof14_ok=false
-fi
-if ! grep -q "── Review " "$ACTUAL_MSG_FILE"; then
-  echo "    FAIL: Commit body missing Review section"
-  proof14_ok=false
-fi
-
-# Verify RULE->file mappings present in commit body
-if ! grep -qE 'RULE-[0-9]+ →' "$ACTUAL_MSG_FILE"; then
-  echo "    FAIL: Commit body missing RULE→file:line mappings"
-  proof14_ok=false
-fi
-
-if $proof14_ok; then
-  echo "    PASS: Git commit body contains complete changeset summary"
-  purlin_proof "skill_build" "PROOF-14" "RULE-10" pass "git commit body contains changeset summary with feat prefix and all 3 sections"
-else
-  purlin_proof "skill_build" "PROOF-14" "RULE-10" fail "git commit body incorrect"
-fi
-
-# ==========================================================================
-# PROOF-15 (RULE-11): Proof fixer changeset maps PROOFs, skips Decisions
-# ==========================================================================
-echo "  --- PROOF-15: Proof fixer changeset maps PROOF-N, skips Decisions ---"
-
-proof15_ok=true
-
-FIXER_FILE="$TMPDIR/_fixer_changeset.txt"
-python3 -c "
-lines = []
-lines.append('── Changeset ──────────────────────────────────────')
-lines.append('')
-lines.append('PROOF-1 → tests/test_login.py:8   Replaced mock with real bcrypt call')
-lines.append('PROOF-3 → tests/test_login.py:20  Added actual rate limit counter instead of stub')
-lines.append('')
-lines.append('── Review ─────────────────────────────────────────')
-lines.append('')
-lines.append('→ tests/test_login.py:8   bcrypt.hashpw call — verify test does not take >1s')
-print('\n'.join(lines))
-" > "$FIXER_FILE"
-
-# Must have PROOF-N -> file:line mappings (not RULE-N)
-if ! grep -qE 'PROOF-[0-9]+ → [^ ]+:[0-9]+' "$FIXER_FILE"; then
-  echo "    FAIL: Proof fixer changeset missing PROOF-N → file:line mapping"
-  proof15_ok=false
-fi
-
-# Decisions section must be ABSENT (proof fixes are mechanical)
-if grep -q "── Decisions " "$FIXER_FILE"; then
-  echo "    FAIL: Proof fixer changeset should NOT have Decisions section"
-  proof15_ok=false
-fi
-
-# Changeset and Review must still be present
-if ! grep -q "── Changeset " "$FIXER_FILE"; then
-  echo "    FAIL: Proof fixer changeset missing Changeset section"
-  proof15_ok=false
-fi
-if ! grep -q "── Review " "$FIXER_FILE"; then
-  echo "    FAIL: Proof fixer changeset missing Review section"
-  proof15_ok=false
-fi
-
-if $proof15_ok; then
-  echo "    PASS: Proof fixer changeset maps PROOF-N and skips Decisions"
-  purlin_proof "skill_build" "PROOF-15" "RULE-11" pass "proof fixer changeset uses PROOF-N mappings, no Decisions section"
-else
-  purlin_proof "skill_build" "PROOF-15" "RULE-11" fail "proof fixer changeset format incorrect"
-fi
-
-# ==========================================================================
-# PROOF-16 (RULE-12): Exit criteria — tests pass, summary done, all committed
-# ==========================================================================
-echo "  --- PROOF-16: Exit criteria verified ---"
-
-proof16_ok=true
-
-# 1. Tests passed
-if ! $TESTS_PASSED; then
-  echo "    FAIL: Tests did not pass (proofs missing or failing)"
-  proof16_ok=false
-fi
-
-# 2. Changeset summary was produced and valid
-if ! $proof13_ok; then
-  echo "    FAIL: Changeset summary not valid (PROOF-13 failed)"
-  proof16_ok=false
-fi
-
-# 3. No uncommitted proof files
-UNCOMMITTED_PROOFS=$(cd "$TMPDIR" && git status --porcelain | grep -E '\.proofs-' || true)
-if [ -n "$UNCOMMITTED_PROOFS" ]; then
-  echo "    FAIL: Uncommitted proof files: $UNCOMMITTED_PROOFS"
-  proof16_ok=false
-fi
-
-# 4. Proof files are tracked in git
-TRACKED_PROOFS=$(cd "$TMPDIR" && git ls-files specs/auth/login.proofs-unit.json)
-if [ -z "$TRACKED_PROOFS" ]; then
-  echo "    FAIL: Proof file not tracked in git"
-  proof16_ok=false
-fi
-
-# 5. Source and test files committed
-UNCOMMITTED_SRC=$(cd "$TMPDIR" && git status --porcelain | grep -E '\.(py|js|ts)' | grep -v __pycache__ || true)
-if [ -n "$UNCOMMITTED_SRC" ]; then
-  echo "    FAIL: Uncommitted source/test files: $UNCOMMITTED_SRC"
-  proof16_ok=false
-fi
-
-if $proof16_ok; then
-  echo "    PASS: Exit criteria met — tests pass, summary valid, proofs committed"
-  purlin_proof "skill_build" "PROOF-16" "RULE-12" pass "exit criteria verified: tests pass, changeset printed, all committed, no uncommitted proofs"
-else
-  purlin_proof "skill_build" "PROOF-16" "RULE-12" fail "exit criteria not met"
-fi
-
-purlin_proof_finish
-
-echo ""
-echo "skill_build changeset e2e: done"
+echo "  $failures of $checks checks failed"
+exit 1

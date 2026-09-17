@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "config_engine",
+  "generated_at": "2026-09-16T22:35:19Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "5a4cc113384ab2967d9989d3d62c791be9c5bf8384969764b0e42601ec790441",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-2",
+      "text": "Create `<tmp>/a/b/c` with a `.purlin/` marker in `<tmp>/a`; call for the project root with the start directory `<tmp>/a/b/c` and verify it returns `<tmp>/a`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/config_engine/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-2",
+  "rule_hash": "b5074b80cdc699f57ff836f09f5d7781ee7a01309607bba83e6984d0ece3ea16",
+  "rule_text": "Failing that, the root is found by climbing from the start directory to the nearest ancestor holding a `.purlin/` marker directory",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "22ac317c2084a777c42579c75a9be555076f70741cbbdf79dfa1948cb122d47c",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_climbs_to_purlin_marker(self):\n        root = os.path.join(self.tmpdir, 'a')\n        os.makedirs(os.path.join(root, '.purlin'))\n        deep = os.path.join(root, 'b', 'c')\n        os.makedirs(deep)\n        result = find_project_root(start_dir=deep)\n        assert result == root",
+      "file": "dev/test_config_engine.py",
+      "findings": [],
+      "name": "test_climbs_to_purlin_marker",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "90538afcfd783ab41dfeeb615d5233f48976401adcbaf48b4b395c1c1f6f6538"
+}

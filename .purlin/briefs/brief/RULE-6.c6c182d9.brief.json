@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "brief",
+  "generated_at": "2026-09-16T22:35:18Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "8cf984bb6d23f35f185991a1d965a058879d545eeec856f6a58f49d642b34011",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-7",
+      "text": "Edit the marked test so it calls the code and asserts nothing, then build the brief; verify the test's findings are exactly `no_assertion` and that a reason is printed with it",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/brief/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-6",
+  "rule_hash": "89c035889bead3480da06bdf80fac1a5c1e495d7a99392ad44cfd28779439386",
+  "rule_text": "Every free check on the marked test body reaches the brief under its own name, each with the reason a reader acts on",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "73d7516968388b2b6b77d57d66e52adc5772103e66a17826537e62f71a911b4f",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_test_body_findings_reach_the_brief(self, proved):\n        proved.edit_test(TEST_FILE.replace(\n            'assert login(\"ada\", \"secret\") == 200', 'login(\"ada\", \"secret\")'))\n        test = build(proved, 'RULE-1')['tests'][0]\n        assert test['findings'] == ['no_assertion'], test\n        assert test['reasons'], 'a finding names what a reader should look at'",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_the_test_body_findings_reach_the_brief",
+      "proof": "PROOF-7",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "c6c182d9377359c497f993a686b2fe43ea592d52bb4e17e14f079e826618bb47"
+}

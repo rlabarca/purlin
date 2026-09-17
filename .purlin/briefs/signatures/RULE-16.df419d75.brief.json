@@ -1,0 +1,62 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-16T23:05:03Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "7741c6fd6f4c5844578dee6c01e9b7a3596460434cf5dce8ab8d30beb475de12",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-20",
+      "text": "Read what is signable at gate `signed` with `sign_at` at `medium`; verify it is `login RULE-2` alone, that signing it leaves nothing signable, and that changing `401` to `403` in the rule makes it signable again",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-30",
+      "text": "Write a CI record in a project at gate `strong` and read what is signable; verify it is `login RULE-2` alone, the high-risk rule with no brief for its current hashes",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/signatures/20260916T230431Z-ca1f4b5-ci-windows.json",
+  "risk": "high",
+  "rule": "RULE-16",
+  "rule_hash": "0e3d68af73e09c8ebfee3dff478d68c6fae63c69bd17885df9a026359e626de1",
+  "rule_text": "A rule is signable when its signed cell reads `unsigned` or `stale`, or when its strong cell reads `needs a person`, and in no other case",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "8daa07bb21149e9e56aa92ca4066f8929e7f38bf91c2b3582d105fc8a0940108",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_is_the_unsigned_the_stale_and_the_ones_needing_a_person(self):\n        made = signing_project(sign_at='medium')\n        try:\n            assert sign_module.signable(made.payload()) == [\n                ('login', 'RULE-2')], (\n                'only the high-risk rule is at or above sign_at')\n            sign_module.main(['login', 'RULE-2', '--project-root', made.root])\n            assert sign_module.signable(made.payload()) == []\n            made.spec(SPEC.replace('return 401 and the body \"denied\"',\n                                   'return 403 and the body \"denied\"'))\n            assert sign_module.signable(made.payload()) == [\n                ('login', 'RULE-2')], 'a stale signature is signable again'\n        finally:\n            made.close()",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_it_is_the_unsigned_the_stale_and_the_ones_needing_a_person",
+      "proof": "PROOF-20",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_rule_needing_a_person_is_signable_under_the_review_gate(self):\n        made = Project(gate=REVIEW_GATE, config={'min_strength': 50})\n        try:\n            made.proofs()\n            made.record(runner='ci', commit_it=False)\n            commit_as_ci(made.root)\n            assert sign_module.signable(made.payload()) == [\n                ('login', 'RULE-2')], (\n                'the high-risk rule has no brief, so it needs a person')\n        finally:\n            made.close()",
+      "file": "dev/test_signatures.py",
+      "findings": [],
+      "name": "test_a_rule_needing_a_person_is_signable_under_the_review_gate",
+      "proof": "PROOF-30",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "df419d754851f0d8d2416e056ad487ba6d5740ae295b3ce8e77fecc96698022b"
+}

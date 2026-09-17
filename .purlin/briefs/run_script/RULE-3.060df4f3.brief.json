@@ -1,0 +1,61 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-16T23:04:53Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "43ce9cf48feaf50407bd85449cfd98ccf6f4642e58283f041a70a0585fafa8aa",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-3",
+      "text": "Build a project with one marked pytest test and run `--all --quick`; verify exit 0, that `.purlin/runtime/proofs/feat.unit.json` holds one entry with `id: \"PROOF-1\"`, `test_file: \"tests/test_feat.py\"`, `status: \"pass\"` and exactly the seven fields, and that `specs/a/` holds no file other than the spec",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/run_script/20260916T230430Z-ca1f4b5-ci-windows.json",
+  "risk": "high",
+  "rule": "RULE-3",
+  "rule_hash": "10705bcf2dc75170b89a19eae6c4ac128ac19f41851904208aec023e79af04d8",
+  "rule_text": "`--quick` runs one arm per resolved framework and the evidence lands in `.purlin/runtime/proofs/<feature>.<tier>.json`; nothing is written under `specs/`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "4a4550888095af9338412917c33e585bafe744efc50bd7c5640b6cfa3329b169",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_pytest_arm_writes_the_runtime_proof_file(self, tmp_path):\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat')\n        code, output = _run(root, '--all', '--quick')\n        data = _proofs(root, 'feat')\n        assert data is not None, output\n        assert data['tier'] == 'unit'\n        assert [e['id'] for e in data['proofs']] == ['PROOF-1']\n        entry = data['proofs'][0]\n        assert entry['test_file'] == 'tests/test_feat.py'\n        assert entry['status'] == 'pass'\n        assert set(entry) == {'feature', 'id', 'rule', 'test_file',\n                              'test_name', 'status', 'tier'}\n        assert code == 0, output",
+      "file": "dev/test_run_script.py",
+      "findings": [
+        "tautology"
+      ],
+      "name": "test_pytest_arm_writes_the_runtime_proof_file",
+      "proof": "PROOF-3",
+      "reasons": [
+        "tautological assertion (assert True or equivalent)"
+      ]
+    },
+    {
+      "body": "def test_the_proof_file_is_not_written_under_specs(self, tmp_path):\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat')\n        _run(root, '--all', '--quick')\n        stray = [name for name in os.listdir(str(root / 'specs' / 'a'))\n                 if not name.endswith('.md')]\n        assert stray == []",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_the_proof_file_is_not_written_under_specs",
+      "proof": "PROOF-3",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "060df4f3b27bb493ac70da0d54c623ee44aa94aaa635cf7cac409ac5a4ce0d0a"
+}

@@ -5,6 +5,8 @@ config.local.json = per-user overrides (gitignored, sparse).
 Resolution = merge config.json base + config.local.json overlay.
 """
 
+import contextlib
+import io
 import json
 import os
 import shutil
@@ -17,7 +19,9 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts', 'mcp'))
 import config_engine
-from config_engine import find_project_root, resolve_config, update_config
+from config_engine import (PROJECT_ROOT_SOURCES, find_project_root,
+                           resolve_config, resolve_project_root,
+                           update_config)
 
 
 class TestFindProjectRoot:
@@ -35,11 +39,24 @@ class TestFindProjectRoot:
             os.environ['PURLIN_PROJECT_ROOT'] = self._old_env
 
     @pytest.mark.proof("config_engine", "PROOF-1", "RULE-1")
-    def test_env_var_takes_precedence(self):
+    def test_env_var_takes_precedence_only_when_the_directory_exists(self):
         os.makedirs(os.path.join(self.tmpdir, '.purlin'))
         os.environ['PURLIN_PROJECT_ROOT'] = self.tmpdir
-        result = find_project_root()
-        assert result == self.tmpdir
+        assert find_project_root() == self.tmpdir
+
+        # The 'and the directory exists' half of the rule: a stale root that
+        # was deleted (a worktree removed, a container rebuilt) is not handed
+        # back. The climb runs instead and finds the real marker.
+        gone = os.path.join(self.tmpdir, 'deleted_root')
+        assert not os.path.isdir(gone)
+        os.environ['PURLIN_PROJECT_ROOT'] = gone
+        marker_root = os.path.join(self.tmpdir, 'real_project')
+        os.makedirs(os.path.join(marker_root, '.purlin'))
+        deep = os.path.join(marker_root, 'src')
+        os.makedirs(deep)
+        assert find_project_root(start_dir=deep) == marker_root, (
+            "PURLIN_PROJECT_ROOT names a directory that does not exist; "
+            "find_project_root must fall through to the .purlin climb")
 
     @pytest.mark.proof("config_engine", "PROOF-2", "RULE-2")
     def test_climbs_to_purlin_marker(self):
@@ -56,6 +73,53 @@ class TestFindProjectRoot:
         os.makedirs(bare)
         result = find_project_root(start_dir=bare)
         assert result == os.path.abspath(os.getcwd())
+
+    @pytest.mark.proof("config_engine", "PROOF-15", "RULE-13")
+    def test_resolve_project_root_names_how_it_resolved(self):
+        project = os.path.join(self.tmpdir, 'project')
+        deep = os.path.join(project, 'src')
+        os.makedirs(os.path.join(project, '.purlin'))
+        os.makedirs(deep)
+
+        # 1. The climb, with nothing in the environment to beat it.
+        assert resolve_project_root(start_dir=deep) == (project, 'climb')
+
+        # 2. The environment wins over the marker the climb would have found.
+        elsewhere = os.path.join(self.tmpdir, 'elsewhere')
+        os.makedirs(elsewhere)
+        os.environ['PURLIN_PROJECT_ROOT'] = elsewhere
+        assert resolve_project_root(start_dir=deep) == (elsewhere, 'env')
+
+        # 3. A root that does not exist does not win; the climb answers again.
+        gone = os.path.join(self.tmpdir, 'gone')
+        assert not os.path.isdir(gone)
+        os.environ['PURLIN_PROJECT_ROOT'] = gone
+        assert resolve_project_root(start_dir=deep) == (project, 'climb')
+
+        # 4. No marker anywhere above: cwd, and said to be cwd.
+        os.environ.pop('PURLIN_PROJECT_ROOT', None)
+        bare = os.path.join(self.tmpdir, 'bare')
+        os.makedirs(bare)
+        root, source = resolve_project_root(start_dir=bare)
+        assert source == 'cwd', source
+        assert root == os.path.abspath(os.getcwd())
+
+        # The fallback is named, not silent, and so is every other case.
+        assert sorted(PROJECT_ROOT_SOURCES) == ['climb', 'cwd', 'env']
+        assert all(isinstance(v, str) and v.strip()
+                   for v in PROJECT_ROOT_SOURCES.values()), PROJECT_ROOT_SOURCES
+        cwd_text = PROJECT_ROOT_SOURCES['cwd']
+        assert 'working directory' in cwd_text and 'marker' in cwd_text, cwd_text
+
+        # The two entry points cannot answer differently.
+        for start, env in ((deep, None), (deep, elsewhere), (deep, gone),
+                           (bare, None)):
+            if env is None:
+                os.environ.pop('PURLIN_PROJECT_ROOT', None)
+            else:
+                os.environ['PURLIN_PROJECT_ROOT'] = env
+            assert (find_project_root(start_dir=start)
+                    == resolve_project_root(start_dir=start)[0])
 
 
 class TestResolveConfig:
@@ -117,20 +181,20 @@ class TestResolveConfig:
         """When framework adds a new key to config.json, it's visible even
         when config.local.json already exists with unrelated overrides.
         This is the scenario that broke with copy-on-first-access."""
-        self._write_shared({"report": True, "version": "0.9.0"})
+        self._write_shared({"digest": "auto", "version": "0.9.0"})
         self._write_local({"pre_push": "strict"})
         result = resolve_config(self.project_root)
-        assert result["report"] is True, "new framework key must be visible"
+        assert result["digest"] == "auto", "new framework key must be visible"
         assert result["version"] == "0.9.0", "shared key preserved"
         assert result["pre_push"] == "strict", "local override preserved"
 
     @pytest.mark.proof("config_engine", "PROOF-12", "RULE-8")
     def test_local_override_wins_in_merge(self):
         """User overrides a framework default. config.json untouched."""
-        self._write_shared({"report": True, "version": "0.9.0"})
+        self._write_shared({"digest": "auto", "version": "0.9.0"})
         shared_before = json.loads(open(os.path.join(self.purlin_dir, 'config.json')).read())
 
-        update_config(self.project_root, "report", False)
+        update_config(self.project_root, "digest", "off")
 
         # config.json must not change
         shared_after = json.loads(open(os.path.join(self.purlin_dir, 'config.json')).read())
@@ -139,11 +203,11 @@ class TestResolveConfig:
         # local should have the override
         with open(os.path.join(self.purlin_dir, 'config.local.json')) as f:
             local = json.load(f)
-        assert local["report"] is False
+        assert local["digest"] == "off"
 
         # Merged result should have local's value
         result = resolve_config(self.project_root)
-        assert result["report"] is False, "local override must win"
+        assert result["digest"] == "off", "local override must win"
         assert result["version"] == "0.9.0", "unrelated shared key preserved"
 
     @pytest.mark.proof("config_engine", "PROOF-4", "RULE-4")
@@ -153,6 +217,23 @@ class TestResolveConfig:
         self._write_local({"custom_setting": 42})
         result = resolve_config(self.project_root)
         assert result == {"version": "0.9.0", "custom_setting": 42}
+
+    @pytest.mark.proof("config_engine", "PROOF-13", "RULE-11")
+    def test_nested_object_in_local_replaces_base_object_whole(self):
+        """The overlay is per top-level key. update_config writes whole
+        values, so a deep merge on read would make what the user wrote and
+        what the server read differ."""
+        self._write_shared({"runners": {
+            "win-2022": {"os": "windows", "version": ">=10.0.20348"},
+            "mac-14": {"os": "macos", "version": "14"},
+        }})
+        self._write_local({"runners": {"ubuntu-24": {"os": "linux", "distro": "ubuntu"}}})
+        result = resolve_config(self.project_root)
+        assert result["runners"] == {"ubuntu-24": {"os": "linux", "distro": "ubuntu"}}, (
+            "a nested object in local must replace the base object whole, "
+            f"not merge into it: {result['runners']}")
+        assert "win-2022" not in result["runners"]
+        assert "mac-14" not in result["runners"]
 
     @pytest.mark.proof("config_engine", "PROOF-4", "RULE-4")
     def test_empty_local_returns_shared(self):
@@ -316,3 +397,42 @@ class TestCLI:
         )
         assert r.returncode == 0
         assert r.stdout.strip() == "0.9.0"
+
+    def _main(self, *args):
+        """The command line's `main()` in this process: (exit code, stdout).
+
+        In-process is what lets a mutation run see which case caught a break;
+        the two cases above still start the script as a child.
+        """
+        out = io.StringIO()
+        code = 0
+        env = {'PURLIN_PROJECT_ROOT': self.project_root}
+        with mock.patch.object(sys, 'argv', ['config_engine.py'] + list(args)), \
+                mock.patch.dict(os.environ, env), \
+                contextlib.redirect_stdout(out), \
+                contextlib.redirect_stderr(io.StringIO()):
+            try:
+                config_engine.main()
+            except SystemExit as stop:
+                code = stop.code if isinstance(stop.code, int) else 1
+        return code, out.getvalue()
+
+    @pytest.mark.proof("config_engine", "PROOF-4", "RULE-4")
+    def test_dump_in_process_shows_the_merged_config(self):
+        with open(os.path.join(self.purlin_dir, 'config.json'), 'w') as f:
+            json.dump({"team": "default"}, f)
+        with open(os.path.join(self.purlin_dir, 'config.local.json'), 'w') as f:
+            json.dump({"local": True}, f)
+        code, out = self._main('--dump')
+        assert code == 0
+        assert json.loads(out) == {"team": "default", "local": True}
+
+    @pytest.mark.proof("config_engine", "PROOF-5", "RULE-5")
+    def test_key_in_process_prints_the_value(self):
+        with open(os.path.join(self.purlin_dir, 'config.json'), 'w') as f:
+            json.dump({"version": "0.9.0"}, f)
+        code, out = self._main('--key', 'version')
+        assert code == 0
+        assert out == "0.9.0\n"
+        assert not os.path.exists(
+            os.path.join(self.purlin_dir, 'config.local.json'))

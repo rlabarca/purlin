@@ -1,0 +1,13 @@
+<!-- @dsCard group="Components" viewport="700x330" name="Editorial" subtitle="Code wells, command markers, numbered rows" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{padding:18px 20px;background:var(--canvas)}.row{display:flex;flex-wrap:wrap;align-items:center;gap:14px}.col{display:flex;flex-direction:column;gap:12px}</style></head><body><div id="root"></div>
+<script type="text/babel">const {CodeBlock,CommandChip,NumberedItem}=window.PurlinDesignSystem_6896a8;
+ReactDOM.createRoot(document.getElementById('root')).render(<div className="col">
+<div className="row" style={{justifyContent:'space-between'}}><CommandChip size="16px">purlin:audit login</CommandChip><CommandChip tone="accent" size="16px">gate: passed</CommandChip></div>
+<CodeBlock size="13px" lines={['break 7 of 41   src/auth.py:71','-   if token.issued_at < now - TTL:','+   if token.issued_at > now - TTL:',{text:'    test_expired_token_rejected  FAILED',kind:'muted'},{text:'    noticed',kind:'accent'}]}/>
+<div><NumberedItem index="01" term="Rule" style={{fontSize:13}}>One line saying what the software has to do.</NumberedItem></div>
+</div>);</script></body></html>

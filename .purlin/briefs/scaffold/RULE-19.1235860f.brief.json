@@ -1,0 +1,92 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T23:04:56Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "f90ee20389c01addce4a98edd3f79637895ed44646ae3ca23c733c3027031dfe",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-19",
+      "text": "Write `node_modules/` into `.gitignore`, run init twice and verify the file is unchanged between the two runs, still starts with `node_modules/`, contains `.purlin/runtime/` and carries `.purlin/plugin-root` exactly once. Then write a `pyproject.toml` and a `src/app.py`, run init and verify `[tool.mutmut]` with `source_paths = [\"src\"]` and `pytest_add_cli_args_test_selection = [\"tests\"]` was appended after the original text; on a project with no `pyproject.toml` verify `[mutmut]` lands in `setup.cfg` and appears once after two runs. Verify the paths the block names prefer `src` and `tests` when both are there, and name the package directory when there is no `src`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T230430Z-ca1f4b5-ci-windows.json",
+  "risk": "medium",
+  "rule": "RULE-19",
+  "rule_hash": "037f4f32d7fb27bcc44123e2d84365e4b9c2cd58ecda6812035ee1cae2af5a41",
+  "rule_text": "A block init appends to a file the project also owns is appended once and never twice, whatever else that file already held",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "b49870d82047d7b07cba3c09ba95aa7551ef06eeab993c81ccddc9db33de8031",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_package_directory_is_found_when_there_is_no_src(self, project):\n        os.makedirs(project.path('demo'), exist_ok=True)\n        write(project.path('demo/__init__.py'), '')\n        sources, tests = scaffold_module.mutmut_paths(project.root)\n        assert sources == ['demo']\n        assert tests == ['tests']",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_a_package_directory_is_found_when_there_is_no_src",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_engine_block_is_added_once(self, project):\n        project.run('--gate', 'passed')\n        project.run('--gate', 'passed')\n        assert read(project.path('setup.cfg')).count('[mutmut]') == 1",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_engine_block_is_added_once",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_engine_block_names_the_source_and_the_tests(self, project):\n        write(project.path('pyproject.toml'), '[project]\\nname = \"demo\"\\n')\n        os.makedirs(project.path('src'), exist_ok=True)\n        write(project.path('src/app.py'), 'def go():\\n    return 1\\n')\n        project.run('--gate', 'passed')\n        text = read(project.path('pyproject.toml'))\n        assert '[tool.mutmut]' in text\n        assert 'source_paths = [\"src\"]' in text\n        assert 'pytest_add_cli_args_test_selection = [\"tests\"]' in text\n        assert text.startswith('[project]\\nname = \"demo\"\\n')",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_engine_block_names_the_source_and_the_tests",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_gitignore_block_is_added_once(self, project):\n        write(project.path('.gitignore'), 'node_modules/\\n')\n        project.run('--gate', 'passed')\n        first = read(project.path('.gitignore'))\n        project.run('--gate', 'passed')\n        assert read(project.path('.gitignore')) == first\n        assert first.startswith('node_modules/\\n')\n        assert '.purlin/runtime/' in first\n        assert first.count('.purlin/plugin-root') == 1",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_the_gitignore_block_is_added_once",
+      "proof": "PROOF-19",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_the_source_paths_prefer_src(self, project):\n        os.makedirs(project.path('src'), exist_ok=True)\n        os.makedirs(project.path('tests'), exist_ok=True)\n        assert scaffold_module.mutmut_paths(project.root) == (['src'],\n                                                              ['tests'])",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_source_paths_prefer_src",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": "def test_without_a_pyproject_the_block_lands_in_setup_cfg(self, project):\n        project.run('--gate', 'passed')\n        assert '[mutmut]' in read(project.path('setup.cfg'))",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_without_a_pyproject_the_block_lands_in_setup_cfg",
+      "proof": "PROOF-19",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "1235860fa474f98cf86f74b7b0c01d0fb0cc9a007161b22fe9674ce34085415c"
+}

@@ -1,0 +1,61 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-16T23:05:23Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "3ae025201956162fdef0bffa222a3d67611bb4d28ea50b58d53e21f4737f7366",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-6",
+      "text": "Run the update on the v0.9.5 fixture answering every question `n`; verify the output contains `skipped config` and the pending ids are exactly what they were; then answer `n` to the records question alone and verify the pending ids afterwards are exactly `['records']`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/update/20260916T230432Z-ca1f4b5-ci-windows.json",
+  "risk": "high",
+  "rule": "RULE-6",
+  "rule_hash": "bf16e8d6c1e0aa483cc3a99068e35c055df94a1ef404302f0e2d50b99b7bd9c1",
+  "rule_text": "Every migration asks before it writes; a declined one is reported as skipped and left pending, and declining one never stops the others",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "94b977cc37977d3a0ec2be7b69ded82c68bc91bcfeff0d41a357c8a66a41372b",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_declined_migration_is_left_pending(tmp_path, capsys, monkeypatch):\n    root = _project(tmp_path, V095)\n    before = _ids(root)\n    _answers(monkeypatch, default='n')\n    assert _apply(root, argv=()) == 0\n    printed = capsys.readouterr().out\n    assert 'skipped config' in printed\n    assert _ids(root) == before",
+      "file": "dev/test_init_update.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_a_declined_migration_is_left_pending",
+      "proof": "PROOF-6",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_one_declined_migration_does_not_stop_the_others(tmp_path, capsys,\n                                                         monkeypatch):\n    root = _project(tmp_path, V095)\n    _answers(monkeypatch, [('Apply records', 'n')])\n    _apply(root, argv=())\n    capsys.readouterr()\n    assert _ids(root) == ['records']",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_one_declined_migration_does_not_stop_the_others",
+      "proof": "PROOF-6",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "3994c8c05c2513de101f9bd04140fa90e1c4a6190d854fcc9ecde95d60d307d6"
+}

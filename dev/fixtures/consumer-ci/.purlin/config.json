@@ -1,0 +1,7 @@
+{
+  "version": "0.10.0",
+  "gate": "strong",
+  "test_framework": "pytest",
+  "mutation_engine": "auto",
+  "ci": "github"
+}

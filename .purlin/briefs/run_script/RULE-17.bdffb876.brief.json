@@ -1,0 +1,73 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "run_script",
+  "generated_at": "2026-09-16T23:04:52Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "0f0c2a0d6a8b5fc54cfb03fe88e0eabea3516c5e9fee6b59020fd70974560422",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-17",
+      "text": "Run `--all --record --commit`; verify the commit call carries the identity `developer`, one path and a message starting `purlin: record for `, and that the record's `environment.kind` is `developer`. Run `--all --record --ci`; verify the identity `ci`, the runner `ci` and the line `0 briefs written.`. Run `--all --record --tag 1.0`; verify the tag call names `1.0` and the record path and that the line `Record tag written: record/1.0` is printed. Run `--all --record` alone; verify no commit call was made",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/run_script/20260916T230430Z-ca1f4b5-ci-windows.json",
+  "risk": "high",
+  "rule": "RULE-17",
+  "rule_hash": "369e5aa804b56e7953adb9580764b345fdfca10ff091ff55bccfb3c72fac2e48",
+  "rule_text": "`--commit` commits the records under the developer's identity and `--ci` under the git host's, both with the message `purlin: record for <commit7>`; `--tag <name>` writes the tag `record/<name>` over the records it vouches for; with neither flag nothing is committed, and `--ci` also writes the briefs and says how many",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "c795744a3d515a831d90b5c3211121840b2b35fedb06da68407196e0e24554bb",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_ci_passes_the_ci_identity_and_the_ci_runner_slug(\n            self, tmp_path, record_run, capsys):\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat')\n        _code, calls = record_run(root, '--all', '--ci')\n        output = capsys.readouterr().out\n        assert calls['commit'][0][1] == 'ci'\n        assert calls['write'][0][0]['runner'] == 'ci'\n        assert calls['write'][0][0]['environment']['kind'] == 'ci'\n        # A CI run writes the briefs and nothing else, and says how many in\n        # one line. It writes no signature file, ever.\n        assert '0 briefs written.' in output",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_ci_passes_the_ci_identity_and_the_ci_runner_slug",
+      "proof": "PROOF-17",
+      "reasons": []
+    },
+    {
+      "body": "def test_commit_passes_the_developer_identity(\n            self, tmp_path, record_run, capsys):\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat')\n        _code, calls = record_run(root, '--all', '--commit')\n        capsys.readouterr()\n        paths, identity, message = calls['commit'][0]\n        assert identity == 'developer'\n        assert message.startswith('purlin: record for ')\n        assert len(paths) == 1\n        assert calls['write'][0][0]['environment']['kind'] == 'developer'",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_commit_passes_the_developer_identity",
+      "proof": "PROOF-17",
+      "reasons": []
+    },
+    {
+      "body": "def test_tag_names_the_record_it_vouches_for(\n            self, tmp_path, record_run, capsys):\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat')\n        _code, calls = record_run(root, '--all', '--tag', '1.0')\n        output = capsys.readouterr().out\n        name, paths = calls['tag'][0]\n        assert name == '1.0'\n        assert paths == ['.purlin/records/feat/r.json'.replace('/', os.sep)]\n        assert 'Record tag written: record/1.0' in output",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_tag_names_the_record_it_vouches_for",
+      "proof": "PROOF-17",
+      "reasons": []
+    },
+    {
+      "body": "def test_without_commit_nothing_is_committed(\n            self, tmp_path, record_run, capsys):\n        root = _pytest_project(tmp_path)\n        _spec(root, 'feat')\n        _code, calls = record_run(root, '--all')\n        capsys.readouterr()\n        assert calls['commit'] == []",
+      "file": "dev/test_run_script.py",
+      "findings": [],
+      "name": "test_without_commit_nothing_is_committed",
+      "proof": "PROOF-17",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "bdffb876c204e04f21235e3684e05da273a0d940b0010dbb81fe15353b47045b"
+}

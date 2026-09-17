@@ -1,0 +1,236 @@
+#!/usr/bin/env python3
+"""Refresh .purlin/report-data.js after something changed what it reports.
+
+Registered in hooks/hooks.json as an async PostToolUse, SubagentStop and Stop
+hook, so it runs in the background after a tool call or a turn and costs the
+model nothing: an async hook's output is discarded, and this script prints
+nothing anyway.
+
+WHAT IT DOES
+    1. Finds the project from the working directory (`git rev-parse`).
+    2. Leaves at once unless the project has a `.purlin/config.json` that
+       does not set `digest` to `off`, and unless no commit is in flight
+       (`index.lock`: the pre-commit hook owns that regeneration). The
+       dashboard is always on: nothing configures it, so nothing turns it off
+       but that one opt-out.
+    3. Compares the digest's mtime to every input that feeds it: the specs,
+       the proof files under `.purlin/runtime/proofs/`, the records under
+       `.purlin/records/`, and the config. Nothing newer, nothing to do. This
+       check runs before any Purlin module is imported, so a quiet tool call
+       costs a process start and a directory walk.
+    4. Takes a non-blocking lock under `.purlin/runtime/`; a second instance
+       finding it held leaves, because the holder re-checks the inputs after
+       writing and picks up what landed meanwhile.
+    5. Calls `purlin.server.generate_digest` with `network=False` (no
+       `git ls-remote` from a hook) and `only_if_changed=True` (an unchanged
+       payload touches the file rather than rewriting it, so a no-op never
+       dirties the working tree).
+
+WHAT IT NEVER DOES
+    Block: every path exits 0. Print: nothing on stdout or stderr. Reach the
+    network. Run a test: what is already on disk is what it reports.
+    Parse the hook's stdin: the input is drained and ignored, because which
+    tool ran does not change whether the digest is stale.
+
+    PURLIN_SKIP_DIGEST=1 skips everything, as it does for the pre-commit hook.
+"""
+
+import json
+import os
+import subprocess
+import sys
+import time
+
+_PLUGIN_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))))
+
+
+# ── single flight ─────────────────────────────────────────────────────
+#
+# One advisory lock on one file, held for as long as a generation runs. It
+# lives here rather than in a shared helper because this is its only caller
+# and the whole of it is nine lines per operating system.
+
+def lock_exclusive(handle):
+    """Take an exclusive lock on an open file, waiting for it."""
+    if os.name == 'nt':
+        import msvcrt
+        msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+        return True
+    import fcntl
+    fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+    return True
+
+
+def try_lock_exclusive(handle):
+    """Take the lock if it is free; return False rather than wait."""
+    try:
+        if os.name == 'nt':
+            import msvcrt
+            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            return True
+        import fcntl
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return True
+    except OSError:
+        return False
+
+
+def unlock(handle):
+    """Release a lock taken by either of the two above."""
+    try:
+        if os.name == 'nt':
+            import msvcrt
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+            return
+        import fcntl
+        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+    except OSError:
+        pass
+
+
+def _project():
+    """(root, git_dir) for the working directory, or (None, None)."""
+    try:
+        result = subprocess.run(
+            ['git', 'rev-parse', '--show-toplevel', '--absolute-git-dir'],
+            capture_output=True, text=True, timeout=5)
+    except (subprocess.SubprocessError, OSError):
+        return None, None
+    if result.returncode != 0:
+        return None, None
+    lines = result.stdout.splitlines()
+    if len(lines) < 2:
+        return None, None
+    return lines[0].strip(), lines[1].strip()
+
+
+def _config(root):
+    try:
+        with open(os.path.join(root, '.purlin', 'config.json'), encoding='utf-8') as f:
+            config = json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return None
+    return config if isinstance(config, dict) else None
+
+
+# What the digest reports, and so what makes it stale: the specs, the proof
+# files a test run leaves under `.purlin/runtime/proofs/`, the records under
+# `.purlin/records/`, and the config. Nothing else under `.purlin/runtime/`
+# is an input, so a test run's scratch files never wake the hook.
+_INPUT_TREES = (
+    ('specs',),
+    ('.purlin', 'runtime', 'proofs'),
+    ('.purlin', 'records'),
+)
+
+
+def _is_input(filename):
+    return filename.endswith('.md') or filename.endswith('.json')
+
+
+def _dirty(root, since=None):
+    """True when some input is newer than the digest (or than `since`).
+
+    The spec directory is `specs`. It was read from the config's `spec_dir`
+    until that key was retired (`skill_init` RULE-76): this hook was its last
+    reader and every other reader of the spec directory, the MCP server and
+    all twelve skills included, had always hardcoded the same literal.
+
+    A missing digest is dirty. `since` lets the caller ask "did anything land
+    after I started?", which is what closes the window between reading the
+    inputs and writing the file.
+    """
+    digest = os.path.join(root, '.purlin', 'report-data.js')
+    try:
+        stamp = os.stat(digest).st_mtime
+    except OSError:
+        return True
+    if since is not None:
+        stamp = min(stamp, since)
+
+    def newer(path):
+        try:
+            return os.stat(path).st_mtime > stamp
+        except OSError:
+            return False
+
+    if newer(os.path.join(root, '.purlin', 'config.json')):
+        return True
+    for parts in _INPUT_TREES:
+        for dirpath, _dirnames, filenames in os.walk(os.path.join(root, *parts)):
+            for name in filenames:
+                if _is_input(name) and newer(os.path.join(dirpath, name)):
+                    return True
+    return False
+
+
+def _stamp(path):
+    """Now, as this filesystem times a write.
+
+    `time.time()` reads the wall clock, which Windows moves forward in steps
+    of about 16 milliseconds while a file written inside one of those steps
+    carries a finer timestamp. Comparing the two reports a write that landed
+    before this generation started as newer than it, and the re-check below
+    then runs again for nothing. Touching a file and reading its time back
+    asks the one clock that stamps the inputs. A filesystem that refuses the
+    touch falls back to the wall clock, which is what this was.
+    """
+    try:
+        os.utime(path, None)
+        return os.stat(path).st_mtime
+    except OSError:
+        return time.time()
+
+
+def main():
+    try:
+        sys.stdin.read()
+    except (OSError, ValueError):
+        pass
+    if os.environ.get('PURLIN_SKIP_DIGEST') == '1':
+        return
+    root, git_dir = _project()
+    if not root:
+        return
+    config = _config(root)
+    if not config or config.get('digest') == 'off':
+        return
+    if os.path.exists(os.path.join(git_dir, 'index.lock')):
+        return
+    if not _dirty(root):
+        return
+
+    sys.path.insert(0, os.path.join(_PLUGIN_ROOT, 'scripts', 'mcp'))
+    from purlin.server import generate_digest
+
+    runtime = os.path.join(root, '.purlin', 'runtime')
+    os.makedirs(runtime, exist_ok=True)
+    lock_path = os.path.join(runtime, 'refresh_digest.lock')
+    with open(lock_path, 'a+', encoding='utf-8') as lock:
+        if not try_lock_exclusive(lock):
+            return
+        try:
+            for _attempt in range(3):
+                started = _stamp(lock_path)
+                generate_digest(root, generated_by='hook', network=False,
+                                only_if_changed=True)
+                if not _dirty(root, since=started):
+                    break
+        finally:
+            unlock(lock)
+
+
+if __name__ == '__main__':
+    # Silent on every path: an async hook's output is discarded, and a
+    # synchronous one's would reach the transcript. Exit 0 on every path: a
+    # refresh that failed is a stale dashboard, never a blocked tool call.
+    devnull = open(os.devnull, 'w')
+    sys.stdout = devnull
+    sys.stderr = devnull
+    try:
+        main()
+    except BaseException:
+        pass
+    sys.exit(0)

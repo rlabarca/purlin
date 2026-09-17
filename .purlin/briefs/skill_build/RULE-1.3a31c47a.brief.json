@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "skill_build",
+  "generated_at": "2026-09-16T22:35:39Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "8d80638a3b4f8d80aeeab50a099488549e72584a274f85593dc09ab00b239e4a",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-1",
+      "text": "Read `skills/build/SKILL.md`; verify the file opens with `---`, that the frontmatter carries `name: build` and a `description:` whose value is one non-empty line, and that `references/purlin_commands.md` contains the literal `purlin:build`. Deleting the `name:` line fails naming the file",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/skill_build/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-1",
+  "rule_hash": "1830adb68f6be961bd3dd7c25060fb5d7035b6f87aeb3de7582d9a02ff296bd6",
+  "rule_text": "`skills/build/SKILL.md` opens with a frontmatter block whose `name` is `build` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:build`",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "488e697f7cc37f144c085bd5974272133211ae5c1f051a4f48362c23aa3a05f8",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_frontmatter_names_the_skill(self):\n        assert frontmatter_problems('build') == []",
+      "file": "dev/test_skills.py",
+      "findings": [],
+      "name": "test_the_frontmatter_names_the_skill",
+      "proof": "PROOF-1",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "3a31c47af05fdaa96dba91a03a4477893ecdf1a7ea4c9814d4e251728124a671"
+}

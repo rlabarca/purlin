@@ -1,188 +1,107 @@
 ---
 name: build
-description: Inject spec rules into context, then implement
+description: Load a spec's rules, write the code and the tagged tests, commit the changeset
 ---
 
-Read a spec, load all its rules (including from `> Requires:` dependencies), and implement the feature.
+# purlin:build
 
-## Usage
+Load every rule a feature is bound by, write the code and the tests that prove it, run them,
+and commit the result with a body that says which rule each change serves.
 
-```
-purlin:build <name>             Build a feature from its spec
-purlin:build                    Resume building the current feature
-```
+**Paths.** Every `references/` and `scripts/` path below is inside the plugin and is reached
+through `${CLAUDE_PLUGIN_ROOT}`. A project carries none of them.
 
-## Step 1 — Load the Spec
+## Choosing what to build
 
-1. Find the spec: `specs/**/<name>.md`.
-2. Read the spec. Extract all `RULE-N` entries from `## Rules` and all `PROOF-N` entries from `## Proof`.
-3. Read all `> Requires:` specs (including anchors in `specs/_anchors/`). Extract their `RULE-N` and `PROOF-N` entries too — both rules and proof descriptions are needed for implementation.
-4. **Read External References:** For each required anchor (and global anchors) with `> Source:`, read the external reference:
-   - **Figma URL:** Call `get_design_context` and `get_screenshot` via Figma MCP for full visual fidelity.
-   - **Git URL:** Fetch the file content from the repository.
-   - **HTTP URL:** Fetch the page content.
-   Use the external reference content as context when implementing — it provides the full fidelity behind the anchor's rules. If a fetch fails: report the error and ask the user whether to continue without the external reference or fix and retry.
-5. If the feature spec itself or any required spec has a `> Visual-Reference:` field, load the visual reference at **full fidelity**:
-   - `figma://fileKey/nodeId` → call `get_design_context` and `get_screenshot` MCP tools
-   - `./path/to/image.png` → read the image file
-   - `./path/to/file.html` → read the HTML file
-   - `https://url` → take a screenshot via Playwright MCP if available
-   - Display: `Visual reference loaded from: <source>`
-
-Display the combined rule set with proof descriptions:
-
-```
-Building: <name>
-Own rules: RULE-1, RULE-2, RULE-3
-Required from api_rest_conventions:
-  RULE-1: All endpoints return JSON with {data, error, meta} envelope
-  PROOF-1: GET /endpoint returns {data: ..., error: null, meta: {}}
-Required from design_modal:
-  RULE-1: Implementation must visually match the Figma design
-  PROOF-1: Screenshot comparison against Figma reference @e2e
-  Visual reference loaded from: figma://ABC123/1:234
-Scope: src/auth.js, src/auth.test.js
+```bash
+purlin:build [<name>]
 ```
 
-## Step 2 — Implement
+With no name, call `sync_status` and read the state:
 
-Write code that satisfies all rules. Use `> Scope:` paths as guidance for where to write.
+| What the state says | What you do |
+|---------------------|-------------|
+| One spec has rules with no passing test | Build it. Say which and why, then start |
+| Several do | List them with their unproved rule counts and ask which |
+| None do | Say the specs are all proved and point at `purlin:spec` for the next requirement |
+| There are no specs at all | Point at `purlin:spec`, or `purlin:spec-from-code` when the tree already has code |
 
-- Implement the feature naturally — there is no required order or ceremony.
-- Keep the rules visible. If a rule constrains behavior, make sure the code satisfies it.
-- If implementation reveals that a rule is wrong or missing, update the spec (this is expected).
-- **When building a feature that requires a design anchor with `> Visual-Reference:`:**
-  - Read the visual reference at FULL FIDELITY (Figma MCP, image file, etc.)
-  - Build from the visual reference, not from rules — the anchor's rule just says "match the design," so the visual reference IS the spec
-  - The visual reference captures everything: layout relationships, alignment, visual hierarchy, spacing proportions, colors, typography
-  - Feature spec rules describe behavioral requirements — build those from the rules
-  - When the visual reference and a behavioral rule conflict, the visual reference wins for visual implementation — but the behavioral rule must still be satisfied for verification
+## Loading the rules
 
-## Step 3 — Write Tests with Proof Markers
+Read the feature spec, then follow `> Requires:` through every anchor it names and every
+anchor those name in turn. Add any anchor with `> Global: true`, which applies without being
+named. The rules you must satisfy are the union of all of them, and a rule from an anchor
+binds exactly as tightly as one written in the feature.
 
-Write tests that prove each rule. Use proof markers so the test runner emits proof files. For marker syntax (pytest, Jest, Shell), see `references/formats/proofs_format.md`.
+Read `> Scope:` and `> Stack:` before you write a line. `> Scope:` is where the code belongs;
+a record carries the git tree hash of those files, so code that lands outside them is code no
+record accounts for.
 
-Each RULE must have at least one PROOF — both own rules AND required rules. For required rules, use the **required spec's feature name** in the proof marker, not your own feature name:
+## Writing the code and the tests
+
+Write the smallest change that satisfies the rules, then one test per proof. Every test
+carries a marker naming the feature, the proof and the rule, which is what lets Purlin tell
+which rule a passing test actually proves:
 
 ```python
-# Own rule — uses YOUR feature name
 @pytest.mark.proof("login", "PROOF-1", "RULE-1")
-
-# Required rule from api_rest_conventions — uses THE ANCHOR's name
-@pytest.mark.proof("api_rest_conventions", "PROOF-1", "RULE-1")
+def test_valid_credentials_return_200():
+    assert authenticate("user@test.com", "secret") == 200
 ```
 
-**Tier review (mandatory before running tests):**
-Review every proof marker just written. Apply tier heuristics from `references/spec_quality_guide.md`:
-- Test hits API/database/filesystem/subprocess → `@integration`
-- Test needs browser/UI rendering → `@e2e`
-- Test needs human judgment → `@manual`
-- Pure logic/in-memory → unit (no tag)
+The marker for every other framework is in `references/formats/proofs_format.md`. A test with
+no marker proves nothing as far as Purlin is concerned, however good it is.
 
-If ANY proof marker is missing a tier tag and the test clearly isn't unit tier (it calls subprocess, hits a network endpoint, etc.), add the tag before running.
+A test asserts the observable the proof names, against the real behaviour. A test that asserts
+a stub returns what the stub was told to return is worse than no test: it reports a rule as
+proved when nothing was proved. When a rule genuinely cannot be proved as written, do not
+weaken the test. Stop and fix the rule.
 
-After writing tests, ALWAYS spawn a purlin-auditor teammate to review proofs. Do NOT audit your own tests in the same context — the auditor must be independent. This applies regardless of the number of proofs.
+## When a rule is wrong
 
-## Step 4 — Run Tests and Iterate
+A rule that contradicts another, or that no test could settle as written, is a spec problem
+and not a build problem. Call `purlin:spec <name>`, fix the rule text in place, keep the id,
+and come back. Changing rule text stales any signature bound to that rule, which is correct: a
+person has to look again.
 
-The iteration loop is: **write code → write tests → run `purlin:unit-test` → read coverage output → fix → repeat**. The loop does NOT end until coverage output shows PASSING for the target feature (all rules proved). PARTIAL means more tests are still needed.
+A rule tagged `[origin: pm]`, `[origin: design]` or `[origin: qa]` is not yours to change.
+Leave it, build against it as written, and put the proposal in the pull request.
 
-```
-purlin:unit-test <name>   # runs tests, emits proofs, calls sync_status, reports coverage
-```
+## Running them
 
-`purlin:unit-test` handles test framework detection, proof file emission, freshness checks, and `sync_status`. Calling `sync_status` after tests is not optional — `purlin:unit-test` does this automatically. Do NOT call `sync_status` separately — it would be redundant. Read the coverage output from `purlin:unit-test` and follow any `→` directives for uncovered rules.
-
-**When a test fails, diagnose the root cause before fixing:**
-1. Read the failing assertion — what did the test expect vs what did it get?
-2. Read the spec rule the proof is linked to — is the test asserting the right behavior?
-3. If the test is correct and the code is wrong → fix the code
-4. If the test has a bug (wrong mock, wrong expected value) → fix the test
-5. If the rule itself is wrong → update the spec first, then fix code and test
-
-**Never weaken an assertion to make it pass.** If `assert response.status == 401` fails because the code returns 200, the code is wrong. See `references/spec_quality_guide.md` "When Tests Fail" for the full diagnostic guide.
-
-**Assertion change detection (mandatory after fixing a failing test):**
-After fixing a failing test, before running tests again, re-read the original proof description from the spec's `## Proof` section. Verify the assertion still matches. If the fix changed WHAT the test asserts (different status code, different field, looser check), flag it:
-
-```
-WARNING: Assertion for PROOF-2 (RULE-2) was changed during iteration.
-Original proof description: "POST invalid password; verify 401"
-New assertion: assert status == 400
-Reason: API returns 400 for validation errors, not 401. Spec rule may need updating.
-→ Run: purlin:spec <name> to review RULE-2
+```bash
+purlin:test <name>
 ```
 
-If you changed what a test asserts (not just how), the proof description in the spec may be wrong. The commit message MUST explain why the assertion changed.
+Never run the test framework directly. `purlin:test` runs the tagged tests, writes the proof
+files into `.purlin/runtime/proofs/`, and prints the state of each rule. Iterate until every
+rule the feature owns has a passing test. A proof tagged `@env` for an operating system that
+is not this one is skipped and listed as `needs <os>`; that is expected locally and CI proves
+it on the matching runner.
 
-## Step 5 — Changeset Summary (mandatory)
+Never write a proof file, a record or a signature by hand. Tests write proof files,
+`purlin:audit` writes records, `purlin:sign` writes signatures.
 
-After the build/test loop reaches a stable state (all rules pass), output the changeset summary as a visible block in your response to the user. This is the engineer's primary review artifact — it must be visible in the conversation, not buried silently in git history. The same text is then reused as the commit message body in Step 6.
+## Committing
 
-The summary has three sections:
+One commit per build, with the `feat(<name>):` prefix and the changeset body described in
+`references/commit_conventions.md`. The body has three sections: **Changeset**, a
+`RULE-N → file:line` line for every rule the build addressed; **Decisions**, the judgment calls
+you made between real alternatives; and **Review**, the places an engineer should look hardest.
+Omit Decisions when every rule had one obvious implementation, and omit Review when nothing
+needs a second pair of eyes. Changeset is never omitted. `references/commit_conventions.md`
+carries the exact rendering; follow it rather than inventing one.
 
-**Changeset** — maps each rule to the file(s) and line(s) where it was implemented, with a one-line description of the change. Every rule addressed in this session must appear. Format: `RULE-N → file:line   description`. Rules satisfied by existing code (no changes needed): `RULE-N → (already satisfied)`. Rules mapping to multiple files get multiple lines.
+Commit the code and the tests together. `.purlin/runtime/` is ignored by git, so proof files
+never enter a commit.
 
-```
-── Changeset ──────────────────────────────────────
+## When you are done
 
-RULE-1 → src/auth.py:34         Added sanitize_input() before query
-RULE-2 → src/auth.py:71         Sliding window rate limiter (60/min)
-         tests/test_auth.py:12  2 proofs covering RULE-1 and RULE-2
-```
+Print the state table from `sync_status` for the feature, then name the next step:
 
-**Decisions** — judgment calls where the agent chose between alternatives. Only genuine decisions, not mechanical translations. If there are no judgment calls: `(No judgment calls — all rules had unambiguous implementations)`.
-
-```
-── Decisions ──────────────────────────────────────
-
-• Middleware pattern over inline validation for RULE-1 — reusable across routes
-• 60 req/min hardcoded — spec says "rate limit" with no threshold
-```
-
-**Review** — curated list of areas where the engineer should focus attention. Flag security-sensitive code, spec ambiguities, performance-critical paths, and anything non-obvious. Not a list of every change — just the parts that need human eyes. If nothing notable: `(No notable risk areas — straightforward implementation)`.
-
-```
-── Review ─────────────────────────────────────────
-
-→ src/auth.py:45   Regex for SQL injection — security-sensitive
-→ Spec gap: RULE-3 says "rate limit" but doesn't specify the window size
-```
-
-**Corner cases:**
-- If no code changes were needed (tests already pass), show `RULE-N → (already satisfied)` for each rule
-- For specs with 10+ rules, list every rule in Changeset but keep Decisions and Review curated (3–5 items max)
-
-## When Running as Proof Fixer
-
-When spawned by the auditor to fix HOLLOW or WEAK proofs:
-
-1. Read the audit findings — each has a PROOF-ID, issue description, and suggested fix
-2. Read the spec rule and current test code
-3. Fix the test to address the specific issue
-4. Run purlin:unit-test to verify the fix works
-5. Report back: "Fixed PROOF-N — now uses real bcrypt instead of mock. Re-audit please."
-6. Print a changeset summary mapping fixed proofs: `PROOF-N → file:line  description of fix`. Skip the Decisions section — proof fixes are mechanical, not judgment calls.
-
-Do NOT weaken assertions to satisfy audit — if the audit says a proof is HOLLOW because it mocks bcrypt, replace the mock with real bcrypt. Don't remove the assertion.
-If fixing a proof requires changing the spec rule (because the rule is wrong), report the issue: "RULE-N in <feature> needs updating — <reason>."
-
-## Step 6 — Commit (mandatory)
-
-After the changeset summary, commit all changed files. Use the changeset summary as the commit message body per `references/commit_conventions.md` ("Build Commit Body"):
-
-```
-git add <source files> <test files> specs/**/*.proofs-*.json
-git commit  # message body = changeset summary from Step 5
-```
-
-Do NOT commit after each failed iteration — only when stable. Do NOT defer the commit to a later step. Uncommitted proof files are invisible to drift detection and verification.
-
-## Exit Criteria
-
-The build is NOT complete until all of the following are true. Verify each one before responding to the user.
-
-1. **Tests pass.** The last `purlin:unit-test` run shows the target feature as PASSING or better.
-2. **Changeset summary printed.** The three-section summary (Changeset, Decisions, Review) was printed as visible text in your response — not only in the commit message. The engineer reviews it in the conversation before looking at git.
-3. **All changes committed.** Run `git status`. If any source files, test files, or `specs/**/*.proofs-*.json` files are uncommitted, commit them now using the changeset summary as the commit message body per Step 6.
-4. **No uncommitted proof files.** `git status` must not show any modified or untracked `.proofs-*.json` files. These are invisible to `sync_status` until committed.
+- Every rule has a passing test: `→ Next: purlin:audit`, which breaks the code on purpose,
+  measures the test strength and writes the record.
+- Some rules still have no test: name them and say what is missing.
+- A rule has a `@manual` proof: say that its evidence is a signature with a one-line note, and
+  point at `purlin:sign`.
+- A proof needs another operating system: say which, and point at `purlin:audit --remote`.

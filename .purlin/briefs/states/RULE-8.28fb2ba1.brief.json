@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-17T12:54:52Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "067dfc95b9266a085ab3a87637f55125276715777dd8d9c5c81914d96894a2a6",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-10",
+      "text": "Build the payload for a rule with a proof and no test at all; verify its passed cell reads `no test` with source null, `current` false and `counts` false",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/states/20260917T125354Z-df84acf-ci-windows.json",
+  "risk": "medium",
+  "rule": "RULE-8",
+  "rule_hash": "75d2b65c7b369105f729984bcb114d4c0795bad764a18ae232d313740871f73c",
+  "rule_text": "A rule no test backs reads `no test` with no source, not current and not counting",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "645b67248e49de6be6dd802b560b669bfa21b61c125c7ed3339fd259e333bfc5",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_rule_no_test_backs_reads_no_test(self, project):\n        cell = project.cell('RULE-2', 'passed')\n        assert cell['word'] == 'no test'\n        assert (cell['source'], cell['current'], cell['counts']) == (\n            None, False, False)",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_a_rule_no_test_backs_reads_no_test",
+      "proof": "PROOF-10",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "28fb2ba15da0a57b0778e60724f938f652693e5d39014baeb423d2c305c36106"
+}

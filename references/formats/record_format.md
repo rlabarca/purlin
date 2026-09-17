@@ -1,0 +1,167 @@
+> Format-Version: 2
+
+# Record Format
+
+A record is one audit run's observations for one feature, written as a file in
+the tree and committed. A record is what the passed cell of a rule reads, and
+the git history of `.purlin/records/` is the log of what ran and when. Nobody
+signs a record.
+
+## File name
+
+```
+.purlin/records/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json
+```
+
+| Part | What it is |
+|---|---|
+| `<feature>` | the spec's name, matching `specs/<category>/<feature>.md` |
+| `<timestamp>` | ISO 8601 UTC without separators, `20260913T120000Z` |
+| `<commit7>` | the first seven characters of the commit the run observed |
+| `<runner>` | `ci`, or the developer's git email local part, lowercased, every non-alphanumeric character replaced by `-` |
+| `<os>` | `windows`, `macos` or `linux`, and absent when the run was not one job of a matrix |
+
+One run writes one file per feature. Adding a file never conflicts, so two runs
+never collide and a matrix job never overwrites another job's observations.
+
+## Fields
+
+```json
+{
+  "schema": "purlin-record/2",
+  "schema_version": 2,
+  "feature": "login",
+  "commit": "4f1c2ab9e1d4e8c9b5f2a7d3c6e0b8a1d9f4c2e7",
+  "timestamp": "2026-09-13T12:00:00Z",
+  "runner": "ci",
+  "os": "linux",
+  "gate": "strong",
+  "test_strength": 71,
+  "scope_tree": "9f2c7a1e5b8d4c6f0a3e9b2d7c4f1a8e6b0d3c5f",
+  "environment": {
+    "os": "linux",
+    "id": "linux-x86_64",
+    "kind": "ci",
+    "job": "audit",
+    "host": "github-runner-3",
+    "engines": ["mutmut"]
+  },
+  "proofs": [
+    {
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "tier": "unit",
+      "env": null,
+      "test_file": "tests/test_login.py",
+      "test_name": "test_rejects_a_wrong_password"
+    }
+  ]
+}
+```
+
+REQUIRED: `schema_version`, `feature`, `commit`, `timestamp`, `runner`,
+`gate`, `proofs`. Every other field is OPTIONAL.
+
+| Field | Type | What it holds |
+|---|---|---|
+| `schema` | string | `purlin-record/2` for this format version |
+| `schema_version` | integer | `2` for this format version |
+| `feature` | string | the spec this run observed |
+| `commit` | string | the full sha of the commit the run observed |
+| `timestamp` | string | ISO 8601 UTC with `Z`, matching the file name |
+| `runner` | string | `ci` or the developer's runner slug, matching the file name |
+| `os` | string or null | the operating system of this matrix job, or null |
+| `gate` | string | `passed`, `strong` or `signed`, the gate in force at the run |
+| `test_strength` | integer or null | of the deliberate breaks made to the code, the percentage the tests caught; null when no engine measured it, which is every run under `passed`, where the breaks do not run at all |
+| `scope_tree` | string | the git tree hash of the spec's `> Scope:` files, which is what tells a code change from a rule change |
+| `environment` | object | where the run happened, described below |
+| `proofs` | array | one entry per proof the run observed |
+
+A record may carry more than this. An audit run also writes the detail it
+gathered on the way: `features` (the per-rule result, tests and attachments),
+`plugins`, `missing`, `log` and `dirty`. Those are OPTIONAL and no reader
+depends on them, so a record written with the fields above alone is a complete
+record.
+
+The `environment` object, and every field in it, is OPTIONAL:
+
+| Field | Type | What it holds |
+|---|---|---|
+| `os` | string | `windows`, `macos` or `linux`, matching the file name's `<os>` |
+| `id` | string | a short name for the machine's shape, such as `darwin-arm64` |
+| `kind` | string | `ci`, `developer` or `local`, what the run called itself |
+| `job` | string or null | the CI job the run was part of, or null off CI |
+| `host` | string or null | the runner or machine name |
+| `engines` | array | the break engines the run used, empty when none measured |
+
+`kind` is what the run called itself and is never the source. The source comes
+from the commit, as the next section says: a record claiming `kind` `ci` that a
+person committed is a `developer` record.
+
+Each `proofs` entry:
+
+| Field | Type | What it holds |
+|---|---|---|
+| `id` | string | `PROOF-N` |
+| `rule` | string | the `RULE-N` the proof covers |
+| `status` | string | `pass`, `fail` or `skip` |
+| `tier` | string | `unit`, `integration`, `e2e` or `manual` |
+| `env` | string or null | the operating system the proof's `@env` tag named, or null |
+| `test_file` | string | the file holding the tagged test |
+| `test_name` | string | the test's name inside that file |
+
+## The source comes from git, not from the file
+
+A file can claim anything. What decides whether a record counts is the last
+commit that touched it. That answer is the record's **source**, and the passed
+cell carries it:
+
+| Source | What git shows |
+|---|---|
+| `ci` | the git host made the commit. On GitHub the committer is `GitHub <noreply@github.com>`, its web identity, and the author is `github-actions[bot]`, because a commit made through the Git Data API with the Actions token and no author or committer field is attributed that way; GitHub signs it with its own key. On Azure DevOps the committer is the build service and no signature exists, which is what Azure DevOps documents |
+| `developer` | a person committed it |
+| `local` | it is not committed at all |
+
+The identity decides and the signature confirms. `git log --format=%G?`
+prints `G` or `U` for a signature this machine checked, `B` for one that
+does not match the commit, and `N` when there is no signature at all,
+which is also what it prints when gpg is not installed. So `B` refuses the
+commit, `N` refuses it only when gpg is installed, and every other answer
+(`E`, `X`, `Y`, `R`: a key this machine does not currently hold) leaves the
+identity to decide. Requiring `G` would throw away every record CI wrote,
+because almost no checkout holds the git host's signing key.
+
+The gate decides which sources count. `passed` counts a `ci`, a `developer` or
+a `local` record. `strong` and `signed` count a `ci` record alone, which the
+git host's file-path rule on `.purlin/records/**` enforces on the other side.
+A record the gate does not count is still read: the passed cell names its
+source and says `<source> record does not count under <gate>`.
+
+## What the record commit carries
+
+An audit run's commit carries the records it wrote and, under `--ci`, the
+briefs the same run wrote under `.purlin/briefs/<feature>/`. Its subject is
+`purlin: record for <commit7>`. It carries no signature file: a signature is a
+named person's attestation, and CI writes none, ever.
+
+## Retention
+
+A feature keeps the newest three records per operating system. An audit run
+prunes the rest as it writes, so a matrix of three operating systems keeps nine
+records per feature and no more.
+
+A record any annotated `record/<name>` tag names in its message is kept for
+ever. `purlin:audit --tag <name>` writes such a tag; its message lists the
+record paths it vouches for, one per line, and retention reads those paths with
+`git for-each-ref --format='%(contents)' refs/tags/record/`.
+
+## Freshness
+
+A record carries `scope_tree`, the git tree hash of the spec's `> Scope:`
+files. That is what separates two kinds of change:
+
+- the code changed, the rule, proof and test text did not: the signature stands
+  and the passed cell reads `code changed` until CI runs again
+- the rule, proof or test text changed: the signature no longer binds the
+  hashes, the signed cell reads `stale`, and a person looks

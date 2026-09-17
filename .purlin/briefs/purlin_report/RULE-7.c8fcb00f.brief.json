@@ -1,0 +1,62 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-17T12:54:26Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "80425c4b84b11bc050e0a1c15d31185a6d38861d52f624bf099319b73d261fe5",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-7",
+      "text": "Open the board over `file://` with the solo, team and regulated fixture beside it in turn; verify the heading reads `<met> of <rules> rules meet the gate <gate>` and `<failing> failing` from that payload's summary, that the top bar reads `gate: ` with that payload's gate and a `Data:` age, that 3 tiles are on screen at `passed`, 4 at `strong` and 5 at `signed`, and that the spec names listed are exactly the payload's",
+      "tier": "e2e"
+    }
+  ],
+  "record": ".purlin/records/purlin_report/20260917T125351Z-df84acf-ci-windows.json",
+  "risk": "medium",
+  "rule": "RULE-7",
+  "rule_hash": "732b8dfb7651b0a66f13db14a98fb06de63dce9a5e201abc0a3e4da5f59684eb",
+  "rule_text": "The board heading states how many rules meet the gate out of how many there are, names that gate and states the failing count, the top bar states the gate and how old the data is, and every spec in the payload has a row",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "f7cfcc6036f5fc2c1d36dd5d98d277bc61a07a839cb3a643b8e437358a6481dd",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_board_renders_for_each_process(browser, tmp_path, process):\n    payload = payload_named(process)\n    summary = payload['summary']\n    page = open_board(browser, tmp_path, payload)\n    heading = page.inner_text('h1')\n    assert '%d of %d rules meet the gate %s' % (\n        summary['met'], summary['rules'], payload['gate']['gate']) in heading\n    assert '%d failing' % summary['failing'] in heading\n    assert len(page.query_selector_all('.tile')) == TILES[process]\n    assert 'gate: ' + payload['gate']['gate'] in page.inner_text('.topbar')\n    assert 'Data:' in page.inner_text('.topbar')\n    assert set(feature_names(page)) == set(\n        f['name'] for f in payload['features'])\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_the_board_renders_for_each_process[regulated]",
+      "proof": "PROOF-7",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_board_renders_for_each_process(browser, tmp_path, process):\n    payload = payload_named(process)\n    summary = payload['summary']\n    page = open_board(browser, tmp_path, payload)\n    heading = page.inner_text('h1')\n    assert '%d of %d rules meet the gate %s' % (\n        summary['met'], summary['rules'], payload['gate']['gate']) in heading\n    assert '%d failing' % summary['failing'] in heading\n    assert len(page.query_selector_all('.tile')) == TILES[process]\n    assert 'gate: ' + payload['gate']['gate'] in page.inner_text('.topbar')\n    assert 'Data:' in page.inner_text('.topbar')\n    assert set(feature_names(page)) == set(\n        f['name'] for f in payload['features'])\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_the_board_renders_for_each_process[solo]",
+      "proof": "PROOF-7",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_board_renders_for_each_process(browser, tmp_path, process):\n    payload = payload_named(process)\n    summary = payload['summary']\n    page = open_board(browser, tmp_path, payload)\n    heading = page.inner_text('h1')\n    assert '%d of %d rules meet the gate %s' % (\n        summary['met'], summary['rules'], payload['gate']['gate']) in heading\n    assert '%d failing' % summary['failing'] in heading\n    assert len(page.query_selector_all('.tile')) == TILES[process]\n    assert 'gate: ' + payload['gate']['gate'] in page.inner_text('.topbar')\n    assert 'Data:' in page.inner_text('.topbar')\n    assert set(feature_names(page)) == set(\n        f['name'] for f in payload['features'])\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_the_board_renders_for_each_process[team]",
+      "proof": "PROOF-7",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "c8fcb00f7d8e3603815e35edd14ccb8a5f76f3644dc5a475c1187c3336914f40"
+}

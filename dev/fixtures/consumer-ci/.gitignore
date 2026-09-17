@@ -1,0 +1,26 @@
+# Purlin runtime (generated, not committed)
+.purlin/runtime/
+
+# Purlin cache
+.purlin/cache/
+
+# Purlin plugin cache
+.purlin/plugins/__pycache__/
+
+# Per-user config overlay (machine-local overrides, never shared)
+.purlin/config.local.json
+
+# Dashboard HTML (copied by purlin:init and refreshed by purlin:init --update)
+/purlin-report.html
+
+# Dashboard focus stamp (regenerated beside the digest, never committed)
+.purlin/report-stamp.js
+
+# Dashboard data, regenerated locally, never committed
+.purlin/report-data.js
+
+# Where this machine keeps the installed plugin (read by .purlin/hooks/)
+.purlin/plugin-root
+
+# Plugin copies the update backed up before refreshing them
+.purlin/plugins/*.local-*.bak

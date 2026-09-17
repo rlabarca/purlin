@@ -1,0 +1,17 @@
+/* The deck is static. The dashboard animates only state changes and bar fills. */
+:root{
+  --duration-instant:80ms;/* @kind other */
+  --duration-fast:140ms;/* @kind other */
+  --duration-base:220ms;/* @kind other */
+  --duration-slow:420ms;/* @kind other */
+  --ease-standard:cubic-bezier(.2,0,0,1);/* @kind other */
+  --ease-out:cubic-bezier(0,0,0,1);/* @kind other */
+  --ease-in:cubic-bezier(.4,0,1,1);/* @kind other */
+
+  --hover-tint:rgba(228,221,212,.06);
+  --press-tint:rgba(9,41,54,.25);
+  --press-scale:.985;/* @kind other */
+}
+@media (prefers-reduced-motion:reduce){
+  :root{--duration-instant:0ms;/* @kind other */--duration-fast:0ms;/* @kind other */--duration-base:0ms;/* @kind other */--duration-slow:0ms/* @kind other */}
+}

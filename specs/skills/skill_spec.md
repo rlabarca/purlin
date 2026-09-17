@@ -1,28 +1,21 @@
 # Feature: skill_spec
 
+> Description: What `skills/spec/SKILL.md` must say. The spec skill turns a requirement in any
+>   form into rules and proofs, so its text decides how ids are allocated and how the
+>   skill hands over to the build.
 > Scope: skills/spec/SKILL.md
-> Stack: markdown (skill definition)
-> Description: The `purlin:spec` skill scaffolds or edits feature specs in 3-section format. It accepts any input — plain English, PRDs, customer feedback, code files, images — and extracts structured rules.
+> Stack: markdown, Claude Code skill definition
 
 ## Rules
 
-- RULE-1: Skill file has YAML frontmatter with `name` and `description` fields
-- RULE-2: Skill file contains a `## Usage` section documenting command syntax
-- RULE-3: The `name` field in frontmatter is `spec`, matching the directory name
-- RULE-4: Skill includes commit instructions or git operations for file modifications
-- RULE-5: Update workflow (Step 7) presents a delta report showing KEEPING/ADDING/UPDATING/REMOVING before applying changes
-- RULE-6: Skill includes mandatory tier tag review for proof descriptions
-- RULE-7: Spec skill has exit criteria requiring the spec file is committed and no uncommitted spec files remain before the skill can complete
-- RULE-8: Validate-Before-Commit includes an e2e proof-description check: `@e2e` proofs must describe an observable flow and must not name source files or internal functions, per `references/spec_quality_guide.md` ("E2E proof descriptions")
+- RULE-1: `skills/spec/SKILL.md` opens with a frontmatter block whose `name` is `spec` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:spec` [risk: medium] [origin: eng]
+- RULE-2: The skill allocates rule and proof ids against `origin/main` with the `ids.next_ids` helper under `${CLAUDE_PLUGIN_ROOT}/scripts/mcp`, never against the working tree [risk: high] [origin: eng]
+- RULE-3: The skill closes by offering the build in one fixed sentence, `Spec created: <name>. Build it now?`, with nothing printed after it [risk: medium] [origin: eng]
+- RULE-4: The whole of `skills/spec/SKILL.md` is at most 210 lines [risk: low] [origin: eng]
 
 ## Proof
 
-- PROOF-1 (RULE-1): Grep `skills/spec/SKILL.md` for YAML frontmatter delimiters (`---`); verify `name:` and `description:` fields exist
-- PROOF-2 (RULE-2): Grep `skills/spec/SKILL.md` for `## Usage`; verify the section exists
-- PROOF-3 (RULE-3): Extract `name:` from frontmatter; verify it equals `spec`
-- PROOF-4 (RULE-4): Grep `skills/spec/SKILL.md` for commit instructions (`git commit`, `commit the`, `create.*commit`); verify present
-- PROOF-5 (RULE-5): Grep `skills/spec/SKILL.md` for `KEEPING`, `ADDING`, `UPDATING`, and `REMOVING`; verify the delta report structure is present
-- PROOF-6 (RULE-6): Grep `skills/spec/SKILL.md` for tier review instructions and tier tag references (`@integration`/`@e2e`/unit tier); verify present
-- PROOF-7 (RULE-7): Grep `skills/spec/SKILL.md` for "Exit Criteria" section; verify it requires spec committed and no uncommitted spec files
-- PROOF-8 (RULE-7): Run purlin:spec via claude -p in a temp project; verify spec .md is committed, git status clean for specs/, and git log shows spec(<name>): commit @e2e
-- PROOF-9 (RULE-8): Grep `skills/spec/SKILL.md` Validate-Before-Commit for the `@e2e` observable-flow check and its pointer to `spec_quality_guide.md` "E2E proof descriptions"; verify present
+- PROOF-1 (RULE-1): Read `skills/spec/SKILL.md`; verify the file opens with `---`, that the frontmatter carries `name: spec` and a `description:` whose value is one non-empty line, and that `references/purlin_commands.md` contains the literal `purlin:spec`. Deleting the `name:` line fails naming the file
+- PROOF-2 (RULE-2): Read `skills/spec/SKILL.md`; verify it carries `origin/main`, `ids.next_ids` and `${CLAUDE_PLUGIN_ROOT}/scripts/mcp`, and that the sentence naming `origin/main` also names the working tree as what ids are not allocated against. Removing the `ids.next_ids` fence fails naming `ids.next_ids`
+- PROOF-3 (RULE-3): Read `skills/spec/SKILL.md` and split it on its `## ` headings; verify the last heading matches `next step` or `when you are done` case-insensitively and that the text under it carries the line `Spec created: <name>. Build it now?` on its own, inside a fenced block. Rewording the offer to `Spec written. Shall I build it?` fails, printing the closing section it read
+- PROOF-4 (RULE-4): Read `skills/spec/SKILL.md` and count its lines; verify the count is at most 210. Appending prose until the file passes 210 lines fails, and the failure reports the count it found beside the ceiling

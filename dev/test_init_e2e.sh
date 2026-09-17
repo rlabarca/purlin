@@ -1,1224 +1,475 @@
 #!/usr/bin/env bash
-# Tests for init_e2e — 33 proofs covering 31 rules.
-# Verifies that purlin:init's output works with ALL downstream Purlin tools.
-set -euo pipefail
+# End to end: a project set up by purlin:init, walked from the first spec to a
+# gate that lets a change merge.
+#
+# The walk is the one the plan traces. On each fixture:
+#
+#   1. purlin:init at gate passed
+#   2. a hand-written spec and one tagged test
+#   3. purlin_run.py --quick            the tests, in seconds
+#   4. purlin_run.py --record --commit  the record a developer commits
+#   5. gate_check.py --check            exits 0 under passed
+#   6. purlin:init --gate strong        raises the gate
+#   7. gate_check.py --check            exits 1: a developer record does not count
+#   8. a record and its briefs from --ci, committed under the build identity
+#   9. gate_check.py --check            exits 0: strong is met by that record
+#  10. purlin:init --gate signed        raises again
+#  11. gate_check.py --check            exits 1: no signer list
+#  12. the signer list, then the gate check exits 1 with no signature
+#  13. sign.py, signed by a throwaway key that exists only in the temp repo
+#  14. gate_check.py --check            exits 0
+#
+# Nothing here reaches a git host. The CI identity is a GIT_COMMITTER_NAME and
+# a signature on a local commit, which is what `record_label` reads, and both
+# signing keys are generated into the temp repository and deleted with it.
+#
+# Fixtures: python (always), typescript (when npm can install vitest, from its
+# cache or a registry), xunit (when dotnet resolves; init wiring only, because
+# the logger needs an assembly built by hand).
+set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REAL_PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-HOOK_SCRIPT="$REAL_PROJECT_ROOT/scripts/hooks/pre-push.sh"
-PRECOMMIT_HOOK_SCRIPT="$REAL_PROJECT_ROOT/scripts/hooks/pre-commit.sh"
-SERVER_PY="$REAL_PROJECT_ROOT/scripts/mcp/purlin_server.py"
-PYTEST_PLUGIN_SRC="$REAL_PROJECT_ROOT/scripts/proof/pytest_purlin.py"
-JEST_REPORTER_SRC="$REAL_PROJECT_ROOT/scripts/proof/jest_purlin.js"
-VITEST_REPORTER_SRC="$REAL_PROJECT_ROOT/scripts/proof/vitest_purlin.ts"
-SHELL_HARNESS_SRC="$REAL_PROJECT_ROOT/scripts/proof/shell_purlin.sh"
-REPORT_HTML_SRC="$REAL_PROJECT_ROOT/scripts/report/purlin-report.html"
-VERSION_FILE="$REAL_PROJECT_ROOT/VERSION"
+ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+SCAFFOLD="$ROOT/scripts/init/scaffold.py"
+RUN="$ROOT/scripts/run/purlin_run.py"
+GATE="$ROOT/scripts/ci/gate_check.py"
+SIGN="$ROOT/scripts/review/sign.py"
+export PURLIN_ROOT="$ROOT"
 
-# Load proof harness
-source "$REAL_PROJECT_ROOT/scripts/proof/shell_purlin.sh"
-
-echo "=== init_e2e tests ==="
-
-# --- Cleanup ---
-ALL_TMPDIRS=""
-cleanup_all() { for d in $ALL_TMPDIRS; do rm -rf "$d" 2>/dev/null; done; }
-trap cleanup_all EXIT
+CI_NAME='github-actions[bot]'
+CI_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
 
 PASS=0
 FAIL=0
+SKIP=0
+TMPDIRS=""
 
-# ==========================================================================
-# Helper: simulate purlin:init output
-# Args: tmpdir, framework ("pytest"|"jest"|"shell"|"pytest,jest"|"auto"),
-#        pre_push ("warn"|"strict"), report ("true"|"false")
-# ==========================================================================
-init_project() {
-  local tmpdir="$1"
-  local framework="${2:-auto}"
-  local pre_push="${3:-warn}"
-  local report="${4:-true}"
-  local digest="${5:-auto}"
+# The two rules this suite proves, counted apart from the run's own total:
+# GATE_FAIL is what RULE-36 reads, WIRE_FAIL what RULE-37 reads.
+GATE_FAIL=0
+WIRE_FAIL=0
+MARK=0
+mark() { MARK=$FAIL; }
+gate_since_mark() { GATE_FAIL=$((GATE_FAIL + FAIL - MARK)); }
+wire_since_mark() { WIRE_FAIL=$((WIRE_FAIL + FAIL - MARK)); }
 
-  local version
-  version=$(cat "$VERSION_FILE")
+cleanup() { for d in $TMPDIRS; do rm -rf "$d" 2>/dev/null; done; }
+trap cleanup EXIT
 
-  # Step 2: Create directory structure
-  mkdir -p "$tmpdir/.purlin/plugins"
-  mkdir -p "$tmpdir/specs/_anchors"
+# A temporary directory, on GNU and BSD alike.
+#
+# `mktemp -d -t <prefix>` is BSD only. GNU mktemp reads the same argument as a
+# template and refuses one with no X's in it, so on Linux the command fails and
+# the variable is left empty. An empty directory name is the dangerous case,
+# not a loud one: every path below would resolve against the working directory,
+# which is this repository, and the walk would re-initialise it, commit to it
+# and run its whole test suite. Both are avoided by writing the X's out and by
+# stopping here when there is still no directory.
+tmp_dir() {  # prefix
+  # `TMPDIR` ends with a slash on macOS and has none on Linux, and the name
+  # this returns is compared as a string further down, so the trailing slash
+  # goes before the template is built.
+  local base="${TMPDIR:-/tmp}"
+  base="${base%/}"
+  local d
+  d="$(mktemp -d "$base/$1.XXXXXXXX" 2>/dev/null)" || d=""
+  if [ -z "$d" ] || [ ! -d "$d" ]; then
+    echo "  FAIL no temporary directory for $1; the suite stops here." >&2
+    exit 1
+  fi
+  printf '%s\n' "$d"
+}
 
-  # Step 2: Write config.json
-  local report_py
-  [[ "$report" == "true" ]] && report_py="True" || report_py="False"
-  python3 -c "
+pass() { PASS=$((PASS + 1)); echo "  ok   $1"; }
+note() { SKIP=$((SKIP + 1)); echo "  skip $1"; }
+bad() {
+  FAIL=$((FAIL + 1))
+  echo "  FAIL $1"
+  [ -n "${2:-}" ] && echo "$2" | sed 's/^/       /'
+  return 0
+}
+
+# --- assertions -----------------------------------------------------------
+
+expect_exit() {  # name expected command...
+  local name="$1" want="$2"
+  shift 2
+  local out
+  out="$("$@" 2>&1)"
+  local got=$?
+  if [ "$got" = "$want" ]; then pass "$name"; else
+    bad "$name (exit $got, wanted $want)" "$out"
+  fi
+}
+
+expect_file() {  # name path
+  if [ -e "$2" ]; then pass "$1"; else bad "$1 (no $2)"; fi
+}
+
+expect_absent() {  # name path
+  if [ ! -e "$2" ]; then pass "$1"; else bad "$1 ($2 is there)"; fi
+}
+
+expect_in() {  # name needle file
+  if grep -q -- "$2" "$3" 2>/dev/null; then pass "$1"; else
+    bad "$1 (no \"$2\" in $3)" "$(tail -5 "$3" 2>/dev/null)"
+  fi
+}
+
+# --- the project ----------------------------------------------------------
+
+new_repo() {  # dir
+  mkdir -p "$1"
+  git -C "$1" init -q .
+  git -C "$1" symbolic-ref HEAD refs/heads/main
+  git -C "$1" config user.email dev@example.com
+  git -C "$1" config user.name Dev
+  git -C "$1" config commit.gpgsign false
+}
+
+init_at() {  # dir gate [args...]
+  local dir="$1" gate="$2"
+  shift 2
+  python3 "$SCAFFOLD" --project-root "$dir" --gate "$gate" --yes "$@" \
+    > "$dir/.purlin-init.log" 2>&1
+}
+
+commit_all() {  # dir message
+  git -C "$1" add -A
+  git -C "$1" commit -q -m "$2"
+}
+
+commit_as_ci() {  # dir
+  # What CI's commit looks like to `record_label`: the build identity as the
+  # committer, and a signature, because CI writes through the git host's API
+  # and the git host signs what it writes. An unsigned commit claiming that
+  # identity is a person's and the reader says so, so a fixture that left the
+  # signature out would be refused on any machine that can check one. Nothing
+  # here talks to a git host; the key is generated into the temp repository
+  # and the label is read from git.
+  local dir="$1" key="$1/.git/ci-signing-key"
+  if [ ! -f "$key.pub" ]; then
+    ssh-keygen -q -t ed25519 -N '' -C "$CI_EMAIL" -f "$key"
+    printf '%s %s\n' "$CI_EMAIL" "$(cut -d' ' -f1,2 "$key.pub")" \
+      > "$dir/.git/ci-allowed-signers"
+    git -C "$dir" config gpg.ssh.allowedSignersFile "$dir/.git/ci-allowed-signers"
+  fi
+  git -C "$dir" add -A
+  GIT_COMMITTER_NAME="$CI_NAME" GIT_COMMITTER_EMAIL="$CI_EMAIL" \
+    git -C "$dir" -c gpg.format=ssh -c "user.signingkey=$key.pub" \
+      commit -q -S -m "purlin: record for $(git -C "$dir" rev-parse --short=7 HEAD)"
+}
+
+signing_key() {  # dir email
+  local dir="$1" email="$2"
+  ssh-keygen -q -t ed25519 -N '' -C "$email" -f "$dir/.git/signing-key"
+  printf '%s %s\n' "$email" "$(cat "$dir/.git/signing-key.pub")" \
+    > "$dir/.git/allowed-signers"
+  git -C "$dir" config user.email "$email"
+  git -C "$dir" config user.name Signer
+  git -C "$dir" config gpg.format ssh
+  git -C "$dir" config user.signingkey "$dir/.git/signing-key.pub"
+  git -C "$dir" config commit.gpgsign true
+  git -C "$dir" config gpg.ssh.allowedSignersFile "$dir/.git/allowed-signers"
+}
+
+set_signers() {  # dir email
+  python3 - "$1" "$2" <<'PY'
 import json
-config = {
-    'version': '$version',
-    'test_framework': '$framework',
-    'spec_dir': 'specs',
-    'pre_push': '$pre_push',
-    'report': $report_py,
-    'digest': '$digest'
+import os
+import sys
+path = os.path.join(sys.argv[1], '.purlin', 'config.json')
+with open(path, encoding='utf-8') as handle:
+    config = json.load(handle)
+config['signers'] = [sys.argv[2]]
+with open(path, 'w', encoding='utf-8') as handle:
+    json.dump(config, handle, indent=2)
+    handle.write('\n')
+PY
 }
-with open('$tmpdir/.purlin/config.json', 'w') as f:
-    json.dump(config, f, indent=2)
-    f.write('\n')
-"
 
-  # Step 4: Scaffold plugins based on framework
-  local IFS=','
-  for fw in $framework; do
-    case "$fw" in
-      pytest) cp "$PYTEST_PLUGIN_SRC" "$tmpdir/.purlin/plugins/pytest_purlin.py" ;;
-      jest)   cp "$JEST_REPORTER_SRC" "$tmpdir/.purlin/plugins/jest_purlin.js" ;;
-      vitest) cp "$VITEST_REPORTER_SRC" "$tmpdir/.purlin/plugins/vitest_purlin.ts" ;;
-      shell)  cp "$SHELL_HARNESS_SRC" "$tmpdir/.purlin/plugins/purlin-proof.sh" ;;
-    esac
-  done
+# `ci`, `developer` or `local` for the newest record, read the way the reader
+# reads it: from the last commit that touched the file.
+record_label() {  # dir
+  python3 - "$1" <<'PY'
+import os
+import sys
+sys.path.insert(0, os.path.join(os.environ['PURLIN_ROOT'], 'scripts', 'mcp'))
+from purlin import records
+loaded = records.load_records(sys.argv[1])
+for by_os in loaded.values():
+    for record in by_os.values():
+        print(record.get('label'))
+        sys.exit(0)
+print('none')
+PY
+}
 
-  # Step 5: Update .gitignore (with duplicate prevention)
-  # NOTE: .purlin/report-data.js is NOT gitignored — it is the project digest
-  local gitignore="$tmpdir/.gitignore"
-  local -a entries=(
-    "# Purlin runtime (not committed)"
-    ".purlin/runtime/"
-    ".purlin/plugins/__pycache__/"
-    ".purlin/cache/"
-    ""
-    "# Dashboard HTML (symlinked from framework)"
-    "/purlin-report.html"
-  )
-  for entry in "${entries[@]}"; do
-    if [[ -z "$entry" ]]; then
-      echo "" >> "$gitignore"
-    elif ! grep -qF "$entry" "$gitignore" 2>/dev/null; then
-      echo "$entry" >> "$gitignore"
-    fi
-  done
+spec_file() {  # dir feature scope
+  mkdir -p "$1/specs/core"
+  cat > "$1/specs/core/$2.md" <<EOF
+# Feature: $2
 
-  # Step 5b: Dashboard report
-  if [[ "$report" == "true" ]]; then
-    cp "$REPORT_HTML_SRC" "$tmpdir/purlin-report.html"
+> Scope: $3
+> Description: One rule, tagged medium risk: the machine settles it at strong,
+>   and the signed gate asks a person because sign_at is medium.
+
+## Rules
+
+- RULE-1: \`greet(name)\` returns \`Hello, <name>!\` [risk: medium] [origin: eng]
+
+## Proof
+
+- PROOF-1 (RULE-1): Call \`greet("Ada")\` and verify it returns exactly \`Hello, Ada!\` @unit
+EOF
+}
+
+# --- the walk -------------------------------------------------------------
+#
+# Everything below is the same for every language: the fixture builder leaves a
+# project with a spec, a tagged test and a plugin, and this walks the gates.
+
+gate_walk() {  # dir language
+  local dir="$1" language="$2"
+
+  expect_exit "$language: quick run passes" 0 \
+    python3 "$RUN" --all --quick --project-root "$dir"
+  expect_exit "$language: the audit writes and commits the record" 0 \
+    python3 "$RUN" --all --record --commit --project-root "$dir"
+  expect_file "$language: the record is in the tree" \
+    "$(ls -d "$dir"/.purlin/records/greeting 2>/dev/null)"
+  expect_exit "$language: passed is met by the developer's record" 0 \
+    python3 "$GATE" --check --project-root "$dir"
+
+  init_at "$dir" strong
+  expect_in "$language: raising to strong writes the workflow" \
+    'wrote .github/workflows/purlin.yml' "$dir/.purlin-init.log"
+  expect_exit "$language: strong refuses a developer record" 1 \
+    python3 "$GATE" --check --project-root "$dir"
+
+  # A record's file name carries the second it was written, and the reader
+  # keeps the newest per operating system. Two records in the same second
+  # leave which one is newest to the file name, so the walk waits a second to
+  # make CI's record unambiguously the later one. `--ci` is what writes the
+  # briefs beside the record; the commit it would make goes through the git
+  # host's API, which no temp repository has, so the walk commits them here
+  # under the build identity instead.
+  sleep 1
+  python3 "$RUN" --all --record --ci --project-root "$dir" \
+    > "$dir/.purlin-ci.log" 2>&1
+  commit_as_ci "$dir"
+  if [ "$(record_label "$dir")" = "ci" ]; then
+    pass "$language: a record the build identity committed is labelled ci"
+  else
+    bad "$language: a record the build identity committed is labelled ci" \
+      "$(record_label "$dir")"
   fi
+  # CI commits its record on top of the commit it observed, so the record is
+  # never at HEAD. What makes it count is its `scope_tree`: the scoped files
+  # still hash to what the run wrote down, so the strong cell is met.
+  expect_exit "$language: strong is met by a record CI committed" 0 \
+    python3 "$GATE" --check --project-root "$dir"
 
-  # Step 7: Install pre-push hook
-  if [[ -d "$tmpdir/.git" ]]; then
-    mkdir -p "$tmpdir/.git/hooks"
-    if [[ ! -f "$tmpdir/.git/hooks/pre-push" ]]; then
-      cp "$HOOK_SCRIPT" "$tmpdir/.git/hooks/pre-push"
-      chmod +x "$tmpdir/.git/hooks/pre-push"
-    elif ! grep -q "purlin" "$tmpdir/.git/hooks/pre-push" 2>/dev/null; then
-      : # Existing non-purlin hook: do not overwrite
-    fi
+  init_at "$dir" signed
+  commit_all "$dir" "raise the gate to signed"
+  expect_exit "$language: signed refuses an empty signer list" 1 \
+    python3 "$GATE" --check --project-root "$dir"
+  python3 "$GATE" --check --project-root "$dir" > "$dir/.purlin-gate.log" 2>&1
+  expect_in "$language: it says which command writes the list" \
+    'purlin:init --gate signed' "$dir/.purlin-gate.log"
 
-    # Step 7a: Install pre-commit hook (project digest)
-    if [[ ! -f "$tmpdir/.git/hooks/pre-commit" ]]; then
-      cp "$PRECOMMIT_HOOK_SCRIPT" "$tmpdir/.git/hooks/pre-commit"
-      chmod +x "$tmpdir/.git/hooks/pre-commit"
-    elif ! grep -q "purlin" "$tmpdir/.git/hooks/pre-commit" 2>/dev/null; then
-      : # Existing non-purlin hook: do not overwrite
-    fi
+  set_signers "$dir" jane@acme.com
+  commit_all "$dir" "name the signers"
+  expect_exit "$language: signed refuses a rule at sign_at with no signature" 1 \
+    python3 "$GATE" --check --project-root "$dir"
+
+  signing_key "$dir" jane@acme.com
+  expect_exit "$language: the signature is written in a signed commit" 0 \
+    python3 "$SIGN" greeting RULE-1 --project-root "$dir"
+  if [ "$(git -C "$dir" log -1 --format=%G\?)" = "G" ]; then
+    pass "$language: the signing commit is signed"
+  else
+    bad "$language: the signing commit is signed" \
+      "$(git -C "$dir" log -1 --format='%G? %an')"
   fi
-
-  # Copy MCP server for sync_status to work
-  mkdir -p "$tmpdir/scripts/mcp"
-  cp "$REAL_PROJECT_ROOT/scripts/mcp/purlin_server.py" "$tmpdir/scripts/mcp/"
-  cp "$REAL_PROJECT_ROOT/scripts/mcp/config_engine.py" "$tmpdir/scripts/mcp/"
-  cp "$REAL_PROJECT_ROOT/scripts/mcp/__init__.py" "$tmpdir/scripts/mcp/" 2>/dev/null || true
-
-  # Initialize git repo if not already
-  if [[ ! -d "$tmpdir/.git" ]]; then
-    (cd "$tmpdir" && git init -q && git add -A && git commit -q -m "init" --allow-empty)
-  fi
+  expect_exit "$language: signed is met" 0 \
+    python3 "$GATE" --check --project-root "$dir"
 }
 
-# --- Helper: create a spec file ---
-create_spec() {
-  local tmpdir="$1" feature="$2" subdir="${3:-integration}" num_rules="${4:-2}"
-  mkdir -p "$tmpdir/specs/$subdir"
-  {
-    echo "# Feature: $feature"
-    echo ""
-    echo "## What it does"
-    echo ""
-    echo "Test feature for init_e2e."
-    echo ""
-    echo "## Rules"
-    echo ""
-    for i in $(seq 1 "$num_rules"); do
-      echo "- RULE-$i: Test rule $i must hold"
-    done
-    echo ""
-    echo "## Proof"
-    echo ""
-    for i in $(seq 1 "$num_rules"); do
-      echo "- PROOF-$i (RULE-$i): Verify rule $i holds"
-    done
-  } > "$tmpdir/specs/$subdir/$feature.md"
-}
+# --- python ---------------------------------------------------------------
 
-# --- Helper: create a proof file ---
-create_proof_file() {
-  local tmpdir="$1"
-  local feature="$2"
-  local subdir="$3"
-  shift 3
+walk_python() {
+  local dir
+  dir="$(tmp_dir purlin-e2e-py)" || exit 1
+  TMPDIRS="$TMPDIRS $dir"
+  echo "--- python ---"
+  new_repo "$dir"
+  printf '[tool.pytest.ini_options]\n' > "$dir/pyproject.toml"
+  printf 'def greet(name):\n    return "Hello, %%s!" %% name\n' > "$dir/greeting.py"
 
-  local proofs="["
-  local first=true
-  for entry in "$@"; do
-    local proof_id rule_id status
-    proof_id=$(echo "$entry" | cut -d'|' -f1)
-    rule_id=$(echo "$entry" | cut -d'|' -f2)
-    status=$(echo "$entry" | cut -d'|' -f3)
-    if [ "$first" = true ]; then
-      first=false
-    else
-      proofs="$proofs,"
-    fi
-    proofs="$proofs
-    {
-      \"feature\": \"$feature\",
-      \"id\": \"$proof_id\",
-      \"rule\": \"$rule_id\",
-      \"test_file\": \"dev/test.sh\",
-      \"test_name\": \"test $proof_id\",
-      \"status\": \"$status\",
-      \"tier\": \"unit\"
-    }"
-  done
-  proofs="$proofs
-  ]"
+  init_at "$dir" passed
+  mark
+  expect_file "python: the config is written" "$dir/.purlin/config.json"
+  expect_file "python: the plugin is copied" \
+    "$dir/.purlin/plugins/pytest_purlin.py"
+  expect_file "python: the runner is wired" "$dir/conftest.py"
+  expect_absent "python: no workflow under passed" \
+    "$dir/.github/workflows/purlin.yml"
+  wire_since_mark
 
-  echo "{\"tier\": \"unit\", \"proofs\": $proofs}" > "$tmpdir/specs/$subdir/$feature.proofs-unit.json"
-}
-
-# --- Helper: run sync_status on a temp project ---
-run_sync_status() {
-  local tmpdir="$1"
-  python3 -c "
-import sys, os
-sys.path.insert(0, os.path.join('$tmpdir', 'scripts', 'mcp'))
-from purlin_server import sync_status
-print(sync_status('$tmpdir'))
-" 2>/dev/null
-}
-
-# --- Helper: run pre-push hook ---
-run_hook() {
-  local tmpdir="$1"
-  (cd "$tmpdir" && bash "$HOOK_SCRIPT" 2>&1) || return $?
-}
-
-
-# ==========================================================================
-# PROOF-1 (RULE-1): Directory structure exists
-# ==========================================================================
-echo "--- PROOF-1: Directory structure ---"
-TMP1=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP1"
-init_project "$TMP1" "shell" "warn" "true"
-
-if [[ -d "$TMP1/.purlin" ]] && [[ -d "$TMP1/.purlin/plugins" ]] && \
-   [[ -d "$TMP1/specs" ]] && [[ -d "$TMP1/specs/_anchors" ]]; then
-  echo "  PASS: all directories exist"
-  purlin_proof "skill_init" "PROOF-8" "RULE-8" pass "all init directories exist"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: missing directories"
-  purlin_proof "skill_init" "PROOF-8" "RULE-8" fail "missing directories"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-2 (RULE-2): config.json has all required fields
-# ==========================================================================
-echo "--- PROOF-2: config.json required fields ---"
-TMP2=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP2"
-init_project "$TMP2" "shell" "warn" "true"
-
-if python3 -c "
-import json, sys
-d = json.load(open('$TMP2/.purlin/config.json'))
-required = ['version', 'test_framework', 'spec_dir', 'pre_push', 'report', 'digest']
-missing = [k for k in required if k not in d]
-if missing:
-    print('Missing:', missing, file=sys.stderr)
-    sys.exit(1)
-" 2>/dev/null; then
-  echo "  PASS: all 6 required fields present"
-  purlin_proof "skill_init" "PROOF-9" "RULE-9" pass "config.json has all required fields"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: missing fields in config.json"
-  purlin_proof "skill_init" "PROOF-9" "RULE-9" fail "missing fields in config.json"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-3 (RULE-3): version matches VERSION file
-# ==========================================================================
-echo "--- PROOF-3: version matches VERSION ---"
-TMP3=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP3"
-init_project "$TMP3" "shell" "warn" "true"
-
-FILE_VERSION=$(cat "$VERSION_FILE" | tr -d '[:space:]')
-CONFIG_VERSION=$(python3 -c "import json; print(json.load(open('$TMP3/.purlin/config.json'))['version'])" 2>/dev/null | tr -d '[:space:]')
-
-if [[ "$FILE_VERSION" == "$CONFIG_VERSION" ]]; then
-  echo "  PASS: version=$FILE_VERSION matches"
-  purlin_proof "skill_init" "PROOF-10" "RULE-10" pass "config version matches VERSION file"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: VERSION=$FILE_VERSION config=$CONFIG_VERSION"
-  purlin_proof "skill_init" "PROOF-10" "RULE-10" fail "config version mismatch"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-4 (RULE-4): Default values
-# ==========================================================================
-echo "--- PROOF-4: Default config values ---"
-TMP4=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP4"
-init_project "$TMP4" "auto" "warn" "true"
-
-if python3 -c "
-import json, sys
-d = json.load(open('$TMP4/.purlin/config.json'))
-assert d['test_framework'] == 'auto', f'test_framework={d[\"test_framework\"]}'
-assert d['spec_dir'] == 'specs', f'spec_dir={d[\"spec_dir\"]}'
-assert d['pre_push'] == 'warn', f'pre_push={d[\"pre_push\"]}'
-assert d['report'] == True, f'report={d[\"report\"]}'
-" 2>/dev/null; then
-  echo "  PASS: defaults correct"
-  purlin_proof "skill_init" "PROOF-11" "RULE-11" pass "default config values correct"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: incorrect defaults"
-  purlin_proof "skill_init" "PROOF-11" "RULE-11" fail "incorrect defaults"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-5 (RULE-5): conftest.py → pytest auto-detection
-# ==========================================================================
-echo "--- PROOF-5: conftest.py → pytest ---"
-TMP5=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP5"
-touch "$TMP5/conftest.py"
-init_project "$TMP5" "auto" "warn" "true"
-create_spec "$TMP5" "test_feature" "hooks" 2
-create_proof_file "$TMP5" "test_feature" "hooks" "PROOF-1|RULE-1|pass" "PROOF-2|RULE-2|pass"
-(cd "$TMP5" && git add -A && git commit -q -m "add spec")
-
-output5=$(run_hook "$TMP5" 2>&1) || true
-if echo "$output5" | grep -q "(pytest)"; then
-  echo "  PASS: auto-detection selects pytest"
-  purlin_proof "skill_init" "PROOF-12" "RULE-12" pass "conftest.py triggers pytest detection"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: expected (pytest) in output"
-  echo "  Output: $output5"
-  purlin_proof "skill_init" "PROOF-12" "RULE-12" fail "conftest.py did not trigger pytest"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-6 (RULE-6): pyproject.toml [tool.pytest] → pytest
-# ==========================================================================
-echo "--- PROOF-6: pyproject.toml → pytest ---"
-TMP6=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP6"
-printf '[tool.pytest]\nminversion = "7.0"\n' > "$TMP6/pyproject.toml"
-init_project "$TMP6" "auto" "warn" "true"
-create_spec "$TMP6" "test_feature" "hooks" 2
-create_proof_file "$TMP6" "test_feature" "hooks" "PROOF-1|RULE-1|pass" "PROOF-2|RULE-2|pass"
-(cd "$TMP6" && git add -A && git commit -q -m "add spec")
-
-output6=$(run_hook "$TMP6" 2>&1) || true
-if echo "$output6" | grep -q "(pytest)"; then
-  echo "  PASS: pyproject.toml triggers pytest"
-  purlin_proof "skill_init" "PROOF-13" "RULE-13" pass "pyproject.toml [tool.pytest] triggers pytest"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: expected (pytest) in output"
-  echo "  Output: $output6"
-  purlin_proof "skill_init" "PROOF-13" "RULE-13" fail "pyproject.toml did not trigger pytest"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-7 (RULE-7): package.json with jest → jest
-# ==========================================================================
-echo "--- PROOF-7: package.json jest → jest ---"
-TMP7=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP7"
-echo '{"devDependencies":{"jest":"^29.0.0"}}' > "$TMP7/package.json"
-init_project "$TMP7" "auto" "warn" "true"
-create_spec "$TMP7" "test_feature" "hooks" 2
-create_proof_file "$TMP7" "test_feature" "hooks" "PROOF-1|RULE-1|pass" "PROOF-2|RULE-2|pass"
-(cd "$TMP7" && git add -A && git commit -q -m "add spec")
-
-output7=$(run_hook "$TMP7" 2>&1) || true
-if echo "$output7" | grep -q "(jest)"; then
-  echo "  PASS: package.json jest triggers jest"
-  purlin_proof "skill_init" "PROOF-14" "RULE-14" pass "package.json jest triggers jest detection"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: expected (jest) in output"
-  echo "  Output: $output7"
-  purlin_proof "skill_init" "PROOF-14" "RULE-14" fail "package.json jest did not trigger jest"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-15 (RULE-15): vitest → native vitest_purlin.ts reporter scaffolded
-# ==========================================================================
-echo "--- PROOF-15: vitest → vitest_purlin.ts ---"
-TMP8=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP8"
-echo '{"devDependencies":{"vitest":"^2.0.0"}}' > "$TMP8/package.json"
-init_project "$TMP8" "vitest" "warn" "true"
-
-if [[ -f "$TMP8/.purlin/plugins/vitest_purlin.ts" ]]; then
-  echo "  PASS: vitest project gets vitest_purlin.ts"
-  purlin_proof "skill_init" "PROOF-15" "RULE-15" pass "vitest maps to native vitest_purlin.ts"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: vitest_purlin.ts not scaffolded"
-  purlin_proof "skill_init" "PROOF-15" "RULE-15" fail "vitest_purlin.ts not scaffolded for vitest"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-9 (RULE-9): Multi-framework — both plugins scaffolded
-# ==========================================================================
-echo "--- PROOF-9: Multi-framework ---"
-TMP9=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP9"
-touch "$TMP9/conftest.py"
-echo '{"devDependencies":{"jest":"^29.0.0"}}' > "$TMP9/package.json"
-init_project "$TMP9" "pytest,jest" "warn" "true"
-
-p9_pytest=false; p9_jest=false; p9_config=false
-[[ -f "$TMP9/.purlin/plugins/pytest_purlin.py" ]] && p9_pytest=true
-[[ -f "$TMP9/.purlin/plugins/jest_purlin.js" ]] && p9_jest=true
-cfg_fw=$(python3 -c "import json; print(json.load(open('$TMP9/.purlin/config.json'))['test_framework'])" 2>/dev/null)
-[[ "$cfg_fw" == "pytest,jest" ]] && p9_config=true
-
-if $p9_pytest && $p9_jest && $p9_config; then
-  echo "  PASS: both plugins scaffolded, config=pytest,jest"
-  purlin_proof "skill_init" "PROOF-16" "RULE-16" pass "multi-framework scaffolding correct"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: pytest=$p9_pytest jest=$p9_jest config=$cfg_fw"
-  purlin_proof "skill_init" "PROOF-16" "RULE-16" fail "multi-framework scaffolding failed"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-10 (RULE-10): No indicators → shell fallback
-# ==========================================================================
-echo "--- PROOF-10: Shell fallback ---"
-TMP10=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP10"
-init_project "$TMP10" "shell" "warn" "true"
-
-if [[ -f "$TMP10/.purlin/plugins/purlin-proof.sh" ]]; then
-  echo "  PASS: shell plugin scaffolded"
-  purlin_proof "skill_init" "PROOF-17" "RULE-17" pass "shell fallback scaffolds purlin-proof.sh"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: purlin-proof.sh not found"
-  purlin_proof "skill_init" "PROOF-17" "RULE-17" fail "shell fallback missing"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-11 (RULE-11): pytest plugin byte-identical to source
-# ==========================================================================
-echo "--- PROOF-11: pytest plugin identical ---"
-TMP11=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP11"
-init_project "$TMP11" "pytest" "warn" "true"
-
-if diff -q "$TMP11/.purlin/plugins/pytest_purlin.py" "$PYTEST_PLUGIN_SRC" >/dev/null 2>&1; then
-  echo "  PASS: pytest_purlin.py identical to source"
-  purlin_proof "skill_init" "PROOF-18" "RULE-18" pass "pytest plugin byte-identical"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: pytest_purlin.py differs from source"
-  purlin_proof "skill_init" "PROOF-18" "RULE-18" fail "pytest plugin differs"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-12 (RULE-12): jest reporter byte-identical to source
-# ==========================================================================
-echo "--- PROOF-12: jest reporter identical ---"
-TMP12=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP12"
-init_project "$TMP12" "jest" "warn" "true"
-
-if diff -q "$TMP12/.purlin/plugins/jest_purlin.js" "$JEST_REPORTER_SRC" >/dev/null 2>&1; then
-  echo "  PASS: jest_purlin.js identical to source"
-  purlin_proof "skill_init" "PROOF-19" "RULE-19" pass "jest reporter byte-identical"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: jest_purlin.js differs from source"
-  purlin_proof "skill_init" "PROOF-19" "RULE-19" fail "jest reporter differs"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-49 (RULE-47): vitest reporter byte-identical to source
-# ==========================================================================
-echo "--- PROOF-49: vitest reporter identical ---"
-TMP12B=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP12B"
-init_project "$TMP12B" "vitest" "warn" "true"
-
-if diff -q "$TMP12B/.purlin/plugins/vitest_purlin.ts" "$VITEST_REPORTER_SRC" >/dev/null 2>&1; then
-  echo "  PASS: vitest_purlin.ts identical to source"
-  purlin_proof "skill_init" "PROOF-49" "RULE-47" pass "vitest reporter byte-identical"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: vitest_purlin.ts differs from source"
-  purlin_proof "skill_init" "PROOF-49" "RULE-47" fail "vitest reporter differs"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-13 (RULE-13): shell harness byte-identical to source
-# ==========================================================================
-echo "--- PROOF-13: shell harness identical ---"
-TMP13=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP13"
-init_project "$TMP13" "shell" "warn" "true"
-
-if diff -q "$TMP13/.purlin/plugins/purlin-proof.sh" "$SHELL_HARNESS_SRC" >/dev/null 2>&1; then
-  echo "  PASS: purlin-proof.sh identical to source"
-  purlin_proof "skill_init" "PROOF-20" "RULE-20" pass "shell harness byte-identical"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: purlin-proof.sh differs from source"
-  purlin_proof "skill_init" "PROOF-20" "RULE-20" fail "shell harness differs"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-14 (RULE-14): Scaffolded pytest plugin produces valid proofs
-# ==========================================================================
-echo "--- PROOF-14: pytest plugin integration ---"
-TMP14=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP14"
-init_project "$TMP14" "pytest" "warn" "true"
-create_spec "$TMP14" "login" "auth" 2
-
-# Create a test file with proof markers
-cat > "$TMP14/test_login.py" << 'PYTEST_TEST'
+  spec_file "$dir" greeting greeting.py
+  mkdir -p "$dir/tests"
+  cat > "$dir/tests/test_greeting.py" <<'EOF'
 import pytest
 
-@pytest.mark.proof("login", "PROOF-1", "RULE-1")
-def test_login_valid():
-    assert True
+from greeting import greet
 
-@pytest.mark.proof("login", "PROOF-2", "RULE-2")
-def test_login_invalid():
-    assert True
-PYTEST_TEST
 
-# Run pytest using the scaffolded plugin via -p flag
-p14_result="fail"
-if (cd "$TMP14" && python3 -m pytest test_login.py -p pytest_purlin --override-ini="pythonpath=$TMP14/.purlin/plugins" -q --no-header --tb=no 2>/dev/null); then
-  # Verify proof file was created
-  if [[ -f "$TMP14/specs/auth/login.proofs-unit.json" ]]; then
-    count=$(python3 -c "import json; d=json.load(open('$TMP14/specs/auth/login.proofs-unit.json')); print(len([p for p in d['proofs'] if p['status']=='pass']))" 2>/dev/null)
-    if [[ "$count" == "2" ]]; then
-      p14_result="pass"
-    fi
+@pytest.mark.proof("greeting", "PROOF-1", "RULE-1")
+def test_greet():
+    assert greet("Ada") == "Hello, Ada!"
+EOF
+  commit_all "$dir" "the first spec and its test"
+  mark
+  gate_walk "$dir" python
+  gate_since_mark
+}
+
+# --- typescript -----------------------------------------------------------
+
+walk_typescript() {
+  if ! command -v npm >/dev/null 2>&1; then
+    note "typescript: npm does not resolve on this host"
+    return 0
   fi
-fi
+  local dir
+  dir="$(tmp_dir purlin-e2e-ts)" || exit 1
+  TMPDIRS="$TMPDIRS $dir"
+  echo "--- typescript ---"
+  new_repo "$dir"
+  printf '{"name":"demo","private":true,"devDependencies":{"vitest":"^4.0.0"}}\n' \
+    > "$dir/package.json"
+  printf 'export function greet(name: string) {\n  return `Hello, ${name}!`;\n}\n' \
+    > "$dir/greeting.ts"
+  # The reporter loads from the project's own vitest, so the runner has to be
+  # installed. A host with neither the package cached nor a way to fetch it
+  # skips this fixture rather than reporting a failure that is about the host.
+  if ! (cd "$dir" && npm install --prefer-offline --no-fund \
+        --loglevel=error >/dev/null 2>&1); then
+    note "typescript: vitest could not be installed on this host"
+    return 0
+  fi
 
-if [[ "$p14_result" == "pass" ]]; then
-  echo "  PASS: pytest plugin emitted 2 passing proofs"
-  purlin_proof "skill_init" "PROOF-21" "RULE-21" pass "scaffolded pytest plugin produces valid proofs"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: pytest plugin did not produce expected proofs"
-  purlin_proof "skill_init" "PROOF-21" "RULE-21" fail "pytest plugin proof emission failed"
-  FAIL=$((FAIL + 1))
-fi
+  init_at "$dir" passed
+  mark
+  expect_file "typescript: the plugin is copied" \
+    "$dir/.purlin/plugins/vitest_purlin.ts"
+  expect_file "typescript: the runner is wired" "$dir/vitest.config.ts"
+  wire_since_mark
 
-# ==========================================================================
-# PROOF-15 (RULE-15): Scaffolded jest reporter produces valid proofs
-# ==========================================================================
-echo "--- PROOF-15: jest reporter integration ---"
-if command -v node >/dev/null 2>&1; then
-  TMP15=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP15"
-  init_project "$TMP15" "jest" "warn" "true"
-  create_spec "$TMP15" "weather" "api" 1
+  spec_file "$dir" greeting greeting.ts
+  mkdir -p "$dir/tests"
+  cat > "$dir/tests/greeting.test.ts" <<'EOF'
+import { expect, test } from 'vitest';
 
-  # Use the scaffolded reporter (from .purlin/plugins/)
-  SCAFFOLDED_REPORTER="$TMP15/.purlin/plugins/jest_purlin.js"
+import { greet } from '../greeting';
 
-  p15_result="fail"
-  if node -e "
-const Module = require('module');
-const fs = require('fs');
-const origLoad = Module._load;
-Module._load = function(request, parent, isMain) {
-  if (request === 'glob') {
-    return {
-      globSync: function(pattern) {
-        const results = [];
-        function walk(dir) {
-          for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-            const full = require('path').join(dir, entry.name);
-            if (entry.isDirectory()) walk(full);
-            else if (entry.name.endsWith('.md')) results.push(full);
-          }
-        }
-        const base = pattern.split('*')[0].replace(/\/$/, '') || '.';
-        if (fs.existsSync(base)) walk(base);
-        return results;
-      }
-    };
-  }
-  return origLoad.apply(this, arguments);
-};
-
-const Reporter = require('$SCAFFOLDED_REPORTER');
-const r = new Reporter({ rootDir: '$TMP15' }, {});
-
-r.onTestResult(null, {
-  testFilePath: '$TMP15/tests/test_weather.js',
-  testResults: [{
-    title: 'fetches weather [proof:weather:PROOF-1:RULE-1]',
-    status: 'passed'
-  }]
+test('[proof:greeting:PROOF-1:RULE-1:unit] greets by name', () => {
+  expect(greet('Ada')).toBe('Hello, Ada!');
 });
+EOF
+  printf 'node_modules/\n' >> "$dir/.gitignore"
+  commit_all "$dir" "the first spec and its test"
+  mark
+  gate_walk "$dir" typescript
+  gate_since_mark
+}
 
-process.chdir('$TMP15');
-r.onRunComplete();
+# --- xunit ----------------------------------------------------------------
 
-const proof = JSON.parse(fs.readFileSync('$TMP15/specs/api/weather.proofs-unit.json', 'utf8'));
-if (proof.proofs[0].feature !== 'weather' || proof.proofs[0].status !== 'pass') process.exit(1);
-" 2>/dev/null; then
-    p15_result="pass"
+walk_xunit() {
+  if ! command -v dotnet >/dev/null 2>&1; then
+    note "xunit: dotnet does not resolve on this host"
+    return 0
   fi
+  local dir
+  dir="$(tmp_dir purlin-e2e-cs)" || exit 1
+  TMPDIRS="$TMPDIRS $dir"
+  echo "--- xunit ---"
+  new_repo "$dir"
+  mkdir -p "$dir/App.Tests"
+  cat > "$dir/App.Tests/App.Tests.csproj" <<'EOF'
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="xunit" Version="2.6.0" />
+  </ItemGroup>
+</Project>
+EOF
+  init_at "$dir" passed
+  mark
+  expect_file "xunit: the logger is copied" \
+    "$dir/.purlin/plugins/xunit_purlin.cs"
+  expect_in "xunit: the summary says how to wire the logger" \
+    'TestLogger.dll' "$dir/.purlin-init.log"
+  expect_in "xunit: the summary names the runner flag" \
+    'dotnet test --logger purlin' "$dir/.purlin-init.log"
+  wire_since_mark
+  note "xunit: the gate walk needs the logger assembly built by hand"
+}
 
-  if [[ "$p15_result" == "pass" ]]; then
-    echo "  PASS: jest reporter emitted valid proof"
-    purlin_proof "skill_init" "PROOF-22" "RULE-22" pass "scaffolded jest reporter produces valid proofs"
-    PASS=$((PASS + 1))
+# --- the marketplace install ----------------------------------------------
+
+walk_marketplace() {
+  local dir cache installed
+  dir="$(tmp_dir purlin-e2e-mk)" || exit 1
+  cache="$(tmp_dir purlin-e2e-cache)" || exit 1
+  TMPDIRS="$TMPDIRS $dir $cache"
+  echo "--- the marketplace install ---"
+  installed="$cache/purlin/purlin/$(cat "$ROOT/VERSION")"
+  mkdir -p "$installed"
+  for name in VERSION templates references scripts; do
+    cp -R "$ROOT/$name" "$installed/"
+  done
+  new_repo "$dir"
+  printf '[tool.pytest.ini_options]\n' > "$dir/pyproject.toml"
+  printf 'def greet(name):\n    return "Hello, %%s!" %% name\n' > "$dir/greeting.py"
+  mark
+  CLAUDE_PLUGIN_ROOT="$installed" python3 "$installed/scripts/init/scaffold.py" \
+    --project-root "$dir" --gate passed --yes > "$dir/.purlin-init.log" 2>&1
+  expect_file "marketplace: the config is written" "$dir/.purlin/config.json"
+  expect_in "marketplace: the pinned root is the install" \
+    "$installed" "$dir/.purlin/plugin-root"
+  if grep -rl "$installed" "$dir" --exclude-dir=.git 2>/dev/null \
+      | grep -v 'plugin-root' | grep -q .; then
+    bad "marketplace: only .purlin/plugin-root names the install"
   else
-    echo "  FAIL: jest reporter did not produce expected proof"
-    purlin_proof "skill_init" "PROOF-22" "RULE-22" fail "jest reporter proof emission failed"
-    FAIL=$((FAIL + 1))
+    pass "marketplace: only .purlin/plugin-root names the install"
   fi
-else
-  echo "  SKIP: node not available"
-  purlin_proof "skill_init" "PROOF-22" "RULE-22" pass "jest reporter (skipped — node not available)"
-  PASS=$((PASS + 1))
-fi
-
-# ==========================================================================
-# PROOF-16 (RULE-16): Scaffolded shell harness produces valid proofs
-# ==========================================================================
-echo "--- PROOF-16: shell harness integration ---"
-TMP16=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP16"
-init_project "$TMP16" "shell" "warn" "true"
-create_spec "$TMP16" "deploy" "ops" 2
-
-# Source the scaffolded plugin and use it
-(
-  cd "$TMP16"
-  export PROJECT_ROOT="$TMP16"
-  source "$TMP16/.purlin/plugins/purlin-proof.sh"
-  purlin_proof "deploy" "PROOF-1" "RULE-1" pass "deploy check 1"
-  purlin_proof "deploy" "PROOF-2" "RULE-2" pass "deploy check 2"
-  purlin_proof_finish
-)
-
-p16_result="fail"
-if [[ -f "$TMP16/specs/ops/deploy.proofs-unit.json" ]]; then
-  count=$(python3 -c "import json; d=json.load(open('$TMP16/specs/ops/deploy.proofs-unit.json')); print(len([p for p in d['proofs'] if p['status']=='pass']))" 2>/dev/null)
-  [[ "$count" == "2" ]] && p16_result="pass"
-fi
-
-if [[ "$p16_result" == "pass" ]]; then
-  echo "  PASS: shell harness emitted 2 passing proofs"
-  purlin_proof "skill_init" "PROOF-23" "RULE-23" pass "scaffolded shell harness produces valid proofs"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: shell harness did not produce expected proofs"
-  purlin_proof "skill_init" "PROOF-23" "RULE-23" fail "shell harness proof emission failed"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-17 (RULE-17): Empty specs → "No specs found"
-# ==========================================================================
-echo "--- PROOF-17: Empty specs → No specs found ---"
-TMP17=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP17"
-init_project "$TMP17" "shell" "warn" "true"
-
-output17=$(run_sync_status "$TMP17")
-if echo "$output17" | grep -qi "No specs found"; then
-  echo "  PASS: empty specs returns 'No specs found'"
-  purlin_proof "skill_init" "PROOF-24" "RULE-24" pass "empty specs returns No specs found"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: expected 'No specs found'"
-  echo "  Output: $output17"
-  purlin_proof "skill_init" "PROOF-24" "RULE-24" fail "empty specs did not return No specs found"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-18 (RULE-18): Status progression: UNTESTED → PASSING → FAILING
-# ==========================================================================
-echo "--- PROOF-18: Status progression ---"
-TMP18=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP18"
-init_project "$TMP18" "shell" "warn" "true"
-create_spec "$TMP18" "auth" "core" 2
-(cd "$TMP18" && git add -A && git commit -q -m "add spec")
-
-# Phase A: no proofs → UNTESTED
-output18a=$(run_sync_status "$TMP18")
-phase_a=false
-if echo "$output18a" | grep -q "UNTESTED"; then
-  echo "  Phase A PASS: UNTESTED"
-  phase_a=true
-else
-  echo "  Phase A FAIL: expected UNTESTED"
-  echo "  Output: $output18a"
-fi
-
-# Phase B: all passing → PASSING
-create_proof_file "$TMP18" "auth" "core" "PROOF-1|RULE-1|pass" "PROOF-2|RULE-2|pass"
-(cd "$TMP18" && git add -A && git commit -q -m "add passing proofs")
-output18b=$(run_sync_status "$TMP18")
-phase_b=false
-if echo "$output18b" | grep -q "PASSING"; then
-  echo "  Phase B PASS: PASSING"
-  phase_b=true
-else
-  echo "  Phase B FAIL: expected PASSING"
-  echo "  Output: $output18b"
-fi
-
-# Phase C: one fail → FAILING
-create_proof_file "$TMP18" "auth" "core" "PROOF-1|RULE-1|pass" "PROOF-2|RULE-2|fail"
-(cd "$TMP18" && git add -A && git commit -q -m "add failing proof")
-output18c=$(run_sync_status "$TMP18")
-phase_c=false
-if echo "$output18c" | grep -q "FAILING"; then
-  echo "  Phase C PASS: FAILING"
-  phase_c=true
-else
-  echo "  Phase C FAIL: expected FAILING"
-  echo "  Output: $output18c"
-fi
-
-if $phase_a && $phase_b && $phase_c; then
-  purlin_proof "skill_init" "PROOF-25" "RULE-25" pass "status progression UNTESTED→PASSING→FAILING"
-  PASS=$((PASS + 1))
-else
-  purlin_proof "skill_init" "PROOF-25" "RULE-25" fail "status progression failed (a=$phase_a b=$phase_b c=$phase_c)"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-19 (RULE-19): report=true generates report-data.js
-# ==========================================================================
-echo "--- PROOF-19: report-data.js generation ---"
-TMP19=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP19"
-init_project "$TMP19" "shell" "warn" "true"
-create_spec "$TMP19" "metrics" "core" 1
-create_proof_file "$TMP19" "metrics" "core" "PROOF-1|RULE-1|pass"
-(cd "$TMP19" && git add -A && git commit -q -m "add spec and proofs")
-
-run_sync_status "$TMP19" >/dev/null
-if [[ -f "$TMP19/.purlin/report-data.js" ]] && head -1 "$TMP19/.purlin/report-data.js" | grep -q "const PURLIN_DATA"; then
-  echo "  PASS: report-data.js generated with PURLIN_DATA"
-  purlin_proof "skill_init" "PROOF-26" "RULE-26" pass "report-data.js generated correctly"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: report-data.js missing or invalid"
-  purlin_proof "skill_init" "PROOF-26" "RULE-26" fail "report-data.js not generated"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-20 (RULE-20): .gitignore has all required entries
-# ==========================================================================
-echo "--- PROOF-20: gitignore entries ---"
-TMP20=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP20"
-init_project "$TMP20" "shell" "warn" "true"
-
-p20_ok=true
-for entry in ".purlin/runtime/" ".purlin/plugins/__pycache__/" ".purlin/cache/" "/purlin-report.html"; do
-  if ! grep -qF "$entry" "$TMP20/.gitignore" 2>/dev/null; then
-    echo "  Missing entry: $entry"
-    p20_ok=false
-  fi
-done
-# Digest file must NOT be gitignored (it's committed)
-if grep -qF ".purlin/report-data.js" "$TMP20/.gitignore" 2>/dev/null; then
-  echo "  report-data.js should NOT be gitignored"
-  p20_ok=false
-fi
-
-if $p20_ok; then
-  echo "  PASS: gitignore entries correct (digest not ignored)"
-  purlin_proof "skill_init" "PROOF-27" "RULE-27" pass "all gitignore entries present, digest not ignored"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: gitignore entries incorrect"
-  purlin_proof "skill_init" "PROOF-27" "RULE-27" fail "missing gitignore entries or digest incorrectly ignored"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-21 (RULE-21): Re-init does not duplicate gitignore entries
-# ==========================================================================
-echo "--- PROOF-21: No duplicate gitignore ---"
-TMP21=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP21"
-init_project "$TMP21" "shell" "warn" "true"
-# Run the gitignore portion again (simulating re-init --force)
-init_project "$TMP21" "shell" "warn" "true"
-
-count=$(grep -cF ".purlin/runtime/" "$TMP21/.gitignore" 2>/dev/null || echo "0")
-if [[ "$count" == "1" ]]; then
-  echo "  PASS: exactly 1 occurrence of .purlin/runtime/"
-  purlin_proof "skill_init" "PROOF-28" "RULE-28" pass "no duplicate gitignore entries"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: found $count occurrences"
-  purlin_proof "skill_init" "PROOF-28" "RULE-28" fail "duplicate gitignore entries ($count)"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-22 (RULE-22): Pre-push hook installed and executable
-# ==========================================================================
-echo "--- PROOF-22: Pre-push hook installed ---"
-TMP22=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP22"
-(cd "$TMP22" && git init -q)
-init_project "$TMP22" "shell" "warn" "true"
-
-p22_exists=false; p22_exec=false; p22_content=false
-[[ -f "$TMP22/.git/hooks/pre-push" ]] && p22_exists=true
-[[ -x "$TMP22/.git/hooks/pre-push" ]] && p22_exec=true
-grep -q "purlin" "$TMP22/.git/hooks/pre-push" 2>/dev/null && p22_content=true
-
-if $p22_exists && $p22_exec && $p22_content; then
-  echo "  PASS: hook exists, executable, contains purlin"
-  purlin_proof "skill_init" "PROOF-29" "RULE-29" pass "pre-push hook installed correctly"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: exists=$p22_exists exec=$p22_exec content=$p22_content"
-  purlin_proof "skill_init" "PROOF-29" "RULE-29" fail "pre-push hook installation failed"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-23 (RULE-23): Existing non-purlin hook preserved
-# ==========================================================================
-echo "--- PROOF-23: Existing hook preserved ---"
-TMP23=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP23"
-(cd "$TMP23" && git init -q)
-mkdir -p "$TMP23/.git/hooks"
-printf '#!/bin/bash\necho custom-hook\n' > "$TMP23/.git/hooks/pre-push"
-chmod +x "$TMP23/.git/hooks/pre-push"
-
-init_project "$TMP23" "shell" "warn" "true"
-
-if grep -q "echo custom-hook" "$TMP23/.git/hooks/pre-push" 2>/dev/null; then
-  echo "  PASS: existing hook content preserved"
-  purlin_proof "skill_init" "PROOF-30" "RULE-30" pass "non-purlin hook preserved"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: existing hook was overwritten"
-  purlin_proof "skill_init" "PROOF-30" "RULE-30" fail "existing hook overwritten"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-24 (RULE-24): Dashboard report on/off
-# ==========================================================================
-echo "--- PROOF-24: Dashboard report on/off ---"
-TMP24a=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP24a"
-init_project "$TMP24a" "shell" "warn" "true"
-
-TMP24b=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP24b"
-init_project "$TMP24b" "shell" "warn" "false"
-
-p24_on=false; p24_off=false
-[[ -f "$TMP24a/purlin-report.html" ]] && p24_on=true
-[[ ! -f "$TMP24b/purlin-report.html" ]] && p24_off=true
-
-if $p24_on && $p24_off; then
-  echo "  PASS: report=true creates file, report=false does not"
-  purlin_proof "skill_init" "PROOF-31" "RULE-31" pass "dashboard report on/off correct"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: on=$p24_on off=$p24_off"
-  purlin_proof "skill_init" "PROOF-31" "RULE-31" fail "dashboard report toggle failed"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-25 (RULE-25): Full Python lifecycle
-#   init → spec → test → pytest → proofs → sync_status PASSING → hook exit 0
-# ==========================================================================
-echo "--- PROOF-25: Full Python lifecycle ---"
-TMP25=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP25"
-touch "$TMP25/conftest.py"
-init_project "$TMP25" "pytest" "warn" "true"
-
-# Create spec
-create_spec "$TMP25" "user_auth" "auth" 2
-
-# Create test file with proof markers
-cat > "$TMP25/test_user_auth.py" << 'TEST'
-import pytest
-
-@pytest.mark.proof("user_auth", "PROOF-1", "RULE-1")
-def test_auth_valid():
-    assert True
-
-@pytest.mark.proof("user_auth", "PROOF-2", "RULE-2")
-def test_auth_invalid():
-    assert True
-TEST
-
-(cd "$TMP25" && git add -A && git commit -q -m "add spec and tests")
-
-# Phase 1: Run pytest using scaffolded plugin via -p flag → proofs emitted
-p25_pytest=false
-if (cd "$TMP25" && python3 -m pytest test_user_auth.py -p pytest_purlin --override-ini="pythonpath=$TMP25/.purlin/plugins" -q --no-header --tb=no 2>/dev/null); then
-  [[ -f "$TMP25/specs/auth/user_auth.proofs-unit.json" ]] && p25_pytest=true
-fi
-
-# Phase 2: sync_status shows PASSING
-p25_status=false
-(cd "$TMP25" && git add -A && git commit -q -m "add proofs")
-output25=$(run_sync_status "$TMP25")
-echo "$output25" | grep -q "PASSING" && p25_status=true
-
-# Phase 3: pre-push hook allows push
-p25_hook=false
-ec25=0
-run_hook "$TMP25" >/dev/null 2>&1 || ec25=$?
-[[ $ec25 -eq 0 ]] && p25_hook=true
-
-if $p25_pytest && $p25_status && $p25_hook; then
-  echo "  PASS: full Python lifecycle works"
-  purlin_proof "skill_init" "PROOF-32" "RULE-32" pass "Python lifecycle: init→spec→pytest→proofs→PASSING→hook-ok"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: pytest=$p25_pytest status=$p25_status hook=$p25_hook"
-  purlin_proof "skill_init" "PROOF-32" "RULE-32" fail "Python lifecycle failed"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-26 (RULE-25): Full Shell lifecycle
-#   init → spec → shell proof → sync_status PASSING
-# ==========================================================================
-echo "--- PROOF-26: Full Shell lifecycle ---"
-TMP26=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP26"
-init_project "$TMP26" "shell" "warn" "true"
-create_spec "$TMP26" "deploy_check" "ops" 2
-
-# Run shell proofs using the scaffolded harness
-(
-  cd "$TMP26"
-  export PROJECT_ROOT="$TMP26"
-  source "$TMP26/.purlin/plugins/purlin-proof.sh"
-  purlin_proof "deploy_check" "PROOF-1" "RULE-1" pass "deploy step 1"
-  purlin_proof "deploy_check" "PROOF-2" "RULE-2" pass "deploy step 2"
-  purlin_proof_finish
-)
-
-# Verify proofs emitted
-p26_proofs=false
-if [[ -f "$TMP26/specs/ops/deploy_check.proofs-unit.json" ]]; then
-  count=$(python3 -c "import json; d=json.load(open('$TMP26/specs/ops/deploy_check.proofs-unit.json')); print(len([p for p in d['proofs'] if p['status']=='pass']))" 2>/dev/null)
-  [[ "$count" == "2" ]] && p26_proofs=true
-fi
-
-# sync_status shows PASSING
-(cd "$TMP26" && git add -A && git commit -q -m "proofs")
-p26_status=false
-output26=$(run_sync_status "$TMP26")
-echo "$output26" | grep -q "PASSING" && p26_status=true
-
-if $p26_proofs && $p26_status; then
-  echo "  PASS: full Shell lifecycle works"
-  purlin_proof "skill_init" "PROOF-33" "RULE-32" pass "Shell lifecycle: init→spec→shell-proof→PASSING"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: proofs=$p26_proofs status=$p26_status"
-  purlin_proof "skill_init" "PROOF-33" "RULE-32" fail "Shell lifecycle failed"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-27 (RULE-25): Full Jest lifecycle
-#   init → spec → node reporter mock → sync_status PASSING
-# ==========================================================================
-echo "--- PROOF-27: Full Jest lifecycle ---"
-if command -v node >/dev/null 2>&1; then
-  TMP27=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP27"
-  echo '{"devDependencies":{"jest":"^29.0.0"}}' > "$TMP27/package.json"
-  init_project "$TMP27" "jest" "warn" "true"
-  create_spec "$TMP27" "api_weather" "api" 1
-
-  SCAFFOLDED_REPORTER_27="$TMP27/.purlin/plugins/jest_purlin.js"
-
-  # Exercise the scaffolded reporter
-  p27_proofs=false
-  if node -e "
-const Module = require('module');
-const fs = require('fs');
-const origLoad = Module._load;
-Module._load = function(request, parent, isMain) {
-  if (request === 'glob') {
-    return {
-      globSync: function(pattern) {
-        const results = [];
-        function walk(dir) {
-          for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-            const full = require('path').join(dir, entry.name);
-            if (entry.isDirectory()) walk(full);
-            else if (entry.name.endsWith('.md')) results.push(full);
-          }
-        }
-        const base = pattern.split('*')[0].replace(/\/$/, '') || '.';
-        if (fs.existsSync(base)) walk(base);
-        return results;
-      }
-    };
-  }
-  return origLoad.apply(this, arguments);
-};
-
-const Reporter = require('$SCAFFOLDED_REPORTER_27');
-const r = new Reporter({ rootDir: '$TMP27' }, {});
-
-r.onTestResult(null, {
-  testFilePath: '$TMP27/tests/test_weather.js',
-  testResults: [{
-    title: 'fetches weather [proof:api_weather:PROOF-1:RULE-1]',
-    status: 'passed'
-  }]
-});
-
-process.chdir('$TMP27');
-r.onRunComplete();
-" 2>/dev/null; then
-    [[ -f "$TMP27/specs/api/api_weather.proofs-unit.json" ]] && p27_proofs=true
-  fi
-
-  # sync_status shows PASSING
-  (cd "$TMP27" && git add -A && git commit -q -m "proofs")
-  p27_status=false
-  output27=$(run_sync_status "$TMP27")
-  echo "$output27" | grep -q "PASSING" && p27_status=true
-
-  if $p27_proofs && $p27_status; then
-    echo "  PASS: full Jest lifecycle works"
-    purlin_proof "skill_init" "PROOF-34" "RULE-32" pass "Jest lifecycle: init→spec→reporter→PASSING"
-    PASS=$((PASS + 1))
-  else
-    echo "  FAIL: proofs=$p27_proofs status=$p27_status"
-    purlin_proof "skill_init" "PROOF-34" "RULE-32" fail "Jest lifecycle failed"
-    FAIL=$((FAIL + 1))
-  fi
-else
-  echo "  SKIP: node not available"
-  purlin_proof "skill_init" "PROOF-34" "RULE-32" pass "Jest lifecycle (skipped — node not available)"
-  PASS=$((PASS + 1))
-fi
-
-# ==========================================================================
-# PROOF-43 (RULE-41): Config has digest field
-# ==========================================================================
-echo "--- PROOF-43: config digest field ---"
-TMP43=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP43"
-(cd "$TMP43" && git init -q)
-init_project "$TMP43" "shell" "warn" "true" "auto"
-
-if python3 -c "
-import json, sys
-d = json.load(open('$TMP43/.purlin/config.json'))
-val = d.get('digest')
-if val not in ('auto', 'warn', 'off'):
-    print(f'Invalid digest value: {val}', file=sys.stderr)
-    sys.exit(1)
-" 2>/dev/null; then
-  echo "  PASS: digest field present with valid value"
-  purlin_proof "skill_init" "PROOF-43" "RULE-41" pass "digest field present"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: digest field missing or invalid"
-  purlin_proof "skill_init" "PROOF-43" "RULE-41" fail "digest field missing or invalid"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-44 (RULE-42): Pre-commit hook installed
-# ==========================================================================
-echo "--- PROOF-44: pre-commit hook installed ---"
-TMP44=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP44"
-(cd "$TMP44" && git init -q)
-init_project "$TMP44" "shell" "warn" "true" "auto"
-
-p44_ok=true
-if [[ ! -f "$TMP44/.git/hooks/pre-commit" ]]; then
-  echo "  pre-commit hook not found"; p44_ok=false
-elif [[ ! -x "$TMP44/.git/hooks/pre-commit" ]]; then
-  echo "  pre-commit hook not executable"; p44_ok=false
-elif ! grep -q "purlin" "$TMP44/.git/hooks/pre-commit" 2>/dev/null; then
-  echo "  pre-commit hook does not contain 'purlin'"; p44_ok=false
-fi
-if $p44_ok; then
-  echo "  PASS: pre-commit hook installed correctly"
-  purlin_proof "skill_init" "PROOF-44" "RULE-42" pass "pre-commit hook installed"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: pre-commit hook not installed correctly"
-  purlin_proof "skill_init" "PROOF-44" "RULE-42" fail "pre-commit hook not installed"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-45 (RULE-43): Existing non-purlin pre-commit hook preserved
-# ==========================================================================
-echo "--- PROOF-45: existing pre-commit hook preserved ---"
-TMP45=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP45"
-(cd "$TMP45" && git init -q)
-# Write a non-purlin pre-commit hook before init
-mkdir -p "$TMP45/.git/hooks"
-echo '#!/bin/sh' > "$TMP45/.git/hooks/pre-commit"
-echo 'echo custom hook' >> "$TMP45/.git/hooks/pre-commit"
-chmod +x "$TMP45/.git/hooks/pre-commit"
-init_project "$TMP45" "shell" "warn" "true" "auto"
-
-if grep -q "custom hook" "$TMP45/.git/hooks/pre-commit" 2>/dev/null; then
-  echo "  PASS: existing pre-commit hook preserved"
-  purlin_proof "skill_init" "PROOF-45" "RULE-43" pass "existing hook preserved"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: existing pre-commit hook overwritten"
-  purlin_proof "skill_init" "PROOF-45" "RULE-43" fail "existing hook overwritten"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# PROOF-46 (RULE-44): Digest auto-generates on commit
-# PROOF-47 (RULE-45): Digest contains timestamp and git_sha
-# PROOF-48 (RULE-46): Digest does not trigger fresh audit
-# ==========================================================================
-echo "--- PROOF-46/47/48: digest auto-generation on commit ---"
-TMP46=$(mktemp -d); ALL_TMPDIRS="$ALL_TMPDIRS $TMP46"
-(cd "$TMP46" && git init -q && git commit -q --allow-empty -m "initial")
-init_project "$TMP46" "shell" "warn" "true" "auto"
-create_spec "$TMP46" "digest_test" "core" 2
-create_proof_file "$TMP46" "digest_test" "core" "PROOF-1|RULE-1|pass" "PROOF-2|RULE-2|pass"
-# Commit everything — this should trigger the pre-commit hook
-(cd "$TMP46" && git add -A && git commit -q -m "test digest generation")
-
-# PROOF-46: Verify report-data.js is tracked in the commit
-p46_ok=false
-if (cd "$TMP46" && git show HEAD:.purlin/report-data.js >/dev/null 2>&1); then
-  p46_ok=true
-  echo "  PASS: report-data.js is tracked in commit"
-  purlin_proof "skill_init" "PROOF-46" "RULE-44" pass "digest auto-generated and staged"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: report-data.js not tracked in commit"
-  purlin_proof "skill_init" "PROOF-46" "RULE-44" fail "digest not in commit"
-  FAIL=$((FAIL + 1))
-fi
-
-# PROOF-47: Verify timestamp and git_sha in digest
-p47_ok=false
-if $p46_ok; then
-  p47_result=$(python3 -c "
-import json, datetime, sys
-with open('$TMP46/.purlin/report-data.js') as f:
-    content = f.read()
-json_str = content.replace('const PURLIN_DATA = ', '', 1).rstrip().rstrip(';')
-data = json.loads(json_str)
-
-ts = data.get('timestamp', '')
-sha = data.get('git_sha', '')
-
-ok = True
-if not ts:
-    print('no timestamp', file=sys.stderr); ok = False
-else:
-    then = datetime.datetime.fromisoformat(ts.replace('Z', '+00:00'))
-    age = (datetime.datetime.now(datetime.timezone.utc) - then).total_seconds()
-    if age > 60:
-        print(f'timestamp too old: {age}s', file=sys.stderr); ok = False
-
-if not sha:
-    print('no git_sha', file=sys.stderr); ok = False
-
-if ok:
-    print('OK')
-else:
-    sys.exit(1)
-" 2>/dev/null)
-  if [[ "$p47_result" == "OK" ]]; then
-    p47_ok=true
-    echo "  PASS: timestamp fresh, git_sha present"
-    purlin_proof "skill_init" "PROOF-47" "RULE-45" pass "digest has fresh timestamp and git_sha"
-    PASS=$((PASS + 1))
-  else
-    echo "  FAIL: timestamp or git_sha check failed"
-    purlin_proof "skill_init" "PROOF-47" "RULE-45" fail "digest timestamp/sha check failed"
-    FAIL=$((FAIL + 1))
-  fi
-else
-  echo "  SKIP: PROOF-47 skipped (PROOF-46 failed)"
-  purlin_proof "skill_init" "PROOF-47" "RULE-45" fail "skipped — digest not generated"
-  FAIL=$((FAIL + 1))
-fi
-
-# PROOF-48: Verify audit_summary is null (no cache in fresh project)
-p48_ok=false
-if $p46_ok; then
-  p48_result=$(python3 -c "
-import json, sys
-with open('$TMP46/.purlin/report-data.js') as f:
-    content = f.read()
-json_str = content.replace('const PURLIN_DATA = ', '', 1).rstrip().rstrip(';')
-data = json.loads(json_str)
-audit = data.get('audit_summary')
-if audit is None:
-    print('OK')
-else:
-    print(f'audit_summary not null: {audit}', file=sys.stderr)
-    sys.exit(1)
-" 2>/dev/null)
-  if [[ "$p48_result" == "OK" ]]; then
-    p48_ok=true
-    echo "  PASS: audit_summary is null (no fresh audit triggered)"
-    purlin_proof "skill_init" "PROOF-48" "RULE-46" pass "no audit triggered"
-    PASS=$((PASS + 1))
-  else
-    echo "  FAIL: audit_summary is not null"
-    purlin_proof "skill_init" "PROOF-48" "RULE-46" fail "audit_summary not null"
-    FAIL=$((FAIL + 1))
-  fi
-else
-  echo "  SKIP: PROOF-48 skipped (PROOF-46 failed)"
-  purlin_proof "skill_init" "PROOF-48" "RULE-46" fail "skipped — digest not generated"
-  FAIL=$((FAIL + 1))
-fi
-
-# ==========================================================================
-# Emit proof files
-# ==========================================================================
-export PROJECT_ROOT="$REAL_PROJECT_ROOT"
-cd "$PROJECT_ROOT"
+  wire_since_mark
+}
+
+# --- run ------------------------------------------------------------------
+
+echo "=== init end to end ==="
+walk_python
+walk_typescript
+walk_xunit
+walk_marketplace
+
+# The two proofs this suite writes. The harness is sourced here, at the end,
+# so its own shell settings never reach the walk above.
+# shellcheck source=../scripts/proof/shell_purlin.sh
+. "$ROOT/scripts/proof/shell_purlin.sh"
+export PURLIN_PROOF_TIER=e2e
+if [ "$GATE_FAIL" -eq 0 ]; then GATE_STATUS=pass; else GATE_STATUS=fail; fi
+if [ "$WIRE_FAIL" -eq 0 ]; then WIRE_STATUS=pass; else WIRE_STATUS=fail; fi
+purlin_proof "scaffold" "PROOF-36" "RULE-36" "$GATE_STATUS" \
+  "the three gates walked on every fixture init set up"
+purlin_proof "scaffold" "PROOF-37" "RULE-37" "$WIRE_STATUS" \
+  "each language wired, and the marketplace install"
 purlin_proof_finish
 
 echo ""
-echo "init_e2e: $PASS passed, $FAIL failed (33 proofs recorded)"
-[[ $FAIL -eq 0 ]]
+echo "passed $PASS, failed $FAIL, skipped $SKIP"
+[ "$FAIL" -eq 0 ] || exit 1
+echo "init e2e ok"

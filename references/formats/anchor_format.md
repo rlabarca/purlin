@@ -1,137 +1,152 @@
-> Format-Version: 4
+> Format-Version: 7
 
-# Anchor Spec Format
+# Anchor format
 
-Anchors define cross-cutting constraints that other features reference via `> Requires:`. They use the standard 3-section format (Rules, Proof, What it does).
+An anchor is a spec for something shared across features. Features reference
+it with `> Requires:`, or it applies to all of them with `> Global: true`. An
+anchor uses the same two sections every spec uses, `## Rules` and `## Proof`,
+and the same rule and proof grammar (`spec_format.md`).
 
 This document has two parts:
 
-1. **Authoring format** — what you write when creating an anchor (either locally or in a remote repo for others to consume)
-2. **Consumer tracking fields** — metadata that Purlin tooling adds when a project pulls an anchor from an external source. You do NOT write these yourself.
+1. **Authoring**: what you write when you create an anchor, locally or in an
+   anchor repo for other projects to consume.
+2. **Consumer tracking**: what Purlin writes into the local copy when a
+   project pulls an anchor from somewhere else. You do not write these.
 
-## Part 1: Authoring Format
-
-This is the format to use when writing an anchor — whether it lives locally in `specs/_anchors/` or in a remote repo that other projects will pull from.
+## Part 1: authoring
 
 ### Template
 
 ```markdown
 # Anchor: <name>
 
-> Description: <What cross-cutting concern this anchor defines>
-> Scope: <file patterns this anchor governs>
-> Type: <optional: design, api, security, brand, platform, schema, legal, prodbrief>
-
-## What it does
-
-<What cross-cutting concern this anchor defines.>
+> Description: <what cross-cutting concern this anchor defines>
+> Scope: <file paths this anchor governs>
+> Type: <optional: design, api, security, brand, schema, legal, prodbrief>
 
 ## Rules
 
-- RULE-1: <Constraint that applies to all features requiring this anchor>
-- RULE-2: <Another constraint>
+- RULE-1: <constraint that applies to every feature requiring this anchor>
+- RULE-2: <another constraint>
 
 ## Proof
 
-- PROOF-1 (RULE-1): <How to verify compliance>
-- PROOF-2 (RULE-2): <How to verify compliance>
+- PROOF-1 (RULE-1): <how compliance is observed>
+- PROOF-2 (RULE-2): <how compliance is observed>
 ```
 
 ### Location
 
-When authoring a local anchor, place it in:
+A local anchor lives in:
 
 ```
 specs/_anchors/<name>.md
 ```
 
-Users name anchors freely. No enforced prefixes.
+Name it what you like. There are no enforced prefixes. An anchor authored in
+a separate repo lives wherever that repo puts it; the consuming project names
+it by repo URL plus path.
 
-When authoring a remote anchor (in an external repo for others to consume), place it wherever makes sense in that repo. The consuming project will reference it by repo URL + path.
-
-### Metadata Fields (author-controlled)
-
-These fields are written by the anchor author. All are optional.
+### Metadata fields you write
 
 | Field | Description |
 |-------|-------------|
-| `> Description:` | Plain-language description. Displayed in the Purlin dashboard. Supports multi-line via `>` continuation lines. |
-| `> Scope:` | File patterns this anchor governs. Used for manual proof staleness detection. |
-| `> Stack:` | Language/framework. |
-| `> Type:` | Suggested types: `design`, `api`, `security`, `brand`, `platform`, `schema`, `legal`, `prodbrief`. Not enforced. |
-| `> Global:` | When `true`, this anchor's rules auto-apply to ALL feature specs without needing `> Requires:`. |
-| `> Visual-Reference:` | Pointer to visual source: `figma://fileKey/nodeId`, `./path.png`, `./path.html`, `https://url`. |
+| `> Description:` | Plain-language description. Continuation lines start with `>`. Displayed in the dashboard |
+| `> Scope:` | File paths this anchor governs |
+| `> Stack:` | Language and framework |
+| `> Type:` | A suggestion to the reader: `design`, `api`, `security`, `brand`, `schema`, `legal`, `prodbrief`. Not enforced |
+| `> Global:` | `true` applies the anchor's rules to every feature spec without `> Requires:` |
+| `> Note:` | Free text for the reader: setup a checkout needs, why a source points where it does. Repeatable, and every parser ignores it |
 
-## Part 2: Consumer Tracking Fields (added by Purlin tooling)
+## Part 2: consumer tracking fields
 
-When a project pulls an anchor from an external source (a git repo, Figma file, or URL), Purlin adds tracking metadata to the local copy in `specs/_anchors/`. **These fields are NOT written by the anchor author** — they are added and maintained by `purlin:anchor sync` in the consuming project.
-
-### Tracking fields
+When a project pulls an anchor from somewhere else, `purlin:anchor` writes
+tracking metadata into the local copy under `specs/_anchors/`. The author's
+file in the source repo does not carry these.
 
 | Field | Description |
 |-------|-------------|
-| `> Source:` | External reference: git repo URL, Figma URL, or HTTP URL. Tells Purlin where to pull updates from. |
-| `> Path:` | For git-sourced anchors: path within the repo to the source file. |
-| `> Pinned:` | Git commit SHA (git-sourced) or ISO 8601 timestamp (Figma-sourced). Updated by `purlin:anchor sync`. |
-| `> Visual-Hash:` | SHA-256 hash of visual reference image for staleness detection. |
+| `> Source:` | Where the anchor comes from. Two shapes, below |
+| `> Path:` | The path inside the source repo, when `> Source:` carries the URL alone |
+| `> Pinned:` | The commit sha of a git source, or the hash of the pinned local files |
 
-### Example: what a consumer's local copy looks like
+### Source shape 1: a git URL plus a path
 
-The consuming project's `specs/_anchors/security_no_eval.md` might look like this after pulling from a remote repo:
+```markdown
+> Source: https://github.com/acme/security-policies.git specs/no_eval.md
+> Pinned: abc1234def5678
+```
+
+The URL and the path may also be split across `> Source:` and `> Path:`; both
+spellings parse the same. A pin is always a commit, never a branch: a branch
+moves, and an anchor whose content changed under a project without a diff is
+what pinning exists to prevent.
+
+`purlin:drift` runs one cached `git ls-remote` per source per run and reports
+`anchor X is behind its pin`. `purlin:anchor sync X` shows the delta, updates
+the local copy, copies any designs it references into `designs/<anchor>/` and
+advances the pin, all in one commit.
+
+A `> Source:` value is repository-supplied text, so it never reaches git in
+option position. A value that begins with `-` or names an `ext::` or `fd::`
+transport is refused before any process starts, and the status line says
+`(source rejected: begins with "-")`.
+
+### Source shape 2: local file globs
+
+A design anchor pins files in the project instead of a repo:
+
+```markdown
+# Anchor: checkout_design
+
+> Description: The checkout screens, as exported.
+> Source: designs/checkout/*.png, designs/checkout/*.pdf
+> Pinned: 9f2c1ab4e7d0
+> Type: design
+
+## Rules
+
+- RULE-1: The checkout page shows the order total above the pay button [origin: design]
+
+## Proof
+
+- PROOF-1 (RULE-1): Load /checkout with one item in the basket; verify the text "Order total" appears above the button labelled "Pay" @e2e
+```
+
+`> Pinned:` is the hash of the named files. A new export changes it, which
+stales the signatures of that anchor's rules, and the brief shows the mock
+beside the screenshot the test captured. A proof for a design rule is an
+end-to-end observable (a route, a state, visible text, presence), never a
+selector.
+
+### Example: what a consumer's copy looks like
 
 ```markdown
 # Anchor: security_no_eval
 
 > Description: No eval() calls in production code
-> Source: git@github.com:acme/security-policies.git
-> Path: specs/no_eval.md
+> Source: git@github.com:acme/security-policies.git specs/no_eval.md
 > Pinned: abc1234def5678
 > Type: security
 
-## What it does
-
-No eval() calls in production code.
-
 ## Rules
 
-- RULE-1: No eval() in source files
-- RULE-2: No exec() in source files
+- RULE-1: No eval() in source files [risk: high]
+- RULE-2: No exec() in source files [risk: high]
 
 ## Proof
 
-- PROOF-1 (RULE-1): grep -r "eval(" src/ returns zero matches
-- PROOF-2 (RULE-2): grep -r "exec(" src/ returns zero matches
+- PROOF-1 (RULE-1): Grep src/ for "eval("; verify zero matches
+- PROOF-2 (RULE-2): Grep src/ for "exec("; verify zero matches
 ```
 
-The `> Source:`, `> Path:`, and `> Pinned:` lines were added by Purlin tooling — the original author's file in `acme/security-policies` does NOT contain them.
+The `> Source:` and `> Pinned:` lines were added by Purlin; the author's file
+in `acme/security-policies` does not carry them.
 
-### Example: Figma-sourced anchor (consumer copy)
+## Requires
 
-```markdown
-# Anchor: checkout_design
-
-> Description: Visual design constraints sourced from Figma.
-> Source: https://www.figma.com/design/ABC123/Design-System
-> Pinned: 2026-03-31T12:00:00Z
-> Visual-Reference: figma://ABC123/1:234
-> Type: design
-
-## What it does
-
-Visual design constraints sourced from Figma.
-
-## Rules
-
-- RULE-1: Implementation must visually match the Figma design at the referenced node
-
-## Proof
-
-- PROOF-1 (RULE-1): Render component at same viewport size as Figma frame, capture screenshot, compare against Figma screenshot; verify visual match at design fidelity @e2e
-```
-
-## Requires Field (on feature specs)
-
-Feature specs reference anchors via `> Requires:`:
+A feature spec names an anchor:
 
 ```markdown
 # Feature: checkout
@@ -139,17 +154,25 @@ Feature specs reference anchors via `> Requires:`:
 > Requires: security_no_eval, checkout_design
 ```
 
-This pulls in all rules from the named anchors. The feature's tests must prove compliance with both its own rules and the anchor rules.
+Its rules are counted with the feature's own, and its tests must prove both.
 
-## Sync Behavior
+## Editing a pinned anchor
 
-`purlin:anchor sync <name>` compares `> Pinned:` to the upstream source:
+A consumer never edits a pinned rule in place: the next sync would overwrite
+it. `purlin:anchor propose <name>` drafts the pull request to the anchor repo
+instead, and a rule that belongs only to this project goes in a separate
+local anchor that `> Requires:` the pinned one.
 
-- **Git:** `git ls-remote` to get HEAD SHA. If different, pull new content and update `> Pinned:`.
-- **Figma:** `get_metadata` MCP call to get `lastModified`. If different, fetch new data and update.
+## Global anchors
 
-If the anchor has local rules and the external source changed, `purlin:drift` surfaces this as a PM action item.
+An anchor with `> Global: true` applies its rules to every non-anchor feature
+spec. Features do not name it; its rules appear in each feature's count with
+the label `global`.
 
-## Global Anchors
+## Retired
 
-An anchor with `> Global: true` has its rules auto-applied to every non-anchor feature spec. Features don't need `> Requires:` — the rules are included automatically. In `sync_status`, global anchor rules appear with a `(global)` label.
+`figma://` sources, `> Visual-Reference:`, `> Visual-Hash:` and the visual
+hash comparison are retired. A design is a versioned file, read and merged by
+pull request, never a live tool connection. An anchor that still carries one of
+those fields parses; the field is ignored and the file is named once in the
+run's warnings.

@@ -1,96 +1,45 @@
 #!/usr/bin/env bash
-# E2E test: Feature-Scoped Overwrite
-# 3 proofs covering 3 rules — all @e2e (Level 3).
-# Creates a real temp git repo with 2 specs and tests that proof file writes
-# for one feature don't affect another, and that re-runs correctly purge old entries.
+# End to end: the write-scoped overwrite, keyed by (feature, tier, test_file).
+#
+# A real temp project with two specs and two shell suites: a write for one
+# feature never touches another, two test files covering one feature coexist in
+# any order, and a re-run replaces only what it ran. The status table Purlin
+# renders is read back at the end, so the merge is proved through the reader the
+# rest of the framework uses.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REAL_PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-SERVER_PY="$REAL_PROJECT_ROOT/scripts/mcp/purlin_server.py"
-SERVER_DIR="$(dirname "$SERVER_PY")"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+HARNESS="$PROJECT_ROOT/scripts/proof/shell_purlin.sh"
+MCP_DIR="$PROJECT_ROOT/scripts/mcp"
 
-# Load proof harness
-source "$REAL_PROJECT_ROOT/scripts/proof/shell_purlin.sh"
+PASS=0
+FAIL=0
 
 echo "=== e2e_feature_scoped_overwrite tests ==="
 
-# --- Helper: run sync_status ---
-run_sync_status() {
-  local tmpdir="$1"
-  python3 -c "
-import sys; sys.path.insert(0, '$SERVER_DIR')
-from purlin_server import sync_status
-print(sync_status('$tmpdir'))
-"
-}
-
-# --- Helper: write a proof file directly ---
-write_proof_file() {
-  local path="$1"
-  local feature="$2"
-  shift 2
-  # Remaining args are "PROOF-N|RULE-N|status" entries
-
-  local proofs="["
-  local first=true
-  for entry in "$@"; do
-    local proof_id rule_id status
-    proof_id=$(echo "$entry" | cut -d'|' -f1)
-    rule_id=$(echo "$entry" | cut -d'|' -f2)
-    status=$(echo "$entry" | cut -d'|' -f3)
-    if [ "$first" = true ]; then
-      first=false
-    else
-      proofs="$proofs,"
-    fi
-    proofs="$proofs
-    {
-      \"feature\": \"$feature\",
-      \"id\": \"$proof_id\",
-      \"rule\": \"$rule_id\",
-      \"test_file\": \"dev/test_example.sh\",
-      \"test_name\": \"test $proof_id\",
-      \"status\": \"$status\",
-      \"tier\": \"default\"
-    }"
-  done
-  proofs="$proofs
-  ]"
-
-  echo "{\"tier\": \"default\", \"proofs\": $proofs}" > "$path"
-}
-
-# --- Cleanup ---
 ALL_TMPDIRS=""
 cleanup_all() { for d in $ALL_TMPDIRS; do rm -rf "$d" 2>/dev/null; done; }
 trap cleanup_all EXIT
 
-# ==========================================================================
-# Setup: create temp repo with 2 specs (login + signup)
-# ==========================================================================
-TMPDIR=$(mktemp -d)
-ALL_TMPDIRS="$ALL_TMPDIRS $TMPDIR"
+record() {
+  local name="$1" status="$2"
+  echo "  $([[ "$status" == "pass" ]] && echo PASS || echo FAIL): $name"
+  [[ "$status" == "pass" ]] && PASS=$((PASS + 1)) || FAIL=$((FAIL + 1))
+}
 
-mkdir -p "$TMPDIR/.purlin"
-mkdir -p "$TMPDIR/specs/auth"
-mkdir -p "$TMPDIR/scripts/mcp"
+# A project with two specs and the shell framework selected.
+make_repo() {
+  local dir
+  dir="$(mktemp -d)"
+  ALL_TMPDIRS="$ALL_TMPDIRS $dir"
+  mkdir -p "$dir/.purlin" "$dir/specs/auth" "$dir/tests"
+  printf '{"gate":"passed","test_framework":"shell"}\n' > "$dir/.purlin/config.json"
 
-# Create default config
-echo '{"version":"0.9.0","test_framework":"shell","spec_dir":"specs"}' > "$TMPDIR/.purlin/config.json"
+  cat > "$dir/specs/auth/login.md" <<'SPEC'
+# login
 
-# Copy the real MCP server files
-cp "$REAL_PROJECT_ROOT/scripts/mcp/purlin_server.py" "$TMPDIR/scripts/mcp/purlin_server.py"
-cp "$REAL_PROJECT_ROOT/scripts/mcp/config_engine.py" "$TMPDIR/scripts/mcp/config_engine.py"
-cp "$REAL_PROJECT_ROOT/scripts/mcp/__init__.py" "$TMPDIR/scripts/mcp/__init__.py" 2>/dev/null || true
-
-# login spec: 2 rules
-cat > "$TMPDIR/specs/auth/login.md" << 'SPEC'
-# Feature: login
-
-## What it does
-
-User login feature.
+> Scope: src/
 
 ## Rules
 
@@ -99,160 +48,128 @@ User login feature.
 
 ## Proof
 
-- PROOF-1 (RULE-1): POST /login with valid creds; verify 200 @e2e
-- PROOF-2 (RULE-2): POST /login with bad creds; verify 401 @e2e
+- PROOF-1 (RULE-1): POST /login with valid credentials; verify 200 @e2e
+- PROOF-2 (RULE-2): POST /login with bad credentials; verify 401 @e2e
 SPEC
 
-# signup spec: 2 rules
-cat > "$TMPDIR/specs/auth/signup.md" << 'SPEC'
-# Feature: signup
+  cat > "$dir/specs/auth/signup.md" <<'SPEC'
+# signup
 
-## What it does
-
-User signup feature.
+> Scope: src/
 
 ## Rules
 
-- RULE-1: Valid registration creates account
-- RULE-2: Duplicate email returns 409
+- RULE-1: Valid registration creates an account
+- RULE-2: A duplicate email returns 409
 
 ## Proof
 
-- PROOF-1 (RULE-1): POST /signup with new email; verify 201 @e2e
-- PROOF-2 (RULE-2): POST /signup with existing email; verify 409 @e2e
+- PROOF-1 (RULE-1): POST /signup with a fresh email; verify the account exists @e2e
+- PROOF-2 (RULE-2): POST /signup twice with one email; verify 409 @e2e
 SPEC
 
-# Initialize git repo
-(cd "$TMPDIR" && git init -q && git add -A && git commit -q -m "init")
+  echo "$dir"
+}
 
-# ==========================================================================
-# Phase A — Write login proofs, then signup proofs → both PASSING
-# ==========================================================================
-echo "  --- Phase A: Write proofs for both features ---"
+# suite <dir> <script-rel> <feature> <entry...>   entry is PROOF-N|RULE-N|status
+suite() {
+  local dir="$1" rel="$2" feature="$3"
+  shift 3
+  {
+    echo "source \"$HARNESS\""
+    echo 'export PURLIN_PROOF_TIER=e2e'
+    for entry in "$@"; do
+      local proof_id rule_id status
+      proof_id="$(cut -d'|' -f1 <<<"$entry")"
+      rule_id="$(cut -d'|' -f2 <<<"$entry")"
+      status="$(cut -d'|' -f3 <<<"$entry")"
+      echo "purlin_proof \"$feature\" \"$proof_id\" \"$rule_id\" $status \"case $proof_id\""
+    done
+    echo 'purlin_proof_finish'
+  } > "$dir/$rel"
+  (cd "$dir" && bash "$rel")
+}
 
-# Write login proofs first
-write_proof_file "$TMPDIR/specs/auth/login.proofs-unit.json" "login" \
-  "PROOF-1|RULE-1|pass" \
-  "PROOF-2|RULE-2|pass"
+read_ids() {
+  local dir="$1" feature="$2"
+  python3 -c "
+import json, sys
+path = '$dir/.purlin/runtime/proofs/$feature.e2e.json'
+try:
+    data = json.load(open(path, encoding='utf-8'))
+except OSError:
+    print('')
+    sys.exit(0)
+print(','.join(sorted('%s@%s' % (e['id'], e['test_file']) for e in data['proofs'])))
+"
+}
 
-# Verify signup proof file does not exist yet (non-interference)
-signup_file="$TMPDIR/specs/auth/signup.proofs-unit.json"
-signup_untouched=true
-if [[ -f "$signup_file" ]]; then
-  echo "    WARNING: signup proof file exists before writing signup proofs"
-  signup_untouched=false
-fi
-
-# Now write signup proofs (separate file)
-write_proof_file "$signup_file" "signup" \
-  "PROOF-1|RULE-1|pass" \
-  "PROOF-2|RULE-2|pass"
-
-(cd "$TMPDIR" && git add -A && git commit -q -m "add proofs for both features")
-
-STATUS_A=$(run_sync_status "$TMPDIR")
-
-login_ready=false
-signup_ready=false
-echo "$STATUS_A" | grep -q "login: PASSING" && login_ready=true
-echo "$STATUS_A" | grep -q "signup: PASSING" && signup_ready=true
-
-phase_a_ok=false
-if $login_ready && $signup_ready && $signup_untouched; then
-  echo "    Phase A PASS: both PASSING, signup untouched before its own write"
-  phase_a_ok=true
+# --- PROOF-1: a write for one feature never touches another ----------------
+phase_one() {
+  local dir; dir="$(make_repo)"
+  suite "$dir" "tests/login.test.sh" login "PROOF-1|RULE-1|pass" "PROOF-2|RULE-2|pass"
+  suite "$dir" "tests/signup.test.sh" signup "PROOF-1|RULE-1|pass" "PROOF-2|RULE-2|fail"
+  [[ "$(read_ids "$dir" login)" == "PROOF-1@tests/login.test.sh,PROOF-2@tests/login.test.sh" ]] || return 1
+  [[ "$(read_ids "$dir" signup)" == "PROOF-1@tests/signup.test.sh,PROOF-2@tests/signup.test.sh" ]] || return 1
+}
+if phase_one; then
+  record "a write for one feature leaves the other alone" pass
 else
-  echo "    Phase A FAIL: login_ready=$login_ready signup_ready=$signup_ready signup_untouched=$signup_untouched"
-  echo "    Status output:"
-  echo "$STATUS_A"
+  record "a write for one feature leaves the other alone" fail
 fi
 
-if $phase_a_ok; then
-  purlin_proof "proof_common" "PROOF-10" "RULE-4" pass "separate proof files don't interfere"
+# --- PROOF-2: two files covering one feature coexist, in any order ---------
+phase_two() {
+  local dir; dir="$(make_repo)"
+  suite "$dir" "tests/login_a.test.sh" login "PROOF-1|RULE-1|pass"
+  suite "$dir" "tests/login_b.test.sh" login "PROOF-2|RULE-2|pass"
+  local forward; forward="$(read_ids "$dir" login)"
+
+  local other; other="$(make_repo)"
+  suite "$other" "tests/login_b.test.sh" login "PROOF-2|RULE-2|pass"
+  suite "$other" "tests/login_a.test.sh" login "PROOF-1|RULE-1|pass"
+  [[ "$forward" == "$(read_ids "$other" login)" ]] || return 1
+  [[ "$forward" == "PROOF-1@tests/login_a.test.sh,PROOF-2@tests/login_b.test.sh" ]] || return 1
+}
+if phase_two; then
+  record "two test files for one feature coexist in any order" pass
 else
-  purlin_proof "proof_common" "PROOF-10" "RULE-4" fail "separate proof files don't interfere"
+  record "two test files for one feature coexist in any order" fail
 fi
 
-# ==========================================================================
-# Phase B — Overwrite login proofs (feature-scoped) → both still PASSING
-# ==========================================================================
-echo "  --- Phase B: Overwrite login proofs ---"
-
-# Use the shell proof harness to simulate a real re-run for login only.
-# The harness does feature-scoped overwrite: removes old entries for the feature,
-# then appends new ones.
-(
-  cd "$TMPDIR"
-  source "$REAL_PROJECT_ROOT/scripts/proof/shell_purlin.sh"
-  purlin_proof "login" "PROOF-1" "RULE-1" pass "login test 1 (re-run)"
-  purlin_proof "login" "PROOF-2" "RULE-2" pass "login test 2 (re-run)"
-  export PROJECT_ROOT="$TMPDIR"
-  purlin_proof_finish
-)
-(cd "$TMPDIR" && git add -A && git commit -q -m "overwrite login proofs via harness")
-
-STATUS_B=$(run_sync_status "$TMPDIR")
-
-login_ready_b=false
-signup_ready_b=false
-echo "$STATUS_B" | grep -q "login: PASSING" && login_ready_b=true
-echo "$STATUS_B" | grep -q "signup: PASSING" && signup_ready_b=true
-
-phase_b_ok=false
-if $login_ready_b && $signup_ready_b; then
-  echo "    Phase B PASS: login PASSING (new entries), signup PASSING (untouched)"
-  phase_b_ok=true
+# --- PROOF-3: a re-run replaces only what it ran, and the table reads it ---
+phase_three() {
+  local dir; dir="$(make_repo)"
+  suite "$dir" "tests/login_a.test.sh" login "PROOF-1|RULE-1|pass"
+  suite "$dir" "tests/login_b.test.sh" login "PROOF-2|RULE-2|fail"
+  suite "$dir" "tests/login_b.test.sh" login "PROOF-2|RULE-2|pass"
+  [[ "$(read_ids "$dir" login)" == "PROOF-1@tests/login_a.test.sh,PROOF-2@tests/login_b.test.sh" ]] || return 1
+  python3 -c "
+import json
+data = json.load(open('$dir/.purlin/runtime/proofs/login.e2e.json', encoding='utf-8'))
+by = {e['id']: e['status'] for e in data['proofs']}
+assert by == {'PROOF-1': 'pass', 'PROOF-2': 'pass'}, by
+" || return 1
+  # The reader the rest of Purlin uses sees both entries as one feature.
+  python3 -c "
+import sys
+sys.path.insert(0, '$MCP_DIR')
+from purlin import proofs
+loaded = proofs.load_proofs('$dir')
+assert sorted(loaded) == ['login'], loaded
+assert len(loaded['login']) == 2, loaded
+statuses = proofs.status_by_proof(loaded['login'])
+assert statuses[('login', 'PROOF-2')] == 'pass', statuses
+" || return 1
+}
+if phase_three; then
+  record "a re-run replaces only the file it ran" pass
 else
-  echo "    Phase B FAIL: login_ready=$login_ready_b signup_ready=$signup_ready_b"
-  echo "    Status output:"
-  echo "$STATUS_B"
+  record "a re-run replaces only the file it ran" fail
 fi
 
-if $phase_b_ok; then
-  purlin_proof "proof_common" "PROOF-11" "RULE-4" pass "overwrite replaces only target feature, others intact"
-else
-  purlin_proof "proof_common" "PROOF-11" "RULE-4" fail "overwrite replaces only target feature, others intact"
-fi
-
-# ==========================================================================
-# Phase C — Simulate deleted test: login proof file with only 1 of 2 proofs
-# ==========================================================================
-echo "  --- Phase C: Simulate deleted test ---"
-
-# Write login proof file with only PROOF-1 (PROOF-2 removed — simulates a test deletion)
-write_proof_file "$TMPDIR/specs/auth/login.proofs-unit.json" "login" \
-  "PROOF-1|RULE-1|pass"
-
-(cd "$TMPDIR" && git add -A && git commit -q -m "remove PROOF-2 from login")
-
-STATUS_C=$(run_sync_status "$TMPDIR")
-
-phase_c_ok=false
-# login should show 1/2 rules proved (not PASSING, not carrying over old PROOF-2)
-if echo "$STATUS_C" | grep -q "login: 1/2 rules proved"; then
-  # Also verify signup is still PASSING
-  if echo "$STATUS_C" | grep -q "signup: PASSING"; then
-    echo "    Phase C PASS: login shows 1/2 (purged old proof), signup still PASSING"
-    phase_c_ok=true
-  else
-    echo "    Phase C FAIL: signup not PASSING"
-  fi
-else
-  echo "    Phase C FAIL: expected 'login: 1/2 rules proved'"
-  echo "    Status output:"
-  echo "$STATUS_C"
-fi
-
-if $phase_c_ok; then
-  purlin_proof "proof_common" "PROOF-12" "RULE-10" pass "removed test proof is purged, not carried over"
-else
-  purlin_proof "proof_common" "PROOF-12" "RULE-10" fail "removed test proof is purged, not carried over"
-fi
-
-# --- Emit proof files ---
-export PROJECT_ROOT="$REAL_PROJECT_ROOT"
 cd "$PROJECT_ROOT"
-purlin_proof_finish
 
 echo ""
-echo "e2e_feature_scoped_overwrite: 3 proofs recorded"
+echo "e2e feature-scoped overwrite: $PASS/$((PASS+FAIL)) passed"
+[[ $FAIL -eq 0 ]]

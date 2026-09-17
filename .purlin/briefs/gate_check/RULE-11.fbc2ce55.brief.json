@@ -1,0 +1,76 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "gate_check",
+  "generated_at": "2026-09-17T12:54:18Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "9b92922f31288b15749a9b316063f9048cb7a4b9f7b7c05028673c6d14f5dd28",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-25",
+      "text": "Run the gate with `--json` over a project at gate `passed` with no record; verify the JSON reads gate `passed`, result `fail`, exit 1, 2 rules, 0 met, 2 entries under `not_passed`, empty `weak`, `waiting` and `not_signed`, and the commit the payload named",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-26",
+      "text": "Run the gate with `--json` over a passing project; verify the result is `pass`, that met equals 2 of 2 rules and `not_passed` is empty",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-27",
+      "text": "Run the gate with `--json` at gate `strong` with a minimum of 70 over a record measuring 40; verify `weak` holds 2 entries, `not_passed` is empty and the minimum reads 70",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/gate_check/20260917T125350Z-df84acf-ci-windows.json",
+  "risk": "medium",
+  "rule": "RULE-11",
+  "rule_hash": "0220c10ccb6d8bb4e024686c3b47e0b796797b8d0e0afe296e1fe133d168adfa",
+  "rule_text": "`--json` prints the gate, the minimum, the commit, the rule counts, the four sections under the keys `not_passed`, `weak`, `waiting` and `not_signed`, the result and the exit code",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "aa2f3829f0580ffc958f4d0538ccda908f0b471dc950f2fa2f23195a0708801a",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_it_carries_the_result_and_every_rule_that_fell_short(self):\n        made = Project(gate='passed')\n        try:\n            code, output = run(made, as_json=True)\n            assert code == 1\n            data = json.loads(output[output.index('{'):])\n            assert data['gate'] == 'passed'\n            assert data['result'] == 'fail'\n            assert data['exit'] == 1\n            assert data['rules'] == 2 and data['met'] == 0\n            assert len(data['not_passed']) == 2\n            assert data['weak'] == [] and data['not_signed'] == []\n            assert data['waiting'] == []\n            assert data['commit'] == made.head()\n        finally:\n            made.close()",
+      "file": "dev/test_gate_check.py",
+      "findings": [],
+      "name": "test_it_carries_the_result_and_every_rule_that_fell_short",
+      "proof": "PROOF-25",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_passing_project_says_pass(self):\n        made = project_at('passed', by_ci=False, briefs=())\n        try:\n            code, output = run(made, as_json=True)\n            data = json.loads(output[output.index('{'):])\n            assert code == 0 and data['result'] == 'pass'\n            assert data['met'] == data['rules'] == 2\n            assert data['not_passed'] == []\n        finally:\n            made.close()",
+      "file": "dev/test_gate_check.py",
+      "findings": [],
+      "name": "test_a_passing_project_says_pass",
+      "proof": "PROOF-26",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_weak_rule_lands_in_the_weak_list(self):\n        made = project_at('strong', strength=40, config={'min_strength': 70})\n        try:\n            code, output = run(made, as_json=True)\n            data = json.loads(output[output.index('{'):])\n            assert code == 1\n            assert len(data['weak']) == 2 and data['not_passed'] == []\n            assert data['min_strength'] == 70\n        finally:\n            made.close()",
+      "file": "dev/test_gate_check.py",
+      "findings": [],
+      "name": "test_a_weak_rule_lands_in_the_weak_list",
+      "proof": "PROOF-27",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "fbc2ce55b647643b4ca7fd34493f81797fd175fd0b86c4321259135bec168eb4"
+}

@@ -1,0 +1,40 @@
+/* The deck ships two typefaces only: Arial for everything, Courier New for anything
+   the machine produced. No webfont binaries were supplied — both stacks resolve to
+   system faces, with Google fallbacks named for non-desktop rendering. */
+:root{
+  --font-sans:Arial,"Helvetica Neue",Helvetica,sans-serif;
+  --font-mono:"Courier New",Courier,monospace;
+
+  /* Deck scale — authored at 1920x1080, expressed here in px at that size */
+  --type-hero:180px;      /* "Purlin" cover wordmark (1125 half-pt) */
+  --type-display:98px;    /* section-break statements */
+  --type-title:48px;      /* slide titles (4800) */
+  --type-subtitle:33px;   /* cover kicker, tracked */
+  --type-lead:30px;
+  --type-body-lg:22.5px;  /* 2250 */
+  --type-body:20.25px;    /* 2025 — the deck's workhorse size */
+  --type-body-sm:18px;    /* 1800 — most common run size overall */
+  --type-caption:15.75px; /* 1575 */
+  --type-micro:15px;
+
+  /* UI scale — product dashboard */
+  --ui-metric-xl:44px;
+  --ui-metric:32px;
+  --ui-lg:18px;
+  --ui-base:15px;
+  --ui-sm:13px;
+  --ui-xs:11px;
+
+  --leading-tight:.8;     /* cover wordmark, lnSpc 79968 */
+  --leading-snug:1.12;
+  --leading-normal:1.35;
+  --leading-relaxed:1.5;
+
+  --tracking-hero:-.006em;  /* spc -112 on 1125 */
+  --tracking-normal:0;
+  --tracking-wide:.055em;   /* spc 182 on 3300 */
+  --tracking-label:.12em;   /* uppercase eyebrows */
+
+  --weight-regular:400;
+  --weight-bold:700;
+}

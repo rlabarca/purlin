@@ -1,0 +1,77 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T23:04:55Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "953551d0ed596b23796805f3ce69771ba477c4483cb45b8409ca4e38c6b27855",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-12",
+      "text": "Run `--gate passed` and verify no workflow; run `--gate strong` and verify `.github/workflows/purlin.yml` exists; run `--gate signed` and verify the workflow's bytes are unchanged and the summary reports it as kept; run `--gate passed` again and verify the config reads `passed` with `min_strength` null while the workflow is still there; set `signers` to `[\"jane@acme.com\"]`, run `--gate strong` and verify the list survives",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T230430Z-ca1f4b5-ci-windows.json",
+  "risk": "high",
+  "rule": "RULE-12",
+  "rule_hash": "cdb65fa992f2b2a576ddd5a1e8bfedfe9381d6c3a766b4cc3fa36d310f3110ed",
+  "rule_text": "Raising the gate adds what the higher level needs and keeps every file an earlier run wrote; lowering it writes the setting and deletes nothing, the signer list included",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "ab528c57a5276830f10cdcb4d7736367a84f3d0875ef36253cde565d954a6c4a",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_lowering_from_signed_keeps_the_signer_list(self, project):\n        project.run('--gate', 'signed')\n        config = project.config()\n        config['signers'] = ['jane@acme.com']\n        write(project.path('.purlin/config.json'),\n              json.dumps(config, indent=2) + '\\n')\n        project.run('--gate', 'strong')\n        assert project.config()['signers'] == ['jane@acme.com']",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_lowering_from_signed_keeps_the_signer_list",
+      "proof": "PROOF-12",
+      "reasons": []
+    },
+    {
+      "body": "def test_lowering_writes_the_setting_and_deletes_nothing(self, project):\n        project.run('--gate', 'signed')\n        project.run('--gate', 'passed')\n        assert project.config()['gate'] == 'passed'\n        assert project.config()['min_strength'] is None\n        assert project.has('.github/workflows/purlin.yml')",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_lowering_writes_the_setting_and_deletes_nothing",
+      "proof": "PROOF-12",
+      "reasons": []
+    },
+    {
+      "body": "def test_raising_to_signed_keeps_what_strong_wrote(self, project):\n        project.run('--gate', 'strong')\n        before = read(project.path('.github/workflows/purlin.yml'))\n        output = project.run('--gate', 'signed')\n        assert read(project.path('.github/workflows/purlin.yml')) == before\n        assert summary_paths(output)['.github/workflows/purlin.yml'] == 'kept'",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_raising_to_signed_keeps_what_strong_wrote",
+      "proof": "PROOF-12",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_raising_to_strong_adds_the_workflow(self, project):\n        project.run('--gate', 'passed')\n        assert not project.has('.github/workflows/purlin.yml')\n        project.run('--gate', 'strong')\n        assert project.has('.github/workflows/purlin.yml')\n        assert project.config()['gate'] == 'strong'",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_raising_to_strong_adds_the_workflow",
+      "proof": "PROOF-12",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "34c610f252418752dddd085eade47d380c032c54b6f1c308c30625ee8054563c"
+}

@@ -1,174 +1,124 @@
 <p align="center">
-  <img src="assets/purlin-logo.svg" alt="Purlin" width="400">
+  <img src="design/assets/logo.svg" alt="Purlin" width="360">
 </p>
 
 # Purlin
 
-[Documentation](docs/index.md)
+For anyone deciding whether to put Purlin in a project, and for the engineer who sets it up.
 
-**Rule-Proof Spec-Driven Development**
+Purlin is a Claude Code plugin for spec-driven development. A **rule** is one line in a spec
+saying what the software must do. A **proof** says how that claim is observed. A **test** is the
+executable form of a proof, tagged with the rule it settles. A **record** is the machine's
+evidence of one `purlin:audit` run, written into the repository and committed. A **signature**
+is a named person's attestation that a rule, its proof and its test belong together.
 
-Purlin is a Claude Code plugin that adds spec-driven development to your workflow. You use Claude exactly as you normally would — Purlin just gives it a structured way to track what your code should do, prove that it does it, and tell you what's missing.
+A rule answers up to three questions, each one an **evidence level**, each answered by a
+**cell**: **passed**, every tagged test for the rule passed; **strong**, the tests are worth
+trusting; **signed**, a person signed the rule, proof and test hashes. Three commands carry the
+three levels: `purlin:test`, `purlin:audit` and `purlin:sign`.
+
+Purlin cannot prove your code is correct. It gives you a paper trail: every claim, how it is
+observed, what ran, on which commit, and who said so.
+
+## Three ways to work
+
+One setting, the **gate**, says what CI must see before a change can merge. `purlin:init` asks
+that one question and nothing else.
+
+| Gate | Who it fits | What CI requires before merge |
+|------|-------------|-------------------------------|
+| `passed` | One developer | Every rule's passed cell is met: a tagged test for every proof, passing. A pass from any source counts |
+| `strong` | A team of PM, designers, engineers and QA | Every rule's strong cell is met: a CI pass at this commit, the test strength at or above `min_strength`, no finding and no hold. Only a record CI wrote counts |
+| `signed` | The same team under GxP | Every rule's signed cell is met: a current signature on every rule at or above `sign_at`, in a signed commit by someone on the signer list |
+
+Raise or lower the gate later with `purlin:init --gate <level>`. Raising adds what is missing;
+lowering deletes nothing. The one definition lives in
+[references/hard_gates.md](references/hard_gates.md).
 
 ## Install
 
-**Prerequisites:** git, Python 3.8+, [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
+Purlin needs git, Python 3.9 or later, and
+[Claude Code](https://docs.anthropic.com/en/docs/claude-code).
+
+Install it from the marketplace, which is how a project uses it:
 
 ```bash
 cd my-project
-git init                # required — Purlin needs git
+git init                # Purlin needs a git repository
 claude plugin marketplace add https://github.com/rlabarca/purlin.git --scope project
 ```
 
-The `--scope project` flag stores the marketplace in the project so teammates get it automatically when they clone. Omit it for user-level install.
+Then, inside Claude Code, `/plugin install purlin@purlin` and `/reload-plugins`. The plugin
+lands under `~/.claude/plugins/cache/purlin/purlin/<version>/`. `--scope project` records the
+marketplace entry in the project's `.claude/settings.json`, so a teammate who clones the
+repository resolves the same source; each teammate still runs the install and the reload in
+their own checkout.
 
-Already added `purlin` using the SSH URL (`git@github.com:...`)? Run `claude plugin marketplace remove purlin` first, then the command above. The name `purlin` stays bound to whichever URL it was added with.
-
-Then start Claude Code and install:
+To work on Purlin itself, or to try a checkout before installing it, load it from disk:
 
 ```bash
-claude
+claude --plugin-dir /path/to/purlin
 ```
 
-```
-/plugin install purlin@purlin
-```
+A consumer project carries no copy of Purlin, so CI clones Purlin at a pinned tag and runs the
+audit from that checkout.
 
-Reload plugins so skill autocomplete takes effect:
-```
-/reload-plugins
-```
-
-Then initialize:
+## Your first session
 
 ```
 purlin:init
 ```
 
-This creates `.purlin/`, `specs/`, detects your test framework, scaffolds the proof plugin, and installs git hooks.
-
-## What a Session Looks Like
-
-You don't need to learn a new workflow. You just use Claude Code as usual. Here's what a typical session looks like:
-
-**If you have an existing codebase**, generate specs from your code:
+Answer the one question with `passed`. Init detects the language and the test framework from the
+tree, reads the git host from the remote URL, writes `.purlin/` and `specs/`, installs the proof
+plugin, and prints every file it wrote.
 
 ```
-purlin:spec-from-code
+purlin:spec "Users sign in with email and password. After five failed attempts the
+account is locked for fifteen minutes."
 ```
 
-**Day-to-day work** — use any combination of these as you go:
+That sentence becomes three rules, each with a proof, because each of the three can fail on its
+own. The skill ends with `Spec created: login. Build it now?`
 
 ```
-purlin:spec auth_login     ← define what a feature must do
-purlin:build auth_login    ← Claude writes code + tests, iterates until rules pass
-purlin:verify              ← sign off — verification receipts committed
+purlin:build login
 ```
 
-**See what needs attention:**
+Build writes the code and one tagged test per proof, runs them, commits the changeset, and
+prints every rule's cells.
 
 ```
-purlin:status              ← coverage table with → directives telling you what to do next
-purlin:drift               ← what changed since last verification, who needs to act
+purlin:audit
 ```
 
-You can tell Claude to handle the items that come back from status and drift — they're actionable directives, not just reports.
+The audit runs the tests, breaks the code on purpose to measure how much the tests catch, writes
+`.purlin/records/login/<timestamp>-<commit7>-<runner>.json`, commits it, and prints the test
+strength. Then push.
 
-**Check test quality** (expensive — don't run every session):
+Every command ends by naming the next step, computed from the cells it found.
 
-```
-purlin:audit               ← evaluates whether your tests actually prove what they claim
-```
+## Commands
 
-**Visual dashboard** — `purlin:status` prints a dashboard link at the bottom. Open it in your browser for a visual view of coverage and test quality. You don't need to use it — the CLI output has everything — but it's there if you want it.
+| Command | Purpose |
+|---------|---------|
+| `purlin:spec <name>` | Scaffold or edit a feature spec in the 2-section format |
+| `purlin:build [name]` | Inject a spec's rules into context, then implement them |
+| `purlin:test [feature]` | Run the tagged tests and print each rule's passed cell |
+| `purlin:audit [feature]` | Run the tests and the breaks, then write the record |
+| `purlin:sign [feature] [RULE-N]` | Walk the review list, or sign a rule, a feature or a batch as a signed commit |
+| `purlin:drift [role]` | Report what changed since the last record, by role |
+| `purlin:init` | Initialize a project for Purlin |
+| `purlin:anchor <cmd>` | Create and manage anchor specs, local or pinned from elsewhere |
+| `purlin:status` | Show every rule's cells and what blocks the gate |
+| `purlin:find [name]` | Find a spec by name and show its rules' cells |
+| `purlin:rename <old> <new>` | Rename a feature across specs, tests, signatures and records |
+| `purlin:spec-from-code [dir]` | Reverse-engineer 2-section specs from existing code |
 
-### Upgrading from an older version of Purlin
+Plain language reaches every one of them: "run the tests" reaches `purlin:test`, and "what needs
+a person" reaches `purlin:sign`. The syntax above is canonical, never required.
 
-If you have a pre-0.9.0 Purlin installation, keep your `features/` directory — `spec-from-code` migrates your old specs to the new format. Remove only the non-spec artifacts:
+## Documentation
 
-```bash
-rm -rf .purlin/ pl-* *.sh
-```
-
-Then initialize and migrate:
-
-```
-purlin:init
-purlin:spec-from-code
-```
-
-Your old scenarios and rules are preserved as input for the new-format specs. See the [Installation Guide](docs/installation-guide.md#upgrading-from-an-older-version-of-purlin) for details.
-
-## How It Works
-
-1. **Specs** define what your code must do. Each spec has rules (testable constraints) and proofs (observable assertions).
-2. **Proof markers** in your tests link test cases to spec rules. Test runners emit proof files automatically.
-3. **`sync_status`** reads specs and proof files, diffs them, and tells you exactly what to do next.
-
-```
-auth_login: 2/3 rules proved
-  RULE-1: PASS (PROOF-1 in tests/test_login.py)
-  RULE-2: PASS (PROOF-2 in tests/test_login.py)
-  RULE-3: NO PROOF
-  → Fix: write a test with @pytest.mark.proof("auth_login", "PROOF-3", "RULE-3")
-  → Run: purlin:unit-test
-```
-
-## Skills
-
-| Skill | Purpose |
-|-------|---------|
-| `purlin:spec` | Create/edit specs |
-| `purlin:build` | Implement from spec rules |
-| `purlin:verify` | Run all tests, issue receipts |
-| `purlin:unit-test` | Run tests, emit proof files |
-| `purlin:audit` | Evaluate proof quality |
-| `purlin:status` | Show coverage + directives |
-| `purlin:drift` | Drift detection and change summary |
-| `purlin:init` | Initialize project |
-| `purlin:anchor` | Sync external constraints |
-| `purlin:find` | Search specs |
-| `purlin:rename` | Rename feature across artifacts |
-| `purlin:spec-from-code` | Generate specs from code |
-
-Skills are **optional** — you can write specs, code, and tests without invoking any skill. Skills provide scaffolding and workflow automation.
-
-## Stakeholder Tools
-
-The `tools/` directory contains skills for non-engineer stakeholders who interact with Purlin projects through Claude Desktop. These don't require a development environment — just a repo URL.
-
-| Tool | Audience | What it does |
-|------|----------|-------------|
-| `tools/QA/purlin-qa-report` | QA | Fetches project digest, produces triaged HTML report of failures, drift, test quality, manual tests due, and sign-off readiness |
-| `tools/PM/purlin-anchor-userstories` | Product | Creates and maintains user story anchor files that drive spec-driven development |
-
-Install these as Claude Desktop skills (drag the `.skill` file or paste the `.md` contents into project instructions). They clone the repo, read the project digest, and produce visual reports — no dev tools needed.
-
-## Hard Gate (only 1)
-
-1. **Proof coverage** — `purlin:verify` won't issue a receipt unless every rule has a passing proof.
-
-Everything else is optional guidance.
-
-## Architecture
-
-```
-.purlin/
-  config.json             # Project settings
-  report-data.js          # Project digest (auto-generated on commit)
-  plugins/                # Proof plugin (scaffolded by init)
-specs/
-  <category>/
-    <feature>.md          # Feature specs (3-section format)
-    <feature>.proofs-*.json  # Proof files (emitted by test runners)
-    <feature>.receipt.json   # Verification receipts
-  _anchors/
-    <name>.md             # Cross-cutting constraints (optionally synced from external sources)
-tools/
-  QA/                     # QA report skill for Claude Desktop
-  PM/                     # Product anchor skill for Claude Desktop
-```
-
-**MCP Server:** `scripts/mcp/purlin_server.py` — provides `sync_status`, `drift`, and `purlin_config` tools.
-**Proof Plugins:** `scripts/proof/` — proof collectors for pytest (Python), Jest and Vitest (JS/TS), xUnit (.NET — C#, F#, VB.NET), C, PHP, SQL, and shell. See [references/supported_frameworks.md](references/supported_frameworks.md).
-**Git Hooks:** `scripts/hooks/` — pre-push (coverage check) and pre-commit (digest auto-generation).
+Start at [docs/index.md](docs/index.md), which maps every guide by who it is for.
+[docs/getting-started.md](docs/getting-started.md) walks the first session in full.

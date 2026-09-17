@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "states",
+  "generated_at": "2026-09-17T12:54:51Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "7f06e345a47d3b0a6a8be6577ad95d244f4dce665ff6210edc6a164720c477ab",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-5",
+      "text": "Call the record reader's gate question for each of the three gates and each of the three labels; verify `passed` counts `ci`, `developer` and `local`, and that `strong` and `signed` count `ci` alone and refuse the other 2",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/states/20260917T125354Z-df84acf-ci-windows.json",
+  "risk": "high",
+  "rule": "RULE-4",
+  "rule_hash": "d9b9a5af4dd633767e1aadaef4f073d053bcd33ae3bb4ace4d2c0bffa40e74f5",
+  "rule_text": "Under the gate `passed` a record counts whether ci, a developer or this checkout wrote it; under `strong` and `signed` only a record labelled `ci` counts",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "e3dc28f6d1fa8ca00f4ef2f2c587096f492d3e67d07b1916a455112c0d88b8bb",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_what_counts_under_each_gate(self):\n        for label in ('ci', 'developer', 'local'):\n            assert purlin_records.counts_under('passed', label), label\n        for gate in ('strong', 'signed'):\n            assert purlin_records.counts_under(gate, 'ci'), gate\n            assert not purlin_records.counts_under(gate, 'developer'), gate\n            assert not purlin_records.counts_under(gate, 'local'), gate",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_what_counts_under_each_gate",
+      "proof": "PROOF-5",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "9f63944bbec28a7a3ea44fee437329d33765a6c41eb3f3a100c4ec6011ba2488"
+}

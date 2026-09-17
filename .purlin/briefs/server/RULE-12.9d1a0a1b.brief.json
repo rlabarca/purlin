@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "server",
+  "generated_at": "2026-09-17T12:54:42Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "d70381319e273e48490c4ffb68bca16d5a0117b34376a23ff64d02aeafd430cf",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-12",
+      "text": "Call `generate_digest` on a directory holding no `.purlin/config.json`; verify it returns nothing and writes no file",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/server/20260917T125352Z-df84acf-ci-windows.json",
+  "risk": "medium",
+  "rule": "RULE-12",
+  "rule_hash": "5e45609b7269a092aed17ed6c9965614d29a3f33855dedd8f01fd961dc3ad78c",
+  "rule_text": "A root holding no config writes no data file and returns nothing",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "bbbb98840639a5f2089468116b196826b5560398fe031407f9edfb1ee6be28c8",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_project_with_no_config_writes_nothing(self, tmp_path):\n        assert purlin_srv.generate_digest(str(tmp_path)) is None",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_a_project_with_no_config_writes_nothing",
+      "proof": "PROOF-12",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "9d1a0a1b8dd25d44d1f1a4af242fc11696be15eca7922cb58686fb23ff521588"
+}

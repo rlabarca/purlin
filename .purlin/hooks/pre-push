@@ -1,0 +1,40 @@
+#!/bin/sh
+# Purlin pre-push shim, written by purlin:init. It hands the hook to the
+# installed plugin's own scripts/hooks/pre-push.sh, where the behaviour lives.
+# The first of these carrying that file wins: $PURLIN_PLUGIN_ROOT, line 1 of
+# .purlin/plugin-root, $CLAUDE_PLUGIN_ROOT, a marketplace install under
+# ~/.claude/plugins/cache/purlin/purlin/, then the project root. A push is
+# never blocked because the plugin was not found: no test ran, none failed.
+set -u
+
+PURLIN_SCRIPT="scripts/hooks/pre-push.sh"
+PURLIN_PROJECT="$(git rev-parse --show-toplevel)"
+PURLIN_ROOT=""
+
+purlin_try() {
+  if [ -z "$PURLIN_ROOT" ] && [ -n "${1:-}" ] && [ -f "$1/$PURLIN_SCRIPT" ]; then
+    PURLIN_ROOT="$1"
+  fi
+}
+
+PURLIN_PINNED=""
+if [ -f "$PURLIN_PROJECT/.purlin/plugin-root" ]; then
+  PURLIN_PINNED="$(sed -n 1p "$PURLIN_PROJECT/.purlin/plugin-root")"
+fi
+
+purlin_try "${PURLIN_PLUGIN_ROOT:-}"
+purlin_try "$PURLIN_PINNED"
+purlin_try "${CLAUDE_PLUGIN_ROOT:-}"
+for purlin_cached in "$HOME"/.claude/plugins/cache/purlin/purlin/*; do
+  purlin_try "$purlin_cached"
+done
+purlin_try "$PURLIN_PROJECT"
+
+if [ -z "$PURLIN_ROOT" ]; then
+  echo "purlin: the plugin was not found, so the tagged tests did not run"
+  echo "        before this push. Set PURLIN_PLUGIN_ROOT, or write the plugin"
+  echo "        directory into .purlin/plugin-root, to fix this."
+  exit 0
+fi
+
+exec "$PURLIN_ROOT/$PURLIN_SCRIPT" "$@"

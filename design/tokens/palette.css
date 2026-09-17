@@ -1,0 +1,47 @@
+/* Purlin raw palette. Warm editorial half from the deck; slate + state half from the product dashboard. */
+:root{
+  /* --- Deck / brand: warm ---------------------------------------- */
+  --purlin-navy-900:#092936;   /* deepest ground, section-break slides */
+  --purlin-navy-800:#0C3444;   /* primary ground, content slides */
+  --purlin-cream-100:#E4DDD4;  /* primary ink on dark, logo fill */
+  --purlin-blush-200:#E6BEB0;  /* secondary ink, eyebrow labels */
+  --purlin-copper-500:#C0793F; /* accent, measure lines, gate labels */
+  --purlin-slate-300:#93AEB8;  /* muted mono, list numerals */
+  --purlin-slate-200:#BFCED5;  /* muted text on navy, one step brighter for reading */
+  --purlin-cream-050:#F1ECE5;  /* primary ink on navy, one step brighter than the logo cream */
+
+  /* --- Product / dashboard: cool slate --------------------------- */
+  --slate-950:#0F172A;
+  --slate-900:#172034;
+  --slate-800:#1E293C;
+  --slate-750:#263350;
+  --slate-700:#334155;
+  --slate-500:#64738B;
+  --slate-400:#94A2B8;
+  --slate-200:#E2E8F0;
+  --white:#FFFFFF;
+
+  /* --- State hues (dashboard) ------------------------------------ */
+  --green-500:#22C55D;
+  --green-600:#269655;
+  --green-300:#3AC968;
+  --green-100:#C6EDCF;
+  --amber-500:#F59E0C;
+  --red-500:#EF4444;
+  --teal-400:#2DD4BF;
+
+  /* --- State hues, light-surface variants ------------------------ */
+  --green-700:#15803D;
+  --amber-700:#B45309;
+  --red-700:#B91C1C;
+  --teal-700:#0F766E;
+  --copper-700:#8F5626;
+
+  /* --- Warm light-surface ramp (extrapolated) -------------------- */
+  --purlin-paper-050:#FBF8EC;  /* yellowish white: the light ground */
+  --purlin-paper-100:#F4EFDF;
+  --purlin-paper-200:#E4DDD4;
+  --purlin-paper-300:#D3C9BC;
+  --purlin-ink-700:#1B4A5C;
+  --purlin-ink-500:#4D676F;  /* navy under the 30% cream veil */
+}

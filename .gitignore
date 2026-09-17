@@ -7,6 +7,7 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+mutants/
 .venv/
 env/
 venv/
@@ -16,6 +17,11 @@ venv/
 .purlin/config.local.json
 .purlin/plugins/__pycache__/
 .purlin/cache/
+.purlin/report-stamp.js
+.purlin/report-data.js
+
+# The text rendering of a brief, a local view of the committed JSON beside it
+.purlin/briefs/**/*.brief.txt
 
 # Plugin data (persists across updates)
 .claude-plugin-data/
@@ -30,6 +36,7 @@ dev/external-refs/
 *.log
 *.pid
 *.mmd
+!assets/src/*.mmd
 *.png
 !docs/images/*.png
 *.jpeg
@@ -59,3 +66,6 @@ tmp/
 dist/
 build/
 .playwright-mcp/
+
+# Where this machine keeps the installed plugin (read by .purlin/hooks/)
+.purlin/plugin-root

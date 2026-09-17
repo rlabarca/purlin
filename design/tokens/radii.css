@@ -1,0 +1,11 @@
+/* Purlin draws rectangles. Every shape in the deck is prstGeom "rect" — no rounding.
+   The product softens only pills and tags; nothing else gets a radius. */
+:root{
+  --radius-none:0;
+  --radius-sm:4px;     /* dashboard panels, tag chips */
+  --radius-md:6px;     /* stat tiles */
+  --radius-pill:999px; /* status pills, outline buttons */
+  --border-width-hairline:1px;
+  --border-width-default:1.5px; /* 13229 EMU deck stroke */
+  --border-width-strong:2px;
+}

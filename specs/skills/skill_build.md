@@ -1,42 +1,23 @@
 # Feature: skill_build
 
+> Description: What `skills/build/SKILL.md` must say. The build skill loads the rules a feature is
+>   bound by, writes the code and the tagged tests, and commits the changeset, so its
+>   text decides what a commit records about which rule each change serves.
 > Scope: skills/build/SKILL.md
-> Stack: markdown (skill definition)
-> Description: The `purlin:build` skill reads a spec, loads all its rules (including `> Requires:` dependencies), and implements the feature. It handles test execution, failure diagnosis, and proof generation.
+> Stack: markdown, Claude Code skill definition
 
 ## Rules
 
-- RULE-1: Skill file has YAML frontmatter with `name` and `description` fields
-- RULE-2: Skill file contains a `## Usage` section documenting command syntax
-- RULE-3: The `name` field in frontmatter is `build`, matching the directory name
-- RULE-4: Skill includes commit instructions or git operations for file modifications
-- RULE-5: Skill requires calling `sync_status` after tests and states it is not optional
-- RULE-6: Skill includes test failure diagnosis guidance requiring root cause analysis before fixing
-- RULE-7: Skill includes mandatory tier tag review for proof descriptions
-- RULE-8: Build skill documents proof fixer mode with instructions to fix proofs based on audit feedback and report back
-- RULE-9: Build skill produces a changeset summary after tests pass, with three sections: Changeset (rule→file:line mapping), Decisions (judgment calls), and Review (focus areas)
-- RULE-10: The changeset summary is included as the commit message body in the build commit
-- RULE-11: When running as proof fixer, the changeset summary maps fixed proofs instead of rules and omits the Decisions section
-- RULE-12: Build skill has exit criteria requiring tests pass, changeset summary printed, all changes committed, and no uncommitted proof files before the skill can complete
+- RULE-1: `skills/build/SKILL.md` opens with a frontmatter block whose `name` is `build` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:build` [risk: medium] [origin: eng]
+- RULE-2: The skill chooses what to build from `sync_status` and runs the tests through `purlin:test`, never through the test framework directly [risk: medium] [origin: eng]
+- RULE-3: The last section of `skills/build/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome [risk: medium] [origin: eng]
+- RULE-4: The whole of `skills/build/SKILL.md` is at most 130 lines [risk: low] [origin: eng]
+- RULE-5: The commit the skill makes carries the `feat(<name>):` subject prefix and a body whose Changeset section maps every rule the build addressed as `RULE-N → file:line`, with Decisions and Review omitted when they are empty and Changeset never omitted, as `references/commit_conventions.md` renders it [risk: medium] [origin: eng]
 
 ## Proof
 
-- PROOF-1 (RULE-1): Grep `skills/build/SKILL.md` for YAML frontmatter delimiters (`---`); verify `name:` and `description:` fields exist
-- PROOF-2 (RULE-2): Grep `skills/build/SKILL.md` for `## Usage`; verify the section exists
-- PROOF-3 (RULE-3): Extract `name:` from frontmatter; verify it equals `build`
-- PROOF-4 (RULE-4): Grep `skills/build/SKILL.md` for commit instructions (`git commit`, `commit the`, `create.*commit`); verify present
-- PROOF-5 (RULE-5): Grep `skills/build/SKILL.md` for `sync_status` and `not optional`; verify both present
-- PROOF-6 (RULE-6): Grep `skills/build/SKILL.md` for `diagnose` and `Never weaken`; verify both present
-- PROOF-7 (RULE-7): Grep `skills/build/SKILL.md` for tier review instructions and tier tag references (`@integration`/`@e2e`/unit tier); verify present
-- PROOF-8 (RULE-8): e2e: Grep skills/build/SKILL.md for proof fixer mode; verify fix proofs and report instructions @e2e
-- PROOF-9 (RULE-9): Grep `skills/build/SKILL.md` for "Changeset Summary", "Changeset", "Decisions", "Review" section headers; verify all three summary sections are documented with format examples
-- PROOF-10 (RULE-10): Grep `skills/build/SKILL.md` for commit message body instructions that reference the changeset summary and commit_conventions.md; verify present
-- PROOF-11 (RULE-11): Grep `skills/build/SKILL.md` for proof fixer changeset instructions in the "When Running as Proof Fixer" section; verify it documents mapping fixed proofs and skipping Decisions
-- PROOF-12 (RULE-12): Grep `skills/build/SKILL.md` for "Exit Criteria" section; verify it requires tests pass, changeset summary, committed changes, and no uncommitted proof files
-- PROOF-13 (RULE-9): Create a temp project with spec+code+tests, run pytest to emit proofs, build a changeset summary, validate it has all 3 sections with RULE→file:line mappings @e2e
-- PROOF-14 (RULE-10): In the temp project, commit with changeset summary as body; verify commit subject uses feat(<name>): prefix and body contains all 3 changeset sections @e2e
-- PROOF-15 (RULE-11): Build a proof-fixer-style changeset; verify it maps PROOF-N instead of RULE-N and has no Decisions section @e2e
-- PROOF-16 (RULE-12): After the build session in the temp project, verify exit criteria: all tests pass, changeset summary valid, all proofs committed, git status clean @e2e
-- PROOF-17 (RULE-9): Run purlin:build via claude -p with a spec containing ambiguous rules; verify agent output contains Changeset with RULE mappings, non-empty Decisions with real judgment calls, and non-empty Review with risk areas @e2e
-- PROOF-18 (RULE-10): After the agent build session, verify git log shows a feat(<name>): commit whose body contains RULE references and the changeset summary sections @e2e
-- PROOF-19 (RULE-12): After the agent build session, verify git status has no uncommitted proof files or source files, and proof files are tracked in git @e2e
+- PROOF-1 (RULE-1): Read `skills/build/SKILL.md`; verify the file opens with `---`, that the frontmatter carries `name: build` and a `description:` whose value is one non-empty line, and that `references/purlin_commands.md` contains the literal `purlin:build`. Deleting the `name:` line fails naming the file
+- PROOF-2 (RULE-2): Read `skills/build/SKILL.md`; verify it names `sync_status` in the section that chooses what to build, carries the fenced command `purlin:test <name>`, and carries the sentence `Never run the test framework directly.` Deleting that sentence fails naming it
+- PROOF-3 (RULE-3): Read `skills/build/SKILL.md` and split it on its `## ` headings; verify the last heading matches `next step` or `when you are done` case-insensitively, that the text under it names at least two outcomes as list items or table rows, and that at least one of its lines carries `→`. Deleting the closing section fails naming the heading it found instead
+- PROOF-4 (RULE-4): Read `skills/build/SKILL.md` and count its lines; verify the count is at most 130. Appending prose until the file passes 130 lines fails, and the failure reports the count it found beside the ceiling
+- PROOF-5 (RULE-5): Run `bash dev/test_e2e_build_changeset.sh` from the repository root; verify it exits 0 and prints a line beginning `ok:`. The suite writes a fixture commit whose body follows the contract, reads the message back out of git and checks it, then rejects three fixtures that each break the contract in one way, and it asserts that `skills/build/SKILL.md` still names Changeset, Decisions, Review, `RULE-N → file:line`, `feat(<name>):` and `references/commit_conventions.md`. Dropping the Changeset section from the skill fails the suite with a non-zero exit @integration

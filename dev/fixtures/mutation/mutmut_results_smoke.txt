@@ -1,0 +1,5 @@
+    calc.ops.x_add__mutmut_1: killed
+    calc.ops.x_scale__mutmut_1: survived
+    calc.ops.x_scale__mutmut_2: survived
+    calc.ops.x_scale__mutmut_3: survived
+    calc.ops.x_scale__mutmut_4: survived

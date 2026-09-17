@@ -1,0 +1,52 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "signatures",
+  "generated_at": "2026-09-17T12:54:44Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "a23dc461a3b1e200ca6c2a4b93e2562abe7d64a0005f987441a146abc2d0e9d2",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-15",
+      "text": "Run `--batch` in a project at gate `signed` whose `sign_at` is `medium`; verify it exits 0, prints `Signed 1 rule in` and writes a signature for `RULE-2` alone",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/signatures/20260917T125352Z-df84acf-ci-windows.json",
+  "risk": "medium",
+  "rule": "RULE-12",
+  "rule_hash": "62d37d84e277cfb6219df4738d59da84783e545cbdbc8e804f2c5b71f2722ffc",
+  "rule_text": "`--batch` signs every rule that is signable now, in one signed commit",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "6d69f7244e5d3f651481a179b34aec320fc90cab98c71a5fe16a218048893e84",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_batch_signs_everything_signable(self, capsys):\n        made = signing_project(sign_at='medium')\n        try:\n            code = sign_module.main(['--batch', '--project-root', made.root])\n            output = capsys.readouterr().out\n            assert code == 0, output\n            assert made.signatures() == [\n                name for name in made.signatures() if name.startswith('RULE-2.')\n            ], made.signatures()\n            assert 'Signed 1 rule in' in output, output\n        finally:\n            made.close()",
+      "file": "dev/test_signatures.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_a_batch_signs_everything_signable",
+      "proof": "PROOF-15",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    }
+  ],
+  "triple_hash": "644a1fae3c615ec26c5ab44f2dda725c5007bc0dbc2378608496921b5c1843ec"
+}

@@ -1,0 +1,10 @@
+/* No drop shadows anywhere in the source. Depth is made with tint steps and hairlines.
+   These tokens exist so consumers reach for the right non-shadow. */
+:root{
+  --shadow-none:none;
+  --elev-flat:0 0 0 0 transparent;
+  --elev-raised:inset 0 0 0 1px var(--border-hairline);
+  --elev-focus:0 0 0 2px var(--canvas),0 0 0 4px var(--focus-ring);
+  --overlay-scrim:rgba(9,41,54,.72);
+  --backdrop-blur:8px;
+}

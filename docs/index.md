@@ -1,85 +1,53 @@
-<p align="center">
-  <img src="../assets/purlin-logo.svg" alt="Purlin" width="400">
-</p>
+# Purlin documentation
 
-# Purlin Documentation
+For anyone looking for the guide that fits their role. Every entry is one sitting's read.
 
-**Rule-Proof Spec-Driven Development**
-
-- Write better code through proof-based specs
-- Prove spec / code drift with signed verification
-- Enable multi-discipline collaboration with drift detection and anchor specs with external references
-
-## Guides
+## Everyone
 
 | Guide | What it covers |
-|-------|---------------|
-| [The Purlin Lifecycle](lifecycle-guide.md) | Spec format, sync model, PM/Engineer/QA workflows, CI integration |
-| [Installation and Quick Start](installation-guide.md) | Quick start, installing Purlin, initializing a project, proof plugin setup |
-| [Testing Workflow](testing-workflow-guide.md) | Proof markers, proof quality, custom plugins, tiers, manual proofs |
-| [Anchors and External References](anchors-guide.md) | Anchors, external references, FORBIDDEN patterns, cross-cutting constraints |
-| [Collaboration](collaboration-guide.md) | External anchors, branch handoff, merge conflicts |
-| [Dashboard](dashboard-guide.md) | Visual coverage dashboard — setup, usage, data flow |
-| [Regulated Environments](regulated-environments.md) | Integration points for FDA, HIPAA, SOC2 -- what Purlin is and isn't |
+|-------|----------------|
+| [Getting started](getting-started.md) | Install, `purlin:init` and its one question, the first spec, build, test, verify |
+| [Working together](working-together.md) | What each role needs, what they run, what they see, and drift per role |
 
-## Example Workflows
+## Engineer
 
-| Example | What it shows |
-|---------|---------------|
-| [Figma Web App Example](examples/figma-web-app.md) | Build a weather app from scratch using a Figma design anchor |
+| Guide | What it covers |
+|-------|----------------|
+| [Solo workflow](solo-workflow.md) | The `passed` gate end to end, your own record commit, the pre-push hook |
+| [Specs and anchors](specs-and-anchors.md) | The spec format, local anchors, the anchor repo option, pins, id allocation |
+| [Running and records](running-and-records.md) | `purlin:test`, `purlin:audit`, CI, the record shape, retention, test strength |
+| [Specs from existing code](spec-from-code.md) | `purlin:spec-from-code` once on a codebase that predates Purlin |
 
-## Architecture at a Glance
+## PM and designer
 
-```
-.purlin/
-  config.json              # Team defaults (committed)
-  config.local.json        # Per-user overrides (gitignored)
-  plugins/                 # Proof plugin (scaffolded by purlin:init)
-  report-data.js           # Project digest (committed, feeds the dashboard)
-specs/
-  <category>/
-    <feature>.md           # Spec (3-section format)
-    <feature>.proofs-*.json  # Proof files (emitted by test runners)
-    <feature>.receipt.json   # Verification receipts
-  _anchors/
-    <name>.md              # Cross-cutting constraints (optionally synced from external sources)
-```
+| Guide | What it covers |
+|-------|----------------|
+| [Design in specs](design-in-specs.md) | `designs/`, design anchors, `origin: design` rules, mock beside screenshot |
+| [Team workflow](team-workflow.md) | The `strong` gate, CI as the writer of the record, one traced sprint |
 
-## Runtime Components
+## QA
 
-| Component | Path | Purpose |
-|-----------|------|---------|
-| MCP server | `scripts/mcp/purlin_server.py` | Powers `purlin:status`, `purlin:drift`, and config tools |
-| Proof plugins | `scripts/proof/` | Proof collectors for pytest, Jest, Vitest, xUnit (.NET), C, PHP, SQL, and shell — see [supported frameworks](../references/supported_frameworks.md) |
+| Guide | What it covers |
+|-------|----------------|
+| [Review and signing](review-and-signing.md) | The review list, the brief, `purlin:sign`, what stales a signature |
+| [Dashboard](dashboard.md) | The local page and the CI artifact, the three screens, filters, both themes |
 
-## Skills Reference
+## Admin
 
-See [references/purlin_commands.md](../references/purlin_commands.md) for the full skill reference.
+| Guide | What it covers |
+|-------|----------------|
+| [Regulated workflow](regulated-workflow.md) | The `signed` gate, the signer list, signed commits, the evidence trail |
+| [Raising the gate and upgrading](raising-the-gate-and-upgrading.md) | `purlin:init --gate` both ways, and `purlin:init --update` |
 
-| Resource | What it covers |
-|----------|---------------|
-| [Spec Quality Guide](../references/spec_quality_guide.md) | How to write good rules, proofs, tiers, anchors, and FORBIDDEN patterns |
-| [Audit Criteria](../references/audit_criteria.md) | Three-pass audit -- spec coverage, structural checks, semantic alignment |
-| [Drift Criteria](../references/drift_criteria.md) | File classification, drift detection, config field ownership |
-| [Generating Specs from Code](spec-from-code-guide.md) | Onboarding existing projects with `purlin:spec-from-code` |
+## Reference
 
-Key skills:
-
-- `purlin:spec` -- create/edit specs
-- `purlin:build` -- implement from spec rules
-- `purlin:verify` -- run all tests, issue verification receipts
-- `purlin:unit-test` -- run tests and emit proof files
-- `purlin:audit` -- evaluate proof quality (STRONG/WEAK/HOLLOW)
-- `purlin:status` -- show rule coverage dashboard
-- `purlin:drift` -- drift detection and change summary
-- `purlin:spec-from-code` -- reverse-engineer specs from existing code
-- `purlin:find` -- search specs by name
-- `purlin:rename` -- rename a feature across specs, proofs, markers, and references
-- `purlin:anchor` -- sync cross-cutting constraints from external sources
-- `purlin:init` -- initialize and configure a project
-
-## Hard Gate (only 1)
-
-1. **Proof coverage** -- `purlin:verify` won't issue a receipt unless every rule has a passing proof.
-
-Everything else is optional guidance.
+| File | What it covers |
+|------|----------------|
+| [Commands](../references/purlin_commands.md) | Every command's syntax, its one-liner, and what it writes |
+| [The gate](../references/hard_gates.md) | The one setting, which records count, the branch rules, the signer list |
+| [Glossary](../references/glossary.md) | The word this project uses for each concept, and the retired spellings |
+| [Spec format](../references/formats/spec_format.md) | The 2-section spec, field by field |
+| [Record format](../references/formats/record_format.md) | The record an audit run writes |
+| [Signature format](../references/formats/signature_format.md) | The signature file and what it binds |
+| [Spec quality](../references/spec_quality_guide.md) | Writing a rule worth having, and diagnosing a failure |
+| [Supported frameworks](../references/supported_frameworks.md) | How each test framework is detected and wired |

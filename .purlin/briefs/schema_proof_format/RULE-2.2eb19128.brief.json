@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "schema_proof_format",
+  "generated_at": "2026-09-16T22:35:36Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "48fa2305f611657dcec2cdf888b35146d13852cd8a5b616d7499fcec63e7c4c8",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-2",
+      "text": "Write a proof file holding one entry, read it back as JSON, and verify the document carries `tier` and `proofs`, that the entry is missing none of the seven required fields, and that it carries neither a `runner` key nor an `os` key",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/schema_proof_format/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-2",
+  "rule_hash": "ec02ce84675b3677c973c7c9b94ed1be9ff3498427b0c3cef7de5d7c57091ad0",
+  "rule_text": "An entry carries the seven fields `feature`, `id`, `rule`, `test_file`, `test_name`, `status` and `tier`, and the file carries a top-level `tier` and a `proofs` array; no entry names the runner or the operating system, because a record says where a run happened once per run",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "112e7066d2167829e5835cd42622ab838beaeab3fd3553446ff0746cfa243c56",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_every_entry_carries_the_seven_fields(self):\n        path = self._write_proofs('foo', [\n            {'feature': 'foo', 'id': 'PROOF-1', 'rule': 'RULE-1',\n             'test_file': 'tests/test_foo.py', 'test_name': 'test_it',\n             'status': 'pass', 'tier': 'unit'},\n        ])\n        with open(path, encoding='utf-8') as handle:\n            data = json.load(handle)\n        assert 'tier' in data and 'proofs' in data\n        for entry in data['proofs']:\n            missing = REQUIRED_FIELDS - set(entry)\n            assert not missing, 'missing fields %s in %s' % (missing, path)\n        # No runner and no operating system on an entry: the record says where\n        # a run happened, once per run rather than once per proof.\n        for entry in data['proofs']:\n            assert 'runner' not in entry and 'os' not in entry, entry",
+      "file": "dev/test_schema_proof_format.py",
+      "findings": [],
+      "name": "test_every_entry_carries_the_seven_fields",
+      "proof": "PROOF-2",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "2eb19128aa7076a76169233ff2d3f891d4801fbafeccb2910bf5af0992c6c0ac"
+}

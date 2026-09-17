@@ -1,0 +1,54 @@
+/* Light mode — extrapolated from the deck's cream/copper half.
+   Paper ground, navy ink, copper accent; state hues darkened for contrast on light. */
+[data-theme="light"]{
+  --color-scheme:light;
+
+  --canvas:var(--purlin-paper-050);
+  --canvas-deep:var(--purlin-paper-100);
+  --surface-1:var(--white);
+  --surface-2:var(--purlin-paper-100);
+  --surface-sunken:var(--purlin-paper-200);
+  --surface-veil:rgba(12,52,68,.05);
+
+  --text-primary:var(--purlin-navy-800);
+  --text-secondary:var(--purlin-ink-700);
+  --text-muted:var(--purlin-ink-500);
+  --text-accent:var(--copper-700);
+  --text-inverse:var(--purlin-paper-050);
+
+  --border-hairline:rgba(12,52,68,.12);
+  --border-default:rgba(12,52,68,.20);
+  --border-strong:rgba(12,52,68,.38);
+  --border-accent:var(--copper-700);
+
+  --accent:var(--copper-700);
+  --accent-contrast:var(--purlin-paper-050);
+
+  --state-pass:var(--green-700);
+  --state-pass-soft:rgba(21,128,61,.12);
+  --state-warn:var(--amber-700);
+  --state-warn-soft:rgba(180,83,9,.12);
+  --state-fail:var(--red-700);
+  --state-fail-soft:rgba(185,28,28,.12);
+  --state-neutral:var(--teal-700);
+  --state-neutral-soft:rgba(15,118,110,.12);
+  --state-idle:var(--purlin-ink-500);
+
+  --focus-ring:var(--copper-700);
+  --link:var(--copper-700);
+  --link-hover:var(--purlin-navy-800);
+}
+
+[data-theme="light"][data-surface="product"]{
+  --canvas:var(--purlin-paper-050);
+  --canvas-deep:var(--purlin-paper-100);
+  --surface-1:var(--white);
+  --surface-2:var(--purlin-paper-050);
+  --surface-sunken:var(--purlin-paper-100);
+  --text-primary:var(--purlin-navy-800);
+  --text-secondary:var(--purlin-ink-700);
+  --text-muted:var(--purlin-ink-500);
+  --border-hairline:var(--purlin-paper-300);
+  --border-default:var(--purlin-paper-300);
+  --border-strong:var(--purlin-ink-500);
+}

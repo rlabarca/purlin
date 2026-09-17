@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "brief",
+  "generated_at": "2026-09-16T23:04:36Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "b11f1af9884afe57cb6d03dd8137db1175b8897cb68dcf1f7c1cb1fb99babc05",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-17",
+      "text": "Read the observations out of `settled: yes` and out of `settled: no` followed by `- PROOF-1 never runs the code.`; verify the first settles with nothing observed and the second does not settle and carries that one sentence",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/brief/20260916T230428Z-ca1f4b5-ci-windows.json",
+  "risk": "high",
+  "rule": "RULE-13",
+  "rule_hash": "6f347d46313b3ac76ae98aeee2b85c307800c2fb6c526e8a8b522d8c270cf849",
+  "rule_text": "The brief records whether the review settled the question, as yes, no, or not answered at all",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "898f9c0c98fb92016134616702938203d3b5412e65234e4a77aedc3813613216",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_settled_reads_yes_no_or_nothing_at_all(self):\n        assert brief_module.model_observations(\n            'settled: yes\\n') == ([], True)\n        assert brief_module.model_observations(\n            'settled: no\\n- PROOF-1 never runs the code.') == (\n            ['PROOF-1 never runs the code.'], False)",
+      "file": "dev/test_brief.py",
+      "findings": [],
+      "name": "test_settled_reads_yes_no_or_nothing_at_all",
+      "proof": "PROOF-17",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "df13af1541b016ee1358392d36b82acf6585871afcd295ca3be18a93a7c7fd22"
+}

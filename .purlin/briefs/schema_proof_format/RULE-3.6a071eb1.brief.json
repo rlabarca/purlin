@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "schema_proof_format",
+  "generated_at": "2026-09-16T22:35:36Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "d5756b10e24b19ac515154e8c5c65dcbee28f73ed5a174f38d92289fe9f9cb99",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-3",
+      "text": "Write a spec holding `RULE-1` and `RULE-2`; for each of the statuses `error`, `fail`, `skipped` and a null status, write a file whose `PROOF-1` entry carries it beside a passing `PROOF-2` entry, and verify `RULE-1`'s passed cell never reads `passed` while `RULE-2`'s reads `passed` every time",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/schema_proof_format/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-3",
+  "rule_hash": "5a78f9e4d5fcccad1f9193d0926d3596c96cc07aa78a6a5d77f2917ff788dfb4",
+  "rule_text": "`status` is `pass` or `fail` and nothing else counts as proved: an entry carrying any other value, or none at all, holds its rule's passed cell short of `passed` while a passing entry beside it still counts for its own rule",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "927d61804943e2cb71cfda8307e37b06b50d0130b7af352923596574fc78960b",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_only_pass_counts(self):\n        self._write_spec('bar', (\n            '# Feature: bar\\n\\n'\n            '## Rules\\n'\n            '- RULE-1: The parser returns 200 for a valid body\\n'\n            '- RULE-2: The parser returns 400 for an empty body\\n\\n'\n            '## Proof\\n'\n            '- PROOF-1 (RULE-1): POST a valid body; verify 200\\n'\n            '- PROOF-2 (RULE-2): POST an empty body; verify 400\\n'\n        ))\n        for bad in ('error', 'fail', 'skipped', None):\n            self._write_proofs('bar', [\n                {'feature': 'bar', 'id': 'PROOF-1', 'rule': 'RULE-1',\n                 'test_file': 't.py', 'test_name': 't', 'status': bad,\n                 'tier': 'unit'},\n                {'feature': 'bar', 'id': 'PROOF-2', 'rule': 'RULE-2',\n                 'test_file': 't.py', 'test_name': 't2', 'status': 'pass',\n                 'tier': 'unit'},\n            ])\n            assert self._word('bar', 'RULE-1') != 'passed', (\n                'status %r must not count as proved' % bad)\n            assert self._word('bar', 'RULE-2') == 'passed', (\n                \"the passing rule beside a %r one still counts\" % bad)",
+      "file": "dev/test_schema_proof_format.py",
+      "findings": [],
+      "name": "test_only_pass_counts",
+      "proof": "PROOF-3",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "6a071eb11037fc2166a5eca75b9e9f98c3a0b39fea991267ca380cd9d9dbaaad"
+}

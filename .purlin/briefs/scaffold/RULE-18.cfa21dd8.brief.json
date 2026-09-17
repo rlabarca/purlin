@@ -1,0 +1,68 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T22:35:35Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "d06fdc38ea40a5299855f8b4f3692005b903cf02c2df8aa9d691db86e332b347",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-18",
+      "text": "Run `--gate recorded`, read every `wrote`, `kept`, `copied` and `skipped` line out of the summary, and verify it names `.purlin/config.json`, `.purlin/plugin-root`, `.purlin/plugins/pytest_purlin.py`, `conftest.py`, `.gitignore`, `designs/`, `designs/README.md`, `.purlin/records/`, `.purlin/records/README.md`, `purlin-report.html`, `.purlin/hooks/pre-push` and `.github/workflows/purlin.yml`, and that each of those exists on disk. Verify each README is 3 lines and `purlin-report.html` equals the dashboard the plugin ships",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-18",
+  "rule_hash": "e71807bd8c675d3e123fb4e1bbd175d834477d69673e945b5dd2f6c18dcd50bb",
+  "rule_text": "The summary names every path init wrote, kept, copied or skipped, and each path it says it wrote is on disk afterwards",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "4e0132e6f3333815cf479883076dfc58d9aaa2af39d5866ae9422047c903d2db",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_dashboard_is_copied(self, project):\n        project.run('--gate', 'tested')\n        source = os.path.join(ROOT, 'scripts', 'report', 'purlin-report.html')\n        assert read(project.path('purlin-report.html')) == read(source)",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_the_dashboard_is_copied",
+      "proof": "PROOF-18",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_the_summary_names_every_write(self, project):\n        output = project.run('--gate', 'recorded')\n        named = summary_paths(output)\n        for rel in ('.purlin/config.json', '.purlin/plugin-root',\n                    '.purlin/plugins/pytest_purlin.py', 'conftest.py',\n                    '.gitignore', 'designs', 'designs/README.md',\n                    '.purlin/records', '.purlin/records/README.md',\n                    'purlin-report.html', '.purlin/hooks/pre-push',\n                    '.github/workflows/purlin.yml'):\n            assert rel in named, output\n            assert project.has(rel), rel",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_summary_names_every_write",
+      "proof": "PROOF-18",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_two_readmes_are_three_lines_each(self, project):\n        project.run('--gate', 'recorded')\n        for rel in ('designs/README.md', '.purlin/records/README.md'):\n            assert len(read(project.path(rel)).strip().splitlines()) == 3",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_two_readmes_are_three_lines_each",
+      "proof": "PROOF-18",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "cfa21dd8da703b1a4fac75d28e30f361af3569d5ca963c9f4c497a928cf3f71e"
+}

@@ -1,409 +1,102 @@
 ---
 name: audit
-description: Evaluate proof quality — STRONG/WEAK/HOLLOW assessments
+description: Run the tests and the breaks, then write the record
 ---
 
-Audit all proofs (or a specific feature) against configurable criteria. Read-only — never modifies code or test files.
+Run every tagged test, break the code on purpose to measure how much the tests catch, and
+write one record of what happened. An audit is level 2: it proves a rule strong or weak, and
+the record is the evidence a gate reads.
+
+**Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
+is relative to the plugin root; see `references/purlin_commands.md#path-resolution`.
+
+**Pending migrations:** when `sync_status` opens with a pending-migrations advisory, stop and
+follow `references/purlin_commands.md#pending-migrations` before doing this skill's work.
 
 ## Usage
 
 ```
-purlin:audit                        Audit all features with receipts
-purlin:audit <feature>              Audit a specific feature
-purlin:audit --criteria <path>      Use a specific criteria file
+purlin:audit                    Run the tests and the breaks, write the record
+purlin:audit <feature> [...]    One feature, or several
+purlin:audit --remote           Push the branch, wait for CI, pull the records it wrote
+purlin:audit --tag <name>       Pin this state as record/<name>
 ```
 
-## Step 1 — Load Criteria
+Plain language reaches the same place: "audit this", "how strong are the tests", "pin 1.0".
 
-Load combined criteria via the single-source function:
+## Step 1: run
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --load-criteria --project-root <project_root>
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py" --all --record --commit
 ```
 
-**Interpreter:** every `static_checks.py` invocation below is written as `python3`, but `python3` is not always on PATH (notably on Windows, where the launcher is `python` or `py -3`). Probe for an available interpreter and use the first that resolves — `python3`, then `python`, then `py -3` — for all `static_checks.py` commands in this skill.
-
-If `--criteria <path>` was passed by the user, add `--extra <path>` to append that file too.
-
-This returns built-in criteria + any configured additional team criteria + any extra file. Built-in criteria always apply — additional criteria are appended, never replace.
-
-Display: `Using audit criteria: built-in (Criteria-Version: N)` and if additional criteria are present: `+ team criteria from <source> (pinned: <sha>)`
-
-## Step 1.5 — Load Audit Cache
-
-Read `.purlin/cache/audit_cache.json` via:
-
-```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --read-cache
-```
-
-The cache maps proof hashes to previous assessments:
-
-```json
-{
-  "a1b2c3d4e5f6a7b8": {
-    "assessment": "STRONG",
-    "criterion": "matches rule intent",
-    "why": "test exercises the rule correctly",
-    "fix": "none",
-    "cached_at": "2026-04-03T..."
-  }
-}
-```
-
-For each proof that reaches Pass 2, compute the proof hash from (rule text + proof description + test function code). If the hash exists in the cache, use the cached assessment — skip the LLM call. Report cached results with a `(cached)` label:
-
-```
-PROOF-1 (RULE-1): STRONG ✓ (cached)
-```
-
-After the audit completes, write all new assessments to the cache (both cached hits and fresh LLM results). This means the cache grows over time and subsequent runs are faster.
-
-## Step 1.6 — Plan Parallel Execution
-
-After loading the cache, categorize features for parallel execution:
-
-- **Cache-only:** specs where every proof has a cache hit. Run Pass 1 in the main context to re-check for new structural defects (a cached STRONG proof could have been edited to `assert True`). If all proofs still pass Pass 1 and have cache hits, use cached assessments — no LLM needed.
-- **Needs LLM:** at least one proof has no cache hit or fails Pass 1 — requires fresh Pass 2 evaluation
-
-For features in the "Needs LLM" category, launch up to 3 parallel evaluations using the Agent tool:
-
-```
-Agent(subagent_type="purlin-auditor", prompt="Audit feature <name>: ...")
-Agent(subagent_type="purlin-auditor", prompt="Audit feature <name>: ...")
-Agent(subagent_type="purlin-auditor", prompt="Audit feature <name>: ...")
-```
-
-Each subagent receives:
-- The audit criteria
-- The audit cache (so it can check for hits on its assigned feature)
-- The feature's spec and test files to evaluate
-
-When all subagents complete, merge their results into the final report and update the cache with all new assessments.
-
-For "Cache-only" features, evaluate them in the main context (no subagent needed — they're fast).
-
-## Step 2 — Audit Pipeline
-
-### Proof-File Structural Checks (Pass 0.5 — language-agnostic, no source reading)
-
-Before reading any source code, run structural checks on the proof JSON files. These operate on JSON regardless of what language produced the proofs:
-
-```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --check-proof-file --proof-path <proof_json> --spec-path <spec_path>
-```
-
-Checks:
-- **Proof ID collision** — same PROOF-N targeting different RULE-N values. Severity: MEDIUM.
-- **Proof rule orphan** — proof targets a RULE-N not in the spec. Severity: LOW.
-
-Report findings inline with the feature's audit output. Proof ID collisions indicate confused proof tracking; orphans indicate stale markers.
-
-### Static Analysis: Structural Defect Detection (Pass 1 — deterministic, no LLM)
-
-Run the deterministic static checker on all specs with proofs:
-
-```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py <test_file> <feature_name> --spec-path <spec_path>
-```
-
-Any proof that fails a structural check is immediately rated HOLLOW — no LLM override possible:
-
-```
-PROOF-3 (RULE-3): HOLLOW ✗ (deterministic)
-  Check: logic_mirroring
-  Why: expected value computed by hash_func() — same function being tested. If hash_func has a bug, test confirms the bug.
-  Fix: replace expected = hash_func(input) with a precomputed literal: assert result == "5e884898..."
-```
-
-The `(deterministic)` label tells the user this was caught by static analysis, not LLM judgment.
-
-### Structural Classification + Semantic Evaluation (Pass 2 — only for surviving proofs)
-
-Proofs that passed Pass 1 go to the LLM for classification and semantic evaluation. The LLM first classifies each proof as structural or behavioral, then evaluates behavioral proofs.
-
-**Batch all proofs for a feature into a single LLM evaluation.** Do NOT evaluate proofs one-at-a-time — this wastes LLM calls. Construct one prompt per feature containing ALL surviving proofs (those that passed Pass 1 and are not cache hits).
-
-For each feature being audited:
-
-1. Read the spec's `## Proof` section — get every proof description.
-2. For each proof, find the test file and test function from `.proofs-*.json` entries.
-   - **Empty `test_file` fallback:** some runners cannot supply a source path — the xUnit logger emits `MakeRelative(_root, tc.CodeFilePath ?? "")`, and under `dotnet test` `CodeFilePath` is often null (no source info), so C# proof entries arrive with `test_file: ""`. When `test_file` is empty, resolve it from the fully-qualified `test_name` before Pass 1 and Pass 2:
-
-     ```bash
-     python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --resolve-source "<test_name>" --project-root <project_root> [--ext .cs]
-     ```
-
-     This derives the declaring type from `test_name` (the segment before the final `.method`) and searches the project's source files for its declaration, printing JSON `{test_name, test_file}`. Use the resolved `test_file` for both the Pass 1 command and the Pass-2 code read. To populate `test_file` natively instead, the consumer's test project must surface source info — run `dotnet test` with `RunConfiguration.CollectSourceInformation=true` and full PDBs.
-3. Read the actual test code (the function body, not just the marker).
-4. **Read fixture/setup code** — if the test references a class-scoped or module-scoped fixture (e.g. via `self` parameter or `@pytest.fixture(scope="class")`), include the fixture code in the prompt. This is critical for e2e tests where the "act" step is in the fixture.
-5. Drop any proof already rated HOLLOW by Pass 1 or resolved by cache hit.
-6. For `@manual` proofs: check staleness only, assess as MANUAL — exclude from LLM batch.
-7. Check if any remaining proof's rule comes from an anchor (the rule key contains a `/` prefix from a spec in `specs/_anchors/`). If so:
-   - The fix directive must say "strengthen the test" not "update the rule"
-   - If the rule itself is ambiguous or seems wrong, collect it for the anchor author recommendations section (see Step 3)
-8. If zero proofs remain after steps 5–6: skip Pass 2 entirely for this feature.
-9. If proofs remain: construct a single prompt containing ALL surviving proof descriptions, ALL test code, and ALL fixture/setup code. Send one LLM call per feature, not one per proof.
-
-**For Claude (default auditor):**
-
-```
-You are classifying and evaluating proofs against spec rules.
-Structural issues (assert True, no assertions, logic mirroring) have already been checked and passed.
-
-STEP 1 — CLASSIFY each proof as STRUCTURAL or BEHAVIORAL:
-
-Examine the proof description, test code, AND fixture/setup code together.
-
-STRUCTURAL — the content being checked exists independently of the test.
-The test reads pre-existing files or static content that no code in the
-test's setup chain produced. Examples: checking a config template has
-certain fields, grepping source code for forbidden patterns, verifying a
-markdown doc has correct sections.
-
-BEHAVIORAL — the test verifies output produced by running code. Includes:
-  - Direct function calls whose return value is asserted
-  - E2E tests where a fixture runs the system (subprocess, API call,
-    function invocation) and assertions check the artifacts it created
-  - Tests that check files/strings CREATED by the test's setup chain
-  - Tests where the "act" step is in a class-scoped fixture
-
-Key signal: if the fixture or setup runs code that produces the artifact
-being checked, the test is BEHAVIORAL — even if the assertions use
-string-matching or regex on file contents. The question is not "what do
-the assertions look like?" but "did code run to produce what's being
-asserted on?"
-
-STRUCTURAL proofs → EXCLUDED (not scored)
-
-STEP 2 — EVALUATE each BEHAVIORAL proof:
-
-For each behavioral proof, answer ONLY these questions:
-1. Does the test set up a scenario that exercises the rule's constraint?
-2. Does the test check the specific outcome the proof description claims?
-3. Is anything described in the proof missing from the test?
-4. Does the assertion contain a tautological escape hatch (OR branch that always passes)?
-5. Does the assertion validate test setup data instead of code-under-test output?
-6. Does the test function name contradict the actual assertion values?
-
-Rate each: STRONG (test matches rule intent), WEAK (test partially matches — something is missing or too loose), or EXCLUDED (structural presence check, not behavioral).
-Do NOT check for structural issues — those were already handled.
-```
-
-**For external LLM (`audit_llm` configured):**
-
-Same prompt, but wrapped in the structured response format:
-
-```
-For each proof, respond in EXACTLY this format:
-
-PROOF-ID: PROOF-N
-RULE-ID: RULE-N
-ASSESSMENT: STRONG|WEAK|EXCLUDED
-CRITERION: <what semantic aspect is missing, "matches rule intent" if STRONG, or "structural presence check" if EXCLUDED>
-WHY: <what behavior would slip through, "test exercises the rule correctly" if STRONG, or "test verifies document content, not system behavior" if EXCLUDED>
-FIX: <specific change to align test with rule, "none" if STRONG, or "none — exclude from audit" if EXCLUDED>
----
-```
-
-Note: the LLM can return STRONG, WEAK, or EXCLUDED in Pass 2. HOLLOW is exclusively determined by Pass 1 (deterministic). EXCLUDED proofs are structural — the pipeline excludes them from scoring.
-
-## Step 3 — Report
-
-Use the bordered output format with findings grouped by value tier (see `references/audit_criteria.md` § Finding Priority):
-
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PROOF AUDIT: <feature> (<N> proofs)
-Criteria: <source> (Criteria-Version: N)
-Auditor: Pass 1 — static_checks.py | Pass 2 — Claude (or external LLM name)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-CRITICAL (fix first — tests prove nothing):
-  PROOF-4 (RULE-4): HOLLOW ✗ — no assertions
-    Why: test function has zero assert/expect statements
-    Fix: add assertions checking the response status and body
-
-HIGH VALUE (real coverage gaps):
-  PROOF-2 (RULE-2): WEAK ~ — missing negative test
-    Why: rule says "reject invalid passwords" but test only checks valid login
-    Fix: add test with invalid password, assert 401 response
-
-MEDIUM VALUE (self-confirming tests):
-  PROOF-6 (RULE-6): HOLLOW ✗ — logic mirroring
-    Why: expected = compute_hash(input) — same function as code under test
-    Fix: replace with precomputed literal: assert result == "5e884898..."
-
-STRONG (no action needed):
-  PROOF-1 (RULE-1): STRONG ✓
-  PROOF-3 (RULE-3): STRONG ✓
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-AUDIT SUMMARY:
-  CRITICAL: N   HIGH: N   MEDIUM: N   LOW: N   STRONG: N   MANUAL: N
-  Audited: N proofs (M cached, K fresh) | J structural excluded
-  Fix priority: N critical, then N high-value, then N medium
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
-
-### Finding Priority
-
-Group findings by value tier (see `references/audit_criteria.md` § Finding Priority for the complete tier mapping). Within each tier, list HOLLOW before WEAK. Present tiers in this order: CRITICAL, HIGH, MEDIUM, LOW, STRONG.
-
-When spawning the builder to fix findings, pass them in priority order: CRITICAL first, then HIGH, then MEDIUM. The builder fixes in that order. If the 3-round limit is reached, the highest-value findings have been addressed.
-
-If HOLLOW or WEAK proofs found, append directives:
-
-```
-Fix proof quality in the build loop, then re-verify:
-  → Run: test <feature> (fix PROOF-N: <what to fix>)
-  → Run: purlin:verify
-```
-
-If any anchor rules have clarity issues, append a separate section:
-
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-RECOMMENDATIONS FOR ANCHOR AUTHORS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  security_no_eval (Source: git@github.com:acme/security-policies.git)
-    RULE-1: "No eval() calls in source code"
-    → Suggest: clarify scope — does this include test files? Current wording is ambiguous.
-
-  prodbrief_checkout (Source: git@github.com:acme/product-briefs.git)
-    RULE-3: "Order confirmation email arrives within 60 seconds"
-    → Suggest: specify what "arrives" means — delivered to SMTP server, or in user's inbox?
-```
-
-This section only appears when anchor rules have clarity issues. It's advisory — the anchor author decides whether to act.
-
-## When Running as Independent Auditor
-
-When spawned by purlin:verify or another agent:
-
-- Load criteria via `--load-criteria` (see Step 1)
-- For each proof, assess as STRONG/WEAK/HOLLOW using the three-pass pipeline
-- After completing the audit, if HOLLOW or WEAK proofs are found:
-  - Spawn a purlin-builder to fix the identified issues
-  - Format each finding with the three-part structure (PROOF-ID, finding, fix)
-  - After the builder responds, re-audit the fixed proofs
-  - If still WEAK or HOLLOW, provide more specific guidance
-  - After 3 rounds on any single proof, move on
-- When all findings are addressed (or rounds exhausted): report the final integrity score
-
-### Anchor Rule Handling
-
-When a HOLLOW or WEAK proof is for an anchor rule:
-- Message the builder: "Fix the test to properly prove <anchor>/<rule>. The anchor is read-only — strengthen the test, don't suggest changing the rule."
-- If the rule itself is ambiguous: message the lead (not the builder): "Recommend to anchor author (<source>): <rule> could be clearer — <suggestion>"
-
-## External LLM Mode
-
-When `.purlin/config.json` has `audit_llm` set, the audit still runs Pass 1 (deterministic) first. Proofs that pass Pass 1 go to the external LLM for Pass 2 (classification + semantic evaluation).
-
-1. Load criteria via Step 1 above (`--load-criteria` — respects additional team criteria and `--extra`).
-2. Run Pass 1 (deterministic) for all proofs. Any failures are HOLLOW — final.
-3. For proofs that passed Pass 1 and are not cache hits, **batch all proofs per feature** into a single shell-out. Construct the Pass 2 prompt:
-
-```
-You are evaluating semantic alignment between spec rules and test code.
-Structural issues (assert True, no assertions, logic mirroring) have already been checked and passed.
-
-SPEC PROOF DESCRIPTIONS:
-<paste the ## Proof section from the spec — only proofs that passed Pass 1>
-
-TEST CODE:
-<paste the actual test function code for each proof>
-
-For each proof, respond in EXACTLY this format:
-
-PROOF-ID: PROOF-N
-RULE-ID: RULE-N
-ASSESSMENT: STRONG|WEAK
-CRITERION: <what semantic aspect is missing, or "matches rule intent" if STRONG>
-WHY: <what behavior would slip through, or "test exercises the rule correctly" if STRONG>
-FIX: <specific change to align test with rule, or "none" if STRONG>
----
-```
-
-4. Shell out: replace `{prompt}` in the configured command with the constructed prompt. Capture stdout.
-5. Parse the response: look for `PROOF-ID:`, `ASSESSMENT:`, `CRITERION:`, `WHY:`, `FIX:` lines. Be flexible — different LLMs format slightly differently. Look for the keywords, not exact whitespace.
-6. If the external LLM returns HOLLOW for a proof, override to WEAK — only Pass 1 can produce HOLLOW.
-7. If parsing fails for a proof (LLM didn't follow the format): mark that proof as `UNKNOWN — external LLM response could not be parsed` and include the raw response excerpt.
-8. Display the combined report:
-
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PROOF AUDIT: <feature> (<N> proofs)
-Criteria: references/audit_criteria.md (Criteria-Version: N)
-Auditor: Pass 1 — static_checks.py | Pass 2 — Gemini Pro (external — cross-model)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
-
-The report header shows both audit passes.
-
-### External LLM with Independent Audit
-
-When external LLM is configured, the lead relays findings:
-
-1. Lead shells out to the external LLM per feature
-2. Lead parses the response
-3. Lead spawns a builder with each finding:
-   ```
-   [Gemini Pro audit] HOLLOW: login PROOF-3
-   Criterion: mocks the function being tested
-   Why: test passes even if bcrypt is misconfigured
-   Fix: remove mock, use real bcrypt call
-   ```
-4. Builder fixes and reports results back
-5. Lead shells out to external LLM again for re-audit
-6. Loop until no HOLLOW proofs or 3 rounds per proof
-
-The builder never calls the external LLM. The lead relays.
-
-## Step 3.5 — Prune Stale Cache Entries (full audit only)
-
-After writing all assessments to the cache, if this is a full audit (no specific feature argument), prune orphaned entries from deleted or renamed features. Collect all proof hashes that were computed during this audit (cache hits + fresh evaluations) into a temp file, one key per line:
-
-```bash
-# Write live keys to temp file
-echo "<hash1>" > /tmp/purlin_live_keys.txt
-echo "<hash2>" >> /tmp/purlin_live_keys.txt
-# ... one line per proof hash computed during this audit
-
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/audit/static_checks.py --prune-cache --live-keys-file /tmp/purlin_live_keys.txt
-```
-
-This removes cache entries for features that no longer exist while preserving all entries from the current audit. For single-feature audits, skip this step — they don't know which other features are live.
-
-## Step 4 — Refresh Status and Report Integrity
-
-After the audit report is complete and the cache has been written, call `sync_status` to compute the integrity score and refresh the dashboard:
-
-```
-sync_status()
-```
-
-The `sync_status` output includes the integrity percentage (computed by `_compute_integrity()` in `purlin_server.py`). **Do not compute the integrity percentage yourself** — always read it from the `sync_status` output. This ensures the audit CLI and the dashboard always show the same value from the same computation.
-
-After `sync_status` completes, report the integrity score it returned:
-
-```
-INTEGRITY SCORE: <N>% (from sync_status, computed by _compute_integrity())
-  Formula: (STRONG + MANUAL) / (STRONG + WEAK + HOLLOW + MANUAL) — proof quality only.
-```
-
-## Key Principles
-
-- **Read-only.** Never modify code or test files.
-- **Independent.** When spawned as a subagent, has fresh context — no memory of writing the tests.
-- **Criteria-driven.** All judgments reference the criteria document, not ad hoc opinions.
-- **Transparent.** The report shows the criteria version and source so anyone can verify the assessment was made against known standards.
-- **Actionable recommendations.** Every HOLLOW or WEAK finding includes three parts:
-  - **Criterion** — which specific criterion was violated (name it from audit_criteria.md)
-  - **Why** — what real problem this creates (what bug or failure would slip through)
-  - **Fix** — a specific, concrete change the builder should make (not "improve the test" but "replace `expected = hash_func(input)` with `expected = '5e884898da28...'`")
-
-  Bad fix recommendation: "Make the test stronger"
-  Good fix recommendation: "Remove the bcrypt.checkpw mock. Store a password via `create_user('alice', 'secret')`, retrieve the stored hash, assert `bcrypt.checkpw(b'secret', stored_hash)` returns True"
+`--record` runs the tests, then the breaks, then writes
+`.purlin/records/<feature>/<timestamp>-<commit7>-<runner>[-<os>].json` and prints
+`Record written: <path>`. `--commit` commits it under your own git identity, which is what the
+`passed` gate reads, and prints `Record committed. Run: git push` and
+`Record committed as developer.` It never pushes: CI publishes its own evidence; a person
+pushes theirs. Drop `--commit` to leave the record uncommitted and read it yourself. Exit codes: `0` everything asked for happened, `1` a
+test failed or evidence is missing, `2` the command line was wrong.
+
+The run script owns test execution for the whole plugin: `purlin:test` and `purlin:build` call
+it too, so there is one answer to how a test is run. CI runs the same script with `--ci`, which
+also writes the briefs under `.purlin/briefs/<feature>/`. You never pass `--ci` by hand.
+
+## Step 2: read what came back
+
+The run prints what it ran, then each record path, then the status table `purlin:status`
+builds, so the cells and the counts come from one computation.
+
+Test strength is the share of the deliberate breaks the tests caught. `min_strength` in
+`.purlin/config.json` is the floor the gate holds you to: 70 under `strong`, 80 under `signed`,
+each overridable.
+
+## Step 3: what the gate changes
+
+| Gate | What this run does |
+|------|--------------------|
+| `passed` | Runs the tests only. No breaks, no risk, no brief; the record carries `null` for test strength and the run says `Strength n/a: the gate is passed.` |
+| `strong` | Runs the breaks too. Your local run is a preview: it prints `Preview: <feature> test strength <n>%.` and then `This record does not count under strong: only a CI record counts.` |
+| `signed` | The same as `strong`, and the record is what the review list and the signatures rest on |
+
+Raising the gate to `strong` turns the breaks on, locally and in CI.
+
+## Step 4: the record's source, and what counts
+
+The last commit that touched a record decides its source, not anything inside the file:
+
+| Source | How it got there | Counts under |
+|--------|------------------|--------------|
+| ci | Written through the git host's API by the CI identity | `passed`, `strong`, `signed` |
+| developer | A person committed it | `passed` only |
+| local | Not committed yet | `passed` only, and only in this checkout |
+
+Under `strong` and `signed` only a `ci` record counts, so your local run tells you the push
+will pass and CI writes the record that the gate reads. Under `passed` your own commit is the
+record. `references/hard_gates.md` defines the three gates once; do not restate them elsewhere.
+
+## Step 5: `--remote` and `--tag`
+
+`--remote` is the one thing here that reaches a remote: it pushes the current branch and
+waits for the workflow. On GitHub it watches the run
+with `gh run watch`, pulls the records CI committed, and prints the table. On Azure DevOps it
+prints the pipeline URL and returns. Use it when a proof is tagged `@env` for an operating
+system this host is not.
+
+`--tag <name>` writes an annotated tag `record/<name>` whose message lists the records it
+vouches for, and prints `Record tag written: record/<name>`. A feature keeps the newest three
+records per operating system and the rest are pruned; a record a tag names is kept for ever.
+
+A forked pull request never gets a record commit. The run still happens and the comment still
+posts; the job says in one line that no record was written.
+
+## Step 6: name the next step
+
+| What the run shows | The line to print |
+|--------------------|-------------------|
+| A test failed | `→ Run: purlin:build <feature>` |
+| Test strength below `min_strength` | `→ Run: purlin:build <feature>` (add the case the break escaped) |
+| A rule needs another operating system | `→ Run: purlin:audit --remote` |
+| Every rule met the gate `passed` | `→ Push.` |
+| A `ci` record is missing under `strong` or `signed` | `→ Push; CI writes the record.` |
+| A rule reads `manual test`, `manual audit` or `held`, or is unsigned or stale | `→ Run: purlin:sign` |

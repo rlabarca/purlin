@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-16T22:35:26Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "3a66f7032737f9c75350f89acf054d2efe1abcafd5ab3705eb653ebe8bb80a2a",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-20",
+      "text": "Open the board with the team fixture rewritten to schema 3; verify exactly 1 notice is on screen, that it names `purlin:status`, and that no tile and no table are rendered",
+      "tier": "e2e"
+    }
+  ],
+  "record": ".purlin/records/purlin_report/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-20",
+  "rule_hash": "4fa408506d730d2f83d74ea6cd9b31804b07bf9c8b84bc6aa68a768cd9b09714",
+  "rule_text": "A payload written for another schema version shows one notice naming the command that rewrites it, and no tiles, no table and no tabs, rather than rendering fields it cannot read",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "56f28591cb4ab7eb26ab45872f3335e5540b83b3f3cae15096d2bea4c9069c12",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_an_older_payload_shows_one_notice_and_nothing_else(browser,\n                                                            tmp_path):\n    payload = payload_named('team')\n    payload['schema_version'] = 3\n    page = open_board(browser, tmp_path, payload)\n    notices = page.query_selector_all('.notice')\n    assert len(notices) == 1\n    assert 'purlin:status' in notices[0].inner_text()\n    assert page.query_selector_all('.tile') == []\n    assert page.query_selector_all('.tbl') == []\n    assert page.query_selector_all('.tabs') == []\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_an_older_payload_shows_one_notice_and_nothing_else",
+      "proof": "PROOF-20",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "736aea528a80f78791930b4551e5952501d33ede3705252d2e88cc5d33d27a6c"
+}

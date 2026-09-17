@@ -1,119 +1,70 @@
 ---
 name: rename
-description: Rename a feature across specs, proofs, markers, and references
+description: Rename a feature across specs, tests, signatures and records
 ---
 
-Rename a feature across all Purlin artifacts in one atomic operation.
+Rename a feature everywhere Purlin wrote its name, in one commit. A name left behind points a
+live test, a signature or a record at a spec that no longer exists.
+
+**Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
+is relative to the plugin root; see `references/purlin_commands.md#path-resolution`.
 
 ## Usage
 
 ```
-purlin:rename <old-name> <new-name>    Rename a feature
+purlin:rename <old-name> <new-name>
 ```
 
----
+Plain language reaches it too: "rename login to authentication".
 
-## What It Renames
+## What carries the name
 
-1. **Spec file**: `specs/**/<old-name>.md` → `specs/**/<new-name>.md`
-2. **Proof files**: `<old-name>.proofs-*.json` → `<new-name>.proofs-*.json` (same directory)
-3. **Receipt files**: `<old-name>.receipt.json` → `<new-name>.receipt.json` (if exists)
-4. **Proof markers in test code**: grep all test files for proof markers referencing the old name and replace:
-   - Python: `@pytest.mark.proof("old-name",` → `@pytest.mark.proof("new-name",`
-   - Jest: `[proof:old-name:` → `[proof:new-name:`
-   - Shell: `purlin_proof "old-name"` → `purlin_proof "new-name"`
-5. **Feature name inside spec file**: `# Feature: old_name` → `# Feature: new_name`
-6. **`> Requires:` references in other specs**: grep all `specs/**/*.md` for `> Requires:` lines containing the old name, replace with new name
-7. **Proof file entries**: inside the renamed proof JSON, update the `"feature"` field in each entry from old name to new name
+| Where | What changes |
+|-------|--------------|
+| `specs/<category>/<old>.md` | The file name, and `# Feature: <old>` inside it |
+| `> Requires:` in other specs | The old entry, matched whole between commas |
+| Proof markers in test code | Every marker form in `references/formats/proofs_format.md#feature-name-token` |
+| `specs/<category>/<old>.signatures/` | The directory name; the files inside are unchanged |
+| `.purlin/records/<old>/` | The directory name; the records inside are unchanged |
+| `designs/<old>/` | The directory name, and the `> Source:` line of any anchor naming it |
 
----
+Proof files are runtime (`.purlin/runtime/proofs/`) and the next run regenerates them, so they
+are not renamed. Nothing outside these places is touched: a test function called
+`test_login_valid` keeps its name, and so does every comment. A signature binds the hashes of
+the rule text, the proof text and the test body, none of which a rename changes, and a record
+names the feature in its path only, so signatures and records both survive it.
 
 ## Steps
 
-### Step 1 — Find the Spec
-
-Search `specs/**/<old-name>.md`.
-
-- **Not found:** Stop with: `No spec found for '<old-name>'. Verify the spec exists in specs/.`
-- **Anchor with `> Source:` (external):** Stop with: `Cannot rename anchor '<old-name>'. Anchors with external sources are read-only and synced from that source. Rename at the source and re-sync.`
-- **Multiple matches:** List them and use `AskUserQuestion` to ask the user which one.
-- **Found:** Continue.
-
-### Step 2 — Show What Will Change
-
-Scan for all artifacts that reference the old name and present a summary:
+1. **Find the spec.** No match: stop with `No spec found for '<old-name>'.` Several matches:
+   list them and ask. An anchor carrying a `> Source:` is owned elsewhere: stop with
+   `Cannot rename '<old-name>': it is pinned from <source>. Rename it there and sync.`
+2. **Show what will change** and wait for an answer. Do not proceed on your own.
 
 ```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚡ RENAME: <old-name> → <new-name>
-
-Files to rename:
-  specs/auth/login.md → specs/auth/authentication.md
-  specs/auth/login.proofs-unit.json → specs/auth/authentication.proofs-unit.json
-
-Proof markers to update:
-  tests/test_login.py: 5 markers
-  tests/test_auth_integration.py: 2 markers
-
-Specs referencing this feature (> Requires:):
-  specs/auth/session.md
-  specs/auth/password_reset.md
-
-[y] Proceed  [n] Cancel
-
-Waiting for your response...
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+rename: login → authentication
+  specs/auth/login.md            → specs/auth/authentication.md
+  specs/auth/login.signatures/   → specs/auth/authentication.signatures/  (6 files)
+  .purlin/records/login/         → .purlin/records/authentication/       (3 records)
+  tests/test_login.py            5 markers
+  specs/auth/session.md          1 requires line
+  [y] proceed   [n] cancel
 ```
 
-### Step 3 — Wait for Approval
+3. **Move the files** with `git mv`, directories included, so history follows them.
+4. **Rewrite the markers**, one pass per row of the proof-marker table, not only the languages
+   this project happens to use.
+5. **Rewrite `# Feature:` and every `> Requires:` entry.** Match the old name whole: renaming
+   `login` must leave `login_oauth` alone.
+6. **Call `sync_status`.** Any unresolved reference it reports is a miss; fix it before the
+   commit rather than reporting a rename that half happened.
+7. **Commit** as `chore: rename <old-name> to <new-name>`, per
+   `references/commit_conventions.md`.
 
-Use `AskUserQuestion` to pause and wait. Do NOT auto-proceed.
+## Name the next step
 
-### Step 4 — Execute Rename (if approved)
-
-Perform all changes in this order:
-
-**a. Rename files** — use `git mv` for spec, proof, and receipt files:
-```bash
-git mv specs/auth/login.md specs/auth/authentication.md
-git mv specs/auth/login.proofs-unit.json specs/auth/authentication.proofs-unit.json
-git mv specs/auth/login.receipt.json specs/auth/authentication.receipt.json  # if exists
-```
-
-**b. Update proof markers in test files** — search and replace marker strings only:
-- Python: `@pytest.mark.proof("old-name",` → `@pytest.mark.proof("new-name",`
-- Jest: `[proof:old-name:` → `[proof:new-name:`
-- Shell: `purlin_proof "old-name"` → `purlin_proof "new-name"`
-
-**c. Update feature name inside the spec file:**
-- `# Feature: old_name` → `# Feature: new_name`
-
-**d. Update `> Requires:` in other specs:**
-- Replace the old name with the new name in `> Requires:` lines across all `specs/**/*.md`
-- Use word-boundary matching to avoid partial replacements (e.g., renaming `login` must not corrupt `login_oauth` → `newname_oauth`). Match on the exact comma-separated entry.
-
-**e. Rename screenshot files** (if the spec has `> Visual-Reference:`):
-- Rename `specs/<category>/screenshots/<old-name>.png` → `specs/<category>/screenshots/<new-name>.png` (using `git mv`)
-- Update the `> Visual-Reference:` path inside the spec file
-
-**f. Update `"feature"` field in proof JSON entries:**
-- Inside each renamed proof file, replace `"feature": "old-name"` with `"feature": "new-name"`
-
-**g. Run `sync_status`** to verify everything still resolves.
-
-**h. Commit** per `references/commit_conventions.md`: `rename(<old-name>): rename to <new-name>`
-
-### Step 5 — Verify
-
-If `sync_status` shows issues after rename, warn the user and show the directives. Do not silently ignore resolution failures.
-
----
-
-## Edge Cases
-
-- **Old name has underscores, new name has hyphens (or vice versa)**: handle both. The rename is exact string replacement — no normalization.
-- **Old name appears in test function names**: do NOT rename test functions — only rename proof marker strings. `test_login_valid()` stays as-is; only `proof("login",` changes.
-- **Old name appears in code comments or docs**: do NOT rename. Only rename in Purlin artifacts (specs, proofs, markers, `> Requires:`).
-- **Multiple specs match**: if `specs/**/login.md` matches multiple files, list them and ask the user which one.
-- **Anchors with `> Source:` (external)**: refuse to rename — anchors with external sources are read-only and synced from that source. The rename must happen at the external source.
-- **`> Requires:` partial matches**: use word-boundary matching when replacing in `> Requires:` lines. The old name must match as a complete comma-separated entry, not as a substring of another name.
+| What sync_status shows afterwards | The line to print |
+|-----------------------------------|-------------------|
+| Everything resolved | `→ Run: purlin:test <new-name>` |
+| A marker still names the old feature | `→ Fix the marker in <file>, then re-run.` |
+| A record or signature was left behind | `→ Move it by hand, then re-run.` |

@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T22:35:35Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "32658c7bf6918f2eb161e4fdc2ffed4af59ac74e3bd4e60f17e30f7ce7c54469",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-22",
+      "text": "Copy `VERSION`, `templates/`, `references/` and `scripts/` into a temp directory shaped like a marketplace install, run that copy's script with `--gate recorded`, and verify `.purlin/plugins/pytest_purlin.py` and `.github/workflows/purlin.yml` exist and the summary names `.purlin/config.json`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T223516Z-e8bd239-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-22",
+  "rule_hash": "e1d8b450a26826fb669b6c6a9d9d56f920423275c4161254cec6bf4d4da7be27",
+  "rule_text": "A copy of the plugin installed from the marketplace sets a project up the same way this checkout does",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "f290975a35c553039b781b3ed2d8c85ae9e6c7a8c226313908d32900f79682c2",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_copy_sets_a_project_up_the_same_way(self):\n        cache, installed = self.copy_plugin()\n        made = Project('pytest')\n        try:\n            output = made.run('--gate', 'recorded',\n                              script=os.path.join(installed, 'scripts', 'init',\n                                                  'scaffold.py'),\n                              env={'CLAUDE_PLUGIN_ROOT': installed})\n            assert made.has('.purlin/plugins/pytest_purlin.py')\n            assert made.has('.github/workflows/purlin.yml')\n            assert '.purlin/config.json' in summary_paths(output)\n        finally:\n            made.close()\n            shutil.rmtree(cache, ignore_errors=True)",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_the_copy_sets_a_project_up_the_same_way",
+      "proof": "PROOF-22",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "4a7f5dfc1974dcc6da2a206f2c0004667ddc5a2b139d7c7ef5a2b9b52501d702"
+}

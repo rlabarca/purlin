@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T22:53:41Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "da8aa96ed8aa244032a2858762a6c789db92d47e45095e2d931e9265838a06ce",
+  "proofs": [
+    {
+      "env": "linux",
+      "findings": [],
+      "id": "PROOF-36",
+      "text": "In a temp git project with `greeting.py`, one spec holding a medium-risk rule and one tagged test, run init at `passed` and verify the quick run exits 0, that `--record --commit` writes a record under `.purlin/records/greeting/` and the gate check exits 0. Raise to `strong` and verify the gate check exits 1; commit a second record under the build identity, verify it is labelled `ci` and the gate check exits 0. Raise to `signed` and verify the gate check exits 1 naming `purlin:init --gate signed`; set one signer and verify it exits 1 again; write a signature and verify the commit is signed and the gate check exits 0. Walk both the python and the typescript fixture",
+      "tier": "e2e"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T225319Z-f601203-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-36",
+  "rule_hash": "22ecfb86558a756977d35db1f41164f6148983991330ba4c3deae2cb2e6159bc",
+  "rule_text": "A project init set up walks the three gates: the quick run passes, a record the developer commits meets `passed`, raising to `strong` refuses that record and accepts one the build identity committed, and `signed` refuses first an empty signer list and then a rule at or above `sign_at` with no signature, until a signature is written in a signed commit",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "5b1dcdca8c2ac56c515f3e7cd602fb0360656d727fdd63f2f47f17bcfbacb7ab",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": null,
+      "file": "dev/test_init_e2e.sh",
+      "findings": [],
+      "name": "the three gates walked on every fixture init set up",
+      "proof": "PROOF-36",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "5ba8177c94630828cc4c72f20f95dbfd41a2cecd6967a1e7a09d81a45b6e2056"
+}

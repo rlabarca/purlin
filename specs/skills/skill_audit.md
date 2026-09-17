@@ -1,43 +1,27 @@
 # Feature: skill_audit
 
+> Description: What `skills/audit/SKILL.md` must say. An audit runs the tests and the deliberate
+>   breaks and writes the record a gate reads, so its text decides which record a reader
+>   believes and what the run does under each gate.
 > Scope: skills/audit/SKILL.md
-> Stack: markdown (skill definition)
-> Description: The `purlin:audit` skill evaluates proof quality with STRONG/WEAK/HOLLOW assessments. It is read-only — it never modifies code or test files.
+> Stack: markdown, Claude Code skill definition
 
 ## Rules
 
-- RULE-1: Skill file has YAML frontmatter with `name` and `description` fields
-- RULE-2: Skill file contains a `## Usage` section documenting command syntax
-- RULE-3: The `name` field in frontmatter is `audit`, matching the directory name
-- RULE-4: Independent auditor mode documents instructions to read audit criteria and assess proofs as STRONG/WEAK/HOLLOW
-- RULE-5: Independent auditor mode documents spawning a builder with HOLLOW/WEAK findings
-- RULE-6: Independent auditor mode documents re-auditing fixed proofs after builder responds
-- RULE-7: Independent auditor mode terminates after all findings addressed or after 3 rounds on any single proof
-- RULE-8: Anchor rule handling documents reporting to the lead for ambiguous anchor rules
-- RULE-9: External LLM detects deliberately hollow tests (assert True, assert None) as non-STRONG
-- RULE-10: External LLM rates well-structured tests with real assertions as STRONG or WEAK (never HOLLOW)
-- RULE-11: Response parsing extracts all required fields (PROOF-ID, ASSESSMENT, CRITERION, WHY, FIX) from external LLM output
-- RULE-12: Two-pass flow works end-to-end: static_checks catches HOLLOW in Pass 1, only surviving proofs go to external LLM in Pass 2
-- RULE-13: Custom audit LLM command in config responds to ping, config stores audit_llm and audit_llm_name, and the two-pass audit completes
-- RULE-14: Criteria are loaded via the single `load_criteria()` function (`--load-criteria` CLI); built-in criteria always apply, additional team criteria are appended — never replaced
-- RULE-15: The skill documents a portable Python interpreter for invoking static_checks.py — falling back from `python3` to `python` to `py -3` — rather than assuming `python3` is always on PATH (it is not on stock Windows)
-- RULE-16: When a proof's `test_file` is empty (e.g. C#/xUnit, where `dotnet test` leaves `TestCase.CodeFilePath` null), the skill resolves the source file from the fully-qualified `test_name` via `static_checks.py --resolve-source` before Pass 1 and Pass 2, so C# Pass-1/Pass-2 is reachable through purlin:audit without a populated path. The skill also documents that populating it natively requires source info (`RunConfiguration.CollectSourceInformation=true` with full PDBs)
+- RULE-1: `skills/audit/SKILL.md` opens with a frontmatter block whose `name` is `audit` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:audit` [risk: medium] [origin: eng]
+- RULE-2: The skill runs `scripts/run/purlin_run.py` inside `${CLAUDE_PLUGIN_ROOT}` with `--record` and `--commit`, and states that `--ci` is CI's flag and is never passed by hand [risk: medium] [origin: eng]
+- RULE-3: The last section of `skills/audit/SKILL.md` names the next step and computes it from the cells the skill found, giving a `→` directive for each outcome [risk: medium] [origin: eng]
+- RULE-4: The whole of `skills/audit/SKILL.md` is at most 105 lines [risk: low] [origin: eng]
+- RULE-5: The skill states which record counts under which gate: a `ci` record counts under `passed`, `strong` and `signed`, and a `developer` or a `local` record under `passed` alone [risk: high] [origin: eng]
+- RULE-6: The skill states that under `passed` the run does the tests only and the record carries test strength `n/a`, and that under `strong` and `signed` a local run is a preview whose record does not count [risk: high] [origin: eng]
+- RULE-7: The skill states that `--ci` also writes the briefs under `.purlin/briefs/`, and that `--tag <name>` writes the tag `record/<name>` [risk: medium] [origin: eng]
 
 ## Proof
 
-- PROOF-1 (RULE-1): Grep `skills/audit/SKILL.md` for YAML frontmatter delimiters (`---`); verify `name:` and `description:` fields exist
-- PROOF-2 (RULE-2): Grep `skills/audit/SKILL.md` for `## Usage`; verify the section exists
-- PROOF-3 (RULE-3): Extract `name:` from frontmatter; verify it equals `audit`
-- PROOF-4 (RULE-4): e2e: Grep skills/audit/SKILL.md for independent auditor section; verify audit_criteria.md and STRONG/WEAK/HOLLOW @e2e
-- PROOF-5 (RULE-5): e2e: Grep independent auditor section for purlin-builder and Spawn; verify builder protocol @e2e
-- PROOF-6 (RULE-6): e2e: Grep independent auditor section for re-audit; verify re-check loop @e2e
-- PROOF-7 (RULE-7): e2e: Grep independent auditor section for 3 rounds; verify termination condition @e2e
-- PROOF-8 (RULE-8): e2e: Grep anchor rule handling for report to lead; verify ambiguous anchor protocol @e2e
-- PROOF-9 (RULE-9): e2e: Audit hollow test code with external LLM; verify returns HOLLOW or WEAK @e2e
-- PROOF-10 (RULE-10): e2e: Audit strong test code with external LLM; verify STRONG or WEAK (not HOLLOW) @e2e
-- PROOF-11 (RULE-11): e2e: Parse external LLM response; verify ASSESSMENT, CRITERION, WHY, FIX fields extracted @e2e
-- PROOF-12 (RULE-12): e2e: Mixed-quality test file; static_checks catches assert True; valid test goes to external LLM @e2e
-- PROOF-13 (RULE-13): e2e: Write config with fake LLM command; verify ping, config fields, and two-pass audit @e2e
-- PROOF-14 (RULE-14): e2e: Create fake git repo with additional criteria; configure project; verify load_criteria returns built-in + additional with separator; verify Pass 1 still catches assert True; verify additional criteria reach fake LLM prompt @e2e
-- PROOF-15 (RULE-15): Grep `skills/audit/SKILL.md` for the interpreter-fallback guidance; verify it documents `python` and `py -3` as fallbacks for `python3`
-- PROOF-16 (RULE-16): Grep `skills/audit/SKILL.md` for the empty-`test_file` fallback; verify it documents resolving the source from `test_name` via `--resolve-source` and mentions `CollectSourceInformation` as the native way to populate it
+- PROOF-1 (RULE-1): Read `skills/audit/SKILL.md`; verify the file opens with `---`, that the frontmatter carries `name: audit` and a `description:` whose value is one non-empty line, and that `references/purlin_commands.md` contains the literal `purlin:audit`. Deleting the `name:` line fails naming the file
+- PROOF-2 (RULE-2): Read `skills/audit/SKILL.md`; verify it carries the literal `"${CLAUDE_PLUGIN_ROOT}/scripts/run/purlin_run.py"` with `--record` and `--commit` on the same line, and one further sentence naming `--ci` and saying it is never passed by hand. Removing that sentence fails naming it
+- PROOF-3 (RULE-3): Read `skills/audit/SKILL.md` and split it on its `## ` headings; verify the last heading matches `next step` or `when you are done` case-insensitively, that the text under it names at least two outcomes as list items or table rows, and that at least one of its lines carries `→`. Deleting the closing section fails naming the heading it found instead
+- PROOF-4 (RULE-4): Read `skills/audit/SKILL.md` and count its lines; verify the count is at most 105. Appending prose until the file passes 105 lines fails, and the failure reports the count it found beside the ceiling
+- PROOF-5 (RULE-5): Read the record-source table in `skills/audit/SKILL.md`; verify it carries one row each for `ci`, `developer` and `local`, that the `ci` row names all three gates, and that the `developer` and `local` rows each name `passed` and neither `strong` nor `signed`. Changing the `developer` row to name `strong` fails, naming the gate it found there
+- PROOF-6 (RULE-6): Read the gate table of `skills/audit/SKILL.md`; verify the `passed` row names `n/a` and says the run does the tests only, and that the `strong` row carries the word `preview` and says the local record does not count. Removing the word `preview` fails naming the row it read
+- PROOF-7 (RULE-7): Read `skills/audit/SKILL.md` with its line wrapping collapsed; verify it carries `.purlin/briefs/` in the sentence that names `--ci`, and the literal `record/<name>` beside `--tag`. Renaming the tag prefix fails naming `record/<name>`

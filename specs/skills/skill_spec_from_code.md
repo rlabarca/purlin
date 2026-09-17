@@ -1,88 +1,23 @@
 # Feature: skill_spec_from_code
 
+> Description: What `skills/spec-from-code/SKILL.md` must say. The skill reads a codebase that has
+>   no specs and writes the rules it already implies, which is the one place a rule
+>   enters the project without a person asking for it.
 > Scope: skills/spec-from-code/SKILL.md
-> Stack: markdown (skill definition)
-> Description: The `purlin:spec-from-code` skill scans codebases and migrates existing specs in any format to the current compliant 3-section format.
+> Stack: markdown, Claude Code skill definition
 
 ## Rules
 
-- RULE-1: Skill file has YAML frontmatter with `name` and `description` fields
-- RULE-2: Skill file contains a `## Usage` section documenting command syntax
-- RULE-3: The `name` field in frontmatter is `spec-from-code`, matching the directory name
-- RULE-4: Skill includes mandatory tier tag review for proof descriptions
-- RULE-5: Phase 1 detects existing specs in both `features/` (legacy) and `specs/` (non-compliant) as migration candidates
-- RULE-6: Non-compliant specs in `specs/` are detected by checking for: missing `## Rules` section, unnumbered rules, missing `## Proof` section, or missing `> Description:` metadata
-- RULE-7: Compliant specs (numbered rules, proofs, proper sections) are left untouched during migration
-- RULE-8: Migration preserves the original spec's rules, descriptions, and metadata with minimal loss of fidelity
-- RULE-9: Phase 4 offers to remove `features/` after migration but does NOT remove non-compliant specs from `specs/` (they are overwritten in place)
-- RULE-10: A spec generated from a plain description contains sequentially numbered RULE-N lines starting at RULE-1 with no gaps
-- RULE-11: A spec generated from a plain description contains PROOF-N (RULE-N) lines where every rule has at least one proof
-- RULE-12: A spec generated from a plain description contains no (assumed) tags when all values were explicitly stated
-- RULE-13: A spec generated from a PRD extracts every testable constraint as a RULE-N line — at least 5 rules for a multi-requirement PRD
-- RULE-14: A spec generated from a PRD contains valid metadata: `> Description:`, `> Scope:`, and `> Stack:` fields are present
-- RULE-15: A spec generated from a PRD includes `> Requires:` referencing anchors whose scope overlaps with the feature's scope
-- RULE-16: A spec generated from a vague description adds `(assumed — <context>)` tags to rules where the agent inferred specific values
-- RULE-17: Rules with (assumed) tags still follow RULE-N format and are parseable by sync_status
-- RULE-18: A spec generated from customer feedback translates complaints into testable RULE-N constraints with specific thresholds or behaviors
-- RULE-19: Every proof line across all four scenarios ends with an appropriate tier tag (@integration, @e2e, @manual, or no tag for unit)
-- RULE-20: sync_status successfully parses specs from all four scenarios without errors, reporting correct rule counts and UNTESTED status
-- RULE-21: The `## Rules` and `## Proof` sections are both present in specs from all four scenarios
-- RULE-22: When a vague-input spec's (assumed) rule is updated with an explicit value, the (assumed) tag is removed and the rule remains valid
-- RULE-23: Skill contains data contract extraction mandatory for ALL features (not just UI) with five categories: inbound contracts, outbound contracts, transformation rules, state transitions, and access contracts
-- RULE-24: Skill contains a mandatory draft-and-evaluate step that applies rebuild/behavior/overlap tests to every candidate rule, and a rebuild-risk filter that verifies contract coverage across all five categories before presenting specs
-- RULE-25: Migration from `features/` reads `.impl.md` companion files and extracts active deviations as rules reflecting actual behavior
-- RULE-26: Migration from `features/` reads `.discoveries.md` companion files and converts resolved bugs to regression rules and open bugs to `(deferred)` rules
-- RULE-27: `.discoveries.md` Figma/design references are preserved as `> Visual-Reference:` metadata or `@manual` proof references during migration
-- RULE-28: Quality guide references coverage dimensions instead of a fixed rule count target
-- RULE-29: The taxonomy phase never produces a category folder containing a single spec — single-feature categories are merged into a related category during taxonomy review, or the spec is placed directly at `specs/<name>.md` when no category fits
-- RULE-30: The tier review pass (Phase 3 step 7) includes an inverse check: every `@e2e` proof description must read as an observable flow (arrange → act → observe through the real running app) and must not name a source file or internal function; mis-tagged proofs are rewritten as boundary observations or retagged, per `references/spec_quality_guide.md` ("E2E proof descriptions")
-- RULE-31: Spec validation (Phase 3 step 11) includes a proof implementation-coupling check that rejects proof descriptions naming source files or internal symbols as the asserted target
-- RULE-32: When a category's generated proofs include `@e2e` and no e2e-capable test runner was detected in Phase 1, the skill surfaces a warning in the category review block and in the Phase 4 summary (tool-agnostic — Playwright, Cypress, MCP-driven browser, etc.)
+- RULE-1: `skills/spec-from-code/SKILL.md` opens with a frontmatter block whose `name` is `spec-from-code` and whose `description` is one non-empty line, and `references/purlin_commands.md` carries a row for `purlin:spec-from-code` [risk: medium] [origin: eng]
+- RULE-2: The skill calls `sync_status` before it surveys anything and sends the reader to `purlin:init` when the project carries no `.purlin/config.json` [risk: medium] [origin: eng]
+- RULE-3: The last section of `skills/spec-from-code/SKILL.md` names the next step and computes it from the state the skill found, giving a `→` directive for each outcome [risk: medium] [origin: eng]
+- RULE-4: The whole of `skills/spec-from-code/SKILL.md` is at most 130 lines [risk: low] [origin: eng]
+- RULE-5: Every rule the skill writes carries `[origin: eng]` and `[risk: low]`, and the skill forbids `[origin: pm]` and any risk above `low` [risk: high] [origin: eng]
 
 ## Proof
 
-- PROOF-1 (RULE-1): Grep `skills/spec-from-code/SKILL.md` for YAML frontmatter delimiters (`---`); verify `name:` and `description:` fields exist
-- PROOF-2 (RULE-2): Grep `skills/spec-from-code/SKILL.md` for `## Usage`; verify the section exists
-- PROOF-3 (RULE-3): Extract `name:` from frontmatter; verify it equals `spec-from-code`
-- PROOF-4 (RULE-4): Grep `skills/spec-from-code/SKILL.md` for tier review instructions and tier tag references (`@integration`/`@e2e`/unit tier); verify present
-- PROOF-5 (RULE-5): Grep SKILL.md for `features/` detection AND `specs/` non-compliant detection in Phase 1; verify both paths exist
-- PROOF-6 (RULE-6): Grep SKILL.md for compliance checks: "Missing `## Rules`", "unnumbered", "Missing `## Proof`", "Missing `> Description:`"; verify all four criteria are documented
-- PROOF-7 (RULE-7): Grep SKILL.md for "Compliant specs" or "left untouched"; verify compliant specs are explicitly excluded from migration
-- PROOF-8 (RULE-8): Grep SKILL.md for "primary input" and "preserve"; verify migration uses old spec as primary input @integration
-- PROOF-9 (RULE-9): Grep SKILL.md for `features/` cleanup offer AND "overwritten in place" for specs/; verify both paths exist
-- PROOF-10 (RULE-5): e2e: Create features/auth/login.md with Given/When/Then; verify 3 scenarios detected for conversion @e2e
-- PROOF-11 (RULE-6): e2e: Create spec with unnumbered rules; verify sync_status warns about non-numbered rules @e2e
-- PROOF-12 (RULE-6): e2e: Create spec missing > Description:; verify field absent and ## What it does present for derivation @e2e
-- PROOF-13 (RULE-6): e2e: Create spec with Rules but no Proof section; verify Proof section absent @e2e
-- PROOF-14 (RULE-7): e2e: Create fully compliant spec; verify sync_status reports zero warnings @e2e
-- PROOF-15 (RULE-7): e2e: Verify compliant spec has Description, numbered rules, and proofs (excluded from migration) @e2e
-- PROOF-16 (RULE-8): e2e: Create spec with Scope, Stack metadata but missing Description; verify Scope and Stack preserved verbatim @e2e
-- PROOF-17 (RULE-5): e2e: Create features/auth/login.md; verify category=auth name=login maps to specs/auth/login.md @e2e
-- PROOF-18 (RULE-8): e2e: Migrate unnumbered spec; verify all original rule content preserved in numbered format with proofs @e2e
-- PROOF-19 (RULE-10): e2e: Create spec with 4 sequentially numbered rules; verify numbers are 1,2,3,4 with no gaps @e2e
-- PROOF-20 (RULE-11): e2e: Verify every RULE-N has at least one PROOF referencing it @e2e
-- PROOF-21 (RULE-12): e2e: Verify plain-description spec with explicit values has no (assumed) tags @e2e
-- PROOF-22 (RULE-13): e2e: Create PRD spec with 6 constraints; verify at least 5 RULE-N lines @e2e
-- PROOF-23 (RULE-14): e2e: Verify PRD spec has Description, Scope, and Stack metadata @e2e
-- PROOF-24 (RULE-15): e2e: Create project with overlapping anchor; verify Requires references it and sync_status shows required rules @e2e
-- PROOF-25 (RULE-16): e2e: Create vague-input spec; verify (assumed) tags present @e2e
-- PROOF-26 (RULE-17): e2e: Run sync_status on vague-input spec; verify parses without errors with correct rule count @e2e
-- PROOF-27 (RULE-18): e2e: Create customer feedback spec; verify rules have specific thresholds @e2e
-- PROOF-28 (RULE-19): e2e: Parse proof lines across all four scenarios; verify tier tags present @e2e
-- PROOF-29 (RULE-20): e2e: Run sync_status on all four scenarios; verify UNTESTED status and correct rule counts @e2e
-- PROOF-30 (RULE-21): e2e: Verify ## Rules and ## Proof sections exist in all four scenario specs @e2e
-- PROOF-31 (RULE-22): e2e: Update (assumed) rule with explicit value; verify tag removed and RULE-N format valid @e2e
-- PROOF-32 (RULE-23): Grep SKILL.md for "Inbound contracts", "Outbound contracts", "Transformation rules", "State transitions", "Access contracts" as subsections of step 4; verify all five exist and step is mandatory for ALL features
-- PROOF-33 (RULE-23): e2e: Create a simulated component with API field consumption, filter/sort transformations, conditional gates by user segment, and missing-data fallbacks; verify the extraction identifies inbound fields, transformations, access gates, and failure modes @e2e
-- PROOF-34 (RULE-24): Grep SKILL.md for "Draft and evaluate" AND "rebuild test" in Phase 3; verify the step applies rebuild, behavior, and overlap tests. Grep for "Verify contract coverage" in the rebuild-risk filter; verify it checks all five contract categories
-- PROOF-35 (RULE-25): Grep SKILL.md for ".impl.md" AND "Active Deviations" AND "PM-ACCEPTED"; verify the skill reads deviations and converts PM-accepted deviations to rules reflecting actual behavior
-- PROOF-36 (RULE-25): e2e: Create a features/ directory with a spec and .impl.md containing a PM-ACCEPTED deviation; verify the deviation's actual behavior becomes a RULE-N in the migrated spec @e2e
-- PROOF-37 (RULE-26): Grep SKILL.md for ".discoveries.md" AND "Resolved bugs" AND "(deferred)"; verify resolved bugs become rules and open bugs become deferred rules
-- PROOF-38 (RULE-26): e2e: Create features/ with .discoveries.md containing one RESOLVED bug and one OPEN bug; verify the resolved bug becomes a RULE-N and the open bug becomes a RULE-N with (deferred) tag @e2e
-- PROOF-39 (RULE-27): Grep SKILL.md for "Visual-Reference" AND "Figma" in the .discoveries.md migration section; verify design references are preserved as metadata or manual proof references
-- PROOF-40 (RULE-28): Grep spec_quality_guide.md for "Coverage dimensions"; verify section exists. Grep for "5–10 rules per feature"; verify the fixed target no longer exists
-- PROOF-41 (RULE-29): Grep `skills/spec-from-code/SKILL.md` for the Phase 2 single-feature category check; verify it instructs merging single-feature categories into a related category or placing the spec at `specs/<name>.md` without a folder
-- PROOF-42 (RULE-30): Grep `skills/spec-from-code/SKILL.md` step 7 for the inverse check: "observable flow", arrange → act → observe, and "must not name a source file or internal function"; verify the pointer to `spec_quality_guide.md` "E2E proof descriptions" is present
-- PROOF-43 (RULE-31): Grep `skills/spec-from-code/SKILL.md` step 11 for the proof implementation-coupling check; verify it rejects proof descriptions naming source files or internal symbols as the asserted target
-- PROOF-44 (RULE-32): Grep `skills/spec-from-code/SKILL.md` for the e2e-runner warning in BOTH the step 12 review block and the Phase 4 summary; verify both locations mention `@e2e` proofs with no e2e runner detected
-- PROOF-45 (RULE-30): Grep `references/spec_quality_guide.md` for the "E2E proof descriptions" section; verify the canonical guidance the skill points to exists
+- PROOF-1 (RULE-1): Read `skills/spec-from-code/SKILL.md`; verify the file opens with `---`, that the frontmatter carries `name: spec-from-code` and a `description:` whose value is one non-empty line, and that `references/purlin_commands.md` contains the literal `purlin:spec-from-code`. Deleting the `name:` line fails naming the file
+- PROOF-2 (RULE-2): Read `skills/spec-from-code/SKILL.md`; verify the section that precedes the procedure names `sync_status`, `.purlin/config.json` and `purlin:init`, one assertion per literal. Deleting that section fails naming `sync_status`
+- PROOF-3 (RULE-3): Read `skills/spec-from-code/SKILL.md` and split it on its `## ` headings; verify the last heading matches `next step` or `when you are done` case-insensitively, that the text under it names at least two outcomes as list items or table rows, and that at least one of its lines carries `→`. Deleting the closing section fails naming the heading it found instead
+- PROOF-4 (RULE-4): Read `skills/spec-from-code/SKILL.md` and count its lines; verify the count is at most 130. Appending prose until the file passes 130 lines fails, and the failure reports the count it found beside the ceiling
+- PROOF-5 (RULE-5): Read `skills/spec-from-code/SKILL.md`; verify every line that opens `- RULE-` carries both `[origin: eng]` and `[risk: low]`, and that the file carries the two prohibitions "Do not tag anything `[origin: pm]`" and "Do not add risk tags above `low`". Changing one example rule to `[risk: medium]` fails, printing that line

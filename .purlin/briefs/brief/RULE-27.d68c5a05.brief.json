@@ -1,0 +1,69 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "brief",
+  "generated_at": "2026-09-16T23:04:36Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "8a05e1f6056ed4210123076e1b6d74dc541fe7aeda2e84831e8b176b8f152828",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-42",
+      "text": "Write the brief for `RULE-1`, then write a copy whose `generated_at` and `record` differ; verify the JSON on disk is byte for byte the first write",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-43",
+      "text": "Write the brief for `RULE-1`, then write a copy carrying the observation `PROOF-1 never names the token.`; verify the JSON on disk now carries that sentence and reads settled",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/brief/20260916T230428Z-ca1f4b5-ci-windows.json",
+  "risk": "medium",
+  "rule": "RULE-27",
+  "rule_hash": "e0df6a625009dcc53fbd8eb21d2d03c54884cb10b08b164139adf1ccb1e0c2cf",
+  "rule_text": "Writing a brief again for a triple that already has one leaves the JSON byte for byte as it was unless the evidence in it changed; a difference only in when it was built or the record it was built from is not a change, so reading a brief dirties no tracked file",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "f9b434ffeea8f90e0d62ec9e44edab3ceb7f179e11281bca1958a124f36a090a",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_when_it_was_built_is_not_a_change(self, proved):\n        built = brief_module.build_brief(proved.root, None, 'login', 'RULE-1')\n        path = brief_module.write_brief(proved.root, built)\n        first = _bytes(proved.root, path)\n        again = copy.deepcopy(built)\n        again['generated_at'] = '2031-01-01T00:00:00Z'\n        again['record'] = '.purlin/records/login/20310101T000000Z-abc1234-ci.json'\n        assert brief_module.write_brief(proved.root, again) == path\n        assert _bytes(proved.root, path) == first, \\\n            'a brief with the same evidence rewrote the committed file'",
+      "file": "dev/test_brief_files.py",
+      "findings": [
+        "logic_mirroring"
+      ],
+      "name": "test_when_it_was_built_is_not_a_change",
+      "proof": "PROOF-42",
+      "reasons": [
+        "expected value computed by same function as SUT"
+      ]
+    },
+    {
+      "body": "def test_a_changed_observation_is_written(self, proved):\n        built = brief_module.build_brief(proved.root, None, 'login', 'RULE-1')\n        path = brief_module.write_brief(proved.root, built)\n        assert json.loads(_bytes(proved.root, path))['observations'] == []\n        changed = copy.deepcopy(built)\n        changed['observations'] = ['PROOF-1 never names the token.']\n        changed['settled'] = True\n        brief_module.write_brief(proved.root, changed)\n        written = json.loads(_bytes(proved.root, path))\n        assert written['observations'] == ['PROOF-1 never names the token.']\n        assert written['settled'] is True",
+      "file": "dev/test_brief_files.py",
+      "findings": [],
+      "name": "test_a_changed_observation_is_written",
+      "proof": "PROOF-43",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "d68c5a0562764f4ced87c98e43c37930803307a007cdafc8e5b4e4bfdd033fb8"
+}

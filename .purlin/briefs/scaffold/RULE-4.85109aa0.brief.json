@@ -1,0 +1,49 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T23:04:59Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "3c6e5ac3becc554fac206482eac618587acd49a692c01b20df50a0cb4ab1e3ea",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-4",
+      "text": "Run init and answer the gate question `whenever`; verify the config reads `gate` `passed` and the output contains `is not a gate`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T230430Z-ca1f4b5-ci-windows.json",
+  "risk": "high",
+  "rule": "RULE-4",
+  "rule_hash": "309cb4912599068ab9097fb928380d80da86b79f7f9525919b84be8bfe6dbe15",
+  "rule_text": "An answer that is not one of the three gates is read as `passed` and the fallback is printed, so a typo lowers what CI enforces loudly rather than raising it silently",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "297428bfa4cbe28a706fbf6d3f89ea90f6330532dd765775c6c6708e20e87836",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_an_unreadable_answer_falls_back_to_passed(self):\n        made = Project('pytest')\n        try:\n            done = subprocess.run(\n                [sys.executable, SCAFFOLD, '--project-root', made.root],\n                input='whenever\\n', capture_output=True, encoding='utf-8',\n                timeout=300)\n            assert made.config()['gate'] == 'passed'\n            assert 'is not a gate' in done.stdout\n        finally:\n            made.close()",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_an_unreadable_answer_falls_back_to_passed",
+      "proof": "PROOF-4",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "85109aa03311d87f195f390b4bca10c0fae5385e3c00fc7f6f1291dba99b86c2"
+}

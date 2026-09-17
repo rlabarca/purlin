@@ -1,0 +1,89 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-16T23:05:21Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "c42f39f7dfaf1083f28112a708266ae18b021c867fd3e5b5abdb632fa2da5c45",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-13",
+      "text": "Write a retired scope tag naming a Windows runner into a spec of the v0.9.5 fixture, apply, and verify it reads `@env(windows)` with the retired tag gone; decline the rewrite and verify both the retired tag and `@env(` are gone and the output says it would rather not guess. Verify the fixture's own retired tier tag becomes one `PROOF-53` line ending `@unit @env(windows)`. Verify a scope naming no operating system is dropped with that reason printed, and that a placeholder in prose is still there after the run",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/update/20260916T230432Z-ca1f4b5-ci-windows.json",
+  "risk": "high",
+  "rule": "RULE-13",
+  "rule_hash": "0d4d5f49a272f67f140d25ed8c3e416d1ba2a75f84150a5f9a49fb20b85a1df5",
+  "rule_text": "A proof's retired operating-system tag becomes `@env(<os>)` when the person confirms the system it names, is dropped when they decline or when it names no operating system, and the retired tier tag becomes `@unit @env(windows)`; text that only looks like a tag is left alone",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "8173c90d8ff2cdee3521c35af671bb73c95d063535d0ae6d6f329349b4a98717",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_confirmed_scope_becomes_env(tmp_path):\n    root = _with_scopes(tmp_path)\n    rel = 'specs/core/locking.md'\n    assert SCOPE in _read(root, rel)\n    _apply(root)\n    text = _read(root, rel)\n    assert '@env(windows)' in text\n    assert SCOPE not in text",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_a_confirmed_scope_becomes_env",
+      "proof": "PROOF-13",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_declined_scope_drops_the_tag(tmp_path, capsys, monkeypatch):\n    root = _with_scopes(tmp_path)\n    rel = 'specs/core/locking.md'\n    _answers(monkeypatch, [('Rewrite the windows-2022 scope', 'n')])\n    _apply(root, argv=())\n    printed = capsys.readouterr().out\n    text = _read(root, rel)\n    assert SCOPE not in text\n    assert '@env(' not in text\n    assert 'rather than guess an operating system' in printed",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_a_declined_scope_drops_the_tag",
+      "proof": "PROOF-13",
+      "reasons": []
+    },
+    {
+      "body": "def test_a_scope_naming_no_operating_system_is_dropped(tmp_path, capsys):\n    root = _with_scopes(tmp_path)\n    rel = 'specs/core/locking.md'\n    assert SCOPE in _read(root, rel)\n    _apply(root)\n    printed = capsys.readouterr().out\n    assert SCOPE not in _read(root, rel)\n    assert 'it names no operating system' in printed",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_a_scope_naming_no_operating_system_is_dropped",
+      "proof": "PROOF-13",
+      "reasons": []
+    },
+    {
+      "body": "def test_no_spec_carries_the_retired_scope_afterwards(tmp_path, layout):\n    root = _project(tmp_path, layout)\n    _apply(root)\n    for rel in _walk(root, ('*.md',)):\n        if rel.startswith('specs/'):\n            assert '%swindows-2022)' % SCOPE not in _read(root, rel)\n            assert '%sfigma-mcp)' % SCOPE not in _read(root, rel)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_no_spec_carries_the_retired_scope_afterwards[upgrade-0.9.5]",
+      "proof": "PROOF-13",
+      "reasons": []
+    },
+    {
+      "body": "def test_prose_that_is_not_a_tag_is_left_alone(tmp_path):\n    root = _with_scopes(tmp_path)\n    rel = 'specs/core/runners.md'\n    before = _read(root, rel)\n    assert '%s<' % SCOPE in before       # a placeholder, not a real scope\n    _apply(root)\n    assert '%s<' % SCOPE in _read(root, rel)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_prose_that_is_not_a_tag_is_left_alone",
+      "proof": "PROOF-13",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_retired_tier_tag_becomes_unit_and_env(tmp_path):\n    root = _project(tmp_path, V095)\n    rel = _spec_holding(root, 'msvcrt.locking')\n    assert '@windows\\n' in _read(root, rel)\n    _apply(root)\n    text = _read(root, rel)\n    proofs = [line for line in text.splitlines()\n              if line.startswith('- PROOF-53 ')]\n    assert len(proofs) == 1\n    assert proofs[0].endswith('@unit @env(windows)')\n    assert '@windows\\n' not in text",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_the_retired_tier_tag_becomes_unit_and_env",
+      "proof": "PROOF-13",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "e586d0bda0f572844f528adc78fc7bd366d5c8ee9e9a03d813eb95eba9c61ac7"
+}

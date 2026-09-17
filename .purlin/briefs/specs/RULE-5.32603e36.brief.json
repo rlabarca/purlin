@@ -1,0 +1,47 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "specs",
+  "generated_at": "2026-09-17T12:54:47Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "0a8a0c7ede42453fd279e72eceedb2b17e6a1ca6e1216a671ccb3543392bc5e4",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-6",
+      "text": "Call the proof tag splitter on `x @env(windows)`, `x @env(macos)` and `x @env(linux)` and verify each returns its own value; then call it on `x @env(bsd)` and verify the operating system is none and the unknown tags are exactly `[\"@env(bsd)\"]`",
+      "tier": "integration"
+    }
+  ],
+  "record": ".purlin/records/specs/20260917T125353Z-df84acf-ci-windows.json",
+  "risk": "high",
+  "rule": "RULE-5",
+  "rule_hash": "0d82ff6c6810e4c69bec24a96eada45106f3a3de17a7a831f77211aff92b3bd5",
+  "rule_text": "`@env` takes `windows`, `macos` and `linux` and nothing else; any other value is read as no operating system at all and is listed as an unknown tag",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "cedbfd88b5dcf0a99c201af91882063fc0c65cdcacdceb2c1bcada8b6604f847",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_env_is_parsed_and_bounded_to_three_values(self, project):\n        project.spec(\n            '# Feature: login\\n\\n## Rules\\n\\n- RULE-1: Files lock\\n\\n'\n            '## Proof\\n\\n'\n            '- PROOF-1 (RULE-1): Lock a file; verify a second open fails '\n            '@unit @env(windows)\\n')\n        info = purlin_specs.scan_specs(project.root)['login']\n        assert info['proofs']['PROOF-1']['env'] == 'windows'\n        assert info['proofs']['PROOF-1']['tier'] == 'unit'\n        assert info['proof_env'] == {'PROOF-1': 'windows'}\n        for value in ('windows', 'macos', 'linux'):\n            assert purlin_specs.split_proof_tags('x @env(%s)' % value)[2] == value\n        assert purlin_specs.split_proof_tags('x @env(bsd)')[2] is None\n        assert purlin_specs.split_proof_tags('x @env(bsd)')[3] == ['@env(bsd)']\n        # A proof line naming no tier at all is unit tier.\n        assert purlin_specs.split_proof_tags(\n            'Call login and verify 200')[1] == 'unit'",
+      "file": "dev/test_mcp_server.py",
+      "findings": [],
+      "name": "test_env_is_parsed_and_bounded_to_three_values",
+      "proof": "PROOF-6",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "32603e36254d6433a1956cc79282e9b60eed724072cf85534679aa3e926d5469"
+}

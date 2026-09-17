@@ -1,71 +1,74 @@
 ---
 name: status
-description: Show rule coverage dashboard with feature table
+description: Show every rule's cells and what blocks the gate
 ---
 
-Show rule coverage across all features. Always outputs a consistent table followed by a summary line and dashboard link.
+Show where every feature stands: how many of its rules meet the gate, what blocks the rest,
+and what to do next. This skill writes nothing.
+
+**Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
+is relative to the plugin root; see `references/purlin_commands.md#path-resolution`.
 
 ## Usage
 
 ```
-purlin:status                   Show all features
-purlin:status --role <role>     Filter by role (pm, dev, qa)
+purlin:status                   Every feature and anchor
 ```
 
-## Step 1 — Call sync_status
+Plain language reaches the same place: "where are we", "what is left", "show the board".
+
+## Step 1: call the tool
 
 ```
-sync_status(role: <from argument, optional>)
+sync_status()
 ```
 
-## Step 2 — Feature Table (mandatory)
+## Step 2: print the table
 
-**Always** display a table with three columns: Feature, Coverage, and Status. Every feature and anchor must appear in this table, sorted by status (PARTIAL first, then PASSING, then VERIFIED). Anchors are labeled with `(anchor)` after the name.
-
-```
-  Feature                              Coverage   Status
-  ─────────────────────────────────────────────────────────
-  purlin_report                           12/41   PARTIAL
-  schema_spec_format (anchor)              7/8    PARTIAL
-  sync_status                             38/41   PARTIAL
-  config_engine                           15/15   PASSING
-  dashboard_visual (anchor)               11/11   PASSING
-  e2e_audit_cache_pipeline                15/15   PASSING
-  skill_find                               4/4    VERIFIED
-  skill_build                              7/7    VERIFIED
-  security_no_dangerous_patterns (anchor)  5/5    VERIFIED
-```
-
-Coverage format is `proved/total` rules. The table must include **every** feature and anchor — never omit rows or collapse them into a summary.
-
-Do NOT print the per-feature detail breakdown (individual RULE/PROOF lines and `→` directives) in the table output. The table is a dashboard overview. If the user wants detail on a specific feature, they can use `purlin:find <name>`.
-
-## Step 3 — Summary Line
-
-After the table, print a one-line summary:
+The tool opens with `Purlin status: <project>, plugin <version>, gate <gate>`, then the table.
+Every feature and every anchor gets a row, sorted attention first: the most rules short of the
+gate at the top. Anchors carry `(anchor)` after the name. Columns exist only when the gate
+creates the cell behind them, so a project at `passed` has no strength and no signature column.
 
 ```
-Summary: 42 features | 10 VERIFIED | 20 PASSING | 6 PARTIAL | 3 FAILING | 3 UNTESTED
+  Feature      Rules  Spec                   Tests                            Run
+  ────────────────────────────────────────────────────────────────────────────────────
+  billing         14  12 ready · 2 drafted   9 passed · 0 failing · 5 no test  ci linux
+  login (anchor)   8  8 ready · 0 drafted    8 passed · 0 failing · 0 no test  ci linux
+  export           5  0 ready · 5 drafted    0 passed · 0 failing · 5 no test  none
 ```
 
-## Step 4 — Dashboard Link
+Under `strong` two columns follow `Run`: `Strength`, the test strength as an integer percent
+or `n/a` when no break engine is installed, and `Strong`, `<n> of <m>` rules whose strong cell
+is met. Under `signed` a `Signed` column follows those two, in the same `<n> of <m>` form.
 
-If `purlin-report.html` exists at the project root, print the clickable link:
+Print the numbers `sync_status` returned. Never recount them: the command line and the
+dashboard must show one answer from one computation.
 
-```
-Dashboard: file://<absolute-path-to-project>/purlin-report.html
-```
+## Step 3: print the summary line and what stands in the way
 
-Check for the file with a glob or ls before printing. If the file does not exist, skip this line.
+The summary is two lines. The first is `<met> of <rules> rules meet the gate <gate>.` The
+second carries the feature count and, as the gate creates them, the failing count, the minimum
+test strength, the risk the model review starts at, how many rules need a person, how many are
+held, the risk a signature starts at, and how many signatures are stale. Print both with their
+denominators intact: a percentage without the count it was taken over is the thing to avoid.
 
-## Status Definitions
+Anything the tool prints after the table and before the directives is its own: an anchor whose
+pin is behind, uncommitted spec changes, and its warnings. Print them verbatim, or nothing
+when the tool returned nothing.
 
-| Status | Meaning |
-|--------|---------|
-| VERIFIED | All rules proved + verification receipt matches |
-| PASSING | All rules proved, no receipt yet |
-| PARTIAL | Some rules proved, none failing — more tests needed |
-| FAILING | Any proof has status FAIL |
-| UNTESTED | No proofs at all |
+## Step 4: name the next step
 
-The progression is: UNTESTED → PARTIAL → PASSING → VERIFIED.
+Print the `→` lines the tool returned and add none of your own. There is one `→ Next:` line,
+computed from the lowest cell that blocks the gate, and one more line when the review list is
+not empty:
+
+| What blocks the gate | The line the tool prints |
+|----------------------|--------------------------|
+| A rule's spec status is `drafted` | `→ Next: run purlin:spec.` with the count |
+| A rule has a failing test, or no test | `→ Next: run purlin:build.` with the count |
+| A rule is waiting for the record that counts | `→ Next: push the branch.` under `strong` and above, `→ Next: run purlin:test.` under `passed` |
+| A rule is weak | `→ Next: run purlin:build.` naming what each one is short of |
+| A rule reads `manual test`, `manual audit` or `held`, or is unsigned or stale | `→ Next: run purlin:sign.` with the count |
+| Every rule meets the gate | `→ Next: nothing is outstanding at gate <gate>.` |
+| The review list is not empty | `→ Review list: <n> rules need a person. Run purlin:sign.` |

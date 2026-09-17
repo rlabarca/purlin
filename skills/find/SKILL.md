@@ -1,68 +1,71 @@
 ---
 name: find
-description: Search specs by name and show coverage
+description: Find a spec by name and show its rules' cells
 ---
 
-Find a spec by name and display its rule coverage from `sync_status`.
+Locate a spec and show what stands behind each of its rules. With no argument, list every
+spec. This skill writes nothing.
+
+**Paths in this skill:** every `references/`, `templates/`, `scripts/` and `agents/` path below
+is relative to the plugin root; see `references/purlin_commands.md#path-resolution`.
 
 ## Usage
 
 ```
-purlin:find <name>              Find a spec by name
-purlin:find                     List all specs
+purlin:find <name>              Find one spec by name or by part of a name
+purlin:find                     List every spec, grouped by category
 ```
 
-## With Argument — Find by Name
+Plain language reaches the same place: "where is the login spec", "what specs do we have".
 
-1. Search `specs/**/<name>.md` for an exact filename match.
-2. If not found, try a substring match against all spec filenames.
-3. If still not found:
+## With a name
 
-```
-No spec found matching "<name>".
+1. Look for `specs/**/<name>.md`.
+2. If nothing matches exactly, match the name as a substring of a spec filename.
+3. If several match, list them and ask which one.
+4. If nothing matches, list every spec and stop.
 
-Available specs:
-  specs/auth/login.md
-  specs/auth/user_profile.md
-  specs/webhooks/webhook_delivery.md
-  specs/_anchors/design_tokens.md
-```
-
-4. If found, read the spec and call `sync_status`. Display the spec's coverage:
+When one spec matches, read it, call `sync_status`, and print the header, the rules and the
+cells of each. One pill per cell the gate creates, in the order spec, passed, strong, signed:
 
 ```
 Found: specs/auth/login.md
-
 # Feature: login
-
-> Description: Authenticates users via email and password.
-> Requires: security_auth
+> Description: People sign in with an email address and a password.
 > Scope: src/auth/login.js, src/auth/login.test.js
 
-Rules: 3 | Proved: 3/3 | Status: VERIFIED (all rules proved + receipt) | vhash=a1b2c3d4
-
-  RULE-1: PASS (PROOF-1 in tests/test_login.py)
-  RULE-2: PASS (PROOF-2 in tests/test_login.py)
-  RULE-3: PASS (PROOF-3, manual, verified 2026-03-30)
+8 rules, 6 meet the gate signed   strength 81%
+  RULE-1  high    ready  passed  strong  signed      PROOF-1  tests/test_login.py::test_rejects_bad_password
+  RULE-2  medium  ready  passed  strong  unsigned    PROOF-2  tests/test_login.py::test_locks_after_five
+  RULE-3  low     ready  no test                     PROOF-3  no test carries this marker
 ```
 
-## Without Argument — List All
+Show the risk and the origin only when the spec carries them; under the `passed` gate both are
+optional and a column of blanks says nothing.
 
-List all specs grouped by category:
+## With no name
+
+Group by category and give one line per spec:
 
 ```
-Specs (12 total):
-
-  auth/ (3 specs)
-    login.md — VERIFIED (3/3 rules proved)
-    user_profile.md — PARTIAL (1/2 rules proved)
-    permissions.md — UNTESTED
-
-  webhooks/ (2 specs)
-    webhook_delivery.md — FAILING (2/3 rules proved)
-    webhook_config.md — PASSING (3/3 rules proved)
-
-  _anchors/ (2 anchors)
-    design_tokens.md — 5 rules
-    api_contracts.md — 3 rules
+Specs (12):
+  auth/ (3)
+    login              8 rules, 6 meet the gate, strength 81%
+    permissions        4 rules, all drafted
+  _anchors/ (2)
+    design_tokens      5 rules, pinned 4 commits behind
 ```
+
+## Name the next step
+
+End with one line, for the spec you showed or for the weakest one you listed:
+
+| What you found | The line to print |
+|----------------|-------------------|
+| A rule's spec status is `drafted` | `→ Run: purlin:spec <feature>` |
+| A rule reads `no test` | `→ Run: purlin:build <feature>` |
+| A rule reads `passed` with no record under `strong` or above | `→ Run: purlin:audit <feature>` |
+| A rule is weak | `→ Run: purlin:build <feature>` |
+| A rule reads `manual test`, `manual audit` or `held`, or is unsigned or stale | `→ Run: purlin:sign <feature>` |
+| An anchor pin is behind | `→ Run: purlin:anchor sync <name>` |
+| Nothing outstanding | `→ Nothing to do here.` |

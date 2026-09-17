@@ -1,0 +1,56 @@
+/* Default theme: Purlin dark. Semantic aliases only — never use raw palette in components. */
+:root{
+  --color-scheme:dark;
+
+  --canvas:var(--purlin-navy-800);
+  --canvas-deep:var(--purlin-navy-900);
+  --surface-1:rgba(228,221,212,.06);
+  --surface-2:rgba(228,221,212,.10);
+  --surface-sunken:var(--purlin-navy-900);
+  --surface-veil:rgba(228,221,212,.30);   /* the deck's full-bleed cream veil */
+
+  --text-primary:var(--purlin-cream-050);
+  --text-secondary:var(--purlin-blush-200);
+  --text-muted:var(--purlin-slate-200);
+  --text-accent:var(--purlin-copper-500);
+  --text-inverse:var(--purlin-navy-900);
+
+  --border-hairline:rgba(228,221,212,.18);
+  --border-default:rgba(228,221,212,.30);
+  --border-strong:rgba(228,221,212,.45);
+  --border-accent:var(--purlin-copper-500);
+
+  --accent:var(--purlin-copper-500);
+  --accent-contrast:var(--purlin-navy-900);
+
+  --state-pass:var(--green-500);
+  --state-pass-soft:rgba(34,197,93,.14);
+  --state-warn:var(--amber-500);
+  --state-warn-soft:rgba(245,158,12,.14);
+  --state-fail:var(--red-500);
+  --state-fail-soft:rgba(239,68,68,.14);
+  --state-neutral:var(--teal-400);
+  --state-neutral-soft:rgba(45,212,191,.14);
+  --state-idle:var(--slate-400);
+
+  --focus-ring:var(--purlin-blush-200);
+  --link:var(--purlin-blush-200);
+  --link-hover:var(--purlin-copper-500);
+}
+
+/* Product surfaces sit on the cool slate ramp; brand surfaces on the warm one. */
+[data-surface="product"]{
+  --canvas:var(--slate-800);
+  --canvas-deep:var(--slate-950);
+  --surface-1:var(--slate-800);
+  --surface-2:var(--slate-750);
+  --surface-sunken:var(--slate-900);
+  --text-primary:var(--slate-200);
+  --text-secondary:var(--slate-400);
+  --text-muted:var(--slate-500);
+  --border-hairline:var(--slate-700);
+  --border-default:var(--slate-700);
+  --border-strong:var(--slate-500);
+  --link:var(--teal-400);
+  --link-hover:var(--slate-200);
+}

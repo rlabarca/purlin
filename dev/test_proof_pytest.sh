@@ -1,26 +1,28 @@
 #!/usr/bin/env bash
-# Tests for scripts/proof/pytest_purlin.py — pytest proof plugin.
+# Tests for scripts/proof/pytest_purlin.py, the pytest proof plugin.
 #
-# Each test creates a temp project, writes a spec and a pytest test file
-# with @pytest.mark.proof markers, runs pytest with the plugin, and
-# verifies the proof JSON output.
+# Each test makes a temp project, writes a spec and a test file carrying
+# @pytest.mark.proof markers, runs pytest with the plugin, and reads the
+# runtime proof file back.
 #
-# Tests:
-#   PROOF-1 (RULE-1): Passing test with @pytest.mark.proof produces proof with status "pass"
-#   PROOF-2 (RULE-2): Proof entry contains all required fields
-#   PROOF-3 (RULE-3): Proof file written next to matching spec
-#   PROOF-4 (RULE-4): Unknown feature writes to specs/ directory
-#   PROOF-5 (RULE-5): Running twice replaces old entries
+#   the marker produces an entry with status "pass"
+#   the entry carries the seven fields
+#   the file is .purlin/runtime/proofs/<feature>.<tier>.json
+#   the tier keyword names the file
+#   a second run replaces this file's entries and keeps the rest
+#   a skipped test writes nothing and keeps the entry it had
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-PLUGIN="$PROJECT_ROOT/scripts/proof/pytest_purlin.py"
+PROOF_DIR="$PROJECT_ROOT/scripts/proof"
 PASS=0
 FAIL=0
 
-# Load proof harness
-source "$PROJECT_ROOT/scripts/proof/shell_purlin.sh"
+if ! python3 -c 'import pytest' >/dev/null 2>&1; then
+  echo "pytest is not installed, so this suite did not run."
+  exit 0
+fi
 
 run_test() {
   local name="$1"
@@ -28,180 +30,156 @@ run_test() {
   if "$@"; then
     echo "  PASS: $name"
     PASS=$((PASS + 1))
-    return 0
   else
     echo "  FAIL: $name"
     FAIL=$((FAIL + 1))
-    return 1
   fi
 }
 
-echo "=== proof-pytest tests ==="
+make_project() {
+  local d
+  d="$(mktemp -d)"
+  mkdir -p "$d/specs/a" "$d/.purlin" "$d/tests"
+  printf '# feat\n\n## Rules\n- RULE-1: a\n- RULE-2: b\n\n## Proof\n- PROOF-1 (RULE-1): t\n' \
+    > "$d/specs/a/feat.md"
+  echo "$d"
+}
 
-# --- PROOF-1: Passing test produces proof with status "pass" ---
+run_pytest() {
+  local d="$1"
+  (cd "$d" && python3 -m pytest tests -p pytest_purlin \
+      --override-ini="pythonpath=$PROOF_DIR" -q --no-header -p no:cacheprovider)
+}
+
+echo "=== pytest proof plugin tests ==="
+
 test_pass_status() {
-  local tmpdir
-  tmpdir=$(mktemp -d)
-  mkdir -p "$tmpdir/specs/auth"
-  echo -e "# Feature: my_feat\n\n## Rules\n- RULE-1: Must work" > "$tmpdir/specs/auth/my_feat.md"
-
-  cat > "$tmpdir/test_sample.py" << 'PYEOF'
+  local d; d="$(make_project)"
+  cat > "$d/tests/test_s.py" <<'PY'
 import pytest
-
-@pytest.mark.proof("my_feat", "PROOF-1", "RULE-1")
-def test_it_works():
-    assert 1 + 1 == 2
-PYEOF
-
-  (cd "$tmpdir" && pytest test_sample.py -p pytest_purlin --override-ini="pythonpath=$PROJECT_ROOT/scripts/proof" -q --no-header 2>/dev/null)
-
-  local proof_file="$tmpdir/specs/auth/my_feat.proofs-unit.json"
-  [[ -f "$proof_file" ]] || return 1
-  local status
-  status=$(python3 -c "import json; print(json.load(open('$proof_file'))['proofs'][0]['status'])")
-  [[ "$status" == "pass" ]]
-  local rc=$?
-  rm -rf "$tmpdir"
-  return $rc
-}
-run_test "pass status" test_pass_status
-purlin_proof "proof-pytest" "PROOF-1" "RULE-1" "$([ $? -eq 0 ] && echo pass || echo fail)" "pass status"
-
-# --- PROOF-2: All required fields present ---
-test_all_fields() {
-  local tmpdir
-  tmpdir=$(mktemp -d)
-  mkdir -p "$tmpdir/specs/auth"
-  echo -e "# Feature: my_feat\n\n## Rules\n- RULE-1: Must work" > "$tmpdir/specs/auth/my_feat.md"
-
-  cat > "$tmpdir/test_sample.py" << 'PYEOF'
-import pytest
-
-@pytest.mark.proof("my_feat", "PROOF-1", "RULE-1")
-def test_it_works():
-    assert True
-PYEOF
-
-  (cd "$tmpdir" && pytest test_sample.py -p pytest_purlin --override-ini="pythonpath=$PROJECT_ROOT/scripts/proof" -q --no-header 2>/dev/null)
-
-  local proof_file="$tmpdir/specs/auth/my_feat.proofs-unit.json"
+@pytest.mark.proof("feat", "PROOF-1", "RULE-1")
+def test_it(): assert 1 + 1 == 2
+PY
+  run_pytest "$d" >/dev/null 2>&1
   python3 -c "
-import json, sys
-entry = json.load(open('$proof_file'))['proofs'][0]
-required = ['feature', 'id', 'rule', 'test_file', 'test_name', 'status', 'tier']
-for f in required:
-    if f not in entry:
-        print(f'missing field: {f}', file=sys.stderr)
-        sys.exit(1)
-"
-  local rc=$?
-  rm -rf "$tmpdir"
-  return $rc
+import json
+data = json.load(open('$d/.purlin/runtime/proofs/feat.unit.json', encoding='utf-8'))
+assert data['tier'] == 'unit', data
+entry = data['proofs'][0]
+assert entry['status'] == 'pass', entry
+assert entry['id'] == 'PROOF-1' and entry['rule'] == 'RULE-1', entry
+assert entry['test_name'] == 'test_it', entry
+" >/dev/null 2>&1
+  local rc=$?; rm -rf "$d"; return $rc
 }
-run_test "all required fields" test_all_fields
-purlin_proof "proof-pytest" "PROOF-2" "RULE-2" "$([ $? -eq 0 ] && echo pass || echo fail)" "all required fields"
+run_test "a passing marked test records status pass" test_pass_status
 
-# --- PROOF-3: Proof file next to spec ---
-test_proof_location() {
-  local tmpdir
-  tmpdir=$(mktemp -d)
-  mkdir -p "$tmpdir/specs/billing"
-  echo -e "# Feature: invoice\n\n## Rules\n- RULE-1: Must total" > "$tmpdir/specs/billing/invoice.md"
-
-  cat > "$tmpdir/test_sample.py" << 'PYEOF'
+test_fail_status() {
+  local d; d="$(make_project)"
+  cat > "$d/tests/test_s.py" <<'PY'
 import pytest
-
-@pytest.mark.proof("invoice", "PROOF-1", "RULE-1")
-def test_total():
-    assert 10 + 20 == 30
-PYEOF
-
-  (cd "$tmpdir" && pytest test_sample.py -p pytest_purlin --override-ini="pythonpath=$PROJECT_ROOT/scripts/proof" -q --no-header 2>/dev/null)
-
-  [[ -f "$tmpdir/specs/billing/invoice.proofs-unit.json" ]]
-  local rc=$?
-  rm -rf "$tmpdir"
-  return $rc
-}
-run_test "proof file next to spec" test_proof_location
-purlin_proof "proof-pytest" "PROOF-3" "RULE-3" "$([ $? -eq 0 ] && echo pass || echo fail)" "proof file next to spec"
-
-# --- PROOF-4: Unknown feature falls back to specs/ ---
-test_unknown_feature() {
-  local tmpdir
-  tmpdir=$(mktemp -d)
-  mkdir -p "$tmpdir/specs"
-
-  cat > "$tmpdir/test_sample.py" << 'PYEOF'
-import pytest
-
-@pytest.mark.proof("unknown_feat", "PROOF-1", "RULE-1")
-def test_it():
-    assert True
-PYEOF
-
-  (cd "$tmpdir" && pytest test_sample.py -p pytest_purlin --override-ini="pythonpath=$PROJECT_ROOT/scripts/proof" -q --no-header 2>/dev/null)
-
-  [[ -f "$tmpdir/specs/unknown_feat.proofs-unit.json" ]]
-  local rc=$?
-  rm -rf "$tmpdir"
-  return $rc
-}
-run_test "unknown feature falls back to specs/" test_unknown_feature
-purlin_proof "proof-pytest" "PROOF-4" "RULE-4" "$([ $? -eq 0 ] && echo pass || echo fail)" "unknown feature falls back to specs/"
-
-# --- PROOF-5: Running twice replaces old entries ---
-test_replace_on_rerun() {
-  local tmpdir
-  tmpdir=$(mktemp -d)
-  mkdir -p "$tmpdir/specs/auth"
-  echo -e "# Feature: my_feat\n\n## Rules\n- RULE-1: Must work" > "$tmpdir/specs/auth/my_feat.md"
-
-  # First run: failing test
-  cat > "$tmpdir/test_sample.py" << 'PYEOF'
-import pytest
-
-@pytest.mark.proof("my_feat", "PROOF-1", "RULE-1")
-def test_it():
-    assert False
-PYEOF
-
-  (cd "$tmpdir" && pytest test_sample.py -p pytest_purlin --override-ini="pythonpath=$PROJECT_ROOT/scripts/proof" -q --no-header 2>/dev/null) || true
-
-  # Second run: passing test
-  cat > "$tmpdir/test_sample.py" << 'PYEOF'
-import pytest
-
-@pytest.mark.proof("my_feat", "PROOF-1", "RULE-1")
-def test_it():
-    assert True
-PYEOF
-
-  (cd "$tmpdir" && pytest test_sample.py -p pytest_purlin --override-ini="pythonpath=$PROJECT_ROOT/scripts/proof" -q --no-header 2>/dev/null)
-
-  local proof_file="$tmpdir/specs/auth/my_feat.proofs-unit.json"
+@pytest.mark.proof("feat", "PROOF-1", "RULE-1")
+def test_it(): assert 1 == 2
+PY
+  run_pytest "$d" >/dev/null 2>&1 || true
   python3 -c "
-import json, sys
-data = json.load(open('$proof_file'))
-if len(data['proofs']) != 1:
-    print(f'expected 1 entry, got {len(data[\"proofs\"])}', file=sys.stderr)
-    sys.exit(1)
-if data['proofs'][0]['status'] != 'pass':
-    print(f'expected pass, got {data[\"proofs\"][0][\"status\"]}', file=sys.stderr)
-    sys.exit(1)
-"
-  local rc=$?
-  rm -rf "$tmpdir"
-  return $rc
+import json
+entry = json.load(open('$d/.purlin/runtime/proofs/feat.unit.json', encoding='utf-8'))['proofs'][0]
+assert entry['status'] == 'fail', entry
+" >/dev/null 2>&1
+  local rc=$?; rm -rf "$d"; return $rc
 }
-run_test "replace on rerun" test_replace_on_rerun
-purlin_proof "proof-pytest" "PROOF-5" "RULE-5" "$([ $? -eq 0 ] && echo pass || echo fail)" "replace on rerun"
+run_test "a failing marked test records status fail" test_fail_status
 
-# --- Emit proofs ---
+test_seven_fields() {
+  local d; d="$(make_project)"
+  cat > "$d/tests/test_s.py" <<'PY'
+import pytest
+@pytest.mark.proof("feat", "PROOF-1", "RULE-1")
+def test_it(): assert True
+PY
+  run_pytest "$d" >/dev/null 2>&1
+  python3 -c "
+import json
+entry = json.load(open('$d/.purlin/runtime/proofs/feat.unit.json', encoding='utf-8'))['proofs'][0]
+assert set(entry) == {'feature', 'id', 'rule', 'test_file', 'test_name', 'status', 'tier'}, entry
+assert entry['test_file'] == 'tests/test_s.py', entry
+" >/dev/null 2>&1
+  local rc=$?; rm -rf "$d"; return $rc
+}
+run_test "the entry carries the seven fields and a relative test file" test_seven_fields
+
+test_tier_names_the_file() {
+  local d; d="$(make_project)"
+  cat > "$d/tests/test_s.py" <<'PY'
+import pytest
+@pytest.mark.proof("feat", "PROOF-1", "RULE-1", tier="e2e")
+def test_it(): assert True
+PY
+  run_pytest "$d" >/dev/null 2>&1
+  [[ -f "$d/.purlin/runtime/proofs/feat.e2e.json" ]] && \
+    [[ ! -f "$d/.purlin/runtime/proofs/feat.unit.json" ]]
+  local rc=$?; rm -rf "$d"; return $rc
+}
+run_test "the tier keyword names the file" test_tier_names_the_file
+
+test_rerun_replaces() {
+  local d; d="$(make_project)"
+  cat > "$d/tests/test_s.py" <<'PY'
+import pytest
+@pytest.mark.proof("feat", "PROOF-1", "RULE-1")
+def test_one(): assert True
+@pytest.mark.proof("feat", "PROOF-2", "RULE-2")
+def test_two(): assert True
+PY
+  run_pytest "$d" >/dev/null 2>&1
+  cat > "$d/tests/test_s.py" <<'PY'
+import pytest
+@pytest.mark.proof("feat", "PROOF-1", "RULE-1")
+def test_one(): assert True
+PY
+  run_pytest "$d" >/dev/null 2>&1
+  python3 -c "
+import json
+ids = [e['id'] for e in json.load(open('$d/.purlin/runtime/proofs/feat.unit.json', encoding='utf-8'))['proofs']]
+assert ids == ['PROOF-1'], ids
+" >/dev/null 2>&1
+  local rc=$?; rm -rf "$d"; return $rc
+}
+run_test "a second run replaces this file's entries" test_rerun_replaces
+
+test_skipped_keeps_its_entry() {
+  local d; d="$(make_project)"
+  cat > "$d/tests/test_s.py" <<'PY'
+import pytest
+@pytest.mark.proof("feat", "PROOF-1", "RULE-1")
+def test_one(): assert True
+@pytest.mark.proof("feat", "PROOF-2", "RULE-2")
+@pytest.mark.skip(reason="no tool")
+def test_two(): assert True
+PY
+  mkdir -p "$d/.purlin/runtime/proofs"
+  python3 -c "
+import json
+entries = [{'feature': 'feat', 'id': 'PROOF-2', 'rule': 'RULE-2',
+            'test_file': 'tests/test_s.py', 'test_name': 'test_two',
+            'status': 'pass', 'tier': 'unit'}]
+json.dump({'tier': 'unit', 'proofs': entries},
+          open('$d/.purlin/runtime/proofs/feat.unit.json', 'w', encoding='utf-8'), indent=2)
+"
+  run_pytest "$d" >/dev/null 2>&1
+  python3 -c "
+import json
+by = {e['id']: e for e in json.load(open('$d/.purlin/runtime/proofs/feat.unit.json', encoding='utf-8'))['proofs']}
+assert by['PROOF-2']['test_name'] == 'test_two', by
+assert by['PROOF-1']['test_name'] == 'test_one', by
+" >/dev/null 2>&1
+  local rc=$?; rm -rf "$d"; return $rc
+}
+run_test "a skipped test writes nothing and keeps the entry it had" test_skipped_keeps_its_entry
+
 cd "$PROJECT_ROOT"
-purlin_proof_finish
 
-# --- Summary ---
 echo ""
-echo "Results: $PASS passed, $FAIL failed"
+echo "pytest proof plugin: $PASS/$((PASS+FAIL)) passed"
 [[ $FAIL -eq 0 ]]

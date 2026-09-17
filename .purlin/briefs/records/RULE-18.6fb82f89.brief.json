@@ -1,0 +1,87 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "records",
+  "generated_at": "2026-09-16T23:19:30Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "70cf513ee1467cae057c8dbd5f5f41a65a64ee49c981da6517a629f9333fb7f9",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-18",
+      "text": "Read the rendered workflow; verify its top-level keys are exactly `jobs`, `name`, `on`, `permissions`, that it holds `contents: write` and `pull-requests: write`, that its steps name `actions/checkout@v4`, `Locate Purlin`, `Run verify and write the record` and `actions/upload-artifact@v4`, that it carries `scripts/run/purlin_run.py\" --all --record --ci`, `name: purlin-dashboard-${{ matrix.os }}`, `github.event.pull_request.head.repo.fork` with `no record was committed`, and the pinned clone ref, and that neither placeholder survives. Verify the upload step's `path:` equals what `ci.publish_dir()` builds from `RUNNER_TEMP`. Verify `schedule:` is absent, and present with `upstream_check=True`",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/records/20260916T231918Z-e198ca5-ci-linux.json",
+  "risk": "high",
+  "rule": "RULE-18",
+  "rule_hash": "73f131b2183d6fcb6793f2a227c1ae62d1a5a5b482294dec8bd3e8544ae02d33",
+  "rule_text": "The rendered workflow checks out the project, locates Purlin, runs `purlin_run.py --all --record --ci`, uploads the artifact `purlin-dashboard-<runner>`, one name per matrix job, from the directory the run publishes to, clones the Purlin release the project pins, tells a forked pull request that no record was committed, and carries the scheduled pin check only when it is asked for",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "c9500e82d9554b9ad7212f9e307fea44c8f777a7f886f2a2565d44b145fd1606",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_forked_pull_request_is_told_it_writes_no_commit():\n    jobs = '\\n'.join(parse_blocks(read(WORKFLOW_REL))['jobs'])\n    assert 'github.event.pull_request.head.repo.fork' in jobs\n    assert 'no record was committed' in jobs",
+      "file": "dev/test_consumer_ci.py",
+      "findings": [],
+      "name": "test_a_forked_pull_request_is_told_it_writes_no_commit",
+      "proof": "PROOF-18",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_scheduled_pin_check_is_off_unless_it_is_asked_for():\n    assert 'schedule:' not in read(WORKFLOW_REL)\n    with_check = workflow_module.render_workflow(\n        'github', ['linux'], PURLIN_REF, upstream_check=True)\n    assert 'schedule:' in with_check\n    assert 'upstream-check:' in with_check\n    assert '<<MATRIX>>' not in with_check\n    assert '<<PURLIN_REF>>' not in with_check",
+      "file": "dev/test_consumer_ci.py",
+      "findings": [],
+      "name": "test_the_scheduled_pin_check_is_off_unless_it_is_asked_for",
+      "proof": "PROOF-18",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_upload_path_is_the_directory_the_run_publishes_to(monkeypatch):\n    \"\"\"One directory, named twice. Two spellings attach an empty artifact.\n\n    `RUNNER_TEMP` is set to the workflow's own expression, so the path\n    `ci.publish_dir` builds is the text the upload step has to carry.\n    \"\"\"\n    monkeypatch.delenv('AGENT_TEMPDIRECTORY', raising=False)\n    monkeypatch.setenv('RUNNER_TEMP', '${{ runner.temp }}')\n    # On the runner the project being audited is the checkout, which is what\n    # sends the dashboard to the runner's own directory; the fixture stands in\n    # for that checkout here.\n    monkeypatch.setenv('GITHUB_WORKSPACE', FIXTURE)\n    published = ci_module.publish_dir(FIXTURE)\n\n    jobs = '\\n'.join(parse_blocks(read(WORKFLOW_REL))['jobs'])\n    assert 'path: %s' % published in jobs, (\n        'the run publishes to %s and the upload step reads somewhere else, so '\n        'the purlin-dashboard artifact on the pull request is empty'\n        % published)",
+      "file": "dev/test_consumer_ci.py",
+      "findings": [],
+      "name": "test_the_upload_path_is_the_directory_the_run_publishes_to",
+      "proof": "PROOF-18",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_workflow_clones_the_release_the_project_pins():\n    jobs = '\\n'.join(parse_blocks(read(WORKFLOW_REL))['jobs'])\n    assert 'ref=\"%s\"' % PURLIN_REF in jobs, (\n        'a consumer runner has no plugin, so the ref it clones must be pinned')\n    assert 'https://github.com/rlabarca/purlin' in jobs\n    assert 'vars.PURLIN_REF' in jobs, 'the pin must be movable without an edit'",
+      "file": "dev/test_consumer_ci.py",
+      "findings": [],
+      "name": "test_the_workflow_clones_the_release_the_project_pins",
+      "proof": "PROOF-18",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_workflow_is_shaped_like_a_workflow():\n    blocks = parse_blocks(read(WORKFLOW_REL))\n    assert sorted(blocks) == ['jobs', 'name', 'on', 'permissions']\n    assert 'contents: write' in read(WORKFLOW_REL)\n    assert 'pull-requests: write' in read(WORKFLOW_REL)\n    assert '  push:' in '\\n'.join(blocks['on'])\n    assert '  pull_request:' in '\\n'.join(blocks['on'])\n    for placeholder in ('<<MATRIX>>', '<<PURLIN_REF>>'):\n        assert placeholder not in read(WORKFLOW_REL), (\n            '%s was left unfilled' % placeholder)",
+      "file": "dev/test_consumer_ci.py",
+      "findings": [],
+      "name": "test_the_workflow_is_shaped_like_a_workflow",
+      "proof": "PROOF-18",
+      "reasons": []
+    },
+    {
+      "body": "def test_the_workflow_names_the_record_step_and_the_artifact():\n    jobs = '\\n'.join(parse_blocks(read(WORKFLOW_REL))['jobs'])\n    names = step_names(jobs.splitlines())\n    assert 'actions/checkout@v4' in names\n    assert 'Locate Purlin' in names\n    assert 'Run verify and write the record' in names\n    assert 'actions/upload-artifact@v4' in names\n    assert 'name: purlin-dashboard-${{ matrix.os }}' in jobs\n    assert 'scripts/run/purlin_run.py\" --all --record --ci' in jobs",
+      "file": "dev/test_consumer_ci.py",
+      "findings": [],
+      "name": "test_the_workflow_names_the_record_step_and_the_artifact",
+      "proof": "PROOF-18",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "6fb82f89f27d830d3e1a7fb3a9cc08a6cadfdaa90c863c2b2c3d9d2b81e3792a"
+}

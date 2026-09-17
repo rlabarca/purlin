@@ -1,0 +1,65 @@
+{
+  "ai_review": "not available",
+  "design": null,
+  "design_hash": null,
+  "feature": "update",
+  "generated_at": "2026-09-16T23:05:22Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength",
+    "model review"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "6a2b89f4435d906de7a02ffb30e5be36013405ceaff8574b38d989afb7081613",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-19",
+      "text": "Run `sync_status` on the v0.9.5 fixture and verify it contains `Run: purlin:init --update`, then apply the update and verify it no longer does; verify it says the line again once `.purlin/records/README.md` is deleted, and that it does not once nothing is pending",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/update/20260916T230432Z-ca1f4b5-ci-windows.json",
+  "risk": "high",
+  "rule": "RULE-19",
+  "rule_hash": "3d5cf1d8d1f02784d72001d9f056d672e0c6cb930f293d5a9552bd16c51a7666",
+  "rule_text": "`sync_status` prints the directive to run the update while anything is pending, including when the config alone is already clean, and stops printing it once nothing is",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "22fa98ef5dda9043eaa90282687fed4340c95deaba4ee2257870a48bd9ad261b",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_status_says_it_even_when_the_config_is_already_clean(tmp_path):\n    \"\"\"The line must come from the pending list, not only from a config warning.\"\"\"\n    root = _project(tmp_path, V095)\n    _apply(root)\n    os.remove(os.path.join(root, '.purlin', 'records', 'README.md'))\n    assert update.pending(root)\n    assert 'Run: purlin:init --update' in status_module.sync_status(root)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_status_says_it_even_when_the_config_is_already_clean",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": "def test_status_says_it_for_a_project_that_has_not_updated(tmp_path):\n    root = _project(tmp_path, V095)\n    assert 'Run: purlin:init --update' in status_module.sync_status(root)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_status_says_it_for_a_project_that_has_not_updated",
+      "proof": "PROOF-19",
+      "reasons": []
+    },
+    {
+      "body": "def test_status_stops_saying_it_once_the_old_project_has_updated(tmp_path):\n    root = _project(tmp_path, V095)\n    _apply(root)\n    assert 'Run: purlin:init --update' not in status_module.sync_status(root)",
+      "file": "dev/test_init_update.py",
+      "findings": [],
+      "name": "test_status_stops_saying_it_once_the_old_project_has_updated",
+      "proof": "PROOF-19",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "31836cf100bef209899d1bda349d70ce25d661cb885cc595fb88f1fad5d7db7d"
+}

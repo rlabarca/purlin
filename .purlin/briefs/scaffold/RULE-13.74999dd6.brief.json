@@ -1,0 +1,54 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "scaffold",
+  "generated_at": "2026-09-16T23:04:55Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "06263ab0476b14232a3bc854a219bc5c203461d69921a04ff4fa2643745be6ff",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-13",
+      "text": "Run with `--gate passed` and verify `.github/workflows/purlin.yml` is absent and the output contains `pass --ci to write it anyway`; run with `--gate passed --ci github` and verify the file is there",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/scaffold/20260916T230430Z-ca1f4b5-ci-windows.json",
+  "risk": "medium",
+  "rule": "RULE-13",
+  "rule_hash": "b8f593438a1df4713d589d87389fe66e97ff676bbf527a630120051148ae910a",
+  "rule_text": "Under `passed` no CI workflow is written and the summary says `--ci` writes it anyway; `--ci` under `passed` writes it",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "6f946722535fe04c79bb5af34c70c5c5b6965395324971e4126369bcc912d3db",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_ci_under_passed_writes_it_anyway(self, project):\n        project.run('--gate', 'passed', '--ci', 'github')\n        assert project.has('.github/workflows/purlin.yml')",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_ci_under_passed_writes_it_anyway",
+      "proof": "PROOF-13",
+      "reasons": []
+    },
+    {
+      "body": "def test_passed_writes_no_workflow(self, project):\n        output = project.run('--gate', 'passed')\n        assert not project.has('.github/workflows/purlin.yml')\n        assert 'pass --ci to write it anyway' in output",
+      "file": "dev/test_init_scaffold.py",
+      "findings": [],
+      "name": "test_passed_writes_no_workflow",
+      "proof": "PROOF-13",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "74999dd66cbe078538c3bf3f80a292b6891863e154ad521b1943342beac96464"
+}
