@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "drift",
-  "generated_at": "2026-09-17T12:51:52Z",
+  "generated_at": "2026-09-17T12:54:17Z",
   "layers": [
     "proof text",
     "test body",
@@ -24,7 +24,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/drift/20260917T125132Z-8ea9df0-ci-windows.json",
+  "record": ".purlin/records/drift/20260917T125350Z-df84acf-ci-windows.json",
   "risk": "medium",
   "rule": "RULE-15",
   "rule_hash": "569f64006933df4259768029eb953b3341146afd01d1060638ee5acb80f9926a",

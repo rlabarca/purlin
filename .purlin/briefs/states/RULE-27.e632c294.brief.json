@@ -3,7 +3,7 @@
   "design": null,
   "design_hash": null,
   "feature": "states",
-  "generated_at": "2026-09-17T12:52:17Z",
+  "generated_at": "2026-09-17T12:54:50Z",
   "layers": [
     "proof text",
     "test body",
@@ -25,7 +25,7 @@
       "tier": "integration"
     }
   ],
-  "record": ".purlin/records/states/20260917T125135Z-8ea9df0-ci-windows.json",
+  "record": ".purlin/records/states/20260917T125354Z-df84acf-ci-windows.json",
   "risk": "high",
   "rule": "RULE-27",
   "rule_hash": "a4f9684c7810f7a3a17958031ad7264ba432fd8556a4b4a2bf56726d3a2122ae",
