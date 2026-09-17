@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-17T12:51:56Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "88e53d8dd5b650c1ca92470d630154ecfd30f3229636cb2f63c551f4467f4e09",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-42",
+      "text": "Open the board with the regulated fixture at 1440 wide and verify that 0 column headings overflow their own box and that the table has no sideways scroll; open it at 1100 wide and verify that 0 column headings overflow their box and that the table's scroll width is greater than its visible width",
+      "tier": "e2e"
+    }
+  ],
+  "record": ".purlin/records/purlin_report/20260917T125146Z-2487f1d-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-35",
+  "rule_hash": "693c4c8f1ce1be0792574a7a241eaf0f999b2fe3f997b1550b78b385d4d00f71",
+  "rule_text": "Every column of the spec table holds a minimum width, and under the sum of those minima the table scrolls sideways rather than squeezing a column past one, so a heading and its cells stay inside their own column at every window width; `Rules` and `Strength` are aligned right in the heading and in the cell alike",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "cce72bc0855a9924c1588f253a56fa47b82ec30749777ce2a7ed9ab4cb86e1d1",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_a_column_keeps_its_floor_and_the_table_scrolls_instead(browser,  # noqa: F811\n                                                                tmp_path):\n    \"\"\"`STRENGTH` ran into `STRONG` where the track was narrower than the word.\"\"\"\n    wide = open_board(browser, tmp_path / 'wide', payload_named('regulated'),\n                      viewport={'width': 1440, 'height': 1000})\n    assert [h for h in wide.evaluate(HEADINGS) if h['over'] > 0] == []\n    assert wide.eval_on_selector(\n        '.tbl', 'el => el.scrollWidth - el.clientWidth') == 0\n    wide.close()\n\n    narrow = open_board(browser, tmp_path / 'narrow',\n                        payload_named('regulated'),\n                        viewport={'width': 1100, 'height': 1000})\n    assert [h for h in narrow.evaluate(HEADINGS) if h['over'] > 0] == []\n    assert narrow.eval_on_selector(\n        '.tbl', 'el => el.scrollWidth - el.clientWidth') > 0\n    narrow.close()",
+      "file": "dev/test_purlin_report_board_layout.py",
+      "findings": [],
+      "name": "test_a_column_keeps_its_floor_and_the_table_scrolls_instead",
+      "proof": "PROOF-42",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "02c91826c9cba8b32dd51ce0e01d1927f98fb67e21628eae5ef04ad879fd19e3"
+}

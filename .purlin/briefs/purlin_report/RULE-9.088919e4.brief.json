@@ -1,0 +1,61 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-17T12:51:57Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "1b3ed75347fc0d677d002b7badc49af115eff6729992c4fc727e14530804a05f",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-9",
+      "text": "Open the board with the solo fixture and verify the column headings read `Spec`, `Rules`, `Spec status`, `Tests`, `Last run` and that 0 grids are on screen; open it with the team fixture and verify `Strength` and `Strong` follow those five; open it with the regulated fixture and verify `Signed` follows those seven and that no heading reads `Risk`",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-40",
+      "text": "Open the board with the regulated fixture, one of login's rules rewritten to a failing passed cell; verify login's `Tests` cell reads `2 passed \u00b7 1 failing`, that export's reads `0 passed` and carries no second part, that login's `Spec status` cell reads `4 ready`, that login's `Signed` cell reads `1 of 4 \u00b7 1 stale` and that invoice's reads `0 of 2`",
+      "tier": "e2e"
+    }
+  ],
+  "record": ".purlin/records/purlin_report/20260917T125146Z-2487f1d-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-9",
+  "rule_hash": "ef3711ef9c257a87c0a9e95cebfe44a13434c8d249065548f5335f33331a3f9d",
+  "rule_text": "A column exists only where the gate reaches it: `Spec`, `Rules`, `Spec status`, `Tests` and `Last run` at every gate, `Strength` and `Strong` at `strong`, `Signed` at `signed`. The board carries no risk column and no grid of rules by bucket at any gate. Every count cell names what it counts beside the number, one labelled part per word in that word's tone: the first part is always drawn, and a later part only where it is above zero",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "0f03ba6c15b73d5890c6f3d6c2d77d18afe8231ebc24c2a744badbb5a53a7001",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_columns_scale_with_the_gate(browser, tmp_path):\n    \"\"\"A gate asks for what it asks for, and the board asks no more.\"\"\"\n    solo = open_board(browser, tmp_path / 'solo', payload_named('solo'))\n    assert head_labels(solo) == BASE_COLUMNS\n    assert solo.query_selector_all('table.grid') == []\n    solo.close()\n\n    team = open_board(browser, tmp_path / 'team', payload_named('team'))\n    assert head_labels(team) == BASE_COLUMNS + ['Strength', 'Strong']\n    team.close()\n\n    reg = open_board(browser, tmp_path / 'reg', payload_named('regulated'))\n    assert head_labels(reg) == BASE_COLUMNS + ['Strength', 'Strong', 'Signed']\n    assert 'Risk' not in head_labels(reg)\n    reg.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_the_columns_scale_with_the_gate",
+      "proof": "PROOF-9",
+      "reasons": []
+    },
+    {
+      "body": "def test_every_count_carries_the_word_it_counts(browser, tmp_path):\n    \"\"\"`24 \\u00b7 0 \\u00b7 0` left the reader to work out which number was which.\"\"\"\n    payload = payload_named('regulated')\n    payload['features'][0]['rules'][1]['cells']['passed']['word'] = 'failed'\n    page = open_board(browser, tmp_path / 'reg', payload)\n    cells = {row['name']: row\n             for row in page.eval_on_selector_all('.tr', COUNT_CELLS)}\n    # The first part is drawn even at zero, and a later part only above it.\n    assert cells['login']['tests'] == '2 passed \\u00b7 1 failing'\n    assert cells['export']['tests'] == '0 passed'\n    assert cells['login']['spec'] == '4 ready'\n    assert cells['login']['signed'] == '1 of 4 \\u00b7 1 stale'\n    assert cells['invoice']['signed'] == '0 of 2'\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_every_count_carries_the_word_it_counts",
+      "proof": "PROOF-40",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "088919e43a1f8385c4a94244148816c5145f0ed2456e4e2f42b00f0616dfdb7f"
+}

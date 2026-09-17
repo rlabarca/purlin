@@ -1,0 +1,48 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-17T12:51:56Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "de99af11b5cf9b5b8258f7e734a11c1feb9f92926530f653283cd0b67a28949c",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [
+        "happy_path_only"
+      ],
+      "id": "PROOF-14",
+      "text": "Open the board with the regulated fixture, set `Stale or held` and `Untested` together, and verify no spec row remains and the page reads `No rule matches every filter you set.`; unset both and verify 4 spec rows come back",
+      "tier": "e2e"
+    }
+  ],
+  "record": ".purlin/records/purlin_report/20260917T125146Z-2487f1d-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-14",
+  "rule_hash": "b985be8799e64ac506a04c38c3201e1f1ee151286437575998e1cacee8f90904",
+  "rule_text": "Filters compose: a rule shows only where every set filter accepts it, a combination nothing matches says so in place of the table, and unsetting them restores every row",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "3ae3e92f9d93952b847f7ffec40f71fef91b2c9d07959094d06dc476ddb63c8c",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_filters_compose_and_clear(browser, tmp_path):\n    page = open_board(browser, tmp_path, payload_named('regulated'))\n    page.click('[data-filter=\"stale-or-held\"]')\n    page.click('[data-filter=\"untested\"]')\n    assert feature_names(page) == []\n    assert 'No rule matches every filter you set.' in page.inner_text('.empty')\n    page.click('[data-filter=\"stale-or-held\"]')\n    page.click('[data-filter=\"untested\"]')\n    assert len(feature_names(page)) == 4\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_filters_compose_and_clear",
+      "proof": "PROOF-14",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "b7e7360e749ff344ad649da04534ede720113cbe0c605e427088452f70c452d0"
+}

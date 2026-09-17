@@ -1,0 +1,2562 @@
+{
+  "commit": "2487f1dcecf924ecf0cbd7e62aa07ef703664a42",
+  "dirty": true,
+  "environment": {
+    "engines": [
+      "none"
+    ],
+    "host": "GitHub Actions 1000000231",
+    "id": "linux-x86_64",
+    "job": "verify",
+    "kind": "ci",
+    "os": "linux"
+  },
+  "feature": "scaffold",
+  "features": {
+    "scaffold": {
+      "rules": {
+        "RULE-1": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-1"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_a_project_with_code_is_asked_the_gate_and_nothing_else",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-10": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-10"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_only_signed_is_asked",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_emails_are_written_and_the_signing_setup_printed",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-11": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-11"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_a_tagged_rule_is_not_listed",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_no_list_prints_the_directive_the_gate_will_fail_on",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_rules_without_a_risk_tag_are_listed",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_untagged_rules_names_the_feature_and_the_rule",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-12": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-12"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_lowering_from_signed_keeps_the_signer_list",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_lowering_writes_the_setting_and_deletes_nothing",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_raising_to_signed_keeps_what_strong_wrote",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_raising_to_strong_adds_the_workflow",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-13": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-13"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_ci_under_passed_writes_it_anyway",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_passed_writes_no_workflow",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-14": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-14"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_an_azure_remote_gets_the_pipeline",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_ci_ado_overrides_the_remote",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_no_remote_reads_no_host",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_host_is_read_from_the_remote",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_host_is_read_from_the_url[git@github.com:acme/demo.git-github]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_host_is_read_from_the_url[https://acme.visualstudio.com/demo/_git/demo-azure]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_host_is_read_from_the_url[https://dev.azure.com/acme/demo/_git/demo-azure]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_host_is_read_from_the_url[https://git.example.com/acme/demo.git-None]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_host_is_read_from_the_url[https://github.com/acme/demo.git-github]",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-15": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-15"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_no_env_tag_means_one_linux_job",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_matrix_is_rendered_from_the_env_tags",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_purlin_release_is_pinned",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-16": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-16"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_upstream_check_adds_the_scheduled_job",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_without_it_the_scheduled_job_is_absent",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-17": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-17"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_passed_prints_only_the_force_push_rule",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_branch_rules_are_printed",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-18": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-18"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_dashboard_is_copied",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_summary_names_every_write",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_two_readmes_are_three_lines_each",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-19": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-19"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_a_package_directory_is_found_when_there_is_no_src",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_engine_block_is_added_once",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_engine_block_names_the_source_and_the_tests",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_gitignore_block_is_added_once",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_source_paths_prefer_src",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_without_a_pyproject_the_block_lands_in_setup_cfg",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-2": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-2"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_each_answer_derives_its_own_settings[passed-None-never]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_each_answer_derives_its_own_settings[signed-80-medium]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_each_answer_derives_its_own_settings[strong-70-high]",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-20": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-20"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_a_second_run_at_the_same_gate_changes_nothing",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-21": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-21"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_nothing_a_project_holds_names_the_plugin_but_that_one_file",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_plugin_root_file_names_the_install",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_plugin_root_file_points_at_this_checkout",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-22": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-22"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_copy_sets_a_project_up_the_same_way",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-23": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-23"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_no_project_file_points_at_the_repository_s_own_dev_folder",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-24": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-24"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_no_pre_commit_hook_is_installed",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_shim_and_the_delegator_are_written",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_pre_push_hook.py",
+              "name": "test_no_pre_commit_script_ships",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_pre_push_hook.py",
+              "name": "test_the_delegator_git_runs_reaches_the_shim",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_pre_push_hook.py",
+              "name": "test_the_delegator_survives_a_checkout_without_the_shim",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-25": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-25"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_shim_names_no_machine",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_pre_push_hook.py",
+              "name": "test_the_shim_names_no_machine_and_no_release",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-26": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-26"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_a_hook_manager_is_named_rather_than_written_over",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_a_hook_someone_else_wrote_is_kept",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-27": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-27"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_pre_push_hook.py",
+              "name": "test_a_failure_with_the_setting_off_is_reported_and_not_blocked",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_pre_push_hook.py",
+              "name": "test_a_failure_with_the_setting_on_blocks",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_pre_push_hook.py",
+              "name": "test_a_pass_with_the_setting_on_still_goes_through",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_pre_push_hook.py",
+              "name": "test_a_passing_suite_says_so_and_lets_the_push_through",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_pre_push_hook.py",
+              "name": "test_a_run_that_reached_no_test_never_blocks",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_pre_push_hook.py",
+              "name": "test_an_unreadable_setting_never_blocks",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_pre_push_hook.py",
+              "name": "test_one_line_either_way",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_pre_push_hook.py",
+              "name": "test_the_script_runs_the_quick_pass_and_nothing_else",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_pre_push_hook.py",
+              "name": "test_the_setting_true_counts_as_on",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-28": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-28"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_pre_push_hook.py",
+              "name": "test_a_project_that_is_not_a_purlin_project_exits_zero",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_pre_push_hook.py",
+              "name": "test_a_project_with_no_specs_exits_zero",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_pre_push_hook.py",
+              "name": "test_outside_a_repository_it_exits_zero",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_pre_push_hook.py",
+              "name": "test_the_script_asks_for_sh_and_sets_no_option_outside_posix",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-29": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-29"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_pre_push_hook.py",
+              "name": "test_a_marketplace_copy_under_home_is_found",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_pre_push_hook.py",
+              "name": "test_an_environment_root_wins_over_the_pinned_one",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_pre_push_hook.py",
+              "name": "test_claude_plugin_root_is_enough",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_pre_push_hook.py",
+              "name": "test_no_plugin_anywhere_warns_and_never_blocks",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_pre_push_hook.py",
+              "name": "test_the_pinned_plugin_root_is_enough",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-3": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-3"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_gate_flag_answers_the_question_without_asking",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_gate_is_remembered_when_no_flag_names_one",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-30": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-30"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_dry_run_outside_a_repository_still_prints_the_plan",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_dry_run_writes_nothing_and_prints_the_plan",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-31": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-31"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_a_missing_project_root_is_a_bad_invocation",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_outside_a_repository_a_real_run_refuses",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-32": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-32"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_add_keeps_what_was_detected",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_add_twice_names_the_framework_once",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-33": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-33"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_update_hands_the_project_to_the_upgrade",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_update_with_dry_run_asks_the_upgrade_what_is_pending",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-34": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-34"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_next_step_is_the_last_line",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_next_step_reads_the_state_once_specs_exist",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-35": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-35"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_no_emoji_and_no_retired_word_in_the_output",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_pre_push_hook.py",
+              "name": "test_the_script_carries_no_retired_word",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-36": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-36"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_e2e.sh",
+              "name": "the three gates walked on every fixture init set up",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-37": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-37"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_e2e.sh",
+              "name": "each language wired, and the marketplace install",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-38": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-38"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_a_framework_the_tree_carries_survives_a_gate_change",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_a_gate_change_drops_a_framework_the_tree_cannot_run",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-39": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-39"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_modules_at_the_root_are_named_one_by_one",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_nested_code_is_source_and_a_test_directory_is_the_selection",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_no_python_anywhere_falls_back_to_the_root",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_src_and_tests_still_win_over_other_directories",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-4": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-4"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_an_unreadable_answer_falls_back_to_passed",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-40": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-40"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_mutmut_copy_is_ignored_once",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-41": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-41"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_brief_files.py",
+              "name": "test_the_template_keeps_the_rendering_out_of_git",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-5": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-5"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_a_child_run_and_an_in_process_run_agree",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_config_holds_the_shape_and_no_retired_key",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_template_carries_the_same_shape",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-6": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-6"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_a_framework_with_no_plugin_is_read_as_shell",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_an_empty_tree_is_asked_and_shell_is_the_default",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_named_framework_is_the_one_installed",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-7": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-7"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_detection_installs_that_language_s_plugin[jest]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_detection_installs_that_language_s_plugin[pytest]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_detection_installs_that_language_s_plugin[shell]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_detection_installs_that_language_s_plugin[sql]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_detection_installs_that_language_s_plugin[vitest]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_detection_installs_that_language_s_plugin[xunit]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_copy_is_byte_equal_to_the_plugin_it_came_from[jest]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_copy_is_byte_equal_to_the_plugin_it_came_from[pytest]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_copy_is_byte_equal_to_the_plugin_it_came_from[shell]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_copy_is_byte_equal_to_the_plugin_it_came_from[sql]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_copy_is_byte_equal_to_the_plugin_it_came_from[vitest]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_copy_is_byte_equal_to_the_plugin_it_came_from[xunit]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_registry_answers_every_framework",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-8": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-8"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_a_runner_config_the_project_wrote_is_never_replaced",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_runner_wiring_is_written[jest-jest.config.js]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_runner_wiring_is_written[pytest-conftest.py]",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_the_runner_wiring_is_written[vitest-vitest.config.ts]",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-9": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-9"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_a_node_project_is_told_about_stryker",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_init_scaffold.py",
+              "name": "test_xunit_is_told_how_to_wire_its_logger",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        }
+      },
+      "scope_score": {
+        "killed": 0,
+        "score": null,
+        "survived": 0
+      },
+      "spec": "specs/init/scaffold.md"
+    }
+  },
+  "gate": "signed",
+  "log": {
+    "path": ".purlin/runtime/run.log",
+    "sha256": "0f9bc148778e1472841dba77f3efc9a9f4158ee0ec26b0e497e684a382bcc11c"
+  },
+  "missing": [],
+  "os": "linux",
+  "plugins": [
+    "pytest",
+    "shell"
+  ],
+  "proofs": [
+    {
+      "env": null,
+      "id": "PROOF-1",
+      "rule": "RULE-1",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_a_project_with_code_is_asked_the_gate_and_nothing_else",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_each_answer_derives_its_own_settings[passed-None-never]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_each_answer_derives_its_own_settings[signed-80-medium]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-2",
+      "rule": "RULE-2",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_each_answer_derives_its_own_settings[strong-70-high]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_gate_flag_answers_the_question_without_asking",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_gate_is_remembered_when_no_flag_names_one",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-4",
+      "rule": "RULE-4",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_an_unreadable_answer_falls_back_to_passed",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_a_child_run_and_an_in_process_run_agree",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_config_holds_the_shape_and_no_retired_key",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-5",
+      "rule": "RULE-5",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_template_carries_the_same_shape",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_a_framework_with_no_plugin_is_read_as_shell",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_an_empty_tree_is_asked_and_shell_is_the_default",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-6",
+      "rule": "RULE-6",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_named_framework_is_the_one_installed",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_detection_installs_that_language_s_plugin[jest]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_detection_installs_that_language_s_plugin[pytest]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_detection_installs_that_language_s_plugin[shell]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_detection_installs_that_language_s_plugin[sql]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_detection_installs_that_language_s_plugin[vitest]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_detection_installs_that_language_s_plugin[xunit]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_copy_is_byte_equal_to_the_plugin_it_came_from[jest]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_copy_is_byte_equal_to_the_plugin_it_came_from[pytest]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_copy_is_byte_equal_to_the_plugin_it_came_from[shell]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_copy_is_byte_equal_to_the_plugin_it_came_from[sql]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_copy_is_byte_equal_to_the_plugin_it_came_from[vitest]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_copy_is_byte_equal_to_the_plugin_it_came_from[xunit]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-7",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_registry_answers_every_framework",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_a_runner_config_the_project_wrote_is_never_replaced",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_runner_wiring_is_written[jest-jest.config.js]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_runner_wiring_is_written[pytest-conftest.py]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-8",
+      "rule": "RULE-8",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_runner_wiring_is_written[vitest-vitest.config.ts]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_a_node_project_is_told_about_stryker",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-9",
+      "rule": "RULE-9",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_xunit_is_told_how_to_wire_its_logger",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_only_signed_is_asked",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-10",
+      "rule": "RULE-10",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_emails_are_written_and_the_signing_setup_printed",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_a_tagged_rule_is_not_listed",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_no_list_prints_the_directive_the_gate_will_fail_on",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_rules_without_a_risk_tag_are_listed",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-11",
+      "rule": "RULE-11",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_untagged_rules_names_the_feature_and_the_rule",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_lowering_from_signed_keeps_the_signer_list",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_lowering_writes_the_setting_and_deletes_nothing",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_raising_to_signed_keeps_what_strong_wrote",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-12",
+      "rule": "RULE-12",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_raising_to_strong_adds_the_workflow",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_ci_under_passed_writes_it_anyway",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-13",
+      "rule": "RULE-13",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_passed_writes_no_workflow",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_an_azure_remote_gets_the_pipeline",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_ci_ado_overrides_the_remote",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_no_remote_reads_no_host",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_host_is_read_from_the_remote",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_host_is_read_from_the_url[git@github.com:acme/demo.git-github]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_host_is_read_from_the_url[https://acme.visualstudio.com/demo/_git/demo-azure]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_host_is_read_from_the_url[https://dev.azure.com/acme/demo/_git/demo-azure]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_host_is_read_from_the_url[https://git.example.com/acme/demo.git-None]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-14",
+      "rule": "RULE-14",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_host_is_read_from_the_url[https://github.com/acme/demo.git-github]",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_no_env_tag_means_one_linux_job",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_matrix_is_rendered_from_the_env_tags",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-15",
+      "rule": "RULE-15",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_purlin_release_is_pinned",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_upstream_check_adds_the_scheduled_job",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-16",
+      "rule": "RULE-16",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_without_it_the_scheduled_job_is_absent",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-17",
+      "rule": "RULE-17",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_passed_prints_only_the_force_push_rule",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-17",
+      "rule": "RULE-17",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_branch_rules_are_printed",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-18",
+      "rule": "RULE-18",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_dashboard_is_copied",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-18",
+      "rule": "RULE-18",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_summary_names_every_write",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-18",
+      "rule": "RULE-18",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_two_readmes_are_three_lines_each",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_a_package_directory_is_found_when_there_is_no_src",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_engine_block_is_added_once",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_engine_block_names_the_source_and_the_tests",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_gitignore_block_is_added_once",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_source_paths_prefer_src",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-19",
+      "rule": "RULE-19",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_without_a_pyproject_the_block_lands_in_setup_cfg",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-20",
+      "rule": "RULE-20",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_a_second_run_at_the_same_gate_changes_nothing",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-21",
+      "rule": "RULE-21",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_nothing_a_project_holds_names_the_plugin_but_that_one_file",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-21",
+      "rule": "RULE-21",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_plugin_root_file_names_the_install",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-21",
+      "rule": "RULE-21",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_plugin_root_file_points_at_this_checkout",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-22",
+      "rule": "RULE-22",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_copy_sets_a_project_up_the_same_way",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-23",
+      "rule": "RULE-23",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_no_project_file_points_at_the_repository_s_own_dev_folder",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-24",
+      "rule": "RULE-24",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_no_pre_commit_hook_is_installed",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-24",
+      "rule": "RULE-24",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_shim_and_the_delegator_are_written",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-24",
+      "rule": "RULE-24",
+      "status": "pass",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_no_pre_commit_script_ships",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-24",
+      "rule": "RULE-24",
+      "status": "pass",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_the_delegator_git_runs_reaches_the_shim",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-24",
+      "rule": "RULE-24",
+      "status": "pass",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_the_delegator_survives_a_checkout_without_the_shim",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-25",
+      "rule": "RULE-25",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_shim_names_no_machine",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-25",
+      "rule": "RULE-25",
+      "status": "pass",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_the_shim_names_no_machine_and_no_release",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-26",
+      "rule": "RULE-26",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_a_hook_manager_is_named_rather_than_written_over",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-26",
+      "rule": "RULE-26",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_a_hook_someone_else_wrote_is_kept",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-27",
+      "rule": "RULE-27",
+      "status": "pass",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_a_failure_with_the_setting_off_is_reported_and_not_blocked",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-27",
+      "rule": "RULE-27",
+      "status": "pass",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_a_failure_with_the_setting_on_blocks",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-27",
+      "rule": "RULE-27",
+      "status": "pass",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_a_pass_with_the_setting_on_still_goes_through",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-27",
+      "rule": "RULE-27",
+      "status": "pass",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_a_passing_suite_says_so_and_lets_the_push_through",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-27",
+      "rule": "RULE-27",
+      "status": "pass",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_a_run_that_reached_no_test_never_blocks",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-27",
+      "rule": "RULE-27",
+      "status": "pass",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_an_unreadable_setting_never_blocks",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-27",
+      "rule": "RULE-27",
+      "status": "pass",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_one_line_either_way",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-27",
+      "rule": "RULE-27",
+      "status": "pass",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_the_script_runs_the_quick_pass_and_nothing_else",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-27",
+      "rule": "RULE-27",
+      "status": "pass",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_the_setting_true_counts_as_on",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-28",
+      "rule": "RULE-28",
+      "status": "pass",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_a_project_that_is_not_a_purlin_project_exits_zero",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-28",
+      "rule": "RULE-28",
+      "status": "pass",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_a_project_with_no_specs_exits_zero",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-28",
+      "rule": "RULE-28",
+      "status": "pass",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_outside_a_repository_it_exits_zero",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-28",
+      "rule": "RULE-28",
+      "status": "pass",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_the_script_asks_for_sh_and_sets_no_option_outside_posix",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-29",
+      "rule": "RULE-29",
+      "status": "pass",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_a_marketplace_copy_under_home_is_found",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-29",
+      "rule": "RULE-29",
+      "status": "pass",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_an_environment_root_wins_over_the_pinned_one",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-29",
+      "rule": "RULE-29",
+      "status": "pass",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_claude_plugin_root_is_enough",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-29",
+      "rule": "RULE-29",
+      "status": "pass",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_no_plugin_anywhere_warns_and_never_blocks",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-29",
+      "rule": "RULE-29",
+      "status": "pass",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_the_pinned_plugin_root_is_enough",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-30",
+      "rule": "RULE-30",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_dry_run_outside_a_repository_still_prints_the_plan",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-30",
+      "rule": "RULE-30",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_dry_run_writes_nothing_and_prints_the_plan",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-31",
+      "rule": "RULE-31",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_a_missing_project_root_is_a_bad_invocation",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-31",
+      "rule": "RULE-31",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_outside_a_repository_a_real_run_refuses",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-32",
+      "rule": "RULE-32",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_add_keeps_what_was_detected",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-32",
+      "rule": "RULE-32",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_add_twice_names_the_framework_once",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-33",
+      "rule": "RULE-33",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_update_hands_the_project_to_the_upgrade",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-33",
+      "rule": "RULE-33",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_update_with_dry_run_asks_the_upgrade_what_is_pending",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-34",
+      "rule": "RULE-34",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_next_step_is_the_last_line",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-34",
+      "rule": "RULE-34",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_next_step_reads_the_state_once_specs_exist",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-35",
+      "rule": "RULE-35",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_no_emoji_and_no_retired_word_in_the_output",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-35",
+      "rule": "RULE-35",
+      "status": "pass",
+      "test_file": "dev/test_pre_push_hook.py",
+      "test_name": "test_the_script_carries_no_retired_word",
+      "tier": "unit"
+    },
+    {
+      "env": "linux",
+      "id": "PROOF-36",
+      "rule": "RULE-36",
+      "status": "pass",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "the three gates walked on every fixture init set up",
+      "tier": "e2e"
+    },
+    {
+      "env": "linux",
+      "id": "PROOF-37",
+      "rule": "RULE-37",
+      "status": "pass",
+      "test_file": "dev/test_init_e2e.sh",
+      "test_name": "each language wired, and the marketplace install",
+      "tier": "e2e"
+    },
+    {
+      "env": null,
+      "id": "PROOF-38",
+      "rule": "RULE-38",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_a_framework_the_tree_carries_survives_a_gate_change",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-38",
+      "rule": "RULE-38",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_a_gate_change_drops_a_framework_the_tree_cannot_run",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-39",
+      "rule": "RULE-39",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_modules_at_the_root_are_named_one_by_one",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-39",
+      "rule": "RULE-39",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_nested_code_is_source_and_a_test_directory_is_the_selection",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-39",
+      "rule": "RULE-39",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_no_python_anywhere_falls_back_to_the_root",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-39",
+      "rule": "RULE-39",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_src_and_tests_still_win_over_other_directories",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-40",
+      "rule": "RULE-40",
+      "status": "pass",
+      "test_file": "dev/test_init_scaffold.py",
+      "test_name": "test_the_mutmut_copy_is_ignored_once",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-41",
+      "rule": "RULE-41",
+      "status": "pass",
+      "test_file": "dev/test_brief_files.py",
+      "test_name": "test_the_template_keeps_the_rendering_out_of_git",
+      "tier": "integration"
+    }
+  ],
+  "runner": "ci",
+  "schema": "purlin-record/2",
+  "schema_version": 2,
+  "scope_tree": "bc5cbd43dac569cc2b9753ee43086b95fcec6fb4a2dc01f4c529ddf2bb7b1922",
+  "test_strength": null,
+  "timestamp": "2026-09-17T12:51:46Z"
+}

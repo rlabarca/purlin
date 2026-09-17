@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-17T12:51:57Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "f24eb6676674bd904ab933935ec80b87de0cf74320fa9cd499456c62910813ff",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-8",
+      "text": "Open the board with the solo fixture and verify the tile labels read `Untested`, `Failing`, `Passing` in that order, that they are set in capitals, and that 0 flag cards are on screen; open the team fixture and verify they read `Untested`, `Failing`, `Passing`, `Strong` with 0 flag cards; open the regulated fixture and verify they read `Untested`, `Failing`, `Passing`, `Strong`, `Signed`, that the five counts read 2, 0, 6, 2 and 1, which is each level's bucket added to every bucket above it, and that the flag card reads `Stale` with the summary's stale count",
+      "tier": "e2e"
+    }
+  ],
+  "record": ".purlin/records/purlin_report/20260917T125146Z-2487f1d-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-8",
+  "rule_hash": "57387cec42eba7529162fb615149c52b0627641d6071d714d19cd384d7ecd505",
+  "rule_text": "The strip above the table carries one tile per level the gate reaches, `Untested`, `Failing` and `Passing` at every gate, `Strong` at `strong` and `Signed` at `signed`. The three level tiles are cumulative: each counts the rules that reached its level or any level above it, added up in the page from the payload's exclusive buckets. Every label is set in capitals, and at `signed` a `Stale` flag card sits beside the tiles",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "7c60050b7d489e5854b6fb74400c54684d6aa159b596c3dcaf1186809ca284bd",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_the_tiles_scale_with_the_gate(browser, tmp_path):\n    solo = open_board(browser, tmp_path / 'solo', payload_named('solo'))\n    assert texts(solo, '.tile-l') == ['Untested', 'Failing', 'Passing']\n    assert solo.query_selector_all('.flag') == []\n    assert solo.eval_on_selector(\n        '.tile-l', 'el => getComputedStyle(el).textTransform') == 'uppercase'\n    solo.close()\n\n    team = open_board(browser, tmp_path / 'team', payload_named('team'))\n    assert texts(team, '.tile-l') == ['Untested', 'Failing', 'Passing',\n                                      'Strong']\n    assert team.query_selector_all('.flag') == []\n    team.close()\n\n    payload = payload_named('regulated')\n    page = open_board(browser, tmp_path / 'reg', payload)\n    assert texts(page, '.tile-l') == ['Untested', 'Failing', 'Passing',\n                                      'Strong', 'Signed']\n    # The tiles are cumulative: the regulated fixture's one signed rule is\n    # counted again under `Strong` and again under `Passing`.\n    assert texts(page, '.tile-v') == [str(reached(payload['summary'], name))\n                                      for name in BUCKETS]\n    assert texts(page, '.tile-v') == ['2', '0', '6', '2', '1']\n    assert texts(page, '.flag-l') == ['Stale']\n    assert texts(page, '.flag-v') == [str(payload['summary']['stale'])]\n    page.close()",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_the_tiles_scale_with_the_gate",
+      "proof": "PROOF-8",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "07f7fb5cea70007a10dc7e04307f60bda179778d34853a0c64c3b2d523ce47cd"
+}

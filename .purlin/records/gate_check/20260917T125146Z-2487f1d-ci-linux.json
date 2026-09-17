@@ -1,0 +1,753 @@
+{
+  "commit": "2487f1dcecf924ecf0cbd7e62aa07ef703664a42",
+  "dirty": true,
+  "environment": {
+    "engines": [
+      "none"
+    ],
+    "host": "GitHub Actions 1000000231",
+    "id": "linux-x86_64",
+    "job": "verify",
+    "kind": "ci",
+    "os": "linux"
+  },
+  "feature": "gate_check",
+  "features": {
+    "gate_check": {
+      "rules": {
+        "RULE-1": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-30",
+            "PROOF-31"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_it_reads_the_payload_and_not_a_rendered_table",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_a_caller_may_hand_over_the_payload_it_already_built",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-10": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-23"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_check_is_required_and_a_missing_directory_is_two",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-11": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-25",
+            "PROOF-26",
+            "PROOF-27"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_it_carries_the_result_and_every_rule_that_fell_short",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_a_passing_project_says_pass",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_a_weak_rule_lands_in_the_weak_list",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-12": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-29"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_no_file_is_created_or_changed_at_any_level",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-13": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-24",
+            "PROOF-32"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_the_script_runs_as_a_command",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_every_line_it_prints_carries_the_prefix_or_is_a_finding",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-2": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-1",
+            "PROOF-6",
+            "PROOF-20"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_a_developer_record_is_enough",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_a_record_ci_committed_with_a_settled_brief_passes",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_a_required_rule_is_counted_once_under_its_owner",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-3": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-2",
+            "PROOF-3",
+            "PROOF-4",
+            "PROOF-7"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_a_rule_with_no_record_is_not_passed",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_a_failing_proof_is_named_with_its_reason",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_a_drafted_rule_is_not_passed_and_says_which_finding",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_a_developer_record_does_not_count",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-4": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-8",
+            "PROOF-9",
+            "PROOF-10"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_below_the_minimum_test_strength_is_weak",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_a_rule_with_no_brief_needs_a_person",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_an_observation_the_model_made_stands_against_the_rule",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-5": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-11",
+            "PROOF-12",
+            "PROOF-13",
+            "PROOF-14",
+            "PROOF-15",
+            "PROOF-16",
+            "PROOF-17"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_a_current_signature_by_a_signer_passes_its_rule",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_a_rule_below_sign_at_needs_no_signature",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_a_rule_with_no_signature_is_not_signed",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_an_unsigned_commit_does_not_carry_a_signature",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_the_author_of_the_test_may_not_sign_it",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_a_signature_the_text_moved_under_reads_stale",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_a_signature_only_on_a_side_branch_is_not_on_the_branch",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-6": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-5"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_no_minimum_test_strength_is_printed_under_passed",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-7": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-19"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_a_section_names_twenty_rules_and_counts_the_rest",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-8": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-18",
+            "PROOF-28"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_no_signer_list_names_the_command_and_fails",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_a_missing_signer_list_says_so_in_the_json",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        },
+        "RULE-9": {
+          "attachments": [],
+          "proofs": [
+            "PROOF-21",
+            "PROOF-22"
+          ],
+          "result": "pass",
+          "test_strength": {
+            "attribution": "unavailable",
+            "engine": "none",
+            "killed": 0,
+            "score": null,
+            "survived": 0
+          },
+          "tests": [
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_zero_one_and_two",
+              "plugin": "",
+              "status": "pass"
+            },
+            {
+              "file": "dev/test_gate_check.py",
+              "name": "test_a_directory_that_is_not_a_project_never_passes",
+              "plugin": "",
+              "status": "pass"
+            }
+          ]
+        }
+      },
+      "scope_score": {
+        "killed": 0,
+        "score": null,
+        "survived": 0
+      },
+      "spec": "specs/ci/gate_check.md"
+    }
+  },
+  "gate": "signed",
+  "log": {
+    "path": ".purlin/runtime/run.log",
+    "sha256": "0f9bc148778e1472841dba77f3efc9a9f4158ee0ec26b0e497e684a382bcc11c"
+  },
+  "missing": [],
+  "os": "linux",
+  "plugins": [
+    "pytest",
+    "shell"
+  ],
+  "proofs": [
+    {
+      "env": null,
+      "id": "PROOF-30",
+      "rule": "RULE-1",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_it_reads_the_payload_and_not_a_rendered_table",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-31",
+      "rule": "RULE-1",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_a_caller_may_hand_over_the_payload_it_already_built",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-1",
+      "rule": "RULE-2",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_a_developer_record_is_enough",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-6",
+      "rule": "RULE-2",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_a_record_ci_committed_with_a_settled_brief_passes",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-20",
+      "rule": "RULE-2",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_a_required_rule_is_counted_once_under_its_owner",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-2",
+      "rule": "RULE-3",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_a_rule_with_no_record_is_not_passed",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-3",
+      "rule": "RULE-3",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_a_failing_proof_is_named_with_its_reason",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-4",
+      "rule": "RULE-3",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_a_drafted_rule_is_not_passed_and_says_which_finding",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-7",
+      "rule": "RULE-3",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_a_developer_record_does_not_count",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-8",
+      "rule": "RULE-4",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_below_the_minimum_test_strength_is_weak",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-9",
+      "rule": "RULE-4",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_a_rule_with_no_brief_needs_a_person",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-10",
+      "rule": "RULE-4",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_an_observation_the_model_made_stands_against_the_rule",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-11",
+      "rule": "RULE-5",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_a_current_signature_by_a_signer_passes_its_rule",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-12",
+      "rule": "RULE-5",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_a_rule_below_sign_at_needs_no_signature",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-13",
+      "rule": "RULE-5",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_a_rule_with_no_signature_is_not_signed",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-14",
+      "rule": "RULE-5",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_an_unsigned_commit_does_not_carry_a_signature",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-15",
+      "rule": "RULE-5",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_the_author_of_the_test_may_not_sign_it",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-16",
+      "rule": "RULE-5",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_a_signature_the_text_moved_under_reads_stale",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-17",
+      "rule": "RULE-5",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_a_signature_only_on_a_side_branch_is_not_on_the_branch",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-5",
+      "rule": "RULE-6",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_no_minimum_test_strength_is_printed_under_passed",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-19",
+      "rule": "RULE-7",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_a_section_names_twenty_rules_and_counts_the_rest",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-18",
+      "rule": "RULE-8",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_no_signer_list_names_the_command_and_fails",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-28",
+      "rule": "RULE-8",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_a_missing_signer_list_says_so_in_the_json",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-21",
+      "rule": "RULE-9",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_zero_one_and_two",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-22",
+      "rule": "RULE-9",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_a_directory_that_is_not_a_project_never_passes",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-23",
+      "rule": "RULE-10",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_check_is_required_and_a_missing_directory_is_two",
+      "tier": "unit"
+    },
+    {
+      "env": null,
+      "id": "PROOF-25",
+      "rule": "RULE-11",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_it_carries_the_result_and_every_rule_that_fell_short",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-26",
+      "rule": "RULE-11",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_a_passing_project_says_pass",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-27",
+      "rule": "RULE-11",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_a_weak_rule_lands_in_the_weak_list",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-29",
+      "rule": "RULE-12",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_no_file_is_created_or_changed_at_any_level",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-24",
+      "rule": "RULE-13",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_the_script_runs_as_a_command",
+      "tier": "integration"
+    },
+    {
+      "env": null,
+      "id": "PROOF-32",
+      "rule": "RULE-13",
+      "status": "pass",
+      "test_file": "dev/test_gate_check.py",
+      "test_name": "test_every_line_it_prints_carries_the_prefix_or_is_a_finding",
+      "tier": "integration"
+    }
+  ],
+  "runner": "ci",
+  "schema": "purlin-record/2",
+  "schema_version": 2,
+  "scope_tree": "3aae030103e849f34e3519461dce125bfd4df3ef15950fbc7cc6f70681d7e068",
+  "test_strength": null,
+  "timestamp": "2026-09-17T12:51:46Z"
+}

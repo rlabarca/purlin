@@ -1,0 +1,46 @@
+{
+  "ai_review": null,
+  "design": null,
+  "design_hash": null,
+  "feature": "purlin_report",
+  "generated_at": "2026-09-17T12:51:56Z",
+  "layers": [
+    "proof text",
+    "test body",
+    "test strength"
+  ],
+  "min_strength": 80,
+  "observations": [],
+  "origin": "eng",
+  "proof_hash": "ae205c168a8f9191d123df18776780518842f92a0da65cc25f6b188972a4dd0b",
+  "proofs": [
+    {
+      "env": null,
+      "findings": [],
+      "id": "PROOF-3",
+      "text": "Run the build, cut the page at the inlined token block, and verify the block declares `--canvas` and that the text outside it contains zero hex colour literals",
+      "tier": "unit"
+    }
+  ],
+  "record": ".purlin/records/purlin_report/20260917T125146Z-2487f1d-ci-linux.json",
+  "risk": "medium",
+  "rule": "RULE-3",
+  "rule_hash": "b8ee6b5293914f87698ecf9ffed9cedc753398003c9e925ba3ba957c135cdea8",
+  "rule_text": "Every colour the page uses is written inside the one inlined token block, and no colour literal appears anywhere else in the file",
+  "schema": "purlin-brief/2",
+  "settled": null,
+  "test_hash": "bef57efc24db7f26a44ef16bc4cd37821e810b6e0d8468f38262f185496bd6e9",
+  "test_hash_kind": "file",
+  "test_strength": null,
+  "tests": [
+    {
+      "body": "def test_every_colour_is_a_token(page_text):\n    \"\"\"The only place a colour is written is the inlined token block.\"\"\"\n    inside, outside = token_block(page_text)\n    assert '--canvas' in inside\n    written = [match for match in re.findall(r'#[0-9a-fA-F]{3,8}\\b', outside)\n               if not match.lower().startswith('#purlin')]\n    assert written == [], written",
+      "file": "dev/test_purlin_report.py",
+      "findings": [],
+      "name": "test_every_colour_is_a_token",
+      "proof": "PROOF-3",
+      "reasons": []
+    }
+  ],
+  "triple_hash": "065e666924549267b7f542a43cf254f2ca81a48677954c66dff258ec39d66c0f"
+}
